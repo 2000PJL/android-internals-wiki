@@ -3900,6 +3900,40 @@
       "summary": "Jetpack WebGPU alpha06 is current; this chapter is still pinned to alpha05 and needs alpha06 source rebaseline before publication",
       "type": "version-boundary",
       "updated_at": "2026-10-09T13:43:20.777411+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch08-responsiveness/01-responsiveness-principles-scenarios-cases.md",
+      "created_at": "2026-10-12T02:00:34.013454+08:00",
+      "created_by": "hermes-aiw-weekly-source-audit",
+      "created_run_id": "freshness-2026-10-12",
+      "details": "last source verification 2026-07-09 older than 90 days\nEvidence: 2026-07-09",
+      "id": "AIW-FRESH-dd5cc4781adc5f88",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-10-12-时效性巡检.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part2-performance/ch08-responsiveness/01-responsiveness-principles-scenarios-cases.md"
+      ],
+      "status": "open",
+      "summary": "last source verification 2026-07-09 older than 90 days",
+      "type": "stale-source-verification",
+      "updated_at": "2026-10-12T02:00:34.013454+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md",
+      "created_at": "2026-10-12T02:00:34.013454+08:00",
+      "created_by": "hermes-aiw-weekly-source-audit",
+      "created_run_id": "freshness-2026-10-12",
+      "details": "affirmative higher-than-Android-17 out-of-scope claim\nEvidence: 能说明](https://developer.android.com/about/versions/16/features#apv)：APV 定位、标准特征与 Android 422-10 实现范围。",
+      "id": "AIW-FRESH-c51e086ba6149099",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-10-12-时效性巡检.md",
+      "severity": "P1",
+      "source_paths": [
+        "src/part2-performance/ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md"
+      ],
+      "status": "open",
+      "summary": "affirmative higher-than-Android-17 out-of-scope claim",
+      "type": "above-android17-affirmative-claim",
+      "updated_at": "2026-10-12T02:00:34.013454+08:00"
     }
   ],
   "schema_version": 1

@@ -84,17 +84,17 @@ consolidated_from:
 
 # App 启动路径、监控与度量
 
-应用启动从用户或系统请求开始，经过进程创建、bindApplication、组件生命周期和首帧显示。本章围绕这条路径讲两件事：先从应用进程一侧把启动拆成可测阶段，说清 Trace（带时间轴的执行跟踪）中一段区间究竟代表什么；再讲线上监控怎样记录启动类型、起止点、关键阶段和设备状态，避免只上报一个总时长。
+应用启动从用户或系统请求开始，经过进程创建、bindApplication、组件生命周期和首帧显示。本章围绕这条路径讲两件事：先从应用进程一侧把启动拆成可测阶段，说清 Trace 中一段区间究竟代表什么；再讲线上监控怎样记录启动类型、起止点、关键阶段和设备状态，避免只上报一个总时长。
 
 分析部分要确认系统什么时候把执行权交给应用、关键路径包含哪些阶段。系统侧的进程创建、任务与窗口管理另见 8.2 节；初始化依赖治理、Baseline Profile 和首帧渲染分别在后续章节展开。
 
-平台源码锚点为 Android 17 / API 37 / `android-17.0.0_r1`。AndroidX 与 Perfetto 属于独立发布的工具链，相关内容会明确它们与平台版本的边界。
+> 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`；AndroidX 与 Perfetto 独立发布，涉及之处会单独注明版本要求。
 
 ## 进程创建、初始化与首帧阶段
 
 ### 1. 冷、温、热描述的是启动前状态
 
-[Android 应用启动文档](https://developer.android.com/topic/performance/vitals/launch-time)把启动分为 cold、warm、hot。三者概括的是启动前进程、Activity 和 UI 对象是否仍然存在；生命周期回调会随任务状态变化。
+[Android 应用启动文档](https://developer.android.com/topic/performance/vitals/launch-time)把启动分为 cold、warm、hot。我们先从这套分类看起：它概括的是启动前进程、Activity 和 UI 对象是否仍然存在，生命周期回调也会随任务状态变化。
 
 | 类型 | 启动前状态 | 应用侧通常需要完成的工作 |
 | --- | --- | --- |
@@ -109,22 +109,22 @@ consolidated_from:
 - **实验分类**：Macrobenchmark 的 `StartupMode.COLD/WARM/HOT` 用固定前置条件构造可比较样本。
 - **线上分类**：使用平台或 Play 的启动指标，并按入口、进程、版本和设备分组；Android 15+ 的 `ApplicationStartInfo` 可提供系统记录的启动类型，应用自有“进程首次启动”标记只能辅助解释。采集方法见后文「启动类型、时间点与线上指标」一节。
 
-不要用“温启动一定是冷启动的某个百分比”或“热启动一定小于一帧”作为基线。后台回收、配置变化、首屏数据、CPU 调频和页面重绘都会改变成本。
+“温启动一定是冷启动的某个百分比”“热启动一定小于一帧”这类经验比例当不了基线：后台回收、配置变化、首屏数据、CPU 调频和页面重绘都会改变成本。
 
-### 2. Android 17 冷启动的 App 侧路径
+### 2. 冷启动的 App 侧路径
 
 #### 2.1 从启动请求到应用主线程
 
-冷启动开始时，系统解析启动请求、准备任务与 starting window（应用首帧完成前由系统显示的启动窗口），并请求 Zygote fork 应用进程。Zygote 是预加载常用框架类的进程模板，fork 会从它派生新的 Linux 应用进程。这个阶段已经计入用户看到的启动等待，但应用自己的 `Application` 埋点还没有运行。
+冷启动开始时，系统解析启动请求、准备任务与 starting window（应用首帧完成前由系统显示的启动窗口），并向 Zygote 请求 fork 应用进程。Zygote 是预加载常用框架类的进程模板，fork 会从它派生新的 Linux 应用进程。这个阶段已经计入用户看到的启动等待，而应用自己的 `Application` 埋点还没有运行。
 
-子进程进入 `ActivityThread.main()` 后，会准备主线程 Looper（按顺序取出并分发消息的事件循环）、创建 `ActivityThread`，再通过 Binder（Android 跨进程调用机制）向 system_server（承载主要系统服务的进程）登记。后续绑定信息和生命周期事务被送回应用主线程。对应用开发者而言，这段路径有两个含义：
+子进程进入 `ActivityThread.main()` 后，先准备主线程 Looper、创建 `ActivityThread`，再通过 Binder 向 system_server 登记，后续的绑定信息和生命周期事务再送回应用主线程。对写应用的我们来说，这段路径有两个含义：
 
 1. `Application.attachBaseContext()` 不是整个冷启动的起点，早于它的系统与进程初始化同样消耗 TTID。
 2. 只汇总应用内埋点会漏掉进程创建、调度等待、系统服务和跨进程通信时间。
 
 #### 2.2 `ContentProvider` 早于 `Application.onCreate()`
 
-Android 17 的 [`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)按以下关键顺序执行：
+[`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)按以下关键顺序执行：
 
 ```text
 创建并 attach Application
@@ -136,7 +136,7 @@ Instrumentation.onCreate(...)
 Instrumentation.callApplicationOnCreate(app)
 ```
 
-这段顺序说明，自动初始化 Provider 的 `onCreate()` 位于应用 `Application.onCreate()` 之前。`Instrumentation` 是框架用来创建和驱动应用组件的入口。仅给 `Application.onCreate()` 计时会漏掉 App Startup、第三方 SDK 或业务 Provider 的成本。
+这段顺序说明，自动初始化 Provider 的 `onCreate()` 跑在应用 `Application.onCreate()` 之前；`Instrumentation` 则是框架创建和驱动应用组件的入口。所以只给 `Application.onCreate()` 计时，会漏掉 App Startup、第三方 SDK 和业务 Provider 的成本。
 
 `Application.attachBaseContext()` 到 `Application.onCreate()` 之间可能包含：
 
@@ -163,7 +163,7 @@ Provider 治理见 [ContentProvider 启动优化](03-contentprovider-multiproces
 
 #### 2.4 Activity 创建与 UI 构建
 
-应用收到启动 Activity 的 lifecycle transaction（系统发给应用主线程的一组生命周期操作）后，框架创建 Activity，并根据目标状态执行 `onCreate()`、`onStart()`、`onResume()` 等回调。不要把这串回调当作所有启动的恒定路径；已有 Activity 回前台、配置变化和任务恢复会走不同组合。
+应用收到启动 Activity 的 lifecycle transaction（系统发给应用主线程的一组生命周期操作）后，框架创建 Activity，并按目标状态执行 `onCreate()`、`onStart()`、`onResume()` 等回调。这串回调只是常见组合之一：已有 Activity 回前台、配置变化和任务恢复会走不同的组合。
 
 View UI 的 `setContentView()` 会触发布局 XML 解析、View 创建和属性解析。Compose UI 则在 `setContent` 后经历初始 composition（执行 Composable 并建立 UI 结构）、layout 和 draw。两种 UI 技术都要关注：
 
@@ -173,13 +173,13 @@ View UI 的 `setContentView()` 会触发布局 XML 解析、View 创建和属性
 - 自定义 View 构造、`onMeasure()`、`onLayout()`、`onDraw()` 是否执行重活；
 - Compose 的首轮 composition 是否创建过多对象或读取未准备好的状态。
 
-View 数量、布局深度或 Composable 数量都没有通用的危险阈值。Trace 中的耗时和调用路径才是优化依据。`ViewStub`（需要时才展开布局的占位 View）、条件 composition、懒加载或异步 inflate（在允许范围内把 View 创建移出主线程）也各有语义限制，采用前要验证线程安全、状态恢复和首屏交互。
+View 数量、布局深度或 Composable 数量都没有通用的危险阈值，优化依据是 Trace 中的耗时和调用路径。`ViewStub`（需要时才展开布局的占位 View）、条件 composition、懒加载、异步 inflate（在允许范围内把 View 创建移出主线程）各有语义限制，采用前要验证线程安全、状态恢复和首屏交互。
 
 #### 2.5 第一帧从 traversal 到系统确认绘制
 
-主线程在 VSync（显示刷新节奏信号）驱动下进入 `Choreographer#doFrame`，执行 traversal，也就是对 View 树完成 measure、layout 和 draw。硬件加速路径中，UI 线程记录绘制命令，RenderThread 与 GPU 继续处理渲染，图形 buffer 再交给系统合成路径。
+主线程在 VSync 驱动下进入 `Choreographer#doFrame`，执行 traversal，也就是对 View 树完成 measure、layout 和 draw。硬件加速路径中，UI 线程记录绘制命令，RenderThread 与 GPU 继续处理渲染，图形 buffer 再交给系统合成路径。
 
-Android 17 的 [`ViewRootImpl`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)在首次绘制请求完成后走 `reportDrawFinished(...)` 路径，窗口系统据此结束对应的启动绘制等待。需要区分几个相邻观测点：
+[`ViewRootImpl`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)在首次绘制请求完成后走 `reportDrawFinished(...)` 路径，窗口系统据此结束对应的启动绘制等待。我们在这里要区分几个相邻观测点：
 
 | 观测点 | 可以说明什么 | 不能说明什么 |
 | --- | --- | --- |
@@ -188,23 +188,23 @@ Android 17 的 [`ViewRootImpl`](https://android.googlesource.com/platform/framew
 | frame commit callback | 硬件渲染内容已提交到 swap chain（等待显示的图形缓冲队列） | 用户已经看到该帧；该回调只适用于硬件渲染 |
 | TTID | 系统记录的首帧启动指标 | 页面主要内容已经可用 |
 
-帧预算取决于刷新率、FrameTimeline deadline（这一帧应完成的时间点）和渲染流水线阶段，不能一律写成 16 ms。120 Hz 显示器的节奏与 60 Hz 不同，一次 traversal 跨过某个 VSync 也要结合目标时间线和实际时间线判断是否错过 deadline。
+帧预算取决于刷新率、这一帧在 FrameTimeline 里的 deadline 以及渲染流水线阶段，不能一律写成 16 ms；120 Hz 显示器的节奏与 60 Hz 不同，一次 traversal 跨过某个 VSync，也要对照目标时间线和实际时间线判断是否错过 deadline。
 
 ### 3. TTID 与 TTFD 回答不同问题
 
 #### 3.1 TTID：首个 UI 帧
 
-TTID（Time To Initial Display）从系统收到启动请求开始，直到目标 Activity 的第一帧被记录为已显示。它包含冷启动时的进程创建，也包含冷/温启动时的 Activity 创建和首帧工作。
+TTID 从系统收到启动请求开始，到目标 Activity 的第一帧被记录为已显示为止，全称 Time To Initial Display。冷启动时它包含进程创建，冷/温启动时还包含 Activity 创建和首帧工作。
 
-TTID 很短只能说明用户很快看到一个应用帧。该帧可能仍是骨架、空列表或占位内容。系统 SplashScreen 的持续时间、应用第一帧和主要内容可用时间也不能混为一个数字。
+TTID 很短，只说明用户很快看到一个应用帧；这一帧可能还是骨架、空列表或占位内容。系统 SplashScreen 的持续时间、应用第一帧、主要内容可用时间是三件事，要分开度量。
 
-Logcat 中的 `Displayed ... +...`、`adb shell am start -W` 和 Perfetto 都能帮助本地诊断。命令行结果会受到任务栈、是否 force-stop、编译状态和设备状态影响，不应把一次 `am start -W` 当成发布门禁。
+Logcat 中的 `Displayed ... +...`、`adb shell am start -W` 和 Perfetto 都能帮助本地诊断。命令行结果会受到任务栈、是否 force-stop、编译状态和设备状态影响，单次 `am start -W` 更适合当线索，而不是发布门禁。
 
-Android vitals（Google Play 汇总的真实设备质量指标）当前把冷启动 5 秒、温启动 2 秒、热启动 1.5 秒及以上列为 excessive。它们是 Play 的告警边界，不是优秀体验的目标值；内部预算怎么设见后文「Android Vitals 怎样对标」。
+Android vitals 汇总的是 Google Play 上真实设备的质量指标，当前把冷启动 5 秒、温启动 2 秒、热启动 1.5 秒及以上列为 excessive。这三条是 Play 的告警门槛，不是优秀体验的目标值；内部预算怎么设，见后文「Android Vitals 怎样对标」。
 
 #### 3.2 TTFD：由应用声明“主要内容可用”
 
-TTFD（Time To Fully Drawn）从同一启动请求开始，到应用调用 `reportFullyDrawn()`，并完成包含该报告的帧。`StartupTimingMetric` 的 `timeToFullDisplayMs` 在 API 29 以前可能不可用；API 29 是该指标的适用起点。
+TTFD 从同一启动请求开始，到应用调用 `reportFullyDrawn()` 并完成包含该报告的帧为止，全称 Time To Fully Drawn。`StartupTimingMetric` 的 `timeToFullDisplayMs` 从 API 29 起可用，更早版本可能拿不到这个指标。
 
 平台不知道每个产品何时“可用”，因此团队必须先定义完成条件。例如：
 
@@ -239,7 +239,7 @@ AndroidX `ComponentActivity` 的 Fully Drawn 支持可协调多个组件或异�
 
 #### 3.3 自定义里程碑：解释 TTID/TTFD 内部时间
 
-TTID 和 TTFD 是端到端指标，无法直接说明慢在哪里。应用可补充少量稳定里程碑：
+TTID 和 TTFD 是端到端指标，回答不了“慢在哪一段”；要解释端到端内部的时间，应用可以补充少量稳定里程碑：
 
 - Application attach；
 - 每个必要初始化器的开始和结束；
@@ -291,15 +291,15 @@ class StartupBenchmark {
 
 - 同一 release 配置和构建工具链；
 - 相同 `CompilationMode` 与 Baseline Profile 条件；
-- 相同入口 Intent、账号、数据和网络桩（测试中返回固定结果的网络替身）；
+- 相同入口 Intent、账号、数据和网络桩（返回固定结果的测试替身）；
 - 相同设备型号、系统版本、电量与温度范围；
 - 相同冷/温/热模式。
 
-Debug 包、模拟器、低电量或温度降频样本不适合建立发布阈值。遇到 profileable、Baseline Profile 或编译模式配置错误时，应让测试失败并修正配置，不能忽略错误后继续使用结果。
+Debug 包、模拟器、低电量或温度降频样本不适合建立发布阈值。遇到 profileable、Baseline Profile 或编译模式配置错误时，应让测试失败并修正配置，而不是忽略错误后继续使用结果。
 
 冷、温、热三组结果要分别保存。页面结构或首屏数据变化时，还要同时检查 TTFD 和帧指标，防止用更早展示空壳换取较短 TTID。
 
-### 5. 自定义 Trace 应围绕业务边界
+### 5. 自定义 Trace 与业务切片
 
 应用控制的初始化入口可以用 `androidx.tracing` 补充切片，切片是时间轴上带开始、结束和名称的一段区间。下面的示例用于区分配置解析与崩溃监控初始化：
 
@@ -314,9 +314,9 @@ fun initializeRequiredComponents() {
 }
 ```
 
-Perfetto 中会显示两个命名切片。切片要包住同步工作本身；如果代码只提交异步任务，切片结束仅代表“已提交”，不能代表初始化完成。等待异步结果时，应在生产者和消费者两端记录可关联的 async trace，或用 flow（连接两个切片的因果箭头）标出任务从提交到执行的关系，并控制关联 ID 的数量。
+Perfetto 中会显示两个命名切片。切片要包住同步工作本身；代码若只提交异步任务，切片结束就只说明“已提交”，说明不了初始化已经完成。等待异步结果时，应在生产者和消费者两端记录可关联的 async trace，或用 flow（连接两段切片的因果箭头）标出任务从提交到执行的关系，并控制关联 ID 的数量。
 
-Trace 本身有开销。不要为每个小方法加切片，也不要只凭一个总切片判定责任。较好的层级是：
+Trace 本身有开销，切片要克制：别给每个小方法都加，单个总切片也定位不了责任。较好的层级是：
 
 1. 启动端到端指标；
 2. Application、Provider、Activity、首帧等阶段；
@@ -327,7 +327,7 @@ Trace 本身有开销。不要为每个小方法加切片，也不要只凭一�
 
 #### 6.1 获取一条可复现的 Trace
 
-推荐路径是运行 Macrobenchmark，并打开某次迭代生成的 `.perfetto-trace`。这样启动模式、编译模式和操作脚本与指标结果属于同一个样本。
+我们推荐先运行 Macrobenchmark，再打开某次迭代生成的 `.perfetto-trace`，这样启动模式、编译模式和操作脚本与指标结果属于同一个样本。
 
 需要手工捕获时，可以在 Perfetto UI 或设备“系统跟踪”中启用 `sched`、`freq`、`am`、`wm`、`gfx`、`view`、`binder_driver`、`dalvik` 等设备支持的类别，并指定目标应用。这些类别分别提供调度、CPU 频率、Activity/Window、图形、View、Binder 和 ART 等事件；应用自定义 `Trace` 切片还要通过 `atrace_apps` 指定允许采集的包名。
 
@@ -365,7 +365,7 @@ data_sources {
 
 #### 6.2 先选中 Android App Startups
 
-打开 Trace 后，先找到 **Android App Startups** 派生轨道（Trace Processor 根据原始事件计算出的分析结果），选中目标包的启动 slice，再固定该时间窗口。它给出的启动边界比手工搜索第一个 `performTraversals` 更可靠。
+打开 Trace 后，先找到 **Android App Startups** 派生轨道（Trace Processor 从原始事件算出的轨道），选中目标包的启动 slice，再固定这个时间窗口；它给出的启动区间比手工搜索第一个 `performTraversals` 更可靠。
 
 随后按这条顺序阅读：
 
@@ -386,7 +386,7 @@ data_sources {
 - **Sleeping**：可能在等待 Binder、futex（内核提供的用户态同步等待机制）、I/O 或条件变量，要沿唤醒关系找生产者。
 - **Uninterruptible Sleep**：常与内核 I/O 等待有关，需要结合块设备和文件事件。
 
-不存在“Runnable 低于 70% 就是异常”这类通用判据。主线程同步等待 5 ms 可能卡住关键路径，后台线程消耗大量 CPU 也可能让主线程长时间处于 Runnable。判断依据是关键路径上的墙钟时间（真实经过的时间），以及任务之间的依赖关系。
+“Runnable 低于 70% 就是异常”这类通用判据并不存在：主线程同步等待 5 ms 可能就卡住关键路径，后台线程消耗大量 CPU 也可能让主线程长时间处于 Runnable。我们判断的依据，是关键路径实际经过的时间，以及任务之间的依赖关系。
 
 #### 6.4 阅读 bind、Activity 和首帧
 
@@ -399,9 +399,9 @@ data_sources {
 - 主线程文件 I/O；
 - 同期后台线程的 CPU/I/O 竞争。
 
-Activity 阶段较长时，检查 View inflate 或 Compose 初始 composition、图片/字体、同步状态恢复和首屏数据绑定。单看 `Activity.onCreate()` 总时间不够，应该把可修改的业务边界标出来。
+Activity 阶段较长时，检查 View inflate 或 Compose 初始 composition、图片/字体、同步状态恢复和首屏数据绑定。单看 `Activity.onCreate()` 总时间不够，应该把可以动手改的业务环节标出来。
 
-首帧阶段同时观察主线程 `Choreographer#doFrame`/traversal、RenderThread 和 FrameTimeline。`performTraversals` 结束只能当作主线程 traversal 的边界，不能作为 TTID 终点；也不能默认第一次同名 slice 就属于目标窗口。
+首帧阶段同时观察主线程 `Choreographer#doFrame`/traversal、RenderThread 和 FrameTimeline。`performTraversals` 结束只代表主线程 traversal 告一段落，TTID 终点要看系统记录；第一次同名 slice 也未必属于目标窗口，先核对时间再下结论。
 
 #### 6.5 用标准库批量列出启动
 
@@ -439,13 +439,13 @@ WHERE a.package = 'com.example.app'
 ORDER BY s.startup_id, s.slice_dur DESC;
 ```
 
-5 ms 只是缩小诊断结果的查询过滤器，不是性能合格线。当前标准库文档已把 `android_thread_slices_for_all_startups` 标为通常不应直接使用的底层视图；上面的查询适合固定 `trace_processor_shell` 版本后的临时排查。长期 CI 应优先采用 `android_slices_for_startup_and_slice_name(...)`、`android_startup_opinionated_breakdown` 等公开函数或表，并为查询 schema（列名与类型约定）编写测试。
+5 ms 只是缩小诊断结果的查询过滤器，不是性能合格线。当前标准库文档已把 `android_thread_slices_for_all_startups` 标为底层视图、建议避免直接使用；上面的查询适合固定 `trace_processor_shell` 版本后的临时排查。长期 CI 应优先采用 `android_slices_for_startup_and_slice_name(...)`、`android_startup_opinionated_breakdown` 等公开函数或表，并为查询 schema（列名与类型约定）编写测试。
 
 ### 7. ClassLoader、编译状态与 DEX 布局
 
 #### 7.1 类首次使用仍可能进入启动关键路径
 
-应用类通常由 ClassLoader（按名称查找并装入类定义的加载器）按需加载。首次主动使用一个类时，运行时可能需要查找定义、加载、验证、解析，并在需要时执行 `<clinit>`（类的静态初始化方法）。其中一部分工作可由安装期 AOT（提前编译）、运行时缓存或已有编译产物减少，但静态初始化中的应用代码仍会执行。
+应用类通常由 ClassLoader 按需加载：首次主动使用一个类时，运行时可能要查找定义、加载、验证、解析，并在需要时执行 `<clinit>`（类的静态初始化方法）。安装期 AOT、运行时缓存或已有编译产物能减少其中一部分工作，但静态初始化中的应用代码仍会执行。
 
 启动阶段要关注：
 
@@ -453,9 +453,9 @@ ORDER BY s.startup_id, s.slice_dur DESC;
 - 一个入口触发长依赖链的类初始化；
 - `<clinit>` 读取文件、创建线程或加载 native library；
 - 多个 SDK 同时加载重复的框架与序列化类型；
-- 编译条件不同导致解释执行、JIT（运行时即时编译）或 AOT 路径不同。
+- 编译条件不同导致解释执行、JIT 或 AOT 路径不同。
 
-`ApplicationLoaders` 的缓存属于进程内状态。冷启动意味着旧应用进程不存在，不能依靠它让下一次冷启动“直接命中”。多次冷启动越来越快，可能来自 Linux page cache（内核保留的文件页缓存）、ART 编译产物、应用磁盘缓存、设备频率或数据状态变化，因此基准必须控制编译与缓存条件。
+`ApplicationLoaders` 的缓存属于进程内状态，冷启动意味着旧应用进程不存在，这份缓存指望不上。多次冷启动越来越快，更可能来自 Linux page cache（内核保留的文件页缓存）、ART 编译产物、应用磁盘缓存、设备频率或数据状态变化，所以基准必须控制编译与缓存条件。
 
 #### 7.2 Baseline Profile 与 Startup Profile 分工
 
@@ -464,13 +464,13 @@ ORDER BY s.startup_id, s.slice_dur DESC;
 - **Baseline Profile**向 ART 提供关键类和方法，帮助安装/后台优化时进行 AOT 编译，减少关键路径上的解释与 JIT。
 - **Startup Profile**面向 DEX 布局，把启动所需代码组织到主 DEX 的相邻区域；读取相邻数据所需的文件页更集中，这就是这里的读取局部性。
 
-Baseline Profile 不会跳过业务初始化，也不会消除磁盘、Binder、锁或网络等待；Startup Profile 也不等于“把类放到文件前面就会进入 CPU cache”。它影响的是 DEX 文件组织和读取局部性，收益要用固定编译模式的启动基准验证。
+Baseline Profile 跳过不了业务初始化，也消除不了磁盘、Binder、锁或网络等待；Startup Profile 影响的也只是 DEX 文件组织和读取局部性，把类放到文件前面并不会让它们自动进入 CPU cache。收益要用固定编译模式的启动基准验证。
 
 两者的实践统一见 [Baseline Profile 与 Startup Profile 实战](04-baseline-startup-cloud-profile.md)。启动期 ART/GC 行为见 [ART GC 启动期开销与分配治理](07-art-gc-startup-allocation-governance.md)。
 
 ### 8. 从 Trace 到修复的判断顺序
 
-面对一条慢启动样本，可以按以下顺序推进：
+面对一条慢启动样本，我们可以按以下顺序推进：
 
 1. 确认启动类型、入口、编译模式、设备状态和 TTID/TTFD。
 2. 选中 Android App Startups 时间窗，判断延迟位于系统、bind、Activity 还是首帧。
@@ -480,17 +480,17 @@ Baseline Profile 不会跳过业务初始化，也不会消除磁盘、Binder、
 6. 运行同配置 A/B Macrobenchmark，并检查 TTID、TTFD、帧和功能正确性。
 7. 在小流量发布的线上数据中，按入口、设备、版本和启动类型确认回归消失。
 
-启动优化不能只追求更早撤掉 SplashScreen。用户需要的是更快看到可理解、可操作且状态正确的内容；TTID、TTFD 和关键页面帧必须一起看。
+启动优化的目标不止于更早撤掉 SplashScreen：用户要的是更快看到可理解、可操作且状态正确的内容，所以 TTID、TTFD 和关键页面帧要一起看。
 
 ## 启动类型、时间点与线上指标
 
-启动路径给出可测阶段，监控系统负责稳定采集并按冷、温、热启动和版本分层。TTID 与 TTFD 也要分开。
+上一节把启动拆成了可测阶段；这一节我们换到监控系统一侧，看数据怎样稳定采集：冷、温、热启动和版本要分层，TTID 与 TTFD 也要分开。
 
 ### 为什么启动监控需要独立设计
 
 启动监控要回答两个问题：改动发布后，用户启动体验是否变差；出现变化后，怎样定位到版本、入口、设备和初始化任务。
 
-只在 `Application.onCreate()` 入口与出口记录时间不够。这个区间看不到系统收到启动请求、创建进程、调用 `bindApplication`、安装 ContentProvider（内容提供者）和显示首帧的过程，也无法表达首屏核心内容何时可用。完整方案需要三类数据互相校准：
+只在 `Application.onCreate()` 入口与出口记录时间是不够的：这个区间看不到系统收到启动请求、创建进程、调用 `bindApplication`、安装 ContentProvider 和显示首帧的过程，也表达不出首屏核心内容何时可用。完整方案需要三类数据互相校准：
 
 | 数据 | 回答的问题 | 典型来源 |
 | --- | --- | --- |
@@ -500,15 +500,15 @@ Baseline Profile 不会跳过业务初始化，也不会消除磁盘、Binder、
 
 三种启动状态走过的代码不同，线上必须分开统计。
 
-线上监控负责发现耗时分布变化；Macrobenchmark（AndroidX 宏基准测试库）负责在固定设备和条件下重复对比；Perfetto（Android 系统级时间线分析工具）负责解释一次启动中的线程、Binder 进程间调用、I/O（存储读写）和调度证据。三者用途不同：一条线上 P90（90% 的样本不超过的耗时）曲线不能代替时间线，一次时间线也不能代表全量用户的耗时分布。
+三类工具各管一段：线上监控发现耗时分布的变化，Macrobenchmark 在固定设备和条件下重复对比，Perfetto 解释一次启动里线程、Binder、I/O 和调度层面发生了什么。线上 P90 曲线只说明 90% 的样本不超过该耗时，要还原单次启动还得看时间线；反过来，一次时间线也撑不起全量用户的耗时分布。
 
 ### 1. 先固定测量契约
 
-这里的“测量契约”指一项指标固定不变的定义：起点、终点、适用启动类型、缺失条件和失败样本处理方式都要写清。名称相同但边界不同的数据不能放进同一条曲线。
+我们先把测量契约固定下来。这里的“测量契约”指一项指标固定不变的定义：起点、终点、适用启动类型、缺失条件和失败样本处理方式都要写清；名称相同而起止不同的数据，放进同一条曲线只会污染结论。
 
 #### 1.1 TTID、TTFD 与业务 ready
 
-TTID 是 Time to Initial Display，即从启动请求到首次显示；TTFD 是 Time to Full Display，即从启动请求到 App 声明主要内容已完整可用。它们都是 Android 的平台口径，“业务 ready”则是团队为某个页面定义的可用条件。
+TTID 是 Time to Initial Display，即从启动请求到首次显示；TTFD 是 Time to Full Display，即从启动请求到 App 声明主要内容已完整可用。它们都是 Android 平台定义的指标，“业务 ready”则是团队为某个页面定义的可用条件。
 
 | 指标 | 起点 | 终点 | 平台语义 | 使用方式 |
 | --- | --- | --- | --- | --- |
@@ -517,23 +517,23 @@ TTID 是 Time to Initial Display，即从启动请求到首次显示；TTFD 是 
 | `content_ready` | 与 TTID/TTFD 相同的启动记录，或明确的应用起点 | 首屏关键数据和交互状态满足产品约定 | 应用自定义 | 解释 TTFD，支持无法直接读取系统 TTFD 的版本 |
 | `app_on_create_cost` | `Application.onCreate()` 方法入口 | 方法返回前 | 应用局部阶段 | 只解释 App 初始化，不能称为总启动耗时 |
 
-TTID 只说明第一帧出现。骨架屏、空列表或不可点击的占位页也可能已有 TTID。TTFD 需要团队给每个首屏入口定义“可用”：例如首页主导航可操作且首批必要数据已展示，支付页已完成本地安全状态检查，拍摄页预览已可用。广告、推荐流后续分页和不影响首个操作的后台刷新通常不应延长 TTFD。
+TTID 只说明第一帧出现，骨架屏、空列表或不可点击的占位页也可能已经有 TTID。TTFD 则要团队给每个首屏入口定义“可用”：例如首页主导航可操作且首批必要数据已展示，支付页已完成本地安全状态检查，拍摄页预览已可用。广告、推荐流后续分页和不影响首个操作的后台刷新，通常都要留在 TTFD 之外。
 
-`Activity.reportFullyDrawn()` 是一次性启动信号。Android 17 的 `Activity` 实现由内部标记 `mDoReportFullyDrawn` 控制：第一次有效调用会经 `ActivityClient` 报给系统，后续调用被忽略。若调用发生在系统确认第一帧之前，平台会把 TTFD 记为 TTID，因此过早上报会让两个值相同，失去“内容完成”的区分能力。
+`Activity.reportFullyDrawn()` 是一次性启动信号。平台的 `Activity` 实现由内部标记 `mDoReportFullyDrawn` 控制：第一次有效调用经 `ActivityClient` 报给系统，后续调用被忽略。若调用发生在系统确认第一帧之前，平台会把 TTFD 记为 TTID；过早上报会让两个值相同，丢掉“内容完成”的区分能力。
 
 #### 1.2 使用同一种时钟
 
-耗时计算使用单调时钟，即只向前推进、不受用户改时间或时区变化影响的计时源。Android 17 的 `ApplicationStartInfo` 系统时间戳在 Activity launch、fork、bindApplication、首帧和 fully drawn 路径中使用 `SystemClock.uptimeNanos()`；通过 `ActivityManager.addStartInfoTimestamp()` 写入同一启动记录的自定义点也应使用同一时基。只在 App 自有遥测内计算同设备会话耗时时，可以另用 `SystemClock.elapsedRealtimeNanos()`，但不要把它和平台启动记录中的 `uptimeNanos()` 节点相减。`System.nanoTime()` 只保证用于计算同一运行环境中的时间差，不应依赖它的绝对起点。
+耗时计算使用单调时钟，即只向前推进、不受用户改时间或时区变化影响的计时源。平台的 `ApplicationStartInfo` 系统时间戳在 Activity launch、fork、bindApplication、首帧和 fully drawn 路径中使用 `SystemClock.uptimeNanos()`；通过 `ActivityManager.addStartInfoTimestamp()` 写入同一启动记录的自定义点也应使用同一时基。只在 App 自有遥测内计算同设备会话耗时时，可以另用 `SystemClock.elapsedRealtimeNanos()`，但它和平台启动记录里的 `uptimeNanos()` 节点属于不同时基，直接相减会得到没有意义的数。`System.nanoTime()` 只保证用于计算同一运行环境中的时间差，不应依赖它的绝对起点。
 
 `System.currentTimeMillis()` 会受到用户改时、网络校时和时区变化影响，适合记录事件发生的墙钟时间，不适合相减得到启动耗时。一个事件可以同时保存：
 
-- `event_wall_ms`：用于版本发布、分批放量（灰度）和配置变更对齐；
+- `event_wall_ms`：用于版本发布、灰度放量和配置变更对齐；
 - `event_elapsed_ns`：用于同一台设备本次启动内的阶段耗时；
 - `duration_ms`：端侧完成边界检查后生成，服务端不跨设备相减单调时钟。
 
 #### 1.3 启动样本的身份
 
-同一设备可能由桌面图标、deep link（直接打开特定页面的链接）、通知、桌面小组件 Widget、Service、Broadcast 或 Provider 启动；多进程 App 还会产生多个进程启动记录。每条样本至少携带：
+同一设备可能由桌面图标、deep link、通知、桌面小组件 Widget、Service、Broadcast 或 Provider 启动；多进程 App 还会产生多个进程启动记录。每条样本至少携带：
 
 | 维度 | 建议字段 |
 | --- | --- |
@@ -545,13 +545,13 @@ TTID 只说明第一帧出现。骨架屏、空列表或不可点击的占位页
 | 编译与配置 | Baseline Profile（预先告知 ART 启动热路径的配置）状态、实验组、远程配置版本 |
 | 结果 | TTID、TTFD、content ready、超时、退出或上报缺失 |
 
-入口 URL、Intent extras（附加参数）、用户 ID 和页面原始参数不应上传。路由、设备和任务名应转换成有限的受控枚举；确需用哈希关联事件时，应使用服务端可轮换密钥生成的伪匿名标识，并评估它是否仍属于个人数据，不能把普通哈希当成匿名化。更完整的采集规则见 [性能指标采集与上报](../ch26-observability/01-app-observability-performance-collection.md)。
+入口 URL、Intent extras、用户 ID 和页面原始参数要留在端上，不应上传。路由、设备和任务名应转换成有限的受控枚举；确需用哈希关联事件时，应使用服务端可轮换密钥生成的伪匿名标识，并评估它是否仍属于个人数据——普通哈希当不成匿名化。更完整的采集规则见 [性能指标采集与上报](../ch26-observability/01-app-observability-performance-collection.md)。
 
 ### 2. 端侧埋点怎样放
 
-#### 2.1 不为“更早”新增 Provider
+#### 2.1 最早的埋点点位
 
-ContentProvider 会在 `Application.onCreate()` 之前安装。若为了“尽早监控”新增自动初始化 Provider，监控 SDK（Software Development Kit，软件开发工具包）的类加载和初始化也会进入每次冷启动的关键路径。已有 Provider 即使负责记录最早入口，也只应保存一个时间戳和必要身份；序列化、压缩、网络发送与扩展设备信息都应延后。
+ContentProvider 会在 `Application.onCreate()` 之前安装。若为了“尽早监控”新增自动初始化 Provider，监控 SDK 的类加载和初始化也会进入每次冷启动的关键路径。已有 Provider 即使负责记录最早入口，也只应保存一个时间戳和必要身份；序列化、压缩、网络发送与扩展设备信息都应延后。
 
 推荐点位如下：
 
@@ -564,7 +564,7 @@ ContentProvider 会在 `Application.onCreate()` 之前安装。若为了“尽�
 | `content_ready` | 首屏状态机（页面从加载、成功、失败等状态间转换的规则） | 核心数据和交互就绪 | SurfaceFlinger（负责屏幕图层合成的系统服务）已完成显示 |
 | `fully_drawn_reported` | `reportFullyDrawn()` 调用处 | 应用声明的 TTFD 边界 | 每次页面恢复的完成时间 |
 
-`onResume()` 不等于首帧。`ViewTreeObserver.OnPreDrawListener` 发生在即将绘制之前；`Choreographer.FrameCallback` 是 UI 帧调度回调。两者都不能证明 SurfaceFlinger 已经把像素显示到屏幕。App 可以把它们当作自定义近似点，但事件名必须写成 `pre_draw` 或 `frame_callback`，不能冒充平台 TTID。
+`onResume()` 不等于首帧。`ViewTreeObserver.OnPreDrawListener` 发生在即将绘制之前，`Choreographer.FrameCallback` 是 UI 帧调度回调，两个时点都证明不了 SurfaceFlinger 已经把像素显示到屏幕。App 可以把它们当作自定义近似点，但事件名要写成 `pre_draw` 或 `frame_callback`，别冒充平台 TTID。
 
 #### 2.2 准确上报 fully drawn
 
@@ -589,7 +589,7 @@ class HomeActivity : ComponentActivity() {
 }
 ```
 
-`reportWhenComplete` 会在挂起任务执行期间持有一个 reporter，等到 `Ready` 后释放；全部 reporter 都释放后，`FullyDrawnReporter` 在下一动画帧调用 `reportFullyDrawn()`。异常与永久 loading（一直停留在加载态）必须有业务降级或超时，否则 TTFD 会长期缺失。缺失样本要单独统计，不能悄悄从总样本数中删除。
+`reportWhenComplete` 会在挂起任务执行期间持有一个 reporter，等到 `Ready` 后释放；全部 reporter 都释放后，`FullyDrawnReporter` 在下一动画帧调用 `reportFullyDrawn()`。异常和一直停在加载态的页面必须有业务降级或超时，否则 TTFD 会长期缺失；缺失样本要单独统计，悄悄从总样本数里删掉等于掩盖问题。
 
 Jetpack Compose 首屏可以把同一条 ready 规则放进 `ReportDrawnWhen`；它会在条件为 `true` 前延迟 fully drawn 上报：
 
@@ -607,7 +607,7 @@ fun HomeRoute(state: HomeUiState) {
 
 这个条件应表示用户已能完成首个核心操作。若空列表是合法结果，判断条件要表达“数据请求已完成”，不能用 `isNotEmpty()` 让合法空态永远不报告。
 
-#### 2.3 慢任务需要时间线，不只需要总耗时
+#### 2.3 慢任务的时间线记录
 
 每个启动任务应记录受控的任务名、调度线程、依赖、开始/结束、结果和是否位于首帧前。对高频短任务，记录动作本身可能比任务还耗时，可以只保留汇总计数，或只在被抽中的慢启动诊断样本里记录细节。
 
@@ -618,13 +618,13 @@ fun HomeRoute(state: HomeUiState) {
 
 标记阶段时，section 必须严格配对，名称集合要有上限；不上传任意类名、SQL、URL 或用户内容作为 trace 名。若把用户输入或 URL 拼进名称，会产生近乎无限的不同值，使存储和聚合失控。
 
-采集器不能在首帧前创建大线程池、扫描完整设备信息或同步写日志文件。启动事件先写入内存队列或受控的小型本地记录，首帧后批量编码；网络发送由既有后台上报机制处理。
+采集器自身要轻量：首帧前不创建大线程池、不扫描完整设备信息、不同步写日志文件。启动事件先写入内存队列或受控的小型本地记录，首帧后批量编码；网络发送交给既有后台上报机制。
 
-### 3. Android 17 的 `ApplicationStartInfo`
+### 3. `ApplicationStartInfo` 与系统启动记录
 
-Android 15（API 35）加入 `ApplicationStartInfo`：它是一份由系统逐步补全的进程启动记录，App 可通过 `ActivityManager` 查询。到 Android 17 / API 37，这组 API 可以给出 App 自己难以准确记录的系统侧信息：
+`ApplicationStartInfo` 由 Android 15 引入，是一份系统逐步补全的进程启动记录，App 可通过 `ActivityManager` 查询。到 Android 17 / API 37，这组 API 能给出 App 自己难以准确记录的系统侧信息：
 
-- `getProcessName()`、PID（进程编号）与 UID（Linux 用户身份）；
+- `getProcessName()`、PID 与 UID；
 - `getReason()`：启动 Activity、Service、Provider、Broadcast、Job、Push、闹钟、备份等触发原因；
 - `getStartType()`：cold、warm、hot；
 - `getStartupState()`：记录仍在启动、发生错误或已经画出首帧；
@@ -632,7 +632,7 @@ Android 15（API 35）加入 `ApplicationStartInfo`：它是一份由系统逐�
 - `getStartComponent()`：Android 16（API 36）加入，用于区分 Activity、Service、Broadcast 和 Provider。
 - `getLaunchMode()`、`wasForceStopped()` 与去除 extras 的启动 Intent：用于补充 Activity 任务和进程状态；原始 Intent、URI 与 referrer（来源页面）默认不进入遥测。
 
-`reason` 与 `start component` 不应混用：前者表示触发原因，后者表示哪类组件引发进程创建。原因枚举并不等同于 Activity、Service、Broadcast、Provider 四大组件分类；Android 16 起应使用 `getStartComponent()` 判断组件类型。
+`reason` 与 `start component` 各说各的事：前者是触发原因，后者说明哪类组件引发进程创建。原因枚举对不上 Activity、Service、Broadcast、Provider 四大组件分类，Android 16 起判断组件类型要用 `getStartComponent()`。
 
 #### 3.1 Android 15、16、17 的能力边界
 
@@ -649,7 +649,7 @@ API 35 没有 `getStartComponent()`，调用前必须检查系统版本。官方
 
 #### 3.2 记录形成与状态
 
-system_server（承载 Android 核心系统服务的进程）中的 `AppStartInfoTracker` 先建立启动记录，随后由进程创建、应用绑定、首帧和 fully drawn 等路径逐步补入字段。App 通过 `ActivityManager` 读到的是某一时刻的记录副本，也就是快照；它不会自动更新，也不包含线程调度、Binder 和 I/O 的完整时间线。
+system_server 中的 `AppStartInfoTracker` 先建立启动记录，随后由进程创建、应用绑定、首帧和 fully drawn 等路径逐步补入字段。App 通过 `ActivityManager` 读到的是某一时刻的记录副本，也就是快照；它不会自动更新，也不包含线程调度、Binder 和 I/O 的完整时间线。
 
 | `getStartupState()` | 含义 | 可依赖的节点 |
 | --- | --- | --- |
@@ -657,9 +657,9 @@ system_server（承载 Android 核心系统服务的进程）中的 `AppStartInf
 | `STARTUP_STATE_ERROR` | 启动失败，记录不会继续完整化 | 只使用已经存在的节点 |
 | `STARTUP_STATE_FIRST_FRAME_DRAWN` | Activity 已走到首帧 | `LAUNCH`、`BIND_APPLICATION`、`APPLICATION_ONCREATE`、`FIRST_FRAME` |
 
-平台没有 `FULLY_DRAWN` 状态；fully drawn 只是依赖 App 调用 `reportFullyDrawn()` 的可选时间戳。完成监听的“complete”表示记录进入 `FIRST_FRAME_DRAWN`，不表示 TTFD 已完成。Android 17 的 tracker 也只在加入 `FIRST_FRAME` 节点时触发回调，因此错误记录和没有 Activity 首帧的纯 Service、Broadcast 或 Provider 进程启动不能依赖该回调；“没有回调”本身不能证明启动失败。
+平台没有 `FULLY_DRAWN` 状态，fully drawn 只是依赖 App 调用 `reportFullyDrawn()` 的可选时间戳；完成监听里的“complete”指记录进入 `FIRST_FRAME_DRAWN`，TTFD 是否完成要看后续的 `FULLY_DRAWN` 时间戳。tracker 也只在加入 `FIRST_FRAME` 节点时触发回调，所以错误记录、以及没有 Activity 首帧的纯 Service、Broadcast 或 Provider 进程启动，都依赖不上这个回调；反过来，没等到回调也说明不了启动失败。
 
-八个系统时间戳的常量编号也不代表发生顺序：
+八个系统时间戳的常量编号只是编号，发生顺序要看实际时间值：
 
 | 时间戳 | 语义与限制 |
 | --- | --- |
@@ -672,11 +672,11 @@ system_server（承载 Android 核心系统服务的进程）中的 `AppStartInf
 | `INITIAL_RENDERTHREAD_FRAME` | 可选的初始 RenderThread（负责部分渲染工作的线程）帧 |
 | `SURFACEFLINGER_COMPOSITION_COMPLETE` | 可选的合成完成节点，仍不等于业务 ready |
 
-#### 3.3 时间戳不是每项都保证存在
+#### 3.3 时间戳的缺失与逐项判断
 
-首帧完成状态保证可获得 `LAUNCH`、`BIND_APPLICATION`、`APPLICATION_ONCREATE` 和 `FIRST_FRAME`；其他时间戳要逐项判断。`FULLY_DRAWN` 依赖 App 调用 `reportFullyDrawn()`，任何版本都不能假设它一定存在。`addApplicationStartInfoCompletionListener()` 在首帧完成时异步回调，不等待 fully drawn，因此回调里的快照经常没有 `FULLY_DRAWN`。需要 TTFD 时，应在上报后重新查询历史记录并取得新副本。
+首帧完成状态保证可获得 `LAUNCH`、`BIND_APPLICATION`、`APPLICATION_ONCREATE` 和 `FIRST_FRAME`，其余时间戳要逐项判断。`FULLY_DRAWN` 依赖 App 调用 `reportFullyDrawn()`，任何版本都要按“可能缺失”处理。`addApplicationStartInfoCompletionListener()` 在首帧完成时异步回调，不等待 fully drawn，所以回调里的快照经常没有 `FULLY_DRAWN`；需要 TTFD 时，应在上报后重新查询历史记录、取新副本。
 
-跨版本还要保留一个限制：官方 API 文档说明，Service 触发的 `START_TIMESTAMP_LAUNCH` 在 Android 16（Baklava / API 36）及以下可能不准确。Android 17 锚点已越过这个限制；分析 Android 15–16 存量设备时仍需标记该样本，不能用这项时间戳做精确 Service 启动回归。
+跨版本还有一个限制要记下：官方 API 文档说明，Service 触发的 `START_TIMESTAMP_LAUNCH` 在 Android 16 及以下可能不准确。本书的 Android 17 基线已越过这个限制；但分析 Android 15–16 存量设备时仍要标记该样本，精确的 Service 启动回归要换用别的数据。
 
 #### 3.4 读取当前进程的正确记录
 
@@ -711,7 +711,7 @@ API 35 起，`ActivityManager.addStartInfoTimestamp()` 允许 App 使用 21～30
 
 这里存在公开契约与 Android 17 r1 实现的差异。当前 `ActivityManager` API 文档写明：相同 key 会覆盖旧值，只有在 `reportFullyDrawn()` 之后添加的时间戳才会被丢弃；但 `android-17.0.0_r1` 的 `AppStartInfoTracker` 会拒绝重复 key，并在记录进入 `FIRST_FRAME_DRAWN` 后拒绝开发者 key。
 
-App 不应把某个版本的内部 tracker 行为当成长期 API 保证。兼容两种行为的写法是：每个开发者 key 在首帧前只写一次；回读时若该 key 不存在，就按缺失处理。通常发生在首帧后的 `content_ready` 继续使用应用遥测（App 自己采集并上报的事件），再由 `reportFullyDrawn()` 表达约定的完成边界。
+把某个版本的内部 tracker 行为当成长期 API 保证是靠不住的，兼容两种行为的写法是：每个开发者 key 在首帧前只写一次，回读时若该 key 缺失就按缺失处理。通常发生在首帧后的 `content_ready` 继续走应用遥测（App 自己采集并上报的事件），约定的完成时点交给 `reportFullyDrawn()` 表达。
 
 下面的代码注册首帧完成监听，并用保留区第一个 key 写入首帧前的路由决策完成点：
 
@@ -761,7 +761,7 @@ class PlatformStartInfoCollector(
 }
 ```
 
-监听回调由指定 Executor（决定任务在哪个线程执行的调度接口）异步执行，里面只应复制必要字段并交给采集队列。历史列表覆盖 App 近期多个进程启动，不能无条件取第 0 项；示例按当前 PID 和进程名过滤，生产代码还应核对最新 launch 时间与当前启动会话。业务 key 的编号和含义要随监控 schema 固定，避免不同版本把同一个 key 解释成不同事件。
+监听回调由指定 Executor 异步执行，里面只应复制必要字段并交给采集队列。历史列表覆盖 App 近期多个进程启动，取记录要像示例那样按当前 PID 和进程名过滤，生产代码还应核对最新 launch 时间与当前启动会话。业务 key 的编号和含义要随监控 schema 固定，避免不同版本把同一个 key 解释成不同事件。
 
 `ApplicationStartInfo` 适合校准系统起点和启动分类，Android 10–14 仍需兼容自建埋点。完整 API 设计见[ApplicationStartInfo](../ch26-observability/07-application-start-info.md)。
 
@@ -784,9 +784,9 @@ fun startupDurationMs(
 
 采集端应保留原始节点、字段是否存在以及 `startupState`。这样即使 schema 调整或后续发现平台差异，服务端仍能重新计算区间，无须依赖端侧已经算好的单一耗时。
 
-### 4. 线上聚合不能只画平均值
+### 4. 线上聚合与分位数解读
 
-启动耗时通常呈右偏长尾分布：多数样本集中在较短区间，少数慢样本向更长耗时方向拖出一条“尾巴”。低端设备、升级迁移、磁盘繁忙、首次读取配置和编译状态都会制造这类慢样本。均值容易被少数极慢值拉高，也可能被大量热启动样本稀释。
+我们先看分布形态。启动耗时通常呈右偏长尾分布：多数样本集中在较短区间，少数慢样本向更长耗时方向拖出一条“尾巴”。低端设备、升级迁移、磁盘繁忙、首次读取配置和编译状态都会制造这类慢样本。均值容易被少数极慢值拉高，也可能被大量热启动样本稀释。
 
 常用分位数回答不同问题：
 
@@ -797,7 +797,7 @@ fun startupDurationMs(
 | P90/P95 | 慢启动群体 | 适合作为版本门禁候选指标 |
 | P99 | 极端尾部 | 需要较大样本量，易受异常设备与数据质量影响 |
 
-分位数必须从同一 cohort（版本、启动类型等条件一致的一组样本）的原始数据或可合并分布摘要计算。不能让每台设备先算 P90，再把各设备 P90 求平均；也不能把每日 P90 平均成周 P90。数据量大时可用直方图，或 t-digest、KLL 这类近似分位数摘要；无论选择哪种方案，都要固定直方图区间边界或算法版本，并保留样本数、最小值、最大值和缺失率。
+分位数必须从同一 cohort（版本、启动类型等条件一致的一组样本）的原始数据或可合并分布摘要计算：每台设备先算 P90 再把各设备 P90 求平均，或把每日 P90 平均成周 P90，都会失真。数据量大时可用直方图，或 t-digest、KLL 这类近似分位数摘要；无论选哪种，都要固定直方图区间边界或算法版本，并保留样本数、最小值、最大值和缺失率。
 
 #### 4.1 先分组，再看分位数
 
@@ -815,7 +815,7 @@ fun startupDurationMs(
 
 #### 4.2 把缺失和退出当成结果
 
-TTFD 上报容易出现幸存者偏差，即只看到了成功完成启动的会话。启动期间退出、崩溃、ANR（Application Not Responding，应用无响应）、进程被杀或长期 loading 的会话没有 TTFD 数值。如果只统计成功上报样本，慢到无法完成的会话会被排除，严重问题反而可能让 TTFD 曲线看起来更好。
+TTFD 上报容易出现幸存者偏差，即只看到了成功完成启动的会话：启动期间退出、崩溃、ANR、进程被杀或长期 loading 的会话都没有 TTFD 数值。只统计成功上报的样本，慢到无法完成的会话就被排除在外，严重问题反而可能让 TTFD 曲线看起来更好。
 
 每个窗口应同时展示：
 
@@ -826,7 +826,7 @@ TTFD 上报容易出现幸存者偏差，即只看到了成功完成启动的会
 - 首屏前崩溃、ANR、主动退出和进程死亡；
 - 采样率、上传成功率、去重率与 schema 版本。
 
-采样策略也要进入总样本数的解释。普通样本可以做稳定随机采样，慢样本与失败样本可以提高诊断采样率；但后者被采到的概率更高，两类数据不能直接混算总体分位数。用于告警的指标数据和用于定位的高采样诊断数据应分开保存；若必须合并，应按每类样本被采中的概率加权。
+采样策略也要进入总样本数的解释。普通样本可以做稳定随机采样，慢样本与失败样本可以提高诊断采样率；后者被采到的概率更高，两类数据直接混算总体分位数会带偏结果。用于告警的指标数据和用于定位的高采样诊断数据应分开保存；若必须合并，应按每类样本被采中的概率加权。
 
 ### 5. 回归检测与归因
 
@@ -844,11 +844,11 @@ TTFD 上报容易出现幸存者偏差，即只看到了成功完成启动的会
 => 暂停灰度并进入归因
 ```
 
-这段规则中的“预算”是产品允许增加的毫秒数，“历史噪声带”是指标在没有代码变化时通常波动的范围。高流量版本可以用 bootstrap（从现有样本反复有放回抽样）估计置信区间（变化可能落入的范围）；低流量灰度可先看中位数、MAD（各样本与中位数偏差的中位数）、样本明细和线下 benchmark（固定条件的基准测试），避免把样本不足的 P99 当成发布结论。实验统计细节见 [性能实验统计](../ch26-observability/04-ab-testing-regression.md)。
+这段规则中的“预算”是产品允许增加的毫秒数，“历史噪声带”是指标在没有代码变化时通常波动的范围。高流量版本可以用 bootstrap（从现有样本反复有放回抽样）估计置信区间；低流量灰度可先看中位数、MAD（各样本与中位数偏差的中位数）、样本明细和线下 benchmark，避免把样本不足的 P99 当成发布结论。实验统计细节见 [性能实验统计](../ch26-observability/04-ab-testing-regression.md)。
 
 #### 5.1 归因顺序
 
-发现回归后，按以下顺序缩小范围：
+发现回归后，我们按以下顺序缩小范围：
 
 1. 核对 schema、采样率、TTFD 完成率与启动类型占比，排除测量变化。
 2. 对齐灰度开始、构建发布时间、远程配置、服务端接口和实验开关。
@@ -869,7 +869,7 @@ TTFD 上报容易出现幸存者偏差，即只看到了成功完成启动的会
 | TTFD 数值变好但完成率下降 | 超时、退出、崩溃或上报丢失造成幸存者偏差 |
 | 只在升级后启动变慢 | 数据库迁移、缓存重建、Profile/编译状态和版本迁移任务 |
 
-`ApplicationStartInfo` 的系统节点用来确定区间，应用 task 事件说明责任模块，Perfetto 用来确认线程当时在运行、睡眠、I/O 还是锁等待。缺少后两层证据时，不应仅凭一个长区间判断根因。
+`ApplicationStartInfo` 的系统节点用来确定区间，应用 task 事件说明责任模块，Perfetto 用来确认线程当时在运行、睡眠、I/O 还是锁等待。后两层凑不齐时，单凭一个长区间还定不了根因。
 
 ### 6. Android Vitals 怎样对标
 
@@ -881,7 +881,7 @@ Google Play Android Vitals 使用 TTID 判断 excessive startup，即启动耗�
 | warm | 2 秒及以上 |
 | hot | 1.5 秒及以上 |
 
-这些数值是 Play 用来识别明显过慢启动的风险线，不代表理想体验。团队内部预算通常要更严格，并按核心入口、设备档位和用户任务设置。Google 的性能测量总览还提供更积极的目标参考，但项目不能脱离页面复杂度、设备和编译条件直接承诺统一毫秒数。
+这些数值是 Play 用来识别明显过慢启动的风险线，距理想体验还有距离；团队内部预算通常要更严格，并按核心入口、设备档位和用户任务设置。Google 的性能测量总览还提供更积极的目标参考，但统一的毫秒数承诺要建立在对页面复杂度、设备和编译条件的具体分析上。
 
 Vitals 与自建监控应同时保留：
 
@@ -895,11 +895,11 @@ Vitals 与自建监控应同时保留：
 
 两边数据不一致时，检查版本覆盖、启动类型、统计窗口、渠道、设备分布、采样条件和 TTFD 完成率。不要通过乘一个固定系数把自建 TTID“换算”为 Vitals。
 
-Android Vitals 的专项边界和 Play Console 使用方式见[Android Vitals 与 Play Console](../ch26-observability/08-android-vitals-play-console-quality.md)。
+Android Vitals 的专项限制和 Play Console 使用方式见[Android Vitals 与 Play Console](../ch26-observability/08-android-vitals-play-console-quality.md)。
 
 ### 7. 线下与线上怎样互证
 
-一条启动问题从发现到验收，建议保留四层证据：
+一条启动问题从发现到验收，我们建议保留四层证据：
 
 | 层级 | 工具 | 产物 |
 | --- | --- | --- |
@@ -908,9 +908,9 @@ Android Vitals 的专项边界和 Play Console 使用方式见[Android Vitals �
 | 平台校准 | `ApplicationStartInfo` | 系统起点、启动类型、原因、组件与阶段时间戳 |
 | 线上验证 | 自建监控 + Android Vitals | 同版本、同启动类型样本组的分位数、完成率、失败率和长期趋势 |
 
-Macrobenchmark 必须记录 `StartupMode`（启动状态）、`CompilationMode`（ART 预编译状态）、设备、温度、电量和重复次数。`StartupMode.COLD` 会在测量前杀掉 App 进程，但默认不等于清空内核 page cache（把文件内容缓存在内存中的页缓存）。若实验要包含从存储重新读取文件的成本，应在支持的测试环境中显式使用 `dropKernelPageCache()`，并把这一条件写进报告。Baseline Profile 实验还要区分 Profile 是否安装，避免把编译差异误归给业务代码。
+Macrobenchmark 必须记录 `StartupMode`、`CompilationMode`、设备、温度、电量和重复次数。`StartupMode.COLD` 会在测量前杀掉 App 进程，但默认并不会清空内核 page cache；若实验要计入从存储重新读取文件的成本，应在支持的测试环境中显式使用 `dropKernelPageCache()`，并把这一条件写进报告。Baseline Profile 实验还要区分 Profile 是否安装，避免把编译差异误归给业务代码。
 
-Perfetto 中先找 Android App Startups 派生轨道（由 trace 数据计算出的启动区间），再与 App 的自定义 trace 对齐。一个任务从开始到结束持续 80 ms，不代表它占用了 80 ms CPU；线程可能在等待 Binder、锁、I/O 或 CPU 调度。结论要由对应时间线证明。下面的 PerfettoSQL 会加载官方 `android.startup.startups` 标准库模块，列出 trace 中识别出的启动；`dur / 1e6` 把纳秒转换成毫秒。取得目标 `startup_id` 后，再查询对应线程、Binder、I/O、GC（垃圾回收）和帧事件：
+Perfetto 中先找 Android App Startups 派生轨道，再与 App 的自定义 trace 对齐。一个任务从开始到结束持续 80 ms，占用的 CPU 未必有 80 ms——线程可能在等待 Binder、锁、I/O 或 CPU 调度，结论要由对应时间线证明。下面的 PerfettoSQL 会加载官方 `android.startup.startups` 标准库模块，列出 trace 中识别出的启动；`dur / 1e6` 把纳秒转换成毫秒。取得目标 `startup_id` 后，再查询对应线程、Binder、I/O、GC 和帧事件：
 
 ```sql
 INCLUDE PERFETTO MODULE android.startup.startups;
@@ -924,7 +924,7 @@ Android 15+ 还可用 `ProfilingManager` 请求 system trace 或 stack sampling�
 
 ### 8. 用同一份模板记录复盘
 
-复盘要把现象、证据、假设、改动和结果分开，避免把一次“同时发生”写成因果关系。下面的最小模板可直接用于 PR（Pull Request，代码合并请求）或性能专项。模板里的 commit 是代码提交标识，release variant 是用于发布的构建变体，R8 是 Android 代码优化与压缩工具，owner 是后续事项负责人；这些工程字段保留原名，便于和构建系统、代码仓库对照。
+复盘时，我们把现象、证据、假设、改动和结果分开，避免把一次“同时发生”写成因果关系。下面的最小模板可直接用于 PR 或性能专项。模板里的 commit 是代码提交标识，release variant 是用于发布的构建变体，R8 是 Android 代码优化与压缩工具，owner 是后续事项负责人；这些工程字段保留原名，便于和构建系统、代码仓库对照。
 
 ```markdown
 # <入口 / 问题> 启动优化复盘
@@ -958,7 +958,7 @@ Android 15+ 还可用 `ProfilingManager` 请求 system trace 或 stack sampling�
 - 门禁、owner、截止时间、回滚条件：
 ```
 
-若无法写出“哪条证据会推翻当前假设”，通常说明结论还停留在猜测。“单变量改动”指一次验证尽量只改变一个待检验因素；当代码、Profile、服务端配置和样本结构同时改变时，结果只能说明整个版本组合发生变化，不能把收益归给其中一项。
+若写不出一条能推翻当前假设的证据，结论多半还停留在猜测。“单变量改动”指一次验证尽量只改变一个待检验因素；当代码、Profile、服务端配置和样本结构同时改变时，结果只说明整个版本组合变了，收益归不到其中单项头上。
 
 ### 检查清单
 
@@ -978,7 +978,7 @@ Android 15+ 还可用 `ProfilingManager` 请求 system trace 或 stack sampling�
 
 ## 小结
 
-启动分析先把系统请求、进程创建、Provider/Application、Activity 和首帧放进同一条时间线，再根据线程运行/等待状态与业务切片定位关键路径。启动监控则依赖一份稳定的测量契约：平台 TTID 告诉我们第一帧何时显示，`reportFullyDrawn()` 给出约定的首屏可用边界，`ApplicationStartInfo` 补齐 Android 15+ 的系统起点、启动分类和触发原因，App 事件负责解释任务与业务状态。服务端再按条件一致的样本组计算分位数、完成率和失败率，用绝对预算与统计不确定性共同判断是否变慢。
+启动分析先把系统请求、进程创建、Provider/Application、Activity 和首帧放进同一条时间线，再根据线程运行/等待状态与业务切片定位关键路径。启动监控则依赖一份稳定的测量契约：平台 TTID 告诉我们第一帧何时显示，`reportFullyDrawn()` 给出约定的首屏可用时点，`ApplicationStartInfo` 补齐 Android 15+ 的系统起点、启动分类和触发原因，App 事件负责解释任务与业务状态。服务端再按条件一致的样本组计算分位数、完成率和失败率，用绝对预算与统计不确定性共同判断是否变慢。
 
 当一条告警能够回答“哪个版本、哪种启动、哪个入口、哪类设备、哪个阶段开始变慢”，启动监控才具备工程价值。
 

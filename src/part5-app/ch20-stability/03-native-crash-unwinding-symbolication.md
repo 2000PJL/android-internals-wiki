@@ -95,9 +95,11 @@ last_consolidated_at: '2026-08-24'
 
 # Native Crash、堆栈回溯与符号化
 
-Native Crash 是 C/C++ 等本地代码执行期间发生的致命崩溃。分析时需要把信号现场、栈回溯、符号版本和对象生命周期放进同一条证据链。Java 异常通常还能沿 `Throwable` 传播；`SIGSEGV`、`SIGABRT` 等同步致命信号往往意味着本地代码状态已经损坏，应用没有可靠的进程内恢复机会。
+Native Crash 是 C/C++ 等本地代码执行期间发生的致命崩溃。分析时，我们要把信号现场、栈回溯、符号版本和对象生命周期放进同一条证据链。Java 异常通常还能沿 `Throwable` 传播；`SIGSEGV`、`SIGABRT` 等同步致命信号往往意味着本地代码状态已经损坏，应用没有可靠的进程内恢复机会。
 
-平台源码按 Android 17 / API 37 / `android-17.0.0_r1` 核对。为便于对照 tombstone、编译产物和命令输出，本文保留以下工具链原名：
+> 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`。
+
+为便于对照 tombstone、编译产物和命令输出，正文保留下表中的工具链原名：
 
 | 术语 | 本文含义 |
 |---|---|
@@ -117,9 +119,9 @@ Native Crash 从信号、寄存器、内存映射和 tombstone 开始，随后�
 
 ### 从致命信号到系统 tombstone
 
-#### 信号只给出入口，不直接给出根因
+#### 从信号编号到根因
 
-CPU、内核、运行库和应用代码都可能触发信号。诊断时要同时读取信号编号、表示具体原因的 `si_code`、fault address、崩溃指令、寄存器和 allocator 报告。
+CPU、内核、运行库和应用代码都可能发出信号。拿到一次 Native Crash，我们要同时读信号编号、表示具体原因的 `si_code`、fault address、崩溃指令、寄存器和 allocator 报告，这几项要放在一起看。
 
 | 信号 | 常见来源 | 容易误判的地方 |
 |---|---|---|
@@ -130,11 +132,11 @@ CPU、内核、运行库和应用代码都可能触发信号。诊断时要同�
 | `SIGILL` | 非法指令、CPU 特性不匹配、代码页损坏 | 也可能由主动 trap 或错误函数指针跳转引起 |
 | `SIGTRAP` | 断点、陷阱指令（trap）、调试和部分运行时诊断 | 不一定是业务代码主动崩溃 |
 
-`SEGV_MAPERR` 表示地址没有有效映射，`SEGV_ACCERR` 表示映射存在但访问权限不允许。MTE（Memory Tagging Extension，内存标记扩展）、GWP-ASan（低开销抽样堆内存检测器）和 Scudo（Android 使用的强化堆分配器）还会在 tombstone 的 `Cause`、abort message 或专用字段中补充证据。不能只凭信号编号完成归因。
+`SEGV_MAPERR` 表示地址没有有效映射，`SEGV_ACCERR` 表示映射存在但访问权限不允许。MTE（Memory Tagging Extension，内存标记扩展）、GWP-ASan（低开销抽样堆内存检测器）和 Scudo（Android 的强化堆分配器）还会在 tombstone 的 `Cause`、abort message 或专用字段中补充证据——归因靠的是这些补充证据，信号编号本身给不出根因。
 
 #### Android SignalChain 的平台处理与用户处理
 
-ART 的 [`sigchain.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/sigchainlib/sigchain.cc) 包装 `signal`、`sigaction` 与 `sigprocmask`，让 ART 等平台特殊处理器先处理由平台接管的信号。Android 17 的关键结构是：
+ART 的 [`sigchain.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/sigchainlib/sigchain.cc) 包装 `signal`、`sigaction` 与 `sigprocmask`，让 ART 等平台特殊处理器先处理由平台接管的信号。关键结构有四条：
 
 - 每个信号有一个 `SignalChain`；
 - 内部 `special_handlers_` 是包含两个槽位的平台处理数组；
@@ -143,11 +145,11 @@ ART 的 [`sigchain.cc`](https://android.googlesource.com/platform/art/+/refs/tag
 
 [`SignalChain::Handler()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/sigchainlib/sigchain.cc) 先尝试平台特殊处理器，再调用动态链接器与 debuggerd 暴露的 `android_handle_signal()`，之后才按保存的 `action_` 交给用户处理器。Recoverable GWP-ASan 是一个特殊分支：debuggerd 若已经完成报告并确认可恢复，`android_handle_signal()` 可以返回 `true`，SignalChain 随即返回；普通致命故障不会因此变成可恢复。
 
-不能根据注册时间推导处理器在这套流程中的位置。直接绕过 SignalChain 改写内核 disposition，可能破坏 ART 隐式空检查、Recoverable GWP-ASan 和系统 tombstone。
+处理器在这套流程中的位置，单凭注册时间推不出来。直接绕过 SignalChain 改写内核 disposition，可能破坏 ART 隐式空检查、Recoverable GWP-ASan 和系统 tombstone。
 
-#### Android 17 的 debuggerd 收集流程
+#### debuggerd 的收集流程
 
-Android 17 的动态链接器（linker）在早期调用 [`linker_debuggerd_init()`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_debuggerd_android.cpp)，把 allocator、GWP-ASan 和额外崩溃详情（crash detail）等回调交给 [`debuggerd_init()`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)。平台随后为致命信号安装 `debuggerd_signal_handler`。
+动态链接器（linker）在早期调用 [`linker_debuggerd_init()`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_debuggerd_android.cpp)，把 allocator、GWP-ASan 和额外崩溃详情（crash detail）等回调交给 [`debuggerd_init()`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)。平台随后为致命信号安装 `debuggerd_signal_handler`。
 
 下面的流程图用于区分崩溃进程内完成的最小入口动作，以及放到进程外完成的主要工作。图中的 `ptrace` 是一个进程检查另一个进程线程与内存的系统机制，maps 是进程内存映射表，protobuf 是结构化二进制数据格式。
 
@@ -165,15 +167,15 @@ Android 17 的动态链接器（linker）在早期调用 [`linker_debuggerd_init
 
 [`debuggerd_handler.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp) 使用预先准备的 pseudothread（专用于崩溃协作的伪线程）栈和受控的 `fork`/`exec` 协议；[`crash_dump.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 `ptrace` 读取现场，并创建崩溃地址空间的快照进程来缩短原进程所有线程的暂停时间。
 
-进程内处理器仍处于约束严格的信号处理上下文，只能执行很小一组安全操作，不能据此认为任意 C++ 逻辑都可以安全运行。
+进程内处理器仍处在约束严格的信号处理上下文里，只执行一组很小的安全操作，不能据此认为任意 C++ 逻辑都可以安全运行。
 
-`crash_dump` 还会连接 `/data/system/ndebugsocket` 通知 ActivityManager。Native Crash 不经过 Java `UncaughtExceptionHandler`；应用安装 Java 致命异常处理器无法覆盖这条路径。
+`crash_dump` 还会连接 `/data/system/ndebugsocket` 通知 ActivityManager。Native Crash 不经过 Java `UncaughtExceptionHandler`；应用装了 Java 致命异常处理器，也覆盖不到这条路径。
 
 ##### 动态链接器接入与 Runtime APEX 边界
 
-动态链接器负责尽早把 allocator、GWP-ASan、crash detail 等回调接入 debuggerd，tombstone 则由后续组件生成。Android 17 的 Runtime APEX 组合会影响接入代码所在文件和条件分支；这属于平台内部装配差异，也没有面向应用的稳定接口。应用不应查找 linker 私有 `soinfo`、debuggerd 私有处理器或 ART 特殊处理器来拼装自己的崩溃链。
+动态链接器负责尽早把 allocator、GWP-ASan、crash detail 等回调接入 debuggerd，tombstone 则由后续组件生成。Android 17 的 Runtime APEX 组合会影响接入代码所在文件和条件分支；这属于平台内部装配差异，没有面向应用的稳定接口。应用去查找 linker 私有 `soinfo`、debuggerd 私有处理器或 ART 特殊处理器来拼自己的崩溃链，没有任何稳定性保障。
 
-评审平台差异时，应沿“linker 注册入口 → debuggerd 处理器 → crash_dump → tombstoned”逐段核对，并固定 Android 源码标签与模块 Build ID。只看到同名函数或某个偏移存在，不能证明厂商构建具有相同 ABI。
+我们评审平台差异时，沿“linker 注册入口 → debuggerd 处理器 → crash_dump → tombstoned”逐段核对，并固定 Android 源码标签与模块 Build ID；同名函数或某个偏移存在，本身证明不了厂商构建具有相同 ABI。
 
 ##### 备用信号栈与 pseudothread 栈各有用途
 
@@ -183,24 +185,24 @@ Android 17 的动态链接器（linker）在早期调用 [`linker_debuggerd_init
 
 ##### CrashInfo 进程间协议与地址标签位
 
-崩溃进程和 `crash_dump` 之间通过版本化的 CrashInfo 二进制布局传递最小现场。协议版本、字段和内部信号编号都属于平台私有实现；Android 17 中出现 v4 不能推导为“Android 17 首次引入 v4”，应用也不应硬编码这一内部结构。
+崩溃进程和 `crash_dump` 之间通过版本化的 CrashInfo 二进制布局传递最小现场。协议版本、字段和内部信号编号都属于平台私有实现；Android 17 的协议里出现了 v4，仅凭这一点推不出“v4 由 Android 17 首次引入”，应用也别硬编码这一内部结构。
 
-Android 17 debuggerd 的注册标志包含 `SA_EXPOSE_TAGBITS`，允许内核在支持时保留 fault address 的地址标签信息。它能改善 MTE/GWP-ASan 报告的可读性，却不会为普通 `SIGSEGV` 自动给出内存错误根因。Recoverable GWP-ASan 和 permissive MTE（允许记录故障后重试的 MTE 宽松模式）只有在平台确认并完成报告的特定分支才可能返回；Crash SDK 不应根据地址形态自行决定吞掉信号或继续执行。
+debuggerd 的注册标志包含 `SA_EXPOSE_TAGBITS`，允许内核在支持时保留 fault address 的地址标签信息。它能改善 MTE/GWP-ASan 报告的可读性，却不会为普通 `SIGSEGV` 自动给出内存错误根因。Recoverable GWP-ASan 和 permissive MTE（记录故障后可重试的宽松模式）只有在平台确认并完成报告的特定分支才可能返回；Crash SDK 凭地址形态自行决定吞掉信号或继续执行，是在替平台做决定。
 
 ### Tombstone 逐层解读
 
 #### 文件、轮转与可访问性
 
-[`tombstoned`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/tombstoned/tombstoned.cpp) 管理 `/data/tombstones/tombstone_<slot>` 与对应的 `.pb`。Android 17 的 tombstone 数量由 `tombstoned.max_tombstone_count` 控制，AOSP 默认保留 32 组产物；设备厂商可以调整该属性，不能依赖固定槽号或长期保留。
+[`tombstoned`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/tombstoned/tombstoned.cpp) 管理 `/data/tombstones/tombstone_<slot>` 与对应的 `.pb`。tombstone 的保留数量由 `tombstoned.max_tombstone_count` 控制，AOSP 默认保留 32 组产物；设备厂商可以调整该属性，所以别把固定槽号或长期保留当成前提。
 
-生产应用通常不能直接遍历 `/data/tombstones`。可用入口包括：
+生产应用通常没有直接遍历 `/data/tombstones` 的权限。可用的入口有：
 
 - 可调试设备、取得 root（最高系统权限）的环境，或 bugreport（系统错误报告）中的系统 tombstone；
 - Play Console、设备厂商后台或稳定性 SDK 提供的 Native Crash 报告；
 - API 30+ 的 `ActivityManager.getHistoricalProcessExitReasons()`；
 - API 31+ 对 `REASON_CRASH_NATIVE` 调用 [`ApplicationExitInfo.getTraceInputStream()`](https://developer.android.com/reference/android/app/ApplicationExitInfo)，读取 tombstone protobuf。
 
-`getTraceInputStream()` 可能因全局循环缓冲轮转、记录缺失或权限边界返回 `null`。返回内容是 protobuf，不是文本 tombstone；解析必须使用平台 API 文档链接的数据结构定义（schema），并限制输入大小。`adb shell dumpsys dropbox`、bugreport 等属于调试或受权限约束的系统入口，不应设计成普通线上应用的采集 API。
+`getTraceInputStream()` 可能因全局循环缓冲轮转、记录缺失或权限限制返回 `null`。返回内容是 protobuf，不是文本 tombstone；解析要按平台 API 文档给出的数据结构定义（schema）来，并限制输入大小。`adb shell dumpsys dropbox`、bugreport 等属于调试或受权限约束的系统入口，别把它们设计成普通线上应用的采集 API。
 
 #### 一份最小 tombstone
 
@@ -224,7 +226,7 @@ backtrace:
           (codec::Decoder::decode()+196) (BuildId: 8f...)
 ```
 
-`>>> ... <<<` 是进程命令行标识（cmdline），常与包名或 `package:process` 相似，但不应一律称为包名。PID 是进程编号，TID 是线程编号；`pid == tid` 通常表示进程主线程。多进程应用仍要结合 cmdline 和 `processName` 判断具体进程。
+`>>> ... <<<` 是进程命令行标识（cmdline），常与包名或 `package:process` 相似，但别把它一律当成包名。PID 是进程编号，TID 是线程编号；`pid == tid` 通常表示进程主线程。多进程应用仍要结合 cmdline 和 `processName` 判断具体进程。
 
 #### 头部、寄存器与调用栈
 
@@ -237,7 +239,7 @@ backtrace:
 5. **backtrace 与 maps**：每帧的模块相对指令地址（relative pc）、模块、函数、Build ID 和映射信息共同用于符号化。
 6. **其他线程、栈内存转储（stack dump）与故障地址附近内存（memory near）**：用于寻找锁等待、线程所有者、损坏指针和上下文。
 
-ARM64 ABI 规定函数入口的前八个整数或指针参数通常使用 `x0-x7`，但崩溃可能发生在函数中部，编译器早已复用这些寄存器。`x0 == 0` 不能自动证明“第一个源码参数为空”。同理，`x30` 在优化、叶函数或异常展开中也不一定等于可靠调用者；应优先采用经过栈展开元数据（unwind metadata）验证的 backtrace。
+ARM64 ABI 规定函数入口的前八个整数或指针参数通常使用 `x0-x7`，但崩溃可能发生在函数中部，编译器早已复用这些寄存器。`x0 == 0` 离“第一个源码参数为空”的结论还差一步验证。同理，`x30` 在优化、叶函数或异常展开中也不一定等于可靠调用者；应优先采用经过栈展开元数据（unwind metadata）验证的 backtrace。
 
 tombstone 的 `pc` 列通常是模块相对地址，可能还伴随非零的映射文件偏移（map offset）或装载基址修正值（load bias）。手工计算时要读同一份 maps；更稳妥的方式是把完整 tombstone 交给 `ndk-stack`，或使用报告中明确标出的 relative pc。把进程绝对 `pc` 原样传给 `addr2line`，经常会得到错误结果。
 
@@ -250,15 +252,15 @@ stack dump 是对原始栈内存的解释结果。某个值“看起来像代码
 - 栈破坏后 `sp` 和保存寄存器可能都不可信；
 - 指针认证（pointer authentication）、带地址标签的指针（tagged pointer）与编译优化都会改变表象。
 
-只有当候选地址与 maps、Build ID、控制流和其他线程证据一致时，才把它纳入调用关系。
+候选地址与 maps、Build ID、控制流和其他线程的证据对得上，我们才把它纳入调用关系。
 
 ### 区分栈回溯（unwind）与符号化（symbolication）
 
 #### Unwind：从现场恢复栈帧
 
-`libunwindstack` 根据寄存器、maps、进程内存和 unwind metadata 恢复栈帧。常见信息来源包括 DWARF CFI（Call Frame Information，调用帧恢复规则，通常位于 `.eh_frame` 或 `.debug_frame`）、ARM EHABI（ARM 异常处理 ABI）的 `.ARM.exidx`、frame pointer，以及 JIT/Dex 相关映射信息。
+`libunwindstack` 根据寄存器、maps、进程内存和 unwind metadata 恢复栈帧。常见信息来源有 DWARF CFI（Call Frame Information，调用帧恢复规则）、ARM EHABI（ARM 异常处理 ABI）的 `.ARM.exidx`、frame pointer，以及 JIT/Dex 相关映射信息；CFI 通常放在 `.eh_frame` 或 `.debug_frame` 段里。
 
-“EH”表示异常处理（Exception Handling），并不代表一套独立且必然更快的回溯算法。`.eh_frame` 原本服务于异常展开，其中存放的 CFI 同样可用于 Crash 时的栈回溯。Frame pointer 的遍历规则较简单，但能否得到完整栈取决于架构、编译选项、尾调用、栈损坏和生成代码。
+“EH”表示异常处理（Exception Handling）；`.eh_frame` 原本服务于异常展开，里面存放的 CFI 同样可用于 Crash 时的栈回溯，谈不上是一套独立或必然更快的算法。Frame pointer 的遍历规则较简单，但能否得到完整栈取决于架构、编译选项、尾调用、栈损坏和生成代码。
 
 | 信息来源 | 优点 | 主要限制 |
 |---|---|---|
@@ -290,7 +292,7 @@ ndk-stack \
   -dump path/to/tombstone.txt
 ```
 
-`llvm-readelf` 的 Build ID 必须与 tombstone 模块帧一致。`llvm-addr2line` 的输入示例使用报告中的 relative pc。`ndk-stack` 需要指向按 ABI 分类、保留符号的 `.so` 目录；从日志复制 tombstone 时还要保留开头的星号分隔行。AGP 中间目录会随版本变化，应从构建任务产物或官方 [ndk-stack 文档](https://developer.android.com/ndk/guides/ndk-stack)确认，不能在脚本中写死一个长期不变的路径。
+`llvm-readelf` 的 Build ID 必须与 tombstone 模块帧一致。`llvm-addr2line` 的输入示例使用报告中的 relative pc。`ndk-stack` 需要指向按 ABI 分类、保留符号的 `.so` 目录；从日志复制 tombstone 时还要保留开头的星号分隔行。AGP 中间目录会随版本变化，应从构建任务产物或官方 [ndk-stack 文档](https://developer.android.com/ndk/guides/ndk-stack)确认，不要在脚本里写死一个长期不变的路径。
 
 ### Breakpad `.sym` 与 minidump 离线符号化
 
@@ -345,9 +347,9 @@ Breakpad 客户端还要处理信号上下文之外的采集流程，远比“�
 - 第三方 Native SDK 的版本与供应商符号获取方式；
 - 产物哈希、访问权限和保留策略。
 
-上传 Play 的应用可以配置 `android.buildTypes.release.ndk.debugSymbolLevel`。`SYMBOL_TABLE` 提供函数名，`FULL` 还提供文件和行号；具体体积限制与配置以 [官方 Native debug symbols 文档](https://developer.android.com/build/include-native-symbols)为准。自建服务也应以 Build ID 为主键，版本号只作检索维度，不能替代二进制身份。
+上传 Play 的应用可以配置 `android.buildTypes.release.ndk.debugSymbolLevel`。`SYMBOL_TABLE` 提供函数名，`FULL` 还提供文件和行号；具体体积限制与配置以 [官方 Native debug symbols 文档](https://developer.android.com/build/include-native-symbols)为准。自建服务也应以 Build ID 为主键，版本号只作检索维度，二进制身份以 Build ID 为准。
 
-符号化服务需要记录“未找到模块”“module identifier 不匹配”“只有函数无行号”“unwind 失败”等状态。返回 `??` 时不能直接判定业务库缺少符号；地址换算、ABI、符号包或 module identifier 错误也会产生相同结果。
+符号化服务需要记录“未找到模块”“module identifier 不匹配”“只有函数无行号”“unwind 失败”等状态。返回 `??` 时先别下“业务库缺符号”的结论；地址换算、ABI、符号包或 module identifier 错误也会产生相同结果。
 
 ### 常见崩溃模式与排查顺序
 
@@ -370,7 +372,7 @@ Breakpad 客户端还要处理信号上下文之外的采集流程，远比“�
 - `SEGV_ACCERR` 常见于写只读页、执行不可执行页或访问保护页；
 - MTE/GWP-ASan 报告若给出分配栈与释放栈，其证据强于仅凭地址形态的猜测。
 
-`pc` 落在 `libart.so` 不能直接推断为 JNI 错误。它也可能是 Java/Native 过渡、GC、类链接、运行时检查，或只是本地内存破坏后的受害位置。判断时要看相邻的应用 Native 栈帧、JNI 调用、CheckJNI/allocator 报告和可复现性。
+`pc` 落在 `libart.so`，离“JNI 错误”这个结论还远：它也可能是 Java/Native 过渡、GC、类链接、运行时检查，或只是本地内存破坏后的受害位置。这时我们要看相邻的应用 Native 栈帧、JNI 调用、CheckJNI/allocator 报告和可复现性。
 
 #### `SIGABRT`：谁主动判定状态不可接受
 
@@ -381,13 +383,13 @@ Breakpad 客户端还要处理信号上下文之外的采集流程，远比“�
 - `CHECK`、断言、fdsan（文件描述符生命周期检查）、FORTIFY（libc 边界强化检查）或 JNI 检查失败；
 - 应用或 SDK 显式调用 `abort()`。
 
-[`C++ library support`](https://developer.android.com/ndk/guides/cpp-support) 文档说明：CMake 与独立工具链默认启用 C++ 异常，`ndk-build` 默认关闭；自定义构建系统还要看编译和链接参数。因此不能笼统写成“NDK 默认 `-fno-exceptions`”。启用异常后，未在 Native 边界捕获的异常仍可能进入 `std::terminate`；禁用时，含 `throw` 的代码通常无法按预期编译。
+[`C++ library support`](https://developer.android.com/ndk/guides/cpp-support) 文档说明：CMake 与独立工具链默认启用 C++ 异常，`ndk-build` 默认关闭；自定义构建系统还要看编译和链接参数。所以“NDK 默认 `-fno-exceptions`”这句笼统的结论可以放下了。启用异常后，未在 Native 边界捕获的异常仍可能进入 `std::terminate`；禁用时，含 `throw` 的代码通常无法按预期编译。
 
 #### `SIGBUS`：优先检查文件映射生命周期
 
-访问 `mmap` 文件时，如果底层文件被截短，读取仍在原映射范围但已经超出新文件末尾的页可能触发 `SIGBUS`。需要记录 inode（内核中的文件身份标识）与文件长度、映射起点和长度、截短或替换文件的时序，以及多进程写入者。
+访问 `mmap` 文件时，如果底层文件被截短，读取仍在原映射范围但已经超出新文件末尾的页可能触发 `SIGBUS`。需要记录 inode（内核的文件身份标识）与文件长度、映射起点和长度、截短或替换文件的时序，以及多进程写入者。
 
-对齐约束取决于架构、指令和访问类型。原子对象、SIMD（单条指令并行处理多个数据）指令、紧凑布局结构体（packed struct）与来自网络或文件的强转指针都值得检查，但不能把所有 ARM64 `SIGBUS` 都归为未对齐访问。
+对齐约束取决于架构、指令和访问类型。原子对象、SIMD（单条指令并行处理多个数据）指令、紧凑布局结构体（packed struct）与来自网络或文件的强转指针都值得检查；把所有 ARM64 `SIGBUS` 归为未对齐访问，会漏掉映射生命周期这类常见根因。
 
 #### JNI 边界
 
@@ -396,7 +398,7 @@ JNI 诊断至少覆盖：
 - 静态命名或 `RegisterNatives` 的方法名、签名与函数指针是否一致；常规失败通常表现为 `UnsatisfiedLinkError`，手写 `dlsym` 查找符号或使用错误函数指针才更可能跳到错误地址；
 - 每次 JNI 调用后是否存在待处理的 Java 异常（pending exception）；有异常时继续调用多数 JNI API 会扩大问题；
 - 局部引用、全局引用和弱全局引用的生命周期是否正确；局部引用容量是实现和上下文相关限制，不使用固定“512 个”作为跨版本契约；
-- `jobject` 是受 GC 管理的句柄，不能当作稳定 C++ 对象地址解引用或跨线程裸存；
+- `jobject` 是受 GC 管理的句柄，解引用成稳定的 C++ 对象地址、或跨线程裸存，都靠不住；
 - `GetPrimitiveArrayCritical`、字符串指针和直接缓冲区（direct buffer）地址是否遵守持有期限；
 - C++ 异常是否在 JNI 导出函数边界内转换成 Java 异常或错误结果，不能穿越 C ABI/JNI 边界。
 
@@ -412,9 +414,9 @@ JNI 诊断至少覆盖：
 | ASan | HWASan 不适用的旧设备或遗留环境 | 多类地址错误 | 官方自 2023 年起不再支持，打包和运行开销高 |
 | malloc debug | 可调试构建与专项复现 | 分配回溯、保护区和内存填充值等 allocator 诊断 | 启动配置和开销取决于选项，不适合作为通用线上方案 |
 
-Android 14+ 未显式配置时，约 1% 的应用启动会启用 [Recoverable GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan)。它生成一次报告后允许进程继续，但官方明确说明后续行为没有定义；团队仍应高优先级修复。自定义 `SIGSEGV` 处理器不会收到这类故障的回调，不能用“APM（Application Performance Monitoring，应用性能监控）没有捕获”否定报告。
+Android 14+ 未显式配置时，约 1% 的应用启动会启用 [Recoverable GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan)。它生成一次报告后允许进程继续，但官方明确说明后续行为没有定义；团队仍应高优先级修复。自定义 `SIGSEGV` 处理器不会收到这类故障的回调，所以“APM（Application Performance Monitoring，应用性能监控）没有捕获”否定不了这份报告。
 
-工具选择与当前命令以 [Memory error debugging and mitigation](https://developer.android.com/ndk/guides/memory-debug)、[GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan) 和 [HWASan](https://developer.android.com/ndk/guides/hwasan) 为准。`wrap.sh` 只用于可调试 APK，并需要随 ABI 正确打包；一条 `setprop wrap.<package>` 命令无法充当所有设备通用的 ASan 开关。
+工具选择与当前命令以 [Memory error debugging and mitigation](https://developer.android.com/ndk/guides/memory-debug)、[GWP-ASan](https://developer.android.com/ndk/guides/gwp-asan) 和 [HWASan](https://developer.android.com/ndk/guides/hwasan) 为准。`wrap.sh` 只用于可调试 APK，并需要随 ABI 正确打包；一条 `setprop wrap.<package>` 命令，离“所有设备通用的 ASan 开关”还很远。
 
 ### 线上 Native Crash 采集方案
 
@@ -428,7 +430,7 @@ Android 14+ 未显式配置时，约 1% 的应用启动会启用 [Recoverable GW
 
 建议把系统与 SDK 记录按进程启动 ID、时间、信号、TID、Build ID 和关键栈帧去重，同时保留来源字段。SDK minidump 与 `ApplicationExitInfo` tombstone 提供互补证据，应同时保留并关联。
 
-#### Signal handler 的执行边界
+#### Signal handler 里允许做什么
 
 POSIX 信号处理上下文中只能调用 async-signal-safe 操作，即标准明确允许在异步信号处理器中调用的小范围函数。工程上应进一步缩小范围：
 
@@ -439,7 +441,7 @@ POSIX 信号处理上下文中只能调用 async-signal-safe 操作，即标准�
 - 处理重入、嵌套信号、多个线程同时故障、备用信号栈和写入中断；
 - 保存并正确恢复或转发原 action、信号屏蔽集（signal mask）与 `SA_SIGINFO` 等语义。
 
-通过 `dlopen("libc.so") + dlsym("sigaction")` 绕过 ART 包装层，无法保证 APM 处理器会被调用。Android 的 SignalChain 自己就用类似方式寻找真实 libc 符号，以保护平台先行处理；应用再次绕过会直接竞争内核 disposition。若处理器消费信号、转发错误或返回到同一条故障指令，系统 tombstone 可能缺失，进程也可能陷入重复信号。
+通过 `dlopen("libc.so") + dlsym("sigaction")` 绕过 ART 包装层，APM 处理器是否被调用就没了保证。Android 的 SignalChain 自己就用类似方式寻找真实 libc 符号，以保护平台先行处理；应用再次绕过会直接竞争内核 disposition。若处理器消费信号、转发错误或返回到同一条故障指令，系统 tombstone 可能缺失，进程也可能陷入重复信号。
 
 自研前应评估成熟 SDK 是否已经处理 Android 版本、处理器顺序、备用信号栈、恢复默认 disposition 和重新投递信号。任何自研实现都要在 Android 10～17、各 ABI、MTE/GWP-ASan、多个 SDK 共存和 [16 KB 页大小设备](https://developer.android.com/guide/practices/page-sizes)上做故障注入。
 
@@ -471,7 +473,7 @@ int SnapshotHandler(int signo, HandlerSnapshot* out) {
 
 函数地址受 ASLR（Address Space Layout Randomization，地址空间布局随机化）影响，只用于同一进程内比较。即使入口被正确串接，也必须用行为结果验收。推荐让一个组件负责致命 Native 信号，其他 SDK 关闭 Native 捕获，只保留 Java、性能或上传能力；依赖升级后重跑冲突测试。
 
-每个支持的 ABI 和主要 Android 版本至少注入 `abort()`、空指针读写、栈溢出、多线程同时故障，以及设备支持时的 MTE/GWP-ASan 错误。通过标准同时覆盖应用产物、`ApplicationExitInfo`、系统 tombstone、离线符号化和服务端接收；缺少其中一项时，应标出失败阶段，不能用一个“堆栈完整率”掩盖原因。
+每个支持的 ABI 和主要 Android 版本至少注入 `abort()`、空指针读写、栈溢出、多线程同时故障，以及设备支持时的 MTE/GWP-ASan 错误。通过标准同时覆盖应用产物、`ApplicationExitInfo`、系统 tombstone、离线符号化和服务端接收；缺少其中一项时，把失败阶段标出来；笼统的一个“堆栈完整率”只会掩盖原因。
 
 ### 线程级跳转恢复点：仅用于实验性故障隔离
 
@@ -489,7 +491,7 @@ int SnapshotHandler(int signo, HandlerSnapshot* out) {
 
 C++ 析构和栈展开被跳过，自动变量还受 `setjmp`/`longjmp` 语义限制。若故障来自堆内存损坏、栈破坏或错误函数指针，跳回后继续使用同一进程可能造成数据损坏、死锁，或稍后在无关位置崩溃。
 
-#### mooner `prevent_pthread_crash` 的证据边界
+#### mooner `prevent_pthread_crash` 的适用范围
 
 [TestPlanB/mooner](https://github.com/TestPlanB/mooner) 展示了一个实验方案：用 ByteHook 代理 `pthread_create`，在线程入口函数（start routine）外层保存 `sigjmp_buf`，目标线程故障时跳回包装函数（wrapper），再结束该线程。
 
@@ -501,7 +503,7 @@ C++ 析构和栈展开被跳过，自动变量还受 `setjmp`/`longjmp` 语义�
 - 故障已经破坏共享堆或全局状态时，结束单个线程也不能恢复进程一致性；
 - 若转发旧 signal action、恢复 disposition 或重新投递不完整，会干扰 debuggerd。
 
-若业务仍要试验，应限制在可丢弃、无共享可变状态的隔离工作线程（worker）；命中后停止接收新任务，保存最小证据，并尽快重建独立进程或让宿主按明确策略退出。跳回后不应再附加到 JVM、分配大量对象并执行普通 Java 回调，更不能据此宣称“线程已经恢复”。
+若业务仍要试验，应限制在可丢弃、无共享可变状态的隔离工作线程（worker）；命中后停止接收新任务，保存最小证据，并尽快重建独立进程或让宿主按明确策略退出。跳回后不应再附加到 JVM、分配大量对象并执行普通 Java 回调，也就谈不上“线程已经恢复”。
 
 #### ByteHook、shadowhook 与私有 pthread 状态
 
@@ -559,9 +561,9 @@ Android 17 使用它们时要重新验证：
 
 现场记录提供 PC、SP、寄存器和映射，unwinder 再依赖 CFI 或 frame pointer 恢复调用链。符号库必须对应同一二进制。
 
-Native 崩溃指 C/C++、Rust 等 native 代码导致的进程崩溃。报告中的 `#00 pc 0000000000008a3c libfoo.so` 包含第 0 帧、程序计数器（PC，指向当前或返回位置的指令地址）和模块名。这里的 `pc` 通常已经不是进程中的绝对地址：系统回溯器先找到该地址所属的内存映射，再换算成 ELF 内的相对地址。
+Native 崩溃指 C/C++、Rust 等 native 代码导致的进程崩溃。报告中的 `#00 pc 0000000000008a3c libfoo.so` 包含第 0 帧、程序计数器（PC，当前或返回位置的指令地址）和模块名。这里的 `pc` 通常已经不是进程中的绝对地址：系统回溯器先找到该地址所属的内存映射，再换算成 ELF 内的相对地址。
 
-ELF（Executable and Linkable Format，可执行与可链接格式）是 Android native 可执行文件和 `.so` 的文件格式。离线工具还要找到 Build ID 完全一致、未剥离调试信息的 ELF，才可能恢复函数、内联调用链和源码行。Build ID 是链接器写入 ELF 的构建指纹，用来区分文件名和版本号相同、实际字节却不同的二进制。
+ELF 是 Android native 可执行文件和 `.so` 的文件格式。离线工具还要找到 Build ID 完全一致、未剥离调试信息的 ELF，才可能恢复函数、内联调用链和源码行。Build ID 是链接器写入 ELF 的构建指纹，用来区分文件名和版本号相同、实际字节却不同的二进制。
 
 取得地址只完成了分析链的一小段。可复核的 Native 诊断系统至少包含五步：
 
@@ -571,7 +573,7 @@ ELF（Executable and Linkable Format，可执行与可链接格式）是 Android
 4. **符号化**：用匹配的调试符号把地址还原成函数、文件、行号和内联帧。
 5. **质量判定**：识别错符号、截断栈和缺失帧，不能把“工具输出了一串函数名”当成正确答案。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为平台源码依据，说明这五步如何衔接，以及每一步能证明什么。
+这五步如何衔接、每一步能证明什么，下面按顺序展开。
 
 ### 1. 两个 CFI 表示不同概念
 
@@ -582,9 +584,9 @@ Native 诊断里经常出现两个缩写相同、含义无关的术语：
 | CFI | Call Frame Information，调用帧信息 | 描述给定 PC 处如何恢复调用者的 SP（Stack Pointer，栈指针）、PC 和其他寄存器，用于异常处理与栈回溯 |
 | CFI | Control Flow Integrity，控制流完整性 | 检查间接调用或跳转的目标是否合法，用于控制流安全加固 |
 
-本文没有特别说明时，CFI 均指 Call Frame Information。Control Flow Integrity 违规后的表现取决于编译参数、运行库和触发陷阱的方式，不能统一写成某个固定信号，也不能拿它解释普通的回溯失败。
+本文没有特别说明时，CFI 均指 Call Frame Information。Control Flow Integrity 违规后的表现取决于编译参数、运行库和触发陷阱的方式，别把它统一写成某个固定信号，也别拿它解释普通的回溯失败。
 
-### 2. Android 17 如何生成系统 tombstone
+### 2. 系统 tombstone 如何生成
 
 #### 2.1 崩溃线程提交现场，`crash_dump` 完成采集
 
@@ -610,7 +612,7 @@ fatal signal
   -> ActivityManager 获得崩溃摘要
 ```
 
-tombstone 是 Android 为 native 崩溃生成的结构化诊断记录。上面的流程解释了两个常见现象：系统 tombstone 可以包含多个线程，而应用自己的信号处理器通常只直接掌握当前线程；系统回溯器还能读取目标地址空间和 ART 的 JIT/Dex 信息，一个简单的 `_Unwind_Backtrace()` 调用不具备同等能力。
+tombstone 是 Android 为 native 崩溃生成的结构化诊断记录。上面的流程解释了我们常碰到的两个现象：系统 tombstone 可以包含多个线程，而应用自己的信号处理器通常只直接掌握当前线程；系统回溯器还能读取目标地址空间和 ART 的 JIT/Dex 信息，一个简单的 `_Unwind_Backtrace()` 调用不具备同等能力。
 
 #### 2.2 当前主回溯器是 `libunwindstack`
 
@@ -637,7 +639,7 @@ DWARF 是编译器和调试工具共用的一组调试数据格式。编译器�
 - CFA（Canonical Frame Address，当前调用帧的稳定参考地址）如何计算。
 - 返回地址、栈指针和被调用者负责保存的寄存器位于 CFA 的什么位置，或应由什么表达式求得。
 
-Android 17 的 `libunwindstack` 会初始化 `.eh_frame_hdr` / `.eh_frame` 与 `.debug_frame`。每恢复一帧，它先尝试信息更具体的 `.debug_frame`，再尝试 `.eh_frame`，随后可尝试 `.gnu_debugdata`；`.gnu_debugdata` 是 ELF 内可选的压缩迷你调试信息。32 位 ARM 还由 `ElfInterfaceArm` 补充 `.ARM.exidx` 路径。
+`libunwindstack` 会初始化 `.eh_frame_hdr` / `.eh_frame` 与 `.debug_frame`。每恢复一帧，它先尝试信息更具体的 `.debug_frame`，再尝试 `.eh_frame`，随后可尝试 `.gnu_debugdata`；`.gnu_debugdata` 是 ELF 内可选的压缩迷你调试信息。32 位 ARM 还由 `ElfInterfaceArm` 补充 `.ARM.exidx` 路径。
 
 `.eh_frame_hdr` 是 `.eh_frame` 的索引入口。缺少它不一定导致回溯失败：Android 17 在仍有 `.eh_frame` 时可以直接初始化该段，只是查找路径和成本可能不同。`.eh_frame` 也没有适用于所有项目的固定体积比例；模板展开、异常处理、优化级别和链接器选项都会改变结果，应在自己的 Release ELF 上测量。
 
@@ -655,7 +657,7 @@ Frame Pointer（FP，帧指针）是指向当前调用帧固定位置的寄存�
 
 FP 链适合高频采样或内存分配追踪，但要求经过的每一帧都遵守兼容布局。任何一层省略 FP、破坏 frame record、切换到特殊栈，或进入没有标准帧的运行时生成代码，都可能截断后续结果。32 位 ARM 的帧布局差异和寄存器压力也使 FP 链不如 arm64 稳定。
 
-Android 的 GWP-ASan 文档明确指出：arm64 默认保留 frame pointer，arm32 默认不保留；分配或释放栈缺失时，应检查是否使用了 `-fomit-frame-pointer`。不能只按某个 NDK 小版本推断最终结果，因为 CMake、第三方预编译库、LTO（Link Time Optimization，链接时优化）和单个编译目标的参数都可能覆盖工具链默认值。
+Android 的 GWP-ASan 文档明确指出：arm64 默认保留 frame pointer，arm32 默认不保留；分配或释放栈缺失时，应检查是否使用了 `-fomit-frame-pointer`。CMake、第三方预编译库、LTO 和单个编译目标的参数都可能覆盖工具链默认值，所以单看某个 NDK 小版本推不出最终结果。
 
 需要稳定的 FP 采样时，可以在目标级别明确参数。下面的配置让 CMake 构建目标 `native-lib` 保留 FP，并继续生成回溯表：
 
@@ -668,11 +670,11 @@ target_compile_options(native-lib PRIVATE
 
 配置只影响 `native-lib` 这个构建目标。静态库、预编译 `.so` 和其他 CMake 目标仍需逐个审计，Release 构建实际执行的编译命令才是有效证据。
 
-平台内部还有 `android_unsafe_frame_pointer_chase()`。其头文件明确说明，这个函数面向 sanitizer（在运行时检测内存错误等问题的工具）等平台组件，不是 NDK 应用 API；遇到没有 FP 的帧时，它只保证此前帧可靠，不保证还能继续回溯。应用不应通过私有头文件或 `dlsym` 动态查找这个符号，并把它当作跨版本兼容接口。
+平台内部还有 `android_unsafe_frame_pointer_chase()`。其头文件明确说明，这个函数面向 sanitizer（运行时内存错误检测工具）等平台组件，不是 NDK 应用 API；遇到没有 FP 的帧时，它只保证此前帧可靠，不保证还能继续回溯。应用不应通过私有头文件或 `dlsym` 动态查找这个符号，并把它当作跨版本兼容接口。
 
-#### 3.3 `_Unwind_Backtrace()` 的能力边界
+#### 3.3 `_Unwind_Backtrace()` 能做什么
 
-`_Unwind_Backtrace()` 可用于当前进程、当前线程的常规 native 调用链。它依赖目标代码提供兼容的回溯表，并可能进入内存分配器、动态链接器或运行库内部状态；这不代表它能在任意致命信号处理器中安全调用。
+`_Unwind_Backtrace()` 可用于当前进程、当前线程的常规 native 调用链。它依赖目标代码提供兼容的回溯表，并可能进入内存分配器、动态链接器或运行库内部状态；这并不代表它能在任意致命信号处理器中安全调用。
 
 下面的示例只用于普通诊断路径，不是信号处理器模板：
 
@@ -703,13 +705,13 @@ size_t CaptureCurrentThread(uintptr_t* frames, size_t capacity) {
 }
 ```
 
-这段代码只收集 PC。`dladdr()` 只能依据进程内可见的模块和动态导出符号解析有限信息，无法替代带 DWARF 的离线符号化，也不会自动生成 `libunwindstack` 插入的 ART Dex 虚拟帧。
+这段代码只收集 PC。`dladdr()` 只能依据进程内可见的模块和动态导出符号解析有限信息，替代不了带 DWARF 的离线符号化，也不会自动生成 `libunwindstack` 插入的 ART Dex 虚拟帧。
 
 #### 3.4 回溯性能必须在目标设备实测
 
 FP 回溯通常比 DWARF 回溯更适合高频采样，但“每帧几纳秒”没有跨设备意义。缓存命中、栈是否在本进程、是否要读取远端内存、FDE 编码、ELF 缓存、线程数和最大深度都会改变成本。
 
-选型应基于同一台目标设备、同一份 Release 二进制测量这些指标：
+选型时我们要在同一台目标设备、同一份 Release 二进制上测量这些指标：
 
 | 指标 | 说明 |
 |---|---|
@@ -725,7 +727,7 @@ FP 回溯通常比 DWARF 回溯更适合高频采样，但“每帧几纳秒”�
 
 #### 4.1 ASLR 地址换算需要三项修正
 
-ASLR（Address Space Layout Randomization，地址空间布局随机化）会让模块每次加载到不同的运行时位置。绝对 PC 要先落到 `/proc/<pid>/maps` 中对应的内存映射。Android 17 的 `Elf::GetRelPc()` 计算式如下：
+ASLR 会让模块每次加载到不同的运行时位置。绝对 PC 要先落到 `/proc/<pid>/maps` 中对应的内存映射。Android 17 的 `Elf::GetRelPc()` 计算式如下：
 
 ```text
 rel_pc = runtime_pc - map_start + load_bias + elf_offset
@@ -746,7 +748,7 @@ rel_pc = runtime_pc - map_start + load_bias + elf_offset
     (offset 0x2a4000) (Foo::run()+84) (BuildId: 4d7c...)
 ```
 
-交给 `ndk-stack` 或匹配 ELF 时，应把 `0000000000012340` 当作 tombstone 已给出的相对 PC，不能再次减去 ASLR 基址。`(offset 0x2a4000)` 描述 ELF 在 APK 等容器文件中的位置，也不能机械地从 `pc` 再减一次。
+交给 `ndk-stack` 或匹配 ELF 时，应把 `0000000000012340` 当作 tombstone 已给出的相对 PC，不要再减 ASLR 基址；`(offset 0x2a4000)` 描述的是 ELF 在 APK 等容器文件中的位置，同样不要从 `pc` 再减一次。
 
 若采集系统上报运行时绝对 PC，而非标准 tombstone 文本，服务端必须同时取得当时的内存映射表、CPU 架构和模块标识，才能重算相对地址。
 
@@ -772,7 +774,7 @@ NDK_BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin"
 "$NDK_BIN/llvm-readelf" -lW libfoo.so
 ```
 
-输出中应检查 `.note.gnu.build-id`、`.eh_frame` / `.debug_frame`、符号和调试信息段，以及 `PT_LOAD` 可装载段的文件偏移与虚拟地址。Apple Silicon 上的预编译目录名随 NDK 发行版可能仍是 `darwin-x86_64`；脚本应从已安装 NDK 中发现目录，不能根据主机 CPU 名自行拼接。
+输出中应检查 `.note.gnu.build-id`、`.eh_frame` / `.debug_frame`、符号和调试信息段，以及 `PT_LOAD` 可装载段的文件偏移与虚拟地址。Apple Silicon 上的预编译目录名随 NDK 发行版可能仍是 `darwin-x86_64`；脚本应从已安装 NDK 中发现目录；按主机 CPU 名拼出来的路径并不可靠。
 
 ### 5. 保存 Release 符号产物
 
@@ -792,9 +794,9 @@ android {
 }
 ```
 
-`SYMBOL_TABLE` 主要恢复函数名；`FULL` 还提供文件和行号。构建输出位于 `app/build/outputs/native-debug-symbols/<variant>/native-debug-symbols.zip`，可随 AAB 交给 Play Console，也应按团队的崩溃数据保留周期归档。当前 Play 文档给出的符号文件上限为 1.6 GB；超过时应评估改用 `SYMBOL_TABLE`，不能在未知缺失范围的情况下随意删除模块符号。
+`SYMBOL_TABLE` 主要恢复函数名；`FULL` 还提供文件和行号。构建输出位于 `app/build/outputs/native-debug-symbols/<variant>/native-debug-symbols.zip`，可随 AAB 交给 Play Console，也应按团队的崩溃数据保留周期归档。当前 Play 文档给出的符号文件上限为 1.6 GB；超过时应评估改用 `SYMBOL_TABLE`；在未知缺失范围时删掉模块符号，事后往往补不回来。
 
-第三方依赖若在进入构建前已经剥离调试信息，AGP 无法重新生成。构建日志出现 `native debug metadata has already been stripped` 时，应阻止发布，或留下明确的风险豁免记录。
+第三方依赖若在进入构建前已经剥离调试信息，AGP 重新生成不了。构建日志出现 `native debug metadata has already been stripped` 时，应阻止发布，或留下明确的风险豁免记录。
 
 #### 5.2 自建符号服务
 
@@ -824,7 +826,7 @@ NDK_BIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/darwin-x86_64/bin"
   -dump tombstone.txt
 ```
 
-`-sym` 要指向未剥离 ELF 目录，不能指向 APK 中已经 strip 的 `.so`。如果输出仍只有模块名和偏移，应检查 ABI、Build ID、输入 tombstone 的分隔头，以及第三方库是否已经丢失调试信息。
+`-sym` 要指向未剥离 ELF 目录；指向 APK 里已经 strip 的 `.so`，是查不出符号的。如果输出仍只有模块名和偏移，应检查 ABI、Build ID、输入 tombstone 的分隔头，以及第三方库是否已经丢失调试信息。
 
 #### 6.2 `llvm-symbolizer` 与 `llvm-addr2line`
 
@@ -877,18 +879,18 @@ backtrace:
 
 1. **信号与 `si_code`**：`SIGSEGV` 只是信号类别；`si_code` 是内核给出的细分原因，`SEGV_MAPERR`、`SEGV_ACCERR`、MTE 子类型会指向不同问题。
 2. **fault address 与故障指令**：fault address 是指令试图访问的地址。`0x10` 常见于空对象加字段偏移，但仍要反汇编 `#00`，确认哪条指令访问了哪个寄存器。
-3. **abort message**：`SIGABRT` 常表示进程主动终止。断言、fdsan（文件描述符误用检测）、Scudo（Android native 内存分配器）、sanitizer 或运行库消息往往比栈顶更有信息。
+3. **abort message**：`SIGABRT` 常表示进程主动终止。断言、fdsan、Scudo、sanitizer 或运行库消息往往比栈顶更有信息。
 4. **寄存器与 maps**：确认 PC、LR（Link Register，arm64 返回地址寄存器）、SP 和 fault address 是否落在合理映射，并留意地址高位是否带有内存标签。
 5. **完整调用链**：`#00` 可能是 `abort`、内存分配器或 signal trampoline（内核进入和返回信号处理器时经过的过渡帧）；业务触发点常在更深处。
 6. **其他线程和诊断区块**：锁等待、内存破坏、GWP-ASan、Scudo、MTE、fdsan 等附加信息可能给出分配栈或更具体的原因。
 
-“栈顶在系统库”不能直接推出系统缺陷。应用传入无效对象、违反 API 前置条件或破坏内存后，故障指令完全可能位于 `libc.so`、`libart.so` 或 `libbinder.so`。
+看到“栈顶在系统库”，先别急着归为系统缺陷：应用传入无效对象、违反 API 前置条件或破坏内存后，故障指令完全可能位于 `libc.so`、`libart.so` 或 `libbinder.so`。我们接着看调用链里应用自己的帧。
 
 ### 8. Java、JIT 与 native 混合调用链
 
 Android 17 的 `AndroidUnwinder::Initialize()` 会在 `libart.so` / `libartd.so` 中定位 JIT（Just-In-Time，即时编译）和 Dex 支持数据。`Unwinder` 遇到 ART 标记的 Dex PC 时，可以插入一个代表解释器 Java 方法的虚拟帧；JIT ELF 则通过 gdb JIT 接口查找。
 
-这项能力属于 `libunwindstack` 与 ART 的协作，不能推广为“任意 native 回溯器都能回溯 Java”。应用侧的 `_Unwind_Backtrace()` 或 FP 链通常只看到 ART 的 native 桥接帧，无法独立还原完整 Java 调用链。
+这项能力属于 `libunwindstack` 与 ART 的协作。应用侧的 `_Unwind_Backtrace()` 或 FP 链通常只看到 ART 的 native 桥接帧，独立还原不了完整 Java 调用链。
 
 线上混合栈应分别保留三组数据：
 
@@ -896,7 +898,7 @@ Android 17 的 `AndroidUnwinder::Initialize()` 会在 `libart.so` / `libartd.so`
 - Java 异常或采样系统得到的 Java 帧与 dex pc；
 - 对应版本的 native 符号与 R8 `mapping.txt`。
 
-服务端可按进程、线程、事件时间和桥接帧关联两类调用链，但不要把 Java dex pc 当作 ELF 地址交给 `llvm-symbolizer`。`artDebuggable_getStackFrameAt` 没有可验证的公开接口依据，不能作为方案。
+服务端可按进程、线程、事件时间和桥接帧关联两类调用链，但不要把 Java dex pc 当作 ELF 地址交给 `llvm-symbolizer`。`artDebuggable_getStackFrameAt` 没有可验证的公开接口依据，别把它写进方案。
 
 ### 9. 应用侧崩溃采集的安全边界
 
@@ -913,9 +915,9 @@ Android 17 的 `AndroidUnwinder::Initialize()` 会在 `libart.so` / `libartd.so`
 - 设计重入保护、超时与二次信号策略；
 - 明确如何把信号继续交给系统 debuggerd 或先前注册的处理器。
 
-信号处理器内只复制 `siginfo_t`、`ucontext_t` 和有限的原始字节，再用经过审计的 async-signal-safe 操作通知外部处理者。async-signal-safe 表示函数即使打断了同进程中的其他代码，也不会依赖可能处于不一致状态的锁或全局数据。POSIX 的 `write()` 可作为基础原语；某函数在多数设备没有出过问题，仍不能证明它满足异步信号安全。
+信号处理器内只复制 `siginfo_t`、`ucontext_t` 和有限的原始字节，再用经过审计的 async-signal-safe 操作通知外部处理者。async-signal-safe 表示函数即使打断了同进程中的其他代码，也不会依赖可能处于不一致状态的锁或全局数据。POSIX 的 `write()` 可作为基础原语；一个函数在多数设备上没出过问题，还证明不了它满足异步信号安全。
 
-下面的伪代码只表达职责边界，不能直接当作完整的信号处理器复制：
+下面的伪代码只表达职责划分，别直接当完整的信号处理器复制：
 
 ```cpp
 static volatile sig_atomic_t handling_crash = 0;
@@ -943,7 +945,7 @@ static void FatalSignalHandler(
 
 普通应用无权直接遍历 `/data/tombstones`。Android 12 / API 31 起，应用可从 `ActivityManager.getHistoricalProcessExitReasons()` 查询自己的历史退出记录；当 reason 为 `REASON_CRASH_NATIVE` 时，`ApplicationExitInfo.getTraceInputStream()` 可以返回 protobuf tombstone。
 
-这条路径适合应用在下次启动后补采系统报告，也能减少致命信号现场的工作。它有几个边界：
+这条路径适合应用在下次启动后补采系统报告，也能减少致命信号现场的工作。它也有几点限制：
 
 - 返回值可能为空。系统把 trace 保存在全局环形缓冲区，新记录（包括其他应用的记录）可能覆盖旧记录，调用方必须容错。
 - 它查询的是历史退出，不是让当前崩溃进程继续执行。
@@ -970,17 +972,17 @@ Crashpad / Breakpad 使用 minidump 保存现场，服务端再结合符号文�
 
 PAC（Pointer Authentication Code，指针认证码）会在 arm64 指针的部分高位保存签名，返回地址也可能带有这些位。Android 17 的 `RegsArm64` 确认返回地址已签名后，会按 PAC mask（标出签名位位置的掩码）清除签名位；没有 mask 时，Bionic 构建还可调用 `__bionic_clear_pac_bits()`。`crash_dump` 也会通过 ptrace 的 `NT_ARM_PAC_ENABLED_KEYS` 读取目标线程启用了哪些 PAC 密钥。
 
-离线系统若自己解析原始 LR 而未清除 PAC 位，可能无法把地址匹配到 maps。使用标准 tombstone 的 `rel_pc` 时不应再次手工“去 PAC”，因为系统回溯器已处理架构细节。
+离线系统若自己解析原始 LR 而未清除 PAC 位，可能匹配不到 maps。使用标准 tombstone 的 `rel_pc` 时不需要再手工“去 PAC”，系统回溯器已处理架构细节。
 
-PAC 认证失败的外部表现取决于指令、内核和后续地址使用方式，不能固定写成 `SIGILL`。排查时应结合信号、`si_code`、fault address、PC/LR 和反汇编判断。
+PAC 认证失败的外部表现取决于指令、内核和后续地址使用方式，未必固定写成 `SIGILL`。排查时应结合信号、`si_code`、fault address、PC/LR 和反汇编判断。
 
 #### 10.2 BTI
 
-BTI（Branch Target Identification，分支目标识别）约束间接分支可以跳到哪些指令。它不改变 `runtime_pc -> rel_pc` 的换算公式，也不要求符号服务器给 PC 加减固定字节。怀疑 BTI 违规时，应查看故障指令、ELF GNU property（记录架构特性的属性段）和编译参数，不能只依据栈中出现 `bti` 指令。
+BTI（Branch Target Identification，分支目标识别）约束间接分支可以跳到哪些指令。它不改变 `runtime_pc -> rel_pc` 的换算公式，也不要求符号服务器给 PC 加减固定字节。怀疑 BTI 违规时，应查看故障指令、ELF GNU property（记录架构特性的属性段）和编译参数；只凭栈里出现过 `bti` 指令下不了结论。
 
 #### 10.3 MTE
 
-MTE（Memory Tagging Extension，内存标签扩展）用指针标签和内存标签不匹配来发现非法访问。Android 17 的 `crash_dump` 同时维护可能带标签的 fault address 和去标签后的地址。同步 MTE 会在出错指令附近报告，异步 MTE 可能延后报告，定位精度不同；上传前不能只保留清除过标签的地址。更完整的 MTE/GWP-ASan 诊断与治理见 20.11。
+MTE 用指针标签和内存标签不匹配来发现非法访问。Android 17 的 `crash_dump` 同时维护可能带标签的 fault address 和去标签后的地址。同步 MTE 会在出错指令附近报告，异步 MTE 可能延后报告，定位精度不同；上传前把带标签和去标签的地址都保留下来。更完整的 MTE/GWP-ASan 诊断与治理见 20.11。
 
 #### 10.4 16 KB 页
 
@@ -1022,7 +1024,7 @@ MTE（Memory Tagging Extension，内存标签扩展）用指针标签和内存�
 
 崩溃回溯保存一次故障现场，性能采样则在短时间内收集大量线程现场。Simpleperf 是 Android 原生性能采样工具；其 DWARF 模式需要内核记录用户栈和寄存器，再由 `libunwindstack` 处理。FP 模式开销较低，但要求经过的帧都保留兼容的 frame pointer。Perfetto 可以承载和分析这些系统追踪数据。
 
-发布门禁中的回溯完整性测试也会影响 profiler、GWP-ASan 分配栈和其他诊断工具。不同用途仍要分别评估：崩溃栈完整不能证明高频采样成本可接受，FP 火焰图完整也不能证明 signal frame 与 ART 混合栈都能恢复。
+发布门禁中的回溯完整性测试也会影响 profiler、GWP-ASan 分配栈和其他诊断工具。不同用途仍要分别评估：崩溃栈完整，还说明不了高频采样成本可接受；FP 火焰图完整，也说明不了 signal frame 与 ART 混合栈都能恢复。
 
 ### 14. 错误符号为什么也会“看起来对”
 
@@ -1072,4 +1074,4 @@ MTE（Memory Tagging Extension，内存标签扩展）用指针标签和内存�
 
 ## 小结
 
-Native Crash 的可复核链路是：从 signal、`si_code`、寄存器和 tombstone 保留原始现场，按当前 ABI 和映射恢复调用栈，再用完全匹配的 Build ID 与符号产物还原函数位置，最后才进入聚合、归因和修复验证。信号采集器、回溯器或符号仓库中任何一环缺少版本证据，结果都必须降级为不完整样本。
+我们把 Native Crash 的可复核链路再收一遍：从 signal、`si_code`、寄存器和 tombstone 保留原始现场，按当前 ABI 和映射恢复调用栈，再用完全匹配的 Build ID 与符号产物还原函数位置，最后才进入聚合、归因和修复验证。信号采集器、回溯器或符号仓库中任何一环缺少版本证据，结果都必须降级为不完整样本。

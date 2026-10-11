@@ -106,22 +106,22 @@ last_consolidated_at: '2026-08-24'
 
 # 实验室测试工具与设备 Benchmark
 
-PerfDog、SoloPi 和 Emmagee 采集应用场景中的帧率、CPU、内存和功耗近似信号；设备 Benchmark 测量 CPU、GPU、Web 和存储能力。前者偏场景回归，后者偏设备基线。
+这一章我们讲两类实验室工具。PerfDog、SoloPi 和 Emmagee 采集应用场景中的帧率、CPU、内存和功耗近似信号，偏场景回归；设备 Benchmark 测量 CPU、GPU、Web 和存储能力，偏设备基线。前者回答“这个版本变差了吗”，后者回答“这台机器的能力到哪”。
 
 ## 场景测试、指标采集与自动化
 
 ### PerfDog 的位置：实验室观测工具
 
-PerfDog 是腾讯 WeTest 提供的跨平台性能测试与分析工具。Android 测试不要求被测 App 接入 SDK（Software Development Kit，此处指需嵌入 App 的采集组件），也不要求设备 root（取得系统最高权限），适合下面几类工作：
+PerfDog 是腾讯 WeTest 提供的跨平台性能测试与分析工具。Android 测试既不要求被测 App 接入 SDK，也不要求设备 root，接入成本很低，适合下面几类工作：
 
-- QA（Quality Assurance，此处指测试或质量保障人员）在固定设备和固定脚本上做发版回归。
+- QA 在固定设备和固定脚本上做发版回归。
 - 开发团队快速筛出帧率、CPU、内存、温度或整机功耗异常的时间段。
 - 在拿不到源码时观察第三方 App 或游戏的外部表现。
-- 通过 PerfDog Service（自动化接口服务）或 CLI（命令行工具）接入实验室自动化。
+- 通过 PerfDog Service 或 CLI 接入实验室自动化。
 
-截至 2026 年 8 月 14 日，官网还提供 MCP（Model Context Protocol，让 AI 客户端调用工具的标准接口）与 Skills（封装分析流程和判断规则的规则包）入口。这些入口可以调用数据、触发分析或生成报告，不会改变底层指标的采集口径，即数据来源、计算方式和适用条件；AI 给出的瓶颈判断仍需原始数据和系统 trace（按时间记录的运行轨迹）验证。
+截至 2026 年 8 月 14 日，官网还提供 MCP（Model Context Protocol，让 AI 客户端调用工具的标准接口）与 Skills 入口，可以调用数据、触发分析或生成报告。它们只是调用方式更方便，底层指标的数据来源、计算方式和适用条件都没有变，AI 给出的瓶颈判断仍需原始数据和系统 trace 验证。
 
-它不能代替线上 APM（生产环境中的应用性能监控）。PerfDog 覆盖的是受控环境里的单台或一组设备，线上 APM 负责汇总真实用户、真实网络和设备分布下的长期数据。它也不能仅凭一条外部曲线证明某个函数、线程或缓存策略有问题；根因仍需 Perfetto（Android 系统级时间线工具）、Android Studio、simpleperf（Android native CPU 分析器）、日志或业务埋点提供证据。
+它的定位是受控环境里的单台或一组设备；汇总真实用户、真实网络和设备分布下的长期数据，是线上 APM（生产环境中的应用性能监控）的职责，两者各管一段。同样，一条外部曲线只够圈出可疑时间段，要证明某个函数、线程或缓存策略有问题，我们还要带着 Perfetto、Android Studio、simpleperf、日志或业务埋点继续往下查。这两个分工决定了后面所有用法：先圈区间，再进源码和 trace。
 
 #### Android 的两种设备模式
 
@@ -137,15 +137,15 @@ PerfDog 官方客户端手册把 Android 设备分为“非安装模式”和“
 
 不要把辅助功能、通知读取或 `android.permission.DUMP` 写成所有版本都必须授予的固定清单。不同客户端、Service 版本和所选指标会给出不同提示，应以当前官方安装包和设备页面为准。若某个侧载组件在 Android 13 至 Android 17 上请求辅助功能或通知读取，系统可能显示 Restricted Settings（受限设置，即系统对侧载 App 敏感能力的额外确认页）；只对来源可信、用途已确认的版本开放对应入口，测试结束后撤销不再需要的权限。
 
-#### USB 与 Wi-Fi 的采集条件不能混用
+#### USB 与 Wi-Fi 的采集条件
 
-USB 模式便于保持连接和采集多数指标，但连接线会给设备充电。PerfDog 官方手册明确把 Android 的 Battery Power 放在 Wi-Fi 模式下采集：先通过 USB 建立 Wi-Fi 设备连接，连接成功后拔线，再开始功耗测试。测试报告必须写明连接方式；USB 下的电流或功耗曲线不能和断线后的 Wi-Fi 结果混在同一组基线里。
+USB 模式便于保持连接和采集多数指标，但连接线会给设备充电，功耗数据会失真。所以 PerfDog 官方手册明确把 Android 的 Battery Power 放在 Wi-Fi 模式下采集：先通过 USB 建立 Wi-Fi 设备连接，连接成功后拔线，再开始功耗测试。我们写报告时要注明连接方式，USB 下的电流或功耗曲线单独归档，别和断线后的 Wi-Fi 结果混进同一组基线。
 
 ### 指标范围与可用条件
 
-PerfDog 能显示的字段取决于平台、设备、SoC（System on Chip，集成 CPU、GPU 等模块的系统级芯片）、驱动、测试模式、客户端版本和账号权限。开始测试前，应先查看当前设备的可用指标列表；字段为空时，不要用 `0` 代替“未采集”。
+PerfDog 能显示哪些字段，取决于平台、设备、SoC、驱动、测试模式、客户端版本和账号权限。我们开始测试前先查看当前设备的可用指标列表；字段为空就记“未采集”，不要填 `0`。
 
-下表沿用 PerfDog 的字段名。Surface 指 App 提交图形缓冲区的显示目标；GPU Counter 是 GPU 暴露的硬件计数器。PSS（Proportional Set Size）是按共享比例分摊后的进程物理内存，Swap 是换出到交换区的内存，VSS 是进程占用的虚拟地址空间。TTID（Time to Initial Display）和 TTFD（Time to Full Display）分别表示首次画面与完整画面的显示时间。
+下表沿用 PerfDog 的字段名，几个容易混淆的先说清楚：Surface 是 App 提交图形缓冲区的显示目标，GPU Counter 是 GPU 暴露的硬件计数器。PSS（Proportional Set Size）按共享比例分摊进程物理内存，Swap 是换出到交换区的内存，VSS 是进程占用的虚拟地址空间。TTID（Time to Initial Display）和 TTFD（Time to Full Display）分别衡量首次画面与完整画面的显示时间。
 
 | 指标组 | Android 常见字段 | 解释时必须保留的条件 |
 |---|---|---|
@@ -158,16 +158,16 @@ PerfDog 能显示的字段取决于平台、设备、SoC（System on Chip，集�
 | 网络流量 | 目标进程 Recv、Send | 目标进程、接口、缓存和服务器区域 |
 | 启动 | TTID、TTFD | 冷/温/热启动条件、是否允许工具重新拉起 App |
 
-Android 常规测试里的 Network 指标是目标进程的接收和发送流量。延迟、抖动、丢包与弱网模拟属于 PerfDog 的“网络分析”功能，不能由 `Recv/Send` 两条曲线推导。报告应标明使用的是常规流量指标还是网络分析任务。
+Android 常规测试里的 Network 指标是目标进程的接收和发送流量。延迟、抖动、丢包与弱网模拟属于 PerfDog 的“网络分析”功能，要从 `Recv/Send` 两条曲线推导它们是推导不出来的。报告应标明使用的是常规流量指标还是网络分析任务。
 
 GPU 是最容易出现“设备已连接但字段缺失”的一组数据。PerfDog 官方文档也把 Android GPU Usage 和 GPU Frequency 标为仅支持部分手机，并按 Adreno、Mali、PowerVR 提供不同 Counter 集。由此可得两个使用边界：
 
 - 同一设备、同一驱动上的版本对比价值较高。
 - 跨 SoC 的 GPU 利用率绝对值通常没有可比性，Counter 名称相同也不保证硬件含义相同。
 
-### 帧指标要按 PerfDog 自己的定义阅读
+### PerfDog 的帧指标定义
 
-PerfDog 的 Jank 口径与 Android Vitals（Play Console 的质量指标）、JankStats（应用内帧性能库）、Perfetto FrameTimeline（系统帧时间线）的分类不同。官方客户端手册把固定的 24 FPS 电影帧时长用作第二个门槛，这个门槛不会随手机的 60 Hz、90 Hz 或 120 Hz 刷新率变化：
+读 PerfDog 的 Jank 系列指标前，我们先记住它和 Android Vitals、JankStats、Perfetto FrameTimeline 的分类各是各的，别互相套用。PerfDog 官方客户端手册把固定的 24 FPS 电影帧时长用作第二个门槛，这个门槛不随手机的 60 Hz、90 Hz 或 120 Hz 刷新率变化：
 
 | 指标 | PerfDog 官方判定 |
 |---|---|
@@ -179,11 +179,11 @@ PerfDog 的 Jank 口径与 Android Vitals（Play Console 的质量指标）、Ja
 | 1% Low | 对最慢 1% 帧的平均帧时间取倒数并换算成 FPS |
 | Smooth | PerfDog 的稳帧指数，数值越低越稳定 |
 
-这套定义适合在 PerfDog 报告之间保持一致，却不能直接替换系统 jank 分类。120 Hz 屏幕每帧预算约 8.33 ms，一帧 30 ms 已经错过多个刷新周期，但还没有达到 PerfDog 的 SmallJank 固定门槛。因此，高刷新率测试必须同时保留 FTime 分布、P95/P99（第 95/99 百分位）、1% Low 和连续低帧区间。
+这套定义的价值在于 PerfDog 报告之间口径一致；直接拿它替换系统 jank 分类并不成立。120 Hz 屏幕每帧预算约 8.33 ms，一帧 30 ms 已经错过多个刷新周期，却还没达到 PerfDog 的 SmallJank 固定门槛。所以高刷新率测试必须同时保留 FTime 分布、P95/P99（第 95/99 百分位）、1% Low 和连续低帧区间。
 
 官方对 Smooth 给出的经验值是游戏或视频小于 8、滑动类 App 小于 20。这是 PerfDog 产品指标的建议区间，不是 Android 平台兼容性标准。团队应先用自身机型和场景建立基线，再决定门禁值，也就是自动通过或阻断测试的阈值。
 
-#### 先选对窗口，再谈 FPS
+#### 目标窗口的确认
 
 一个包名可能同时存在 Activity 主窗口、`SurfaceView`、`TextureView`、视频层、游戏渲染层和子进程窗口。选错窗口时，PerfDog 可能显示系统 UI、静止层或与用户所见不一致的帧率。测试开始前至少确认：
 
@@ -192,9 +192,9 @@ PerfDog 的 Jank 口径与 Android Vitals（Play Console 的质量指标）、Ja
 - 游戏、视频、小程序是否使用独立 Surface。
 - 旋转、画中画、弹窗或场景切换后，目标窗口是否发生变化。
 
-PerfDog Service 提供 `getAppWindowsMap` 一类接口，可查询 Android 应用各进程涉及的 Activity 与 SurfaceView。人工核对时也可用 SurfaceFlinger（Android 的系统显示合成服务）的 layer 列表；layer 是参与合成的显示层，其名称属于系统调试信息，不能把名称相似当成归属证据。
+PerfDog Service 提供 `getAppWindowsMap` 一类接口，可查询 Android 应用各进程涉及的 Activity 与 SurfaceView。人工核对时也可以看 SurfaceFlinger 的 layer 列表；layer 是参与合成的显示层，名称属于系统调试信息，名称相似只值得怀疑，还够不上归属证据。
 
-### 测试条件决定结果能否复现
+### 测试条件与可复现性
 
 性能测试的首要产物是可复现的实验记录。每轮开始前固定并记录下面这些条件：
 
@@ -211,20 +211,20 @@ PerfDog Service 提供 `getAppWindowsMap` 一类接口，可查询 Android 应�
 | 操作 | 脚本版本、场景步骤、采集时长、场景标签 |
 | 工具 | PerfDog 客户端/Service 版本、连接模式、已启用指标 |
 
-自动刷新率、自动亮度、游戏加速器、厂商性能模式和后台同步都可能改变结果。测试前不要用“清理全部后台”代替条件说明：系统服务无法被等价清空，过度清理还会制造不符合用户场景的冷缓存。更稳妥的做法是列出允许保留的后台进程，并在各轮之间执行同一套恢复步骤。
+自动刷新率、自动亮度、游戏加速器、厂商性能模式和后台同步都可能改变结果。测试前别用“清理全部后台”代替条件说明：系统服务清不干净，过度清理还会制造不符合用户场景的冷缓存。更稳妥的做法是列出允许保留的后台进程，并在各轮之间执行同一套恢复步骤。
 
-长时游戏或视频至少覆盖热稳定阶段，也就是运行足够久、温度和频率趋于相对稳定的阶段。只取开局一分钟，测到的往往是尚未受温控约束的峰值。每轮开始温度必须落入预设区间；若达不到，应延长冷却时间并记录，不应临时放宽门槛。
+长时游戏或视频至少覆盖热稳定阶段，也就是运行足够久、温度和频率趋于相对稳定的阶段。只取开局一分钟，测到的往往是尚未受温控约束的峰值。每轮开始温度必须落入预设区间；达不到就延长冷却时间并记录，别临时放宽门槛。
 
-### 平均 FPS 不够
+### 平均 FPS 之外的保留指标
 
-平均值会同时掩盖“长期偏低”和“偶发长帧”。P50 是中位数，P95/P99 表示 95%/99% 的样本不超过该值。下面两个 60 秒场景可能得到相近的平均 FPS：
+平均值会同时掩盖“长期偏低”和“偶发长帧”。P50 是中位数，P95/P99 表示 95%/99% 的样本不超过该值。我们看两个 60 秒场景，它们的平均 FPS 可能很接近：
 
 | 场景 | 平均 FPS | FTime P50 | FTime P95 | FTime P99 | 体感线索 |
 |---|---:|---:|---:|---:|---|
 | A：稳定受限 | 45 | 22 ms | 24 ms | 27 ms | 持续不够顺滑，但节奏稳定 |
 | B：多数时间流畅、偶发尖峰 | 56 | 16 ms | 31 ms | 180 ms | 平时顺滑，间歇出现明显停顿 |
 
-场景 B 的平均 FPS 更高，用户仍可能更容易注意到卡顿。一次回归至少保留：
+场景 B 的平均 FPS 更高，用户却可能更容易注意到卡顿。所以一次回归至少保留：
 
 - FPS 的平均值、中位数、1% Low 和稳定区间。
 - FTime 的 P50、P90、P95、P99 和最大值。
@@ -234,11 +234,11 @@ PerfDog Service 提供 `getAppWindowsMap` 一类接口，可查询 Android 应�
 
 P95/P99 若由导出数据离线计算，应在报告中写明脚本版本和空值处理方式，不要伪装成 PerfDog 界面原生字段。
 
-### 功耗、温度和频率要一起看
+### 功耗、温度与频率的联合阅读
 
-PerfDog 的 Android Battery Power 是整机口径，不是目标 App 的独占功耗。屏幕、基带（蜂窝通信模块）、Wi-Fi、后台进程和系统服务都包含在内。对比时应固定亮度、音量、网络、账号数据和后台状态，并使用 Wi-Fi 连接后拔掉 USB。
+PerfDog 的 Android Battery Power 是整机口径，屏幕、基带、Wi-Fi、后台进程和系统服务都包含在内，目标 App 只占其中一部分。对比时我们固定亮度、音量、网络、账号数据和后台状态，并使用 Wi-Fi 连接后拔掉 USB。
 
-`FPower` 在 PerfDog 数据处理中的口径是 `Power / FPS`，界面单位仍为 mW。它用于在相近场景和帧率下做归一化比较，也就是按同一尺度比较功耗；不能把它当作物理单位为焦耳的“单帧能量”。FPS 接近 0、场景静止或两组帧率差距很大时，这个比值也会失去解释力。
+`FPower` 在 PerfDog 数据处理中的口径是 `Power / FPS`，界面单位仍为 mW。它用于在相近场景和帧率下按同一尺度比较功耗；要把它当物理单位为焦耳的“单帧能量”就错了。FPS 接近 0、场景静止或两组帧率差距很大时，这个比值也会失去解释力。
 
 判断热降频时，推荐寻找同一时间轴上的证据组合：
 
@@ -247,7 +247,7 @@ PerfDog 的 Android Battery Power 是整机口径，不是目标 App 的独占�
 3. FTime P95/P99、1% Low 或 Stutter 同步恶化。
 4. 在相同操作标签处，CPU/GPU 负载没有出现能够单独解释退化的新峰值。
 
-单个温度值不等于系统已经限频。不同厂商暴露的传感器名称、安装位置与校准方式不同；同为 `CTemp` 的绝对值也不适合跨设备排名。报告应写起止温度、曲线拐点和系统 thermal status（温控等级），避免只贴峰值。
+判断限频要看组合证据，单个温度值说明不了问题。不同厂商暴露的传感器名称、安装位置与校准方式不同，同为 `CTemp` 的绝对值也不适合跨设备排名。报告写起止温度、曲线拐点和系统温控等级，别只贴峰值。
 
 精确的能耗实验应使用外置功耗仪，并清楚区分电池端、USB 端和整机输入端的测量位置。PerfDog 更适合实验室回归中的相对变化监控。
 
@@ -267,7 +267,7 @@ PerfDog 的 Android Battery Power 是整机口径，不是目标 App 的独占�
 3. 能修改源码时，增加低开销 trace，或使用 Profiler、simpleperf、heap dump（堆内存快照）定位代码。
 4. 对已定位且可自动重放的启动、滑动或列表场景，补 Macrobenchmark 防回归用例。
 
-PerfDog 的 StartupTiming 可观察 TTID/TTFD，但精确启动基准仍要写清冷、温、热启动，并优先由 Macrobenchmark 控制启动模式。两种工具的启动数据可以互证，不能把不同启动条件的数值放在同一列比较。
+PerfDog 的 StartupTiming 可观察 TTID/TTFD，但精确启动基准仍要写清冷、温、热启动，并优先由 Macrobenchmark 控制启动模式。两种工具的启动数据可以互证，放进同一列比较时须保证启动条件一致。
 
 ### 三类使用流程
 
@@ -297,11 +297,11 @@ PerfDog 的 StartupTiming 可观察 TTID/TTFD，但精确启动基准仍要写�
 
 “竞品 A 在同机同场景下 FTime P95 较低”是可验证结论；“竞品 A 使用了更好的缓存算法”只是需继续验证的假设。
 
-### 自动化：固定操作，也固定判废规则
+### 自动化的操作与判废规则
 
-精细回归优先使用 UIAutomator（Android UI 自动化框架）或团队内部的确定性脚本。`monkey` 是随机发送系统与触控事件的测试工具，适合稳定性和探索测试，不适合要求逐轮路径一致的性能对比。
+精细回归优先使用 UIAutomator 或团队内部的确定性脚本。`monkey` 是随机发送系统与触控事件的测试工具，适合稳定性和探索测试，拿到逐轮路径一致的性能对比要靠前者。
 
-PerfDog Service 的公开 gRPC（跨进程远程调用框架）接口覆盖设备初始化、可用指标查询、启停测试、实时数据流、场景标签、保存数据和 Android 窗口查询；当前官网也提供 CLI 与 Service 的 CI/CD（持续集成与交付）入口。接入时应把下面内容纳入脚本：
+PerfDog Service 的公开 gRPC（跨进程远程调用框架）接口覆盖设备初始化、可用指标查询、启停测试、实时数据流、场景标签、保存数据和 Android 窗口查询；当前官网也提供 CLI 与 Service 的 CI/CD（持续集成与交付）入口。接入脚本时，我们把下面这些内容一并纳入：
 
 - 在测试前调用可用指标查询，缺少必填字段就终止该轮。
 - 用 `setLabel` 或等价接口标记场景；不要等测试结束后再凭曲线猜测时间点。
@@ -309,7 +309,7 @@ PerfDog Service 的公开 gRPC（跨进程远程调用框架）接口覆盖设�
 - 停止采集后等待文件写完，再开始清理或下一轮。
 - 给每轮保留原始数据、控制台日志、操作日志和判定结果。
 
-“看起来异常就删掉”会带来选择偏差。应在测试前写明判废条件，例如设备断连、必填指标缺失、脚本步骤失败、App 崩溃或网络环境越界。判废轮次仍保留原始文件和原因；性能差但流程完整的轮次属于结果，不能判废。
+“看起来异常就删掉”会带来选择偏差。我们应在测试前写明判废条件，例如设备断连、必填指标缺失、脚本步骤失败、App 崩溃或网络环境越界。判废轮次仍保留原始文件和原因；性能差但流程完整的轮次属于结果，老老实实计入。
 
 场景文件可采用下面的命名方式：
 
@@ -362,9 +362,9 @@ PerfDog Service 的公开 gRPC（跨进程远程调用框架）接口覆盖设�
 
 模板把设备状态、统计汇总和原始附件放在同一份记录中。团队可增加业务指标，但不应删掉连接方式、起止温度、脚本版本和判废规则。
 
-### Android 17 上如何交叉核验
+### 用 AOSP 源码交叉核验
 
-PerfDog 没有公开 Android 客户端每个指标的完整采集实现，因此无法从公开资料证明“Power 一定调用 PowerStats HAL（Hardware Abstraction Layer，硬件抽象层）”或“FPS 一定通过 `SurfaceFlinger --latency` 获取”。下面的 AOSP（Android Open Source Project，Android 开源项目）接口用于解释系统能够提供什么，并在字段缺失或曲线可疑时做独立核验；它们不代表 PerfDog 闭源实现的调用链。
+PerfDog 没有公开 Android 客户端每个指标的完整采集实现，公开资料证明不了“Power 一定调用 PowerStats HAL（Hardware Abstraction Layer，硬件抽象层）”或“FPS 一定通过 `SurfaceFlinger --latency` 获取”。下面这些 AOSP（Android Open Source Project，Android 开源项目）接口用来解释系统能够提供什么，并在字段缺失或曲线可疑时做独立核验；PerfDog 闭源实现走哪条调用链，以工具厂商的公开说明为准。
 
 下面这些命令用于同机排障，执行前先替换包名和 layer 名称。
 
@@ -377,40 +377,40 @@ adb shell dumpsys powerstats
 adb shell dumpsys meminfo com.example.app
 ```
 
-命令输出也有权限、缓存窗口和厂商实现限制。它们适合确认“系统侧是否有数据”和“变化时间是否一致”，不能要求数值与 PerfDog 一一相等。
+命令输出也有权限、缓存窗口和厂商实现限制，适合确认“系统侧是否有数据”和“变化时间是否一致”；数值与 PerfDog 一一相等是额外的要求，不作为预期。
 
 #### 帧时间：SurfaceFlinger 与 FrameTimeline
 
-Android 17 `android-17.0.0_r1` 中，`SurfaceFlinger.cpp` 把 `--latency` 分派给 `SurfaceFlinger::dumpStats()`。该函数先输出当前 pacesetter VSYNC（SurfaceFlinger 用作节奏参考的垂直同步信号）周期，再按完整 layer 名查找目标并调用 `Layer::dumpFrameStats()`。`Layer.cpp` 随后经 `Layer::getFrameStats()` 从对应 timeline 生成 `desiredPresentTimesNano`、`actualPresentTimesNano` 和 `frameReadyTimesNano` 三列。
+在 `android-17.0.0_r1` 源码中，`SurfaceFlinger.cpp` 把 `--latency` 分派给 `SurfaceFlinger::dumpStats()`。该函数先输出当前 pacesetter VSYNC（SurfaceFlinger 用作节奏参考的垂直同步信号）周期，再按完整 layer 名查找目标并调用 `Layer::dumpFrameStats()`。`Layer.cpp` 随后经 `Layer::getFrameStats()` 从对应 timeline 生成 `desiredPresentTimesNano`、`actualPresentTimesNano` 和 `frameReadyTimesNano` 三列。
 
 这条源码路径能解释几个常见现象：
 
 - layer 名不完全匹配时，输出可能只有刷新周期，没有帧记录。
 - Surface 重建后名称或序列会变化，长时脚本要重新确认目标。
-- `gfxinfo framestats` 主要覆盖 Android UI Toolkit/HWUI（系统 UI 硬件加速渲染管线）参与的帧。直接使用 OpenGL ES、Vulkan、Unity 或 Unreal 的应用可能只有部分数据，Android 官方慢帧文档也明确提示了这一限制。
+- `gfxinfo framestats` 主要覆盖 Android UI Toolkit/HWUI 参与的帧。直接使用 OpenGL ES、Vulkan、Unity 或 Unreal 的应用可能只有部分数据，Android 官方慢帧文档也明确提示了这一限制。
 - Perfetto FrameTimeline 提供预期与呈现时序以及 jank 分类，更适合查“哪一段流水线错过了截止时间”。
 
-`FrameTracer` 是 SurfaceFlinger 内记录部分帧时间戳和 fence（协调 GPU 与显示完成时序的同步对象）事件的模块，但 Android 17 的 `--latency` 路径不能简化成“直接读取 FrameTracer”。
+`FrameTracer` 是 SurfaceFlinger 内记录部分帧时间戳和 fence（协调 GPU 与显示完成时序的同步对象）事件的模块，但 `--latency` 路径把它简化成“直接读取 FrameTracer”并不成立。
 
 #### 温度与限频：`thermalservice`
 
-Android 17 的 framework（系统框架层）实现位于：
+framework 层的实现位于：
 
 `frameworks/base/services/core/java/com/android/server/power/thermal/ThermalManagerService.java`
 
-服务通过 `Context.THERMAL_SERVICE` 发布，服务名是 `thermalservice`，所以核验命令应写成 `adb shell dumpsys thermalservice`。连接 HAL 时，Android 17 依次尝试 AIDL（Android Interface Definition Language，Android 接口定义语言）、Thermal HAL 2.0、1.1 和 1.0 兼容实现。
+服务通过 `Context.THERMAL_SERVICE` 发布，服务名是 `thermalservice`，所以核验命令应写成 `adb shell dumpsys thermalservice`。连接 HAL 时依次尝试 AIDL（Android Interface Definition Language，Android 接口定义语言）、Thermal HAL 2.0、1.1 和 1.0 兼容实现。
 
 AIDL 接口位于：
 
 `hardware/interfaces/thermal/aidl/android/hardware/thermal/IThermal.aidl`
 
-它提供温度、按类型过滤的温度、CoolingDevice（降频、限流或风扇等冷却执行项）、静态阈值和温度变化回调。节流等级位于返回的 `Temperature.throttlingStatus`，并不存在 `getThrottlingStatus()` 这个 HAL 方法。AIDL 注释还强调：设备温控策略可能包含迟滞（阈值上下保留回差，避免状态反复切换）和复合条件，静态阈值不足以准确推断当前节流状态，应读取温度状态或回调。
+它提供温度、按类型过滤的温度、CoolingDevice（降频、限流或风扇等冷却执行项）、静态阈值和温度变化回调。节流等级位于返回的 `Temperature.throttlingStatus`，HAL 里并没有 `getThrottlingStatus()` 这个方法。AIDL 注释还强调：设备温控策略可能包含迟滞（阈值上下保留回差，避免状态反复切换）和复合条件，静态阈值不足以准确推断当前节流状态，应以温度状态或回调为准。
 
-Android 10 引入 framework thermal service 和 Thermal HAL 2.0；Android 14 将 `IThermal` 从 HIDL（旧一代 HAL 接口描述语言）迁移到 AIDL。Android 17 保留旧 HAL 回退是设备兼容策略，不表示每台设备都会暴露 CPU、GPU、NPU 和机身传感器。
+Android 10 引入 framework thermal service 和 Thermal HAL 2.0；Android 14 将 `IThermal` 从 HIDL（旧一代 HAL 接口描述语言）迁移到 AIDL。保留旧 HAL 回退是设备兼容策略，具体某台设备会不会暴露 CPU、GPU、NPU 和机身传感器，还要逐台确认。
 
-#### 能耗：PowerStats 与电池口径不能混为一谈
+#### 能耗：PowerStats 与 Battery Power 的口径
 
-Android 17 的系统服务位于：
+系统服务位于：
 
 `frameworks/base/services/core/java/com/android/server/powerstats/PowerStatsService.java`
 
@@ -418,7 +418,7 @@ Android 17 的系统服务位于：
 
 `android.hardware.power.stats.IPowerStats/default`
 
-若 AIDL/PowerStats HAL 2.0 不可用，framework 回退到 HAL 1.0 JNI wrapper（Java 与 native 代码之间的桥接层）。是否有显示、CPU、GPU、Wi-Fi 等细分项，取决于设备 HAL；`dumpsys powerstats` 没有数据不等于 PerfDog 的整机 Battery Power 必然无数据。
+若 AIDL/PowerStats HAL 2.0 不可用，framework 回退到 HAL 1.0 JNI wrapper（Java 与 native 代码之间的桥接层）。是否有显示、CPU、GPU、Wi-Fi 等细分项，取决于设备 HAL；`dumpsys powerstats` 没有数据，也可能只是这套 HAL 路径没数据，PerfDog 的整机 Battery Power 仍可能正常。
 
 PerfDog 官方把 Android Battery Power 描述为 Wi-Fi 模式下的整机 Current、Voltage 和 Power。PowerStats HAL 则可能提供硬件能量表或子系统累计能量，两者的对象、单位、采样周期和计算过程都可能不同。只有在工具厂商公开采集细节后，才能声明它们存在直接依赖。
 
@@ -426,19 +426,19 @@ PerfDog 官方把 Android Battery Power 描述为 Wi-Fi 模式下的整机 Curre
 
 `dumpsys meminfo <package>` 可核对 PSS 分类，但多进程应用要逐个确认进程，汇总规则也要与 PerfDog 选择项一致。CPU 还要区分 AppCPU/TotalCPU、规范化/未规范化以及采样窗口。
 
-Android 没有向普通工具保证一套跨厂商一致的 GPU 利用率、频率和 Counter API。PerfDog 能否显示这些字段取决于机型适配与驱动接口，不能由 `gfxinfo` 反推出 GPU 使用率；`gfxinfo` 的核心用途是应用图形与帧统计。
+Android 没有向普通工具保证一套跨厂商一致的 GPU 利用率、频率和 Counter API。PerfDog 能否显示这些字段取决于机型适配与驱动接口，`gfxinfo` 也推不出 GPU 使用率，它的核心用途是应用图形与帧统计。
 
 常规 Network 的 Recv/Send 是流量观察。要解释延迟或丢包，需要 PerfDog 网络分析、抓包、服务端日志或受控弱网记录提供额外证据。
 
-### SoloPi：复现工具，不能当作指标的权威来源
+### SoloPi 的复现能力与指标边界
 
 SoloPi 的开源部分提供录制回放、设备侧操作、悬浮窗采样和视觉响应分析，适合 QA 固定复现路径；一机多控（用一套操作同步控制多台设备）的实现并未完整开源。
 
-截至 2026 年 8 月 21 日，GitHub 最新发布为 `v1.0.2`（2026 年 8 月 19 日），对应 `master` 提交 `c83276286183f43d99f35cd52a6e2432bd11c7af`；发布说明只声明悬浮窗授权流程修复。当前源码基线声明 `appVersionName=1.0.2`，仍使用 AGP（Android Gradle Plugin）4.0.2、compile/targetSdk 29 和 NDK 21.1.6352462（native 开发工具链）。它可以作为较新的 APK 基线重新验收，但不能替代 Android 17 / targetSdk 37 下的权限、存储、前台服务、录屏和 16 KB 兼容检查。
+截至 2026 年 8 月 21 日，GitHub 最新发布为 `v1.0.2`（2026 年 8 月 19 日），对应 `master` 提交 `c83276286183f43d99f35cd52a6e2432bd11c7af`；发布说明只声明悬浮窗授权流程修复。当前源码基线声明 `appVersionName=1.0.2`，仍使用 AGP（Android Gradle Plugin）4.0.2、compile/targetSdk 29 和 NDK 21.1.6352462（native 开发工具链）。它可以作为较新的 APK 基线重新验收；Android 17 / targetSdk 37 下的权限、存储、前台服务、录屏和 16 KB 兼容检查是另一回事，得重新来。
 
-讨论兼容时要分开两个问题：当前 target 29 APK 能否在某台 API 37 设备运行，以及源码升级到 targetSdk 37 后能否满足现代规则。前者只证明一组 APK、系统镜像与厂商策略共同可用，不能替代后者的构建、权限、前台服务、存储和 16 KB 验收。
+讨论兼容时我们分开两个问题：当前 target 29 APK 能否在某台 API 37 设备运行，以及源码升级到 targetSdk 37 后能否满足现代规则。前者只证明一组 APK、系统镜像与厂商策略共同可用；后者那套构建、权限、前台服务、存储和 16 KB 验收，仍要逐项做。
 
-#### Android 17 准入项
+#### 准入验收项
 
 | 关卡 | 通过条件 | 失败信号 |
 |---|---|---|
@@ -453,7 +453,7 @@ SoloPi 的开源部分提供录制回放、设备侧操作、悬浮窗采样和�
 
 SoloPi 会通过反射调用非 SDK（未公开）接口 `AccessibilityNodeInfo.getSourceNodeId()` 来构建节点 ID，调用失败后多个节点可能都降级为 0；录屏能力还涉及 MediaProjection、`mediaProjection` 前台服务类型与 API 34+ 专用权限。迁到 targetSdk 37 时应使用公开资源 ID、类名、文本、描述、窗口和边界组合定位节点，且每次捕获都重新获得用户授权。
 
-#### 字段口径必须逐项标注
+#### 字段口径的逐项标注
 
 | 字段 | 公开源码路径 | 使用边界 |
 |---|---|---|
@@ -465,13 +465,13 @@ SoloPi 会通过反射调用非 SDK（未公开）接口 `AccessibilityNodeInfo.
 | 视觉响应 | MediaProjection 录屏 + 图像差异 | 点击到画面稳定，不是系统 TTID/TTFD |
 | 电流/功率 | BatteryManager 与历史 sysfs（`/sys` 下的内核设备接口）路径 | 设备级数据，单位、符号和传感器需实测 |
 
-每个结果都要标注 `verified`（已核验）、`degraded`（降级）、`unavailable`（不可用）或 `unknown`（未知）中的一种。字段有值不代表语义正确，脚本跑完也不能掩盖其中一项失效。视觉响应可以作为用户体验的补充；系统启动由 Macrobenchmark 的 TTID/TTFD 与 `reportFullyDrawn()` 单列。
+每个结果都要从 `verified`、`degraded`、`unavailable`、`unknown` 里选一个标注，分别表示已核验、降级、不可用、未知。字段有值只说明采到了数，语义对不对要另外确认；脚本跑完，其中一项失效照样算失效。视觉响应可以作为用户体验的补充；系统启动由 Macrobenchmark 的 TTID/TTFD 与 `reportFullyDrawn()` 单列。
 
 录制回放的性能价值来自路径一致性。固定数据、账号、刷新率和动画，使用状态等待替代固定 sleep（无条件暂停）；正式轮次前先跑正确性，通过后再启用 PerfDog、Macrobenchmark 或 Perfetto。回放失败率与性能结果分开统计，避免把等待控件超时当成 App 变慢。
 
-### Emmagee：只用于解释历史报告
+### Emmagee 的历史定位
 
-Emmagee `V2.5.1` 发布于 2017 年 8 月 25 日，上游 `master` 最后提交于 2018 年 3 月 16 日，README 已明确 Android 7.0 不受支持。其目标 PID、TopActivity（前台 Activity）、CPU、PSS、流量和电流依赖受限的进程枚举、`/proc`、跨 UID API、旧 sysfs 或 Root shell（具有 root 权限的命令环境）；这些限制会破坏整条采样链，不存在 Android 17 上“降低精度后继续使用”的可靠路线。
+Emmagee `V2.5.1` 发布于 2017 年 8 月 25 日，上游 `master` 最后提交于 2018 年 3 月 16 日，README 已明确 Android 7.0 不受支持。其目标 PID、TopActivity（前台 Activity）、CPU、PSS、流量和电流依赖受限的进程枚举、`/proc`、跨 UID API、旧 sysfs 或 Root shell（具有 root 权限的命令环境）；这些限制会破坏整条采样链，在 Android 17 上找一条“降低精度后继续使用”的可靠路线是找不到的。
 
 旧 CSV 只能在原工具、原版本、相近设备与系统条件下阅读。缺少版本和口径时，把数值作为背景材料，不重新接入、补跑或与 PerfDog/SoloPi 当前字段直接换算。
 
@@ -499,23 +499,23 @@ Emmagee `V2.5.1` 发布于 2017 年 8 月 25 日，上游 `master` 最后提交�
 
 ## 设备能力基线与跨设备比较
 
-场景工具发现应用回归后，设备 Benchmark 可解释硬件能力差异。不同版本、温度和系统策略下的分数不能直接比较。
+场景工具发现应用回归后，我们还要回答“是这台设备不行，还是这个版本不行”，设备 Benchmark 补上的就是硬件能力这一半。先说读分数的前提：不同版本、温度和系统策略下的分数要分开看，直接放在一起比会得出错误结论。
 
-### 先把设备基线和 App 数据分开
+### 设备基线与 App 数据的分工
 
-Benchmark（基准测试）用统一任务测量设备在特定条件下的表现。本文所说的设备基线，是在固定工具、版本和环境下保存的设备参照数据。Geekbench、3DMark、PCMark、安兔兔和 Speedometer 给设备施加固定负载，用于描述 CPU、GPU、存储或浏览器执行路径的能力。线上 APM（生产环境中的应用性能监控）、Macrobenchmark（Jetpack 宏基准测试）和业务场景 trace（按时间记录的运行轨迹）描述 App 在指定版本、账号、网络和数据规模下的体验。两类数据可以互相解释，不能互相替代。
+Benchmark（基准测试）用统一任务测量设备在特定条件下的表现；本文所说的设备基线，是在固定工具、版本和环境下保存的设备参照数据。Geekbench、3DMark、PCMark、安兔兔和 Speedometer 给设备施加固定负载，描述 CPU、GPU、存储或浏览器执行路径的能力；线上 APM、Macrobenchmark 和业务场景 trace 描述 App 在指定版本、账号、网络和数据规模下的体验。两类数据各回答一半问题，放在一起互相解释才有价值，单拿一类都会丢掉另一半。
 
-下面三种说法都越过了证据边界：
+下面三种说法都把结论下过了头：
 
 - “Geekbench 单核高，所以 App 冷启动一定快。”
 - “3DMark 稳定性高，所以列表滚动一定稳定。”
 - “安兔兔总分高，所以 SQLite 事务一定快。”
 
-更稳妥的表达是：某项设备分数提示了可能的资源上限；要判断它是否限制当前 App，还要用启动、帧时间、I/O（Input/Output，输入输出，此处主要指存储读写）、内存和功耗数据验证。
+更稳妥的表达是：某项设备分数提示了可能的资源上限；它是否真的限制当前 App，还要用启动、帧时间、I/O、内存和功耗数据验证。
 
-### 版本号决定分数能不能比较
+### 版本号与分数可比性
 
-测试报告至少要记录三个版本：Benchmark 应用版本、应用内测试项目版本、被测系统与驱动版本。只写“3DMark 最新版”或“Geekbench 6”不足以复现结果。
+分数能不能比较，先看版本号。测试报告至少要记录三个版本：Benchmark 应用版本、应用内测试项目版本、被测系统与驱动版本；只写“3DMark 最新版”或“Geekbench 6”是复现不了结果的。
 
 截至 2026 年 8 月 14 日，各工具的公开版本与比较规则如下。表中的 workload 指工具内一组固定的测试任务：
 
@@ -547,13 +547,13 @@ Geekbench 7 于 2026 年 7 月 23 日发布。当前设备库若已积累大量 
 
 分数命名也要带上工具语义。`gpu_score` 这样的字段会把 Geekbench Compute 和 3DMark Graphics 混在一起，建议写成 `gb7_vulkan_compute`、`3dmark_wild_life_v1_score` 和 `3dmark_wild_life_stability`。字段名中的工具、大版本、测试和 API 共同说明分数来自哪套规则。
 
-### Geekbench：把分数理解为代理变量
+### Geekbench 分数作为代理变量
 
-代理变量是间接反映目标能力的信号。它可以帮助提出假设，不能替代 App 自身的直接测量。
+代理变量是间接反映目标能力的信号，帮我们提出假设；验证假设还是要靠 App 自身的直接测量。
 
 #### Geekbench 6 的单核分数由什么组成
 
-Geekbench 6 的公开内部文档说明，CPU 总分由 integer（整数）和 floating-point（浮点）两部分加权，权重分别为 65% 和 35%；各子测试先按参考系统归一化，也就是换算到统一基准，再组合成分数。分数翻倍表示这套 Benchmark 工作负载中的性能翻倍，不表示任意 App 代码都快一倍。
+Geekbench 6 的公开内部文档说明，CPU 总分由 integer（整数）和 floating-point（浮点）两部分加权，权重分别为 65% 和 35%；各子测试先按参考系统归一化，也就是换算到统一基准，再组合成分数。分数翻倍只在这套 Benchmark 工作负载内成立，推到任意 App 代码都快一倍就过了。
 
 下表把公开工作负载映射到 Android 工程问题。表中的“可提出假设”只用于确定下一步测量方向：
 
@@ -566,27 +566,27 @@ Geekbench 6 的公开内部文档说明，CPU 总分由 integer（整数）和 f
 | Photo Library / Photo Editor | 图片编解码、SQLite、图像处理及部分 ML | 相册扫描、缩略图生成或编辑可能受 CPU、内存和指令集影响 | 复用业务图片格式、分辨率和模型做 Macrobenchmark 或业务基准 |
 | Clang、Text Processing、Asset Compression | 编译、正则、SQLite、纹理及几何资产压缩 | 文本处理、开发工具或图形资源处理流程可能有相近计算特征 | 对业务库直接基准；不要把 Text Processing 等同于 JSON 解析 |
 
-“单核分数影响 JSON 解析”这个判断过于确定。Geekbench 6 没有以你的 JSON 库、序列化模型和数据规模运行；它只能给出通用单线程容量线索。JSON、protobuf（二进制序列化格式）、XML inflate（从布局 XML 创建 View）、Compose measure/layout（测量与布局）和 `RecyclerView` bind（把数据绑定到列表项）仍要分别测量。I/O 等待、锁竞争或 Binder 往返占比高时，单核分数的解释力会更弱。
+“单核分数影响 JSON 解析”这个判断过于确定。Geekbench 6 没有用你的 JSON 库、序列化模型和数据规模运行，只能给出通用单线程容量线索；JSON、protobuf（二进制序列化格式）、XML inflate（从布局 XML 创建 View）、Compose measure/layout（测量与布局）和 `RecyclerView` bind（把数据绑定到列表项）仍要分别测量。I/O 等待、锁竞争或 Binder 往返占比高时，单核分数的解释力会更弱。
 
-ARM 设备还可能按运行时能力使用 AES、SHA、FP16、Dot Product、I8MM 等加密、半精度浮点、点积或整数矩阵指令。两个设备的分差有时来自特定指令路径，而业务实现未必走同一条路径。跨 SoC（System on Chip，系统级芯片）解释子项时，要核对 App 使用的库、ABI（Application Binary Interface，应用二进制接口，例如 `arm64-v8a`）、编译选项和硬件加速路径。
+ARM 设备还可能按运行时能力使用 AES、SHA、FP16、Dot Product、I8MM 等加密、半精度浮点、点积或整数矩阵指令。两个设备的分差有时来自特定指令路径，而业务实现未必走同一条路径。跨 SoC 解释子项时，我们要核对 App 使用的库、目标 ABI（例如 `arm64-v8a`）、编译选项和硬件加速路径。
 
-#### 多核分数不是“所有核心相加”
+#### 多核分数的 shared-task 模型
 
 Geekbench 6 相对 Geekbench 5 改用 shared-task（共享任务）模型，让多个线程协作处理同一批任务，纳入线程协调和共享数据带来的成本。2026 年 7 月 23 日发布的 Geekbench 7 又调整了规则：只有在对应现实任务适合并行时才进入多线程套件，例如其 HTML5 Browser 不进入多线程测试。
 
-因此，GB6 和 GB7 的多核分数都不能直接回答“App 开八个线程会快多少”。要先检查任务依赖、可并行比例、调度优先级、线程池拥塞和内存带宽。主线程上的串行关键路径不会因多核总分高而自动缩短。
+所以“App 开八个线程会快多少”这个问题，GB6 和 GB7 的多核分数都直接回答不了。我们先检查任务依赖、可并行比例、调度优先级、线程池拥塞和内存带宽；主线程上的串行关键路径，并不会因多核总分高而自动缩短。
 
-#### Compute 分数不等于图形帧率
+#### Compute 分数的适用范围
 
-Geekbench 6 的 GPU Benchmark 通过 Vulkan 或 OpenCL 运行计算工作负载，并将子项组合成 Compute 分数。它适合为图像处理、部分 ML（Machine Learning，机器学习）、视频处理或通用 GPU 计算提出容量假设。
+Geekbench 6 的 GPU Benchmark 通过 Vulkan 或 OpenCL 运行计算工作负载，并将子项组合成 Compute 分数。它适合为图像处理、部分 ML、视频处理或通用 GPU 计算提出容量假设。
 
 游戏和 Android UI 还涉及顶点与像素着色、光栅化、纹理、内存带宽、SurfaceFlinger 合成、显示刷新和帧调度。Compute 分数没有覆盖从 App 生成帧到屏幕显示的完整流程。分析渲染问题时应改看 3DMark Graphics、Perfetto、FrameTimeline 和 App 自身帧数据。
 
-### 3DMark：峰值、持续性能和温控要一起看
+### 3DMark 的峰值、持续性能与温控
 
 #### 选择设备能稳定完成的测试
 
-3DMark Android 会根据设备能力推荐测试。Android 17 项目常见选择如下：
+3DMark Android 会根据设备能力推荐测试，本项目常见的几种如下：
 
 | 测试 | 适用对象 | 读取结果时的重点 |
 |---|---|---|
@@ -596,54 +596,54 @@ Geekbench 6 的 GPU Benchmark 通过 Vulkan 或 OpenCL 运行计算工作负载�
 | Solar Bay | Android 12+、4 GB RAM，并支持 Vulkan 1.1 ray query 的设备 | ray query 是查询光线与场景相交结果的光追能力；它不覆盖普通设备，也不代表传统栅格化帧率 |
 | Sling Shot / Sling Shot Extreme | 旧设备与历史 OpenGL ES 数据 | 只维护历史序列，不与 Wild Life 或新测试换算 |
 
-标准测试、Extreme、Stress 和 Unlimited（离屏，即不受设备屏幕分辨率限制）模式是不同负载。即使名称相近，也要分别存储，不能只保留一个 `3dmark_score`。
+标准测试、Extreme、Stress 和 Unlimited（离屏，即不受设备屏幕分辨率限制）模式是不同负载，即使名称相近也要分别存储，只留一个 `3dmark_score` 会丢掉模式信息。
 
 #### Stability 需要和帧率共同解释
 
-Wild Life 的普通 Benchmark 用于观察短时间高性能；Stress Test 连续运行二十轮，每轮称为一个 loop，用于观察性能和温度随时间的变化。UL 在 PC 版 Stress Test 结果页给出了 Frame Rate Stability 的定义：最低循环平均帧率除以最高循环平均帧率，再乘以 100%。Android Wild Life 的官方说明则更强调二十轮曲线。移动端报告应保存应用显示的 stability 和整条曲线，不要把 PC 页面给出的 97% pass 条件照搬成 App 的产品门槛。
+Wild Life 的普通 Benchmark 用于观察短时间高性能；Stress Test 连续运行二十轮，每轮称为一个 loop，用于观察性能和温度随时间的变化。UL 在 PC 版 Stress Test 结果页给出了 Frame Rate Stability 的定义：最低循环平均帧率除以最高循环平均帧率，再乘以 100%；Android Wild Life 的官方说明则更强调二十轮曲线。移动端报告保存应用显示的 stability 和整条曲线即可，PC 页面给出的 97% pass 条件属于 PC 产品口径，照搬成 App 的产品门槛并不合适。
 
 这个比例有两个容易忽略的边界：
 
 - 98% stability 可能来自“每一轮都只有较低帧率”，说明稳定但不够快。
 - 很高的首轮帧率配合 65% stability 可能说明峰值强、持续性能弱。
 
-报告至少同时列出 best loop（最高轮）、worst loop（最低轮）、stability、每轮帧率曲线和热状态。若要解释游戏体验，还要在游戏自身固定场景中采集帧时间、CPU/GPU 频率、功耗和温控事件。
+报告至少同时列出 best loop（最高轮）、worst loop（最低轮）、stability、每轮帧率曲线和热状态。要解释游戏体验，还要在游戏自身固定场景中采集帧时间、CPU/GPU 频率、功耗和温控事件。
 
-#### 热数据不要只抄一个温度
+#### 热数据的记录方式
 
-Android 17 平台的 `ThermalManagerService` 聚合 Thermal HAL（Hardware Abstraction Layer，硬件抽象层）上报并维护当前 thermal status（温控等级），`PowerManager.getCurrentThermalStatus()` 向应用提供从 `NONE` 到 `SHUTDOWN` 的状态。`THERMAL_STATUS_NONE` 只表示当前没有进入节流状态，不表示设备已经回到相同初始温度。
+平台的 `ThermalManagerService` 聚合 Thermal HAL 上报并维护当前 thermal status（温控等级），`PowerManager.getCurrentThermalStatus()` 向应用提供从 `NONE` 到 `SHUTDOWN` 的状态。`THERMAL_STATUS_NONE` 只说明当前没有进入节流状态，设备是否回到相同初始温度还要另行确认。
 
-内核侧以 `android17-6.18-2026-06_r6` 为源码锚点。Linux thermal sysfs（`/sys` 下的内核设备接口）文档说明，`thermal_zone` 暴露当前温度与 trip point（触发温控动作的阈值），cooling device（降频、限流或风扇等冷却执行项）参与温控。量产设备对传感器名称、可见性和温度标定的实现不同，不能把两个厂商的 `thermal_zone0` 数值直接横向比较。
+内核侧以 `android17-6.18-2026-06_r6` 为源码锚点。`/sys` 下的内核设备接口 thermal sysfs 文档说明，`thermal_zone` 暴露当前温度与 trip point（触发温控动作的阈值），cooling device（降频、限流或风扇等冷却执行项）参与温控。量产设备对传感器名称、可见性和温度标定的实现不同，两个厂商的 `thermal_zone0` 数值直接横向比较没有意义。
 
 温控测试更适合记录同一设备的相对变化：起始表面温度、每轮温度或 thermal status、首轮到稳定轮的性能衰减，以及冷却回基线所需时间。
 
-### PCMark：工作负载比总分更有解释力
+### PCMark 工作负载与总分
 
 PCMark Android 3.1.4113 是当前应用版本，Work 3.0 包含 Web Browsing、Video Editing、Writing、Photo Editing 和 Data Manipulation；Storage 2.0 覆盖内部存储、外部存储和 SQLite 数据库操作。
 
 这些子项比总分更接近 Android 业务，但仍需注意实现差异：
 
 - Web Browsing 3.0 使用系统 Android WebView。系统更新后，即使 PCMark 应用版本不变，执行引擎也可能变化，因此要记录 `com.google.android.webview` 或设备实际 WebView provider（提供 WebView 实现的应用包）版本。
-- Video Editing 3.0 使用 `MediaCodec`、ExoPlayer 和 OpenGL ES 2.0。它反映一套固定的媒体处理流程，不代表 App 的编解码参数、滤镜和文件格式。
-- Writing 3.0 使用 Android `EditText` 与 `PdfDocument`。它适合作为文档工作负载背景，不能替代业务编辑器测量。
+- Video Editing 3.0 使用 `MediaCodec`、ExoPlayer 和 OpenGL ES 2.0，反映一套固定的媒体处理流程；App 的编解码参数、滤镜和文件格式要另行测量。
+- Writing 3.0 使用 Android `EditText` 与 `PdfDocument`，适合作为文档工作负载背景；业务编辑器仍要单独测量。
 - Storage 2.0 的 Database 子项使用 SQLite，但 App 的 schema（表、列和约束的结构）、index（索引）、transaction（事务）、WAL（Write-Ahead Logging，预写式日志）、文件系统和缓存状态都会改变结果。
 
-PCMark 3.1 发布说明指出，3.1 与 3.0 总体分数大致可比，同时明确建议在相同 workload 版本间比较。工程回归应遵守更严格的后一句：版本或 workload 变化就切分时间序列。Work 3.0、Storage 2.0 也不能与 Work 2.0、Storage 1.0 混比。
+PCMark 3.1 发布说明指出，3.1 与 3.0 总体分数大致可比，同时明确建议在相同 workload 版本间比较。工程回归应遵守更严格的后一句：版本或 workload 变化就切分时间序列。Work 3.0、Storage 2.0 与 Work 2.0、Storage 1.0 同样分开，不放在同一序列里。
 
-### 存储专项 Benchmark：协议比工具名重要
+### 存储专项 Benchmark 的协议
 
-存储工具只能描述“这台设备在这套路径、参数和缓存状态下”的 I/O 背景，不能指出 App 哪个文件、线程或 SQL 慢，也不能证明一次 `write()` 已经持久化到闪存。从分数到业务结论还要补 App 路径、调用栈、事务、查询计划与用户场景。
+存储工具描述的是“这台设备在这套路径、参数和缓存状态下”的 I/O 背景；App 哪个文件、线程或 SQL 慢，一次 `write()` 有没有持久化到闪存，都要另外取证。从分数到业务结论，中间还要补 App 路径、调用栈、事务、查询计划与用户场景。
 
 #### AndroBench、A1 SD Bench 与现代替代
 
 AndroBench 可公开核对的协议源于 2011 年：顺序读文件 32 MB、写文件 2 MB，随机测试使用 4 KiB 操作，每项三轮平均。这样的文件规模很容易被 page cache（内核把近期文件内容保留在内存中的页缓存）、write buffer（暂存待写数据的缓冲区）和设备只能短时间维持的高吞吐主导。A1 SD Bench 公开描述了 Quick、Longer、Accurate、Random I/O、RAM、SD/USB 与自定义路径，但没有足够信息说明 cache、同步、block size、预分配和汇总算法。
 
-两者保留用于解释历史报告，不作为 Android 17 新设备库的默认基线。因历史连续性而补测时，要保存 APK 版本、文件 hash（用于识别文件内容的指纹）、模式和全部参数。
+两者保留用于解释历史报告，新设备库的默认基线另选现代工具。因历史连续性而补测时，要保存 APK 版本、文件 hash（用于识别文件内容的指纹）、模式和全部参数。
 
 现代设备实验室优先选择协议可审计的工具或业务自建基准：
 
 - CPDT（Cross Platform Disk Test）可以配置文件大小、4 KiB random、write buffering（写入缓冲）与 in-memory caching（内存缓存），并导出时序；仍需固定源码版本，并先验证该版本能否在 API 37 上正确运行。
-- PCMark Storage 2.0 提供内部、外部与 SQLite 的组合 workload，但输出仍是工作负载分数，不代表 UFS（Universal Flash Storage，移动设备常用的闪存接口）设备本身的原始吞吐。
+- PCMark Storage 2.0 提供内部、外部与 SQLite 的组合 workload，但输出仍是工作负载分数；UFS（Universal Flash Storage，移动设备常用的闪存接口）设备本身的原始吞吐要另测。
 - 最能预测真实表现的方案，是在目标 App 实际目录中复用相同文件格式、SQLite schema、事务、同步语义和线程模型。
 
 #### 四类指标与必要参数
@@ -657,7 +657,7 @@ IOPS（Input/Output Operations Per Second）表示每秒完成的 I/O 次数，l
 | 随机读 IOPS/latency | block、范围、QD、线程、分布 | 小块读取与索引背景 | 目录扫描和反序列化 CPU |
 | 随机写 IOPS/latency | 上述参数 + 同步频率和预分配 | 数据库日志与元数据更新风险 | 业务事务设计是否合理 |
 
-IOPS 不带 block size 和 QD 没有工程意义。吞吐越高越好，较差的结果落在数值偏低的一侧，多轮报告应看 median（中位数）与 P10（第 10 百分位）；latency 越低越好，单次操作可看 p50、p95 和 p99。MAD（median absolute deviation，中位数绝对偏差）描述样本相对中位数的离散程度。只有五轮时，分位数还不稳定，宜报告 median、min/max 与 MAD。
+IOPS 不带 block size 和 QD 没有工程意义。吞吐越高越好，较差的结果落在数值偏低的一侧，多轮报告看 median（中位数）与 P10（第 10 百分位）；latency 越低越好，单次操作看 p50、p95 和 p99。MAD（median absolute deviation，中位数绝对偏差）描述样本相对中位数的离散程度。只有五轮时分位数还不稳定，宜报告 median、min/max 与 MAD。
 
 #### 路径、缓存与持久化语义
 
@@ -670,46 +670,46 @@ IOPS 不带 block size 和 QD 没有工程意义。吞吐越高越好，较差�
 | SD / USB | 卷、文件系统、读卡器和授权 | 不只代表卡片本身 |
 | RAM | 内存复制或内存文件 | 不进入闪存排名 |
 
-普通 buffered write 返回时，数据可能只进入 page cache。`fsync`、`fdatasync` 等调用要求内核在返回前将相关数据写到存储设备，`fsync` 还会处理恢复文件所需的元数据；测试协议没有同步步骤时，不能宣称写入已经安全持久化。
+普通 buffered write 返回时，数据可能还只停留在 page cache 里。`fsync`、`fdatasync` 等调用要求内核在返回前将相关数据写到存储设备，`fsync` 还会处理恢复文件所需的元数据；测试协议没有同步步骤时，宣称写入已经安全持久化就站不住。
 
-cold read（缓存中没有目标数据）、warm read（缓存中已有数据）和 reboot 后首次读取是三组不同实验；量产 user build（面向普通用户的系统构建）不应为跑分操作 `drop_caches`（主动清空内核缓存）。剩余空间、文件系统 GC（回收无效存储块）、discard（通知存储设备哪些块可回收）、加密、温度、后台媒体扫描和系统更新都要记录。
+cold read（缓存中没有目标数据）、warm read（缓存中已有数据）和 reboot 后首次读取是三组不同实验；量产 user build（面向普通用户的系统构建）上为跑分操作 `drop_caches`（主动清空内核缓存）并不合适。剩余空间、文件系统 GC、discard、加密、温度、后台媒体扫描和系统更新都要记录，GC 负责回收无效存储块，discard 通知存储设备哪些块可回收。
 
-SQLite 分数也使用工具自己的表、索引、journal（事务日志）和 transaction。业务验证要检查批量写是否放在同一 transaction，并记录 WAL、`synchronous`（写入持久化强度）、checkpoint（把 WAL 内容合并回主数据库）、N+1 查询（一次主查询后又逐行追加查询）、索引和 `EXPLAIN QUERY PLAN`（查看 SQLite 查询计划）。测试应使用真实数据记录 p50/p95 latency 与 rows scanned（实际扫描的行数）。
+SQLite 分数也使用工具自己的表、索引、journal 和 transaction。业务验证要检查批量写是否放在同一 transaction，并记录 WAL、`synchronous`、checkpoint、N+1 查询、索引和 `EXPLAIN QUERY PLAN`；checkpoint 指把 WAL 内容合并回主数据库，N+1 查询指一次主查询后又逐行追加查询。测试用真实数据记录 p50/p95 latency 与 rows scanned（实际扫描的行数）。
 
 存储 Benchmark 只提供设备背景。Perfetto 的 database/文件系统事件、Matrix IO Canary（辅助定位主线程等 I/O 问题的 Android 工具）或 StrictMode（发现主线程磁盘与网络访问的系统诊断机制）可以给出发生时间和调用位置，再用 A/B 业务测试（保持其他条件一致，比较修改前后）验证效果。比如，先发现设备随机写较慢，再由 trace 定位启动主线程的重复小写入，最后验证改成后台批量写后 P95 回落，才形成较完整的证据链；单张跑分截图做不到。
 
-### 安兔兔：总分只保留为沟通标签
+### 安兔兔总分的沟通定位
 
-安兔兔 V11 包含 CPU、GPU、MEM（内存）和 UX（用户交互体验）等组合测试。官方 V11 公测说明明确写出，V11 因测试项调整不能与 V10 比较，并给出 27℃±1℃、电量 80% 以上、亮度 300 nit 的示例测试条件；nit 是屏幕亮度常用单位，1 nit 等于 1 cd/m²。这里的条件说明跑分对环境敏感，不表示所有团队都必须采用相同电量。
+安兔兔 V11 包含 CPU、GPU、MEM（内存）和 UX（用户交互体验）等组合测试。官方 V11 公测说明明确写出，V11 因测试项调整与 V10 不可比，并给出 27℃±1℃、电量 80% 以上、亮度 300 nit 的示例测试条件；nit 是屏幕亮度常用单位，1 nit 等于 1 cd/m²。这些条件说明跑分对环境敏感；各团队采用什么电量，按自己的测试规范定即可。
 
 若产品、测试和市场已经习惯用安兔兔总分描述设备档位，可以保留总分，但设备字典还要保存大版本和子项。工程排查从相关子项开始：
 
 - 启动慢优先检查 CPU 单线程、存储和 App 启动 trace。
 - 游戏掉帧优先检查 GPU 子项、持续性能和游戏帧时间。
 - 数据库慢优先检查存储与业务 SQL，不从 UX 总分推断。
-- 后台恢复或 OOM（Out Of Memory，内存耗尽）优先检查物理内存、进程状态和 App 内存峰值。
+- 后台恢复或内存耗尽优先检查物理内存、进程状态和 App 内存峰值。
 
 两个设备总分相近时，一个可能是 CPU 强、存储弱，另一个是 CPU 弱、GPU 强。总分把不同资源结构压成一个数，会隐藏 App 所依赖的那一维。
 
-### Speedometer：浏览器分数不能代替 WebView 实测
+### Speedometer 与 WebView 实测的分工
 
-Speedometer 3.1 通过模拟用户操作，测量 TodoMVC（一组用不同前端技术实现的待办事项示例应用）、富文本编辑器、图表和新闻站点等 Web 应用负载的响应性。它不测网络吞吐，也不覆盖 Web Worker（在后台线程执行 JavaScript 的浏览器机制）中并发异步工作的完整成本；官方还明确说明，不能用它比较 JavaScript 框架优劣。
+Speedometer 3.1 通过模拟用户操作，测量 TodoMVC（一组用不同前端技术实现的待办事项示例应用）、富文本编辑器、图表和新闻站点等 Web 应用负载的响应性。它既不测网络吞吐，也不覆盖 Web Worker（在后台线程执行 JavaScript 的浏览器机制）中并发异步工作的完整成本；官方还明确说明，它也评不出 JavaScript 框架的优劣。
 
-Android 上用 Chrome 跑出的分数描述“这台设备 + 这个 Chrome 版本 + 当前配置”的浏览器路径。App 内 WebView 的 provider、版本、启动方式、缓存、JS bridge（JavaScript 与原生代码之间的调用接口）、页面资源和进程模型都可能不同。需要判断 App 的 Web 页面时，建议补一套受控 WebView 容器，固定 provider 与页面资源，并采集 WebView/Chromium trace。
+Android 上用 Chrome 跑出的分数描述“这台设备 + 这个 Chrome 版本 + 当前配置”的浏览器路径。App 内 WebView 的 provider、版本、启动方式、缓存、JS bridge（JavaScript 与原生代码之间的调用接口）、页面资源和进程模型都可能不同。要判断 App 的 Web 页面，我们建议补一套受控 WebView 容器，固定 provider 与页面资源，并采集 WebView/Chromium trace。
 
-Speedometer 官方建议使用最新稳定浏览器、干净 profile（不受扩展、历史缓存和自定义设置干扰的独立用户配置）、关闭其他标签页和后台程序、保持页面前台，并在两次测试间按需冷却。移动设备测试还要把充电状态记入报告；若团队选择不充电以避开发热，也可以，但同一比较组必须保持一致。
+Speedometer 官方建议使用最新稳定浏览器、干净 profile（不受扩展、历史缓存和自定义设置干扰的独立用户配置）、关闭其他标签页和后台程序、保持页面前台，并在两次测试间按需冷却。移动设备测试还要把充电状态记入报告；团队若选择不充电以避开发热也可以，同一比较组内保持一致即可。
 
-### Vellamo：冻结历史，不推断“当前版本”
+### Vellamo 的历史数据冻结
 
-Qualcomm 2012 年官方资料把 Vellamo 描述为包含 HTML5 与 Metal 等章节的移动 Benchmark 套件。该资料可用于解释旧报告中的字段，不能证明它在 Android 17 上仍有维护、兼容性或稳定测试规则。
+Qualcomm 2012 年官方资料把 Vellamo 描述为包含 HTML5 与 Metal 等章节的移动 Benchmark 套件。这份资料能解释旧报告中的字段；它在 Android 17 上是否仍有维护、兼容性或稳定测试规则，则证明不了。
 
 处理旧数据时保留 APK hash、工具版本、Android 版本、设备和原始分数。新设备不再补跑，也不尝试把 Vellamo 分数换算成 Speedometer、Geekbench 或 PCMark 分数。
 
-### Performance Class 只能做能力下限标签
+### Performance Class 的能力下限定位
 
-Android 的 Media Performance Class（MPC，媒体性能等级）自 Android 12 引入。它用 CDD（Compatibility Definition Document，Android 兼容性定义文档）规定能力要求，并由 CTS（Compatibility Test Suite，兼容性测试套件）验证。Android 17 / API 37 的 AOSP（Android Open Source Project）`Build.VERSION.MEDIA_PERFORMANCE_CLASS` 仍从设备属性读取声明值，未声明时返回 0。Jetpack Core Performance 是读取设备性能等级的 Jetpack 库，可以从系统 build 信息或 Google Play services（Google Play 服务组件）查询兼容等级。
+Android 的 Media Performance Class（MPC，媒体性能等级）自 Android 12 引入，用 CDD（Compatibility Definition Document，兼容性定义文档）规定能力要求，并由 CTS（Compatibility Test Suite，兼容性测试套件）验证。API 37 的 `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 从设备属性读取声明值，未声明时返回 0。Jetpack Core Performance 是读取设备性能等级的 Jetpack 库，可以从系统 build 信息或 Google Play services（Google Play 服务组件）查询兼容等级。
 
-截至 2026 年 8 月 14 日，Android 官方公开定义的等级是 30、31、33、34、35，其中没有 MPC 32；0 表示未定义。Performance Class 可向前兼容：设备升级到 Android 17 后，仍可能报告它原先满足的 33、34 或 35。不要自行创造“MPC 37”，也不要把 Android 版本号当作设备必然报告的等级。
+截至 2026 年 8 月 14 日，Android 官方公开定义的等级是 30、31、33、34、35，其中没有 MPC 32；0 表示未定义。Performance Class 可向前兼容：设备升级到 Android 17 后，仍可能报告它原先满足的 33、34 或 35。“MPC 37”是自造的等级，实际档位以设备报告为准，也别把 Android 版本号当成设备必然报告的等级。
 
 | 信号 | 可以表达什么 | 不能表达什么 |
 |---|---|---|
@@ -726,7 +726,7 @@ Android 的 Media Performance Class（MPC，媒体性能等级）自 Android 12 
 #### 记录设备身份
 
 - 设备品牌、市场型号、硬件 SKU（厂商用于区分配置的商品编号）、SoC、RAM、存储容量；同名机型的不同 SoC 或内存版本分开。
-- Android 版本、build fingerprint（唯一标识系统构建的字符串）、安全补丁、基带、GPU driver（图形处理器驱动版本）、实际 kernel release（内核版本）。知识库源码锚点是 Android 17 / API 37 / `android-17.0.0_r1` 与 `android17-6.18-2026-06_r6`，测试报告仍应记录量产机的实际构建。
+- Android 版本、build fingerprint（唯一标识系统构建的字符串）、安全补丁、基带、GPU driver、实际 kernel release。知识库源码锚点是 Android 17 / API 37 / `android-17.0.0_r1` 与 `android17-6.18-2026-06_r6`，测试报告仍应记录量产机的实际构建。
 - Benchmark 应用版本、测试名、测试版本、API 或运行模式。Web 测试另记浏览器或 WebView provider 版本。
 
 #### 固定运行条件
@@ -755,16 +755,16 @@ adb shell dumpsys webviewupdate
 #### 重复、取值与作废规则
 
 - 短测试建议预热一轮后至少保留 5 个有效轮次；报告中给出中位数、最小值、最大值和 MAD，以说明典型结果与波动范围。
-- 长时间 Stress Test 建议在完整冷却后做至少 3 个独立 session（从冷却、启动到完成测试的一次完整实验）；每个 session 保留全部循环曲线。
+- 长时间 Stress Test 建议在完整冷却后做至少 3 个独立 session（从冷却、启动到完成测试的一次完整实验），每个 session 保留全部循环曲线。
 - 轮次更多时可以报告 P10/P90，即第 10 和第 90 百分位；5 个样本不足以形成稳定的分位数分布。
 - 来电、通知弹窗、失去前台、后台安装、系统更新、意外网络切换或测试崩溃都应作废并写明原因。
-- 热状态或起始温度不在约定窗口时不并入同一比较组。`THERMAL_STATUS_NONE` 不能单独证明温度已经复位。
+- 热状态或起始温度不在约定窗口时不并入同一比较组；确认温度复位还要看温度读数本身，`THERMAL_STATUS_NONE` 单独作证不够。
 
 平均值容易被一次异常高分或低分拉动，中位数更适合小样本跑分。任何“回归 3%”的结论都要先和同设备、同版本的自然波动比较。
 
 ### 用分项能力建立机型分层
 
-设备分层指按相近能力把设备分组。每台设备应保存能力向量，也就是一组相互独立的 CPU、GPU、存储、内存和持续性能字段，不能只保存一个综合档位：
+设备分层指按相近能力把设备分组。我们给每台设备保存一组能力向量，也就是相互独立的 CPU、GPU、存储、内存和持续性能字段；只存一个综合档位，后面就无从拆解：
 
 | 维度 | 建议来源 | 线上问题 |
 |---|---|---|
@@ -777,7 +777,7 @@ adb shell dumpsys webviewupdate
 | Thermal | 3DMark Stress 曲线、thermal status 和业务长测 | 游戏、视频、直播的持续性能 |
 | MPC | Jetpack Core Performance | 官方能力下限与功能开关参考 |
 
-#### 四档不是四个固定分数线
+#### 四档的边界计算
 
 入门、中端、高端、旗舰的边界应从团队已冻结版本的设备样本分布中计算。例如，可在同一国家/渠道覆盖集内按关键维度的 P20、P50、P80（第 20、50、80 百分位）切四档，再由线上数据校正。换 Geekbench 大版本、3DMark 测试或设备覆盖集后，要重新计算边界。这里的性能预算，是每档设备对启动时延、慢帧率、内存等指标设定的上限。
 
@@ -794,7 +794,7 @@ adb shell dumpsys webviewupdate
 
 不建议让每个客户端在线跑 Benchmark，也不建议在每条 APM 事件里上传跑分。团队可以维护版本化设备字典，也就是一张从设备与系统标识映射到能力字段的表。客户端只上报已有标识，分析平台再关联对应字段。
 
-下面是一个仅用于说明字段关系的虚构事件，不代表 Pixel 8 或 Tensor G3 的实测结论。`capability_schema` 的日期只是规则版本名示例，不表示这份文档仍以 2026 年 7 月为验证日期：
+下面是一个仅用于说明字段关系的虚构事件，与 Pixel 8 或 Tensor G3 的实测无关。`capability_schema` 的日期只是规则版本名示例，这份文档的验证日期以 frontmatter 为准：
 
 ```text
 event: app_start
@@ -813,9 +813,9 @@ thermal_bucket: medium
 mpc: 35
 ```
 
-`capability_schema` 让历史事件始终能还原当时的分层规则。设备字典还应区分同型号的 SoC、RAM、存储和区域版本；无法精确匹配时写入 `unknown`，不要凭市场名称猜测。
+`capability_schema` 让历史事件始终能还原当时的分层规则。设备字典还应区分同型号的 SoC、RAM、存储和区域版本；匹配不上就写 `unknown`，凭市场名称猜会引入错误档位。
 
-#### 关联示例不能当作因果结论
+#### 关联表背后的混杂因素
 
 假设某次分析得到以下虚构结果：
 
@@ -825,7 +825,7 @@ mpc: 35
 | medium | 1,090 ms | 1,760,000 |
 | high | 810 ms | 940,000 |
 
-这个表只说明分档和启动 P95 同时变化。低档设备还可能拥有更慢存储、更小 RAM、旧系统或不同地区网络。分析时应固定 App 版本与启动计算规则，并按存储、RAM、Android 版本、网络和地区分别比较；再用区间趋势或 Spearman 秩相关（比较两组数据排序的一致程度）判断关系是否稳定。需要证明某段 CPU 代码受限，还要回到 Macrobenchmark、trace 或 Microbenchmark。
+这个表只说明分档和启动 P95 同时变化。低档设备还可能拥有更慢存储、更小 RAM、旧系统或不同地区网络。我们分析时固定 App 版本与启动计算规则，按存储、RAM、Android 版本、网络和地区分别比较，再用区间趋势或 Spearman 秣相关（比较两组数据排序的一致程度）判断关系是否稳定。要证明某段 CPU 代码受限，还要回到 Macrobenchmark、trace 或 Microbenchmark。
 
 #### 灰度、预算和告警
 
@@ -834,9 +834,9 @@ mpc: 35
 - 告警阈值使用同 App 版本、同能力档位的历史波动。Benchmark 版本变化只触发设备字典重算，不直接触发线上性能告警。
 - 功能降级由明确能力维度驱动。例如 GPU/thermal 弱时降低实时特效质量，RAM 小时降低缓存；不要用安兔兔总分作为单一开关。
 
-### 综合分误导的一个例子
+### 相同综合分的两种取向
 
-假设设备 A 的 CPU single 很强、存储随机读写较弱，设备 B 的 CPU single 较弱、存储较强，两者恰好拥有相同综合分。图片解码计算重的 App 可能在 A 上更快；冷启动读取许多小文件的 App 可能在 B 上更快。相同总分无法给出统一排序。
+假设设备 A 的 CPU single 很强、存储随机读写较弱，设备 B 的 CPU single 较弱、存储较强，两者恰好拥有相同综合分。图片解码计算重的 App 可能在 A 上更快；冷启动读取许多小文件的 App 可能在 B 上更快——相同总分下，排序取决于业务吃哪一维资源。
 
 工程报告应从业务关键路径反推资源维度，再选择子项。综合分可以留在摘要中，结论和行动项必须引用相关分项及 App 证据。
 

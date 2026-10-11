@@ -177,21 +177,21 @@ consolidated_from:
 
 # 应用分发、安装验证与 PackageManager 性能
 
-安装一个应用需要经过一整套系统流程。系统要验证安装会话、解析包、校验签名、协调权限和共享库、准备应用数据、按策略执行 dexopt（DEX 优化流程，可能包括验证或预编译），最终才把新状态发布给系统其余部分。任何一个阶段变慢，都会延长用户看到“正在安装”的时间；如果编译产物或 Profile（记录重点类和方法的性能配置文件）没有按预期生效，影响还会延续到首次启动。
+安装一个应用要经过一整套系统流程：验证安装会话、解析包、校验签名、协调权限和共享库、准备应用数据、按策略执行 dexopt，最后把新状态发布给系统其余部分。dexopt 指 DEX 的优化流程，可能只做验证，也可能做预编译。任何一个阶段变慢，用户看到的“正在安装”都会变长；如果编译产物或 Profile 没有按预期生效，影响还会延续到首次启动。Profile 记录的是重点类和方法，用来指导这次优化。
 
-平台基线采用 AOSP `android-17.0.0_r1`；涉及增量文件系统（Incremental File System，IncFS）时，内核基线采用 Android 通用内核（ACK）`android17-6.18-2026-06_r6`。Android 10～16 只用于解释机制如何演进。
+> 源码基线：AOSP `android-17.0.0_r1`；涉及增量文件系统（Incremental File System，IncFS）时，内核为 Android 通用内核（ACK）`android17-6.18-2026-06_r6`。Android 10～16 只用于解释机制如何演进。
 
 ---
 
-应用交付从制品生成开始，经过安装来源验证、PackageInstaller 会话、PMS 扫描与 dexopt，最后形成可启动的软件包状态。AAB、普通安装与 Staged Install 位于这条路径的不同边界，不能用同一个成功信号代替整条链路的完成。
+应用交付从制品生成开始，经过安装来源验证、PackageInstaller 会话、PMS 扫描与 dexopt，最后形成可启动的软件包状态。AAB、普通安装与 Staged Install 分别落在这条路径的不同位置，一个成功信号说明不了整条链路都已完成。
 
-按问题入口找对应部分：安装本身或 dexopt 变慢，看“PMS 扫描、解析与安装主路径”；安装被策略拦下，看“安装来源验证与权限边界”；更新要跨重启，看“Staged Install 的提交、重启与恢复”；问题出在商店侧的制品与下载，看“AAB 与 PackageInstaller 内容分发”。全文末尾汇总常见误区与结论。
+我们可以按问题入口找到对应部分：安装本身或 dexopt 变慢，看“PMS 扫描、解析与安装主路径”；安装被策略拦下，看“安装来源验证与权限边界”；更新要跨重启，看“Staged Install 的提交、重启与恢复”；问题出在商店侧的制品与下载，看“AAB 与 PackageInstaller 内容分发”。全文末尾汇总常见误区与结论。
 
 ## PMS 扫描、解析与安装主路径
 
 ### 先建立一张职责表
 
-应用安装横跨多个进程。排查问题前，先确定观察的是负责决策、调度的控制面，还是实际完成文件操作与编译的执行面：
+应用安装横跨多个进程。排查问题前，我们先确定自己看的是负责决策、调度的控制面，还是实际完成文件操作与编译的执行面：
 
 | 模块 | 所在进程 | 主要职责 | 不应归给它的工作 |
 |---|---|---|---|
@@ -202,7 +202,7 @@ consolidated_from:
 | ART Service / `artd` | `system_server` / 原生守护进程 | 组织和执行设备端 dexopt，管理编译产物 | 不发布 PackageManager 状态 |
 | `dex2oat` | 独立原生进程 | 按 ART Service 给出的参数生成 OAT、VDEX 等 ART 编译产物 | 不判断包能否安装 |
 
-Android 14 起，设备端 AOT（Ahead-of-Time，运行前编译）任务改由 ART Service 统一调度。PMS 中仍能看到 `DexOptHelper`，但它在安装流程中主要负责转交请求：根据安装状态发起编译，最终由 `ArtManagerLocal`、`artd` 和 `dex2oat` 组织并完成。若把 Android 17 的安装编译简单画成“PMS 调用 `installd` 做 dexopt”，就会遗漏实际的调度和执行位置。
+Android 14 起，设备端 AOT（Ahead-of-Time，运行前编译）任务改由 ART Service 统一调度。PMS 中仍能看到 `DexOptHelper`，但它在安装流程里主要负责转交请求：根据安装状态发起编译，实际的组织和执行由 `ArtManagerLocal`、`artd` 和 `dex2oat` 完成。所以我们追安装编译问题时，要顺着 ART Service 这条线往下找；仍按“PMS 调用 `installd` 做 dexopt”的旧模型画图，就会漏掉真正的调度和执行位置。
 
 ---
 
@@ -210,44 +210,44 @@ Android 14 起，设备端 AOT（Ahead-of-Time，运行前编译）任务改由 
 
 `PackageManagerService` 运行在 `system_server`。它维护已安装包、组件、签名、权限、共享库和用户安装状态，是 Activity、Service、Provider 解析以及权限检查的基础数据来源。
 
-Android 17 的 `SystemServer.startBootstrapServices()` 用名为 `StartPackageManagerService` 的 Trace 区段标记 `PackageManagerService.main(...)`。它位于引导（bootstrap）阶段，早于 `startCoreServices()` 和 `startOtherServices()`。许多服务启动时已经需要查询包和权限信息，因此 PMS 必须较早就绪。
+`SystemServer.startBootstrapServices()` 用名为 `StartPackageManagerService` 的 Trace 区段标记 `PackageManagerService.main(...)`，位置在引导（bootstrap）阶段，早于 `startCoreServices()` 和 `startOtherServices()`。后面的许多服务一启动就要查询包和权限信息，PMS 必须比它们更早就绪。
 
 开机初始化会处理两类信息：
 
 - 从持久化设置恢复包、用户和权限状态；
 - 扫描 APEX 系统组件包、系统分区和 `/data/app` 中的实际包，解析 Manifest 清单，并让磁盘状态与设置状态保持一致。
 
-`InitAppsHelper` 负责组织系统目录和 `/data` 目录的扫描。`ParallelPackageParser.makeExecutorService()` 在 Android 17 固定使用 4 个 `package-parsing-thread` 工作线程，并设置前台线程优先级。这里的“并行”主要是包解析并行，不等于 PMS 初始化的每一步都可以并行；共享状态提交仍要遵守 PMS 的锁和阶段顺序。
+`InitAppsHelper` 负责组织系统目录和 `/data` 目录的扫描。`ParallelPackageParser.makeExecutorService()` 在 Android 17 固定使用 4 个 `package-parsing-thread` 工作线程，并设置前台线程优先级。这里的“并行”主要是包解析并行，共享状态的提交仍要按 PMS 的锁和阶段顺序依次进行。
 
-#### 包信息不是一个对象
+#### 包信息的四个层次
 
-阅读 PMS 源码时，常见的几类对象处于不同层次：
+我们读 PMS 源码时，会遇到几类层次不同的对象：
 
 - `AndroidPackage`：包解析后的内部只读视图，包含组件、权限、代码路径等声明信息；
 - `PackageSetting`：系统持久化的安装状态，例如 appId、安装路径、签名和各用户状态；
 - `PackageStateInternal`：供系统内部查询的包状态视图；
 - `PackageInfo`：根据调用方权限、用户和查询标志位（flags）生成的公共 API 返回对象。
 
-`getPackageInfo()` 因此并非从全局映射表（Map）中原样取出一个 `PackageInfo`。它要根据调用方可见性、用户状态和查询标志位生成结果；包数量、标志位组合和对象构造成本都可能影响查询耗时。
+`getPackageInfo()` 做的也就不是从全局映射表（Map）里原样取出一个对象：它要按调用方可见性、用户状态和查询标志位生成结果。包数量、标志位组合和对象构造成本，都可能反映在查询耗时上。
 
 ---
 
 ### `Computer` 快照解决了什么
 
-Android 17 的 PMS 仍有多个锁，不能用“PMS 已经无锁化”概括：
+PMS 内部仍有多个锁，“已经无锁化”的说法与源码不符：
 
 - `mLock` 保护内存中的包解析结果与关联状态，源码明确要求持有时间尽量短；
 - `mInstallLock` 保护对 `installd` 的访问，源码要求不要在持有 `mLock` 时再获取它；
 - `mSnapshotLock` 只用于构造或取得 `Computer` 快照。
 
-`snapshotComputer()` 会比较当前数据版本和缓存快照版本。版本一致时可直接返回缓存；缓存版本落后时，才在 `mSnapshotLock` 与 `mLock` 的保护下重建快照。若当前线程已经持有 `mLock`，它会返回基于当前可变数据的实时查询视图（源码中的 live computer），避免在写操作中产生前后矛盾的快照。
+`snapshotComputer()` 会比较当前数据版本和缓存快照的版本：一致时可直接返回缓存，落后才在 `mSnapshotLock` 与 `mLock` 的保护下重建快照。当前线程已经持有 `mLock` 时，它会改返回基于当前可变数据的实时查询视图（源码中的 live computer），避免写操作拿到前后矛盾的快照。
 
-可以据此得到两个结论：
+从这里我们可以得到两个结论：
 
 1. 大量只读查询不必每次都重新获取 PMS 的主锁并复制全部状态；
 2. 查询变慢仍可能来自快照重建、对象生成、包可见性过滤、Binder 排队或其他锁竞争。
 
-所以，Perfetto 中一次缓慢的 `getPackageInfo` 调用，不能只凭 Android 版本就排除锁竞争，也不能看到 `Computer` 就断言读请求完全无锁。应结合 Java 监视器锁竞争（monitor contention）、Binder 调度和对应线程的轨迹区段（slice）判断。
+所以在 Perfetto 里看到一次缓慢的 `getPackageInfo`，我们要结合 Java 监视器锁竞争（monitor contention）、Binder 调度和对应线程的轨迹区段（slice）来判断：可能是锁竞争，也可能是快照重建或对象生成在耗时，单凭版本号或 `Computer` 这个名字都定不了性。
 
 ---
 
@@ -257,9 +257,9 @@ Android 17 的 PMS 仍有多个锁，不能用“PMS 已经无锁化”概括：
 
 #### 1. 写入和密封安装会话
 
-安装器先创建会话，再把文件写入暂存（staging）目录。`PackageInstallerSession.commit()` 不会直接修改 PMS 的包表；它先密封会话，防止内容继续被改写。
+安装器先创建会话，再把文件写入暂存（staging）目录。`PackageInstallerSession.commit()` 到这里还碰不到 PMS 的包表：它先密封会话，防止内容继续被改写。
 
-Android 17 中，密封后的处理大致是：
+密封后的处理大致是：
 
 ```text
 PackageInstallerSession.commit()
@@ -279,12 +279,12 @@ PackageInstallerSession.commit()
 
 这个方法的源码注释把核心事务分成四个阶段：
 
-1. **Prepare（准备）**：检查安装参数、替换关系、应用二进制接口（ABI，用于匹配处理器架构）、签名和已有包状态；
+1. **Prepare（准备）**：检查安装参数、替换关系、签名和已有包状态，并按应用二进制接口（ABI）确认处理器架构匹配；
 2. **Scan（扫描）**：解析待安装包，生成扫描结果；
 3. **Reconcile（协调）**：让多个扫描结果与系统现有包、共享用户和签名规则保持一致；
 4. **Commit（提交）**：在锁保护下提交包状态。
 
-Android 17 的实际执行还包含路径切换、应用数据准备、异步安装 dexopt 与提交后的广播：
+在这条主线上，实际执行还包含路径切换、应用数据准备、异步安装 dexopt 与提交后的广播：
 
 ```text
 prepareInstallPackages
@@ -299,7 +299,7 @@ prepareInstallPackages
 
 路径切换发生在 dexopt 前，因为 OAT、VDEX 等 ART 产物会关联最终代码路径。应用数据也要在编译前准备好。
 
-`DexOptHelper.performDexoptIfNeededAsync()` 使用单线程执行器（executor）处理安装 dexopt，也就是同一时刻只处理一个任务。源码还明确规定，dexopt 失败不应导致应用安装失败：应用可以先以解释执行或较低优化级别运行，之后再由后台 dexopt 补齐优化。
+`DexOptHelper.performDexoptIfNeededAsync()` 用单线程执行器（executor）处理安装 dexopt，同一时刻只有一个任务在跑。源码同时规定：dexopt 失败不拖垮整个安装，应用可以先以解释执行或较低优化级别运行，之后再由后台 dexopt 补齐优化。
 
 #### 3. 哪些阶段消耗什么资源
 
@@ -313,7 +313,7 @@ prepareInstallPackages
 | dexopt | CPU + I/O | DEX 大、Profile 缺失、设备热限制、后台负载 |
 | 提交与发布 | 锁 + Binder | 多包事务、观察者和广播接收端繁忙 |
 
-诊断时不能只看总安装时长。安装会话写入缓慢与 `dex2oat` 执行缓慢，要分开排查。
+诊断时我们要把总安装时长拆开看：安装会话写入缓慢与 `dex2oat` 执行缓慢是两类问题，分开排查。
 
 ---
 
@@ -321,22 +321,22 @@ prepareInstallPackages
 
 #### APK 签名方案的分工
 
-Android 17 仍同时支持多代 APK Signature Scheme：
+几代 APK Signature Scheme 目前并存：
 
 - v1 以 JAR 条目为单位，兼容旧系统；
 - v2 从 Android 7 引入，保护 APK 的整体内容；
 - v3 从 Android 9 引入签名密钥轮换历史（lineage）；
 - v4 从 Android 11 引入面向流式安装的 `.idsig` 文件，并与 v2/v3 一起使用。
 
-v4 不是 v2/v3 的替代品。`.idsig` 用于让系统在 APK 尚未完整落盘时验证已读取的数据块；APK 的最终身份和完整性仍要满足相应的 APK 签名规则。
+v4 与 v2/v3 是配合关系：`.idsig` 让系统在 APK 尚未完整落盘时就能验证已读取的数据块，APK 的最终身份和完整性仍要满足相应的 APK 签名规则。
 
-#### IncFS 按块提供数据，与“按需解密”无关
+#### IncFS 的数据块供给与校验
 
-IncFS 允许应用在 APK 的全部数据块下载完之前开始安装或运行。用户态数据加载器负责提供缺失块，IncFS 则通过 Merkle 树（一种逐层校验数据完整性的哈希树）和签名元数据校验读到的数据块。
+IncFS 允许应用在 APK 的全部数据块下载完之前开始安装或运行。缺的块由用户态数据加载器补上；IncFS 再通过 Merkle 树和签名元数据校验读到的数据块。Merkle 树是一种逐层校验数据完整性的哈希树。
 
-平台侧入口可在 `frameworks/base/services/incremental/IncrementalService.cpp` 看到；内核侧实现在 ACK `android17-6.18-2026-06_r6` 的 `fs/incfs/main.c` 与 `fs/incfs/vfs.c`。内核负责增量文件系统和缺块读取语义，不负责 PackageManager 的签名策略。
+平台侧入口可在 `frameworks/base/services/incremental/IncrementalService.cpp` 看到；内核侧实现在 ACK `android17-6.18-2026-06_r6` 的 `fs/incfs/main.c` 与 `fs/incfs/vfs.c`。内核负责增量文件系统和缺块读取语义，签名策略归 PackageManager。
 
-增量安装因此可以准确描述为“边下载，边提供并校验数据块”，其中没有“APK 按需解密”这一步。遇到 IncFS 安装卡顿，要同时观察：
+增量安装的准确描述是“边下载，边提供并校验数据块”，整个过程里没有“APK 按需解密”这一步。遇到 IncFS 安装卡顿，我们要同时观察：
 
 - 数据加载器是否及时提供系统请求的数据块；
 - 存储读取是否阻塞；
@@ -351,7 +351,7 @@ IncFS 允许应用在 APK 的全部数据块下载完之前开始安装或运行
 
 `pm.dexopt.<reason>` 用于在 Android 构建中为不同编译原因指定编译过滤器（compiler filter），它决定 ART 采用的优化级别。ART Service 文档给出的标准配置中，`bg-dexopt` 通常使用 `speed-profile`，多个开机相关原因使用 `verify`；产品配置可以覆盖这些值。
 
-即使请求了 `speed-profile`，没有可用 Profile 时也不能假定系统一定进行完整 AOT。ART 会综合 Profile、磁盘空间、温度、现有产物和其他约束，选择实际可用的编译方式。分析设备行为时，应读取设备配置并检查实际产物，不能把某个默认值当成所有 Android 17 设备的保证。
+即使请求了 `speed-profile`，系统也未必做完整 AOT：没有可用 Profile 时，ART 会综合 Profile、磁盘空间、温度、现有产物和其他约束，选择实际可用的编译方式。我们分析设备行为时，要读取设备配置并检查实际产物；某个默认值只代表标准配置，换一台 Android 17 设备就未必成立。
 
 #### Baseline Profile、运行时 Profile 与 Startup Profile
 
@@ -365,9 +365,9 @@ IncFS 允许应用在 APK 的全部数据块下载完之前开始安装或运行
 
 Baseline Profile 通常位于 APK 的 `assets/dexopt/baseline.prof`。安装渠道可以把 Profile 写入 DEX 元数据文件（例如 `base.dm`）并随 APK 交付；使用 `ProfileInstaller` 的应用也可以在运行后把 Profile 写到 ART 能读取的位置，再等待后台 dexopt。
 
-不能笼统声称“只要 APK 带有 Baseline Profile，安装按钮结束前就一定完成 AOT”。Google Play、ADB、IDE、本地侧载（sideload，即绕过应用商店直接安装）以及 OEM 构建可以采用不同调度时机。判断时应检查设备上的 ART 状态和编译原因。
+“APK 带了 Baseline Profile，安装按钮结束前就一定完成 AOT”这个说法要看渠道：Google Play、ADB、IDE、本地侧载（sideload，绕过商店直接安装）以及 OEM 构建可以采用不同调度时机。判断时我们检查设备上的 ART 状态和编译原因。
 
-Startup Profile 容易与设备端编译混淆。它影响 R8/D8 在构建时如何把启动相关类和方法排布到 DEX 中，目的是减少启动时的缺页异常（page fault）和随机读取；设备上并不存在一个名为“Startup Profile 编译”的 PMS 阶段。
+Startup Profile 容易和设备端编译混淆。它作用于构建期，影响 R8/D8 怎样把启动相关类和方法排布到 DEX 中，以减少启动时的缺页异常（page fault）和随机读取；设备上并没有一个名叫“Startup Profile 编译”的 PMS 阶段。
 
 #### Android 17 中可用的诊断命令
 
@@ -401,7 +401,7 @@ adb shell pm art clear-app-profiles com.example.app
 adb shell pm bg-dexopt-job
 ```
 
-这类命令会改变设备编译状态。性能实验应记录执行前后的包版本、Profile 状态、编译过滤器、温度和电量条件，不能把人工编译后的结果与普通用户首次安装直接比较。
+这类命令会改变设备编译状态。做性能实验时，我们记录执行前后的包版本、Profile 状态、编译过滤器、温度和电量条件；人工编译出来的结果，要和普通用户首次安装的数据分开比较。
 
 ---
 
@@ -411,21 +411,21 @@ Android 14 及以上版本的后台编译由 ART Service 的 `BackgroundDexoptJo
 
 ART Service 不再保留旧 PMS 模型中的开机后 dexopt 任务（post-boot dexopt job），从而避免刚开机时的编译任务与用户操作直接争抢资源。尚未完成的编译工作交给后台任务，在设备空闲、充电等条件满足时继续。
 
-OTA 或 Mainline 模块化系统更新后，已有编译产物能否复用，取决于启动镜像（boot image）、类路径（classpath）、APEX 版本、编译依赖和产物校验结果。不能把 OTA 后的行为笼统概括成“所有应用重新编译”：
+OTA 或 Mainline 模块化系统更新后，已有编译产物能否复用，取决于启动镜像（boot image）、类路径（classpath）、APEX 版本、编译依赖和产物校验结果。OTA 之后是下面几种情况的混合，一句话概括成“所有应用重新编译”会掩盖差异：
 
 - 可继续验证并复用的产物不必重做；
 - 失效产物可能先用 `verify` 或解释执行保证可用性；
 - 更积极的 `speed-profile` 编译可以在后台逐步完成。
 
-用户不再长时间看到“正在优化第 N 个应用”，并不代表编译成本消失；系统只是把更多工作安排成可验证、可复用和可延后的任务。
+用户不再长时间看到“正在优化第 N 个应用”，编译成本并没有消失：系统只是把更多工作安排成可验证、可复用和可延后的任务。
 
 ---
 
 ### `.sdm` / `.sdc`：Android 17 源码中的“云编译产物”
 
-Android 17 固定 tag 中存在 `.sdm` 和 `.sdc`，但应按源码能够证明的范围描述。
+Android 17 固定 tag 的源码里能看到 `.sdm` 和 `.sdc`，下面按源码能证明的范围来讲。
 
-`PackageInstallerSession` 的注释把 `.sdm` 说明为承载 cloud compilation artifacts（云编译产物）的文件。这里的“云编译产物”只是源码对这类可选优化输入的命名，不表示应用安装时必然联网编译。`ArtManagedInstallFileHelper` 把 `.dm`、`.prof` 和 `.sdm` 列为 ART 管理的安装文件；`.sdm` 文件名还要包含有效的指令集架构（ISA），例如 `base.arm64.sdm`。源码注释说明该格式从 Android 16 引入。
+`PackageInstallerSession` 的注释把 `.sdm` 说明为承载 cloud compilation artifacts（云编译产物）的文件。“云编译产物”只是源码给这类可选优化输入起的名字，安装时并不必然联网编译。`ArtManagedInstallFileHelper` 把 `.dm`、`.prof` 和 `.sdm` 列为 ART 管理的安装文件；`.sdm` 的文件名还要带上有效的指令集架构（ISA），例如 `base.arm64.sdm`。源码注释说明该格式从 Android 16 引入。
 
 验证要求比普通附属文件更严格：
 
@@ -434,22 +434,22 @@ Android 17 固定 tag 中存在 `.sdm` 和 `.sdc`，但应按源码能够证明�
 - APK 与 `.sdm` 至少使用 v3 签名；
 - APK 和 `.sdm` 的签名必须精确匹配。
 
-ART Service 的 `PrimaryDexopter` 会尝试为各 ABI（如 arm64）创建 `.sdc`。`artd.maybeCreateSdc()` 的行为说明了几个适用边界：
+ART Service 的 `PrimaryDexopter` 会尝试为各 ABI（如 arm64）创建 `.sdc`。`artd.maybeCreateSdc()` 的行为划出了几条适用范围：
 
 1. 没有 `.sdm` 是常见情况，不是安装错误；
 2. 可复用 `.sdc` 需要匹配 `.sdm` 时间戳和相关 APEX 版本；
 3. 一旦实际 dexopt 已完成，临时 `.sdm` / `.sdc` 可以被提前删除；
 4. 删除 dexopt 编译产物时，ART Service 会把 ODEX、VDEX、ART、SDM 和 SDC 一并纳入管理。
 
-`.sdm` / `.sdc` 是受签名与版本约束的可选优化输入，不是 Android 17 所有应用都必须经历的安装阶段。源码类名使用 `SecureDexMetadata` 相关命名，但没有必要自行扩展一个未经源码或官方文档定义的全称。
+`.sdm` / `.sdc` 是受签名与版本约束的可选优化输入，Android 17 的应用安装没有它们照样走完。源码类名使用 `SecureDexMetadata` 相关命名，全称以源码和官方文档为准，我们不必自行扩展。
 
 ---
 
 ### 跨重启的分阶段安装与 APEX
 
-普通 APK 安装会话通常在当前开机周期完成。`StagingManager` 处理的是必须重启后才能完成的分阶段会话（staged session），常见于 APEX（Android 用于交付和更新系统模块的包格式），或要求多包全部成功、否则全部撤销的原子系统更新。
+普通 APK 安装会话通常在当前开机周期内完成；`StagingManager` 管的是必须重启后才能激活的分阶段会话（staged session）。这类会话常见于 APEX 更新，或要求多包全部成功、否则全部撤销的原子系统更新；APEX 是 Android 用来交付和更新系统模块的包格式。
 
-`PackageSessionVerifier` 会执行所有会话共用的校验；对于分阶段会话，还要处理重启前验证、与 `apexd` 交互、检查点与回滚（checkpoint/rollback），以及 `ready`（就绪）、`applied`（已应用）、`failed`（失败）等状态。这些步骤共同组成一个跨重启事务：
+`PackageSessionVerifier` 先执行所有会话共用的校验；分阶段会话还要叠加重启前验证、与 `apexd` 交互、检查点与回滚（checkpoint/rollback），以及 `ready`（就绪）、`applied`（已应用）、`failed`（失败）这些状态。这些步骤拼在一起，构成一个跨重启的事务：
 
 ```text
 session committed
@@ -461,7 +461,7 @@ session committed
       或失败后进入回滚/失败处理
 ```
 
-只有部分 `PackageInstallerSession` 属于分阶段会话。使用安装会话 API 时，应先检查参数和包类型，再判断是否需要跨重启分析。
+分阶段会话只占 `PackageInstallerSession` 的一部分。我们用安装会话 API 时，先检查参数和包类型，再决定要不要按跨重启的思路分析。
 
 ---
 
@@ -474,9 +474,9 @@ Android 15（API 35）引入系统级应用归档（App Archiving），Android 1
 - 桌面启动器（Launcher）仍可展示归档入口；
 - 用户点击后，由负责的安装器恢复归档应用。
 
-Android 17 的 `PackageArchiver` 使用带 `DELETE_ARCHIVE` 与 `DELETE_KEEP_DATA` 语义的删除路径，并保存 `ArchiveState`。归档状态可包含可启动 Activity 信息、安装器标题和归档时间。`ActivityStarter` 遇到归档目标时，可以转入请求恢复流程，而不是按“组件不存在”直接失败。
+`PackageArchiver` 使用带 `DELETE_ARCHIVE` 与 `DELETE_KEEP_DATA` 语义的删除路径，并保存 `ArchiveState`。归档状态里可以有可启动 Activity 信息、安装器标题和归档时间。`ActivityStarter` 遇到归档目标时，可以转入请求恢复流程，而不是按“组件不存在”直接失败。
 
-恢复完成后会出现相应包添加事件。对启动性能而言，归档后的第一次点击包含重新获取和恢复包的成本，不能与普通冷启动放在同一组数据里。
+恢复完成后会出现相应的包添加事件。做启动性能统计时要注意：归档后的第一次点击包含重新获取和恢复包的成本，要和普通冷启动分开成组。
 
 ### 查询、权限与应用身份边界
 
@@ -484,20 +484,20 @@ Android 17 的 `PackageArchiver` 使用带 `DELETE_ARCHIVE` 与 `DELETE_KEEP_DAT
 
 #### 查询快照、客户端缓存与包可见性
 
-服务端通过 `Computer` 快照减少长时间持有 PMS 主锁；应用侧的 `ApplicationPackageManager` 还可能缓存部分查询结果。缓存命中只能说明省去了一部分 Binder 或对象构造成本，不能据此认为结果与版本、用户、调用 UID 和可见性规则无关。
+服务端用 `Computer` 快照减少长时间持有 PMS 主锁；应用侧的 `ApplicationPackageManager` 还可能缓存部分查询结果。缓存命中只说明省下了一部分 Binder 或对象构造成本；结果仍随版本、用户、调用 UID 和可见性规则变化，我们要以当次查询的上下文为准。
 
-Android 11 以后，普通应用的包查询受 `<queries>`、自动可见规则和调用身份限制。`AppsFilterImpl` 参与服务端过滤，因此“查询为空”未必表示包没有安装；诊断应同时记录调用方 UID、用户 ID（`userId`）、查询 API、查询标志位和 Manifest 可见性声明。系统组件或持有特权权限的工具得到的结果不能直接用于推断普通应用的查询结果。
+Android 11 以后，普通应用的包查询受 `<queries>`、自动可见规则和调用身份限制，`AppsFilterImpl` 参与服务端过滤。所以“查询为空”未必说明包没装上；诊断时我们把调用方 UID、用户 ID（`userId`）、查询 API、查询标志位和 Manifest 可见性声明一起记下来。系统组件或持有特权权限的工具查到的结果，不能直接拿来推断普通应用的查询结果。
 
-#### 权限服务不是 PMS 内部的一张表
+#### 权限状态的归属与排查层次
 
-Android 17 的权限状态由 `AccessCheckingService` 及其权限与访问策略组件维护。PMS 仍提供包、UID、签名和安装状态等基础信息，并通过对外接口与权限服务协作。权限检查缓慢时，需要区分：
+权限状态由 `AccessCheckingService` 及其权限与访问策略组件维护，PMS 仍提供包、UID、签名和安装状态这些基础信息，并通过对外接口与权限服务协作。权限检查慢的时候，我们要区分耗时落在哪一层：
 
 - 调用方 Binder 排队；
 - PMS/权限服务的快照或锁；
 - 跨用户、可见性和签名关系计算；
 - 首次构造或失效后的缓存重建。
 
-如果把所有权限工作都归到 `PackageManagerService.mLock`，会遗漏当前架构边界。
+把所有权限相关的工作都归到 `PackageManagerService.mLock` 上，会漏掉权限服务所在的层。
 
 #### 拆分包（Split）、UID 与更新冲突
 
@@ -505,9 +505,9 @@ Android 17 的权限状态由 `AccessCheckingService` 及其权限与访问策�
 
 Play Feature Delivery 负责从分发侧按需交付功能模块；到了设备端，仍以 PackageInstaller/PMS 实际收到的文件集合为准。
 
-Linux UID、应用数据目录、SELinux 安全域（domain）和运行时权限共同构成应用沙箱。包名相同并不意味着可以直接覆盖安装：签名密钥轮换历史、`versionCode`、共享 UID 的历史约束、安装来源以及系统分区与数据分区的关系都会影响结果。
+Linux UID、应用数据目录、SELinux 安全域（domain）和运行时权限共同构成应用沙箱。包名相同，离能覆盖安装还差一串检查：签名密钥轮换历史、`versionCode`、共享 UID 的历史约束、安装来源，以及系统分区与数据分区的关系，都会影响最终结果。
 
-安装流程中的包冻结（package freeze）用于阻止更新期间发生并发启动或状态变化，与“应用休眠”或“冻结缓存进程”无关。
+安装流程中的包冻结（package freeze）用于阻止更新期间发生并发启动或状态变化，容易和“应用休眠”“冻结缓存进程”混为一谈，但它们是三件事。
 
 ---
 
@@ -538,7 +538,7 @@ Android 17 源码中可直接找到的 Trace 区段名称包括：
 - `dexopt`
 - `commitPackages`
 
-具体设备可能因功能开关（feature flag）、厂商修改或代码分支而缺少部分轨迹区段。应先搜索设备实际记录的区段，再围绕相应时间范围展开，不能依赖一套固定的 SQL 名单。
+具体设备可能因功能开关（feature flag）、厂商修改或代码分支而缺少部分轨迹区段。我们先搜索设备实际记录到的区段，再围绕相应时间范围展开；上面这份名单只是入口，替代不了这一步。
 
 #### 诊断顺序
 
@@ -569,7 +569,7 @@ ORDER BY s.dur DESC
 LIMIT 100;
 ```
 
-这条查询只能找到已经记录的轨迹区段。某个阶段没有对应区段时，还要结合线程状态、Binder、I/O 和日志判断；没有搜到名称，不能证明该阶段没有执行。
+这条查询只能找到已经记录的区段。某个阶段搜不到名称时，我们还要结合线程状态、Binder、I/O 和日志判断；“没记录”和“没执行”是两回事。
 
 ---
 
@@ -583,25 +583,25 @@ LIMIT 100;
 | Android 16 | Android 17 源码注释确认 `.sdm` 格式由此引入 | 可选云编译输入进入安装会话的签名校验与 ART 产物管理流程 |
 | Android 17 | 当前固定基线；保留 ART 管理文件校验、SDM/SDC 复用判断和现代安装提交路径 | 以 `android-17.0.0_r1` 的实际功能开关和产品配置判断行为 |
 
-版本变化必须能由固定 tag 或官方文档确认。没有类、提交或官方行为说明支撑的说法，不应写成平台事实。
+版本变化必须能由固定 tag 或官方文档确认；没有类、提交或官方行为说明支撑的说法，先按传闻处理，不写成平台事实。
 
 ---
 
 ## 安装来源验证与权限边界
 
-安装会话进入 PMS 之前，平台可能先检查来源、安装器身份和用户授权。验证结果只回答当前来源是否允许继续，不替代签名、会话提交和包扫描。
+安装会话进入 PMS 之前，平台可能先检查来源、安装器身份和用户授权。这一步验证只回答“当前来源允不允许继续”，签名、会话提交和包扫描仍由后面的流程负责。
 
 Android Developer Verification（Android 开发者验证，后文简称“开发者验证”）回答的是：
 
 > 准备安装这个包的开发者身份、包名和签名密钥，是否满足当前设备上的开发者验证策略？
 
-它不判断 APK 是否损坏、升级签名是否匹配、安装器是否有权限、用户是否同意，也不负责 dexopt。把这些问题混成一项“安装校验”，会直接导致错误归因。
+APK 是否损坏、升级签名是否匹配、安装器是否有权限、用户是否同意、dexopt 做得怎样，都由别的环节判断。把它们和开发者验证混成一项“安装校验”，归因就会出错。
 
 以下分析采用三组基线：
 
 - 平台源码：AOSP `android-17.0.0_r1`。
 - 平台接口：Android 17 / API 37；相关公开接口最早标记为 Android 16.1 / API 36.1。
-- 产品政策：Android Developer Verification 官方指南、FAQ 与上线博客截至 2026-09-30 的公开口径。
+- 产品政策：Android Developer Verification 官方指南、FAQ 与上线博客截至 2026-09-30 的公开说法。
 
 政策会继续变化，源码标签不会。工程实现应把两者分开管理。
 
@@ -613,11 +613,11 @@ Android Developer Verification（Android 开发者验证，后文简称“开发
 | Android 平台机制 | 安装会话如何请求验证、等待结果、触发用户动作并回传错误 | `PackageInstallerSession`、`DeveloperVerifierController`、`PackageInstaller` API | 以 `android-17.0.0_r1` 为源码基准；公开结果 API 自 36.1 提供 |
 | APK 与安装信任链 | APK 是否可解析、签名是否有效、升级证书是否兼容、权限与设备策略是否允许 | APK Signature Scheme、PMS、PackageInstaller、DPM、旧版包验证服务 | 由各自的平台版本和策略决定 |
 
-Android 17 AOSP 提供开发者验证服务的接入框架，却没有在 `frameworks/base` 中开源 Google 的身份数据库和判定逻辑。下文用 verifier 指代设备指定的这项验证服务。在 Google 认证设备上，官方把 Android Developer Verifier 描述为一项新的 Google 系统服务，并说明 Android 7 及以上设备通过 Google Play services 接收相关更新。
+AOSP 提供了开发者验证服务的接入框架，Google 的身份数据库和判定逻辑并没有随 `frameworks/base` 开源。下文用 verifier 指代设备指定的这项验证服务。在 Google 认证设备上，官方把 Android Developer Verifier 描述为一项新的 Google 系统服务，并说明 Android 7 及以上设备通过 Google Play services 接收相关更新。
 
-AOSP 中存在这些类，并不表示任意 AOSP 构建都会自动执行 Google 的政策。Android 17 的 `PackageInstallerService` 默认策略是 `DEVELOPER_VERIFICATION_POLICY_NONE`；设备没有配置 verifier，或功能开关没有启用时，安装会话会跳过这一步。
+所以 AOSP 构建里有这些类，离自动执行 Google 的政策还差配置这一步：`PackageInstallerService` 在 Android 17 的默认策略是 `DEVELOPER_VERIFICATION_POLICY_NONE`，设备没有配置 verifier 或功能开关未启用时，安装会话会直接跳过验证。
 
-`android.content.pm.verify.developer` 下的 `DeveloperVerifierService`、`DeveloperVerificationSession` 和 `DeveloperVerificationStatus` 都标有 `@SystemApi` 与 `@hide`。它们定义平台与受信任 verifier 之间的协议，普通应用无法通过公开 SDK 直接实现或调用。普通安装器只能使用 `PackageInstaller` 公开的结果附加字段、失败原因码和扩展接口。
+`android.content.pm.verify.developer` 下的 `DeveloperVerifierService`、`DeveloperVerificationSession` 和 `DeveloperVerificationStatus` 都标有 `@SystemApi` 与 `@hide`，定义平台与受信任 verifier 之间的协议；普通应用拿不到公开 SDK 里的这些入口，安装器能用的是 `PackageInstaller` 公开的结果附加字段、失败原因码和扩展接口。
 
 ### 2. 截至 2026-09-30，政策执行到哪里
 
@@ -639,7 +639,7 @@ FAQ 在 2026-07-15 明确补充：
 - 未列入上表的其他商店，2026 年 9 月也暂不受这轮要求影响。
 - 2027 年开始，计划把保护扩展到全球经 Google 认证的 Android 设备上的所有应用。
 
-所以，“2026-09-30 起四国所有非 Play 安装都会被拦截”是错误结论。更准确的模型是：
+由此也能看出，“2026-09-30 起四国所有非 Play 安装都会被拦截”是错误结论。更准确的模型是：
 
 ```text
 长期目标
@@ -655,7 +655,7 @@ FAQ 在 2026-07-15 明确补充：
   └─ 未参与首批计划的其他商店
 ```
 
-“暂不”描述的是当前上线批次，不代表可以忽略 2027 年的全球扩展。
+“暂不”说的是当前上线批次，2027 年的全球扩展仍在计划里。
 
 首批执行还要区分设备类型（form factor）：通过 Google Play 分发的应用需要登记支持的所有设备类型；Play 以外的 2026 年首批强制范围，目前只包括所选四国的手机（mobile）与平板（tablet）。不要把手机上的实验结果直接外推到 TV、Auto 或 Wear。
 
@@ -668,9 +668,9 @@ FAQ 在 2026-07-15 明确补充：
 | 有限分发（Limited distribution） | 免费、无需政府签发身份证件，最多分享给 20 台经最终用户明确授权的设备 | 适合学习、课堂、家庭和非商业小范围分享 |
 | 受管设备与组织内商店 | 由 IT 管理员审核的组织内应用不要求完成验证 | 同一 APK 离开组织内商店或进入非受管设备后，不能继续假设享有豁免 |
 
-高级流程不是安装器可自行打开的开关。官方常见问题说明的流程包含启用开发者模式、反诱导确认、重启与重新认证、等待 24 小时，以及再次使用生物识别或 PIN 确认。ADB 不受这段等待时间影响。
+高级流程没有安装器可自行打开的开关。官方常见问题说明的流程包含启用开发者模式、反诱导确认、重启与重新认证、等待 24 小时，以及再次使用生物识别或 PIN 确认；ADB 不受这段等待时间影响。
 
-这些步骤属于 2026 年的政策快照，不应硬编码成应用的永久业务规则。
+这些步骤是 2026 年的政策快照，写死在应用业务规则里很快会过时。
 
 ### 3. 开发者验证和 APK 签名是什么关系
 
@@ -686,7 +686,7 @@ FAQ 在 2026-07-15 明确补充：
 签名密钥
 ```
 
-它利用签名 APK 证明包名与密钥归属，但不替代设备本地的 APK 签名校验。
+它利用签名 APK 证明包名与密钥归属；设备本地的 APK 签名校验仍由平台自己完成。
 
 攻击者即使知道已注册应用的包名，只要没有合法私钥，仍会受到以下限制：
 
@@ -694,7 +694,7 @@ FAQ 在 2026-07-15 明确补充：
 2. APK Signature Scheme 校验仍会发现签名无效。
 3. 若设备上已有正版应用，升级安装还要通过签名继承链（signing lineage）和证书兼容性检查。
 
-一个 APK 的 v2/v3/v4 签名有效，只说明 APK 由对应密钥签发且内容未被篡改；它不能自动证明开发者已完成身份验证，也不能证明包名已登记到对应账号。
+一个 APK 的 v2/v3/v4 签名有效，说明的是 APK 由对应密钥签发且内容未被篡改；开发者有没有完成身份验证、包名有没有登记到对应账号，要由 Developer Verification 这一层回答。
 
 发版资产至少要同时维护包名、当前与历史签名证书、验证账号与状态，以及各渠道最终交付 APK 的证书指纹。渠道重签会同时破坏升级兼容性和包名登记证明。
 
@@ -704,7 +704,7 @@ FAQ 在 2026-07-15 明确补充：
 
 `PackageInstaller` 文档把 Developer Verification 的结果字段标为“Added in version 36.1”。Android 17 / API 37 继续提供这些接口，并把安装器的目标 SDK 版本（target SDK）是否大于 36 作为新的回调行为边界。
 
-36.1 是 SDK 次版本，不能只检查 `Build.VERSION.SDK_INT >= 36`。需要区分次版本时，可以使用下面的判断：
+36.1 是 SDK 的次版本，只检查 `Build.VERSION.SDK_INT >= 36` 分辨不出它。需要区分次版本时，用下面的判断：
 
 ```kotlin
 val supportsDeveloperVerificationResult =
@@ -722,7 +722,7 @@ Android 17 的 `Build.VERSION_CODES_FULL.CINNAMON_BUN` 为 37.0，自然满足�
 | `DEVELOPER_VERIFICATION_FAILED_REASON_NETWORK_UNAVAILABLE` | 1 | verifier 明确报告网络不可用 |
 | `DEVELOPER_VERIFICATION_FAILED_REASON_DEVELOPER_BLOCKED` | 2 | verifier 已完成判断，但开发者未通过当前策略 |
 
-`UNKNOWN` 不等于“没有提供原因”。读取前必须检查失败原因附加字段是否存在，不能只使用默认值 0。
+`UNKNOWN` 对应“原因未知”，“字段不存在”是另一种情况。读取前必须检查失败原因附加字段是否存在，只拿默认值 0，会把两种情况混在一起。
 
 #### 4.3 结果附加字段
 
@@ -733,11 +733,11 @@ Android 17 的 `Build.VERSION_CODES_FULL.CINNAMON_BUN` 为 37.0，自然满足�
 | `EXTRA_DEVELOPER_VERIFICATION_EXTENSION_RESPONSE` | `PersistableBundle` | verifier 对安装器扩展参数的响应 |
 | `Intent.EXTRA_INTENT` | `Intent` | 需要用户动作，或提供可延后展示的系统解释页 |
 
-`SessionParams.setExtensionParams()` 与 `getDeveloperVerificationServiceProvider()` 允许安装器和 verifier 使用双方约定的扩展参数。`Bundle` 的字段结构由 verifier 实现决定，不是跨设备通用协议。安装器只有确认服务提供方后才能解释其中内容；遥测也不应默认原样上传未知的 `Bundle`。
+`SessionParams.setExtensionParams()` 与 `getDeveloperVerificationServiceProvider()` 允许安装器和 verifier 使用双方约定的扩展参数。`Bundle` 的字段结构由 verifier 实现决定，跨设备并不通用：安装器确认服务提供方之后才能解释内容，遥测也不默认原样上传未知的 `Bundle`。
 
 ### 5. 一次提交可能产生多次回调
 
-`Session.commit(IntentSender)` 只是把已封存的安装会话交给系统异步处理。这个方法成功返回，不代表安装已经完成。
+`Session.commit(IntentSender)` 只是把已封存的安装会话交给系统异步处理；方法顺利返回，离安装完成还有整个后台流程。
 
 Developer Verification 失败时，`EXTRA_STATUS` 取决于安装器的目标 SDK 版本、权限，以及该失败是否允许用户处理：
 
@@ -790,7 +790,7 @@ fun handleInstallResult(result: Intent) {
 
 ### 6. Android 17 的源码调用链
 
-Android 17 把新机制直接接入 `PackageInstallerSession`，没有把 Google 的业务判定写进旧版包验证服务。
+新机制直接接在 `PackageInstallerSession` 上，Google 的业务判定没有写进旧版包验证服务。
 
 #### 6.1 创建安装会话：保存初始策略并提前连接 verifier
 
@@ -821,7 +821,7 @@ Session.commit(statusReceiver)
   → handleInstall()
 ```
 
-`streamValidateAndCommit()` 会准备 `DataLoader`、验证 APK/APEX 安装会话的基本结构，并把会话标记为已提交。执行到这里仍未安装成功。
+`streamValidateAndCommit()` 会准备 `DataLoader`、验证 APK/APEX 安装会话的基本结构，并把会话标记为已提交。走到这里安装还没有成功，后面还有解析和验证。
 
 #### 6.3 `handleInstall()`：解析 APK 后先做 Developer Verification
 
@@ -899,21 +899,21 @@ Android 17 AOSP 定义了四种 System API 验证策略：
 
 `BLOCK_FAIL_OPEN` 与 `BLOCK_FAIL_WARN` 在 Android 17 源码注释中的安装结果描述相同；不要只凭名字推导额外语义。
 
-每个用户的默认策略由 verifier 或系统指定的策略代理设置。verifier 还可通过安装会话的 `setPolicy()` 覆盖当前请求。业务代码不能只凭国家码模拟最终判定，必须以系统回调为准。
+每个用户的默认策略由 verifier 或系统指定的策略代理设置。verifier 还可通过安装会话的 `setPolicy()` 覆盖当前请求。业务代码要预判最终结果时，国家码只能当参考，落点以系统回调为准。
 
 ### 8. ADB 的绕过边界
 
 官方面向开发者的承诺是 ADB 工作流不变。Android 17 源码分别描述了机制与结果：旧的非强制路径可以直接跳过验证；启用 `verificationServiceAdb` 后，ADB 安装请求也可送到 verifier，并通过 `FLAG_VERIFICATION_IS_ADB` 表明来源。verifier 可用 `DEVELOPER_VERIFICATION_BYPASSED_REASON_ADB` 明确报告这次验证因 ADB 来源而绕过。
 
-若内部安装会话还设置了 `forceVerification`，平台会追加 `FLAG_VERIFICATION_FORCED_ON_ADB`；即便如此，源码注释仍要求只有阻断策略才能阻止安装。这些都属于命令行、测试或系统管理边界，不是普通第三方安装器 API，也不改变常规 ADB 用于开发测试的产品承诺。
+若内部安装会话还设置了 `forceVerification`，平台会追加 `FLAG_VERIFICATION_FORCED_ON_ADB`；即便如此，源码注释仍要求只有阻断策略才能阻止安装。这些都属于命令行、测试或系统管理范畴，普通第三方安装器的 API 里见不到它们；常规 ADB 用于开发测试的产品承诺也保持不变。
 
 - `adb install` 成功：证明 APK 和调试安装路径基本可用。
 - 商店安装成功：证明该商店、设备、账号、区域和策略组合可用。
-- 两者不能互相替代。
+- 两者证明的是不同的东西，互相替代不了。
 
 ### 9. 安装耗时应如何分段统计
 
-从取得安装包到收到最终回调，至少包含下面这些阶段，不能把总耗时全部记到 Developer Verification：
+从取得安装包到收到最终回调，至少要经过下面这些阶段；把总耗时整段记到 Developer Verification 头上，会把别的阶段也算进去：
 
 ```text
 包体获取
@@ -926,7 +926,7 @@ Android 17 AOSP 定义了四种 System API 验证策略：
   + 最终回调
 ```
 
-这里的 `dexopt` 指 dex 字节码的编译与优化。`DeveloperVerifierController` 会在安装会话创建时尝试提前连接 verifier，正式验证请求则在 `handleInstall()` 解析 APK 后发送。因此，只看“创建安装会话到安装成功”的总时长，无法得出开发者验证本身的耗时。
+这里的 `dexopt` 指 dex 字节码的编译与优化。`DeveloperVerifierController` 在安装会话创建时就会尝试提前连接 verifier，正式的验证请求则等到 `handleInstall()` 解析完 APK 才发出。所以只看“创建安装会话到安装成功”的总时长，拆不出开发者验证本身的耗时；要拆，得靠下面这些时间点。
 
 Android 17 r1 控制器的默认参数是：
 
@@ -934,7 +934,7 @@ Android 17 r1 控制器的默认参数是：
 - 等待 verifier 响应请求：10 秒；
 - verifier 可申请延长的总上限：10 分钟。
 
-它们来自 `DeviceConfig.NAMESPACE_PACKAGE_MANAGER_SERVICE`，只是默认值，不构成兼容性保证或产品服务等级协议（SLA）。设备厂商、系统更新和实验配置都可能改变这些时间。
+它们来自 `DeviceConfig.NAMESPACE_PACKAGE_MANAGER_SERVICE`，只是默认值，兼容性保证和产品服务等级协议（SLA）都不包含它们；设备厂商、系统更新和实验配置都可能改变这些时间。
 
 | 时间点 | 普通安装器是否可见 | 含义 |
 |---|---|---|
@@ -945,7 +945,7 @@ Android 17 r1 控制器的默认参数是：
 | 最终成功或失败 | 可见 | 安装会话结束 |
 | verifier 的绑定、请求和响应时刻 | 普通应用不可直接取得 | 需要系统级指标、系统轨迹或受控设备日志 |
 
-普通安装器可以上报“`commit()` 到首个回调”和“`commit()` 到最终回调”，但不能把前者直接命名为“Developer Verification 耗时”。
+普通安装器能上报的是“`commit()` 到首个回调”和“`commit()` 到最终回调”两段；前一段里可能混着用户授权、解析等多个步骤，直接命名成“Developer Verification 耗时”会误导。
 
 ### 10. 推荐的错误归因顺序
 
@@ -966,7 +966,7 @@ Android 17 r1 控制器的默认参数是：
        └─ 安装完成；不等于应用首帧已经出现
 ```
 
-其中，DPM 是设备策略管理器（Device Policy Manager）。`STATUS_FAILURE_BLOCKED` 的公开定义覆盖设备策略、旧版包验证服务和系统关键包保护等来源。只有 `STATUS_FAILURE_ABORTED` 同时携带 Developer Verification 失败原因时，才有充分证据把问题归入本机制。
+其中 DPM 指设备策略管理器（Device Policy Manager）。`STATUS_FAILURE_BLOCKED` 的公开定义覆盖设备策略、旧版包验证服务和系统关键包保护等来源；把问题归入 Developer Verification 的充分证据只有一种：`STATUS_FAILURE_ABORTED` 同时携带 Developer Verification 失败原因。
 
 `EXTRA_STATUS_MESSAGE` 是调试文本，可能随系统版本、语言和 OEM 改变。它适合保留样本，不适合作为监控聚合键。
 
@@ -977,7 +977,7 @@ Android 17 r1 控制器的默认参数是：
 1. `setSessionFailedDueToDeveloperVerification()` 用 `Bundle.putBoolean()` 写入。
 2. `sendOnPackageInstalled()` 复制到最终 Intent 时却调用 `extras.getInt()`。
 
-这是 r1 源码中的类型不一致，不能把 `int` 当成新的公开协议。`Bundle.getInt()` 遇到原来的 `Boolean` 时还可能返回默认值 0，因此 `true` 信息可能在复制过程中已经丢失。下面的兼容性读取只能把类型差异限制在一处，不能恢复已丢失的真值：
+这是 r1 源码里的类型不一致，`int` 读写并不因此变成新的公开协议。`Bundle.getInt()` 遇到原来的 `Boolean` 时还可能返回默认值 0，`true` 信息可能在复制过程中已经丢失。下面的兼容性读取只能把类型差异收拢在一处，已丢失的真值它救不回来：
 
 ```kotlin
 fun readLitePerformedCompat(intent: Intent): Boolean? {
@@ -1015,7 +1015,7 @@ fun readLitePerformedCompat(intent: Intent): Boolean? {
 - 安装会话写入、`commit()` 到首个回调、`commit()` 到最终状态的耗时；
 - 由服务端按版本维护的政策区域和渠道批次。
 
-不建议默认记录未知的 verifier 扩展 `Bundle`、系统解释页文本、身份文件、账号凭据或签名私钥，也不要把自由格式的状态文本作为主聚合维度，因为它的可能取值很多且会随版本变化。
+默认不记录未知的 verifier 扩展 `Bundle`、系统解释页文本、身份文件、账号凭据或签名私钥；自由格式的状态文本取值很多且随版本变化，也不适合当主聚合维度。
 
 下面是一份只记录状态与时长、不收集身份材料的示例：
 
@@ -1091,11 +1091,11 @@ fun readLitePerformedCompat(intent: Intent): Boolean? {
 | SDM / dex 元数据 | 安装时附带的 dex 编译优化元数据是否可信 | 否 |
 | `dexopt` / ART 应用性能配置文件 | 安装后代码编译状态和启动性能 | 否 |
 
-可以按下面的职责模型理解：
+我们可以按下面的职责模型理解：
 
 > Developer Verification 是安装继续条件中的一项，无法取代 Android 现有的安装安全模型。
 
-它通过 Android 17 的 `PackageInstallerSession` 接入统一安装事务；Google 的实际验证规则由设备上的 verifier 和当前政策控制；普通安装器只应根据公开回调处理用户动作与最终状态，不应猜测系统内部结论。
+它通过 `PackageInstallerSession` 接入统一安装事务；Google 的实际验证规则由设备上的 verifier 和当前政策决定；普通安装器只处理公开回调里的用户动作与最终状态，系统内部结论留给系统。
 
 ### 源码锚点
 
@@ -1122,13 +1122,11 @@ fun readLitePerformedCompat(intent: Intent): Boolean? {
 
 普通 APK 安装完成于当前系统会话，Staged Install 还要跨越重启验证和回滚状态机。它用更长的提交周期换取系统组件更新的原子性。
 
-Staged Install（分阶段安装）经常被概括成“原子性更强的 APK 安装”，这种概括混淆了两个问题。
+Staged Install（分阶段安装）常被概括成“原子性更强的 APK 安装”。这个概括把两个问题混在了一起，我们把它拆开。
 
-Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackageHelper.installPackagesTraced()` 把安装组织为准备（Prepare）、扫描（Scan）、协调（Reconcile）和提交（Commit）；前三个阶段完成检查，Commit 才修改 Package Manager 的系统状态。多包安装会话（multi-package session）还可以把多个子会话作为一组提交。
+Android 的普通安装本来就有事务边界：`InstallPackageHelper.installPackagesTraced()` 把安装组织为准备（Prepare）、扫描（Scan）、协调（Reconcile）和提交（Commit），前三个阶段完成检查，Commit 才修改 Package Manager 的系统状态。多包安装会话（multi-package session）还可以把多个子会话作为一组提交。
 
-分阶段安装处理另一类场景：某批更新不能在当前运行中的系统里立即激活，需要先完整验证，再跨过一次重启，让 APEX 与 APK 在新一次启动中以一致状态生效。APEX 是 Android 用于交付和更新系统模块的包格式。分阶段安装提供的是**跨重启激活协议**，并非为普通 APK 安装补充基础事务能力。
-
-当前源码锚点为 Android 17 / API 37 / AOSP `android-17.0.0_r1`，同时保留 Android 10–16 的版本演进边界。
+分阶段安装处理的是另一类场景：某批更新要先完整验证，再跨过一次重启，让 APEX 与 APK 在新一次启动中以一致状态生效——APEX 是 Android 用于交付和更新系统模块的包格式。它提供的是**跨重启激活协议**，普通 APK 安装的基础事务能力本来就存在。
 
 ### 先分清三种“原子性”
 
@@ -1140,23 +1138,23 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
 
 这三层可以叠加。一个分阶段父会话可以包含多个子会话，其中既有 APEX，也有 APK。此时既要满足多包同组提交规则，又要满足分阶段安装的跨重启状态机。
 
-普通安装的原子性也有边界。`installPackagesTraced()` 要求可预见错误在 Commit 前被发现，并把系统状态修改集中到 Commit；但 `commitReconciledScanResultLocked()` 的源码注释同时警告，Commit 中抛出异常仍可能留下不一致状态。这是 Package Manager 的逻辑事务划分，不等同于数据库式或掉电安全的完整回滚。
+普通安装的原子性也有范围。`installPackagesTraced()` 要求可预见错误在 Commit 前被发现，并把系统状态修改集中到 Commit；但 `commitReconciledScanResultLocked()` 的源码注释同时警告，Commit 中抛出异常仍可能留下不一致状态。这是 Package Manager 的逻辑事务划分，离数据库式或掉电安全的完整回滚还有距离。
 
 分阶段安装增加了持久化状态、`apexd` 协调和文件系统 checkpoint；checkpoint 是系统可在启动失败时放弃一组文件系统变更的恢复点。
 
 ### API 边界：谁能创建分阶段安装会话
 
-`PackageInstaller.SessionParams#setStaged()` 从 Android 10 / API 29 开始提供。Android 17 中它仍是 `@SystemApi`，并要求 `android.permission.INSTALL_PACKAGES`。普通应用即使声明 `REQUEST_INSTALL_PACKAGES`，也不能因此获得分阶段安装能力。
+`PackageInstaller.SessionParams#setStaged()` 从 Android 10 / API 29 开始提供，Android 17 中仍是 `@SystemApi`，并要求 `android.permission.INSTALL_PACKAGES`。普通应用即使声明 `REQUEST_INSTALL_PACKAGES`，也拿不到分阶段安装能力。
 
-调用 `setStaged()` 后，这个安装会话会被安排到下一次重启时安装。若它是多包安装的父会话，所有子会话都必须采用一致的分阶段安装属性；回滚（rollback）属性也有同样约束。任一子会话在激活时失败，整组都不能按部分成功处理。
+调用 `setStaged()` 后，这个安装会话会被安排到下一次重启时安装。若它是多包安装的父会话，所有子会话都必须采用一致的分阶段安装属性；回滚（rollback）属性也有同样约束。任一子会话激活失败，整组按失败处理，没有部分成功。
 
-另一个边界是免重启 APEX 更新。APEX 可以声明支持免重启更新（rebootless update），但这种 APEX 更新不属于分阶段安装会话。
+另一类是免重启 APEX 更新：APEX 可以声明支持免重启更新（rebootless update），这类更新走自己的路径，与分阶段安装会话分开。
 
 命令行使用 `--force-non-staged` 进入另一条路径。明确设置了 `staged` 属性的安装会话都要等待重启。
 
 ### Android 17 的完整状态机
 
-#### 提交后不会直接进入 StagingManager
+#### 提交后的完整验证链
 
 实际路径比“`commit()` 调用 `StagingManager.commitSession()`”多出一整段验证：
 
@@ -1180,7 +1178,7 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
                                 └─ StagingManager.commitSession(...)
 ```
 
-`StagingManager.commitSession()` 接到的是已经完成当前验证流程的安装会话。它负责把会话纳入重启恢复管理；它不是 `commit()` 后的第一站，也不会替代前面的解析、Developer Verification 或 `PackageSessionVerifier`。
+`StagingManager.commitSession()` 接到的，是已经走完当前验证流程的安装会话；它的工作是把会话纳入重启恢复管理。前面的解析、Developer Verification 和 `PackageSessionVerifier` 都不归它管。
 
 #### `ready`、`applied`、`failed` 是三个持久化状态
 
@@ -1200,7 +1198,7 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
 /data/app-staging/session_<sessionId>/
 ```
 
-普通内部 APK 安装会话通常使用 `/data/app/vmdl<sessionId>.tmp`。这两个目录不能混写成同一种安装路径。
+普通内部 APK 安装会话通常使用 `/data/app/vmdl<sessionId>.tmp`。分析日志时这两个目录要区分开，混成同一种安装路径会看错对象。
 
 #### 为什么先持久化就绪状态，再通知 apexd
 
@@ -1211,7 +1209,7 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
 
 如果设备在第 1 步后、第 2 步前重启，`apexd` 没收到 `ready` 通知，不会激活这批 APEX；重启恢复阶段可以把安装会话判为失败。如果先通知 `apexd`、后写 Package Installer 状态，窗口期内重启就可能出现 APEX 已激活、APK 侧却不知道该继续哪个安装会话的不一致状态。
 
-这段顺序直接展示了分阶段安装的原子性来源：持久化状态与 `apexd` 状态之间采用明确的提交次序，不能简化成一句“重启后提升状态”。
+这段顺序直接展示了分阶段安装的原子性来源：持久化状态与 `apexd` 状态之间采用明确的提交次序，一句话“重启后提升状态”概括不了它。
 
 ### 重启前到底检查什么
 
@@ -1223,7 +1221,7 @@ Android 的普通安装本来就有事务边界。Android 17 的 `InstallPackage
 4. **APEX 提交与验证**：包含 APEX 时，向 `apexd` 提交会话，并继续检查 APEX 容器签名与包信息。
 5. **建立 checkpoint 并转为 ready**：支持 checkpoint 的设备调用 `StorageManager.startCheckpoint(2)`，随后按前述顺序更新 Package Installer 与 `apexd` 的状态：先持久化 `ready`，再通知 `apexd`。
 
-“重启前验证”（pre-reboot verification）不能简化成检查磁盘空间和签名。它还负责检查并发的分阶段安装会话、回滚、包重叠和 APEX 状态是否一致。
+“重启前验证”（pre-reboot verification）检查的远不止磁盘空间和签名：并发的分阶段安装会话、回滚、包重叠和 APEX 状态是否一致，都在它的清单上。
 
 Developer Verification 位于安装会话的通用验证路径中，发生在分阶段安装专用验证之前。Android 17 设备若启用了相应服务，并且当前安装适用该策略，分阶段安装会话同样必须通过它。
 
@@ -1256,11 +1254,11 @@ Developer Verification 位于安装会话的通用验证路径中，发生在分
                            └─ 普通 APK 安装事务
 ```
 
-`restoreSessions()` 发现系统构建指纹（build fingerprint）与提交时记录不一致后，会让待恢复的安装会话失败。系统镜像已经改变，重启前完成的验证不能继续作为当前系统上的有效结论。
+`restoreSessions()` 发现系统构建指纹（build fingerprint）与提交时记录不一致后，会让待恢复的安装会话失败。系统镜像已经改变，重启前完成的验证在当前系统上就失效了。
 
-尚未就绪的安装会话不会被强行安装。Android 17 会把它移出本轮立即恢复集合，并在 `BOOT_COMPLETED` 之后重新触发验证。因此，本次开机通常不会应用该会话，系统也不会绕过检查继续安装。
+尚未就绪的安装会话不会被强行安装：它会被移出本轮立即恢复的集合，等 `BOOT_COMPLETED` 之后再重新触发验证。本次开机通常就不会应用它，绕过检查直接安装的情况也不存在。
 
-### 文件系统 checkpoint 不等同于 Virtual A/B
+### 文件系统 checkpoint 与 Virtual A/B 的关系
 
 `StagingManager` 通过 `StorageManager` 使用以下能力：
 
@@ -1269,9 +1267,9 @@ Developer Verification 位于安装会话的通用验证路径中，发生在分
 - `startCheckpoint(2)`：为分阶段激活建立 checkpoint。
 - `abortChanges("abort-staged-install", false)`：失败时放弃变更并回到安全状态。
 
-这些是文件系统 checkpoint 接口。Virtual A/B 设备可能同时使用快照和 checkpoint，但源码中的 `supportsCheckpoint()` 不能直接改写成“是否支持 Virtual A/B”。分析日志时应保留 API 的准确含义。
+这些是文件系统 checkpoint 接口。Virtual A/B 设备可能同时使用快照和 checkpoint，但读日志时我们要保留 API 的准确含义：`supportsCheckpoint()` 就写“是否支持 checkpoint”，别顺手改写成“是否支持 Virtual A/B”。
 
-没有文件系统 checkpoint 时，系统不允许并行恢复多批分阶段安装会话，因为缺少覆盖多批系统变更的统一回退边界。
+没有文件系统 checkpoint 时，系统就不允许并行恢复多批分阶段安装会话——少了能统一回退多批系统变更的安全网。
 
 ### 不同安装会话的恢复差异
 
@@ -1296,7 +1294,7 @@ Developer Verification 位于安装会话的通用验证路径中，发生在分
 
 仅 APK 的会话在重启后安装失败时，通常会调用 `setSessionFailed()` 并清理自己的暂存目录。包含 APEX 的失败影响更大：系统可能调用 `revertActiveSessions()`，再通过 checkpoint 回退；如果回退本身失败，还可能触发重启，以免系统继续运行在无法确认一致性的状态中。
 
-恢复阶段若发现某个 APEX 会话已处于激活失败（activation failed）、状态未知（unknown）、已回退（reverted）、正在回退或回退失败等状态，会阻止相关会话继续应用。出现“一个 APEX 会话失败，其他分阶段安装会话也被标记失败”时，不应按普通 APK 的独立失败模型排查。
+恢复阶段若发现某个 APEX 会话已处于激活失败（activation failed）、状态未知（unknown）、已回退（reverted）、正在回退或回退失败等状态，会阻止相关会话继续应用。出现“一个 APEX 会话失败，其他分阶段安装会话也被标记失败”时，别按普通 APK 的独立失败模型排查：这类失败会传播到同批会话。
 
 失败原因还会写入：
 
@@ -1304,7 +1302,7 @@ Developer Verification 位于安装会话的通用验证路径中，发生在分
 /metadata/staged-install/failure_reason.txt
 ```
 
-这份文件需要相应权限才能读取，在量产用户版本（user build）上不能假设 `adb shell` 一定可见。
+这份文件要相应权限才能读取；在量产用户版本（user build）上，`adb shell` 能否看到要实际验证。
 
 ### Android 17 的 dexopt 边界
 
@@ -1319,19 +1317,19 @@ Android 17 的应用安装 `dexopt` 已由 ART Service 负责。分阶段 APK �
 - `install-bulk`
 - `install-bulk-secondary`
 
-`InstallScenarioHelper` 还会根据电池和温控状态调整批量安装策略。最终编译过滤器（compiler filter）受设备配置、安装参数、性能配置文件（profile）和 ART Service 策略共同影响，不能只看一个 `dalvik.vm.*dex2oat-filter` 属性下结论。
+`InstallScenarioHelper` 还会根据电池和温控状态调整批量安装策略。最终编译过滤器（compiler filter）受设备配置、安装参数、性能配置文件（profile）和 ART Service 策略共同影响；只看一个 `dalvik.vm.*dex2oat-filter` 属性就下结论，会漏掉大半变量。
 
 APEX 本身不会作为普通应用交给这条 `dexopt` 路径。在 APEX 与 APK 混合会话中，需要执行应用 `dexopt` 的是 APK 子会话。
 
-安装时的 `dexopt` 采用尽力而为策略，也就是编译失败通常不会单独导致安装失败。Android 17 的 `DexOptHelper` 明确避免仅因 `dexopt` 步骤失败就让应用安装失败。因此：
+安装时的 `dexopt` 采用尽力而为策略：编译失败通常不会单独导致安装失败，`DexOptHelper` 也明确避免仅因 `dexopt` 失败就让安装失败。因此：
 
-- “安装会话失败”不能自动归因于 `dex2oat`；应先检查 Package Installer 保存的错误码和错误信息。
+- “安装会话失败”要先检查 Package Installer 保存的错误码和错误信息，再考虑 `dex2oat`；
 - `dexopt` 失败可能表现为安装后首次运行需要解释执行或等待后续编译，不一定触发分阶段安装回退。
-- `INSTALL_FAILED_DEXOPT`、进程被杀或空间不足等日志必须和当前代码路径核对，不能拿旧版行为直接套用。
+- `INSTALL_FAILED_DEXOPT`、进程被杀或空间不足等日志必须和当前代码路径核对，旧版行为直接套用会出错。
 
 ### 性能测量：分为三个时间窗口
 
-分阶段安装会跨过一次重启，`commit()` 到 `isApplied()` 无法只靠一段连续的进程内计时或一份短 Perfetto 系统轨迹测准。因此，应分成三个窗口测量，并用持久化的会话 ID 与状态时间把结果关联起来。
+分阶段安装跨过一次重启，`commit()` 到 `isApplied()` 这段时间，一段连续的进程内计时或一份短 Perfetto 系统轨迹都罩不住。我们把它分成三个窗口测量，再用持久化的会话 ID 和状态时间把结果串起来。
 
 #### 窗口一：重启前提交与验证
 
@@ -1346,7 +1344,7 @@ APEX 本身不会作为普通应用交给这条 `dexopt` 路径。在 APEX 与 A
 - APEX 提交和验证；
 - 建立 checkpoint 并持久化就绪状态。
 
-这部分的结束条件是 `SessionInfo.isStagedSessionReady()`，不能以 `commit()` 返回为准。验证中包含异步步骤，调用方必须通过回调或查询安装会话状态，等待它进入 `ready` 或 `failed`。
+这一窗口的结束条件是 `SessionInfo.isStagedSessionReady()`，`commit()` 返回了什么不算数。验证里有异步步骤，调用方要靠回调或查询安装会话状态，等它进入 `ready` 或 `failed`。
 
 #### 窗口二：重启与开机早期
 
@@ -1368,7 +1366,7 @@ Android 17 源码中可直接依赖的系统轨迹名称包括：
 - `installPackages`
 - `dexopt`
 
-前两个位于 `StagingManagerTiming`，后两个用于观察普通 APK 安装事务与 ART 编译。这里的 slice 是系统轨迹中的一段带起止时间的工作区间。先用精确名称查找，再展开它们的父子区间：
+前两个位于 `StagingManagerTiming`，后两个用于观察普通 APK 安装事务与 ART 编译；slice 指系统轨迹里一段带起止时间的工作区间。我们先用精确名称查找，再展开它们的父子区间：
 
 ```sql
 SELECT
@@ -1385,7 +1383,7 @@ WHERE name IN (
 ORDER BY ts;
 ```
 
-不要预设 `verifyPackage`、`collectCertificates`、`commitPackageSettings`、`relabel` 一定是稳定存在的 slice 名称。不同版本和厂商分支可能没有这些名称，应先在目标系统轨迹中确认，再编写 SQL。
+`verifyPackage`、`collectCertificates`、`commitPackageSettings`、`relabel` 这些名字未必稳定存在：不同版本和厂商分支可能没有它们，先在目标系统轨迹里确认，再写 SQL。
 
 查看 `artd`、`dex2oat`、`apexd`、`installd` 和 `system_server` 的 CPU 调度时间，可以使用下面的进程维度查询：
 
@@ -1403,7 +1401,7 @@ GROUP BY process.name
 ORDER BY cpu_ms DESC;
 ```
 
-CPU 时间不能替代从开始到结束的墙钟时间。若 `dex2oat` 的 CPU 时间不高但对应区间很长，还要检查可运行态等待（runnable 延迟）、I/O 等待、温控降频和内存压力。
+CPU 时间回答不了墙钟时间的问题。`dex2oat` 的 CPU 时间不高但对应区间很长时，接着查可运行态等待（runnable 延迟）、I/O 等待、温控降频和内存压力。
 
 #### 一次可复现的测量应记录什么
 
@@ -1418,7 +1416,7 @@ CPU 时间不能替代从开始到结束的墙钟时间。若 `dex2oat` 的 CPU 
 7. 提交前系统轨迹、开机系统轨迹、恢复阶段系统轨迹和完整的 `logcat -b all`。
 8. `isReady`、`isApplied`、`isFailed` 的状态变化时间。
 
-跨设备比较时，应使用同一批安装文件、同一安装参数，以及相近的温控和电量条件。仅报告“安装总耗时降低 30%”而不说明时间窗口，通常没有可比性。
+跨设备比较要用同一批安装文件、同一安装参数，以及相近的温控和电量条件。只报一句“安装总耗时降低 30%”而不说明时间窗口，通常没有可比性。
 
 ### 实战排障
 
@@ -1442,7 +1440,7 @@ adb logcat -b all -d | grep -E \
 5. 含 APEX 时，`apexd` 提交、容器签名和包名检查是否通过。
 6. `/data` 剩余空间是否足以写入暂存目录和后续安装产物。
 
-不要把“提交命令已返回”当成 `ready`。命令行测试可使用 `--staged-ready-timeout` 等待 `ready` 或 `failed`；超时只说明等待窗口结束，不能自动证明系统死锁。
+“提交命令已返回”和 `ready` 是两个节点，别当成一个。命令行测试可用 `--staged-ready-timeout` 等待 `ready` 或 `failed`；超时只说明等待窗口结束，系统是否死锁还要靠别的证据。
 
 #### 已经 `ready`，但重启后没有变为 `applied`
 
@@ -1497,7 +1495,7 @@ adb logcat -b all -d | grep -E \
   'INSTALL_FAILED_INSUFFICIENT_STORAGE|PackageInstaller|StagingManager|apexd'
 ```
 
-目录读取受系统构建类型和 SELinux 权限限制。看不到 `/data/app-staging` 不等于目录不存在，也不能因此排除空间问题。APEX 与 APK 混合会话还要结合 `apexd` 日志和 `dumpsys apexservice`；`/data/apex/active` 也不是 Package Installer 写入 APK 的暂存目录。
+目录读取受系统构建类型和 SELinux 权限限制：看不到 `/data/app-staging`，可能只是权限不够，空间问题仍在候选里。APEX 与 APK 混合会话还要结合 `apexd` 日志和 `dumpsys apexservice`；Package Installer 写入 APK 的暂存目录也另有其处，不在 `/data/apex/active`。
 
 ### 常用命令
 
@@ -1522,7 +1520,7 @@ adb shell pm list staged-sessions --only-parent
 adb shell pm install-abandon <session-id>
 ```
 
-`pm install-create` 之后还要用 `pm install-write` 写入 APK，并在多包安装场景中把子会话加入父会话。具体脚本应检查每条命令的返回值和会话 ID，不要仅凭 `grep Success` 推测父子会话已经正确关联。
+`pm install-create` 之后还要用 `pm install-write` 写入 APK，并在多包安装场景中把子会话加入父会话。具体脚本要逐条检查返回值和会话 ID；只 `grep Success` 就认定父子会话已正确关联，容易漏掉关联错误。
 
 ### 源码阅读入口
 
@@ -1548,7 +1546,7 @@ adb shell pm install-abandon <session-id>
 
 ## AAB 与 PackageInstaller 内容分发
 
-AAB 决定商店侧如何生成和选择 APK 集合，PackageInstaller 承担设备侧安装。两者属于同一软件交付链的不同责任边界：商店负责制品选择、下载和重试，平台从安装会话开始负责校验、确认与提交。
+AAB 决定商店侧如何生成和选择 APK 集合，PackageInstaller 承担设备侧安装。两者处在同一条软件交付链的不同位置：商店负责制品选择、下载和重试，平台从安装会话开始负责校验、确认与提交。
 
 | 场景 | 平台接收的输入 | 主要系统组件 | 平台负责什么 |
 | --- | --- | --- | --- |
@@ -1571,13 +1569,13 @@ Android 封存 session，完成验证、确认和安装
 PackageInstaller 通过 IntentSender 返回最终状态
 ```
 
-这里有三个经常被混为一谈的边界。
+这条链上有三个经常被混为一谈的分界点。
 
-#### 1. AAB 不能直接安装到 Android 设备
+#### 1. AAB 与设备端 APK 的关系
 
-Android App Bundle（AAB）是发布格式。Google Play 可以根据应用二进制接口（ABI）、屏幕密度、语言和动态功能模块，从 AAB 生成目标设备需要的 APK。其他分发系统也可以通过 `bundletool` 生成一组 APK。设备端最终安装的仍是 APK：一个基础 APK，加上零个或多个 split APK；split APK 按设备配置或功能模块拆分代码和资源。
+Android App Bundle（AAB）是发布格式。Google Play 可以根据 ABI、屏幕密度、语言和动态功能模块，从 AAB 生成目标设备需要的 APK；其他分发系统也可以用 `bundletool` 生成。设备端最终安装的仍是 APK：一个基础 APK，加上零个或多个 split APK，split 按设备配置或功能模块拆分代码和资源。
 
-`PackageInstaller` 不解析 `.aab`，也不替应用商店决定应该下载哪些配置 split APK。若安装器漏掉必需的 split APK，或把不同版本、不同签名的 APK 混在同一个安装会话中，平台会拒绝安装。
+`PackageInstaller` 既不解析 `.aab`，也不替商店决定下载哪些配置 split APK。安装器漏掉必需的 split APK，或把不同版本、不同签名的 APK 混进同一个安装会话，平台都会拒绝安装。
 
 Android 17 的 `PackageInstaller` API 文档和 `PackageInstallerSession.validateApkInstallLocked()` 都把同一组 APK 的一致性作为设备端安装前置条件：
 
@@ -1590,13 +1588,13 @@ Android 17 的 `PackageInstaller` API 文档和 `PackageInstallerSession.validat
 
 #### 2. 下载器和 PackageInstaller 是两个模块
 
-内容分发网络（CDN）选择、HTTP 并发、断点续传和网络切换恢复属于商店下载器。`PackageInstaller.Session.openWrite(name, offset, length)` 支持从指定文件偏移继续写入安装会话，但它不发起网络请求，也不知道 CDN 的存在。
+内容分发网络（CDN）选择、HTTP 并发、断点续传和网络切换恢复属于商店下载器。`PackageInstaller.Session.openWrite(name, offset, length)` 支持从指定文件偏移继续写入安装会话，但它不发起网络请求，也看不见 CDN。
 
 已知 `length` 时应传入真实长度，系统可以提前分配暂存空间。`offset` 是开始写入的文件偏移量，适合从安装会话中已经写入的位置继续；安装器仍要自行保证远端文件没有变化，并校验下载结果。
 
 因此，“弱网下载失败”要在下载层定位；“APK 已写完但 `commit()` 失败”才进入 PackageInstaller 和 Package Manager 的诊断范围。
 
-#### 3. 普通安装器不因此获得静默安装能力
+#### 3. 创建安装会话与静默安装的差别
 
 任何应用都可以使用安装会话 API 创建安装请求，但最终能否无交互安装，取决于调用方身份、权限、设备策略和用户授权。面向普通用户的外部来源安装通常需要：
 
@@ -1604,7 +1602,7 @@ Android 17 的 `PackageInstaller` API 文档和 `PackageInstallerSession.validat
 - 用户允许该来源请求安装应用；
 - 在 `STATUS_PENDING_USER_ACTION` 返回后，由可见界面或通知引导用户完成系统确认。
 
-设备所有者、关联的资料所有者以及持有系统级安装权限的组件有不同规则。应用不能把“能够创建安装会话”理解为“能够静默安装”。
+设备所有者、关联的资料所有者以及持有系统级安装权限的组件遵循另一套规则。“能够创建安装会话”和“能够静默安装”之间，隔着上面这一串条件。
 
 ### 二、PackageInstaller 安装会话的执行过程
 
@@ -1688,31 +1686,31 @@ PackageInstallerSession.commit()
                         └─ InstallingSession.installStage()
 ```
 
-`commit()` 返回不代表安装完成。它只发起异步处理，最终结果由 `IntentSender` 送回。把 `commit()` 放到主线程并不会让系统安装工作在应用主线程执行；但如果安装器自己的下载、哈希计算或 APK 复制阻塞主线程，仍会造成应用无响应（ANR）。
+`commit()` 返回只代表异步处理开始，最终结果由 `IntentSender` 送回。把它放到主线程，并不会让系统安装工作跑到应用主线程上；但安装器自己的下载、哈希计算或 APK 复制阻塞主线程时，应用无响应（ANR）照样发生。
 
 #### 3. 完整安装、继承安装和多包安装
 
 `SessionParams.MODE_FULL_INSTALL` 提供一个完整 APK 集合。`MODE_INHERIT_EXISTING` 用于保留已有 APK，并增加、替换或移除部分 split APK；它要求目标包已经存在，新增内容也必须与现有安装一致。
 
-Android 10（API 29）起，父安装会话可以通过 `setMultiPackage()` 关联多个子会话。提交父会话时，所有子会话作为一个原子多包请求处理：共同成功，或共同失败。它不代表并行下载，也不会取消每个子包各自的签名、策略和兼容性检查。
+Android 10（API 29）起，父安装会话可以通过 `setMultiPackage()` 关联多个子会话。提交父会话时，所有子会话作为一个原子多包请求处理：共同成功，或共同失败。多包提交管的是原子性，下载仍各下各的，每个子包的签名、策略和兼容性检查一项不少。
 
-分阶段安装会话（staged session）主要服务于需要跨重启验证和应用的系统级更新。普通应用商店不应为了“更可靠”而把所有安装都改成分阶段安装。
+分阶段安装会话（staged session）主要服务于要跨重启验证和应用的系统级更新。普通应用商店不必为了“更可靠”把日常安装都改成分阶段安装。
 
 #### 4. Streaming、Incremental 与普通 `openWrite()`
 
-`PackageInstallerSession` 确有流式（Streaming）和增量式（Incremental）`DataLoader` 分支，但它们需要专门的数据加载协议、权限和文件系统配合。普通安装器使用 `openWrite()` 顺序写入 APK，不会自动变成“边下载边运行”的增量安装。
+`PackageInstallerSession` 确有流式（Streaming）和增量式（Incremental）`DataLoader` 分支，但要专门的数据加载协议、权限和文件系统配合。普通安装器用 `openWrite()` 顺序写入 APK，得到的仍是普通安装，“边下载边运行”要走显式配置的增量路径。
 
 分析安装性能时应先确认安装会话参数和 `DataLoader` 类型，再讨论数据是否完整暂存。把所有安装都归为流式解析，会误判磁盘占用和首次启动行为。
 
 ### 三、Android 17 的验证边界
 
-#### 1. APK 签名验证解决的是软件包身份连续性
+#### 1. APK 签名验证的职责
 
-APK 签名用于确认 APK 内容未在签名后被修改，并约束同一包名的更新关系。Android 17 兼容性定义文档（CDD）要求设备支持 APK Signature Scheme v3.2、v3.1、v3、v2 和 JAR 签名；这不表示每个 APK 都同时带有所有签名方案。
+APK 签名用于确认 APK 内容未在签名后被修改，并约束同一包名的更新关系。Android 17 兼容性定义文档（CDD）要求设备支持 APK Signature Scheme v3.2、v3.1、v3、v2 和 JAR 签名；设备端全支持，单个 APK 却未必样样都带。
 
-在 `PackageInstallerSession` 中，新增 APK 会经过 `ApkSignatureVerifier`，基础 APK 与 split APK 的 `SigningDetails` 必须一致。更新已有应用时，Package Manager 还会检查新旧签名或有效的签名轮换关系。签名不匹配属于安装冲突或无效包，不能通过关闭某个“性能校验”来绕过。
+在 `PackageInstallerSession` 中，新增 APK 会经过 `ApkSignatureVerifier`，基础 APK 与 split APK 的 `SigningDetails` 必须一致。更新已有应用时，Package Manager 还会检查新旧签名或有效的签名轮换关系。签名不匹配属于安装冲突或无效包，没有任何“性能校验”开关能绕过它。
 
-#### 2. Android 17 开发者验证不是 APK 签名的替代品
+#### 2. 开发者验证与 APK 签名的分工
 
 开发者验证的结果字段在 `PackageInstaller` 文档中标为 Android 16.1（API 36.1）加入；Android 17 / API 37 继续提供，并把安装器的目标 SDK 是否大于 API 36 作为一条新的回调行为边界。相关接口和结果信息包括：
 
@@ -1721,11 +1719,11 @@ APK 签名用于确认 APK 内容未在签名后被修改，并约束同一包�
 - 开发者被阻止、网络不可用和未知错误等原因码；
 - 验证扩展参数及响应。
 
-APK 签名回答“这个更新是否延续了允许的签名身份”，开发者验证回答“当前安装策略下，开发者和包名是否满足验证要求”。Android 17 源码中的 `PackageInstallerSession.handleInstall()` 会在完成用户确认和 APK 解析后，在功能启用时启动 `DeveloperVerifierController`，随后才继续安装会话的其余验证。
+APK 签名回答“这个更新是否延续了允许的签名身份”，开发者验证回答“当前安装策略下，开发者和包名是否满足验证要求”。时序上，`PackageInstallerSession.handleInstall()` 在完成用户确认和 APK 解析后，于功能启用时启动 `DeveloperVerifierController`，随后才继续安装会话的其余验证。
 
-安装器必须以 `EXTRA_STATUS` 为主状态，并在失败时读取开发者验证原因。网络不可用不应统一显示成“APK 损坏”；设备策略是否允许用户继续，由系统确认界面和验证策略决定。
+安装器必须以 `EXTRA_STATUS` 为主状态，并在失败时读取开发者验证原因。网络不可用要按网络问题展示，统一显示成“APK 损坏”会误导用户；设备策略是否允许用户继续，由系统确认界面和验证策略决定。
 
-#### 3. 安装失败不能只归因于签名
+#### 3. 安装失败状态的分类处理
 
 常见返回状态应按类别处理：
 
@@ -1742,7 +1740,7 @@ APK 签名回答“这个更新是否延续了允许的签名身份”，开发�
 
 ### 四、安装性能应该怎样测
 
-没有脱离设备、包结构和安装模式的固定优化百分比。建议把时间轴分成以下阶段：
+固定的优化百分比离不开设备、包结构和安装模式这三个前提。我们把时间轴分成以下阶段：
 
 1. **商店选择与下载**：服务端选择 APK 集合、首字节、下载完成、重试次数；
 2. **安装会话写入**：`createSession()` 到最后一个输出流关闭，分别统计下载等待和本地写入；
@@ -1759,7 +1757,7 @@ APK 签名回答“这个更新是否延续了允许的签名身份”，开发�
 | split APK 安装失败 | 基础 APK 与 split APK 的版本、签名、名称、设备配置和依赖 | 增量更新机制失败 |
 | 安装器界面 ANR | 下载、复制、哈希和回调处理是否占用主线程 | 系统安装逻辑运行在应用界面线程 |
 
-如果需要比较单体 APK 与 split APK，应固定设备、包版本、数据状态和安装方式，分别报告下载字节数、安装会话写入字节数、提交耗时和最终占用。AAB 能减少多少下载量取决于资源、ABI、语言和模块拆分，不能给出适用于所有应用的区间。
+如果需要比较单体 APK 与 split APK，应固定设备、包版本、数据状态和安装方式，分别报告下载字节数、安装会话写入字节数、提交耗时和最终占用。AAB 能省多少下载量，取决于资源、ABI、语言和模块拆分，适合所有应用的区间给不出来。
 
 内容分享虽然也会使用 PackageManager 做目标解析，但它属于 `ACTION_SEND`、Sharesheet 与 URI 授权主题，不属于软件包安装流水线，本文不再展开。
 
@@ -1811,7 +1809,7 @@ Android 17 源码把它作为可选 ART 管理文件。没有 `.sdm` 是正常�
 
 ## 结论
 
-Android 17 的安装流程可以简要概括为：`PackageInstallerSession` 管事务，PMS 管包状态，`installd` 管应用数据和底层文件，ART Service 与 `artd` 管 dexopt，`dex2oat` 执行计算量最大的编译工作。
+整条安装流程可以简要概括为：`PackageInstallerSession` 管事务，PMS 管包状态，`installd` 管应用数据和底层文件，ART Service 与 `artd` 管 dexopt，`dex2oat` 执行计算量最大的编译工作。
 
 有用的性能结论必须回答三个问题：
 

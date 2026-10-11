@@ -60,15 +60,15 @@ consolidated_from:
 
 # 内存泄漏检测与治理
 
-内存上涨只能说明占用正在变化，无法单独证明泄漏；OOM（内存耗尽）的报错位置也未必是增长源。Android 应用的内存包含 ART（Android 运行时）托管堆（managed heap）、原生堆（native heap）、线程栈、代码与文件映射、图形缓冲区等部分。
+这篇文章处理内存治理中最容易混为一谈的两个判断：占用是不是在泄漏，以及一条泄漏结论需要什么证据。内存上涨只说明占用在变化，说明不了泄漏；OOM 报错的位置也未必是增长源。反过来，一个对象仍然可达，同样说明不了它已经越过业务生命周期。Android 应用的内存由 ART 托管堆、原生堆、线程栈、代码与文件映射、图形缓冲区等部分组成，增长可能落在其中任何一段。
 
-某个对象仍可达，也不等于它已经违反业务生命周期。
+> 源码基线：Android 17 / API 37 / `android-17.0.0_r1`。
 
-平台基线为 Android 17 / API 37 / `android-17.0.0_r1`。排查需要回答三个问题：
+排查要依次回答三个问题：
 
 1. 怎样证明对象已经失去业务用途，却仍被强引用链保留？
 2. 怎样区分托管堆泄漏、原生分配增长和正常缓存？
-3. 怎样让本地复现、生产信号、采集产物与回归验证使用同一套证据口径？
+3. 怎样让本地复现、生产信号、采集产物与回归验证对得上？
 
 文中保留与 API、工具界面和 Perfetto 数据源一致的英文标识：
 
@@ -83,15 +83,13 @@ consolidated_from:
 | RSS / PSS | RSS 是进程驻留页总量；PSS 会按共享者数量分摊共享页。它们是进程内存统计，不是某一个堆的大小。 |
 | fork / COW | fork 创建子进程；COW（Copy-on-Write，写时复制）让父子进程先共享物理页，任一方写入时才复制对应页。 |
 
-工具选择应跟随增长所在的内存分区：对象图用于判断 Java 引用，原生分配调用栈用于判断 C/C++ 增长，退出记录只说明进程如何结束。
-
-Android 17 新增 `ProfilingManager` 的 OOM 与 anomaly trigger（系统事件触发器）。`ApplicationExitInfo`、LeakCanary 和 KOOM 各自回答不同问题，退出记录、对象保留和泄漏结论不能互相替代。
+工具选择跟随增长所在的内存分区：对象图用于判断 Java 引用，原生分配调用栈用于判断 C/C++ 增长，退出记录只说明进程如何结束。Android 17 起，`ProfilingManager` 增加了 OOM 与 anomaly 两类系统事件 trigger。`ApplicationExitInfo`、LeakCanary 和 KOOM 各自回答不同的问题：退出记录、对象保留和泄漏结论，互相替代不了。
 
 ## 1. 先定义“泄漏”
 
-### 1.1 GC 可达性只回答“能不能回收”
+### 1.1 GC 可达性
 
-ART 从 GC Root 出发遍历引用图。只要对象仍能通过强引用路径到达，GC 就不能回收它。排查时应按分析器报告的 Root 类型阅读完整路径：
+我们从一个基本事实开始：ART 的垃圾回收从 GC Root 出发遍历引用图，只要对象仍能通过强引用路径到达，GC 就会一直留着它。分析器报告的 Root 类型本身就是线索，排查时按类型读完整路径：
 
 | Root 类别 | 常见来源 | 排查重点 |
 | --- | --- | --- |
@@ -101,32 +99,28 @@ ART 从 GC Root 出发遍历引用图。只要对象仍能通过强引用路径�
 | JNI global reference（JNI 全局引用） | `NewGlobalRef()` | 是否存在配对的 `DeleteGlobalRef()` 与明确持有者 |
 | VM internal / monitor（运行时内部结构或监视器） | 虚拟机内部对象、锁相关结构 | 结合 Root 类型、引用边与对象生命周期判断 |
 
-静态字段通常位于“类对象 → static field → 业务对象”的路径上。把每个 static 字段都当成独立 GC Root，就漏掉了类对象这一层，也容易把合法进程级状态误判成泄漏。
+静态字段通常位于“类对象 → static field → 业务对象”的路径上。把每个 static 字段都当成独立 GC Root，会漏掉类对象这一层，也容易把合法的进程级状态误判成泄漏。
 
-泄漏判断还需要业务语义：
+所以可达性之外，泄漏判断还要加上业务语义：
 
 > 对象已经越过应有生命周期，却仍被一条不必要的强引用路径保留。
 
-因此，“GC Root 到对象有路径”只是必要证据之一。单例、进程级缓存和当前显示的 Activity 都会有 Root 路径，它们可能仍在合法生命周期内。
+“GC Root 到对象有路径”只是必要证据之一：单例、进程级缓存、当前显示的 Activity 都有 Root 路径，它们可能仍在合法生命周期内。
 
-### 1.2 retained object：已保留对象还需核查
+### 1.2 retained object 的核查
 
-页面收到 `onDestroy()`、Fragment view 收到 `onDestroyView()` 或 ViewModel 收到 `onCleared()` 后，工具可以延迟观察对应对象是否仍存在。对象经过一次观察窗口仍未回收，只能先记为 retained object。
-
-retained object 不一定已经构成泄漏：
+页面收到 `onDestroy()`、Fragment view 收到 `onDestroyView()` 或 ViewModel 收到 `onCleared()` 后，工具可以延迟观察对应对象是否仍存在。对象经过一个观察窗口仍未回收，先记作 retained object。它离泄漏结论还差一步，因为有四种常见解释：
 
 - GC 可能尚未发生；
 - 测试框架、调试器或系统组件可能暂时持有对象；
 - 异步任务可能仍在合法完成阶段；
 - 设备厂商修改过的系统框架（framework）可能存在已知泄漏。
 
-可靠结论需要把生命周期事件、引用路径、持有者语义和重复复现放在一起。
+可靠结论要把生命周期事件、引用路径、持有者语义和重复复现放在一起看。
 
-### 1.3 OOM 也不等于 Java 对象泄漏
+### 1.3 OOM 的来源
 
-应用层 OOM 没有跨设备固定的 256 MB 或 512 MB 阈值。托管堆上限随设备配置和应用属性变化；原生分配、线程创建、地址空间、图形缓冲区和 `mmap` 文件/匿名映射也可能触发不同形式的内存失败。
-
-排查 OOM 时至少区分下面几类现象：
+应用层 OOM 没有跨设备固定的 256 MB 或 512 MB 阈值：托管堆上限随设备配置和应用属性变化，原生分配、线程创建、地址空间、图形缓冲区和 `mmap` 文件/匿名映射也可能触发不同形式的内存失败。排查 OOM 时至少区分下面几类现象：
 
 | 现象 | 优先证据 | 常见方向 |
 | --- | --- | --- |
@@ -137,9 +131,11 @@ retained object 不一定已经构成泄漏：
 | RSS/PSS 上升但 Java heap 稳定 | `dumpsys meminfo`、maps/smaps（进程虚拟内存映射）、Perfetto | `mmap`、共享页、native/graphics |
 | 分配速率过高但回落正常 | allocation recording（分配记录）、GC 事件 | 内存抖动，不一定是泄漏 |
 
-`ActivityManager.getMemoryClass()` 可以读取当前设备为普通应用配置的 Java Heap 上限等级（近似值），但它不是“安全缓存容量”，也不能解释原生或图形内存。
+`ActivityManager.getMemoryClass()` 可以读取当前设备为普通应用配置的 Java Heap 上限等级（近似值）。它不是“安全缓存容量”，适合做预算参考；原生或图形内存不在它的解释范围内。
 
 ## 2. Android 常见泄漏路径
+
+这一节过一遍最常见的泄漏路径。它们分布在 Context、监听器、异步任务、Fragment、Compose、协程和 JNI 各处，结构却是同一个：引用的存活范围，比被引用对象应有的生命周期长。排查时可以拿这份清单对照引用链逐条排除。
 
 ### 2.1 长生命周期对象持有短生命周期 Context
 
@@ -157,11 +153,11 @@ class ImageRepository(context: Context) {
 }
 ```
 
-这里使用 `applicationContext` 是因为仓库与进程同寿命。不要把所有 Context 都改成 Application Context：主题、窗口、权限交互和 Activity Result 等能力仍可能要求 Activity Context。
+这里用 `applicationContext`，是因为仓库与进程同寿命。我们也要留意另一面：主题、窗口、权限交互和 Activity Result 等能力仍可能要求 Activity Context，把所有 Context 都改成 Application Context，就可能弄坏这些能力。
 
 ### 2.2 监听器注册与注销不对称
 
-常见引用链是 `进程级单例 -> 监听器集合 -> Activity/Fragment/View`。注册位置和注销位置必须对应同一生命周期。
+监听器泄漏常见的引用链是 `进程级单例 -> 监听器集合 -> Activity/Fragment/View`。注册和注销要落在同一个生命周期上，泄漏就出在只做了前一半。
 
 下面用 `DefaultLifecycleObserver` 把回调注册限定在可见生命周期内：
 
@@ -186,7 +182,7 @@ class SensorBinding(
 }
 ```
 
-这段代码的重点是所有权清楚：`LifecycleOwner` 进入 `STARTED` 时注册，离开时注销。若业务要求后台继续采集，就应把所有者提升到 Service 或进程组件，而不是省略注销。
+这段代码把所有权交待清楚了：`LifecycleOwner` 进入 `STARTED` 时注册，离开时注销。若业务要求后台继续采集，正确的做法是把所有者提升到 Service 或进程组件，注销这一步省不掉。
 
 ### 2.3 延迟消息和异步任务越过页面生命周期
 
@@ -215,19 +211,19 @@ class ResultFragment : Fragment(R.layout.result) {
 }
 ```
 
-移除回调同时避免任务操作已销毁的 view。协程场景优先选择 `viewLifecycleOwner.lifecycleScope`、`repeatOnLifecycle()` 或结构化并发，让取消关系由作用域表达。
+在 `onDestroyView()` 里移除回调，同时也避免了任务去操作已销毁的 view。协程场景我们优先选 `viewLifecycleOwner.lifecycleScope`、`repeatOnLifecycle()` 或结构化并发，让取消关系由作用域表达。
 
-### 2.4 Fragment view 与 Fragment 是两个生命周期
+### 2.4 Fragment 的两个生命周期
 
-Fragment 可以留在 back stack（返回栈）中，而它的 view 已被销毁。把 binding、Adapter callback、Animator 或 ComposeView 相关对象存为 Fragment 字段时，应在 `onDestroyView()` 释放 view 级引用。
+Fragment 可以留在 back stack 中，而它的 view 已被销毁。把 binding、Adapter callback、Animator 或 ComposeView 相关对象存为 Fragment 字段时，应在 `onDestroyView()` 释放 view 级引用。
 
-不要用 `mFragmentManager == null`、`mCalled == true` 之类 Android 系统框架内部字段判断泄漏。这些字段不是应用契约，其含义也不能代替 view lifecycle（View 生命周期）。
+判断泄漏也不靠 `mFragmentManager == null`、`mCalled == true` 之类系统框架内部字段：这些字段不是应用契约，其含义也不能代替 view lifecycle。
 
-### 2.5 Compose 的 effect 没有释放外部订阅
+### 2.5 Compose effect 与外部订阅
 
 `DisposableEffect` 适合管理必须显式注册和注销的非 Compose 资源。
 
-下面的 composable（可组合函数）会在 key（依赖键）变化或离开 composition（Compose 组合树）时移除监听器：
+下面的 composable 会在 key 变化或离开 composition 时移除监听器：
 
 ```kotlin
 @Composable
@@ -244,11 +240,11 @@ fun NetworkState(source: NetworkStateSource) {
 }
 ```
 
-`remember` 只让对象跟随当前 composition 保存，并不会自动注销外部系统中的 listener（监听器）。`DisposableEffect` 的 `onDispose` 才定义了释放点。
+`remember` 只管对象在当前 composition 里的存续，外部系统中的 listener 要由 `DisposableEffect` 的 `onDispose` 定义释放点。
 
 ### 2.6 `observeForever()`、静态集合与无界缓存
 
-`observeForever()` 的 observer（观察者）不受 Lifecycle 自动管理，调用方必须保存同一个 observer 并执行 `removeObserver()`。RxJava subscription（订阅）、Flow 转换后自建的 scope（协程作用域）、广播接收器和 SDK callback（回调）也遵循同样原则。
+`observeForever()` 的 observer 不受 Lifecycle 自动管理，调用方必须保存同一个 observer 并执行 `removeObserver()`。RxJava subscription、Flow 转换后自建的 scope、广播接收器和 SDK callback 遵循同一原则：谁注册，谁在对应的生命周期注销。
 
 静态集合和缓存还要回答：
 
@@ -257,11 +253,11 @@ fun NetworkState(source: NetworkStateSource) {
 - 淘汰策略依据数量、字节数还是业务代次？
 - 账号切换、退出登录和低内存事件是否会清理？
 
-弱引用不能代替缓存策略。`SoftReference` 也不适合作为可预测缓存；回收时机由运行时决定，命中率和容量都不可控。
+弱引用替代不了缓存策略。`SoftReference` 也撑不起可预测的缓存：回收时机由运行时决定，命中率和容量都控制不了。
 
-### 2.7 Kotlin Coroutine 与 Flow 的生命周期边界
+### 2.7 Kotlin Coroutine 与 Flow 的生命周期
 
-协程泄漏的根源仍是生命周期长短不匹配。scope 决定协程的父子关系与取消边界；页面任务不应放进 `GlobalScope` 或其他进程级 scope。Fragment View 相关的收集任务应绑定 `viewLifecycleOwner`，回调式 API 转为 `callbackFlow` 时则要在 `awaitClose` 中移除 listener。
+协程泄漏的根源仍是生命周期长短不匹配。scope 决定协程的父子关系与取消边界，页面任务放进 `GlobalScope` 或其他进程级 scope，就等于放弃了随页面取消的时机。Fragment View 相关的收集任务应绑定 `viewLifecycleOwner`，回调式 API 转为 `callbackFlow` 时，listener 的移除写进 `awaitClose`。
 
 ```kotlin
 class FeedFragment : Fragment(R.layout.feed) {
@@ -281,39 +277,39 @@ class FeedFragment : Fragment(R.layout.feed) {
 
 ### 2.8 JNI 引用与显式关闭资源
 
-原生代码通过 `NewGlobalRef()` 创建的引用会让 Java 对象跨调用持续可达。每条成功创建的 global reference 都要有明确持有者，并在会话结束、模块卸载或原生对象析构时调用 `DeleteGlobalRef()`。local reference 只在当前原生方法调用范围内有效，不能保存到调用结束以后；跨线程或跨调用时要区分 local、global 与 weak global reference（局部、全局与弱全局引用）。
+原生代码通过 `NewGlobalRef()` 创建的引用会让 Java 对象跨调用持续可达。每条成功创建的 global reference 都要有明确持有者，并在会话结束、模块卸载或原生对象析构时调用 `DeleteGlobalRef()`。local reference 只在当前原生方法调用范围内有效，调用结束之后再持有它就会出问题；跨线程或跨调用时，我们要分清 local、global 与 weak global reference。
 
-`Cursor`、`ParcelFileDescriptor`、`MediaCodec`、`Image`、`Surface` 等对象还带有显式关闭协议。Java wrapper（包装对象）可能很小，背后却连接着原生分配、图形缓冲区或内核对象。持有者应通过 `use`、try-with-resources 或对应的 `close()` 在业务生命周期终点释放；finalizer 或 Cleaner 只能作为延迟兜底，不能保证资源及时归还。
+`Cursor`、`ParcelFileDescriptor`、`MediaCodec`、`Image`、`Surface` 等对象还带有显式关闭协议。Java wrapper 本身可能很小，背后连着的却是原生分配、图形缓冲区或内核对象。持有者应通过 `use`、try-with-resources 或对应的 `close()` 在业务生命周期终点释放；finalizer 或 Cleaner 只能当延迟兜底，资源的及时归还靠显式关闭。
 
 ### 2.9 案例：常驻 Activity 如何保留已关闭弹窗
 
-货拉拉司机端公开复盘中的首页弹窗问题，展示了“业务事件—对象增长—引用链—生命周期缺口”的完整证据链。
+货拉拉司机端公开复盘过一起首页弹窗问题，正好完整走了一遍“业务事件—对象增长—引用链—生命周期缺口”的链路。
 
-测试人员每两秒触发一次弹窗，约八分钟、约 240 次展示后观察到内存上涨约 50 MB；线上 OOM 样本中的弹窗展示次数超过 2000 次。这些数字只描述当时版本和测试口径，尚不足以证明泄漏。
+测试人员每两秒触发一次弹窗，约八分钟、约 240 次展示后，观察到内存上涨约 50 MB；线上 OOM 样本中的弹窗展示次数超过 2000 次。这些数字描述的是当时版本和当时的测试条件，单凭它们还定不下泄漏结论。
 
 heap dump 进一步显示 `SolverVariable[]`、`SolverVariable`、`ArrayRow` 等布局对象持续增加，一条引用链从弹窗 `mView` 经 `LifecycleRegistry.mObserverMap` 到常驻 `MainActivity`。代码审查确认：Dialog 初始化时注册了 Activity 生命周期观察者，`dismiss` 时却没有移除。
 
 修复后应使用同一事件序列复测，确认观察者、旧 Dialog/View 和布局对象不再随展示次数累积。
 
-这个案例说明，缺陷来自注册方、注销方和资源生命周期终点的不一致。相同方法也适用于监听器、回调、Flow collector（收集器）和外部 SDK observer。
+缺陷的根源在这里看得很清楚：注册方、注销方和资源生命周期终点没有对上。同一套排查方法也适用于监听器、回调、Flow collector 和外部 SDK observer。
 
 ## 3. 证据链：从“内存上涨”到引用路径
 
 ### 3.1 固定复现场景
 
-一次首页启动和连续执行二十轮页面进出不可直接比较。先固定：
+一次首页启动，和连续执行二十轮页面进出，两组数据没有可比性。比较之前，我们先固定条件：
 
-- 相同设备、系统 build、CPU ABI（应用二进制接口）与应用版本；
+- 相同设备、系统 build、CPU ABI 与应用版本；
 - 相同账号和数据规模；
 - 相同操作序列与等待点；
 - 相同前后台状态；
 - 采集前是否执行 GC、是否连接调试器。
 
-轮次不要写成通用门槛。应根据页面应有对象数、噪声和问题增长速度确定，并在修复前后使用同一协议。
+轮次不设通用门槛，应按页面应有对象数、噪声和问题增长速度确定，修复前后沿用同一协议。
 
-### 3.2 先看分区，再决定工具
+### 3.2 按内存分区选工具
 
-`dumpsys meminfo <package>` 适合做低成本分区观察。分析时应比较 Java Heap、Native Heap、Graphics、Code、Stack 等分区在相同操作序列下的变化，单次总 PSS 只能作为一个采样点。
+`dumpsys meminfo <package>` 适合做低成本分区观察。分析时比较 Java Heap、Native Heap、Graphics、Code、Stack 等分区在相同操作序列下的变化，单次总 PSS 只算一个采样点。
 
 下面的命令用于记录进程内存概况和线程数量：
 
@@ -323,11 +319,11 @@ adb shell pidof com.example.app
 adb shell ls /proc/<pid>/task | wc -l
 ```
 
-把 `<pid>` 替换为 `pidof` 返回值。`dumpsys meminfo` 是采样视图；PSS 会受共享页和系统环境影响，线程数也需要与业务并发阶段一起解释。
+把 `<pid>` 替换为 `pidof` 返回值。`dumpsys meminfo` 是采样视图，PSS 会受共享页和系统环境影响，线程数也要结合业务并发阶段解释。
 
-### 3.3 heap dump 看的是某一时刻的对象图
+### 3.3 用 heap dump 看对象图
 
-Android Studio Heap Dump 可显示类实例、shallow size、retained size、dominator 和引用关系。分析顺序建议为：
+Android Studio Heap Dump 能显示类实例、shallow size、retained size、dominator 和引用关系，我们的分析顺序是：
 
 1. 找到按业务应已销毁的对象实例；
 2. 查看它到 GC Root 的 shortest path（最短引用路径）；
@@ -335,9 +331,9 @@ Android Studio Heap Dump 可显示类实例、shallow size、retained size、dom
 4. 判断这条引用属于应用代码、第三方库还是系统框架；
 5. 修改所有权或注销时机后重复同一场景。
 
-retained size 很大不代表当前节点就是缺陷位置。它表示该对象支配的对象集合大小；修复点往往位于引用路径更靠近 Root 的字段或容器。
+retained size 很大，只说明这个节点支配的对象集合大；修复点往往在引用路径更靠近 Root 的字段或容器上，未必就是当前节点本身。
 
-heap dump 会暂停或扰动被测进程，也会暂时增加内存占用。性能结果不能用 dump 期间的数据代替正常运行数据。
+还要记得 heap dump 会暂停或扰动被测进程，也会暂时增加内存占用；性能结论要用正常运行数据，dump 期间的数据代表不了正常状态。
 
 命令行排查 debuggable 进程时，也可以让 ActivityManager 生成完整 HPROF：
 
@@ -346,13 +342,13 @@ adb shell am dumpheap com.example.app /data/local/tmp/example.hprof
 adb pull /data/local/tmp/example.hprof
 ```
 
-heap dump 文件还可能包含账号、页面文本与业务对象。采集、保存、上传和删除都要遵守调试数据的访问控制；生产设备不应把全量 HPROF 当作常规定时监控数据。
+heap dump 文件还可能包含账号、页面文本与业务对象，采集、保存、上传和删除都要遵守调试数据的访问控制；全量 HPROF 也不适合作为生产设备的常规定时监控数据。
 
-### 3.4 原生增长要看分配调用栈
+### 3.4 原生增长与分配调用栈
 
-Java heap 稳定而 Native Heap 上升时，继续抓 Java HPROF 往往不会得到答案。Perfetto `heapprofd` 是原生堆分析器，能记录 native allocation/free（分配/释放）与调用栈；ART allocation profiling 则面向 Java/Kotlin 分配。
+Java heap 稳定而 Native Heap 上升时，继续抓 Java HPROF 往往拿不到答案，这时要换工具：Perfetto `heapprofd` 是原生堆分析器，能记录 native allocation/free 与调用栈；ART allocation profiling 则面向 Java/Kotlin 分配。
 
-采样频率、目标进程、持续时间和符号化条件会影响开销与可读性。生产环境启用前应在目标机型做开销验证，并保留 build ID（构建标识）、native symbols（原生符号文件）和混淆映射。
+采样频率、目标进程、持续时间和符号化条件都会影响开销与可读性。生产环境启用前先在目标机型做开销验证，并保留 build ID、native symbols 和混淆映射。
 
 ## 4. LeakCanary：开发期 retained-object 检测
 
@@ -361,20 +357,20 @@ LeakCanary 的检测过程可以概括为：
 1. `ObjectWatcher` 用弱引用观察已越过生命周期的对象；
 2. 对象在等待和 GC 后仍存在时，标记为 retained；
 3. retained object 达到当前配置条件后生成 HPROF；
-4. Shark 分析对象图并计算 leak trace（泄漏引用路径）；
+4. Shark 分析对象图并计算 leak trace；
 5. 相同可疑引用路径按 signature（路径特征签名）归组。
 
-阅读一条 LeakCanary 报告时，先确认 `╰→` 指向的对象是否已经越过业务生命周期，再从 GC Root 沿 `↓` 阅读强引用路径。`~~~` 标出的是分析器认为可疑的引用边，修复点仍要回到注册、缓存、任务或 JNI 代码中的实际持有者。
+我们读一条 LeakCanary 报告时，先确认 `╰→` 指向的对象是否已经越过业务生命周期，再从 GC Root 沿 `↓` 阅读强引用路径；`~~~` 标出的是分析器认为可疑的引用边，修复点仍要回到注册、缓存、任务或 JNI 代码中的实际持有者。
 
-retained size 要和 dominator（支配）关系一起看。它估算某对象不可达后可随之释放的内存，不能单独证明对象已经泄漏。
+retained size 要和 dominator 关系一起看：它估算的是某对象不可达后可随之释放的内存，单看这一个数字定不了泄漏。
 
-leak signature（泄漏签名）根据可疑路径归组，适合统计同类缺陷；Shark 展示的是便于诊断的一条路径，对象仍可能存在其他到 Root 的路径，修复后必须重新抓取验证。
+leak signature 按可疑路径归组，适合统计同类缺陷；Shark 展示的只是便于诊断的一条路径，对象仍可能存在其他到 Root 的路径，修复后必须重新抓取验证。
 
-`Library Leak` 表示路径匹配已知库或 Framework 模式，不等于可以忽略。应核对依赖版本和上游修复，评估发生频率与 retained bytes；应用侧无法消除时，仍要记录受影响版本、规避方案和验收条件。
+`Library Leak` 表示路径匹配已知库或 Framework 模式，这类泄漏照样要处理：核对依赖版本和上游修复，评估发生频率与 retained bytes；应用侧消除不掉的，记录受影响版本、规避方案和验收条件。
 
 Activity、Fragment、Fragment view 和 ViewModel 等常见类型可以自动观察。业务自定义对象也可以在确认其生命周期结束后交给 `AppWatcher.objectWatcher.watch()`。
 
-依赖通常只加入 debug variant（调试构建变体），避免把本地分析界面和自动 heap dump 带进生产包：
+依赖通常只加进 debug variant，避免把本地分析界面和自动 heap dump 带进生产包：
 
 ```kotlin
 dependencies {
@@ -382,22 +378,22 @@ dependencies {
 }
 ```
 
-这里用 version catalog（Gradle 版本目录）隐去具体版本，项目应锁定经过验证的依赖版本。LeakCanary 默认策略会随版本变化，阈值和延迟应查当前依赖的配置与文档。
+这里用 version catalog 隐去了具体版本，项目应锁定经过验证的依赖版本；LeakCanary 的默认策略会随版本变化，阈值和延迟以当前依赖的配置与文档为准。
 
-LeakCanary 给出的 leak trace 是定位入口。修复前仍要确认：
+LeakCanary 给出的 leak trace 是定位入口，修复前还要确认：
 
 - 被标记对象在业务上是否已经无用；
 - 可疑引用是否由测试环境或调试器引入；
-- library leak（库或系统已知泄漏）是否有可升级版本或可行规避；
+- library leak 是否有可升级版本或可行规避；
 - 同一 signature 是否能稳定复现。
 
 ## 5. KOOM 与生产环境方案
 
-KOOM 官方仓库提供 Java Heap、Native Heap 和 Thread 三类监控模块。Java leak 模块包含基于 fork/COW 的 heap dump 方案；native 模块和 thread 模块有各自的 hook（拦截目标函数以记录事件）与分析路径。
+KOOM 官方仓库提供 Java Heap、Native Heap 和 Thread 三类监控模块。Java leak 模块包含基于 fork/COW 的 heap dump 方案；native 模块和 thread 模块则通过 hook 拦截目标函数来记录事件，各有自己的分析路径。
 
-截至 2026-08-15，KOOM 仓库未归档，默认分支最近一次推送为 2026-01-12；GitHub 最新正式版仍是 2024-04-16 发布的 v2.2.2。这个时间跨度不能直接证明库与新系统不兼容，接入时仍要固定版本或提交，并覆盖目标 Android 版本、ABI 和厂商设备。
+截至 2026-08-15，KOOM 仓库未归档，默认分支最近一次推送为 2026-01-12，GitHub 最新正式版仍是 2024-04-16 发布的 v2.2.2。这段空窗期说明不了它与新系统不兼容，也说明不了兼容；接入时固定版本或提交，并在目标 Android 版本、ABI 和厂商设备上实测。
 
-KOOM 不应被简化成“计数器推断泄漏”，也不能用固定的“精度高低”表格和 LeakCanary 互相排名。是否接入取决于：
+把 KOOM 简化成“计数器推断泄漏”，或者用一张固定的“精度高低”表格给 KOOM 和 LeakCanary 排名，都偏离了选型该做的事。是否接入取决于：
 
 - 目标 Android 版本、ABI 与厂商设备兼容性；
 - native hook、fork/dump 策略对稳定性和时延的影响；
@@ -405,33 +401,33 @@ KOOM 不应被简化成“计数器推断泄漏”，也不能用固定的“精
 - 符号、混淆映射和服务端分析能力；
 - 项目维护状态以及本地验证结果。
 
-自建方案也不要通过周期性 `System.gc()` 加弱引用来宣布泄漏。低成本趋势信号适合筛选样本，泄漏结论仍要由系统或工具生成的 heap/native profile（堆或原生分配分析产物）支持。
+自建方案同样不要靠周期性 `System.gc()` 加弱引用来宣布泄漏：低成本趋势信号适合筛选样本，泄漏结论仍要由系统或工具生成的 heap/native profile 支持。
 
 ## 6. Android 17：用 `ProfilingManager` 捕获线上证据
 
-### 6.1 API 边界
+### 6.1 ProfilingManager 的能力与版本
 
-`ProfilingManager` 在 API 35（Android 15）加入平台，可请求 system trace（系统轨迹）、Java heap dump、heap profile（堆分配采样）和 stack sampling（调用栈采样）。系统 trigger 能力在后续版本继续扩展。
+`ProfilingManager` 在 Android 15、API 35 加入平台，能请求 system trace、Java heap dump、heap profile 和 stack sampling；系统 trigger 能力在后续版本继续扩展。
 
 Android 17 / API 37 新增了与内存诊断直接相关的 trigger：
 
 - `ProfilingTrigger.TRIGGER_TYPE_OOM`：应用抛出 `OutOfMemoryError` 时采集 Java heap dump；若应用设置了自定义 `Thread.UncaughtExceptionHandler`，该处理器必须继续调用系统默认处理器，否则这个 trigger 不会生效；
 - `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`：系统检测到过量内存使用等异常时，可在系统采取处置前提供相应 profile；Android 17 MemoryLimiter 达到上限时，可通过该 trigger 获取 Java heap dump。
 
-请求受系统 rate limiter（采集频率限制器）、设备状态和采集条件约束，不保证每次事件都有结果。OOM 发生时原进程通常无法继续可靠工作；如果结果生成时应用不在运行，系统会等到应用下次启动并注册 listener（结果监听器）后交付。
+请求受系统 rate limiter、设备状态和采集条件约束，每次事件都有结果是没有保证的。OOM 发生时原进程通常已无法继续可靠工作；如果结果生成时应用不在运行，系统会等到应用下次启动并注册 listener 后再交付。
 
 ### 6.2 区分完整 HPROF 与 Perfetto HeapGraph
 
-Android 17 已不能用 `kill -10 <pid>` 触发 HPROF；数字 10 对应 SIGUSR1 信号。`SignalCatcher::HandleSigUsr1()` 的现行语义是强制 GC 和保存运行时 profile，源码日志明确标注 `no HPROF`。内存取证要区分两条管线：
+取证时还要留意信号触发的版本变化：Android 17 上 `kill -10 <pid>` 已经触发不了 HPROF，数字 10 对应 SIGUSR1 信号，`SignalCatcher::HandleSigUsr1()` 的现行语义是强制 GC 和保存运行时 profile，源码日志明确标注 `no HPROF`。内存取证因此要区分两条管线：
 
 - **完整 HPROF 文件**：应用显式调用 `Debug.dumpHprofData(path)`，或由具备权限的 `am dumpheap` / Android Studio 进入 ART `Hprof::Dump()`；适合交给成熟解析器做离线 dominator 和引用链分析。
-- **Perfetto ART HeapGraph**：配置 `android.java_hprof` 数据源，由 Perfetto producer（数据生产组件）使用 `__SIGRTMIN + 6` 通知目标进程，ART 插件 fork 后把 `HeapGraph` packet（轨迹数据包）写入 trace；适合和时间线关联，但产物不是先落盘的完整 `.hprof`。
+- **Perfetto ART HeapGraph**：配置 `android.java_hprof` 数据源，由 Perfetto producer 使用 `__SIGRTMIN + 6` 通知目标进程，ART 插件 fork 后把 `HeapGraph` packet 写入 trace；适合和时间线关联，但产物不是先落盘的完整 `.hprof`。
 
-Native heapprofd 使用另一条数据源和 `__SIGRTMIN + 4`，不能因为 Java HeapGraph 可采集，就推断 native profile 也满足权限和运行条件。
+Native heapprofd 走另一条数据源和 `__SIGRTMIN + 4`；Java HeapGraph 能采集，native profile 的权限和运行条件仍要单独确认。
 
-完整 HPROF 在 Android 17 中先遍历堆计算输出长度，第二遍才写出；segment（输出分段）以最多 128 个对象或 4 KiB 为边界。直接流式写入能避免为整个 dump 再持有一份大缓冲区，但 dump 仍会暂停、遍历并输出大量数据。Perfetto HeapGraph 同样有 fork、页表、COW、trace buffer（轨迹缓冲区）和子进程序列化成本。
+完整 HPROF 的写出分两遍：先遍历堆计算输出长度，第二遍才写出，segment 以最多 128 个对象或 4 KiB 为边界。直接流式写入避免了为整个 dump 再持有一份大缓冲区，但 dump 仍会暂停、遍历并输出大量数据。Perfetto HeapGraph 这边同样有 fork、页表、COW、trace buffer 和子进程序列化的成本。
 
-两类产物都只能在调试、灰度或系统受控触发下采集，不能放进常规高频监控。
+两类产物的采集只应发生在调试、灰度或系统受控触发下，常规高频监控不在此列。
 
 ### 6.3 注册 trigger 和结果监听
 
@@ -485,9 +481,9 @@ class MemoryProfileRegistrar(
 
 ## 7. `ApplicationExitInfo` 能证明什么
 
-`ApplicationExitInfo` 从 API 30 起记录历史进程退出信息。它适合回答“进程为何退出、退出前系统最近采样到多少 PSS/RSS”，不能直接回答“哪条引用造成泄漏”。
+`ApplicationExitInfo` 从 API 30 起记录历史进程退出信息。它适合回答“进程为何退出、退出前系统最近采样到多少 PSS/RSS”；“哪条引用造成泄漏”要靠前文的 heap dump 与引用路径分析来回答。
 
-Android 17 的 MemoryLimiter 目前只在部分设备启用。按 Android 17 行为变更文档，受限进程的 `reason` 是 `REASON_OTHER`，`description` 包含 `MemoryLimiter:AnonSwap`；同一页还建议注册 `TRIGGER_TYPE_ANOMALY` 获取达到上限时的 heap dump。API 参考中 `REASON_MEMORY_LIMITER` 标为 37.2 版本加入，不能用它替代该行为变更文档的 Android 17 识别规则。
+MemoryLimiter 目前只在部分设备启用。按 Android 17 行为变更文档，受限进程的 `reason` 是 `REASON_OTHER`，`description` 包含 `MemoryLimiter:AnonSwap`；同一页还建议注册 `TRIGGER_TYPE_ANOMALY` 获取达到上限时的 heap dump。API 参考中 `REASON_MEMORY_LIMITER` 标为 37.2 版本加入；在 Android 17 上识别受限进程，以上行为变更文档的规则为准。
 
 生产记录应同时保存 reason、status 和 description，并按目标系统版本验证识别规则。
 
@@ -522,7 +518,7 @@ fun readRecentExits(context: Context): List<ExitSnapshot> {
 }
 ```
 
-`getPss()` 和 `getRss()` 是系统退出前最近一次采样值，可能为零，也不保证等于死亡瞬间。`REASON_LOW_MEMORY` 说明系统在低内存情境下终止进程，仍需结合设备压力、进程重要性和内存分区判断；部分设备不支持该原因码，可用 `ActivityManager.isLowMemoryKillReportSupported()` 查询。`getTraceInputStream()` 主要用于 ANR（应用无响应）trace，以及 API 31 起的 native tombstone（原生崩溃转储）；不要假设每条低内存记录都附带 heap dump。
+`getPss()` 和 `getRss()` 是系统退出前最近一次采样值：可能为零，也未必等于死亡瞬间。`REASON_LOW_MEMORY` 说明系统在低内存情境下终止了进程，具体判断还要结合设备压力、进程重要性和内存分区；部分设备不支持该原因码，可用 `ActivityManager.isLowMemoryKillReportSupported()` 查询。`getTraceInputStream()` 主要用于 ANR trace 和 API 31 起的 native tombstone，别指望每条低内存记录都附带 heap dump。
 
 ## 8. 生产治理：信号、采集与验证分层
 
@@ -534,15 +530,15 @@ fun readRecentExits(context: Context): List<ExitSnapshot> {
 
 - Java/native/graphics 等内存分区的轻量采样；
 - 进程 RSS/PSS 与线程数；
-- OOM、LMK（系统低内存回收进程）、native allocation failure（原生分配失败）和历史退出原因；
-- 当前页面或关键用户流程、设备档位、系统版本、应用 build（构建版本）；
+- OOM、LMK、native allocation failure 和历史退出原因；
+- 当前页面或关键用户流程、设备档位、系统版本、应用 build；
 - 采集器自身耗时、内存和失败率。
 
-单个绝对阈值很难覆盖所有设备。阈值应来自设备分层基线、业务场景和历史分布，并与持续增长、退出原因或异常率组合判断。
+单个绝对阈值很难覆盖所有设备：阈值应来自设备分层基线、业务场景和历史分布，再与持续增长、退出原因或异常率组合判断。
 
 ### 8.2 高成本证据按需触发
 
-heap dump、native allocation profile（原生分配分析产物）和长时间 trace 都会带来资源开销及敏感数据风险。采集策略应限制：
+heap dump、native allocation profile 和长时间 trace 都带资源开销与敏感数据风险，采集策略要设限制：
 
 - 设备与用户抽样；
 - 单设备和单版本配额；
@@ -551,7 +547,7 @@ heap dump、native allocation profile（原生分配分析产物）和长时间 
 - 符号化、反混淆和访问权限；
 - 失败重试和重复事件合并。
 
-系统允许采集不代表产品可以无条件上传。上线前还需满足隐私声明、用户选择和所在地区的数据要求。
+系统允许采集，只是技术前提；上传还要满足隐私声明、用户选择和所在地区的数据要求。
 
 ### 8.3 用回归实验确认修复
 
@@ -563,17 +559,17 @@ heap dump、native allocation profile（原生分配分析产物）和长时间 
 4. 页面行为、异步任务和缓存命中没有被错误破坏；
 5. OOM/LMK 等线上指标按版本和设备分层改善。
 
-一次 heap dump 不再显示对象，只能证明该次快照没有捕获它。稳定复现协议和版本对照才能降低偶然 GC、采样时机与数据规模带来的误判。
+修复后一次 heap dump 里看不到目标对象，只说明这一次快照没抓到它；把偶然 GC、采样时机与数据规模带来的误判压下去，靠的是稳定的复现协议和版本对照。
 
 ## 9. 容易制造新问题的“修复”
 
 - **把所有引用换成 WeakReference**：弱引用会让对象在仍被业务需要时消失，也掩盖所有权设计问题。
-- **用 SoftReference 做核心缓存**：回收时机不可预测，不能保证容量、命中或业务可用性。
+- **用 SoftReference 做核心缓存**：回收时机不可预测，保证不了容量、命中或业务可用性。
 - **频繁调用 `System.gc()`**：GC 请求不构成释放保证，还可能增加暂停和 CPU 开销。
-- **只清空页面字段，不注销外部 listener**：外部持有者（owner）仍可通过 listener 捕获页面。
-- **把 `observeForever()` 当 lifecycle observer（生命周期观察者）**：它必须显式 `removeObserver()`。
+- **只清空页面字段，不注销外部 listener**：外部持有者仍可通过 listener 捕获页面。
+- **把 `observeForever()` 当 lifecycle observer**：它必须显式 `removeObserver()`。
 - **盲目使用对象池**：对象池会延长对象寿命、引入同步和重置成本；只应在基准证明确有收益时使用。
-- **只上传 OOM stack trace（调用栈）**：内存耗尽后异常可能出现在任意后续分配点，stack trace 常常不是增长源。
+- **只上传 OOM stack trace**：内存耗尽后异常可能出现在任意后续分配点，stack trace 常常不是增长源。
 
 ## 10. 排查清单
 
@@ -599,9 +595,9 @@ heap dump、native allocation profile（原生分配分析产物）和长时间 
 
 ## 11. 全文小结
 
-内存泄漏治理的核心证据是“已结束的业务生命周期 + 不必要的强引用路径 + 可重复的保留现象”。OOM、PSS 上涨、retained object 和 `REASON_LOW_MEMORY` 都是线索，单独使用都不足以给出引用泄漏结论。
+内存泄漏治理要凑齐三样东西：已结束的业务生命周期、不必要的强引用路径、可重复的保留现象。OOM、PSS 上涨、retained object 和 `REASON_LOW_MEMORY` 都只是线索，单独哪一个都撑不起引用泄漏的结论。
 
-本地开发优先用 LeakCanary 与 Android Studio heap dump 找对象路径；原生增长用 heapprofd 等 allocation profile；生产环境用低成本趋势筛选样本，再通过 Android 17 `ProfilingManager` OOM/anomaly trigger 或经过验证的生产工具采集产物。修复点应回到所有权和生命周期，而不是依赖 GC、弱引用或固定阈值。
+本地开发优先用 LeakCanary 与 Android Studio heap dump 找对象路径，原生增长交给 heapprofd 等 allocation profile；生产环境先用低成本趋势筛选样本，再用 Android 17 `ProfilingManager` 的 OOM/anomaly trigger 或经过验证的生产工具采集产物。修复点要回到所有权和生命周期本身，GC、弱引用或固定阈值替代不了它们。
 
 ## 参考资料
 

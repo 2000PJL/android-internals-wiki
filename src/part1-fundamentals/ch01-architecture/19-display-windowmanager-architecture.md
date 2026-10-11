@@ -174,22 +174,22 @@ consolidated_from:
 
 # Android 显示架构与 WindowManager
 
-窗口管理负责窗口身份、层级、布局和 Surface 生命周期，渲染系统负责产生和合成缓冲区。本文先建立应用窗口到显示设备的公共主线，再沿 addWindow、StartingWindow、relayout、BLAST 同步、转场和输入窗口快照追踪一次窗口变化。定位问题时，应把 WMS 状态、应用 buffer 与 SurfaceFlinger 的 layer/present 放在同一时间轴上。
+窗口管理负责窗口身份、层级、布局和 Surface 生命周期，渲染系统负责产生和合成缓冲区。本文先建立应用窗口到显示设备的公共主线，再沿 addWindow、StartingWindow、relayout、BLAST 同步、转场和输入窗口快照追踪一次窗口变化。定位问题时，我们把 WMS 状态、应用 buffer 与 SurfaceFlinger 的 layer/present 放在同一时间轴上。
 
 ## 从应用窗口到显示设备
 
 ### 证据范围
 
-AOSP 没有承诺通用的“动态分辨率自动调整”或“基于机器学习的渲染参数自动调整”，`RenderThread`、BufferQueue 复用和 HWC 也都早于 Android 17。GPU 驱动、硬件叠加平面（overlay plane）、显示带宽和功耗策略，大多由芯片系统（SoC）与设备厂商实现，平台版本号无法证明某台设备一定获得性能提升。
+AOSP 没有承诺通用的“动态分辨率自动调整”或“基于机器学习的渲染参数自动调整”，`RenderThread`、BufferQueue 复用和 HWC 也都早于 Android 17。GPU 驱动、overlay plane、显示带宽和功耗策略，大多由芯片系统（SoC）与设备厂商实现，平台版本号无法证明某台设备一定获得性能提升。
 
-讨论范围限定为能够由源码和系统轨迹证明的内容：
+我们只讨论源码和系统轨迹能证明的内容：
 
-- 框架锚定 Android 17 / API 37 / `android-17.0.0_r1`；
-- 涉及 dma-buf、dma-fence、sync_file 或显示驱动边界时，内核锚定 `android17-6.18-2026-06_r6`；
+- 框架基线 Android 17 / API 37 / `android-17.0.0_r1`；
+- 涉及 dma-buf、dma-fence、sync_file 或显示驱动时，内核基线 `android17-6.18-2026-06_r6`；
 - 版本演进保留 Android 12—17 的现代显示基线，版本首引由对应标签或公开 API 文档确认；
-- “性能更好”必须落实到具体对象、等待点和显示时间边界，不能由系统版本或 API 名字推导。
+- “性能更好”要落实到具体对象、等待点和显示时间边界，不能由系统版本或 API 名字推导。
 
-各类出图路径的源码细节和 Perfetto 案例见[第 13 章：渲染管线专题](../../part2-performance/ch13-rendering-pipelines/README.md)。这里先统一定义公共显示主线、时间边界和分类索引。
+各类出图路径的源码细节和 Perfetto 案例见[第 13 章：渲染管线专题](../../part2-performance/ch13-rendering-pipelines/README.md)。我们先把公共显示主线、时间边界和分类索引统一，下面各节都沿用它。
 
 ### 1. Android 17 的公共显示主线
 
@@ -197,7 +197,7 @@ AOSP 没有承诺通用的“动态分辨率自动调整”或“基于机器学
 
 `VSync 调度 → Choreographer → ViewRootImpl/HWUI → RenderThread/GPU → BLAST → SurfaceFlinger → HWC → 显示屏`
 
-这条主线是分析基线。下文把生产图像缓冲区的一方称为 Producer（生产者），把读取缓冲区的一方称为 Consumer（消费者）；layer 是 SurfaceFlinger 管理和合成的画面层。SurfaceView、TextureView、Camera、视频、WebView、Flutter、游戏引擎会在生产者、Surface 数量、layer 组织关系或合成位置上出现不同路径。
+这条主线是后面所有分析的出发点。下文把生产图像缓冲区的一方称为 Producer（生产者），读取缓冲区的一方称为 Consumer（消费者）；layer 是 SurfaceFlinger 管理和合成的画面层。SurfaceView、TextureView、Camera、视频、WebView、Flutter、游戏引擎会在生产者、Surface 数量、layer 组织关系或合成位置上走出不同支路，我们按支路分类，而不按框架名分类。
 
 标准应用窗口从起帧到提交显示（present）的观察点如下：
 
@@ -226,49 +226,49 @@ sequenceDiagram
     HWC-->>SF: present and release fences
 ```
 
-这里的 buffer 是承载一帧像素的图形缓冲区。CPU 调用结束、GPU 完成、buffer 被 SurfaceFlinger 采纳，以及画面提交到显示设备，属于不同时间边界。把这些边界合成一个“渲染完成”时间，会误导排查方向。
+这里的 buffer 是承载一帧像素的图形缓冲区。从这一步开始，我们就要区分四个时刻：CPU 调用结束、GPU 完成、buffer 被 SurfaceFlinger 采纳、画面提交到显示设备。它们属于不同时间边界；把它们合成一个“渲染完成”时间，排查方向就会被带偏。
 
 #### 1.1 起帧与 UI 状态准备
 
-Android 17 的 SurfaceFlinger 调度器会根据预测显示时间（present time），以及应用和 SurfaceFlinger 的工作预算安排唤醒时刻，再经 EventThread 与 `DisplayEventReceiver` 把 VSync 事件送到应用。旧资料中的固定应用偏移、SurfaceFlinger 偏移或 `DispSync` 模型，不宜直接用于解释 Android 17。
+先看起帧。SurfaceFlinger 调度器根据预测显示时间（present time）和应用、SurfaceFlinger 双方的工作预算安排唤醒时刻，再经 EventThread 与 `DisplayEventReceiver` 把 VSync 事件送到应用。旧资料里的固定应用偏移、SurfaceFlinger 偏移或 `DispSync` 模型，不宜直接拿来解释现在的调度器。
 
 `Choreographer#doFrame()` 在主线程按下面的回调顺序组织一帧：
 
 `INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT`
 
-其中，Traversal 是 View 树的遍历阶段，可能执行测量（measure）、布局（layout）和绘制（draw），但不表示每帧都会完整遍历整棵 View 树。硬件加速路径中的 View `draw()` 主要更新 `RenderNode` / `DisplayList` 绘制指令，真正的像素工作还要经过 HWUI RenderThread 和 GPU。
+其中 Traversal 是 View 树的遍历阶段，可能执行 measure、layout 和 draw，但每帧未必完整遍历整棵树。硬件加速路径里的 View `draw()` 主要更新 `RenderNode` / `DisplayList` 绘制指令；像素工作要等 HWUI RenderThread 和 GPU 真正去做。
 
 #### 1.2 RenderThread、GPU 与 buffer 提交
 
-`ViewRootImpl.performDraw()` 经 `ThreadedRenderer`、`HardwareRenderer.syncAndDrawFrame()` 进入原生 HWUI。RenderThread 同步 `RenderNode` 状态、组织 Skia 绘制工作并向 GPU 提交命令。主线程可能在同步阶段等待 RenderThread；`syncAndDrawFrame()` 返回不能证明 GPU 已完成。
+`ViewRootImpl.performDraw()` 经 `ThreadedRenderer`、`HardwareRenderer.syncAndDrawFrame()` 进入原生 HWUI。RenderThread 同步 `RenderNode` 状态、组织 Skia 绘制工作并向 GPU 提交命令。主线程可能在同步阶段等 RenderThread；`syncAndDrawFrame()` 返回，说明不了 GPU 已经完成。
 
-RenderThread 通过 `dequeueBuffer` 取得可写缓冲槽（slot），再以 `queueBuffer` 交回 buffer、描述信息和生产完成 fence。fence 是表示异步图形工作何时完成的同步对象；消费者把这条完成关系作为 acquire fence 使用。`queueBuffer` 传递的是缓冲槽、buffer 句柄、裁剪区域、变换、色彩空间标识（dataspace）、时间戳和同步对象，不会通过 Binder 复制整帧像素。
+RenderThread 通过 `dequeueBuffer` 取得可写缓冲槽（slot），再以 `queueBuffer` 交回 buffer、描述信息和生产完成 fence。fence 是表示异步图形工作何时完成的同步对象，消费者把这条完成关系作为 acquire fence 使用。`queueBuffer` 交回的只有缓冲槽、buffer 句柄、裁剪区域、变换、色彩空间标识（dataspace）、时间戳和同步对象，整帧像素不经过 Binder 复制。
 
-标准应用窗口的 `BLASTBufferQueue` 位于应用进程。它取得 `BufferItem` 后，用 `SurfaceComposerClient::Transaction::setBuffer()` 携带 buffer、acquire fence、帧号与释放回调，再把事务提交给 SurfaceFlinger。窗口几何事务还可以按帧号与 buffer 更新对齐。
+标准应用窗口的 `BLASTBufferQueue` 位于应用进程。它取得 `BufferItem` 后，用 `SurfaceComposerClient::Transaction::setBuffer()` 携带 buffer、acquire fence、帧号与释放回调，再把事务提交给 SurfaceFlinger；窗口几何事务还可以按帧号与 buffer 更新对齐。
 
 #### 1.3 SurfaceFlinger FrontEnd 与 latch
 
-Android 17 的 FrontEnd 以 `RequestedLayerState` 保存请求状态，经 `LayerLifecycleManager` 和 `LayerSnapshotBuilder` 形成当前帧快照（snapshot）。CompositionEngine 根据快照中的可见性、几何、Z 轴顺序、buffer、dataspace 和效果状态，为每个显示屏准备输出。
+buffer 到了 SurfaceFlinger 这边，FrontEnd 先以 `RequestedLayerState` 保存请求状态，经 `LayerLifecycleManager` 和 `LayerSnapshotBuilder` 形成当前帧快照（snapshot）。CompositionEngine 再根据快照里的可见性、几何、Z 轴顺序、buffer、dataspace 和效果状态，为每个显示屏准备输出。
 
-`latch` 表示 SurfaceFlinger 在本轮采纳了某个 layer 的新 buffer。Android 13 之后，部分受限场景允许先采纳 fence 尚未发出完成信号的 buffer，把等待推迟到真正读取内容之前；RenderEngine 或 HWC 读取内容时仍须遵守 acquire fence。该策略只覆盖满足条件的简单单 layer buffer 更新，不能用来证明跨 layer 或跨窗口同步已经完成。
+`latch` 表示 SurfaceFlinger 在本轮采纳了某个 layer 的新 buffer。Android 13 之后，部分受限场景允许先采纳 fence 尚未发出完成信号的 buffer，把等待推迟到真正读取内容之前；RenderEngine 或 HWC 读取内容时仍须遵守 acquire fence。该策略只覆盖满足条件的简单单 layer buffer 更新，要证明跨 layer 或跨窗口同步已经完成，得另找依据。
 
 #### 1.4 HWC、RenderEngine 与 present
 
-SurfaceFlinger 会根据显示屏上的可见 layer 集合，与硬件合成器（Hardware Composer，HWC）协商每个 layer 的合成类型（composition type）：
+SurfaceFlinger 会根据显示屏上的可见 layer 集合，与硬件合成器（Hardware Composer，HWC）协商每个 layer 的合成类型（composition type）。协商结果受一整屏 layer 状态影响，同一 layer 在不同帧之间可能从 `DEVICE` 变成 `CLIENT`：
 
 - `DEVICE`：显示硬件可处理该 layer；
 - `CLIENT`：RenderEngine 把相关 layer 画入客户端合成目标（client target），再由 HWC 提交显示；
 - `SOLID_COLOR`、`CURSOR`、`SIDEBAND` 等类型用于对应的 Composer3 场景。
 
-几何变换、像素格式、dataspace、混合方式、色彩变换、受保护内容、硬件叠加平面数量和厂商策略，都会改变协商结果。同一 layer 在不同帧之间可能从 `DEVICE` 变成 `CLIENT`，因此“使用 SurfaceView 就一定由硬件叠加平面直接合成”的说法不成立。
+几何变换、像素格式、dataspace、混合方式、色彩变换、受保护内容、硬件叠加平面数量和厂商策略，都会改变协商结果。所以“使用 SurfaceView 就一定由硬件叠加平面直接合成”的说法不成立。
 
-Android 17 也不保证每轮单独执行 `validate()`。`HWComposer::getDeviceCompositionChanges()` 在满足 `canSkipValidate` 条件时尝试 `presentOrValidate()`：
+SurfaceFlinger 也不是每轮都单独执行 `validate()`。`HWComposer::getDeviceCompositionChanges()` 在满足 `canSkipValidate` 条件时尝试 `presentOrValidate()`：
 
 - 返回 `PresentSucceeded`，组合调用已经完成显示提交，后续流程不会再次提交；
 - 返回 `Validated`，验证已在该调用中完成，SurfaceFlinger 继续读取变化后的 composition type 和 request；
 - 无法跳过验证时，流程走 `validate()`，必要的 client composition 完成后再调用 `present()`。
 
-FrameTimeline 中 SurfaceFlinger 的实际帧区间可延伸到屏幕更新，覆盖 Composer / Display HAL 等显示栈时间。它的持续时间不能全部计入 SurfaceFlinger 主线程的 CPU 时间。
+FrameTimeline 中 SurfaceFlinger 的实际帧区间可延伸到屏幕更新，覆盖 Composer / Display HAL 等显示栈时间，所以它的持续时间不能全部计入 SurfaceFlinger 主线程的 CPU 时间。
 
 ### 2. 三类 fence 与三个时间边界
 
@@ -290,7 +290,7 @@ present fence 不包含面板扫描、像素响应和人眼感知时间。定位
 
 ### 3. 出图类型要按拓扑分类
 
-框架名称不足以确定渲染路径。分类需要回答三项：谁生产像素、内容写入哪个 Surface、SurfaceFlinger 看到几个可见 layer。
+框架名称不足以确定渲染路径。分类要回答三项：谁生产像素、内容写入哪个 Surface、SurfaceFlinger 看到几个可见 layer。第 2 节的三个观察点在这里就要用上：buffer 谁生产、写到哪个 Surface，决定了它落在哪一行。
 
 | 路径 | 主要生产者与 layer 形态 | 排查重点 | 深入阅读 |
 |---|---|---|---|
@@ -308,7 +308,7 @@ present fence 不包含面板扫描、像素响应和人眼感知时间。定位
 | Game | 游戏、渲染与 RHI 线程，GPU 队列和 swapchain 自主管理帧节奏 | 输入、逻辑、提交、GPU、队列积压、显示提交、温控 | [游戏引擎](../../part2-performance/ch13-rendering-pipelines/12-game-engine.md) |
 | React Native | Fabric Render / Commit / Mount 后进入普通 Android View / HWUI；原生组件可另建 Surface | JS、提交与布局、挂载、View 遍历、独立 Surface | [类型识别总览](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) |
 
-SurfaceView 与 TextureView 的差异值得单独记：
+SurfaceView 与 TextureView 的差异值得单独记，这直接影响我们选哪条排查路径：
 
 - SurfaceView 的主体通常保留独立可见 layer，HWC 可以单独评估该 layer；
 - TextureView 把外部 buffer 当纹理交给 HWUI，主体像素进入宿主 Window buffer；
@@ -319,7 +319,7 @@ Camera、视频、游戏描述生产者或业务类型，SurfaceView、TextureVi
 
 ### 4. Android 12—17 的有效演进
 
-现代 trace 分析可以从 Android 12 建立基线：
+现代 trace 分析可以从 Android 12 建立基线，这张表也提示我们，拿到一份 trace 先问设备版本，再问 layer 拓扑：
 
 | 版本 | 可以确认的变化 | 阅读系统轨迹时的含义 |
 |---|---|---|
@@ -330,7 +330,7 @@ Camera、视频、游戏描述生产者或业务类型，SurfaceView、TextureVi
 | Android 16 / API 36 | SurfaceView API 文本中出现带 `surface_view_set_composition_order` flag 的整数 `compositionOrder` | 多 Surface 页面要记录 parent、relative layer 和 Z-order；flag-gated API 不能当成所有设备无条件可用 |
 | Android 17 / API 37 | 现行 FrontEnd 帧快照、预测显示调度与 HWC 流程；SurfaceView API 文本中出现受 `surface_view_set_blur_regions` 开关控制的模糊区域 | 当前对象名按 `android-17.0.0_r1` 解释；厂商合成能力和功能开关状态仍需设备证据 |
 
-这些版本差异没有建立“版本越新，所有页面越快”的因果关系。Android 17 的渲染评审应把版本能力、应用用法、设备实现和运行时证据分别记录。
+这些版本差异没有建立“版本越新，所有页面越快”的因果关系。做渲染评审时，我们把版本能力、应用用法、设备实现和运行时证据分别记录，四者不互相代表。
 
 #### 4.1 常见“新技术”说法的源码边界
 
@@ -347,33 +347,33 @@ Camera、视频、游戏描述生产者或业务类型，SurfaceView、TextureVi
 
 ### 5. Perfetto：按对象复原一帧
 
-出现卡顿后，可按以下顺序建立证据。
+出现卡顿后，我们按下面的顺序建立证据：先认对象，再找生产者，然后对齐生产、消费、合成与显示四段。
 
 #### 5.1 确认显示对象、窗口、Surface 与 layer
 
-记录目标显示设备（Display）、窗口（Window）、Surface，以及 layer 的父子关系、Z-order、buffer 格式、dataspace 和合成类型。混合页面要为每个可见内容对象单独建表，不能只用宿主应用窗口的 FrameTimeline 代表整页。
+第一步是认对象。记录目标显示设备（Display）、窗口（Window）、Surface，以及 layer 的父子关系、Z-order、buffer 格式、dataspace 和合成类型。混合页面要为每个可见内容对象单独建表；只看宿主应用窗口的 FrameTimeline，代表不了整页。
 
 #### 5.2 找到每个生产者
 
-标准页面查看主线程（MainThread）与 RenderThread；原生引擎查看游戏、渲染与 RHI 线程；视频查看编解码器输出；Camera 查看 HAL 请求、结果与各路输出流；WebView、Flutter、React Native 还要补齐各自的框架线程与宿主线程。
+第二步找生产者。标准页面看主线程（MainThread）与 RenderThread；原生引擎看游戏、渲染与 RHI 线程；视频看编解码器输出；Camera 看 HAL 请求、结果与各路输出流；WebView、Flutter、React Native 还要补上各自的框架线程与宿主线程。
 
 #### 5.3 对齐生产阶段
 
 标准路径关注 `vsync-app`、`Choreographer#doFrame`、五类回调、`syncAndDrawFrame`、`dequeueBuffer` 和 `queueBuffer`。原生图形路径还要观察 swapchain 图像获取、CPU 提交、GPU 完成和交换链深度（swapchain depth）。
 
-`dequeueBuffer` 长时间等待，常指向可复用 slot 不足或 release fence 迟到；CPU 调度只是候选原因之一。
+`dequeueBuffer` 长时间等待，常指向可复用 slot 不足或 release fence 迟到；CPU 调度只是候选原因之一，先看 buffer 周转再看调度。
 
 #### 5.4 对齐系统消费阶段
 
-`BufferTX - <layerName>` 是 SurfaceFlinger 服务端待处理 buffer 事务的计数。含 buffer 的事务进入待处理状态时计数增加，buffer 被采纳（latch）或丢弃（drop）时计数减少。数值长期偏高说明系统侧已有待处理 buffer，仍需结合 acquire fence、事务就绪条件、latch 原因和 SurfaceFlinger 的实际帧区间判断原因。
+`BufferTX - <layerName>` 是 SurfaceFlinger 服务端待处理 buffer 事务的计数：含 buffer 的事务进入待处理状态时计数增加，buffer 被采纳（latch）或丢弃（drop）时计数减少。数值长期偏高说明系统侧已有积压；要判断具体原因，还得结合 acquire fence、事务就绪条件、latch 原因和 SurfaceFlinger 的实际帧区间。
 
-`BufferTX` 接近零只说明 SurfaceFlinger 服务端没有这类积压，不能证明生产者、GPU、HWC 和显示设备都按期完成。
+`BufferTX` 接近零只说明 SurfaceFlinger 服务端没有这类积压；生产者、GPU、HWC 和显示设备是否按期完成，它回答不了。
 
 #### 5.5 对齐合成与显示阶段
 
-检查 SurfaceFlinger 的 CPU/GPU 截止时间、RenderEngine 客户端合成、每个 layer 的合成类型、HWC/DisplayHAL 事件和 present fence。若 buffer 入队与 latch 按时、present 仍晚，排查范围应移向合成阶段、显示模式切换、Composer HAL、显示驱动与面板。
+最后对齐合成与显示。检查 SurfaceFlinger 的 CPU/GPU 截止时间、RenderEngine 客户端合成、每个 layer 的合成类型、HWC/DisplayHAL 事件和 present fence。若 buffer 入队与 latch 都按时、present 仍晚，我们就要把排查范围移向合成阶段、显示模式切换、Composer HAL、显示驱动与面板。
 
-FrameTimeline 对标准应用窗口很有价值，对 SurfaceView 主体、Camera、视频和某些引擎 layer 的覆盖可能不完整。缺少应用侧实际帧区间时，应回到生产者入队、layer、`BufferTX`、fence、latch 和 present 证据。
+FrameTimeline 对标准应用窗口很有价值，对 SurfaceView 主体、Camera、视频和某些引擎 layer 的覆盖可能不完整。缺少应用侧实际帧区间时，我们回到生产者入队、layer、`BufferTX`、fence、latch 和 present 这些更原始的信号。
 
 ### 6. 优化动作与证据对应
 
@@ -389,7 +389,7 @@ FrameTimeline 对标准应用窗口很有价值，对 SurfaceView 主体、Camer
 | `DEVICE` 频繁变为 `CLIENT` | 几何变换、透明度、像素格式、dataspace、受保护内容、硬件叠加平面竞争 |
 | latch 按时而 present 晚 | HWC、DisplayHAL、刷新率切换、显示驱动和面板后段 |
 
-“启用硬件加速”“减少层级”“避免过度绘制”只能作为检查入口。修改前应保存同一场景的系统轨迹、设备信息、刷新率、温度和驱动版本，再以帧耗时分位数、卡顿类型（jank type）、GPU 时间、合成类型与功耗数据复测。
+“启用硬件加速”“减少层级”“避免过度绘制”只能作为检查入口。修改前我们保存同一场景的系统轨迹、设备信息、刷新率、温度和驱动版本，改完再以帧耗时分位数、卡顿类型（jank type）、GPU 时间、合成类型与功耗数据复测。
 
 ### 7. Android 17 源码阅读入口
 
@@ -409,11 +409,11 @@ FrameTimeline 对标准应用窗口很有价值，对 SurfaceView 主体、Camer
 - [`sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)；
 - [`dma-fence.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/dma-fence.h)。
 
-这些内核文件能说明共享 buffer 与同步对象的公共语义。硬件叠加平面分配、显示链路的带宽申请（常称“带宽投票”）、安全显示路径和扫描输出时序（scanout timing），仍要查看目标设备的 Composer HAL、GPU / 显示驱动与厂商轨迹。
+这些内核文件能说明共享 buffer 与同步对象的公共语义。硬件叠加平面分配、显示链路的带宽申请（常称“带宽投票”）、安全显示路径和扫描输出时序（scanout timing），仍要看目标设备的 Composer HAL、GPU / 显示驱动与厂商轨迹。
 
 ### 8. 核查清单
 
-一段渲染论述至少应回答：
+一段渲染论述至少应回答以下十项，前四项认对象，后六项对时间：
 
 1. Android、WebView、Flutter、React Native 或引擎版本分别是什么？
 2. 主体像素由哪个线程、进程或硬件模块生产？
@@ -430,7 +430,7 @@ FrameTimeline 对标准应用窗口很有价值，对 SurfaceView 主体、Camer
 
 ## WindowManager 的窗口、Surface 与事务
 
-建立显示主路径后，WMS 分析要落到 WindowToken、WindowState、SurfaceControl 和同步事务。布局循环与跨窗口同步是 system_server 侧常见的延迟来源。
+建立显示主路径后，WMS 分析要落到 WindowToken、WindowState、SurfaceControl 和同步事务。布局循环与跨窗口同步是 system_server 侧常见的延迟来源；我们把窗口从添加到显示的整条链路走一遍。
 
 WindowManager 需要保持四套状态一致：
 
@@ -439,17 +439,17 @@ WindowManager 需要保持四套状态一致：
 3. SurfaceFlinger 里的 Layer、buffer 与 transaction；
 4. InputFlinger 里的输入窗口快照、焦点和事件队列。
 
-`WindowManagerService`（WMS）负责第 2 层，并把需要合成与输入系统执行的状态写进 `SurfaceControl.Transaction`（一批原子提交的 Surface 属性修改）。它不会绘制应用 View，也不负责逐个消费触摸事件。
+`WindowManagerService`（WMS）负责第 2 层，把需要合成与输入系统执行的状态写进 `SurfaceControl.Transaction`（一批原子提交的 Surface 属性修改）。它不绘制应用 View，也不逐个消费触摸事件。
 
-这条边界可用于判断卡顿发生在应用遍历、WMS 全局锁、等待首帧、SurfaceFlinger 提交，还是 InputDispatcher。
+这条分工线可用于判断卡顿发生在应用遍历、WMS 全局锁、等待首帧、SurfaceFlinger 提交，还是 InputDispatcher。
 
-版本范围是 Android 17 / API 37 / `android-17.0.0_r1`。SurfaceFlinger、BLAST 与 InputDispatcher 以同一标签下的 `frameworks/native` 为准。耗时和 Surface 内存必须结合设备、刷新率、窗口数量与 trace 采集条件测量。
+版本范围是 Android 17 / API 37 / `android-17.0.0_r1`，SurfaceFlinger、BLAST 与 InputDispatcher 以同一标签下的 `frameworks/native` 为准。注意分属四套状态的窗口数据只在事务提交点交汇：耗时和 Surface 内存必须结合设备、刷新率、窗口数量与 trace 采集条件测量。
 
 本文沿用源码中的图形术语：`Surface` 是应用提交图像缓冲区的目标，buffer 是一帧像素数据，Layer 是 SurfaceFlinger 合成树中的节点，`SurfaceControl` 是修改 Layer 的控制句柄。transaction 把一组 Layer 属性修改合并提交；traversal 是 View 树的一轮 measure、layout 和 draw；window token 则标识一组窗口的归属和策略上下文。
 
 ### 从 `addView()` 到屏幕上的 Layer
 
-应用添加一个顶层 View 时，主要调用链如下：
+应用添加一个顶层 View 时，主要调用链如下。我们先沿它从 App 进程走到 system_server，再看首次 traversal：
 
 ```text
 App process
@@ -478,7 +478,7 @@ system_server
     → SurfaceFlinger 合成显示
 ```
 
-`addWindow()` 只把逻辑窗口加入系统。方法尾部的源码注释明确说明：这里不做 layout，窗口必须随后调用 relayout（让 WMS 重新计算窗口几何与 Surface）才会显示。“addWindow 返回成功”和“首帧已经可见”因此是两个时间点。
+`addWindow()` 只把逻辑窗口加入系统。方法尾部的源码注释明确说明：这里不做 layout，窗口必须随后调用 relayout（让 WMS 重新计算窗口几何与 Surface）才会显示。所以“addWindow 返回成功”和“首帧已经可见”是两个时间点，两者之间隔着整个首次 traversal。
 
 #### 三个容易混在一起的对象
 
@@ -488,13 +488,13 @@ system_server
 | `WindowState` | `system_server` | 窗口属性、token/父子关系、frame/insets、焦点与可见性状态 |
 | `SurfaceControl` | 两侧均有句柄，实体由 SurfaceFlinger 管理 | 对 Layer 的控制句柄；位置、裁剪、alpha、layer、reparent 等通过 transaction 修改 |
 
-`SurfaceControl` 本身不是像素缓冲区。应用通过 `Surface`/BufferQueue 生产 graphic buffer（图像缓冲区），SurfaceFlinger 获取 buffer 并按 Layer 树合成。只统计 Java `SurfaceControl` 对象数量，无法得到窗口图形内存。
+`SurfaceControl` 本身不是像素缓冲区：应用通过 `Surface`/BufferQueue 生产 graphic buffer（图像缓冲区），SurfaceFlinger 获取 buffer 并按 Layer 树合成。只统计 Java `SurfaceControl` 对象数量，得不到窗口图形内存。
 
 [源码依据：`WindowManagerGlobal.addView()`、`ViewRootImpl.setView()`、`Session.addToDisplayAsUser()`、`WindowManagerService.addWindow()`，`android-17.0.0_r1`]
 
 ### 容器、图层与内容事务的职责边界
 
-窗口状态变化会同时经过容器、图层几何与内容 buffer 三条事务链，它们虽然都叫“事务”，表达的状态却不同：
+窗口状态变化会同时经过容器、图层几何与内容 buffer 三条事务链。它们都叫“事务”，表达的状态却各不相同，拉伸、黑边或一帧错位时，我们要分别核对：
 
 | 类型 | 表达的内容 | 典型持有者 |
 |------|-----------|-----------|
@@ -502,9 +502,9 @@ system_server
 | `SurfaceControl.Transaction` | layer 的位置、crop、alpha、变换、reparent、visibility 和 input info | WMS、WM Shell、App 或其他系统组件 |
 | BLAST buffer transaction | 新内容 buffer 及 acquire fence（表示何时可安全读取该 buffer），与目标 layer 的内容更新配套 | App producer、BLASTBufferQueue、SurfaceFlinger |
 
-WCT 是“窗口容器要变成什么状态”的管理请求，处理后可能引发一个或多个 SurfaceControl transaction；它不属于 SurfaceFlinger 的几何 transaction。几何属性与内容 buffer 分属两路输入：resize 时可能短暂出现新 geometry（位置和尺寸）配旧 buffer，或新 buffer 已到、但同步组尚未放行 geometry。
+WCT 是“窗口容器要变成什么状态”的管理请求，处理后可能引发一个或多个 SurfaceControl transaction；它不属于 SurfaceFlinger 的几何 transaction。几何属性与内容 buffer 分属两路输入，resize 时可能短暂出现新 geometry（位置和尺寸）配旧 buffer，也可能新 buffer 已到、但同步组尚未放行 geometry。
 
-遇到拉伸、黑边或一帧错位，需要分别核对 container 状态、layer geometry、buffer 尺寸和 fence；只搜索“transaction”无法确定问题位置。
+这四路信号对齐之后，才能确定问题出在哪条链；只搜索“transaction”无法确定问题位置。
 
 ### WMS 的容器树与 Surface 树
 
@@ -525,7 +525,7 @@ IME、wallpaper、system overlay 等窗口会进入由 `DisplayAreaPolicy` 决�
 
 #### Z-order 不是每帧对所有窗口做一次全量排序
 
-Z-order 表示窗口从底到顶的遮挡顺序。`WindowContainer.mChildren` 保存有序子节点，索引方向表达 bottom-to-top 关系。添加、移动到顶/底、reparent（更换父节点）、task reorder（调整任务顺序）或特殊窗口策略改变顺序后，`assignChildLayers()` 把结果写入 SurfaceControl transaction。
+Z-order 表示窗口从底到顶的遮挡顺序。`WindowContainer.mChildren` 保存有序子节点，索引方向表达 bottom-to-top 关系；添加、移动到顶/底、reparent（更换父节点）、task reorder（调整任务顺序）或特殊窗口策略改变顺序后，`assignChildLayers()` 把结果写入 SurfaceControl transaction。
 
 这个顺序还受下面几项影响：
 
@@ -535,20 +535,20 @@ Z-order 表示窗口从底到顶的遮挡顺序。`WindowContainer.mChildren` �
 - IME、wallpaper、always-on-top、magnification 等有专门的 layering 规则；
 - 动画期间 `SurfaceAnimator` 会创建 leash（承载动画变换的临时父 Layer），把待动画 Surface 临时 reparent 到 leash。
 
-所以，SurfaceFlinger trace 中的即时父子关系可能处于动画结构，不能只凭某一帧的 Layer parent 反推稳定的 WMS 容器树。应同时查看 WindowManager trace 与 SurfaceFlinger layers/transactions。
+所以 SurfaceFlinger trace 中的即时父子关系可能处于动画结构，只凭某一帧的 Layer parent，反推不出稳定的 WMS 容器树。要同时打开 WindowManager trace 与 SurfaceFlinger layers/transactions 对照。
 
 #### `mGlobalLock` 是架构和性能的共同约束
 
 WMS 与 ActivityTaskManagerService（ATMS）共享 `WindowManagerGlobalLock`。`addWindow()`、`relayoutWindow()`、容器 reparent、焦点变化和大量配置更新都会在锁内修改状态。共享锁让 Task/Activity/Window 的相关状态作为整体一致更新，也意味着慢操作会扩大等待范围。
 
-排查 `system_server` 窗口卡顿时，应区分：
+排查 `system_server` 窗口卡顿时，我们先区分四种情况：
 
 - 线程在等待 `mGlobalLock`；
 - 持锁线程执行过长；
 - AnimationThread 已收到 traversal，但在等待锁；
 - WMS 已提交 transaction，后续时间消耗在应用绘制或 SurfaceFlinger。
 
-“WMS 很忙”不足以解释延迟，必须把锁持有者和调用阶段标出来。
+“WMS 很忙”不足以解释延迟；我们要把锁持有者和调用阶段标出来，才能对上具体阶段。
 
 ### WMS 的线程分工
 
@@ -566,7 +566,7 @@ WMS 构造通过 `DisplayThread.getHandler().runWithScissors()` 同步切到 Dis
 
 `SurfaceAnimationRunner` 同时使用两条线程：动画帧计算在 `SurfaceAnimationThread`，transaction apply 会借助 `AnimationThread` 调度。这样可以把逐帧动画计算与持有窗口全局锁的容器变更隔开。
 
-线程分开不等于没有共享瓶颈。surface placement 仍会读取和修改受 `mGlobalLock` 保护的窗口树；大量同步 Binder 调用或锁内工作仍可能影响动画路径。
+线程分开不等于没有共享瓶颈：surface placement 仍会读取和修改受 `mGlobalLock` 保护的窗口树，大量同步 Binder 调用或锁内工作仍可能拖慢动画路径。
 
 [源码依据：`DisplayThread.java`、`AnimationThread.java`、`SurfaceAnimationThread.java`、`SurfaceAnimationRunner.java`、`WindowManagerService.main()`，`android-17.0.0_r1`]
 
@@ -586,7 +586,7 @@ WMS 构造通过 `DisplayThread.getHandler().runWithScissors()` 同步切到 Dis
 
 子窗口的 `attrs.token` 必须指向现有父 `WindowState`，而且父窗口本身不能还是子窗口。通过后，子窗口复用父窗口的 `WindowToken`，从而继承同一组可见性与策略约束。
 
-非子窗口先在目标 `DisplayContent` 中查找 token：
+非子窗口先在目标 `DisplayContent` 中查找 token，找到与找不到分别走不同构造路径：
 
 - 应用窗口必须对应有效 `ActivityRecord`；未知 application token 会返回 `ADD_BAD_APP_TOKEN`；
 - 已知 token 还会按 window type 检查，例如 IME token 不能用来添加 wallpaper；
@@ -608,19 +608,19 @@ WMS 构造通过 `DisplayThread.getHandler().runWithScissors()` 同步切到 Dis
 | `ADD_BAD_APP_TOKEN` / `ADD_NOT_APP_TOKEN` | token 缺失、类型不符或不是 Activity token |
 | `ADD_APP_EXITING` | session/client 已死亡或 Activity 已脱离层级 |
 
-应用侧收到 `BadTokenException` 时，应核对 window type、Context/token 来源、Activity 生命周期和 display；失败发生在 Layer 创建之前，无需先查 SurfaceFlinger。
+应用侧收到 `BadTokenException` 时，先核对 window type、Context/token 来源、Activity 生命周期和 display；失败发生在 Layer 创建之前，无需先查 SurfaceFlinger。
 
 [源码依据：`WindowManagerService.addWindow()`、`unprivilegedAppCanCreateTokenWith()`、`WindowToken.Builder`，`android-17.0.0_r1`]
 
 ### StartingWindow 与应用首帧交接
 
-窗口身份建立后，冷启动还需要在应用主窗口交出首帧前维持可见反馈。StartingWindow（启动占位窗口）是这段窗口生命周期的一部分，但它的创建者、内容生产者和移除信号不在同一进程。
+窗口身份建立后，冷启动还要在应用主窗口交出首帧前维持可见反馈。StartingWindow（启动占位窗口）承担的就是这段职责，但它的创建者、内容生产者和移除信号不在同一进程。
 
-冷启动期间，进程创建、Runtime/Application/Activity 初始化和首帧绘制尚未完成。它在这段空档提供可见内容，避免用户只看到桌面、空白或旧画面。它可以显示统一 SplashScreen，也可以在恢复历史任务时显示 TaskSnapshot（此前任务画面的快照）。
+冷启动期间，进程创建、Runtime/Application/Activity 初始化和首帧绘制都还没完成，StartingWindow 在这段空档里提供可见内容，避免用户只看到桌面、空白或旧画面。它可以显示统一 SplashScreen，也可以在恢复历史任务时显示 TaskSnapshot（此前任务画面的快照）。
 
 #### 决策与创建为何分属 WMS 和 WM Shell
 
-Android 12 之后，StartingWindow 的决策与实际创建分在两侧。ATMS/WMS 负责判断本次 Activity 启动是否需要 starting surface，`StartingSurfaceController` 根据 SplashScreen 或 TaskSnapshot 路径生成 starting data（描述启动窗口类型和资源的请求数据）；WM Shell（WindowManager Shell）的 starting-surface 组件负责创建 SplashScreen/TaskSnapshot 窗口并挂到对应 Task 上。常用源码锚点包括：
+Android 12 之后，StartingWindow 的决策与实际创建分在两侧。ATMS/WMS 负责判断本次 Activity 启动是否需要 starting surface，`StartingSurfaceController` 根据 SplashScreen 或 TaskSnapshot 路径生成 starting data（描述启动窗口类型和资源的请求数据）；WM Shell（WindowManager Shell）的 starting-surface 组件负责创建 SplashScreen/TaskSnapshot 窗口并挂到对应 Task 上。常用源码位置包括：
 
 - `frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java`：服务端发起 starting surface 请求
 - `frameworks/base/services/core/java/com/android/server/wm/SplashScreenStartingData.java`：保存 SplashScreen starting data
@@ -635,7 +635,7 @@ Android 12 之后，StartingWindow 的决策与实际创建分在两侧。ATMS/W
 4. App 进程启动并绘制主 Window 第一帧。
 5. App 通过 `finishDrawing`/`reportDrawFinished` 把主窗口首帧完成信号交给服务端，随后由 `removeStartingWindow` 路径通知 Shell 移除 starting surface。
 
-Perfetto 里要把三段分开看：system_server 侧是 starting data、Activity/Task 状态和移除请求；Shell/SystemUI 侧负责启动 surface 的创建与绘制；App 侧的 `reportDrawFinished` 标记主 Window 首帧完成。把 starting surface 的绘制职责放在 system_server，会混淆服务端、Shell 和 App 进程边界。
+Perfetto 里我们要把三段分开看：system_server 侧是 starting data、Activity/Task 状态和移除请求；Shell/SystemUI 侧负责启动 surface 的创建与绘制；App 侧的 `reportDrawFinished` 标记主 Window 首帧完成。把 starting surface 的绘制职责放到 system_server，就混淆了服务端、Shell 和 App 的进程分工。
 
 #### Android 12 SplashScreen API 的责任边界
 
@@ -645,22 +645,22 @@ Perfetto 里要把三段分开看：system_server 侧是 starting data、Activit
 - 退出动画通过 `setOnExitAnimationListener` 接入，移除时机仍要和主 Window 首帧完成信号配合。
 - `androidx.core:core-splashscreen` 向后支持 Android 5.0+，但 Android 12+ 的系统 starting surface 创建仍落在 Shell starting-surface 路径。
 
-这套 API 可以避免 App 为启动页另建 SplashActivity。自建启动页会多一次 Activity 启动、窗口切换和可能的 relayout；系统 SplashScreen 则复用 starting surface 生命周期，不增加 App 侧 Activity 数量。
+这套 API 可以避免 App 为启动页另建 SplashActivity：自建启动页会多一次 Activity 启动、窗口切换和可能的 relayout，系统 SplashScreen 复用 starting surface 生命周期，不增加 App 侧 Activity 数量。
 
 #### 移除时机：首帧完成不等于已经呈现
 
-StartingWindow 的移除时机会影响启动体感：
+StartingWindow 的移除时机直接影响启动体感，两头都有代价：
 
 - **过早移除**：App 主 Window 第一帧还没准备好时移除 starting surface，用户可能看到短暂闪白或闪黑。
 - **过晚移除**：主 Window 已经完成首帧，starting surface 仍停留在前台，用户会把这段时间感知为启动变慢。
 
-主 Window 首帧完成后，服务端才确认有新内容可以替换 StartingWindow。服务端通过 `finishDrawing`/`reportDrawFinished` 收到信号，再走 `removeStartingWindow` 路径让 Shell 移除 starting surface。
+主 Window 首帧完成后，服务端才确认有新内容可以替换 StartingWindow：服务端通过 `finishDrawing`/`reportDrawFinished` 收到信号，再走 `removeStartingWindow` 路径让 Shell 移除 starting surface。
 
-分析启动 trace 时，`reportDrawFinished` 只说明 App 首帧完成；视觉切换还要看 Shell 移除窗口、SurfaceFlinger 消费 transaction 和后续 present。
+分析启动 trace 时，`reportDrawFinished` 只说明 App 首帧完成；视觉切换还要看 Shell 移除窗口、SurfaceFlinger 消费 transaction 和后续 present——这几步任何一个慢，用户看到的都是启动变长。
 
 ### Android 17 的两种窗口 Surface 所有权路径
 
-`WindowManager.useClientSurface()` 由 `com.android.window.flags.Flags.useClientSurface()` 控制。Android 17 源码保留两条可执行路径，不能把其中一条当作已经不可达的兼容代码。
+`WindowManager.useClientSurface()` 由 `com.android.window.flags.Flags.useClientSurface()` 控制。Android 17 源码保留两条可执行路径，我们逐条看；两条都活着，哪条都不是已经不可达的兼容代码。
 
 #### server-created surface
 
@@ -683,7 +683,7 @@ WindowStateAnimator.createSurfaceLocked()
 
 flag 开启时，`ViewRootImpl.createSurfaceControl()` 在应用进程创建 BLAST layer，并在 `relayout2()` / `relayoutAsync2()` 中把可见 SurfaceControl 交给 WMS。此时服务端若误入 `WindowStateAnimator.createSurfaceLocked()`，会记录 `No longer create client surfaces on the server side` 并返回 `null`。
 
-这条错误日志表达的是“client-owned surface 不应再由 server 创建”，并不表示 client-created surface 已经废弃。
+这条错误日志表达的是“client-owned surface 不应再由 server 创建”；client-created surface 路径本身仍由前面的 flag 分支保留。
 
 `ViewRootImpl.updateSurfaceControl()` 在该路径还会对 `INVISIBLE` 的 SurfaceControl 做缓存，后续重新可见时可复用有效句柄。它受 flag 和可见性条件约束，不是 WMS 面向所有窗口的通用 Surface 池。
 
@@ -691,7 +691,7 @@ flag 开启时，`ViewRootImpl.createSurfaceControl()` 在应用进程创建 BLA
 
 `SurfaceControl.Builder.build()` 遇到未显式指定 effect/container 类型的普通 layer 时会调用 `setBLASTLayer()`；WMS 和 `ViewRootImpl` 的窗口创建代码也显式设置 BLAST layer。
 
-“谁创建 SurfaceControl”与“是否为 BLAST buffer layer”是两个维度：
+注意“谁创建 SurfaceControl”与“是否为 BLAST buffer layer”是两个维度，别把它们混在一起：
 
 ```text
 server-created ─┐
@@ -705,7 +705,7 @@ client-created ─┘
 
 ### `BLASTBufferQueue`：把应用 buffer 与 transaction 对齐
 
-BLAST 让 buffer 到达与 SurfaceControl transaction 之间建立明确的同步关系。`ViewRootImpl` 为窗口 render target（绘制目标）创建 `BLASTBufferQueue`，通过它取得交给 HWUI/软件绘制的 `Surface`。当 SurfaceControl、尺寸或格式变化时，`updateBlastSurfaceIfNeeded()` 更新或重建 BLASTBufferQueue。
+BLAST 在 buffer 到达与 SurfaceControl transaction 之间建立明确的同步关系。`ViewRootImpl` 为窗口 render target（绘制目标）创建 `BLASTBufferQueue`，通过它取得交给 HWUI/软件绘制的 `Surface`；SurfaceControl、尺寸或格式变化时，`updateBlastSurfaceIfNeeded()` 更新或重建 BLASTBufferQueue。
 
 关键 API 的职责如下：
 
@@ -717,17 +717,17 @@ BLAST 让 buffer 到达与 SurfaceControl transaction 之间建立明确的同�
 | `mergeWithNextTransaction(t, frameNumber)` | 把几何/属性 transaction 与指定 frame number 对齐 |
 | `applyPendingTransactions(frameNumber)` | 目标帧没有绘制时，避免待合并 transaction 永久滞留 |
 
-不要从 `requestLayout()` 直接推导“一定重建 BLASTBufferQueue”。`requestLayout()` 先触发 ViewRoot traversal；是否 relayout、Surface 尺寸是否变化、SurfaceControl 是否更换，需要由 `performTraversals()` 的状态判断。相同 SurfaceControl 下，BLASTBufferQueue 可以只做 `update()`；SurfaceControl 改变时才销毁并重建 adapter。
+要不要重建 BLASTBufferQueue，要看 `performTraversals()` 的状态判断，不能从 `requestLayout()` 直接推导。`requestLayout()` 先触发 ViewRoot traversal；是否 relayout、Surface 尺寸是否变化、SurfaceControl 是否更换，都由 traversal 的状态决定。相同 SurfaceControl 下，BLASTBufferQueue 可以只做 `update()`；SurfaceControl 改变时才销毁并重建 adapter。
 
 BLAST 是否降低某台设备上的延迟、降低多少，需要 trace 比较；源码没有“每帧固定少一次 round trip（跨进程或组件往返）”或“固定节省若干毫秒”的保证。
 
 ### relayout：同步返回与异步发送的选择
 
-`ViewRootImpl.relayoutWindow()` 在允许时先用本地 `WindowLayout.computeFrames()` 计算 frame（窗口边界），然后决定调用同步或异步 relayout。
+`ViewRootImpl.relayoutWindow()` 在允许时先用本地 `WindowLayout.computeFrames()` 计算 frame（窗口边界），然后决定走同步还是异步 relayout。我们先看哪些 traversal 会跨进程。
 
 #### 哪些 traversal 会跨进程 relayout
 
-`ViewRootImpl.performTraversals()` 不会每帧跨进程调用 WMS。Android 17 `ViewRootImpl.java` 的直接条件有五类：
+`ViewRootImpl.performTraversals()` 不会每帧跨进程调用 WMS，Android 17 `ViewRootImpl.java` 的直接条件有五类：
 
 - **`mFirst`**：窗口首次显示，必须向 WMS 申请初始 `SurfaceControl`、frames 和 Insets。
 - **`windowShouldResize`**：`requestLayout()` 后测量结果改变了窗口尺寸，常见于旋转、多窗口 resize，或 Dialog 的 `WRAP_CONTENT` 内容变大。
@@ -764,7 +764,7 @@ if (relayoutRequested) {
 }
 ```
 
-这段代码只抽取调度与 relayout 分支。`requestLayout()` → `scheduleTraversals()` → `performTraversals()` 先在 App 进程内执行；命中前述五类条件后，才从 `performTraversals()` 调用 WMS。
+这段代码只抽取调度与 relayout 分支：`requestLayout()` → `scheduleTraversals()` → `performTraversals()` 先在 App 进程内执行，命中前述五类条件后，才从 `performTraversals()` 调用 WMS。
 
 Perfetto 中可以用下表区分这些 slice（时间线上有起止时间的一段事件）：
 
@@ -805,9 +805,9 @@ relative position changed AND size changed
 
 `improveFluidResizingPerformance` flag 开启时，position 比较使用“相对父 frame 的偏移”，避免父子一起移动时被误判为窗口自身位置变化。
 
-异步路径也分两种：server-created surface 调用 `relayoutAsync()`，client-created surface 调用 `relayoutAsync2()`。因此不能把 async relayout 写成只服务于 visibility/insets，或写成 client-surface 路径专属。
+异步路径也分两种：server-created surface 调用 `relayoutAsync()`，client-created surface 调用 `relayoutAsync2()`。所以 async relayout 既不是只服务于 visibility/insets，也不是 client-surface 路径专属。
 
-优化 resize 时，应查看 `TRACE_TAG_VIEW` 下源码明确写入的 `relayoutSync ...` instant（瞬时 trace 事件），结合 frame、sync id 与应用 draw 时长判断同步原因。
+优化 resize 时，我们查看 `TRACE_TAG_VIEW` 下源码明确写入的 `relayoutSync ...` instant（瞬时 trace 事件），结合 frame、sync id 与应用 draw 时长判断同步原因。
 
 [源码依据：`ViewRootImpl.canRelayoutAsync()`、`relayoutWindow()`、`IWindowSession.relayout*()`，`android-17.0.0_r1`]
 
@@ -822,7 +822,7 @@ WMS/InsetsStateController 维护状态栏、导航栏、IME、caption 和 cutout
 - View 与 Compose 同时应用相同 Insets，可能出现重复 padding；
 - PlatformView、SurfaceView、camera preview（相机预览）还需要同步内容 crop/transform。
 
-应先确定哪个容器负责处理 Insets，再选择 View listener 或 Compose modifier（修饰符）。只有当前容器已经完整处理、子树不再需要同一 Insets 时，才把它标记为已消费；无条件返回 `WindowInsets.CONSUMED` 会让子 View 丢失所需信息。Edge-to-edge 场景还应把 layout 成本与 SurfaceControl/IME 动画分开测量。
+我们应先确定哪个容器负责处理 Insets，再选择 View listener 或 Compose modifier（修饰符）。只有当前容器已经完整处理、子树不再需要同一 Insets 时，才把它标记为已消费；无条件返回 `WindowInsets.CONSUMED` 会让子 View 丢失所需信息。Edge-to-edge 场景还应把 layout 成本与 SurfaceControl/IME 动画分开测量。
 
 ### surface placement：让一次状态变更收敛
 
@@ -848,7 +848,7 @@ Android 17 有两处相关计数：
 1. `performSurfacePlacement()` 的 `loopCount = 6`：同一次直接调用中，如果 placement 又请求 traversal，最多立即再跑 6 轮；
 2. `performSurfacePlacementLoop()` 的 `mLayoutRepeatCount`：Root 仍标记 `layoutNeeded` 时继续请求 traversal，累计到阈值后输出 `Performed 6 layouts in a row. Skipping` 并重置。
 
-两者会相互影响，但不能描述成“严格跨 6 帧”和“同一帧内、内外两层各 6 次”。源码约束的是调用/重复布局次数，最终跨多少 vsync（显示刷新同步信号）取决于调度时机和每轮耗时。
+两者会相互影响，但不能描述成“严格跨 6 帧”和“同一帧内、内外两层各 6 次”：源码约束的是调用/重复布局次数，最终跨多少 vsync（显示刷新同步信号）取决于调度时机和每轮耗时。
 
 #### 延后、重入和内存故障
 
@@ -857,13 +857,13 @@ Android 17 有两处相关计数：
 - placement 尚未结束又再次进入属于重入；debug 条件下会抛异常，普通构建记录警告并返回；`force=true` 只绕过 defer，不绕过重入检查；
 - `mForceRemoves` 非空表示之前发生 Surface 内存故障，WMS 会强制移除窗口并等待 250 ms 后再继续 placement。
 
-250 ms 等待属于故障恢复路径，不应把它当成正常 layout 的固定成本。trace 中若出现该停顿，应继续查 `Out of memory for surface`、被清理的窗口和图形内存。
+250 ms 等待属于故障恢复路径，正常 layout 没有这笔固定成本。trace 中若出现该停顿，我们继续查 `Out of memory for surface`、被清理的窗口和图形内存。
 
 [源码依据：`WindowSurfacePlacer.java`、`RootWindowContainer.performSurfacePlacement()`，`android-17.0.0_r1`]
 
 ### `BLASTSyncEngine`：多 Surface 状态的原子交付
 
-`BLASTSyncEngine` 让一组参与者的 Surface 修改在同一个合并 transaction 中交给下一层；它与 `BLASTBufferQueue` 分属不同层：
+`BLASTSyncEngine` 让一组参与者的 Surface 修改在同一个合并 transaction 中交给下一层。它和 `BLASTBufferQueue` 名字相近，分属不同层：
 
 - `BLASTBufferQueue` 在 producer/consumer（buffer 生产端/消费端）之间把某个窗口的 buffer 与 transaction 对齐；
 - `BLASTSyncEngine` 在 WMS 中等待一组 `WindowContainer` 完成同步，再合并这组容器的 SurfaceControl transaction。
@@ -885,7 +885,7 @@ Transition 创建 SyncGroup
   → TransactionReadyListener.onTransactionReady()
 ```
 
-`METHOD_BLAST` 表示应用绘制并把 buffer 纳入同步；`METHOD_NONE` 表示应用自行呈现后报告，不使用 BLAST sync method。它们不等同于“等待”和“立即 apply（提交）”两个简单开关。
+`METHOD_BLAST` 表示应用绘制并把 buffer 纳入同步；`METHOD_NONE` 表示应用自行呈现后报告，不使用 BLAST sync method。这两个值不是“等待”和“立即 apply（提交）”那样的简单开关。
 
 #### 并行组与依赖
 
@@ -900,7 +900,7 @@ Transition 创建 SyncGroup
 - **sync group timeout（同步组超时）**：组没有正常完成。`isReadinessTimeout=true` 只表示所有容器已 finished（完成绘制或同步工作）、但组还没 ready（获准提交）；`false` 还可能是未绘制容器或依赖未完成；
 - **transaction commit timeout（事务提交超时）**：合并 transaction 已交给 listener/organizer（负责转场的组织者），却迟迟没有收到 committed callback（提交完成回调）。
 
-因此，看到 sync timeout 时不能直接断言“应用 buffer 没 acquire”；应查看日志中的 unfinished container（未完成容器）、draw state、sync state 和 dependency。commit timeout 则应继续核对 organizer、SurfaceFlinger transaction 和 commit callback。
+所以看到 sync timeout，先别断言“应用 buffer 没 acquire”，我们去查日志里的 unfinished container（未完成容器）、draw state、sync state 和 dependency；commit timeout 则继续核对 organizer、SurfaceFlinger transaction 和 commit callback。
 
 [源码依据：`BLASTSyncEngine.SyncGroup`、`Transition.onTransactionReady()`，`android-17.0.0_r1`]
 
@@ -908,7 +908,7 @@ Transition 创建 SyncGroup
 
 API 34 起公开的 `SurfaceSyncGroup` 面向 `AttachedSurfaceControl`、`SurfaceView`、`SurfaceControlViewHost` 等 Surface，可跨组件甚至跨进程等待多个 Surface ready 后一起应用 transaction。它与 system_server 内部的 `BLASTSyncEngine` 都解决“多个 Surface 何时一起可见”，但调用方和同步对象不同。
 
-看到 sync id 或超时时，先确认它属于 WMS 的 WindowContainer 同步，还是应用/组件侧的 `SurfaceSyncGroup`。前者继续检查 `WindowState` draw state、SyncGroup 依赖和 transition ready；后者检查参与 Surface 是否报告 ready、回调进程是否存活，以及合并 transaction 是否真正提交。
+看到 sync id 或超时，先确认它属于 WMS 的 WindowContainer 同步，还是应用/组件侧的 `SurfaceSyncGroup`：前者继续检查 `WindowState` draw state、SyncGroup 依赖和 transition ready，后者检查参与 Surface 是否报告 ready、回调进程是否存活，以及合并 transaction 是否真正提交。
 
 ### 窗口转场与动画
 
@@ -921,9 +921,9 @@ Android 17 的 Shell Transitions 由 `TransitionController`/`Transition` 在 `sy
 3. `AnimationAdapter` 修改 leash 的变换参数、position、alpha、crop 等；
 4. 动画完成后把 Surface reparent 回原父节点并销毁 leash。
 
-应用 View 内容仍由应用/HWUI 绘制。WMS/Shell 对 Surface 做变换，并不代替应用执行 GPU 渲染，也没有一个名为 `WindowAnimationController` 的 Android 17 核心类负责“统一 GPU 优化”。
+应用 View 内容仍由应用/HWUI 绘制。WMS/Shell 对 Surface 做变换，代替不了应用的 GPU 渲染；Android 17 也没有一个名为 `WindowAnimationController` 的核心类负责“统一 GPU 优化”。
 
-共享元素转场通常还涉及应用侧捕获、布局和绘制，不能只从 WMS 动画线程判断成本。诊断时要同时看：
+共享元素转场通常还涉及应用侧捕获、布局和绘制，只从 WMS 动画线程判断成本会漏掉大头。诊断时我们要同时看：
 
 - transition collect/ready 是否等待应用；
 - start transaction 何时交付；
@@ -940,9 +940,9 @@ Activity open / close 动画可以按版本分层理解：
 | Android 12—14 | legacy `AppTransition` 仍覆盖一部分路径，`TransitionController` 和 Shell transition 逐步接管 Task/Activity 级过渡 | 同时看 `wm`、`transition`、`android.anim*`、Shell 进程和 SurfaceFlinger transaction |
 | Android 15—17 | `TransitionController` / Shell transition 是 Activity、Recents、predictive back、桌面模式等场景的主要分析入口 | 先定位 transition id，再看 Shell handler、remote transition、leash transaction 与 SF `commit`/`composite` |
 
-一次 Activity 切换里，旧 Activity 和新 Activity 的 Window 往往会被包到 leash Surface 下。动画过程更新 transform（变换）、alpha、crop 和 layer，App 不需要每帧重绘 Activity 内容。App 侧首帧准备慢、Shell 动画线程慢、system_server transition 状态收集慢或 SurfaceFlinger 合成慢，都会表现成切换掉帧，但对应的慢点不同。
+一次 Activity 切换里，旧 Activity 和新 Activity 的 Window 往往会被包到 leash Surface 下。动画过程更新 transform（变换）、alpha、crop 和 layer，App 不需要每帧重绘 Activity 内容。App 侧首帧准备慢、Shell 动画线程慢、system_server transition 状态收集慢、SurfaceFlinger 合成慢，都会表现成切换掉帧，但对应的慢点各不相同，下一步就是把这四段拆开。
 
-Perfetto 里不能只看 `android.anim`。如果掉帧发生在 Activity open/close 期间，应按这个顺序检查：
+Perfetto 里不能只看 `android.anim`。掉帧发生在 Activity open/close 期间时，我们按这个顺序检查：
 
 1. App 主线程和 RenderThread 是否按时提交首帧。
 2. system_server 里 transition collect/ready/finish 是否被锁等待或 Binder 调用拖长。
@@ -959,11 +959,11 @@ Predictive Back（预测返回）会随用户返回手势的进度，实时预�
 - **Android 16**：target SDK 36 的应用默认启用 predictive back，`android:enableOnBackInvokedCallback` 默认值改为 `true`；旧 `OnBackPressed`/`KEYCODE_BACK` 调用在该行为下被忽略，同时新增 `finishAndRemoveTaskCallback`、`moveTaskToBackCallback` 等 API。
 - **Android 17**：沿用该 transition/Shell 主路径；应用仍需按目标 SDK、manifest 与 AndroidX callback 实际配置判断，不能从系统版本单独推断是否参与预测动画。
 
-它的性能路径跨 Input、ATMS/WMS、Shell transition 和 SurfaceFlinger。手势开始后，Input 侧持续上报 back progress（返回进度）；WMS/Shell 根据返回目标更新当前窗口和目标窗口的 leash；手势完成或取消时，transition 进入 finish 或 cancel。分析卡顿时要同时看 Input 事件节奏、Shell transition handler、system_server transition 状态，以及 SurfaceFlinger 是否在同一时间段出现 transaction 堆积。
+它的性能路径跨 Input、ATMS/WMS、Shell transition 和 SurfaceFlinger。手势开始后，Input 侧持续上报 back progress（返回进度），WMS/Shell 根据返回目标更新当前窗口和目标窗口的 leash；手势完成或取消时，transition 进入 finish 或 cancel。分析卡顿时要同时看 Input 事件节奏、Shell transition handler、system_server transition 状态，以及 SurfaceFlinger 是否在同一时间段出现 transaction 堆积。
 
 ### “可见”不是一个布尔值
 
-Android 17 没有 `SurfaceVisibilityManager` 作为统一可见性状态机。`WindowState` 同时维护/派生多种含义：
+Android 17 没有 `SurfaceVisibilityManager` 这样的统一可见性状态机，`WindowState` 同时维护/派生多种含义。排查黑屏/闪屏时，我们把下面几栏逐一对上：
 
 | 状态/方法 | 回答的问题 |
 | --- | --- |
@@ -986,7 +986,7 @@ NO_SURFACE
 
 `READY_TO_SHOW` 允许 WMS 等同一 token 或 sync group 的其他窗口准备好后再统一显示。`mHasSurface=true` 因此只能说明资源存在，不能证明用户已经看到内容。
 
-排查黑屏/闪屏时，应分别确认“请求可见、已有 Surface、首帧已提交、Surface 已 show、Layer 已 present（显示到屏幕）”。
+“请求可见、已有 Surface、首帧已提交、Surface 已 show、Layer 已 present（显示到屏幕）”，哪一环断了，就沿那一环继续查。
 
 [源码依据：`WindowState.isVisible*()`、`isOnScreen()`、`WindowStateAnimator` draw states，`android-17.0.0_r1`]
 
@@ -995,7 +995,7 @@ NO_SURFACE
 InputReader 和 InputDispatcher 位于 native InputFlinger：前者读取并规范化设备事件，后者选择目标窗口并分发事件。WMS 不遍历每个触摸事件，它负责向输入系统提供当前窗口信息：
 
 - `WindowState` 对应的 input token/channel（输入身份与事件传输通道）；
-- touchable region（可触摸区域）、transform（坐标变换）、display、owner PID/UID；
+- touchable region（可触摸区域）、transform、display、owner PID/UID；
 - focusable（能否获得焦点）、trusted overlay（受系统信任的覆盖层）、input config 等属性；
 - 当前 focused window；
 - PIP、wallpaper、recents、drag 等 input consumer（消费特定输入事件的系统对象）。
@@ -1012,7 +1012,7 @@ WMS add/relayout/focus/layout
         → InputDispatcher 命中目标并投递事件
 ```
 
-当 InputDispatcher 判断无焦点窗口或窗口无响应时，通过 `InputManagerCallback` 回到 WMS，随后由 `AnrController` 解析窗口/Activity/进程并通知 ActivityManager。窗口 ANR 超时受目标窗口和应用状态影响，不应把所有输入超时硬编码成一个通用 5 秒结论。
+当 InputDispatcher 判断无焦点窗口或窗口无响应时，通过 `InputManagerCallback` 回到 WMS，随后由 `AnrController` 解析窗口/Activity/进程并通知 ActivityManager。窗口 ANR 超时受目标窗口和应用状态影响，把所有输入超时硬编码成一个通用 5 秒结论是错的。
 
 #### 输入延迟应拆成三段
 
@@ -1022,7 +1022,7 @@ WMS add/relayout/focus/layout
          → 应用主线程分发并处理
 ```
 
-如果 input window 快照里的 transform/region/focus 已过期，问题在 WMS/InputMonitor 更新；目标正确但队列等待长，则查 InputDispatcher 与进程调度；事件已到应用却迟迟不完成，则查主线程、锁和 View 事件处理。
+如果 input window 快照里的 transform/region/focus 已过期，问题在 WMS/InputMonitor 更新；目标正确但队列等待长，则查 InputDispatcher 与进程调度；事件已到应用却迟迟不处理完，则查主线程、锁和 View 事件处理。
 
 [源码依据：`InputMonitor.java`、`InputManagerCallback.java`、`AnrController.java`、`InputDispatcher.cpp`，`android-17.0.0_r1`]
 
@@ -1036,7 +1036,7 @@ InputDispatcher 的 `onWindowInfosChanged()` 按 Display 替换窗口缓存并�
 
 窗口移动、转场、焦点或 touchable region 变化时，应依次对齐：WMS 标记并提交 input info、SurfaceFlinger 生成新 snapshot、InputDispatcher 替换缓存和处理 focus request、应用 input channel 收到事件。
 
-点击无响应可能来自旧 snapshot、不可触摸窗口、未完成的焦点请求、channel backlog 或应用主线程迟到，不能只凭焦点切换下结论。
+点击无响应可能来自旧 snapshot、不可触摸窗口、未完成的焦点请求、channel backlog 或应用主线程迟到；只凭焦点切换就下结论，会把问题看窄。
 
 ### 多窗口、自由窗体与大屏
 
@@ -1050,13 +1050,13 @@ split screen（分屏）、freeform（自由窗体）、嵌入式 Activity 和�
 - transition SyncGroup 参与者增加；
 - IME、壁纸、焦点和 input region 的关系更复杂。
 
-但“窗口数量增加”不自动等于某种固定内存或帧耗。每个窗口的 buffer 尺寸、格式、buffer 数量、是否持续更新、是否被硬件合成，以及显示器分辨率/刷新率都会改变结果。
+但“窗口数量增加”并不自动等于某种固定内存或帧耗：每个窗口的 buffer 尺寸、格式、buffer 数量、是否持续更新、是否被硬件合成，以及显示器分辨率/刷新率都会改变结果。
 
 fluid resize 的重点是减少不必要的同步 relayout，同时保证“尺寸和相对位置一起变”时仍取得 BLAST sync id。应用侧还应避免在拖拽期间对整棵 View 树做与尺寸无关的重复测量、耗时的图片解码或同步 I/O。
 
 #### 按 Display、进程与 ViewRoot 划分共享域
 
-“屏幕上有多个窗口”不能直接说明它们竞争哪条线程或哪份显示资源。应按 Display、进程和 ViewRoot 分组：
+“屏幕上有多个窗口”并不能直接说明它们在竞争哪条线程或哪份显示资源，我们要按 Display、进程和 ViewRoot 分组：
 
 | 拓扑关系 | 共享对象 | 各自独立的对象 | 常见瓶颈 |
 |---------|---------|---------------|---------|
@@ -1065,7 +1065,7 @@ fluid resize 的重点是减少不必要的同步 relayout，同时保证“尺�
 | 不同进程、位于同一 Display | SurfaceFlinger 的该 Display layer 集合、HWC/overlay（硬件合成平面）、输出带宽和本轮 present | App UI 线程、进程 RenderThread、窗口 buffer 队列 | 单个慢窗口拖延同步组，或合成资源不足 |
 | 位于不同 Display | 设备级 GPU/HWC 资源仍可能共享 | 各 Display 的 layer 集合、时序和 present fence | 只看默认屏会漏掉外接屏的掉帧 |
 
-多窗口 trace 的第一层索引因此应是 Display，第二层是 Window/ViewRoot，第三层才是进程、UI 线程、RenderThread 和内容 producer（内容生产者）。每个 ViewRoot 有自己的 Surface/BLAST 内容通道；同进程只表示部分执行资源共享，多个窗口仍各有自己的 BufferQueue。
+所以多窗口 trace 的第一层索引是 Display，第二层是 Window/ViewRoot，第三层才是进程、UI 线程、RenderThread 和内容 producer（内容生产者）。每个 ViewRoot 有自己的 Surface/BLAST 内容通道；同进程只说明部分执行资源共享，多个窗口仍各有自己的 BufferQueue。
 
 #### 折叠屏与大屏的配置边界
 
@@ -1102,7 +1102,7 @@ QPR 是 Android 的季度平台更新；Connected Display Desktop 是把桌面�
 
 `WindowStateAnimator.createSurfaceLocked()` 捕获 `OutOfResourcesException` 后调用 `RootWindowContainer.reclaimSomeSurfaceMemory()`。恢复逻辑会先扫描并销毁 leaked surfaces（已经失去有效窗口归属却仍占资源的 Surface）；没有发现泄漏时，还可能收集持有 Surface 的进程 PID 并请求 ActivityManager 终止进程，以释放图形内存。成功回收后会销毁本次失败的 Surface，要求客户端重新申请。
 
-这是一条严重故障路径，不能称为温和的 Surface 池回收。出现时应保存：
+这是一条严重故障路径，称不上温和的 Surface 池回收。出现时我们保存：
 
 - `Out of memory for surface` 与 `wm_no_surface_memory`；
 - 被识别的 leaked surface 或被终止进程；
@@ -1110,7 +1110,7 @@ QPR 是 Android 的季度平台更新；Connected Display Desktop 是把桌面�
 - 各可见窗口分辨率、格式和 buffer 数量；
 - 最近是否有旋转、分屏、录屏、虚拟显示或窗口反复创建。
 
-WMS 也没有公开的“常用窗口预加载池”。starting window 和 task snapshot 用于启动/切换期间的视觉连续性，不等同于提前创建完整应用窗口及其 buffer。
+WMS 也没有公开的“常用窗口预加载池”。starting window 和 task snapshot 服务于启动/切换期间的视觉连续性，等同于提前创建完整应用窗口及其 buffer 的说法没有依据。
 
 ### 性能诊断：按状态链取证
 
@@ -1127,7 +1127,7 @@ adb shell dumpsys input
 adb shell dumpsys SurfaceFlinger --list
 ```
 
-应把同一窗口的 title、token、owner PID/UID、display、frame、surface、focus 和 input channel 对齐。只截取 `dumpsys window` 的焦点行，无法判断首帧和 Layer 是否完成。
+我们要把同一窗口的 title、token、owner PID/UID、display、frame、surface、focus 和 input channel 对齐。只截取 `dumpsys window` 的焦点行，判断不了首帧和 Layer 是否完成。
 
 #### WindowManager state tracing
 
@@ -1157,7 +1157,7 @@ EOF
 adb pull /data/misc/perfetto-traces/wm.perfetto-trace
 ```
 
-在 15 秒采集窗口内复现问题，命令结束后再执行 `adb pull`。需要观察每次 transaction 时，可以把 `LOG_FREQUENCY_FRAME` 改为 `LOG_FREQUENCY_TRANSACTION`，代价是更高的采集量；`LOG_LEVEL_VERBOSE`、`DEBUG`、`CRITICAL` 依次改变状态明细与开销。配置中的 `RING_BUFFER` 表示缓冲区写满后覆盖最旧数据。产品构建是否允许采集、能看到哪些字段，还受设备的 Perfetto 权限和安全配置约束。
+在 15 秒采集窗口内复现问题，命令结束后再执行 `adb pull`。需要观察每次 transaction 时，可以把 `LOG_FREQUENCY_FRAME` 改为 `LOG_FREQUENCY_TRANSACTION`，代价是更高的采集量；`LOG_LEVEL_VERBOSE`、`DEBUG`、`CRITICAL` 依次改变状态明细与开销。配置里的 `RING_BUFFER` 表示缓冲区写满后覆盖最旧数据。产品构建是否允许采集、能看到哪些字段，还受设备的 Perfetto 权限和安全配置约束。
 
 [源码依据：`WindowTracing.java`、`WindowTracingPerfetto.java`、`WindowTracingDataSource.java`、`windowmanager_config.proto`，`android-17.0.0_r1`]
 
@@ -1171,7 +1171,7 @@ adb pull /data/misc/perfetto-traces/wm.perfetto-trace
 - BLAST sync：`onTransactionReady`、`onTransactionCommitTimeout`；
 - Window tracing：`traceStateLocked`。
 
-再配合 `sched`、`binder_driver`、`view`/`wm`/`gfx`/`input` atrace category（跟踪分类）、SurfaceFlinger transactions/layers 和应用自定义 trace，可以在同一份 Perfetto trace 中建立：
+再配合 `sched`、`binder_driver`、`view`/`wm`/`gfx`/`input` atrace category（跟踪分类）、SurfaceFlinger transactions/layers 和应用自定义 trace，我们就可以在同一份 Perfetto trace 中建立：
 
 ```text
 T0  WindowManagerGlobal.addView
@@ -1182,7 +1182,7 @@ T4  buffer 被 BLAST acquire；若参与同步组，记录 sync transaction read
 T5  SurfaceFlinger commit / present
 ```
 
-`T0` 和 `T3` 需要应用自定义 trace 或等价的应用侧时间记录；`T1`、`T2` 来自 framework 的窗口 trace/atrace；`T4`、`T5` 依赖 BLAST 与 SurfaceFlinger 数据源。只有这些事件处于同一采集时间轴并能对应到同一个窗口、sync id 或 frame number 时，下面的分段才成立。缺少关联信息时，不能用时间上最近的一条 transaction 代替因果关系。
+`T0` 和 `T3` 需要应用自定义 trace 或等价的应用侧时间记录；`T1`、`T2` 来自 framework 的窗口 trace/atrace；`T4`、`T5` 依赖 BLAST 与 SurfaceFlinger 数据源。这些事件要处于同一采集时间轴、并能对应到同一个窗口、sync id 或 frame number，下面的分段才成立；缺少关联信息时，用时间上最近的一条 transaction 代替因果关系是危险的。
 
 定位原则：
 
@@ -1199,7 +1199,7 @@ T5  SurfaceFlinger commit / present
 | §1.9 | `IWindowSession` Binder、oneway/sync relayout 与 `system_server` 锁竞争 |
 | §1.16 | PackageManager 提供包/组件信息，但窗口 token、显示与焦点由 WMS/ATMS 管理 |
 
-`android-17.0.0_r1` 包含上述窗口添加、两种 Surface 所有权、BLASTBufferQueue、surface placement、BLASTSyncEngine、transition、visibility 与 input integration。设备侧合成能力、gralloc buffer 策略和显示时序由具体产品实现决定，性能结论应附 trace、设备和复现条件。
+`android-17.0.0_r1` 包含上述窗口添加、两种 Surface 所有权、BLASTBufferQueue、surface placement、BLASTSyncEngine、transition、visibility 与 input integration。设备侧合成能力、gralloc buffer 策略和显示时序由具体产品实现决定，性能结论要附上 trace、设备和复现条件。
 
 ## 诊断与验证清单
 
@@ -1209,7 +1209,7 @@ T5  SurfaceFlinger commit / present
 - 不在动画或拖拽 resize 中高频重复 `updateViewLayout()`；
 - `requestLayout()` 的调用原因可追踪，避免无尺寸变化的整树 traversal；
 - 首帧阶段不做同步 I/O、图片解码或大对象初始化；
-- 区分 View 已 attach（连接到窗口）、WMS 已 add、Surface 已创建、首帧已 present；
+- 区分 View 已 attach（连接到窗口）、WMS 已 add、Surface 已创建、首帧已 present，四者推进有先后；
 - overlay 使用正确的 Context/token/type，并处理 display/lifecycle 变化。
 
 系统与厂商开发：
@@ -1220,5 +1220,5 @@ T5  SurfaceFlinger commit / present
 - layout repeat 达到 6 时，沿 pending layout changes 查找反复把布局标为需要重算的来源；
 - sync timeout 区分 ready、unfinished container、dependency 与 commit；
 - 输入问题同时核对 WMS input window snapshot 和 native InputDispatcher；
-- Surface 图形内存不足（OOM）按严重故障处理，不能用普通 Java heap 结论代替图形内存证据；
+- Surface 图形内存不足（OOM）按严重故障处理，普通 Java heap 结论代替不了图形内存证据；
 - 多窗口性能要按可见 buffer、resize、transition 参与者和合成路径测量。

@@ -11,10 +11,12 @@ tags:
 related_chapters:
 - '5.1'
 - '5.4'
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Current Android Developers Android 16 behavior changes / Android 17 Profiling APIs / PerformanceHintManager and kotlinx.coroutines 1.11.0 docs retrieved 2026-08-15; AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6
+last_verified: '2026-10-12'
+last_source_verified_at: '2026-10-12'
+last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6; Android Developers Android 16 fixed-rate behavior / Android 17 Profiling APIs / SystemClock / PerformanceHintManager and current kotlinx.coroutines Dispatchers.IO docs retrieved 2026-10-12
+verification_scope_note: 源码与官方文档抽检；线程池边界另经 OpenJDK 21 主机复现，未执行 Android 设备测试。
 confidence: medium-high
+last_idle_audit_at: '2026-10-12T22:39:42+08:00'
 consolidated_from:
 - src/part5-app/ch25-power-size/12-android17-excessive-cpu-kill.md
 - src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md
@@ -22,6 +24,12 @@ last_draft_polish_at: '2026-08-15T16:16:05+08:00'
 last_review_finalize_at: '2026-08-15T16:16:05+08:00'
 last_rework_at: '2026-08-15T16:16:05+08:00'
 sources:
+- type: aosp
+  title: Android 17 ThreadPoolExecutor timeout and rejection lifecycle contracts
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java
+- type: official
+  title: SystemClock uptime and elapsedRealtime deep-sleep boundary
+  path: https://developer.android.com/reference/android/os/SystemClock
 - type: aosp
   title: ThreadPoolExecutor / Process / bionic times / procfs source verification
   path: DeepResearch/2026-07-02-android17-app-cpu-optimization-thread-priority-source-verification.md
@@ -95,7 +103,7 @@ Android 17 的 `ThreadPoolExecutor` 来自 libcore 内置的 OpenJDK 并发实�
 
 这解释了一个常见疑问：使用容量很大的队列时，任务会长时间停在第 2 步，`maximumPoolSize` 很少参与调度。使用 `SynchronousQueue` 时没有存储槽位，提交方更容易触发创建非核心 worker。两种队列没有固定优劣，差别在于系统选择“排队”还是“增加并发”。
 
-默认配置下，核心线程不会因 `keepAliveTime` 到期而退出；`keepAliveTime` 只约束超出核心数量的 worker。调用 `allowCoreThreadTimeOut(true)` 后，核心线程也可以超时退出。对应实现可在 Android 17 的 [`ThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java) 中核对。
+默认配置下，核心线程不会因 `keepAliveTime` 到期而退出；`keepAliveTime` 只约束超出核心数量的 worker。`keepAliveTime` 大于零时，调用 `allowCoreThreadTimeOut(true)` 可以让核心线程也超时退出；零值会导致 `IllegalArgumentException`。示例工厂将该值设为 `0L`，启用核心线程超时前需要先设置正的存活时间。对应实现可在 Android 17 的 [`ThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java) 中核对。
 
 ### 没有跨应用通用的“核数公式”
 
@@ -163,9 +171,9 @@ fun newBoundedCpuExecutor(
 }
 ```
 
-固定大小的有界池让并发量和积压量都可控。`AbortPolicy` 会用 `RejectedExecutionException` 明确报告执行器已满，提交点据此选择合并同类请求、取消已经过期的工作、返回功能较少但仍可用的结果，或交给能跨进程重启保存任务的持久化调度器。
+固定大小的有界池让并发量和积压量都可控。`AbortPolicy` 在任务被拒绝时抛出 `RejectedExecutionException`，原因可能是满载，也可能是执行器已经关闭。提交点应区分容量不足与生命周期结束：满载时可以合并同类请求、取消已经过期的工作、返回功能较少但仍可用的结果，或交给能跨进程重启保存任务的持久化调度器；执行器关闭后应按业务生命周期取消任务或明确转交，避免向同一个执行器反复重试。
 
-`CallerRunsPolicy` 会在提交任务的线程里直接调用 `Runnable.run()`。如果提交方恰好是主线程、Binder（Android 跨进程调用机制）线程或持有锁的回调线程，计算或阻塞工作就会转移到那里。只有能证明提交线程允许执行该任务时，才能用它实现反压，也就是让提交速度随执行能力自动放慢。
+`CallerRunsPolicy` 在执行器尚未关闭时，会在提交任务的线程里直接调用 `Runnable.run()`；执行器已经关闭时，它会静默丢弃任务。如果提交方恰好是主线程、Binder（Android 跨进程调用机制）线程或持有锁的回调线程，计算或阻塞工作就会转移到那里。只有能证明提交线程允许执行该任务，并接受关闭后的丢弃行为时，才能用它实现反压，也就是让提交速度随执行能力自动放慢。
 
 线程工厂在新线程内部调用 `Process.setThreadPriority()`，因为该 API 修改的是调用它的线程，所以每条新建的 worker 线程都会带上配置中的优先级。
 
@@ -342,7 +350,9 @@ std::optional<double> EquivalentCores(
 
 Android 17 新增 `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`；`ProfilingTrigger` 是应用预先登记“发生指定事件时采集性能资料”的配置。这个新类型把既有的资源使用过量终止路径接入事后性能分析，不负责决定任务能否执行。`ApplicationExitInfo` 是系统保存的应用进程退出记录，其中 `REASON_EXCESSIVE_RESOURCE_USAGE` 从 API 30 已公开，因此不能把终止机制本身误写成 Android 17 新增。接口边界可在 [`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger) 与 [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo) 中核对。
 
-AOSP r1 的检查对象是进程状态达到 Home（桌面进程）或更低重要级的缓存进程。系统用检查窗口内的进程累计 CPU 时间除以窗口墙钟时间，并在终止前再次确认进程仍处于该状态；检查间隔和四档上限来自可配置常量，设备厂商可以修改。多线程累计 CPU 时间可以超过单核墙钟时间，所以源码中的百分比不等同于性能面板显示的整机 CPU 占比。实现见 [`ActivityManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 与 [`ActivityManagerConstants.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java)。JobScheduler/WorkManager 的配额（系统允许后台任务使用的调度机会与运行额度）和这条 CPU 终止路径没有直接调用关系。
+AOSP r1 以 `setProcState >= PROCESS_STATE_HOME` 筛选受检进程，包括 Home（桌面进程）及更低重要级的进程。系统用检查窗口内的进程累计 CPU 时间除以 `SystemClock.uptimeMillis()` 的增量，再乘以 100 与上限比较，并在终止前再次确认进程仍处于该状态。这个分母不计深度睡眠，与前文计入深度睡眠的 `elapsedRealtime()` 采样口径不同，两种窗口的百分比不能直接混用；时钟语义见 [`SystemClock`](https://developer.android.com/reference/android/os/SystemClock)。
+
+检查间隔和四档上限来自可配置常量，设备厂商可以修改。多线程累计 CPU 时间可以超过单核窗口时长，所以源码中的百分比不等同于性能面板显示的整机 CPU 占比。实现见 [`ActivityManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 与 [`ActivityManagerConstants.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java)。JobScheduler/WorkManager 的配额（系统允许后台任务使用的调度机会与运行额度）和这条 CPU 终止路径没有直接调用关系。
 
 后台任务的常见问题发生在 Worker 已结束或被停止之后：协程、独立线程、JNI（Java/Kotlin 与 C/C++ 互调接口）、子进程或 Binder 循环仍在工作，进程随后转为缓存状态。处理时应避免重复任务，根据失败类型逐步延长重试间隔，让取消信号传到所有子任务，并用有界并发、可分批执行的工作单元和进度检查点控制成本；不要围绕某个 AOSP 默认阈值持续轮询。
 

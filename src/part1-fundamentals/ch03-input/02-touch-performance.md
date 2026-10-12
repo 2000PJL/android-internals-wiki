@@ -4,8 +4,10 @@ chapter: '3.2'
 section: '3.2'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-21'
-last_verified_against: AOSP android-17.0.0_r1 InputFlinger/InputTransport/ViewRootImpl/Choreographer/MotionPredictor/MotionEvent/InputEventAssigner/View.requestUnbufferedDispatch sources; external/perfetto android.input inputevent config and android.input stdlib docs; source.android.com Input/Winscope adb trace docs; AndroidX Input/Graphics low-latency docs | 2026-08-21 deep review added official unbuffered-dispatch warning boundary
+last_verified: '2026-10-12'
+last_verified_against: AOSP android-17.0.0_r1 InputFlinger/InputTransport/ViewRootImpl/Choreographer/MotionPredictor/MotionEvent/InputEventAssigner/View.requestUnbufferedDispatch sources; external/perfetto android.input inputevent config and android.input stdlib docs; source.android.com Input/Winscope adb trace docs; AndroidX Input/Graphics low-latency docs | 2026-08-21 deep review added official unbuffered-dispatch warning boundary | 2026-10-12 idle audit checked pinned external/perfetto input.sql and EventHub.cpp, corrected read_time proxy boundary, and rechecked listed API/AndroidX/Winscope sources
+last_idle_audit_at: '2026-10-12T14:43:23+08:00'
+last_source_verified_at: '2026-10-12T14:43:23+08:00'
 confidence: medium-high
 sources:
 - type: blog
@@ -32,6 +34,8 @@ sources:
   path: developer.android.com/jetpack/androidx/releases/graphics
 - type: official
   path: perfetto.dev/docs/analysis/stdlib-docs#android-input
+- type: official
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/input.sql
 - type: research
   path: DeepResearch/2026-05-11-hci-perception-input-latency-analysis.md
 - type: research
@@ -87,7 +91,7 @@ consolidated_from:
 |---|---|---|---|
 | 硬件到读取（hardware-to-read） | 触控控制器或内核事件 | `EventHub` 或 `InputReader` 读到事件 | 应用处理、渲染和显示 |
 | 分发到确认（dispatch-to-ACK） | `InputDispatcher` 发布事件 | 系统框架收到 `FINISHED` | 完成确认后的渲染、合成与面板输出 |
-| 读取到呈现（read-to-present） | `InputReader.readTime` | 关联帧的呈现时间 | 触控 IC 扫描前段与面板光学响应 |
+| 读取到呈现（read-to-present） | `EventHub` 记录的 `RawEvent.readTime` | 关联帧的呈现时间 | 触控 IC 扫描前段与面板光学响应 |
 | 触摸到光子（touch-to-photon） | 物理接触 | 目标像素实际变化 | 原则上覆盖整条链，通常需要外部仪器 |
 
 可执行的阶段预算应记录证据来源，而不是把几个经验数相加：
@@ -417,7 +421,9 @@ Perfetto 标准库的 `android_input_events` 会把套接字往返与关联帧�
 - `total_latency_dur = finish_ack.ts - dispatch.ts`；
 - `end_to_end_latency_dur = frame.present_time - frame.read_time`。
 
-`total_latency_dur` 只计算到 `FINISHED` 完成确认，不表示画面已经显示。`end_to_end_latency_dur` 从 `InputReader` 读取时间开始计算，不包含触控 IC 前段和面板光学响应。标准库无法确定事件驱动的是哪一帧时，可能选择随后最近的一帧，并把 `is_speculative_frame` 设为 `true`；这类样本适合观察分布，不宜当作单个事件的确定因果证据。
+`total_latency_dur` 只计算到 `FINISHED` 完成确认，不表示画面已经显示。在 `android-17.0.0_r1` 附带的 `android.input` 实现中，`read_time` 取自 `UnwantedInteractionBlocker::notifyMotion...` 区段的起始时间，作为读取阶段的代理时间点；它没有直接使用 `EventHub` 记录的 `RawEvent.readTime`。`end_to_end_latency_dur` 表示这个代理点到关联帧呈现的区间，不包含触控 IC 前段和面板光学响应。若要精确测量从设备节点读取到呈现的耗时，需要另行取得真实 `RawEvent.readTime`，再按同一事件关联呈现时间。
+
+标准库无法确定事件驱动的是哪一帧时，可能选择随后最近的一帧，并把 `is_speculative_frame` 设为 `true`；这类样本适合观察分布，不宜当作单个事件的确定因果证据。
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
@@ -651,6 +657,7 @@ Android 17 中，`InputDispatcher` 会把符合条件的按键、触摸动作和
   - `frameworks/base/core/java/android/view/MotionEvent.java`
   - `frameworks/base/core/java/android/view/MotionPredictor.java`
   - `external/perfetto/protos/perfetto/config/android/android_input_event_config.proto`
+  - `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/input.sql`（`_input_read_time` 与 `android_input_events` 的测量起点和关联规则）
 - Android 官方文档：[Input 系统概述](https://source.android.com/docs/core/interaction/input)、[通过 adb 抓取 Input Trace](https://source.android.com/docs/core/graphics/winscope/capture/adb)、[MotionEvent](https://developer.android.com/reference/android/view/MotionEvent)、[MotionPredictor](https://developer.android.com/reference/android/view/MotionPredictor)、[Advanced Stylus](https://developer.android.com/develop/ui/views/touch-and-input/stylus-input/advanced-stylus-features)、[AndroidX Input](https://developer.android.com/jetpack/androidx/releases/input)
 - AndroidX 低延迟图形：[`CanvasFrontBufferedRenderer`](https://developer.android.com/reference/androidx/graphics/lowlatency/CanvasFrontBufferedRenderer)、[`LowLatencyCanvasView`](https://developer.android.com/reference/androidx/graphics/lowlatency/LowLatencyCanvasView)
 - Perfetto：[`android.input` 标准库](https://perfetto.dev/docs/analysis/stdlib-docs#android-input)、[FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)

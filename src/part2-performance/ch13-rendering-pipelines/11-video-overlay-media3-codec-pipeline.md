@@ -1,7 +1,7 @@
 ---
 title: 视频 Overlay、Media3 与专业编解码管线
 chapter: '13.11'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
   - hwc
@@ -216,7 +216,7 @@ sources:
   role: 普通视频 Surface、buffer/fence、SurfaceFlinger 与 HWC overlay 决策边界
 - type: official
   path: https://developer.android.com/about/versions/16/features#apv
-  role: APV 定位、标准特征与 Android 422-10、2 Gbps 实现范围
+  role: APV 定位、标准特征与 APV 422-10、2 Gbps 实现范围
 - type: official
   path: https://developer.android.com/about/versions/17/release-notes
   role: Android 17 Constant Quality 录制入口
@@ -294,9 +294,10 @@ related_chapters:
 - '15.14'
 - '24.4'
 section: '13.11'
-last_verified: '2026-10-05'
+last_verified: '2026-10-12'
 last_verified_against: android-17.0.0_r1 media/HWC/APV source anchors (MediaCodec.java, MediaCodecInfo.java, MediaFormat.java, MediaRecorder.java, CCodec.cpp, CCodecBufferChannel.cpp, CCodecConfig.cpp, HWComposer.cpp, Composition.aidl, Capability.aidl, BufferUsage.aidl) / Android 16-17 APV, HWC, Media3, multimedia tunneling and frame-rate official docs / Media3 1.10.1 source tag and release notes / android17-6.18-2026-06_r6 dma-buf, dma-fence, sched, block and thermal anchors
 last_review_finalize_at: '2026-10-05T22:09:47+08:00'
+last_rework_at: '2026-10-12T09:35:33+08:00'
 confidence: high
 last_idle_audit_at: '2026-07-25T22:35:51+08:00'
 last_consolidated_at: '2026-08-24'
@@ -1314,7 +1315,7 @@ APV 上线时应分别记录静态能力与每次运行结果，并按这些字�
 
 下列依据限于 Android 16 到 Android 17 的公开文档、`android-17.0.0_r1` 平台源码和 `android17-6.18-2026-06_r6` kernel。OpenAPV 只作为 APV 标准与参考实现材料，不能外推为 Android 17 之后的平台能力。
 
-- [Android 16（适用范围下限）APV 功能说明](https://developer.android.com/about/versions/16/features#apv)：APV 定位、标准特征与 Android 422-10 实现范围。
+- [Android 16（适用范围下限）APV 功能说明](https://developer.android.com/about/versions/16/features#apv)：APV 定位、标准特征与 APV 422-10 实现范围。
 - [Android 17 CQ 功能说明](https://developer.android.com/about/versions/17/release-notes#audio-video)与 [`MediaRecorder` API](https://developer.android.com/reference/android/media/MediaRecorder#setVideoEncodingQuality(int))：CQ 入口、适用条件与质量值边界。
 - [`CodecCapabilities.isFormatSupported()`](https://developer.android.com/reference/android/media/MediaCodecInfo.CodecCapabilities#isFormatSupported(android.media.MediaFormat))：format keys 的检查范围，以及指定 level 不约束其他参数的文档边界。
 - [Android 17 `MediaFormat.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/MediaFormat.java)：`MIMETYPE_VIDEO_APV` 与 format keys。

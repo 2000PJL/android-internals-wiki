@@ -1,7 +1,7 @@
 ---
 title: 视频 Overlay、Media3 与专业编解码管线
 chapter: '13.11'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
 tags:
   - hwc
@@ -150,7 +150,7 @@ sources:
   role: Android 17 VVC framework/MP4/Codec2 支持与 vendor decoder 边界
 - type: official
   path: https://developer.android.com/jetpack/androidx/releases/media3
-  role: Media3 1.10.1 稳定版、1.11.0-rc01 与 tunnel audio session 竞态修复
+  role: Media3 发布记录截至 1.11.1、1.10.1 源码锚点与 tunnel audio session 竞态修复
 - type: official
   path: https://github.com/androidx/media/releases/tag/1.10.1
   role: Media3 1.10.1 tag、commit 与 release 内容
@@ -295,8 +295,8 @@ related_chapters:
 - '24.4'
 section: '13.11'
 last_verified: '2026-10-12'
-last_verified_against: android-17.0.0_r1 media/HWC/APV source anchors (MediaCodec.java, MediaCodecInfo.java, MediaFormat.java, MediaRecorder.java, CCodec.cpp, CCodecBufferChannel.cpp, CCodecConfig.cpp, HWComposer.cpp, Composition.aidl, Capability.aidl, BufferUsage.aidl) / Android 16-17 APV, HWC, Media3, multimedia tunneling and frame-rate official docs / Media3 1.10.1 source tag and release notes / android17-6.18-2026-06_r6 dma-buf, dma-fence, sched, block and thermal anchors
-last_review_finalize_at: '2026-10-05T22:09:47+08:00'
+last_verified_against: android-17.0.0_r1 media/HWC/APV source anchors (MediaCodec.java, MediaCodecInfo.java, MediaFormat.java, MediaRecorder.java, CCodec.cpp, CCodecBufferChannel.cpp, CCodecConfig.cpp, HWComposer.cpp, Composition.aidl, Capability.aidl, BufferUsage.aidl) / Android 16-17 APV, HWC, Media3, multimedia tunneling and frame-rate official docs / Media3 发布记录截至 1.11.1 以及固定到 Media3 1.10.1 的源码 tag / android17-6.18-2026-06_r6 dma-buf, dma-fence, sched, block and thermal anchors
+last_review_finalize_at: '2026-10-12T10:07:32+08:00'
 last_rework_at: '2026-10-12T09:35:33+08:00'
 confidence: high
 last_idle_audit_at: '2026-07-25T22:35:51+08:00'
@@ -642,7 +642,7 @@ HWC 只处理到达显示端的 layer，播放前半段还包括 ABR、缓冲、
 
 - Android 平台：Android 17 / API 37 / `android-17.0.0_r1`。
 - kernel：`android17-6.18-2026-06_r6`。
-- Media3：截至 2026-07-31 的最新稳定版为 1.10.1，源码 tag 对应 commit `5fb306449733dd71595700c1227ad6087578c559`。1.11.0-rc01 已于 2026-07-22 发布，本文的常量仍以稳定版 1.10.1 为准。
+- Media3：截至 2026-10-12，官方发布记录的最新稳定版为 1.11.1；本文的 ABR 常量和 tunnel selector 代码仍固定到 1.10.1 tag，因为下文引用的是该版本源码。1.11.0-rc01 已于 2026-07-22 发布，1.11.0 稳定版于 2026-08-05 发布，1.11.1 于 2026-09-10 发布。使用 1.11.x 时，应重新核对对应 tag 的 `AdaptiveTrackSelection`、`DefaultBandwidthMeter` 和 `DefaultTrackSelector`。
 
 Android 平台版本和 Media3 库版本彼此独立。设备运行 Android 17，不能说明应用使用哪个 Media3 版本；升级 Media3 也不会替换设备上的 codec、Composer HAL 或显示驱动。
 
@@ -929,7 +929,7 @@ View surface 在 Android 10 之前就会丢弃过量帧，公开文档只对非 
 5. **准备可控回退。** Tunnel 初始化或播放异常时，释放当前 codec 后重建普通 SurfaceView 路径。回退次数必须受限，并保留首次失败的 codec diagnostic，避免循环重建掩盖根因。
 6. **不要单改一个 ABR 常量。** `bandwidthFraction`、buffer 门槛、LoadControl、segment duration、TTFB、live offset 和倍速互相影响。按点播、普通直播、低延迟直播分别实验。
 7. **组合测试 DRM/HDR/高帧率。** 用目标内容覆盖 secure decoder、Widevine 等级、HDCP、HDR format、60/120 fps、AV1/HEVC/VVC、tunnel 和外接显示。
-8. **使用 Media3 1.10.1 或核对对应修复。** 1.10.1 release notes 包含 tunnel 模式 audio session id 生成竞态的修复；旧版本遇到相关 `IllegalStateException` 时，应先确认是否命中该已知问题。
+8. **使用至少包含相关修复的 Media3 版本。** 1.10.1 发布记录包含 tunnel 模式 audio session id 生成竞态的修复；仍在 1.10.0 或更早版本时，应先确认是否命中相关 `IllegalStateException`。截至 2026-10-12，最新稳定版是 1.11.1；升级到 1.11.x 时，还要按对应发布记录与源码 tag 复核 ABR 和 tunnel 行为。
 
 Android 17 增加 VVC/H.266 的 framework MIME、MediaCodec/Codec2 API 与 MP4 extractor 支持，但 AOSP 不提供 VVC software decoder，也不提供 VVC encoder。只有 SoC 厂商提供并注册 vendor Codec2 VVC decoder 的设备才能解码。运行 API 37 和本机能否播放 VVC 必须作为两个独立字段记录。
 

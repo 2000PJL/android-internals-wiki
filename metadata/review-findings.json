@@ -4003,6 +4003,47 @@
       "summary": "legacy scan timeout 被泛化到批量扫描路径",
       "type": "platform-scope",
       "updated_at": "2026-10-12T18:43:34.737855+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "close_note": "按 Android 17 r1 ThreadPoolExecutor.java 校正正 keepAliveTime 前提、shutdown 拒绝及 CallerRunsPolicy 关闭后静默丢弃；OpenJDK 21 主机复现实验三项均通过，未冒充 Android 设备测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261012-223533-idle-audit-fda680b6",
+      "created_at": "2026-10-12T22:40:14.826130+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261012-223533-idle-audit-fda680b6",
+      "details": "android-17.0.0_r1 ThreadPoolExecutor.java 明确要求 allowCoreThreadTimeOut(true) 的 keepAliveTime 大于零；AbortPolicy 的拒绝也来自 shutdown；CallerRunsPolicy 在 shutdown 后静默丢弃。正文把拒绝等同满载并无条件描述 caller-run，可能误导生命周期处理。",
+      "id": "finding-ch25-7-threadpool-lifecycle-contract",
+      "log_path": "logs/audit/2026-10-12-20261012-223533-idle-audit-fda680b6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java"
+      ],
+      "status": "fixed",
+      "summary": "线程池超时与拒绝策略遗漏关闭状态和有效参数边界",
+      "type": "api-lifecycle-boundary",
+      "updated_at": "2026-10-12T22:41:47.059436+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "close_note": "按 Android 17 r1 AMS 明确 setProcState >= HOME、CPU 增量 / uptimeMillis 增量 * 100，以及 uptime 排除深度睡眠、不可与 elapsedRealtime 百分比直接混用；附 SystemClock 官方入口。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261012-223533-idle-audit-fda680b6",
+      "created_at": "2026-10-12T22:40:38.395282+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261012-223533-idle-audit-fda680b6",
+      "details": "ActivityManagerService.java 16064-16085 与 16191-16192 用 uptimeMillis 增量作分母，排除深度睡眠；正文只称窗口墙钟，易与前文计入深度睡眠的 elapsedRealtime 样本混用。受检条件是 setProcState >= PROCESS_STATE_HOME，不能把全部受检对象概括为缓存进程。",
+      "id": "finding-ch25-7-excessive-cpu-uptime-denominator",
+      "log_path": "logs/audit/2026-10-12-20261012-223533-idle-audit-fda680b6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "status": "fixed",
+      "summary": "CPU 使用过量检查遗漏 uptime 分母与受检进程状态边界",
+      "type": "measurement-contract",
+      "updated_at": "2026-10-12T22:42:02.979239+08:00"
     }
   ],
   "schema_version": 1

@@ -4,8 +4,10 @@ chapter: '11.4'
 section: '11.4'
 status: finalized
 applicable_versions: Android 7.0 (API 24) - Android 17 (API 37)
-last_verified: '2026-08-02'
-last_verified_against: AOSP android-17.0.0_r1；Android 17 / API 37 SDK 文档；Android Developers / source.android.com / Perfetto 文档 2026-07；review-finalize 2026-08-02 逐条核验 ScanUtil.kt / AppScanStats.kt / ScanMetricsReporter.kt / ScanThrottler.kt
+last_verified: '2026-10-12'
+last_verified_against: AOSP android-17.0.0_r1；Android 17 / API 37 SDK 文档；Android Developers / source.android.com / Perfetto 官方文档 2026-10-12；核对 ScanBinder.kt / ScanController.java 的回调注册配额与 ScanManager.java 的常规、批量扫描超时边界
+last_source_verified_at: '2026-10-12T18:40:38+08:00'
+last_idle_audit_at: '2026-10-12T18:40:38+08:00'
 confidence: high
 last_review_finalize_at: '2026-08-02T22:05:39+08:00'
 tags:
@@ -274,7 +276,7 @@ sequenceDiagram
 
 ### 注册频率限制
 
-`AppScanStats.isScanningTooFrequently()` 读取可由 DeviceConfig 调整的 quota（配额）。AOSP 17 默认保留最近 5 次已结束扫描；若其中最早一次的开始时间仍处于 30 秒窗口内，后续非特权注册会收到 `SCAN_FAILED_SCANNING_TOO_FREQUENTLY`。
+`AppScanStats.isScanningTooFrequently()` 读取可由 DeviceConfig 调整的 quota（配额）。AOSP 17 默认保留最近 5 次已结束扫描；若其中最早一次的开始时间仍处于 30 秒窗口内，`ScanController.registerAndStartScan()` 会拒绝后续非特权回调扫描注册，返回 `SCAN_FAILED_SCANNING_TOO_FREQUENTLY`。同一版本的 `registerPiAndStartScan()` 未执行这项检查，因此不能把 5 次 / 30 秒视为所有扫描入口的统一上限。
 
 这里的 5 次和 30 秒来自 DeviceConfig 的默认值，OEM 和不同设备上的实际窗口可能不同。连续 start/stop 来提高发现概率，会更容易触发拒绝，也会增加 Binder 与 controller 配置开销。注册失败后应停止循环，并等待业务事件或退避计时器。
 
@@ -288,7 +290,7 @@ sequenceDiagram
 
 ### 长时间扫描降级
 
-AOSP 17 的 legacy scan timeout（旧扫描超时）默认为 10 分钟，可由 DeviceConfig 调整。opportunistic 和 first-match（首次匹配）扫描不受这条 timeout 影响；其余长时扫描会发生以下变化：
+AOSP 17 的 legacy scan timeout（旧扫描超时）默认为 10 分钟，可由 DeviceConfig 调整。`ScanManager.startScan()` 只在常规扫描分支设置这项计时器，批量扫描分支不设置；自动批量扫描进入批量路径时也不设置。常规扫描中的 opportunistic 和 first-match（首次匹配）扫描豁免这条 timeout，其余长时常规扫描会发生以下变化：
 
 - 无 filter：改成 opportunistic，不再单独驱动 controller 扫描。
 - 有 filter：扫描 mode 被限制到不高于 `SCAN_MODE_LOW_POWER`。

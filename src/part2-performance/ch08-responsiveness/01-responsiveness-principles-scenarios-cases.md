@@ -39,16 +39,24 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp
 - type: official
   path: https://perfetto.dev/docs/analysis/stdlib-docs#android-input
+- type: aosp
+  path: external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/input.sql@android-17.0.0_r1
 - type: official
   path: https://developer.android.com/topic/performance/vitals/render
 - type: official
+  path: https://developer.android.com/google/play/vitals/render
+- type: official
   path: https://developer.android.com/topic/performance/vitals/launch-time
+- type: official
+  path: https://developer.android.com/google/play/vitals/launch-time
 - type: official
   path: https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
 - type: official
   path: https://developer.android.com/reference/android/view/MotionPredictor
 - type: official
   path: https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate
+- type: official
+  path: https://developer.android.com/reference/android/view/Display
 - type: aosp
   path: frameworks/base/core/java/android/app/Activity.java
 - type: aosp
@@ -77,8 +85,9 @@ sources:
   path: https://developer.android.com/reference/android/os/ProfilingManager
 - type: blog
   path: 性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md
-last_verified: '2026-07-09'
-last_verified_against: AOSP android-17.0.0_r1; Android Developers MotionPredictor/ARR/Vitals docs; web.dev RAIL
+last_verified: '2026-10-12'
+last_verified_against: AOSP android-17.0.0_r1 Input/Choreographer/View/ActivityInfo and external/perfetto android.input stdlib; Android Developers MotionPredictor/ARR/Display/Vitals/ANR docs; source.android.com eval_perf
+last_idle_audit_at: '2026-10-12T10:35:33+08:00'
 related_chapters:
 - '2.3'
 - '3.1'
@@ -143,7 +152,7 @@ TTID（Time to Initial Display）表示从启动请求到首帧显示，TTFD（T
 
 Android 动画和滚动应以系统为当前帧分配的 deadline 为准。60 Hz 屏幕的刷新周期约为 16.67 ms，120 Hz 约为 8.33 ms；留给应用 CPU 的时间通常更少，因为 RenderThread、GPU、SurfaceFlinger 和显示提交还要继续工作。从 Android 12（API 31）开始，Perfetto FrameTimeline 会同时给出 expected timeline 和 actual timeline，也就是系统预期的时序与实际执行的时序；直接比较二者，比套用固定的 16 ms 更可靠。
 
-支持 Adaptive Refresh Rate（ARR，自适应刷新率）的设备还会动态改变刷新节奏。ARR 要求设备实现相应 HAL，并运行 Android 15 QPR1 或更高版本。Android 16 增加了 `Display.hasArrSupport()` 和 `Display.getSuggestedFrameRate(int)` 等查询能力。解释数据时仍需结合当前帧率、应用请求的帧率和 FrameTimeline——设备未必一直跑在最高刷新率上。
+支持 Adaptive Refresh Rate（ARR，自适应刷新率）的设备还会动态改变刷新节奏。ARR 从 Android 15 开始面向启用该能力的设备提供，是否生效仍取决于设备显示能力、系统策略以及应用或窗口的帧率请求。Android 16 增加了 `Display.hasArrSupport()` 和 `Display.getSuggestedFrameRate(int)` 等查询能力。解释数据时仍需结合当前帧率、应用请求的帧率和 FrameTimeline——设备未必一直跑在最高刷新率上。
 
 ### 触摸到显示的完整路径
 
@@ -1139,11 +1148,15 @@ minify 开关、默认规则文件、full mode 属性和 keep rules 会共同影
 
 - [Evaluate performance](https://source.android.com/docs/core/tests/debug/eval_perf)
 - [PerfettoSQL `android.input`](https://perfetto.dev/docs/analysis/stdlib-docs#android-input)
+- [AOSP Android 17：Perfetto `android.input` stdlib](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/input.sql)
 - [Slow rendering and frozen frames](https://developer.android.com/topic/performance/vitals/render)
+- [Google Play Android vitals：Slow rendering](https://developer.android.com/google/play/vitals/render)
 - [App startup time: TTID and TTFD](https://developer.android.com/topic/performance/vitals/launch-time)
+- [Google Play Android vitals：App startup time](https://developer.android.com/google/play/vitals/launch-time)
 - [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
 - [`MotionPredictor` API](https://developer.android.com/reference/android/view/MotionPredictor)
 - [Adaptive refresh rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)
+- [`Display` API](https://developer.android.com/reference/android/view/Display)
 - [RAIL performance model](https://web.dev/articles/rail)
 
 ### 场景与平台资料

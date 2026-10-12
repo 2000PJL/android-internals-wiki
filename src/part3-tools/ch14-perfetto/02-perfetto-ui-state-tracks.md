@@ -110,13 +110,13 @@ consolidated_from:
 
 # Perfetto UI、状态轨道与版本边界
 
-Perfetto UI 用 track、slice、counter 和 flow 展示时间关系；状态轨道把线程、进程或系统组件在某段时间内的离散状态直接呈现。版本变化会调整轨道命名和数据源，不能只凭颜色判断。
+打开一份 trace，我们面对的是 track、slice、counter 和 flow 这些对象，它们把线程、进程或系统组件在某段时间内的离散状态直接摆上时间轴。同一个位置上的轨道，含义会随版本和数据源变化，所以读图先读语义，颜色只用来快速定位。
 
 ## 轨道、切片、计数器与因果连接
 
-### 读图顺序比轨道数量更重要
+### 一轮分析的读图顺序
 
-Perfetto UI 把多个 data source 的事件放在同一时间轴上；data source 是产生某类 trace 数据的采集组件。UI 无法补回缺失的调度事件、FrameTimeline、Binder 或应用标记，也不会自动给出因果关系。读图时要把“轨道上发生了什么”和“为什么发生”分开。
+Perfetto UI 把多个 data source 的事件放在同一时间轴上，data source 指产生某类 trace 数据的采集组件。录制时缺了调度事件、FrameTimeline、Binder 或应用标记，UI 这边补不回来，因果关系还得我们自己顺着事件去查。所以读图时，先把“轨道上发生了什么”和“为什么发生”当成两个问题。
 
 一轮可靠分析按下面的顺序推进：
 
@@ -127,15 +127,15 @@ Perfetto UI 把多个 data source 的事件放在同一时间轴上；data sourc
 5. 沿 Binder、Flow、waker 或帧 token 检查跨线程、跨进程和显示下游。
 6. 需要批量比较时，把 UI 观察写成 PerfettoSQL。
 
-平台结论固定到 Android 17 / API 37 / `android-17.0.0_r1`，内核状态固定到 `android17-6.18-2026-06_r6`。`ui.perfetto.dev` 和主机 Trace Processor 独立更新；本文的界面文字、命令和轨道布局按 2026-08-13 的稳定版 v57.2 与官方文档复核。
+> 源码基线：平台结论固定到 Android 17 / API 37 / `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`；`ui.perfetto.dev` 与主机 Trace Processor 独立更新，界面文字、命令和轨道布局按 2026-08-13 的稳定版 v57.2 复核。
 
 ### 打开并整理 Trace
 
-#### 加载方式与大文件边界
+#### 加载方式与大文件
 
 [Perfetto UI](https://ui.perfetto.dev/) 可以通过侧边栏的 “Open trace file” 或拖放加载本地 trace。一次选择多个文件时，当前 UI 会进入合并配置流程，把它们放到共享时间轴；合并前要确认各文件的时钟来源和对齐依据。
 
-浏览器能否顺利处理大文件取决于 trace 内容、主机内存、浏览器限制和查询复杂度，不能用一个固定体积判断。加载或交互开始受限时，可以运行 `./trace_processor server http <trace>`，让本机原生 Trace Processor 作为 UI 后端；也可以直接用 `trace_processor_shell` 查询，具体流程见 §14.1。把二进制 trace 全量转成文本通常会扩大体积，也会失去 UI 的索引优势，不适合作为大文件的默认方案。
+浏览器能否顺利处理大文件，取决于 trace 内容、主机内存、浏览器限制和查询复杂度，没有一个固定的体积门槛。加载或交互开始受限时，可以运行 `./trace_processor server http <trace>`，让本机原生 Trace Processor 作为 UI 后端，也可以直接用 `trace_processor_shell` 查询，具体流程见 §14.1。把二进制 trace 全量转成文本通常会扩大体积，还会失去 UI 的索引优势，大文件默认不走这条路。
 
 #### 时间轴、选择与详情抽屉
 
@@ -152,7 +152,7 @@ Perfetto UI 把多个 data source 的事件放在同一时间轴上；data sourc
 | 命令面板 | `Ctrl+Shift+P`；macOS 用 `Cmd+Shift+P` | 搜索并执行 UI 命令 |
 | 当前快捷键 | `?` | 查看该 UI 构建实际注册的快捷键 |
 
-Area Selection 不只有起止时间，还包含所选轨道。修改 track shell（轨道左侧的名称和控制区域）上的勾选项会改变统计范围；分享截图或结论时，应把选区边界和轨道集合一起说明。
+Area Selection 除了起止时间，还包含所选轨道。修改 track shell（轨道左侧的名称和控制区域）上的勾选项会改变统计范围；分享截图或结论时，把选区范围和轨道集合一起写明，统计范围才说得清楚。
 
 #### 找轨道、过滤和 Pin
 
@@ -164,17 +164,17 @@ Area Selection 不只有起止时间，还包含所选轨道。修改 track shel
 
 分析一帧时，常用组合是 App 主线程、RenderThread、FrameTimeline、`surfaceflinger` 主线程和相关 CPU。分析同步 Binder 时，把客户端线程与服务端 Binder 线程一起 Pin。Pin 只改变显示位置，不改变数据或时间对齐。
 
-Omnibox 是页面顶部的统一搜索和命令输入框，输入 `:` 可以进入 SQL 模式。结果能否生成 Debug Track 取决于列的语义：Slice Track 至少要选择名称、非空时间戳和 duration 列，Counter Track 至少要选择时间戳和数值列；列名可以在创建界面中映射，不必固定写成 `name`、`ts`、`dur` 或 `value`。复杂查询留到 §14.7，这里把它作为“将查询结果放回时间轴”的入口。
+Omnibox 是页面顶部的统一搜索和命令输入框，输入 `:` 进入 SQL 模式。查询结果能否生成 Debug Track 取决于列的语义：Slice Track 至少要选名称、非空时间戳和 duration 列，Counter Track 至少要选时间戳和数值列；列名可以在创建界面里映射，写法无需固定为 `name`、`ts`、`dur` 或 `value`。复杂查询留到 §14.7，这里先把它当作“将查询结果放回时间轴”的入口。
 
 ### 轨道描述的是哪一层
 
 #### CPU Scheduling、Frequency 与 Idle
 
-CPU Scheduling 轨道来自内核调度事件。每个 Slice 表示某个线程在一颗 CPU 上运行的区间；详情中的 `priority`、线程身份和 `end_state` 可以帮助解释这次运行如何结束，其中 `end_state` 是线程被切出 CPU 后进入的调度状态。该轨道回答“哪条线程在何时占用哪颗 CPU”，不回答线程执行了哪一行代码。代码热点还需要应用 Slice、采样调用栈或方法跟踪。
+CPU Scheduling 轨道来自内核调度事件。每个 Slice 表示某个线程在一颗 CPU 上运行的区间；详情中的 `priority`、线程身份和 `end_state` 可以帮助解释这次运行如何结束，`end_state` 就是线程被切出 CPU 后进入的调度状态。这条轨道回答“哪条线程在何时占用哪颗 CPU”；至于线程执行了哪一行代码，要靠应用 Slice、采样调用栈或方法跟踪。
 
-CPU Frequency 轨道来自设备提供的频率事件。它能显示记录到的频率变化，但频率值不能单独证明某段代码变慢：CPU 微架构、单核处理能力、热限制、空闲状态、调度放置和内存等待都会影响完成时间。判断线程迁移到另一颗 CPU 是否有害，还要结合 Runnable 延迟、各 CPU 的并发负载和设备拓扑，不能要求主线程始终固定在某颗“大核”。
+CPU Frequency 轨道来自设备提供的频率事件，能看到记录到的频率变化，但频率值本身证明不了某段代码变慢：CPU 微架构、单核处理能力、热限制、空闲状态、调度放置和内存等待都会影响完成时间。判断线程迁移到另一颗 CPU 是否有害，还要结合 Runnable 延迟、各 CPU 的并发负载和设备拓扑；主线程也无需始终固定在某颗“大核”上。
 
-CPU Idle 轨道描述 CPU 的空闲状态。线程处于 Sleeping 或 D 状态时，本来就没有资格运行；此时看到部分 CPU idle 并不构成调度异常。只有线程已 Runnable，并且在 affinity（线程允许运行的 CPU 集合）和 cpuset（系统为一组任务限定的 CPU 集合）等约束下有可用 CPU，却长期没有进入 Running，才需要继续检查优先级、系统负载和调度策略。
+CPU Idle 轨道描述 CPU 的空闲状态。线程处于 Sleeping 或 D 状态时本来就没有资格运行，此时看到部分 CPU idle 属于正常；只有线程已经 Runnable，并且在 affinity（线程允许运行的 CPU 集合）和 cpuset（系统为一组任务限定的 CPU 集合）等约束下有可用 CPU，却长期没有进入 Running，我们才需要继续查优先级、系统负载和调度策略。
 
 #### 进程、线程、Slice 与线程状态
 
@@ -189,25 +189,25 @@ Binder 线程名能帮助定位服务端执行线程，但 Binder transaction �
 
 #### Counter Track
 
-Counter 由一组“时间戳 + 数值”样本组成，例如频率、RSS（进程驻留在物理内存中的页量）、堆大小、BufferQueue 积压量或自定义队列深度。UI 会把离散样本画成折线或阶梯图；Counter 的来源、单位和采样间隔由数据源决定，图形上升不能直接证明泄漏或性能退化。
+Counter 由一组“时间戳 + 数值”样本组成，例如频率、RSS（进程驻留在物理内存中的页量）、堆大小、BufferQueue 积压量或自定义队列深度。UI 会把离散样本画成折线或阶梯图；Counter 的来源、单位和采样间隔由数据源决定，图形上升本身还证明不了泄漏或性能退化。
 
 内存 Counter 持续上升时，要区分采样区间、GC、缓存上限、映射文件、共享内存和进程生命周期。GPU Counter 是否存在、含义是什么，也受 GPU 数据源和厂商支持限制。报告中应记录 Counter 名称、单位、数据源和比较窗口。
 
-### Slice 详情：三种时间不能混用
+### Slice 的三种时间
 
 #### Wall Duration
 
-`slice.dur` 是 Slice 起点到终点的墙上时长，对应时间轴上的宽度。线程在这段时间内可能运行、等待 CPU、休眠或阻塞。长 Slice 只证明命名区间长，不能直接判定为 CPU 计算重。
+`slice.dur` 是 Slice 起点到终点的墙上时长，对应时间轴上的宽度。线程在这段时间里可能运行、等待 CPU、休眠或阻塞，所以长 Slice 只说明命名区间长，还不足以判定 CPU 计算重。
 
 #### Thread Duration / CPU 时间
 
-`slice.thread_dur` 是 Slice 消耗的线程时间，只有 Track Event 开启线程时间采集时才会填充。Android ATrace 产生的普通 Slice 往往没有这个字段。UI 未显示 Thread Duration 时，缺失值表示没有这份数据，不能按 0 处理。
+`slice.thread_dur` 是 Slice 消耗的线程时间，只有 Track Event 开启线程时间采集时才会填充，Android ATrace 产生的普通 Slice 往往没有这个字段。UI 未显示 Thread Duration 时，缺失就是没有这份数据，按 0 处理会得出错误结论。
 
-需要计算某个线程 Slice 内的 on-CPU 时间时，应将该 Slice 的半开区间 `[ts, ts + dur)` 与 `thread_state.state = 'Running'` 求交；半开表示包含起点、不包含终点。只有调度数据覆盖完整时，墙上时间才能按 Running、Runnable、Sleeping、D 等互斥状态分解；trace 边界、丢包和未知区间必须单列。
+需要计算某个线程 Slice 内的 on-CPU 时间时，我们把这个 Slice 的半开区间 `[ts, ts + dur)` 与 `thread_state.state = 'Running'` 求交；半开表示包含起点、不包含终点。只有调度数据覆盖完整时，墙上时间才能按 Running、Runnable、Sleeping、D 等互斥状态分解；trace 边界、丢包和未知区间要单独列出来。
 
 #### Self Duration
 
-Self Duration 是一个轨道嵌套概念：父 Slice 的墙上区间扣除子 Slice 覆盖区间。它适合判断时间落在哪一层标记中，不等于函数自身的 CPU 时间，也不会自动扣除另一个线程上的异步工作。
+Self Duration 是一个轨道嵌套概念：父 Slice 的墙上区间扣除子 Slice 覆盖区间。它适合判断时间落在哪一层标记中；算不上函数自身的 CPU 时间，也不会自动扣除另一个线程上的异步工作。
 
 下面的查询用于比较 `doFrame` 的墙上时长、自身墙上时长和可选线程时长。
 
@@ -227,13 +227,13 @@ ORDER BY s.dur DESC
 LIMIT 20;
 ```
 
-`thread_ms` 为 `NULL` 表示该 Slice 没有线程时间，不能据此推断 CPU 消耗。`self_wall_ms` 只扣除同一嵌套栈里的子 Slice；判断等待原因仍要查询 `thread_state`。
+`thread_ms` 为 `NULL` 表示该 Slice 没有线程时间，CPU 消耗要从别的途径估计；`self_wall_ms` 只扣除同一嵌套栈里的子 Slice，判断等待原因仍要查询 `thread_state`。
 
 ### 线程状态与颜色编码
 
-#### 状态值是证据，颜色只是导航
+#### 从内核状态到 UI 颜色
 
-Android 17 Trace Processor 按内核 `prev_state` 解码调度状态；`android17-6.18-2026-06_r6/include/linux/sched.h` 定义了 `TASK_RUNNING`、`TASK_INTERRUPTIBLE`、`TASK_UNINTERRUPTIBLE` 等状态位。UI 颜色帮助快速浏览，但主题、轨道类型和 UI 版本可能调整配色。结论应写状态名或 SQL 值，不能只写“绿色段”“橙色段”。
+Android 17 Trace Processor 按内核 `prev_state` 解码调度状态，`android17-6.18-2026-06_r6/include/linux/sched.h` 定义了 `TASK_RUNNING`、`TASK_INTERRUPTIBLE`、`TASK_UNINTERRUPTIBLE` 等状态位。UI 颜色只是帮我们快速浏览，主题、轨道类型和 UI 版本都可能调整配色，所以结论里应写状态名或 SQL 值，“绿色段”“橙色段”这类说法留在口头浏览就好。
 
 | UI / SQL 状态 | 内核或处理器含义 | 可以确认 | 仍需补证据 |
 | --- | --- | --- | --- |
@@ -243,17 +243,17 @@ Android 17 Trace Processor 按内核 `prev_state` 解码调度状态；`android1
 | `S` / Sleeping | 可中断睡眠，等待显式唤醒 | 线程不在运行队列 | Binder、futex（用户态锁进入内核等待时使用的机制）、条件变量、定时器或其他等待对象 |
 | `D` / Uninterruptible Sleep | 不可中断睡眠 | 线程等待内核条件 | 是否为 I/O、具体 `blocked_function`、设备驱动或内存回收 |
 
-当前稳定版 UI 通常用不同深浅的绿色区分 Running 与 Runnable，Sleeping/Idle 显示为低对比度色块，D 状态则使用暖色。具体色值会随主题和 UI 实现变化，不属于稳定的数据接口。FrameTimeline 的绿、浅绿、红、黄、蓝是另一套帧结果编码，也不能套用到线程状态。分析结论应记录状态值和详情字段。
+当前稳定版 UI 通常用不同深浅的绿色区分 Running 与 Runnable，Sleeping/Idle 显示为低对比度色块，D 状态用暖色。具体色值随主题和 UI 实现变化，谈不上稳定的数据接口；FrameTimeline 的绿、浅绿、红、黄、蓝是另一套帧结果编码，套不到线程状态上。分析结论记录状态值和详情字段即可。
 
-#### D 状态不等于磁盘 I/O
+#### D 状态的常见来源
 
 `TASK_UNINTERRUPTIBLE` 表示等待条件不会被普通信号打断，磁盘 I/O 只是常见来源之一。驱动等待、页回收、文件系统、块设备和其他内核等待都可能产生 D 状态。
 
-采集了 `sched/sched_blocked_reason` 时，`thread_state` 可以提供 `blocked_function`，部分 trace 还会给出 `io_wait`。缺少这些字段时，只能写“Uninterruptible Sleep，原因未由本次 trace 识别”，不能直接归为磁盘瓶颈。
+采集了 `sched/sched_blocked_reason` 时，`thread_state` 可以提供 `blocked_function`，部分 trace 还会给出 `io_wait`。缺少这些字段时，我们能下的结论只有“Uninterruptible Sleep，原因未由本次 trace 识别”，磁盘瓶颈还定不下来。
 
-#### 红色锁竞争标记不是调度状态
+#### 红色锁竞争标记的来源
 
-`Lock contention on a monitor lock` 等红色 Slice 来自 ART/平台锁竞争埋点；monitor lock 是 Java 对象监视器对应的互斥锁。等待线程的内核状态在同一时间窗内通常是 Sleeping，也可能随实现变化。红色表示 trace 提供了更具体的锁证据，不是 Linux `thread_state` 新增了一个 Blocked 状态。
+`Lock contention on a monitor lock` 等红色 Slice 来自 ART/平台锁竞争埋点；monitor lock 是 Java 对象监视器对应的互斥锁。等待线程的内核状态在同一时间窗内通常是 Sleeping，也可能随实现变化。红色说明 trace 提供了更具体的锁证据，Linux `thread_state` 并没有因此新增一个 Blocked 状态。
 
 详情面板若提供 owner、blocking thread 或关联跳转，应切到持锁线程检查：
 
@@ -262,21 +262,21 @@ Android 17 Trace Processor 按内核 `prev_state` 解码调度状态；`android1
 3. 锁持有区间是否覆盖昂贵操作。
 4. 这段等待是否位于当前帧、启动或 ANR 的时间窗内。
 
-红色 Slice 本身不能证明优先级反转。优先级反转是高优先级线程等待低优先级持锁线程，而持锁线程又被其他工作延迟的情况；还要同时确认等待者、持锁者、抢占者及其优先级和调度状态。
+红色 Slice 本身还证明不了优先级反转。优先级反转指高优先级线程等待低优先级持锁线程，而持锁线程又被其他工作延迟；下这个结论前，要同时确认等待者、持锁者、抢占者的优先级和调度状态。
 
-#### Waker 的使用边界
+#### Waker 与唤醒路径
 
-采集 `sched_waking` 或相关 wakeup 事件后，线程状态详情可以关联 waker，也就是发起本次唤醒的线程。waker 不一定是最初的业务事件源，被唤醒线程也不会因此立刻获得 CPU。从 wakeup 到 Running 的区间才是本次唤醒后的调度等待时间。
+采集 `sched_waking` 或相关 wakeup 事件后，线程状态详情可以关联 waker，也就是发起本次唤醒的线程。waker 未必是最初的业务事件源，被唤醒线程也不会因此立刻获得 CPU；要看唤醒后的调度等待，就看从 wakeup 到 Running 的区间。
 
 跨 CPU 唤醒时，`sched_waking` 记录在发起唤醒的一侧，`sched_wakeup` 的记录位置受唤醒路径影响。普通延迟分析优先保证 `sched_waking` 存在；若要区分 IPI（Inter-Processor Interrupt，CPU 核之间发送的中断）和调度器唤醒路径的各段耗时，再同时检查更底层事件。
 
 ### Flow Events 与跨进程关联
 
-Flow 是 trace 显式记录的跨 track 关联关系，用箭头连接不同轨道上的相关事件。选中带 Flow 的事件后，UI 会突出相关箭头；未选中时可能为了可读性减少显示。箭头只表达“trace 数据声明两者相关”，不能自动证明同步阻塞或单一因果。
+Flow 是 trace 显式记录的跨 track 关联关系，用箭头连接不同轨道上的相关事件。选中带 Flow 的事件后，UI 会突出相关箭头，未选中时可能为了可读性减少显示。箭头说的是“trace 数据声明两者相关”；至于同步阻塞还是单一因果，还得我们沿两侧事件核实。
 
 #### Binder transaction
 
-Binder 分析依赖相应的驱动 tracepoint 和 Trace Processor 解析。同步调用通常可以关联客户端 transaction、服务端 transaction 和 reply；oneway 是单向异步调用，没有同步 reply，客户端也不等待服务端完成。嵌套 Binder、回调和线程池排队会让路径分叉，第一条箭头不能代表完整调用树。
+Binder 分析依赖相应的驱动 tracepoint 和 Trace Processor 解析。同步调用通常可以关联客户端 transaction、服务端 transaction 和 reply；oneway 是单向异步调用，没有同步 reply，客户端也不等待服务端完成。嵌套 Binder、回调和线程池排队会让路径分叉，第一条箭头之后往往还有更完整的调用树。
 
 读一个同步 Binder 调用时，依次检查：
 
@@ -285,19 +285,19 @@ Binder 分析依赖相应的驱动 tracepoint 和 Trace Processor 解析。同�
 3. 服务端 Slice 内是 Running、锁等待、D 状态还是再次发起 Binder。
 4. reply 何时返回，客户端从唤醒到 Running 又等了多久。
 
-Android 17 的 `stdlib/android/binder.sql` 会把 Binder transaction 与 reply、线程和进程关联起来。UI 跳转适合看单个案例，批量统计应使用该标准库或 §14.7 的查询模板。
+Android 17 的 `stdlib/android/binder.sql` 会把 Binder transaction 与 reply、线程和进程关联起来。UI 跳转适合看单个案例；批量统计时，用这个标准库或 §14.7 的查询模板更省事。
 
 #### FrameTimeline Flow
 
 选中 App 的 Actual Timeline Slice 时，Perfetto 可以通过 surface frame token（标识应用提交帧的关联键）找到对应的 SurfaceFlinger display frame；选中 display frame 时，也可以显示这次合成包含的多个应用 frame。这个 Flow 表达帧的消费关系，比只按时间重叠匹配更可靠。
 
-Flow 与 BufferQueue frame number 是不同的标识，也不能替代 acquire、present 和 release fence 提供的同步证据。SurfaceView 等独立 Surface 路径还受 FrameTimeline 覆盖范围限制，具体边界见 §14.13 和 §15。
+Flow 与 BufferQueue frame number 是两套标识，替代不了 acquire、present 和 release fence 提供的同步信息。SurfaceView 这类独立 Surface 路径还受 FrameTimeline 覆盖范围的限制，具体范围见 §14.13 和 §15。
 
 ### FrameTimeline：从异常帧进入
 
-FrameTimeline 从 Android 12 / API 31 起可用。Android 9-11 没有 Expected / Actual 主轨道，应从 `Choreographer#doFrame`、RenderThread、调度事件和 SurfaceFlinger 时间窗建立关联。
+FrameTimeline 从 Android 12 / API 31 起可用。Android 9-11 没有 Expected / Actual 主轨道，我们要从 `Choreographer#doFrame`、RenderThread、调度事件和 SurfaceFlinger 时间窗建立关联。
 
-Expected Timeline 表示调度器为这一帧安排的预计时间窗。App Actual Timeline 从 `Choreographer#doFrame` 或 NDK Choreographer 回调开始，结束点取 GPU 完成时间与帧提交给 SurfaceFlinger 的 post time 两者中较晚者。SurfaceFlinger Actual Timeline 覆盖合成到屏幕更新的结果。Actual Slice 的 `dur` 是这套 FrameTimeline 定义下的墙上区间，不代表主线程 CPU 时间，也不能概括所有显示路径的端到端延迟。
+Expected Timeline 表示调度器为这一帧安排的预计时间窗。App Actual Timeline 从 `Choreographer#doFrame` 或 NDK Choreographer 回调开始，结束点取 GPU 完成时间与帧提交给 SurfaceFlinger 的 post time 中较晚的一个；SurfaceFlinger Actual Timeline 覆盖合成到屏幕更新的结果。读 Actual Slice 的 `dur` 时要记住：它只是这套 FrameTimeline 定义下的墙上区间，既算不上主线程 CPU 时间，也概括不了所有显示路径的端到端延迟。
 
 选中 Actual Slice 后，按下面的字段读：
 
@@ -321,9 +321,9 @@ Expected Timeline 表示调度器为这一帧安排的预计时间窗。App Actu
 | 黄色 | App 帧发生 jank，但归因在 SurfaceFlinger |
 | 蓝色 | Dropped frame |
 
-颜色用于寻找候选帧，报告应记录 `present_type`、`on_time_finish`、`jank_type`、layer 和 token。`BufferStuffing` 表示应用在旧 buffer 尚未呈现时持续提交新 buffer，导致队列积压并增加延迟。Android 17 `FrameTimeline.cpp` 把 `BufferStuffing`、`SurfaceFlingerStuffing` 等状态与 deadline jank 分开计算，不能把所有非绿色帧合并成“App Deadline Missed”。
+颜色用于寻找候选帧，报告应记录 `present_type`、`on_time_finish`、`jank_type`、layer 和 token。`BufferStuffing` 表示应用在旧 buffer 尚未呈现时持续提交新 buffer，导致队列积压、延迟增加。Android 17 `FrameTimeline.cpp` 把 `BufferStuffing`、`SurfaceFlingerStuffing` 等状态与 deadline jank 分开计算；把它们合并成一句“App Deadline Missed”，就丢掉了这层区分。
 
-官方文档仍提示 SurfaceView 不在 FrameTimeline 的完整支持范围内。Camera、视频、游戏和跨进程嵌入常有独立 Producer / Surface / layer，宿主窗口的帧 token 不能代替这些路径的逐帧证据。
+官方文档仍提示 SurfaceView 不在 FrameTimeline 的完整支持范围内。Camera、视频、游戏和跨进程嵌入常有独立的 Producer / Surface / layer，宿主窗口的帧 token 代替不了这些路径的逐帧信息。
 
 ### Android 17 SurfaceFlinger 轨道
 
@@ -336,13 +336,13 @@ Android 17 的主循环由 `Scheduler::onFrameSignal()` 组织。`Scheduler.cpp`
 | Android 12 / 12L | 常见 `onMessageReceived`、`onMessageInvalidate`、`onMessageRefresh`、`REFRESH` |
 | Android 13-17 | 按 `onFrameSignal`、`commit`、`composite` 以及可见的 present 子阶段阅读 |
 
-Slice 名称受埋点和版本影响，不能要求每份 Android 17 trace 都出现一条字面为 `presentFrameAndReleaseLayers` 的 Slice。源码调用关系用于解释已出现的阶段，不用于虚构 trace 中没有的数据。
+Slice 名称受埋点和版本影响，不必指望每份 Android 17 trace 都出现一条字面为 `presentFrameAndReleaseLayers` 的 Slice；源码调用关系用来解释已经出现的阶段，trace 里没有的数据它变不出来。
 
-`composite` 变长也不能直接归为 GPU Client Composition。要同时找到 RenderEngine/`drawLayers` 等 GPU 合成证据、HWC（Hardware Composer，硬件显示合成器）的 composition type、layer 特征和 fence 时间。事务处理变重、latch（选定本轮要合成的 buffer）等待、HWC validate/present 或显示提交都可能拉长 SurfaceFlinger 一帧。
+`composite` 变长先别急着归为 GPU Client Composition：要同时找到 RenderEngine/`drawLayers` 等 GPU 合成痕迹、HWC（Hardware Composer，硬件显示合成器）的 composition type、layer 特征和 fence 时间。事务处理变重、latch（选定本轮要合成的 buffer）等待、HWC validate/present 或显示提交，都可能拉长 SurfaceFlinger 的一帧。
 
 ### 日志与原始事件
 
-只有采集配置包含 Android log 数据源时，UI 才能显示抓取窗口内的日志。只有保留相应 ftrace event 时，原始事件表才有对应记录。看不到 Android Logs 或 Ftrace Events 时，应回查配置与数据完整性，不能把“UI 没有轨道”解释为“系统没有发生事件”。
+只有采集配置包含 Android log 数据源时，UI 才能显示抓取窗口内的日志；只有保留相应 ftrace event 时，原始事件表才有对应记录。看不到 Android Logs 或 Ftrace Events 时，先回查配置与数据完整性——“UI 没有轨道”和“系统没有发生事件”是两回事。
 
 日志适合标记业务阶段和错误点，时间线用于验证线程、调度与依赖关系。日志时间戳、trace 时钟和跨文件合并可能使用不同时间基准；要先确认时钟转换和对齐误差，再做毫秒级因果判断。
 
@@ -357,11 +357,11 @@ Android Studio 的 System Trace 也是系统级视图，能够展示 CPU 核心�
 | Android Studio Method / Function Trace | 查看方法或函数调用树、按调用栈随时间展开的 Flame Chart，以及从调用者或被调用者方向聚合的 Top Down/Bottom Up 视图 |
 | Simpleperf / `linux.perf` | 调用栈采样、热点和 CPU profile |
 
-Android Studio 的 System Trace 与 Java Method Trace 是不同录制类型，不能用统一的 `.trace` 口径描述。复杂系统问题可以从 Android Studio 导出 System Trace，再放到 Perfetto UI 做 SQL 与跨进程分析。
+Android Studio 的 System Trace 与 Java Method Trace 是不同的录制类型，一个 `.trace` 扩展名区分不了两者。复杂系统问题可以从 Android Studio 导出 System Trace，再放到 Perfetto UI 做 SQL 与跨进程分析。
 
 ### 一轮掉帧分析怎么走
 
-拿到滑动卡顿 trace 后，可以按这条主线检查：
+拿到滑动卡顿的 trace 后，我们可以按这条主线走一遍：
 
 1. 在 Info / Stats 确认复现窗口、目标进程、FrameTimeline 与调度数据存在，相关丢包不影响结论。
 2. Android 12-17 从 App Actual Timeline 选择候选帧；Android 9-11 从 `doFrame`、RenderThread 与 SurfaceFlinger 的共同时间窗开始。
@@ -372,7 +372,7 @@ Android Studio 的 System Trace 与 Java Method Trace 是不同录制类型，�
 7. Binder 或锁跨进程时，把客户端、服务端、持锁线程和 reply 放进同一选区。
 8. 用 SQL 复核同类帧是否重复出现，避免用一个案例代表整段运行。
 
-这套流程用于判断现有证据指向应用、调度、跨进程调用、合成还是显示末端。修复后仍要回到对应代码、配置和设备复现验证；FrameTimeline 的分类也不能替代源码与 fence 证据。
+这条主线用来判断手上的信息指向应用、调度、跨进程调用、合成还是显示末端；修复之后仍要回到对应代码、配置和设备上复现验证，FrameTimeline 的分类替代不了源码与 fence 这一层的核对。
 
 ### Android 17 源码核对点
 
@@ -391,15 +391,13 @@ Android Studio 的 System Trace 与 Java Method Trace 是不同录制类型，�
 
 ## 状态轨道的语义与版本差异
 
-掌握通用 UI 对象后，状态轨道要继续核对状态枚举、生成数据源和 Perfetto 版本。相同视觉样式不保证语义相同。
-
-> Android 平台内置组件、Perfetto SDK 与开发机上的分析器分别升级，不能用“Android 17 支持 Perfetto v57”笼统概括。本文的平台基线固定为 Android 17 / API 37 / `android-17.0.0_r1`；state track 的功能基线是 v57.1，工具补丁基线是 v57.2。
+通用 UI 对象熟悉之后，状态轨道还要继续核对三件事：状态枚举怎么定义、数据由哪个源产生、Perfetto 处在哪条版本线上。平台内置组件、Perfetto SDK 与开发机上的分析器各自升级，相同的视觉样式未必有相同的语义；“Android 17 支持 Perfetto v57”这样的一句话，概括不了三条版本线各自的进度。
 
 ### 三条版本线
 
-`android-17.0.0_r1` 的 `external/perfetto/CHANGELOG` 顶部记录了一个尚未进入完整上游版本的 Android `aflags` 补丁。`aflags` 是 Android 的功能开关机制，用于让平台代码按 flag 启用或停用行为。紧接着的完整上游版本是 **v54.0（2026-02-27）**；同一 Android 标签下的 `track_event.proto` 只定义到 `TYPE_COUNTER = 4`，没有 `TYPE_STATE`。
+`android-17.0.0_r1` 的 `external/perfetto/CHANGELOG` 顶部记录了一个尚未进入完整上游版本的 Android `aflags` 补丁；`aflags` 是 Android 的功能开关机制，让平台代码按 flag 启用或停用行为。紧接着的完整上游版本是 **v54.0**，发布于 2026-02-27；同一 Android 标签下的 `track_event.proto` 只定义到 `TYPE_COUNTER = 4`，还没有 `TYPE_STATE`。
 
-Perfetto **v57.1** 于 2026 年 7 月 2 日发布，引入 state track 等能力。**v57.2** 于 7 月 7 日发布，是截至 2026-08-13 最新的 v57 补丁版；它只修复 Trace Processor 解析内嵌 proto descriptor 时的兼容问题，其他 v57 功能仍以 v57.1 发布说明为准。state track、journald 采集和新版 Trace Processor/UI 都属于上游版本线，不会自动升级设备中的 `/system/bin/perfetto`、`traced`、`traced_probes` 或 Android Framework API。
+Perfetto **v57.1** 于 2026 年 7 月 2 日发布，state track 等能力从这里引入。**v57.2** 于 7 月 7 日发布，是截至 2026-08-13 最新的 v57 补丁版，只修复 Trace Processor 解析内嵌 proto descriptor 时的兼容问题，其余 v57 功能仍以 v57.1 发布说明为准。还要记住：state track、journald 采集和新版 Trace Processor/UI 都在上游版本线上，设备中的 `/system/bin/perfetto`、`traced`、`traced_probes` 和 Android Framework API 都不会因此自动升级。
 
 | 对象 | 采用的版本 | 在哪里运行 | 能否直接提供 v57 状态轨道 |
 |---|---|---|---|
@@ -410,7 +408,7 @@ Perfetto **v57.1** 于 2026 年 7 月 2 日发布，引入 state track 等能力
 
 - 只升级开发机分析器：可以读取新版 schema（trace 的字段与类型定义）和 PerfettoSQL 标准库，但不会补出设备未录制的数据。
 - 想在 trace 中得到原生 `state` 表：producer（生产事件的一端）和 Trace Processor（解析事件的一端）都要具备 v57 state track 能力。
-- 只能依赖 Android 17 系统内置组件：继续使用 slice、instant、counter 等 v54 能力。即使自行写出 `TYPE_STATE`，也不能假定平台自带工具能够解释。
+- 只能依赖 Android 17 系统内置组件：继续使用 slice、instant、counter 等 v54 能力；就算自行写出 `TYPE_STATE`，也不要假定平台自带工具能够解释。
 
 ### State track 的数据模型
 
@@ -428,9 +426,11 @@ state track 表达单值状态机：一条轨道在任一时刻最多有一个�
 
 v57.1 的 `TrackEvent.Type` 增加 `TYPE_STATE = 5`，v57.2 延续同一 wire format（序列化后的二进制字段格式）。事件的 `track_uuid` 是轨道的 64 位稳定标识，必须指向带 `StateDescriptor` 的轨道；descriptor 是描述轨道类型和属性的元数据。`StateDescriptor` 在 v57.1/v57.2 中是空消息，只负责把轨道标记为 state track。
 
-状态字符串的实际编码走 TrackEvent 的事件名路径，即 `name` 或经过 string interning（把重复字符串换成整数 ID）的 `name_iid`。v57.2 `track_event.proto` 的枚举注释仍写着 `state` 字段，但 schema 已将原字段号 51 标为 `reserved`，表示该编号被保留且不能重新用作普通字段；C++ `TRACE_STATE` 也会把状态值交给事件名参数。手工生成 trace packet（单个 protobuf 事件数据包）时应以真实字段定义和 SDK 实现为准，不能照搬这条过时注释。空字符串或未设置事件名会结束当前状态，使轨道进入 idle。
+状态字符串的实际编码走 TrackEvent 的事件名路径，也就是 `name`，或经过 string interning（把重复字符串换成整数 ID）的 `name_iid`。v57.2 `track_event.proto` 的枚举注释仍写着 `state` 字段，但 schema 已把原字段号 51 标为 `reserved`——这个编号被保留下来，不再用作普通字段；C++ `TRACE_STATE` 也把状态值交给事件名参数。
 
-下面节选只用于展示枚举边界，省略了 proto 中的大段注释和其他字段：
+手工生成 trace packet（单个 protobuf 事件数据包）时，以真实字段定义和 SDK 实现为准，别照搬那条过时注释。空字符串或未设置事件名会结束当前状态，让轨道回到 idle。
+
+下面节选只用于展示枚举范围，省略了 proto 中的大段注释和其他字段：
 
 ```protobuf
 enum Type {
@@ -443,7 +443,7 @@ enum Type {
 }
 ```
 
-Android 17 标签中的同一枚举止于 `TYPE_COUNTER = 4`。`TYPE_STATE = 5` 只说明 v57 的二进制格式已经分配这个枚举值，不代表每种语言 SDK 都同时提供了高层方法；看到 API 37 或 Android 17 也不能推出设备自带 v57 状态轨道。
+Android 17 标签中的同一枚举止于 `TYPE_COUNTER = 4`。`TYPE_STATE = 5` 只说明 v57 的二进制格式已经分配了这个枚举值，各种语言 SDK 未必同时提供高层方法；看到 API 37 或 Android 17，也推不出设备自带 v57 状态轨道。
 
 #### Trace Processor 如何形成持续时间
 
@@ -454,7 +454,7 @@ v57.2 的 `StateTracker::UpdateState()` 展示了几条容易遗漏的语义：
 - 新值为空：关闭旧行，不创建 idle 行；
 - 尚未被下一次转换或清空关闭的行以 `dur = -1` 暂存；`-1` 是“持续时间尚未确定”的哨兵值。
 
-这也解释了为什么查询 `state` 表时不应再用 `LEAD(ts)` 计算时长。`LEAD()` 是读取下一行值的 SQL 窗口函数；Trace Processor 已经维护 `dur`，手工用下一行时间戳相减会忽略相同状态合并、显式清空和开放区间的语义。
+这也解释了查询 `state` 表时为什么无需再用 `LEAD(ts)` 计算时长：`LEAD()` 只是读取下一行值的 SQL 窗口函数，而 Trace Processor 已经在维护 `dur`；手工拿下一行时间戳相减，相同状态合并、显式清空和开放区间的语义就都被丢掉了。
 
 ### 写入 state 事件
 
@@ -470,18 +470,18 @@ TRACE_STATE("player", "Playing", player_state);
 TRACE_STATE("player", "", player_state);  // 清空当前状态，进入 idle
 ```
 
-第三次调用传入空字符串，作用是关闭 `Playing` 并进入 idle。同一逻辑轨道应复用稳定的 `StateTrack` 身份，也就是每次更新都指向同一 `track_uuid`。状态值应来自受控枚举；cardinality（基数）表示可能出现的不同取值数量，把请求 ID、文件名等高 cardinality 字符串作为状态，会制造大量难以聚合的值，也会增加 trace 体积。
+第三次调用传入空字符串，作用是关闭 `Playing` 并进入 idle。同一逻辑轨道要复用稳定的 `StateTrack` 身份，也就是每次更新都指向同一个 `track_uuid`。状态值应来自受控枚举：cardinality（基数）指可能取值的数量，把请求 ID、文件名这类高 cardinality 字符串当状态用，会产生大量难以聚合的值，trace 体积也随之膨胀。
 
 #### 上游 `main` 的 C high-level API
 
-下面的调用展示上游提交 #6464 加入的 C high-level API（用宏封装底层 C ABI 的接口），用于向已经注册的状态轨道写入 `Buffering`。该提交位于 v57.2 之后的 `main` 分支，示例只适用于包含这次变更的 commit（源码提交）或后续明确收录它的版本：
+下面的调用展示上游提交 #6464 加入的 C high-level API（用宏封装底层 C ABI 的接口），向已经注册的状态轨道写入 `Buffering`。该提交位于 v57.2 之后的 `main` 分支，示例只适用于包含这次变更的 commit 或后续明确收录它的版本：
 
 ```c
 PERFETTO_TE(player, PERFETTO_TE_STATE("Buffering"),
             PERFETTO_TE_REGISTERED_TRACK(&player_state_track));
 ```
 
-`player_state_track` 的声明和注册必须使用状态轨道 API 完成。普通 counter 或 named track 的 descriptor 不会把轨道标记为 state，不能传给状态事件。v57.2 的公开 C 头文件还没有 `PERFETTO_TE_STATE`、`PerfettoTeStateTrackRegister` 等符号，因此这段代码不能按 v57.2 tag 编译；依赖必须锁定到实际包含 #6464 的版本或 commit。
+`player_state_track` 的声明和注册必须用状态轨道 API 完成；普通 counter 或 named track 的 descriptor 不会把轨道标记为 state，传给状态事件是无效的。v57.2 的公开 C 头文件里还没有 `PERFETTO_TE_STATE`、`PerfettoTeStateTrackRegister` 这些符号，这段代码按 v57.2 tag 编译不过；依赖要锁定到实际包含 #6464 的版本或 commit。
 
 #### Android Java SDK 的 release tag 差异
 
@@ -489,7 +489,7 @@ v57.1 发布了 state track，但各语言 SDK 的高层 API 并未在同一个 
 
 - `v57.1` 与 `v57.2` tag 下的 `src/android_sdk/.../PerfettoTrace.java` 只公开 slice、instant 和 counter 的事件类型，未出现 `TYPE_STATE` 或 `state(...)`；
 - 上游 `main` 的 `sdk: add state track event support (C HL API + Java SDK)` 提交 #6464 才加入 `PerfettoTrace.state(...)`、state track builder、C high-level API 和 JNI（Java 与 C/C++ 之间的调用桥梁）路径；
-- release tag 与该变更所在分支已经分开，不能把 `main` 上的方法签名写成 v57.1/v57.2 已发布 API。
+- release tag 与该变更所在分支已经分开，`main` 上的方法签名也就算不上 v57.1/v57.2 的已发布 API。
 
 工程上应以项目解析到的 Java artifact（构建工具实际下载的库文件）和源码 commit 为准：锁定依赖，查看 `PerfettoTrace` 公共方法并做一次编译验证。若 artifact 没有 state API，可以改用 v57.2 C++ SDK，或等待所采用的 Java SDK 版本明确包含该变更。文档中的 Java 示例也必须由所声明的依赖版本实际编译通过。
 
@@ -497,7 +497,7 @@ v57.1 发布了 state track，但各语言 SDK 的高层 API 并未在同一个 
 
 #### 先确认分析器版本和表结构
 
-Android 17 自带的 v54 Trace Processor 不认识 `state` 表。使用 v57.1 或更高的兼容分析器打开 trace 后，可以先执行下面的结构查询。`PRAGMA table_info(...)` 是 SQLite/PerfettoSQL 用来列出表或视图字段的命令：
+Android 17 自带的 v54 Trace Processor 不认识 `state` 表。我们用 v57.1 或更高的兼容分析器打开 trace，先执行下面的结构查询。`PRAGMA table_info(...)` 是 SQLite/PerfettoSQL 用来列出表或视图字段的命令：
 
 ```sql
 PRAGMA table_info(state);
@@ -507,7 +507,7 @@ v57.2 的公开 view（由 SQL 查询定义、读取时计算的表状结果）�
 
 #### 查询转换与已观测时长
 
-下面的查询列出状态转换，并把 trace 结束时仍开放的 `dur = -1` 行裁剪到 `trace_bounds.end_ts`。`trace_bounds` 给出当前 trace 中数据的起止时间边界：
+下面的查询列出状态转换，并把 trace 结束时仍开放的 `dur = -1` 行裁剪到 `trace_bounds.end_ts`。`trace_bounds` 给出当前 trace 中数据的起止时间范围：
 
 ```sql
 SELECT
@@ -531,11 +531,11 @@ WHERE t.name = 'Player state'
 ORDER BY s.ts;
 ```
 
-`CROSS JOIN trace_bounds` 把同一行 trace 边界值附到每条状态记录上。`observed_dur_ms` 只表示录制窗口内观察到的时长。开放行可能在 trace 开始前已经处于该状态，也可能在 trace 结束后继续保持；裁剪后的值不能代表完整业务时长。若第一条状态事件晚于 `trace_bounds.start_ts`，更早的状态仍是未知值，查询不会自行补齐。
+`CROSS JOIN trace_bounds` 把同一份 trace 范围值附到每条状态记录上。`observed_dur_ms` 只表示录制窗口内观察到的时长：开放行可能在 trace 开始前就已处于该状态，也可能在 trace 结束后继续保持，裁剪后的值代表不了完整的业务时长。若第一条状态事件晚于 `trace_bounds.start_ts`，更早的状态仍是未知，查询也不会自行补齐。
 
 #### 汇总各状态占比
 
-下面的查询把每行限制在 trace 边界内，再按状态值聚合，适合比较一次录制中播放器的缓冲和播放占比：
+下面的查询把每行限制在 trace 边界内，再按状态值聚合；我们拿它比较一次录制中播放器的缓冲和播放占比：
 
 ```sql
 WITH bounded AS (
@@ -560,7 +560,7 @@ GROUP BY value
 ORDER BY total_ms DESC;
 ```
 
-`SUM(SUM(dur)) OVER ()` 先得到每种状态的合计时长，再计算所有状态的总和。这个分母只覆盖 `state` 表中有值的区间，因为 idle 不会生成状态行。若指标要求把 idle 计入分母，应使用整个观测窗口，或根据相邻状态行另外构造 idle 间隔；报告中应说明采用哪种口径。
+`SUM(SUM(dur)) OVER ()` 先得到每种状态的合计时长，再算所有状态的总和。这个分母只覆盖 `state` 表里有值的区间，idle 不会生成状态行。若指标要求把 idle 计入分母，就使用整个观测窗口，或按相邻状态行另外构造 idle 间隔；报告里写清楚分母怎么算即可。
 
 ### 在 Android 17 上采用 v57 能力
 
@@ -584,13 +584,13 @@ ORDER BY total_ms DESC;
 4. 在目标 Android 17 build 上验证注册、SELinux、缓冲区、丢包统计和 SQL 表；
 5. 为旧分析器保留可识别的降级标记，或者明确拒绝旧版本工具。
 
-backend 是 SDK 写入 trace 的目标。in-process backend 在本进程内管理缓冲与会话，system backend 则连接设备上的 Perfetto tracing service；trace packet 是 producer 写入服务的 protobuf（Protocol Buffers 序列化格式）数据单元。Android 17 的 tracing service 可以搬运 producer 写入的 packet，但这不表示任意新版 SDK 都能无条件接入 system backend。SDK ABI（二进制调用约定）、Unix socket（本机进程间通信端点）权限、数据源注册策略和产品 SELinux 强制访问规则都可能限制连接，必须在目标系统镜像上实测。
+backend 是 SDK 写入 trace 的目标：in-process backend 在本进程内管理缓冲与会话，system backend 连接设备上的 Perfetto tracing service，trace packet 就是 producer 写入服务的 protobuf（Protocol Buffers 序列化格式）数据单元。Android 17 的 tracing service 可以搬运 producer 写入的 packet，但任意新版 SDK 都不保证能接入 system backend——SDK ABI、Unix socket 权限、数据源注册策略和产品 SELinux 强制访问规则都可能卡住连接，必须在目标系统镜像上实测。
 
-不建议为了追逐上游版本而单独替换产品镜像中的 `traced` 或 `trace_processor_shell`。这些平台二进制会与 Android init 服务启动配置、文件权限、SELinux、AIDL（Android 接口定义语言）生成的 Binder 接口、IPC（进程间通信）协议及系统测试一起交付；只覆盖其中一个文件，可能造成协议、权限或启动流程不匹配。
+不建议为了追逐上游版本而单独替换产品镜像中的 `traced` 或 `trace_processor_shell`。这些平台二进制和 Android init 服务启动配置、文件权限、SELinux、AIDL 生成的 Binder 接口、IPC 协议及系统测试一起交付；只覆盖其中一个文件，就可能造成协议、权限或启动流程的不匹配。
 
 #### 路径三：维持 Android 17 平台兼容
 
-无法携带新版 SDK 时，可以按数据含义选择 Android 17 已有的轨道类型：
+用不了新版 SDK 时，可以按数据含义选择 Android 17 已有的轨道类型：
 
 - 有明确开始和结束的活动：slice；
 - 某个时刻的数值：counter；
@@ -599,10 +599,10 @@ backend 是 SDK 写入 trace 的目标。in-process backend 在本进程内管�
 
 这种兼容表达缺少 state track 的单值约束和专用 UI 展示。生产代码要自行保证状态转换合法，文档、SQL 和指标名称也应标明所用替代方案，避免与原生 `state` 表混用。
 
-### v57 系列的其他变化及 Android 边界
+### v57 系列的其他变化
 
 - `linux.journald` data source 采集使用 systemd 的 Linux 系统日志 journald，并在统一日志表中用 `log_source` 标明来源。Android 使用 logcat；该数据源不会在 Android 17 上取代 logcat。
-- JSON Trace Event Format 用 `"ph": "X"` 表示带完整时长的 complete event，同一线程上的这类事件按格式约束不应互相重叠。v57 会把重叠事件放入额外的 overflow track（容纳冲突事件的备用轨道），UI 再合并显示，同时记录导入警告。生产工具应使用异步 `"b"` / `"e"` 事件表达可重叠区间。
+- JSON Trace Event Format 用 `"ph": "X"` 表示带完整时长的 complete event，格式要求同一线程上的这类事件互相不重叠。v57 会把重叠事件放入额外的 overflow track（容纳冲突事件的备用轨道），UI 再合并显示，同时记录导入警告。生产工具应使用异步 `"b"` / `"e"` 事件表达可重叠区间。
 - 查询结果网格增加列排序、重排、隐藏和更清楚的 SQL 错误显示。这些是 UI 操作能力，不改变表结构或 SQL 计算结果。
 - `heapprofd.process_cmdline` 是按进程命令行选择 native heap profiler（C/C++ 堆分析器）目标的配置项。它支持部分通配符，但通配符只能匹配已经运行的进程；配置必须设置 `no_startup = true`，明确禁用“从进程启动时开始 profiling”的模式。
 - C high-level API 和 Android Java SDK 增加嵌套轨道及同级轨道的排序、合并控制。correlation ID（关联 ID）只表示多个事件属于同一逻辑操作，不包含因果方向；需要表达跨线程的先后或因果关系时仍应使用 flow。
@@ -646,15 +646,15 @@ backend 是 SDK 写入 trace 的目标。in-process backend 在本进程内管�
 
 **Runnable 长就提高线程优先级。** Runnable 只证明线程在等 CPU。优先级、负载、affinity、cpuset、热限制和调度策略都要核对，盲目提权还会伤害其他线程和功耗。
 
-**D 状态就是磁盘慢。** D 表示不可中断等待。没有 `blocked_function`、`io_wait` 或驱动证据时，不能把原因限定为磁盘。
+**D 状态就是磁盘慢。** D 表示不可中断等待。没有 `blocked_function`、`io_wait` 或驱动证据时，先别把原因限定为磁盘。
 
 **红色都代表同一种问题。** Thread State、锁竞争 Slice 和 FrameTimeline 各有自己的颜色语义。结论应写轨道类型和字段值。
 
-**Android Studio System Trace 只看 App。** 当前 System Trace 能展示系统级活动。Perfetto UI 的差异主要在开放时间轴、SQL、扩展和跨进程分析能力，不能用“有没有系统数据”简单二分。
+**Android Studio System Trace 只看 App。** 当前 System Trace 能展示系统级活动。Perfetto UI 的差异主要在开放时间轴、SQL、扩展和跨进程分析能力，“有没有系统数据”这把尺子已经不适用。
 
 ## 小结
 
-读 Perfetto UI 时先确认轨道对象、时间范围和数据源，再读 slice、counter、thread state 与 flow。颜色只是当前 UI 的视觉提示，墙上时间也不等于 CPU 运行时间；结论应回到详情字段、稳定身份和 SQL。state track 又有独立的 producer、分析器与 UI 版本线，跨版本使用时必须记录实际 schema 和缺失边界。
+读 Perfetto UI，我们先把轨道对象、时间范围和数据源确认清楚，再去读 slice、counter、thread state 与 flow。颜色只是当前 UI 的视觉提示，墙上时间与 CPU 运行时间是两回事，结论要落回详情字段、稳定身份和 SQL。state track 另有独立的 producer、分析器与 UI 版本线，跨版本使用时，把实际 schema 和缺失的范围记录在案。
 
 
 ## 参考资料

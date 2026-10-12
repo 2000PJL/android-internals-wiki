@@ -59,17 +59,19 @@ consolidated_from:
 
 内存工具按问题域选择：Heap Dump 观察 Java 对象和引用，heapprofd 采样 Native 分配，smaps 与 meminfo 描述映射和系统统计。HPROF 与 Perfetto java_hprof 都面向 Java 堆，但采集和分析路径不同。
 
+> 源码基线：AOSP `android-17.0.0_r1`；内核 `/proc`、dma-buf 与 MTE 相关说明以 `android17-6.18-2026-06_r6` 为准；较早版本只说明最低版本或行为差异。
+
 ## 按 Java、Native、图形与映射选择工具
 
 ### 先确定要测哪一种内存
 
-“应用内存上涨”只描述了现象。Java 对象、C/C++ 分配器、匿名 `mmap`、文件映射、线程栈、Graphic Buffer 和 zRAM 中的换出页，采集接口与归因方式都不同。选错工具时，报告可能很完整，结论却指向另一类内存。
+拿到“应用内存上涨”这个现象，我们要先把内存分个类：Java 对象、C/C++ 分配器、匿名 `mmap`、文件映射、线程栈、Graphic Buffer、zRAM 中的换出页。每一类的采集接口和归因方式都不同；工具选错了，报告可能很完整，结论却指向另一类内存。
 
 本文保留工具和系统接口中的英文名，方便与命令输出互相查找。`native` 指 C/C++ 代码和本地分配器一侧；ART（Android Runtime）管理 Java/Kotlin 对象。匿名 `mmap` 是没有文件作为后备存储的虚拟内存映射，Graphic Buffer 是图形管线跨组件共享的像素缓冲区，zRAM 则把换出页压缩后保存在内存中。
 
 GC Root 是垃圾回收器遍历对象图时认定的根引用，VMA（Virtual Memory Area）是进程地址空间中属性连续的一段映射。PSS、RSS 和 USS 是三种进程页记账口径，后文会分别定义。
 
-工具按四类证据组织：
+我们把工具按要回答的问题分成四类：
 
 | 证据 | 能回答的问题 | 主要工具 |
 | --- | --- | --- |
@@ -78,7 +80,7 @@ GC Root 是垃圾回收器遍历对象图时认定的根引用，VMA（Virtual M
 | 进程与 VMA 记账 | PSS/RSS/USS 如何变化，内存落在哪类映射 | `dumpsys meminfo`、`showmap`、`procrank`、libmeminfo |
 | 非法内存访问 | 哪里发生越界、释放后使用（use-after-free）或错误释放 | malloc debug、HWASan、MTE |
 
-下面的决策图用于从症状选择第一件工具。
+下面的决策图从症状出发，帮我们选第一件工具。
 
 ```mermaid
 flowchart TD
@@ -92,19 +94,17 @@ flowchart TD
     B -->|"整机内存压力"| I["procrank + LMKD/PSI 证据"]
 ```
 
-图中的 OOM（Out of Memory）表示内存不足错误，native crash 指 C/C++ 代码或本地运行库中的崩溃。dma-buf 是内核中用于跨设备、跨进程共享缓冲区的机制，memtrack 是 Android 图形内存记账接口。LMKD（Low Memory Killer Daemon）根据系统内存压力选择终止进程，PSI（Pressure Stall Information）则记录任务因 CPU、内存或 I/O 资源紧张而停顿的时间。
+图里几个词先说清楚：OOM 是内存不足错误，native crash 指 C/C++ 代码或本地运行库中的崩溃；dma-buf 是内核中跨设备、跨进程共享缓冲区的机制，memtrack 是 Android 图形内存记账接口；LMKD 根据系统内存压力选择终止进程，PSI（Pressure Stall Information）记录任务因 CPU、内存或 I/O 资源紧张而停顿的时间。
 
-同一问题常要经过两层证据：记账工具确认“涨在哪里”，归因工具解释“由谁产生”。单次快照通常只能提出假设。
-
-本文的平台实现以 AOSP（Android Open Source Project）的 `android-17.0.0_r1` 为版本基准，涉及内核 `/proc`、dma-buf 与 MTE 的说明以 `android17-6.18-2026-06_r6` 为准；较早版本只说明最低版本或行为差异。
+同一个问题往往要走两步：记账工具确认“涨在哪里”，归因工具解释“由谁产生”。单次快照通常只能提出假设。
 
 ### LeakCanary：发现应被回收的 Java 对象
 
 #### 它观察的对象
 
-LeakCanary 适合开发与测试阶段。本文使用 2.14 稳定版 API，不混用仍处于 alpha 阶段的 3.0 API。2.14 的默认观察器会跟踪已经销毁的 `Activity`、`Fragment`、Fragment View 和 `Service`，以及已经执行 `onCleared()` 的 `ViewModel`。业务对象不在默认清单时，可在生命周期结束处交给 `ObjectWatcher`。
+LeakCanary 适合开发与测试阶段。本文使用 2.14 稳定版 API，不混用仍处于 alpha 阶段的 3.0 API。2.14 的默认观察器跟踪已经销毁的 `Activity`、`Fragment`、Fragment View 和 `Service`，以及已经执行 `onCleared()` 的 `ViewModel`；业务对象不在默认清单里时，我们可以在生命周期结束处把它交给 `ObjectWatcher`。
 
-它判断的是“对象在等待期和 GC 后仍被保留”，不是“对象已经被证明永远无法释放”。异步任务、动画、消息队列和测试操作尚未结束，都可能让对象暂时存活。
+它判断的是“对象在等待期和 GC 后仍被保留”，还没有证明到“这个对象永远释放不掉”的程度。异步任务、动画、消息队列和测试操作尚未结束，都可能让对象暂时存活。
 
 LeakCanary 2.14 的基础依赖应只进入 debug 构建变体。下面的配置用于避免把堆转储与分析代码带进 release APK。
 
@@ -114,7 +114,7 @@ dependencies {
 }
 ```
 
-依赖合入的自动安装组件会在主进程安装默认观察器，无需在 `Application` 手工初始化。AndroidX Startup 属于另一种可选安装依赖，基础依赖并不能说明项目正在使用它。构建产物仍应通过依赖分析确认 release 变体不含 LeakCanary。
+依赖合入的自动安装组件会在主进程装好默认观察器，`Application` 里无需手工初始化。AndroidX Startup 是另一种可选的安装依赖，装了基础依赖也说明不了项目正在用它。构建产物仍应通过依赖分析确认 release 变体里没有 LeakCanary。
 
 #### 从弱引用到泄漏引用链
 
@@ -123,11 +123,11 @@ LeakCanary 的处理过程分为四段：
 1. 生命周期观察器把应结束生命周期的对象交给 `ObjectWatcher`，后者只保留弱引用。
 2. 默认等待五秒并触发 GC；弱引用仍未清除时，对象进入保留对象集合。
 3. 保留对象数量达到当前阈值后，LeakCanary 调用 Android 堆转储接口。
-4. Shark（LeakCanary 的堆分析器）解析 HPROF（Java 堆快照文件），从 GC Root 搜索到保留对象的引用路径，并按泄漏签名聚类。
+4. Shark（LeakCanary 的堆分析器）解析 HPROF 堆快照，从 GC Root 搜索到保留对象的引用路径，并按泄漏签名聚类。
 
-GC Root 到目标对象的路径才是修复依据。通知里的红色可疑引用表示 Shark 认为该边不符合生命周期预期；路径中出现一个熟悉的类名，不能直接证明那个类创建了泄漏。
+修复要看 GC Root 到目标对象的整条路径。通知里的红色可疑引用，表示 Shark 认为该边不符合生命周期预期；路径里出现一个熟悉的类名，也说明不了那个类创建了泄漏。
 
-业务对象可在确定不再使用的位置显式观察。下面的函数要求调用方同时给出对象和生命周期结束原因，避免报告里只剩一个无法定位的类名。
+业务对象可在确定不再使用的位置显式观察。下面的函数要求调用方同时给出对象和生命周期结束原因，避免报告里只剩一个来历不明的类名。
 
 ```kotlin
 fun watchAfterLifecycleEnd(instance: Any, reason: String) {
@@ -149,7 +149,7 @@ fun watchAfterLifecycleEnd(instance: Any, reason: String) {
 </resources>
 ```
 
-关闭后必须在主进程安装观察器。下面的函数把等待时间作为测试配置输入；只有先测得业务存在更长的正常清理窗口时，才应偏离 2.14 的五秒默认值。
+关闭之后，就要在主进程安装观察器。下面的函数把等待时间作为测试配置输入；先测得业务有更长的正常清理窗口，才有理由偏离 2.14 的五秒默认值。
 
 ```kotlin
 fun installLeakWatchers(
@@ -164,9 +164,9 @@ fun installLeakWatchers(
 }
 ```
 
-应用应从主进程的 `Application.onCreate()` 调用该函数一次。等待时间越长，暂时保留造成的误报越少，反馈也越慢；稳定复现的异常引用不能靠延长等待时间处理。
+应用应从主进程的 `Application.onCreate()` 调用该函数一次。等待时间越长，暂时保留造成的误报越少，反馈也越慢；稳定复现的异常引用要回到引用本身去修，延长等待时间帮不上忙。
 
-堆转储策略属于 `LeakCanary.config`。2.14 在应用可见时默认累计五个保留对象才转储，应用不可见时等待一个 `retainedDelayMillis` 后即可转储。下面的函数允许测试基础设施传入经过验证的可见态阈值。
+堆转储策略属于 `LeakCanary.config`。2.14 的默认行为是：应用可见时累计五个保留对象才转储，应用不可见时等待一个 `retainedDelayMillis` 后即可转储。下面的函数允许测试基础设施传入经过验证的可见态阈值。
 
 ```kotlin
 fun setVisibleHeapDumpThreshold(retainedObjectCount: Int) {
@@ -188,13 +188,13 @@ fun setVisibleHeapDumpThreshold(retainedObjectCount: Int) {
 3. 找到第一条生命周期不合理的强引用，核对它的写入和清理位置。
 4. 修复后重复相同操作，等待保留对象消失，并确认没有换成另一条签名。
 
-LeakCanary 不会自动覆盖所有单例、缓存和业务容器。自定义对象应显式观察；只表现为“大量仍然合法存活对象”的内存膨胀，应转到堆转储的 Histogram（按类汇总的对象直方图）与 Dominator Tree（支配树）。
+LeakCanary 的默认观察范围有限，单例、缓存和业务容器要显式观察。内存膨胀若表现为“大量仍然合法存活的对象”，就转到堆转储的 Histogram 和 Dominator Tree 上去找：Histogram 按类汇总对象，Dominator Tree 反映对象间的支配关系。
 
 #### Android Studio LeakCanary task 与 CI 接入
 
-CI（Continuous Integration，持续集成）中的泄漏检查应依赖可重复的操作与明确断言，不能只保存一次人工截图。
+CI（Continuous Integration，持续集成）里的泄漏检查要靠可重复的操作和明确的断言，只保存一次人工截图说明不了问题。
 
-Android Studio Panda 3 起提供专用 LeakCanary Profiler task。设备仍负责运行应用和生成堆现场，Shark 转到开发机分析，报告可以从可疑引用跳回工程源码。截至 2026-08-13，Quail 3 稳定版继续提供这项能力；它属于 IDE（Integrated Development Environment，集成开发环境）发布线，与 Android API 版本没有绑定关系。
+Android Studio 从 Panda 3 起提供专用的 LeakCanary Profiler task：设备仍负责运行应用和生成堆现场，Shark 转到开发机分析，报告可以从可疑引用跳回工程源码。截至 2026-08-13，Quail 3 稳定版继续提供这项能力；它跟着 IDE 发布线走，与 Android API 版本没有绑定关系。
 
 几种入口的职责不同：
 
@@ -218,21 +218,21 @@ dependencies {
 val detectLeaksAfterTestSuccess = DetectLeaksAfterTestSuccess()
 ```
 
-这类断言适合生命周期明确、操作可重复的端到端场景。测试应固定页面操作、空闲等待和后台任务清理；异步任务尚未结束时，保留对象不等于稳定泄漏。团队还可以维护少量确定性样例，例如单例保存 Activity、Fragment View binding 未清理、延迟消息、全局协程、Listener 未注销和 WebView/播放器未释放，用同一脚本同时验证“能发现”和“修复后消失”。
+这类断言适合生命周期明确、操作可重复的端到端场景。测试应固定页面操作、空闲等待和后台任务清理；异步任务尚未结束时看到的保留对象，还够不上稳定泄漏。团队还可以维护少量确定性样例，例如单例保存 Activity、Fragment View binding 未清理、延迟消息、全局协程、Listener 未注销和 WebView/播放器未释放，用同一脚本同时验证“能发现”和“修复后消失”。
 
-线上使用实验性的 release 观察能力时，至少要有远程开关、低采样率、磁盘配额、充电/空闲条件、失败恢复、访问控制与过期策略。原始 HPROF 可能包含业务对象，不应默认上传；优先保存 leak signature（用于归并同类引用路径的泄漏签名）、裁剪后的引用路径和不含业务值的统计字段。
+线上使用实验性的 release 观察能力时，至少要有远程开关、低采样率、磁盘配额、充电/空闲条件、失败恢复、访问控制与过期策略。原始 HPROF 可能包含业务对象，默认留在本地；要上传，也优先上传 leak signature（按引用路径归并泄漏的签名）、裁剪后的引用路径和不含业务值的统计字段。
 
 ### MAT：离线分析 Java 堆对象图
 
 #### HPROF 包含什么
 
-MAT（Eclipse Memory Analyzer）用于离线分析 HPROF。HPROF 是某一时刻的托管堆快照，包含类、对象、字段、数组、线程与 GC Root 等信息。它适合回答“对象为何仍可达”和“谁支配了大量 Java 对象”。它不记录历史分配时序，也不覆盖 malloc 分配区、未映射 dma-buf 或 GPU（Graphics Processing Unit，图形处理器）驱动私有内存。
+MAT（Eclipse Memory Analyzer）用来离线分析 HPROF。HPROF 是某一时刻的托管堆快照，包含类、对象、字段、数组、线程与 GC Root 等信息，适合回答“对象为何仍可达”“谁支配了大量 Java 对象”。它记录的只是这一刻的托管堆：历史分配时序、malloc 分配区、未映射的 dma-buf 和 GPU 驱动私有内存，都在它的覆盖之外。
 
 Android Studio 的 Heap Dump 页面能直接采集与浏览 Android HPROF。MAT 的 Dominator Tree、Path to GC Roots、OQL（Object Query Language，对象查询语言）和大堆处理更适合复杂离线分析。
 
 #### 采集与转换
 
-Android 17 的 `am dumpheap` 支持进程名或 PID（Process ID，进程号）；`-g` 会在 dump 前请求一次 GC。下面的命令要求调用方提供本次实测 PID，再用 PID 组成设备端和主机端文件名。
+`am dumpheap` 支持进程名或 PID（Process ID，进程号）；`-g` 会在 dump 前请求一次 GC。下面的命令要求调用方提供本次实测 PID，再用 PID 组成设备端和主机端文件名。
 
 ```bash
 : "${APP_PID:?Set APP_PID to the target process id}"
@@ -243,9 +243,9 @@ adb shell am dumpheap -g "${APP_PID}" "${remote_hprof}"
 adb pull "${remote_hprof}" "${local_hprof}"
 ```
 
-`-g` 能减少已经不可达却尚未回收的对象，但 GC 时机与堆状态仍会受运行时影响。Android 17 的 [`ActivityManagerService.enforceDebuggable()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java#6922) 规定：面向量产设备的 user 构建只能转储 debuggable 应用，`profileable` 声明本身不开放 HPROF；userdebug/eng 这类可调试系统构建才允许转储其他目标。两个文件名带有 PID，可避免连续分析不同进程时误用旧文件。采集过程会暂停应用并增加临时内存，不能把它当成无扰动观测。
+`-g` 能减少已经不可达却尚未回收的对象，但 GC 时机与堆状态仍会受运行时影响。转储权限由 [`ActivityManagerService.enforceDebuggable()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java#6922) 把关：面向量产设备的 user 构建只能转储 debuggable 应用，`profileable` 声明本身换不来 HPROF；userdebug/eng 这类可调试系统构建才允许转储其他目标。两个文件名带有 PID，可避免连续分析不同进程时误用旧文件。另外，采集过程会暂停应用并增加临时内存，是一次有扰动的观测。
 
-Android HPROF 若无法被 MAT 直接打开，可用 Android SDK（Software Development Kit）Platform-Tools 的 `hprof-conv` 转为标准 Java SE HPROF。下面的命令检查 SDK 根目录和本次 PID，再转换刚才拉取的文件。
+MAT 打不开 Android HPROF 时，可用 Android SDK Platform-Tools 的 `hprof-conv` 转为标准 Java SE HPROF。下面的命令检查 SDK 根目录和本次 PID，再转换刚才拉取的文件。
 
 ```bash
 : "${ANDROID_SDK_ROOT:?Set ANDROID_SDK_ROOT to the Android SDK directory}"
@@ -258,7 +258,7 @@ output_hprof="./app-${APP_PID}-mat.hprof"
     "${output_hprof}"
 ```
 
-转换产物可交给 MAT；转换只改变 HPROF 编码，不会补出 native 分配器、dma-buf 或 GPU 数据。Android Studio 从 Past Recordings 导出的文件是否仍需转换，以 MAT 的解析结果为准。
+转换产物可交给 MAT；转换只改变 HPROF 编码，native 分配器、dma-buf 或 GPU 数据它都补不出来。Android Studio 从 Past Recordings 导出的文件是否仍需转换，以 MAT 的解析结果为准。
 
 #### 四个概念
 
@@ -267,7 +267,7 @@ output_hprof="./app-${APP_PID}-mat.hprof"
 - **Dominator**：从任意 GC Root 到目标对象的所有路径都经过的对象。
 - **Path to GC Roots**：目标对象到 GC Root 的引用路径；分析泄漏时通常排除 weak、soft 和 phantom references，这三类引用不会像普通强引用那样无条件阻止对象回收。
 
-Retained size 很大说明该对象控制着大块对象图，不等于该对象自身分配了这些字节。Histogram 中数量最多的类也不必然是泄漏源；缓存、预加载和池化对象可能有合法生命周期。
+Retained size 很大，说明该对象控制着大块对象图，这些字节却未必是它自己分配的。Histogram 中数量最多的类同样未必是泄漏源；缓存、预加载和池化对象可能有合法生命周期。
 
 #### 一套可复现的 MAT 流程
 
@@ -279,11 +279,11 @@ Retained size 很大说明该对象控制着大块对象图，不等于该对象
 6. 对目标实例执行 Path to GC Roots，排除弱引用，找到第一条异常强引用。
 7. 回到源码验证写入、移除和生命周期，修复后以同一脚本复测。
 
-单个 HPROF 适合判断持有关系，两份或多份同条件 HPROF 才适合判断增长。对象数量上涨一次也可能来自懒加载，需要用重复轮次确认它是否停止继续增长并趋于稳定。
+单个 HPROF 适合判断持有关系，两份或多份同条件 HPROF 才适合判断增长。对象数量上涨一次也可能来自懒加载，要用重复轮次确认它是否停止增长并趋于稳定。
 
 #### Bitmap 的版本边界
 
-Android 8.0 起，Bitmap 像素数据由 native 堆管理，Java `Bitmap` 对象主要保存 native 指针和元数据。MAT 能看到 Java 封装对象与引用关系，不能依靠标准 HPROF 还原完整像素内存。
+Android 8.0 起，Bitmap 像素数据由 native 堆管理，Java `Bitmap` 对象主要保存 native 指针和元数据。MAT 能看到 Java 封装对象与引用关系；完整像素内存，靠标准 HPROF 是还原不出来的。
 
 Android Studio Heap Dump 会为部分框架类型提供 Native Size 和 Bitmap 预览，这属于 Android Studio 的增强信息。`dumpsys meminfo` 的 `Graphics`、`Native Heap` 与 Bitmap 预览应一起看；图像数据位于 Graphic Buffer 时，还要转到 dma-buf 工具。
 
@@ -291,11 +291,11 @@ Android Studio Heap Dump 会为部分框架类型提供 Native Size 和 Bitmap �
 
 #### Native 模式的模型
 
-heapprofd 从 Android 10 起作为 Perfetto 数据源提供。native 模式会拦截 `malloc/free`、`new/delete` 等分配器调用，对分配按字节概率采样，并把寄存器、栈和分配/释放记录送给独立的 heapprofd 进程展开与聚合。
+heapprofd 从 Android 10 起作为 Perfetto 数据源提供。native 模式拦截 `malloc/free`、`new/delete` 等分配器调用，对分配按字节概率采样，把寄存器、栈和分配/释放记录送给独立的 heapprofd 进程去展开和聚合。
 
-采样间隔为 `n` 字节时，可理解为每个字节约有 `1/n` 的概率命中，工具再用统计权重估算总体。Android 17 的 `HeapprofdConfig` 要求显式提供非零间隔；同版本 `tools/heap_profile` 代为写入的默认值是 4096 字节。间隔设为 1 表示记录每次分配，记录量与被测进程扰动也随之增加。
+采样间隔为 `n` 字节时，可理解为每个字节约有 `1/n` 的概率命中，工具再用统计权重估算总体。`HeapprofdConfig` 要求显式提供非零间隔，`tools/heap_profile` 代为写入的默认值是 4096 字节。间隔设为 1 表示记录每次分配，记录量与被测进程扰动也随之增加。
 
-heapprofd 统计的是分配器请求与释放。分配器 arena（为批量管理内存而申请的内存区）、页粒度、碎片、zRAM 和 mmap 区域会让 heapprofd 的存活分配字节、`malloc_info()` 与 Native Heap RSS 出现差异。三者不应强行对齐。
+heapprofd 统计的是分配器请求与释放。分配器 arena（批量管理内存的预留区）、页粒度、碎片、zRAM 和 mmap 区域，会让 heapprofd 的存活分配字节、`malloc_info()` 与 Native Heap RSS 出现差异；三者各说各话，分开读就好。
 
 #### 权限与目标
 
@@ -326,9 +326,9 @@ Perfetto 的 `tools/heap_profile` 会构造配置、启动会话、拉取原始 
     -c "${DUMP_INTERVAL_MS}"
 ```
 
-省略 `-i` 时，Android 17 [`tools/heap_profile`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/heap_profile#780) 使用 4096 字节间隔；省略 `-d` 时持续到中断。结果目录中的 `raw-trace` 可直接交给 Perfetto UI。按进程名采集会匹配已经运行的进程，也会覆盖会话开始后新启动的同名进程；按 PID 只跟踪当前实例。
+省略 `-i` 时，[`tools/heap_profile`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/heap_profile#780) 使用 4096 字节间隔；省略 `-d` 时持续到中断。结果目录中的 `raw-trace` 可直接交给 Perfetto UI。按进程名采集会匹配已经运行的进程，也会覆盖会话开始后新启动的同名进程；按 PID 只跟踪当前实例。
 
-需要把堆数据与调度、Binder（Android 进程间调用）或自定义 trace 放入同一会话时，可手写 TraceConfig，也就是 Perfetto 的采集配置。下面的配置使用 Android 17 `tools/heap_profile` 的默认 trace 缓冲区、共享内存、采样间隔和阻塞策略，目标是 userdebug 构建上的真实平台进程 `system_server`；会话由操作者中断。
+需要把堆数据与调度、Binder 或自定义 trace 放入同一会话时，可手写 TraceConfig，也就是 Perfetto 的采集配置。下面的配置使用 `tools/heap_profile` 的默认 trace 缓冲区、共享内存、采样间隔和阻塞策略，目标是 userdebug 构建上的真实平台进程 `system_server`；会话由操作者中断。
 
 ```protobuf
 buffers {
@@ -351,7 +351,7 @@ duration_ms: 0
 write_into_file: true
 ```
 
-`process_cmdline` 可覆盖已运行及后续启动的匹配进程。`block_client` 在共享内存写满时会暂停目标分配线程，因此高分配率测试还要检查 trace 统计和业务时延。若要改成应用进程，应替换为设备上 `/proc/<pid>/cmdline` 的精确值，并满足前述 AndroidManifest 条件。配置字段以 Android 17 的 [`heapprofd_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/heapprofd_config.proto) 为准；文本配置交给 Perfetto CLI（命令行工具）时要使用 `--txt`。
+`process_cmdline` 可覆盖已运行及后续启动的匹配进程。`block_client` 在共享内存写满时会暂停目标分配线程，因此高分配率测试还要检查 trace 统计和业务时延。若要改成应用进程，应替换为设备上 `/proc/<pid>/cmdline` 的精确值，并满足前述 AndroidManifest 条件。配置字段以 [`heapprofd_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/heapprofd_config.proto) 为准；文本配置交给 Perfetto CLI 时要使用 `--txt`。
 
 #### ART 分配分析
 
@@ -368,24 +368,24 @@ Android 12 起，heapprofd 还可选择 ART 注册的 `com.android.art` heap。�
     --heaps com.android.art
 ```
 
-`com.android.art` 是 ART 注册的 heap 名称。该模式不跟踪对象何时删除或被 GC，也不生成对象引用图；它定位分配频繁的调用栈与类型，泄漏持有关系仍要由 HPROF、LeakCanary 或 MAT 给出。
+`com.android.art` 是 ART 注册的 heap 名称。这个模式定位的是分配频繁的调用栈与类型；对象何时删除、被谁持有，要回到 HPROF、LeakCanary 或 MAT 去看。
 
 #### 读火焰图
 
-火焰图按调用栈逐层堆叠方框，方框宽度表示该视角下估算的分配字节或次数。它展示聚合调用路径，不表示真实时间线。
+火焰图按调用栈逐层堆叠方框，方框宽度表示该视角下估算的分配字节或次数。它展示的是聚合调用路径，真实时间线不在其中。
 
 Native 快照常见的两个视角是：
 
 - 累计分配：时间窗内该调用栈分配过多少估算字节或次数，包含已经释放的分配。
 - 快照时仍存活：到该快照尚未收到 free 记录的采样分配，适合寻找持续增长的 native 路径。
 
-“仍存活”也不自动等于泄漏。长生命周期缓存、分配器延迟释放和会话尚未覆盖释放动作都会保留数据。连续快照中同一调用栈稳定增长，且业务生命周期已经结束时，证据更强。
+“仍存活”离泄漏还差一步：长生命周期缓存、分配器延迟释放和会话尚未覆盖释放动作，都会把数据留下来。连续快照中同一调用栈稳定增长，且业务生命周期已经结束时，把泄漏当主要怀疑对象才站得住。
 
 #### 空报告与异常栈
 
 - 结果为空：检查包是否 `debuggable/profileable`、目标进程名是否匹配、是否存在并发 heapprofd 会话。
 - 启动阶段缺样本：运行时挂接会有延迟；按进程名启动会话通常比进程启动后按 PID 连接覆盖更早。
-- 缓冲区溢出（buffer overrun）：短暂峰值可增大 `--shmem-size`；持续过载应增大 `--interval`，接受较低精度。
+- 缓冲区溢出：短暂峰值可增大 `--shmem-size`；持续过载应增大 `--interval`，接受较低精度。
 - native 符号缺失：提供与二进制 Build ID（构建产物的唯一标识）匹配的未剥离符号，再执行 Perfetto 符号化。
 - Java 帧出现 `[DEDUPED]`：ART 的 identical code folding（ICF，相同机器码折叠）让多个方法共享代码，显示名不一定是执行的那个方法。
 
@@ -406,7 +406,7 @@ adb shell dumpsys meminfo -s "${APP_PACKAGE}"
 adb shell dumpsys meminfo --package "${APP_PACKAGE}"
 ```
 
-`-d` 增加 Dalvik/ART 子项；`-s` 只保留 App Summary；`--package` 把参数解释为包名，并输出所有已经加载该包的进程，适合核对 `:remote` 或其他辅助进程。WebView renderer 是否出现取决于它实际加载的包，不能只凭父应用包名推定。Android 17 的选项解析可在 [`ActivityManagerService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java#13030) 中核对。
+`-d` 增加 Dalvik/ART 子项；`-s` 只保留 App Summary；`--package` 把参数解释为包名，并输出所有已经加载该包的进程，适合核对 `:remote` 或其他辅助进程。WebView renderer 是否出现，取决于它实际加载的包，父应用包名说了不算。选项解析可在 [`ActivityManagerService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java#13030) 中核对。
 
 #### PSS、RSS、USS 与 swap
 
@@ -417,11 +417,11 @@ adb shell dumpsys meminfo --package "${APP_PACKAGE}"
 | USS（Unique Set Size） | Private Clean 与 Private Dirty 之和 | 该进程独占的驻留页有多少 |
 | Swap / SwapPss | 已换出页，SwapPss 对共享换出页按比例分摊 | 是否已有工作集换出到 zRAM/swap |
 
-PSS 可以避免共享页在进程间重复记账，但把所有进程 PSS 相加也不等于整机全部物理内存：内核自身、未映射页、设备内存和统计时刻变化仍在进程口径之外。
+PSS 可以避免共享页在进程间重复记账，但把所有进程 PSS 相加，离整机全部物理内存还差一截：内核自身、未映射页、设备内存和统计时刻变化，都落在这套进程统计之外。
 
-Android 17 的 `Debug.MemoryInfo.getTotalPss()` 会在内核提供 SwapPss 时，把按比例分摊的换出页加入总值。解析脚本应保存原始列名和系统版本，避免把 `TOTAL PSS` 与单独显示的 swap 列重复相加。
+内核提供 SwapPss 时，`Debug.MemoryInfo.getTotalPss()` 会把按比例分摊的换出页加入总值。解析脚本应保存原始列名和系统版本，避免把 `TOTAL PSS` 与单独显示的 swap 列重复相加。
 
-Private Dirty 表示页面由该进程独占且内容已经改变，不能像干净文件页那样直接丢弃；匿名页和私有 COW（Copy-on-Write，写时复制）页仍可换出到 zRAM/swap。可回写文件的共享脏页属于另一种记账，不能用它解释 Private Dirty。Private Clean 多为可从文件重新加载的私有页，内存压力下更容易回收。
+Private Dirty 表示页面由该进程独占且内容已经改变，这类页面没法像干净文件页那样直接丢弃；匿名页和私有 COW（Copy-on-Write，写时复制）页仍可换出到 zRAM/swap。可回写文件的共享脏页属于另一种记账，解释不了 Private Dirty。Private Clean 多为可从文件重新加载的私有页，内存压力下更容易回收。
 
 #### 分类行与 App Summary
 
@@ -429,11 +429,11 @@ Private Dirty 表示页面由该进程独占且内容已经改变，不能像干
 - `Native Heap`：默认 native 分配器对应的 Private Dirty malloc 空间。
 - `Code`：`.so`、`.jar`、`.apk`、`.dex`、`.oat` 等代码与静态资源的私有部分。
 - `Stack`：Java 与 native 线程栈的 Private Dirty。
-- `Graphics`：Gfx、EGL（图形上下文与窗口系统接口）、GL（OpenGL 图形 API）的 private 统计，部分数据来自 memtrack。
+- `Graphics`：Gfx、EGL、GL 的 private 统计，部分数据来自 memtrack；EGL 是图形上下文与窗口系统接口，GL 指 OpenGL 图形 API。
 - `Private Other`：尚未归入前述类别的 Private Clean/Dirty。
 - `System`：摘要中归入系统的共享内存份额。
 
-App Summary 不是上方每一行 PSS 的简单求和。Android 17 的 [`Debug.MemoryInfo`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java#720) 会把 private 与 shared 部分重新归组。`Graphics` 还受图形驱动的 memtrack 报告质量影响，源码也明确保留了误报警告。
+App Summary 不是上方每一行 PSS 的简单求和：[`Debug.MemoryInfo`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java#720) 会把 private 与 shared 部分重新归组。`Graphics` 还受图形驱动的 memtrack 报告质量影响，源码也明确保留了误报警告。
 
 #### 如何判断“持续增长”
 
@@ -444,20 +444,20 @@ App Summary 不是上方每一行 PSS 的简单求和。Android 17 的 [`Debug.M
 3. 同时保存 `TOTAL PSS`、RSS、SwapPss、Java Heap、Native Heap、Graphics 和进程列表。
 4. 观察数值是否停止继续增长并趋于稳定，必要时再抓 HPROF、heapprofd 或 dma-buf 明细。
 
-PSS 一次不回落不能证明泄漏。Java 堆会保留已提交空间，native 分配器会保留 arena，图片与代码会进入缓存，线程池也可能延迟销毁。趋势、生命周期和归因调用栈要互相印证。
+PSS 一次没有回落，离泄漏结论还远：Java 堆会保留已提交空间，native 分配器会保留 arena，图片与代码会进入缓存，线程池也可能延迟销毁。趋势、生命周期和归因调用栈要互相印证。
 
 ### `showmap`、`procrank` 与 libmeminfo
 
 #### `showmap`：逐个 VMA 查看
 
-Android 17 的 `showmap` 读取 `/proc/<pid>/smaps`，按 VMA 输出 VSS（Virtual Set Size，虚拟地址范围总量）、RSS、PSS、private/shared clean/dirty、swap 等字段。下面的命令要求调用方提供真实 PID，同时显示地址并禁止合并同名 VMA。
+`showmap` 读取 `/proc/<pid>/smaps`，按 VMA 输出 VSS（Virtual Set Size，虚拟地址范围总量）、RSS、PSS、private/shared clean/dirty、swap 等字段。下面的命令要求调用方提供真实 PID，同时显示地址并禁止合并同名 VMA。
 
 ```bash
 : "${APP_PID:?Set APP_PID to the target process id}"
 adb shell showmap -a -v "${APP_PID}"
 ```
 
-`-a` 显示虚拟地址，`-v` 保留每个 VMA。`[anon:libc_malloc]` 变大通常指向分配器 heap；大型匿名 `mmap` 不一定属于 malloc；`.so/.dex/.apk` 是文件映射。procfs 是内核导出进程和系统状态的伪文件系统，SELinux 则执行强制访问控制。命令能否读取目标 `/proc/<pid>/smaps` 由 user 构建、SELinux 和 procfs 权限决定，不能假定所有商用设备都允许 shell 查看任意进程。
+`-a` 显示虚拟地址，`-v` 保留每个 VMA。`[anon:libc_malloc]` 变大通常指向分配器 heap；大型匿名 `mmap` 未必属于 malloc；`.so/.dex/.apk` 是文件映射。procfs 是内核导出进程和系统状态的伪文件系统，SELinux 执行强制访问控制。这条命令能不能读到目标 `/proc/<pid>/smaps`，由 user 构建、SELinux 和 procfs 权限决定，商用设备上别指望 shell 一定能查看任意进程。
 
 `showmap` 只能报告已经映射进该进程地址空间的页。只持有 dma-buf fd（file descriptor，文件描述符）、仅由 GPU/内核引用或映射在其他进程的缓冲区，可能不会在目标 VMA 中呈现。
 
@@ -472,13 +472,13 @@ adb shell procrank -r
 adb shell procrank -s
 ```
 
-Android 17 的默认排序已经是 PSS，显式参数便于保存实验脚本。`procrank` 是否被产品镜像打包、shell 能读取多少进程，都由设备构建决定；缺少命令时可在 AOSP 构建中生成对应可执行文件。
+默认排序已经是 PSS，显式参数便于保存实验脚本。`procrank` 是否被产品镜像打包、shell 能读取多少进程，都由设备构建决定；缺少命令时可在 AOSP 构建中生成对应可执行文件。
 
-`procrank` 适合找出大进程，不能预测 LMKD 的唯一候选。LMKD 还会结合 PSI、thrashing（页面反复回收后又被访问的抖动）、swap、`oom_score_adj`（内核选择低内存终止对象时使用的优先级）和产品策略；`procrank -o` 展示 oom score 维度时也只是一张当前快照。
+`procrank` 适合找出大进程；LMKD 下一个终止谁，它回答不了——LMKD 还会结合 PSI、thrashing（页面反复回收后又被访问的抖动）、swap、`oom_score_adj`（内核选择低内存终止对象时使用的优先级）和产品策略。`procrank -o` 展示 oom score 维度时，也只是一张当前快照。
 
 #### libmeminfo 的源码分工
 
-libmeminfo 是平台内部 C++ 库，不是应用 SDK API。Android 17 的实现位于独立仓库 `platform/system/memory/libmeminfo`：
+libmeminfo 是平台内部的 C++ 库，应用 SDK 里没有这个 API。实现位于独立仓库 `platform/system/memory/libmeminfo`：
 
 | 模块 | 职责 |
 | --- | --- |
@@ -487,13 +487,13 @@ libmeminfo 是平台内部 C++ 库，不是应用 SDK API。Android 17 的实现
 | [`libsmapinfo/smapinfo.cpp`](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/libsmapinfo/smapinfo.cpp) | 为 `showmap`、`procrank`、`librank` 提供统计与输出 |
 | [`libdmabufinfo`](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/libdmabufinfo/) | 读取 dma-buf 引用、映射和逐缓冲区统计 |
 
-`ProcMemInfo::ResetWorkingSet()` 会向 `/proc/<pid>/clear_refs` 写入 `1`。这类接口需要特权并会改变 working-set 统计状态，常规应用采集不应直接照搬。
+`ProcMemInfo::ResetWorkingSet()` 会向 `/proc/<pid>/clear_refs` 写入 `1`。这类接口需要特权，还会改变 working-set 统计状态，常规应用采集时别直接照搬。
 
 内核 PSS/smaps 生成逻辑可从 [`fs/proc/task_mmu.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/task_mmu.c) 核对。libmeminfo 是读者与分类器，页表和映射状态仍由内核提供。
 
 ### Graphics 与 dma-buf：从 memtrack 转向缓冲区归因
 
-`dumpsys meminfo` 的 `Graphics` 不等同于 `showmap` 中所有 `/dev` 映射。Android 17 的 [`android_os_Debug.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp#130) 会通过图形内存记账接口 libmemtrack 获取 smaps 未覆盖的 graphics、GL 和 other PSS，再合入 `Debug.MemoryInfo`。
+`dumpsys meminfo` 的 `Graphics` 与 `showmap` 中所有 `/dev` 映射是两回事：[`android_os_Debug.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp#130) 会通过图形内存记账接口 libmemtrack 获取 smaps 未覆盖的 graphics、GL 和 other PSS，再合入 `Debug.MemoryInfo`。
 
 图形内存上涨时可按以下顺序收集：
 
@@ -513,7 +513,7 @@ adb shell dmabuf_dump "${APP_PID}"
 adb shell dmabuf_dump -b
 ```
 
-带 PID 的输出只覆盖该进程持有 fd 或建立映射的缓冲区；`-b` 不接受 PID。工具可用性和可见范围取决于产品镜像、debugfs（内核调试伪文件系统）、procfs 与 SELinux。每进程总量会在共享缓冲区上重复显示，系统唯一总量要按 inode 去重。实现依据见 Android 17 的 [`dmabuf_dump.cpp`](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/libdmabufinfo/tools/dmabuf_dump.cpp)。
+带 PID 的输出只覆盖该进程持有 fd 或建立映射的缓冲区；`-b` 不接受 PID。工具可用性和可见范围取决于产品镜像、debugfs（内核调试伪文件系统）、procfs 与 SELinux。每进程总量会在共享缓冲区上重复显示，系统唯一总量要按 inode 去重。实现依据见 [`dmabuf_dump.cpp`](https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/libdmabufinfo/tools/dmabuf_dump.cpp)。
 
 dma-buf 的内核对象、文件描述符与 attachment（设备附加到共享缓冲区后建立的关系）生命周期见 [`drivers/dma-buf/dma-buf.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-buf.c)。图形缓冲区的分配与跨进程共享原理参见 §2.8 [DMA-BUF 与 Gralloc](../../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)。
 
@@ -521,11 +521,11 @@ dma-buf 的内核对象、文件描述符与 attachment（设备附加到共享�
 
 malloc debug 从 API 24 起提供。它在正常分配器前加入 shim（位于调用方与原分配器之间的转发层），可为 `malloc/free/calloc/realloc` 等调用增加 guard、填充值、指针校验、释放隔离区和分配调用栈。guard 是放在分配块前后的哨兵字节，用于发现越界改写；释放隔离区则暂缓复用已释放内存，以提高 use-after-free 的检出机会。
 
-它适合可控测试，不适合性能基准或生产常开。`backtrace` 会让分配显著变慢，`free_track` 会延迟释放，`guard` 会增加每次分配大小；这些选项都会改变被测进程。
+它适合可控测试，性能基准或生产常开都不合适：`backtrace` 会让分配显著变慢，`free_track` 会延迟释放，`guard` 会增加每次分配大小；这些选项都在改变被测进程。
 
 #### debuggable 应用的 `wrap.sh`
 
-没有 root 权限的应用可在 API 27 及以上按 NDK（Native Development Kit）`wrap.sh` 方式为 debuggable APK 设置环境。下面的脚本让 backtrace（分配调用栈记录）初始关闭并等待信号开启，同时输出详细启用日志。
+没有 root 权限的应用可在 API 27 及以上按 NDK `wrap.sh` 方式为 debuggable APK 设置环境。下面的脚本让 backtrace 初始关闭并等待信号开启，同时输出详细启用日志。
 
 ```sh
 #!/system/bin/sh
@@ -546,7 +546,7 @@ exec "$@"
 | 只记录特定大小范围 | `backtrace_min_size`、`backtrace_max_size`、`backtrace_size` |
 | 收集仍可达性之外的 native 泄漏候选 | `check_unreachable_on_signal` |
 
-Android 17 仍使用 Linux 实时信号控制这些动作。下面的命令先检查真实 PID，再依次切换 backtrace、写出 backtrace heap，以及触发 API 34 起的不可达内存扫描。
+这些动作仍由 Linux 实时信号控制。下面的命令先检查真实 PID，再依次切换 backtrace、写出 backtrace heap，以及触发 API 34 起的不可达内存扫描。
 
 ```bash
 : "${APP_PID:?Set APP_PID to the target process id}"
@@ -556,7 +556,7 @@ adb shell kill -47 "${APP_PID}"  # SIGRTMAX-17：请求 backtrace heap dump
 adb shell kill -48 "${APP_PID}"  # SIGRTMAX-16：请求 unreachable scan
 ```
 
-堆转储与不可达内存扫描会等到下一次分配器调用再执行。`-47` 需要已启用 backtrace；`-48` 需要配置 `check_unreachable_on_signal`。受保护进程还可能因权限失败，不能把无输出解释为无泄漏。
+堆转储与不可达内存扫描会等到下一次分配器调用再执行。`-47` 需要已启用 backtrace；`-48` 需要配置 `check_unreachable_on_signal`。受保护进程还可能因权限失败，这时的无输出只是没采到数据，说明不了有没有泄漏。
 
 另一条入口是 `dumpsys meminfo --unreachable <process>`。libmemunreachable 会在 native 地址空间中做保守的可达性扫描，报告没有从已知根扫描到的分配。下面的命令要求调用方提供 PID，再请求目标进程执行扫描。
 
@@ -565,11 +565,11 @@ adb shell kill -48 "${APP_PID}"  # SIGRTMAX-16：请求 unreachable scan
 adb shell dumpsys meminfo --unreachable "${APP_PID}"
 ```
 
-没有分配调用栈时，结果可能只能说明存在不可达 native 分配，无法给出有用的分配点。Android 17 的完整选项和信号语义以 [`malloc_debug/README.md`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/memory/malloc_debug/README.md) 为准。
+没有分配调用栈时，结果可能只能说明存在不可达 native 分配，给不出有用的分配点。完整选项和信号语义以 [`malloc_debug/README.md`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/memory/malloc_debug/README.md) 为准。
 
 ### malloc hooks：自定义分配器回调
 
-hook 是可替换的函数指针，用来截获调用后记录或转发。API 28 起，Android C 库 bionic 在显式启用 hooks 时公开 `__malloc_hook`、`__realloc_hook`、`__free_hook` 和 `__memalign_hook`。它们不构成对 GNU/Linux 常用 C 库 glibc 接口的兼容承诺；这里讨论的是 Android bionic 自己的接口。
+hook 是可替换的函数指针，用来截获调用后记录或转发。API 28 起，Android C 库 bionic 在显式启用 hooks 时公开 `__malloc_hook`、`__realloc_hook`、`__free_hook` 和 `__memalign_hook`。这组接口属于 Android bionic 自己，不构成对 GNU/Linux 常用 C 库 glibc 接口的兼容承诺。
 
 下面的 C++ 片段只演示在进程启动早期替换 `malloc` hook，并保存、转调 bionic 提供的原分配器。
 
@@ -603,7 +603,7 @@ export LIBC_HOOKS_ENABLE=1
 exec "$@"
 ```
 
-hook 指针更新没有线程安全保证，应在线程并发分配前完成。没有替换的 hook 会继续指向 bionic 原实现；如果继续替换 `realloc`、`free` 或 `memalign`，每一个回调都必须保存并转调对应原函数。`malloc_usable_size` 没有独立 hook，它依赖分配器元数据仍然有效。接口细节见 Android 17 的 [`malloc_hooks/README.md`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/memory/malloc_hooks/README.md)。
+hook 指针更新没有线程安全保证，应在线程并发分配前完成。没有替换的 hook 会继续指向 bionic 原实现；如果继续替换 `realloc`、`free` 或 `memalign`，每一个回调都必须保存并转调对应原函数。`malloc_usable_size` 没有独立 hook，它依赖分配器元数据仍然有效。接口细节见 [`malloc_hooks/README.md`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/memory/malloc_hooks/README.md)。
 
 多数项目应优先使用 heapprofd。malloc hooks 更适合编写专用测试器，维护成本和测量扰动都更高。
 
@@ -656,9 +656,9 @@ LD_HWASAN=1 exec "$@"
 </manifest>
 ```
 
-SYNC 在出错指令处触发 `SIGSEGV/SEGV_MTESERR`，诊断精度高。ASYNC 延迟到后续内核入口触发 `SIGSEGV/SEGV_MTEAERR`，故障地址和访问类型不精确。
+SYNC 在出错指令处触发 `SIGSEGV/SEGV_MTESERR`，诊断精度高。ASYNC 延迟到后续内核入口触发 `SIGSEGV/SEGV_MTEAERR`，故障地址和访问类型都只是近似。
 
-Armv8.7-A 的 ASYMM 对读使用同步检查、对写使用异步检查。应用清单没有 `asymm` 值；应用请求 `async` 后，设备可通过 CPU 粒度的 `mte_tcf_preferred` 把执行模式升级为 ASYMM 或 SYNC。这个选择属于设备配置，应用不能假定所有 MTE 设备都会升级。异步请求被设备升级为 SYNC 时，故障位置会更精确，但分配器的分配栈和释放栈只在进程明确配置为 SYNC 时采集。
+Armv8.7-A 的 ASYMM 对读使用同步检查、对写使用异步检查。应用清单没有 `asymm` 值；应用请求 `async` 后，设备可通过 CPU 粒度的 `mte_tcf_preferred` 把执行模式升级为 ASYMM 或 SYNC。这个选择握在设备配置手里，应用不要默认所有 MTE 设备都会升级。异步请求被设备升级为 SYNC 时，故障位置会更精确，但分配器的分配栈和释放栈只在进程明确配置为 SYNC 时采集。
 
 MTE 默认不对所有第三方应用开启。`android:memtagMode` 从 API 31 提供；设置在 `<application>` 时作用于全部应用进程，也可由单个 `<process>` 覆盖。堆 MTE 只覆盖参与标记分配的 native 堆。Android 14 QPR3（第三次季度平台更新）起，native 栈还可通过编译器插桩参与检查；下面的 CMake 函数把官方要求的编译与链接参数绑定到调用方传入的真实构建目标。
 
@@ -677,7 +677,7 @@ endfunction()
 
 这组产物只能在支持 MTE 的设备上运行，应限制在 native 内存安全测试变体。清单中的 `sync` 决定堆检查模式，`-fsanitize=memtag` 则给栈增加标记与检查，两者覆盖范围不同。
 
-Android 17 的内核接口与标记故障处理可从 [`memory-tagging-extension.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/arch/arm64/memory-tagging-extension.rst) 和 [`arch/arm64/include/asm/mte.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/include/asm/mte.h) 核对。
+内核接口与标记故障处理可从 [`memory-tagging-extension.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/arch/arm64/memory-tagging-extension.rst) 和 [`arch/arm64/include/asm/mte.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/include/asm/mte.h) 核对。
 
 ### 工具组合示例
 
@@ -712,38 +712,38 @@ Android 17 的内核接口与标记故障处理可从 [`memory-tagging-extension
 
 - 采集的是 Java 堆、native 分配器、VMA、图形内存还是整机压力？
 - 数据来自同一进程吗？包是否含多个进程？
-- PSS、RSS、USS、SwapPss 和分配器存活字节数是否被混成一个口径？
+- PSS、RSS、USS、SwapPss 和分配器存活字节数，是否被不加区分地混在了一起？
 - 快照前后的业务状态、预热、GC、温度和后台负载是否一致？
 - HPROF 是否只覆盖托管堆？Native Size 是否来自工具增强信息？
 - heapprofd 使用 native 堆还是 `com.android.art`？采样间隔是多少？
 - 报告是否有缓冲区溢出、缺少符号、`[DEDUPED]` 或驱动误报？
 - `showmap` 是否只看到了已映射 VMA，而遗漏 fd/内核持有的 dma-buf？
 - 内存安全检查器、malloc debug 或 hooks 是否改变了时序和内存行为？
-- 修复后能否用相同脚本重复验证，并由另一类证据支持？
+- 修复后能否用相同脚本重复验证，并用另一类工具交叉印证？
 
 
 ## HPROF 生成、传输与引用图
 
-工具选型确定需要 Java 对象证据后，再检查 dump 触发、停顿、文件传输和解析。Perfetto java_hprof 适合与时间线协同，但不等同于任意完整 HPROF。
+工具选型确定要看 Java 对象之后，我们再来检查 dump 触发、停顿、文件传输和解析。Perfetto java_hprof 适合与时间线协同，与完整 HPROF 是两条不同的管线。
 
 Android 上的“Java 堆转储”至少包含两类产物：
 
-ART（Android Runtime，Android 运行时）负责执行应用的 Java/Kotlin 代码并管理对象内存。这里的托管堆（managed heap）指由 ART 分配、由垃圾回收器自动回收的对象区域；HPROF 是记录类、对象及其引用关系的二进制堆快照格式。GC Root 是垃圾回收器开始可达性扫描的一组根：对象只要还能从任一 GC Root 沿引用链到达，就不会被回收。
+ART 负责执行应用的 Java/Kotlin 代码并管理对象内存；由 ART 分配、垃圾回收器自动回收的对象区域，就是这里的托管堆（managed heap）。HPROF 是记录类、对象及其引用关系的二进制堆快照格式。GC Root 是垃圾回收器开始可达性扫描的一组根：对象只要还能从任一 GC Root 沿引用链到达，就不会被回收。
 
 | 产物 | 采集入口 | 主要数据 | 适合回答的问题 |
 | --- | --- | --- | --- |
 | 完整 ART HPROF | `am dumpheap`、`Debug.dumpHprofData()`、Android Studio | 对象、类、GC Root、引用、实例字段、基本类型数组等 | 某个字段保存了什么、对象沿哪条引用链存活、离线工具能否读取完整对象数据 |
 | Perfetto ART Heap Graph | `android.java_hprof` | 类、对象大小、GC Root、引用图、可达性、部分 native size | 哪类对象增长、谁支配了大块内存、堆变化与 GC、内存压力或卡顿是否同一时段出现 |
 
-表中的 native size 是 `NativeAllocationRegistry` 为部分 Java 对象登记的关联原生内存估算值，Android 13 起可由这条数据源采集。它只覆盖被登记的内存，不能代表进程的全部 native heap。
+表中的 native size 是 `NativeAllocationRegistry` 为部分 Java 对象登记的关联原生内存估算值，Android 13 起可由这条数据源采集。它覆盖的只是被登记的内存，代表不了进程的全部 native heap。
 
-这两条管线都从 ART 的托管堆取快照，产物和暂停边界却不相同。`android.java_hprof` 这个名字容易造成误会：Perfetto 在目标进程中 fork（派生子进程）后，直接写入采用 Protocol Buffers（protobuf）编码的 `HeapGraph` 数据包，不会先生成 HPROF 再解析。
+这两条管线都从 ART 的托管堆取快照，产物和暂停行为却不相同。`android.java_hprof` 这个名字容易造成误会：Perfetto 在目标进程中 fork（派生子进程）后，直接写入采用 Protocol Buffers（protobuf）编码的 `HeapGraph` 数据包，中间没有“先生成 HPROF 再解析”这一步。
 
-§23.2 讨论泄漏模型；本文前文介绍 Android Studio Memory Profiler 与 LeakCanary。这里聚焦采集管线、数据边界和 Android 17 上可核对的源码行为。
+§23.2 讨论泄漏模型；本文前文介绍 Android Studio Memory Profiler 与 LeakCanary。这里聚焦采集管线、各自的数据范围，以及可以对着源码核对的行为。
 
 ### 完整 HPROF：从 Shell 到 ART
 
-#### `am dumpheap` 参数以 Android 17 解析器为准
+#### `am dumpheap` 的参数
 
 `ActivityManagerShellCommand.runDumpHeap()` 在 `android-17.0.0_r1` 中识别这些参数：
 
@@ -755,7 +755,7 @@ ART（Android Runtime，Android 运行时）负责执行应用的 Java/Kotlin �
 | `-n` | 调用 `Debug.dumpNativeHeap()`，输出 native heap dump；native heap 指由 C/C++ 分配器管理的内存，这份产物不是 HPROF |
 | `-m` | 调用 `Debug.dumpNativeMallocInfo()`，输出 `malloc` 分配信息，不是 HPROF；Android 17 的帮助文本没有列出这个解析器仍接受的选项 |
 
-没有 `-g` 时，系统不会主动在转储前运行 GC。输出文件参数在解析器中可省略；省略后使用 `/data/local/tmp/heapdump-<时间>.prof`。自动化脚本宜显式给出设备侧路径，避免后续猜测文件名。
+没有 `-g` 时，系统不会主动在转储前运行 GC。输出文件参数在解析器中可省略，省略后使用 `/data/local/tmp/heapdump-<时间>.prof`；自动化脚本宜显式给出设备侧路径，省得之后猜文件名。
 
 下面的命令用于抓取一次已回收明显垃圾、且包含 PNG 编码 Bitmap 内容的完整 HPROF：
 
@@ -779,15 +779,15 @@ Android 17 的托管堆路径可以按下面的顺序阅读：
 | 应用进程 | `ActivityThread.handleDumpHeap()` | 按选项运行 GC，并选择 managed、native heap 或 malloc-info 路径 |
 | ART | `Debug.dumpHprofData()` → `art::hprof::DumpHeap()` | 停止托管线程，遍历堆并写 HPROF |
 
-`system_server` 是承载 Android 核心系统服务的进程；Binder 是 Android 的跨进程调用机制。这个拆分能解释两个常见现象：Shell 命令会等待目标进程异步完成；遍历堆和写文件的工作发生在目标应用进程，不在 `system_server`。
+`system_server` 是承载 Android 核心系统服务的进程；Binder 是 Android 的跨进程调用机制。按这张表读，两个常见现象就有了出处：Shell 命令会等待目标进程异步完成；遍历堆和写文件的工作发生在目标应用进程，`system_server` 不经手这部分。
 
 #### 权限检查和 Freezer 的含义
 
-`ActivityManagerService.dumpHeap()` 要求调用方持有 `android.permission.SET_ACTIVITY_WATCHER`。Android 17 中该权限的保护级别是 `signature`，通常只授予使用平台签名的系统组件。AMS 还会调用 `enforceDebuggable()` 检查目标进程，因此不能把 `am dumpheap` 当成面向任意发布应用的通用接口。
+`ActivityManagerService.dumpHeap()` 要求调用方持有 `android.permission.SET_ACTIVITY_WATCHER`。该权限的保护级别是 `signature`，通常只授予使用平台签名的系统组件。AMS 还会调用 `enforceDebuggable()` 检查目标进程，所以别把 `am dumpheap` 当成面向任意发布应用的通用接口。
 
-应用在自己的进程内调用公开的 `Debug.dumpHprofData()` 时，不经过 AMS 这组跨进程检查。它仍会承受 ART 转储的停顿、I/O 和敏感数据风险。
+应用在自己的进程内调用公开的 `Debug.dumpHprofData()` 时，不经过 AMS 这组跨进程检查；ART 转储的停顿、I/O 和敏感数据风险照样都在。
 
-Cached App Freezer（缓存应用冻结器）会暂停暂时不用的后台缓存进程，以减少其 CPU 活动。AMS 在请求前调用 `mCachedAppOptimizer.enableFreezer(false)`，完成回调中再调用 `enableFreezer(true)`。这段代码临时关闭的是系统范围的 Freezer，目的是防止目标进程被冻结后无法处理 Binder 请求。
+Cached App Freezer（缓存应用冻结器）会暂停暂时不用的后台缓存进程，以减少其 CPU 活动。AMS 在请求前调用 `mCachedAppOptimizer.enableFreezer(false)`，完成回调中再调用 `enableFreezer(true)`。这段代码临时关闭的是系统范围的 Freezer，目的是防止目标进程已被冻结、接不了 Binder 请求。
 
 目标进程的托管线程仍由更下层的 ART 在转储时暂停，这与 Freezer 的开关是两件事。
 
@@ -801,7 +801,7 @@ System.runFinalization();
 System.gc();
 ```
 
-该序列发生在调用 `Debug.dumpHprofData()` 之前。它能减少等待回收对象对快照的干扰，也会增加采集前的停顿；它不能证明业务层已经不存在泄漏。
+该序列发生在调用 `Debug.dumpHprofData()` 之前。它能减少等待回收对象对快照的干扰，也会增加采集前的停顿；业务层已经不存在泄漏这件事，它证明不了。
 
 随后，`handleDumpHeap()` 根据模式选择一个入口：
 
@@ -809,7 +809,7 @@ System.gc();
 - native heap：`Debug.dumpNativeHeap(fd)`；
 - malloc info：`Debug.dumpNativeMallocInfo(fd)`。
 
-因此，`-n` 和 `-m` 的结果不能交给 HPROF 分析器。
+因此，`-n` 和 `-m` 的产物要另找工具分析，HPROF 分析器不认这两类文件。
 
 ### ART 如何生成 HPROF
 
@@ -822,13 +822,13 @@ HPROF record 是带类型标记和长度的记录单元。`Hprof::Dump()` 在这
 1. 用计数输出器运行 `ProcessHeap(false)`，计算整体大小和最大 record 大小；
 2. 清空访问状态，再由 `DumpToFile()` 或 DDMS（Dalvik Debug Monitor Service，Android 调试监控协议）路径写正式数据。
 
-暂停覆盖计数遍历、正式遍历和文件输出，代价不止一次“扫对象”。耗时受对象数、字段与数组数据量、存储速度、Bitmap 内容和设备状态影响。没有一组固定的“每 100 MB 几秒”数字能跨设备成立，采集方案应在目标机型和目标堆规模上测量。
+暂停覆盖计数遍历、正式遍历和文件输出，代价不止一次“扫对象”。耗时受对象数、字段与数组数据量、存储速度、Bitmap 内容和设备状态影响；“每 100 MB 几秒”这类固定数字跨不了设备，采集方案应在目标机型和目标堆规模上实测。
 
 #### Android 17 HPROF 的结构
 
 ART 写出的头部 magic（用于识别文件格式的固定字节序列）是 `JAVA PROFILE 1.0.3`，对象 ID 宽度为 4 字节。文件包含字符串与类定义、GC Root、类转储、实例转储、对象数组和基本类型数组等 record。
 
-可以用下面的结构理解文件，但解析器必须按 record 的长度和 tag 读取，不能依赖示意图推算偏移：
+可以用下面的结构理解文件；写解析器时仍要按 record 的长度和 tag 读取，示意图只用来建立整体印象：
 
 ```text
 Header
@@ -843,11 +843,11 @@ Header
 └── HEAP_DUMP_END
 ```
 
-ART 的实现会在生成堆数据时收集字符串和类信息，再按分析工具需要的顺序组织输出。自行编写裁剪器时，还要处理 Android 扩展 tag（记录类型编号）、分段边界、对象 ID 和交叉引用。
+ART 的实现会在生成堆数据时收集字符串和类信息，再按分析工具需要的顺序组织输出。自行编写裁剪器时，还要处理 Android 扩展 tag（记录类型编号）、分段起止、对象 ID 和交叉引用。
 
 #### app、zygote 与 image 只是空间归类
 
-Android 的 `HPROF_HEAP_DUMP_INFO` record 标识对象所在的堆空间。app image 是 ART 为应用预先生成的对象镜像；Zygote space 保存从 Zygote（应用进程孵化器）继承的对象；boot image space 保存核心类库预加载的镜像对象。
+Android 的 `HPROF_HEAP_DUMP_INFO` record 标识对象所在的堆空间。app image 是 ART 为应用预先生成的对象镜像；Zygote space 保存从 Zygote 继承的对象；boot image space 保存核心类库预加载的镜像对象。
 
 | 标识 | Android 17 归类规则 |
 | --- | --- |
@@ -855,33 +855,33 @@ Android 的 `HPROF_HEAP_DUMP_INFO` record 标识对象所在的堆空间。app i
 | `HPROF_HEAP_ZYGOTE` | Zygote space 与 Zygote large-object space 中的对象 |
 | `HPROF_HEAP_IMAGE` | boot image space 中的对象 |
 
-zygote 或 boot image 对象通常不是应用泄漏的分配主体，但它们可能出现在 GC Root 路径中，相关类和字符串 record 也可能被其他对象引用。“很少是泄漏主体”不表示“整段可安全删除”。KOOM 一类工具会用配套的裁剪器和补全器维护文件引用关系；直接删除二进制区段，很容易得到无法解析或引用断裂的文件。
+zygote 或 boot image 对象通常不是应用泄漏的分配主体，但它们可能出现在 GC Root 路径中，相关类和字符串 record 也可能被其他对象引用。“很少是泄漏主体”和“整段可安全删除”是两回事：KOOM 一类工具会用配套的裁剪器和补全器维护文件引用关系，直接删除二进制区段，很容易得到解析不了、引用断裂的文件。
 
 #### GC Root 和对象遍历
 
 `Hprof::VisitRoot()` 把 ART 的 root 类型映射为标准或 Android 扩展 HPROF tag，例如 JNI global/local、Java frame、native stack、sticky class、thread object、interned string、debugger、VM internal 和 JNI monitor。它们是分析器保留的 root 分类名，用来标明引用来自原生句柄、线程栈、类表或虚拟机内部结构。
 
-JNI（Java Native Interface）让 Java/Kotlin 代码与 C/C++ 代码互相调用；JNI global/local 是原生代码持有的全局或局部 Java 引用。
+JNI 让 Java/Kotlin 代码与 C/C++ 代码互相调用；JNI global/local 是原生代码持有的全局或局部 Java 引用。
 
-`ProcessBody()` 访问运行时 root、image root，再通过 `Heap::VisitObjectsPaused()` 访问对象。对象按类型写成 class、instance、object array 或 primitive array record。泄漏分析器会据此计算从 GC Root 到对象的路径、可达性和 dominator tree（支配树）。若从任一 GC Root 到对象 B 的路径都经过对象 A，就说 A 支配 B；单个字段引用只表示图中的一条边，无法推出这种支配关系。
+`ProcessBody()` 访问运行时 root、image root，再通过 `Heap::VisitObjectsPaused()` 访问对象。对象按类型写成 class、instance、object array 或 primitive array record。泄漏分析器会据此计算从 GC Root 到对象的路径、可达性和 dominator tree。若从任一 GC Root 到对象 B 的路径都经过对象 A，就说 A 支配 B；单个字段引用只表示图中的一条边，推不出这种支配关系。
 
 ### Perfetto `android.java_hprof`：直接采集引用图
 
 #### 这条链路从 Android 11 已经存在
 
-`android.java_hprof` 支持 Android 11 及以上版本。Android 17 的管线由 heapprofd（Perfetto 的堆分析守护进程）中的 `JavaHprofProducer` 和目标进程中的 ART Perfetto 插件协作完成：
+`android.java_hprof` 支持 Android 11 及以上版本。管线由 heapprofd（Perfetto 的堆分析守护进程）中的 `JavaHprofProducer` 和目标进程中的 ART Perfetto 插件协作完成：
 
 1. traced（Perfetto 的跟踪服务）把 `JavaHprofConfig` 交给 `JavaHprofProducer`；
 2. producer 根据 `pid` 或 `process_cmdline` 找到目标，读取有效 UID（Linux 用来标识用户身份的数字）并调用 `CanProfile()`；
-3. producer 用 `sigqueue()` 发送 `__SIGRTMIN + 6` 这个 Linux 实时信号，信号值携带 tracing session ID（本次跟踪会话的编号）；
-4. ART 插件的信号处理器只向 pipe（进程内管道）写通知，专用 listener thread（监听线程）收到通知后再调用 `DumpPerfetto()`；
+3. producer 用 `sigqueue()` 发送 `__SIGRTMIN + 6` 这个 Linux 实时信号，信号值携带标识本次跟踪会话的 tracing session ID；
+4. ART 插件的信号处理器只向 pipe 写一个通知，专用的 listener thread 收到后再调用 `DumpPerfetto()`；
 5. ART 进入与 GC 互斥的临界区，暂停托管线程、锁定运行时结构并执行第一次 fork；父进程随后尽快恢复托管线程；
-6. 第一次 fork 出来的子进程调用 `daemon()`，再次派生并脱离原会话；最终由孙进程遍历 fork 时刻的堆副本，通过 trace writer（向 Perfetto trace 缓冲区写数据的接口）输出 `HeapGraph` 数据包；
+6. 第一次 fork 出来的子进程调用 `daemon()`，再次派生并脱离原会话；最终由孙进程遍历 fork 时刻的堆副本，用 trace writer 把 `HeapGraph` 数据包写进 Perfetto trace 缓冲区；
 7. Trace Processor（Perfetto 的导入与 SQL 分析引擎）读取 protobuf 数据包，生成 `heap_graph_*` SQL 表。
 
 Java producer 只负责找进程、做授权和发信号。它不会接收 HPROF 文件描述符，也没有 `ArtHprofParser` 把临时 HPROF 转成 protobuf 的步骤。
 
-fork 把父进程的暂停范围缩到准备快照和创建子进程的阶段，图遍历由派生进程继续完成。它采用 Copy-on-Write（写时复制）：父子进程起初共享物理内存页，某一方修改页面时才复制该页。因此采集仍有 fork、页表、页面复制、子进程内存和序列化开销，不能描述成零成本。
+fork 把父进程的暂停范围缩到准备快照和创建子进程的阶段，图遍历由派生进程继续完成。父子进程起初共享物理内存页，某一方修改页面时才复制该页（Copy-on-Write）。因此采集仍有 fork、页表、页面复制、子进程内存和序列化开销，谈不上零成本。
 
 #### TraceConfig 示例
 
@@ -912,9 +912,9 @@ data_sources {
 duration_ms: 180000
 ```
 
-`StartDataSource()` 总会立即调用一次 `SendSignal()`。`dump_interval_ms` 非零时，`dump_phase_ms` 是第一次追加采集前的延迟；它不延迟开头那份快照。后续每隔 `dump_interval_ms` 再采一份。
+`StartDataSource()` 总会立即调用一次 `SendSignal()`。`dump_interval_ms` 非零时，`dump_phase_ms` 是第一次追加采集前的延迟，只延迟追加采集，开头那份快照不受影响；后续每隔 `dump_interval_ms` 再采一份。
 
-#### 配置字段的边界
+#### 配置字段的含义
 
 | 字段 | Android 17 语义 |
 | --- | --- |
@@ -930,23 +930,23 @@ Android 12 及更早版本默认只在数据源启动时扫描 PID；Android 13 
 
 #### `CanProfile()` 如何决定能否采集
 
-Android 17 的 `producer_support.cc` 按 build type（系统构建类型）、UID、trace session initiator（跟踪会话发起者）和 `packages.list` 联合判断。`packages.list` 是系统维护的已安装包及其 UID、调试和 profileable 属性清单：
+`producer_support.cc` 按 build type、UID、trace session initiator 和 `packages.list` 联合判断。`packages.list` 是系统维护的已安装包及其 UID、调试和 profileable 属性清单：
 
 - 非 `user` 构建，也就是 `userdebug` 或 `eng` 等开发构建，直接允许；
 - `user` 构建上的普通应用会映射到 `packages.list`；
 - 普通 Shell 发起的 session 要求目标为 `profileable_from_shell` 或 `debuggable`；
 - trusted-system session 要求目标为 `profileable` 或 `debuggable`；
-- 平台 UID（系统服务使用的身份）只允许 trusted-system initiator；
-- isolated UID（隔离进程使用、无法直接映射回应用包的临时身份）采用更保守的规则；
+- 平台 UID 只允许 trusted-system initiator；
+- isolated UID（隔离进程使用、映射不回应用包的临时身份）采用更保守的规则；
 - 配置了 `target_installed_by` 时，installer 还要命中允许列表。
 
 `profileable_from_shell` 表示应用允许 Shell 发起性能分析，`profileable` 表示允许受信任的系统会话分析，`debuggable` 表示应用允许调试。这组检查与 `am dumpheap` 的 `SET_ACTIVITY_WATCHER`、`enforceDebuggable()` 不是同一套权限模型。排查“抓不到图”时，应同时确认 trace 发起者、应用 Manifest 中的 profileable/debuggable 属性、目标进程 UID 和 installer 条件。
 
 ### Perfetto 引用图和完整 HPROF 差在哪
 
-Perfetto 文档把 `android.java_hprof` 的结果称为 ART Heap Dump。它记录类型、对象、大小、root 和对象间引用，不保存实例的基本类型字段值、字符串内容、基本类型数组字节或 Bitmap 像素。完整 HPROF 可以携带这些内容，所以文件更大，也更容易包含隐私数据。
+Perfetto 文档把 `android.java_hprof` 的结果称为 ART Heap Dump。它记录类型、对象、大小、root 和对象间引用；实例的基本类型字段值、字符串内容、基本类型数组字节和 Bitmap 像素，要靠完整 HPROF 才带得动——所以完整 HPROF 文件更大，也更容易包含隐私数据。
 
-Android 17 的 Trace Processor 也能导入完整 ART HPROF。导入后会填充 HPROF 专用的数据表；这是分析器支持另一种输入格式，实时 `android.java_hprof` 采集仍只生成 `HeapGraph` 数据包。
+Trace Processor 也能导入完整 ART HPROF，导入后填充 HPROF 专用的数据表。这是分析器多支持的一种输入格式；实时 `android.java_hprof` 采集产出的仍是 `HeapGraph` 数据包。
 
 | 能力 | 实时 `android.java_hprof` | 导入完整 ART HPROF |
 | --- | --- | --- |
@@ -961,7 +961,7 @@ Android 17 的 Trace Processor 也能导入完整 ART HPROF。导入后会填充
 
 #### 表结构
 
-Android 17 的 `profiler_tables.py` 定义了这些公开视图的底层表：
+这些公开视图的底层表由 `profiler_tables.py` 定义：
 
 | 表 | 关键列 | 说明 |
 | --- | --- | --- |
@@ -973,13 +973,13 @@ Android 17 的 `profiler_tables.py` 定义了这些公开视图的底层表：
 
 `deobfuscated_name` 是应用反混淆映射后恢复的类名。`classloader_id` 指向加载该类的 `ClassLoader` 对象；同名类若由不同类加载器载入，仍可能是不同类型。`reference_set_id` 和 `field_set_id` 是跨表关联键，用来把对象与其引用或基本类型字段值连起来。
 
-生成表都带隐式 `id` 主键，所以 `heap_graph_object.id` 可以与 `owner_id`、`owned_id` 关联。`profiler_tables.py` 的 `columns` 列表没有手写 `id`，不等于 SQL 表没有 `id`。
+生成表都带隐式 `id` 主键，所以 `heap_graph_object.id` 可以与 `owner_id`、`owned_id` 关联。`profiler_tables.py` 的 `columns` 列表没有手写 `id`，SQL 表里的 `id` 一直都在。
 
-Android 17 没有一张名为 `heap_graph` 的采样元信息表。同一 `(upid, graph_sample_ts)` 的全部 `heap_graph_object` 行构成一次 dump，其中 `graph_sample_ts` 是采样时间戳。trace 中包含多次采集时，查询要同时限定进程和时间戳。
+没有一张名为 `heap_graph` 的采样元信息表。同一 `(upid, graph_sample_ts)` 的全部 `heap_graph_object` 行构成一次 dump，其中 `graph_sample_ts` 是采样时间戳。trace 中包含多次采集时，查询要同时限定进程和时间戳。
 
 #### 统计最新快照中各类的 shallow size
 
-shallow size（浅大小）只计算对象自身占用的 Java 堆空间。下面的查询为每个进程选取时间戳最新的一份图，再按类统计对象数与 `self_size`：
+shallow size 只计算对象自身占用的 Java 堆空间。下面的查询为每个进程选取时间戳最新的一份图，再按类统计对象数与 `self_size`：
 
 ```sql
 WITH latest_dump AS (
@@ -1004,7 +1004,7 @@ GROUP BY o.upid, class_name
 ORDER BY shallow_size_bytes DESC;
 ```
 
-这个结果回答“类实例自身占了多少 Java 堆”。retained size（保留大小）还包括仅能通过该对象到达的被支配对象；查询没有计算这部分。
+这个结果回答“类实例自身占了多少 Java 堆”。retained size 还包括仅能通过该对象到达的被支配对象；查询没有计算这部分。
 
 #### 用标准库计算 class-level dominated size
 
@@ -1027,7 +1027,7 @@ ORDER BY dominated_size_bytes DESC
 LIMIT 50;
 ```
 
-`dominated_size_bytes` 来自 dominator tree，并按类聚合。入边指其他对象指向当前对象的引用；用“只有一个入边”推算 retained size，会在共享引用、root、引用环和不可达对象上得出错误结果。
+`dominated_size_bytes` 来自 dominator tree，并按类聚合。入边指其他对象指向当前对象的引用；用“只有一个入边”推算 retained size，碰到共享引用、root、引用环和不可达对象就会得出错误结果。
 
 #### 查看按 root 路径聚合的类树
 
@@ -1052,7 +1052,7 @@ ORDER BY cumulative_size DESC
 LIMIT 100;
 ```
 
-表中的 `parent_id` 组成按最短 root 路径聚合后的树，`cumulative_size` 是节点及其后代的总和。flamegraph（火焰图）会用层级块展示这些路径及其大小；这里的类路径树与单对象 dominator tree 含义不同，阅读时不要混用。
+表中的 `parent_id` 组成按最短 root 路径聚合后的树，`cumulative_size` 是节点及其后代的总和。flamegraph 会用层级块展示这些路径及其大小；这里的类路径树与单对象 dominator tree 含义不同，阅读时不要混用。
 
 ### 工具选择与采集流程
 
@@ -1074,23 +1074,23 @@ LIMIT 100;
 使用 `android.java_hprof`，并把采集点与这些事件放在同一条 Perfetto trace 中：
 
 - `art`/GC 事件；
-- `process_stats`、内存计数器与 LMK（Low Memory Killer，系统在内存压力下终止进程的机制）相关事件；
+- `process_stats`、内存计数器与 LMK 相关事件；
 - 主线程调度、Binder 和帧时间；
 - native heap 问题需要另行启用的 `android.heapprofd`。
 
-Java heap graph 和 native allocation profile（原生内存分配采样）是两个数据源。Java 对象的 `native_size` 只反映 `NativeAllocationRegistry` 登记给该对象的近似原生内存值，不能替代 native heap 分配采样。
+Java heap graph 和 native allocation profile 是两个数据源。Java 对象的 `native_size` 只反映 `NativeAllocationRegistry` 登记给该对象的近似原生内存值，替代不了 native heap 分配采样。
 
 #### KOOM fork-dump 的使用边界
 
 KOOM 2.2.1 的 `ForkJvmHeapDumper` 源码执行 `suspendAndFork()`：子进程调用 `Debug.dumpHprofData(path)`，父进程走 `resumeAndWait(pid)`。`ForkStripHeapDumper` 在这条路径上安装 HPROF 裁剪逻辑，仓库同时提供用于处理裁剪产物的 `koom-fill-crop.jar`。
 
-这些代码依赖 ART 内部实现和版本适配。入口会调用 `sdkVersionMatch()` 读取 KOOM 公共配置中的版本检查结果，不支持时拒绝转储。源码中存在 fork 设计，不能据此认定 Android 17 已适配，也无法推导固定的毫秒级停顿。
+这些代码依赖 ART 内部实现和版本适配。入口会调用 `sdkVersionMatch()` 读取 KOOM 公共配置中的版本检查结果，不支持时拒绝转储。源码中存在 fork 设计，但据此认定 KOOM 已适配 Android 17，或者推出一个固定的毫秒级停顿，都站不住。
 
 接入 Android 17 时，要核对 KOOM 版本、ART 私有符号与实现、目标厂商 ROM（厂商定制的系统镜像）、子进程资源占用、文件可解析性和失败回退。
 
-Android 17 的 Perfetto ART Heap Graph 自身也使用 fork。只需要引用图和时间轴时，可先评估系统数据源；需要完整 HPROF、第三方告警策略或定制裁剪时，再评估 KOOM 一类方案。
+Perfetto ART Heap Graph 自身也使用 fork。只需要引用图和时间轴时，可先评估系统数据源；需要完整 HPROF、第三方告警策略或定制裁剪时，再评估 KOOM 一类方案。
 
-### Android 17 源码核对清单
+### 源码核对清单
 
 阅读或排障时，可以从这些断点逐层核对：
 

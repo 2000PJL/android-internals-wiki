@@ -123,7 +123,9 @@ last_consolidated_at: '2026-08-24'
 
 `RenderEffect` 让 HWUI 在 View 或 RenderNode 已经画完后，再由 GPU 处理这些像素，例如模糊、颜色滤镜、混合和偏移。Android 13（API 33）又加入了基于 Android Graphics Shading Language（AGSL，Android 图形着色语言）的自定义效果。遇到需要先画入离屏缓冲区、再读取纹理的效果，RenderThread 的提交工作、GPU 的逐像素计算、纹理读写带宽和图形内存都会增加。
 
-应用侧要回答三个问题：哪些效果值得实时做，什么时候降级，以及怎样用性能 trace（按时间记录系统事件的轨迹）和 GPU 工具验证。平台源码锚点是 Android 17 / API 37 / `android-17.0.0_r1`。标准 View 或 Compose 内容仍沿 UI 线程 → RenderThread → BLAST / BufferQueue（把图形缓冲区交给系统）→ SurfaceFlinger（系统合成服务）→ HWC / RenderEngine（硬件合成器或系统 GPU 合成器）→ present（送往显示设备）前进。`RenderEffect` 改变的是 HWUI 的绘制工作，不会绕开这条显示路径。RenderNode 与 Hardware Layer（硬件图层）见 2.4，完整渲染管线见 13.1，GPU 瓶颈分类见 2.7。
+应用侧要回答三个问题：哪些效果值得实时做，什么时候降级，以及怎样用性能 trace 和 GPU 工具验证。标准 View 或 Compose 内容都沿同一条显示路径前进：UI 线程 → RenderThread → BLAST / BufferQueue → SurfaceFlinger → HWC / RenderEngine → present。`RenderEffect` 改变的是 HWUI 的绘制工作，显示路径本身原样保留；我们排查时仍沿这条路径逐段看。RenderNode 与 Hardware Layer 见 2.4，完整渲染管线见 13.1，GPU 瓶颈分类见 2.7。
+
+> 源码基线：Android 17 / API 37 / AOSP `android-17.0.0_r1`。
 
 RenderEffect 和 RuntimeShader 在渲染管线里新增图像处理与 AGSL 计算，Compose Canvas 提供自定义绘制入口。前者把成本压在离屏缓冲区和逐像素处理上，后者把成本压在绘制状态、对象复用和重绘范围上；效果复杂度、shader 编译和实际绘制范围共同决定两部分的帧成本。
 
@@ -131,7 +133,7 @@ RenderEffect 和 RuntimeShader 在渲染管线里新增图像处理与 AGSL 计�
 
 ### RenderEffect 的适用场景
 
-`RenderEffect` 从 Android 12（API 31）开始提供。AOSP 把它定义为一个中间渲染步骤：效果可以配置到 `RenderNode`，也可以通过 `View.setRenderEffect()` 配置到 View 背后的 RenderNode。`View.setRenderEffect()` 调用 `mRenderNode.setRenderEffect()`；属性确有变化时，View 会请求重新绘制。以模糊为例，`RenderNode.setRenderEffect()` 的注释说明内容会先绘制到独立图层，再对该图层做模糊。这里的独立图层就是离屏图层：像素先写入一块暂不直接显示的缓冲区，处理完成后再合成到目标画面。
+`RenderEffect` 从 Android 12（API 31）开始提供。要用好它，我们先看 AOSP 的定义：一个中间渲染步骤。效果可以配置到 `RenderNode`，也可以通过 `View.setRenderEffect()` 配置到 View 背后的 RenderNode；`View.setRenderEffect()` 调用 `mRenderNode.setRenderEffect()`，属性确有变化时 View 会请求重新绘制。以模糊为例，`RenderNode.setRenderEffect()` 的注释说明内容会先绘制到独立图层，再对该图层做模糊。这里的独立图层就是离屏图层：像素先写入一块暂不直接显示的缓冲区，处理完成后再合成到目标画面。
 
 适合用 `RenderEffect` 的场景有三个共同点：效果区域可控、内容变化频率不高、视觉收益足以覆盖 GPU 成本。
 
@@ -146,7 +148,7 @@ RenderEffect 和 RuntimeShader 在渲染管线里新增图像处理与 AGSL 计�
 
 需要处理 View 的当前画面时，`RenderEffect` 可以直接留在 HWUI 管线中，不必先把内容读回 Bitmap 再由 CPU 逐像素修改。每次内容变化仍可能让 GPU 重新处理这块区域。静态背景、固定遮罩、品牌氛围图优先预生成或缓存；手势跟随、转场、局部反馈这类短时动态效果再考虑 `RenderEffect`。
 
-`RenderEffect` 模糊与 Window blur（窗口模糊）是两套接口。前者只处理同一 RenderNode 的输出；后者由系统模糊窗口后方的画面。Window blur 可能因 GPU 能力、省电模式、视频直通（multimedia tunneling，编解码器与显示路径直接协作的播放模式）或系统配置而动态关闭。应用要监听 `WindowManager.addCrossWindowBlurEnabledListener()`，并准备不透明度更高的无模糊背景。不要通过反射调用 `setBackdropRenderEffect()` 一类隐藏接口。
+`RenderEffect` 模糊与 Window blur 是两套接口：前者只处理同一 RenderNode 的输出，后者由系统模糊窗口后方的画面。Window blur 可能因 GPU 能力、省电模式、视频直通（multimedia tunneling，编解码器与显示路径直接协作的播放模式）或系统配置而动态关闭，所以应用要监听 `WindowManager.addCrossWindowBlurEnabledListener()`，并准备不透明度更高的无模糊背景。不要通过反射调用 `setBackdropRenderEffect()` 一类隐藏接口。
 
 版本封装的要点是：API 31 之前直接返回，不调用 `View.setRenderEffect()`，因为 Android 11 及以下没有这个方法。
 
@@ -172,22 +174,22 @@ fun View.applyBlurEffectIfSupported(
 }
 ```
 
-这段代码的边界是：API 31 以下直接返回；API 31+ 才允许清空或设置效果。动画性能里的 RenderEffect 降级封装详见 22.7 节。
+这段代码的行为很直接：API 31 以下直接返回，API 31+ 才允许清空或设置效果。动画性能里的 RenderEffect 降级封装详见 22.7 节。
 
 ### HWUI 管线中的成本来源
 
-`RenderEffect` 的成本不只来自 API 调用本身。对模糊这类效果，AOSP 注释已经给出运行路径：先把目标 RenderNode 的内容绘制到独立图层，再处理该图层。这会增加中间纹理以及对应的读写开销。
+`RenderEffect` 的成本不只来自 API 调用本身。我们拿模糊这类效果，看 AOSP 注释给出的运行路径：先把目标 RenderNode 的内容绘制到独立图层，再处理该图层——中间纹理和对应的读写开销就来自这里。
 
 一块 1080 × 2400、RGBA_8888 格式的全屏中间纹理，未压缩的逻辑像素量是 9.9 MiB，按十进制计量约 10.4 MB。实际占用还受行跨度（stride，每行实际分配的字节数）、内存对齐、分块渲染缓冲区（tile buffer）、驱动复用池、压缩和实际格式影响，这个数字只表示量级，不能当作进程图形内存的下限。
 
-分析时也不要只看 Java 堆；`dumpsys meminfo` 或 trace 若提供 Graphics、GL/EGL mtrack 与 GPU memory（GPU 内存）轨道，应分别核对。mtrack 是内核或驱动上报的内存记账分类，各设备提供的分类不完全相同。
+分析时也不要只看 Java 堆；`dumpsys meminfo` 或 trace 若提供 Graphics、GL/EGL mtrack 与 GPU memory 轨道，应分别核对。mtrack 是内核或驱动上报的内存记账分类，各设备提供的分类不完全相同。
 
 成本主要有四类：
 
 - **离屏层分配**：效果区域越大，中间纹理越大。全屏模糊、沉浸式背景模糊、多个浮层叠加，都会增加 GPU 内存和带宽压力。
 - **额外绘制与采样**：内容先画到中间层，再作为纹理读取并写回目标帧。模糊半径越大，单个输出像素周围要读取的输入像素范围越大。
 - **失效与重绘**：`setRenderEffect()` 变更会触发 View 属性失效；内容本身频繁 `invalidate()` 时，效果输入也会跟着更新。动画中同时改变内容和效果参数，最容易把成本放进每一帧。
-- **链式效果叠加**：`createChainEffect(outer, inner)` 表示 `outer(inner(source))`。每个子效果都会增加处理工作，但链长不等于临时纹理数量；是否需要独立的中间纹理由 HWUI / Skia 的具体实现决定。是否变慢、慢在哪一层，要靠逐项开关和 trace 判断。
+- **链式效果叠加**：`createChainEffect(outer, inner)` 表示 `outer(inner(source))`。每个子效果都会增加处理工作；至于会不会引入独立的中间纹理，由 HWUI / Skia 的具体实现决定。是否变慢、慢在哪一层，要靠逐项开关和 trace 判断。
 
 这些代价和 2.4 节的 Hardware Layer 很像，但用途不同。Hardware Layer 把相对稳定的绘制结果缓存为 GPU 图层，供后续帧复用；`RenderEffect` 处理已经画好的像素。两者都可能使用离屏缓冲区，收益取决于作用区域、复用次数和内容变化频率。
 
@@ -266,16 +268,16 @@ class HighlightEffect {
 
 ### Perfetto 与 GPU 工具观测
 
-`RenderEffect` 导致的卡顿常表现为 UI Thread 用时不多，RenderThread 或 GPU 用时却增加。FrameTimeline 的 expected timeline 表示系统给这一帧安排的目标时间，actual timeline 记录实际工作；actual slice（实际时间片）越过预期截止时间，说明该帧没有按计划完成。标准 App Window 的 App actual slice 可以覆盖 GPU 工作和缓冲区提交，但 `queueBuffer()` 返回或 App slice 结束，只表示应用已提交缓冲区。SurfaceFlinger 是否 latch（接收该缓冲区参与合成）、显示设备是否 present（显示该帧），还要看同一帧的 SurfaceFrame、DisplayFrame 和卡顿类型。
+`RenderEffect` 导致的卡顿常表现为 UI Thread 用时不多，RenderThread 或 GPU 用时却增加。我们沿 FrameTimeline 把一帧拆开看：expected timeline 是系统给这一帧安排的目标时间，actual timeline 记录实际工作，actual slice 越过预期截止时间，就说明该帧没有按计划完成。标准 App Window 的 App actual slice 可以覆盖 GPU 工作和缓冲区提交，但 `queueBuffer()` 返回或 App slice 结束，只表示应用已提交缓冲区；SurfaceFlinger 是否 latch（接收缓冲区参与合成）、显示设备是否 present（显示该帧），还要看同一帧的 SurfaceFrame、DisplayFrame 和卡顿类型。
 
 排查顺序如下：
 
 1. **FrameTimeline 与截止时间**：截止时间（deadline）是这一帧按计划完成的最晚时刻。API 31+ 可以用 Macrobenchmark `frameOverrunMs`，或比较 FrameMetrics 的 `TOTAL_DURATION` 与 `DEADLINE`，找出超期帧，再按时间戳核对 expected / actual timeline。平均帧耗时会掩盖偶发慢帧，不适合作为唯一指标。
 2. **UI Thread 与 RenderThread**：UI Thread 用时不多而 RenderThread `DrawFrame` 耗时增加，原因可能是绘制、纹理上传、GPU 提交或等待 GPU；UI Thread 自身耗时很长，则检查布局、绘制命令记录和主线程任务。
-3. **GPU 轨道与计数器**：先枚举设备的 Perfetto producer（负责写入 trace 数据的组件）实际提供的 counter name/id。若有 `gpu_busy` 或类似利用率计数器，再放进对照。Android 16 CDD 7.1.4.6 规定：设备声明支持 GPU 性能分析后，输出必须符合 Perfetto GPU counters / RenderStages 的数据格式；CDD 没有规定一个统一名为 `gpu_busy` 的计数器，各设备的采样口径和精度也可能不同。计数器不可用或不稳定时，改用 AGI 或厂商工具查看片元着色、纹理采样和内存带宽。
+3. **GPU 轨道与计数器**：先枚举设备的 Perfetto producer（写入 trace 数据的组件）实际提供的 counter name/id。若有 `gpu_busy` 或类似利用率计数器，再放进对照。Android 16 CDD 7.1.4.6 规定：设备声明支持 GPU 性能分析后，输出必须符合 Perfetto GPU counters / RenderStages 的数据格式；CDD 没有规定一个统一名为 `gpu_busy` 的计数器，各设备的采样口径和精度也可能不同。计数器不可用或不稳定时，改用 AGI 或厂商工具查看片元着色、纹理采样和内存带宽。
 4. **开关对照**：在同一设备、页面和操作脚本下，分别测量“无效果 / 小半径 / 大半径 / 静态预渲染”，排除网络、数据加载和动画时序的影响。
 
-AGI 适合在开发和预发布阶段分析 GPU。Frame Profiler 可以直接捕获 Vulkan；捕获 OpenGL ES 时，AGI 要求应用走 OpenGL on ANGLE，由 ANGLE 把 GLES 调用转换到 Vulkan。这条捕获路径改变了图形后端，结果不能当作原厂 GLES 驱动下的无扰动测量。System Profiler 能显示哪些计数器和 GPU 时间片，也取决于设备。Android 官方现已把仍处于公测阶段的 Android Performance Analyzer（APA）列为系统性能分析的新推荐工具；切换工具时应保留同一份 Perfetto trace 配置和操作脚本，方便比较前后结果。
+AGI 适合在开发和预发布阶段分析 GPU。Frame Profiler 可以直接捕获 Vulkan；捕获 OpenGL ES 时，AGI 要求应用走 OpenGL on ANGLE，由 ANGLE 把 GLES 调用转换到 Vulkan。这条捕获路径改变了图形后端，其结果也就不再是原厂 GLES 驱动下的无扰动测量。System Profiler 能显示哪些计数器和 GPU 时间片，也取决于设备。Android 官方现已把仍处于公测阶段的 Android Performance Analyzer（APA）列为系统性能分析的新推荐工具；切换工具时应保留同一份 Perfetto trace 配置和操作脚本，方便比较前后结果。
 
 ### 优化清单
 
@@ -287,16 +289,18 @@ AGI 适合在开发和预发布阶段分析 GPU。Frame Profiler 可以直接捕
 - **减少输入变化**：内容每帧变化时，优先分为两层：静态背景层做效果，动态内容层直接绘制。
 - **避免链式叠加**：模糊、颜色滤镜、RuntimeShader、透明度和裁剪同时使用时，每增加一种效果都要重新跑一轮 trace 对照。
 - **缓存静态结果**：大背景、固定蒙版、品牌氛围图优先用预渲染资源；图片压缩、格式选择和使用频率要分别考虑。
-- **建立降级开关**：Android 16 / API 36+ 设备若支持 `SystemHealthManager.getGpuHeadroom()`，可以把 GPU Headroom 作为质量调节信号之一。它估算 GPU 还能增加多少负载：有效值范围为 0—100，0 表示不能再分配更多 GPU 资源；`Float.NaN` 表示结果暂时不可用。它不是逐帧利用率。一次有效调用至少包含一次同步 Binder transaction，也就是等待另一个进程返回的同步 IPC，耗时可能超过 1 ms，因此不能在 UI Thread、RenderThread 或逐帧回调中查询。调用侧要处理 `UnsupportedOperationException`、`IllegalArgumentException`，并遵守 `getGpuHeadroomMinIntervalMillis()`；调用过密时 API 可能返回缓存值。旧版本或不支持该能力的设备，继续使用设备档位、温控、帧超期分布和远程配置的降级开关。
-- **写清版本边界**：`RenderEffect` 需要 API 31+，`RuntimeShader` / `createRuntimeShaderEffect()` 需要 API 33+。版本判断要包住所有调用点，包括清空效果。
+- **建立降级开关**：Android 16 / API 36+ 设备若支持 `SystemHealthManager.getGpuHeadroom()`，可以把 GPU Headroom 作为质量调节信号之一。它估算 GPU 还能增加多少负载：有效值范围为 0—100，0 表示不能再分配更多 GPU 资源；`Float.NaN` 表示结果暂时不可用。它衡量的是整体余量，逐帧利用率要看别的指标。一次有效调用至少包含一次同步 Binder transaction，也就是等待另一个进程返回的同步 IPC，耗时可能超过 1 ms，因此 UI Thread、RenderThread 和逐帧回调里都不要查询它。调用侧要处理 `UnsupportedOperationException`、`IllegalArgumentException`，并遵守 `getGpuHeadroomMinIntervalMillis()`；调用过密时 API 可能返回缓存值。旧版本或不支持该能力的设备，继续使用设备档位、温控、帧超期分布和远程配置的降级开关。
+- **写清版本要求**：`RenderEffect` 需要 API 31+，`RuntimeShader` / `createRuntimeShaderEffect()` 需要 API 33+。版本判断要包住所有调用点，包括清空效果。
 
 ### RuntimeColorFilter 与 RuntimeXfermode：区分节点效果和绘制命令
 
 `RenderEffect` 作用于 RenderNode 或图层的最终结果；API 36 的 `RuntimeColorFilter` 与 `RuntimeXfermode` 则装到 `Paint` 上，影响使用该 Paint 发出的具体绘制命令。`Paint.setColorFilter()` 安装前者，`Paint.setXfermode()` 安装后者。三者都能使用 AGSL，但作用位置不同：`RenderEffect` 处理整棵已绘制内容，`RuntimeColorFilter` 改写当前绘制命令产生的新颜色（source color），`RuntimeXfermode` 决定新颜色与目标中已有颜色（destination）怎样合成。
 
-`RuntimeColorFilter` 的 AGSL 入口接收一个 sRGB 输入色，输出也按 sRGB 解释；`RuntimeXfermode` 的入口签名是 `main(src, dst)`，同时接收 source 与 destination，输入和输出同样按 sRGB 解释。destination 是当前 Canvas 渲染目标里已经存在的像素，因此结果受绘制顺序、裁剪区（clip）和 `saveLayer()` 影响。需要把混合限制在组件边界（bounds）内时，可以用 `saveLayer()` 建立尽可能小的离屏作用域；没有这层隔离，该混合函数仍只处理本次命令覆盖的区域，但可能改写该区域内父 Canvas 已经画好的像素。
+`RuntimeColorFilter` 的 AGSL 入口接收一个 sRGB 输入色，输出也按 sRGB 解释；`RuntimeXfermode` 的入口签名是 `main(src, dst)`，同时接收 source 与 destination，输入和输出同样按 sRGB 解释。destination 是当前 Canvas 渲染目标里已经存在的像素，因此结果受绘制顺序、裁剪区（clip）和 `saveLayer()` 影响。需要把混合限制在组件 bounds 内时，可以用 `saveLayer()` 建立尽可能小的离屏作用域；没有这层隔离，该混合函数仍只处理本次命令覆盖的区域，但可能改写该区域内父 Canvas 已经画好的像素。
 
-透明边缘要单独做像素对照，避免把 straight alpha（RGB 尚未乘透明度）与 premultiplied alpha（RGB 已乘透明度）混用；`RuntimeShader` 的预乘约束可参考前面的高光示例。`RuntimeColorFilter` 和 `RuntimeXfermode` 的 sRGB 契约在广色域或 HDR 窗口里尤其需要截图验证，确认色域转换和精度满足设计要求。动态 uniform 可以复用同一个 `RuntimeColorFilter` 或 `RuntimeXfermode` 实例并更新数值；框架会在绘制前通过 `Paint.getNativeInstance()` 取得更新后的底层对象。uniform 的赋值方法不会替 View 请求重绘，动画仍要调用 `invalidate()` 或 `postInvalidateOnAnimation()`。只有 AGSL 程序结构、混合方式或作用范围改变时才重建对象，不要逐帧重新解析源码。
+透明边缘要单独做像素对照，避免把 straight alpha（RGB 尚未乘透明度）与 premultiplied alpha（RGB 已乘透明度）混用；`RuntimeShader` 的预乘约束可参考前面的高光示例。`RuntimeColorFilter` 和 `RuntimeXfermode` 的 sRGB 契约在广色域或 HDR 窗口里尤其需要截图验证，确认色域转换和精度满足设计要求。
+
+动态 uniform 可以复用同一个 `RuntimeColorFilter` 或 `RuntimeXfermode` 实例并更新数值；框架会在绘制前通过 `Paint.getNativeInstance()` 取得更新后的底层对象。uniform 的赋值方法不会替 View 请求重绘，动画仍要调用 `invalidate()` 或 `postInvalidateOnAnimation()`。只有 AGSL 程序结构、混合方式或作用范围改变时才重建对象，不要逐帧重新解析源码。
 
 测量时分成四组：普通 `SrcOver`、只加颜色滤镜、只加 `RuntimeXfermode`、完整的颜色滤镜 + `RuntimeXfermode` / 离屏图层。比较 UI 线程的绘制命令记录、RenderThread、GPU 用时、离屏目标和 FrameTimeline。
 
@@ -308,7 +312,7 @@ AGI 适合在开发和预发布阶段分析 GPU。Frame Profiler 可以直接捕
 
 `RenderEffect` 和 Hardware Layer 都可能让内容先进入离屏 GPU 纹理，但不要把它们混成同一个优化开关。Hardware Layer 的收益来自“内容不变、后续复用”；`RenderEffect` 的收益来自“视觉效果由 GPU 处理”。当一个 View 同时有 `LAYER_TYPE_HARDWARE`、透明度、裁剪和 `RenderEffect` 时，HWUI 的合成策略会更复杂，trace 里也更难把成本归因到某一个属性。
 
-一次只改变一个变量：测出不加 Hardware Layer 时的 `RenderEffect` 成本，再检查 Hardware Layer 是否减少重复绘制。若 Perfetto 中频繁出现 `buildLayer` slice（HWUI 构建硬件图层的时间片），或图形内存反复升降，应先调整 View 层级或缩小效果区域。Hardware Layer 的判断方法见 2.4 节。
+我们一次只改变一个变量：测出不加 Hardware Layer 时的 `RenderEffect` 成本，再检查 Hardware Layer 是否减少重复绘制。若 Perfetto 中频繁出现 `buildLayer` slice（HWUI 构建硬件图层的时间片），或图形内存反复升降，应先调整 View 层级或缩小效果区域。Hardware Layer 的判断方法见 2.4 节。
 
 #### Compose graphicsLayer / RenderEffect 对应关系
 
@@ -316,23 +320,25 @@ Compose 的 `graphicsLayer` 可以通过 Compose `RenderEffect` 把效果应用�
 
 效果应挂到能覆盖目标视觉区域的最小 Composable 节点。Compose RenderEffect 在 Android 11（API 30）及以下会被忽略，可以用 `RenderEffect.isSupported()` 做能力判断。
 
-Compose 与 View 在 RenderThread 之后共用标准管线，详见 13.1 节。排查 Compose 页面时，在 `MainThread` 轨道观察重组（recomposition）和布局（layout）；RenderThread 和 GPU 侧仍按上述 `RenderEffect` 方法做对照。
+Compose 与 View 在 RenderThread 之后共用标准管线，详见 13.1 节。排查 Compose 页面时，在 `MainThread` 轨道观察 recomposition 和 layout；RenderThread 和 GPU 侧仍按上述 `RenderEffect` 方法做对照。
 
 #### 厂商 GPU 对模糊效果的差异
 
-不同 GPU 执行模糊和 RuntimeShader 的耗时差异很大。Adreno、Mali、PowerVR 的驱动、分块渲染缓冲区、纹理缓存、着色器编译和 GPU 计数器命名并不统一；同一段 AGSL 在不同设备、驱动和温控状态下可能产生不同程度的帧超期，不能从单台设备推导固定耗时增量。
+不同 GPU 执行模糊和 RuntimeShader 的耗时差异很大。Adreno、Mali、PowerVR 的驱动、分块渲染缓冲区、纹理缓存、着色器编译和 GPU 计数器命名并不统一；同一段 AGSL 在不同设备、驱动和温控状态下可能产生不同程度的帧超期，固定耗时增量要在目标设备上实测。
 
-上线策略不能只依据一台 Pixel 或一台旗舰机。测试设备至少覆盖用户量占比高的低端、中端与高刷新率机型；每类设备都测“冷启动后首次进入页面”和“持续滑动 / 转场”两个受控场景。记录 `frameOverrunMs` 分布、卡顿帧数、总帧数、设备实际提供的 GPU 计数器、图形内存、温度和显示模式（分辨率与刷新率）。
+上线策略不要只看一台 Pixel 或一台旗舰机：测试设备至少覆盖用户量占比高的低端、中端与高刷新率机型；每类设备都测“冷启动后首次进入页面”和“持续滑动 / 转场”两个受控场景。记录 `frameOverrunMs` 分布、卡顿帧数、总帧数、设备实际提供的 GPU 计数器、图形内存、温度和显示模式（分辨率与刷新率）。
 
 ## Canvas 状态、DrawScope 与重绘控制
 
-效果选型确定后，还要管住 Compose Canvas 的绘制状态、对象复用和 invalidate 范围，让 Runtime effect 只作用在需要处理的内容上。
+效果选型确定后，我们还要管住 Compose Canvas 的绘制状态、对象复用和 invalidate 范围，让 Runtime effect 只作用在需要处理的内容上。
 
 ### 1. 范围与版本锚点
 
-本节讨论 Android 上的 Compose Canvas。平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，内核固定为 `android17-6.18-2026-06_r6`；Compose 采用独立发布的 UI 1.12.0，源码快照为 `963bf914f78b389bdddef0da7f36bee19d897274`。截至 2026 年 8 月 15 日，Google Maven 中的最新稳定版是 1.12.0，1.13.0-alpha01 属于预览版。
+本节讨论 Android 上的 Compose Canvas。先把三条版本线固定下来：
 
-HWUI 是 Android 的硬件加速 UI 渲染器；RenderNode 记录一组绘制命令，display list 是这些命令的列表；RenderThread 是执行 HWUI 渲染工作的线程；buffer 是窗口提交的像素缓冲区。
+> 源码版本：平台 `android-17.0.0_r1`，即 Android 17 / API 37；内核 `android17-6.18-2026-06_r6`；Compose UI 1.12.0，源码快照 `963bf914f78b389bdddef0da7f36bee19d897274`。
+
+截至 2026 年 8 月 15 日，Google Maven 中的最新稳定版是 1.12.0，1.13.0-alpha01 属于预览版。
 
 平台、Compose 和内核版本必须分开记录：
 
@@ -340,7 +346,7 @@ HWUI 是 Android 的硬件加速 UI 渲染器；RenderNode 记录一组绘制命
 - Compose UI 决定 `Canvas`、绘制类 `Modifier`、`DrawScope` 与 `GraphicsLayer` 的实现；
 - 内核和设备厂商实现会影响线程调度、频率、内存压力与 GPU 驱动等待。
 
-同一台 API 37 设备可以运行多个 Compose 版本，因此不能从 `android-17.0.0_r1` 推导 Compose 1.12.0 的具体实现。
+同一台 API 37 设备可以运行多个 Compose 版本，因此从 `android-17.0.0_r1` 推导不出 Compose 1.12.0 的具体实现。
 
 #### 1.1 常见说法与适用边界
 
@@ -365,12 +371,12 @@ Compose Foundation 1.12.0 的实现只有一行关键代码：
 
 `Canvas(modifier, onDraw) = Spacer(modifier.drawBehind(onDraw))`
 
-> 当前源码锚点：[`Canvas.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt)（Compose UI 1.12.0 快照）。
+> 当前源码出处：[`Canvas.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt)（Compose UI 1.12.0 快照）。
 
 这条源码说明：
 
-- `Canvas` 仍参加 Compose layout（布局），需要 `Modifier` 给出尺寸；
-- `onDraw` 在 drawing phase（绘制阶段）执行，不处于 composition scope（组合作用域）；
+- `Canvas` 仍参加 Compose layout，需要 `Modifier` 给出尺寸；
+- `onDraw` 在 drawing phase 执行，不在 composition scope 内；
 - `Canvas` 没有可由 `drawContent()` 绘制的业务子节点；
 - `Canvas` 自身不会创建独立 Surface、BufferQueue 或 SurfaceFlinger layer。
 
@@ -380,20 +386,20 @@ Compose Foundation 1.12.0 的实现只有一行关键代码：
 
 Android 端用 `AndroidCanvas` 包装平台 Canvas。`AndroidComposeView.dispatchDraw(android.graphics.Canvas)` 通过可复用的 `CanvasHolder` 把 framework Canvas 交给 Compose 根节点；`DrawScope.drawIntoCanvas` 把对应的 Compose Canvas 传给绘制回调，`nativeCanvas` 可再取得 `android.graphics.Canvas`。
 
-> 当前源码锚点：[`AndroidCanvas.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/AndroidCanvas.android.kt)、[`AndroidComposeView.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt)。
+> 当前源码出处：[`AndroidCanvas.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/AndroidCanvas.android.kt)、[`AndroidComposeView.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt)。
 
 这层包装不会把每个 `drawRect()` 直接变成一个独立 GPU 调用。标准硬件窗口中的大致路径是：
 
-1. UI Thread（应用主线程）执行 Compose 绘制 lambda；
+1. UI Thread 执行 Compose 绘制 lambda；
 2. `DrawScope` 把 draw 参数转换为 Android Canvas 调用；
 3. framework RecordingCanvas / RenderNode 记录绘制命令；
 4. `syncAndDrawFrame()` 把当前 RenderNode 树状态交给 RenderThread；
 5. RenderThread 准备树并通过 Skia OpenGL 或 Vulkan pipeline 生成 GPU 工作；
-6. App Window buffer 经 BLAST 缓冲提交机制、SurfaceFlinger 系统合成器和 HWC（Hardware Composer，硬件合成器）进入显示。
+6. App Window buffer 经 BLAST 缓冲提交机制、SurfaceFlinger 系统合成器和 HWC 进入显示。
 
-> 平台源码锚点：[`DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)、[`CanvasContext.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)、[Skia OpenGL pipeline](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp) / [Vulkan pipeline](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp)（`android-17.0.0_r1`）。
+> 平台源码出处：[`DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)、[`CanvasContext.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)、[Skia OpenGL pipeline](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp) / [Vulkan pipeline](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp)（`android-17.0.0_r1`）。
 
-UI Thread 上的 draw lambda 耗时主要反映 Kotlin 计算、Path/Brush 构造、文本测量、display list 录制和调用开销。draw op 是一条绘制操作；GPU 执行这些操作的时间位于后续 RenderThread/GPU 区间，不能用 draw lambda 的同步耗时替代。
+UI Thread 上的 draw lambda 耗时主要反映 Kotlin 计算、Path/Brush 构造、文本测量、display list 录制和调用开销。draw op 是一条绘制操作；GPU 执行这些操作的时间位于后续 RenderThread/GPU 区间，draw lambda 的同步耗时替代不了它。
 
 #### 2.3 绘制目标决定执行方式
 
@@ -410,7 +416,7 @@ UI Thread 上的 draw lambda 耗时主要反映 Kotlin 计算、Path/Brush 构�
 
 #### 2.4 与 View `onDraw()` 的关系
 
-Compose Canvas 与 View `onDraw(Canvas)` 都能进入 Android Canvas/HWUI，但两者的 invalidation（失效后请求重绘）、节点树、图形层管理和状态观察不同。给定相同几何、Paint、目标面积和硬件 Canvas，后半段 Skia/GPU 成本可能接近；UI Thread 录制成本与失效范围仍可能不同。
+Compose Canvas 与 View `onDraw(Canvas)` 都能进入 Android Canvas/HWUI，但两者的 invalidation 机制、节点树、图形层管理和状态观察不同。给定相同几何、Paint、目标面积和硬件 Canvas，后半段 Skia/GPU 成本可能接近；UI Thread 录制成本与失效范围仍可能不同。
 
 “Compose Canvas 比 View Canvas 快”或“二者完全等价”都缺少前提。迁移评估要使用相同图形、相同构建类型、相同设备和相同帧指标。
 
@@ -437,12 +443,12 @@ Compose Canvas 与 View `onDraw(Canvas)` 都能进入 Android Canvas/HWUI，但�
 
 `drawWithCache` 把工作分成缓存构建与实际绘制：
 
-- 缓存构建 block（回调）可以创建 Brush、Shader、Path、`TextLayoutResult`、Stroke 或受管 `GraphicsLayer`；
+- 缓存构建 block 可以创建 Brush、Shader、Path、`TextLayoutResult`、Stroke 或受管 `GraphicsLayer`；
 - `onDrawBehind` / `onDrawWithContent` 返回每次绘制都会执行的 block；
-- `size`、density（屏幕密度）、layout direction（LTR/RTL 布局方向）、缓存构建 block 的身份，或该 block 读取的 snapshot 状态变化时，缓存失效；
+- `size`、density、layout direction、缓存构建 block 的身份，或该 block 读取的 snapshot 状态变化时，缓存失效；
 - 绘制 block 中读取的 snapshot 状态只请求重新绘制，不会重建缓存构建 block。
 
-snapshot 状态是 Compose 可观察状态的一种。静态 Path 和 Brush 适合放在缓存构建 block；进度、alpha（透明度）、指针坐标等高频状态留在返回的绘制 block。
+snapshot 状态是 Compose 可观察状态的一种。静态 Path 和 Brush 适合放在缓存构建 block；进度、alpha、指针坐标等高频状态留在返回的绘制 block。
 
 这个折线图示例按画布尺寸和 `samples` 缓存折线路径，只在绘制阶段读取动画进度。
 
@@ -481,7 +487,7 @@ fun Sparkline(
 }
 ```
 
-这段代码中，`samples` 变化或 `Modifier` lambda 更新会重建缓存，尺寸变化也会重建 Path；`progress.value` 位于绘制 block，只让绘制失效。每个动画帧仍会重新录制 `drawPath` 和 clip（裁剪）命令；缓存保存的是对象与几何计算结果，不会自动保存上一帧像素。
+这段代码中，`samples` 变化或 `Modifier` lambda 更新会重建缓存，尺寸变化也会重建 Path；`progress.value` 位于绘制 block，只让绘制失效。每个动画帧仍会重新录制 `drawPath` 和 clip 命令；缓存保存的是对象与几何计算结果，不会自动保存上一帧像素。
 
 没有可缓存对象时，`drawWithCache` 会增加 lambda 与缓存管理。简单的单色 `drawRect()` 使用 `drawBehind` 更合适。
 
@@ -489,7 +495,7 @@ fun Sparkline(
 
 `DrawScope.size` 与绘制 API 使用像素坐标，原点为 `(0, 0)`，x 轴正方向向右，y 轴正方向向下。设计尺寸使用 `dp.toPx()`，与画布大小成比例的图形直接基于 `size` 计算。
 
-`translate`、`rotate`、`scale`、`inset` 和 `withTransform` 只改变当前绘制的坐标，不改变节点在布局阶段报告的宽高。图形变换后越过 `bounds`（节点矩形边界）时，是否可见取决于父级裁剪、图形层、离屏范围和窗口边界。视觉位置变化还要与输入区域、语义和相邻布局一起验证。
+`translate`、`rotate`、`scale`、`inset` 和 `withTransform` 只改变当前绘制的坐标，不改变节点在布局阶段报告的宽高。图形变换后越过节点 `bounds` 时，是否可见取决于父级裁剪、图形层、离屏范围和窗口边界。视觉位置变化还要与输入区域、语义和相邻布局一起验证。
 
 ### 4. 状态读取决定重启哪个阶段
 
@@ -510,15 +516,15 @@ Compose 会记录 snapshot 状态在哪个 restart scope（可重启作用域）
 - 在 Composable 函数体求出 `val color = colorState.value`，再传给 `Modifier`：变化触发 composition；
 - 在 `drawBehind { drawRect(colorState.value) }` 内读取：变化只触发 drawing。
 
-高频动画只改变像素而不改变节点结构与尺寸时，延后到绘制阶段读取可以省去 composition 和 layout。若颜色变化还会影响语义、布局或子节点选择，就应在对应的较早阶段读取，不能只为减少重组而隐藏必要更新。
+高频动画只改变像素而不改变节点结构与尺寸时，我们把读取延后到绘制阶段，可以省去 composition 和 layout；若颜色变化还会影响语义、布局或子节点选择，就在对应的较早阶段读取，别为了减少重组把必要更新藏起来。
 
 #### 4.2 绘制失效仍可能重录 display list
 
 “只触发 drawing”表示 Compose 不需要重跑 composition/layout，但绘制回调和 display list 仍可能更新，已有像素也不会自动增量复用。
 
-当 draw node（绘制节点）失效时，Compose 会重新执行相关绘制 block，并更新对应 display list 或图形层。一个不断增长的 Path 仍可能逐帧重录整条路径。可以采用这些处理方式：
+当 draw node 失效时，Compose 会重新执行相关绘制 block，并更新对应 display list 或图形层。一个不断增长的 Path 仍可能逐帧重录整条路径。可以采用这些处理方式：
 
-- 把历史笔迹按 segment（路径分段）拆开，只有活动分段高频变化；
+- 把历史笔迹按 segment 拆开，只有活动分段高频变化；
 - 对过密输入点做有误差界限的简化；
 - 把不变背景放进独立图形层；
 - 对低延迟墨迹评估 front-buffer（前缓冲）专用方案。
@@ -532,7 +538,7 @@ Compose UI 1.12.0 的 `CanvasDrawScope` 有两个延迟创建字段：
 - `fillPaint` 用于 Fill；
 - `strokePaint` 用于 Stroke。
 
-> 当前源码锚点：[`CanvasDrawScope.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/drawscope/CanvasDrawScope.kt)。
+> 当前源码出处：[`CanvasDrawScope.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/drawscope/CanvasDrawScope.kt)。
 
 第一次需要时创建，后续 draw call 复用。因此，使用 `drawRect(color)`、`drawCircle()` 或 `drawPath(..., style = Stroke)` 不会为每次调用新建底层 Paint。
 
@@ -581,7 +587,7 @@ fun LegacyDrawableCanvas(
 
 #### 5.3 缓存不能脱离生命周期
 
-缓存 Path、Bitmap、Shader 或 GraphicsLayer 时还要定义生命周期边界：
+缓存 Path、Bitmap、Shader 或 GraphicsLayer 时还要定义生命周期规则：
 
 - 数据改变时怎样失效；
 - size/density 改变时怎样重算；
@@ -589,7 +595,7 @@ fun LegacyDrawableCanvas(
 - 是否会同时保留旧列表和新几何；
 - 多窗口或不同 density 下是否发生错误共享。
 
-大对象保留时间过长，可能用内存压力换取较小的 CPU 节省。缓存策略要结合对象分配、GC（垃圾回收）、图形内存与帧数据验证。
+大对象保留时间过长，可能用内存压力换取较小的 CPU 节省。缓存策略要结合对象分配、GC、图形内存与帧数据验证。
 
 ### 6. `graphicsLayer`：display list 隔离与离屏合成
 
@@ -602,13 +608,13 @@ Compose UI 1.12.0 的 Android `GraphicsLayerV29`：
 - 用 `Canvas.drawRenderNode()` 把图形层放进父 Canvas；
 - 通过 RenderNode 属性设置平移、缩放、旋转、alpha、裁剪、阴影和 RenderEffect。
 
-> 当前源码锚点：[`GraphicsLayerV29.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt)。
+> 当前源码出处：[`GraphicsLayerV29.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt)。
 
 Android 12—17 都走 API 29+ 实现。`graphicsLayer` 仍属于宿主 App Window 的 RenderNode 树，SurfaceFlinger 通常看不到同名的独立图层。
 
 #### 6.2 图形层不等于离屏纹理
 
-图形层的基础能力是隔离绘制指令。内容未失效时，父节点变化可以重新引用已有 display list，不必执行子树的 Kotlin 绘制代码。是否把结果栅格化到离屏 buffer，由 compositing（合成）条件决定。
+图形层的基础能力是隔离绘制指令。内容未失效时，父节点变化可以重新引用已有 display list，不必执行子树的 Kotlin 绘制代码。是否把结果栅格化到离屏 buffer，由 compositing 条件决定。
 
 | `CompositingStrategy` | 行为 | 使用边界 |
 | --- | --- | --- |
@@ -623,19 +629,19 @@ Android 12—17 都走 API 29+ 实现。`graphicsLayer` 仍属于宿主 App Wind
 - `colorFilter` 非空；
 - 显式 `Offscreen`。
 
-`Auto` 下 alpha 小于 1 会创建离屏 buffer；overscroll（越界滚动效果）与 RenderEffect 也会需要离屏。离屏目标通常采用图形层 `bounds`，局部效果不宜包住全屏父节点。
+`Auto` 下 alpha 小于 1 会创建离屏 buffer；overscroll 与 RenderEffect 也会需要离屏。离屏目标通常采用图形层 `bounds`，局部效果不宜包住全屏父节点。
 
 Compose UI 1.12.0 增加了 `LayerOutsets`。它能在 Android 12 及以上扩大图形层的可视边界，避免内容进入离屏 buffer 后被原始边界裁掉；它不改变布局尺寸，也不改变 `clip`、阴影或变换的基准。`outsets` 越大，离屏 buffer 的像素面积越大，应按效果所需范围设置。
 
 #### 6.3 `ModulateAlpha` 会改变重叠像素
 
-`ModulateAlpha` 对图形层内每条 draw command（绘制命令）分别应用 alpha。两个图形重叠时，重叠区域会叠加多次，结果与“先把整个图形层画为不透明，再统一乘 alpha”不同。
+`ModulateAlpha` 对图形层内每条 draw command 分别应用 alpha。两个图形重叠时，重叠区域会叠加多次，结果与“先把整个图形层画为不透明，再统一乘 alpha”不同。
 
 确认图形层内内容不重叠，或差异符合设计时，才适合用它减少离屏工作。透明文本、阴影、图片和多层图形通常要实机对比。
 
 #### 6.4 属性动画使用 lambda overload
 
-`graphicsLayer {}` 允许在 block 内读取 Compose 状态；变化只更新图形层属性，不触发 recomposition（重组）与 remeasure（重新测量）。block 可能被调用多次，内部应只做属性赋值。
+`graphicsLayer {}` 允许在 block 内读取 Compose 状态；变化只更新图形层属性，不触发 recomposition 与 remeasure。block 可能被调用多次，内部应只做属性赋值。
 
 这个示例旋转一份内容不变的图标。
 
@@ -656,11 +662,11 @@ fun RotatingIcon(
 }
 ```
 
-这段代码在 `angle.value` 变化时更新 RenderNode rotation（旋转）属性；图标内容没有失效时，无需重跑绘制 block。RenderThread/GPU 仍要在每个可见动画帧合成变换后的图形层。
+这段代码在 `angle.value` 变化时更新 RenderNode rotation 属性；图标内容没有失效时，无需重跑绘制 block。RenderThread/GPU 仍要在每个可见动画帧合成变换后的图形层。
 
 #### 6.5 多层嵌套的成本
 
-每个 `graphicsLayer` 至少增加 RenderNode、属性同步、几何变换/裁剪处理和 display list 引用。触发 offscreen（离屏渲染）时，还会增加中间 render target（GPU 渲染目标）、清理、栅格化与采样。
+每个 `graphicsLayer` 至少增加 RenderNode、属性同步、几何变换/裁剪处理和 display list 引用。触发 offscreen 时，还会增加中间 render target（GPU 渲染目标）、清理、栅格化与采样。
 
 嵌套数量本身没有通用安全阈值。评审时检查：
 
@@ -675,7 +681,7 @@ fun RotatingIcon(
 
 #### 7.1 `saveLayer()` 与 Offscreen 都产生中间结果
 
-硬件加速 Canvas 的 `saveLayer()`、`CompositingStrategy.Offscreen`、RenderEffect 和某些 alpha/混合路径都可能生成 GPU 中间目标，不应描述为 CPU Bitmap 缓存。
+硬件加速 Canvas 的 `saveLayer()`、`CompositingStrategy.Offscreen`、RenderEffect 和某些 alpha/混合路径都可能生成 GPU 中间目标，与 CPU Bitmap 缓存是两类东西。
 
 中间目标常见成本包括：
 
@@ -696,7 +702,7 @@ fun RotatingIcon(
 
 #### 7.3 渐变与 RuntimeShader
 
-大面积渐变和 AGSL 的成本取决于覆盖像素数、shader（着色器）指令复杂度、采样次数、精度与后端/驱动。Shader 对象和不变 uniform（着色器参数）应缓存，每帧只更新动态 uniform。
+大面积渐变和 AGSL 的成本取决于覆盖像素数、shader 指令复杂度、采样次数、精度与后端/驱动。Shader 对象和不变的 uniform 应缓存，每帧只更新动态 uniform。
 
 `android.graphics.RuntimeShader` 从 API 33 提供。这个示例缓存 shader 与 brush，在 `size` 改变时更新 `resolution`，动画时间只在绘制阶段写入。
 
@@ -733,19 +739,13 @@ fun ShaderBackground(
 }
 ```
 
-这段代码要求 API 33，并应在低版本提供普通 Brush 作为降级方案。它避免每帧编译 AGSL 或新建 Shader；全屏 `drawRect` 仍会执行每个 fragment（片元，最终对应待计算像素）的着色工作，缓存对象不会降低逐像素数学成本。
+这段代码要求 API 33，并应在低版本提供普通 Brush 作为降级方案。它避免每帧编译 AGSL 或新建 Shader；全屏 `drawRect` 仍会执行每个 fragment 的着色工作，缓存对象不会降低逐像素数学成本。
 
 ### 8. Bitmap 与 Canvas 的互操作
 
 #### 8.1 Hardware Bitmap 适合作为只读绘制源
 
-`Bitmap.Config.HARDWARE` 从 API 26 提供，像素位于图形内存且 Bitmap 永远不可变。它适合解码后只用于显示的图片：
-
-- 可以包装为 Compose `ImageBitmap` 并画到标准硬件 Canvas；
-- 不能作为可变 Bitmap 继续写像素；
-- 不能作为 `Canvas(bitmap)` 的可写目标；
-- 也不能作为图片源画到 software Canvas；
-- 需要读回像素、软件滤镜或画入 Bitmap 时，应选择软件内存分配或显式复制。
+`Bitmap.Config.HARDWARE` 从 API 26 提供，像素位于图形内存且 Bitmap 永远不可变。它适合解码后只用于显示的图片：可以包装为 Compose `ImageBitmap` 并画到标准硬件 Canvas；而当可变 Bitmap 继续写像素、当 `Canvas(bitmap)` 的可写目标、当图片源画到 software Canvas，这些用法都不支持。需要读回像素、软件滤镜或画入 Bitmap 时，应选择软件内存分配或显式复制。
 
 Hardware Bitmap 不保证任何场景都零拷贝。缩放、颜色空间转换、采样、RenderEffect、离屏图形层与窗口合成都可能增加 GPU 工作。
 
@@ -761,14 +761,14 @@ Canvas 不负责替应用选择合适的解码尺寸。大图缩到很小仍会�
 
 #### 9.1 图表
 
-图表适合 Compose Canvas，因为大量图元可以放在一个 layout node（布局节点）中。可以按这个顺序优化：
+图表适合 Compose Canvas，因为大量图元可以放在一个 layout node 中。可以按这个顺序优化：
 
 1. 数据排序、聚合与坐标索引放到数据层或缓存构建阶段；
 2. Path、网格 Brush、Stroke 和文字测量按数据与 `size` 缓存；
-3. 只生成当前 viewport（可视区域）内的点和标签；
-4. 手势状态在绘制或 placement（放置）阶段读取；
+3. 只生成当前 viewport 内的点和标签；
+4. 手势状态在绘制或 placement 阶段读取；
 5. 大数据更新使用不可变快照，避免 draw 时遍历正在修改的集合；
-6. 用 Macrobenchmark（针对完整应用场景的 Jetpack 基准测试）固定缩放、拖动和 fling（惯性滚动）场景。
+6. 用 Macrobenchmark 固定缩放、拖动和 fling 场景。
 
 Canvas 减少了 Composable 节点数量，但 draw op 数量、Path 复杂度和文字栅格成本仍在。
 
@@ -779,23 +779,23 @@ Canvas 减少了 Composable 节点数量，但 draw op 数量、Path 复杂度�
 - 活跃粒子数量与屏幕外剔除；
 - 每帧对象分配；
 - 随机数、碰撞和物理计算；
-- 透明 overdraw（同一像素在一帧内被重复绘制）；
+- 透明 overdraw；
 - 大面积模糊、阴影与混合；
 - UI Thread 录制时间。
 
-粒子状态可以在后台计算后提交不可变帧快照，但 Canvas 绘制 block 本身由 Compose 绘制阶段调用，不能随意迁移到后台线程。需要独立的生产节奏或更重的 GPU 管线时，应评估 SurfaceView、OpenGL/Vulkan 或专用引擎。
+我们把计算和绘制分开：粒子状态可以在后台计算后提交不可变帧快照，但 Canvas 绘制 block 本身由 Compose 绘制阶段调用，别随意迁移到后台线程。需要独立的生产节奏或更重的 GPU 管线时，应评估 SurfaceView、OpenGL/Vulkan 或专用引擎。
 
 #### 9.3 墨迹与手写
 
 普通表单签名可以用 Canvas：
 
 - 合并同一指针事件携带的历史采样点；
-- 按 stroke/segment（笔画/路径分段）保存 Path；
+- 按 stroke/segment 保存 Path；
 - 活动笔画高频更新，已完成笔画分组缓存；
 - 缩小无效区域和对象分配；
 - 在后台做保存、压缩与矢量简化。
 
-专业手写关注触笔到像素显示的总延迟。`CanvasFrontBufferedRenderer` 使用 SurfaceView、front buffer（前缓冲）与 multi buffer（多缓冲），并在内部渲染线程回调，适合评估低延迟路径。它会引入独立图层、Surface 生命周期、transaction（提交事务）和 tearing（画面撕裂）等权衡，不能当成普通 Compose Canvas 的透明替换。
+专业手写关注触笔到像素显示的总延迟。`CanvasFrontBufferedRenderer` 使用 SurfaceView、front buffer（前缓冲）与 multi buffer（多缓冲），并在内部渲染线程回调，适合评估低延迟路径。它会引入独立图层、Surface 生命周期、transaction 和 tearing（画面撕裂）等权衡，不是普通 Compose Canvas 的透明替换。
 
 #### 9.4 动态全屏 Shader
 
@@ -808,13 +808,13 @@ RuntimeShader 适合连续程序化背景，但应准备：
 - shader uniform 与时间基准；
 - 大面积离屏、RenderEffect 和多重采样检查。
 
-减少 Kotlin 分配不会消除 shader 的 GPU 成本。Perfetto 要同时查看应用帧、RenderThread、GPU frequency/queue（频率与任务队列）和设备热状态。
+减少 Kotlin 分配不会消除 shader 的 GPU 成本。Perfetto 要同时查看应用帧、RenderThread、GPU frequency/queue 和设备热状态。
 
 #### 9.5 自定义绘制仍要提供语义
 
-Canvas 中的线、点、柱和图标不会自动成为独立语义节点。纯装饰可以由父组件描述；表达业务信息或响应点击时，应使用带 `contentDescription` 的 Canvas overload（重载）、`Modifier.semantics`、custom action（自定义无障碍操作），或为可交互元素提供可访问的 Compose 节点。
+Canvas 中的线、点、柱和图标不会自动成为独立语义节点。纯装饰可以由父组件描述；表达业务信息或响应点击时，应使用带 `contentDescription` 的 Canvas overload、`Modifier.semantics`、custom action，或为可交互元素提供可访问的 Compose 节点。
 
-一张图表画得更快，却让读屏服务无法获得数据，不能算完成优化。语义节点数量也应按可操作信息设计，避免为每个装饰像素创建节点。
+一张图表画得更快，读屏服务却拿不到数据，这样的优化只算完成了一半。语义节点数量也应按可操作信息设计，避免为每个装饰像素创建节点。
 
 ### 10. 何时转向 SurfaceView
 
@@ -839,34 +839,34 @@ SurfaceView 会创建独立 SurfaceControl layer，并带来 Z-order（图层前
 - UI Thread 与 RenderThread 相关的 `frameDurationCpuMs`；
 - `frameCount`，用于识别无效帧数量变化。
 
-Canvas 性能场景应固定输入轨迹、数据、动画时长、viewport、图片缓存和 shader warmup（预热）。目标应用应允许性能分析（profileable）且不是调试构建（non-debuggable），并保留每轮 trace。
+Canvas 性能场景应固定输入轨迹、数据、动画时长、viewport、图片缓存和 shader warmup。目标应用应处于 profileable、non-debuggable 的构建状态，并保留每轮 trace。
 
 #### 11.2 Perfetto 没有稳定的 Canvas 单节点事件
 
 Perfetto trace 是按时间记录系统与应用事件的性能轨迹。Compose 1.12.0 的 `AndroidComposeView.dispatchDraw()` 带有 `AndroidOwner:draw` 事件，但它覆盖根节点绘制与 dirty layer（待更新图形层）处理，不等于某个 Canvas 的耗时。
 
-[Composition Tracing](03-compose-compiler-modifier-diagnostics.md) 记录 Composable 在组合阶段的执行时序，不会自动给每个绘制 Modifier 的函数体或 GPU draw op 建立 slice（带起止时间的区间事件）。两类 trace 不能混用。
+[Composition Tracing](03-compose-compiler-modifier-diagnostics.md) 记录 Composable 在组合阶段的执行时序，不会自动给每个绘制 Modifier 的函数体或 GPU draw op 建立 slice。两类 trace 要分开使用。
 
 按下面的层次定位：
 
-1. 在 FrameTimeline（关联计划帧与实际帧的时间线）中找到目标 App SurfaceFrame（应用 Surface 对应的一帧）；
-2. UI Thread 查看 `Choreographer#doFrame`、Traversal（View 树遍历）、`AndroidOwner:draw` 与自定义 marker（追踪标记）；
+1. 在 FrameTimeline 中找到目标 App SurfaceFrame（应用 Surface 对应的一帧）；
+2. UI Thread 查看 `Choreographer#doFrame`、Traversal、`AndroidOwner:draw` 与自定义 marker；
 3. 检查绘制区间里的 GC、锁、Binder、I/O 和线程调度状态；
-4. RenderThread 查看 `DrawFrame`、buffer 出队/入队与 GPU completion（完成时刻）；
-5. 结合 GPU 轨道、频率和 render stage（渲染阶段）判断 shader、像素填充、纹理与离屏 pass；
-6. App 按时完成后，继续检查 SurfaceFlinger actual timeline（实际时间线）与 present（送显时刻）。
+4. RenderThread 查看 `DrawFrame`、buffer 出队/入队与 GPU completion；
+5. 结合 GPU 轨道、频率和 render stage 判断 shader、像素填充、纹理与离屏 pass；
+6. App 按时完成后，继续检查 SurfaceFlinger actual timeline 与 present。
 
-不存在的 `FrameTimeslice` 不应出现在查询或监控协议中。内部 slice 名会随 Compose/HWUI 版本变化，录制后先确认当前 trace。
+查询和监控协议里都不要引用不存在的 `FrameTimeslice`；内部 slice 名会随 Compose/HWUI 版本变化，录制后先确认当前 trace。
 
 #### 11.3 自定义 trace 只测 draw recording
 
-可以在一个耗时已经确认偏高的绘制 block 外围使用 `androidx.tracing`，名称保持固定且不含动态数据。该 slice 记录 UI Thread 执行 lambda 与录制命令的实际经过时间，不能代表 GPU 执行时间。
+可以在一个耗时已经确认偏高的绘制 block 外围使用 `androidx.tracing`，名称保持固定且不含动态数据。该 slice 记录 UI Thread 执行 lambda 与录制命令的实际经过时间，GPU 执行时间要看后续的 GPU 轨道。
 
-不要给每个 draw primitive（基础绘制操作）添加 marker。大量 trace event 会改变被测代码的耗时和 trace 体积。
+不要给每个 draw primitive 添加 marker。大量 trace event 会改变被测代码的耗时和 trace 体积。
 
 #### 11.4 Layout Inspector 的边界
 
-Layout Inspector 可以检查 Compose tree（节点树）、图形层、recomposition/skip（重组/跳过）计数和 `Modifier` 顺序。它不统计绘制失效次数，也不提供每个 Canvas 的 GPU 时间。正式计时要关闭 Inspector，再用接近发布配置的构建复测。
+Layout Inspector 可以检查 Compose 节点树、图形层、重组/跳过计数和 `Modifier` 顺序。它不统计绘制失效次数，也不提供每个 Canvas 的 GPU 时间。正式计时要关闭 Inspector，再用接近发布配置的构建复测。
 
 #### 11.5 Baseline Profile 的边界
 
@@ -879,7 +879,7 @@ Baseline Profile 可以覆盖图表页面、Canvas 绘制代码、数据准备�
 - RenderEffect/Offscreen 带宽；
 - SurfaceFlinger 或驱动等待。
 
-生成 profile 后要用 `CompilationMode.Partial` 等对应生产条件验证，不能用“已经依赖 Profile Installer”代替测量。
+生成 profile 后要用 `CompilationMode.Partial` 等对应生产条件验证，“已经依赖 Profile Installer”代替不了测量。
 
 ### 12. Android 12—17 的版本边界
 
@@ -897,11 +897,11 @@ Baseline Profile 可以覆盖图表页面、Canvas 绘制代码、数据准备�
 
 #### Android 15 / API 35
 
-Canvas/RenderNode/HWUI 主路径延续。设备刷新率、frame-rate hint（帧率提示）、GPU 后端与厂商驱动可能改变结果，跨版本比较要固定设备和应用构建。
+Canvas/RenderNode/HWUI 主路径延续。设备刷新率、frame-rate hint、GPU 后端与厂商驱动可能改变结果，跨版本比较要固定设备和应用构建。
 
 #### Android 16 / API 36
 
-没有需要把 Compose Canvas 改写成独立 Surface 的公开架构变化。Compose artifact（库制品）继续独立更新，平台升级测试必须同时记录 Compose 版本。
+没有需要把 Compose Canvas 改写成独立 Surface 的公开架构变化。Compose artifact 继续独立更新，平台升级测试必须同时记录 Compose 版本。
 
 #### Android 17 / API 37
 
@@ -913,7 +913,7 @@ Canvas/RenderNode/HWUI 主路径延续。设备刷新率、frame-rate hint（帧
 - Skia OpenGL 与 Vulkan pipeline 源码都存在；
 - 最终 App Window buffer 仍经过 BLAST、SurfaceFlinger 与 HWC。
 
-因此，不能声称 Android 17 为 Compose Canvas 固定切换 Vulkan，或固定更改 Skia GPU 线程模型。实机后端应结合设备配置、trace、dumpsys 和驱动证据确认。
+因此，不能声称 Android 17 为 Compose Canvas 固定切换 Vulkan，或固定更改 Skia GPU 线程模型；实机后端要结合设备配置、trace、dumpsys 和驱动证据确认。
 
 ### 13. 评审清单
 
@@ -955,7 +955,7 @@ Compose Canvas 在 Android 上沿用 Canvas、RenderNode 和 HWUI 路径。`Canv
 
 性能分析要区分三段：UI Thread 的几何计算与录制、RenderThread 的树准备与 Skia 提交、GPU 的像素和离屏工作。`drawWithCache` 处理对象与几何复用，`graphicsLayer` 处理指令隔离和属性变换；它们都不会自动减少复杂 Path、全屏 shader 或多重离屏的像素成本。
 
-Android 17 没有 Compose Canvas 专属显示管线。分析时应固定 Compose 与平台版本，控制状态读取阶段和缓存失效范围，再用 Macrobenchmark 与 Perfetto 沿 FrameTimeline、UI Thread、RenderThread、GPU、SurfaceFlinger 逐段验证。
+Android 17 没有 Compose Canvas 专属显示管线。我们分析时应固定 Compose 与平台版本，控制状态读取阶段和缓存失效范围，再用 Macrobenchmark 与 Perfetto 沿 FrameTimeline、UI Thread、RenderThread、GPU、SurfaceFlinger 逐段验证。
 
 ## 全文小结
 
@@ -965,7 +965,7 @@ Compose Canvas 侧要把组合、绘制回调、display list 录制和 GPU 执�
 
 ## 参考资料
 
-**AOSP 源码（android-17.0.0_r1）：**
+**AOSP 源码，android-17.0.0_r1：**
 
 - [`RenderEffect.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java)
 - [`RuntimeShader.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java)
@@ -997,20 +997,20 @@ Compose Canvas 侧要把组合、绘制回调、display list 录制和 GPU 执�
 - [Compose UI release notes](https://developer.android.com/jetpack/androidx/releases/compose-ui)：Compose UI 各版本变化与 `LayerOutsets` 引入记录。
 - [Google Maven：Compose UI 版本元数据](https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui/maven-metadata.xml)：核对 1.12.0 稳定版与 1.13.0-alpha01 预览版。
 - [`LayerOutsets` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/graphics/LayerOutsets)：扩大图形层可视边界的语义与限制。
-- [`Canvas.kt`（Compose 1.12.0 源码快照）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt)：`Spacer(modifier.drawBehind(onDraw))` 实现。
-- [`DrawModifier.kt`（Compose 1.12.0 源码快照）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt)：绘制 Modifier 顺序、缓存失效与 `CacheDrawScope`。
-- [`CanvasDrawScope.kt`（Compose 1.12.0 源码快照）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/drawscope/CanvasDrawScope.kt)：内部填充/描边 Paint 的延迟创建与复用。
-- [`AndroidCanvas.android.kt`（Compose 1.12.0 源码快照）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/AndroidCanvas.android.kt)：framework Canvas 包装、`CanvasHolder` 与 `nativeCanvas`。
-- [`GraphicsLayerModifier.kt`（Compose 1.12.0 源码快照）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt)：图形层属性、状态读取、placement 与 `LayerOutsets`。
-- [`GraphicsLayerV29.android.kt`（Compose 1.12.0 源码快照）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt)：RenderNode 录制、合成策略与强制离屏条件。
-- [`AndroidComposeView.android.kt`（Compose 1.12.0 源码快照）](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt)：`dispatchDraw()`、`AndroidOwner:draw` 与待更新图形层。
-- [`Canvas.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt)：保留旧版 `Canvas` 实现锚点。
-- [`DrawModifier.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt)：保留旧版绘制节点锚点。
-- [`CanvasDrawScope.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/drawscope/CanvasDrawScope.kt)：保留旧版 Paint 复用锚点。
-- [`AndroidCanvas.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/AndroidCanvas.android.kt)：保留旧版 Canvas 包装锚点。
-- [`GraphicsLayerModifier.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt)：保留旧版图形层 Modifier 锚点。
-- [`GraphicsLayerV29.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt)：保留旧版 Android 图形层锚点。
-- [`AndroidComposeView.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt)：保留旧版宿主 View 锚点。
+- [`Canvas.kt`，Compose 1.12.0 源码快照](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt)：`Spacer(modifier.drawBehind(onDraw))` 实现。
+- [`DrawModifier.kt`，Compose 1.12.0 源码快照](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt)：绘制 Modifier 顺序、缓存失效与 `CacheDrawScope`。
+- [`CanvasDrawScope.kt`，Compose 1.12.0 源码快照](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/drawscope/CanvasDrawScope.kt)：内部填充/描边 Paint 的延迟创建与复用。
+- [`AndroidCanvas.android.kt`，Compose 1.12.0 源码快照](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/AndroidCanvas.android.kt)：framework Canvas 包装、`CanvasHolder` 与 `nativeCanvas`。
+- [`GraphicsLayerModifier.kt`，Compose 1.12.0 源码快照](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt)：图形层属性、状态读取、placement 与 `LayerOutsets`。
+- [`GraphicsLayerV29.android.kt`，Compose 1.12.0 源码快照](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt)：RenderNode 录制、合成策略与强制离屏条件。
+- [`AndroidComposeView.android.kt`，Compose 1.12.0 源码快照](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt)：`dispatchDraw()`、`AndroidOwner:draw` 与待更新图形层。
+- [`Canvas.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt)：保留旧版 `Canvas` 实现出处。
+- [`DrawModifier.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt)：保留旧版绘制节点出处。
+- [`CanvasDrawScope.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/drawscope/CanvasDrawScope.kt)：保留旧版 Paint 复用出处。
+- [`AndroidCanvas.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/AndroidCanvas.android.kt)：保留旧版 Canvas 包装出处。
+- [`GraphicsLayerModifier.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/graphics/GraphicsLayerModifier.kt)：保留旧版图形层 Modifier 出处。
+- [`GraphicsLayerV29.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt)：保留旧版 Android 图形层出处。
+- [`AndroidComposeView.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt)：保留旧版宿主 View 出处。
 - [Android hardware acceleration](https://developer.android.com/topic/performance/hardware-accel)：hardware Canvas 的 display list 模型、View layer 与 `saveLayer()` 边界。
 - [`RecordingCanvas.java`（`android-17.0.0_r1`）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RecordingCanvas.java)：Android 17 framework 硬件绘制录制入口。
 - [`DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp) 与 [`CanvasContext.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)：UI Thread 到 RenderThread 的同步、树准备与绘制。
@@ -1023,9 +1023,9 @@ Compose Canvas 侧要把组合、绘制回调、display list 录制和 GPU 执�
 
 ### 旧版本参考锚点
 
-以下链接保留用于核对 Compose 1.11.4（含 BOM 2026.06.00）到 1.12.0 的实现差异；正文版本边界仍以文中说明为准。
+以下链接保留用于核对 Compose 1.11.4、BOM 2026.06.00 到 1.12.0 的实现差异；正文版本结论仍以文中说明为准。
 
-- [`Canvas.kt`（Compose 1.11.4 源码快照）](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt)
+- [`Canvas.kt`，Compose 1.11.4 源码快照](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt)
 - [`CanvasDrawScope.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/drawscope/CanvasDrawScope.kt)
 - [`AndroidCanvas.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/AndroidCanvas.android.kt)
 - [`GraphicsLayerV29.android.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt)

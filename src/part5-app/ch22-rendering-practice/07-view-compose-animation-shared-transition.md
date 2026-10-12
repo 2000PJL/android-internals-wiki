@@ -94,23 +94,23 @@ last_consolidated_at: '2026-08-24'
 
 # View、Compose 动画与共享元素性能
 
-动画掉帧可能出现在 UI 线程推进属性值时，也可能出现在 RenderThread 绘制、窗口缓冲区排队、SurfaceFlinger 合成或显示提交阶段。只观察 Animator 回调时长，会漏掉后半段问题。动画性能取决于每帧更新发生在哪个线程、是否触发布局，以及中间图层如何合成；Compose 动画延续同一原则，SharedTransition 还要在两个内容状态之间匹配元素、同步边界。
+动画掉帧可能出现在 UI 线程推进属性值时，也可能出现在 RenderThread 绘制、窗口缓冲区排队、SurfaceFlinger 合成或显示提交阶段；只看 Animator 回调时长，会漏掉后半段的问题。我们判断一段动画的性能，主要看每帧更新发生在哪个线程、是否触发布局、中间图层怎么合成。Compose 动画延续同一原则，SharedTransition 还要在两个内容状态之间匹配元素、同步边界。
 
-平台源码固定为 Android 17 / API 37 / `android-17.0.0_r1`，Linux 内核观察基线固定为 `android17-6.18-2026-06_r6`。普通 View 动画走应用窗口的标准 HWUI（Android 硬件加速 UI 渲染系统）路径：
+> 源码基线：Android 17 / API 37 / `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
+
+普通 View 动画走应用窗口的标准 HWUI 路径：
 
 `vsync-app → Choreographer#doFrame → input / animation / insets animation / traversal / commit → HardwareRenderer.syncAndDrawFrame() → RenderThread → BLAST → SurfaceFlinger → HWC → present`
 
-这条路径中的 input、animation、insets animation、traversal 与 commit，分别对应输入、动画、窗口边衬区变化动画（如系统栏或输入法区域变化）、View 树遍历和提交回调。
+其中 input、animation、insets animation、traversal 与 commit，分别对应输入、动画、窗口边衬区变化动画（如系统栏或输入法区域变化）、View 树遍历和提交回调；RenderThread 是专用渲染线程，BLAST 负责在应用窗口与 SurfaceFlinger 之间交接缓冲区，SurfaceFlinger 是系统合成服务，HWC 是硬件合成器，present 表示显示系统确认的上屏时刻。
 
-RenderThread 是专用渲染线程，BLAST 负责在应用窗口与 SurfaceFlinger 之间交接缓冲区，SurfaceFlinger 是系统合成服务，HWC 是硬件合成器，present 表示显示系统确认的上屏时刻。
-
-动画 API 的状态推进主要位于 Android 框架和应用进程。内核基线用于解释线程调度、GPU 驱动、fence（跨 CPU、GPU、显示设备传递完成状态的同步对象）与显示侧现象，不能拿内核标签推导 Animator 的 Java 语义。完整显示路径可结合 [Android View 标准渲染路径](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) 阅读。
+动画 API 的状态推进主要位于 Android 框架和应用进程；内核基线用来解释线程调度、GPU 驱动、fence 与显示侧现象，拿内核标签推导 Animator 的 Java 语义会走偏。完整显示路径可结合 [Android View 标准渲染路径](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) 阅读。
 
 ## 属性更新、布局触发与 RenderThread
 
 ### 属性动画与帧动画：先看每帧改变什么
 
-选择动画方案时，应把“每帧输入”“是否触发布局”“绘制输入规模”分开评估。
+选择动画方案时，我们先把“每帧输入”“是否触发布局”“绘制输入规模”三件事分开评估。
 
 | 模型 | Android 17 中的每帧工作 | 合适场景 | 主要风险 |
 | --- | --- | --- | --- |
@@ -120,9 +120,9 @@ RenderThread 是专用渲染线程，BLAST 负责在应用窗口与 SurfaceFling
 | 自绘动画 | 更新进度并使 View 失效，UI 线程按需重录 DisplayList（显示列表） | 图表、波形、进度和业务图形 | 每帧重建几何、分配对象或提交过多绘制命令 |
 | Lottie | 推进 composition（解析后的动画模型）中各节点的进度，并绘制矢量、图片、mask（同层路径遮罩）与 matte（由另一图层决定可见区域） | 设计工具导出的矢量动效 | 节点遍历、路径计算、mask / matte、图片和渲染模式 |
 
-Android 17 的 `ViewPropertyAnimator.startAnimation()` 创建一个 `ValueAnimator`。它在 UI 线程的更新回调中计算各属性值，直接更新 View 对应状态，再合并发出一次失效请求（invalidation）。它没有把动画回调自动迁移到 RenderThread；RenderThread 消费更新后的 RenderNode（渲染节点）与 DisplayList 状态。`ViewPropertyAnimator` 的优势是专用 View 属性接口、组合写法和失效请求合并。
+`ViewPropertyAnimator.startAnimation()` 创建一个 `ValueAnimator`：更新回调运行在 UI 线程，先算出各属性值并直接更新 View 状态，再把失效请求（invalidation）合并成一次发出。动画回调留在 UI 线程，RenderThread 消费的是更新后的 RenderNode（渲染节点）与 DisplayList 状态。`ViewPropertyAnimator` 的优势正在于此：专用 View 属性接口、组合写法、失效请求合并。
 
-`ObjectAnimator` 也不能统一描述为“每帧都用反射”。传入 `Property<T, V>` 时可以直接调用 `Property.set()`；传入属性名时，`PropertyValuesHolder` 会解析并缓存 getter（属性读取方法）与 setter，随后经反射或针对部分数值属性的优化路径写值。性能判断仍要回到目标 setter 的副作用。
+`ObjectAnimator` 的写值路径要看入参：传入 `Property<T, V>` 时可以直接调用 `Property.set()`；传入属性名时，`PropertyValuesHolder` 会解析并缓存 getter 与 setter，随后经反射或针对部分数值属性的优化路径写值。性能判断仍要回到目标 setter 的副作用。
 
 #### 变换属性不会修改布局语义
 
@@ -138,7 +138,7 @@ ValueAnimator.ofInt(startWidth, targetWidth).apply {
 }.start()
 ```
 
-`updateLayoutParams` 会把新参数重新设置给 View，并触发 `requestLayout()`。受影响范围取决于父容器、约束与测量缓存；不能把它简化成“只改当前 View 的宽度”。
+`updateLayoutParams` 会把新参数重新设置给 View，并触发 `requestLayout()`。受影响范围由父容器、约束与测量缓存决定，重排可能波及当前 View 之外。
 
 只需要视觉展开、且布局占位与触摸区域可以保持目标尺寸时，可以用变换属性表达同一段视觉过程。
 
@@ -150,11 +150,11 @@ view.animate()
     .start()
 ```
 
-`scaleX` 改变绘制变换，不会缩小 measured width（测量宽度）、layout bounds（摆放边界）、触摸命中区域或无障碍节点边界。产品要求周围内容随宽度移动、收起后不可点击或无障碍边界同步变化时，应更新布局和交互状态，并通过性能 trace（时间轴）确认参与重排的子树及其耗时；不能用 `scaleX` 冒充几何变化。
+`scaleX` 改变的是绘制变换，measured width、layout bounds、触摸命中区域和无障碍节点边界都维持原值。产品要求周围内容随宽度移动、收起后不可点击或无障碍边界同步变化时，我们应更新布局和交互状态，并通过性能 trace（时间轴）确认参与重排的子树及其耗时；这类几何语义要靠布局更新完成。
 
 #### `withLayer()` 只用于内容稳定的短时合成
 
-`withLayer()` 会在下一次动画开始前设置 `LAYER_TYPE_HARDWARE`，结束时恢复调用前的图层类型。它适合内容复杂、动画期间内容保持不变、外层只做 `alpha` 或 transform（几何变换）的 View。View 内容每帧失效时，硬件图层仍需更新；大面积图层还会增加 GPU 内存，以及把内容先画到中间缓冲区的离屏渲染成本。默认 View 已有 RenderNode / DisplayList 复用能力，静态内容不需要长期强制硬件图层。
+`withLayer()` 会在下一次动画开始前设置 `LAYER_TYPE_HARDWARE`，结束时恢复调用前的图层类型。它适合内容复杂、动画期间内容保持不变、外层只做 `alpha` 或 transform 的 View。View 内容每帧失效时，硬件图层仍需更新；大面积图层还会增加 GPU 内存，以及把内容先画到中间缓冲区的离屏渲染成本。默认 View 已有 RenderNode / DisplayList 复用能力，静态内容不需要长期强制硬件图层。
 
 #### 逐帧图片按解码后像素估算
 
@@ -162,7 +162,7 @@ view.animate()
 
 `1920 × 1080 × 4 × 30 = 248,832,000 bytes ≈ 237.3 MiB`
 
-这个数字只包含未经额外填充的像素数据，不能直接当成 `AnimationDrawable` 的固定内存占用。资源 density（密度）缩放、采样、Bitmap 复用、硬件位图、Drawable 类型和缓存生命周期都会改变驻留位置与数量；GPU 纹理也可能按绘制时机上传。评审时要用目标资源的解码尺寸、内存记录和 GPU 轨迹验证。大尺寸长动画通常更适合视频、受控的矢量动画或按需自绘，选型还要比较视觉保真、功耗和启动成本。
+这个数字只统计未经额外填充的像素数据；`AnimationDrawable` 的实际驻留内存还要看资源 density 缩放、采样、Bitmap 复用、硬件位图、Drawable 类型和缓存生命周期，GPU 纹理也可能按绘制时机上传。评审时用目标资源的解码尺寸、内存记录和 GPU 轨迹验证。大尺寸长动画通常更适合视频、受控的矢量动画或按需自绘，选型还要比较视觉保真、功耗和启动成本。
 
 ### Lottie：以当前稳定版 6.7.1 解释渲染模式
 
@@ -174,11 +174,11 @@ view.animate()
 - mask 与 matte 总数超过 4；
 - 系统不高于 Android 7.1。
 
-在 Android 10—17 上，第一个和第三个兼容分支不会命中，主要自动切换条件是 mask / matte 总数超过 4。源码注释说明这个阈值只试过少量动画，要求开发者手动比较两种模式。它不能证明第 5 个 mask 一定更慢，也不能替代目标设备测量。软件模式会把内容绘制到 Lottie 管理的 Bitmap，复杂动画仍可能产生较高的 CPU 与内存成本。
+在 Android 10—17 上，第一个和第三个兼容分支不会命中，主要自动切换条件是 mask / matte 总数超过 4。源码注释说明这个阈值只试过少量动画，要求开发者手动比较两种模式；第 5 个 mask 是否更慢、哪种模式更适合目标设备，都要以实测为准。软件模式会把内容绘制到 Lottie 管理的 Bitmap，复杂动画仍可能产生较高的 CPU 与内存成本。
 
 `LottieAnimationView` 的 `cacheComposition` 默认开启。常规 assets 目录资源、raw 资源和 URL 加载通过 `LottieCompositionFactory` 返回异步任务，编辑器预览分支仍有同步解析。异步加载只把动画模型的解析与构建移出当前调用，播放期间的进度传播、动态属性回调和 Canvas 绘制仍要计入帧成本。
 
-Lottie 6.7.1 还提供 `setPerformanceTrackingEnabled()` 与 `getPerformanceTracker()`，用于观察各图层的渲染时间。`AsyncUpdates` 在该版本被标为实验 API，`AUTOMATIC` 的注释写明当前按禁用处理；项目没有显式启用并验证时，不能认为节点更新已经离开 UI 线程。
+Lottie 6.7.1 还提供 `setPerformanceTrackingEnabled()` 与 `getPerformanceTracker()`，用于观察各图层的渲染时间。`AsyncUpdates` 在该版本被标为实验 API，`AUTOMATIC` 的注释写明当前按禁用处理；节点更新是否离开 UI 线程，要看项目是否显式启用并验证过。
 
 评审一份 Lottie 资源时，可以按四组输入记录结果：
 
@@ -189,13 +189,13 @@ Lottie 6.7.1 还提供 `setPerformanceTrackingEnabled()` 与 `getPerformanceTrac
 | 图片资源 | 解码尺寸、复用、色彩格式和首次上传 | 内存记录、RenderThread/GPU 轨迹、冷启动与热启动对比 |
 | 播放策略 | 同屏数量、循环、可见性和生命周期 | RecyclerView 滚动、页面切后台与长时间功耗测试 |
 
-这四组输入必须随同一份动画资源一起记录。只写 `RenderMode` 或平均帧率，无法解释一次资源简化、缓存命中或同屏数量变化带来的差异。
+这四组输入要随同一份动画资源一起记录；一次资源简化、缓存命中或同屏数量变化带来的差异，要从这四组输入里找原因。
 
 RecyclerView 中的动画应绑定列表项可见性和业务焦点。离屏列表项停止播放，回收时移除动态回调或引用；同屏数量多时，可以给非焦点列表项使用静态帧。首屏动画模型的预加载和缓存要与内存预算一起评估，避免每次绑定数据时重复发起加载。
 
 ### RenderEffect：控制输入面积、效果状态与降级
 
-`RenderEffect` 从 API 31 公开。Android 17 的 `View.setRenderEffect()` 把效果设置到 View 背后的 RenderNode；RenderNode 状态变化后，View 会触发属性失效，让渲染系统同步新状态。blur（模糊）、shader（着色器）或多个效果组成的链可能需要中间渲染目标，成本随输入区域、采样范围、像素格式、效果组合和更新频率变化。
+`RenderEffect` 从 API 31 公开。`View.setRenderEffect()` 把效果设置到 View 背后的 RenderNode；RenderNode 状态变化后，View 会触发属性失效，让渲染系统同步新状态。blur、shader 或多个效果组成的链可能需要中间渲染目标，成本随输入区域、采样范围、像素格式、效果组合和更新频率变化。
 
 评审 RenderEffect 时，要记录这一帧处理了多少像素、处理几次，以及输入是否改变。全屏模糊、滚动容器上的模糊、半径持续变化，以及效果与复杂透明叠加同时出现，都需要单独测量。低性能设备档位、省电模式和降级路径可以关闭效果、缩小作用 View，或改用经过设计确认的静态背景与半透明色块。
 
@@ -232,13 +232,13 @@ class BlurController(
 }
 ```
 
-这个示例避免在每帧重复创建相同效果，并保留 `null` 清理路径。半径由视觉目标与实机数据决定，关闭状态直接传 `null`。动画必须连续改变半径时，缓存固定状态无法消除每帧输入变化，应缩小 View 的输入边界，并比较关闭效果前后的 FrameTimeline（关联应用、系统合成与显示阶段的帧时间线）、RenderThread、GPU 和功耗差值。
+这个示例避免在每帧重复创建相同效果，并保留 `null` 清理路径。半径由视觉目标与实机数据决定，关闭状态直接传 `null`。动画必须连续改变半径时，每帧输入都在变化，这时应缩小 View 的输入边界，并比较关闭效果前后的 FrameTimeline、RenderThread、GPU 和功耗差值。
 
-`RenderThread DrawFrame` 变长也不能直接写成“GPU 慢”。这段时间可能包含 RenderThread 的 CPU 工作、runnable（线程已就绪但仍在等 CPU）时间、`dequeueBuffer` 等待、驱动调用或 GPU 同步。还要检查线程状态、调度延迟、`dequeueBuffer` / `queueBuffer` 耗时、GPU slice（时间轴上的工作区间）和 fence。UI 与 RenderThread 都按时而 present 偏晚时，应继续检查 BLAST 的缓冲区积压、SurfaceFlinger 的 latch（接收本帧缓冲区）与合成、HWC 和显示反馈。
+`RenderThread DrawFrame` 变长时，先别急着写成“GPU 慢”：这段时间可能包含 RenderThread 的 CPU 工作、runnable 时间、`dequeueBuffer` 等待、驱动调用或 GPU 同步。我们要接着检查线程状态、调度延迟、`dequeueBuffer` / `queueBuffer` 耗时、GPU slice 和 fence；UI 与 RenderThread 都按时而 present 偏晚时，再往下看 BLAST 的缓冲区积压、SurfaceFlinger 的 latch（接收本帧缓冲区）与合成、HWC 和显示反馈。
 
 ### 动画与 UI 线程：按显示阶段归因
 
-`Choreographer` 在 Android 17 中依次执行 input、animation、insets animation、traversal 和 commit 回调。`ValueAnimator`、`ViewPropertyAnimator` 的进度推进以及应用注册的更新回调通常运行在创建它们的 Looper 线程；Looper 是按队列处理消息和回调的线程循环。View 动画应在 UI 线程创建和操作。属性最终写入 RenderNode，也不会省掉 UI 线程上的插值、回调和状态更新。
+`Choreographer` 依次执行 input、animation、insets animation、traversal 和 commit 回调。`ValueAnimator`、`ViewPropertyAnimator` 的进度推进以及应用注册的更新回调通常运行在创建它们的 Looper 线程；Looper 是按队列处理消息和回调的线程循环。View 动画应在 UI 线程创建和操作。属性最终写入 RenderNode，UI 线程上的插值、回调和状态更新照旧执行。
 
 一帧动画应沿以下观察点逐段检查：
 
@@ -250,7 +250,7 @@ class BlurController(
 | BLAST / SurfaceFlinger | `BufferTX - <layerName>`、latch（接收缓冲区）、composition（合成）、FrameTimeline | 缓冲区到达、合成和 display frame（显示帧）是否按期 | 屏幕面板的像素响应已经完成 |
 | HWC / 显示设备 | composition type（合成类型）、present feedback（上屏反馈）、相关 fence | Android 显示栈观察到的 present 时刻 | 用户已经感知到像素变化 |
 
-这张表的边界是“某一阶段按时”只能排除该阶段已经观察到的延迟。判断动画是否按期可见，仍要把同一帧从应用回调关联到最终 present。
+这张表的用法是：“某一阶段按时”只能排除该阶段已经观察到的延迟；判断动画是否按期可见，仍要把同一帧从应用回调关联到最终 present。
 
 #### 把不变计算移出更新回调
 
@@ -281,31 +281,31 @@ ValueAnimator.ofFloat(0f, 1f).apply {
 }.start()
 ```
 
-`setSamples()` 只在动画开始前复制数据并建立几何缓存；`setProgress()` 只更新可见区间并调用 `invalidate()`。API 21 起，应用传给 `invalidate(Rect)` 的 dirty rectangle（局部脏区域）会被忽略，因此不能依赖它缩小 View 的重录范围。需要隔离更新时，应把内容分到不同的 View 或 RenderNode。`onDraw()` 的对象复用、刷新和 RenderNode 边界详见 [22.1 自定义 View 性能优化](01-view-layout-custom-drawing.md)。
+`setSamples()` 只在动画开始前复制数据并建立几何缓存；`setProgress()` 只更新可见区间并调用 `invalidate()`。API 21 起，应用传给 `invalidate(Rect)` 的 dirty rectangle 会被忽略，想缩小 View 的重录范围，应把内容分到不同的 View 或 RenderNode。`onDraw()` 的对象复用、刷新和 RenderNode 边界详见 [22.1 自定义 View 性能优化](01-view-layout-custom-drawing.md)。
 
 #### 动画要随可见性停止
 
 页面 `onStop()`、View 从窗口分离或 RecyclerView 列表项回收后，Animator、Lottie、粒子系统和 `postOnAnimation()` 循环都应停止或暂停。恢复时要从业务状态计算进度，避免重复注册回调。生命周期处理既影响帧性能，也影响后台功耗和对象引用。
 
-#### Android 17 的缓冲区积压恢复
+#### 缓冲区积压恢复
 
-Android 17 源码包含 buffer stuffing recovery（缓冲区积压恢复）。窗口生产者等待空闲缓冲区超过半个帧周期时，`Choreographer.onWaitForBufferRelease()` 会把当前状态标为 stuffed（已积压）；等待时长来自 `BBQBufferQueueProducer::waitForBufferRelease()`，经渲染器回调与 `ViewRootImpl` 连接到 `Choreographer`。恢复逻辑可以主动延迟一帧，再用 `Negative offset` 调整后续动画的 frame time（动画时间基准），让缓冲区积压有时间下降。
+Android 17 源码包含 buffer stuffing recovery（缓冲区积压恢复）。窗口生产者等待空闲缓冲区超过半个帧周期时，`Choreographer.onWaitForBufferRelease()` 会把当前状态标为 stuffed；等待时长来自 `BBQBufferQueueProducer::waitForBufferRelease()`，经渲染器回调与 `ViewRootImpl` 连接到 `Choreographer`。恢复逻辑可以主动延迟一帧，再用 `Negative offset` 调整后续动画的 frame time（动画时间基准），让缓冲区积压有时间下降。
 
-Perfetto 中遇到动画帧间隔异常时，可搜索 `Buffer stuffing recovery`、`buffer stuffed` 和 `Negative offset`，再检查 `dequeueBuffer` 等待、FrameTimeline 的 `Buffer Stuffing`、目标图层的 `BufferTX` 与后续缓冲区积压。出现主动延迟时，该帧不能直接归因为 Animator 计算或 CPU 算力不足。`bufferStuffingMultiRecovery`、`bufferStuffingRecoveryThreshold` 等 aconfig（Android 平台功能开关机制）配置会改变恢复细节，设备行为要以当前构建配置和 trace 为准。
+Perfetto 中遇到动画帧间隔异常时，可搜索 `Buffer stuffing recovery`、`buffer stuffed` 和 `Negative offset`，再检查 `dequeueBuffer` 等待、FrameTimeline 的 `Buffer Stuffing`、目标图层的 `BufferTX` 与后续缓冲区积压。出现主动延迟时，应先确认恢复机制的影响，再评估 Animator 计算或 CPU 算力是否不足。`bufferStuffingMultiRecovery`、`bufferStuffingRecoveryThreshold` 等 aconfig（Android 平台功能开关机制）配置会改变恢复细节，设备行为要以当前构建配置和 trace 为准。
 
 ### AnimatedVectorDrawable：先确认运行线程再优化
 
-Android 17 的 `AnimatedVectorDrawable`（AVD）默认使用 `VectorDrawableAnimatorRT`，API 25 起可以在 RenderThread 推进动画。动画尚未启动、却先绘制到软件 Canvas 时，源码会调用 `fallbackOntoUI()` 切到 UI 线程实现；平台内部也保留强制 UI 动画的入口。
+`AnimatedVectorDrawable`（AVD）默认使用 `VectorDrawableAnimatorRT`，API 25 起可以在 RenderThread 推进动画。动画尚未启动、却先绘制到软件 Canvas 时，源码会调用 `fallbackOntoUI()` 切到 UI 线程实现；平台内部也保留强制 UI 动画的入口。
 
-`Animatable2.AnimationCallback` 不会让动画退回 UI 线程。RenderThread 动画完成后，结束回调经 Handler 返回 UI 侧，而且可能比 RenderThread 完成晚一帧。排查时应在 Perfetto 中分别查看主线程、RenderThread 和 GPU；主线程没有逐帧更新，也不能证明动画已经按期 present。
+`Animatable2.AnimationCallback` 不会让动画退回 UI 线程。RenderThread 动画完成后，结束回调经 Handler 返回 UI 侧，而且可能比 RenderThread 完成晚一帧。排查时在 Perfetto 中分别查看主线程、RenderThread 和 GPU；主线程看不到逐帧更新，说明不了动画是否按期 present，还要结合 GPU 与显示侧确认。
 
 AVD 适合路径、颜色和 transform 数量有限的图标动画。路径节点、关键帧和同时播放实例越多，属性插值、矢量绘制与 GPU 覆盖成本越高；退回 UI 线程时还要承担主线程更新与绘制记录。可以从 `Drawable.ConstantState` 创建实例以复用不可变配置，但每个可见控件仍需独立的可变动画状态。列表复用时必须在从窗口分离或回收时停止动画并重置进度，避免不可见 ViewHolder 继续占用帧时钟。
 
-出现版本或设备差异时，建立三组对照：原 AVD、等价静态矢量图、简化路径或关键帧的 AVD。若静态组仍慢，问题不在动画插值；若主线程组明显改善但 GPU 耗时不变，说明只是移动了 CPU 工作。软件 Canvas、截图和离屏 Bitmap 路径也要单独验证，因为它们不能沿用硬件窗口的 RenderThread 结论。
+出现版本或设备差异时，建立三组对照：原 AVD、等价静态矢量图、简化路径或关键帧的 AVD。若静态组仍慢，问题就不在动画插值；若主线程组明显改善但 GPU 耗时不变，说明只是移动了 CPU 工作。软件 Canvas、截图和离屏 Bitmap 路径要单独验证，因为它们不能沿用硬件窗口的 RenderThread 结论。
 
 ### 转场动画：限制捕获范围和目标数量
 
-`TransitionManager.beginDelayedTransition(sceneRoot, transition)` 先立即捕获 start values（变化前的属性），再安排在下一次 pre-draw（绘制前回调）捕获 end values（变化后的属性），最后为有差异的目标创建 Animator。`sceneRoot` 是转场捕获和动画的根容器；范围过大时，遍历、布局影响和候选目标都会增加。具体成本还取决于 Transition 类型，以及 target / exclude（纳入 / 排除目标）配置。
+`TransitionManager.beginDelayedTransition(sceneRoot, transition)` 的执行顺序是：先立即捕获 start values，再在下一次 pre-draw（绘制前回调）捕获 end values，最后为有差异的目标创建 Animator。`sceneRoot` 是转场捕获和动画的根容器；范围过大时，遍历、布局影响和候选目标都会增加。具体成本还取决于 Transition 类型，以及 target / exclude（纳入 / 排除目标）配置。
 
 场景根节点应选能容纳目标变化的最小共同父容器，再显式限制 target。下面的例子让筛选面板和结果列表的外框参与转场，同时排除列表项。
 
@@ -335,7 +335,7 @@ filterPanel.isVisible = showFilters
 
 ### 扩展：MotionLayout 性能实践
 
-截至 2026-08-14，Google Maven 中 ConstraintLayout 的当前稳定版是 `2.2.2`，本文以该版本为库基线。MotionLayout 属于 AndroidX ConstraintLayout，其行为由依赖版本和 `MotionScene` 决定，Android 17 平台标签不能替代库版本记录。`progress` 是从 0 到 1 的转场进度；MotionLayout 适合用它同时驱动多个 View 的约束、位置、尺寸、透明度和关键帧。
+截至 2026-08-14，Google Maven 中 ConstraintLayout 的当前稳定版是 `2.2.2`，本文以该版本为库基线。MotionLayout 属于 AndroidX ConstraintLayout，行为由依赖版本和 `MotionScene` 决定；排查行为差异时先对库版本，再对平台标签。`progress` 是从 0 到 1 的转场进度；MotionLayout 适合用它同时驱动多个 View 的约束、位置、尺寸、透明度和关键帧。
 
 接入时检查三类输入：
 
@@ -361,13 +361,13 @@ filterPanel.isVisible = showFilters
 
 View 动画按属性和线程判断成本，Compose 动画还要检查状态读取是否扩大重组和测量范围。
 
-Compose 动画每帧会做多少工作，取决于动画值在哪个阶段读取、哪些阶段因此失效、过渡期间保留多少界面内容，以及应用提交帧后的显示过程。本文以 Compose BOM 2026.08.00 对应的 Compose 1.12.0 为库版本基线，以 Android 17、API 37 的 `android-17.0.0_r1` 为平台基线。Compose 独立于 Android 平台发布，不能用 API 37 推导 Compose 行为。
+Compose 动画每帧会做多少工作，取决于动画值在哪个阶段读取、哪些阶段因此失效、过渡期间保留多少界面内容，以及应用提交帧后的显示过程。本文的 Compose 库版本基线是 BOM 2026.08.00 对应的 Compose 1.12.0；Compose 独立于 Android 平台发布，行为以库版本为准。
 
-普通 Compose 页面仍由宿主应用窗口的 HWUI 路径生成画面。状态计算，以及部分组合（Composition）、布局（Layout）和绘制（Draw），都发生在主线程；`RenderThread` 整理硬件绘制命令，GPU 执行命令，BLAST 负责传递图形缓冲区，`SurfaceFlinger` 与硬件合成器（Hardware Composer，HWC）完成系统合成和送显。完整边界见 [13.8 Jetpack Compose 渲染管线：Composition、Layout 与 RenderNode](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md)。本文只讨论动画额外增加的工作。
+普通 Compose 页面仍由宿主应用窗口的 HWUI 路径生成画面。状态计算，以及部分组合（Composition）、布局和绘制，都发生在主线程；`RenderThread` 整理硬件绘制命令，GPU 执行命令，BLAST 负责传递图形缓冲区，`SurfaceFlinger` 与 HWC 完成系统合成和送显。完整边界见 [13.8 Jetpack Compose 渲染管线：Composition、Layout 与 RenderNode](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md)。本文只讨论动画额外增加的工作。
 
 ### 1. 用状态读取阶段判断动画成本
 
-`Animatable.value`、`Transition.animate*` 和 `animate*AsState` 返回的动画值都受 Compose 快照（Snapshot）系统观察。用哪个 API 并不决定失效发生在哪个阶段；动画值在哪个阶段被读取，值变化时就请求哪个阶段重新执行。同一个值若在多个阶段读取，也会建立多处观察关系。
+`Animatable.value`、`Transition.animate*` 和 `animate*AsState` 返回的动画值都受 Compose 快照（Snapshot）系统观察。失效发生在哪个阶段，取决于动画值在哪里被读取：在哪个阶段读取，值变化时就请求哪个阶段重新执行；同一个值在多个阶段读取，也会建立多处观察关系。
 
 | 动画值的读取位置 | 值变化后的主要工作 | 常见写法 | 判断要点 |
 | --- | --- | --- | --- |
@@ -376,7 +376,7 @@ Compose 动画每帧会做多少工作，取决于动画值在哪个阶段读取
 | 绘制回调 | 绘制 | `drawBehind { drawRect(color) }` | 适合颜色、路径参数和 `Canvas` 内容 |
 | `graphicsLayer {}` 回调 | 图层属性更新与绘制提交 | `graphicsLayer { translationX = x }` | 不重组、不重新测量；仍会产生 `RenderThread`/GPU 工作 |
 
-`drawWithCache` 也会观察缓存构建代码中读取的 `State`，依赖变化时会重建缓存。绘制阶段并没有统一关闭 Snapshot 读取观察。把高频值延后到绘制回调或图层回调中读取，组合阶段才无需处理这次更新。
+`drawWithCache` 也会观察缓存构建代码中读取的 `State`，依赖变化时会重建缓存。绘制阶段同样保持 Snapshot 读取观察；把高频值延后到绘制回调或图层回调中读取，组合阶段就无需处理这次更新。
 
 下面的示例用于把透明度动画值延后到图层属性更新。
 
@@ -402,21 +402,21 @@ fun FadingPanel(
 }
 ```
 
-这里的 `alpha.value` 只在 `graphicsLayer` 回调中读取，所以透明度变化不会要求 `FadingPanel` 逐帧重组或重新布局。透明度低于 1 时，图层可能需要中间合成；减少主线程工作不表示 GPU 无需工作。应在目标设备上同时观察界面线程、`RenderThread` 和帧时间线（`FrameTimeline`）。
+这里的 `alpha.value` 只在 `graphicsLayer` 回调中读取，透明度变化停留在图层属性更新这一层，`FadingPanel` 无需逐帧重组或重新布局。透明度低于 1 时，图层可能需要中间合成，主线程省下的工作，GPU 那边未必同步变轻；应在目标设备上同时观察界面线程、`RenderThread` 和 `FrameTimeline`。
 
-### 2. 动画时钟与 Android 17 帧时间
+### 2. 动画时钟与帧时间
 
 Compose 1.12.0 的 `AndroidUiFrameClock.withFrameNanos()` 会注册 `Choreographer.FrameCallback`。`Transition` 和 `Animatable` 的逐帧循环都通过 `withFrameNanos` 一类接口等待下一帧。Android 上没有一套脱离 `Choreographer`、按固定间隔自行计时的 Compose 界面时钟。
 
 主线程及时收到回调时，动画按本次帧时间计算已经播放的时长。主线程被阻塞后，回调会延迟；下一次执行看到更大的时间差，动画值会向前跳。Compose 不会补画所有错过的中间帧，用户通常会看到画面停顿后直接跳到较后的状态。
 
-Android 17 的 `Choreographer.FrameData` 同时携带候选帧时间线、首选帧时间线、截止时间和预计呈现时间。性能判断应使用当前帧的截止时间，或 `FrameTimeline` 中的预期/实际结果，不能把 16.6 ms、11.1 ms、8.3 ms 固化成设备常量。可变刷新率、帧率请求和调度选择都会改变某一帧可用的时间。
+Android 17 的 `Choreographer.FrameData` 同时携带候选帧时间线、首选帧时间线、截止时间和预计呈现时间。性能判断应使用当前帧的截止时间，或 `FrameTimeline` 中的预期/实际结果；16.6 ms、11.1 ms、8.3 ms 只是特定刷新率下的周期换算值，可变刷新率、帧率请求和调度选择都会改变某一帧可用的时间。
 
-Perfetto 中的 `Choreographer#doFrame` 区间事件（slice）覆盖应用主线程回调，不包含应用 GPU 完成、图形缓冲区入队后的 SurfaceFlinger 合成和送显。它变长只能证明主线程帧回调变长，不能单独代表端到端帧耗时。
+Perfetto 中的 `Choreographer#doFrame` 区间事件（slice）覆盖应用主线程回调，不包含应用 GPU 完成、图形缓冲区入队后的 SurfaceFlinger 合成和送显。它变长只说明主线程帧回调变长，端到端帧耗时还要关联 GPU 与送显一起看。
 
 ### 3. Animatable：互斥动画与手势跟随
 
-`Animatable<T, V>` 内部持有 `AnimationState`，其 `value` 由 `mutableStateOf` 保存。它提供数值连续性、边界约束、速度信息和互斥控制；读取位置仍会决定失效阶段，不能假定它只触发绘制。
+`Animatable<T, V>` 内部持有 `AnimationState`，其 `value` 由 `mutableStateOf` 保存。它提供数值连续性、边界约束、速度信息和互斥控制；失效阶段仍由读取位置决定。
 
 同一个 `Animatable` 启动新的 `animateTo`、`animateDecay`、`snapTo` 或 `stop` 时，`MutatorMutex` 会取消正在运行的变更。新的 `animateTo` 从当前值继续；弹簧动画（spring）还会延续当前速度。取消会以 `CancellationException` 沿协程父子关系传播，需要释放的资源应在 `finally` 中清理。
 
@@ -429,7 +429,7 @@ API 选择可以按控制语义划分：
 - 单值随目标自动过渡，且无需等待完成或主动取消：`animate*AsState`。
 - 内容进入、退出或替换：`AnimatedVisibility`、`AnimatedContent`。
 
-无关组件各自维护状态迁移，更容易限定生命周期。跨组件共享一个 `Transition` 虽然能减少对象数，却会把状态、取消和完成条件耦合在一起，不能作为通用优化。
+无关组件各自维护状态迁移，更容易限定生命周期。跨组件共享一个 `Transition` 可以减少对象数，代价是把状态、取消和完成条件耦合在一起，适用范围有限。
 
 ### 4. Transition 会参与组合
 
@@ -469,7 +469,7 @@ Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` �
 
 独立创建的 `animate*AsState` 不属于 `AnimatedVisibilityScope.transition`，容器不知道它何时结束，因而可能先移除内容。需要与退出完成同步的自定义动画，应注册到作用域提供的 `transition` 上。
 
-缩短退出时长只能缩短保留窗口，没有一个适用于所有产品的固定毫秒数。内容很重时，可把昂贵订阅移到更高层统一管理，或在退出开始后停止不再需要的数据更新；这属于业务生命周期设计，不能靠 `visible=false` 自动完成。
+缩短退出时长只能缩短保留窗口，保留多久取决于内容轻重与产品要求。内容很重时，可把昂贵订阅移到更高层统一管理，或在退出开始后停止不再需要的数据更新；这属于业务生命周期设计，不能靠 `visible=false` 自动完成。
 
 ### 6. AnimatedContent：过渡期间新旧内容共存
 
@@ -492,7 +492,7 @@ Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` �
 
 返回的 `State` 会合并相等值；写入与当前值相等的结果不会触发重组。不同值若按帧更新，下游仍会按其读取阶段失效。`produceState` 适合把外部异步或订阅式数据转成 Compose `State`；外部数据频率高不构成误用，判断依据是界面是否需要每个样本，以及读取位置是否合适。
 
-`snapshotFlow` 把 Snapshot `State` 读取转换成冷流（cold Flow，即有人收集时才开始执行），适合驱动埋点、持久化等副作用。`distinctUntilChanged`、`sample` 或 `debounce` 会改变事件或时间语义，不适合替代屏幕上的逐帧动画。
+`snapshotFlow` 把 Snapshot `State` 读取转换成冷流（cold Flow），有人收集时才开始执行，适合驱动埋点、持久化等副作用。`distinctUntilChanged`、`sample` 或 `debounce` 会改变事件或时间语义，不适合替代屏幕上的逐帧动画。
 
 `derivedStateOf` 适合输入变化频繁、输出变化较少的派生结果。例如滚动偏移不断变化，而界面只关心“是否越过阈值”。它根据派生结果的相等性策略决定是否通知读取方。若派生结果每帧都不同，`derivedStateOf` 只会增加观察与计算开销。
 
@@ -500,7 +500,7 @@ Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` �
 
 强跳过模式（Strong Skipping）从 Kotlin 2.0.20 起默认启用。启用后，可重启的可组合函数即使带有不稳定参数，也可以被标记为允许跳过；稳定参数仍用对象相等性比较，不稳定参数则用实例相等性比较。编译器还会自动记忆可组合函数内的 lambda，并用它捕获的值作为键。
 
-这些规则主要减少父级重组向子级传播，以及 lambda 的重复分配。它们不会改变以下行为：
+这些规则主要减少父级重组向子级传播，以及 lambda 的重复分配；下面这些行为保持原样：
 
 - 可组合函数体直接读取的动画 `State` 变化后，读取作用域仍会失效。
 - 布局、绘制或图层回调中的 `State` 读取仍由对应阶段观察。
@@ -531,13 +531,13 @@ Compose 1.12.0 已弃用接收 `MutableTransitionState` 的 `updateTransition` �
 
 `graphicsLayer`、绘制回调或跳过组合，只会改变应用生成帧前半程的工作量。标准 HWUI 页面仍要经过 `RenderThread`、GPU、应用窗口的图形缓冲区提交、SurfaceFlinger 和 HWC。透明度、裁剪、模糊、复杂路径或较大的离屏图层可能减少主线程工作，同时增加 GPU 或内存带宽成本。
 
-`ComposeView` 与 View 动画共用窗口和主线程帧回调；`AndroidView` 也不会得到独立帧预算。混合页面应通过同一条 `FrameTimeline` 分析 View 树遍历、Compose 工作、`RenderThread` 和系统合成，不能把某个跟踪区间当成整帧耗时。
+`ComposeView` 与 View 动画共用窗口和主线程帧回调；`AndroidView` 同样共用这套帧预算。混合页面应通过同一条 `FrameTimeline` 分析 View 树遍历、Compose 工作、`RenderThread` 和系统合成，不能把某个跟踪区间当成整帧耗时。
 
-Android 17 的内核基线是 `android17-6.18-2026-06_r6`。内核调度器、CPU 调频（cpufreq）、热限制（thermal）和同步栅栏等待（fence wait）会影响线程何时运行或等待，却不定义 `Animatable`、`Transition` 和内容移除的语义。跟踪数据出现线程可运行但迟迟未获调度、频率受限或栅栏等待时，再检查内核证据；只凭动画卡顿不能归因给调度器。
+内核侧的调度器、cpufreq 调频、thermal 热限制和 fence wait 会影响线程何时运行或等待；`Animatable`、`Transition` 和内容移除的语义由 Compose 定义。跟踪数据出现线程可运行但迟迟未获调度、频率受限或栅栏等待时，再检查内核证据；只凭动画卡顿不能归因给调度器。
 
 ### 11. Perfetto、Studio 与线上指标各看什么
 
-一次排查可以按以下顺序进行：
+一次排查我们可以按以下顺序进行：
 
 1. 在发布（release）、可分析（profileable）且不可调试（non-debuggable）的构建上复现固定交互。
 2. 用 `FrameTimeline` 对齐预期与实际时间线，确认哪些帧迟到，以及应用是否按时完成。
@@ -595,7 +595,7 @@ class ExpandAnimationBenchmark {
 
 应同时关注 `frameOverrunMs` 的 P50/P90/P95/P99、`frameDurationCpuMs` 和 `frameCount`。`frameOverrunMs` 在 API 31 及以上按每帧截止时间计算，能适应高刷新率和可变帧率；`frameDurationCpuMs` 只覆盖界面线程与 `RenderThread` 生成一帧所用的 CPU 时间。`frameCount` 是辅助指标：它变化时，可能表示实现减少或增加了请求帧数量，不能只比较耗时分位值。`FrameTimingMetric` 不提供通用的 `jankFrameCount`，也不应按固定 16.6 ms 自行推导卡顿帧数。
 
-基准配置文件（Baseline Profile）可以让 Android 运行时（ART）提前编译关键用户流程覆盖的应用与库代码，减少首次运行时的解释执行和即时编译（JIT）成本。它不能预编译 GPU 着色器、消除离屏合成，也不会改变 Snapshot 失效范围。用同一组 Macrobenchmark 对比应用基准配置文件前后的数据，才能判断当前动画是否受编译状态影响。
+基准配置文件（Baseline Profile）可以让 Android 运行时（ART）提前编译关键用户流程覆盖的应用与库代码，减少首次运行时的解释执行和即时编译（JIT）成本。GPU 着色器预编译、离屏合成的消除、Snapshot 失效范围，都在它的能力之外。用同一组 Macrobenchmark 对比应用基准配置文件前后的数据，才能判断当前动画是否受编译状态影响。
 
 ### 13. 无限动画、VectorConverter 与资源动画
 
@@ -673,7 +673,7 @@ API 用法、性能工具和测量口径参考：
 
 单个动画稳定后，共享元素过渡需要同时维护起止内容、overlay 绘制和布局坐标。元素匹配失败或重复测量会直接影响连续性。
 
-共享元素过渡会把两个页面中代表同一对象的内容匹配起来，在页面切换时连续改变位置和尺寸。这里关注它对组合、布局、绘制和 GPU 的影响。一般 Compose 性能方法见 [22.3 Compose 性能、Compiler 与 Modifier.Node 诊断](03-compose-compiler-modifier-diagnostics.md)，普通动画成本已由本文前两节建立基线。
+共享元素过渡会把两个页面中代表同一对象的内容匹配起来，在页面切换时连续改变位置和尺寸。这里我们关注它对组合、布局、绘制和 GPU 的影响。一般 Compose 性能方法见 [22.3 Compose 性能、Compiler 与 Modifier.Node 诊断](03-compose-compiler-modifier-diagnostics.md)，普通动画成本已由本文前两节建立基线。
 
 为便于对照 API 和源码，本文保留几个常用英文词：`key` 是两端内容的匹配标识；`bounds` 是包含位置与尺寸的矩形边界；`entry` 是某个 `key` 在源端或目标端的一条注册记录；`overlay` 是 `SharedTransitionScope` 根节点内用于置顶绘制的覆盖区域。这些词都指 Compose 作用域内的匹配、布局或绘制概念。
 
@@ -697,7 +697,7 @@ API 用法、性能工具和测量口径参考：
 1. 创建 `SharedTransitionScope`，集中管理 `key` 匹配、`bounds` 动画和过渡是否活跃；
 2. 创建一个 `Box` 布局，在根 `Modifier` 中取得当前坐标与 Lookahead 目标坐标，并提供 overlay 绘制入口。
 
-Compose 1.12.0 还提供 `SharedTransitionScope { modifier -> ... }` 这个 Composable（可组合函数）入口。它不额外创建 `Box`，但调用方必须把回调给出的 `Modifier` 放在最上层子节点；该节点还要适合作为 overlay 的最高绘制根。大多数页面使用 `SharedTransitionLayout`，更容易保持正确坐标与 z-order（同一绘制区域中的前后顺序）。
+Compose 1.12.0 还提供 `SharedTransitionScope { modifier -> ... }` 这个 Composable 入口。它不额外创建 `Box`，但调用方必须把回调给出的 `Modifier` 放在最上层子节点；该节点还要适合作为 overlay 的最高绘制根。大多数页面使用 `SharedTransitionLayout`，更容易保持正确坐标与 z-order（同一绘制区域中的前后顺序）。
 
 #### 2.1 AnimatedVisibilityScope 告诉系统谁在进入
 
@@ -714,7 +714,7 @@ Compose 1.12.0 还提供 `SharedTransitionScope { modifier -> ... }` 这个 Comp
 
 `rememberSharedContentState(key)` 在 1.12.0 中通过 `remember(key)` 保存 `SharedContentState`。`remember` 会让该对象跨重组保留；列表和详情页应从同一个业务 ID 派生相同 `key`，例如 `article-image:42`。
 
-Compose 的 `key()` 可以在组合结构移动时保留节点身份，但不会自动缩小重组范围。减少重组要从稳定参数、延后状态读取、避免每帧在 Composition（Compose 生成并维护 UI 树的组合阶段）中读取动画值等方面处理。
+Compose 的 `key()` 可以在组合结构移动时保留节点身份，但不会自动缩小重组范围。减少重组要从稳定参数、延后状态读取、避免每帧在 Composition 中读取动画值等方面处理。
 
 相同 `key` 通常应同时存在一个退出 `entry` 和一个进入 `entry`。快速连续导航可能短暂产生多条记录，源码会从可见记录中选择目标。若同一个 `key` 出现多个正在进入的内容，匹配结果便不明确。
 
@@ -787,7 +787,7 @@ private fun SharedTransitionScope.ArticleScene(
 
 #### 4.1 Lookahead 负责取得目标
 
-`SharedBoundsNode.measure()` 在 Lookahead pass 测量子节点，完成放置后记录目标尺寸和位置。坐标相对 `SharedTransitionScope` 根节点，而不是相对整个 window（应用窗口）。
+`SharedBoundsNode.measure()` 在 Lookahead pass 测量子节点，完成放置后记录目标尺寸和位置。坐标相对 `SharedTransitionScope` 根节点，而不是相对整个 window。
 
 这带来两个边界：
 
@@ -798,7 +798,7 @@ private fun SharedTransitionScope.ArticleScene(
 
 #### 4.2 approach 决定重测还是缩放
 
-`sharedElement()` 的子节点会使用动画 `bounds` 生成的固定 constraints（布局给出的宽高限制）重新测量和布局。它与 `RemeasureToBounds` 的成本特征相近：`bounds` 尺寸逐帧变化时，子节点可能逐帧执行 measure/layout（测量与布局）。
+`sharedElement()` 的子节点会使用动画 `bounds` 生成的固定 constraints（布局给出的宽高限制）重新测量和布局。它与 `RemeasureToBounds` 的成本特征相近：`bounds` 尺寸逐帧变化时，子节点可能逐帧执行 measure/layout。
 
 `sharedBounds()` 提供两种 resize mode：
 
@@ -827,7 +827,7 @@ placeholder 是共享内容过渡时留在原布局中的占位区域。默认�
 | 常见用途 | 跨页主图（hero image）、相同图标、可移动内容 | 卡片到详情、`Text` 样式变化、容器变换 |
 | 透明混合 | 通常只有目标内容 | 默认 `fadeIn`/`fadeOut` 可能同时混合两端 |
 
-`sharedBounds()` 可能保留两棵内容子树并同时绘制；alpha（透明度）混合区域较大时，GPU 成本会上升。`sharedElement()` 只绘制目标内容，但它仍有逐帧 constraints 变化和 `GraphicsLayer` 记录成本。无法仅凭 `Modifier` 类型断定哪一种在所有内容上更快。
+`sharedBounds()` 可能保留两棵内容子树并同时绘制；alpha 混合区域较大时，GPU 成本会上升。`sharedElement()` 只绘制目标内容，但仍有逐帧 constraints 变化和 `GraphicsLayer` 记录成本。哪一种更快要按内容实测，`Modifier` 类型本身给不出答案。
 
 两者也没有固有的重组范围差异。重组来自各自内容读取的 Compose 可观察状态；`sharedBounds()` 的进入和退出内容同时存活，可能带来更多活跃的 Composition，具体范围仍由调用方的状态结构决定。
 
@@ -835,15 +835,15 @@ placeholder 是共享内容过渡时留在原布局中的占位区域。默认�
 
 #### 6.1 活跃的 overlay entry 按需持有 GraphicsLayer
 
-Compose 1.12.0 不会在 `SharedBoundsNode.onAttach()` 时立刻分配图形层。节点需要在 overlay 中绘制时，才调用 `createGraphicsLayer()`，并在 draw 阶段把子节点的绘制命令记录进去；退出 overlay、节点 detach（从树中分离）或节点 reset（被复用）时会释放该层。
+Compose 1.12.0 不会在 `SharedBoundsNode.onAttach()` 时立刻分配图形层。节点需要在 overlay 中绘制时，才调用 `createGraphicsLayer()`，并在 draw 阶段把子节点的绘制命令记录进去；退出 overlay、节点 detach 或节点 reset 时会释放该层。
 
-这层资源用于在原位置与 overlay 之间移动绘制结果。它不等于固定大小的 Bitmap 缓存，也不能按 `width × height × 4` 推导全部内存。RenderNode（HWUI 的可记录绘制节点）、display list（录制后的绘制命令列表）、离屏纹理和 GPU backing（GPU 侧实际存储）是否出现，取决于图形效果与渲染后端。
+这层资源用于在原位置与 overlay 之间移动绘制结果。它与固定大小的 Bitmap 缓存是两回事，全部内存也无法按 `width × height × 4` 推导；RenderNode、display list、离屏纹理和 GPU 侧存储是否出现，取决于图形效果与渲染后端。
 
 应用无需在过渡结束时手工清理图形层。实现会在不再需要 overlay 或节点离开 Composition 时释放它。若使用 caller-managed visibility（由调用方直接传入可见状态的 API），不可见节点可能继续留在树中；官方文档建议在 `isTransitionActive == false` 后移除不可见端。
 
 #### 6.2 overlay 会改变父级效果边界
 
-默认情况下，共享内容在 scope overlay 里绘制，不再受原父节点的 clip（裁剪）、alpha 或 scale（缩放）影响。视觉上仍需要这些效果时，要把它们明确应用到共享节点或 overlay。
+默认情况下，共享内容在 scope overlay 里绘制，不再受原父节点的 clip、alpha 或 scale 影响。视觉上仍需要这些效果时，要把它们明确应用到共享节点或 overlay。
 
 需要圆角或裁剪时，应根据语义选择：
 
@@ -856,7 +856,7 @@ Compose 1.12.0 不会在 `SharedBoundsNode.onAttach()` 时立刻分配图形层�
 
 #### 6.3 modifier 顺序会改变目标 bounds
 
-共享 `Modifier` 前的尺寸与 padding（内边距）会参与确定初始和目标 `bounds`；后续 `Modifier` 接收共享节点给出的动画 constraints。列表端与详情端顺序不一致时，位置或尺寸容易在起始帧跳变。
+共享 `Modifier` 前的尺寸与 padding 会参与确定初始和目标 `bounds`；后续 `Modifier` 接收共享节点给出的动画 constraints。列表端与详情端顺序不一致时，位置或尺寸容易在起始帧跳变。
 
 `requiredSize()` 还会覆盖约束，放置位置不同会让父布局观察到不同尺寸。遇到跳变时，应比较两端完整的 `Modifier` 链，再调整动画参数。
 
@@ -870,13 +870,13 @@ Compose 1.12.0 不会在 `SharedBoundsNode.onAttach()` 时立刻分配图形层�
 
 #### 7.2 重复添加 graphicsLayer
 
-共享 `Modifier` 已经按需维护内部 `GraphicsLayer`。业务再为同一节点增加多个 `graphicsLayer()`、模糊、阴影、alpha 或离屏 compositing（先画到中间缓冲再合成），可能引入更多 render pass（一次渲染任务）和中间纹理。
+共享 `Modifier` 已经按需维护内部 `GraphicsLayer`。业务再为同一节点增加多个 `graphicsLayer()`、模糊、阴影、alpha 或离屏 compositing，可能引入更多 render pass（一次渲染任务）和中间纹理。
 
 只保留有明确视觉用途的层，并在 Perfetto/GPU 工具中验证。无作用的 layer 可以删除；有些属性动画适合在 layer 上更新，因此不能把所有 `graphicsLayer()` 都视为问题。
 
 #### 7.3 大面积 alpha 与 overdraw
 
-`sharedBounds()` 默认同时显示进入和退出内容，并用 `fadeIn`/`fadeOut` 过渡。两张全屏图或复杂列表长时间重叠，像素填充（fill rate，GPU 单位时间能处理的像素量）和显存带宽压力都会明显上升，overdraw（同一像素在一帧内被重复绘制）也随之增加。
+`sharedBounds()` 默认同时显示进入和退出内容，并用 `fadeIn`/`fadeOut` 过渡。两张全屏图或复杂列表长时间重叠，像素填充（fill rate）和显存带宽压力都会明显上升，overdraw 也随之增加。
 
 可以缩小共享容器范围、减少同时变化的背景层、调整进入/退出动画，或把静态不透明背景放在共享区域外。优化依据是覆盖面积和 GPU duration（GPU 完成该帧所需时间），不是共享 `key` 的数量。
 
@@ -884,13 +884,13 @@ Compose 1.12.0 不会在 `SharedBoundsNode.onAttach()` 时立刻分配图形层�
 
 列表仍在惯性滚动时启动共享过渡，会同时发生 Lazy layout（只布局可见项及预取项）、图片请求、Lookahead、approach placement 和窗口绘制。motion frame of reference 能处理滚动坐标，却不会消除这些工作。
 
-产品交互允许时，可以结束 fling（松手后的惯性滚动）再切换详情；需要并行时，要保证 item key（列表项身份）稳定、图片已命中缓存，并减少 `AnimatedSize`、`RemeasureToBounds` 和大面积渐变的叠加。
+产品交互允许时，可以结束 fling（松手后的惯性滚动）再切换详情；需要并行时，要保证 item key 稳定、图片已命中缓存，并减少 `AnimatedSize`、`RemeasureToBounds` 和大面积渐变的叠加。
 
 #### 7.5 动画 spec 的求值成本通常较小
 
-默认 bounds transform 使用中低 stiffness（弹簧刚度）的 spring（弹簧动画）。spring 的结束时间由收敛条件决定，tween（按时间插值的动画）的 duration 固定；两者逐帧求值的成本通常远小于复杂内容重测、文字排版和 GPU 绘制。
+默认 bounds transform 使用中低 stiffness（弹簧刚度）的 spring。spring 的结束时间由收敛条件决定，tween（按时间插值的动画）的 duration 固定；两者逐帧求值的成本通常远小于复杂内容重测、文字排版和 GPU 绘制。
 
-选择 animation spec（动画规格）时，应先满足交互与中断连续性，再观察它让高成本内容活跃了多少帧。缩短 duration（持续时间）可能减少总工作，也可能增大逐帧变化幅度并造成视觉突兀，不能只按“spring 更耗性能”判断。
+选择 animation spec（动画规格）时，应先满足交互与中断连续性，再观察它让高成本内容活跃了多少帧。缩短 duration 可能减少总工作，也可能增大逐帧变化幅度并造成视觉突兀，不能只按“spring 更耗性能”判断。
 
 ### 8. LazyList 中的共享元素
 
@@ -905,7 +905,7 @@ Compose 1.12.0 不会在 `SharedBoundsNode.onAttach()` 时立刻分配图形层�
 
 若点击后立刻替换整个列表树，源 `entry` 可能在目标端获得 `bounds` 前 detach。`AnimatedContent`、Navigation 或官方 `AnimatedVisibility` 示例会让进入和退出内容在过渡窗口内同时存在，应优先选作可见性容器。
 
-预取应准备数据、图片和目标页面不可避免的昂贵资源。提前组合整个详情树会延长对象生命周期，也可能让未展示页面参与状态观察；只有 trace（按时间记录系统与应用事件的性能轨迹）证明首次组合是瓶颈时，再设计受控的 precompose（预先组合）。
+预取应准备数据、图片和目标页面不可避免的昂贵资源。提前组合整个详情树会延长对象生命周期，也可能让未展示页面参与状态观察；只有 trace 证明首次组合是瓶颈时，再设计受控的 precompose（预先组合）。
 
 ### 9. Predictive Back
 
@@ -923,7 +923,7 @@ Android 17 沿用这套标准机制，没有独立的 SharedTransitionLayout 帧
 
 #### 9.1 BackHandler 与 PredictiveBackHandler
 
-`BackHandler` 适合处理一次完成的返回动作，不提供连续 progress。需要自定义手势驱动动画时使用 `PredictiveBackHandler`，它提供一串 `BackEventCompat` 事件及 0 到 1 的进度；使用 Navigation 内建 Predictive Back 时，不要再添加会抢先消费同一手势的 handler（回调处理器）。
+`BackHandler` 适合处理一次完成的返回动作，不提供连续 progress。需要自定义手势驱动动画时使用 `PredictiveBackHandler`，它提供一串 `BackEventCompat` 事件及 0 到 1 的进度；使用 Navigation 内建 Predictive Back 时，不要再添加会抢先消费同一手势的 handler。
 
 自定义进度流应更新专门的动画状态，避免每个事件都重建导航图、重发图片请求或重组整页。取消手势时要恢复初始状态，手势完成后再提交返回栈变化。
 
@@ -938,7 +938,7 @@ Compose 1.12.0 的 `SharedTransitionScope.kt`、`SharedContentNode.kt` 与 `Shar
 - UI Thread（应用主线程）上的 Choreographer、Compose recomposition、measure/layout 与 draw；
 - RenderThread（HWUI 的渲染线程）的 `DrawFrame`、资源更新和命令提交；
 - FrameTimeline 的 expected/actual frame（计划帧与实际帧）；
-- GPU completion（GPU 完成时刻）与 GPU duration（GPU 执行时长）；
+- GPU completion（GPU 完成时刻）与 GPU duration；
 - 图片解码、列表预取和其他并行工作；
 - 应用为导航开始、目标端首次放置和过渡结束增加的自定义 trace。
 
@@ -951,10 +951,10 @@ Compose Layout Inspector 可以检查：
 - 两端 `key` 是否一致；
 - `Modifier` 顺序；
 - 源端与目标端是否同时在树中；
-- recomposition count 与 skip count（重组次数与跳过重组次数）；
+- recomposition count 与 skip count；
 - 不可见的 caller-managed 节点是否长期保留。
 
-它不能给出 GPU 渲染 pass 数量、`GraphicsLayer` backing 或 SurfaceFlinger composition type（合成类型）。Inspector 本身也会影响运行，正式性能采样应关闭 Inspector，再用 release/profileable（发布版或允许性能分析的构建）复测。
+它不能给出 GPU 渲染 pass 数量、`GraphicsLayer` backing 或 SurfaceFlinger composition type。Inspector 本身也会影响运行，正式性能采样应关闭 Inspector，再用 release/profileable（发布版或允许性能分析的构建）复测。
 
 #### 10.3 Compose 1.12.0 的视觉调试
 
@@ -993,7 +993,7 @@ fun SharedTransitionDebugOverlay(
 
 #### 11.1 BoundsTransform 只定义 Rect 动画 spec
 
-`BoundsTransform.createAnimationSpec(initialBounds, targetBounds)` 返回 `FiniteAnimationSpec<Rect>`。它能改变 timing（时间控制）、spring 或 keyframes（关键帧），但 API 本身没有沿任意几何 `Path` 移动的参数。
+`BoundsTransform.createAnimationSpec(initialBounds, targetBounds)` 返回 `FiniteAnimationSpec<Rect>`。它能改变 timing、spring 或 keyframes（关键帧），但 API 本身没有沿任意几何 `Path` 移动的参数。
 
 需要曲线路径、旋转或形变时，可以在共享 `bounds` 之外增加受控的 `graphicsLayer` 或绘制类 `Modifier`，也可以使用 caller-managed visibility 驱动视觉属性。过渡结束后，语义节点、点击区域和无障碍焦点都应回到目标布局。
 
@@ -1077,7 +1077,7 @@ Compose 1.12.0 在需要 overlay 绘制时为共享内容创建 `GraphicsLayer`�
 
 SharedTransition overlay 是 `SharedTransitionScope` 根节点 draw pass 内的绘制区域。共享内容仍进入同一个 App Window buffer（应用窗口提交的像素缓冲区），SurfaceFlinger 这个系统合成器通常只看到宿主窗口的 layer。
 
-共享元素可能增加应用侧的图形层记录、裁剪、缩放、透明混合和过绘制，进而推迟窗口 buffer 完成时间；进入 Compose overlay 不会直接增加 HWC（Hardware Composer，硬件合成器）要合成的窗口 layer 数量。
+共享元素可能增加应用侧的图形层记录、裁剪、缩放、透明混合和过绘制，进而推迟窗口 buffer 完成时间；进入 Compose overlay 不会直接增加 HWC 要合成的窗口 layer 数量。
 
 按生产者与结果位置来判断，App 内部的 GPU 图形层或离屏中间结果仍由宿主窗口消费。只有通过 `SurfaceControl` 独立提交的 buffer，才会自然对应独立的 SurfaceFlinger layer。BufferQueue 的 slot（可循环使用的缓冲槽位）、GraphicBuffer 复用与生产者/消费者模型见 [2.8 BufferQueue、Gralloc 与 Sync Fence](../../part1-fundamentals/ch02-rendering/08-bufferqueue-gralloc-sync-fence.md)。
 

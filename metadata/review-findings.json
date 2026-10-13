@@ -4213,6 +4213,68 @@
       "summary": "validateLocationRequest is incorrectly credited with CallerIdentity package checks and provider-manager allowlist policy",
       "type": "source-function-mismatch",
       "updated_at": "2026-10-13T14:53:50.182001+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch21-startup/05-splash-screen.md",
+      "close_note": "Prefetch launchState after super.onCreate and before registering the condition. The callback only reads launchState.value. Source-backed static regression and local gates passed.",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261013-183533-idle-audit-5db5761d",
+      "created_at": "2026-10-13T18:40:33.993912+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261013-183533-idle-audit-5db5761d",
+      "details": "4.1 示例把 viewModel.launchState.value 放进条件闭包，by viewModels() 的首次取值可能创建 ViewModel；与回调只读取已有内存状态及后文生产要求不一致。应在 super.onCreate 后、注册条件前取得 launchState 引用。",
+      "id": "finding-bc45f99f2fee",
+      "log_path": "logs/audit/2026-10-13-20261013-183533-idle-audit-5db5761d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/kotlin/androidx/activity/package-summary#(androidx.activity.ComponentActivity).viewModels(kotlin.Function0,kotlin.Function0)",
+        "https://dl.google.com/dl/android/maven2/androidx/core/core-splashscreen/1.2.0/core-splashscreen-1.2.0-sources.jar"
+      ],
+      "status": "fixed",
+      "summary": "KeepOnScreenCondition 示例在首次绘制回调中首次访问惰性 ViewModel",
+      "type": "predraw-lazy-initialization",
+      "updated_at": "2026-10-13T18:44:28.424432+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch21-startup/05-splash-screen.md",
+      "close_note": "Replaced withEndAction-only removal with idempotent cleanup shared by animation end, cancellation and Activity destruction. Listeners are detached. Warning confirmed in Android 17 source and official API docs; static regression passed.",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261013-183533-idle-audit-5db5761d",
+      "created_at": "2026-10-13T18:40:49.312288+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261013-183533-idle-audit-5db5761d",
+      "details": "ViewPropertyAnimator 官方文档及 android-17.0.0_r1 源码明确规定动画取消时 withEndAction 不执行。原示例不包含取消和 Activity 销毁清理，与本节清理要求不一致；需共享幂等移除函数并覆盖正常结束、取消和销毁。",
+      "id": "finding-f7c94030c14f",
+      "log_path": "logs/audit/2026-10-13-20261013-183533-idle-audit-5db5761d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/view/ViewPropertyAnimator#withEndAction(java.lang.Runnable)",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewPropertyAnimator.java"
+      ],
+      "status": "fixed",
+      "summary": "退出动画示例只在 withEndAction 中移除 Splash，取消路径会跳过清理",
+      "type": "splash-exit-cancel-cleanup",
+      "updated_at": "2026-10-13T18:44:34.463929+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch21-startup/05-splash-screen.md",
+      "close_note": "Documented compileSdk >= 35, Android Gradle Plugin >= 8.6.0, and runtime minSdk 21 separately. Values verified in the downloaded Google Maven 1.2.0 AAR, not inferred from the older migration guide.",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261013-183533-idle-audit-5db5761d",
+      "created_at": "2026-10-13T18:40:59.360716+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261013-183533-idle-audit-5db5761d",
+      "details": "Google Maven 1.2.0 AAR 的 aar-metadata.properties 声明 minCompileSdk=35、minAndroidGradlePluginVersion=8.6.0，而 AndroidManifest.xml 的 minSdkVersion=21。接入段仅给 implementation，需说明构建下限与运行系统下限的区别，避免照搬旧迁移页 compileSdk 31。",
+      "id": "finding-66e2ff99240e",
+      "log_path": "logs/audit/2026-10-13-20261013-183533-idle-audit-5db5761d-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://dl.google.com/dl/android/maven2/androidx/core/core-splashscreen/1.2.0/core-splashscreen-1.2.0.aar"
+      ],
+      "status": "fixed",
+      "summary": "core-splashscreen 1.2.0 接入缺少 AAR 声明的构建工具下限",
+      "type": "missing-build-version-boundary",
+      "updated_at": "2026-10-13T18:44:41.778127+08:00"
     }
   ],
   "schema_version": 1

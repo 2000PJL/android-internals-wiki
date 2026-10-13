@@ -121,25 +121,21 @@ last_body_apply_at: '2026-08-31T11:18:58+08:00'
 
 # Compose 性能、Compiler 与 Modifier.Node 诊断
 
-Compose 性能优化要回答两个问题：哪一段工作错过了本帧 deadline（必须完成提交的截止点），以及哪些状态或输入让这段工作重复发生。只统计重组次数，容易漏掉 Layout、Drawing、RenderThread 和显示系统；只看整帧耗时，又无法定位到具体 Composable。
+Compose 性能优化要回答两个问题：哪一段工作错过了本帧 deadline（必须完成提交的截止点），以及哪些状态或输入让这段工作反复发生。只统计重组次数，容易漏掉 Layout、Drawing、RenderThread 和显示系统；只看整帧耗时，又定位不到具体的 Composable。
 
-截至 2026-08-31，本文使用下面三组基线：
+> 源码基线，截至 2026-08-31：Android 平台为 Android 17 / API 37 / `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`；依赖基线为 Compose BOM `2026.08.00`，POM 把 Runtime、Foundation、UI 约束到 `1.12.0`，文中另保留 BOM `2025.12.00` / Compose `1.10.0` 与 Foundation `1.10.6`，用于 Pausable Composition 的历史变化和复现实验；Compose Compiler 随 Kotlin `2.4.10` Gradle plugin 使用，Strong Skipping 属于编译器行为、Lazy 预取属于 Foundation 行为，两者由应用依赖决定，平台源码标签里查不到。
 
-- Android 平台以 Android 17 / API 37 / `android-17.0.0_r1` 为源码锚点，Linux kernel 以 `android17-6.18-2026-06_r6` 为锚点。
-- 当前依赖基线为 Compose BOM `2026.08.00`，其 POM 把 Runtime、Foundation 和 UI 约束到 `1.12.0`。文中另保留 BOM `2025.12.00` / Compose `1.10.0` 与 Foundation `1.10.6`，用于说明 Pausable Composition 的历史变化和复现实验。
-- Compose Compiler 随 Kotlin `2.4.10` Gradle plugin 使用。Strong Skipping 属于编译器行为，Lazy 预取属于 Foundation 行为，两者都不能从 Android platform 源码标签推断。
+普通 `ComposeView` 不会单独创建 Surface，内容仍由当前应用窗口的 HWUI（Android 硬件加速 UI 渲染器）路径输出。我们顺着这条路径走一遍：UI 线程完成 Composition（根据状态生成或更新 UI 树）、Layout（测量与摆放）和 Drawing（记录绘制命令），经 `HardwareRenderer.syncAndDrawFrame()` 交给 RenderThread；随后图形缓冲区经 BLAST BufferQueue 提交、SurfaceFlinger 合成，再交给 HWC（Hardware Composer，硬件合成器）上屏。页面嵌入 `SurfaceView`、`TextureView`、WebView 或视频组件后，还要跟踪这些组件自己的图像生产者和 Surface layer。完整管线可结合 [Compose 渲染管线架构](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md) 阅读。
 
-普通 `ComposeView` 不会单独创建 Surface。内容仍由当前应用窗口的 HWUI（Android 硬件加速 UI 渲染器）路径输出：UI 线程完成 Composition（根据状态生成或更新 UI 树）、Layout（测量与摆放）和 Drawing（记录绘制命令），经 `HardwareRenderer.syncAndDrawFrame()` 交给 RenderThread（执行渲染命令的专用线程）。随后，图形缓冲区通过 BLAST BufferQueue 提交，由 SurfaceFlinger 合成，再交给 HWC（Hardware Composer，硬件合成器），最终显示到屏幕。页面嵌入 `SurfaceView`、`TextureView`、WebView 或视频组件后，还要跟踪这些组件自己的图像生产者（producer）和 Surface layer（合成图层）。完整管线可结合 [Compose 渲染管线架构](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md) 阅读。
+这条窗口链路和 Compose Runtime 的内部结构是两层概念。`SlotTable` 保存组合的 group、key、`remember` 值和调用结构，承载 Compose 测量、摆放与绘制节点的则是 `LayoutNode`。重组只重新执行失效的重启作用域，整页并不会重建；大多数普通 `LayoutNode` 也不会各自创建一个 Android `RenderNode`，绘制通常记录到最近的图层边界。
 
-这条窗口链路与 Compose Runtime 的内部结构是两层概念。`SlotTable` 保存组合的 group、key、`remember` 值和调用结构，它不是 UI 节点树；`LayoutNode` 才承载 Compose 的测量、摆放与绘制节点。重组只重新执行失效的重启作用域，不等于重建整个页面；大多数普通 `LayoutNode` 也不会各自创建一个 Android `RenderNode`，绘制通常记录到最近的图层边界。
-
-Compose 性能先从状态读取、重组范围、测量和绘制判断责任阶段，再用 Compiler 报告和 Runtime Tracing 解释可跳过性与实际重组。Modifier.Node 改变修饰符节点的生命周期和更新成本。
+我们的排查顺序也是这样：先从状态读取、重组范围、测量和绘制判断责任阶段，再用 Compiler 报告和 Runtime Tracing 解释可跳过性与实际重组；Modifier.Node 则改变修饰符节点的生命周期和更新成本。
 
 ## 状态、重组、布局与绘制基线
 
 ### 从状态读取阶段控制工作范围
 
-Compose 把 UI 更新分成 Composition、Layout 和 Drawing 三个阶段。状态在哪个阶段被读取，运行时就在哪个阶段记录依赖；状态变化后，从对应的重启作用域（restart scope，可被单独标记失效并重新执行的范围）开始工作。
+Compose 把 UI 更新分成 Composition、Layout 和 Drawing 三个阶段。状态在哪个阶段被读取，运行时就在哪里记录依赖；状态变化后，工作从对应的重启作用域（restart scope，可被单独标记失效并重新执行的范围）开始。
 
 | 读取位置 | 状态变化后的起点 | 适合的变化 |
 | --- | --- | --- |
@@ -147,9 +143,9 @@ Compose 把 UI 更新分成 Composition、Layout 和 Drawing 三个阶段。状�
 | 测量 / 摆放 lambda | Layout；摆放与测量还有独立的重启作用域 | 位置、约束内尺寸、对齐 |
 | draw lambda 或 layer property lambda | Drawing 或图层属性更新 | 颜色、透明度、绘制偏移、缩放 |
 
-这张表描述失效（invalidation，即状态变化通知运行时某段结果已过期）的起点，不代表后续阶段必然执行。Composition 的输出没有改变时，Layout 和 Drawing 仍可跳过。`LazyColumn`、`BoxWithConstraints` 和 `SubcomposeLayout` 会在布局过程中决定子内容，不能套用“Composition 总在 Layout 之前一次完成”的简化模型。
+这张表给出的是失效（invalidation，状态变化的失效通知）的起点，后续阶段是否执行要看输出有没有变：Composition 的输出没变，Layout 和 Drawing 仍可跳过。另外，`LazyColumn`、`BoxWithConstraints` 和 `SubcomposeLayout` 会在布局过程中决定子内容，“Composition 总在 Layout 之前一次完成”这个简化模型对它们并不成立。
 
-下面的示例把滚动偏移推迟到 placement lambda 中读取，并把透明度放进 `graphicsLayer` 的属性 lambda。两个高频值都不再由 Composable 函数体读取。
+看一个例子：下面的示例把滚动偏移推迟到 placement lambda 中读取，透明度放进 `graphicsLayer` 的属性 lambda，两个高频值都离开了 Composable 函数体。
 
 ```kotlin
 @Composable
@@ -174,22 +170,22 @@ fun ParallaxHeader(
 }
 ```
 
-`offset { ... }` 的状态读取发生在 placement 阶段，`graphicsLayer { ... }` 的读取用于更新图层属性。若位置变化会改变兄弟节点的测量约束，仍应使用能表达该约束关系的布局；视觉平移不能冒充布局位置。
+`offset { ... }` 的状态读取发生在 placement 阶段，`graphicsLayer { ... }` 的读取用于更新图层属性。若位置变化会改变兄弟节点的测量约束，仍应使用能表达该约束关系的布局——视觉平移替代不了布局位置。
 
-状态影响节点数量、文本或语义属性时，Composition 无法省略。优化方向是缩小读取范围：把状态读取封装进 lambda、把读取移到更靠近使用位置的 Composable，或把一个过大的重组作用域拆成输入清晰的子函数。
+状态影响节点数量、文本或语义属性时，Composition 省不掉。这时优化的方向是缩小读取范围：把状态读取封装进 lambda、移到更靠近使用位置的 Composable，或把过大的重组作用域拆成输入清晰的子函数。
 
 ### Strong Skipping 与 Stability
 
 #### 跳过条件要分函数和参数
 
-Kotlin 2.0.20 起默认启用 Strong Skipping，本文当前基线 Kotlin `2.4.10` 无需再设置旧选项 `enableStrongSkippingMode`。它改变两项编译结果：
+Kotlin 2.0.20 起默认启用 Strong Skipping，本文基线 Kotlin `2.4.10` 已经不用再设置旧选项 `enableStrongSkippingMode`。它改变两项编译结果：
 
-- 所有 restartable（运行时可单独重新执行）的 Composable 默认也可标记为 skippable（参数满足条件时可跳过）；non-restartable 函数仍不可跳过，`@NonSkippableComposable` 可以显式禁止跳过。
-- Composable 内部创建的 lambda 会自动记忆并复用（memoize）。捕获值用作缓存 key；stable 捕获值按 `equals()` 比较，unstable 捕获值按 `===` 比较。`@DontMemoize` 可以让某个 lambda 退出自动缓存。
+- 所有 restartable（可单独重新执行）的 Composable 默认也可标记为 skippable，参数满足条件时可跳过；non-restartable 函数仍不可跳过，`@NonSkippableComposable` 可以显式禁止跳过。
+- Composable 内部创建的 lambda 会自动 memoize。捕获值用作缓存 key：stable 捕获值按 `equals()` 比较，unstable 捕获值按 `===` 比较。`@DontMemoize` 可以让某个 lambda 退出自动缓存。
 
-Stability（稳定性）是编译器对“参数能否可靠比较、属性变化能否被观察”的判定。进入重组时，skippable 函数还要比较本次与上次参数：`stable` 参数使用 `equals()`，`unstable` 参数使用实例相等 `===`。参数相等只能阻断父级重组向下传播；函数内部读取的 Snapshot 状态（能被 Compose 观察的快照状态）或动态 `CompositionLocal`（沿 Composition 树向下提供的值）发生变化时，对应重组作用域仍会失效。
+Stability（稳定性）是编译器对“参数能否可靠比较、属性变化能否被观察”的判定。进入重组时，skippable 函数还要比较本次与上次的参数：`stable` 参数使用 `equals()`，`unstable` 参数使用实例相等 `===`。参数相等拦住的只是父级重组向下传播；函数内部读取的 Snapshot 状态或动态 `CompositionLocal` 发生变化时，对应重组作用域仍会失效。
 
-Strong Skipping 没有让 Stability 失去作用。它决定参数采用哪种比较方式，也约束可变对象如何通知 Compose：
+Strong Skipping 并没有让 Stability 失去作用：它决定参数采用哪种比较方式，也约束可变对象如何通知 Compose。
 
 - 普通 `List`、`Set`、`Map` 接口仍被编译器视为 unstable。同一个可变集合实例原地修改时，实例比较可能让调用被跳过，集合本身也不会发送 Snapshot 通知。
 - `SnapshotStateList`、`SnapshotStateMap` 能通知运行时；不可变 UI 数据模型配合新集合实例，则能提供边界清晰的新旧快照。
@@ -198,7 +194,7 @@ Strong Skipping 没有让 Stability 失去作用。它决定参数采用哪种�
 
 #### 用编译器报告验证推断
 
-编译器报告适合回答“这个函数怎样被编译”和“哪个类型被判定为 unstable”，不能单独证明某次卡顿由 Stability 引起。下面的 Gradle 配置适用于 Kotlin 2.x 的 Compose Compiler Gradle plugin。
+编译器报告能回答“这个函数怎样被编译”和“哪个类型被判定为 unstable”；某次卡顿是不是 Stability 引起的，它单独证明不了。下面的 Gradle 配置适用于 Kotlin 2.x 的 Compose Compiler Gradle plugin。
 
 ```kotlin
 composeCompiler {
@@ -207,13 +203,13 @@ composeCompiler {
 }
 ```
 
-应在 release variant（发布构建变体）上生成报告。`reportsDestination` 输出 `*-classes.txt`、`*-composables.txt` 和 `*-composables.csv`；`metricsDestination` 另行输出模块统计。Strong Skipping 开启后，`restartable` 函数通常也会显示 `skippable`，因此还要检查参数比较、状态读取位置和现场重组次数。追求“全模块全部 skippable”会增加错误标注和维护成本。
+应在 release variant 上生成报告。`reportsDestination` 输出 `*-classes.txt`、`*-composables.txt` 和 `*-composables.csv`；`metricsDestination` 另行输出模块统计。Strong Skipping 开启后，`restartable` 函数通常也会显示 `skippable`，所以还要检查参数比较、状态读取位置和现场重组次数；追求“全模块全部 skippable”只会增加错误标注和维护成本。
 
 ### `remember`、`derivedStateOf` 与副作用
 
 #### `remember` 缓存一次计算，不负责数据一致性
 
-`remember(keys...)` 在 key 比较相等时复用缓存值，key 变化时丢弃旧值并重新计算。这里的 key 是缓存身份，不是业务列表中随意挑选的字段。它适合缓存排序结果、状态容器和创建成本较高的对象，但输入必须能表达一份稳定快照。
+`remember(keys...)` 在 key 相等时复用缓存值，key 变化时丢弃旧值并重新计算。key 表达的是缓存身份，别从业务列表里随手挑字段；输入要能表达一份稳定快照。它适合缓存排序结果、状态容器和创建成本较高的对象。
 
 下面的写法假定 `items` 是不可变列表，数据更新时会提交新实例。
 
@@ -236,7 +232,7 @@ fun SortedFeed(items: List<FeedItem>) {
 }
 ```
 
-如果调用方原地修改同一个普通列表，`remember(items)` 不会重新排序，Lazy 列表也拿不到可靠的新旧输入。修复点在数据所有权和可观察性，不在增加更多 `remember`。
+如果调用方原地修改同一个普通列表，`remember(items)` 不会重新排序，Lazy 列表也拿不到可靠的新旧输入。修复点在数据所有权和可观察性，叠加更多 `remember` 解决不了。
 
 #### `derivedStateOf` 只处理输入、输出频率不匹配
 
@@ -267,13 +263,13 @@ fun FeedWithScrollToTop(items: List<FeedItem>) {
 }
 ```
 
-字符串拼接、数值乘法这类“输入每次变，输出也每次变”的表达式不需要 `derivedStateOf`。直接计算通常更清楚，运行时工作也更少。
+至于字符串拼接、数值乘法这类“输入每次变、输出也每次变”的表达式，直接计算通常更清楚，运行时工作也更少，用不上 `derivedStateOf`。
 
 #### `rememberCoroutineScope` 面向事件，`produceState` 面向外部数据
 
 `rememberCoroutineScope()` 返回与调用点 Composition 生命周期绑定的 `CoroutineScope`；调用点离开 Composition 后，其中的协程会收到取消信号。它适合点击、拖动结束、Snackbar 等事件回调。不要在 Composable 函数体中直接 `launch`；每次函数执行都可能启动新任务。
 
-`produceState` 用协程把外部数据转成 Compose `State`，其中 producer 指负责持续产出状态值的协程代码块。Compose Runtime `1.12.0` 的带 key 重载使用 `remember { mutableStateOf(initialValue) }` 保存结果，并用 `LaunchedEffect(key)` 运行 producer。key 变化会取消旧 producer 并启动新 producer，离开 Composition 也会取消。返回的 `State` 会合并相等值；连续快速写入时，观察者也可能跳过中间值，只读到较新的结果。
+`produceState` 用协程把外部数据转成 Compose `State`，其中 producer（产出状态值的协程代码块）负责持续产出。Compose Runtime `1.12.0` 的带 key 重载使用 `remember { mutableStateOf(initialValue) }` 保存结果，并用 `LaunchedEffect(key)` 运行 producer：key 变化会取消旧 producer 并启动新 producer，离开 Composition 也会取消。返回的 `State` 会合并相等值；连续快速写入时，观察者也可能跳过中间值，只读到较新的结果。
 
 下面的示例把用户 ID 和 repository 都作为 producer 的身份输入。
 
@@ -295,7 +291,7 @@ fun userProfile(
 
 缺少 key 会让 producer 继续使用旧输入；塞入每次重组都变化的 key 又会反复取消请求。key 变化也不会自动把同一个 `State` 恢复成 `initialValue`；若切换用户时必须立刻显示“加载中”，要在新的 producer 开头显式赋值。非挂起订阅可在 producer 中注册，并用 `awaitDispose` 解除。
 
-高频且每次都不同的数据仍可能使读取者频繁失效，应在数据源侧采样、聚合，或把仅影响绘制的读取延迟到 Drawing。`snapshotFlow` 用于把 Compose Snapshot 状态转成 Flow，不能替代外部高频数据到 UI 状态的节流。
+高频且每次都不同的数据仍可能使读取者频繁失效，应在数据源侧采样、聚合，或把仅影响绘制的读取延迟到 Drawing。`snapshotFlow` 负责把 Compose Snapshot 状态转成 Flow；外部高频数据进 UI 状态之前的节流，还得在数据侧自己做。
 
 Strong Skipping 不管理 producer 协程。跳过规则作用于 Composable 调用，协程的启动、取消和异常处理仍由 Effect key 与作用域生命周期决定。
 
@@ -320,13 +316,13 @@ Lazy 列表未提供业务 key 时按位置维护身份；显式使用 index 基
 3. 开关启用时，预组合调用 `PausedComposition.resume(shouldPause)`。暂停请求只在运行时提供的可暂停点生效，不能理解成回调返回 `true` 后立即中断任意一行代码。
 4. 组合完成后单独 `apply()`，把结果提交到 Composition，再按约束执行 premeasure。Pausable Composition 只切分 precompose，不能把 apply、measure 或已进入可见窗口的同步工作一并切开。
 
-这个默认值经历过反复：Foundation `1.10.0` 默认开启，`1.10.6` 因稳定性问题改为默认关闭，当前 `1.12.0` 源码又恢复为默认开启。现场行为取决于 Foundation 的精确版本和该版本中的开关值，不能只看“Compose 1.x”这一大版本号。`ComposeFoundationFlags` 的源码注释还提醒：调试环境应尽早设置开关，发布环境若要改写默认值需配合 R8；因此本文只用它界定版本默认行为，不把它当作稳定的应用配置 API。本文保留 BOM `2025.12.00` / Foundation `1.10.0` 作为历史复现点。
+这个默认值经历过反复：Foundation `1.10.0` 默认开启，`1.10.6` 因稳定性问题改为默认关闭，`1.12.0` 源码又恢复为默认开启。所以现场行为取决于 Foundation 的精确版本和该版本中的开关值，看“Compose 1.x”这样的大版本号是不够的。`ComposeFoundationFlags` 的源码注释还提醒：调试环境应尽早设置开关，发布环境若要改写默认值需配合 R8；因此本文只用它界定版本默认行为，不把它当作稳定的应用配置 API。本文保留 BOM `2025.12.00` / Foundation `1.10.0` 作为历史复现点。
 
-这项能力没有覆盖普通首帧 Composition、常规重组或非 Lazy 子树。拆分重组作用域、降低列表项的组合成本、提供稳定 key 和控制状态读取范围仍然有效。
+这项能力的覆盖面也要记牢：普通首帧 Composition、常规重组和非 Lazy 子树都不在其中。拆分重组作用域、降低列表项的组合成本、提供稳定 key 和控制状态读取范围，这些手段仍然有效。
 
 #### `LazyLayoutCacheWindow` 同时控制 ahead 与 behind
 
-Foundation `1.12.0` 的 `LazyLayoutCacheWindow` 仍是实验 API。ahead window 是滚动方向前方的准备窗口，behind window 是反方向的保留窗口。窗口增大会增加 precompose、premeasure 和保留节点的成本，不能按“越大越顺”设置。
+Foundation `1.12.0` 的 `LazyLayoutCacheWindow` 仍是实验 API。ahead window 是滚动方向前方的准备窗口，behind window 是反方向的保留窗口。窗口越大，precompose、premeasure 和保留节点的成本也越高，“越大越顺”在这里并不成立。
 
 下面的配置只用于展示 API 形态，比例需要在目标页面和目标设备上测量后确定。
 
@@ -353,7 +349,7 @@ fun TunedFeed(items: List<FeedItem>) {
 }
 ```
 
-调参时同时观察 `compose:lazy:prefetch:compose`、`compose:lazy:prefetch:apply`、`compose:lazy:prefetch:measure` 这些 trace slice（时间轴上的工作片段）、目标列表项首次可见帧成本和内存峰值。只有预取工作前移且后续关键帧变轻，才能说明窗口设置有收益。预取片段增加、关键帧不变或内存明显上升，通常说明窗口过大、命中不准或列表项的工作仍在可见帧发生。
+调参时我们同时观察 `compose:lazy:prefetch:compose`、`compose:lazy:prefetch:apply`、`compose:lazy:prefetch:measure` 这些 trace slice、目标列表项首次可见帧的成本和内存峰值。窗口设置有没有收益，要看预取工作是否前移、后续关键帧是否变轻；预取片段增加、关键帧不变或内存明显上升时，多半是窗口过大、命中不准，或列表项的工作仍留在可见帧里。
 
 ### 工具：从重组证据走到实际显示
 
@@ -372,7 +368,7 @@ implementation(composeBom)
 implementation("androidx.compose.runtime:runtime-tracing")
 ```
 
-依赖加入后仍要确认被测 APK 保留 tracing 支持，并使用适合性能测量的构建。自定义 trace 没有 `track_event` data source 时，不能因为搜索不到 Composable 名就断言没有重组。
+依赖加入后仍要确认被测 APK 保留 tracing 支持，并使用适合性能测量的构建。自定义 trace 没有订阅 `track_event` data source 时，搜索不到 Composable 名说明不了没有重组。
 
 #### Perfetto 按四段定位耗时
 
@@ -381,7 +377,7 @@ implementation("androidx.compose.runtime:runtime-tracing")
 3. **HWUI 与 buffer 提交**：UI 线程按时完成后，检查 `syncAndDrawFrame()`、RenderThread `DrawFrame`、`dequeueBuffer`（申请可写缓冲区）、GPU 工作和 `queueBuffer()`（提交完成的缓冲区）。
 4. **显示出口**：用目标应用窗口的 FrameTimeline（把应用帧与实际显示结果关联起来的时间线）、`BufferTX - <layerName>` 图层事务片段、latch（SurfaceFlinger 选中并接收该缓冲区）、HWC composition 与 actual present（真正上屏的时间）判断应用提交之后的延迟。
 
-刷新率决定单帧预算，不能把 `16.67 ms` 或任意一条固定毫秒线套到所有设备。Compose 工作片段变短也不等于屏幕更早显示；比较应追到同一帧的 actual present。
+刷新率决定单帧预算，`16.67 ms` 或任意一条固定毫秒线都套不到所有设备上。Compose 工作片段变短也说明不了屏幕更早显示；比较要追到同一帧的 actual present。
 
 ### Compose 与 View 互操作
 
@@ -389,7 +385,7 @@ implementation("androidx.compose.runtime:runtime-tracing")
 
 #### RecyclerView 中的 `ComposeView`
 
-Compose UI `1.12.0` 的默认 `ViewCompositionStrategy` 是 `DisposeOnDetachedFromWindowOrReleasedFromPool`。pooling container 指 RecyclerView 这类会暂存并复用子 View 的容器：View 不在这类容器中时，从窗口 detach（分离）会销毁 Composition；位于其中时，临时 detach 不会立即销毁，容器从窗口分离或列表项被复用池淘汰时才释放。
+Compose UI `1.12.0` 的默认 `ViewCompositionStrategy` 是 `DisposeOnDetachedFromWindowOrReleasedFromPool`。pooling container 指 RecyclerView 这类会暂存并复用子 View 的容器：View 在容器外时，从窗口 detach 会销毁 Composition；在容器内时，临时 detach 不会立即销毁，等容器从窗口分离或列表项被复用池淘汰时才释放。
 
 ViewHolder 中应让 `setContent()` 只执行一次，再用可观察状态绑定数据。下面的 `key(model.id)` 会把列表项的身份切换明确告诉 Composition，避免 ViewHolder 复用时把 `remember` 状态带给另一条数据。
 
@@ -420,11 +416,11 @@ class ComposeItemHolder(
 }
 ```
 
-`onViewRecycled()` 可以清空业务数据和外部资源，不应无条件调用 `disposeComposition()`；默认策略保留池内 Composition 是为了复用。Fragment XML 中的一对一 `ComposeView` 更适合 `DisposeOnViewTreeLifecycleDestroyed`，它会跟随下一次 attach 所在 View tree 的 `LifecycleOwner`（提供生命周期的所有者）销毁。
+`onViewRecycled()` 里可以清空业务数据和外部资源，`disposeComposition()` 别无条件调用——默认策略保留池内 Composition 正是为了复用。Fragment XML 中的一对一 `ComposeView` 更适合 `DisposeOnViewTreeLifecycleDestroyed`，它会跟随下一次 attach 所在 View tree 的 `LifecycleOwner` 销毁。
 
 #### Lazy 列表中的 `AndroidView`
 
-`AndroidView.factory` 在 UI 线程创建 View，并且对当前实例只调用一次；`update` 会在 factory 后调用，后续还会随其中读取的 `State` 变化而运行。重操作不能塞进 `update`，但 View 属性修改仍应留在 UI 线程。
+`AndroidView.factory` 在 UI 线程创建 View，并且对当前实例只调用一次；`update` 会在 factory 后调用，后续还会随其中读取的 `State` 变化而运行。重操作别塞进 `update`，View 属性修改仍应留在 UI 线程。
 
 Lazy 列表中要使用带非空 `onReset` 的重载，才能让兼容的 View 实例参与复用。下面的例子在旧数据解绑、新数据绑定之前清理瞬时状态，并在永久离开 Composition 时释放资源。
 
@@ -444,21 +440,21 @@ LazyColumn {
 }
 ```
 
-`onReset` 可能紧接着进入下一次 `update`，也可能先进入暂时停用状态，之后才被释放；清理逻辑应允许重复调用。若嵌入的是 `SurfaceView`、WebView、播放器或相机预览，图形分析还要跟随它自己的 BufferQueue 和 SurfaceFlinger layer，不能只看 Compose 宿主窗口。
+`onReset` 可能紧接着进入下一次 `update`，也可能先进入暂时停用状态，之后才被释放；清理逻辑应允许重复调用。若嵌入的是 `SurfaceView`、WebView、播放器或相机预览，图形分析还要跟随它自己的 BufferQueue 和 SurfaceFlinger layer，Compose 宿主窗口只是其中一环。
 
 ### Effect 与 producer 的生命周期盲区
 
-`rememberCoroutineScope()` 适合由点击、拖动等事件启动工作；需要随 key 进入、变化和退出自动管理的持续任务，应直接使用 `LaunchedEffect(key)`。把任务从 Effect 再转交给 `rememberCoroutineScope()` 保存的作用域，会让 key 变化只取消“启动者”，旧任务却继续消费旧数据。Composition 离开时，`Job.cancel()` 只是向协程传播取消信号；阻塞 I/O、没有检查取消的 CPU 循环、耗时的 `NonCancellable` 清理和未注销的外部回调都可能延长退出时间。验证时应查看任务的 `finally`、订阅计数和资源所有者，不能仅凭“页面退出后对象还在”判定泄漏。
+这一段我们盯住“谁在何时被取消”。`rememberCoroutineScope()` 适合由点击、拖动等事件启动工作；需要随 key 进入、变化和退出自动管理的持续任务，应直接使用 `LaunchedEffect(key)`。把任务从 Effect 转交给 `rememberCoroutineScope()` 保存的作用域，key 变化时就只取消了“启动者”，旧任务还在消费旧数据。Composition 离开时，`Job.cancel()` 只是向协程发出取消信号；阻塞 I/O、不检查取消的 CPU 循环、耗时的 `NonCancellable` 清理和未注销的外部回调都可能拖长退出时间。验证时查看任务的 `finally`、订阅计数和资源所有者；“页面退出后对象还在”本身证明不了泄漏。
 
 `produceState` 由 `remember` 保留的 `MutableState` 和带 key 的 `LaunchedEffect` 组成，这套实现与 key 语义前面已经交代；它的生命周期还留有两个盲区。长期 Flow 依靠 `collect` 自身的取消与 `finally` 结束，无限收集不会自然返回，把 `awaitDispose` 写在它后面就永远执行不到；需要在切换用户或请求时立即显示“加载中”，producer 必须显式赋值，key 变化本身不会把 `State` 重置成 `initialValue`。
 
-`State` 的 conflation（合并更新）只会过滤相等结果，或让观察者跳过来不及读取的中间值；它不会减少上游网络请求、解析和每次赋值。高频源要在数据层明确采用 `sample`（按周期取样）、`conflate`（消费跟不上时只保留较新值）、`distinctUntilChanged`（过滤连续相等值）或领域聚合。多个数据源必须共同满足一条业务约束时，应先在 ViewModel 产出一份不可变 `UiState`，不能期待两个独立 producer 恰好在同一帧完成。
+`State` 的 conflation 只会过滤相等结果，或让观察者跳过来不及读取的中间值；上游的网络请求、解析和每次赋值一点都不会少。高频源要在数据层明确采用 `sample` 按周期取样、`conflate` 在消费跟不上时只保留较新值、`distinctUntilChanged` 过滤连续相等值，或做领域聚合。多个数据源必须共同满足一条业务约束时，应先在 ViewModel 产出一份不可变 `UiState`，别指望两个独立 producer 恰好在同一帧完成。
 
-Strong Skipping 只改变可组合调用和 lambda 的跳过机会，不改变作用域中的 Job、Effect key、状态变更策略（State mutation policy，判断新旧值是否等价）或 producer 取消语义。Pausable Composition 也只切分尚未 apply 的 Composition；已经启动的网络请求、Flow 收集协程和回调不会随它自动暂停。
+Strong Skipping 只改变可组合调用和 lambda 的跳过机会；作用域中的 Job、Effect key、状态变更策略（State mutation policy，判断新旧值是否等价）和 producer 取消语义都不受它影响。Pausable Composition 也只切分尚未 apply 的 Composition，已经启动的网络请求、Flow 收集协程和回调不会随它自动暂停。
 
 ### 升级与验收
 
-升级 Kotlin 或 Compose 时，先记录解析后的精确依赖。下面的命令用于确认应用模块的 Runtime、Foundation 和 UI 版本；configuration（依赖配置）名称按项目的构建 variant 调整。
+升级 Kotlin 或 Compose 时，先记录解析后的精确依赖。下面的命令用于确认应用模块的 Runtime、Foundation 和 UI 版本；configuration 名称按项目的构建 variant 调整。
 
 ```bash
 ./gradlew :app:dependencyInsight \
@@ -474,7 +470,7 @@ Strong Skipping 只改变可组合调用和 lambda 的跳过机会，不改变�
   --configuration releaseRuntimeClasspath
 ```
 
-BOM 只约束它声明的 Compose artifacts（依赖模块），不会自动添加依赖，也不控制 Kotlin plugin。版本确认后再做同机对比，避免把 Kotlin 编译器、Foundation 预取、Baseline Profile 或业务代码的变化混成一个结果。
+BOM 只约束它声明的 Compose artifacts，不会自动添加依赖，也管不到 Kotlin plugin。版本确认后再做同机对比，避免把 Kotlin 编译器、Foundation 预取、Baseline Profile 或业务代码的变化混成一个结果。
 
 #### Kotlin 升级时把 classpath 故障与 Compose 诊断分开
 
@@ -482,9 +478,9 @@ Kotlin/Compose 升级验收还应记录第三方 AAR/JAR 的 POM 与 class 签�
 
 在 FlutterFire `firebase_auth 6.6.0` 的 Kotlin 重写中，`FirebaseAuth.IdTokenListener { auth -> ... }` 这类 Java SAM lambda 让 `auth` 参数由 Kotlin 推断；材料记录 Kotlin 2.4 会把缺失注解类导致的 “inferred type is inaccessible” 路径表现为编译错误，而 Kotlin 2.3 主要表现为警告。[来源: https://juejin.cn/post/7678586341090803748]
 
-这个故障不属于 Compose Runtime、Stability 或 `Modifier.Node` 性能问题；它是 Kotlin 前端读取依赖 class 元数据时暴露出的 classpath / 发布元数据问题，因此排查顺序应先锁定 Kotlin、AGP、Firebase 与 FlutterFire 版本，再看报错中的 annotation class、来源 artifact 和 POM 依赖。[来源: https://juejin.cn/post/7678586341090803748；已验证: https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.pom]
+把这个故障算到 Compose Runtime、Stability 或 `Modifier.Node` 头上是误诊：它是 Kotlin 前端读取依赖 class 元数据时暴露出的 classpath / 发布元数据问题，排查顺序是先锁定 Kotlin、AGP、Firebase 与 FlutterFire 版本，再看报错中的 annotation class、来源 artifact 和 POM 依赖。[来源: https://juejin.cn/post/7678586341090803748；已验证: https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.pom]
 
-处置时不要把 `skippable`、重组次数或 FrameTimeline 作为主证据；对这个案例，材料记录的 FlutterFire 侧修复是把 `FirebaseAuth.IdTokenListener` / `AuthStateListener` 的 lambda 参数写成显式 `FirebaseAuth` 类型，并在测试工程覆盖 Kotlin `2.4.10`、AGP `8.11.1`、Gradle `8.14`。[来源: https://juejin.cn/post/7678586341090803748]
+处置时别把 `skippable`、重组次数或 FrameTimeline 当主证据。对这个案例，材料记录的 FlutterFire 侧修复是把 `FirebaseAuth.IdTokenListener` / `AuthStateListener` 的 lambda 参数写成显式 `FirebaseAuth` 类型，并在测试工程覆盖 Kotlin `2.4.10`、AGP `8.11.1`、Gradle `8.14`。[来源: https://juejin.cn/post/7678586341090803748]
 
 验收可以按下面的顺序执行：
 
@@ -503,7 +499,7 @@ Kotlin/Compose 升级验收还应记录第三方 AAR/JAR 的 POM 与 class 签�
 | `ComposeView` 列表反复创建 | `setContent()` 次数、`ViewCompositionStrategy`、列表项身份 | 每次回收都调用 `disposeComposition()` |
 | UI 线程正常仍有卡顿（jank） | RenderThread、缓冲区、SurfaceFlinger、HWC、actual present | 把所有慢帧归到重组 |
 
-这五类现象都要先定位工作发生在哪个阶段，再决定改状态读取、列表身份、预取参数还是显示链；单看重组次数或某一个开关不足以完成验收。
+这五类现象都要先定位工作发生在哪个阶段，再决定改状态读取、列表身份、预取参数还是显示链；单看重组次数或某一个开关，完成不了验收。
 
 ### 源码与文档
 
@@ -522,7 +518,7 @@ Kotlin/Compose 升级验收还应记录第三方 AAR/JAR 的 POM 与 class 签�
 
 ## Compiler 稳定性与运行时重组证据
 
-Compiler 报告说明静态稳定性，Runtime Tracing 说明实际执行次数和时间；Compose 性能排查常把三类证据混在一起：编译器生成了什么代码、运行时执行了哪些组合函数、用户看到的帧是否按时显示。三类证据各自回答一个问题，不能互相代替。
+Compiler 报告说明静态稳定性，Runtime Tracing 说明实际执行次数和时间。Compose 性能排查常把三类证据混在一起：编译器生成了什么代码、运行时执行了哪些组合函数、用户看到的帧是否按时显示。三类证据各答各的问题，互相代替不了，后文就按这个拆法展开。
 
 可复现的诊断链路如下：
 
@@ -556,7 +552,7 @@ Compose 编译器从 Kotlin 2.0 起随 Kotlin 一同发布，`org.jetbrains.kotl
 | Layout Inspector | 连接期间，界面节点观察到的重组与跳过计数 | 发布构建的精确耗时；线上用户的慢帧比例 |
 | Composition Tracing、FrameTimeline | 组合函数何时执行、执行多久；帧是否错过截止时间 | 类型为什么被判为 `unstable`；改动后代码生成是否发生变化 |
 
-“`unstable` 数量下降”属于静态证据，“重组次数下降”属于运行时证据，“慢帧下降”才对应用户结果。优化结论至少应包含一项静态证据和一项运行时证据。
+我们把三个层次分开看：“`unstable` 数量下降”属于静态证据，“重组次数下降”属于运行时证据，“慢帧下降”才对应用户结果。优化结论至少应包含一项静态证据和一项运行时证据。
 
 ### 二、按 Kotlin 2.3.20 生成编译器报告
 
@@ -571,7 +567,7 @@ plugins {
 }
 ```
 
-这两行的要点是版本必须相同，而不是继续采用 2.3.20。如果项目通过版本目录管理插件，Kotlin Android 插件和 Compose 插件也应引用同一个 Kotlin 版本。
+这两行的要点是版本必须相同，2.3.20 只是本文的样本固定值。项目若通过版本目录管理插件，Kotlin Android 插件和 Compose 插件也应引用同一个 Kotlin 版本。
 
 下面的模块配置用于启用 Compose 编译器报告，并把报告与模块指标分开存放。
 
@@ -594,7 +590,7 @@ composeCompiler {
 
 #### 2. 固定构建变体和编译输入
 
-官方诊断文档建议使用发布构建生成报告。团队基线还应固定 Kotlin 版本、Compose 插件配置、模块、构建变体、代码压缩设置和源码提交；不同输入得到的数量不能直接比较。
+官方诊断文档建议使用发布构建生成报告。团队基线还应固定 Kotlin 版本、Compose 插件配置、模块、构建变体、代码压缩设置和源码提交；输入不同，得到的数量不能直接比较。
 
 下面的命令用于重新编译应用模块的 Release 变体，也就是准备发布时使用的构建配置。
 
@@ -604,13 +600,13 @@ composeCompiler {
 
 `clean` 可避免把旧编译任务留下的报告误当成本次结果。大型工程可以清理目标模块的输出目录并执行对应编译任务，无须每次清空全仓库缓存。
 
-下面的命令用于确认实际生成的文件，而不是假定某个固定的变体子目录。
+下面的命令用于确认实际生成的文件，别靠假定固定的变体子目录。
 
 ```bash
 find app/build/compose_compiler -type f -print | sort
 ```
 
-Kotlin Gradle 插件会按编译目标和编译单元（compilation）组织部分指标目录，多模块工程也会产生不同文件前缀。CI 应从构建产物中发现文件，再按模块和变体归档。
+Kotlin Gradle 插件会按编译目标和编译单元组织部分指标目录，多模块工程也会产生不同文件前缀。CI 应从构建产物中发现文件，再按模块和变体归档。
 
 #### 3. Kotlin 2.3.20 样本的输出文件
 
@@ -625,7 +621,7 @@ Kotlin Gradle 插件会按编译目标和编译单元（compilation）组织部�
 
 `metricsDestination` 产生 `*-module.json`。Kotlin 2.3.20 的 JSON 包含 `totalComposables`、`skippableComposables`、`restartableComposables`、各类参数和类统计，以及本次编译的 `featureFlags`。这个字段记录各项编译器功能开关是否启用，是解释其他数字的必要条件。
 
-Kotlin 2.4.10 的 `BuildMetrics.kt` 仍输出相同的 CSV 表头和模块 JSON 键，本文的解析器可以读取这两个版本。2.4.10 同时修正了 Compose 稳定性推断：部分过去报告为 `stable` 的类会改为运行时稳定性或 `Uncertain`。解析器可复用不代表旧基线数值可以沿用；升级后必须重新生成报告，解释标签变化，再更新 CI 基线。
+Kotlin 2.4.10 的 `BuildMetrics.kt` 仍输出相同的 CSV 表头和模块 JSON 键，本文的解析器可以读取这两个版本。2.4.10 同时修正了 Compose 稳定性推断：部分过去报告为 `stable` 的类会改为运行时稳定性或 `Uncertain`。解析器可复用，旧基线数值不可沿用；升级后重新生成报告、解释标签变化，再更新 CI 基线。
 
 ### 三、用固定样本读懂报告标签
 
@@ -709,7 +705,7 @@ fun lab.NonUnitResult(
 - `unused`：参数没有被该函数生成的组合逻辑读取。
 - 没有 `restartable`：该函数不构成可独立重启的组合边界。非 `Unit` 返回值就是一种常见原因。
 
-`UnstableList` 同时出现 `unstable snacks` 和 `skippable` 并不矛盾。Strong Skipping（强跳过模式）从 Kotlin 2.0.20 起默认启用，它让所有可重启组合函数都可以生成跳过逻辑；参数稳定性只决定运行时采用哪种比较方式。这项规则在当前 Kotlin 2.4.10 中仍然成立。
+`UnstableList` 同时出现 `unstable snacks` 和 `skippable` 并不矛盾：Strong Skipping 从 Kotlin 2.0.20 起默认启用，所有可重启组合函数都能生成跳过逻辑，参数稳定性只决定运行时采用哪种比较方式。这项规则在当前 Kotlin 2.4.10 中仍然成立。
 
 `ExplicitlyNonSkippable` 仍是 `restartable`，但 `@NonSkippableComposable` 阻止编译器为它生成 `skippable` 标签。报告中不存在 `@NonSkippableOptIn` 这一注解。
 
@@ -762,11 +758,11 @@ package,name,composable,skippable,restartable,readonly,inline,isLambda,hasDefaul
 - 不稳定参数使用引用相等，即 `===`。
 - 所有参数均满足各自的“未变化”条件时，函数体才会被跳过。
 
-这组规则带来两个容易漏掉的边界。
+这组规则带出两个容易漏掉的边界。
 
 传入一个内容相同但新创建的 `List`，引用不同，`UnstableList` 仍会重组。每次在调用点执行 `items.map { ... }` 或 `items.toList()`，都可能制造新容器。
 
-把普通 `MutableList` 原地修改后继续传入同一引用，引用比较可能允许跳过；普通集合的修改又不会通知 Snapshot 系统，界面可能保留旧内容。解决方向是不可变 UI 模型、可观察的 Snapshot 状态或明确的新值流转，不能靠虚假稳定性注解遮住可变对象。
+把普通 `MutableList` 原地修改后继续传入同一引用，引用比较可能允许跳过；普通集合的修改又不会通知 Snapshot 系统，界面可能保留旧内容。解决方向是不可变 UI 模型、可观察的 Snapshot 状态或明确的新值流转；用虚假的稳定性注解盖住可变对象，只是把问题藏起来。
 
 #### 2. Lambda 会被自动记住
 
@@ -784,7 +780,7 @@ Lambda 是可以作为值传递的函数表达式；它引用外部变量时，�
 - 读取的 Snapshot 状态是否让该作用域失效；
 - 控制流和键值是否改变了组结构。
 
-因此，不能用 CSV 中 `skippable=1` 计算运行时跳过率。跳过次数需要运行时工具观察。
+因此，CSV 中的 `skippable=1` 算不出运行时跳过率，跳过次数需要运行时工具观察。
 
 ### 五、稳定性是一项代码契约
 
@@ -835,22 +831,22 @@ com.example.model.ImmutableFromAnotherModule
 
 ### 六、Layout Inspector 观察次数
 
-Android Studio Layout Inspector 可以显示组合节点的重组次数和跳过次数。它适合回答以下问题：
+Android Studio Layout Inspector 可以显示组合节点的重组次数和跳过次数。我们主要用它回答：
 
 - 哪个界面区域在目标交互期间反复重组；
 - 状态读取是否放在过高层级；
 - 参数身份是否在父层频繁变化；
 - 修复前后，同一操作脚本下的计数是否收敛。
 
-使用时应固定设备、页面初始状态和交互步骤，并在每轮采样前重置计数。Inspector 是诊断环境，会增加观测开销；计数只用于定位范围。精确耗时应由允许性能分析（profileable）且关闭调试（non-debuggable）的构建，通过系统跟踪和基准测试确认。
+使用时固定设备、页面初始状态和交互步骤，每轮采样前重置计数。Inspector 是诊断环境，自带观测开销，计数只用于定位范围；精确耗时交给 profileable 且 non-debuggable 的构建，用系统跟踪和基准测试确认。
 
-计数高也不自动等于问题。一个很小的计时文本可以高频重组且成本很低；一个只执行一次的组合函数也可能同步解析大对象并阻塞一帧。排查顺序应把次数与单次成本、作用域大小和帧截止时间放在一起看。
+计数高也未必是问题：很小的计时文本可以高频重组而成本很低，只执行一次的组合函数也可能同步解析大对象并阻塞一帧。我们把次数与单次成本、作用域大小、帧截止时间放在一起看。
 
 ### 七、Composition Tracing 定位运行时间
 
 #### 1. 加入 Runtime Tracing 依赖
 
-普通系统跟踪默认不包含每个组合函数。下面的依赖坐标固定为 1.11.4，用于复现旧实验；它展示的是构件名称，不是当前推荐版本。
+普通系统跟踪默认不包含每个组合函数。下面的依赖坐标固定为 1.11.4，用于复现旧实验；它展示的是构件名称，当前推荐版本见下一段。
 
 ```kotlin
 dependencies {
@@ -873,15 +869,15 @@ Kotlin 2.4.10 的 Compose 插件仍默认注入组合跟踪标记和源码信息
 </application>
 ```
 
-`non-debuggable` 保留发布构建的优化与运行方式，`profileable` 则允许 shell 和受信任工具在不打开调试器的情况下采集性能数据。Debug 构建的额外检查、调试器和编译差异会改变耗时，不能作为发布性能结论。
+`non-debuggable` 保留发布构建的优化与运行方式，`profileable` 则允许 shell 和受信任工具在不打开调试器的情况下采集性能数据。Debug 构建的额外检查、调试器和编译差异都会改变耗时，发布性能结论别建立在它上面。
 
 #### 3. 正确阅读系统跟踪
 
 加入 `runtime-tracing` 后，系统跟踪会显示带函数名、文件和行号信息的组合切片。切片表示线程上从开始标记到结束标记的一段时间。Compose Runtime 1.12.0 源码仍包含 `Recomposer:animation`、`Recomposer:recompose` 等内部区间。
 
-这些名称不是稳定 API。团队查询应先打开当前版本的跟踪数据确认切片名称，再保存针对该版本的查询；不能假设所有版本都存在固定的 `Compose:measure`、`Compose:layout`、`Compose:draw` 或 `Compose:recompose` 切片组合。
+这些名称不是稳定 API。团队查询应先打开当前版本的跟踪数据确认切片名称，再保存针对该版本的查询；`Compose:measure`、`Compose:layout`、`Compose:draw`、`Compose:recompose` 这套切片组合，并不是每个版本都有。
 
-组合函数切片只覆盖组合阶段的相关执行。Compose UI 的测量、布局和绘制属于后续阶段，可能由不同跟踪标记表达。某个组合函数耗时后，还要检查它是否触发布局、绘制和 RenderThread 工作，不能把四个阶段合并成一个“重组耗时”。
+组合函数切片只覆盖组合阶段的相关执行。Compose UI 的测量、布局和绘制属于后续阶段，可能由不同跟踪标记表达。看到某个组合函数耗时长，我们还要检查它是否触发布局、绘制和 RenderThread 工作——四个阶段不能合并成一个“重组耗时”。
 
 1.12.0 的运行时依赖通过 `ComposeTracingInitializer` 安装 `CompositionTracer`，再把编译器传入的 `info` 写入 `PerfettoSdkTrace.beginSection(info)`。函数名来自编译器标记，因此缺少依赖或关闭标记时不会出现逐函数切片。
 
@@ -893,7 +889,7 @@ Kotlin 2.4.10 的 Compose 插件仍默认注入组合跟踪标记和源码信息
 
 ### 八、把重组放回 Android 17 渲染流水线
 
-在 Android 17 标准应用窗口路径中，一次可见更新大致经过：
+在标准应用窗口路径中，一次可见更新大致经过：
 
 ```text
 vsync-app
@@ -906,18 +902,18 @@ vsync-app
   -> present
 ```
 
-这条路径用于标出责任边界。Compose 的组合优化主要减少应用主线程生成 UI 更新的工作，无法直接证明 RenderThread、GPU、SurfaceFlinger 或显示硬件已经按时完成。
+这条路径用于标出责任边界。Compose 的组合优化主要减少应用主线程生成 UI 更新的工作，证明不了 RenderThread、GPU、SurfaceFlinger 或显示硬件已经按时完成。
 
 诊断时可以按以下证据相互核对：
 
 1. FrameTimeline 标出目标交互中的慢帧，并区分 App 与 SurfaceFlinger 侧截止时间。
 2. 主线程轨道检查 `Choreographer#doFrame`、`Recomposer:recompose` 和目标组合函数切片。
-3. 若应用主线程按时完成，继续检查 RenderThread、GPU、BufferQueue、SurfaceFlinger 和同步栅栏；同步栅栏用于表示前一项图形工作何时完成。
+3. 若应用主线程按时完成，继续检查 RenderThread、GPU、BufferQueue、SurfaceFlinger 和同步栅栏；同步栅栏表示前一项图形工作何时完成。
 4. 用同一用户操作的 Macrobenchmark 比较修复前后帧指标。
 
-`queueBuffer` 只说明应用提交了一个缓冲，不代表该缓冲已经显示。评估用户结果要看 FrameTimeline 与最终呈现时刻相关的证据。
+`queueBuffer` 只说明应用提交了一个缓冲，缓冲有没有显示是另一回事。评估用户结果要看 FrameTimeline 与最终呈现时刻相关的证据。
 
-Android 内核锚点 `android17-6.18-2026-06_r6` 只用于解释线程为什么没有及时运行、唤醒是否延迟、同步栅栏是否阻塞等现象。内核跟踪不认识 Compose 的稳定性标签，编译器报告也无法解释 CPU 为什么有一段时间没有调度目标线程。跨层结论必须用时间戳关联两类证据。
+内核侧的 `android17-6.18-2026-06_r6` 证据只解释线程为什么没有及时运行、唤醒是否延迟、同步栅栏是否阻塞；它不认识 Compose 的稳定性标签，编译器报告也解释不了 CPU 为什么有一段时间没有调度目标线程。跨层结论要用时间戳把两类证据对上。
 
 ### 九、从状态写入追到重组作用域
 
@@ -933,7 +929,7 @@ Android 内核锚点 `android17-6.18-2026-06_r6` 只用于解释线程为什么�
   -> 节点更新可能触发测量、布局或绘制
 ```
 
-状态写入不保证产生可见重组。等价写入可能被 `SnapshotMutationPolicy` 忽略；没有组合读取者的状态也不会让界面作用域失效。相反，把频繁变化的状态读取放在页面根部，会让更大的作用域进入重组判断，即使很多子函数随后被跳过。
+状态写入不保证产生可见重组：等价写入可能被 `SnapshotMutationPolicy` 忽略，没有组合读取者的状态也不会让界面作用域失效。反过来说，把频繁变化的状态读取放在页面根部，会让更大的作用域进入重组判断，哪怕很多子函数随后被跳过。
 
 排查调用点时重点检查：
 
@@ -944,19 +940,19 @@ Android 内核锚点 `android17-6.18-2026-06_r6` 只用于解释线程为什么�
 - `derivedStateOf` 是否只在“输入变化频率高于派生结果变化频率”时使用；
 - 普通可变对象是否绕过 Snapshot 通知。
 
-报告指出参数类型，Layout Inspector 指出作用域，系统跟踪指出耗时。把三类证据对齐后再改代码，比看到 `unstable` 就添加注解更容易找到实际原因。
+报告指出参数类型，Layout Inspector 指出作用域，系统跟踪指出耗时。三类证据摆到一起再改代码，比看到 `unstable` 就添加注解更容易找到实际原因。
 
 ### 十、CI 中保存可解释的语义快照
 
 #### 1. 记录原始产物与构建条件
 
-这里的“语义快照”指某次固定编译产生的原始报告、统计结果和构建条件，与运行时 Snapshot 无关。它让代码评审可以判断标签变化来自业务代码、编译选项还是工具升级。
+这一节的“语义快照”指某次固定编译产生的原始报告、统计结果和构建条件，与运行时 Snapshot 无关；它让代码评审可以判断标签变化来自业务代码、编译选项还是工具升级。
 
 每个基线至少应保存：
 
 - Kotlin 与 Compose 插件版本；
 - Compose Runtime / UI 版本；
-- 模块、编译目标（target）、编译单元（compilation）与构建变体；
+- 模块、编译目标、编译单元与构建变体；
 - `module.json` 的 `featureFlags`；
 - 原始 `classes.txt`、`composables.txt`、CSV 和 module JSON；
 - 源码提交及生成命令；
@@ -1126,7 +1122,7 @@ python3 tools/compose_metrics_snapshot.py \
 - 单次组合函数切片超过固定的 1 ms 或 8 ms；
 - 编译器指标改善，但没有运行时验证。
 
-帧预算受刷新率、设备性能、热状态和同一帧其他工作影响。项目应围绕关键用户旅程（Critical User Journey，CUJ），例如冷启动、打开会话和滚动列表，在受控实验中建立各自阈值；不存在适用于所有设备的统一常数。
+帧预算受刷新率、设备性能、热状态和同一帧其他工作影响。项目应围绕关键用户旅程（Critical User Journey，CUJ）——冷启动、打开会话和滚动列表——在受控实验中建立各自阈值；适用于所有设备的统一常数并不存在。
 
 ### 十一、K2 / Compose Compiler 迁移：先固定构建语义
 
@@ -1134,19 +1130,19 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 
 迁移时应删除旧 `androidx.compose.compiler:compiler` 依赖、`kotlinCompilerExtensionVersion` 和重复的 `freeCompilerArgs` 插件参数，再在 Compose DSL 中配置报告目录、指标目录和稳定性配置文件。Android 17 / targetSdk 37 不决定 Kotlin 或 Compose 编译器版本；AGP 内置 Kotlin 支持、kapt/KSP 注解处理和 Compose Multiplatform 也要分别核对兼容性表。
 
-增量编译性能可用 Gradle Profiler 或可重复脚本分别测量全量构建、无改动构建、单个 Kotlin 文件变更、公共模型变更和资源变更。实验要固定 Gradle、AGP、Kotlin、JDK、守护进程与 JVM 参数、配置缓存、远程缓存和机器负载，并保存构建扫描或任务失效原因。一次 IDE 构建面板中的主观感受不能证明 K2 或 Compose 插件改善了构建速度。
+增量编译性能可用 Gradle Profiler 或可重复脚本分别测量全量构建、无改动构建、单个 Kotlin 文件变更、公共模型变更和资源变更。实验要固定 Gradle、AGP、Kotlin、JDK、守护进程与 JVM 参数、配置缓存、远程缓存和机器负载，并保存构建扫描或任务失效原因。IDE 构建面板里的一次主观感受，证明不了 K2 或 Compose 插件改善了构建速度。
 
-编译成功也不等于运行时性能改善。迁移前后应使用同一业务代码、Release/R8 设置、Baseline Profile、设备与用户旅程，比较启动时间和帧耗时分位数。编译器报告只能解释代码生成属性，不能推导重组次数或帧截止时间。值类（value class）、Kotlin 元数据、R8、Live Edit 与 kapt 故障属于构建兼容问题，应单独记录，不能混入 Compose 帧归因。
+编译成功离运行时性能改善还有一步。迁移前后应使用同一业务代码、Release/R8 设置、Baseline Profile、设备与用户旅程，比较启动时间和帧耗时分位数。编译器报告只能解释代码生成属性，推导不出重组次数或帧截止时间。值类（value class）、Kotlin 元数据、R8、Live Edit 与 kapt 故障属于构建兼容问题，应单独记录，别混入 Compose 帧归因。
 
 ### 十二、Runtime Tracing 的采集与解释边界
 
-`runtime-tracing` 通过 AndroidX Startup 安装全局跟踪器，把编译器注入的可组合函数标记送到 Perfetto SDK。激活跟踪器只让进程具备写入能力，录制会话（session）才决定何时收集数据。终端采集时，目标进程要成功加载匹配的 `tracing-perfetto` 二进制库，跟踪配置还要订阅用于记录应用事件的 `track_event` 数据源；完整渲染调查还需要 FrameTimeline、内核调度事件（ftrace/sched）、图形与 View 事件、RenderThread 和 SurfaceFlinger 数据源。
+`runtime-tracing` 通过 AndroidX Startup 安装全局跟踪器，把编译器注入的可组合函数标记送到 Perfetto SDK。激活跟踪器只是让进程具备写入能力，何时收集数据由录制会话决定。终端采集时，目标进程要成功加载匹配的 `tracing-perfetto` 二进制库，跟踪配置还要订阅用于记录应用事件的 `track_event` 数据源；完整渲染调查还需要 FrameTimeline、内核调度事件（ftrace/sched）、图形与 View 事件、RenderThread 和 SurfaceFlinger 数据源。
 
-用于诊断的构建应可被性能工具分析，且不可调试。`tracing-perfetto-binary` 会明显增加体积，只应放进基准测试或诊断变体；通过 adb 广播激活 `TracingReceiver` 需要 `android.permission.DUMP`，普通线上应用不能把它当作远程开关。API 35 及以上的 `ProfilingManager` 可以请求受限且经过隐私删减的系统跟踪，但能否看到逐个可组合函数，仍取决于目标构建是否保留标记、运行时跟踪是否激活，不能自动替代 Runtime Tracing 的配置要求。
+用于诊断的构建应可被性能工具分析，且不可调试。`tracing-perfetto-binary` 会明显增加体积，只应放进基准测试或诊断变体；通过 adb 广播激活 `TracingReceiver` 需要 `android.permission.DUMP`，普通线上应用不能把它当作远程开关。API 35 及以上的 `ProfilingManager` 可以请求受限且经过隐私删减的系统跟踪，但能否看到逐个可组合函数，仍取决于目标构建是否保留标记、运行时跟踪是否激活——Runtime Tracing 那套配置要求还是要自己满足。
 
-一条可组合函数切片表示同一线程上的同步区间。`dur` 是切片从开始到结束的墙钟时间，既包含线程正在运行（Running）的时间，也包含已经就绪但等待 CPU（Runnable）和阻塞的时间。父切片包含子切片，所有包含耗时（`inclusive duration`）不能直接相加；分析时应按名称、线程和时间筛选候选，再统计出现次数，分别计算包含耗时与扣除直接子切片后的自耗时（`self time`）。切片能证明函数在该时间窗执行过，但不能直接指出哪个 State 导致失效，也不覆盖布局、绘制、RenderThread 或 GPU 工作。
+一条可组合函数切片表示同一线程上的同步区间。`dur` 是切片从开始到结束的墙钟时间，既包含线程正在运行（Running）的时间，也包含已经就绪但等待 CPU（Runnable）和阻塞的时间。父切片包含子切片，把所有包含耗时（`inclusive duration`）直接相加会重复计数；分析时按名称、线程和时间筛选候选，再统计出现次数，分别计算包含耗时与扣除直接子切片后的自耗时（`self time`）。切片能证明函数在该时间窗执行过，但回答不了哪个 State 导致失效，也不覆盖布局、绘制、RenderThread 或 GPU 工作。
 
-可靠的排查顺序是：用 FrameTimeline 定位异常帧，在主线程对齐组合切片、状态或业务标记、测量、布局和绘制，再检查线程状态、垃圾回收、Binder 与 I/O；若 UI 线程按时完成，则继续查看 RenderThread、缓冲区、SurfaceFlinger 与最终呈现。线上应用性能监控（APM）用于筛选页面、设备和操作样本组（cohort）。完整跟踪包含源码位置、线程和用户操作时序，采集系统必须设置配额、保留期、访问控制和隐私策略。
+可靠的排查顺序是：先用 FrameTimeline 定位异常帧，在主线程上把组合切片、状态或业务标记、测量、布局和绘制串起来，再检查线程状态、垃圾回收、Binder 与 I/O；UI 线程按时完成的，继续查看 RenderThread、缓冲区、SurfaceFlinger 与最终呈现。线上 APM 用于筛选页面、设备和操作样本组。完整跟踪包含源码位置、线程和用户操作时序，采集系统必须设置配额、保留期、访问控制和隐私策略。
 
 ### 十三、逐个问题的诊断流程
 
@@ -1159,7 +1155,7 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 7. 只修改一个主要变量，再用相同脚本复测计数、系统跟踪和帧结果。
 8. 更新编译器语义快照，并记录变化为何符合预期。
 
-若 FrameTimeline 显示应用侧按时完成，排查应转向 RenderThread、GPU、SurfaceFlinger 和同步栅栏。继续修改稳定性通常不会解决合成侧或显示侧瓶颈。
+若 FrameTimeline 显示应用侧按时完成，排查就转向 RenderThread、GPU、SurfaceFlinger 和同步栅栏；这时继续修改稳定性，通常动不到合成侧或显示侧的瓶颈。
 
 ### 十四、核查清单
 
@@ -1235,23 +1231,17 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 | 重组计数下降就证明帧性能改善 | 仍需 FrameTimeline 或 Macrobenchmark 验证用户结果 |
 | 内核调度记录能解释稳定性 | 内核只提供线程运行、唤醒和同步证据，不包含 Compose 类型语义 |
 
-这些误判都把证据用到了它回答不了的问题上：静态报告不能代替运行时计数，组合切片不能代替整帧结果，内核调度也不能解释类型稳定性。
+这些误判的共同点是把手头的证据用到了它回答不了的问题上：静态报告代替不了运行时计数，组合切片代替不了整帧结果，内核调度也解释不了类型稳定性。
 
 ## Modifier.Node 生命周期与迁移成本
 
-状态和重组稳定后，Modifier 链仍可能产生节点创建和更新开销。Node API 通过复用节点改变这部分成本，但要求正确实现 update 和 invalidate。
+状态读取和重组都理顺之后，Modifier 链仍可能剩下一块成本：节点的创建和更新。Node API 用复用节点来压这部分成本，代价是我们要正确实现 update 和 invalidate。
 
-`Modifier`（修饰符）是一条为 Compose 组件附加布局、绘制、输入等行为的链。`Modifier.Node` 是这条链的底层扩展机制：它把短生命周期的配置对象与可跨重组复用的运行节点分开，适合实现绘制、测量、语义、焦点和输入等行为。这里的“重组”指状态变化后，Compose 重新执行受影响的 `@Composable` 函数。迁移时需要同时处理节点复用、生命周期和阶段失效，不能只替换接口名称。
+`Modifier`（修饰符）是一条为 Compose 组件附加布局、绘制、输入等行为的链，`Modifier.Node` 是这条链的底层扩展机制：它把短生命周期的配置对象与可跨重组复用的运行节点分开，适合实现绘制、测量、语义、焦点和输入等行为。这里的“重组”指状态变化后，Compose 重新执行受影响的 `@Composable` 函数。迁移要同时处理节点复用、生命周期和阶段失效，只换接口名称是不够的。
 
-验证基线如下：
+> 验证基线：Android 17 / API 37 / `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`；Compose BOM `2026.08.00`，UI、Foundation 与 Runtime 均为 `1.12.0`；Kotlin `2.4.10`；Compose UI 源码取 AndroidX 提交 `963bf914f78b389bdddef0da7f36bee19d897274`。
 
-- Android 平台：Android 17、API 37、`android-17.0.0_r1`
-- 内核：`android17-6.18-2026-06_r6`
-- Compose：Compose BOM `2026.08.00`，Compose UI、Foundation 与 Compose Runtime 均为 `1.12.0`
-- Kotlin：`2.4.10`
-- Compose UI 源码：AndroidX 提交 `963bf914f78b389bdddef0da7f36bee19d897274`
-
-`Modifier.Node` 随 Compose UI 库发布，不由设备 API 级别或 Linux 内核版本提供。Android 17 与内核锚点用于限定系统环境；节点复用、链更新和自动失效语义应以应用实际依赖的 Compose UI 版本为准。
+`Modifier.Node` 随 Compose UI 库发布，设备 API 级别和 Linux 内核版本都不提供它。Android 17 与内核标签在这里只是环境说明；节点复用、链更新和自动失效语义，以应用实际依赖的 Compose UI 版本为准。
 
 `Modifier.Node` API 在 Compose UI 1.3.0 加入。当前项目采用 1.12.0 稳定版，因此正文不再用“从某个 Android 版本开始支持”描述它，也不把早期版本的内部实现当成当前契约。
 
@@ -1302,7 +1292,7 @@ Element 负责 `create()` 与 `update(node)`。Node 通过所实现的接口声�
 | `ObserverModifierNode` | 观察显式 `observeReads` 中的快照读取 |
 | `LayoutAwareModifierNode` | 尺寸或放置回调 |
 
-Node 可以实现多个接口。运行时会据此计算 `kindSet`：这是记录节点能力类型的位掩码，每一位对应绘制、布局、输入等一种能力。遍历 Modifier 链时，运行时可用它跳过不含目标能力的链段，并触发对应阶段的自动失效。
+Node 可以同时实现多个接口。运行时会据此计算 `kindSet`——一个位掩码，每一位对应绘制、布局、输入等一种能力。遍历 Modifier 链时，运行时借助它跳过与目标能力无关的链段，并触发对应阶段的自动失效。
 
 #### 2.1 一个最小、可复用的绘制节点
 
@@ -1345,7 +1335,7 @@ fun Modifier.circle(color: Color): Modifier =
 
 ### 3. NodeChain 如何决定复用、更新或替换
 
-每个 `LayoutNode` 通过 `NodeChain` 管理自己的 Modifier 节点链，并在链变化时做差分，也就是比较新旧 Element 序列并计算复用、更新、插入和删除动作。`NodeCoordinator` 负责把节点与坐标、绘制、命中及布局流程衔接起来；它不是 Element 列表的所有者，也不独自执行整条链的差分。
+每个 `LayoutNode` 通过 `NodeChain` 管理自己的 Modifier 节点链，并在链变化时做差分，也就是比较新旧 Element 序列并计算复用、更新、插入和删除动作。`NodeCoordinator` 负责把节点与坐标、绘制、命中及布局流程衔接起来，链的差分仍由 `NodeChain` 完成。
 
 Compose UI 1.12.0 的 `NodeChain.actionForModifiers()` 规则如下：
 
@@ -1365,11 +1355,11 @@ Compose UI 1.12.0 的 `NodeChain.actionForModifiers()` 规则如下：
 
 参数型 Element 使用 `data class` 通常最安全。无参数 Element 可以使用单例，并提供稳定的相等与散列语义。错误的 `equals()` 会让运行时错误地跳过 `update()`；遗漏字段则可能让界面保留旧配置。
 
-Node 复用不等于 Element 零分配。Modifier 工厂在 Composable 内执行时，新的轻量 Element 仍可能出现；复用的是 Element 背后的 Node 及其状态。
+还要分清一件事：Node 复用说的是 Element 背后的 Node 及其状态被留下来，Element 本身仍可能在每次重组时新建——Modifier 工厂在 Composable 内执行时就是这样。
 
 ### 4. update() 与自动失效
 
-“失效”表示把某一阶段的旧结果标记为不可继续使用，并安排该阶段重新执行。`Modifier.Node.shouldAutoInvalidate` 默认返回 `true`。同类型 Element 发生更新后，运行时会按 Node 接口自动安排相关工作：
+失效的意思很直接：把某一阶段的旧结果标记为作废，并安排该阶段重新执行。`Modifier.Node.shouldAutoInvalidate` 默认返回 `true`。同类型 Element 发生更新后，运行时会按 Node 接口自动安排相关工作：
 
 - `LayoutModifierNode`：使测量结果失效；
 - `DrawModifierNode`：使绘制结果失效；
@@ -1377,7 +1367,7 @@ Node 复用不等于 Element 零分配。Modifier 工厂在 Composable 内执行
 - `LayoutAwareModifierNode`：按具体回调类型安排测量、放置或位置通知；
 - 其他支持自动失效的节点类型：执行各自的失效处理。
 
-所以，常规 `update()` 只同步字段即可。无条件手动调用 `invalidateDraw()` 或 `invalidateMeasurement()` 会重复表达运行时已经知道的信息。
+所以常规 `update()` 把字段同步完就够了；无条件手动调用 `invalidateDraw()` 或 `invalidateMeasurement()`，等于把运行时已经知道的信息再说一遍。
 
 #### 4.1 何时关闭自动失效
 
@@ -1441,7 +1431,7 @@ Node 有四个生命周期入口需要区分：
 - `create()` 创建对象；Node 此时尚未附着。
 - `onAttach()` 表示 Node 已进入 UI 树，可以访问 `owner` 和 `coroutineScope`；实现相应消费接口后也可读取 `CompositionLocal`。此时同一轮更新中的其他节点不一定都已处理完，需要观察整棵树的最终状态时，应通过 `sideEffect` 延后执行。
 - `onDetach()` 在 Node 离开当前 UI 树前调用；之后节点协程作用域会被取消。
-- `onReset()` 在 Node 即将随布局进入复用池时调用，例如采用可复用内容机制的 Lazy 列表项滚出视口。调用发生时 Node 仍处于附着状态，随后才解除附着；未进入复用流程的普通离屏变化不应据此推断一定会触发 `onReset()`。
+- `onReset()` 在 Node 即将随布局进入复用池时调用，例如采用可复用内容机制的 Lazy 列表项滚出视口。调用发生时 Node 仍处于附着状态，随后才解除附着；未进入复用流程的普通离屏变化则未必触发 `onReset()`。
 
 `onDetach()` 后同一个 Node 仍可能再次附着。`onReset()` 还表示它未来可能服务于语义上不同的数据项，因此焦点、按压、拖拽进度和临时选择等数据项级状态需要清理。
 
@@ -1489,11 +1479,11 @@ private class SelectableNode : Modifier.Node() {
 - 状态和副作用依赖组合槽位生命周期，而非 Node 的附着与复用生命周期；
 - 相比 Node，会增加组合工作和中间对象。
 
-官方文档目前把 `composed {}` 标为“不再推荐”，没有把所有重载从公开 API 删除。维护旧代码时，应依据热点数据安排迁移，避免把“不推荐”写成“运行即错误”。
+官方文档目前把 `composed {}` 标为“不再推荐”，但重载仍在公开 API 里。维护旧代码时按热点数据安排迁移就好，别把“不推荐”放大成“运行即错误”。
 
 `@Composable` Modifier 工厂也有相似限制。返回值不是 `Unit` 的 Composable 函数不能被 Compose 编译器跳过，因此这种工厂即使输入稳定，也会在调用者重组时执行。它读取的 `CompositionLocal` 值来自工厂调用位置，而普通 Node 工厂可在使用位置读取附着环境。
 
-下面这段代码只用于说明调用位置语义，不是推荐模板。
+下面这段代码只用于说明调用位置语义，别当推荐模板抄。
 
 ```kotlin
 @Composable
@@ -1616,7 +1606,7 @@ fun Modifier.horizontalInset(inset: Dp): Modifier {
 
 这段代码用于解释测量协议。业务仅需水平内边距时，应直接使用 `Modifier.padding(horizontal = inset)`；只有内置 Modifier 无法表达布局语义时才保留自定义节点。
 
-Node 的持久化可以减少 Node 创建与链结构更新，但不会为每个 `LayoutModifierNode` 自动提供“参数不变就复用上次 MeasureResult”的公开保证。是否跳过测量由 `LayoutNode` 的测量状态、父约束、子项状态和读取依赖共同决定。不要把 Node 复用当成测量缓存。
+Node 的持久化可以减少 Node 创建与链结构更新，但“参数不变就复用上次 MeasureResult”这种公开保证，`LayoutModifierNode` 并不提供。是否跳过测量由 `LayoutNode` 的测量状态、父约束、子项状态和读取依赖共同决定——Node 复用与测量缓存是两回事。
 
 `LayoutModifierNode` 已为四种固有尺寸测量方法提供默认实现。固有尺寸查询发生在正式测量前，用于询问组件在给定另一维尺寸时所需的最小或最大宽高；默认实现通过节点的 `measure()` 估算结果。自定义布局若需要不同语义，应覆写对应方法并保持约束一致性；源码没有承诺由 `NodeCoordinator` 为每个 Modifier 单独缓存固有尺寸结果。
 
@@ -1632,7 +1622,7 @@ fun onPointerEvent(
 )
 ```
 
-方法返回 `Unit`。需要消费事件时，对相应的 `PointerInputChange` 调用 `consume()`；不能用 Boolean 返回值声明消费。
+方法返回 `Unit`。需要消费事件时，对相应的 `PointerInputChange` 调用 `consume()`；Boolean 返回值声明不了消费。
 
 指针事件依次经过 `Initial`、`Main` 和 `Final` 三个分发阶段，节点可按协作需求选择处理阶段。`PointerObserverNode` 只观察 `Initial` 阶段，并把事件交给调用者。
 
@@ -1667,7 +1657,7 @@ private data class PointerObserverElement(
 }
 ```
 
-直接实现该接口适合能够明确处理三个事件分发阶段、命中路径和消费规则的底层组件。复杂手势继续使用 `Modifier.pointerInput`、`awaitPointerEventScope` 与 Foundation 手势检测器通常更安全。当前 `pointerInput` 本身已经由 `SuspendingPointerInputModifierNode` 支持；挂起式手势能让相关协程随输入处理范围一起取消或重启，不能简单归类为应消除的“协程调度开销”。
+直接实现该接口适合能够明确处理三个事件分发阶段、命中路径和消费规则的底层组件。复杂手势继续使用 `Modifier.pointerInput`、`awaitPointerEventScope` 与 Foundation 手势检测器通常更安全。当前 `pointerInput` 本身已经由 `SuspendingPointerInputModifierNode` 支持；挂起式手势让相关协程随输入处理范围一起取消或重启，把它归成应当消除的“协程调度开销”，通常是误诊。
 
 ### 10. graphicsLayer 与阶段读取
 
@@ -1692,7 +1682,7 @@ Box(
 
 这一模式已经使用 Compose 内部的 Node 实现。业务代码无需为了“使用 Node”再复制内部 `GraphicsLayerModifierNode`。公开 `graphicsLayer` API 还能处理图层创建、属性更新和平台渲染后端适配，通常比自建绘制节点更稳妥。
 
-Node 本身也不会阻止父 Composable 重组。性能收益来自把状态读取放在需要的阶段、复用运行节点并减少 `materialize()` 展开或节点替换；父级是否重组仍由 Compose Runtime 的状态读取和跳过规则决定。
+Node 本身拦不住父 Composable 重组。性能收益来自把状态读取放在需要的阶段、复用运行节点并减少 `materialize()` 展开或节点替换；父级是否重组，仍由 Compose Runtime 的状态读取和跳过规则决定。
 
 ### 11. 迁移步骤
 
@@ -1732,7 +1722,7 @@ Element 应保持轻量与不可变。Node 中不要保存 Activity、View 或�
 
 ### 12. 性能验证：测什么，怎样解释
 
-迁移前后要使用同一构建类型、设备状态、操作脚本和样本窗口。推荐至少观察以下四类证据：
+迁移前后要使用同一构建类型、设备状态、操作脚本和样本窗口，至少观察以下四类证据：
 
 | 证据 | 工具 | 可回答的问题 |
 | --- | --- | --- |
@@ -1741,7 +1731,7 @@ Element 应保持轻量与不可变。Node 中不要保存 Activity、View 或�
 | 用户可见帧表现 | Macrobenchmark、FrameTimingMetric | P50、P90、P95、P99 与超时帧是否改善 |
 | 编译器可跳过性 | Compose 编译器报告与指标 | 相关 `@Composable` 函数的稳定性与跳过条件是否合理 |
 
-不要预设“迁移后 Composable 重组次数一定下降”。Modifier 工厂所在的父函数仍可能重组，Element 也可能重建。更可靠的预期是：
+我们先把预期摆正：Modifier 工厂所在的父函数仍可能重组，Element 也可能重建，“迁移后 Composable 重组次数一定下降”这个预设并不成立。更可靠的预期是：
 
 - 相同 Element 类型保留既有 Node；
 - `composed` 的 `materialize()` 展开成本消失；
@@ -1749,7 +1739,7 @@ Element 应保持轻量与不可变。Node 中不要保存 Activity、View 或�
 - 参数变化只触发节点声明的阶段；
 - 热点路径中的对象分配和阶段耗时有机会下降。
 
-Macrobenchmark 的目标值应由当前产品基线、设备档位和业务场景确定，不使用脱离项目数据的固定百分比。若帧时间没有改善，也要检查瓶颈是否位于图片解码、文本布局、GPU、Binder、I/O 或其他部分。
+Macrobenchmark 的目标值应由当前产品基线、设备档位和业务场景确定，脱离项目数据的固定百分比没有意义。若帧时间没有改善，也要检查瓶颈是否位于图片解码、文本布局、GPU、Binder、I/O 或其他部分。
 
 #### 12.1 一条实用的源码断言
 
@@ -1761,13 +1751,13 @@ same runtime type, not equals -> reuse node and update
 different runtime type -> replace node
 ```
 
-这段规则适合帮助解释 `create()` 与 `update()` 的调用次数。它属于 Compose UI 内部实现，升级 Compose 后仍应回到目标版本源码复核，不能将其视为跨所有未来版本不变的二进制契约。
+这段规则适合帮助解释 `create()` 与 `update()` 的调用次数。它属于 Compose UI 内部实现，升级 Compose 后仍应回到目标版本源码复核，别把它当成跨所有未来版本不变的二进制契约。
 
 ### 13. Android 17 与多平台边界
 
 Android 17 不改变 `ModifierNodeElement` 的复用协议。它可能通过平台输入、窗口、渲染、无障碍或硬件加速行为影响具体组件，但这些影响要在对应 Android API 章节单独验证。
 
-`Modifier.Node` 与主要节点接口位于 Compose UI 的 `commonMain` 源码，因此 Compose Multiplatform 也共享这套抽象。平台渲染后端、输入接入和窗口系统并不相同，不能由 Android 的 HardwareRenderer 行为推导 iOS、Desktop 或 Web 的帧表现。跨平台项目应在各目标平台分别测量。
+`Modifier.Node` 与主要节点接口位于 Compose UI 的 `commonMain` 源码，因此 Compose Multiplatform 也共享这套抽象。但各平台的渲染后端、输入接入和窗口系统不同，Android 的 HardwareRenderer 行为推不出 iOS、Desktop 或 Web 的帧表现。跨平台项目应在各目标平台分别测量。
 
 Linux 内核锚点 `android17-6.18-2026-06_r6` 不参与 Node 链差分。只有分析调度、频率、GPU 驱动或输入延迟的系统跟踪时，内核版本才进入证据范围。
 
@@ -1806,6 +1796,6 @@ Linux 内核锚点 `android17-6.18-2026-06_r6` 不参与 Node 链差分。只有
 
 ## 全文小结
 
-Compose 性能诊断的起点是状态在组合、布局还是绘制阶段被读取，而不是先追求某个“全部可跳过”指标。Compiler 报告解释稳定性、重启组和跳过条件，Layout Inspector 与 Runtime Tracing 说明实际执行范围，FrameTimeline 和 Macrobenchmark 才证明用户可见的帧结果。
+全篇的线索到这里可以收拢：Compose 性能诊断的起点是状态在组合、布局还是绘制阶段被读取，其次才轮得到“全部可跳过”这类指标。Compiler 报告解释稳定性、重启组和跳过条件，Layout Inspector 与 Runtime Tracing 说明实际执行范围，FrameTimeline 和 Macrobenchmark 才证明用户可见的帧结果。
 
 `Modifier.Node` 是这条链上的运行时扩展点：Element 表达配置，Node 保留运行状态并参与具体阶段。迁移只有在节点复用、失效范围和热路径分配都得到同条件数据支持时才算完成；若 UI 线程已按时提交，还要继续追到 RenderThread、缓冲区、SurfaceFlinger 和 actual present。

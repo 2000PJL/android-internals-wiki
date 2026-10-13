@@ -4127,6 +4127,92 @@
       "summary": "Android 17 SCO rearchitecture omits property and compatible HAL requirements",
       "type": "missing-availability-boundary",
       "updated_at": "2026-10-13T10:51:50.446161+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/25-locationmanager-architecture-performance.md",
+      "close_note": "Replaced the conflated Criteria account with separate query/update semantics and documented API 34/API 31 deprecation; checked against pinned source and official API reference.",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261013-143533-idle-audit-4b2b908a",
+      "created_at": "2026-10-13T14:41:41.055516+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261013-143533-idle-audit-4b2b908a",
+      "details": "Pinned LocationManager.java lines 1348-1360 and 1414-1420 route Criteria update requests directly to FUSED_PROVIDER. Official documentation says this behavior applies since KitKat and these overloads were deprecated at API 31. getBestProvider and getProviders(Criteria, boolean) were deprecated at API 34.",
+      "id": "finding-55e87940d582",
+      "log_path": "logs/audit/2026-10-13-20261013-143533-idle-audit-4b2b908a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/location/java/android/location/LocationManager.java#1348",
+        "https://developer.android.com/reference/android/location/LocationManager"
+      ],
+      "status": "verified",
+      "summary": "Criteria provider selection conflates getBestProvider with fixed-fused update overloads and omits deprecation levels",
+      "type": "api-lifecycle-boundary",
+      "updated_at": "2026-10-13T14:53:50.014549+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/25-locationmanager-architecture-performance.md",
+      "close_note": "Documented API 33 age-method availability and the API 31-32 same-boot nanosecond comparison. Official Location lifecycle notices were inspected.",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261013-143533-idle-audit-4b2b908a",
+      "created_at": "2026-10-13T14:42:16.406930+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261013-143533-idle-audit-4b2b908a",
+      "details": "The official Location reference marks getElapsedRealtimeAgeMillis and getElapsedRealtimeMillis as added in API 33. API 31-32 callers must compare SystemClock.elapsedRealtimeNanos against Location.getElapsedRealtimeNanos in the same boot and clock domain.",
+      "id": "finding-ca80fc4b1502",
+      "log_path": "logs/audit/2026-10-13-20261013-143533-idle-audit-4b2b908a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/location/Location#getElapsedRealtimeAgeMillis()",
+        "https://developer.android.com/reference/android/location/Location#getElapsedRealtimeNanos()"
+      ],
+      "status": "verified",
+      "summary": "Location age recommendation omits API 33 availability within the declared API 31-37 range",
+      "type": "api-availability",
+      "updated_at": "2026-10-13T14:53:50.069073+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/25-locationmanager-architecture-performance.md",
+      "close_note": "Restricted merge semantics to non-passive requests, documented developer-setting input and hasIsFullTracking guard, and corrected the setter owner to Builder. Source and writing gates passed.",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261013-143533-idle-audit-4b2b908a",
+      "created_at": "2026-10-13T14:42:39.693447+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261013-143533-idle-audit-4b2b908a",
+      "details": "GnssMeasurementsProvider.java lines 197-226 skips PASSIVE_INTERVAL registrations and separately honors the developer full-tracking setting. GnssMeasurementsEvent.isFullTracking is valid only when hasIsFullTracking is true. setFullTracking belongs to GnssMeasurementRequest.Builder, not GnssMeasurementRequest.",
+      "id": "finding-051a093aa823",
+      "log_path": "logs/audit/2026-10-13-20261013-143533-idle-audit-4b2b908a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/location/gnss/GnssMeasurementsProvider.java#197",
+        "https://developer.android.com/reference/android/location/GnssMeasurementsEvent#isFullTracking()",
+        "https://developer.android.com/reference/android/location/GnssMeasurementRequest.Builder#setFullTracking(boolean)"
+      ],
+      "status": "verified",
+      "summary": "GNSS full-tracking section omits passive-request and optional-event-field boundaries and names the setter on the wrong class",
+      "type": "gnss-full-tracking-boundary",
+      "updated_at": "2026-10-13T14:53:50.125312+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/25-locationmanager-architecture-performance.md",
+      "close_note": "Separated Binder package ownership validation, request sanitization, and dynamic provider-manager allowlist matching. Removed the unsupported attributionTag/UID consistency assertion.",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261013-143533-idle-audit-4b2b908a",
+      "created_at": "2026-10-13T14:48:55.651572+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261013-143533-idle-audit-4b2b908a",
+      "details": "LocationManagerService.registerLocationListener constructs CallerIdentity before validateLocationRequest. CallerIdentity.fromBinder validates package ownership but records attributionTag without the claimed UID-consistency check. Privileged bypass allowlists are checked in LocationProviderManager.calculateProviderLocationRequest, not validateLocationRequest.",
+      "id": "finding-0a065dd74c6a",
+      "log_path": "logs/audit/2026-10-13-20261013-143533-idle-audit-4b2b908a-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/location/java/android/location/util/identity/CallerIdentity.java#94",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/location/LocationManagerService.java#902",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/location/provider/LocationProviderManager.java#708"
+      ],
+      "status": "verified",
+      "summary": "validateLocationRequest is incorrectly credited with CallerIdentity package checks and provider-manager allowlist policy",
+      "type": "source-function-mismatch",
+      "updated_at": "2026-10-13T14:53:50.182001+08:00"
     }
   ],
   "schema_version": 1

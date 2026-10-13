@@ -5764,6 +5764,54 @@
       "status": "appended",
       "title": "你是不是还没用过 select？实战 Kotlin select 在 Kotlin 协程中，select 算是一个有点尴"
     },
+    "source/juejin-android/2026-10-14-76948820-端侧推理排查（二）：线程在大核、CPU_.md": {
+      "chapter": "ch05-cpu-power",
+      "entry_id": "88b3d764cf1742aa",
+      "last_appended": "2026-10-14T05:25:33.970439+08:00",
+      "last_seen": "2026-10-14T05:25:33.970439+08:00",
+      "mtime": 1791922777.9267912,
+      "score": 19,
+      "sha256": "7ac9e6932d5b6573afc83b5f39ac3cc1c72ed005a82dddd932bcc88824936b9e",
+      "size": 10257,
+      "status": "appended",
+      "title": "端侧推理排查（二）：线程在大核、CPU 满频，为什么还是慢？编译优化修好之后，速度仍然只有 0.5 tok/s。这次我用"
+    },
+    "source/juejin-android/2026-10-14-76949670-Android_防二次打包第一道锁：签名.md": {
+      "chapter": "待分类",
+      "entry_id": "d9aea856ef5a9363",
+      "last_appended": "2026-10-14T05:25:33.970439+08:00",
+      "last_seen": "2026-10-14T05:25:33.970439+08:00",
+      "mtime": 1791922777.9265358,
+      "score": 13,
+      "sha256": "54d0427be9458671d8ba8b75838c972635500505209baf2c3a4f2d2040f35f7b",
+      "size": 27160,
+      "status": "appended",
+      "title": "Android 防二次打包第一道锁：签名校验与完整性校验拿到一个 APK，反编译、改几行、重新打个包、重新签个名，装到手"
+    },
+    "source/juejin-android/2026-10-14-76956055-为什么你的_LazyColumn_仍然卡.md": {
+      "chapter": "ch07-smoothness",
+      "entry_id": "5bcf17d3347d37ba",
+      "last_appended": "2026-10-14T05:25:33.970439+08:00",
+      "last_seen": "2026-10-14T05:25:33.970439+08:00",
+      "mtime": 1791922777.9262948,
+      "score": 12,
+      "sha256": "7837b69246c6d558a2ff40d226785efc84865f80b863ac12938f6d8cc2729347",
+      "size": 23359,
+      "status": "appended",
+      "title": "为什么你的 LazyColumn 仍然卡顿从键、嵌套滚动、昂贵的条目、图片解码、预取到调试版本，逐一拆解 LazyCol"
+    },
+    "source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "cabdbfef8f56f683",
+      "last_appended": "2026-10-14T05:25:33.970439+08:00",
+      "last_seen": "2026-10-14T05:25:33.970439+08:00",
+      "mtime": 1791922777.9259608,
+      "score": 19,
+      "sha256": "526544e12d870c05900505b0c2e7d7f45de1113550ce82985834fc66c3638ed8",
+      "size": 19652,
+      "status": "appended",
+      "title": "APK mmap 内存增长定位：pagemap 与 DEX 结构联合定位方法摘要 本文提出一种将 APK mmap 增长"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -8039,24 +8087,24 @@
     }
   },
   "last_report": {
-    "appended": 2,
-    "considered": 2,
-    "cutoff": "2026-10-12T05:20:33.942931+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-13.md",
+    "appended": 4,
+    "considered": 4,
+    "cutoff": "2026-10-13T05:20:34.046190+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-14.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2177,
+    "scanned": 2181,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1414,
       "path": 31,
-      "unchanged": 730
+      "unchanged": 732
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-13T05:25:34.046190+08:00",
+  "last_run_at": "2026-10-14T05:25:33.970439+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

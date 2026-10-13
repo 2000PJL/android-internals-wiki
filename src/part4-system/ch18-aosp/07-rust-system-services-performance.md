@@ -88,9 +88,8 @@ Rust 进入 Android 平台，主要目标是减少新增 native 代码里的内�
 
 AOSP `android-17.0.0_r1` 给出以下工程边界：
 
-- Keystore2 与 VirtualizationService 是 Rust Binder 服务，直接使用 Rust AIDL backend（AIDL 的 Rust 代码生成后端）和 `libbinder_rs`，没有固定的 C++ AIDL 中转层。
-- DnsResolver 仍是 C++ 与 Rust 混合模块。Rust 以 `libresolvrs_ffi` 静态 FFI（Foreign Function Interface，跨语言调用接口）库参与 DoH（DNS over HTTPS）、HTTP/3 和 DNS proxy 等部分，
-  不能把整个 resolver 标成 Rust 服务。
+- Keystore2 与 VirtualizationService 是 Rust Binder 服务，直接使用 Rust AIDL backend 和 `libbinder_rs`，中间没有固定的 C++ AIDL 中转层。
+- DnsResolver 仍是 C++ 与 Rust 混合模块。Rust 以 `libresolvrs_ffi` 静态 FFI（Foreign Function Interface，跨语言调用接口）库参与 DoH、HTTP/3 和 DNS proxy 等部分，谈不上整个 resolver 都换成了 Rust。
 - UWB 包含 Rust UCI（UWB Command Interface）core、packet 与 HAL adapter。Bluetooth 在 `system/rust` 下提供 `libbluetooth_rs`，
   并通过 CXX bridge（由 `cxx` 生成的 Rust/C++ 桥接层）接入现有 C++ 代码。两者都走渐进式替换。
 - 设备端 Rust 全局启用 `panic=abort`、整数溢出检查、强栈保护与 unwind table；ThinLTO（链接期的轻量级全程序优化）默认开启。解释平台上 Rust 的表现时，这些构建配置比通用 Rust 项目的经验数字更合适。
@@ -125,7 +124,7 @@ Google 在 2021 年发布 Rust 支持时提到，内存不安全问题长期约�
 比如 DnsResolver 根目录仍有 `DnsResolverService.cpp`、`ResolverController.cpp`、`res_send.cpp` 等大量 C++；Bluetooth 的 Rust 库也作为现有 stack 的静态 FFI 组件构建。
 
 r1 的 UWB 仓库位于 `packages/modules/Uwb`，Bluetooth Rust 代码位于 `packages/modules/Bluetooth/system/rust`。
-`system/uwb`、`system/bt/gd/rust`、Rust 主体的 DnsResolver、Rust HTTP engine 与 Rust bpfloader 在 r1 源码树中找不到对应路径，不能计入“已完成重写”。
+`system/uwb`、`system/bt/gd/rust`、Rust 主体的 DnsResolver、Rust HTTP engine 与 Rust bpfloader 在 r1 源码树中找不到对应路径，也就谈不上“已完成重写”。
 
 ### 1.3 Keystore2 的 Binder 入口
 
@@ -161,20 +160,18 @@ Java 或 native client → 语言对应的 AIDL proxy → Binder driver → Rust
 - 服务端锁、数据库、文件系统或硬件调用；
 - 回包与调用方重新调度。
 
-在这条路径上，Rust backend 的价值是让服务端保留 Rust 类型和所有权模型，同时遵守 AIDL wire format（跨进程传输时的字段编码规则）；它没有给 Binder transaction 增加新的进程跳转。我们分析时先测 transaction 的排队与执行，再判断生成代码和对象转换是否已经成了高占比路径。
+在这条路径上，Rust backend 的价值是让服务端保留 Rust 类型和所有权模型，同时遵守 AIDL wire format；它没有给 Binder transaction 增加新的进程跳转。所以我们先测 transaction 的排队与执行，再看生成代码和对象转换有没有变成高占比路径。
 
 ### 2.2 Rust 与 C/C++ 的同进程 FFI
 
-`extern "C"` 使用 C ABI，标量参数和 ABI 兼容结构体可按普通 native call 传递。成本风险来自边界两侧的工作：
+`extern "C"` 使用 C ABI，标量参数和 ABI 兼容结构体可按普通 native call 传递；成本风险来自边界两侧的工作：
 
-- Rust 与 C/C++ 编译单元之间通常无法内联；
 - 所有权、生命周期与异常约束需要人工设计；
 - 字符串、容器、trait object（动态分派调用的对象）和 C++ 对象需要表示转换；
 - 生成桥接代码可能做分支、长度校验、分配或析构；
 - 回调频率过高会放大每次固定成本。
 
-跨语言通常没法内联，这一点和 LTO 配置直接相关。Soong `compiler.go` 对 `lto` 属性的注释写得很清楚：它控制最终 Rust 链接的 LTO，管不到 cross-language LTO（跨语言链接期优化）。
-所以 r1 默认的 ThinLTO 能优化 Rust crate 依赖图，但 Rust/C++ 边界是否会被跨语言内联，不能据此下结论。
+跨 Rust/C++ 编译单元通常没法互相内联，这一点和 LTO 配置直接相关。Soong `compiler.go` 对 `lto` 属性的注释写得很清楚：它控制最终 Rust 链接的 LTO，管不到 cross-language LTO。所以 r1 默认的 ThinLTO 能优化 Rust crate 依赖图，但 Rust/C++ 边界会不会被跨语言内联，从 ThinLTO 默认值本身读不出来。
 
 数据是否复制取决于接口形态。下面的 CXX bridge 例子用借用 slice 传递指针和长度：
 
@@ -229,7 +226,7 @@ panic 一旦触发，进程直接终止，不会沿 C/C++ stack frame 展开；`
 
 所以我们在设计 FFI API 时，要把可预期失败编码成 `Result`、错误码、AIDL `Status` 或明确的 nullable/optional 返回值。panic 只留给违反内部不变量这类不可恢复错误，C++ exception 也不要穿过未声明可 unwind 的 Rust ABI 边界。
 
-`panic=abort` 也没有让 r1 去掉全部 unwind metadata（描述怎样还原调用栈的信息）：Soong 同时设置 `-C force-unwind-tables=yes`，服务于栈回溯、采样和诊断。二进制会因此缩小多少，不能从 panic 策略直接推算。
+`panic=abort` 也没有让 r1 去掉全部 unwind metadata（栈回溯所需的元数据）：Soong 同时设置 `-C force-unwind-tables=yes`，服务于栈回溯、采样和诊断。二进制会因此缩小多少，从 panic 策略是推算不出来的。
 
 ### 3.2 谁分配，谁释放
 
@@ -283,7 +280,7 @@ Rust 和 C++ 共用 native allocator 时，malloc 热点可以用 heapprofd 统�
 
 ### 4.2 边界检查与溢出检查
 
-Rust slice 索引可能生成 bounds check（越界检查），Android device build 还开启整数 overflow check。LLVM 能在循环边界清晰时消除一部分检查，但结果依赖代码形态。优化方向包括：
+Rust slice 索引可能生成 bounds check，Android device build 还开启整数 overflow check。LLVM 能在循环边界清晰时消除一部分检查，但结果依赖代码形态。优化方向包括：
 
 - 使用 iterator 或一次验证后的 slice 分段；
 - 避免循环体内重复计算长度；
@@ -306,7 +303,7 @@ Rust slice 索引可能生成 bounds check（越界检查），Android device bu
 - atomic refcount 是否在跨核高频路径中反复争用同一 cache line；
 - channel 是否积压并造成内存增长。
 
-safe Rust 的类型规则能挡住数据 race（多线程无同步读写同一内存）；业务层的死锁、队头阻塞和优先级反转，还是要我们在分析里自己去找。
+safe Rust 的类型规则能挡住数据 race；业务层的死锁、队头阻塞和优先级反转，还是要我们在分析里自己去找。
 
 ### 4.4 代码体积与 i-cache
 
@@ -355,17 +352,17 @@ r1 的 `library.go` 把它注册到 `RustLibraryRlibFactory`，注释也写明�
 `lto` 是一个属性组，合法形式是 `lto: { thin: true }` 或 `lto: { thin: false }`。r1 默认值已经是 `true`，常规生产模块无须重复声明。`lto: "thin"` 与该 tag 的属性类型不符。
 
 Soong 注释指出 ThinLTO 对 Rust code size 收益很大，生产构建若要关闭需要清楚理由。
-sanitizer、fuzz（模糊测试）、构建时间或工具兼容性可能要求例外；这类例外要通过最终 rustc command 和产物指标来确认，只读一段 Blueprint（`Android.bp` 使用的描述语言）是不够的。
+sanitizer、fuzz、构建时间或工具兼容性可能要求例外；这类例外要通过最终 rustc command 和产物指标来确认，只读一段 Blueprint（`Android.bp` 使用的描述语言）是不够的。
 
 ### 5.3 第三方 crate 管理
 
-Android 17 的 crates.io 导入集中在 `external/rust/android-crates-io` 仓库，各 crate 位于 `crates/<name>/` 子目录。每个目录可包含 `cargo_embargo.json`、Android 补丁、许可证元数据和生成的 `Android.bp`。
+平台的 crates.io 导入集中在 `external/rust/android-crates-io` 仓库，各 crate 位于 `crates/<name>/` 子目录。每个目录可包含 `cargo_embargo.json`、Android 补丁、许可证元数据和生成的 `Android.bp`。
 
 仓库根目录的 `crate_tool` 是入口脚本：它通过 AOSP 预置 Cargo 调用 `development/tools/external_crates` 中的 Rust CLI。
 该工具的 `import`/`regenerate` 子命令负责 vendor crate（把依赖源码固定复制进受管仓库）、按顺序应用补丁、检查许可证，并调用 `cargo_embargo` 生成或更新 `Android.bp`。
 
 这套流程不使用 `external/upstream` 与 `development/tools/regex_gen_cargo2android.py`。
-平台开发不能把 `cargo build` 的依赖解析结果直接带入系统镜像；crate 版本、license、patch、Soong rule、APEX 可用性和测试都要进入 AOSP 管理。
+平台开发要把 crate 版本、license、patch、Soong rule、APEX 可用性和测试都纳入 AOSP 管理，`cargo build` 的依赖解析结果照搬不进系统镜像。
 
 ## 6. 怎样测 Rust 边界
 
@@ -379,7 +376,7 @@ Android 17 的 crates.io 导入集中在 `external/rust/android-crates-io` 仓�
 - Rust 服务的 CPU 时间花在 bridge、锁、allocator、Binder 或业务代码中的哪一项？
 - static Rust std 与 dynamic linkage 对文件体积、PSS 和启动 relocation 有什么影响？
 
-“Rust 服务快不快”这样的问题没有可测的边界；我们先把业务语义、输入、线程数、CPU affinity（把线程限制到指定 CPU）、编译配置和设备温度固定下来，再决定用什么工具。
+“Rust 服务快不快”这种问法没法落到可测的对象上；我们先把业务语义、输入、线程数、CPU affinity（把线程绑到指定 CPU）、编译配置和设备温度固定下来，再决定用什么工具。
 
 ### 6.2 同进程 FFI microbenchmark
 
@@ -393,7 +390,7 @@ Android 17 的 crates.io 导入集中在 `external/rust/android-crates-io` 仓�
 - 单线程与并发；
 - 多种 payload 大小。
 
-统计每次调用的 cycles、instructions、branch misses（分支预测失败）、allocation count 和复制字节：空调用用来估计每次调用的固定开销，业务 payload 用来判断这笔固定开销在总耗时里的占比。
+统计每次调用的 cycles、instructions、branch misses、allocation count 和复制字节：空调用用来估计每次调用的固定开销，业务 payload 用来判断这笔固定开销在总耗时里的占比。
 
 两侧产物要使用相同优化级别；一侧保留断言或日志、另一侧关闭，比较就失真了。
 
@@ -427,7 +424,7 @@ adb shell simpleperf record -p "$keystore_pid" \
 系统服务的 attach（附加采样）权限受 build type、SELinux 和 simpleperf 策略限制；user build 上附加失败，说明的是权限或构建条件不满足。
 
 Soong 使用 Rust v0 symbol mangling（把函数签名编码进链接符号名），并保留 unwind table，但 Simpleperf/Perfetto 报告仍要核对是否成功加载了对应符号。
-看见大量十六进制地址，应先修正 symbol path 和 build ID（唯一标识该 ELF 构建的值）；把采样归到“unknown”之后继续比较语言，结论是靠不住的。
+看见大量十六进制地址，应先修正 symbol path 和 build ID；把采样归到“unknown”之后继续比较语言，结论是靠不住的。
 
 ### 6.5 文件体积、链接与 PSS
 
@@ -460,7 +457,7 @@ heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录
 1. 减少不必要的 Binder transaction 与 callback 往返。
 2. 缩短持锁区，移出数据库、文件和硬件 I/O。
 3. 避免 payload 的重复编码与复制。
-4. 控制 executor、Binder pool 和 channel 背压（生产速度超过消费速度时限制继续入队）。
+4. 控制 executor、Binder pool 和 channel 的背压。
 5. 减少热点分配和跨核原子写。
 6. 在证据充分时调整 bridge 表示、linkage 或 compiler 配置。
 
@@ -509,7 +506,7 @@ heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录
 | Android 14～16 / API 34～36 | Rust 在 Mainline（可独立更新的系统模块）、虚拟化、连接与底层组件中继续扩展，混合语言边界仍然存在 |
 | Android 17 / API 37 | `android-17.0.0_r1` 中可核对 Rust Binder 服务、CXX 混合模块、默认 ThinLTO、panic/overflow/unwind 配置与新 Bluetooth Rust 组件 |
 
-这里不讨论内核 Rust 配置或驱动，也不能从平台用户态模块推导 `android17-6.18-2026-06_r6` 的内核能力。
+这里不讨论内核 Rust 配置或驱动；平台用户态模块也说明不了 `android17-6.18-2026-06_r6` 的内核能力。
 分析 Rust for Linux 时，需要另行核对该 kernel tag 的 Kconfig（内核配置）、toolchain、bindings 和具体驱动。
 
 ## 源码与官方资料

@@ -5905,6 +5905,34 @@
       "action": "indexed-only-chapter-freeze",
       "score": 19,
       "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-14-76956055-为什么你的_LazyColumn_仍然卡.md",
+      "title": "[技术文章] 为什么你的 LazyColumn 仍然卡顿从键、嵌套滚动、昂贵的条目、图片解码、预取到调试版本，逐一拆解 LazyCol",
+      "summary": "> 发布时间: 2026-10-12T12:33:52.000Z > 原文链接: https://juejin.cn/post/7695605570640707594 2026-10-12 142 阅读18分钟 > 本文译自「Why Your LazyColumn Is Still Janky」，原文链接proandroiddev.com/why-your-la…，由Su...",
+      "chapter": "ch07",
+      "processed_at": "2026-10-14T06:20:33.733523+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md",
+      "title": "[技术文章] APK mmap 内存增长定位：pagemap 与 DEX 结构联合定位方法摘要 本文提出一种将 APK mmap 增长",
+      "summary": "> 发布时间: 2026-10-12T22:46:19.000Z > 原文链接: https://juejin.cn/post/7695622779606450191 2026-10-13 50 阅读14分钟 本文提出一种将 APK mmap 增长从 VMA 级下钻到 APK entry / DEX 结构级的归因方法。方法利用： 1. smaps 中的 offset 字段...",
+      "chapter": "ch04",
+      "processed_at": "2026-10-14T06:20:33.733523+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "route_confidence": 18,
+      "route_terms": [
+        "apk",
+        "dex",
+        "juejin-android",
+        "ch04-memory"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",

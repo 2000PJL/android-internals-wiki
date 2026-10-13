@@ -4,14 +4,18 @@ chapter: '1.25'
 section: '1.25'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-18'
+last_verified: '2026-10-13'
 last_verified_against: AOSP android-17.0.0_r1
+last_source_verified_at: '2026-10-13T14:45:36+08:00'
+last_idle_audit_at: '2026-10-13T14:45:36+08:00'
 confidence: high
 sources:
 - type: aosp
   path: frameworks/base/location/java/android/location/LocationManager.java
 - type: aosp
   path: frameworks/base/location/java/android/location/LocationRequest.java
+- type: aosp
+  path: frameworks/base/location/java/android/location/util/identity/CallerIdentity.java
 - type: aosp
   path: frameworks/base/location/java/android/location/GnssMeasurementRequest.java
 - type: aosp
@@ -63,9 +67,15 @@ sources:
 - type: official
   path: developer.android.com/reference/android/location/LocationManager
 - type: official
+  path: developer.android.com/reference/android/location/Location
+- type: official
   path: developer.android.com/reference/android/location/LocationRequest
 - type: official
   path: developer.android.com/reference/android/location/GnssMeasurementRequest
+- type: official
+  path: developer.android.com/reference/android/location/GnssMeasurementRequest.Builder
+- type: official
+  path: developer.android.com/reference/android/location/GnssMeasurementsEvent
 - type: official
   path: developer.android.com/develop/sensors-and-location/location/permissions
 - type: official
@@ -158,7 +168,9 @@ locationManager.requestLocationUpdates(
 
 服务端会查找名为 `gps` 的 `LocationProviderManager`。它不会因为 `request` 使用 `QUALITY_LOW_POWER` 就把请求迁移到 `network`；同理，向 `network` provider 提交 `QUALITY_HIGH_ACCURACY` 也不会自动启动 GNSS。Provider 对 quality 的解释由具体实现决定。
 
-旧的 `Criteria` API 可以让 framework 从现有 Provider 中挑选一个名称，但那是调用前的 Provider 选择，不是一次请求同时驱动多个 Provider。
+`getBestProvider(Criteria, boolean)` 会从可用 Provider 中返回一个匹配的名称，`getProviders(Criteria, boolean)` 则返回匹配的名称列表。这两个查询 API 自 API 34 起废弃，官方建议显式选择 provider。
+
+接收 `Criteria` 的 `requestLocationUpdates` 重载自 API 31 起废弃。自 Android KitKat 起，这些重载固定向 `FUSED_PROVIDER` 提交请求，`Criteria` 用来转换请求的质量参数，不会先调用 `getBestProvider()` 选源。排查旧调用时，要区分查询 Provider 名称与提交 Criteria 定位请求。
 
 ### 2.1 `LocationRequest` 中值得区分的字段
 
@@ -198,15 +210,19 @@ locationManager.requestLocationUpdates(
 
 `LocationRequest.Builder(long)` 的参数是更新间隔，不是 priority（优先级）。示例中的 `10_000 / 2 >= 5_000` 满足 framework 接受 batching 参数的基本比例，但设备还要具备 batching 扩展，Provider 也要接受该请求；因此这段代码不构成硬件批处理保证。
 
-[源码依据：`LocationManager.java`、`LocationRequest.java`、`LocationManagerService.validateLocationRequest()`，`android-17.0.0_r1`]
+[源码依据：`LocationManager.java`、`LocationRequest.java`、`LocationManagerService.validateLocationRequest()`，`android-17.0.0_r1`；废弃版本见 [LocationManager 官方 API 文档](https://developer.android.com/reference/android/location/LocationManager)。]
 
 ## 3. 三类位置读取的成本不同
 
 ### 3.1 最近位置：只读缓存
 
-`getLastKnownLocation(provider)` 通过 `ILocationManager.getLastLocation()` 读取指定 Provider 的服务端缓存。它不会为了这次调用启动 Provider，返回值可以为 `null`，也可能已经过时。业务必须结合 `Location.getElapsedRealtimeAgeMillis()`、accuracy（估计精度半径）和数据完整性判断能否使用。
+`getLastKnownLocation(provider)` 通过 `ILocationManager.getLastLocation()` 读取指定 Provider 的服务端缓存。它不会为了这次调用启动 Provider，返回值可以为 `null`，也可能已经过时。业务必须结合位置年龄、accuracy（估计精度半径）和数据完整性判断能否使用。
+
+`Location.getElapsedRealtimeAgeMillis()` 自 API 33 起可用。Android 12 / 12L（API 31 / 32）可用 `SystemClock.elapsedRealtimeNanos() - location.getElapsedRealtimeNanos()` 计算纳秒年龄，再换算为业务所需的单位。两个时间戳必须来自同一设备的同一次启动，不能跨重启比较。
 
 系统日期时间可能被修改，不能用 `System.currentTimeMillis() - location.getTime()` 作为唯一新鲜度依据。比较位置年龄应优先使用单调递增、不受改时钟影响的 elapsed realtime。
+
+[API 可用版本与时钟边界：[Location 官方文档](https://developer.android.com/reference/android/location/Location#getElapsedRealtimeAgeMillis())。]
 
 ### 3.2 单次位置：先尝试缓存，再等待新结果
 
@@ -262,12 +278,13 @@ LocationManager.requestLocationUpdates()
 
 ### 4.1 身份、权限和请求清洗
 
-`LocationManagerService` 从 Binder 调用构造 `CallerIdentity`，读取 fine/coarse 权限级别，并检查 provider 是否存在。`validateLocationRequest()` 会处理：
+`LocationManagerService` 从 Binder 调用构造 `CallerIdentity`，读取 fine/coarse 权限级别，并检查 provider 是否存在。Binder 入口中的 `CallerIdentity.fromBinder()` 校验包名是否属于调用 UID，并记录 attribution tag 供后续 AppOps 归因。`validateLocationRequest()` 会处理：
 
 - 普通调用者无权指定的 `WorkSource`；
 - `lowPower`、忽略位置设置、ADAS（高级驾驶辅助系统）GNSS bypass（绕过部分常规限制）等受限字段；
-- 包名、attribution tag 与调用 UID 的一致性；
-- 对特权 bypass 的权限及 allowlist（允许名单）限制。
+- 对特权 bypass 的权限检查，以及 ADAS 请求的设备类型和 provider 限制。
+
+bypass 的 allowlist（允许名单）检查在 `LocationProviderManager.calculateProviderLocationRequest()` 中执行，会按包名和 attribution tag 匹配，并随注册状态重新计算。
 
 所以，客户端对象中的隐藏字段不等于服务端会照单执行。调试系统应用时，要同时打印“客户端构造的请求”和 `dumpsys location` 中“服务端接受后的请求”。
 
@@ -442,13 +459,15 @@ batching 的收益来自减少 AP（Application Processor，应用处理器）�
 
 ### 8.3 GNSS measurement 的 full tracking 是另一条请求
 
-`GnssMeasurementRequest.Builder.setFullTracking(true)` 自 API 31 起用于原始 GNSS measurements。它要求关闭 duty cycling（周期性停机以省电），以连续跟踪更多 GNSS 信号，通常会增加功耗。多个 measurement listener 合并时，只要任一 active 请求要求 full tracking（全程跟踪），合并结果就启用 full tracking；measurement interval 也取最短值。
+`GnssMeasurementRequest.Builder.setFullTracking(true)` 自 API 31 起用于原始 GNSS measurements。它要求关闭 duty cycling（周期性停机以省电），以连续跟踪更多 GNSS 信号，通常会增加功耗。
 
-API 34 增加了 `GnssMeasurementsEvent.isFullTracking()`，调用者可以在 HAL 支持相应信息时判断事件是否处于 full-tracking 模式。
+`GnssMeasurementsProvider` 合并当前 active 且 interval 不是 `PASSIVE_INTERVAL` 的 measurement 请求。参与合并的任一请求要求 full tracking（全程跟踪），合并结果就启用 full tracking；measurement interval 取这些请求的最短值。passive 请求只接收其他请求产生的测量，不参与这两项合并。服务端还会读取开发者选项中的 GNSS full-tracking 设置，该设置也可使合并结果启用 full tracking。排查额外功耗时，应同时检查非 passive 的 measurement 注册和开发者选项。
 
-普通 `LocationRequest` 的 `QUALITY_HIGH_ACCURACY + 短 interval` 不等价于显式 `GnssMeasurementRequest.setFullTracking(true)`。`IGnssPowerIndication` 也不是 full-tracking 开关：它只提供 `setCallback()` 和 `requestGnssPowerStats()`，用途是报告 GNSS power capabilities/statistics（功耗能力与统计）。
+API 34 增加了 `GnssMeasurementsEvent.hasIsFullTracking()` 和 `isFullTracking()`。只有 `hasIsFullTracking()` 返回 `true`，`isFullTracking()` 才能用于判断该事件的跟踪模式；字段不可用时，不能把 `false` 当作设备已启用 duty cycling 的证据。
 
-[源码依据：`GnssLocationProvider.updateRequirements()`、`GnssMeasurementsProvider.mergeRegistrations()`、`IGnssBatching.aidl`、`IGnssPowerIndication.aidl`，`android-17.0.0_r1`]
+普通 `LocationRequest` 的 `QUALITY_HIGH_ACCURACY + 短 interval` 不等价于显式 `GnssMeasurementRequest.Builder.setFullTracking(true)`。`IGnssPowerIndication` 也不是 full-tracking 开关：它只提供 `setCallback()` 和 `requestGnssPowerStats()`，用途是报告 GNSS power capabilities/statistics（功耗能力与统计）。
+
+[源码依据：`GnssLocationProvider.updateRequirements()`、`GnssMeasurementsProvider.mergeRegistrations()`、`GnssMeasurementsEvent.java`、`IGnssBatching.aidl`、`IGnssPowerIndication.aidl`，`android-17.0.0_r1`；API 可用版本与字段条件见 [GnssMeasurementsEvent 官方文档](https://developer.android.com/reference/android/location/GnssMeasurementsEvent#isFullTracking()) 与 [GnssMeasurementRequest.Builder 官方文档](https://developer.android.com/reference/android/location/GnssMeasurementRequest.Builder#setFullTracking(boolean))。]
 
 ## 9. PSDS 与 TTFF：把测量事实和经验值分开
 

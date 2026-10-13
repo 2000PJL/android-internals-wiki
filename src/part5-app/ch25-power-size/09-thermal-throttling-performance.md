@@ -55,6 +55,8 @@ last_rework_at: 2026-08-15 16:58:28+08:00
 
 热节流是设备为守住安全温度而动态控制的结果，不同机型的阈值和降级动作不会完全一致。我们把热状态和 headroom 当作趋势信号：热压力上来时提前减掉可选工作，验收看持续性能，不看瞬时峰值。
 
+> 源码基线：AOSP `android-17.0.0_r1`。正文源码路径均对应这个标签；设备可能使用其他内核分支。
+
 ## 热治理的目标
 
 冷机跑分反映的是短时峰值；长时间游戏、导航、视频通话、直播和端侧推理拼的是稳态吞吐，也就是设备进入热平衡后还能持续完成多少工作。持续负载通常沿这样一条路径发展：
@@ -65,13 +67,13 @@ last_rework_at: 2026-08-15 16:58:28+08:00
 4. 同一份应用工作在更低的资源预算下执行，帧时间、编码时间或推理延迟随之上升；
 5. 应用若继续堆积过期工作，功耗和热压力可能持续，体验进一步恶化。
 
-频率和限制档位（cooling state，冷却设备当前的限制强度）都由系统和厂商策略决定，Thermal API 没有给应用指定这些的入口；我们能调整的只有工作量：目标帧率、渲染分辨率、画质、编码规格、相机分析速率、模型档位、并发度、预取与非紧急后台工作。
+频率和 cooling state 都由系统和厂商策略决定，Thermal API 没有给应用指定这些的入口；我们能调整的只有工作量：目标帧率、渲染分辨率、画质、编码规格、相机分析速率、模型档位、并发度、预取与非紧急后台工作。
 
 所以好的策略会提前减掉低价值工作，等设备冷却后再分阶段恢复。反过来，等 `SEVERE` 到来才一次性关掉大量能力，通常出现明显的质量跳变；热状态刚回落就把能力全部加回去，又容易在阈值附近反复振荡。
 
 ## 公开 API 的实际入口
 
-热节流（thermal throttling）指设备为控制温度而限制 CPU、GPU、充电或其他热源的过程。Android SDK 没有公开的 `ThermalManager` Java 类，应用侧入口在 `android.os.PowerManager`：
+热节流指设备为控制温度而限制 CPU、GPU、充电或其他热源的过程。Android SDK 没有公开的 `ThermalManager` Java 类，应用侧入口在 `android.os.PowerManager`：
 
 - `getCurrentThermalStatus()`、`addThermalStatusListener()`：API 29；
 - `getThermalHeadroom(forecastSeconds)`：API 30；
@@ -132,7 +134,7 @@ AIDL 用来生成稳定的 Binder 接口，HIDL 是更早一代的 HAL 接口体
 
 限制等级变化由 `IThermalChangedCallback.notifyThrottling(Temperature)` 推送，AIDL v3 另有低频阈值更新 `notifyThresholdChanged(TemperatureThreshold)`；`sendThermalNotify()` 在这个 AIDL 里并不存在。
 
-`android-17.0.0_r1` 冻结了 AIDL v1、v2、v3，没有 v4：v1 覆盖温度、阈值、冷却设备与热状态回调，v2 增加冷却设备变化回调，v3 增加表面温度预测与阈值变化回调。兼容旧厂商系统镜像（vendor image）的设备仍可能连接 HIDL Thermal HAL 2.0、1.1 或 1.0；AIDL 版本号和旧 HIDL“2.0”属于两套版本体系，别把 AIDL v2 当成 HIDL 2.0。
+`android-17.0.0_r1` 冻结了 AIDL v1、v2、v3，没有 v4：v1 覆盖温度、阈值、冷却设备与热状态回调，v2 增加冷却设备变化回调，v3 增加表面温度预测与阈值变化回调。兼容旧厂商系统镜像的设备仍可能连接 HIDL Thermal HAL 2.0、1.1 或 1.0；AIDL 版本号和旧 HIDL“2.0”属于两套版本体系，别把 AIDL v2 当成 HIDL 2.0。
 
 ### CoolingDevice 的定位
 
@@ -415,23 +417,23 @@ fun requestedTier(signals: ThermalSignals): WorkloadTier {
 
 ## CPU、GPU 与应用性能的证据
 
-最后一环是取证。热状态升高可能伴随 CPU/GPU 限制，但热状态本身说明不了系统采取了哪项动作：CPU 主线程变慢、GPU 帧延长、充电速度下降、屏幕亮度变化，每一项都要分别取证。
+信号驱动策略，性能退化则要另行取证：热状态升高可能伴随 CPU/GPU 限制，但热状态本身说明不了系统采取了哪项动作——CPU 主线程变慢、GPU 帧延长、充电速度下降、屏幕亮度变化，每一项都要分别取证。
 
 ### 把热限制与卡顿连成因果链
 
 “设备发热”和“界面卡顿”同时出现，只能建立相关性。要确认热节流导致性能退化，我们至少要按时间顺序取得这些证据：
 
 1. 固定场景输入后，目标进程或相关系统组件形成持续负载；
-2. 热状态、headroom、温度阈值事件（temperature trip，温度跨过配置阈值）或冷却档位发生可重复变化；
+2. 热状态、headroom、temperature trip（温度跨过配置阈值）或冷却档位发生可重复变化；
 3. CPU/GPU 频率上限、可用容量或完成时间显示资源受到约束；
 4. 工作量保持稳定时，线程执行时间、Runnable（可运行但等待 CPU 调度）时长、GPU 完成时间或帧时间随后恶化；
 5. 设备降温，或主动降低单一负载变量后，限制与性能退化按预测回落。
 
 对照一下缺了哪一环：没有第 2、3 项，观测到的 CPU/GPU 低频可能只是 DVFS（动态电压频率调整）应对普通负载变化的常规选择；没有稳定工作量与对照组，排除不了业务负载本身的变化；没有回落过程，还要检查省电模式（Battery Saver）、刷新率切换、后台争用和厂商短时提频（boost）策略。
 
-Perfetto 取证时，我们把 `ThermalManagerService.status`、热状态与冷却设备事件、`cpu_frequency_limits`、调度器、FrameTimeline、RenderThread 与 GPU 完成栅栏（fence）放在同一时间窗口；单条异常帧或一次温度读数撑不起归因。
+Perfetto 取证时，我们把 `ThermalManagerService.status`、热状态与冷却设备事件、`cpu_frequency_limits`、调度器、FrameTimeline、RenderThread 与 GPU fence 放在同一时间窗口；单条异常帧或一次温度读数撑不起归因。
 
-时间尺度也要分开：单帧和输入反馈用短时跟踪，数分钟温升用持续跟踪或周期快照；屏幕熄灭后的唤醒锁（WakeLock）、后台作业（Job）与网络重试，则回到 [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md) 的 Batterystats（系统电量统计）窗口。三类结果靠同一设备、系统构建版本（build）、场景和时间戳关联；power rail 是设备级供电轨的能量统计，不能直接归因到某个 Java 方法。
+时间尺度也要分开：单帧和输入反馈用短时跟踪，数分钟温升用持续跟踪或周期快照；屏幕熄灭后的 WakeLock、后台作业（Job）与网络重试，则回到 [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md) 的 Batterystats（系统电量统计）窗口。三类结果靠同一设备、系统构建版本（build）、场景和时间戳关联；power rail 是设备级供电轨的能量统计，不能直接归因到某个 Java 方法。
 
 ### CPU 受限
 
@@ -450,7 +452,7 @@ GPU devfreq 或厂商固件降低预算时，GPU 完成时间延后，FrameTimel
 
 ### 充电与其他缓解动作
 
-Thermal HAL 指南要求设备把会限制性能的电池功率约束也报告为限制等级；厂商还可能限制充电、显示、相机、modem 或其他热源。公开热状态没有具体缓解原因字段，所以关心充电场景的应用要额外记录是否接电、是否充电，并在实验中分开充电与电池供电样本。
+Thermal HAL 指南要求设备把会限制性能的电池功率约束也报告为限制等级；厂商还可能限制充电、显示、相机、modem 或其他热源。公开热状态没有具体缓解原因字段，所以关心充电场景的应用要额外记录是否接电，并在实验中分开充电与电池供电样本。
 
 ## Thermal API、ADPF 与 Game Mode 的分工
 
@@ -475,7 +477,7 @@ API 36 的 CPU/GPU capacity headroom 位于 [`SystemHealthManager`](https://deve
 
 Game Mode 表达用户选择的 `PERFORMANCE`（性能优先）、`BATTERY`（续航优先）或 `STANDARD`（标准）偏好。应用应在 `onResume()` 重新读取模式，并选择相应的初始质量档位。热安全与稳定体验的优先级更高，性能优先模式同样受热限制约束。
 
-续航优先模式（Battery Game Mode）只影响游戏自己的策略，与系统省电模式是两回事。Game Mode 干预（interventions）是 OEM 在应用外部施加的帧率、分辨率等优化，应用未接入 Game Mode API 时也可能被采用。跨厂商验证时要记录当前模式、应用是否声明自行支持，以及系统实际启用的干预项。
+续航优先模式只影响游戏自己的策略，与系统省电模式是两回事。Game Mode 干预（interventions）是 OEM 在应用外部施加的帧率、分辨率等优化，应用未接入 Game Mode API 时也可能被采用。跨厂商验证时要记录当前模式、应用是否声明自行支持，以及系统实际启用的干预项。
 
 ### Sustained Performance Mode
 
@@ -496,7 +498,7 @@ API 24 的 Sustained Performance Mode（持续性能模式）面向长时间负�
 - `SEVERE` 及以上限制所有非 TOP_APP job；
 - TOP_APP bias 不受这条限制规则影响。
 
-新的停止/等待原因（stop/pending reason）功能标志和兼容开关同时生效时，应用可以收到专门的热设备状态原因（thermal device-state reason）；旧配置可能只返回通用设备状态原因，任务实现仍要支持停止、保存进度和幂等重试。
+新的停止/等待原因功能标志和兼容开关同时生效时，应用可以收到专门的热设备状态原因；旧配置可能只返回通用设备状态原因，任务实现仍要支持停止、保存进度和幂等重试。
 
 Doze（设备空闲节电）、App Standby、Battery Saver 和热限制规则是各自独立的状态机。设备可以同时处于多种限制状态，平台没有面向应用的“叠加系数”。排查延迟任务时，我们把执行/停止原因、设备空闲状态、App Standby bucket（应用待机分桶）、充电状态和热状态放在一起看。
 

@@ -4,7 +4,7 @@ chapter: '4.8'
 section: '4.8'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-26'
+last_verified: '2026-10-13'
 last_verified_against: AOSP android-17.0.0_r1 system/memory/mmd + system/memory/lmkd + frameworks/base ZramMaintenance/CachedAppOptimizer/OomAdjuster；Android common kernel android17-6.18-2026-06_r6 zram；Android MMD/LMKD docs；Linux zram docs；Perfetto memory docs；ApplicationExitInfo/ActivityManager API reference；Android 16 KB page size docs；arXiv 2502.12826
 confidence: medium-high
 sources:
@@ -79,6 +79,9 @@ related_chapters:
 last_deep_review_at: '2026-08-26T12:39:47+08:00'
 last_review_finalize_at: '2026-08-26T16:05:14+08:00'
 last_body_apply_at: '2026-08-26T09:55:08+08:00'
+last_idle_audit_at: '2026-10-13T22:45:35+08:00'
+last_source_verified_at: '2026-10-13T22:45:35+08:00'
+verification_scope_note: 核验 Android 17 固定标签下的 LMKD 选进程、MMD 维护与按进程预取、ZRAM 统计，并复核退出原因 API、页大小和 Ariadne 实验边界；未进行设备性能实验。
 ---
 
 # ZRAM 压缩交换与应用重启延迟
@@ -147,11 +150,12 @@ flowchart TD
     F -->|是| G["用高压缩率算法重压"]
     F -->|否| J["继续保留在 ZRAM"]
     G --> J
-    I --> K{"缓存进程因 Activity 激活?"}
-    K -->|是| L["CachedAppOptimizer 请求 MMD prefetch"]
-    K -->|否| M["访问时按需从后备存储读回"]
-    L --> N["内核异步恢复进程相关 entry"]
-    N --> O["应用线程恢复并继续处理 fault"]
+    I --> K{"已标记按进程写回，因 Activity 解冻?"}
+    K -->|是，且功能可用| L["CachedAppOptimizer 请求 MMD prefetch"]
+    K -->|是，进程已解除冻结| O["应用线程继续执行并按需处理 fault"]
+    K -->|其他情况| M["访问时按需从后备存储读回"]
+    L --> N["内核异步读回进程相关 entry"]
+    N -.->|已就绪条目可减少后续缺页 I/O| O
     D --> O
     M --> O
 ```
@@ -192,7 +196,7 @@ Android 17 的 `CachedAppOptimizer` 把进程冻结器（freezer）与 MMD 接�
 3. `system_server` 用 pidfd 标识目标进程，调用 `mmd.asyncWritebackProcessZramMemory()`。
 4. MMD 通过 Android ZRAM 的 ioctl 控制接口扫描该进程页表，选出指向目标 ZRAM 的交换条目。
 5. 回调成功后，ActivityManager 标记 `isZramWrittenBack`。下一轮 OOM 调整会用 `min(adj, zramWritebackAdj)` 计算进程优先级分值（`adj`），这个值只发送给 LMKD；AOSP 默认 `zramWritebackAdj` 为 `249`，因此该进程在已写回状态下得到更强的 LMKD 保护。解冻时此标记会被清除。
-6. 进程因 Activity 激活而解冻时，`CachedAppOptimizer.prefetchZram()` 调用 `mmd.asyncPrefetchProcessZramMemory()`。
+6. 进程解除冻结后，只有此前带有 `isZramWrittenBack` 标记、解冻原因是 `UNFREEZE_REASON_ACTIVITY`，且写回功能与 MMD 按进程操作可用时，`CachedAppOptimizer.prefetchZram()` 才调用 `mmd.asyncPrefetchProcessZramMemory()`。应用线程此时已可继续执行，无需等待预取完成。
 
 pidfd 是内核提供的进程文件描述符，可以避免只用整数 PID 时遇到编号复用问题。写回和预取都是异步请求，目标进程可能在执行前退出，后备设备也可能空间不足；这些都属于预期失败分支。
 
@@ -217,16 +221,18 @@ pidfd 是内核提供的进程文件描述符，可以避免只用整数 PID 时
 分析时可以把恢复窗口分为：
 
 ```text
-Activity 解冻
-  -> MMD 收到 prefetch 请求
-  -> 内核扫描目标进程 swap PTE
-  -> backing bio 与 high-priority deferred work
-  -> 应用线程恢复执行
-  -> 按页面触碰顺序继续发生 swap fault
-  -> 首帧 / 完整显示
+因 Activity 激活而解除进程冻结
+  ├─ 应用线程恢复执行
+  │    -> 按页面触碰顺序处理 swap fault
+  │    -> 首帧 / 完整显示
+  └─ 已有按进程写回标记，且功能可用
+       -> CachedAppOptimizer 请求 MMD prefetch
+       -> 内核扫描目标进程 swap PTE
+       -> 后备设备 bio 与高优先级延后工作
+       -> 把条目读回 ZRAM，供后续换入使用
 ```
 
-这段时序用于安排性能轨迹标记。预取与应用初始化会重叠，不能把两者的耗时简单相加。
+这段并行时序用于安排性能轨迹标记。进程解除冻结后，应用执行与预取可以重叠；预取完成后，应用仍需通过缺页把条目恢复到进程页面，不能把预取耗时与应用初始化耗时简单相加。
 
 ### CPU 与 I/O 竞争会放大延迟
 
@@ -263,8 +269,8 @@ drivers/block/zram/
 
 - `orig_data_size`：ZRAM 中内容未压缩时的总大小；
 - `compr_data_size`：压缩数据载荷的大小；
-- `mem_used_total`：zsmalloc、碎片和元数据共同占用的内存；
-- `same_pages`：内容完全相同、无需分配普通压缩对象的页面；
+- `mem_used_total`：zsmalloc 内存池占用的物理页总字节数，包含池内碎片与相应分配开销；另行分配的 ZRAM 条目表、压缩上下文等不计入这个字段；
+- `same_pages`：单个页面内所有 `unsigned long` 元素均为同一值的页面数，例如全零页；驱动只保存这个值，无需分配普通压缩对象，也不进行跨页去重；
 - `huge_pages`：压缩收益不足的页面；
 - `pages_compacted`：ZRAM 内部分配器经过压缩整理后释放的页面数。
 
@@ -359,7 +365,7 @@ PSI 不是简单读取 `/proc/pressure/memory` 的 `avg10`/`avg60` 摘要值。A
 
 `lmkd.cpp` 的默认 PSI 阈值表包含 low=`some 70ms/1s`、medium=`some 100ms/1s`、critical=`full 70ms/1s`；启用新策略时，low 阈值会被置为 0，medium 与 critical 改用 `ro.lmk.psi_partial_stall_ms` 和 `ro.lmk.psi_complete_stall_ms`。因此，排查 Android 17 设备时应同时记录 `/proc/pressure/memory` 的 `some/full` 增量、`ro.lmk.*` 实际属性和设备是否使用新策略，不能只凭一个 AOSP 默认阈值表推断杀进程时机。[来源: DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md；已验证: android-17.0.0_r1 system/memory/lmkd/lmkd.cpp]
 
-PSI 事件也不等于 `lmkd` 立即杀进程。`__mp_event_psi()` 会把 PSI 唤醒与内存水位、ZRAM-aware free swap、反复换入换出、进程 `oom_score_adj` 等状态合并后再选候选进程；在 `kill_heaviest_task` 模式下，同一压力档位内会偏向 RSS+swap 更大的候选。[来源: DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md；已验证: android-17.0.0_r1 system/memory/lmkd/lmkd.cpp]
+PSI 事件也不等于 `lmkd` 立即杀进程。`__mp_event_psi()` 会把 PSI 唤醒与内存水位、ZRAM-aware free swap、反复换入换出、进程 `oom_score_adj` 等状态合并后再选候选进程。`find_and_kill_process()` 从较大的 `adj` 开始向下遍历；启用 `kill_heaviest_task` 时，`proc_get_heaviest()` 在同一个 `adj` 内比较 `/proc/<pid>/statm` 的 RSS，并在可以读取 `dmabuf_pss` 时加上 DMA-BUF PSS。该比较不包含 swap 用量。[来源: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp，`proc_get_size()`、`proc_get_heaviest()`、`find_and_kill_process()`]
 
 ## 16 KB 页大小的准确影响
 
@@ -405,7 +411,7 @@ Android 17 的按进程写回和预取与 Ariadne 的“提前准备热数据”
 | AOSP 状态 | 已有公开文档与源码 | 研究原型 |
 | 目标选择 | 进程、空闲时长、条目类型与配置阈值 | 数据热度与恢复访问历史 |
 | 压缩粒度 | 以基础页为一个条目，支持多个压缩器优先级 | 按热度使用自适应块大小（chunk size） |
-| 提前恢复 | Activity 解冻时，按进程预取已写回的条目 | 预测下一批将访问的数据并主动解压 |
+| 提前恢复 | 进程因 Activity 激活而解冻后，按进程预取已写回的条目 | 预测下一批将访问的数据并主动解压 |
 
 截至 Android 17 基线，没有证据表明 Ariadne 的完整论文设计已经合入 AOSP。它适合用来说明相关研究方向，但论文中的性能数字不能视为 Android 系统承诺。
 
@@ -464,7 +470,7 @@ adb shell cat /sys/kernel/tracing/available_events \
 
 时间轴分析建议使用以下顺序：
 
-1. 找到用户点击、Activity 解冻、首帧和完整显示的时间点。
+1. 找到用户点击、进程因 Activity 激活而解冻、首帧和完整显示的时间点。
 2. 确认 PID 是否改变，以及是否发生冻结器解冻（freezer unfreeze）。
 3. 比较恢复窗口内 `pswpin`、主缺页（major fault）、ZRAM 后备设备读取量与块设备 I/O 增量。
 4. 检查主线程处于可运行（runnable）还是阻塞（blocked）状态，以及它是否与 `kswapd`、MMD 或解压任务争用 CPU。
@@ -478,7 +484,7 @@ Android 11（API 30）及以上，`ActivityManager.getHistoricalProcessExitReaso
 - `REASON_FREEZER`（API 33+）：冻结期间的 Binder 等异常导致退出；
 - `REASON_SIGNALED` 与 `SIGKILL`：某些设备无法准确报告低内存终止原因时，可能只记录这两个值。
 
-Android 11 及以上，应用可以用 `ActivityManager.isLowMemoryKillReportSupported()` 判断设备能否可靠报告低内存终止原因。历史 `getPss()` / `getRss()` 是进程退出前后的快照，不等于峰值，也不能证明哪些页面曾存放在 ZRAM 中。
+Android 11 及以上，应用可以用 `ActivityManager.isLowMemoryKillReportSupported()` 判断设备能否可靠报告低内存终止原因。`ApplicationExitInfo.getPss()` 与 `getRss()` 返回系统最后一次采样的 PSS 与 RSS，单位为 kB；采样时刻可能早于进程退出，数值不代表退出瞬间或峰值。进程在系统尚未采样时就退出，这两个值会返回 0。它们也不能证明哪些页面曾存放在 ZRAM 中。[来源: `ApplicationExitInfo` API reference，`getPss()`、`getRss()`；均自 API 30 提供]
 
 ## 应用能做什么
 

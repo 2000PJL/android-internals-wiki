@@ -2,7 +2,7 @@
 title: Android 与 Linux 内存管理全景
 chapter: '4.1'
 section: '4.1'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-09-23'
 last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article / source-index material juejin-android 2026-10-09 Memory Limiter exemption article
@@ -115,6 +115,24 @@ sources:
   path: https://developer.android.com/reference/android/os/ProfilingManager
 - type: official
   path: https://developer.android.com/reference/android/os/ProfilingTrigger
+- type: reference
+  path: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md
+  role: APK 文件映射驻留页与 ZIP 条目、DEX 结构的交叉归因；不作为函数触发点或精确 PSS 的证明
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/pagemap.rst
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/soft-dirty.rst
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/task_mmu.c
+- type: official
+  path: https://source.android.com/docs/core/runtime/dex-format
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java
+- type: official
+  path: https://developer.android.com/reference/android/content/ComponentCallbacks2
+- type: official
+  path: https://developer.android.com/topic/performance/app-optimization/enable-app-optimization
+last_source_verified_at: '2026-10-14'
 tags:
   - android-memory
   - memory-model
@@ -136,7 +154,7 @@ consolidated_from:
 - src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md
 - src/part1-fundamentals/ch04-memory/01-memory-overview.md
 - src/part1-fundamentals/ch04-memory/02-linux-memory.md
-last_body_apply_at: '2026-10-09T07:15:34+08:00'
+last_body_apply_at: '2026-10-14T07:22:27+08:00'
 ---
 
 # Android 与 Linux 内存管理全景
@@ -301,6 +319,25 @@ adb shell getconf PAGE_SIZE
 
 16 KiB 页会改变页表规模、缺页行为、对齐要求和小映射的内部碎片。官方文档只给出“平均内存可能略有增加”这类边界描述，没有通用的固定增幅。应用比较前后数据时，应保持 ABI、构建选项、MTE、业务负载和设备配置一致。
 
+#### APK mmap：从 VMA 定位到 ZIP 条目与 DEX 结构
+
+`smaps` 能指出哪段 APK 映射的 RSS 或 PSS 增长，但同一段映射可能覆盖多个文件条目（ZIP entry）。要继续定位 `classes.dex`、资源或原生库，可以把页的驻留状态、VMA 文件偏移和 APK 内部布局对应起来。得到的是驻留页覆盖的文件内容分布，触发驻留的函数调用仍需另找证据。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §3.2、§5.4、§6.4]
+
+对文件线性映射，设 VMA 起点为 `vma_start`，映射头中的文件偏移为 `vma_offset`，页起始虚拟地址为 `page_addr`，设备基础页大小为 `PAGE_SIZE`。该页对应的 APK 文件区间为 `[file_start, file_start + PAGE_SIZE)`，其中 `file_start = vma_offset + (page_addr - vma_start)`。`PAGE_SIZE` 应取前面 `getconf PAGE_SIZE` 的结果，不能照搬材料示例中的 4096。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §3.1] [已验证: 本章“4 KiB 与 16 KiB 页大小”；android17-6.18-2026-06_r6 `fs/proc/task_mmu.c` `pagemap_read()` 的 `PAGE_SHIFT` 索引]
+
+`/proc/<pid>/pagemap` 为每个虚拟基础页保存一个 8 字节记录，文件读取位置是 `(page_addr / PAGE_SIZE) × 8`。bit 63 是 `present`，bit 62 是 `swapped`，bit 0–54 才是驻留页的 PFN。只统计驻留页时不需要 PFN：r6 源码单独用 `CAP_SYS_ADMIN` 控制 PFN 是否可见，`present` 的设置不依赖这个开关。读取文件仍受进程访问检查与 Android SELinux 策略限制；PFN 为 0 不能直接解释为未驻留，读取失败或数据不完整也不能当作零增长。 [已验证: android17-6.18-2026-06_r6 `Documentation/admin-guide/mm/pagemap.rst`；`fs/proc/task_mmu.c` `pagemap_open()`、`pagemap_read()`、`pte_to_pagemap_entry()`]
+
+ZIP 条目的数据起点是 `data_start = header_offset + 30 + name_len + extra_len`，其中两个长度要从本地文件头读取；`header_offset` 本身不是 DEX 起点。按页文件区间与条目数据区间求交集，才能把跨条目的页分开统计。直接把交集解释为 DEX 内部字节，还要求该条目采用 `ZIP_STORED`，且映射内容与所采集 APK 一致；Deflate 压缩、运行时解密或另一个文件中的 DEX，需要单独处理。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §2.1、§5.2、§5.4]
+
+1. 在测试前后保留同一 PID、同一构建的 `smaps` 与目标 VMA 的 `pagemap`，记录时间和业务阶段。比较前核对文件身份、地址范围、权限与映射偏移；VMA 已变化时应单独分析，不能直接对旧虚拟地址集合做差。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §1、§3.1、§5.5] [已验证: 本章“为什么 PSS 会在代码不变时波动”与“先确认命令和采样条件”]
+2. 对稳定 VMA 按基础页读取 `present`，分别记录 `pages_t1 - pages_t0` 的新增驻留页与反向差集的离开驻留页。新增页数量只描述进入量；比较净 RSS 变化时还要扣除离开量，并注意 `smaps` 与 `pagemap` 不是同一时刻的原子快照。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §5.5、§6.2] [已验证: android17-6.18-2026-06_r6 `fs/proc/task_mmu.c` 的 `show_smap()` 与 `pagemap_read()` 独立读取路径]
+3. 把新增页换算成文件区间，先汇总各 ZIP 条目的交集字节。ZIP 头、填充、未支持的压缩条目以及解析失败范围保留为未归因字节，避免只归一化已识别内容而隐藏遗漏。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §5.2、§5.4、§5.5]
+4. 对 DEX 条目，先校验格式版本和边界，再解析 `map_list` 与具体项。`method_ids` 是方法标识符表；回到方法字节码要沿 `class_data_item` 中的 `encoded_method.code_off` 找 `code_item`。变长项必须完整解码，不能用几个定长表的偏移代表全部类、方法或字符串。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §5.3] [已验证: AOSP DEX 格式文档 `method_id_item`、`class_data_item`、`encoded_method`、`code_item`]
+
+页内的字节占比只能说明驻留页里包含什么。一页同时覆盖方法字节码和字符串时，字符串占比高并不能证明它触发了缺页；`present` 也不表示访问频率。soft-dirty 记录写入及映射更新，不能用来跟踪只读 APK 的全部访问。要追触发路径，应把驻留分布与 perf/simpleperf 调用栈采样、ART 分析或业务时间线结合。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §5.4、§6.2、§6.4] [已验证: android17-6.18-2026-06_r6 `Documentation/admin-guide/mm/soft-dirty.rst`]
+
+单进程的 `present` 集合给出驻留页口径，不能直接计算共享页的 PSS。材料把 VMA 的 PSS 增量按已归因字节占比分摊，这依赖页间共享比例相近等假设；共享者变化、离开驻留页和未归因内容都会影响结果。报告应并列保留 `smaps` 实测的 RSS/PSS 差值、进入与离开页数、条目分布和未归因字节，把比例分摊值标为估算；没有归因字节时不输出伪精确的零 PSS。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §5.5、§6.2] [已验证: 本章“为什么 PSS 会在代码不变时波动”]
+
 ### `dumpsys meminfo` 应该怎样读
 
 #### 先确认命令和采样条件
@@ -462,17 +499,19 @@ MemoryLimiter 触发“匿名页 + 共享内存 + 交换空间”越界终止后
 
 **编译期：让 R8 的压缩与优化生效**
 
-R8 的保留规则写得太宽时，release 包会留下本该删掉的代码和资源、为反射保留的入口，以及被 proguard 规则挡住而没做的优化；这些内容占住运行时常驻内存，把进程推向 MemoryLimiter 的 `anon + shmem + swap` 边界。`buildTypes.release` 至少要确认：
+R8 的保留规则写得太宽时，release 包可能留下未使用的代码和资源，或者阻止优化。安装包里保留了多少内容，不能直接换算成常驻内存，更不能把 APK 的干净文件页都计入 MemoryLimiter 的 `anon + shmem + swap`。应先区分文件驻留页与运行时对象、匿名映射等占用。 [已验证: Android Developers《Enable app optimization with R8》；本章“APK mmap：从 VMA 定位到 ZIP 条目与 DEX 结构”与 AOSP android-17.0.0_r1 `com_android_server_am_MemoryLimiter.cpp` 的 `anon`、`shmem`、Swap 读取路径]
 
-- `isMinifyEnabled = true`：启用代码压缩与混淆；
-- `isShrinkResources = true`：移除未引用的资源映射；
-- `proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")`：使用 `proguard-android-optimize.txt`，而不是偏兼容旧行为、阻止部分优化的 `proguard-android.txt`。
+沿用 `minifyEnabled`/`shrinkResources` 配置方式的工程，可以在 `buildTypes.release` 中检查：
 
-`gradle.properties` 中如果仍保留 `android.enableR8.fullMode=false` 应删除，让 R8 进一步做激进优化。`proguard-rules.pro` 里要避免 `-dontoptimize`、`-dontshrink`、`-dontobfuscate` 这类全局开关，它们会挡住 R8 对整库的优化。
+- `isMinifyEnabled = true`：启用代码压缩、优化与混淆。 [已验证: Android Developers《Enable app optimization with R8》的 Legacy DSL 示例]
+- `isShrinkResources = true`：在构建阶段移除未使用的资源。 [已验证: Android Developers《Enable app optimization with R8》的 Legacy DSL 示例]
+- `proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")`：使用允许优化的默认规则文件。 [已验证: Android Developers《Enable app optimization with R8》的 Legacy DSL 示例]
 
-反射、序列化与三方 SDK 的 keep 规则应当收窄到具体类、字段或注解。库工程要把对外规则放在 `consumer-rules.pro`，把库内部为自身编译和测试保留的规则放在模块自己的 `proguard-rules.pro`；两者混在一起，接入方就会拿到过宽的 keep，运行时代码与资源映射规模也随之变大。 [来源: 技术文章/source/juejin-android/2026-09-23-76471867-Android17内存超限杀App排查.md] [已验证: Android Gradle Plugin 官方文档关于 R8 与 shrinkResources 的配置入口]
+AGP 8.0 起 R8 完整模式默认开启；若 `gradle.properties` 中仍保留 `android.enableR8.fullMode=false`，可在补齐必要 keep 规则并测试反射等动态入口后移除。`-dontoptimize`、`-dontshrink`、`-dontobfuscate` 分别限制优化、压缩与混淆，应逐项核对使用理由。 [已验证: Android Developers《Enable app optimization with R8》的完整模式说明与版本行为表]
 
-R8 与资源压缩对 MemoryLimiter 越界只有间接作用；它们影响的是运行时代码映射和未回收资源，而这些内容会进入匿名页与共享内存，让 cgroup 视角下的 `anon + shmem + swap` 更接近上限。R8 的效果要在开启 R8 完整模式的 release 构建上做前后对比，而不是在 debug 构建里凭直觉判断。
+反射、序列化与三方 SDK 的 keep 规则应当收窄到具体类、字段或注解。库工程要把对外规则放在 `consumer-rules.pro`，把库内部为自身编译和测试保留的规则放在模块自己的 `proguard-rules.pro`；两者混在一起，接入方可能收到过宽的 keep，限制代码与资源压缩。 [来源: 技术文章/source/juejin-android/2026-09-23-76471867-Android17内存超限杀App排查.md] [已验证: Android Developers《Enable app optimization with R8》]
+
+R8 对文件映射和运行时分配的影响要分开测量。对同一业务负载的 release 构建，比较 APK/DEX 大小、文件映射 RSS/PSS，以及 cgroup 的 `anon`、`shmem` 和 Swap；只有后几项的变化才能直接对应这里的 MemoryLimiter 联合上限。 [已验证: 本章“APK mmap：从 VMA 定位到 ZIP 条目与 DEX 结构”；AOSP android-17.0.0_r1 `com_android_server_am_MemoryLimiter.cpp`]
 
 **运行时：主动让出可重建缓存**
 
@@ -483,34 +522,21 @@ R8 与资源压缩对 MemoryLimiter 越界只有间接作用；它们影响的�
 
 在 `onTrimMemory` 里，正在编辑的草稿、支付流程状态或用户选择路径这类难以低成本恢复的业务状态要留下，走持久化或 `ViewModel` / saved state。错误地把业务状态当作普通缓存清掉，反而会触发重保存和重分配，加重后续一次内存事件。 [来源: 技术文章/source/juejin-android/2026-09-23-76471867-Android17内存超限杀App排查.md] [已验证: AOSP android-17.0.0_r1 `ComponentCallbacks2.java` 常量；本章“进程内存域与统计口径”段落]
 
-trim 处理的实时性影响 `anon + shmem + swap` 的峰值。在 `visible` 或 `not-visible` 档位下，进程已经被 MemoryLimiter 盯住；`onTrimMemory` 的工作通常需要在进入这些档位之前完成，才有空间余量。
+`onTrimMemory` 按应用状态转换提示清理，并不保证在 MemoryLimiter 越界之前送达。可重建缓存应有自己的生命周期和容量管理，不能依赖 trim 回调替代峰值控制。 [已验证: Android Developers `ComponentCallbacks2` 的状态回调说明；本章 Android 17 MemoryLimiter 按进程状态选择限制档位的流程]
 
 **线上取证：用 `ProfilingManager` 抓被杀前的现场**
 
-MemoryLimiter 触发的终止没有 Java 堆栈，`ApplicationExitInfo` 也只给出 `REASON_OTHER` 与 `MemoryLimiter:AnonSwap` 这类标记字符串；要把堆转储补齐，应用侧得提前注册取证入口。
+MemoryLimiter 的退出标记用于确认终止路径，通常还不足以定位保留对象或分配调用栈。应用可以提前接入 `ProfilingManager`，但采集请求与结果交付都不保证成功。 [已验证: 本章 `ApplicationExitInfo` 的 MemoryLimiter 标记；AOSP android-17.0.0_r1 `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`]
 
-`ProfilingManager` 提供触发式 profiling 注册能力：
+`ProfilingManager` 和全局结果回调从 API 35 提供，`addProfilingTriggers()` 从 API 36 提供；下面两个触发类型从 Android 17 / API 37 提供： [已验证: Android Developers `ProfilingManager`、`ProfilingTrigger` API 参考]
 
-- `ProfilingTrigger.TRIGGER_TYPE_OOM`：面向 `OutOfMemoryError` 抓取 Java 堆转储；
-- `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`：面向系统识别出的严重性能异常；MemoryLimiter 触发时按其源码流程会在杀进程前调度异常分析事件（`MemoryLimiter.java` 中异常事件触发路径），结合 `registerForAllProfilingResults` 可拿到 artifact。
+- `ProfilingTrigger.TRIGGER_TYPE_OOM`：应用发生 OOM 异常时请求 Java 堆转储；自定义未捕获异常处理器需要继续调用默认处理器，否则这一触发路径无法使用。 [已验证: Android Developers `ProfilingTrigger.TRIGGER_TYPE_OOM`]
+- `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`：系统检测到应用异常行为时触发，产物类型取决于异常。MemoryLimiter 在相关系统开关启用时调度该事件，不能把每次异常事件都等同于 Java 堆转储。 [已验证: Android Developers `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`；本章 AOSP android-17.0.0_r1 MemoryLimiter 异常事件流程]
 
-下面给出一个最小接入示例，拿到文件路径后交给自己的上传任务处理：
+接入时应分别注册全局结果回调 `registerForAllProfilingResults()` 和所需的触发器 `addProfilingTriggers()`；只注册结果回调不会订阅 OOM 或异常事件。结果可在进程存活时返回；如果回调失败，系统可能在应用以后重新注册全局回调时尝试重投递，不能保证“只在下次启动返回”或必然补齐文件。 [已验证: AOSP android-17.0.0_r1 `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java` `addProfilingTriggers()` 与 `registerForAllProfilingResults()`]
 
-```kotlin
-val profilingManager = context.getSystemService(ProfilingManager::class.java)
-val executor = Executors.newSingleThreadExecutor()
-profilingManager.registerForAllProfilingResults(executor) { result ->
-    if (result.errorCode == ProfilingResult.ERROR_NONE) {
-        enqueueProfileUpload(result.resultFilePath)
-    } else {
-        logProfilingError(result.errorCode)
-    }
-}
-```
+线上接入还要考虑限流、用户同意、文件大小、上传时机和保留时间。Java 堆转储可能包含对象引用与内容，应按敏感数据处理；`ApplicationExitInfo`、系统日志、tombstone、lmkd 记录与 PSI 时间线仍用于确认退出原因，分析产物用于补充对象或调用栈证据。 [来源: 技术文章/source/juejin-android/2026-09-23-76471867-Android17内存超限杀App排查.md] [已验证: Android Developers `ProfilingManager` 的限流说明；本章“堆转储与采样边界”]
 
-artifact 在 App 下次启动并注册回调后才会返回。线上接入还要考虑采样比例、用户同意、文件大小、上传时机和保留时间：Java 堆转储可能包含对象引用与内容，不适合当作普通日志直接上传，应按业务敏感字段先脱敏再走既有 APM 通道。 [来源: 技术文章/source/juejin-android/2026-09-23-76471867-Android17内存超限杀App排查.md] [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` 异常分析事件触发路径；Android Developers `ProfilingManager` / `ProfilingTrigger` 参考文档]
-
-在取证链上，`ApplicationExitInfo`、系统日志、tombstone、lmkd 记录、PSI 时间线仍是主线；`ProfilingManager` 的产物是补充证据，用来给 MemoryLimiter 杀进程这一类“没有 Java 堆栈的系统终止”补齐堆转储。
 
 ### ZRAM 与 Swap：容量、压缩数据和 RAM 成本
 
@@ -674,6 +700,15 @@ ZRAM 本身是匿名页回收策略的一部分，风险主要来自持续换入
 - [Perfetto `ProcessStatsConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/process_stats/process_stats_config.proto)
 - [Perfetto `SysStatsConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/sys_stats/sys_stats_config.proto)
 - [Perfetto `JavaHprofConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/java_hprof_config.proto)
+- [APK mmap 内存增长定位：pagemap 与 DEX 结构联合定位方法](https://juejin.cn/post/7695622779606450191)
+- [Android 17 kernel `pagemap` 接口文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/pagemap.rst)
+- [Android 17 kernel soft-dirty 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/soft-dirty.rst)
+- [Android 17 kernel `fs/proc/task_mmu.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/task_mmu.c)
+- [AOSP DEX 文件格式](https://source.android.com/docs/core/runtime/dex-format)
+- [AOSP Android 17 `ProfilingManager`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java)
+- [Android `ProfilingTrigger` API 参考](https://developer.android.com/reference/android/os/ProfilingTrigger)
+- [Android `ComponentCallbacks2` API 参考](https://developer.android.com/reference/android/content/ComponentCallbacks2)
+- [Android R8 优化配置](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization)
 
 ### 从指标进入根因的判断顺序
 

@@ -112,23 +112,25 @@ last_body_apply_at: '2026-09-15T09:18:26+08:00'
 
 类加载性能取决于查找路径、DEX 元数据、验证与初始化；Boot Image 把一部分核心类和运行时状态提前生成并跨进程共享。两者共同影响启动期缺页、映射和类链接成本。
 
-版本边界：本文按 AOSP `android-17.0.0_r1` 解释 ART、libcore 与 Framework 行为，按 Android common kernel `android17-6.18-2026-06_r6` 解释 `MAP_PRIVATE` 写时复制；应用侧 Baseline Profile 和 Startup Profile 结论以 Android Developers 文档为边界，最终仍要回到所用 AGP/R8 版本、release APK 和目标设备 trace 验证。
+> 源码基线：AOSP `android-17.0.0_r1`（ART、libcore 与 Framework）；内核 `android17-6.18-2026-06_r6`（`MAP_PRIVATE` 写时复制）。
 
-本文中的 ART 指 Android Runtime，Zygote 是预先初始化运行时、再 fork 出 System Server 和应用进程的父进程。Boot Class Path 是系统核心 Java 类路径，System Server Class Path 则承载 `system_server` 专用类。profile 是记录应优先处理哪些类和方法的编译输入；AOT（Ahead-of-Time）表示运行前编译，JIT（Just-in-Time）表示运行时即时编译。
+应用侧 Baseline Profile 与 Startup Profile 的结论以 Android Developers 文档为准，最终仍要回到所用 AGP/R8 版本、release APK 和目标设备 trace 验证。
+
+全文还有几个反复出现的词，先约定清楚：ART 指 Android Runtime；Zygote 是预先初始化运行时、再 fork 出 System Server 和应用进程的父进程；Boot Class Path 是系统核心 Java 类路径，System Server Class Path 承载 `system_server` 专用类；profile 记录应优先处理哪些类和方法，作为编译输入；AOT 在运行前编译，JIT 在运行时即时编译。
 
 ## 类加载委派、查找与启动成本
 
 ### 类加载包含三个动作
 
-这三个动作各自的开销来源不同，排查时先分清耗时落在哪一个：
+我们在 trace 里看到一段类加载耗时时，第一步是分清它落在哪个动作上——三个动作的开销来源各不相同：
 
 1. **查找并定义类**：找到 DEX 中描述该类的 `class_def`，构造 `java.lang.Class` 对象，装入字段、方法、父类和接口信息，再完成方法表布局、引用解析等链接工作。
 2. **验证类**：检查 DEX 指令、类型流和访问约束。VDEX/OAT 是 dexopt 生成或使用的 ART 产物，其中可复用的验证信息能够省掉重复验证；缺少有效结果时，运行时仍要调用验证器（verifier）。
 3. **初始化类**：写入 DEX 编码的静态字段初值，再执行 `<clinit>`。`<clinit>` 是虚拟机看到的类初始化方法，由静态字段初始化表达式和 `static` 代码块汇成；完成后，ART 还要按 Java 内存模型让其他线程看到初始化结果。
 
-`ClassLoader.loadClass()` 会取得类并完成 ART 所需的定义/链接，但不会仅因这次调用就执行 `<clinit>`。`Class.forName(name)` 的单参数重载会请求初始化；`new`、调用静态方法、读写非常量静态字段等“主动使用”也可能触发初始化。验证结果可能已经存在于有效产物中；尚未满足验证条件的类，可以在后续初始化或使用路径进入 verifier。
+`ClassLoader.loadClass()` 会取得类并完成 ART 所需的定义/链接，但仅凭这次调用还不会执行 `<clinit>`。`Class.forName(name)` 的单参数重载会请求初始化；`new`、调用静态方法、读写非常量静态字段等“主动使用”也可能触发初始化。验证结果可能已经存在于有效产物中；尚未满足验证条件的类，可以在后续初始化或使用路径进入 verifier。
 
-因此，即使一段启动耗时由某个类首次出现引起，也要继续判断时间落在查找、定义/链接、验证，还是业务自己的 `<clinit>`。四者的修复方向不同。
+所以，一段启动耗时即使明确来自某个类的首次出现，我们还要继续判断时间落在查找、定义/链接、验证，还是业务自己的 `<clinit>`——四者的修复方向不同。
 
 ### 从 Java API 到 ART
 
@@ -152,7 +154,7 @@ ClassLoader.loadClass(name, resolve)
 
 这里的 `bootstrap lookup` 是从 boot class path 查找平台类；`sharedLibraryLoaders` 与 `sharedLibraryLoadersAfter` 则分别表示在本加载器 DEX 之前、之后参与查找的共享库加载器。
 
-这条链有两个按顺序访问的维度：父加载器链和 `dexElements[]`。`DexPathList.findClass()` 按数组顺序访问元素，命中第一个定义就停止。DEX 数量增加会让一次未命中或靠后命中的查找访问更多元素，但耗时还受缓存、DEX 是否已映射、ART 产物是否有效和设备存储影响，不能只用 DEX 数量换算成固定毫秒数。
+这条链上有两个按顺序访问的维度：父加载器链和 `dexElements[]`。`DexPathList.findClass()` 按数组顺序访问元素，命中第一个定义就停止。DEX 数量增加，会让一次未命中或靠后命中的查找访问更多元素；但耗时还受缓存、DEX 是否已映射、ART 产物是否有效和设备存储影响，要把这些因素放在一起看，单凭 DEX 数量换算不出固定毫秒数。
 
 #### API 37 的 ART 快速路径
 
@@ -162,7 +164,7 @@ ART 自己解析类型引用时，不一定重新递归调用上述 Java 方法�
 - `InMemoryDexClassLoader`
 - `DelegateLastClassLoader`
 
-对可识别的链，`FindClassInBaseDexClassLoader()` 在 ART 原生层按对应委托顺序查找，减少 Java 与原生层之间的多次调用切换。API 37 的识别谓词比较的是这些 well-known class 的精确类型；自定义 `ClassLoader`，以及虽然继承自标准加载器、但不等于这些精确类型的加载器，都可能让 ART 回到该加载器定义的 Java `loadClass()` 行为。原生快速路径仍遵循 Java 侧对应的委托顺序。
+对可识别的链，`FindClassInBaseDexClassLoader()` 在 ART 原生层按对应委托顺序查找，减少 Java 与原生层之间的多次调用切换。API 37 的识别谓词比较的是这些 well-known class 的精确类型：自定义的 `ClassLoader`，以及继承自标准加载器、类型却与这些精确类型不同的加载器，都可能让 ART 回到该加载器定义的 Java `loadClass()` 行为。原生快速路径遵循的委托顺序与 Java 侧一致。
 
 #### `DelegateLastClassLoader` 的准确顺序
 
@@ -174,9 +176,9 @@ ART 自己解析类型引用时，不一定重新递归调用上述 Java 方法�
 4. `sharedLibraryLoadersAfter`；
 5. parent。
 
-它只把应用/库 DEX 放到了普通 parent 之前，boot class path 仍有最高优先级。该策略适合有明确隔离需求的运行环境，不能用来给普通应用加速类加载。
+它只把应用/库 DEX 放到了普通 parent 之前，boot class path 仍有最高优先级。这个顺序服务于有明确隔离需求的运行环境，普通应用拿它当类加载加速手段是行不通的。
 
-Java 类型身份由二进制类名和定义它的类加载器共同决定，因此同名类由谁定义会影响强制转换、包访问和链接约束。应先保证正确性，再评估性能收益。
+还有一层要留意：Java 类型身份由二进制类名和定义它的类加载器共同决定，同名类由谁定义会影响强制转换、包访问和链接约束。我们先保证正确性，再评估性能收益。
 
 ### DEX 中怎样找到 `class_def`
 
@@ -184,11 +186,11 @@ API 37 的实现里没有对 `class_defs` 做二分查找这一步。
 
 `DexPathList` 或 ART 的标准加载器快速路径会依次访问加载器持有的 DEX。进入某一个 DEX 后，`OatDexFile::FindClassDef()` 的优先路径如下：
 
-1. 如果该 DEX 关联的 `TypeLookupTable` 有效，就按类型描述符（descriptor）的 modified UTF-8 哈希值查找 `class_def_idx`；描述符形如 `Lcom/example/Foo;`，`class_def_idx` 是该类定义在 DEX 表中的索引。
+1. 如果该 DEX 关联的 `TypeLookupTable` 有效，就按类型描述符的 modified UTF-8 哈希值查找 `class_def_idx`；描述符形如 `Lcom/example/Foo;`，`class_def_idx` 是该类定义在 DEX 表中的索引。
 2. 如果没有有效查找表，先由描述符找到 `type_id`，也就是 DEX 类型表中的条目。
 3. 再调用 `DexFile::FindClassDef(type_idx)`；它在 API 37 中顺序扫描 `class_defs`，寻找引用该 `type_id` 的类定义。
 
-`TypeLookupTable` 在编译阶段创建，运行时从已经映射到进程地址空间的产物中读取，常见路径上的整表扫描因此可以省掉。外层 DEX 元素仍然按类路径（class path）顺序访问，所以 Startup Profile 对 DEX 布局的优化依旧有价值。
+`TypeLookupTable` 在编译阶段创建，运行时从已经映射到进程地址空间的产物中读取，常见路径上的整表扫描因此可以省掉。外层 DEX 元素仍然按类路径顺序访问，所以 Startup Profile 对 DEX 布局的优化依旧有价值。
 
 #### MultiDex 优化应看什么
 
@@ -196,13 +198,13 @@ API 37 的实现里没有对 `class_defs` 做二分查找这一步。
 
 - 启动所需类是否集中在靠前的 DEX；
 - 未命中查找是否反复穿过多个元素；
-- 动态功能模块（dynamic feature）、插件或补丁是否增加了额外加载器层级；
+- 动态功能模块、插件或补丁是否增加了额外加载器层级；
 - 产物中是否带有有效的 profile、验证信息和 `TypeLookupTable`；
 - 类是否在首帧前确有必要。
 
-Startup Profile 是构建期输入。D8/R8 用它调整 DEX 布局，优先把启动类和方法放入主 `classes.dex`；空间不足时会放到后续 DEX。Baseline Profile 则随 APK/AAB 提供给 ART，用于设备侧的 Profile 引导编译（profile-guided compilation）：ART 会优先处理 Profile 覆盖的类和方法。两者可以来自同一套生成流程，但作用阶段不同。
+Startup Profile 是构建期输入：D8/R8 用它调整 DEX 布局，优先把启动类和方法放入主 `classes.dex`，空间不足时放到后续 DEX。Baseline Profile 则随 APK/AAB 提供给 ART，做设备侧的 profile 引导编译——ART 会优先处理 Profile 覆盖的类和方法。两者可以来自同一套生成流程，只是作用阶段不同。
 
-不要用“首 DEX 命中率必须达到某个百分比”代替测量。可在 Android Studio 的 APK Analyzer 或同等解包工具中检查 DEX 分布；如果构建链路还输出 R8/Startup Profile 元数据，也应把它当成布局辅助证据，并最终回到 release 产物和启动 trace 验证。
+“首 DEX 命中率达到某个百分比”这类目标代替不了测量。我们可以在 Android Studio 的 APK Analyzer 或同等解包工具中检查 DEX 分布；构建链路输出的 R8/Startup Profile 元数据可以当布局辅助参考，最终还是要回到 release 产物和启动 trace 验证。
 
 ### `ClassLinker::DefineClass()` 做了什么
 
@@ -222,21 +224,21 @@ API 37 的主要步骤可概括为：
 
 其中，vtable、iftable 和 IMT 分别服务于虚方法、接口及接口方法分派；CHA 是类层次分析（Class Hierarchy Analysis），用于根据当前继承关系优化调用。
 
-这段顺序解释了两个常见性能时间线（trace）现象。定义一个类可能递归解析父类和接口，因此一个外层类的实际经过时间（wall time，包含计算、等待和被调度出去的时间）会包含依赖类的工作。CHA 更新发生在类变为 `kResolved` 之前；新类若推翻了 JIT 编译器此前采用的“某调用点只有一个实现”假设，还可能让已编译代码失效并触发去优化，相关机制见 §1.5。
+这段顺序能解释 trace 里两个常见现象。其一，定义一个类可能递归解析父类和接口，所以外层类的实际经过时间——wall time，包含计算、等待和被调度出去的时间——会计入依赖类的工作。其二，CHA 更新发生在类变为 `kResolved` 之前；新类若推翻了 JIT 编译器此前采用的“某调用点只有一个实现”假设，还可能让已编译代码失效并触发去优化，相关机制见 §1.5。
 
-#### 托管堆与 `LinearAlloc` 的边界
+#### 托管堆与 `LinearAlloc` 的分工
 
-`mirror::Class` 是 ART 托管堆中的类对象，由 `AllocClass()` 分配。`LinearAlloc` 是随类加载器管理的一类线性原生内存分配器，主要承载以下元数据：
+`mirror::Class` 是 ART 托管堆中的类对象，由 `AllocClass()` 分配；`LinearAlloc` 则是随类加载器管理的一类线性原生内存分配器，主要承载这些元数据：
 
 - `ArtMethod` 数组；
 - `ArtField` 数组；
 - 部分 IMT、方法冲突表和链接期表结构。
 
-应用类加载器注册时，ART 为它创建 `ClassTable` 和专属 `LinearAlloc`。当该类加载器不再可达并被清理时，ART 会移除相关 JIT/CHA 依赖，随后删除对应分配器和类表。类加载器长期存活时，`LinearAlloc` 中的类元数据会一直存在；这只描述该观察窗口，不能当成 ART 的一般回收规则。
+应用类加载器注册时，ART 为它创建 `ClassTable` 和专属 `LinearAlloc`；该类加载器不再可达并被清理时，ART 会移除相关 JIT/CHA 依赖，随后删除对应分配器和类表。类加载器长期存活时，`LinearAlloc` 中的类元数据会一直存在——这描述的只是该观察窗口内的情形，尚不构成 ART 的一般回收规则。
 
 #### 并发定义使用多层同步
 
-`classlinker_classes_lock_` 保护全局类表、各加载器类表等共享结构，但 `DefineClass()` 不会从头到尾独占这把锁。插入、更新或访问 `ClassTable` 时才在限定范围内持锁。类对象自身的监视器（monitor，即 `synchronized` 使用的锁和等待机制）以及类状态变化，共同协调同一个类的并发定义、解析、验证与初始化。
+`classlinker_classes_lock_` 保护全局类表、各加载器类表等共享结构，但 `DefineClass()` 并不从头到尾独占这把锁：插入、更新或访问 `ClassTable` 时才在限定范围内持锁。类对象自身的 monitor（`synchronized` 底下的锁与等待机制），连同类状态变化，共同协调同一个类的并发定义、解析、验证与初始化。
 
 并发加载不同类仍可能互相影响，来源包括：
 
@@ -244,13 +246,13 @@ API 37 的主要步骤可概括为：
 - 两个类共享父类或接口；
 - verifier 递归验证父类型；
 - 初始化代码等待其他线程、I/O 或应用锁；
-- CHA 假设失效处理和 JIT 代码缓存（code cache）的更新。
+- CHA 假设失效处理和 JIT 代码缓存的更新。
 
-仅凭主线程进入阻塞状态，不能直接归因于一把“ClassLinker 全局锁”。需要结合等待栈和被等待线程确认。
+所以看到主线程阻塞，我们先结合等待栈和被等待线程确认它等在哪，再谈是不是那把“ClassLinker 全局锁”。
 
 ### 验证：编译过滤器能省掉哪部分工作
 
-`ClassLinker::VerifyClass()` 先检查类是否已经验证，然后尝试使用 OAT/VDEX 记录的状态。只有无法取得有效的预验证结果时，才调用 `ClassVerifier::VerifyClass()`。运行时 verifier 会遍历方法，对指令和类型流做检查；API 37 的 trace 名称为 `VerifyClass <PrettyDescriptor>`，其中 `PrettyDescriptor` 表示便于阅读的类名格式。
+`ClassLinker::VerifyClass()` 先检查类是否已经验证，然后尝试使用 OAT/VDEX 记录的状态；拿不到有效的预验证结果时，才调用 `ClassVerifier::VerifyClass()`。运行时 verifier 会遍历方法，对指令和类型流做检查，API 37 里对应的 trace 名称是 `VerifyClass <PrettyDescriptor>`，`PrettyDescriptor` 表示便于阅读的类名格式。
 
 compiler filter 决定 dexopt 执行验证、提取和方法编译到什么程度。ART Service 对三个正式支持的 filter 定义如下：
 
@@ -260,9 +262,9 @@ compiler filter 决定 dexopt 执行验证、提取和方法编译到什么程�
 | `speed-profile` | 是 | profile 中的方法 | 是 |
 | `speed` | 是 | 全部方法 | 否 |
 
-`verify` 会在 dexopt 阶段执行验证并生成可复用结果；它不做预先（AOT）方法编译，也不做类解析与初始化。运行时能否跳过 verifier，还取决于产物是否存在、校验是否通过、class loader context（编译时记录的加载器类型、DEX 路径及依赖关系）是否与运行时匹配，以及编译期是否记录了需要在运行时重试的软失败。
+`verify` 会在 dexopt 阶段执行验证并生成可复用结果，但只到验证为止：它不做 AOT 方法编译，也不做类解析与初始化。运行时能否跳过 verifier，还取决于产物是否存在、校验是否通过、编译时记录的 class loader context——加载器类型、DEX 路径及依赖关系——是否与运行时匹配，以及编译期是否记录了需要在运行时重试的软失败。
 
-同理，`speed-profile` 也不能保证每个启动类都不需要运行时验证。profile 覆盖范围、产物有效性、依赖变化和验证器失败类型都会改变实际路径。验证优化应以 `VerifyClass ...` 时间片（Perfetto 中记录一段起止时间的 slice）、ART 产物状态和可重复的启动测量为证据。
+同理，`speed-profile` 也保证不了每个启动类都免去运行时验证：profile 覆盖范围、产物有效性、依赖变化和验证器失败类型都会改变实际路径。验证优化做没做对，要以 `VerifyClass ...` 时间片、ART 产物状态和可重复的启动测量为准。
 
 ### 初始化：`<clinit>`、状态与可见性
 
@@ -280,7 +282,7 @@ kNotReady → kIdx → kLoaded → kResolving/kResolved
 
 OAT 中记录的 class status 可用 `kSuperclassValidated` 表示父类描述符已经校验，但运行时类对象不会把它作为每次初始化都经历的固定节点。临时类在确定最终大小并复制到正式对象后会进入 `kRetired`。因此，诊断代码不应假设每个类都会逐项经历同一组状态。
 
-`kInitialized` 表示执行初始化的线程已经完成工作，但其他线程仍需通过 acquire 内存语义取得此前写入的值。`kVisiblyInitialized` 表示初始化结果已经对所有线程可见，编译代码因而可以使用开销更小的检查。API 37 在 x86/x86_64 或单线程事务中可直接进入 `kVisiblyInitialized`；其他路径先记录 `kInitialized`，再由批处理回调使用 `membarrier()`（Linux 内存屏障系统调用）或线程 checkpoint（让目标线程运行一段 ART 检查代码）建立可见性。
+`kInitialized` 表示执行初始化的线程已经完成工作，但其他线程仍需通过 acquire 内存语义取得此前写入的值；`kVisiblyInitialized` 表示初始化结果已经对所有线程可见，编译代码因而可以使用开销更小的检查。API 37 在 x86/x86_64 或单线程事务中可直接进入 `kVisiblyInitialized`。其他路径先记录 `kInitialized`，再由批处理回调建立可见性：要么调用 `membarrier()`——Linux 的内存屏障系统调用，要么走线程 checkpoint，让目标线程运行一段 ART 检查代码。
 
 #### 谁执行，谁等待
 
@@ -295,9 +297,9 @@ OAT 中记录的 class status 可用 `kSuperclassValidated` 表示父类描述�
 
 #### `<clinit>` 耗时属于应用代码
 
-ART 会先初始化父类，并按规范处理声明了默认方法（default method）的接口，再写入 DEX 编码的静态值，最终调用类初始化方法。此处可以执行任意应用逻辑，例如读取磁盘、初始化序列化元数据、创建线程池或等待锁。耗时来自这些逻辑时，调整 compiler filter 或 DEX 次序通常只能改善外围成本，不能消除 `<clinit>` 本身。
+ART 会先初始化父类，并按规范处理声明了默认方法的接口，再写入 DEX 编码的静态值，最终调用类初始化方法。这里可以执行任意应用逻辑，例如读取磁盘、初始化序列化元数据、创建线程池或等待锁。耗时来自这些逻辑时，调整 compiler filter 或 DEX 次序通常只能改善外围成本，消除不了 `<clinit>` 本身。
 
-把静态初始化改为按需加载的 holder 类、按需缓存或显式初始化前，要检查线程安全和首次使用位置。如果工作只是从进程启动移到另一个用户动作，还应衡量该动作的延迟。
+把静态初始化改成按需加载的 holder 类、按需缓存或显式初始化之前，我们要先检查线程安全和首次使用位置；如果工作只是从进程启动挪到另一个用户动作，还要衡量那个动作的延迟。
 
 ### 应用冷启动中的准确时序
 
@@ -321,46 +323,46 @@ LoadedApk.makeApplicationInner()
 启动阶段常见的类加载来源包括：
 
 - 自定义 `Application`、Provider 和首个 Activity；
-- 布局解析与实例化（inflate）触发的 View、Drawable 与反射构造；
-- 依赖注入（DI）的生成代码或运行时扫描；
+- 布局解析与实例化触发的 View、Drawable 与反射构造；
+- 依赖注入的生成代码或运行时扫描；
 - 序列化、数据库、路由与日志框架的注册表；
 - SDK 在静态字段或 `Initializer` 中建立的对象依赖图。
 
-不要预设类加载占启动时间的固定比例。应在同一构建、同一设备和同一编译状态下运行多轮 Macrobenchmark，并从其 trace 中识别稳定热点。
+类加载占启动时间多少比例，没有固定答案；我们在同一构建、同一设备和同一编译状态下跑多轮 Macrobenchmark，从 trace 里找稳定出现的热点。
 
 ### Zygote 与应用类路径
 
 #### 预加载共享了什么
 
-`ZygoteInit.preloadClasses()` 读取 `/system/etc/preloaded-classes`。每个有效条目都通过 `Class.forName(name, true, null)` 交给 boot class loader 加载并初始化，最后调用 `VMRuntime.preloadDexCaches()`。列表条数由具体产品配置决定，不能写成跨设备固定值。
+`ZygoteInit.preloadClasses()` 读取 `/system/etc/preloaded-classes`，每个有效条目都通过 `Class.forName(name, true, null)` 交给 boot class loader 加载并初始化，最后调用 `VMRuntime.preloadDexCaches()`。列表条数由具体产品配置决定，跨设备没有统一数字。
 
-`fork` 后，应用可以借助写时复制（copy-on-write，进程修改页面时才复制）共享 Zygote 已建立的类元数据、初始化状态和相关内存页。应用仍要按 boot class path 和类表执行查找；首次解析指向自身 DEX 的引用，也可能更新应用侧用于缓存已解析字符串、类型、字段和方法的 `DexCache`。成功预加载类的定义、验证和初始化已经在 Zygote 完成，并具备共享条件，但后续查找仍有成本。
+`fork` 之后，应用借着写时复制（copy-on-write）共享 Zygote 已建立的类元数据、初始化状态和相关内存页——页面要等进程修改时才真正复制。应用仍要按 boot class path 和类表执行查找；首次解析指向自身 DEX 的引用，也可能更新应用侧用于缓存已解析字符串、类型、字段和方法的 `DexCache`。成功预加载的类，定义、验证和初始化已经在 Zygote 完成并具备共享条件，只是后续查找仍有成本。
 
-`--enable-lazy-preload` 是 Zygote 的配置分支。启用时，Zygote 启动阶段跳过立即预加载（eager preload），改在第一次 `fork` 前完成预加载。该选项由产品启动策略决定，应用不能假定 Android 17 设备都采用同一配置。
+`--enable-lazy-preload` 是 Zygote 的配置分支：启用时，Zygote 启动阶段跳过立即预加载（eager preload），改在第一次 `fork` 前完成预加载。是否启用由产品启动策略决定，设备之间可能不同，应用侧别依赖同一种配置。
 
 #### `ApplicationLoaders` 缓存存在适用条件
 
-`ApplicationLoaders` 的 `mLoaders` 通常以 APK/zip 路径作为缓存键（cache key），但只在 parent 等于 base parent 时查找和写入该缓存。使用自定义 parent 会新建加载器，也不会进入这条普通缓存路径。系统还会为部分不在 boot class path 中的系统库建立独立缓存，并校验 parent、加载器名称和 shared-library 环境。
+`ApplicationLoaders` 的 `mLoaders` 通常以 APK/zip 路径作为缓存键，但只在 parent 等于 base parent 时查找和写入该缓存；使用自定义 parent 会新建加载器，也不会进入这条普通缓存路径。系统还会为部分不在 boot class path 中的系统库建立独立缓存，并校验 parent、加载器名称和 shared-library 环境。
 
-同一路径只有满足缓存条件时才会复用 `PathClassLoader`。分析拆分 APK、共享库（shared library）、WebView 或插件时，要同时检查 parent 与共享库加载关系图。
+同一路径只有满足缓存条件时才会复用 `PathClassLoader`；我们分析拆分 APK、共享库、WebView 或插件时，要同时检查 parent 与共享库加载关系图。
 
-#### 插件加载不是进程隔离边界
+#### 插件加载与进程隔离
 
-把插件 APK 追加到宿主的 `DexClassLoader`、`PathClassLoader` 或其他 `BaseDexClassLoader` 链路时，改变的是宿主进程内的 DEX 查找路径和类定义归属；插件的静态初始化、View/Compose 运行时代码和崩溃仍发生在宿主进程内。外部材料中的车载多 App 同屏案例把这种 ClassLoader 方案作为第一版：插件 APK 被加载进宿主进程，插件 View 直接挂在宿主视图树，集成简单，但插件崩溃会带崩宿主，Compose 版本也必须与宿主对齐。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md；已验证: libcore/dalvik/src/main/java/dalvik/system/BaseDexClassLoader.java 与 frameworks/base/core/java/android/app/ApplicationLoaders.java @ android-17.0.0_r1]
+把插件 APK 追加到宿主的 `DexClassLoader`、`PathClassLoader` 或其他 `BaseDexClassLoader` 链路，改变的是宿主进程内的 DEX 查找路径和类定义归属；插件的静态初始化、View/Compose 运行时代码和崩溃，仍都发生在宿主进程里。外部材料中的车载多 App 同屏案例把这种 ClassLoader 方案当作第一版：插件 APK 被加载进宿主进程，插件 View 直接挂在宿主视图树，集成简单，代价是插件崩溃会带崩宿主，Compose 版本也必须与宿主对齐。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md；已验证: libcore/dalvik/src/main/java/dalvik/system/BaseDexClassLoader.java 与 frameworks/base/core/java/android/app/ApplicationLoaders.java @ android-17.0.0_r1]
 
-因此，优化或重排类加载路径只能降低查找、定义、验证和初始化成本，不能提供故障隔离或依赖版本隔离。需要“插件独立进程渲染、宿主只展示结果”的场景，应切到 IPC 与跨进程 UI 嵌入：前一篇材料用 `SurfaceControlViewHost` 对照说明，宿主通过 AIDL 传出 `hostToken`，Provider 在自己的进程中创建内容并把 `SurfacePackage` 回传，最终由 SurfaceFlinger 合成到同一屏；这解决的是进程隔离和图层嵌入，不是一个更快的 ClassLoader。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md]
+所以，优化或重排类加载路径，降的是查找、定义、验证和初始化这四类成本；故障隔离和依赖版本隔离，它给不了。需要“插件独立进程渲染、宿主只展示结果”的场景，应切到 IPC 与跨进程 UI 嵌入：前一篇材料用 `SurfaceControlViewHost` 对照说明，宿主通过 AIDL 传出 `hostToken`，Provider 在自己的进程中创建内容并把 `SurfacePackage` 回传，最终由 SurfaceFlinger 合成到同一屏；这解决的是进程隔离和图层嵌入，不是一个更快的 ClassLoader。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md]
 
-如果场景只是展示型卡片，RemoteCompose 这类数据化方案把边界推得更远：Provider 把 UI 描述序列化成字节文档，通过 AIDL 交给宿主；宿主用自己的播放器解释并绘制这份文档，既不把插件 View 挂进宿主视图树，也不共享 Provider 的实时 `Surface`，插件代码不会在宿主进程执行。Provider 交付文档后不必持续持有渲染面，崩溃边界不再表现为宿主类加载失败或嵌入图层黑屏；代价是交互被收敛到预声明动作、回传 `actionId`、重新生成文档这类有限往返，不适合滚动、拖拽等连续交互。
+如果场景只是展示型卡片，RemoteCompose 这类数据化方案把隔离做得更彻底：Provider 把 UI 描述序列化成字节文档，通过 AIDL 交给宿主；宿主用自己的播放器解释并绘制这份文档，插件 View 不进宿主视图树，也不共享 Provider 的实时 `Surface`，插件代码不在宿主进程执行。Provider 交付文档后无需持续持有渲染面，崩溃的表现也不再是宿主类加载失败或嵌入图层黑屏；代价是交互被收敛到预声明动作、回传 `actionId`、重新生成文档这类有限往返，滚动、拖拽等连续交互不适合它。
 
-该材料使用的是应用层 `androidx.compose.remote:*` alpha 实现，并提醒平台侧 `com.android.internal.widget.remotecompose.*` 属于隐藏实现，不能把示例 API 写成 Android 17 稳定 SDK 契约。[来源: 技术文章/source/juejin-android/2026-09-15-76851907-车载多 App 同屏渲染(三) RemoteCompose 序列.md]
+该材料使用的是应用层 `androidx.compose.remote:*` alpha 实现，并提醒平台侧 `com.android.internal.widget.remotecompose.*` 属于隐藏实现，写结论时别把示例 API 当成 Android 17 稳定 SDK 契约。[来源: 技术文章/source/juejin-android/2026-09-15-76851907-车载多 App 同屏渲染(三) RemoteCompose 序列.md]
 
-排查这类方案时，先确认代码运行在哪个进程：同进程插件的类加载、`<clinit>` 和崩溃栈会出现在宿主进程，SIGQUIT/Perfetto 中也应在宿主进程看到对应加载器、DEX 路径或类加载 slice；SCVH 这类跨进程嵌入则应同时观察宿主进程、Provider 进程、Binder 连接和 surface 可见性，Provider 死亡可能导致嵌入区域黑屏或停更；RemoteCompose 这类字节文档路径则应优先核对宿主播放器、Binder 文档传输和 Provider 重新生成文档的时机，若宿主出现插件 DEX 加载或插件 `<clinit>` 热点，应先怀疑架构中混入了同进程加载，而不是把它归因于 RemoteCompose 文档渲染。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md；来源: 技术文章/source/juejin-android/2026-09-15-76851907-车载多 App 同屏渲染(三) RemoteCompose 序列.md；已验证: system/core/debuggerd/debuggerd.cpp 与 art/runtime/class_linker.cc @ android-17.0.0_r1]
+排查这类方案时，我们先确认代码运行在哪个进程：同进程插件的类加载、`<clinit>` 和崩溃栈会出现在宿主进程，SIGQUIT/Perfetto 中也应在宿主进程看到对应加载器、DEX 路径或类加载 slice；SCVH 这类跨进程嵌入则要同时观察宿主进程、Provider 进程、Binder 连接和 surface 可见性，Provider 死亡可能导致嵌入区域黑屏或停更；RemoteCompose 这类字节文档路径，优先核对宿主播放器、Binder 文档传输和 Provider 重新生成文档的时机，若宿主出现插件 DEX 加载或插件 `<clinit>` 热点，应先怀疑架构中混入了同进程加载，而不是把它归因于 RemoteCompose 文档渲染。[来源: 技术文章/source/juejin-android/2026-09-12-76841401-车载多 App 同屏渲染二 SurfaceControlView.md；来源: 技术文章/source/juejin-android/2026-09-15-76851907-车载多 App 同屏渲染(三) RemoteCompose 序列.md；已验证: system/core/debuggerd/debuggerd.cpp 与 art/runtime/class_linker.cc @ android-17.0.0_r1]
 
 ### 如何在 API 37 上定位成本
 
 #### 1. 固定编译状态
 
-类验证以及 JIT/AOT 编译状态会直接改变 trace。对比优化前后时，应明确使用哪种 Macrobenchmark `CompilationMode`，不要把首次安装时的 `verify` 状态和已完成后台 dexopt 后的 `speed-profile` 状态混在一组结果中。
+类验证和 JIT/AOT 编译状态会直接改变 trace。我们对比优化前后时，先明确用哪种 Macrobenchmark `CompilationMode`，把首次安装的 `verify` 状态和后台 dexopt 完成后的 `speed-profile` 状态分开比较。
 
 设备支持 ART Service shell 命令时，可这样检查包的 dexopt 状态：
 
@@ -368,7 +370,7 @@ LoadedApk.makeApplicationInner()
 adb shell pm art dump com.example.app
 ```
 
-输出可帮助确认每个 DEX 的 compiler filter、编译原因和 profile 情况。不同构建类型与设备策略可能影响可见字段，记录原始输出比只抄一个 filter 名称更可靠。
+输出能帮我们确认每个 DEX 的 compiler filter、编译原因和 profile 情况。不同构建类型与设备策略可能影响可见字段，排查时记录原始输出，比只抄一个 filter 名称更可靠。
 
 #### 2. 使用 API 37 的实际 trace 名称
 
@@ -392,7 +394,7 @@ GROUP BY s.name
 ORDER BY SUM(s.dur) DESC;
 ```
 
-这里的 slice 覆盖 `DefineClass()` 的实际经过时间，可能包含依赖类解析和等待。汇总后还要回到时间线查看嵌套关系，不能把父 slice 与子 slice 简单相加，误当成彼此独立的成本。
+这里的 slice 覆盖 `DefineClass()` 的实际经过时间，可能包含依赖类解析和等待。汇总之后我们要回到时间线看嵌套关系：父 slice 已经包含子 slice 的时间，直接相加会重复计算。
 
 验证事件可在同一查询框架中改用以下条件筛选：
 
@@ -400,7 +402,7 @@ ORDER BY SUM(s.dur) DESC;
 s.name GLOB 'VerifyClass *'
 ```
 
-若热点落在 `<clinit>`，需要使用方法采样、范围可控的方法 tracing，或在自有初始化入口增加 `Trace.beginSection()`。系统 trace 没有独立初始化 slice 时，不能拿类描述符 slice 的总时长代替 `<clinit>` 时长。
+若热点落在 `<clinit>`，我们改用方法采样、范围可控的方法 tracing，或在自有初始化入口加 `Trace.beginSection()`；系统 trace 里若没有独立的初始化 slice，类描述符 slice 的总时长也就替代不了 `<clinit>` 的时长。
 
 #### 3. 用 SIGQUIT 看累计统计
 
@@ -413,7 +415,7 @@ adb shell debuggerd -j "$pid" > java-dump.txt
 rg 'Zygote loaded classes|post zygote classes|Classes initialized|Dumping registered class loaders' java-dump.txt
 ```
 
-API 37 的 `debuggerd` 实现要求 root 权限，量产用的 `user` 构建不应依赖这条流程。这些统计是进程累计值，适合比较同一测试节点上的构建差异，却不会指出单个类为何慢。Java dump 还包含完整线程信息，采集时要考虑它对进程的扰动。
+API 37 的 `debuggerd` 实现要求 root 权限，量产 `user` 构建不应依赖这条流程。这些统计是进程累计值，适合比较同一测试节点上的构建差异，单看它定位不到单个类为何慢；Java dump 又包含完整线程信息，采集时要考虑对进程的扰动。
 
 #### 4. 用采样确认 CPU 去向
 
@@ -423,7 +425,7 @@ API 37 的 `debuggerd` 实现要求 root 权限，量产用的 `user` 构建不�
 
 #### 先减少首帧前必须出现的类
 
-优先检查 Provider、`Application.onCreate()`、首屏布局 inflate 和首帧前的同步回调。可以推迟到首帧后的 SDK，不要通过静态字段或清单（manifest）中的 Provider 提前引用。能够按需创建的大型对象依赖图，也不要在 `<clinit>` 中一次性建立。
+我们优先检查 Provider、`Application.onCreate()`、首屏布局 inflate 和首帧前的同步回调：可以推迟到首帧后的 SDK，就别通过静态字段或清单里的 Provider 提前引用；能按需创建的大型对象依赖图，也不必在 `<clinit>` 里一次性建立。
 
 这一步通常同时减少类定义、验证、对象分配和业务初始化，收益范围比只调 DEX 次序更广。推迟后仍要给新位置做交互延迟和线程安全测试。
 
@@ -435,7 +437,7 @@ API 37 的 `debuggerd` 实现要求 root 权限，量产用的 `user` 构建不�
 - 通过 Macrobenchmark 分别测 `None`、`BaselineProfile` 等明确编译模式；
 - 用 `pm art dump` 确认设备采用了预期产物。
 
-Baseline Profile 可以减少解释执行、JIT 和部分运行时验证，也可能让 profile 覆盖的类从 app image（包含预初始化类对象的 ART 镜像产物）中更快恢复。它不保证消除所有 `Class` 对象的建立工作，也不会自动缩短应用写在 `<clinit>` 中的 I/O 或锁等待。
+Baseline Profile 可以减少解释执行、JIT 和部分运行时验证，也可能让 profile 覆盖的类从 app image——预先初始化好类对象的 ART 镜像产物——中更快恢复。它不保证消除所有 `Class` 对象的建立工作，也不会自动缩短应用写在 `<clinit>` 中的 I/O 或锁等待。
 
 #### 处理反射和运行时扫描
 
@@ -447,9 +449,9 @@ Baseline Profile 可以减少解释执行、JIT 和部分运行时验证，也�
 
 把 SDK 初始化全部放进线程池可能增加 DEX 映射、类表临界区、verifier、CPU 和内存带宽竞争，也可能形成跨线程 `<clinit>` 依赖。适合并行的工作应满足：依赖清楚、不阻塞首帧所需类、没有主线程回调要求，并且在目标设备上测得端到端收益。
 
-### Android 17 边界与检查表
+### Android 17 结论与检查表
 
-源码锚点为 `android-17.0.0_r1`。API 37 的结论包括：标准加载器的原生快速路径、`TypeLookupTable` 优先查找、`mirror::Class` 与 `LinearAlloc` 的内存边界、完整类状态、实际 trace 名称和 ART Service 三种正式 compiler filter。没有源码证据的“Android 17 进一步优化了某算法”不作为版本结论。
+源码结论以 `android-17.0.0_r1` 为准。API 37 的结论包括：标准加载器的原生快速路径、`TypeLookupTable` 优先查找、`mirror::Class` 与 `LinearAlloc` 的内存分工、完整类状态、实际 trace 名称和 ART Service 三种正式 compiler filter；至于“Android 17 进一步优化了某算法”这类说法，没有源码依据的都不算版本结论。
 
 排查启动类加载时，可按以下顺序复核：
 
@@ -468,18 +470,16 @@ Baseline Profile 可以减少解释执行、JIT 和部分运行时验证，也�
 
 普通类加载沿 ClassLoader 和 DEX 路径查找，Boot Image 则把常用类放进预生成映像。映像是否命中、是否重定位、页面如何共享，都会改变前面那些类加载成本。
 
-Boot Image 处在 ART 启动、系统镜像预编译和 Zygote 共享内存的交点。排查开机变慢、Zygote 私有脏页增长或 ART Mainline（可独立于完整系统 OTA 更新的 ART 模块）更新后的编译行为时，需要分别观察镜像文件、编译 profile 和 Zygote 预加载。
-
-平台行为以 Android 17 / API 37 / `android-17.0.0_r1` 为准；涉及 `MAP_PRIVATE` 与写时复制的内核行为以 `android17-6.18-2026-06_r6` 为准。
+Boot Image 处在 ART 启动、系统镜像预编译和 Zygote 共享内存的交点。排查开机变慢、Zygote 私有脏页增长，或 ART Mainline——可独立于完整系统 OTA 更新的 ART 模块——更新后的编译行为时，我们要分别观察镜像文件、编译 profile 和 Zygote 预加载。
 
 ### Boot Image 保存了什么
 
 ART Boot Image 是 `dex2oat` 生成的可加载运行时快照。它保存选入镜像的 Java 对象、类元数据和 ART native 元数据，并与相应的 AOT 代码一起使用。运行时可以直接恢复这批对象和元数据，省去重复分配、链接及一部分初始化工作。
 
-这项机制有两个边界：
+先把两处范围划清：
 
-- Boot Image 不等于整个 Boot Class Path。哪些类进入 `.art` 镜像、哪些方法获得 AOT 代码，受 Boot Image Profile、编译过滤器和构建配置共同影响。
-- Boot Image 不等于 Zygote 完成 `preload()` 后的完整堆。Zygote 还会加载类、资源、共享库和图形驱动；这些操作产生的对象位于其他堆空间。
+- Boot Image 只覆盖 Boot Class Path 的一部分：哪些类进入 `.art` 镜像、哪些方法获得 AOT 代码，受 Boot Image Profile、编译过滤器和构建配置共同影响。
+- Zygote 完成 `preload()` 之后的堆里还有别的东西：类、资源、共享库和图形驱动，这些操作产生的对象位于其他堆空间，Boot Image 并不包含它们。
 
 #### `.art`、`.oat`、`.vdex` 的职责
 
@@ -491,13 +491,13 @@ ART Boot Image 是 `dex2oat` 生成的可加载运行时快照。它保存选入
 | `.oat` | OAT 头、编译代码、运行时所需元数据 | 提供 AOT 代码和镜像依赖信息 |
 | `.vdex` | DEX 字节码与验证相关数据；是否携带 DEX section（文件区段）取决于产物模式 | 配合 OAT 打开 DEX，复用验证结果 |
 
-“三个固定文件”只适合解释最小模型。Android 17 默认使用多组件能力：一个主镜像可以覆盖多个 Boot Class Path 组件，也可以接若干 Boot Image Extension（附加在主镜像后的扩展镜像）。多镜像构建时会出现 `boot.art`、`boot-framework-*.art` 等文件，并各有对应的 `.oat`、`.vdex`。
+“三个固定文件”只够解释最小模型。Android 17 默认使用多组件能力：一个主镜像可以覆盖多个 Boot Class Path 组件，再接若干 Boot Image Extension（附加在主镜像后的扩展镜像）；多镜像构建时会出现 `boot.art`、`boot-framework-*.art` 等文件，并各有对应的 `.oat`、`.vdex`。
 
-`services.jar` 属于 System Server Class Path，不应当为了说明 Boot Image 而写进 Boot Class Path 清单。`odrefresh` 对 Boot Class Path 和 System Server Class Path 使用两套检查与编译流程。
+`services.jar` 属于 System Server Class Path，说明 Boot Image 时别把它写进 Boot Class Path 清单；`odrefresh` 对 Boot Class Path 和 System Server Class Path 使用两套检查与编译流程。
 
-### Android 17 的产物位置由运行时选择
+### 产物位置由运行时选择
 
-源码中的 image location（镜像位置）是一条组件描述，运行时还要把它展开成当前指令集的文件路径。以 `/system/framework/boot.art` 为例，`GetSystemImageFilename()` 会定位到类似 `/system/framework/arm64/boot.art` 的实际文件。
+源码中的 image location 是一条组件描述，运行时会把它展开成当前指令集的文件路径。以 `/system/framework/boot.art` 为例，`GetSystemImageFilename()` 会定位到类似 `/system/framework/arm64/boot.art` 的实际文件。
 
 `GetDefaultBootImageLocationSafe()` 在 Android 17 上按以下次序选择默认镜像：
 
@@ -508,7 +508,7 @@ ART Boot Image 是 `dex2oat` 生成的可加载运行时快照。它保存选入
 
 ART 已经模块化，并不表示 `boot.art` 一定位于 `/apex/com.android.art`。APEX 是系统模块的安装与更新容器；ART APEX 提供运行时、profile 和工具。当前进程使用的镜像可能来自 `/system`，也可能来自 ART APEX 的 `/data` 目录。
 
-`GetBootImageLocationForDefaultBcpRespectingSysProps()` 会在 `odsign.verification.success` 不为 `true` 时设置 `deny_art_apex_data_files`。即使 `/data` 中残留同名文件，运行时也不会仅凭路径存在就采用它；设备取证应把 `odsign` 验证结果与进程 `maps` 一起检查。
+`GetBootImageLocationForDefaultBcpRespectingSysProps()` 会在 `odsign.verification.success` 不为 `true` 时设置 `deny_art_apex_data_files`。即使 `/data` 中残留同名文件，运行时也不会仅凭路径存在就采用它；排查设备时，要把 `odsign` 验证结果与进程 `maps` 放在一起看。
 
 ### `dex2oat` 生成 Boot Image 的方式
 
@@ -520,16 +520,16 @@ ART 已经模块化，并不表示 `boot.art` 一定位于 `/apex/com.android.ar
 - 同时传入输出 image 和已有 `--boot-image`：生成 Boot Image Extension。
 - 传入 `--app-image-file` 或 `--app-image-fd`：生成 App Image。
 
-Android 17 的 AOT 编译统一使用位置无关代码（PIC，代码可在不同装载地址执行），`Dex2Oat::ProcessOptions()` 直接设置 `compile_pic_ = true`。“Boot Image 依赖位置相关机器码，地址稍变就无法运行”不符合当前实现。
+Android 17 的 AOT 编译统一使用位置无关代码（PIC）——代码装载到不同地址也能执行，`Dex2Oat::ProcessOptions()` 直接设置 `compile_pic_ = true`。“Boot Image 依赖位置相关机器码，地址一变就跑不起来”不符合当前实现。
 
 #### profile 对类和方法的选择不同
 
 Boot Image Profile 同时携带类和方法信息：
 
 - 类条目参与决定哪些类进入 `.art` 镜像。
-- 方法的热（hot）、启动（startup）等标记参与 `speed-profile` 编译决策。
+- 方法的 hot、startup 等标记参与 `speed-profile` 编译决策。
 
-进入镜像的类不代表其全部方法都被 AOT 编译；获得 AOT 代码的方法也不能简单等同于 `preloaded-classes`。Android 12 起，官方 ART 配置将 Boot Image 编译过滤器固定为 `speed-profile`，即按 profile 编译重点方法。Android 17 的 `odrefresh` 也把主镜像和 Mainline 扩展的默认过滤器设为 `speed-profile`；扩展缺少 profile 时会回退到只做验证、不生成同等优化代码的 `verify`。
+类进入镜像，其全部方法未必都被 AOT 编译；获得 AOT 代码的方法集合，与 `preloaded-classes` 也是两码事。Android 12 起，官方 ART 配置将 Boot Image 编译过滤器固定为 `speed-profile`，即按 profile 编译重点方法；Android 17 的 `odrefresh` 也把主镜像和 Mainline 扩展的默认过滤器设为 `speed-profile`，扩展缺少 profile 时回退到只做验证、不生成同等优化代码的 `verify`。
 
 #### `preloaded-classes` 和 `dirty-image-objects`
 
@@ -538,7 +538,7 @@ Boot Image Profile 同时携带类和方法信息：
 - `/system/etc/preloaded-classes`：传给 `dex2oat --preloaded-classes-fds`，同时由 Zygote 在 Java 层逐项加载并初始化。
 - `/system/etc/dirty-image-objects` 与 ART APEX 内同名文件：给 `ImageWriter` 提供容易被写脏的对象信息，改善对象排布，减少少量可变对象导致整页失去共享的概率。
 
-Android 17 AOSP 手机配置中的 `preloaded-classes` 有 18,784 个有效条目。这个数字只描述该 tag 的默认 phone 配置；产品可以替换该文件，后续版本也会变化，不能当作平台契约。
+Android 17 AOSP 手机配置中的 `preloaded-classes` 有 18,784 个有效条目。这个数字只描述该 tag 的默认 phone 配置；产品可以替换该文件，后续版本也会变化，别把它当平台契约。
 
 ### `.art` 文件结构
 
@@ -546,7 +546,7 @@ Android 17 的定义位于 `art/runtime/oat/image.h`，文件格式实现位于 
 
 `ImageHeader` 记录的内容包括：
 
-- 格式 magic（文件类型标识）与 version；`android-17.0.0_r1` 中分别为 `art\n` 和 `119`。
+- 格式 magic 与 version；`android-17.0.0_r1` 中分别为 `art\n` 和 `119`。
 - 镜像预留大小、组件数、期望地址、镜像大小与镜像校验和。
 - 对应 OAT 的校验和及地址范围。
 - 依赖 Boot Image 的起始地址、大小、组件数与组合校验和。
@@ -596,9 +596,9 @@ Runtime::Init()
 
 `BootImageLoader::LoadImage()` 计算所有组件和 OAT 所需的总预留大小，然后调用 `ReserveBootImageMemory()`。启用 relocation 时，基址由 `ART_BASE_ADDRESS + ChooseRelocationOffsetDelta()` 得出；未启用时使用镜像头中的基址。
 
-地址改变不会直接导致 fatal abort（进程因致命错误退出）。`MaybeRelocateSpaces()` 计算实际地址与 `ImageHeader::GetImageBegin()` 的差值，再由 `Relocator::RelocateBootImage()` 修正镜像内的对象引用和 native 指针。加载器还会为 OAT 初始化运行时 relocation（地址重定位）。
+地址改变不会直接导致 fatal abort（进程因致命错误退出）。`MaybeRelocateSpaces()` 计算实际地址与 `ImageHeader::GetImageBegin()` 的差值，再由 `Relocator::RelocateBootImage()` 修正镜像内的对象引用和 native 指针；加载器还会为 OAT 初始化运行时 relocation。
 
-预留连续地址仍有价值：多个 image 与 OAT 可以按构建时布局装入同一段低 4 GB 地址空间，引用编码和相邻空间预留也更容易满足。这里的“低 4 GB”指虚拟地址小于 4 GiB 的区域；它不等于“所有内部指针都是不可调整的绝对地址”。
+预留连续地址仍有价值：多个 image 与 OAT 可以按构建时布局装入同一段低 4 GB 地址空间，引用编码和相邻空间预留也更容易满足。这里的“低 4 GB”指虚拟地址小于 4 GiB 的区域，跟“内部指针全是不可调整的绝对地址”是两回事。
 
 #### 未压缩镜像与压缩镜像的映射不同
 
@@ -619,22 +619,22 @@ MemMap::MapFileAtAddress(
     error_msg);
 ```
 
-这段源码说明 image object 区以 `MAP_PRIVATE` 私有文件映射装入，初始权限 `PROT_READ | PROT_WRITE` 表示可读写。Android 17 的 `ImageSpace` 加载代码没有在 Zygote `fork` 前统一通过 `mprotect(PROT_READ)` 把整段镜像改成只读；把“fork 前统一转为只读”写成固定步骤会误导排查。
+这段源码说明 image object 区以 `MAP_PRIVATE` 私有文件映射装入，初始权限 `PROT_READ | PROT_WRITE`，可读可写。`ImageSpace` 加载代码并没有在 Zygote `fork` 前统一通过 `mprotect(PROT_READ)` 把整段镜像改成只读；把“fork 前统一转为只读”写成固定步骤，会误导排查。
 
-压缩镜像需要建立匿名读写映射，再从只读文件映射解压进去；运行期生成到 `memfd`（只存在于内存中的匿名文件描述符）的 Boot Image Extension 也会禁用直接映射，并复制到匿名映射。此时物理页共享特征与直接文件映射不同，诊断时要以 `/proc/<pid>/maps`、`smaps` 中的实际映射为准。
+压缩镜像需要建立匿名读写映射，再从只读文件映射解压进去；运行期生成到 `memfd`（只存在于内存的匿名文件）的 Boot Image Extension 也会禁用直接映射，并复制到匿名映射。此时物理页共享特征与直接文件映射不同，诊断时要以 `/proc/<pid>/maps`、`smaps` 中的实际映射为准。
 
-记录镜像对象位置的 Image bitmap 单独以 `PROT_READ | MAP_PRIVATE` 映射。OAT 则由 `OatFile::Open()` 按文件段及是否允许执行建立映射，不能用一句“整个 `boot.oat` 都是 `PROT_READ|PROT_EXEC`”概括。
+记录镜像对象位置的 Image bitmap 单独以 `PROT_READ | MAP_PRIVATE` 映射。OAT 则由 `OatFile::Open()` 按文件段及是否允许执行建立映射，一句话“整个 `boot.oat` 都是 `PROT_READ|PROT_EXEC`”概括不了它。
 
 ### Zygote 共享与写时复制
 
 Boot Image 的内存收益有两层来源：
 
-1. 直接文件映射让多个进程可以引用同一份 page cache（文件页缓存）。
+1. 直接文件映射让多个进程可以引用同一份 page cache。
 2. Zygote `fork()` 让子进程继承相同页表；匿名页和私有文件页在发生写入前都可以共享。
 
-`MAP_PRIVATE` 表示写入不会回写原文件。Linux 在私有映射发生 write fault（首次写入触发的页故障）时执行写时复制（Copy-on-Write，COW）；`android17-6.18-2026-06_r6` 的相关实现位于 `mm/memory.c`。页面一旦被某个进程修改，该进程获得私有页，PSS、`Private_Dirty` 和物理内存占用随之变化。
+`MAP_PRIVATE` 表示写入不会回写原文件。Linux 在私有映射发生 write fault（首次写入触发的页故障）时执行写时复制，`android17-6.18-2026-06_r6` 的相关实现位于 `mm/memory.c`。页面一旦被某个进程修改，该进程获得私有页，PSS、`Private_Dirty` 和物理内存占用随之变化。
 
-读写权限并不等于页面已经私有化。只有写入落到该页时才会产生私有副本。文件映射也不保证永远保持 `Shared_Clean`（可共享且未被写脏的页）：类初始化、对象头中的锁状态、运行时修正或同页其他可变对象都可能写脏页面。`dirty-image-objects` 的排布优化用于减少“一处写入使整页私有化”的页级放大。
+页面有了读写权限，还推断不出它已经私有化——只有写入落到该页时，才会产生私有副本。文件映射也不保证永远保持 `Shared_Clean`（可共享且未被写脏的页）：类初始化、对象头中的锁状态、运行时修正或同页其他可变对象都可能写脏页面。`dirty-image-objects` 的排布优化用于减少“一处写入使整页私有化”的页级放大。
 
 #### Zygote 的 `preload()` 是另一层共享
 
@@ -658,7 +658,7 @@ Boot Image 提供构建期生成的对象与元数据；Zygote preload 提供本
 | 应用 Baseline Profile | 应用或库的方法与类 | 安装、更新及 ART dexopt | 不修改平台 Boot Image |
 | 应用 Startup Profile | 应用启动路径中的类和方法 | R8/D8 构建应用时优化 DEX 布局 | 不修改平台 Boot Image |
 
-应用 Startup Profile 通常对应 Baseline Profile 中启动路径规则的那一部分，用来影响最终安装 APK 中 DEX 的排列，让启动代码更集中。官方构建链路把这项优化限定在应用构建期：需要启用 R8（release build 的 minify）和 AGP 8.1+ 的 DEX layout optimization，AGP 8.3 起默认启用；AGP 8.1–8.2 需要在 app 模块 `baselineProfile {}` 中显式设置 `dexLayoutOptimization = true`，AGP 8.2 还不支持按 variant 区分 Startup Profile。Startup Profile 不能由库单独贡献，必须由应用启动测试生成。它不会生成 `/system/etc/preloaded-classes`，也不会选择平台 `boot.art` 中的类。
+应用 Startup Profile 通常对应 Baseline Profile 中启动路径规则的那一部分，用来影响最终安装 APK 中 DEX 的排列，让启动代码更集中。官方构建链路把这项优化限定在应用构建期：需要 release 构建启用 R8 minify 和 AGP 8.1+ 的 DEX layout optimization，AGP 8.3 起默认启用；AGP 8.1–8.2 需要在 app 模块 `baselineProfile {}` 中显式设置 `dexLayoutOptimization = true`，AGP 8.2 还不支持按 variant 区分 Startup Profile。Startup Profile 必须由应用启动测试生成，库单独贡献不了；它既不会生成 `/system/etc/preloaded-classes`，也不会选择平台 `boot.art` 中的类。
 
 Boot Image Profile 与 `preloaded-classes` 可以来自同一批代表性使用场景采样。`profman --generate-boot-image-profile` 也能同时输出 Boot Image Profile 和预加载类清单，但两个输出文件的用途不同。
 
@@ -674,16 +674,16 @@ Android 12 起，ART 是可更新的 Mainline 模块。早期启动阶段的 `od
 
 检查失败时，`odrefresh` 可以重新生成主 Boot Image、Mainline Extension 和需要更新的 System Server 产物，默认输出目录是 `/data/misc/apexdata/com.android.art/dalvik-cache`。完整主镜像编译失败时，源码还会尝试生成只覆盖 ART 模块 JAR 的最小镜像，并在后续启动重试完整编译。
 
-profile 输入和运行时产物的边界如下：
+profile 输入和运行时产物的关系分开看：
 
-- 官方文档所说“Boot Image Profile 只能随 OTA（系统无线更新）更新”，对应系统镜像内的 framework profile。Mainline APEX 还可以携带模块自己的 `etc/boot-image.prof`，Android 17 会把已安装模块提供的 profile 加入扩展镜像编译。
+- 官方文档所说“Boot Image Profile 只能随 OTA 更新”，对应系统镜像内的 framework profile。Mainline APEX 还可以携带模块自己的 `etc/boot-image.prof`，Android 17 会把已安装模块提供的 profile 加入扩展镜像编译。
 - `odrefresh` 可以在 ART/APEX 或 Boot Class Path 变化后，用当前系统和 APEX 提供的 profile 输入重新生成 `/data` 下的 `.art/.oat/.vdex`。
 
 “ART Mainline 更新不会重建 Boot Image”不符合上述流程。
 
-#### Boot Image 变化不代表所有应用立即重编
+#### Boot Image 变化后的应用产物处理
 
-应用 OAT 产物记录 Boot Class Path、image checksum（镜像校验和）或 class loader context（类加载器及依赖关系描述）等依赖信息。ART 按产物和当前上下文判断能否继续使用；失效的产物再由 ART Service 安排 dexopt（DEX 优化或编译）。一次 Boot Image 变化可能让大量应用产物失效，但源码没有“无条件重新编译所有应用”的规则。
+应用 OAT 产物会记录依赖信息：Boot Class Path、image checksum（镜像校验和）或描述类加载器及依赖关系的 class loader context。ART 按产物和当前上下文判断能否继续使用；失效的产物再由 ART Service 安排 dexopt。一次 Boot Image 变化可能让大量应用产物失效，不过源码里没有“无条件重新编译所有应用”的规则。
 
 Boot Image、System Server 产物与普通应用产物的维护者也不同：
 
@@ -695,24 +695,24 @@ Boot Image、System Server 产物与普通应用产物的维护者也不同：
 
 #### 1. 查看配置与进程映射
 
-以下命令用于确认是否覆盖默认 image location，并查出 Zygote 映射的实际文件。读取其他进程的 `/proc` 信息通常需要 root，或用于调试的 `userdebug`/`eng` 构建。
+我们先确认是否覆盖了默认 image location，再查出 Zygote 映射的实际文件。读取其他进程的 `/proc` 信息通常需要 root，或用于调试的 `userdebug`/`eng` 构建。
 
 ```bash
 adb shell getprop dalvik.vm.boot-image
 adb shell 'pid=$(pidof zygote64); cat /proc/$pid/maps | grep -E "boot.*\\.(art|oat|vdex)"'
 ```
 
-属性为空表示运行时采用默认选择逻辑，不代表没有 Boot Image。`/proc/<pid>/maps` 列出进程的虚拟内存映射，其中的路径是当前进程使用位置的直接证据；还要同时检查 32 位 Zygote 或其他运行时进程。
+属性为空表示运行时走了默认选择逻辑，这并说明不了设备没有 Boot Image。`/proc/<pid>/maps` 列出进程的虚拟内存映射，其中的路径直接指出当前使用的镜像在哪；32 位 Zygote 或其他运行时进程也要一并检查。
 
 #### 2. 用 `smaps` 判断共享质量
 
-`smaps` 在 `maps` 基础上给出每段映射的内存统计。以下命令用于观察 Boot Image 的 `Shared_Clean`（可共享的干净页）、`Private_Clean`（当前为该进程私有、但未写脏的页）和 `Private_Dirty`（该进程私有且已写脏的页）：
+`smaps` 在 `maps` 基础上给出每段映射的内存统计。以下命令用于观察 Boot Image 的 `Shared_Clean`、`Private_Clean`（该进程私有但未写脏）和 `Private_Dirty`（该进程私有且已写脏）：
 
 ```bash
 adb shell 'pid=$(pidof zygote64); cat /proc/$pid/smaps' > zygote64-smaps.txt
 ```
 
-从输出中按 `.art`、`.oat` 路径分组，再比较 Zygote 与多个应用进程。RSS（驻留物理内存）会在每个进程中重复计入共享页；PSS（按共享者数量分摊后的物理内存）适合估算分摊成本，`Private_Dirty` 更适合定位写时复制增长。
+从输出中按 `.art`、`.oat` 路径分组，再比较 Zygote 与多个应用进程。RSS 会在每个进程中重复计入共享页；PSS 按共享者数量分摊，适合估算分摊成本，`Private_Dirty` 更适合定位写时复制增长。
 
 #### 3. 用 `oatdump` 检查镜像内容
 
@@ -726,25 +726,25 @@ adb shell oatdump --image=/system/framework/boot.art
 
 #### 4. 区分 `odrefresh` 与应用 dexopt
 
-ART 产物更新问题应同时收集：
+排查 ART 产物更新问题时，应同时收集：
 
-- early boot（系统早期启动）日志中的 `odrefresh`、`odsign`、`dex2oat`。
+- early boot 日志中的 `odrefresh`、`odsign`、`dex2oat`。
 - `/data/misc/apexdata/com.android.art/dalvik-cache` 中产物的时间戳和完整性。
 - `odrefresh` 的编译阶段、触发原因与失败原因。
 - ART Service 对应用执行的 dexopt 记录。
 
-这些证据可以区分 Boot Image 重建、System Server 编译和应用 dexopt，避免把三类耗时合成一个“OTA 后重编”结论。
+这些信息可以区分 Boot Image 重建、System Server 编译和应用 dexopt，避免把三类耗时合成一个“OTA 后重编”结论。
 
-### OEM 调整的验证边界
+### OEM 调整的整机验证
 
-OEM 可以调整 Boot Class Path、Boot Image Profile、`preloaded-classes` 和 `dirty-image-objects`，但每项改动都需要整机数据验证：
+OEM 可以调整 Boot Class Path、Boot Image Profile、`preloaded-classes` 和 `dirty-image-objects`，每项改动都要拿整机数据验证：
 
 - Boot Image Profile 过小，会增加常用类恢复、方法解释/JIT 和随机 I/O；过大则增加文件尺寸、映射范围及实际驻留内存的页数。
 - `preloaded-classes` 过小，会把类加载和初始化移到应用冷启动；过大会拉长 Zygote preload，并增加共享堆与脏页压力。
 - 容易写入的对象散布在大量页面中，会抬高每个子进程的 `Private_Dirty`。只比较 `boot.art` 文件大小看不到这项成本。
-- Mainline Boot Class Path JAR、System Server JAR 和自定义 Boot Class Path JAR 要放在正确的 classpath（类路径）配置中。把 `services.jar` 当作 Boot Class Path 组件会让编译依赖模型失真。
+- Mainline Boot Class Path JAR、System Server JAR 和自定义 Boot Class Path JAR 要放在正确的 classpath 配置中。把 `services.jar` 当作 Boot Class Path 组件会让编译依赖模型失真。
 
-调优至少要同时观察 Zygote preload 时间、应用冷启动、Boot Image/OAT 文件尺寸、各进程 PSS、`Private_Dirty`、page fault（缺页异常）和 dexopt/JIT 行为。单个指标变好不能证明整机收益。
+调优至少要同时观察 Zygote preload 时间、应用冷启动、Boot Image/OAT 文件尺寸、各进程 PSS、`Private_Dirty`、page fault（缺页异常）和 dexopt/JIT 行为。光看单个指标变好，说明不了整机收益。
 
 ### 源码阅读入口
 
@@ -758,8 +758,8 @@ OEM 可以调整 Boot Class Path、Boot Image Profile、`preloaded-classes` 和 
 - `frameworks/base/core/java/com/android/internal/os/ZygoteInit.java`：`preload()`、`preloadClasses()`、`gcAndFinalize()` 与 `fork` 前流程。
 - `common/mm/memory.c`：`MAP_PRIVATE` 写 fault 与写时复制。
 
-### Android 17 的映射与共享边界
+### 映射与共享小结
 
-Android 17 的 Boot Image 是一组可校验、可重定位、可扩展的 ART 运行时产物。`.art` 保存选入镜像的对象和元数据，`.oat` 提供编译代码，`.vdex` 保存 DEX 与验证相关数据；运行时可能从系统分区加载，也可能使用 `odrefresh` 在 ART APEX 数据目录生成的版本。
+Boot Image 是一组可校验、可重定位、可扩展的 ART 运行时产物。`.art` 保存选入镜像的对象和元数据，`.oat` 提供编译代码，`.vdex` 保存 DEX 与验证相关数据；运行时可能从系统分区加载，也可能使用 `odrefresh` 在 ART APEX 数据目录生成的版本。
 
-Boot Image Profile、Boot Image Extension、Zygote `preloaded-classes`、应用 Baseline Profile 和应用 Startup Profile 分属不同环节。性能分析只有在文件来源、映射类型、私有脏页、Zygote 预加载和 ART 产物更新原因分别确认后，才有足够证据修改配置。
+Boot Image Profile、Boot Image Extension、Zygote `preloaded-classes`、应用 Baseline Profile 和应用 Startup Profile 分属不同环节。性能分析要把文件来源、映射类型、私有脏页、Zygote 预加载和 ART 产物更新原因分别确认下来，改动配置才算有据可依。

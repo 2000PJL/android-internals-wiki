@@ -18,6 +18,14 @@ sources:
   path: developer.android.com/jetpack/androidx/releases/core#core-splashscreen_1.2.0
 - type: official
   path: dl.google.com/dl/android/maven2/androidx/core/core-splashscreen/1.2.0/
+- type: official
+  path: developer.android.com/reference/kotlin/androidx/activity/package-summary
+- type: official
+  path: developer.android.com/reference/android/view/ViewPropertyAnimator
+- type: official
+  path: developer.android.com/reference/android/animation/Animator
+- type: official
+  path: developer.android.com/reference/androidx/lifecycle/DefaultLifecycleObserver
 - type: blog
   path: obsidian/Personal-Knowlodge/source/2026-03-12_wechat_SplashScreen_优化启动体验_开发者说_DTalk.md
 - type: clippings
@@ -33,8 +41,10 @@ related_chapters:
 - '1.19'
 - '8.3'
 - '21.1'
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1; AndroidX core-splashscreen 1.2.0; Android Developers 2026-06-24
+last_verified: '2026-10-13'
+last_source_verified_at: '2026-10-13'
+last_idle_audit_at: '2026-10-13'
+last_verified_against: AOSP android-17.0.0_r1; AndroidX core-splashscreen 1.2.0 AAR and sources; Android Developers 2026-10-13
 ---
 
 # Splash Screen 与感知启动速度
@@ -134,7 +144,7 @@ App 内容可以显示时，system_server 请求 Shell 移除 starting window。
 
 ### 3.2 添加依赖
 
-下面在应用模块引入当前稳定版：
+下面在应用模块引入 `core-splashscreen:1.2.0`。该版本 AAR 的构建元数据要求 `compileSdk` 至少为 35、Android Gradle Plugin 至少为 8.6.0；其 Manifest 声明的运行下限仍是 API 21。构建工具要求与运行系统下限要分别检查：
 
 ```kotlin
 dependencies {
@@ -215,7 +225,7 @@ class MainActivity : ComponentActivity() {
 - 网络请求；
 - 广告 SDK 初始化。
 
-下面的写法让 `ViewModel` 管理跨配置变更保留的页面状态，并异步读取少量本地数据。`StateFlow` 是可观察的状态流，条件回调只读取它当前保存在内存中的 `value`：
+下面是启动 Activity 的接入节选，`MainViewModel` 负责跨配置变更保留页面状态，并异步读取少量本地数据。注册条件前先取得 `launchState` 引用；`StateFlow` 是可观察的状态流，绘制回调只读取它当前保存在内存中的 `value`：
 
 ```kotlin
 class MainActivity : ComponentActivity() {
@@ -225,8 +235,9 @@ class MainActivity : ComponentActivity() {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
 
+        val launchState = viewModel.launchState
         splashScreen.setKeepOnScreenCondition {
-            viewModel.launchState.value == LaunchState.LoadingLocal
+            launchState.value == LaunchState.LoadingLocal
         }
 
         setContentView(R.layout.activity_main)
@@ -240,7 +251,7 @@ enum class LaunchState {
 }
 ```
 
-`by viewModels()` 是惰性委托，ViewModel 要到第一次访问时才可能创建，也就是第一次绘制回调。生产代码应在注册条件前先取到 ViewModel 和 `launchState` 引用，并让构造过程保持轻量，避免首次绘制回调顺带执行对象创建或初始化。
+`by viewModels()` 是惰性委托，第一次访问时可能创建 ViewModel。这里的首次访问发生在 `onCreate()` 中，条件回调只使用已取得的状态引用。ViewModel 构造过程仍须保持轻量，文件读取等初始化工作要异步执行，避免阻塞 `onCreate()`。
 
 异步任务必须有失败和超时出口，把 `LoadingLocal` 转成 `Ready` 或 `RecoverableError`。若状态一直不变化，Splash 会持续挡住 Activity，页面也不会开始绘制。
 
@@ -259,21 +270,52 @@ enum class LaunchState {
 
 ## 5. 退出动画
 
-注册 `setOnExitAnimationListener` 后，回调会在 UI 线程执行，应用也要负责移除 `provider`。回调拿到的 `provider` 是 `SplashScreenViewProvider`，即退出动画所用视图的包装对象，与 `ContentProvider` 无关。下面用短淡出连接 Splash 和已准备好的首屏：
+注册 `setOnExitAnimationListener` 后，回调会在 UI 线程执行，应用也要负责移除 `provider`。回调拿到的 `provider` 是 `SplashScreenViewProvider`，即退出动画所用视图的包装对象，与 `ContentProvider` 无关。下面的注册代码放在 `ComponentActivity.onCreate()` 中，用短淡出连接 Splash 和已准备好的首屏，并处理取消与销毁；`DefaultLifecycleObserver` 需要 Lifecycle 2.4.0 或更高版本：
 
 ```kotlin
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+
+// Register inside ComponentActivity.onCreate().
 splashScreen.setOnExitAnimationListener { provider ->
-    provider.view.animate()
+    val animator = provider.view.animate()
         .alpha(0f)
         .setDuration(160L)
-        .withEndAction {
-            provider.remove()
+    var removed = false
+    lateinit var destroyObserver: DefaultLifecycleObserver
+
+    fun removeSplash() {
+        if (removed) return
+        removed = true
+        animator.setListener(null)
+        lifecycle.removeObserver(destroyObserver)
+        provider.remove()
+    }
+
+    destroyObserver = object : DefaultLifecycleObserver {
+        override fun onDestroy(owner: LifecycleOwner) {
+            animator.setListener(null)
+            animator.cancel()
+            removeSplash()
         }
-        .start()
+    }
+    animator.setListener(object : AnimatorListenerAdapter() {
+        override fun onAnimationEnd(animation: Animator) {
+            removeSplash()
+        }
+
+        override fun onAnimationCancel(animation: Animator) {
+            removeSplash()
+        }
+    })
+    lifecycle.addObserver(destroyObserver)
+    animator.start()
 }
 ```
 
-动画结束路径必须调用 `provider.remove()`，否则 Splash View 会继续覆盖应用。Activity 销毁、动画取消等终止路径也要完成清理；系统动画缩放设为关闭时，动画可能立即结束，清理仍不能省略。
+正常结束、动画取消和 Activity 销毁都调用同一个幂等清理函数，移除 Splash View 并注销监听。销毁路径先取消动画，再显式清理；系统动画缩放关闭、动画立即结束时也会执行结束回调。`ViewPropertyAnimator.withEndAction` 在动画取消时不会执行，因此不能单独用它保证 `provider.remove()`。
 
 退出动画有三条约束：
 
@@ -461,6 +503,11 @@ Splash Screen 负责把系统 starting surface 平稳交接给应用首帧，骨
 - [`SplashScreen` AndroidX API](https://developer.android.com/reference/androidx/core/splashscreen/SplashScreen)
 - [`KeepOnScreenCondition` API](https://developer.android.com/reference/androidx/core/splashscreen/SplashScreen.KeepOnScreenCondition)
 - [`SplashScreenViewProvider` API](https://developer.android.com/reference/androidx/core/splashscreen/SplashScreenViewProvider)
+- [`core-splashscreen:1.2.0` AAR：Manifest 与构建元数据](https://dl.google.com/dl/android/maven2/androidx/core/core-splashscreen/1.2.0/core-splashscreen-1.2.0.aar)
+- [`ComponentActivity.viewModels()` API](https://developer.android.com/reference/kotlin/androidx/activity/package-summary)
+- [`ViewPropertyAnimator.withEndAction()` API](https://developer.android.com/reference/android/view/ViewPropertyAnimator#withEndAction(java.lang.Runnable))
+- [`Animator.cancel()` API](https://developer.android.com/reference/android/animation/Animator#cancel())
+- [`DefaultLifecycleObserver` API](https://developer.android.com/reference/androidx/lifecycle/DefaultLifecycleObserver)
 - [App startup time：TTID 与 TTFD](https://developer.android.com/topic/performance/vitals/launch-time)
 - [AOSP Android 17 `ActivityRecord`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityRecord.java)
 - [AOSP Android 17 `StartingSurfaceController`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/StartingSurfaceController.java)

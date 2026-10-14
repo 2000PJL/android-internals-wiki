@@ -197,29 +197,23 @@ consolidated_from:
 
 # heapprofd、procfs CPU 与 Page Fault 分析
 
-本文把三类低层资源证据放在一条排障链上：heapprofd 用采样调用栈回答 native 分配来自哪里，procfs 累计计数回答进程或线程在窗口内用了多少 CPU，Page Fault 计数与时间线则解释页面何时需要建立映射、读入或重试。三者观察对象、权限和分母不同，不能互相替代，但可以共同解释“内存上升、CPU 异常或关键路径等待”这类线上症状。
+排查线上内存上涨或卡顿时，我们手里有三类低层证据可用：heapprofd 用采样调用栈回答 native 分配来自哪里，procfs 累计计数回答进程或线程在窗口内用了多少 CPU，Page Fault 计数与时间线则解释页面何时需要建立映射、读入或重试。三者观察对象、权限和分母各不相同；放在同一条排障链上，可以共同解释“内存上升、CPU 异常或关键路径等待”这类线上症状。
 
-native heap 是 App 通过 `malloc`、C++ `new` 等接口，在 ART（Android Runtime）管理的 Java/Kotlin 对象堆之外维护的内存。Page Fault 则发生在 CPU 访问虚拟地址、页表或权限不能直接满足访问时。
+native heap 是 App 通过 `malloc`、C++ `new` 等接口，在 ART 管理的 Java/Kotlin 对象堆之外维护的内存。Page Fault 则发生在 CPU 访问虚拟地址、页表或权限不能直接满足访问时。用哪一类证据之前，先要过权限这一关：user build 面向量产设备，许多只供调试使用的权限在它上面是关闭的，普通应用只能稳定读取自身 CPU 与 fault 计数；系统级 native heap profile、全机 CPU 和内核事件还受 `ProfilingManager`、profileable、SELinux、Perfetto 会话身份或平台权限约束。
 
-user build 是面向量产设备的系统构建类型，许多只供调试使用的权限会在其中关闭。普通应用只能稳定读取自身 CPU 与 fault 计数；系统级 native heap profile、全机 CPU 和内核事件还受 `ProfilingManager`、profileable、SELinux、Perfetto 会话身份或平台权限约束。
+这几个工具的版本线也各不相同。heapprofd 随 Android 10 引入；Android 12 增加 named heap、`all_heaps` 和 installer 过滤等配置，其中 named heap 由分配器注册名称，可以单独选择；Android 15 又通过 `ProfilingManager` 向普通应用开放受系统约束的 heap profile 请求，Android 17 保留这些入口。`<profileable>` 元素从 API 29 可用，`android:enabled` 属性从 API 30 可用；heapprofd 的起始版本仍是 Android 10。
 
-heapprofd 随 Android 10 引入。Android 12 增加 named heap（由分配器注册名称、可单独选择的一类堆）、`all_heaps` 和 installer 过滤等配置。
-
-Android 15 又通过 `ProfilingManager` 向普通应用开放受系统约束的 heap profile 请求，Android 17 保留这些入口。`<profileable>` 元素从 API 29 可用，`android:enabled` 属性从 API 30 可用；heapprofd 的起始版本仍是 Android 10。
-
-平台源码以 `android-17.0.0_r1` 为锚点；procfs、CPU 记账与 Page Fault 实现另以 Android Common Kernel `android17-6.18-2026-06_r39` 复核。
+> 源码基线：AOSP `android-17.0.0_r1`；内核 Android Common Kernel `android17-6.18-2026-06_r39`（procfs、CPU 记账与 Page Fault 实现）。设备可能使用其他内核分支。
 
 ## Native 分配采样、权限与开销
 
 ### heapprofd 记录什么
 
-heapprofd 是 Perfetto 的 native heap 采样器。allocator（内存分配器）负责向进程发放和回收内存。
+heapprofd 是 Perfetto 的 native heap 采样器。它观察目标进程在采集窗口内经过 allocator 的分配与释放，把采样大小、调用栈和内存映射写入 trace。allocator 是内存分配器，负责向进程发放和回收内存；trace 则是按时间保存多类诊断事件的跟踪文件。
 
-heapprofd 观察目标进程在采集窗口内经过受支持分配器的分配与释放，把采样大小、调用栈和内存映射写入 Perfetto trace。这里的 trace 是按时间保存多类诊断事件的跟踪文件。
+默认 heap 为 `libc.malloc`，覆盖 Bionic 的 `malloc`、`free`、`calloc`、`realloc` 以及 C++ `new`、`delete` 等路径。Bionic 是 Android 的 C 标准库实现。
 
-默认 heap 为 `libc.malloc`。Bionic 是 Android 的 C 标准库实现，这个 heap 覆盖它的 `malloc`、`free`、`calloc`、`realloc` 以及 C++ `new`、`delete` 等路径。
-
-一次 allocation 就是一次内存分配。heapprofd 记录采集期间抽样到的分配和释放事件，不扫描完整的进程堆快照，也不保存对象内容。不同内存对象需要配合不同证据：
+一次 allocation 就是一次内存分配。heapprofd 记录采集期间抽样到的分配和释放事件，不扫描完整的进程堆快照，也不保存对象内容。哪些问题它能直接回答、哪些要换工具？我们按内存对象逐类看：
 
 | 对象 | heapprofd 可见性 | 补充数据源 |
 |---|---|---|
@@ -230,37 +224,31 @@ heapprofd 观察目标进程在采集窗口内经过受支持分配器的分配�
 | Java 对象引用关系 | native heap profile 不提供 | Java heap dump、Android Studio profiler |
 | 分配器内部缓存 | 能看到应用层 free，无法直接说明 RSS 是否已归还 | `dumpsys meminfo`、smaps、分配器指标 |
 
-这些边界决定了 heapprofd 最适合回答“采集窗口内，哪些调用栈产生了仍未释放的 native 分配”。
+所以，heapprofd 最适合回答的问题是“采集窗口内，哪些调用栈产生了仍未释放的 native 分配”。想判断 PSS 为什么增长，或找出保住 native 对象的某个 Java 引用，还要配其他证据。PSS（Proportional Set Size）按比例计入共享页，用来估算可归属到进程的物理内存。
 
-PSS（Proportional Set Size）会按比例计入共享页，用来估算可归属到进程的物理内存。仅凭 heapprofd 无法判断 PSS 增长的全部原因，也无法找出保住 native 对象的某个 Java 引用。
+### heapprofd 的一次采集流程
 
-### Android 17 的工作流程
-
-在 Perfetto 中，`traced` 是管理跟踪会话的核心服务，producer 是向会话提供数据包的组件，data source 是可启用的一类数据。Android 17 的 `heapprofd` producer 为 `android.heapprofd` data source 供数。
-
-PID 是系统为一个运行中进程分配的数字 ID。对已运行进程的一次采集依次经过这些步骤：
+在 Perfetto 中，`traced` 是管理跟踪会话的核心服务，producer 是向会话提供数据包的组件，data source 是可启用的一类数据。`heapprofd` producer 为 `android.heapprofd` data source 供数。对一个已经运行的进程（PID 是系统为它分配的数字 ID），一次采集依次经过这些步骤：
 
 1. `traced` 把 `android.heapprofd` data source 配置交给 heapprofd；
 2. heapprofd 规范化进程名，扫描 `/proc` 找出目标 PID；
 3. producer 向目标发送实时信号 `__SIGRTMIN + 4`，整数载荷 `si_value` 为 0，用来触发 Bionic 安装 heapprofd client；
 4. Bionic 的 heapprofd 入口在专用线程中加载 `heapprofd_client.so`，安装 malloc dispatch；dispatch 是把分配调用转交给具体实现的一组函数入口；
 5. 目标进程把采样事件写入共享 ring buffer；ring buffer 会循环复用一块固定内存，写满时等待空间或报错停止取决于 `block_client`；
-6. heapprofd 的 unwinder（栈回溯器）读取事件，根据采样现场还原调用层级，并维护仍未释放的分配账目；
+6. heapprofd 的 unwinder 读取事件，根据采样现场还原调用层级，并维护仍未释放的分配账目；
 7. 会话停止或到达 continuous dump 时间点时，producer 写出 `ProfilePacket` 数据包；continuous dump 会在同一会话中周期性输出当前分配账目。
 
-信号处理函数只触发安装流程。动态加载、连接 daemon（常驻后台的系统进程）和 hook 初始化由专用线程继续执行，不会全部堆在 signal handler 中。hook 是拦截原有函数入口以观察调用的机制。
+上面第 3 步的信号处理函数只负责触发安装流程。动态加载、连接 daemon 和 hook 初始化由专用线程继续执行——hook 是拦截原有函数入口以观察调用的机制，daemon 则是常驻后台的系统进程。
 
-Bionic 还会处理 heapprofd 与 GWP-ASan、malloc debug 等分配器 dispatch 的兼容关系。已有 malloc hook 不兼容时，heapprofd 可能拒绝安装。
+安装时 Bionic 还会处理 heapprofd 与 GWP-ASan、malloc debug 等分配器 dispatch 的兼容关系，已有 malloc hook 不兼容时，heapprofd 可能拒绝安装。GWP-ASan 会抽样保护少量分配，以发现越界或释放后使用；malloc debug 是 Bionic 提供的分配检查机制。
 
-GWP-ASan 会抽样保护少量分配，以发现越界或释放后使用；malloc debug 是 Bionic 提供的分配检查机制。
-
-启动期目标使用另一条入口。heapprofd 在会话开始时设置按进程名匹配的系统属性，Bionic 随后在新进程初始化期间接入客户端。配置中的 `no_startup` 会关闭启动期接入，`no_running` 会跳过已经运行的进程。
+针对启动期目标，heapprofd 走另一条入口：会话开始时设置按进程名匹配的系统属性，Bionic 随后在新进程初始化期间接入客户端。配置中的 `no_startup` 会关闭启动期接入，`no_running` 会跳过已经运行的进程。
 
 ### user build 的权限判定
 
-UID 是 Android 用来区分应用和系统主体的数字身份。Android 17 的 `CanProfileAndroid()` 先看 build type：`userdebug` 和 `eng` 通过这一层，`user` build 继续检查 UID、会话发起者以及 `/data/system/packages.list` 中的包属性。
+user build 上能不能采，由 `CanProfileAndroid()` 判定，判定输入是 UID（Android 区分应用和系统主体的数字身份）、session initiator（谁发起 Perfetto 会话）和 `/data/system/packages.list` 中的包属性；`userdebug` 和 `eng` build 则直接通过这一层。
 
-session initiator 表示是谁发起 Perfetto 会话。表中的规则适用于直接提交给 `android.heapprofd` data source 的配置。通过 `ProfilingManager` 请求时，应用不能自行填写 `session_initiator`；系统服务先核对 Binder 调用 UID 与包名，再生成只指向调用方包名的配置。两种入口采用不同的权限流程，结论不能混用。
+下表的规则适用于直接提交给 `android.heapprofd` data source 的配置。通过 `ProfilingManager` 请求是另一回事：应用不能自行填写 `session_initiator`，系统服务先核对 Binder 调用 UID 与包名，再生成只指向调用方包名的配置。两种入口权限流程不同，结论不能混用。
 
 #### 普通应用与两类发起者
 
@@ -271,7 +259,7 @@ session initiator 表示是谁发起 Perfetto 会话。表中的规则适用于�
 | shell / `SESSION_INITIATOR_UNSPECIFIED` | `profileable_from_shell` 或 `debuggable` |
 | `SESSION_INITIATOR_TRUSTED_SYSTEM` | `profileable` 或 `debuggable` |
 
-`profileable_from_shell` 对应 Manifest 中的 `android:shell="true"`，表示 shell 调试工具可以分析该应用；`profileable` 对应 `<profileable>` 处于 enabled 状态。trusted-system 允许系统服务采集未向 shell 开放的应用，但目标仍要声明 profileable 或 debuggable。
+表中各属性的含义是：`profileable_from_shell` 对应 Manifest 中的 `android:shell="true"`，表示 shell 调试工具可以分析该应用；`profileable` 对应 `<profileable>` 处于 enabled 状态。trusted-system 允许系统服务采集未向 shell 开放的应用，但目标仍要声明 profileable 或 debuggable。
 
 `SESSION_INITIATOR_TRUSTED_SYSTEM` 是 `traced` 赋予受信系统会话的身份。普通 App 即使在自己的 textproto 中写入该字段，也不会获得这项身份。
 
@@ -284,20 +272,20 @@ session initiator 表示是谁发起 Perfetto 会话。表中的规则适用于�
 - isolated process 使用临时隔离 UID，无法直接映射到来源包。Android 17 只在 trusted-system 会话且 `packages.list` 中所有包都允许 trusted initiator 采集时放行；
 - 其余 UID 范围在 user build 上拒绝。
 
-isolated process 的判定有意从严。目标应用即使声明了 `<profileable>`，它的 isolated service 仍可能得不到 profile。排查时需要同时查看 trace 中的拒绝信息和 heapprofd 日志，只看主进程 Manifest 不足以确认权限。
+isolated process 的判定有意从严：目标应用即使声明了 `<profileable>`，它的 isolated service 仍可能得不到 profile。所以排查时要同时看 trace 中的拒绝信息和 heapprofd 日志，只看主进程 Manifest 并不足以确认权限。
 
 #### installer 过滤
 
-installer 是把目标 APK 安装到设备上的包或系统来源。`target_installed_by` 是 `HeapprofdConfig` 的可选过滤项，支持普通 installer 包名以及 `@system`、`@product`、`@null`；`@null` 表示 sideload，也就是没有 installer 包记录的侧载安装。配置未填写该字段时，`CanProfileAndroid()` 不检查 installer。
+installer 是把目标 APK 安装到设备上的包或系统来源。`target_installed_by` 是 `HeapprofdConfig` 的可选过滤项，支持普通 installer 包名以及 `@system`、`@product`、`@null`，其中 `@null` 表示没有 installer 包记录的侧载安装；配置未填写该字段时，`CanProfileAndroid()` 不检查 installer。
 
-installer 过滤只会缩小候选集合，不会授予 profile 权限。这组约束要求目标来自 system 或 product 分区，但目标仍须通过相应的 profileable 判定：
+注意 installer 过滤只会缩小候选集合，不会授予 profile 权限。这组约束要求目标来自 system 或 product 分区，但目标仍须通过相应的 profileable 判定：
 
 ```textproto
 target_installed_by: "@system"
 target_installed_by: "@product"
 ```
 
-这两行适合平台采集策略用来限制目标来源。把它们加入 shell 配置，仍无法采集未开放 shell profiling 的应用。
+这两行适合平台采集策略限制目标来源；把它们加入 shell 配置，仍无法采集未开放 shell profiling 的应用。
 
 ### Manifest 应怎样声明
 
@@ -312,9 +300,9 @@ target_installed_by: "@product"
 
 `android:enabled` 默认是 `true`，通常不用重复写。设为 `false` 会禁止系统服务和 shell profiler。`android:shell="true"` 允许 shell 工具读取 profiling 所需的调用栈信息，不会把任意堆字节开放给第三方 App。
 
-发布策略要根据产品威胁模型决定。威胁模型列出需要保护的数据、可能的攻击者和允许的访问方式。调用栈、模块路径、Build ID（二进制文件的唯一构建标识）、线程名和进程名仍可能暴露实现信息。应用若不接受终端用户通过本地调试工具采集 release 版本，应保留 `android:shell="false"`，由受信系统组件执行线上采集。
+发布策略则要看产品的威胁模型——需要保护哪些数据、可能的攻击者是谁、允许哪些访问方式。调用栈、模块路径、Build ID（二进制文件的唯一构建标识）、线程名和进程名仍可能暴露实现信息。应用若不接受终端用户通过本地调试工具采集 release 版本，应保留 `android:shell="false"`，由受信系统组件执行线上采集。
 
-`ProfilingManager` 不要求 `android:shell="true"`。平台服务 profiling 默认允许，应用可通过 `<profileable android:enabled="false" />` 明确退出；退出后，shell 与平台服务都不能采集。Android 15–17 的普通应用若要采自己的生产 profile，应优先使用 `ProfilingManager`，不必为了远程采集向设备 shell 开放 release APK。
+`ProfilingManager` 是另一条路：不要求 `android:shell="true"`，平台服务 profiling 默认允许，应用可通过 `<profileable android:enabled="false" />` 明确退出，退出后 shell 与平台服务都不能采集。Android 15–17 的普通应用若要采自己的生产 profile，应优先使用 `ProfilingManager`，不必为了远程采集向设备 shell 开放 release APK。
 
 可以通过包管理器输出核对最终 APK 的合并结果。这组命令查看设备侧 package 信息：
 
@@ -323,15 +311,15 @@ adb shell dumpsys package com.example.app |
   rg -i 'profileable|debuggable'
 ```
 
-输出字段会随系统版本和 OEM 改动而变化。是否可采还要用一次短会话验证，单个 `dumpsys` 字段不足以代表完整权限判定。
+输出字段会随系统版本和 OEM 改动而变化，是否可采最终还要用一次短会话验证——单个 `dumpsys` 字段不足以代表完整权限判定。
 
 ### daemon、SELinux 与能力边界
 
-Android 17 的 `heapprofd.rc` 把服务定义为 disabled，由 `traced.lazy.heapprofd=1` 或持久属性按需启动。服务以 `nobody` 用户运行，加入 `nobody` 和 `readproc` 组，并声明 `KILL`、`DAC_READ_SEARCH` capability。capability 是把 root 权限拆成较小能力单元的 Linux 机制。
+`heapprofd.rc` 把服务定义为 disabled，由 `traced.lazy.heapprofd=1` 或持久属性按需启动。服务以 `nobody` 用户运行，加入 `nobody` 和 `readproc` 组，并声明 `KILL`、`DAC_READ_SEARCH` capability（把 root 权限拆成较小能力单元的 Linux 机制）。
 
-SELinux 会按安全策略限制进程可执行的操作。同一份 rc 文件明确说明：SELinux 在 user build 上拒绝 `DAC_READ_SEARCH` 对应权限，userdebug/eng 才允许这部分访问。因此，rc 中出现 capability 不能推出生产设备可任意读取 `/proc/<pid>/mem`。
+不过 capability 只是声明，能不能真用还要看 SELinux——它按安全策略限制进程可执行的操作。同一份 rc 文件明确说明：SELinux 在 user build 上拒绝 `DAC_READ_SEARCH` 对应权限，userdebug/eng 才允许这部分访问。所以 rc 里写了 capability，并不代表生产设备可以任意读取 `/proc/<pid>/mem`。
 
-`/dev/socket/heapprofd` 的 socket mode 只控制文件系统层面的连接条件，无法单独证明调用者已获采集授权。连接建立后，producer 会读取 peer UID（连接对端的 UID）、目标 UID 和 `packages.list`，再执行 `CanProfile()`。文件 mode、Linux capability、SELinux 和 Perfetto 会话身份共同构成权限边界。
+`/dev/socket/heapprofd` 的 socket mode 也只控制文件系统层面的连接条件。真正的授权判定在连接建立之后：producer 读取 peer UID（连接对端的 UID）、目标 UID 和 `packages.list`，再执行 `CanProfile()`。文件 mode、Linux capability、SELinux 和 Perfetto 会话身份共同构成权限边界。
 
 ### native 进程名按规范化结果精确匹配
 
@@ -350,13 +338,13 @@ process_cmdline: "com.example.app"
 process_cmdline: "com.example.app:remote"
 ```
 
-heapprofd 会分别为匹配到的 PID 建立记录。`upid` 是 trace processor 为一次进程生命周期分配的唯一进程 ID，可以避免系统 PID 被复用后的混淆。分析时应按 `upid` 区分进程，不能把两个进程的分配直接相加后归到主进程。
+heapprofd 会分别为匹配到的 PID 建立记录。`upid` 是 trace processor 为一次进程生命周期分配的唯一进程 ID，系统 PID 被复用后也不会混淆。分析时我们按 `upid` 区分进程，不能把两个进程的分配直接相加后归到主进程。
 
 ### 三种采集入口
 
 #### Android 15–17 使用 `ProfilingManager`
 
-API 35 起，普通应用可以请求自己的 native heap profile，也就是按调用栈抽样记录 native 分配与释放。Android 官方建议通过 AndroidX `HeapProfileRequestBuilder` 构造参数。系统会限制时长、buffer、采样间隔和请求频率；请求被接受只表示系统开始尝试采集，不保证一定生成结果文件。
+API 35 起，普通应用可以请求自己的 native heap profile——按调用栈抽样记录 native 分配与释放。Android 官方建议通过 AndroidX `HeapProfileRequestBuilder` 构造参数。系统会限制时长、buffer、采样间隔和请求频率；请求被接受只表示系统开始尝试采集，不保证一定生成结果文件。
 
 这段 Kotlin 代码用于启动 native allocation profile，并把停止时机交给调用方：
 
@@ -385,7 +373,7 @@ Binder 是 Android 的跨进程调用机制，服务端可从请求中取得真�
 
 应用无法借此采集其他包，`:remote` 等次要进程也不会自动加入。
 
-`setTrackJavaAllocations(true)` 会把采样对象从 native 分配改为 `com.android.art` Java 分配，记录 Java 分配调用栈和大小。这种 allocation profile 不含对象引用关系，与 Java heap dump 提供的证据不同。
+`setTrackJavaAllocations(true)` 会把采样对象从 native 分配改为 `com.android.art` Java 分配，记录 Java 分配调用栈和大小。这种 allocation profile 不含对象引用关系，提供的证据和 Java heap dump 不同。
 
 trace redactor 会按策略删除或改写跟踪文件中的敏感字段。系统 trace 会经过通用 redactor；`android-17.0.0_r1` 的 `ProfilingService.needsRedaction()` 没有把 heap profile 列入该流程。heap profile 依靠目标包限制来隔离其他应用数据，但返回文件中的本应用调用栈、映射与地址仍属于敏感诊断数据。
 
@@ -409,7 +397,7 @@ Android 17 tag 中脚本的默认采样间隔为 4096 bytes，共享内存默认
 
 #### 手写 Perfetto textproto
 
-textproto 是 Protocol Buffers 的可读文本格式。需要把 heap profile 与调度、进程内存或业务 marker（标记操作起止位置的 trace 事件）放进同一会话时，可以直接配置 `android.heapprofd`。
+textproto 是 Protocol Buffers 的可读文本格式。需要把 heap profile 与调度、进程内存或业务 marker（标记操作起止位置的 trace 事件）放进同一会话时，直接配置 `android.heapprofd` 即可。
 
 这个两分钟示例沿用官方脚本的采样间隔、dump 周期和共享 buffer 默认值，并附带 process stats：
 
@@ -453,9 +441,7 @@ flush_timeout_ms: 30000
 
 这份配置用周期 dump 观察仍未释放分配的变化，并用 process stats 提供 RSS 侧背景。RSS（Resident Set Size）表示进程当前驻留在物理内存中的页面总量。
 
-guardrail 是超过资源阈值就停止采集的保护条件。示例没有填写 `max_heapprofd_memory_kb` 和 `max_heapprofd_cpu_secs`，因为这两个 guardrail 没有跨设备通用值。
-
-量产配置应先测量 daemon 基线，再设置并验证阈值。
+guardrail 是超过资源阈值就停止采集的保护条件。示例没有填写 `max_heapprofd_memory_kb` 和 `max_heapprofd_cpu_secs`，因为这两个 guardrail 没有跨设备通用值，量产配置应先测量 daemon 基线，再设置并验证阈值。
 
 这组命令把配置送入设备侧 Perfetto，并拉回 trace：
 
@@ -467,7 +453,7 @@ adb shell perfetto --txt \
 adb pull /data/misc/perfetto-traces/heapprofd.pftrace
 ```
 
-`perfetto` 会运行到 `duration_ms` 结束。若目标不满足 profileable 条件，trace 仍可能生成，却不包含该进程的 heap profile；此时应同步检查 heapprofd 日志与 trace 中的 profile 错误。
+`perfetto` 会运行到 `duration_ms` 结束。若目标不满足 profileable 条件，trace 仍可能生成，却不包含该进程的 heap profile；这时要同时检查 heapprofd 日志与 trace 中的 profile 错误。
 
 ### 参数怎样影响开销和证据质量
 
@@ -486,9 +472,7 @@ Android 17 的 `HeapprofdConfig` 已经把资源控制项写进 proto。配置�
 
 `RssAnon` 是匿名内存中驻留在 RAM 的部分，`VmSwap` 是被换出的内存；两者相加用于约束 heapprofd 自身内存。
 
-memory 和 CPU guardrail 每 30 秒检查一次。阈值触发后，producer 会关闭对应 data source，不会自动增大 sampling interval。
-
-需要自适应采样时，应显式使用 `adaptive_sampling_shmem_threshold` 和 `adaptive_sampling_max_sampling_interval_bytes`。
+memory 和 CPU guardrail 每 30 秒检查一次。阈值触发后，producer 会关闭对应 data source，不会自动增大 sampling interval；需要自适应采样时，应显式使用 `adaptive_sampling_shmem_threshold` 和 `adaptive_sampling_max_sampling_interval_bytes`。
 
 固定的“CPU 增加 1%”或“daemon RSS 80 MB”不能作为跨设备结论。开销会受分配速率、采样间隔、调用栈深度、ABI、符号信息、目标进程数和 CPU 性能影响。ABI 规定二进制代码的调用约定和数据布局，例如 `arm64-v8a`。可靠做法是在相同操作序列下，分别测量无采集、目标采样间隔和更大间隔三组数据。
 
@@ -504,7 +488,7 @@ memory 和 CPU guardrail 每 30 秒检查一次。阈值触发后，producer 会
 - DeviceConfig（系统服务可动态读取的一组配置项）可以限制参数范围或关闭 profile 类型；
 - 结果复制到应用目录，由应用负责上传和删除。
 
-这条路径适合少量、按场景触发的线上取证。它的可配置范围小于手写 Perfetto config，无法选择其他进程名、installer 过滤、连续 dump 或自定义 heapprofd guardrail。
+这条路径适合少量、按场景触发的线上取证，但可配置范围小于手写 Perfetto config：无法选择其他进程名、installer 过滤、连续 dump 或自定义 heapprofd guardrail。
 
 #### QA 在 user build 上采 release APK
 
@@ -531,9 +515,7 @@ OEM 或系统产品可以让受信系统服务按设备健康信号发起 Perfet
 
 #### Android 12–14 的普通 App 无法自主启动系统级 heapprofd
 
-Android 12–14 的普通 App 没有 `ProfilingManager`，也没有公开 API 可以把自己声明为 trusted-system 会话。
-
-若产品必须在这些版本的终端用户设备上由 App 自主触发，只能改用应用内 allocator instrumentation（在分配器调用处自行记录）、SDK 自带 native hook、GWP-ASan 或轻量内存指标，并单独评估兼容性、性能和隐私。
+Android 12–14 的普通 App 没有 `ProfilingManager`，也没有公开 API 可以把自己声明为 trusted-system 会话。若产品必须在这些版本的终端用户设备上由 App 自主触发，只能改用应用内 allocator instrumentation（在分配器调用处自行记录）、SDK 自带 native hook、GWP-ASan 或轻量内存指标，并单独评估兼容性、性能和隐私。
 
 若想用 `onTrimMemory()`、PSS 阈值或 `ApplicationExitInfo` 触发 heapprofd，必须先确认设备上存在有权执行采集的系统主体。Android 15–17 可以请求 `ProfilingManager`，但仍受限流和并发会话约束。更低版本中的事件信号只能决定何时记录应用内证据，无法增加 Perfetto 系统权限。
 
@@ -550,7 +532,7 @@ Android 12–14 的普通 App 没有 `ProfilingManager`，也没有公开 API �
 - 同期 RSS、PSS、anon RSS、swap 和 mmap 变化；
 - trace 是否出现 buffer overrun、unwinding error，或目标进程因权限判定被拒。
 
-anon RSS 是匿名映射当前驻留在 RAM 的大小，swap 是已换出到交换空间的大小。`heap_profile_allocation` 中的正数表示分配，负数表示已经释放的样本。callsite 是把一次分配归因到的调用栈位置；这段 SQL 按 dump、进程、heap 和 callsite 汇总净存活量：
+anon RSS 是匿名映射当前驻留在 RAM 的大小，swap 则是已换出到交换空间的大小。`heap_profile_allocation` 中的正数表示分配，负数表示已经释放的样本。callsite 是把一次分配归因到的调用栈位置，下面的 SQL 按 dump、进程、heap 和 callsite 汇总净存活量：
 
 ```sql
 SELECT
@@ -568,15 +550,13 @@ ORDER BY ts, net_live_bytes DESC;
 
 查询结果仍是采样估计。相同调用栈跨 dump 增长、场景退出后不回落，并且多轮复现一致，才构成较强的泄漏线索。
 
-flamegraph（火焰图）用矩形宽度表示聚合量，可沿父子调用关系查看完整栈。调用栈展开与符号化可交给 Perfetto UI flamegraph 或命令行转换工具 `traceconv`。
-
-只连接 leaf frame（栈最末端函数）的 SQL 无法还原完整调用栈。
+查询结果出来后，我们用 flamegraph（火焰图）查看：矩形宽度表示聚合量，可沿父子调用关系查看完整栈。调用栈展开与符号化交给 Perfetto UI flamegraph 或命令行转换工具 `traceconv`；只连接 leaf frame（栈最末端函数）的 SQL 无法还原完整调用栈。
 
 #### 三类常见误判
 
 1. **attach 之前的存量缺失**：attach 指采集器接入已经运行的进程。旧分配没有对应事件，所以运行期采集的第一次 dump 无法代表完整 native heap；
 2. **分配器缓存仍保留页面**：应用已经 free，分配器仍可能保留 arena 或 page。arena 是分配器管理的一组内存区域，page 是操作系统映射和回收内存的基本页单位；此时仍存活分配的估算字节数已回落，RSS 仍可能不变；
-3. **增长来自 `mmap` 或图形内存**：PSS 上升而 heapprofd 平稳时，应转查 anonymous mapping（匿名内存映射）、文件 mapping、DMA-BUF 与 GPU 内存。
+3. **增长来自 `mmap` 或图形内存**：PSS 上升而 heapprofd 平稳时，应转查 anonymous mapping、文件 mapping、DMA-BUF 与 GPU 内存。
 
 heapprofd 证据与 PSS 证据应并排解释。两者趋势一致时，可把调用栈作为主要线索；趋势分离时，应先确定增长所在的内存类别。
 
@@ -591,7 +571,7 @@ API 35 以上的应用应先检查 `ProfilingResult` 的错误码：
 - `ERROR_FAILED_PROFILING_IN_PROGRESS` 表示已有不兼容的 profiling 会话；
 - `ERROR_FAILED_INVALID_REQUEST` 常见于参数越界、未知参数或 profile 类型被关闭。
 
-命中限流后立即重试通常仍会失败。应用应记录错误分类，并等待下一次有诊断价值的场景。listener 是接收异步结果的回调；若进程在采集期间退出，系统会停止并保存已有结果，应用下次启动并注册全局 listener 后才有机会收到补发通知。
+命中限流后立即重试通常仍会失败，应用应记录错误分类，等待下一次有诊断价值的场景。listener 是接收异步结果的回调；若进程在采集期间退出，系统会停止并保存已有结果，应用下次启动并注册全局 listener 后才有机会收到补发通知。
 
 #### 手写 Perfetto 会话没有生成 profile
 
@@ -613,13 +593,9 @@ memory 或 CPU guardrail 命中也会关闭 data source。检查阈值时要区�
 
 #### 栈缺帧或符号缺失
 
-常见原因包括缺少 Build ID 对应符号、栈展开信息被裁剪、JIT/AOT frame 缺少可用元数据、相同代码折叠，以及 trace 与符号包版本不一致。JIT 是运行时即时编译，AOT 是安装或构建阶段的提前编译，frame 表示调用栈中的一层函数记录。
+栈缺帧或符号缺失时，常见原因包括缺少 Build ID 对应符号、栈展开信息被裁剪、JIT/AOT frame 缺少可用元数据、相同代码折叠，以及 trace 与符号包版本不一致。这里 JIT 是运行时即时编译，AOT 是安装或构建阶段的提前编译，frame 表示调用栈中的一层函数记录。其中相同代码折叠指编译器或链接器把内容相同的函数实现合并到同一地址，会让一个地址对应多个候选符号。
 
-相同代码折叠是编译器或链接器把内容相同的函数实现合并到同一地址；它会让一个地址对应多个候选符号。
-
-符号化是把程序地址还原成函数名和源码位置。build fingerprint 是标识一套系统构建的字符串。
-
-符号服务应以 APK version、ABI、Build ID 和系统 build fingerprint 定位文件；只按 so 文件名匹配容易拿错版本。
+查符号要用对索引。符号化是把程序地址还原成函数名和源码位置；build fingerprint 是标识一套系统构建的字符串。符号服务应以 APK version、ABI、Build ID 和系统 build fingerprint 定位文件，只按 so 文件名匹配容易拿错版本。
 
 ### 与其他工具的职责分工
 
@@ -634,15 +610,15 @@ UAF（use-after-free）是释放内存后继续访问，double free 是同一块
 | malloc debug | allocator 检查、回溯与泄漏信息 | 可控 debug 环境 | 开销高，发布环境受限 |
 | 应用内 native hook | App 自己定义的事件和调用栈 | 无系统采集权限的长期监控 | 兼容 allocator、递归、信号安全和版本维护成本高 |
 
-`libmemunreachable` 不属于稳定 NDK API。通过 `dlopen` 加载私有系统库并硬编码 C++ 符号，会受到 linker namespace、符号变化和 SELinux 限制。linker namespace 用来规定一个进程能加载哪些 native 库，因此这类调用不适合作为通用量产方案。
+`libmemunreachable` 不属于稳定 NDK API。通过 `dlopen` 加载私有系统库并硬编码 C++ 符号，会受到 linker namespace、符号变化和 SELinux 限制，这类调用不适合作为通用量产方案。linker namespace 规定一个进程能加载哪些 native 库。
 
 Scudo 是强调内存安全检查的 native 分配器。它的 error callback 只报告分配器发现的错误，不能充当通用 allocation 事件回调。
 
-需要记录自定义 named heap 时，Perfetto 提供 `AHeapProfile_registerHeap` 一类注册接口；接入前仍要确认目标平台提供的头文件、ABI 和集成方式。
+需要记录自定义 named heap 时，Perfetto 提供 `AHeapProfile_registerHeap` 一类注册接口；接入前我们仍要确认目标平台提供的头文件、ABI 和集成方式。
 
 ### 数据安全与归档
 
-heapprofd 不复制任意 heap payload（堆中对象或缓冲区的原始内容），但 trace 仍可能包含：
+heapprofd 不复制任意 heap payload（堆中对象或缓冲区的原始内容），但一份 trace 仍可能包含：
 
 - 进程名、线程名与 UID 关联；
 - 映射路径、模块名、Build ID 和地址；
@@ -655,9 +631,7 @@ heapprofd 不复制任意 heap payload（堆中对象或缓冲区的原始内容
 - 在设备侧加密存储，为上传通道做身份校验；
 - 服务端按角色授权，并设置明确的删除期限。
 
-符号化宜在受控环境中按 Build ID 完成。只上传 `heap_profile_allocation` 表会丢失完整调用栈、错误标志和会话关联信息，不能视为默认的“脱敏等价物”。
-
-若要裁剪，应定义可复现的 trace-to-report（从 trace 转换为摘要报告）格式，并保留采样参数、版本和错误元数据。
+符号化宜在受控环境中按 Build ID 完成。只上传 `heap_profile_allocation` 表会丢失完整调用栈、错误标志和会话关联信息，不能视为默认的“脱敏等价物”；若要裁剪，应定义可复现的 trace-to-report（从 trace 转换为摘要报告）格式，并保留采样参数、版本和错误元数据。
 
 ### 发布前检查表
 
@@ -676,21 +650,21 @@ heapprofd 不复制任意 heap payload（堆中对象或缓冲区的原始内容
 
 ## procfs CPU 计数器与采样窗口
 
-内存分配采样回答谁在申请内存，procfs CPU 统计回答进程和线程在窗口内消耗多少 CPU。累计值必须通过相邻样本求差。
+内存分配采样回答谁在申请内存；接下来这一节我们看 CPU：procfs 统计回答进程和线程在窗口内消耗多少 CPU。它给的是累计值，必须通过相邻样本求差才能得到窗口数据，这一点贯穿整节。
 
 ### CPU 使用率的三种口径
 
-Android 上的“CPU 使用率”至少有三种口径：
+同一个“CPU 使用率”，在 Android 上至少有三种口径，分别对应三类问题：
 
 - 系统在采样窗口内有多少 CPU 容量处于忙碌状态；
 - 某个进程在采样窗口内消耗了多少个“核等价”的 CPU 时间；
 - 某个线程何时被调度、在哪个 CPU 上运行，以及等待运行队列多久。
 
-核等价把一个逻辑 CPU 在整个采样窗口内满负荷运行定义为 100%；多线程进程因此可以超过 100%。运行队列保存已经可以运行、正在等待 CPU 的线程，调度事件则记录线程何时进入或离开 CPU。
+这里的关键词是核等价：一个逻辑 CPU 在整个采样窗口内满负荷运行算 100%，多线程进程因此可以超过 100%。运行队列保存已经可以运行、正在等待 CPU 的线程；调度事件则记录线程何时进入或离开 CPU。
 
-这三类问题分别适合用 `/proc/stat`、进程 CPU 时间和调度事件回答。load average 衡量一段时间内活跃任务的平均数量，与 CPU 利用率采用不同口径。混成一个百分比后，单核占满可能被误报成整机占满，load average 也可能被错当成利用率。
+这三类问题各有对口的数据源：`/proc/stat`、进程 CPU 时间和调度事件。load average 衡量一段时间内活跃任务的平均数量，与 CPU 利用率是两回事。把这些口径混成一个百分比，单核占满可能被误报成整机占满，load average 也可能被错当成利用率——后面我们会反复回到这一点。
 
-`ProcessCpuTracker` 是 Android 系统框架内部的全进程 CPU 采样类。`system_server` 是承载多数 Android 系统服务的核心进程。普通应用无法照搬它使用 `ProcessCpuTracker` 的方案，因此需要先区分应用侧与平台侧权限。
+读代码之前还要分清应用侧与平台侧。`ProcessCpuTracker` 是 Android 系统框架内部的全进程 CPU 采样类，运行在 `system_server`（承载多数 Android 系统服务的核心进程）里；普通应用无法照搬它的方案。
 
 平台源码以 AOSP `android-17.0.0_r1` 为准，内核源码以最新 Android Common Kernel `android17-6.18-2026-06_r39` 为准。页面保留的 6 条 r6 内核链接用于历史追溯；对应文件与 r39 字节一致，相关结论按 r39 复核。
 
@@ -705,21 +679,21 @@ Android 上的“CPU 使用率”至少有三种口径：
 - 进程可能在 `open()`、`read()` 之间退出，PID 还可能被复用。跨时刻跟踪进程时，应同时校验 `/proc/<pid>/stat` 的 `starttime`。
 - `seq_file` 是内核逐段生成较长文本节点的辅助接口。节点是否支持 `lseek()` 定位由具体实现决定，业务代码不应套用统一假设。
 
-因此，可靠的采样器应给每次样本附加单调时钟时间戳，允许单个节点读取失败，并在计数回退、进程实例变化或字段不足时丢弃本轮差值。
+按这些边界写采样器，可靠的做法是：给每次样本附加单调时钟时间戳，允许单个节点读取失败，并在计数回退、进程实例变化或字段不足时丢弃本轮差值。
 
 内核接口与挂载选项可在 [`Documentation/filesystems/proc.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst) 中核对。
 
-### Android 17 的访问边界
+### 普通应用的访问边界
 
 #### 普通应用不能读取全局 CPU 节点
 
-AOSP Android 17 的 `app_neverallows.te` 使用 neverallow 规则，明确禁止所有普通应用域读取 `proc_stat` 和 `proc_loadavg`。neverallow 是 SELinux 在策略编译阶段强制检查的禁止项。该规则覆盖不同 `targetSdk` 对应的 `untrusted_app_*` 域，因此降低 `targetSdk` 也无法恢复 `/proc/stat`。
+普通应用读不到全局节点，是策略写死的结果。`app_neverallows.te` 使用 neverallow 规则，明确禁止所有普通应用域读取 `proc_stat` 和 `proc_loadavg`。neverallow 是 SELinux 在策略编译阶段强制检查的禁止项。该规则覆盖不同 `targetSdk` 对应的 `untrusted_app_*` 域，因此降低 `targetSdk` 也无法恢复 `/proc/stat`。
 
-`untrusted_app_all.te` 还保留了从 Android O 开始对 `proc_stat` 读取拒绝的 `dontaudit` 处理。`dontaudit` 只抑制审计日志，不会授予权限；应用读取失败时，设备日志中未必出现醒目的 SELinux denial（拒绝审计记录）。
+`untrusted_app_all.te` 还保留了从 Android O 开始对 `proc_stat` 读取拒绝的 `dontaudit` 处理。`dontaudit` 只抑制审计日志，不会授予权限；应用读取失败时，设备日志中未必出现醒目的 SELinux denial。
 
-Android 的 `/proc` 还使用 `hidepid=2` 隐藏其他 UID 的进程目录。first-stage init 是系统启动时最早运行的 init 阶段；Android 17 在该阶段以 `gid=AID_READPROC` 挂载 procfs。获得 `AID_READPROC` 组的受信进程可按策略读取更多目录。
+进程目录层面还有一道隔离。Android 的 `/proc` 使用 `hidepid=2` 隐藏其他 UID 的进程目录；系统启动最早的 first-stage init 阶段就以 `gid=AID_READPROC` 挂载 procfs。获得 `AID_READPROC` 组的受信进程可按策略读取更多目录。
 
-普通应用只能稳定依赖自身数据，其他 PID 是否可见不属于 SDK 保证。Android 10 的公开隐私变更针对 `/proc/net`，并影响设备上的所有应用；整个 `/proc/<pid>` 的隔离不能归因于 Android 10 按 `targetSdk` 新增的一条开关。
+所以普通应用只能稳定依赖自身数据，其他 PID 是否可见属于平台策略而不是 SDK 保证。Android 10 的公开隐私变更针对 `/proc/net`，并影响设备上的所有应用；整个 `/proc/<pid>` 的隔离不能归因于 Android 10 按 `targetSdk` 新增的一条开关。
 
 | 调用方 | Android 17 上适合依赖的数据 | 不应依赖的数据 |
 |---|---|---|
@@ -727,7 +701,7 @@ Android 的 `/proc` 还使用 `hidepid=2` 隐藏其他 UID 的进程目录。fir
 | 具有专用 SELinux 规则的平台服务 | 策略允许的全局节点与进程节点 | 仅凭“预装”或“平台签名”推定访问权 |
 | `shell`、root、系统 tracing 服务 | Perfetto、受控的 procfs/ftrace/BPF 采集 | 把调试权限当作线上应用权限 |
 
-厂商策略可以比 AOSP 更严格。采集器应把节点访问视为可能失败的能力，品牌或系统版本不能替代运行时验证。
+厂商策略还可以比 AOSP 更严格。写采集器时我们应把节点访问视为可能失败的能力，品牌或系统版本不能替代运行时验证。
 
 对应证据包括：
 
@@ -744,7 +718,7 @@ possible CPU 是内核可能管理的逻辑 CPU 集合，其中可以包含当�
 cpu  user nice system idle iowait irq softirq steal guest guest_nice
 ```
 
-这些数值自启动以来累计，单位为 `USER_HZ`。`USER_HZ` 是用户空间读取内核 CPU 计数时使用的每秒 tick 数；不能把它写死为 100。Android 17 的 `ProcessCpuTracker` 通过 `Os.sysconf(OsConstants._SC_CLK_TCK)` 获取换算系数。
+这些数值自启动以来累计，单位为 `USER_HZ`，即用户空间读取内核 CPU 计数时使用的每秒 tick 数；不能把它写死为 100。`ProcessCpuTracker` 通过 `Os.sysconf(OsConstants._SC_CLK_TCK)` 获取换算系数。
 
 各字段的含义如下：
 
@@ -769,9 +743,9 @@ cpu  user nice system idle iowait irq softirq steal guest guest_nice
 - `localBusy = user + nice + system + irq + softirq`
 - `localBusyPercent = ΔlocalBusy / Δtotal × 100%`
 
-`steal` 表示虚拟机等待宿主提供 CPU 的时间，不计入本机任务执行时间。若指标要表达“对虚拟机不可用的 CPU 容量”，可以把 `steal` 加入分子，但应使用不同名称。`guest` 和 `guest_nice` 仍不能重复相加。
+`steal` 表示虚拟机等待宿主提供 CPU 的时间，不计入本机任务执行时间；若指标要表达“对虚拟机不可用的 CPU 容量”，可以把 `steal` 加入分子，但应使用不同名称。`guest` 和 `guest_nice` 仍不能重复相加。
 
-`cpu` 首行汇总多个 CPU。假设八个 CPU 在一个窗口内都保持在线，一个进程只占满其中一个 CPU，`Δprocess / Δtotal` 会接近整机容量的八分之一。若先把该结果称为“单核百分比”，随后再除一次 CPU 数，就会重复归一化。
+`cpu` 首行汇总多个 CPU，这里最容易踩重复归一化的坑。假设八个 CPU 在一个窗口内都保持在线，一个进程只占满其中一个 CPU，`Δprocess / Δtotal` 会接近整机容量的八分之一；若先把该结果称为“单核百分比”，随后再除一次 CPU 数，就等于归一化了两次。
 
 还要注意：
 
@@ -781,27 +755,21 @@ cpu  user nice system idle iowait irq softirq steal guest guest_nice
 
 Android 17 对应实现位于 [`fs/proc/stat.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/stat.c)。该文件还输出：
 
-- `ctxt`：全机累计 `context switch`（任务切换）次数，即 CPU 从一个线程切换到另一个线程的累计次数；
+- `ctxt`：全机累计 `context switch` 次数，即 CPU 从一个线程切换到另一个线程的累计次数；
 - `btime`：启动时间的 Unix 时间戳；
 - `processes`：创建过的进程和线程数量；
 - `procs_running`：正在运行或可运行的线程数量；
 - `procs_blocked`：等待 I/O 的阻塞任务数量。
 
-这些值适合补充描述系统压力，但不能替代调度 trace。
+这些值适合补充描述系统压力，替代调度 trace 还差得远——它们没有时间线。
 
-### 两种进程 CPU 百分比不要混用
+### 两种进程 CPU 百分比
 
 `/proc/<pid>/stat` 的第 14、15 个字段分别是 `utime` 和 `stime`，两者相加得到进程累计 CPU 时间。对两次样本做差后，可以定义两种常见口径。
 
 #### 核等价利用率
 
-`ΔprocessCpu / Δwall × 100%` 表示进程用了多少个核：
-
-- 100% 表示窗口内约占用一个 CPU；
-- 150% 表示平均约占用 1.5 个 CPU；
-- 多线程进程可以超过 100%。
-
-这是应用性能监控中更直观的口径。它不需要 `/proc/stat`，普通应用可以用公开 API [`Process.getElapsedCpuTime()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java) 获取当前进程累计 CPU 毫秒数。
+`ΔprocessCpu / Δwall × 100%` 表示进程用了多少个核：100% 是窗口内约占用一个 CPU，150% 是平均约占用 1.5 个，多线程进程可以超过 100%。这是应用性能监控中更直观的口径，而且它不需要 `/proc/stat`——普通应用可以用公开 API [`Process.getElapsedCpuTime()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java) 获取当前进程累计 CPU 毫秒数。
 
 这段 Kotlin 示例同时保留“设备唤醒期间”和“完整观察窗口”两个分母，避免睡眠时间是否计入指标变成隐含条件：
 
@@ -850,7 +818,7 @@ class SelfCpuSampler {
 
 #### 整机容量占比
 
-`ΔprocessCpu / ΔallCpu × 100%` 表示进程占全机累计 CPU 容量的比例，通常位于 0% 到 100% 之间。它需要全局 CPU 计数，普通应用在 AOSP Android 17 上无法直接计算。
+另一种口径是 `ΔprocessCpu / ΔallCpu × 100%`，即进程占全机累计 CPU 容量的比例，通常位于 0% 到 100% 之间。它需要全局 CPU 计数，普通应用在 AOSP Android 17 上无法直接计算。
 
 若产品为了跨设备比较而把核等价利用率除以 CPU 数量，必须先定义分母：物理核心、当前在线 CPU、进程 cpuset 允许的 CPU，或者按调度容量加权的 CPU。cpuset 是限制一组进程可以在哪些 CPU 上运行的内核机制。移动设备会热插拔，大小核性能也不同，简单除以 `Runtime.availableProcessors()` 只能得到近似值。
 
@@ -909,9 +877,9 @@ fun clockTicksPerSecond(): Long =
     Os.sysconf(OsConstants._SC_CLK_TCK)
 ```
 
-解析失败返回 `null`，调用方应丢弃这一轮样本。不要返回 `-1` 后继续计算差值，否则一次权限拒绝或进程退出会产生很大的伪 CPU 峰值。跟踪任意 PID 时，还要在两次样本之间比较 `startTicks`；数值变化说明 PID 已对应另一个进程。
+解析失败返回 `null`，调用方应丢弃这一轮样本。这里不要返回 `-1` 后继续计算差值——一次权限拒绝或进程退出就会产生很大的伪 CPU 峰值。跟踪任意 PID 时，还要在两次样本之间比较 `startTicks`；数值变化说明 PID 已对应另一个进程。
 
-内核可能在末尾追加字段，因此不应断言 `/proc/<pid>/stat` 固定有 44 个字段。按需要解析稳定前缀，比校验总字段数更兼容。Android 17 生成这些字段的代码位于 [`fs/proc/array.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/array.c)。
+内核可能在末尾追加字段，因此我们不应断言 `/proc/<pid>/stat` 固定有 44 个字段；按需要解析稳定前缀，比校验总字段数更兼容。生成这些字段的代码位于 [`fs/proc/array.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/array.c)。
 
 ### 线程级采集
 
@@ -924,9 +892,9 @@ TID 是系统为线程分配的数字 ID。`/proc/<pid>/task/<tid>/stat` 与进�
 
 逐线程轮询的成本随线程数增长，并且目录枚举会遇到线程创建、退出的竞争。它适合短时诊断或低频摘要，无法替代调度事件。
 
-主线程 CPU 较低也不能证明主线程健康：锁等待、Binder 等待和 I/O 阻塞都可能让线程几乎不消耗 CPU，却仍造成卡顿或 ANR（应用无响应）。
+反过来，主线程 CPU 较低也说明不了主线程健康：锁等待、Binder 等待和 I/O 阻塞都可能让线程几乎不消耗 CPU，却仍造成卡顿或 ANR（应用无响应）。
 
-### Android 17 `ProcessCpuTracker` 的准确模型
+### `ProcessCpuTracker` 的准确模型
 
 `ProcessCpuTracker` 位于 `com.android.internal.os`，是系统框架内部类，不属于 SDK API。Android 17 源码直接声明 `public class ProcessCpuTracker`；该目录没有它继承的 `CpuTracker` 基类。
 
@@ -951,7 +919,7 @@ Stats
   active, working, added, removed
 ```
 
-`base_*` 保存累计基线，`rel_*` 保存本轮与基线的差值。minor fault 是无需从存储读取页面即可处理的缺页，major fault 通常需要存储 I/O；`rel_minfaults` 和 `rel_majfaults` 分别记录两类缺页增量。
+`base_*` 保存累计基线，`rel_*` 保存本轮与基线的差值；minor fault 是无需从存储读取页面即可处理的缺页，major fault 通常需要存储 I/O，`rel_minfaults` 和 `rel_majfaults` 分别记录两类缺页增量。
 
 `update()` 的返回类型为 `void`。Android 17 r1 的类也没有声明 `addCpuTime()`、`getProcessStats()` 或 `getIdleCpuTime()`；完整定义见 [`ProcessCpuTracker.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ProcessCpuTracker.java)。
 
@@ -966,7 +934,7 @@ Stats
 
 `Stats.active` 表示本次 CPU 累计值发生变化；`Stats.working` 表示本轮需要进入工作集合，新发现的进程也可能被标为 working。退出项会短暂设置 `removed` 后从活动列表移除。三者不能互换。
 
-源码虽然保留了“累计计数不能回退”的条件，但 Android 17 r1 写成 `if (true || ...)`，该分支实际总会接受读数。自建采样器遇到负差值时应丢弃样本；这与 `ProcessCpuTracker` 当前行为不同。
+一个容易误传的细节：源码虽然保留了“累计计数不能回退”的条件，但 Android 17 r1 写成 `if (true || ...)`，该分支实际总会接受读数。自建采样器遇到负差值时应丢弃样本，这与 `ProcessCpuTracker` 当前行为不同。
 
 #### 同一个类中也存在不同百分比定义
 
@@ -974,11 +942,11 @@ Android 17 先把 `/proc/stat` 的 `user + nice` 合入 `mRelUserTime`。`getTot
 
 `printCurrentState()` 与 proto 输出在计算总时间时则包含 `iowait` 和 `softirq`。
 
-这属于现有内部实现的语义差异，不应把 `getTotalCpuPercent()` 抄成通用 CPU 公式。使用内部数据时，应直接选取需要的增量字段并在指标协议中记录公式。
+这属于现有内部实现的语义差异，所以不要把 `getTotalCpuPercent()` 抄成通用 CPU 公式；使用内部数据时，直接选取需要的增量字段并在指标协议中记录公式。
 
 #### Framework 为什么能用，应用为什么不能照搬
 
-Android 17 的 `AppProfiler` 在 `system_server` 内持有一个 `ProcessCpuTracker`。源码注释明确说明它会遍历 `/proc`，并要求调用方避免在关键锁路径上持有其锁。
+`AppProfiler` 在 `system_server` 内持有一个 `ProcessCpuTracker`。源码注释明确说明它会遍历 `/proc`，并要求调用方避免在关键锁路径上持有其锁。
 
 采样结果用于 ANR 等诊断输出、进程 CPU 统计和 BatteryStats 归因。BatteryStats 是系统累计应用耗电归因数据的服务端账本。
 
@@ -991,13 +959,13 @@ Android 17 的 `AppProfiler` 在 `system_server` 内持有一个 `ProcessCpuTrac
 - 类本身是隐藏 API，反射调用没有兼容性保证；
 - 即使设法调用成功，SELinux 与 procfs 挂载权限也不会随反射绕过。
 
-所以第三方 APM 应使用公开 API 采集自身进程 CPU，并把系统级诊断交给 Perfetto、bugreport（系统诊断包）或受控的平台服务。
+所以第三方 APM 应使用公开 API 采集自身进程 CPU，把系统级诊断交给 Perfetto、bugreport（系统诊断包）或受控的平台服务。
 
 ### `/proc/loadavg` 记录任务负载
 
 Android 17 内核将 load average 定义为 `nr_running + nr_uninterruptible` 的指数衰减平均值。指数衰减会让新样本权重更高，三个结果通常称为 1、5、15 分钟负载。
 
-`nr_running` 包含正在运行或已可运行的任务，`nr_uninterruptible` 包含处于不可中断睡眠的任务，后者通常显示为 D 状态。高负载既可能来自 CPU 竞争，也可能来自等待内核 I/O 的 D 状态任务。
+`nr_running` 包含正在运行或已可运行的任务，`nr_uninterruptible` 包含处于不可中断睡眠的任务，后者通常显示为 D 状态。所以高负载既可能来自 CPU 竞争，也可能来自等待内核 I/O 的 D 状态任务。
 
 这个示例只用于说明文件布局：
 
@@ -1005,9 +973,9 @@ Android 17 内核将 load average 定义为 `nr_running + nr_uninterruptible` �
 1.23 1.45 1.67 3/1024 12345
 ```
 
-前三个值分别是 1、5、15 分钟的负载平均值；`3/1024` 是读取时刻的 runnable（正在运行或等待 CPU）线程数与系统线程总数。末尾值是当前 PID namespace（PID 隔离空间）最近分配的 PID。第四列按线程或任务计数，不能解释成“运行进程数/总进程数”，也不能只统计进程主线程。
+前三个值分别是 1、5、15 分钟的负载平均值；`3/1024` 是读取时刻的 runnable 线程数与系统线程总数。末尾值是当前 PID namespace 最近分配的 PID。第四列按线程或任务计数，不能解释成“运行进程数/总进程数”，也不能只统计进程主线程。
 
-不要为所有设备设定固定的 load average 告警线。Android 设备存在 CPU 热插拔、大小核、cpuset 和功耗策略，同一个数值在不同设备和温控状态下含义不同。更稳妥的做法是：
+不要为所有设备设定固定的 load average 告警线：Android 设备存在 CPU 热插拔、大小核、cpuset 和功耗策略，同一个数值在不同设备和温控状态下含义不同。更稳妥的做法是：
 
 - 与同机型、同场景的历史基线比较；
 - 同时查看系统 CPU 忙碌率、`procs_running`、`procs_blocked` 与 PSI；PSI（Pressure Stall Information）记录 CPU、内存或 I/O 资源不足造成的停顿时间；
@@ -1018,7 +986,7 @@ Android 17 内核将 load average 定义为 `nr_running + nr_uninterruptible` �
 
 ### 采样器的工程约束
 
-采样间隔没有脱离产品场景的固定答案。短间隔能看见更短的尖峰，也会增加唤醒、文件解析、线程枚举和上报成本。设计时应明确：
+采样间隔没有脱离产品场景的固定答案：短间隔能看见更短的尖峰，也会增加唤醒、文件解析、线程枚举和上报成本。设计时我们应明确：
 
 - 常态只采当前进程的累计 CPU 时间，异常窗口再临时增加线程维度；
 - 不在主线程读取 procfs；Android `StrictMode` 会把这类文件 API 调用归入 disk read 检查，即使内容由内核动态生成，也可能触发策略告警；
@@ -1034,9 +1002,7 @@ Android 17 内核将 load average 定义为 `nr_running + nr_uninterruptible` �
 
 #### CPU 调度分析用 `linux.ftrace`
 
-ftrace 是 Linux 内核事件跟踪框架。Perfetto 的 `linux.process_stats` 主要提供进程/线程身份关系，以及按周期采集的内存、`oom_score_adj`（进程被低内存回收的优先级调整值）等数据；它不提供进程 CPU 时间样本。
-
-`linux.ftrace` 中的 `sched_switch` 记录 CPU 从一个线程切换到另一个线程，可还原线程何时运行以及运行多久。`sched_waking` 记录线程被唤醒，可补充唤醒到实际运行之间的调度延迟。
+要回答“线程何时被调度”这类问题，procfs 轮询就不够了，我们换成事件数据。ftrace 是 Linux 内核事件跟踪框架；Perfetto 的 `linux.process_stats` 主要提供进程/线程身份关系，以及按周期采集的内存、`oom_score_adj`（进程被低内存回收的优先级调整值）等数据，它不提供进程 CPU 时间样本。CPU 时间轴来自 `linux.ftrace`：`sched_switch` 记录 CPU 从一个线程切换到另一个线程，可还原线程何时运行以及运行多久；`sched_waking` 记录线程被唤醒，可补充唤醒到实际运行之间的调度延迟。
 
 这份配置同时启用两类 data source，使调度事件带有完整的进程和线程名称：
 
@@ -1061,7 +1027,7 @@ data_sources {
 }
 ```
 
-`linux.ftrace` 给出 CPU 时间轴，`linux.process_stats` 补充名称和线程归属。若要周期采集进程内存，再显式配置 `proc_stats_poll_ms`；它不应被描述成 CPU 采样频率。可继续阅读 Perfetto 的 [CPU Scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling) 与 [Memory counters and events](https://perfetto.dev/docs/data-sources/memory-counters)。
+两者这样分工：`linux.ftrace` 给出 CPU 时间轴，`linux.process_stats` 补充名称和线程归属。若要周期采集进程内存，再显式配置 `proc_stats_poll_ms`；它不应被描述成 CPU 采样频率。可继续阅读 Perfetto 的 [CPU Scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling) 与 [Memory counters and events](https://perfetto.dev/docs/data-sources/memory-counters)。
 
 #### eBPF 适用于受信平台组件
 
@@ -1077,11 +1043,11 @@ Android BPF loader 会在开机时加载由 Android 构建系统生成并放入�
 
 `BPF_MAP_LOOKUP_AND_DELETE_ELEM` 是 `bpf()` 系统调用中“读取一个元素并将其删除”的操作命令，map 类型需要另外定义。Android 的 loader、对象编译与固定规则可参考 AOSP 的 [Extend the kernel with eBPF](https://source.android.com/docs/core/architecture/kernel/bpf)。
 
-普通应用性能诊断可以使用由平台管理的 Perfetto 调度数据。设备厂商或系统组件需要长期、定制化聚合时，才有理由维护专用 BPF 方案。
+对普通应用来说，性能诊断用平台管理的 Perfetto 调度数据即可；设备厂商或系统组件需要长期、定制化聚合时，才有理由维护专用 BPF 方案。
 
 ### 排查顺序
 
-遇到 CPU 告警时，可以按问题粒度选择数据：
+到这里可以整理出一条排查路径。遇到 CPU 告警时，我们按问题粒度选择数据：
 
 1. 用 `Process.getElapsedCpuTime()` 判断当前进程是否持续消耗核等价 CPU。
 2. 对短时异常读取自身线程 stat，确认 CPU 时间集中在哪些线程。
@@ -1094,7 +1060,7 @@ Android BPF loader 会在开机时加载由 Android 构建系统生成并放入�
 
 ## Minor、Major Fault 与页面来源
 
-CPU 或启动异常伴随缺页时，需要继续区分匿名页、文件页、首次映射和存储读取。fault 次数本身不等于阻塞时间。
+最后一类证据是缺页。CPU 或启动异常伴随缺页时，我们需要继续区分匿名页、文件页、首次映射和存储读取——fault 次数本身不等于阻塞时间。
 
 ### 先分清计数与失败结果
 
@@ -1108,7 +1074,7 @@ Linux 的统计结果分为两类成功计数和一类失败结果：
 | Major Fault | 内核成功完成 fault，最终带 `VM_FAULT_MAJOR`，或处理过程发生过重试 | 文件页需要读入、交换页需要从 zRAM（内存压缩块设备）或后备存储取回 |
 | 失败访问 | 内核不能为该访问建立合法映射，通常向线程发送 SIGSEGV 或 SIGBUS | 地址未映射、权限不符、文件映射越过 EOF、硬件内存错误 |
 
-“Invalid Page Fault”可用于口头描述失败访问；`/proc/<pid>/stat` 并没有与 minor、major 并列的第三个同名计数器。`min_flt + maj_flt` 只覆盖成功完成的 fault，native crash 需要另行统计。
+“Invalid Page Fault”可以用于口头描述失败访问，但要注意 `/proc/<pid>/stat` 并没有与 minor、major 并列的第三个同名计数器；`min_flt + maj_flt` 只覆盖成功完成的 fault，native crash 需要另行统计。
 
 页表项（Page Table Entry，PTE）记录虚拟页到物理页的映射与访问权限。转译后备缓冲区（Translation Lookaside Buffer，TLB）是 CPU 保存近期地址转换结果的硬件高速缓冲。PTE 有效而转换结果未命中 TLB 时，硬件执行 `page-table walk`（逐级查页表）后即可继续；这类 TLB miss 通常不会进入内核的 Page Fault Handler，应与 Page Fault 分开分析。
 
@@ -1137,7 +1103,7 @@ do_mem_abort()
                  └─ do_swap_page()
 ```
 
-`do_page_fault()` 根据 ESR 判断读、写或执行访问。内核先尝试用只保护目标 VMA 的 per-VMA lock 查找它，条件不满足时再使用覆盖整个地址空间的 `mmap_lock`。VMA 存在且权限匹配后，`handle_mm_fault()` 才进入匿名页、COW、文件页或 swap（交换页）等通用处理；错误结果返回 arm64 入口后，再转换成对应信号。
+`do_page_fault()` 根据 ESR 判断读、写或执行访问。内核先尝试用只保护目标 VMA 的 per-VMA lock 查找它，条件不满足时再退回覆盖整个地址空间的 `mmap_lock`；VMA 存在且权限匹配后，`handle_mm_fault()` 才进入匿名页、COW、文件页或 swap 等通用处理，错误结果返回 arm64 入口后再转换成对应信号。
 
 三处计数时机决定了各指标的边界：
 
@@ -1145,7 +1111,7 @@ do_mem_abort()
 - `handle_mm_fault()` 返回前调用 `mm_account_fault()`。`PGFAULT` 是内核虚拟内存事件，系统级结果可在 `/proc/vmstat` 的 `pgfault` 字段看到。它计入已经到达 `handle_mm_fault()` 的成功与失败结果；`VM_FAULT_RETRY` 表示退出本轮处理并稍后重试，未完成的 retry 会先返回，待处理完成时再计数。VMA 查找或权限检查阶段提前失败的访问不会到达这里。
 - `mm_account_fault()` 遇到 `VM_FAULT_ERROR` 时，不更新 `current->min_flt`、`current->maj_flt` 及对应的 perf minor/major 事件。成功结果最终带 `VM_FAULT_MAJOR`，或之前设置过 `FAULT_FLAG_TRIED`，都会记作 major；其余记作 minor。
 
-所以，`page-faults` 与 `minor-faults + major-faults` 出现差值有源码依据。解释差值时需要同时检查失败访问、统计区间和工具权限。
+所以 `page-faults` 与 `minor-faults + major-faults` 出现差值是有源码依据的，解释差值时需要同时检查失败访问、统计区间和工具权限。
 
 ### Minor Fault：能在内存中完成的映射修复
 
@@ -1155,15 +1121,15 @@ Minor Fault 的记账条件是成功完成、最终未带 `VM_FAULT_MAJOR`，并
 - **写时复制（Copy-on-Write，COW）**：Zygote 是预加载框架代码并 `fork` 出应用进程的系统进程。父子进程先共享只读页，某一方写入时，`do_wp_page()` 才为它准备私有副本。
 - **文件页已在页缓存中**：页缓存（`page cache`）保存内核近期读过的文件数据。数据已在内存而当前进程缺少对应 PTE 时，内核可以直接建立映射，无需再次读取存储。
 
-Minor 只表示“成功处理且未归为 major”。它无法证明页面此前已经映射，也无法证明发生了一次对象分配。一次 fault 仍可能分配页表页、处理 folio、执行 memcg 计费、维护反向映射并等待锁；folio 是把一个或多个连续基础页作为整体管理的内核对象，memcg 是按控制组统计和限制内存的机制，反向映射则用于从物理页找到映射它的进程地址。耗时会随内存压力、页大小、folio 大小和并发状态变化，不存在跨设备通用的固定微秒阈值。
+Minor 只表示“成功处理且未归为 major”，它既证明不了页面此前已经映射，也证明不了发生了一次对象分配。一次 fault 仍可能分配页表页、处理 folio、执行 memcg 计费、维护反向映射并等待锁（folio 是把一个或多个连续基础页作为整体管理的内核对象，memcg 是按控制组统计和限制内存的机制，反向映射用于从物理页找到映射它的进程地址）。耗时会随内存压力、页大小、folio 大小和并发状态变化，不存在跨设备通用的固定微秒阈值。
 
-`malloc()` 何时改用 `mmap()` 由分配器实现、进程状态和版本共同决定。固定字节阈值既不能解释 COW，也不适合作为通用的 Page Fault 判断规则。
+`malloc()` 何时改用 `mmap()` 由分配器实现、进程状态和版本共同决定；固定字节阈值既不能解释 COW，也不适合作为通用的 Page Fault 判断规则。
 
 ### Major Fault：处理过程需要读取或等待
 
 Linux 6.18 在 [`include/linux/mm_types.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/mm_types.h) 中把 `VM_FAULT_MAJOR` 注释为 “Page read from storage”。`do_swap_page()` 需要从交换区读页时会设置该标志，文件映射的 fault handler 需要读页时也会返回 major。
 
-记账规则还把发生过 retry 的成功 fault 归入 major。retry 表示本轮无法立即完成，处理程序需要释放条件、等待或重新进入；它可能与 I/O 有关，也可能由其他等待触发。因此，major 只能作为“需要读页或重试”的调查线索，单凭该计数无法证明闪存 I/O 已经发生。
+记账规则还把发生过 retry 的成功 fault 归入 major。retry 表示本轮无法立即完成，处理程序需要释放条件、等待或重新进入；它可能与 I/O 有关，也可能由其他等待触发。因此 major 只能作为“需要读页或重试”的调查线索，单凭该计数还证明不了闪存 I/O 已经发生。
 
 Android 上常见的来源有：
 
@@ -1172,7 +1138,7 @@ Android 上常见的来源有：
 - 设备启用 zRAM writeback 后，交换页已写入后备存储，恢复访问需要从闪存取回；
 - fault handler 等待页面 I/O 或发生 retry，最终按 major 计数。
 
-一次 fault 可能触发 readahead（内核预读后续文件页），一次 I/O 也可能满足多个后续 fault。folio 大小、页缓存命中和 I/O 合并都会改变“fault 次数”与“读取字节数”的关系。UFS（Universal Flash Storage，移动设备常用闪存接口）、I/O 调度器、文件系统和当前负载还会影响时延。只有 major 增长与关键线程等待存储在同一时间段出现，才能支持“存储影响用户体验”的判断。
+把 major 和存储画上等号之前，还要过数量关系这一关。一次 fault 可能触发 readahead，也就是内核预读后续文件页；一次 I/O 也可能满足多个后续 fault。folio 大小、页缓存命中和 I/O 合并都会改变“fault 次数”与“读取字节数”的关系。UFS（Universal Flash Storage，移动设备常用闪存接口）、I/O 调度器、文件系统和当前负载还会影响时延。只有 major 增长与关键线程等待存储在同一时间段出现，才能支持“存储影响用户体验”的判断。
 
 #### Android 17 的 zRAM 与 MMD
 
@@ -1180,13 +1146,13 @@ swap（交换）是把匿名页内容写入交换设备、释放原物理页，�
 
 Android 17 起，[Memory Management Daemon（MMD）](https://source.android.com/docs/core/perf/mmd) 统一管理 zRAM 配置和维护任务。recompression 会用压缩率更高的算法重新压缩冷页；writeback 会把符合条件的 zRAM 页移到 `/data` 上的后备存储；prefetch 则在应用按需访问前先把指定进程的交换页取回。应用从缓存冻结状态恢复时，`system_server` 可以请求 MMD 异步执行按进程预取，以减少主界面初始化期间等待后备存储的概率。
 
-MMD 由系统策略调用，普通应用没有可移植的直接控制接口。zRAM 大小、压缩算法、writeback 开关、后备设备和预取策略都由产品配置决定；设备分析应读取实际配置和内核统计。
+MMD 由系统策略调用，普通应用没有可移植的直接控制接口；zRAM 大小、压缩算法、writeback 开关、后备设备和预取策略都由产品配置决定。设备分析时我们应读取实际配置和内核统计，而不是假定某套默认值。
 
 ### 失败访问与 native crash
 
 `si_code` 记录信号的具体原因。arm64 找不到目标 VMA 时通常发送 `SIGSEGV`，并把 `si_code` 设为 `SEGV_MAPERR`；VMA 存在但访问权限不符时通常得到 `SIGSEGV/SEGV_ACCERR`。文件映射越过有效文件内容等 `VM_FAULT_SIGBUS` 路径会产生 `SIGBUS/BUS_ADRERR`，硬件内存错误还可能产生 `BUS_MCEERR_*`。
 
-MTE（Memory Tagging Extension，内存标签扩展）会比较指针标签与内存标签，标签检查失败时也可能发送带专用 `si_code` 的 `SIGSEGV`。因此，同为 signal 11，根因仍可能不同。
+MTE（Memory Tagging Extension，内存标签扩展）会比较指针标签与内存标签，标签检查失败时也可能发送带专用 `si_code` 的 `SIGSEGV`。所以同样是 signal 11，根因仍可能不同。
 
 排查失败访问时还要考虑三个边界：
 
@@ -1273,7 +1239,7 @@ fun delta(
 }
 ```
 
-示例只读取当前应用自己的 proc 节点，并用 `starttime` 识别 PID 复用或进程重启。采样应放在低频诊断窗口，避免文件读取干扰短场景；进程或线程退出、读取失败及计数回退都按无效样本处理。
+示例只读取当前应用自己的 proc 节点，并用 `starttime` 识别 PID 复用或进程重启。采样应放在低频诊断窗口，避免文件读取干扰短场景；进程或线程退出、读取失败及计数回退都按无效样本处理，我们在示例里逐项判断了这些条件。
 
 #### 为什么不能用 fault 数估算分配字节
 
@@ -1288,7 +1254,7 @@ Java/Kotlin 可按 [AOSP 页大小指南](https://source.android.com/docs/core/a
 
 ### 从计数建立因果证据
 
-Page Fault 调查要回答三个问题：计数在哪个阶段增长、增长的是 minor 还是 major、当时访问的是文件映射还是匿名映射。计数只能提示现象，时间线和映射对象才能把现象与用户可感知时延联系起来。
+Page Fault 调查要回答三个问题：计数在哪个阶段增长、增长的是 minor 还是 major、当时访问的是文件映射还是匿名映射。计数只能提示现象，要把现象与用户可感知时延联系起来，还得靠时间线和映射对象。
 
 #### 用 Simpleperf 区分事件
 
@@ -1316,7 +1282,7 @@ adb shell su 0 sh -c \
   /sys/kernel/tracing/available_events"
 ```
 
-这条命令需要 root 或等价系统调试权限。结果为空时，应改用 Simpleperf 计数和常规 Perfetto 调度/I/O 数据，不要假定 tracepoint 名称跨内核版本稳定。
+这条命令需要 root 或等价系统调试权限。结果为空时，我们改用 Simpleperf 计数和常规 Perfetto 调度/I/O 数据，不要假定 tracepoint 名称跨内核版本稳定。
 
 eBPF 程序也只能挂到设备已有且安全策略允许的位置。`kprobe` 会在内核函数或指令位置安装动态探针，BTF 描述内核类型信息，ABI 规定函数调用约定；内核升级可能改变三者依赖的符号、类型或参数布局。这些方案适合受控的系统调试环境，不适合作为普通应用的通用监控接口。
 
@@ -1329,7 +1295,7 @@ eBPF 程序也只能挂到设备已有且安全策略允许的位置。`kprobe` 
 3. 同时观察线程状态、内存回收和块设备 I/O。major 增长并且关键线程同期等待存储，才构成 I/O 影响关键路径的证据。
 4. 在同一设备、同一安装状态和相近内存压力下做基线对照，分别记录冷页缓存与热页缓存场景。
 
-`/proc/stat` 中的 `iowait` 表示 CPU 被记为空闲且系统有待完成 I/O 的时间，它无法把等待归因到具体进程，内核文档也提醒该值很难精确计算。较高的 kernel CPU 表示 CPU 正在执行内核代码，也不表示 CPU 正在等待 I/O。两项数据都需要进程级时间线补充。
+`/proc/stat` 中的 `iowait` 表示 CPU 被记为空闲且系统有待完成 I/O 的时间，它无法把等待归因到具体进程，内核文档也提醒该值很难精确计算；较高的 kernel CPU 表示 CPU 正在执行内核代码，同样代表不了“正在等待 I/O”。两项数据都需要进程级时间线补充。
 
 ### 按原因选择改进手段
 
@@ -1343,13 +1309,13 @@ eBPF 程序也只能挂到设备已有且安全策略允许的位置。`kprobe` 
 
 minor fault 集中在首次访问大块匿名内存时，应检查分配时机、初始化范围和执行线程。Zygote 继承页的大量写入还会增加 COW。PSS、堆剖析和调用栈可以帮助定位写入来源。
 
-评价改动时同时比较关键路径时延、总内存和后台压力。单独降低 fault 数不能证明优化有效。
+评价改动时，我们要同时比较关键路径时延、总内存和后台压力——单独降低 fault 数证明不了优化有效。
 
 #### swap-in 与后台恢复
 
 后台恢复出现 major fault 时，要同时查看内存压力、进程冻结、zRAM、writeback 和 LMKD 事件。LMKD（Low Memory Killer Daemon，低内存终止守护进程）会在内存压力下选择进程终止，它的事件可帮助区分“从交换区恢复”和“进程已被杀后重启”。
 
-Android 17 的 MMD prefetch 属于系统策略能力，普通应用不应复制其内核机制。系统开发者调整策略时，要同时比较恢复时延、后台 I/O、内存占用和闪存写入量。
+MMD prefetch 属于系统策略能力，普通应用不应复制其内核机制。系统开发者调整策略时，要同时比较恢复时延、后台 I/O、内存占用和闪存写入量。
 
 #### 谨慎使用预取建议
 
@@ -1361,14 +1327,14 @@ Android 17 的 MMD prefetch 属于系统策略能力，普通应用不应复制�
 
 Android 17 已有生产用例。ART 的 Concurrent Mark-Compact GC 在 [`mark_compact.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc) 中调用 `userfaultfd(..., UFFD_USER_MODE_ONLY)`。Concurrent Mark-Compact 会标记存活对象并移动它们以压缩堆；moving space 是这次移动涉及的 ART 堆区域。
 
-ART 先通过 `UFFDIO_API` 查询可用 feature，这一步称为 feature negotiation（能力协商）。它还检查所需内核能力和 `UFFD_FEATURE_SIGBUS`。创建失败或条件不满足时，`uffd_` 进入 fallback mode，改用 stop-the-world compaction；后者会暂停应用线程再完成压缩。
+ART 先通过 `UFFDIO_API` 查询可用 feature，这一步称为 feature negotiation，也就是能力协商。它还检查所需内核能力和 `UFFD_FEATURE_SIGBUS`。创建失败或条件不满足时，`uffd_` 进入 fallback mode，改用 stop-the-world compaction；后者会暂停应用线程再完成压缩。
 
 这个实现给出两条使用边界：
 
 - `userfaultfd` 的可用性由内核能力、Android 安全限制和系统配置共同决定；
 - 接管 fault 会改变线程阻塞与内存访问行为，适合受控的运行时或系统组件，无法充当低干扰的应用性能计数器。
 
-普通应用只需 Page Fault 指标时，应读取 `/proc/self/stat` 或使用设备支持的 perf 工具。系统组件确需 `userfaultfd` 时，应像 ART 一样完成能力协商、失败降级和逐版本验证。
+普通应用只需 Page Fault 指标时，读取 `/proc/self/stat` 或使用设备支持的 perf 工具即可；系统组件确需 `userfaultfd` 时，应像 ART 一样完成能力协商、失败降级和逐版本验证。
 
 ### 判读清单
 
@@ -1380,7 +1346,7 @@ ART 先通过 `UFFDIO_API` 查询可用 feature，这一步称为 feature negoti
 
 ## 全文小结
 
-heapprofd、procfs CPU 与 Page Fault 分别提供分配调用栈、累计运行时间和虚拟内存映射修复计数。排障时应先用低成本的自身计数确认异常窗口，再按问题选择 heapprofd、Simpleperf 或 Perfetto；任何百分比、增长量和 fault 次数都必须保留采样分母、进程实例、权限与缺失状态。
+heapprofd、procfs CPU 与 Page Fault 分别提供分配调用栈、累计运行时间和虚拟内存映射修复计数。排障时我们先用低成本的自身计数确认异常窗口，再按问题选择 heapprofd、Simpleperf 或 Perfetto；任何百分比、增长量和 fault 次数都必须保留采样分母、进程实例、权限与缺失状态。
 
 三类证据的联合价值在于缩小原因范围，而不是从单个数字直接推断根因。native 存活分配要与 RSS/PSS 和映射类别对照，CPU 时间要与调度等待分开，major fault 也只有在关键线程同期等待存储时才支持 I/O 归因。量产接入还要把 profileable、系统限流、采集器开销、符号文件与原始 trace 的访问控制纳入同一协议。
 

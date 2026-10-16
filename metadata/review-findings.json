@@ -4357,6 +4357,201 @@
       "summary": "ApplicationExitInfo PSS and RSS are last samples, not snapshots around death, and can be zero before any sample",
       "type": "missing-api-boundary",
       "updated_at": "2026-10-13T22:48:59.601067+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
+      "close_note": "重写原生内存统计说明，补齐 malloc 与显式登记两部分，以及 NotifyNativeAllocations、RegisterNativeAllocation 和 CheckGCForNative 的检查边界；开篇同步采用 ART 统计到的原生压力口径。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261017-014310-idle-audit-afd026b2",
+      "created_at": "2026-10-17T01:47:54.194690+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-014310-idle-audit-afd026b2",
+      "details": "android-17.0.0_r1 heap.cc:2802-2839 的 GetNativeBytes() 返回 mallinfo().uordblks 与 native_bytes_registered_ 之和；4579-4636 的检查入口使用此总量。原文排除了未逐笔登记的 malloc 分配，会误导 native SDK 压力排查。",
+      "id": "finding-d7e6d621a000",
+      "log_path": "logs/audit/2026-10-17-20261017-014310-idle-audit-afd026b2-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc#2802"
+      ],
+      "status": "fixed",
+      "summary": "原生 GC 压力统计被误写为只包含显式登记内存",
+      "type": "native-accounting-scope",
+      "updated_at": "2026-10-17T01:52:09.106062+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
+      "close_note": "在分配录制与发布耗时隔离说明之后补入 Android 8/API26+ 的 native 工具开销警告，保留 debuggable、Full/Sampled 和只用于归因等现有条件。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261017-014310-idle-audit-afd026b2",
+      "created_at": "2026-10-17T01:47:54.575119+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-014310-idle-audit-afd026b2",
+      "details": "当前 record-java-kotlin-allocations HTML 的 How memory is counted 节含 Note：Android 8/API26+ 会把部分 profiling tools 内存误计入 App native memory。opencli Markdown 提取遗漏 aside；原始 HTML 已复核。正文需要提示该偏差，避免把录制开销归因于应用。",
+      "id": "finding-fdf58b26da39",
+      "log_path": "logs/audit/2026-10-17-20261017-014310-idle-audit-afd026b2-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/studio/profile/record-java-kotlin-allocations#how-memory-is-counted"
+      ],
+      "status": "fixed",
+      "summary": "分配记录遗漏 Android 8 起分析工具计入 native 内存的官方警告",
+      "type": "profiler-native-overhead-warning",
+      "updated_at": "2026-10-17T01:52:09.163240+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
+      "close_note": "补充 Perfetto UI 官方录制流程要求 Android 11/API30+，本章覆盖的 Android 8—10 使用 record_android_trace 等命令行流程。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261017-014310-idle-audit-afd026b2",
+      "created_at": "2026-10-17T01:47:54.633407+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-014310-idle-audit-afd026b2",
+      "details": "当前 Recording system traces 文档将 Perfetto UI 录制前置条件列为 Android R+，更早版本使用 Android 命令行流程；record_android_trace 文档前置条件为 Android M+。原文只提查看 atrace 类别，缺少不同录制入口的版本边界。",
+      "id": "finding-dd53061c7ab5",
+      "log_path": "logs/audit/2026-10-17-20261017-014310-idle-audit-afd026b2-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/getting-started/system-tracing#recording-your-first-system-trace"
+      ],
+      "status": "fixed",
+      "summary": "Android 8—17 章节未交代 Perfetto UI 录制的 Android 11 起适用边界",
+      "type": "perfetto-recording-availability",
+      "updated_at": "2026-10-17T01:52:09.222477+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "Clarified getTotalPss includes SwapPss, no double addition, Code JIT caches and private Graphics. Source Debug.java 425-426 and 734-923; metadata, summary links, diff and prose gates passed.",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-014212-b4eac0df",
+      "created_at": "2026-10-17T01:47:55.701363+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-014212-b4eac0df",
+      "details": "r1 Debug.MemoryInfo.getTotalPss adds getTotalSwappedOutPss. Distinguish resident smaps Pss from App Summary TOTAL PSS and TOTAL SWAP PSS. Also clarify JIT code caches and private graphics categories.",
+      "id": "AIW-4.1-P2-total-pss-swappss",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java"
+      ],
+      "status": "fixed",
+      "summary": "App Summary TOTAL PSS includes SwapPss: prevent double counting",
+      "type": "accounting-boundary",
+      "updated_at": "2026-10-17T01:52:10.377301+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "Corrected Limiter.updateIsReady locator, manual MiB and none no-reset warning, swap flag condition, status templates and limits/monitoring/killing. Checked shell-to-Java-to-JNI flow and source-derived sentinel arithmetic. No device test claimed.",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-014212-b4eac0df",
+      "created_at": "2026-10-17T01:47:55.765637+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-014212-b4eac0df",
+      "details": "Shell none becomes -1, Java multiplies by MiB, JNI skips node writes for values at or below -2. The four status memory values are configured visibility templates, not actual PID node values; inspect limits, monitoring, killing. updateIsReady belongs to Limiter, not ProcessMemInfo. JNI writes memory.swap.max despite stale Java swap.high comments.",
+      "id": "AIW-4.1-P2-memorylimiter-manual-status",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp"
+      ],
+      "status": "fixed",
+      "summary": "MemoryLimiter manual none does not reliably reset limits in r1; status shows templates",
+      "type": "source-command-boundary",
+      "updated_at": "2026-10-17T01:52:10.443387+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "Preserved API 37 shared-UID multi-package artifact delivery caveat in the anomaly bullet, checked against r1 ProfilingTrigger.java 103-115 and official API reference. Existing OOM default-handler and API 35/36/37 boundaries retained.",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-014212-b4eac0df",
+      "created_at": "2026-10-17T01:47:55.830208+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-014212-b4eac0df",
+      "details": "r1 ProfilingTrigger.java lines 110-112 and the API 37 reference warn that for some anomalies artifacts may not be provided when multiple packages sharing a UID register this trigger.",
+      "id": "AIW-4.1-P2-anomaly-shared-uid",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_ANOMALY"
+      ],
+      "status": "fixed",
+      "summary": "ProfilingTrigger ANOMALY omits the shared-UID multi-package delivery warning",
+      "type": "missing-api-warning",
+      "updated_at": "2026-10-17T01:52:10.509182+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "Added per-reboot kill limit, history.json and denied SELinux domain failure. Verified official PMGD System health features and SELinux configuration; no universal enablement claimed.",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-014212-b4eac0df",
+      "created_at": "2026-10-17T01:47:55.894710+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-014212-b4eac0df",
+      "details": "Official System health features restrict each target to one PMGD-initiated kill per device reboot, with history in /data/misc/pmgd/history.json. SELinux must allow the target domain or PMGD cannot monitor it.",
+      "id": "AIW-4.1-P2-pmgd-reboot-rate",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/perf/pmgd"
+      ],
+      "status": "fixed",
+      "summary": "PMGD omits per-reboot kill rate limiting and denied-domain monitoring failure",
+      "type": "missing-lifecycle-boundary",
+      "updated_at": "2026-10-17T01:52:10.574100+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "created_at": "2026-10-17T01:47:55.961780+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-014212-b4eac0df",
+      "details": "Whole chapter read. Proposal performance and reviewer objections have no primary mailing-list or review URL; local material search found none. ART runtime/GC absence of MADV_COLD and r6 whole-tree absence of ANON_VMA_LAZY require directory-wide evidence, not a defconfig or selected-file sample. Keep ready-for-review. Before finalization, provide the fixed-tag search scope and original proposal/review, or remove unsupported historical assertions.",
+      "id": "AIW-4.1-P2-research-negative-source-coverage",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md"
+      ],
+      "status": "open",
+      "summary": "ANON_VMA_LAZY proposal history and whole-tree negative claims lack reproducible primary coverage",
+      "type": "incomplete-primary-evidence",
+      "updated_at": "2026-10-17T01:47:55.961780+08:00"
+    },
+    {
+      "chapter": "11.1",
+      "close_note": "同一 blocker 由新条目 aiw-chinese-rewrite-frontmatter-blocker-20261017-053020 接替（仅更新套用稿指针：最优稿已从 023020 稿演进为 050020 稿），问题本身未修复，仍需人工清理 frontmatter 四个过时字段",
+      "closed_by": "aiw-chinese-rewrite",
+      "closed_run_id": "20261017-053020-cn-rewrite-d4f62ead7a6eac52",
+      "created_at": "2026-10-17T03:00:08.937470+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261017-023020-cn-rewrite-d4f62ead7a6eac52",
+      "details": "41ef3d1c3 已全仓迁移删除这四个过时字段，但本章与 ch01-architecture/01、09 被漏掉。cn-rewrite 车道冻结 frontmatter（style_lint compare 要求 frontmatter 字节相等），无法在车道内修复；aiw-run-complete 对 changed 结果强制运行 check-metadata，故本章任何提交都会被拒。修复路径：按 41ef3d1c3 先例清理本章 frontmatter 后，套用已验证草稿 ~/.hermes/state/aiw-chinese-rewrite/20261017-023020-cn-rewrite-d4f62ead7a6eac52.after.md（style_lint compare pass=true，GPT 复核 5 处语义问题已修正）。",
+      "id": "aiw-chinese-rewrite-frontmatter-blocker-20261017-023020",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "run 20261017-023020-cn-rewrite-d4f62ead7a6eac52; scripts/frontmatter_schema.py ALLOWED_FIELDS; git 41ef3d1c3"
+      ],
+      "status": "wontfix",
+      "summary": "ch11-power/01 frontmatter 仍含 pipeline_stage/task2b_state/task6_state/task9_state，check-metadata 在 base_sha 即失败，阻塞所有需过门禁的编辑车道",
+      "type": "metadata-schema",
+      "updated_at": "2026-10-17T05:33:01.857069+08:00"
+    },
+    {
+      "chapter": "11.1",
+      "created_at": "2026-10-17T05:33:01.908455+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261017-053020-cn-rewrite-d4f62ead7a6eac52",
+      "details": "41ef3d1c3 已全仓迁移删除这四个过时字段，但本章（与 ch01-architecture/01、09）被漏掉。cn-rewrite 车道冻结 frontmatter（style_lint compare 要求 frontmatter 字节相等），无法在车道内修复；aiw-run-complete 对 changed 结果强制 check-metadata，本章任何提交都会被拒。修复路径：按 41ef3d1c3 先例清理本章 frontmatter 四行后，套用当前最优已验证草稿 ~/.hermes/state/aiw-chinese-rewrite/20261017-050020-cn-rewrite-d4f62ead7a6eac52.after.md（sha16 e5a1f2416a24f3f3；style_lint compare pass=true：gloss 17.45→3.29/1k、neg 4.5→0.0/1k、regloss 3→0、我们 0→9；GPT 复核一轮 6 处已修正；053020 run 于 2026-10-17 05:30 复测 compare 仍 pass=true）。该稿取代 023020/033020 稿；提交说明见 050020 result JSON 的 commit_message。",
+      "id": "aiw-chinese-rewrite-frontmatter-blocker-20261017-053020",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "runs 20261017-023020/033020/040020/043020/050020/053020-cn-rewrite-d4f62ead7a6eac52; scripts/frontmatter_schema.py ALLOWED_FIELDS; git 41ef3d1c3"
+      ],
+      "status": "open",
+      "summary": "ch11-power/01 frontmatter 仍含 pipeline_stage/task2b_state/task6_state/task9_state，check-metadata 在 base_sha 即失败，阻塞所有需过门禁的编辑车道",
+      "type": "metadata-schema",
+      "updated_at": "2026-10-17T05:33:01.908455+08:00"
     }
   ],
   "schema_version": 1

@@ -5812,6 +5812,66 @@
       "status": "appended",
       "title": "APK mmap 内存增长定位：pagemap 与 DEX 结构联合定位方法摘要 本文提出一种将 APK mmap 增长"
     },
+    "source/juejin-android/2026-10-17-76535333-Android 17 正式发布！targ.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "6b007735266ac74b",
+      "last_appended": "2026-10-17T05:25:20.533855+08:00",
+      "last_seen": "2026-10-17T05:25:20.533855+08:00",
+      "mtime": 1792182025.4390242,
+      "score": 13,
+      "sha256": "75b9bdf4de4def3a103feb01352ac440737b0e3495e61b193af45937f9129343",
+      "size": 11076,
+      "status": "appended",
+      "title": "Android 17 正式发布！target 37 一大批旧代码直接不能用了Android 17 已经正式发布，对应 A"
+    },
+    "source/juejin-android/2026-10-17-76573848-自己动手写了一个 Android 虚拟定.md": {
+      "chapter": "待分类",
+      "entry_id": "f48836bffcdbdc04",
+      "last_appended": "2026-10-17T05:25:20.533855+08:00",
+      "last_seen": "2026-10-17T05:25:20.533855+08:00",
+      "mtime": 1792182025.4397337,
+      "score": 14,
+      "sha256": "56e905d60edb05836d25a51bdf54e1165c3ca81f9b9ff50fb2498422b552ce86",
+      "size": 14942,
+      "status": "appended",
+      "title": "自己动手写了一个 Android 虚拟定位 App：GPSSimulate 技术实自己动手写了一个 Android 虚拟"
+    },
+    "source/juejin-android/2026-10-17-76574953-腾讯 XLog 日志框架 Android.md": {
+      "chapter": "待分类",
+      "entry_id": "a845f79cab286969",
+      "last_appended": "2026-10-17T05:25:20.533855+08:00",
+      "last_seen": "2026-10-17T05:25:20.533855+08:00",
+      "mtime": 1792182025.4401317,
+      "score": 9,
+      "sha256": "29149f46991a83dbe2dc6ff1516672a8d6623decee55c42d1cd78ee665e52069",
+      "size": 11471,
+      "status": "appended",
+      "title": "腾讯 XLog 日志框架 Android 端接入mars 是微信官方的终端基础组件，是一个使用 C++ 编写的业务性无关"
+    },
+    "source/juejin-android/2026-10-17-76648798-你是不是还没用过 select？实战 K.md": {
+      "chapter": "待分类",
+      "entry_id": "18dc0bdd56349bab",
+      "last_appended": "2026-10-17T05:25:20.533855+08:00",
+      "last_seen": "2026-10-17T05:25:20.533855+08:00",
+      "mtime": 1792182025.4393632,
+      "score": 9,
+      "sha256": "3207dcaed657c61701c4bebcf7b0198b173b2cee32c2c7c2898c28e8b36134b9",
+      "size": 18535,
+      "status": "appended",
+      "title": "你是不是还没用过 select？实战 Kotlin select 在 Kotlin 协程中，select 算是一个有点尴"
+    },
+    "source/juejin-android/2026-10-17-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "2b465d63dc7932c4",
+      "last_appended": "2026-10-17T05:25:20.533855+08:00",
+      "last_seen": "2026-10-17T05:25:20.533855+08:00",
+      "mtime": 1792182025.438511,
+      "score": 24,
+      "sha256": "c64058a8cc2637772fbea268ad73dc05c62b742587df6ef9bf80d5b4b88b95d1",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -6279,6 +6339,55 @@
       "size": 5908,
       "status": "appended",
       "title": "Some quick thoughts on Unit Testing ActivityPub"
+    },
+    "source/rss-snapshot/2026-10-17-AI-is-mass-decompiling-games-That-s-both-awesome.md": {
+      "last_seen": "2026-10-17T05:25:20.533855+08:00",
+      "mtime": 1792177389.5279145,
+      "sha256": "83c92bdb97680e797a2dc3ffc7d9c6b256cca129e7264d3bc53cf9ad8a458704",
+      "size": 1677,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-17-Anthropic-tells-investors-quarterly-revenue-up-n.md": {
+      "last_seen": "2026-10-17T05:25:20.533855+08:00",
+      "mtime": 1792177379.85827,
+      "sha256": "a9b39460ec4d1e8b63b5eba2c84db44af646f7a916c0d54bf904bf5f0128ab32",
+      "size": 2067,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-17-C-futures-part-3-The-mental-model-for-std-async.md": {
+      "last_seen": "2026-10-17T05:25:20.533855+08:00",
+      "mtime": 1792177391.9674337,
+      "sha256": "328080e443c936393b2611af63f72b7f3280ed4df2b838573c68db27e408b7ab",
+      "size": 2634,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-17-C-futures-part-4-What-if-I-want-an-immediate-on-.md": {
+      "last_seen": "2026-10-17T05:25:20.533855+08:00",
+      "mtime": 1792177377.1798735,
+      "sha256": "9b09445c9c8de25f32f3b6ba6c875173940419585ba117a1d7bb6b9e8e8e2d02",
+      "size": 2380,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-17-LaTeX-package-for-Pascal-like-triangles.md": {
+      "last_seen": "2026-10-17T05:25:20.533855+08:00",
+      "mtime": 1792177387.8445365,
+      "sha256": "da1305b27580e2c8f0dec127f736609d9e9373d9771c7f442fbc9320ffcf9b11",
+      "size": 810,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-17-Monoliths-and-Lagrange-Points.md": {
+      "last_seen": "2026-10-17T05:25:20.533855+08:00",
+      "mtime": 1792177366.1511815,
+      "sha256": "e064e0d654dfb735e7de1216934100d2c1ab0ca0f1497e2fc6f4a47e8dd991de",
+      "size": 2397,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-17-Tree-Appreciator.md": {
+      "last_seen": "2026-10-17T05:25:20.533855+08:00",
+      "mtime": 1792177384.19579,
+      "sha256": "c5720be88190d1df2063a02b60d8e95e7a044f17dfdd995fb996a0d374c48db3",
+      "size": 2714,
+      "status": "skipped-low-score"
     },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
       "chapter": "ch05-cpu-power",
@@ -8087,16 +8196,16 @@
     }
   },
   "last_report": {
-    "appended": 0,
-    "considered": 0,
-    "cutoff": "2026-10-14T05:20:33.970439+08:00",
+    "appended": 5,
+    "considered": 12,
+    "cutoff": "2026-10-17T01:37:01.839080+08:00",
     "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-17.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2181,
+    "scanned": 2193,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 7,
       "max_files": 0,
       "old_unseen": 1414,
       "path": 31,
@@ -8104,7 +8213,7 @@
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-17T01:42:01.839080+08:00",
+  "last_run_at": "2026-10-17T05:25:20.533855+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

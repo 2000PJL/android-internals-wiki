@@ -132,7 +132,9 @@ sources:
   path: https://developer.android.com/reference/android/content/ComponentCallbacks2
 - type: official
   path: https://developer.android.com/topic/performance/app-optimization/enable-app-optimization
-last_source_verified_at: '2026-10-14'
+- type: aosp
+  path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java
+last_source_verified_at: '2026-10-17'
 tags:
   - android-memory
   - memory-model
@@ -356,14 +358,15 @@ adb shell dumpsys meminfo com.example.app
 
 - `Java Heap`：`dalvikPrivateDirty` 加 `.art` 映射的私有页；
 - `Native Heap`：原生堆的私有脏页（Private Dirty）；
-- `Code`：`.so`、`.jar`、`.apk`、`.ttf`、`.dex`、`.oat` 等映射的私有页；
+- `Code`：`.so`、`.jar`、`.apk`、`.ttf`、`.dex`、`.oat` 等映射，以及 Zygote/应用 JIT 代码缓存的私有页；
 - `Stack`：栈类别的私有脏页；
-- `Graphics`：`Gfx dev`、`EGL mtrack` 与 `GL mtrack` 汇总；
+- `Graphics`：`Gfx dev`、`EGL mtrack` 与 `GL mtrack` 的私有页汇总；
 - `Private Other`：总私有页扣除前面几项后的余量；
-- `System`：总 PSS 扣除总私有页后的余量，包含共享页的比例归因；内核提供 SwapPss 时也会受到比例化 Swap 的影响；
-- `TOTAL PSS` 与 `TOTAL SWAP`：该次采样的 PSS 和 Swap 汇总。
+- `System`：`getTotalPss()` 扣除总私有页后的余量，包含共享页的比例归因，以及内核提供的 SwapPss；
+- `TOTAL PSS`：r1 的 `getTotalPss()` 返回 `dalvikPss + nativePss + otherPss + getTotalSwappedOutPss()`，已经包含比例化 Swap；
+- `TOTAL SWAP PSS` / `TOTAL SWAP`：前者展示比例化 Swap，内核不提供该统计时回退展示后者的未分摊 Swap 总量。
 
-这组分类由 `Debug.MemoryInfo` 的计算方式定义，读的时候要把它们当作记账行，彼此对应的物理内存并不互相独立。例如，`Java Heap` 采用私有页统计，`TOTAL PSS` 还包含共享页的比例归因。
+App Summary 的 `TOTAL PSS` 与 `/proc/<pid>/smaps_rollup` 的驻留 `Pss` 口径不同。比较两者前，应先分清 SwapPss、映射分类和 memtrack 数据；计算驻留加交换的总量时，不要再把 `TOTAL SWAP PSS` 加到这里的 `TOTAL PSS` 上。`System` 也是计算余量，不能直接解释为内核替该应用分配的全部内存。 [已验证: AOSP android-17.0.0_r1 `Debug.MemoryInfo.getTotalPss()`、`getSummarySystem()`、`getSummaryTotalSwapPss()`]
 
 #### 详细表格用于解释“增长来自哪里”
 
@@ -452,7 +455,7 @@ Android 通过 `libprocessgroup` 与任务配置文件（task profile）管理�
 
 面向单应用的 MemoryLimiter 是 Android 17 引入的行为变化。它由 `system_server` 中的 Java 服务和 JNI 组件组成，用每进程 cgroup v2 监控应用进程，约束的是进程外部的 cgroup 边界，与 `Runtime.maxMemory()` 或 Dalvik/ART 堆大小的调整无关。Java 堆之外的原生匿名映射、WebView/Bitmap 背后占用和图形相关缓存，只要最终表现为受统计的匿名页、共享内存或 Swap 增长，也可能把进程推近限制。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android 17 Memory Limiter 官方文档；AOSP android-17.0.0_r1 `MemoryLimiter.java` 与 JNI]
 
-`android-17.0.0_r1` 的 `ProcessMemInfo.updateIsReady()` 还把监控范围限定在应用 UID 空间：PID 和 UID 有效，且 UID 不小于 `Process.FIRST_APPLICATION_UID`（10000）时，进程对象才可能进入 MemoryLimiter 配置路径；如果包名命中豁免列表，源码会把它排除。低于该范围的系统 UID 不按普通应用限制处理；系统或厂商进程的内存边界要另看 PMGD、task profile 或厂商私有机制。 [来源: 技术文章/source/juejin-android/2026-10-09-76535333-解读Android17全新内存限制有没有豁免后门.md] [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` `ProcessMemInfo.updateIsReady()`；`Process.java` `FIRST_APPLICATION_UID`]
+`android-17.0.0_r1` 的 `MemoryLimiter.Limiter.updateIsReady()` 还把监控范围限定在应用 UID 空间：PID 和 UID 有效，且 UID 不小于 `Process.FIRST_APPLICATION_UID`（10000）时，进程对象才可能进入 MemoryLimiter 配置路径；如果包名命中豁免列表，源码会把它排除。低于该范围的系统 UID 不按普通应用限制处理；系统或厂商进程的内存边界要另看 PMGD、task profile 或厂商私有机制。 [来源: 技术文章/source/juejin-android/2026-10-09-76535333-解读Android17全新内存限制有没有豁免后门.md] [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` `Limiter.updateIsReady()`；`Process.java` `FIRST_APPLICATION_UID`]
 
 在 `android-17.0.0_r1` 源码锚点下，默认配置文件路径为 `/vendor/etc/memory-limiter-config.xml`；该文件并非必需，没有配置文件或没有匹配当前 RAM 的 limit set 时功能会关闭。
 
@@ -466,7 +469,7 @@ Android 17 r1 源码中的关键流程如下：
 4. 联合判断会比较 `anon + shmem + swapCurrent` 与 `memHigh + swapMax`。 [已验证: AOSP android-17.0.0_r1 `com_android_server_am_MemoryLimiter.cpp`]
 5. 联合上限越界后，服务解除该进程的限制；相关系统开关启用时触发异常分析事件 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`，并安排在 30 秒后终止进程。 [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java`]
 
-应用侧可用 `ApplicationExitInfo` 区分这类退出：原因字段为 `REASON_OTHER`，描述字段包含 `MemoryLimiter:AnonSwap`。测试设备可以用以下命令确认功能状态和临时配置： [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` 与 `ActivityManagerShellCommand.java`]
+应用侧可用 `ApplicationExitInfo` 区分这类退出：原因字段为 `REASON_OTHER`，描述字段包含 `MemoryLimiter:AnonSwap`。以下命令中，只有 `status` 是查询；其余命令会改变限制，应仅用于可重启的测试进程。r1 的 `manual 12345 10` 会按 10 MiB 向 JNI 传递内存和 Swap 两项限制，Swap 项是否写入还受开关控制；这个数值可能导致回收停顿或进程退出，不能当作 10% 使用。 [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` 与 `ActivityManagerShellCommand.java`]
 
 ```bash
 adb shell am memory-limiter status
@@ -477,11 +480,11 @@ adb shell am memory-limiter manual 12345 10
 adb shell am memory-limiter manual 12345 none
 ```
 
-`ignore` 在 r1 接受 UID、`none` 或 `all`；`manual` 在 r1 的 shell 解析中接受 PID 和一个整数或 `none`，源码随后把整数按 MiB 转换为限制值，帮助文本仍写成 `PERCENT|none`。
+`ignore` 在 r1 接受 UID、`none` 或 `all`，其中 `ignore none` 清除忽略设置。`manual` 接受 PID 和一个整数或 `none`，Java 层把整数按 MiB 转换，帮助文本仍写成 `PERCENT|none`。但 `manual ... none` 在这份实现中先变为 `-1`，再被乘成 `-1048576`，JNI 对这种值跳过节点写入，因此不能依赖它撤销已写入的手动限制；测试后应重启目标进程，并重新读取该进程的 cgroup 节点确认。 [已验证: AOSP android-17.0.0_r1 `ActivityManagerShellCommand.runMemoryLimiter()`、`MemoryLimiter.setManualLimit()`、JNI `Process::setLimit()`]
 
-公开二手材料可能把命令写成 `<limit>|max|none`，当前官方文档也给出不同单位写法；使用前以目标构建源码、`am help` 和实测为准，`max` 在 r1 里还称不上通用接口。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android Memory Limiter 官方文档；AOSP android-17.0.0_r1 `ActivityManagerShellCommand.java` 与 `MemoryLimiter.java`]
+公开二手材料可能把命令写成 `<limit>|max|none`，当前官方文档也给出字节数及 `MB`/`GB` 后缀写法；r1 的 shell 解析不接受 `max` 或这些后缀。使用前核对目标构建源码和运行结果，`am help` 在 r1 的单位与复位说明也不能单独作为依据。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android Memory Limiter 官方文档；AOSP android-17.0.0_r1 `ActivityManagerShellCommand.java` 与 `MemoryLimiter.java`]
 
-排查时先看 `status` 输出里的 `enabled`、`monitoring`、`ignored`，再看 `visibleMem`、`visibleSwap`、`notVisibleMem`、`notVisibleSwap` 这些当前生效值，以及事件和进程计数；公开示例里的 14 GiB / 8192 MiB / 4096 MiB 只说明 XML 配置格式，外推成 Android 17 固定阈值就错了。 [来源: 技术文章/source/juejin-android/2026-10-09-76535333-解读Android17全新内存限制有没有豁免后门.md] [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` `dump()`]
+排查时先看 `status` 输出里的 `enabled`、`limits`、`monitoring`、`killing` 和 `ignored`，区分服务存在、限制生效、事件监控与终止开关。`visibleMem`、`visibleSwap`、`notVisibleMem`、`notVisibleSwap` 展示的是可见/不可见档位的配置模板，不保证等于某个 PID 当前节点中的值：手动配置、cached 状态和 JNI 的水位余量调整都可能让两者不同。应结合 PID 的进程状态、事件计数和实际 cgroup 节点读取；公开示例里的 14 GiB / 8192 MiB / 4096 MiB 也不能外推成 Android 17 固定阈值。 [来源: 技术文章/source/juejin-android/2026-10-09-76535333-解读Android17全新内存限制有没有豁免后门.md] [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` `initializeMemoryLimits()`、`dump()` 与 JNI `Process::setLimit()`]
 
 MemoryLimiter 与 lmkd 的决策依据也不同。MemoryLimiter 约束单个受监控进程的匿名页、共享内存与交换空间；lmkd 在系统压力下结合进程重要性等信息选择终止目标。复盘进程消失时，应先读取 `ApplicationExitInfo`、系统日志和 PSI，再确定是哪条路径。 [已验证: AOSP android-17.0.0_r1 MemoryLimiter 源码；本章“MemAvailable 与 PSI 描述不同维度”段落]
 
@@ -491,7 +494,9 @@ Android 17 官方文档还描述了进程内存守护进程 PMGD（Process Memor
 
 PMGD 使用 `inotify` 监听 cgroup v2 的 `memory.events`。命中后，它先检查匿名内存；如果超过 `anon_limit_in_mb` 会立即终止目标进程。如果匿名内存未超过硬边界，PMGD 会等待 `reclaim_wait_time_secs`，再检查 `memory.current` 是否仍大于等于 `memory.high`，或匿名内存是否超过硬边界；仍超限时终止进程，并记录 Statsd memory atoms。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android PMGD 官方文档 `https://source.android.com/docs/core/perf/pmgd`]
 
-因此，看到某个系统或厂商进程因内存被终止时，先别归因到普通应用的 MemoryLimiter。排查时应同时确认 PMGD 配置、SELinux 策略、`memory.events`/`memory.current`、`ApplicationExitInfo`、lmkd 日志与 PSI 时间线。 [已验证: Android PMGD 官方文档；本章“MemAvailable 与 PSI 描述不同维度”段落]
+PMGD 官方文档还规定，每个目标进程在一次设备重启周期内最多被 PMGD 终止一次，历史记录在 `/data/misc/pmgd/history.json`。重复实验时要核对这项限流；SELinux 未允许访问目标进程的域时，PMGD 无法监控，logcat 可能出现拒绝记录。 [已验证: Android PMGD 官方文档 `System health features`、`SELinux configuration`]
+
+系统或厂商进程因内存被终止时，应同时确认 PMGD 配置与历史记录、SELinux 策略、`memory.events`/`memory.current`、`ApplicationExitInfo`、lmkd 日志与 PSI 时间线，再判断是否属于普通应用的 MemoryLimiter 路径。 [已验证: Android PMGD 官方文档；本章“MemAvailable 与 PSI 描述不同维度”段落]
 
 #### 应用侧对 MemoryLimiter 的应答路径
 
@@ -531,7 +536,7 @@ MemoryLimiter 的退出标记用于确认终止路径，通常还不足以定位
 `ProfilingManager` 和全局结果回调从 API 35 提供，`addProfilingTriggers()` 从 API 36 提供；下面两个触发类型从 Android 17 / API 37 提供： [已验证: Android Developers `ProfilingManager`、`ProfilingTrigger` API 参考]
 
 - `ProfilingTrigger.TRIGGER_TYPE_OOM`：应用发生 OOM 异常时请求 Java 堆转储；自定义未捕获异常处理器需要继续调用默认处理器，否则这一触发路径无法使用。 [已验证: Android Developers `ProfilingTrigger.TRIGGER_TYPE_OOM`]
-- `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`：系统检测到应用异常行为时触发，产物类型取决于异常。MemoryLimiter 在相关系统开关启用时调度该事件，不能把每次异常事件都等同于 Java 堆转储。 [已验证: Android Developers `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`；本章 AOSP android-17.0.0_r1 MemoryLimiter 异常事件流程]
+- `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`：系统检测到应用异常行为时触发，产物类型取决于异常。MemoryLimiter 在相关系统开关启用时调度该事件，不能把每次异常事件都等同于 Java 堆转储。同一 UID 下有多个包注册该触发器时，系统对部分异常可能不提供产物；共享 UID 应用排查未交付结果时，还要核对同 UID 的其他注册包。 [已验证: Android Developers `ProfilingTrigger.TRIGGER_TYPE_ANOMALY` 的同 UID 警告；AOSP android-17.0.0_r1 `ProfilingTrigger.java` 与 MemoryLimiter 异常事件流程]
 
 接入时应分别注册全局结果回调 `registerForAllProfilingResults()` 和所需的触发器 `addProfilingTriggers()`；只注册结果回调不会订阅 OOM 或异常事件。结果可在进程存活时返回；如果回调失败，系统可能在应用以后重新注册全局回调时尝试重投递，不能保证“只在下次启动返回”或必然补齐文件。 [已验证: AOSP android-17.0.0_r1 `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java` `addProfilingTriggers()` 与 `registerForAllProfilingResults()`]
 

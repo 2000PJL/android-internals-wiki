@@ -18,8 +18,10 @@ related_chapters:
 - '21.2'
 - '23.1'
 - '4.5'
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 heap.cc, TaskProcessor, StartupCompletedTask, VMRuntime/Daemons/ActivityThread; current Android Developers memory and allocation-recording docs; current Perfetto tracing docs
+last_verified: '2026-10-17'
+last_source_verified_at: '2026-10-17T01:48:00+08:00'
+last_idle_audit_at: '2026-10-17T01:48:00+08:00'
+last_verified_against: AOSP android-17.0.0_r1 heap.cc (PostForkChildAction, GetNativeBytes, CheckGCForNative), heap-inl.h, TaskProcessor, StartupCompletedTask, VMRuntime/Daemons/ActivityThread/runtime.cc; current Android Developers memory and allocation-recording docs including API 26+ profiler native-memory warning; current Perfetto tracing docs including Android R+ UI recording availability
 confidence: high
 sources:
 - type: aosp
@@ -27,7 +29,7 @@ sources:
 - type: aosp
   path: art/runtime/startup_completed_task.cc
 - type: aosp
-  path: art/runtime/native/dalvik_system_VMRuntime.cc
+  path: art/runtime/native/dalvik_system_VMRuntime.cc, art/runtime/runtime.cc
 - type: aosp
   path: libcore/libart/src/main/java/dalvik/system/VMRuntime.java, java/lang/Daemons.java
 - type: aosp
@@ -46,7 +48,7 @@ sources:
 
 Android Runtime（ART）负责执行 Android 字节码和管理 Java heap（存放 Java/Kotlin 对象的堆内存）。GC（Garbage Collection，垃圾回收）会查找已经不可达的对象并回收它们占用的空间。第三方 App 没有受支持的“暂停 ART GC”接口；本文所说的 GC 抑制，指降低启动阶段的对象分配速率和存活对象规模，让 ART 更少达到 GC 触发条件。
 
-Android 17 会从 Zygote（预先加载公共 framework 代码的系统进程）fork 出 App 进程，并在 fork 后暂时放宽 Java heap 的启动期阈值。首帧前仍可能发生 GC，触发原因包括分配接近 growth limit（该进程 Java heap 允许增长的上限）、显式 GC 请求、已登记到 ART 的 native allocation（原生内存分配）压力和进程状态变化。排查时应找到具体的分配点和 GC cause（触发原因），阻塞 `HeapTaskDaemon` 只会破坏运行时调度。
+Android 17 会从 Zygote（预先加载公共 framework 代码的系统进程）fork 出 App 进程，并在 fork 后暂时放宽 Java heap 的启动期阈值。首帧前仍可能发生 GC，触发原因包括分配接近 growth limit（该进程 Java heap 允许增长的上限）、显式 GC 请求、ART 统计到的 native allocation（原生内存分配）压力和进程状态变化。排查时应找到具体的分配点和 GC cause（触发原因），阻塞 `HeapTaskDaemon` 只会破坏运行时调度。
 
 以下内部行为以 `android-17.0.0_r1` 为准。对象分配与 GC 治理见 [23.1 Java Heap、GC 与 Compose 内存分配](../ch23-memory-practice/01-java-heap-gc-compose-allocation.md)，启动任务治理见 [21.2 启动任务编排、延迟初始化与并发调度](02-startup-task-lazy-concurrency.md)。
 
@@ -104,7 +106,7 @@ Android 17 的常见任务包括：
 
 ## 用 Perfetto 建立因果证据
 
-Perfetto 是 Android 的系统级时间线追踪工具。采集配置至少要包含 scheduler 事件（`sched_switch`、`sched_wakeup`）、CPU frequency/idle（频率与空闲状态），以及 `am`、`view`、`dalvik` 等 atrace 类别；还应为目标包启用 App trace。可用的 atrace 类别跟系统版本有关，采集前先在 Perfetto UI 或命令行里查看设备支持哪些类别。配置方法见 [Recording system traces](https://perfetto.dev/docs/getting-started/system-tracing) 和 [CPU scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling)。
+Perfetto 是 Android 的系统级时间线追踪工具。采集配置至少要包含 scheduler 事件（`sched_switch`、`sched_wakeup`）、CPU frequency/idle（频率与空闲状态），以及 `am`、`view`、`dalvik` 等 atrace 类别；还应为目标包启用 App trace。可用的 atrace 类别跟系统版本有关，采集前先在 Perfetto UI 或命令行里查看设备支持哪些类别。官方 Perfetto UI 录制流程要求 Android 11（API 30）及更高版本；本章覆盖的 Android 8—10 应使用 `record_android_trace` 等命令行流程。配置方法见 [Recording system traces](https://perfetto.dev/docs/getting-started/system-tracing) 和 [CPU scheduling events](https://perfetto.dev/docs/data-sources/cpu-scheduling)。
 
 分析时先标出进程创建、`bindApplication`（framework 把 App 绑定到新进程并开始初始化的阶段）、首帧和 fully drawn（App 报告主要内容已完整可用）边界，再看 GC 是否与启动关键路径重叠。
 
@@ -149,6 +151,8 @@ Logcat 中的 ART GC 行可补充 cause、freed bytes（回收字节数）、hea
 ## 从 GC 事件追到分配调用栈
 
 Perfetto 适合确认时序和关键路径，Java/Kotlin Allocation Recording（对象分配记录）适合查对象类型与分配调用栈。当前 Android Studio 要求使用 debuggable 构建；Full 模式记录每次分配，分配密集时会明显拖慢 App，Sampled 模式则按间隔采样。两种模式都用于归因，采集期间的启动耗时不能作为发布性能结论。详细限制见 [Record Java/Kotlin allocations](https://developer.android.com/studio/profile/record-java-kotlin-allocations)。
+
+Android 8（API 26）及更高版本的分配分析器还可能把部分分析工具开销显示为 App 的 native 内存，不能直接把这部分增长归因于应用。比较原生内存占用时，应另外保留未开启分配记录的采集结果。
 
 建议做两轮采集：
 
@@ -198,7 +202,9 @@ Android Studio 的 Remaining Size 是所选时间段内“分配大小减去已�
 
 ### 4. 同时检查 native 与 graphics memory
 
-ART 只把通过 native allocation accounting（原生分配记账）登记过的那部分原生内存纳入 GC 压力判断。Android 17 的 `RegisterNativeAllocation()` 在累计到一定次数或遇到大额登记时，会检查是否需要 GC。Bitmap、字体或解码器等 framework 组件可能走这条路径，数据库 page cache（文件页缓存）、graphics buffer（图形缓冲区）和任意 native SDK 占用则不能仅凭“位于 native 内存”就认定会触发 ART GC。
+ART 的原生内存压力统计同时包括系统 malloc 已用字节数和显式登记字节数。Android 17 的 `Heap::GetNativeBytes()` 把 `mallinfo().uordblks` 与 `native_bytes_registered_` 相加，因此通过系统 malloc 分配的 native SDK 内存即使没有逐笔登记，也可能参与 GC 压力判断。Bitmap、字体和解码器的占用同样要按实际分配与记账路径检查。自行 `mmap` 的区域、文件页缓存和 graphics buffer（图形缓冲区）能否纳入统计，也取决于具体的分配与登记方式，不能直接按进程 PSS 推算。
+
+`RegisterNativeAllocation()` 用于按字节补记 malloc 统计看不到的非 malloc 分配；累计登记达到检查间隔或出现大额登记时会调用 `CheckGCForNative()`，`NotifyNativeAllocations()` 也会触发检查。检查结合原生内存计数与 Java 堆占用判断压力，满足条件时以 `kGcCauseForNativeAlloc` 请求或执行 GC。统计范围和检查时机需要分开判断，原生内存增长不等于每次分配都会立即触发回收。
 
 Java heap 看起来不大时，仍要查看进程 PSS（按共享比例折算的驻留内存）、native heap、graphics 分类和对应调用栈。这些数据能说明进程总内存压力，不等同于 ART heap 的触发阈值。`Runtime.totalMemory() - freeMemory()` 只给出 Java heap 的一个瞬时近似值，不能代表进程总内存，也不适合设置跨设备统一百分比告警。
 

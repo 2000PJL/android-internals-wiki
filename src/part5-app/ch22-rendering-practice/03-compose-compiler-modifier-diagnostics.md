@@ -5,6 +5,9 @@ section: '22.3'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
 last_verified: '2026-08-31'
+last_source_verified_at: '2026-10-17'
+last_idle_audit_at: '2026-10-17T10:39:27+08:00'
+verification_scope_note: '2026-10-17 source spot-check: Kotlin release lifecycle, 2.3.20/2.4.10 CSV writer, Compose BOM 2026.08.00, Foundation 1.12.0 prefetch/cache-window, UI 1.12.0 Node lifecycle and View interop, runtime-tracing 1.12.0, Strong Skipping, and Firebase Auth 24.2.0 artifact signatures; no new device benchmarks or compiler sample reruns.'
 last_verified_against: 'Compose BOM 2026.08.00 (Runtime/Foundation/UI/runtime-tracing 1.12.0), Kotlin/Compose compiler 2.4.10, Android 17 android-17.0.0_r1; historical checks: Compose 1.10.0 and Foundation 1.10.6'
 confidence: high
 sources:
@@ -24,6 +27,9 @@ sources:
   path: https://developer.android.com/develop/ui/compose/side-effects
 - type: official
   path: https://kotlinlang.org/docs/releases.html
+- type: source
+  path: https://github.com/JetBrains/kotlin/releases/tag/v2.4.21
+  note: 'Released 2026-10-08; release lifecycle check only, not the compiler report baseline.'
 - type: official
   path: https://kotlinlang.org/docs/compose-compiler-options.html
 - type: official
@@ -541,7 +547,7 @@ Compiler 报告说明静态稳定性，Runtime Tracing 说明实际执行次数�
 
 Compose 编译器从 Kotlin 2.0 起随 Kotlin 一同发布，`org.jetbrains.kotlin.plugin.compose` 的版本必须与 Kotlin 插件一致。Compose 库独立于 Android 平台发布；API 37 不会自动决定项目使用哪个 Compose 版本。当前 BOM `2026.08.00` 将 `runtime-tracing` 与 Runtime 约束为 1.12.0。
 
-文中的 2.3.20 代码块和报告输出是一组固定实验样本，保留它们才能逐字复现 CSV、JSON 和标签解释；新项目应把 Kotlin 与 Compose 插件同时设为 2.4.10。两版 `BuildMetrics.kt` 的 CSV 表头和模块 JSON 键相同，但 CI 仍要记录编译器版本与 `featureFlags`，因为字段相同不代表代码生成行为完全相同。
+文中的 2.3.20 代码块和报告输出是一组固定实验样本，保留它们才能逐字复现 CSV、JSON 和标签解释；复现本文工具链基线时，应把 Kotlin 与 Compose 插件同时设为 2.4.10。[Kotlin 发布记录](https://kotlinlang.org/docs/releases.html)已列出 2026-10-08 发布的 2.4.21，该版本不在本文的报告与源码核查范围内。2.3.20 与 2.4.10 的 `BuildMetrics.kt` 使用相同的 CSV 表头和模块 JSON 键，但 CI 仍要记录编译器版本与 `featureFlags`，因为字段相同不代表代码生成行为完全相同。
 
 ### 一、先分清四层证据
 
@@ -558,7 +564,7 @@ Compose 编译器从 Kotlin 2.0 起随 Kotlin 一同发布，`org.jetbrains.kotl
 
 #### 1. 用固定版本复现报告样本
 
-下面的根项目配置把 Kotlin 与 Compose 编译器插件都固定为 2.3.20，用于复现本文的报告样本。当前项目应把两处版本一同改为 2.4.10。
+下面的根项目配置把 Kotlin 与 Compose 编译器插件都固定为 2.3.20，用于复现本文的报告样本。复现本文工具链基线时，应把两处版本一同改为 2.4.10。
 
 ```kotlin
 plugins {
@@ -1189,7 +1195,7 @@ Kotlin 2.0 起，Compose 编译器随 Kotlin 一同发布，项目应应用与 K
 
 ### 源码与资料索引
 
-- [Kotlin 发布记录：当前稳定版 2.4.10](https://kotlinlang.org/docs/releases.html)
+- [Kotlin 发布记录：本文工具链基线 2.4.10](https://kotlinlang.org/docs/releases.html)
 - [Kotlin 2.4.10 发行说明](https://github.com/JetBrains/kotlin/releases/tag/v2.4.10)
 - [Compose 编译器插件 2.4.10](https://plugins.gradle.org/plugin/org.jetbrains.kotlin.plugin.compose/2.4.10)
 - [Diagnose stability issues](https://developer.android.com/develop/ui/compose/performance/stability/diagnose)

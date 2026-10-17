@@ -4501,6 +4501,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "Removed unsupported proposal performance/reviewer history, unmerged-status assertion, ART runtime/GC-wide MADV_COLD absence, kernel-wide ANON_VMA_LAZY absence and the repeated absence conclusion. Replaced them with fixed-tag positive RegionSpace/FreeListSpace/ZeroMemory/WILLNEED paths, MADV_COLD eligibility and r6 do_anonymous_page/vmf_anon_prepare/__anon_vma_prepare paths, including zero-page and metadata-reuse boundaries. No whole-tree negative search or device test is claimed. Chapter remains ready-for-review; source anchors and local gates recorded in logs/deep-review/2026-10-17-20261017-083520-deep-review-7eda697f-deep-review.md.",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261017-083520-deep-review-7eda697f",
       "created_at": "2026-10-17T01:47:55.961780+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261017-014212-b4eac0df",
@@ -4511,10 +4514,10 @@
       "source_paths": [
         "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "ANON_VMA_LAZY proposal history and whole-tree negative claims lack reproducible primary coverage",
       "type": "incomplete-primary-evidence",
-      "updated_at": "2026-10-17T01:47:55.961780+08:00"
+      "updated_at": "2026-10-17T08:40:14.583577+08:00"
     },
     {
       "chapter": "11.1",

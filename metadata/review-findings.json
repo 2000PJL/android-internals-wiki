@@ -4582,6 +4582,9 @@
     },
     {
       "chapter": "1.1",
+      "close_note": "同一 blocker 由新条目 aiw-chinese-rewrite-frontmatter-blocker-20261017-110020 接替（仅更新套用稿指针：最优稿已从 103020 稿演进为 110020 稿，指标 gloss 2.90→2.14/1k、我们 7→11），问题本身未修复，仍需人工清理 frontmatter 六个过时字段",
+      "closed_by": "aiw-chinese-rewrite",
+      "closed_run_id": "20261017-110020-cn-rewrite-70132b0f4eb643ff",
       "created_at": "2026-10-17T10:47:41.718369+08:00",
       "created_by": "aiw-chinese-rewrite",
       "created_run_id": "20261017-103020-cn-rewrite-70132b0f4eb643ff",
@@ -4592,10 +4595,27 @@
       "source_paths": [
         "run 20261017-103020-cn-rewrite-70132b0f4eb643ff; scripts/frontmatter_schema.py ALLOWED_FIELDS; git 41ef3d1c3"
       ],
-      "status": "open",
+      "status": "wontfix",
       "summary": "ch01-architecture/01 frontmatter 仍含 pipeline_stage/task2b_state/task6_state/task9_state/last_review_finalize_run_id/last_body_apply_run_id 六个 schema 外字段，check-metadata 在 base_sha 即失败，阻塞所有需过门禁的编辑车道",
       "type": "metadata-schema",
-      "updated_at": "2026-10-17T10:47:41.718369+08:00"
+      "updated_at": "2026-10-17T11:34:38.632234+08:00"
+    },
+    {
+      "chapter": "1.1",
+      "created_at": "2026-10-17T11:34:21.282756+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261017-110020-cn-rewrite-70132b0f4eb643ff",
+      "details": "41ef3d1c3 全仓迁移删除 pipeline_stage/task2b_state/task6_state/task9_state/last_review_finalize_run_id/last_body_apply_run_id 时漏掉本章。cn-rewrite 车道冻结 frontmatter（style_lint compare 要求字节相等），无法在车道内修复；aiw-run-complete 对 changed 结果强制 check-metadata，本章任何提交都会被拒。修复路径：按 41ef3d1c3 先例与 ch11-power/01 同日 rework 先例（run 20261017-093520）删除这六行后，套用最新已验证草稿 ~/.hermes/state/aiw-chinese-rewrite/20261017-110020-cn-rewrite-70132b0f4eb643ff.after.md（sha16 5ca799eaffbe6727；style_lint compare pass=true：gloss 9.11→2.14/1k、neg 4.59→0.71/1k、regloss 7→0、我们 0→11、cjk 13059→12602=96.5%；GPT 复核一轮 2 处限定范围问题已修正；10:30 的 103020 稿已被本稿取代）。",
+      "id": "aiw-chinese-rewrite-frontmatter-blocker-20261017-110020",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "scripts/check-metadata.py @ base_sha 9303fb230a1ad68f2c1ea4709b02254c6f3d4753"
+      ],
+      "status": "open",
+      "summary": "ch01-architecture/01 frontmatter 六个 41ef3d1c3 迁移遗漏字段阻塞 cn-rewrite 提交（套用稿指针更新为 110020 稿）",
+      "type": "metadata-schema",
+      "updated_at": "2026-10-17T11:34:21.282756+08:00"
     }
   ],
   "schema_version": 1

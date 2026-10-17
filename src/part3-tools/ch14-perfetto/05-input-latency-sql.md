@@ -4,14 +4,18 @@ chapter: '14.5'
 section: '14.5'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-13'
-last_verified_against: Android 17 / android-17.0.0_r1 Perfetto ece66975738007dd0978b911d8a2077e49b8f31e + frameworks/native ae266dcb706d083868578cfedce381ef44488a07; Perfetto v57.2-da1d152cf stdlib docs; android17-6.18-2026-06_r6
+last_verified: '2026-10-17'
+last_source_verified_at: '2026-10-17'
+last_idle_audit_at: '2026-10-17'
+last_verified_against: Android 17 / android-17.0.0_r1 Perfetto ece66975738007dd0978b911d8a2077e49b8f31e + frameworks/native ae266dcb706d083868578cfedce381ef44488a07; Perfetto stdlib docs checked 2026-10-17; SQL smoke tests with Trace Processor v56.1-c794fceab and pinned Android stdlib modules; android17-6.18-2026-06_r6
 confidence: high
 sources:
 - type: official
-  path: https://perfetto.dev/docs/analysis/sql-tables/android-input
+  path: https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/input.sql
 - type: official
   path: https://perfetto.dev/docs/analysis/trace-processor
+- type: official
+  path: https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/anrs.sql
 - type: research
   path: intake/research-feeds/2026-04-05-15-input-pipeline-latency-breakdown.md
 tags:
@@ -106,7 +110,7 @@ ORDER BY event.ts, dispatch.window_id
 LIMIT 200;
 ```
 
-解析器会把协议消息中单调时钟域的 `event_time_nanos` 转为 Trace 时间域；单调时钟只持续向前，不受墙上时间校准影响。转换后的值以 `kernel_time` 写入 `args`，`EXTRACT_ARG` 从 `arg_set_id` 对应的键值参数集中读出它。原始表的 `ts` 则是系统处理该 Trace 数据包的时间。同一事件可能投递给前台窗口、监视窗口或其他目标，因此结果出现多行并非重复数据。
+解析器会把协议消息中单调时钟域的 `event_time_nanos` 转为 Trace 时间域；单调时钟只持续向前，不受墙上时间校准影响。转换后的值以 `kernel_time` 写入 `args`，`EXTRACT_ARG` 从 `arg_set_id` 对应的键值参数集中读出它。原始表的 `ts` 直接取自对应 TracePacket 的时间戳，不能解释成分析机器上 Trace Processor 解析数据包的时刻。同一事件可能投递给前台窗口、监视窗口或其他目标，因此结果出现多行并非重复数据。
 
 ## 公共表结构与延迟公式
 
@@ -263,7 +267,7 @@ LIMIT 100;
 
 ### 输入与 `doFrame` 的关联规则
 
-标准库会在同一应用线程上查找与 `deliverInputEvent` 区间相交的 `Choreographer#doFrame`。找到交集时标记为精确关联；没有交集时，选择该线程上紧随其后的帧并标记 `is_speculative_frame = 1`。这里的“精确”只表示两个区间按规则相交，不自动证明业务因果。映射到 SurfaceFlinger 后，标准库还会选择不早于关联应用帧的首个未丢弃帧。
+标准库会在同一应用线程上查找与 `deliverInputEvent` 区间相交的 `Choreographer#doFrame`。找到交集时标记为精确关联；没有交集时，选择该线程上紧随其后的帧并标记 `is_speculative_frame = 1`。这里的“精确”只表示两个区间按规则相交，不自动证明业务因果。映射到 SurfaceFlinger 的步骤再按应用帧时间筛选未丢弃帧。
 
 这些规则带来三个限制：
 
@@ -273,7 +277,7 @@ LIMIT 100;
 
 Android 17 的 `_input_read_time` 只匹配 motion 事件的 `UnwantedInteractionBlocker::notifyMotion*` Slice。按键事件可以有完整往返时间，却没有 `read_time`、`event_time` 或呈现延迟。以下划线开头表示标准库内部对象，外部查询不应依赖它。
 
-该版本选择未丢弃帧的内部标量查询（预期返回单个值的子查询）也没有显式增加 `upid` 条件。多应用同时绘制时，应把 `frame_id` 当作候选锚点，并用目标进程再次校验。
+该版本查找未丢弃帧的内部标量查询（预期返回单个值的子查询）使用 `app_ts >= frame_ts` 和 `LIMIT 1`，没有 `upid` 条件，也没有 `ORDER BY`。结果不能保证是目标进程时间最早的候选帧。多应用同时绘制时，应回到目标进程的 `actual_frame_timeline_slice` 核对帧与呈现时间；仅在下游连接中补上 `upid`，无法修正已经算出的 `end_to_end_latency_dur`。
 
 下面的查询把输入结果连接到 `android_frames`，同时保留关联质量：
 
@@ -442,7 +446,7 @@ ORDER BY ts;
 
 ### 查看 ANR 窗口内已完成的输入
 
-下面的查询按照每个 ANR 的真实或默认超时窗口，列出 ANR 前已经完成往返的最近 50 个事件：
+下面的查询以超时到期为窗口终点，列出窗口内分发、且到该终点已完成往返的最近 50 个事件。`android_anrs.ts` 是 `ErrorId` 计数器的记录时刻；存在计时器时，减去纳秒单位的 `timer_delay` 才是到期时刻。缺少计时器时使用记录时刻和默认超时长度估算窗口，不能把它当作精确的阻塞起点。
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
@@ -452,7 +456,8 @@ INCLUDE PERFETTO MODULE time.conversion;
 WITH input_anrs AS (
   SELECT
     *,
-    COALESCE(anr_dur_ms, default_anr_dur_ms) AS timeout_ms
+    COALESCE(anr_dur_ms, default_anr_dur_ms) AS timeout_ms,
+    ts - COALESCE(timer_delay, 0) AS timeout_end_ts
   FROM android_anrs
   WHERE anr_type IN (
     'INPUT_DISPATCHING_TIMEOUT',
@@ -463,7 +468,7 @@ ranked AS (
   SELECT
     anr.error_id,
     anr.process_name AS anr_process,
-    anr.ts AS anr_ts,
+    anr.timeout_end_ts,
     anr.timeout_ms,
     event.dispatch_ts,
     event.input_event_id,
@@ -479,15 +484,17 @@ ranked AS (
   FROM input_anrs AS anr
   LEFT JOIN android_input_events AS event
     ON event.process_name = anr.process_name
+    AND (anr.pid IS NULL OR event.pid = anr.pid)
     AND event.dispatch_ts BETWEEN
-      anr.ts - time_from_ms(anr.timeout_ms)
-      AND anr.ts
+      anr.timeout_end_ts - time_from_ms(anr.timeout_ms)
+      AND anr.timeout_end_ts
+    AND event.dispatch_ts + event.total_latency_dur <= anr.timeout_end_ts
 )
 SELECT
   error_id,
   anr_process,
   timeout_ms,
-  time_to_ms(anr_ts - dispatch_ts) AS ms_before_anr,
+  time_to_ms(timeout_end_ts - dispatch_ts) AS ms_before_timeout,
   input_event_id,
   thread_name,
   time_to_ms(dispatch_latency_dur) AS dispatch_ms,
@@ -496,12 +503,12 @@ SELECT
   time_to_ms(total_latency_dur) AS total_ms
 FROM ranked
 WHERE recency <= 50
-ORDER BY anr_ts, recency;
+ORDER BY timeout_end_ts, recency;
 ```
 
-`android_input_events` 只包含四个消息节点都匹配成功的投递。卡住并触发 ANR 的事件可能没有 `finish_ack`（系统收到完成确认的节点），因此不会出现在结果里。ANR 附近没有行并不等于没有输入；此时应查看 `wq:` 计数器、目标主线程调度状态和 ANR 主题字段。
+`dispatch_ts + total_latency_dur` 是系统收到完成确认的时刻；额外的上界条件排除了超时后才完成的投递。`android_input_events` 只包含四个消息节点都匹配成功的投递。卡住并触发 ANR 的事件可能没有 `finish_ack`（系统收到完成确认的节点），因此不会出现在结果里。ANR 附近没有行并不等于没有输入；此时应查看 `wq:` 计数器、目标主线程调度状态和 ANR 主题字段。
 
-下面的查询把 ANR 窗口与非零队列采样放在同一结果中：
+下面的查询先把队列采样展开成持续区间，再与超时窗口求交集，保留窗口开始前已经出现的非零状态：
 
 ```sql
 INCLUDE PERFETTO MODULE android.anrs;
@@ -510,7 +517,8 @@ INCLUDE PERFETTO MODULE time.conversion;
 WITH input_anrs AS (
   SELECT
     *,
-    COALESCE(anr_dur_ms, default_anr_dur_ms) AS timeout_ms
+    COALESCE(anr_dur_ms, default_anr_dur_ms) AS timeout_ms,
+    ts - COALESCE(timer_delay, 0) AS timeout_end_ts
   FROM android_anrs
   WHERE anr_type IN (
     'INPUT_DISPATCHING_TIMEOUT',
@@ -520,6 +528,13 @@ WITH input_anrs AS (
 queue_samples AS (
   SELECT
     counter.ts,
+    COALESCE(
+      LEAD(counter.ts) OVER (
+        PARTITION BY counter.track_id
+        ORDER BY counter.ts
+      ),
+      trace_end()
+    ) AS end_ts,
     counter.value,
     track.name
   FROM counter
@@ -533,23 +548,35 @@ queue_samples AS (
       OR track.name GLOB 'oq:*'
       OR track.name GLOB 'wq:*'
     )
+),
+overlaps AS (
+  SELECT
+    anr.error_id,
+    anr.process_name,
+    anr.timeout_end_ts,
+    queue.name AS queue_name,
+    queue.value AS queue_length,
+    MAX(queue.ts, anr.timeout_end_ts - time_from_ms(anr.timeout_ms)) AS start_ts,
+    MIN(queue.end_ts, anr.timeout_end_ts) AS end_ts
+  FROM input_anrs AS anr
+  JOIN queue_samples AS queue
+    ON queue.ts < anr.timeout_end_ts
+    AND queue.end_ts > anr.timeout_end_ts - time_from_ms(anr.timeout_ms)
+  WHERE queue.value > 0
 )
 SELECT
-  anr.error_id,
-  anr.process_name,
-  queue.name AS queue_name,
-  time_to_ms(anr.ts - queue.ts) AS ms_before_anr,
-  queue.value AS queue_length
-FROM input_anrs AS anr
-JOIN queue_samples AS queue
-  ON queue.ts BETWEEN
-    anr.ts - time_from_ms(anr.timeout_ms)
-    AND anr.ts
-WHERE queue.value > 0
-ORDER BY anr.ts, queue.ts, queue.name;
+  error_id,
+  process_name,
+  queue_name,
+  time_to_ms(timeout_end_ts - start_ts) AS ms_before_timeout,
+  time_to_ms(end_ts - start_ts) AS overlap_dur_ms,
+  queue_length
+FROM overlaps
+WHERE end_ts > start_ts
+ORDER BY timeout_end_ts, start_ts, queue_name;
 ```
 
-这份结果适合确认堆积发生在哪类队列、是否持续到 ANR 附近。目标连接名可能被截断，仍需在 `Perfetto UI` 中对齐同一时间段的 `InputDispatcher`、应用主线程和调度轨道。
+`overlap_dur_ms` 是已知非零状态与窗口相交的时长；同轨道的后继采样会结束该状态，首条采样之前的值仍然未知。结果包含 `system_server` 的所有匹配队列，不能直接归给 ANR 进程。目标连接名可能被截断，仍需在 `Perfetto UI` 中对齐同一时间段的 `InputDispatcher`、应用主线程和调度轨道。
 
 ## 三个可复用场景模板
 
@@ -618,7 +645,12 @@ WITH params(package_name) AS (
   VALUES ('com.example.reader')
 ),
 target_startups AS (
-  SELECT startup.*
+  SELECT
+    startup.*,
+    LEAD(startup.ts) OVER (
+      PARTITION BY startup.package
+      ORDER BY startup.ts
+    ) AS next_startup_ts
   FROM android_startups AS startup
   JOIN params
     ON params.package_name = startup.package
@@ -630,12 +662,12 @@ ranked AS (
     startup.startup_type,
     startup.ts AS startup_ts,
     startup.ts_end AS startup_end_ts,
-    event.dispatch_ts,
+    event.receive_ts,
     event.input_event_id,
     event.total_latency_dur,
     ROW_NUMBER() OVER (
       PARTITION BY startup.startup_id
-      ORDER BY event.dispatch_ts
+      ORDER BY event.receive_ts
     ) AS input_order
   FROM target_startups AS startup
   LEFT JOIN android_input_events AS event
@@ -643,17 +675,18 @@ ranked AS (
       event.process_name = startup.package
       OR event.process_name GLOB startup.package || ':*'
     )
-    AND event.dispatch_ts >= startup.ts
+    AND event.receive_ts >= startup.ts
+    AND event.receive_ts < COALESCE(startup.next_startup_ts, trace_end())
 )
 SELECT
   startup_id,
   package,
   startup_type,
   time_to_ms(startup_end_ts - startup_ts) AS startup_ms,
-  time_to_ms(dispatch_ts - startup_ts) AS first_input_after_start_ms,
+  time_to_ms(receive_ts - startup_ts) AS first_input_after_start_ms,
   CASE
-    WHEN dispatch_ts IS NULL THEN NULL
-    WHEN dispatch_ts <= startup_end_ts THEN 1
+    WHEN receive_ts IS NULL THEN NULL
+    WHEN receive_ts <= startup_end_ts THEN 1
     ELSE 0
   END AS input_arrived_during_startup,
   time_to_ms(total_latency_dur) AS first_input_round_trip_ms,
@@ -663,7 +696,7 @@ WHERE input_order = 1
 ORDER BY startup_ts;
 ```
 
-第一条目标输入可能发生在启动结束很久之后，`first_input_after_start_ms` 因而不能直接当作可交互时间。若目标是启动手势到首帧，应结合 `android_startups`、启动方输入事件、Flow（Trace 事件之间的因果连线）或自定义场景标记，并对跨进程因果关系单独建模。
+这里用应用侧 `receive_ts` 表示收到输入的时刻，并以同包下一次启动的开始时间为上界，避免把后一次启动的输入归入前次。模板保留各类 `startup_type`，分析冷启动时再筛选对应结果。第一条目标输入可能发生在启动结束很久之后，`first_input_after_start_ms` 因而不能直接当作可交互时间。若目标是启动手势到首帧，应结合 `android_startups`、启动方输入事件、Flow（Trace 事件之间的因果连线）或自定义场景标记，并对跨进程因果关系单独建模。
 
 ## SQL 与 Perfetto UI 的分工
 
@@ -841,6 +874,7 @@ print(summary.to_string(index=False))
 - [Perfetto `Batch Trace Processor`](https://perfetto.dev/docs/analysis/batch-trace-processor)
 - [Perfetto `TraceConfig` 协议参考](https://perfetto.dev/docs/reference/trace-config-proto#AndroidInputEventConfig)
 - [Android 17 `android/input.sql`](https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/input.sql)
+- [Android 17 `android/anrs.sql`](https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/anrs.sql)
 - [Android 17 inputevent 配置协议](https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/protos/perfetto/config/android/android_input_event_config.proto)
 - [Android 17 inputevent `Trace Processor` 解析器](https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/importers/proto/winscope/android_input_event_parser.cc)
 - [Android 17 `InputDispatcher.cpp`](https://android.googlesource.com/platform/frameworks/native/+/ae266dcb706d083868578cfedce381ef44488a07/services/inputflinger/dispatcher/InputDispatcher.cpp)

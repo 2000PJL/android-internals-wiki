@@ -5872,6 +5872,30 @@
       "status": "appended",
       "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
     },
+    "source/juejin-android/2026-10-18-76782605-我常用的 5 个 Kotlin 优化小技巧.md": {
+      "chapter": "待分类",
+      "entry_id": "5e5bacc2e2a86ab4",
+      "last_appended": "2026-10-18T05:25:20.579103+08:00",
+      "last_seen": "2026-10-18T05:25:20.579103+08:00",
+      "mtime": 1792268266.779531,
+      "score": 13,
+      "sha256": "d1c85ea1e095f0dec89d012aab41e7c8dca4eaf67a3c7a27248d63fb80642562",
+      "size": 11103,
+      "status": "appended",
+      "title": "我常用的 5 个 Kotlin 优化小技巧今天我先来分享一下最近几年常用的一些 Kotlin 代码优化小技巧，与君共享。"
+    },
+    "source/juejin-android/2026-10-18-76800243-EventBus为什么现在没人爱用了.md": {
+      "chapter": "待分类",
+      "entry_id": "5bc26337a43c6afe",
+      "last_appended": "2026-10-18T05:25:20.579103+08:00",
+      "last_seen": "2026-10-18T05:25:20.579103+08:00",
+      "mtime": 1792268266.7792473,
+      "score": 9,
+      "sha256": "dc6746559df2cbcf6b04fbaf38e71bb8509d7b429cbf6a45a03945b397e7143f",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -6387,6 +6411,67 @@
       "mtime": 1792177384.19579,
       "sha256": "c5720be88190d1df2063a02b60d8e95e7a044f17dfdd995fb996a0d374c48db3",
       "size": 2714,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-18-AI-is-driving-a-boom-in-modestly-successful-soft.md": {
+      "last_seen": "2026-10-18T05:25:20.579103+08:00",
+      "mtime": 1792263811.1908643,
+      "sha256": "660dbc094bd259cc5ce2f91bfda0da617516be1799deffd6b44d017ef5ddaacb",
+      "size": 8962,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-18-Chirp-Pong.md": {
+      "last_seen": "2026-10-18T05:25:20.579103+08:00",
+      "mtime": 1792263814.275168,
+      "sha256": "453d361a982ebc4939f47304ae0a75f5b5cf343befb89731fa8e6a689de29370",
+      "size": 917,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-18-How-to-Train-Your-Robot.md": {
+      "chapter": "待分类",
+      "entry_id": "6ac15531ae7ecdfc",
+      "last_appended": "2026-10-18T05:25:20.579103+08:00",
+      "last_seen": "2026-10-18T05:25:20.579103+08:00",
+      "mtime": 1792263824.5242743,
+      "score": 9,
+      "sha256": "80854660d5844ac51c51a188919f1a7376f04631f00235e9af18f1e7e094d073",
+      "size": 31671,
+      "status": "appended",
+      "title": "How to Train Your Robot"
+    },
+    "source/rss-snapshot/2026-10-18-Initial-Thoughts-on-This-Week-s-New-Apple-TV-4K-.md": {
+      "last_seen": "2026-10-18T05:25:20.579103+08:00",
+      "mtime": 1792263808.7153862,
+      "sha256": "a56fe89c1a22ef486c07a7c62048a3a4f4735501c25ddbee62eb04f0a5f326d0",
+      "size": 7005,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-18-Monoliths-and-Lagrange-Points.md": {
+      "last_seen": "2026-10-18T05:25:20.579103+08:00",
+      "mtime": 1792263803.673171,
+      "sha256": "c43d6bbc26f99034e7424a3ef1e558bcf7c67fac3677a8742f06a30722cf559d",
+      "size": 2396,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-18-Real-Artists-Ship-Tesla-Edition.md": {
+      "last_seen": "2026-10-18T05:25:20.579103+08:00",
+      "mtime": 1792263786.2335544,
+      "sha256": "c18d4fd56dc0eddba321f6b7cd9a50fe1ec41818feb6a4d969b8133208a2c38d",
+      "size": 6936,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-18-Strange-Times-Make-for-Strange-Bedfellows.md": {
+      "last_seen": "2026-10-18T05:25:20.579103+08:00",
+      "mtime": 1792263782.1495013,
+      "sha256": "5fc1affc8dc39f96d876fff63549e0d0c691994a0b9705cb789381c00080829f",
+      "size": 905,
+      "status": "skipped-low-score"
+    },
+    "source/rss-snapshot/2026-10-18-iPhone-Duo-Pre-Orders-Launched-and-Three-Hours-L.md": {
+      "last_seen": "2026-10-18T05:25:20.579103+08:00",
+      "mtime": 1792263799.9149005,
+      "sha256": "dd1949cef19812ceb6bf28954c32bf3998d5ab2018c7349fdddd6f600480804d",
+      "size": 1910,
       "status": "skipped-low-score"
     },
     "source/zhihu-cited-2026-07-15-2060461467506365061/00-PATMC2性能衔接/PATMC2性能衔接.md": {
@@ -8196,24 +8281,24 @@
     }
   },
   "last_report": {
-    "appended": 5,
-    "considered": 12,
-    "cutoff": "2026-10-17T01:37:01.839080+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-17.md",
+    "appended": 3,
+    "considered": 10,
+    "cutoff": "2026-10-17T05:20:20.533855+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-18.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2193,
+    "scanned": 2203,
     "skipped": {
       "existing_link": 0,
       "low_score": 7,
       "max_files": 0,
       "old_unseen": 1414,
       "path": 31,
-      "unchanged": 736
+      "unchanged": 748
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-17T05:25:20.533855+08:00",
+  "last_run_at": "2026-10-18T05:25:20.579103+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

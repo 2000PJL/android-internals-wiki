@@ -5251,6 +5251,23 @@
       "summary": "WindowInfoTracker 使用说明缺少首值交付与能力查询的可用性边界",
       "type": "missing-api-lifecycle-boundary",
       "updated_at": "2026-10-17T22:49:25.066731+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md",
+      "created_at": "2026-10-18T01:13:45.615090+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261018-003020-cn-rewrite-f1627a0e30d44ed7",
+      "details": "check-metadata.py --files 在未修改的 base（6321f0de）上即报：包含过时或未登记的 frontmatter 字段 pipeline_stage, task2b_state, task6_state, task9_state（迁移 41ef3d1c3 漏掉的本章为 consolidated 章节）。cn-rewrite 车道要求 frontmatter 字节不变（style_lint compare），completer 又要求 check-metadata 通过，二者互斥，车道死锁。本次整篇改写已完成并通过全部文风门禁（compare pass=true：gloss 7.65→2.09/1k，neg 3.98→0.2/1k，regloss 3→0，我们 0→14，汉字 99.7%，GPT 审查 5 条意见已修正一轮），全文草稿保存在 ~/.hermes/state/aiw-chinese-rewrite/20261018-003020-cn-rewrite-f1627a0e30d44ed7.after.md。人工删除上述 4 个 frontmatter 字段后，可原样套用该草稿。",
+      "id": "finding-b1ca2b5a1999",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "check-metadata.py @ repo scripts; manifest 20261018-003020-cn-rewrite-f1627a0e30d44ed7"
+      ],
+      "status": "open",
+      "summary": "frontmatter 仍含 4 个已被 ALLOWED_FIELDS 移除的字段（pipeline_stage/task2b_state/task6_state/task9_state），check-metadata 在 base_sha 即失败，阻塞中文改写车道",
+      "type": "metadata",
+      "updated_at": "2026-10-18T01:13:45.615090+08:00"
     }
   ],
   "schema_version": 1

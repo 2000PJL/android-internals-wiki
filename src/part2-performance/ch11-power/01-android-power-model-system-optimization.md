@@ -2,8 +2,7 @@
 title: Android 功耗模型与系统级优化
 chapter: '11.1'
 section: '11.1'
-status: finalized
-pipeline_stage: ready-to-publish
+status: ready-for-review
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
 - power
@@ -137,9 +136,7 @@ related_chapters:
 - '14.1'
 - '1.1'
 - '4.3'
-task2b_state: fixed
-task6_state: reviewed
-task9_state: reviewed
+last_rework_at: '2026-10-17T09:35:56+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch11-power/01-power-model.md

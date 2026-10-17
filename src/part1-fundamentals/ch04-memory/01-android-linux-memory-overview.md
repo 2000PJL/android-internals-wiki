@@ -4,7 +4,8 @@ chapter: '4.1'
 section: '4.1'
 status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-09-23'
+last_verified: '2026-10-17'
+verification_scope_note: '2026-10-17 定点复核 ART r1 的空闲页释放与文件预取、r6 MADV_COLD 和匿名缺页/rmap、Debug.MemoryInfo；其余来源保留各段已有核验范围。'
 last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article / source-index material juejin-android 2026-10-09 Memory Limiter exemption article
 confidence: medium-high
 sources:
@@ -134,7 +135,22 @@ sources:
   path: https://developer.android.com/topic/performance/app-optimization/enable-app-optimization
 - type: aosp
   path: https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/space/region_space.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/space/large_object_space.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/memory.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/rmap.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/rmap.h
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/internal.h
 last_source_verified_at: '2026-10-17'
+last_deep_review_at: '2026-10-17T08:38:48+08:00'
 tags:
   - android-memory
   - memory-model
@@ -1048,19 +1064,21 @@ Arm 内存标签扩展（Memory Tagging Extension，MTE）可以支持用户空�
 
 ### ART 与内核回收的 Android 17 边界
 
-ART 会用内存建议接口 `madvise()` 把不再需要的页面退还或标为可丢弃：r1 的 ART 源码调用了 `MADV_DONTNEED`、`MADV_FREE`、`MADV_WILLNEED` 等建议，覆盖 RegionSpace、LargeObjectSpace、线程栈和映射预取等场景。
+ART 通过 `madvise()` 处理页面释放和映射预取，两者用途不同。`android-17.0.0_r1` 的 `RegionSpace::ReleaseFreeRegions()` 与 `FreeListSpace::Free()` 使用 `MADV_DONTNEED` 处理空闲页；线程栈中不再需要的页面也通过该建议处理。`Runtime::MadviseFileForRange()` 则用 `MADV_WILLNEED` 预取文件映射。 [已验证: AOSP android-17.0.0_r1 `region_space.cc`、`large_object_space.cc`、`thread.cc`、`runtime.cc`]
 
-同一源码标签下，`platform/art` 的运行时与 GC 目录没有直接调用 `MADV_COLD`。Linux 6.18 内核是支持 `MADV_COLD` 的，`mm/madvise.c` 会对范围内合适的 folio 执行 `folio_deactivate()`，让它们在压力下更容易被回收——但内核有接口，离 r1 的 ART 已经用上这条 GC 协作路径，还差一次源码确认。
+`RegionSpace::ClearFromSpace()` 经 `ZeroAndProtectRegion()` 调用 `ZeroMemory()`。Linux 下，对支持 `madvise` 清零的完整页范围，`release_eagerly=false` 且 `mincore()` 成功时，`ZeroMemory()` 按驻留状态分段：驻留段先清零，编译时存在 `MADV_FREE` 定义才发送该建议；非驻留段使用 `MADV_DONTNEED`。立即释放或 `mincore()` 失败时，页对齐的内部范围回退到 `MADV_DONTNEED`；不足一页的边界部分直接清零，不适合 `madvise` 的范围也直接清零。 [已验证: AOSP android-17.0.0_r1 `region_space.cc` `ClearFromSpace()`；`mem_map.cc` `ZeroMemory()`、`ClearMemory()`]
 
-Silk 等研究工作讨论了对象热度与内核页热度之间的偏差，可以作为研究方向看待；只要没进 `android-17.0.0_r1` 的 ART 调用链，它就还不是 Android 17 的系统行为。
+内核 `android17-6.18-2026-06_r6` 的 `MADV_COLD` 走另一条路径：`mm/madvise.c` 的 `madvise_cold()` 排除 `VM_LOCKED`、`VM_PFNMAP`、`VM_HUGETLB` 等不适用的 VMA，再对符合条件的 folio 清理访问状态并调用 `folio_deactivate()`。共享、非 LRU 等页面还可能被跳过；这条路径降低页面活跃度，不承诺立即回收整个范围。内核接受该参数，不能单独证明某个 ART 调用点使用了它。 [已验证: android17-6.18-2026-06_r6 `mm/madvise.c` `can_madv_lru_vma()`、`madvise_cold()`、`madvise_cold_or_pageout_pte_range()`]
 
-#### 尚未合入的 `ANON_VMA_LAZY` 提案
+Silk 等研究工作讨论了对象热度与内核页热度之间的偏差。核对具体构建中的 GC 协作方案时，需要追到 ART 调用入口、建议值和内核处理，再结合回收与 PSI 观察效果。
 
-`anon_vma` 为匿名映射建立反向映射（reverse mapping，rmap）关系，内核靠它从 folio 反查映射它的 VMA，再服务页面迁移、回收、同页合并（KSM）、NUMA 架构的页面平衡，以及 `fork()` 后的 COW。普通匿名 VMA 已把物理页分配推迟到首次缺页；`ANON_VMA_LAZY` 讨论的是再往后推一步——把 `anon_vma` 结构及其区间树（interval tree）关系的建立也延迟掉，它没有给 `mmap()` 带来什么第一次。
+#### 核对 `ANON_VMA_LAZY` 类优化
 
-在 Android 通用内核 `android17-6.18-2026-06_r6` 中，没有 `CONFIG_ANON_VMA_LAZY`、同名源码符号或 Kconfig 入口。公开讨论中的提案曾报告减少 `anon_vma` slab 与部分 `fork()` 开销，上游评审也指出了 VMA 生命周期、区间树完整性、锁覆盖和映射类型覆盖不足等问题；所以它属于未合入的设计探索，离“Android 17 已启用的内存优化”还远。
+`anon_vma` 为匿名页提供反向映射（reverse mapping，rmap）关系，让内核能从页找到相关 VMA；`anon_vma_chain` 连接 VMA 与 `anon_vma`，并把关系组织到区间树（interval tree）中。物理页按需分配与这些元数据的建立，是需要分别核对的两个时机。 [已验证: android17-6.18-2026-06_r6 `include/linux/rmap.h` 的结构定义与注释]
 
-检查厂商内核是否有私有实现时，应同时核对：
+在 r6 的普通 PTE 级匿名缺页路径中，`do_anonymous_page()` 的读缺页可以映射共享零页；需要分配私有匿名页时，先调用 `vmf_anon_prepare()`，再调用 `alloc_anon_folio()`。准备路径已有 `anon_vma` 时直接复用；缺少时，`__anon_vma_prepare()` 尝试复用相邻 VMA 的结构或分配新结构，并在锁保护下链接 VMA 与区间树。因此，“匿名页按需分配”本身不能证明存在额外的 `ANON_VMA_LAZY` 优化，也不能用来推算 slab 或 `fork()` 的收益。 [已验证: android17-6.18-2026-06_r6 `mm/memory.c` `do_anonymous_page()`、`__vmf_anon_prepare()`；`mm/internal.h` `vmf_anon_prepare()`；`mm/rmap.c` `__anon_vma_prepare()`、`anon_vma_chain_link()`]
+
+检查厂商材料中的 `ANON_VMA_LAZY` 或类似优化时，应同时核对：
 
 - 内核配置、源码符号和补丁提交，不能只看 Android API 级别；
 - `/proc/slabinfo` 中 `anon_vma`、`anon_vma_chain` 的数量与对象大小；
@@ -1144,6 +1162,14 @@ D 状态只是不可中断睡眠，来源很多，而且直接回收也可能正
 - [Perfetto `ProcessStatsConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/process_stats/process_stats_config.proto)
 - [Perfetto `PerfEventConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/perf_event_config.proto)
 - [AOSP Android 17 ART `mem_map.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartbase/base/mem_map.cc)
+- [AOSP Android 17 ART `RegionSpace`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/space/region_space.cc)
+- [AOSP Android 17 ART `FreeListSpace`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/space/large_object_space.cc)
+- [AOSP Android 17 ART 线程栈处理](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc)
+- [AOSP Android 17 ART 文件映射预取](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/runtime.cc)
+- [Android 17 kernel 匿名缺页处理](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/memory.c)
+- [Android 17 kernel 反向映射实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/rmap.c)
+- [Android 17 kernel `anon_vma` 与 `anon_vma_chain`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/rmap.h)
+- [Android 17 kernel `vmf_anon_prepare()`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/internal.h)
 
 ## 小结
 
@@ -1154,4 +1180,4 @@ D 状态只是不可中断睡眠，来源很多，而且直接回收也可能正
 3. 页面回收或内存规整是否进入应用线程，造成了多长停顿？
 4. 图形缓冲区由哪个内存堆导出，哪些进程和设备仍持有引用？
 
-版本差异上心里要有数：arm64 GKI 配置默认启用 MGLRU，DMA-BUF Heaps 是新设备的主要分配接口，16 KiB 基础页已经是需要兼容的设备形态，ART r1 没有直接使用 `MADV_COLD` 的 GC 路径。把这些差异和运行设备的证据对齐，我们才能从“内存看起来很高”走到可验证的原因。
+版本差异需要结合构建和设备确认：arm64 GKI 配置默认启用 MGLRU，DMA-BUF Heaps 是新设备的主要分配接口，16 KiB 基础页需要兼容；ART 释放空闲页与内核 `MADV_COLD` 降低页面活跃度的路径要分别核对。再把这些机制与运行设备的缺页、回收、PSI 和映射变化对应起来，才能定位具体原因。

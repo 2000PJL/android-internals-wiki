@@ -4616,6 +4616,206 @@
       "summary": "ch01-architecture/01 frontmatter 六个 41ef3d1c3 迁移遗漏字段阻塞 cn-rewrite 提交（套用稿指针更新为 110020 稿）",
       "type": "metadata-schema",
       "updated_at": "2026-10-17T11:34:21.282756+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "已按 Android 17 BatteryStatsImpl 选择条件、CpuCyclePerUidCollector 和 processor 快速路径补齐 x86 cycle/RAPL 归因，并限定原 profile/bracket 解释的范围。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-120520-573194e8",
+      "created_at": "2026-10-17T12:10:25.185886+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-120520-573194e8",
+      "details": "正文把全部 CPU 归因描述为频点/profile bracket 分配，未覆盖 BatteryStatsImpl 在 x86CpuEnergyAttribution 且无 time-in-state 时选择 CpuCyclePerUidCollector，以及 processor 直接消费设备/UID µC 的路径。",
+      "id": "finding-f1700e755177",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "frameworks/base/services/core/java/com/android/server/power/stats/CpuCyclePerUidCollector.java"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 CPU 归因遗漏 x86 cycle/RAPL 路径",
+      "type": "cpu-attribution-boundary",
+      "updated_at": "2026-10-17T12:16:12.140202+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "已分开 energy meter rail 与逻辑 consumer、注明 profile 各字段单位与 memory.bandwidths 例外，Audio/Video 回到 AOSP profile 路径，不把厂商 monitor 当作标准归因输入。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-120520-573194e8",
+      "created_at": "2026-10-17T12:10:25.239760+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-120520-573194e8",
+      "details": "全景段把共享 rail 直接描述为 Framework UID 分配输入；Audio/Video 表把 DSP/controller/vendor monitor 与 AOSP profile 归因混列，未区分厂商独立观测和标准处理器。",
+      "id": "finding-8929069390c3",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/services/core/java/com/android/server/power/stats/processor/AudioPowerStatsProcessor.java"
+      ],
+      "status": "fixed",
+      "summary": "原始 rail 与组件归因输入、Audio/Video 估算路径混写",
+      "type": "measurement-attribution-boundary",
+      "updated_at": "2026-10-17T12:16:12.191356+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "已按 android-17.0.0_r1 BatteryManager Javadoc 修正正充负放契约，并将反向读数标为需核对的实现/工具偏差。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-120520-573194e8",
+      "created_at": "2026-10-17T12:10:25.291112+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-120520-573194e8",
+      "details": "CURRENT_NOW 与 CURRENT_AVERAGE 的公开契约为正值充电、负值放电；实现偏差应作为异常核对，不能描述为平台允许厂商自由选择。",
+      "id": "finding-06803cd5ef81",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/core/java/android/os/BatteryManager.java"
+      ],
+      "status": "fixed",
+      "summary": "BatteryManager 电流符号被误写成厂商任意定义",
+      "type": "api-contract",
+      "updated_at": "2026-10-17T12:16:12.244615+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "已在工具推荐与对照表保留 Battery Historian 官方不再积极维护警告，并列出官方替代观察入口。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-120520-573194e8",
+      "created_at": "2026-10-17T12:10:25.342147+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-120520-573194e8",
+      "details": "官方 setup-battery-historian 页面明确提示不再积极维护，并建议 system tracing、Macrobenchmark power metric 或 Power Profiler；正文推荐和工具表均未注明。",
+      "id": "finding-dd2c2b757cc1",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/topic/performance/power/setup-battery-historian"
+      ],
+      "status": "fixed",
+      "summary": "Battery Historian 使用建议遗漏停止积极维护的官方警告",
+      "type": "source-lifecycle",
+      "updated_at": "2026-10-17T12:16:12.298291+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "已按 AppStandbyController.reportEventLocked 给出 Never 首次 FGS 启动的暂时晋级条件，保留 Job quota/Doze 非通用豁免。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-120520-573194e8",
+      "created_at": "2026-10-17T12:10:25.393305+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-120520-573194e8",
+      "details": "AppStandbyController.reportEventLocked 对首次 FOREGROUND_SERVICE_START 且原 bucket 为 Never 的应用提升至 Active。需要明确条件，保留 FGS 不提供通用 Doze/Job quota 豁免。",
+      "id": "finding-04e4de28329e",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java"
+      ],
+      "status": "fixed",
+      "summary": "FGS 提升不了 bucket 的绝对表述与 Android 17 分桶代码矛盾",
+      "type": "fgs-standby-boundary",
+      "updated_at": "2026-10-17T12:16:12.350126+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "已把 force-stop 与 Android 13+ Task Manager Stop 拆为两行，后者明确已调度 Job/Alarm 仍可执行，并给出 stop-app 观察入口。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-120520-573194e8",
+      "created_at": "2026-10-17T12:10:25.445124+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-120520-573194e8",
+      "details": "官方 handle-user-stopping 明确 Task Manager Stop 终止整个应用，但已调度 Job 和 Alarm 仍可执行，不能与包 stopped 状态统一描述。",
+      "id": "finding-b93f7b9a2840",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "https://developer.android.com/develop/background-work/services/fgs/handle-user-stopping"
+      ],
+      "status": "fixed",
+      "summary": "force-stop 与 Android 13 Task Manager 停止被合并为 stopped 状态",
+      "type": "stopped-state-semantics",
+      "updated_at": "2026-10-17T12:16:12.401053+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "已补完整 hibernation 的设备/target31边界，requestArchive 的 anyOf 权限、异步结果及用户确认分支均据 Android 17 源码核对。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-120520-573194e8",
+      "created_at": "2026-10-17T12:10:25.498654+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-120520-573194e8",
+      "details": "完整自动休眠效果需要 Android 12+ 设备和 target 31+，不能只列平台版本；requestArchive 接受 DELETE_PACKAGES 或 REQUEST_DELETE_PACKAGES，且可能通过 STATUS_PENDING_USER_ACTION 请求用户确认。",
+      "id": "finding-df386333d0df",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/core/java/android/content/pm/PackageInstaller.java"
+      ],
+      "status": "fixed",
+      "summary": "Hibernation target 边界与 requestArchive 授权回调不完整",
+      "type": "api-availability",
+      "updated_at": "2026-10-17T12:16:12.452183+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "已保存/恢复 bucket 数值和 low_power 原值，说明 battery reset 只恢复电池模拟状态；shell 语法与 mocked-adb 回滚逻辑均通过，未冒充实机测试。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-120520-573194e8",
+      "created_at": "2026-10-17T12:10:25.553272+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-120520-573194e8",
+      "details": "分桶示例仅恢复 BatteryService，未恢复 bucket；Battery Saver 示例仅 battery reset，不能保证恢复低功耗设置项原值。需记录与恢复原始值并说明 battery reset 的范围。",
+      "id": "finding-30ec4c8d7c3f",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/services/core/java/com/android/server/BatteryService.java"
+      ],
+      "status": "fixed",
+      "summary": "手工分桶和 Battery Saver 示例未显式恢复修改的测试设置",
+      "type": "test-state-restoration",
+      "updated_at": "2026-10-17T12:16:12.503132+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "已按 DeviceIdleController 源码注明 Deep idle 导致 Light 进入 LIGHT_STATE_OVERRIDE 并暂停自身转换，删除完全独立的误导。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-120520-573194e8",
+      "created_at": "2026-10-17T12:15:46.166780+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-120520-573194e8",
+      "details": "DeviceIdleController 在 Deep 进入 STATE_IDLE 时把 Light 切到 LIGHT_STATE_OVERRIDE，Light 自身转换暂停，不能描述为互不关联的两条独立状态机。",
+      "id": "finding-df4385c4b9fe",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java"
+      ],
+      "status": "fixed",
+      "summary": "Light 与 Deep Doze 的独立状态机表述遗漏 override 联动",
+      "type": "doze-state-coupling",
+      "updated_at": "2026-10-17T12:16:12.553559+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "已补 Routine Battery Saver 的预装、特权及单一控制者条件，保留可选 OEM 集成与启用提示 API 的原有信息。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-120520-573194e8",
+      "created_at": "2026-10-17T12:15:46.218805+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-120520-573194e8",
+      "details": "官方文档要求预装特权 provider，明确多个持有 POWER_SAVER 的 App 同时控制时行为不受支持、不作定义。正文应保留这项可选 OEM 功能的权限与可用性边界。",
+      "id": "finding-ee55da1564ed",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/power/routine-battery-saver"
+      ],
+      "status": "fixed",
+      "summary": "Routine Battery Saver 遗漏预装与单一特权控制者边界",
+      "type": "oem-feature-availability",
+      "updated_at": "2026-10-17T12:16:12.604589+08:00"
     }
   ],
   "schema_version": 1

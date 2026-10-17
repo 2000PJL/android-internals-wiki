@@ -4602,6 +4602,9 @@
     },
     {
       "chapter": "1.1",
+      "close_note": "同一 blocker 由 finding-2726a2ac6940 接替：最优套用稿已从 110020 稿演进为 190020 稿（run 20261017-203020 已对当前 HEAD 重验 style_lint compare pass=true，保留稿原样可套用），问题本身未修复，仍需人工删除本章 frontmatter 六个过时字段（pipeline_stage/task2b_state/task6_state/task9_state/last_review_finalize_run_id/last_body_apply_run_id）。",
+      "closed_by": "aiw-chinese-rewrite",
+      "closed_run_id": "20261017-203020-cn-rewrite-70132b0f4eb643ff",
       "created_at": "2026-10-17T11:34:21.282756+08:00",
       "created_by": "aiw-chinese-rewrite",
       "created_run_id": "20261017-110020-cn-rewrite-70132b0f4eb643ff",
@@ -4612,10 +4615,10 @@
       "source_paths": [
         "scripts/check-metadata.py @ base_sha 9303fb230a1ad68f2c1ea4709b02254c6f3d4753"
       ],
-      "status": "open",
+      "status": "wontfix",
       "summary": "ch01-architecture/01 frontmatter 六个 41ef3d1c3 迁移遗漏字段阻塞 cn-rewrite 提交（套用稿指针更新为 110020 稿）",
       "type": "metadata-schema",
-      "updated_at": "2026-10-17T11:34:21.282756+08:00"
+      "updated_at": "2026-10-17T20:33:17.716498+08:00"
     },
     {
       "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",

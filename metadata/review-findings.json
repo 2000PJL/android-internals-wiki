@@ -4619,13 +4619,13 @@
     },
     {
       "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
-      "close_note": "已按 Android 17 BatteryStatsImpl 选择条件、CpuCyclePerUidCollector 和 processor 快速路径补齐 x86 cycle/RAPL 归因，并限定原 profile/bracket 解释的范围。",
+      "close_note": "已根据 Android 17 BatteryStatsImpl 选择条件、CpuCyclePerUidCollector 与 processor 快速路径，限定常规 time-in-state 描述并补充 x86 RAPL/cycle 归因；未将分摊结果写成每 App 硬件测量。",
       "closed_by": "aiw-review-finalize-apply",
-      "closed_run_id": "20261017-120520-573194e8",
-      "created_at": "2026-10-17T12:10:25.185886+08:00",
+      "closed_run_id": "20261017-140520-2e61ffed",
+      "created_at": "2026-10-17T14:08:23.178459+08:00",
       "created_by": "aiw-review-finalize-apply",
-      "created_run_id": "20261017-120520-573194e8",
-      "details": "正文把全部 CPU 归因描述为频点/profile bracket 分配，未覆盖 BatteryStatsImpl 在 x86CpuEnergyAttribution 且无 time-in-state 时选择 CpuCyclePerUidCollector，以及 processor 直接消费设备/UID µC 的路径。",
+      "created_run_id": "20261017-140520-2e61ffed",
+      "details": "当前正文再次把 CPU 硬件能量归因全部描述为 profile/bracket 路径。android-17.0.0_r1 BatteryStatsImpl:10384-10388 按功能开关和 time-in-state 能力选择 CpuCyclePerUidCollector；CpuPowerStatsProcessor:164-168、211-249 有直接消费设备/UID µC 的快速路径。沿用已有 finding id 修复回退。",
       "id": "finding-f1700e755177",
       "log_path": "",
       "severity": "P1",
@@ -4635,17 +4635,17 @@
       "status": "fixed",
       "summary": "Android 17 CPU 归因遗漏 x86 cycle/RAPL 路径",
       "type": "cpu-attribution-boundary",
-      "updated_at": "2026-10-17T12:16:12.140202+08:00"
+      "updated_at": "2026-10-17T14:14:40.481066+08:00"
     },
     {
       "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
-      "close_note": "已分开 energy meter rail 与逻辑 consumer、注明 profile 各字段单位与 memory.bandwidths 例外，Audio/Video 回到 AOSP profile 路径，不把厂商 monitor 当作标准归因输入。",
+      "close_note": "已分开 raw rail 观测与标准组件归因，按 XML 字段区分单位及 rail 例外，Audio/Video 回到默认 profile/state 处理器；原始 XML 摘录逐值核对通过。",
       "closed_by": "aiw-review-finalize-apply",
-      "closed_run_id": "20261017-120520-573194e8",
-      "created_at": "2026-10-17T12:10:25.239760+08:00",
+      "closed_run_id": "20261017-140520-2e61ffed",
+      "created_at": "2026-10-17T14:08:23.231167+08:00",
       "created_by": "aiw-review-finalize-apply",
-      "created_run_id": "20261017-120520-573194e8",
-      "details": "全景段把共享 rail 直接描述为 Framework UID 分配输入；Audio/Video 表把 DSP/controller/vendor monitor 与 AOSP profile 归因混列，未区分厂商独立观测和标准处理器。",
+      "created_run_id": "20261017-140520-2e61ffed",
+      "details": "当前正文再次暗示 energy meter 原始 rail 可直接作为 Framework UID 分配输入，Audio/Video 表将厂商 DSP/controller/vendor monitor 与标准归因混列。power_profile 各字段单位也需区分组件电流、容量、电压及 memory.bandwidths rail 口径。沿用原 finding id。",
       "id": "finding-8929069390c3",
       "log_path": "",
       "severity": "P2",
@@ -4655,7 +4655,7 @@
       "status": "fixed",
       "summary": "原始 rail 与组件归因输入、Audio/Video 估算路径混写",
       "type": "measurement-attribution-boundary",
-      "updated_at": "2026-10-17T12:16:12.191356+08:00"
+      "updated_at": "2026-10-17T14:14:40.532228+08:00"
     },
     {
       "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
@@ -4739,13 +4739,13 @@
     },
     {
       "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
-      "close_note": "已补完整 hibernation 的设备/target31边界，requestArchive 的 anyOf 权限、异步结果及用户确认分支均据 Android 17 源码核对。",
+      "close_note": "已补设备 Android12+/target31+ 完整自动休眠条件，并补 requestArchive anyOf 权限、异步结果和可能的用户确认。",
       "closed_by": "aiw-review-finalize-apply",
-      "closed_run_id": "20261017-120520-573194e8",
-      "created_at": "2026-10-17T12:10:25.498654+08:00",
+      "closed_run_id": "20261017-140520-2e61ffed",
+      "created_at": "2026-10-17T14:08:23.282300+08:00",
       "created_by": "aiw-review-finalize-apply",
-      "created_run_id": "20261017-120520-573194e8",
-      "details": "完整自动休眠效果需要 Android 12+ 设备和 target 31+，不能只列平台版本；requestArchive 接受 DELETE_PACKAGES 或 REQUEST_DELETE_PACKAGES，且可能通过 STATUS_PENDING_USER_ACTION 请求用户确认。",
+      "created_run_id": "20261017-140520-2e61ffed",
+      "details": "当前正文遗漏完整自动休眠的设备 Android 12+/target31+ 条件；requestArchive 将 REQUEST_DELETE_PACKAGES 写成唯一权限且未说明异步结果和用户确认。沿用原 finding id；已重新获取官方 hibernation 表及 Android 17 PackageInstaller。",
       "id": "finding-df386333d0df",
       "log_path": "",
       "severity": "P2",
@@ -4755,17 +4755,17 @@
       "status": "fixed",
       "summary": "Hibernation target 边界与 requestArchive 授权回调不完整",
       "type": "api-availability",
-      "updated_at": "2026-10-17T12:16:12.452183+08:00"
+      "updated_at": "2026-10-17T14:14:40.583122+08:00"
     },
     {
       "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
-      "close_note": "已保存/恢复 bucket 数值和 low_power 原值，说明 battery reset 只恢复电池模拟状态；shell 语法与 mocked-adb 回滚逻辑均通过，未冒充实机测试。",
+      "close_note": "已保存并显式还原 bucket 数值及 low_power 原值，注明 battery reset 仅恢复电池模拟、分桶历史与实际省电状态另有边界；shell 语法和五个 stub-adb 单元用例通过，未冒充真机测试。",
       "closed_by": "aiw-review-finalize-apply",
-      "closed_run_id": "20261017-120520-573194e8",
-      "created_at": "2026-10-17T12:10:25.553272+08:00",
+      "closed_run_id": "20261017-140520-2e61ffed",
+      "created_at": "2026-10-17T14:08:23.333720+08:00",
       "created_by": "aiw-review-finalize-apply",
-      "created_run_id": "20261017-120520-573194e8",
-      "details": "分桶示例仅恢复 BatteryService，未恢复 bucket；Battery Saver 示例仅 battery reset，不能保证恢复低功耗设置项原值。需记录与恢复原始值并说明 battery reset 的范围。",
+      "created_run_id": "20261017-140520-2e61ffed",
+      "details": "当前分桶示例仍只 battery reset，保留手工 rare 状态；Battery Saver 示例只 battery reset，不能保证恢复 low_power 原值。Android 17 BatteryService.resetBattery 只恢复电池模拟；am 命令接受 bucket 数值，适合显式还原。沿用原 finding id。",
       "id": "finding-30ec4c8d7c3f",
       "log_path": "",
       "severity": "P2",
@@ -4775,17 +4775,17 @@
       "status": "fixed",
       "summary": "手工分桶和 Battery Saver 示例未显式恢复修改的测试设置",
       "type": "test-state-restoration",
-      "updated_at": "2026-10-17T12:16:12.503132+08:00"
+      "updated_at": "2026-10-17T14:14:40.633890+08:00"
     },
     {
       "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
-      "close_note": "已按 DeviceIdleController 源码注明 Deep idle 导致 Light 进入 LIGHT_STATE_OVERRIDE 并暂停自身转换，删除完全独立的误导。",
+      "close_note": "已按 DeviceIdleController 的 LIGHT_STATE_OVERRIDE 联动修正独立状态机断言，其他 Doze 条件和硬件休眠证据边界保留。",
       "closed_by": "aiw-review-finalize-apply",
-      "closed_run_id": "20261017-120520-573194e8",
-      "created_at": "2026-10-17T12:15:46.166780+08:00",
+      "closed_run_id": "20261017-140520-2e61ffed",
+      "created_at": "2026-10-17T14:08:23.384283+08:00",
       "created_by": "aiw-review-finalize-apply",
-      "created_run_id": "20261017-120520-573194e8",
-      "details": "DeviceIdleController 在 Deep 进入 STATE_IDLE 时把 Light 切到 LIGHT_STATE_OVERRIDE，Light 自身转换暂停，不能描述为互不关联的两条独立状态机。",
+      "created_run_id": "20261017-140520-2e61ffed",
+      "details": "当前正文仍称两条独立状态机。DeviceIdleController.stepIdleStateLocked 进入 Deep STATE_IDLE 时将 Light 切至 LIGHT_STATE_OVERRIDE；stepLightIdleStateLocked 对 override 直接返回。沿用原 finding id。",
       "id": "finding-df4385c4b9fe",
       "log_path": "",
       "severity": "P2",
@@ -4795,17 +4795,17 @@
       "status": "fixed",
       "summary": "Light 与 Deep Doze 的独立状态机表述遗漏 override 联动",
       "type": "doze-state-coupling",
-      "updated_at": "2026-10-17T12:16:12.553559+08:00"
+      "updated_at": "2026-10-17T14:14:40.685115+08:00"
     },
     {
       "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
-      "close_note": "已补 Routine Battery Saver 的预装、特权及单一控制者条件，保留可选 OEM 集成与启用提示 API 的原有信息。",
+      "close_note": "已保留官方预装、预授予 POWER_SAVER 及单一控制者要求，不将可选 OEM 集成推广到普通应用。",
       "closed_by": "aiw-review-finalize-apply",
-      "closed_run_id": "20261017-120520-573194e8",
-      "created_at": "2026-10-17T12:15:46.218805+08:00",
+      "closed_run_id": "20261017-140520-2e61ffed",
+      "created_at": "2026-10-17T14:08:23.435451+08:00",
       "created_by": "aiw-review-finalize-apply",
-      "created_run_id": "20261017-120520-573194e8",
-      "details": "官方文档要求预装特权 provider，明确多个持有 POWER_SAVER 的 App 同时控制时行为不受支持、不作定义。正文应保留这项可选 OEM 功能的权限与可用性边界。",
+      "created_run_id": "20261017-140520-2e61ffed",
+      "details": "当前正文只写 POWER_SAVER 与指定 provider，漏掉官方 Installation 的预装、预授予权限及单一控制者要求；多个控制者行为 unsupported/unspecified。沿用原 finding id。",
       "id": "finding-ee55da1564ed",
       "log_path": "",
       "severity": "P2",
@@ -4815,7 +4815,7 @@
       "status": "fixed",
       "summary": "Routine Battery Saver 遗漏预装与单一特权控制者边界",
       "type": "oem-feature-availability",
-      "updated_at": "2026-10-17T12:16:12.604589+08:00"
+      "updated_at": "2026-10-17T14:14:40.736972+08:00"
     },
     {
       "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
@@ -4916,6 +4916,46 @@
       "summary": "FGS 无法提升 bucket 的绝对断言遗漏 Never 首次启动例外",
       "type": "overbroad-platform-claim",
       "updated_at": "2026-10-17T12:40:37.977535+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "已按官方前台定位分类区分有效 location FGS 与后台位置访问，保留 Android11 后台启动及后续 FGS 启动/类型权限限制。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-140520-2e61ffed",
+      "created_at": "2026-10-17T14:08:23.486844+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-140520-2e61ffed",
+      "details": "后台位置段将所有持续后台定位一概要求 ACCESS_BACKGROUND_LOCATION；官方 Request location permissions 将可见 Activity 或有效 location FGS 归为 foreground location。需明确这里后台按权限语义判断，界面退后台不等同于后台位置访问，并保留 Android 11+ 从后台启动 FGS 的权限限制。",
+      "id": "finding-11-1-location-fgs-permission-scope",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/develop/sensors-and-location/location/permissions"
+      ],
+      "status": "fixed",
+      "summary": "持续后台定位的权限描述未区分前台定位 FGS",
+      "type": "location-permission-boundary",
+      "updated_at": "2026-10-17T14:14:40.791673+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "已按 shouldResetOnUnplugLocked 完整方法，将 session 时长误写修为累计放电量，补自动重置/系统就绪/history 前提，并保留可配置阈值90。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261017-140520-2e61ffed",
+      "created_at": "2026-10-17T14:11:59.375758+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261017-140520-2e61ffed",
+      "details": "android-17.0.0_r1 shouldResetOnUnplugLocked() 按满电/可配置高电量、显著充电和累计高放电量判断，没有会话时长判断。正文应把 session 时长改成累计放电量；保留禁止自动 reset、系统就绪及 history 开关等前置条件的适用性。",
+      "id": "finding-11-1-unplug-reset-criteria",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java"
+      ],
+      "status": "fixed",
+      "summary": "BatteryStats 拔电重置条件误写为会话时长",
+      "type": "reset-policy-contract",
+      "updated_at": "2026-10-17T14:14:40.844925+08:00"
     }
   ],
   "schema_version": 1

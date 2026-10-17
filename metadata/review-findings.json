@@ -4956,6 +4956,108 @@
       "summary": "BatteryStats 拔电重置条件误写为会话时长",
       "type": "reset-policy-contract",
       "updated_at": "2026-10-17T14:14:40.844925+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+      "close_note": "以固定 Android 17 input.sql 替换 404 来源，新增 anrs.sql 来源；HTTP 200 和源码已核对。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261017-143520-idle-audit-e4b15960",
+      "created_at": "2026-10-17T14:40:22.944148+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-143520-idle-audit-e4b15960",
+      "details": "sql-tables/android-input 已不可访问；已获取同一 Android 17 固定提交 input.sql 和当前 stdlib-docs#android-input，使用可追溯源码替换失效来源。",
+      "id": "finding-input-sql-source-url",
+      "log_path": "logs/audit/2026-10-17-20261017-143520-idle-audit-e4b15960-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/analysis/sql-tables/android-input",
+        "https://perfetto.dev/docs/analysis/stdlib-docs#android-input"
+      ],
+      "status": "verified",
+      "summary": "输入标准库 frontmatter 官方来源返回 HTTP 404",
+      "type": "stale-source",
+      "updated_at": "2026-10-17T14:44:04.252740+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+      "close_note": "删除保证首帧的表述，明确 LIMIT 1 无排序/进程约束及下游 upid 连接的能力边界；固定源码与确定性 SQL 测试验证。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261017-143520-idle-audit-e4b15960",
+      "created_at": "2026-10-17T14:40:22.997145+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-143520-idle-audit-e4b15960",
+      "details": "固定提交 input.sql 两个 LIMIT 1 子查询没有 ORDER BY 或 upid 条件，无法保证目标进程时间最早的候选；仅连接结果 frame_id 与 upid 也不能修复上游呈现耗时。",
+      "id": "finding-input-sql-frame-limit-order",
+      "log_path": "logs/audit/2026-10-17-20261017-143520-idle-audit-e4b15960-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/input.sql"
+      ],
+      "status": "verified",
+      "summary": "未丢弃帧查找被描述为保证选择首帧",
+      "type": "inaccurate-boundary",
+      "updated_at": "2026-10-17T14:44:04.297886+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+      "close_note": "按 timer_delay 对齐到期终点，限制完成确认时刻和 PID，队列改为区间求交；官方 Trace SQL 冒烟与确定性边界用例通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261017-143520-idle-audit-e4b15960",
+      "created_at": "2026-10-17T14:40:23.048042+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-143520-idle-audit-e4b15960",
+      "details": "anrs.sql 定义 timer_delay=ErrorId.ts-expired.ts。原查询未扣 timer_delay；仅按 dispatch_ts 筛选会收进超时之后才完成的投递；队列只按采样点落窗会漏掉窗前开始、窗内持续的非零状态。",
+      "id": "finding-input-sql-anr-window",
+      "log_path": "logs/audit/2026-10-17-20261017-143520-idle-audit-e4b15960-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/anrs.sql",
+        "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/input.sql"
+      ],
+      "status": "verified",
+      "summary": "ANR 查询混用 ErrorId 与超时窗口且采样点连接漏掉持续队列",
+      "type": "query-semantics",
+      "updated_at": "2026-10-17T14:44:04.343653+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+      "close_note": "使用 receive_ts，并以同包下一次启动为上界；跨启动与发送/接收跨界用例通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261017-143520-idle-audit-e4b15960",
+      "created_at": "2026-10-17T14:40:23.099181+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-143520-idle-audit-e4b15960",
+      "details": "模板声称测量目标进程收到首条输入，却排序和输出 dispatch_ts；无下一次启动上界时，后一次启动的输入可归入前次。应使用 receive_ts 并按同包下一次启动切断窗口。",
+      "id": "finding-input-sql-startup-receipt",
+      "log_path": "logs/audit/2026-10-17-20261017-143520-idle-audit-e4b15960-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/perfetto_sql/stdlib/android/input.sql"
+      ],
+      "status": "verified",
+      "summary": "启动模板用分发时刻表示接收时刻且未隔离下一次启动",
+      "type": "query-semantics",
+      "updated_at": "2026-10-17T14:44:04.389060+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch14-perfetto/05-input-latency-sql.md",
+      "close_note": "正文改为 TracePacket 时间戳，并明确不代表 Trace Processor 主机解析时刻；固定解析器 event_row.ts=packet_ts 已核对。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261017-143520-idle-audit-e4b15960",
+      "created_at": "2026-10-17T14:43:37.677933+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-143520-idle-audit-e4b15960",
+      "details": "固定提交解析器把 event_row.ts 赋值为 packet_ts，而非主机实际解析时间；应明确是对应 TracePacket 的时间戳。",
+      "id": "finding-input-sql-packet-timestamp",
+      "log_path": "logs/audit/2026-10-17-20261017-143520-idle-audit-e4b15960-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/external/perfetto/+/ece66975738007dd0978b911d8a2077e49b8f31e/src/trace_processor/importers/proto/winscope/android_input_event_parser.cc"
+      ],
+      "status": "verified",
+      "summary": "原始输入视图 ts 容易被解释为 Trace 数据包解析时刻",
+      "type": "inaccurate-boundary",
+      "updated_at": "2026-10-17T14:44:04.434439+08:00"
     }
   ],
   "schema_version": 1

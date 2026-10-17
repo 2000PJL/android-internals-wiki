@@ -5126,6 +5126,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "已复现原始 check-metadata 返回 1；依据 scripts/frontmatter_schema.py:43-54 和 scripts/check-metadata.py:141-147 删除 6 个过时字段，保留合并来源、既有核验日期与正文，status 设为 ready-for-review。目标元数据校验现返回 0（1 通过、0 失败、0 警告），SUMMARY 链接与 git diff --check 均通过。正文逐字未变；未套用其他运行的中文改写草稿。证据见 logs/rework/2026-10-17-20261017-213520-rework-70132b0f-rework.md。",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261017-213520-rework-70132b0f",
       "created_at": "2026-10-17T19:25:59.768737+08:00",
       "created_by": "aiw-chinese-rewrite",
       "created_run_id": "20261017-190020-cn-rewrite-70132b0f4eb643ff",
@@ -5136,10 +5139,10 @@
       "source_paths": [
         "check-metadata.py @ repo scripts; manifest 20261017-190020-cn-rewrite-70132b0f4eb643ff"
       ],
-      "status": "open",
+      "status": "verified",
       "summary": "frontmatter 仍含 6 个已被 ALLOWED_FIELDS 移除的字段，check-metadata 在 base_sha 即失败，阻塞中文改写车道",
       "type": "metadata",
-      "updated_at": "2026-10-17T19:25:59.768737+08:00"
+      "updated_at": "2026-10-17T21:36:51.976051+08:00"
     }
   ],
   "schema_version": 1

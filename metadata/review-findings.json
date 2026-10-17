@@ -4541,6 +4541,9 @@
     },
     {
       "chapter": "11.1",
+      "close_note": "仅修复本条 metadata-schema 阻塞：按 scripts/frontmatter_schema.py:43-54 及迁移提交 41ef3d1c3 删除 pipeline_stage/task2b_state/task6_state/task9_state；依 scripts/check-metadata.py:141-147、169-175 验证目标 1/1 通过、0 警告。status 改为 ready-for-review，新增 schema 允许的 last_rework_at；保留原 last_verified、confidence、sources 与全部正文，不把元数据修复当成 Android 17 全章技术终审，也不在此处套用历史中文重写稿。SUMMARY 316 条链接通过，git diff --check 通过；修复证据见 logs/rework/2026-10-17-20261017-093520-rework-d4f62ead-rework.md。",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261017-093520-rework-d4f62ead",
       "created_at": "2026-10-17T05:33:01.908455+08:00",
       "created_by": "aiw-chinese-rewrite",
       "created_run_id": "20261017-053020-cn-rewrite-d4f62ead7a6eac52",
@@ -4551,10 +4554,10 @@
       "source_paths": [
         "runs 20261017-023020/033020/040020/043020/050020/053020-cn-rewrite-d4f62ead7a6eac52; scripts/frontmatter_schema.py ALLOWED_FIELDS; git 41ef3d1c3"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "ch11-power/01 frontmatter 仍含 pipeline_stage/task2b_state/task6_state/task9_state，check-metadata 在 base_sha 即失败，阻塞所有需过门禁的编辑车道",
       "type": "metadata-schema",
-      "updated_at": "2026-10-17T05:33:01.908455+08:00"
+      "updated_at": "2026-10-17T09:37:24.904890+08:00"
     }
   ],
   "schema_version": 1

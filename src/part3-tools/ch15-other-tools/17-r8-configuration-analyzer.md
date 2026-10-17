@@ -4,8 +4,10 @@ chapter: '15.17'
 section: '15.17'
 status: finalized
 applicable_versions: Android 17 (API 37)；AGP 9.3.0+，或旧 AGP 替换为 R8 9.3.7-dev+；更旧 R8 只能做启发式规则审查
-last_verified: '2026-08-14'
-last_verified_against: R8 Configuration Analyzer 文档（2026-08-01）；Choose libraries wisely（2026-08-13）；r8-analyzer skill（2026-08-06）；keep rule 文档（2026-06-29）；android-17.0.0_r1 / android17-6.18-2026-06_r6
+last_verified: '2026-10-17'
+last_verified_against: R8 Configuration Analyzer、enable-app-optimization、full-mode、Choose libraries wisely、keep-rule-examples、add-keep-rules、CONFIGURATION-ANALYZER 与 r8-analyzer skill（2026-10-17 在线核验）；平台基线维持 android-17.0.0_r1 / android17-6.18-2026-06_r6
+last_source_verified_at: '2026-10-17'
+last_idle_audit_at: '2026-10-17T18:37:02+08:00'
 confidence: high
 sources:
 - type: official
@@ -123,7 +125,7 @@ android {
 }
 ```
 
-例如公共规则可以放在 `src/main/keepRules/app.keep`。AGP 9.3 默认规则等价于 `proguard-android-optimize.txt`。旧版 AGP 继续使用 `isMinifyEnabled=true`、`isShrinkResources=true` 和 `proguardFiles(...)`；不要把两套 DSL 拼在同一个示例里。
+例如公共规则可以放在 `src/main/keepRules/app.keep`。AGP 9.3 默认规则等价于 `proguard-android-optimize.txt`。旧版 AGP 继续使用 `isMinifyEnabled=true`、`isShrinkResources=true` 和 `proguardFiles(...)`。AGP 9.3 仍支持这套旧 DSL，`keepRules` source set 也能与旧 DSL 配合使用；采用新 `optimization` DSL 时，App 规则必须放在上述 `.keep` source set 中。
 
 ## 报告里哪些字段该看
 
@@ -194,7 +196,9 @@ unused、identical 和 subsumed 都只描述当前 variant 的配置关系，不
 }
 ```
 
-第一条是默认优化规则中的 JNI downcall（Java/Kotlin 调 C/C++）保护；第二条面向 upcall（C/C++ 回调 Java/Kotlin）。`includedescriptorclasses` 会把方法 descriptor（参数与返回值组成的 JVM 签名）中的应用类型一并纳入保护。若 native 代码还按名字访问 `NativePayload` 的构造函数或字段，这些成员需要单独规则。二者都比 `-keep class com.example.bridge.** { *; }` 窄。
+第一条是默认优化规则中的 JNI downcall（Java/Kotlin 调 C/C++）保护；第二条面向 upcall（C/C++ 回调 Java/Kotlin），前提是 `NativeBridge` 已由 Java/Kotlin 代码实例化并在该构建中保留。`-keepclassmembers` 不会单独保留桥接类；如果桥接类本身也只从 native 侧访问，还需单独保留该类，并保护 native 按名查找的构造函数或成员。
+
+`includedescriptorclasses` 会把方法 descriptor（参数与返回值组成的 JVM 签名）中的应用类型一并纳入保护。若 native 代码还按名字访问 `NativePayload` 的构造函数或字段，这些成员需要单独规则。遗漏 native 查找的类或成员可能导致 `UnsatisfiedLinkError` 或 `NoSuchMethodError`，应使用启用 R8 的 release 包覆盖这些调用。二者都比 `-keep class com.example.bridge.** { *; }` 窄。
 
 ## 高风险规则的排查顺序
 
@@ -241,7 +245,7 @@ CI 里至少归档这些产物：
 
 独立任务不生成 APK、AAB、mapping、seeds 或 usage；表中的编译产物来自完整 R8 build，并且必须和被比较的 APK/AAB 属于同一次构建。mapping 会被后续构建覆盖，发布时应按制品校验值归档。
 
-标准开发者工作流把 HTML 作为供人阅读的报告。最新官方 `r8-analyzer` skill 还会读取 protobuf：AGP 9.3 路径使用独立任务生成的 `.pb`，旧 AGP + R8 9.2.7-dev 路径使用 `dumpkeepradiustodirectory`，随后转换成 JSON。该流程服务于 skill 的分析脚本，官方没有把其中的 protobuf/JSON schema（字段结构契约）承诺为稳定的外部 CI API。团队若复用这些数据，应固定 R8 与 skill 版本，为转换和解析脚本加契约测试，格式变化时停止门禁并转人工检查。
+标准开发者工作流把 HTML 作为供人阅读的报告。最新官方 `r8-analyzer` skill 还会读取 protobuf：AGP 9.3 路径使用独立任务生成的 `.pb`，旧 AGP + R8 9.3.7-dev 及以上路径使用 `dumpkeepradiustodirectory`，随后转换成 JSON。该流程服务于 skill 的分析脚本，官方没有把其中的 protobuf/JSON schema（字段结构契约）承诺为稳定的外部 CI API。团队若复用这些数据，应固定 R8 与 skill 版本，为转换和解析脚本加契约测试，格式变化时停止门禁并转人工检查。
 
 门禁规则建议按“变宽”定义，避免把低分本身当作失败。可执行的评审条件包括：
 

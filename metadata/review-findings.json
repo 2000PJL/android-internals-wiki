@@ -5058,6 +5058,68 @@
       "summary": "原始输入视图 ts 容易被解释为 Trace 数据包解析时刻",
       "type": "inaccurate-boundary",
       "updated_at": "2026-10-17T14:44:04.434439+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
+      "close_note": "已统一为 R8 9.3.7-dev 及以上；对照官方 CONFIGURATION-ANALYZER Requirements 与当前 SKILL 路由，版本和属性未混用。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261017-183520-idle-audit-ce3b7420",
+      "created_at": "2026-10-17T18:37:15.256478+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-183520-idle-audit-ce3b7420",
+      "details": "CI 段落写旧 AGP + R8 9.2.7-dev，与本章准入条件及当前官方 CONFIGURATION-ANALYZER、r8-analyzer SKILL 的 9.3.7-dev 要求矛盾。",
+      "id": "finding-f50110064caa",
+      "log_path": "logs/audit/2026-10-17-20261017-183520-idle-audit-ce3b7420-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/agents/skills/performance/r8-analyzer/references/CONFIGURATION-ANALYZER",
+        "https://github.com/android/skills/blob/main/performance/r8-analyzer/SKILL.md"
+      ],
+      "status": "verified",
+      "summary": "定量 protobuf 生成路径误写 R8 9.2.7-dev，低于官方 9.3.7-dev 门槛",
+      "type": "version-boundary",
+      "updated_at": "2026-10-17T18:38:04.647685+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
+      "close_note": "已补桥接宿主类须由 Java/Kotlin 实例化并保留的前提，及 native-only 类和构造函数需独立保护、遗漏会触发 JNI 查找错误的边界；代码示例原样保留。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261017-183520-idle-audit-ce3b7420",
+      "created_at": "2026-10-17T18:37:15.306930+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-183520-idle-audit-ce3b7420",
+      "details": "官方 JNI 示例明确 keepclassmembers 以宿主类由 Java/Kotlin 实例化并保留为前提。当前正文只交代方法和描述符类型，未覆盖桥接类也只被 native 访问的情况。",
+      "id": "finding-c6f0608b55fb",
+      "log_path": "logs/audit/2026-10-17-20261017-183520-idle-audit-ce3b7420-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/topic/performance/app-optimization/keep-rule-examples",
+        "https://developer.android.com/topic/performance/app-optimization/add-keep-rules"
+      ],
+      "status": "verified",
+      "summary": "JNI upcall 示例未说明 keepclassmembers 不单独保留桥接宿主类",
+      "type": "missing-precondition",
+      "updated_at": "2026-10-17T18:38:04.699119+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/17-r8-configuration-analyzer.md",
+      "close_note": "已明确 AGP 9.3 保留旧 DSL，keepRules source set 可与旧 DSL 兼用，新 DSL 才要求 .keep source set；对照官方版本行为表。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261017-183520-idle-audit-ce3b7420",
+      "created_at": "2026-10-17T18:37:15.357532+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-183520-idle-audit-ce3b7420",
+      "details": "官方版本行为表明确 legacy DSL is still supported，且 keepRules source set 与 legacy DSL 兼容；原文按新旧版本分段但未交代迁移可选边界，容易被理解为必须替换旧配置。",
+      "id": "finding-1b3b07e0a979",
+      "log_path": "logs/audit/2026-10-17-20261017-183520-idle-audit-ce3b7420-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization"
+      ],
+      "status": "verified",
+      "summary": "AGP 9.3 optimization DSL 迁移说明遗漏旧 DSL 仍受支持",
+      "type": "migration-boundary",
+      "updated_at": "2026-10-17T18:38:04.750515+08:00"
     }
   ],
   "schema_version": 1

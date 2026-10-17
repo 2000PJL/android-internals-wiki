@@ -22,10 +22,21 @@ tags:
 - adaptive-battery
 - foreground-service
 confidence: medium
-last_verified: '2026-07-31'
+last_verified: '2026-10-17'
+last_source_verified_at: '2026-10-17T12:39:20+08:00'
+last_deep_review_at: '2026-10-17T12:39:20+08:00'
+verification_scope_note: 核验 BatteryManager 电流与返回值契约、IPowerStats 接口、FGS 分桶例外、用户停止行为、Historian 维护状态、屏幕归因与 ODPM 范围；未进行真机功耗测试，未重新核验全部内核路径。
 last_verified_against: AOSP android-17.0.0_r1 / Android common kernel android17-6.18-2026-06_r6 / PowerAttributor and PowerStatsProcessor pipeline
 note: Android 17+ 屏幕功耗归因处理器
 sources:
+- type: aosp
+  path: frameworks/base/core/java/android/os/BatteryManager.java
+- type: official
+  path: https://developer.android.com/reference/android/os/BatteryManager
+- type: official
+  path: https://developer.android.com/topic/performance/power/setup-battery-historian
+- type: official
+  path: https://developer.android.com/develop/background-work/services/fgs/handle-user-stopping
 - type: aosp
   path: frameworks/base/core/res/res/xml/power_profile.xml
 - type: aosp
@@ -330,7 +341,7 @@ adb shell dumpsys batterystats > batterystats.txt
 adb bugreport bugreport.zip
 ```
 
-`dumpsys` 适合核对 UID 活动、WakeLock、网络、Job 和组件统计；bugreport 可交给 Battery Historian 做时间线分析——它把 BatteryStats 历史数据可视化。命令结果是统计与归因证据，和外接功耗仪的瞬时电流曲线是两类数据。
+`dumpsys` 适合核对 UID 活动、WakeLock、网络、Job 和组件统计；bugreport 可交给 Battery Historian，把 BatteryStats 历史数据可视化。官方文档已警告 Battery Historian 不再积极维护；新建诊断流程可优先评估系统跟踪、Macrobenchmark 功耗指标或 Power Profiler，已有 Historian 流程需先验证目标版本的解析兼容性。命令结果是统计与归因证据，和外接功耗仪的瞬时电流曲线是两类数据。
 
 ### 5. Coulomb Counter、Fuel Gauge 与 Framework 归因
 
@@ -343,7 +354,9 @@ Coulomb Counter 对电池充放电电流做时间积分，得到 charge（电荷
 - `BATTERY_PROPERTY_CAPACITY`：百分比；
 - `BATTERY_PROPERTY_ENERGY_COUNTER`：nWh，设备支持情况不同。
 
-属性缺失、符号方向和采样行为由设备实现决定。精度结论要以目标 Fuel Gauge 的数据手册和整机验证为准，Coulomb Counter 没有跨设备通用的误差范围。
+`BATTERY_PROPERTY_CURRENT_NOW` 与 `BATTERY_PROPERTY_CURRENT_AVERAGE` 的公开契约都规定：正值表示净电流流入电池，负值表示净放电。设备实现决定属性是否可用、采样更新节奏与平均电流的计算窗口；遇到符号与契约不符的读数，应核对设备实现，不能直接当成另一种合法约定。
+
+读取前还要处理不支持属性的返回值：`getLongProperty()` 返回 `Long.MIN_VALUE`；`getIntProperty()` 对 targetSdk 28 及以上应用返回 `Integer.MIN_VALUE`，对更低 targetSdk 返回 `0`，后者不能区分“不支持”和有效零值。精度结论要以目标 Fuel Gauge 的数据手册和整机验证为准，Coulomb Counter 没有跨设备通用的误差范围。
 
 #### 5.2 Fuel Gauge
 
@@ -409,12 +422,13 @@ Android 10、Android 11 的历史实现使用 HIDL（旧一代 HAL 接口定义�
 - `getEnergyData()` 返回累计能量；
 - `EnergyData.energy` 使用 µWs。
 
-Android 12 起的 AIDL `android.hardware.power.stats.IPowerStats` 分为两组：
+Android 12 起的 AIDL `android.hardware.power.stats.IPowerStats` 包含三组接口：
 
+- `getPowerEntityInfo()` / `getStateResidency()` 返回 PowerEntity 与各状态的累计驻留时间、进入次数、最近进入时间，用于检查子系统的状态驻留，不直接提供能量；
 - `getEnergyConsumerInfo()` / `getEnergyConsumed()` 返回逻辑 consumer 与 `EnergyConsumerResult.energyUWs`；
 - `getEnergyMeterInfo()` / `readEnergyMeter()` 返回 Channel 与 `EnergyMeasurement.energyUWs`。
 
-AIDL consumer 可以附带 UID attribution，但供应商是否提供、如何划分均由硬件与 HAL 决定。Channel 更接近物理或逻辑 meter（计量通道），名称不具备跨设备稳定性。
+这三组累计数据都从开机开始记录。接口契约允许某次查询缺少部分对象的结果，调用方需要按返回 ID 匹配并处理缺失。AIDL consumer 可以附带 UID attribution，但供应商是否提供、如何划分均由硬件与 HAL 决定。Channel 更接近物理或逻辑 meter（计量通道），名称不具备跨设备稳定性。
 
 #### 7.2 ODPM 与 Pixel
 
@@ -524,7 +538,7 @@ duration_ms: 60000
 
 | 工具 | 强项 | 边界 |
 |---|---|---|
-| Battery Historian | bugreport 中的 BatteryStats 时间线 | 依赖采集窗口和 BatteryStats 数据 |
+| Battery Historian | bugreport 中的 BatteryStats 时间线 | 官方已停止积极维护；依赖采集窗口，需验证目标版本解析兼容性 |
 | `dumpsys batterystats` | UID、WakeLock、Job、网络和组件统计 | 不提供高频电流波形 |
 | Perfetto | rail、battery counter、调度、频率和应用 trace 的时间关联 | rail 设备相关；trace 本身有采集成本 |
 | Power Profiler | Android Studio 中对比应用操作与 rail | ODPM 设备范围与 rail 可用性有限 |
@@ -797,7 +811,7 @@ PendingIntent 与 IntentSender 的授权逐步改为 opt-in（显式选择启用
 
 Android 8.0+ 对后台 Service 的创建和存活施加限制。可延迟任务交给 JobScheduler 或 WorkManager；用户知情的持续任务使用匹配类型的 FGS，并接受后台启动限制、类型权限和时长规则。
 
-FGS 提升不了 bucket 等级，也绕不过 Doze、Job quota 和 while-in-use 权限。Android 16 起，与 FGS 并发的 Job 明确受 runtime quota 约束。
+运行 FGS 不会持续把 App 维持在 Active bucket。Android 17 的 `AppStandbyController.reportEventLocked()` 有一个首次使用例外：App 尚在 Never bucket 时，`FOREGROUND_SERVICE_START` 事件会把它临时提升为 Active；其他 bucket 不走这条提升路径。FGS 仍不能作为 Doze、Job quota 或 while-in-use 权限的通用豁免，Android 16 起与 FGS 并发的 Job 也受 runtime quota 约束。
 
 ### Hibernation 与 Archiving
 
@@ -867,7 +881,8 @@ AOSP 允许厂商调整 bucket 分类和低功耗策略。ROM 还可能提供自
 | Job 等待系统条件 | 进程可能不存在，包可正常启动 | Job pending reason、bucket、Doze、quota |
 | OEM/内核冻结 | 进程可能仍在，但线程长时间不获调度 | vendor（厂商）日志、cgroup/freezer（控制组冻结）状态、sched trace（调度跟踪）；接口随设备变化 |
 | 低内存回收 | 进程消失，系统有内存压力 | `ApplicationExitInfo`、lmkd/LMKD（低内存终止守护进程）日志、PSI（Pressure Stall Information，压力停顿信息）与内存 trace |
-| force-stop（强制停止）/用户停止 | 包进入 stopped（已停止）状态，后台触发被阻断 | package/activity 状态、用户操作时间、重新点击图标后的恢复 |
+| force-stop（强制停止） | 包进入 stopped（已停止）状态，后台触发被阻断 | package/activity 状态、用户操作时间、重新点击图标后的恢复 |
+| Android 13+ Task Manager 的“停止” | 整个 App 进程与 Activity 返回栈被移除，已调度的 Job 和 Alarm 仍可按原定时机交付 | 无停止回调；下次启动检查 `ApplicationExitInfo.REASON_USER_REQUESTED`，并用 `adb shell cmd activity stop-app com.example.app` 验证 |
 | Hibernation | 长期未用，权限和后台任务被重置 | unused-app（未使用应用）设置、权限、Job/Alarm 与 push 状态 |
 | Archiving | APK 被移除，用户数据保留 | Launcher/PackageInstaller 的 archive metadata（归档元数据）与 installer 状态 |
 
@@ -965,8 +980,10 @@ PowerMonitor 可能返回直接测量的 rail measurement，或模型估算的 m
 - [SystemHealthManager](https://developer.android.com/reference/android/os/health/SystemHealthManager)
 - [PowerMonitor](https://developer.android.com/reference/android/os/PowerMonitor)
 - [PowerMonitorReadings](https://developer.android.com/reference/android/os/PowerMonitorReadings)
+- [BatteryManager：电池属性、单位与返回值](https://developer.android.com/reference/android/os/BatteryManager)
 - [Perfetto traced_probes：android.power](https://perfetto.dev/docs/reference/traced_probes)
 - [Battery Historian](https://github.com/google/battery-historian)
+- [Batterystats 与 Battery Historian：含维护状态警告](https://developer.android.com/topic/performance/power/setup-battery-historian)
 
 ### 官方与 API 文档
 
@@ -984,6 +1001,7 @@ PowerMonitor 可能返回直接测量的 rail measurement，或模型估算的 m
 - [Android 17 features and APIs](https://developer.android.com/about/versions/17/features)
 - [Secure background activity launches](https://developer.android.com/guide/components/activities/secure-bal)
 - [Background FGS start restrictions](https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start)
+- [用户在 Task Manager 停止 FGS 应用后的行为](https://developer.android.com/develop/background-work/services/fgs/handle-user-stopping)
 - [Background location](https://developer.android.com/develop/sensors-and-location/location/background)
 - [Background execution limits](https://developer.android.com/about/versions/oreo/background)
 - [App hibernation](https://developer.android.com/topic/performance/app-hibernation)
@@ -991,6 +1009,8 @@ PowerMonitor 可能返回直接测量的 rail measurement，或模型估算的 m
 
 #### Android 17 源码锚点
 
+- [BatteryManager.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/BatteryManager.java)
+- [IPowerStats.aidl](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl)
 - [DeviceIdleController.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java)
 - [AppStandbyController.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java)
 - [JobSchedulerService.java](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/base/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java)

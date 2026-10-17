@@ -5143,6 +5143,114 @@
       "summary": "frontmatter 仍含 6 个已被 ALLOWED_FIELDS 移除的字段，check-metadata 在 base_sha 即失败，阻塞中文改写车道",
       "type": "metadata",
       "updated_at": "2026-10-17T21:36:51.976051+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "created_at": "2026-10-17T22:40:18.013596+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-223520-idle-audit-f691e632",
+      "details": "3.5 缺少 STATE_PENDING，并把 abort 画在播放之后；误称所有窗口首帧（含 wallpaper）均受同步保证；误写事务先归入 orphan、排队时尚无 Transition 对象、Transition.getCanBeIndependent 及跨 Display 的通用并行条件。token、finishTransitionWithState、超时与 Shell 回告时序也需按 android-17.0.0_r1 修正，9.3 重复的错误排查条件须同时删除。",
+      "id": "finding-02d8c3661361",
+      "log_path": "logs/audit/2026-10-17-20261017-223520-idle-audit-f691e632-idle-audit.md",
+      "severity": "P1",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/Transition.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TransitionController.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowState.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java"
+      ],
+      "status": "open",
+      "summary": "Shell Transition 的状态机、BLAST 就绪保证与并行收集描述不符 Android 17 源码",
+      "type": "source-mismatch",
+      "updated_at": "2026-10-17T22:40:18.013596+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "created_at": "2026-10-17T22:40:18.065913+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-223520-idle-audit-f691e632",
+      "details": "ActivityRecord extends WindowToken，应用窗口示意不应再增加一个 WindowToken 子层；WindowContainer 实现位于 services/core/java/com/android/server/wm，正文参考链接误指 core/java/android/view。",
+      "id": "finding-f08f00d699a0",
+      "log_path": "logs/audit/2026-10-17-20261017-223520-idle-audit-f691e632-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityRecord.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowContainer.java"
+      ],
+      "status": "open",
+      "summary": "WMS 树误将 ActivityRecord 与 WindowToken 分为父子层，且 WindowContainer 来源路径无效",
+      "type": "incorrect-object-model",
+      "updated_at": "2026-10-17T22:40:18.065913+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "created_at": "2026-10-17T22:40:18.118113+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-223520-idle-audit-f691e632",
+      "details": "8.3 仍引用旧版示例，未给出 Studio、AGP、Emulator、AVD API 前提、emulatorControl 配置及 androidTest 网络权限。2026-10-16 官方文档另明确 target 37 测试需声明并授权 ACCESS_LOCAL_NETWORK，且要在 ScreenOrientationRule 之前授权。",
+      "id": "finding-a8df522f7dae",
+      "log_path": "logs/audit/2026-10-17-20261017-223520-idle-audit-f691e632-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/studio/test/espresso-api"
+      ],
+      "status": "open",
+      "summary": "Espresso Device API 示例遗漏环境前提与 target 37 本地网络权限要求",
+      "type": "missing-availability-boundary",
+      "updated_at": "2026-10-17T22:40:18.118113+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "created_at": "2026-10-17T22:40:18.169503+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-223520-idle-audit-f691e632",
+      "details": "2.2 流程与 2.3 把正常推进条件简化为 transitioning Displays 全部 OFF；finishStateTransitionLocked 还检查 shouldDeviceBeWoken/shouldDeviceBePutToSleep 对应的交互状态，并保留 force 超时路径。",
+      "id": "finding-987bc2e389ab",
+      "log_path": "logs/audit/2026-10-17-20261017-223520-idle-audit-f691e632-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplayMapper.java"
+      ],
+      "status": "open",
+      "summary": "Display layout 切换等待条件遗漏设备唤醒或休眠状态",
+      "type": "missing-condition",
+      "updated_at": "2026-10-17T22:40:18.169503+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "created_at": "2026-10-17T22:45:03.485791+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-223520-idle-audit-f691e632",
+      "details": "DeviceStateManagerService 使用 TRACE_TAG_SYSTEM_SERVER 写 DeviceStateChanged；atrace.cpp 将该 tag 映射为 ss，原快速采集命令仅列 wm 等类别，无法保证采到文中定位起点。还需说明快速配置不自动启用完整 FrameTimeline 数据源。",
+      "id": "finding-b6f9e1650395",
+      "log_path": "logs/audit/2026-10-17-20261017-223520-idle-audit-f691e632-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/devicestate/DeviceStateManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp"
+      ],
+      "status": "open",
+      "summary": "折叠切换采集命令遗漏 DeviceStateChanged 所需的 ss 类别",
+      "type": "incomplete-trace-config",
+      "updated_at": "2026-10-17T22:45:03.485791+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "created_at": "2026-10-17T22:49:25.066731+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261017-223520-idle-audit-f691e632",
+      "details": "官方 API 说明 windowLayoutInfo(Activity) 首值不会早于 onStart，且设备可能延迟甚至不交付；Flow 不应跨 Activity 重建持有。supportedPostures 另要求 Jetpack WindowManager 1.4.0 与 Extensions 6，低扩展版本抛 UnsupportedOperationException。需在应用连续性说明与版本表保留这些限制。",
+      "id": "finding-06c0810cafee",
+      "log_path": "logs/audit/2026-10-17-20261017-223520-idle-audit-f691e632-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/androidx/window/layout/WindowInfoTracker"
+      ],
+      "status": "open",
+      "summary": "WindowInfoTracker 使用说明缺少首值交付与能力查询的可用性边界",
+      "type": "missing-api-lifecycle-boundary",
+      "updated_at": "2026-10-17T22:49:25.066731+08:00"
     }
   ],
   "schema_version": 1

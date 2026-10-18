@@ -5289,6 +5289,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "删除普通分进程用于不可信插件权限隔离的建议，区分同 UID 的 :remote 与 isolatedProcess 服务，并保留系统组件通信和权限边界。依据 Service manifest、应用沙箱及 ProcessList.newProcessRecordLocked。 结构化来源证据 claim_id=manifest-isolation。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
       "created_at": "2026-10-18T08:10:08.342167+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-080520-b3e487e8",
@@ -5300,13 +5303,16 @@
         "https://developer.android.com/guide/topics/manifest/service-element#isolated",
         "https://developer.android.com/guide/components/processes-and-threads"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "android:process 分进程被当成不可信代码的权限隔离方案",
       "type": "security-boundary",
-      "updated_at": "2026-10-18T08:10:08.342167+08:00"
+      "updated_at": "2026-10-18T10:12:40.292158+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "改为 Android 14 起经 CTS 测试的公开 API，补互斥注解、CriticalNative ABI、GC 挂起限制、8–11 显式注册、12 起动态查找及旧设备 ABI 风险。依据官方 JNI tips。 结构化来源证据 claim_id=jni-annotations。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
       "created_at": "2026-10-18T08:10:08.423315+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-080520-b3e487e8",
@@ -5317,13 +5323,16 @@
       "source_paths": [
         "https://developer.android.com/ndk/guides/jni-tips#fast_critical_native"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "FastNative 与 CriticalNative 被错误限定为系统级场景",
       "type": "version-boundary",
-      "updated_at": "2026-10-18T08:10:08.423315+08:00"
+      "updated_at": "2026-10-18T10:12:40.344449+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "把 fork 瞬间与 ActivityThread.main 之前分开，明确 nativeZygoteInit/onZygoteInit 在 Java 入口前启动 Binder 池。固定 Android 17 标签重新下载核对。 结构化来源证据 claim_id=binder-before-main。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
       "created_at": "2026-10-18T08:10:08.477226+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-080520-b3e487e8",
@@ -5335,13 +5344,16 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java#983",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/cmds/app_process/app_main.cpp#92"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "应用进程进入业务入口仍只有主线程的描述与 Binder 初始化顺序冲突",
       "type": "contradictory-claim",
-      "updated_at": "2026-10-18T08:10:08.477226+08:00"
+      "updated_at": "2026-10-18T10:12:40.396197+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "补普通 Worker 10 分钟限制、长任务仍走 JobScheduler、Android 16 作业配额、target34 服务类型及旧版本位置/相机/麦克风要求。依据官方 Worker 与长任务文档。 结构化来源证据 claim_id=background-apis。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
       "created_at": "2026-10-18T08:10:08.529505+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-080520-b3e487e8",
@@ -5353,13 +5365,16 @@
         "https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running",
         "https://developer.android.com/reference/androidx/work/Worker"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "WorkManager 长任务建议缺失 Android 14 服务类型与 Android 16 作业配额边界",
       "type": "missing-lifecycle-warning",
-      "updated_at": "2026-10-18T08:10:08.529505+08:00"
+      "updated_at": "2026-10-18T10:12:40.448939+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "分别解释工厂 API 发布开关、未带同一 FlaggedApi 的 isVirtual、ART continuation 开关及 BoundVirtualThread 回退；同步修正版本表，未承诺所有构建轻量线程复用。 结构化来源证据 claim_id=virtual-api-runtime。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
       "created_at": "2026-10-18T08:10:08.582855+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-080520-b3e487e8",
@@ -5372,13 +5387,16 @@
         "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadBuilders.java#403",
         "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/jdk/internal/vm/ContinuationSupport.java#30"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "虚拟线程 API 公开开关与运行时实现支持混为一层",
       "type": "availability-boundary",
-      "updated_at": "2026-10-18T08:10:08.582855+08:00"
+      "updated_at": "2026-10-18T10:12:40.500844+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "补 HIDL 自 Android 13 废弃但兼容存量、Stable AIDL 的 VINTF 声明与冻结要求、vendor NDK 后端、libbinder 分区限制和 Java 后端警告。 结构化来源证据 claim_id=hal-vintf。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
       "created_at": "2026-10-18T08:10:08.637431+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-080520-b3e487e8",
@@ -5390,13 +5408,16 @@
         "https://source.android.com/docs/core/architecture/hal",
         "https://source.android.com/docs/core/architecture/aidl/aidl-hals"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "HAL 迁移说明缺少 HIDL 废弃版本与 vendor AIDL 后端限制",
       "type": "missing-lifecycle-warning",
-      "updated_at": "2026-10-18T08:10:08.637431+08:00"
+      "updated_at": "2026-10-18T10:12:40.554574+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "把 onReceive 返回即结束活跃限定为未用 goAsync 的普通路径；补 PendingResult.finish、整个异步区间的广播超时及非持久执行边界。 结构化来源证据 claim_id=receiver-lifecycle。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
       "created_at": "2026-10-18T08:12:43.633553+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-080520-b3e487e8",
@@ -5407,13 +5428,16 @@
       "source_paths": [
         "https://developer.android.com/reference/android/content/BroadcastReceiver#goAsync()"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "广播回调返回即失去活跃状态的描述遗漏 goAsync 有限延期",
       "type": "lifecycle-boundary",
-      "updated_at": "2026-10-18T08:12:43.633553+08:00"
+      "updated_at": "2026-10-18T10:12:40.608180+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "把默认增线程条件与 ACK 厂商钩子分开，明确 force_spawn 可绕过默认判断，要求设备核对厂商实现。依据固定 ACK binder.c 5402–5415。 结构化来源证据 claim_id=binder-pool。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
       "created_at": "2026-10-18T08:16:05.990135+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-080520-b3e487e8",
@@ -5424,13 +5448,16 @@
       "source_paths": [
         "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c#5402"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Binder 动态增线程条件遗漏 ACK force_spawn 厂商钩子",
       "type": "vendor-policy-boundary",
-      "updated_at": "2026-10-18T08:16:05.990135+08:00"
+      "updated_at": "2026-10-18T10:12:40.660855+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "改为清单描述提供、矩阵描述要求，明确设备清单/框架矩阵与框架清单/设备矩阵两组匹配。依据官方 VINTF 文档。 结构化来源证据 claim_id=hal-vintf。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
       "created_at": "2026-10-18T08:16:06.042146+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-080520-b3e487e8",
@@ -5441,13 +5468,16 @@
       "source_paths": [
         "https://source.android.com/docs/core/architecture/vintf"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "VINTF 清单与兼容性矩阵的提供和要求方向混淆",
       "type": "interface-contract",
-      "updated_at": "2026-10-18T08:16:06.042146+08:00"
+      "updated_at": "2026-10-18T10:12:40.713012+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "SCHED_SP_TOP_APP 改为 MaxPerformance、MaxIoPriority、TimerSlackNormal，删除最大进程容量。依据 Android 17 task_profiles.json 724–725。 结构化来源证据 claim_id=task-profile-mapping。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
       "created_at": "2026-10-18T08:17:34.231391+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-080520-b3e487e8",
@@ -5458,13 +5488,16 @@
       "source_paths": [
         "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json#724"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "SCHED_SP_TOP_APP 的组合项沿用不存在的最大进程容量配置",
       "type": "stale-source-mapping",
-      "updated_at": "2026-10-18T08:17:34.231391+08:00"
+      "updated_at": "2026-10-18T10:12:40.764945+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "改为 current_sid 与 cred_sid(from) 差异触发 IMPERSONATE，通过后检查 CALL，删除任意凭据差异的错误泛化。依据固定 ACK hooks.c 2047–2063。 结构化来源证据 claim_id=binder-selinux。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
       "created_at": "2026-10-18T08:18:00.455058+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-080520-b3e487e8",
@@ -5475,13 +5508,16 @@
       "source_paths": [
         "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/security/selinux/hooks.c#2047"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Binder SELinux IMPERSONATE 检查被误写为任意凭据差异触发",
       "type": "security-condition",
-      "updated_at": "2026-10-18T08:18:00.455058+08:00"
+      "updated_at": "2026-10-18T10:12:40.816246+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "区分历史通用 ro.lmk.use_psi 文档与 Android 17 init_monitors 直接初始化 PSI 的实现；确认固定源码全文不存在该属性读取。 结构化来源证据 claim_id=lmkd-pressure。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
       "created_at": "2026-10-18T08:20:14.022092+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-080520-b3e487e8",
@@ -5493,10 +5529,50 @@
         "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp#3649",
         "https://source.android.com/docs/core/perf/lmkd"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Android 17 lmkd 被描述为仍由 ro.lmk.use_psi 开关选择 PSI",
       "type": "stale-configuration",
-      "updated_at": "2026-10-18T08:20:14.022092+08:00"
+      "updated_at": "2026-10-18T10:12:40.867552+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "OomAdjuster 片段明确标注按分支简化，并在正文与代码注释标出省略远程动画、instrumentation 和日志，不再伪装完整算法。 结构化来源证据 claim_id=adj-states。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
+      "created_at": "2026-10-18T10:07:33.347303+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-100520-34d466a8",
+      "details": "正文拼接 top、broadcast、executing-service 分支为连续 else-if；固定标签在 top 与 broadcast 之间还有 remote animation 与 instrumentation 分支。必须标明按分支简化及省略位置，避免被当成可直接复制的完整算法。",
+      "id": "finding-140460f5acf5",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java#1316"
+      ],
+      "status": "fixed",
+      "summary": "OomAdjuster 节选省略中间优先级分支却未注明简化",
+      "type": "source-excerpt-boundary",
+      "updated_at": "2026-10-18T10:12:40.919715+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "close_note": "补 mmd.zram.enabled 启用后 swapon_all ZRAM setup 成为空操作、config_zramWriteback/ro.zram.* 写回属性被忽略，并把空闲/电量约束说明为可配置默认值。 结构化来源证据 claim_id=mmd-zram。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-100520-34d466a8",
+      "created_at": "2026-10-18T10:07:33.399712+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-100520-34d466a8",
+      "details": "官方 mmd 文档说明 mmd.zram.enabled 启用 ZRAM 配置后，swapon_all 的 ZRAM setup 成为空操作，config_zramWriteback 与 ro.zram.* 写回属性被忽略。正文需要保留该迁移约束，避免同时调两套参数。",
+      "id": "finding-4ba0bdede9e1",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/perf/mmd"
+      ],
+      "status": "fixed",
+      "summary": "mmd 配置说明遗漏启用后旧 ZRAM 配置失效边界",
+      "type": "missing-migration-warning",
+      "updated_at": "2026-10-18T10:12:40.972182+08:00"
     }
   ],
   "schema_version": 1

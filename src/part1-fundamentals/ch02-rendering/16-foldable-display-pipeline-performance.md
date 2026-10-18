@@ -2,7 +2,7 @@
 title: 折叠屏显示切换、窗口连续性与渲染性能
 chapter: '2.16'
 section: '2.16'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
 - foldable
@@ -21,8 +21,8 @@ related_chapters:
 - '22.13'
 last_verified: '2026-10-18'
 last_verified_against: AOSP android-17.0.0_r1 + Android Developers 2026-10-18
-last_source_verified_at: '2026-10-18T12:42:42+08:00'
-verification_scope_note: Shell Transition、WMS 对象模型、Display 切换条件、Espresso Device、Perfetto 采集与 WindowInfoTracker 边界；补充核对 display layout 配置、Handler 超时、大屏方向规则、HWC present fence 与 SurfaceFlinger dump 参数；未作设备性能实验。
+last_source_verified_at: '2026-10-18T14:09:05+08:00'
+verification_scope_note: 按 android-17.0.0_r1 核对显示布局、DeviceState、Shell Transition/BLAST、HWC 与采集入口；核对官方 WindowInfoTracker 生命周期、Espresso Device 可用性及 target 37 边界，补齐 Lifecycle 依赖、Flow 取消与保存状态限制。未作设备性能实验。
 confidence: medium-high
 sources:
 - type: official
@@ -79,6 +79,10 @@ sources:
   path: external/perfetto/src/perfetto_cmd/config.cc
 - type: official
   path: https://developer.android.com/reference/androidx/window/layout/WindowInfoTracker
+- type: official
+  path: https://developer.android.com/topic/libraries/architecture/views/coroutines-views
+- type: official
+  path: https://developer.android.com/topic/libraries/architecture/saving-states
 - type: aosp
   path: frameworks/base/services/core/xsd/display-layout-config/display-layout-config.xsd
 - type: aosp
@@ -394,7 +398,7 @@ foldingFeature.state == FoldingFeature.State.HALF_OPENED &&
 
 ### 4.4 生命周期安全的收集方式
 
-官方推荐在 `STARTED` 生命周期内收集，停止时自动取消。`windowLayoutInfo(Activity)` 的首值不会早于 `Activity.onStart()`；具体设备可能立即交付、长时间延迟，也可能始终没有值。初始布局应能在尚无 posture 信息时工作，避免等待首值才显示页面。下面的代码把订阅绑定到当前 Activity 生命周期：
+官方建议在 `STARTED` 生命周期内收集，停止时自动取消。`windowLayoutInfo(Activity)` 的首值不会早于 `Activity.onStart()`；具体设备可能立即交付、长时间延迟，也可能始终没有值。初始布局应能在尚无姿态信息时工作，避免等待首值才显示页面。下面是 `MainActivity.onCreate()` 中的订阅节选，放在 `super.onCreate()` 和 UI 初始化之后；需依赖 `androidx.lifecycle:lifecycle-runtime-ktx:2.4.0` 或后续版本，`renderPosture()` 是应用自行实现的 UI 更新函数：
 
 ```kotlin
 lifecycleScope.launch(Dispatchers.Main) {
@@ -411,7 +415,7 @@ lifecycleScope.launch(Dispatchers.Main) {
 }
 ```
 
-这段代码在 Activity 低于 `STARTED` 状态时停止收集，避免 Activity 不可见后继续持有订阅；它不限制重组或 View layout 成本。回调里我们先把 posture 归一化为小而稳定的 UI state，再让受影响的区域读取它。
+这段代码在 Activity 低于 `STARTED` 状态时停止收集，再次进入 `STARTED` 时重新订阅。官方 [Lifecycle 协程文档](https://developer.android.com/topic/libraries/architecture/views/coroutines-views#restartable-lifecycle-aware) 提醒，`launchWhenX` 在停止时只挂起协程，上游 Flow 可能仍在后台运行；收集 Flow 应优先使用 `repeatOnLifecycle()`。生命周期绑定不限制重组或 View layout 成本，回调里可先把姿态归一化为小而稳定的 UI 状态，再让受影响的区域读取它。
 
 该 Flow 关联传入的 Activity，不能跨 Activity 重建持有，例如把旧 Activity 的 Flow 存入保留的 ViewModel；新 Activity 应重新创建订阅，否则可能泄漏或收到错误窗口信息。[`WindowInfoTracker.windowLayoutInfo(Activity)` API](https://developer.android.com/reference/androidx/window/layout/WindowInfoTracker#windowLayoutInfo(android.app.Activity)) 明确列出了首值交付和重建边界。
 
@@ -455,7 +459,7 @@ Perfetto 中出现 `DeviceStateChanged`，只能证明 DeviceState 已提交，�
 
 ### 6.1 Activity 重建与 ViewModel
 
-默认 configuration handling 会销毁并重建 Activity，但 `ViewModel` 通常不会被一起重建：Architecture Components 通过 `ViewModelStore` 跨 configuration change 保留实例。`SavedStateHandle`、`rememberSaveable` 等用于恢复可保存 UI 状态，并应覆盖应用进程被系统回收的情况。
+默认 configuration handling 会销毁并重建 Activity，但 `ViewModel` 通常不会被一起重建：Architecture Components 通过 `ViewModelStore` 跨 configuration change 保留实例。系统回收应用进程时，`ViewModel` 也会丢失；`SavedStateHandle`、`rememberSaveable` 等保存状态 API 用于保存恢复 UI 所需的少量数据。
 
 需要保留的状态通常包括：
 
@@ -466,7 +470,11 @@ Perfetto 中出现 `DeviceStateChanged`，只能证明 DeviceState 已提交，�
 - 当前选中 pane（窗格）或 item；
 - 尚未提交的编辑内容。
 
-这些状态应与窗口尺寸和 posture 分离。折叠或展开改变布局时，不应顺带清空业务状态或跳到另一个导航 destination（目的页面）。
+这些状态应与窗口尺寸和姿态分离。折叠或展开改变布局时，不应顺带清空业务状态或跳到另一个导航 destination（目的页面）。
+
+保存状态时只记录恢复所需的 ID、滚动位置或少量输入。大型草稿、图片和其他业务数据应持久化到数据库或文件，保存状态中保留读取它们所需的标识；复杂对象的序列化发生在主线程，可能增加配置变化时的卡顿。`SavedStateHandle` 和 `rememberSaveable` 都不能替代长期存储。
+
+保存状态也不是每次赋值都会立即持久化。官方 [Save UI states](https://developer.android.com/topic/libraries/architecture/saving-states#savedstateregistry) 明确说明：Activity 已停止期间的写入，需再次经历 `onStart()`、`onStop()` 才会保存。用户划掉任务、强行停止应用或结束 Activity 后，也不能依赖原有保存记录恢复编辑内容。这些 AndroidX/Compose 机制使用 `Bundle`，不支持用 `PersistableBundle` 替代它来实现长期保存。
 
 ### 6.2 自行处理 configChanges 的代价
 
@@ -800,9 +808,11 @@ Shell 端没有进度回调时，先沿同一个 transition token 与 sync ID �
 
 ### 应用与测试文档
 
-- [Make your app fold aware](https://developer.android.com/develop/adaptive-apps/guides/foldables/make-your-app-fold-aware)：`WindowInfoTracker`、`FoldingFeature` 与感知生命周期的收集方式；
+- [Make your app fold aware](https://developer.android.com/develop/adaptive-apps/guides/foldables/make-your-app-fold-aware)：窗口折叠特征、桌面与书本姿态，以及精确铰链角度的设备校准边界；
 - [`FoldingFeature` API](https://developer.android.com/reference/androidx/window/layout/FoldingFeature)：state、orientation、occlusion、separating 的定义；
 - [`WindowInfoTracker` API](https://developer.android.com/reference/androidx/window/layout/WindowInfoTracker)：Activity Flow 的首值与重建限制、supported posture 的库版本和扩展版本要求；
+- [Use Kotlin coroutines with lifecycle-aware components (Views)](https://developer.android.com/topic/libraries/architecture/views/coroutines-views)：Lifecycle 依赖、`repeatOnLifecycle()` 的重启与取消，以及 `launchWhenX` 的后台上游警告；
+- [Save UI states](https://developer.android.com/topic/libraries/architecture/saving-states)：ViewModel、少量恢复数据和持久化存储的分工，以及停止后的写入保存边界；
 - [Android 17 大屏方向与缩放行为](https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored)：target 37 规则与例外；
 - [Configuration and continuity](https://developer.android.com/guide/topics/large-screens/configuration-and-continuity)：Activity 重建、自行处理配置与状态连续性；
 - [Espresso Device API](https://developer.android.com/studio/test/espresso-api)：虚拟设备上的 closed 与 flat mode 功能测试；

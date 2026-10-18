@@ -2,7 +2,7 @@
 title: 折叠屏显示切换、窗口连续性与渲染性能
 chapter: '2.16'
 section: '2.16'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 tags:
 - foldable
@@ -19,9 +19,11 @@ related_chapters:
 - '3.2'
 - '22.1'
 - '22.13'
-last_verified: '2026-08-22'
-last_verified_against: AOSP android-17.0.0_r1 + Android Developers 2026-08
-confidence: high
+last_verified: '2026-10-18'
+last_verified_against: AOSP android-17.0.0_r1 + Android Developers 2026-10-18
+last_source_verified_at: '2026-10-18T09:40:37+08:00'
+verification_scope_note: Shell Transition、WMS 对象模型、Display 切换条件、Espresso Device、Perfetto 采集与 WindowInfoTracker 边界；未作设备性能实验。
+confidence: medium-high
 sources:
 - type: official
   path: https://developer.android.com/develop/adaptive-apps/guides/foldables/make-your-app-fold-aware
@@ -65,7 +67,20 @@ sources:
   path: frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/transition/DefaultTransitionHandler.java
 - type: aosp
   path: frameworks/base/core/java/android/window/ITransitionPlayer.aidl
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/WindowContainer.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/WindowState.java
+- type: aosp
+  path: frameworks/native/cmds/atrace/atrace.cpp
+- type: aosp
+  path: external/perfetto/src/perfetto_cmd/config.cc
+- type: official
+  path: https://developer.android.com/reference/androidx/window/layout/WindowInfoTracker
 last_body_apply_at: '2026-09-26T07:15:18+08:00'
+last_rework_at: '2026-10-18T09:40:37+08:00'
 ---
 
 # 折叠屏显示切换、窗口连续性与渲染性能
@@ -155,8 +170,8 @@ flowchart TD
     C --> D["DisplayManagerService DeviceStateListener"]
     D --> E["LogicalDisplayMapper.setDeviceState()"]
     E --> F["标记需切换的 LogicalDisplay 为 in-transition"]
-    F --> G["请求相关 Display 进入 OFF"]
-    G --> H["全部关闭或 500 ms 超时"]
+    F --> G["请求相关 Display 进入 OFF，并处理所需唤醒 / 休眠"]
+    G --> H["Display 全部 OFF 且无待完成交互状态变化，或 500 ms 强制推进"]
     H --> I["应用新的 DeviceState layout"]
     I --> J["LogicalDisplay 与 DisplayDevice 重映射 / enabled 更新"]
     J --> K["WMS / Display traversal / SurfaceControl display transaction"]
@@ -180,7 +195,7 @@ flowchart TD
 - DisplayDevice 只出现在新旧 layout 的一侧；
 - Display 已处于 transition。
 
-系统先发送 transition 阶段更新，让相关 Display 关闭。等所有 transitioning Display 确认 `OFF` 后，才清除 transition 标记、应用新 layout 并发出后续更新。源码给这段等待设置了 **500 ms** 的强制推进超时。
+系统先发送 transition 阶段更新，让相关 Display 关闭。正常推进要求所有 transitioning Display 确认 `OFF`，同时没有待完成的设备唤醒或休眠：`finishStateTransitionLocked(false)` 检查 `displaysOff && !waitingToWakeDevice && !waitingToSleepDevice`。后两项由设备状态、`mIsInteractive`、启动完成情况及折叠休眠设置等条件决定。满足后才清除 transition 标记、应用新 layout 并发出后续更新；500 ms 超时则以 `force=true` 强制推进。[源码：`LogicalDisplayMapper.java` L116、L683–705、L720–835、L1748–1752]
 
 display blanking 的作用是遮住 resize 过程中可能出现的错误尺寸。500 ms 是框架状态转换的兜底上限，屏幕未必黑场 500 ms，它也不代表折叠动画时长。
 
@@ -210,11 +225,11 @@ RootWindowContainer
   DisplayContent
     DisplayArea / TaskDisplayArea
       Task / TaskFragment
-        ActivityRecord
-          WindowToken / WindowState
+        ActivityRecord（继承 WindowToken）
+          WindowState
 ```
 
-这棵树表达 WMS 的窗口与任务管理关系，不会与 SurfaceFlinger 的 layer tree 一一对应。
+这棵树表达应用窗口在 WMS 中的管理关系，`ActivityRecord` 本身就是 `WindowToken` 的子类，不需要再增加一个 `WindowToken` 子层。它与 SurfaceFlinger 的 layer tree 不一一对应。[源码：`ActivityRecord.java` L372]
 
 Shell transition 可以创建 leash——转场期间使用的临时父 Surface——把 Task 或窗口 Surface reparent 到 leash 上，再对 leash 设置 matrix、crop、corner radius 和 position。
 
@@ -251,78 +266,73 @@ WindowLayoutInfo → Configuration → onConfigurationChanged
 
 ### 3.5 Shell Transition 状态机与 BLAST 同步
 
-折叠或展开时，App 端会看到“动画期的 buffer 一起出现”，这是 WMS 通过 `BLASTSyncEngine` 把多个参与窗口统一合并提交的结果。窗口动画是怎么走到这一步的？平台自 Android 12 起把窗口动画从 WMS 内置的 `AppTransition` 迁出，改由 `WM Shell` 进程通过 `ITransitionPlayer` AIDL 与 WMS 对接，同步由 WMS 的 `BLASTSyncEngine` 完成。[来源: juejin Shell Transition 机制详解, 2026-09-23, https://juejin.cn/post/7688334749719035940][已验证: AOSP android-17.0.0_r1 `frameworks/base/services/core/java/com/android/server/wm/Transition.java`、`TransitionController.java`、`BLASTSyncEngine.java`、`WindowOrganizerController.java`、`frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java`、`DefaultTransitionHandler.java`、`frameworks/base/core/java/android/window/ITransitionPlayer.aidl`]
+Android 17 的 Shell Transition 把窗口状态管理、同步事务和动画播放分开：WMS 收集窗口变化，`BLASTSyncEngine` 协调同步事务，WM Shell 接收动画目标并播放。同步结束仅表示可以把事务交给动画端；应用的新布局是否已显示，还要检查对应 buffer 的 latch 与目标 Display 的 present。
 
 #### 3.5.1 进程边界与两条 Binder 通知
 
-WMS 在 `system_server`，`WM Shell` 跑在 `com.android.systemui` 进程内，二者通过 AIDL 通信：
+WMS 在 `system_server`，WM Shell 通常运行在 SystemUI 进程内。`ITransitionPlayer` 是 `oneway` AIDL 接口，启动与就绪分别通过以下通知传递：
 
-- `ITransitionPlayer.requestStartTransition(token, request)`：WMS 把 token（`Transition.mToken`，由 `new Binder()` 创建）和 `TransitionRequestInfo`（type、triggerTask、displayChange、flags、pipChange、remoteTransition）发给 Shell。此时 Shell 还没有窗口细节，只知道“接下来要发生什么类型”。[来源: juejin Shell Transition 机制详解 5.1；AOSP `ITransitionPlayer.aidl`、`TransitionRequestInfo`][已验证: AOSP `frameworks/base/core/java/android/window/ITransitionPlayer.aidl`]
-- `ITransitionPlayer.onTransitionReady(token, info, startT, finishT)`：BLAST 同步完成后，WMS 把 `TransitionInfo`（包含 Roots、每个参与容器的 Changes、leash Surface）和两张 `SurfaceControl.Transaction` 发给 Shell。`startT` 是 BLAST 合并后的初态，`finishT` 是动画结束需恢复的终态。[来源: juejin Shell Transition 机制详解 5.2、6.1、6.2][已验证: AOSP `Transition.onTransactionReady`]
+- `requestStartTransition(token, request)`：WMS 发送 transition 标识和请求信息。`Transition.mToken` 由 `new Token(this)` 创建，`Token` 继承 `Binder`，内部以弱引用关联 `Transition`。
+- `onTransitionReady(token, info, startT, finishT)`：WMS 发送 `TransitionInfo` 中的动画目标、root leash 和变化信息，以及动画初态事务 `startT`、结束时恢复父子关系与层级等状态的 `finishT`。
 
-`requestStartTransition` 与 `startTransition`（Shell 经 `WindowOrganizerController` 回告 WMS）的执行在 Shell 端是同一方法内的同步序列：先 dispatch Handler 链认领、再回告 WMS，最后才把 transition 状态从 `STATE_COLLECTING` 推进到 `STATE_STARTED`。[来源: juejin Shell Transition 机制详解 阶段 2；AOSP `Transitions.requestStartTransition` 第 1860 行附近] 这条链路是 AOSP 自 Android 12 起就固定的形态，不是 Android 17 才引入。
+Shell 的 `TransitionPlayerImpl` 收到 Binder 通知后，将处理投递到 `mMainExecutor`。在未启用 `transitMixpatcherBase` 的分支中，`Transitions.requestStartTransition()` 先分发请求、处理 Display 变化，再调用 `mOrganizer.startTransition()` 回告 WMS；启用该标志时则转交 Mixpatcher。WMS 的 `WindowOrganizerController` 也可能将 `transition.start()` 与窗口事务应用投递到 Handler。不能把一次 Binder 返回当成两端状态已同步推进的证明。[源码：`ITransitionPlayer.aidl` L42–66；`Transitions.java` L1337–1418、L2036–2052；`WindowOrganizerController.java` L397–444；`Transition.java` L410–416、L4955–4959]
 
 #### 3.5.2 Transition 状态机
 
-`Transition`（WMS 侧）按以下状态推进：
+WMS 侧正常路径与可中止路径如下：
 
+```text
+STATE_PENDING → STATE_COLLECTING → STATE_STARTED → STATE_PLAYING → STATE_FINISHED
+STATE_PENDING / STATE_COLLECTING / STATE_STARTED → STATE_ABORT
 ```
-STATE_COLLECTING → STATE_STARTED → STATE_PLAYING → STATE_FINISHED
-                                          ↘ STATE_ABORT
-```
 
-- `STATE_COLLECTING`：`TransitionController.moveToCollecting()` 之后，正在收集参与者；此时 `mCollectingTransition` 唯一指向它。
-- `STATE_STARTED`：Shell 通过 `WindowOrganizerController.startTransition()` 调用 `transition.start()` 后进入；BLAST 开始等待所有参与窗口绘制。`isCollecting()` 对 `COLLECTING` 与 `STARTED` 都返回 true，目的是防止新 transition 抢占 `mCollectingTransition`。[来源: juejin Shell Transition 机制详解 7.2；AOSP `Transition.java` `isCollecting` / `isPopulated`]
-- `STATE_PLAYING`：`Transition.onTransactionReady()` 内部 `moveToPlaying()` 之后，并通过 Binder `onTransitionReady` 通知 Shell。`onTransactionReady` 会按顺序做：`commitVisibleActivities` → `commitVisibleWallpapers` → `calculateTargets` → `calculateTransitionInfo` → `assignTrack` → `moveToPlaying` → `mController.getTransitionPlayer().onTransitionReady(...)`。[来源: juejin Shell Transition 机制详解 4.4、5.2；AOSP `Transition.onTransactionReady`]
-- `STATE_FINISHED` / `STATE_ABORT`：Shell 在 `onFinish()` 中调用 `mOrganizer.finishTransitionWithState()`；WMS 收到后从 `mPlayingTransitions` 移除、清理 starting window、通知监听器；`abort()` 则用于超时或 SystemUI 异常。[来源: juejin Shell Transition 机制详解 阶段 5、7.1；AOSP `TransitionController.finishTransition`、`Transition.finishTransition`]
+`STATE_PENDING` 表示对象已创建但尚未开始收集。`startCollecting()` 进入 `STATE_COLLECTING` 时就创建 SyncGroup；`start()` 进入 `STATE_STARTED` 后应用就绪状态。`isCollecting()` 对 `COLLECTING` 和 `STARTED` 都返回 true，两个阶段都允许继续收集参与者。
 
-`isPopulated()` 为 `mState >= STATE_STARTED && allReady()`，是“可以让新 transition 并行”的判定条件。[来源: juejin Shell Transition 机制详解 7.2、7.3；AOSP `Transition.isPopulated`]
+非中止路径的 `onTransactionReady()` 先提交可见性，再设置 `STATE_PLAYING`、保存初态事务，随后计算动画目标与 `TransitionInfo`、分配 track、调用 `moveToPlaying()`，最后通知 Shell。WMS 进入 `PLAYING` 与 Shell 开始执行动画仍有时间间隔。
+
+动画结束时，Shell 的普通完成路径应用合并后的结束事务，再调用 `mOrganizer.finishTransition(token, wct)`。WMS 经 `WindowOrganizerController.finishTransition()` 和 `TransitionController.finishTransition()` 完成窗口状态清理。`abort()` 只允许在 `PENDING`、`COLLECTING` 或 `STARTED` 阶段中止；播放后不能再沿这条路径中止。[源码：`Transition.java` L165–199、L832–898、L1949–1977、L2034–2128、L2247–2284；`Transitions.java` L1276–1325；`WindowOrganizerController.java` L514–535]
+
+`isPopulated()` 的实现是 `mState >= STATE_STARTED && allReady()`，表示预期参与者与就绪条件已齐备。它不保证绘制完成，也不足以单独决定并行收集。[源码：`Transition.java` L1267–1275]
 
 #### 3.5.3 BLAST 同步：避免多 Surface 抖动
 
-`BLASTSyncEngine` 把多个参与窗口（Activity 容器、Task、Wallpaper、starting window）合成一个 `SyncGroup`，等待所有窗口把首帧 buffer 提交，再统一合并事务、回调 `Transition.onTransactionReady()`。[来源: juejin Shell Transition 机制详解 4.1、4.3；AOSP `BLASTSyncEngine.startSyncSet` / `addToSyncSet` / `onSurfacePlacement` / `tryFinish` / `finishNow`]
+正常完成时，`SyncGroup.tryFinish()` 要求 group 已 ready、依赖为空、根成员的 `isSyncFinished(group)` 均满足。这里检查的是容器的同步就绪条件，不能推导为每个窗口都交付了新布局的首帧：不可见或全透明窗口可以跳过等待；已有绘制结果且无需重绘的窗口可以直接完成；上层已就绪且覆盖父容器的子窗口可以遮住下层。`WindowState.prepareSync()` 对 wallpaper 仍保留添加同步支持的 TODO，不能把 wallpaper 的新 buffer 纳入统一首帧保证。[源码：`BLASTSyncEngine.java` L198–216；`WindowState.java` L5967–6029；`WindowContainer.java` L3515–3539]
 
-执行要点：
+同步事务按以下路径合并：
 
-1. `prepareSync()` 递归把子树 `mSyncState` 设为 `SYNC_STATE_READY`。此后 `getSyncTransaction()` 返回各容器的隔离 `mSyncTransaction`，直到 `finishSync()` 把它合并到 `SyncGroup.mOrphanTransaction`。[来源: juejin Shell Transition 机制详解 4.2.1、4.2.3；AOSP `WindowContainer.getSyncTransaction`]
-2. App 在 `WindowState.finishDrawing(postDrawT)` 处触发 `onSyncFinishedDrawing()`，`mSyncState` 进入 `READY`，事务并入隔离事务。
-3. WMS 的 surface placement（`onSurfacePlacement()`）遍历活跃 SyncGroup，对每个 group 依次检查 `mReady`、依赖为空、全部成员 `isSyncFinished()`；都满足后 `finishNow()` 合并 `mOrphanTransaction`、调用 `mListener.onTransactionReady(syncId, merged)`。[来源: juejin Shell Transition 机制详解 4.3；AOSP `BLASTSyncEngine.tryFinish` / `finishNow`]
-4. `merged` 传给 `Transition.onTransactionReady()` 后，再由 WMS 转给 Shell 作为 `startT`。[来源: juejin Shell Transition 机制详解 6.1；AOSP `Transition.onTransactionReady`]
+1. 通用 `WindowContainer.prepareSync()` 递归准备子树并将自身标为 `READY`；需要等待绘制的 `WindowState` 随后进入 `WAITING_FOR_DRAW`。同步期间 `getSyncTransaction()` 返回各容器的 `mSyncTransaction`。
+2. `WindowState.finishDrawing(postDrawTransaction, syncSeqId)` 检查绘制序号，满足当前请求后调用 `onSyncFinishedDrawing()`；需要同步的绘制事务合并进该窗口的 `mSyncTransaction`。
+3. `finishNow()` 创建 `merged`，合并已有的 orphan 事务，再对根成员调用 `finishSync(merged, group, false)`，递归把各容器事务直接合并进 `merged`。`mOrphanTransaction` 专门保存同步期间已移除根子树的遗留操作。
+4. `mListener.onTransactionReady(syncId, merged)` 把结果交给 `Transition`，由 WMS 构造动画初态后发给 Shell。
 
-`persist.wm.debug.shell_transit_blast` 决定 `TransitionController.SYNC_METHOD`：`true` 走 `METHOD_BLAST`（完整 BLAST 同步），`false` 走 `METHOD_NONE`（仅 App 内部绘制报告，不做 BLAST 级 buffer 同步）。[来源: juejin Shell Transition 机制详解 4.5；AOSP `TransitionController.SYNC_METHOD`]
+这些步骤分别对应 `WindowContainer.java` L2852–2860、L3415–3420、L3454–3505，`WindowState.java` L6048–6129，以及 `BLASTSyncEngine.java` L166–177、L219–291。
 
-在折叠/展开场景里，如果 transition 跨 Display，或同时携带 starting window、旧 Task leash 与新 Activity Surface，BLAST 是避免“先看到旧 Activity 残影，再看到新 Activity 边界”的关键一环。buffer 同步本身可能耗时间，App 内部 `performTraversals` 也未必在窗口准备好后立即提交。[来源: juejin Shell Transition 机制详解 10.2；AOSP `BLASTSyncEngine`]
+`TransitionController.SYNC_METHOD` 在类初始化时读取 `persist.wm.debug.shell_transit_blast`：`true` 选择 `METHOD_BLAST`，应用交出 buffer，由同步事务统一应用；`false` 选择 `METHOD_NONE`，应用自行绘制和显示并报告完成。不能仅凭 SyncGroup 存在就认定启用了 buffer 同步。
 
-#### 3.5.4 TransitionController 的三个队列与“伪并行”
+同步等待还有超时路径。该基线给 `TRANSIT_CHANGE` 配置 2000 ms，其余类型配置 5000 ms；超时会记录未完成容器或依赖，调用 `onSyncGroupTimeout()` 后执行 `finishNow()`。它可能使 transition 在绘制尚未全部就绪时推进到播放，不等同于 `abort()`，这些数值也不表示动画时长。[源码：`TransitionController.java` L116–124、L443–447；`BLASTSyncEngine.java` L90–94、L408–457；`Transition.java` L880–887、L4424–4436]
 
-`TransitionController` 维护三个容器：
+#### 3.5.4 TransitionController 的三个队列与并行收集
 
-- `mCollectingTransition`：当前唯一正在收集参与者的 transition（`STATE_COLLECTING` 或 `STATE_STARTED`）。
-- `mWaitingTransitions`：已进入 `STATE_STARTED` 且 `isPopulated()=true`、但仍在等 BLAST 同步的 transition。
-- `mQueuedTransitions`：还没创建 `Transition` 对象、连并行收集条件都不满足的申请。
+`TransitionController` 用以下容器管理收集与等待：
 
-新 transition 申请按以下优先级处理：队列非空就排队；没有 active sync 或 collecting 时直接 `moveToCollecting`；当前 collecting 已满足并行条件时，旧的进 `mWaitingTransitions`，新的成为 `mCollectingTransition`；以上都不满足，则进 `mQueuedTransitions`。[来源: juejin Shell Transition 机制详解 8.2、8.6；AOSP `TransitionController.canStartCollectingNow` / `tryStartCollectFromQueue`]
+- `mCollectingTransition`：当前接收新变化的 transition，可处于 `COLLECTING` 或 `STARTED`。
+- `mWaitingTransitions`：已 populated、为新的 collecting transition 让出位置，但仍在等待同步完成的 transition。
+- `mQueuedTransitions`：尚不能开始收集的条目。普通条目已经持有 `Transition` 对象；legacy 同步条目持有 SyncGroup，`mTransition` 可以为空。
 
-并行收集的三个前置条件：
+`startCollectOrQueue()` 先保持已有队列顺序；没有活跃同步时直接开始收集；存在 collecting transition 时，只有 `canStartCollectingNow()` 允许，才把旧的移入 waiting、让新的开始收集。该检查要求当前 collecting 已 populated，并对它及所有 waiting transition 调用 `TransitionController.getCanBeIndependent(collecting, queued)`。
 
-1. 当前 collecting 已 populated（`isPopulated()=true`）。
-2. 新 transition 与当前 collecting 独立（`getCanBeIndependent()` 返回 true）。
-3. 新 transition 与所有 waiting transitions 都独立。
-
-`getCanBeIndependent()` 的默认返回是 false；同 display 上的窗口变化、参与者可能重叠的情况都不会独立。所以 `TRANSIT_SPLIT_TO_FREEFORM_AND_FULL` 必须由一个 transition 统一处理，Shell 端一次播放，而不是拆成两个 transition 各自播放。[来源: juejin Shell Transition 机制详解 8.4、8.5；AOSP `Transition.getCanBeIndependent`]
-
-回到折叠展开场景：transition 用的 leash Surface 通常就是 task 的 leash；新 transition 能否并行，取决于是否存在第二个独立的 Display，或是否命中 `PARALLEL_TYPE_RECENTS` 这类特例。[来源: juejin Shell Transition 机制详解 8.5]
+`getCanBeIndependent()` 默认返回 false。该基线的放行分支针对测试用的双方 `PARALLEL_TYPE_MUTUAL`，以及带附加限制的 `PARALLEL_TYPE_RECENTS` 场景；跨 Display 检查位于 recents 分支内部。存在第二个 Display 本身不构成通用并行许可。即使允许并行收集，SyncGroup 依赖或后续播放独立性检查仍可能使其等待。[源码：`TransitionController.java` L188–229、L1303–1364、L1406–1504、L1766–1798]
 
 #### 3.5.5 折叠/展开分析时可用的观察点
 
-折叠与展开常伴随 task 切换、`displayChange`、resize 与 starting window 出现。我们按上面这套机制排查时，要区分：
+折叠与展开常伴随 Task、Display、窗口尺寸及 starting window 的变化，排查时分别记录：
 
-- WMS 端是否真的进入了 BLAST 同步：检查 `persist.wm.debug.shell_transit_blast`、`BLASTSyncEngine` logcat、`TransitionController.moveToPlaying` 时机。
-- Shell 是否正确回告：检查 `Transitions.requestStartTransition` 是否在 `WindowOrganizerController.startTransition` 之前完成；如果 `transition.start()` 看到的 state 已不是 `STATE_COLLECTING`，说明 Shell 回告时序已乱。
-- App 端 `onSyncFinishedDrawing()` 时机：检查 `WindowState.finishDrawing` 与 `Choreographer#doFrame` 的相对位置。
-- 队列堆积：检查 `mQueuedTransitions` 与 `mWaitingTransitions` 长度、是否有 transition 长期停在 `STATE_STARTED` 而没有 `onTransactionReady`。
+- 收集与启动：对齐 transition token、sync ID、Shell 收到请求与 WMS 执行 `start()` 的时间。`start()` 遇到已启动、已播放或已中止状态会提前返回；结合超时日志判断原因，不能仅凭状态不再是 `COLLECTING` 判定回告顺序错误。
+- 同步就绪：确认实际 sync method，再检查 ready 条件、依赖和未完成容器；把 `WindowState.finishDrawing()` 的序号与应用 `Choreographer#doFrame` 对照。
+- 队列等待：区分 queued、waiting 和 playing，检查 `isPopulated()` 与 controller 的独立性判断，避免把所有等待都归为应用绘制慢。
+- 动画与显示：Shell 收到 ready 后仍可能等待 track 或同步屏障；继续核对 Handler、leash 事务、目标 buffer 的 latch 与 present。
 
-Logcat 过滤 tag：`TransitionController`、`Transition`、`BLASTSyncEngine`、`Transitions`、`DefaultTransitionHandler`。[来源: juejin Shell Transition 机制详解 10.1；AOSP 各模块 logcat tag]
+Logcat 可辅助查看 `TransitionController`、`Transition`、`BLASTSyncEngine` 和 `ShellTransitions`，详细状态还需相应 ProtoLog 分组与窗口 trace。观察入口对应 `Transition.java` L880–887，`Transitions.java` L145、L798–858，以及前述同步与队列方法。
 
 ## 4. Jetpack WindowManager：面向应用的窗口 posture
 
@@ -365,7 +375,7 @@ foldingFeature.state == FoldingFeature.State.HALF_OPENED &&
 
 ### 4.4 生命周期安全的收集方式
 
-官方推荐在 `STARTED` 生命周期内收集，停止时自动取消。下面的代码把订阅绑定到 Activity 生命周期：
+官方推荐在 `STARTED` 生命周期内收集，停止时自动取消。`windowLayoutInfo(Activity)` 的首值不会早于 `Activity.onStart()`；具体设备可能立即交付、长时间延迟，也可能始终没有值。初始布局应能在尚无 posture 信息时工作，避免等待首值才显示页面。下面的代码把订阅绑定到当前 Activity 生命周期：
 
 ```kotlin
 lifecycleScope.launch(Dispatchers.Main) {
@@ -383,6 +393,10 @@ lifecycleScope.launch(Dispatchers.Main) {
 ```
 
 这段代码在 Activity 低于 `STARTED` 状态时停止收集，避免 Activity 不可见后继续持有订阅；它不限制重组或 View layout 成本。回调里我们先把 posture 归一化为小而稳定的 UI state，再让受影响的区域读取它。
+
+该 Flow 关联传入的 Activity，不能跨 Activity 重建持有，例如把旧 Activity 的 Flow 存入保留的 ViewModel；新 Activity 应重新创建订阅，否则可能泄漏或收到错误窗口信息。[`WindowInfoTracker.windowLayoutInfo(Activity)` API](https://developer.android.com/reference/androidx/window/layout/WindowInfoTracker#windowLayoutInfo(android.app.Activity)) 明确列出了首值交付和重建边界。
+
+能力查询另有版本要求：`supportedPostures` 自 Jetpack WindowManager 1.4.0 提供，要求设备的 `WindowSdkExtensions.extensionVersion >= 6`，低于 6 会抛出 `UnsupportedOperationException`；派生测试类未实现该方法时会抛出 `NotImplementedError`。能力集合在运行期间不变，当前姿态仍从 `WindowLayoutInfo` 读取。调用前检查库版本与扩展版本，不能仅凭 Android 平台版本放行。[`getSupportedPostures()` API](https://developer.android.com/reference/androidx/window/layout/WindowInfoTracker#getSupportedPostures())
 
 ## 5. 原始 hinge angle sensor 的使用边界
 
@@ -543,16 +557,18 @@ SurfaceFlinger FrontEnd 接收 App、WMS 和 Shell 的 layer transaction。Compo
 
 ### 8.2 Perfetto 采集
 
-快速采集可以覆盖调度、图形、窗口、Binder 与 power 类别：
+快速采集可以覆盖调度、图形、窗口、Binder、power 与 system_server 类别；`ss` 用于启用 `DeviceStateChanged` 所属的 system-server trace tag：
 
 ```bash
 adb shell perfetto \
   -o /data/misc/perfetto-traces/fold-switch.perfetto-trace \
   -t 20s \
-  sched freq idle binder_driver gfx view wm power
+  sched freq idle binder_driver gfx view wm power ss
 ```
 
-这条命令采集 20 秒，并把结果写入设备上的指定 trace 文件。分析时重点找：
+这条命令采集 20 秒，并把结果写入设备上的指定 trace 文件。`DeviceStateManagerService` 使用 `TRACE_TAG_SYSTEM_SERVER` 写入事件，`atrace.cpp` 将它映射为 `ss`，单独启用 `wm` 无法覆盖这个起点。[源码：`DeviceStateManagerService.java` L660–672；`atrace.cpp` L122]
+
+在该 Android 17 源码基线中，Perfetto 的 `CreateConfigFromOptions()` 遇到 `gfx` 类别会自动加入 `android.surfaceflinger.frametimeline` 数据源，因此这条快速命令也会请求 FrameTimeline。仍需确认实际设备支持并产出该数据源；使用自定义配置时，应显式加入它，不能只凭 `gfx` 的 atrace tag 判断帧数据齐全。[源码：Perfetto `src/perfetto_cmd/config.cc` L123–138] 分析时重点找：
 
 - system_server 的 `DeviceStateChanged`；
 - `DisplayThread` 上的 DeviceState、DMS（DisplayManagerService）和 WMS 工作；
@@ -567,7 +583,50 @@ adb shell perfetto \
 
 ### 8.3 功能自动化与性能测试分开
 
-截至 2026-07，Espresso Device API 1.0.1 可在兼容虚拟设备上执行以下模式切换：
+[Espresso Device API 官方文档](https://developer.android.com/studio/test/espresso-api)（2026-10-16 更新）要求 Android Studio Iguana、AGP 8.3、Android Emulator 33.1.10 或各自的后续版本，AVD 需运行 API 24 或以上系统，并具备所测试的设备模式。文档当前示例依赖为 `androidx.test.espresso:espresso-device:1.1.0`。
+
+测试控制通道需要网络权限，在 `src/androidTest/AndroidManifest.xml` 的 `<manifest>` 内加入以下声明；其中 `ACCESS_LOCAL_NETWORK` 适用于本文的 target SDK 37 测试：
+
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+```
+
+这些权限属于测试 APK 的配置。还需在 `gradle.properties` 启用实验开关 `android.experimental.androidTest.enableEmulatorControl=true`，并在模块构建脚本开启 emulator control。以下是 `build.gradle.kts` 配置节选：
+
+```kotlin
+android {
+    testOptions {
+        emulatorControl {
+            enable = true
+        }
+    }
+}
+
+dependencies {
+    androidTestImplementation("androidx.test.espresso:espresso-device:1.1.0")
+}
+```
+
+上述两处开关允许测试向模拟器发送控制命令。target SDK 37 测试还必须在设备操作前授予 `ACCESS_LOCAL_NETWORK`；使用 `ScreenOrientationRule` 时，授权必须先于该规则运行。官方用 `RuleChain` 固定顺序，规则配置节选如下：
+
+```kotlin
+val grantPermissionRule = GrantPermissionRule.grant(
+    android.Manifest.permission.ACCESS_LOCAL_NETWORK
+)
+val composeTestRule = createComposeRule()
+val screenOrientationRule = ScreenOrientationRule(ScreenOrientation.PORTRAIT)
+
+@get:Rule
+val chain = RuleChain.outerRule(grantPermissionRule)
+    .around(composeTestRule)
+    .around(screenOrientationRule)
+```
+
+这里的规则类型分别来自 `androidx.test.rule.GrantPermissionRule`、`org.junit.rules.RuleChain`、`org.junit.Rule`、`androidx.compose.ui.test.junit4.createComposeRule`、`androidx.test.espresso.device.rules.ScreenOrientationRule` 和 `androidx.test.espresso.device.action.ScreenOrientation`；测试类需导入相应类型。只声明权限或并列声明多个 `@Rule`，都没有保证授权先于设备规则执行。
+
+环境与权限就绪后，在测试方法内通过 `androidx.test.espresso.device.EspressoDevice.onDevice` 执行模式切换：
 
 ```kotlin
 onDevice().setClosedMode()
@@ -640,13 +699,15 @@ adb shell dumpsys SurfaceFlinger --display
 
 只看 App `onSensorChanged()` 间隔，定位不到显示后段。
 
-Shell 端看起来没有进度回调时，我们先确认 transition 是否已经进入播放：检查 `Transition` 是否仍停在 `STATE_STARTED`、`onTransactionReady` 是否被触发、`moveToPlaying` 之前 BLAST 同步是否已就绪。常见卡点：
+Shell 端没有进度回调时，先沿同一个 transition token 与 sync ID 检查请求、同步就绪、动画分发和显示提交：
 
-- transition 卡在 `STATE_COLLECTING`：检查 Shell 是否收到 `requestStartTransition` 并回告了 `startTransition`，以及 `WindowOrganizerController.startTransition` 内 transition 是否仍处于 `isCollecting()` 状态。[来源: juejin Shell Transition 机制详解 10.2；AOSP `WindowOrganizerController.startTransition`]
-- transition 卡在 `STATE_STARTED` 不进入 playing：检查 `BLASTSyncEngine.onSurfacePlacement` 是否触发、`tryFinish` 中 `isSyncFinished` 是否返回 true；`persist.wm.debug.shell_transit_blast` 是否打开。[来源: juejin Shell Transition 机制详解 10.2；AOSP `BLASTSyncEngine.onSurfacePlacement` / `tryFinish`]
-- Shell 收到回调但没动画：检查 `Transitions.dispatchReady` 内的 track 分配、Handler 链是否有人认领。[来源: juejin Shell Transition 机制详解 10.2；AOSP `Transitions.dispatchReady`]
-- 新 transition 未立即启动：检查 `mQueuedTransitions` 是否非空、是否 `canStartCollectingNow` 返回 false（`isPopulated` 为 false 或 `getCanBeIndependent` 返回 false）。[来源: juejin Shell Transition 机制详解 10.2；AOSP `TransitionController.canStartCollectingNow`]
-- 动画出现闪烁、撕裂：检查 BLAST sync 是否实际生效、容器 `mSyncTransaction` 是否被正确隔离。[来源: juejin Shell Transition 机制详解 10.2；AOSP `WindowContainer.getSyncTransaction`]
+- 停在 `STATE_COLLECTING`：核对 Shell 是否收到启动请求、WMS 是否执行 `start()`，以及 ready 条件是否仍未满足；Handler 投递与超时都可能改变两端观测顺序。
+- 停在 `STATE_STARTED`：检查 `BLASTSyncEngine.tryFinish()` 的 ready、依赖和容器条件，并查看超时日志。属性值决定 sync method，SyncGroup 存在本身不能证明 buffer 同步已开启。
+- Shell 已收到 ready：检查 `TransitionInfo` 的 track、同步或 sleep 屏障、动画处理器是否接手，以及任务是否存在可播放的变化。
+- 新 transition 排队：检查 `mQueuedTransitions`、`mWaitingTransitions`，以及 `canStartCollectingNow()` 对 populated 和 `TransitionController.getCanBeIndependent()` 的判断；不同 Display 不自动允许并行收集。
+- 画面闪烁：对照新窗口 buffer、同步事务合并、starting window 和 leash 的可见时段，再检查目标 Display 的 latch 与 present，区分内容尚未更新和动画几何变化。
+
+这些检查使用 3.5 节的 Android 17 源码入口；同步完成、Shell 开始动画和屏幕显示新内容要分别取证。
 
 ### 9.4 展开后 GPU/功耗上升
 
@@ -675,7 +736,7 @@ Shell 端看起来没有进度回调时，我们先确认 transition 是否已�
 | Android 12L（API 32） | 大屏系统体验与 Activity Embedding（在同一任务内并排显示多个 Activity）进入主流支持范围 | foldable 展开态常进入多 pane 或 split（分栏）布局，但要运行时查询能力 |
 | Android 13（API 33） | 多窗口与大屏路径继续演进 | 不改变 DeviceState、LogicalDisplay、App Window、SF Output 的分层 |
 | Android 14（API 34） | 公开 `SurfaceSyncGroup`（协调多个 Surface 同步提交）；部分设备提供 rear 或 dual display mode | 同步 API 与 fold posture API 职责不同；特殊 display mode 需查询设备能力 |
-| Android 15（API 35） | WindowManager Extensions 6 可查询 supported postures（支持的姿态集合） | supported posture 是能力信息，不给出连续 hinge angle |
+| Android 15（API 35） | 部分设备提供 WindowManager Extensions 6 的 supported posture 能力查询 | 应用还需 Jetpack WindowManager 1.4.0，并检查扩展版本；低于 6 会抛 `UnsupportedOperationException`，能力信息不表示当前姿态 |
 | Android 16（API 36） | target SDK 36 大屏方向、比例、resizability 限制忽略，保留临时 opt-out | 应用要覆盖更多 resize、rotation 与展开态 |
 | Android 17（API 37） | 移除上述 opt-out；当前平台源码锚点 | smallest width 至少 600 dp（sw600dp 及以上）时不能依赖固定方向与不可缩放声明 |
 
@@ -692,18 +753,21 @@ Shell 端看起来没有进度回调时，我们先确认 transition 是否已�
 - [`UnfoldTransitionHandler.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/unfold/UnfoldTransitionHandler.java) 与 [`FullscreenUnfoldTaskAnimator.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/unfold/animation/FullscreenUnfoldTaskAnimator.java)：Shell task leash 动画；
 - [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp) 与 [`CompositionEngine`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/)：display transaction、snapshot 与 per-display output。
 - [`TransitionController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TransitionController.java)：transition 的创建、收集、播放、完成；`mCollectingTransition` / `mWaitingTransitions` / `mQueuedTransitions` 三队列与 `canStartCollectingNow`。
-- [`Transition.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/Transition.java)：单 transition 状态机（`STATE_COLLECTING` / `STATE_STARTED` / `STATE_PLAYING` / `STATE_FINISHED` / `STATE_ABORT`）、`onTransactionReady` 回调。
-- [`BLASTSyncEngine.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java)：`SyncGroup` 合并、`onSurfacePlacement` → `tryFinish` → `finishNow` → `mListener.onTransactionReady`。
-- [`WindowContainer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/WindowContainer.java)：`getSyncTransaction` / `prepareSync` / `finishSync` / `onSyncFinishedDrawing` 隔离事务。
-- [`WindowOrganizerController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowOrganizerController.java)：Shell → WMS 的 Binder 服务端，`startTransition` / `finishTransitionWithState`。
+- [`Transition.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/Transition.java)：`PENDING`、`COLLECTING`、`STARTED`、`PLAYING`、`FINISHED` 状态与播放前的 `ABORT` 分支，`onTransactionReady` 回调。
+- [`BLASTSyncEngine.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java)：SyncGroup 就绪与超时、事务合并和回调。
+- [`WindowContainer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowContainer.java)：`getSyncTransaction` / `prepareSync` / `finishSync` / `onSyncFinishedDrawing` 隔离与合并事务。
+- [`WindowState.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowState.java)：窗口绘制序号、同步跳过条件和 wallpaper 同步支持边界；[`ActivityRecord.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityRecord.java)：应用窗口的 WindowToken 子类。
+- [`WindowOrganizerController.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowOrganizerController.java)：Shell → WMS 的 Binder 服务端，`startTransition` / `finishTransition`。
 - [`Transitions.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java)：Shell 端 `requestStartTransition` / `onTransitionReady` / `playTransition` / `onFinish`，含内嵌 `TransitionPlayerImpl`。
 - [`DefaultTransitionHandler.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/DefaultTransitionHandler.java)：系统默认 Handler 链一环，`startAnimation` 驱动 `DefaultSurfaceAnimator`。
-- [`ITransitionPlayer.aidl`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/ITransitionPlayer.aidl)：WMS → Shell 的两条通知接口定义。
+- [`ITransitionPlayer.aidl`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/ITransitionPlayer.aidl)：WMS → Shell 的启动与就绪通知接口。
+- [`atrace.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp)：`ss` 与 system-server trace tag 的映射；Perfetto [`config.cc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/perfetto_cmd/config.cc)：快速命令的类别与数据源配置。
 
 ### 应用与测试文档
 
 - [Make your app fold aware](https://developer.android.com/develop/adaptive-apps/guides/foldables/make-your-app-fold-aware)：`WindowInfoTracker`、`FoldingFeature` 与感知生命周期的收集方式；
 - [`FoldingFeature` API](https://developer.android.com/reference/androidx/window/layout/FoldingFeature)：state、orientation、occlusion、separating 的定义；
+- [`WindowInfoTracker` API](https://developer.android.com/reference/androidx/window/layout/WindowInfoTracker)：Activity Flow 的首值与重建限制、supported posture 的库版本和扩展版本要求；
 - [Android 17 大屏方向与缩放行为](https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored)：target 37 规则与例外；
 - [Configuration and continuity](https://developer.android.com/guide/topics/large-screens/configuration-and-continuity)：Activity 重建、自行处理配置与状态连续性；
 - [Espresso Device API](https://developer.android.com/studio/test/espresso-api)：虚拟设备上的 closed 与 flat mode 功能测试；

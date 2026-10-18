@@ -5146,6 +5146,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "重写 3.5 及 9.3：按 android-17.0.0_r1 修正 PENDING/ABORT、Token、异步回告、finishTransition、BLAST 跳过/超时/事务合并与队列并行条件。Transition L165-199/832-898/1949-1977/2034-2128/4955-4959；Controller L1303-1504；WindowState L5967-6029；BLAST L198-291/408-457；Shell L1276-1418/2036-2052。 证据：logs/rework/2026-10-18-20261018-093520-rework-f691e632-rework.md",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261018-093520-rework-f691e632",
       "created_at": "2026-10-17T22:40:18.013596+08:00",
       "created_by": "aiw-polish-idle-audit",
       "created_run_id": "20261017-223520-idle-audit-f691e632",
@@ -5160,13 +5163,16 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowState.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Shell Transition 的状态机、BLAST 就绪保证与并行收集描述不符 Android 17 源码",
       "type": "source-mismatch",
-      "updated_at": "2026-10-17T22:40:18.013596+08:00"
+      "updated_at": "2026-10-18T09:42:32.611191+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "3.1 按 ActivityRecord.java L372 改为继承 WindowToken、直接列 WindowState；11 节 WindowContainer 链接改为 services/core/java/com/android/server/wm，已实际读取该文件并核对 L2852-2860/3454-3539。 证据：logs/rework/2026-10-18-20261018-093520-rework-f691e632-rework.md",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261018-093520-rework-f691e632",
       "created_at": "2026-10-17T22:40:18.065913+08:00",
       "created_by": "aiw-polish-idle-audit",
       "created_run_id": "20261017-223520-idle-audit-f691e632",
@@ -5178,13 +5184,16 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityRecord.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowContainer.java"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "WMS 树误将 ActivityRecord 与 WindowToken 分为父子层，且 WindowContainer 来源路径无效",
       "type": "incorrect-object-model",
-      "updated_at": "2026-10-17T22:40:18.065913+08:00"
+      "updated_at": "2026-10-18T09:42:32.664958+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "8.3 补齐 Studio Iguana/AGP8.3/Emulator33.1.10/AVD API24、androidTest 网络权限、两处 emulatorControl 开关、官方1.1.0依赖和 target37 RuleChain 授权顺序。当前官方 HTML L9329-9388、L9431-9451，更新日期 L9557=2026-10-16。未声称运行模拟器测试。 证据：logs/rework/2026-10-18-20261018-093520-rework-f691e632-rework.md",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261018-093520-rework-f691e632",
       "created_at": "2026-10-17T22:40:18.118113+08:00",
       "created_by": "aiw-polish-idle-audit",
       "created_run_id": "20261017-223520-idle-audit-f691e632",
@@ -5195,13 +5204,16 @@
       "source_paths": [
         "https://developer.android.com/studio/test/espresso-api"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Espresso Device API 示例遗漏环境前提与 target 37 本地网络权限要求",
       "type": "missing-availability-boundary",
-      "updated_at": "2026-10-17T22:40:18.118113+08:00"
+      "updated_at": "2026-10-18T09:42:32.717023+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "2.2/2.3 同步修正：正常条件为 displaysOff 且无待完成 wake/sleep，保留500ms force路径。LogicalDisplayMapper.java L683-705/720-835/1748-1752。 证据：logs/rework/2026-10-18-20261018-093520-rework-f691e632-rework.md",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261018-093520-rework-f691e632",
       "created_at": "2026-10-17T22:40:18.169503+08:00",
       "created_by": "aiw-polish-idle-audit",
       "created_run_id": "20261017-223520-idle-audit-f691e632",
@@ -5212,13 +5224,16 @@
       "source_paths": [
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplayMapper.java"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Display layout 切换等待条件遗漏设备唤醒或休眠状态",
       "type": "missing-condition",
-      "updated_at": "2026-10-17T22:40:18.169503+08:00"
+      "updated_at": "2026-10-18T09:42:32.769254+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "8.2 采集命令加入 ss：DeviceStateManagerService L660-672、atrace.cpp L122。审计详情中“快速配置不自动启用FrameTimeline”被本基线 Perfetto config.cc L123-138 反证，正文按源码写明 gfx 自动请求数据源，并保留设备支持/实际产出的检查边界。 证据：logs/rework/2026-10-18-20261018-093520-rework-f691e632-rework.md",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261018-093520-rework-f691e632",
       "created_at": "2026-10-17T22:45:03.485791+08:00",
       "created_by": "aiw-polish-idle-audit",
       "created_run_id": "20261017-223520-idle-audit-f691e632",
@@ -5230,13 +5245,16 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/devicestate/DeviceStateManagerService.java",
         "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "折叠切换采集命令遗漏 DeviceStateChanged 所需的 ss 类别",
       "type": "incomplete-trace-config",
-      "updated_at": "2026-10-17T22:45:03.485791+08:00"
+      "updated_at": "2026-10-18T09:42:32.821517+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "4.4 与版本表补齐首值不早于onStart、可能延迟/无交付、Flow不跨Activity重建、WM1.4.0+扩展6及低版本异常；保留测试子类NotImplementedError。当前官方 HTML L36925-36959/37239-37265。 证据：logs/rework/2026-10-18-20261018-093520-rework-f691e632-rework.md",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261018-093520-rework-f691e632",
       "created_at": "2026-10-17T22:49:25.066731+08:00",
       "created_by": "aiw-polish-idle-audit",
       "created_run_id": "20261017-223520-idle-audit-f691e632",
@@ -5247,10 +5265,10 @@
       "source_paths": [
         "https://developer.android.com/reference/androidx/window/layout/WindowInfoTracker"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "WindowInfoTracker 使用说明缺少首值交付与能力查询的可用性边界",
       "type": "missing-api-lifecycle-boundary",
-      "updated_at": "2026-10-17T22:49:25.066731+08:00"
+      "updated_at": "2026-10-18T09:42:32.876199+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md",

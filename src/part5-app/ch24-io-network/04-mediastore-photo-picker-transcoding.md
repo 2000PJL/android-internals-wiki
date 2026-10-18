@@ -90,15 +90,17 @@ consolidated_from:
 
 # MediaStore、Photo Picker 与媒体转码
 
-MediaStore 和 MediaProvider 管理共享媒体索引、权限与文件访问，Photo Picker 提供受控选择入口，系统转码可能在交付 URI 内容时改变格式并带来额外延迟。缓存必须跟随 URI 授权和媒体版本。
+MediaStore 和 MediaProvider 管理共享媒体的索引、权限与文件访问，Photo Picker 提供受控的选择入口，系统转码则可能在交付 URI 内容时改变格式、带来额外延迟。这篇文章我们把两条链路放在一起看：查询和打开各要花多少成本，授权如何随选择与时间变化，缓存又该跟着什么失效。
+
+> 源码基线：Android 17 / API 37 / AOSP `android-17.0.0_r1`。
 
 ## MediaStore 索引、查询、写入与 Provider 路径
 
 ### 媒体库的耗时从哪里来
 
-`MediaStore` 是应用访问共享媒体的公开 API，`MediaProvider` 是负责实现查询、权限检查和文件访问的系统模块。Android 17 上，一次查询可能从 `ContentResolver` 进入 Binder 跨进程调用，再经过 `MediaProvider`、SQLite 索引和权限过滤。打开查询结果时，还可能进入 FUSE、缩略图生成或兼容媒体转码。FUSE 是 Filesystem in Userspace，即在用户空间处理部分文件系统请求的机制。
+我们先看一次媒体查询要经过哪些环节。应用通过 `MediaStore` 这套公开 API 访问共享媒体，执行查询、权限检查和文件访问的是系统模块 `MediaProvider`：一次查询可能从 `ContentResolver` 进入 Binder 跨进程调用，再经过 SQLite 索引和权限过滤；打开查询结果时，还可能进入 FUSE、缩略图生成或兼容媒体转码。FUSE 指 Filesystem in Userspace，部分文件系统请求改在用户空间处理。
 
-列表查询返回得快，首屏仍可能卡在后续工作。`Cursor` 是承载查询结果的游标对象，遍历时可能继续读取数据；`Bitmap` 是解码后的像素数据，分配量会直接影响内存。文件打开和图片解码也要分别计时。
+列表查询往往很快返回，首屏却可能卡在后续工作上：`Cursor` 遍历时可能继续读取数据；`Bitmap` 保存解码后的像素，分配量直接影响内存；文件打开和图片解码也要分别计时。
 
 相册、即时通信、备份和文件管理应用面对的媒体项可能达到数万甚至更多。常见问题包括：
 
@@ -106,14 +108,14 @@ MediaStore 和 MediaProvider 管理共享媒体索引、权限与文件访问，
 - 列表绑定时打开原文件并解码。
 - 用文件系统遍历重复完成 `MediaProvider` 已经维护的索引工作。
 - 把 `ContentObserver` 回调当作完整、按顺序到达的变更日志。
-- 把 `generation`（由 `MediaProvider` 递增的变更序号）查询误当成包含删除记录的完整同步协议。
+- 把 `generation` 查询误当成包含删除记录的完整同步协议，而它只是 `MediaProvider` 递增的变更序号。
 - 未声明媒体能力，导致分享或上传路径发生未计划的转码。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为核对基准。Scoped Storage（分区存储）按文件归属和授权范围限制应用访问，相关演进见 6.1、6.3 节；图片加载与缓存见 22.9、24.3 节；普通文件 I/O 的线程管理见 24.1 节。
+Scoped Storage（分区存储）按文件归属和授权范围限制应用访问，相关演进见 6.1、6.3 节；图片加载与缓存见 22.9、24.3 节；普通文件 I/O 的线程管理见 24.1 节。
 
 ### MediaStore 访问模型与性能边界
 
-`MediaStore` 约定了共享媒体的索引和访问方式。列表、筛选和同步通过索引查询完成；读取媒体内容时再打开单个 `Uri`。`Uri` 是形如 `content://...` 的内容标识符，不等同于本地文件路径。文件路径仍可服务于已经合法取得路径的旧库或原生库，但不应作为枚举整个媒体库的入口。
+`MediaStore` 约定了共享媒体的索引和访问方式：列表、筛选和同步走索引查询，读取媒体内容时再打开单个 `Uri`。`Uri` 形如 `content://...`，是内容标识符，本地文件路径和它并不等同。文件路径仍可服务于已经合法取得路径的旧库或原生库；枚举整个媒体库这件事，交给索引查询。
 
 | 访问方式 | 适合场景 | 主要收益 | 必须处理的边界 |
 | --- | --- | --- | --- |
@@ -129,7 +131,7 @@ MediaStore 和 MediaProvider 管理共享媒体索引、权限与文件访问，
 
 Android 13 及以上把读取权限分为 `READ_MEDIA_IMAGES`、`READ_MEDIA_VIDEO` 和 `READ_MEDIA_AUDIO`。Android 14 及以上还提供 `READ_MEDIA_VISUAL_USER_SELECTED`，用于表示应用只能访问用户选中的图片和视频。应用自己写入的媒体在 Android 10 及以上不需要读取权限即可再次访问。Photo Picker 返回逐项 `Uri` 授权，其可见集合与整个媒体库的读取权限不同。
 
-所以，“查询结果里没有某条记录”至少可能表示三种情况：文件被删除、存储卷被卸载、当前授权不可见。备份应用不能仅凭查询缺失就删除云端副本。它需要同时记录权限范围、存储卷状态和同步检查点。
+所以，“查询结果里没有某条记录”至少有三种可能：文件被删除、存储卷被卸载、当前授权不可见。备份应用要判断云端副本该不该删，需要同时看权限范围、存储卷状态和同步检查点，单凭查询缺失下不了结论。
 
 `MediaStore.VOLUME_EXTERNAL` 是汇总多个外部卷的合成视图，适合跨卷展示，但它只读。卷是一个独立的存储区域，例如内部共享存储或 SD 卡。插入操作与 `generation` 同步都应使用具体卷名：
 
@@ -142,13 +144,13 @@ for (volume in volumes) {
 }
 ```
 
-这段代码用于发现当前已挂载的外部媒体卷。卷名可能随可移动存储的插拔而变化，不能把 `VOLUME_EXTERNAL` 传给 `getVersion(context, volume)` 或 `getGeneration(context, volume)`；两者都要求具体卷名。
+这段代码用于发现当前已挂载的外部媒体卷。卷名可能随可移动存储的插拔而变化，`getVersion(context, volume)` 和 `getGeneration(context, volume)` 都要求具体卷名，`VOLUME_EXTERNAL` 留给跨卷展示。
 
 #### 只查询所需列，并让分页可取消
 
-`projection` 是查询要求返回的列集合，只应包含当前阶段需要的数据。媒体网格通常先取 `_ID`、时间、MIME 类型、宽高、视频时长和 `generation`；MIME 类型用 `image/jpeg` 这类值标识内容格式。详情页再读取 EXIF 拍摄信息或打开文件。查询返回 `Cursor` 后，把列表需要的字段复制到小型数据对象中，再关闭 `Cursor`，避免界面长期占用 `MediaProvider` 查询资源。
+`projection` 决定查询返回哪些列，只应包含当前阶段需要的数据。媒体网格通常先取 `_ID`、时间、MIME 类型、宽高、视频时长和 `generation`；MIME 类型用 `image/jpeg` 这类值标识内容格式，详情页再读取 EXIF 拍摄信息或打开文件。查询返回 `Cursor` 后，我们把列表需要的字段复制到小型数据对象中再关闭 `Cursor`，避免界面长期占用 `MediaProvider` 的查询资源。
 
-大图库不宜用不断增长的 `OFFSET` 翻页；`OFFSET` 表示先跳过多少行。较早页面发生插入或删除后，按行数跳过可能造成重复或遗漏，`MediaProvider` 仍可能扫描这些行。应用可以保存上一页末尾的“排序值 + `_ID`”，下一页从该位置继续查询。代码按 `DATE_ADDED` 和 `_ID` 倒序读取图片；`_ID` 用于区分同一秒加入的多条记录：
+大图库翻页不宜用不断增长的 `OFFSET`：它先跳过指定行数再返回，较早页面一旦发生插入或删除，按行数跳过就可能重复或遗漏，`MediaProvider` 也仍可能扫描这些行。更稳妥的做法是保存上一页末尾的“排序值 + `_ID`”，下一页从该位置继续查询。下面的代码按 `DATE_ADDED` 和 `_ID` 倒序读取图片，`_ID` 用于区分同一秒加入的多条记录：
 
 ```kotlin
 data class PageAnchor(
@@ -207,7 +209,7 @@ fun queryImagePage(
 }
 ```
 
-这是一种应用侧分页方案，不保证 `_ID` 永久稳定。媒体库 `version`（整体版本标识）变化后，应废弃旧页位置并重新查询。界面销毁、筛选条件变化或新查询取代旧查询时，调用 `signal.cancel()`；`MediaProvider` 会在支持取消的位置尽快终止工作。
+这是应用侧的分页方案，`_ID` 没有永久稳定的保证；媒体库 `version` 是整体版本标识，它一变化，旧页位置就应废弃并重新查询。界面销毁、筛选条件变化或新查询取代旧查询时，调用 `signal.cancel()`，`MediaProvider` 会在支持取消的位置尽快终止工作。
 
 #### 用 `IS_PENDING` 发布完整媒体
 
@@ -255,11 +257,11 @@ fun publishJpeg(
 }
 ```
 
-这段代码应在负责阻塞 I/O 的后台调度器上执行。`IS_PENDING` 表示尚未发布；失败分支删除调用方刚创建的待发布记录，避免留下长期不可见的半成品。清理操作本身也可能失败，生产实现应记录待清理的 `Uri`，并避免让清理异常覆盖最初的写入异常。创建和移动媒体应使用 `DISPLAY_NAME`、`RELATIVE_PATH` 等列；`DATA` 是旧式绝对路径列，不能用于创建或移动媒体。
+这段代码应在负责阻塞 I/O 的后台调度器上执行。`IS_PENDING` 表示尚未发布，失败分支会删除调用方刚创建的待发布记录，避免留下长期不可见的半成品。清理操作本身也可能失败，生产实现应记录待清理的 `Uri`，并避免让清理异常覆盖最初的写入异常。创建和移动媒体应使用 `DISPLAY_NAME`、`RELATIVE_PATH` 等列；`DATA` 是旧式绝对路径列，只服务于打开已有媒体。
 
 ### MediaProvider 索引、扫描与元数据更新
 
-`MediaProvider` 是 Mainline 可更新模块，可以随 Google Play 系统更新独立升级，不必等整机系统升级。它维护共享存储中的图片、视频、音频和下载项索引，并在查询、打开文件和扫描时执行可见性检查、位置元数据移除等规则。查询结果反映 `MediaProvider` 已建立的索引，不是对目录进行一次实时遍历。
+`MediaProvider` 是 Mainline 可更新模块，可以随 Google Play 系统更新独立升级，不必等整机系统升级。它维护共享存储中的图片、视频、音频和下载项索引，并在查询、打开文件和扫描时执行可见性检查、位置元数据移除等规则；查询结果来自这些已建立的索引，目录并没有被实时遍历一遍。
 
 应用自己通过 `MediaStore.insert()` 创建媒体时，应保留返回的 `Uri`。外部程序直接写入共享目录后，索引更新可能晚于文件出现；读取端要容忍文件存在但索引尚未更新，以及索引行存在但文件打开失败的短暂状态。
 
@@ -267,13 +269,13 @@ fun publishJpeg(
 
 Android 17 的 `MediaStore.java` 对两者给出了不同契约：
 
-- `getVersion(context, volume)` 返回不能解析内部格式的版本字符串。媒体库发生重大变化时，它会改变。应用不必每次查询都调用；进程启动或开始一轮同步时检查即可。
+- `getVersion(context, volume)` 返回内部格式不供解析的版本字符串，媒体库发生重大变化时它会改变。应用不必每次查询都调用，进程启动或开始一轮同步时检查即可。
 - `getGeneration(context, volume)` 返回该卷当前的变更序号。只要 `version` 没变，`generation` 就单调递增，可以直接比较大小。
 - 每行的 `GENERATION_ADDED` 表示记录加入索引时的 `generation`。
 - 每行的 `GENERATION_MODIFIED` 表示该记录元数据最近变化时的 `generation`。
 - `version` 改变后，旧 `generation` 失去比较意义，应用需要重新分页读取当前可见数据。
 
-`generation` 比 `DATE_ADDED` 和 `DATE_MODIFIED` 更适合做增量判断，因为文件时间可被 `setLastModified()` 或系统时钟变化影响。`generation` 只描述 `MediaProvider` 索引变化，不能替代内容哈希；内容哈希是根据文件字节计算的指纹。元数据变化也不一定表示文件字节已经改变。
+`generation` 比 `DATE_ADDED` 和 `DATE_MODIFIED` 更适合做增量判断，因为文件时间可能被 `setLastModified()` 或系统时钟变化改动。它只描述 `MediaProvider` 的索引变化；要判断内容本身，仍需按文件字节计算的内容哈希。反过来，元数据变了，文件字节也未必变。
 
 这段代码先取得本轮结束序号，再把增量查询限制在“上次检查点之后、本轮结束序号之前”的区间：
 
@@ -328,16 +330,16 @@ fun queryChangedImages(
 }
 ```
 
-调用方处理并持久化所有行后，还要再次读取 `version`。前后 `version` 相同，才能把 `endGeneration` 写入检查点；检查点是已经完整处理到哪个位置的持久记录。查询期间发生且 `generation` 大于 `endGeneration` 的变化会留给下一轮。代码把 `Cursor` 交给调用方是为了突出查询区间，业务实现必须用 `use` 关闭它。
+调用方处理并持久化所有行后，还要再次读取 `version`：前后相同，才可把 `endGeneration` 写入检查点——检查点记录的是已经完整处理到哪个位置。查询期间发生且 `generation` 大于 `endGeneration` 的变化留给下一轮。代码把 `Cursor` 交给调用方是为了突出查询区间，业务实现必须用 `use` 关闭它。
 
 `android-17.0.0_r1` 的公开 API 没有删除记录查询。原始媒体行删除后，`GENERATION_MODIFIED` 查询不会返回替代它的删除标记；保留“某项已删除”信息的记录，常称为删除墓碑。因此，以基础 API 为基准的可靠同步需要两条路径：
 
 1. `generation` 增量查询处理新增和修改。
 2. 定期分页查询该卷当前可见的 `_ID`，与本地记录逐项比较，补偿进程停止期间遗漏的删除。
 
-比较前要确认卷仍然挂载，且媒体读取权限没有收窄。权限变化造成的“不可见”不能记为用户删除。
+比较前先确认卷仍然挂载、媒体读取权限没有收窄；权限收窄造成的“不可见”属于权限问题，别记成用户删除。
 
-SDK 扩展版本让 Mainline 模块在基础 Android API 级别不变时增加公开 API。当前 API 37.1 / S 扩展 23（这里的 S 指 Android 12 的 SDK 扩展线）已增加 `MediaStore.queryDeletedFiles()`。该方法返回外部卷的删除记录，包括原 `_ID`、媒体类型、删除 `generation` 和卷名；内部卷的删除不会返回，外部卷移除后，其删除记录也不再保留。
+SDK 扩展版本让 Mainline 模块在基础 Android API 级别不变时增加公开 API。当前 API 37.1 / S 扩展 23 已增加 `MediaStore.queryDeletedFiles()`，这里的 S 指 Android 12 的 SDK 扩展线。该方法返回外部卷的删除记录，包括原 `_ID`、媒体类型、删除 `generation` 和卷名；内部卷的删除不会返回，外部卷移除后，其删除记录也不再保留。
 
 应用应在运行时检查 SDK 扩展版本：支持时用新增/修改查询配合删除查询，不支持时继续比较当前 `_ID` 集合。即使支持该 API，卷移除和权限收窄仍要单独处理。
 
@@ -356,12 +358,12 @@ Android 11 及以上的 `ContentObserver.onChange()` 可以接收一组 `Uri`，
 
 Android 11 及以上允许应用通过直接路径和原生 `fopen()` 访问其有权读取的共享媒体。`MediaProvider` 的 FUSE 守护进程负责在用户空间处理相关文件请求，仍可执行访问检查、位置元数据移除和兼容转码。
 
-Android Open Source Project（AOSP）文档记录了一组调优 Pixel 2 的对照测试：通过文件路径和 `MediaStore` 顺序读取时性能接近，FUSE 顺序写入稍慢，随机读写耗时最高约为 `MediaStore` 路径的两倍。这个结果描述特定设备和测试方式，不是 Android 17 的性能保证。应用需要在目标机型上按顺序读写、随机读写等实际模式分别测量。
+AOSP 文档记录过一组调优 Pixel 2 的对照测试：通过文件路径和 `MediaStore` 顺序读取时性能接近，FUSE 顺序写入稍慢，随机读写耗时最高约为 `MediaStore` 路径的两倍。这组数字描述的是特定设备和测试方式，换机型要重新按顺序读写、随机读写等实际模式测量。
 
 路径访问还受这些约束：
 
 - `DATA` 可用于打开当前已存在且有权访问的媒体，但路径可能因移动、卸载卷或权限变化失效。
-- 创建和更新位置应使用 `DISPLAY_NAME` 与 `RELATIVE_PATH`，不能写 `DATA`。
+- 创建和更新位置应使用 `DISPLAY_NAME` 与 `RELATIVE_PATH`；`DATA` 只用于打开已有媒体。
 - Photo Picker 或云媒体提供方返回的 `Uri` 不保证对应本地路径。
 - 递归扫描目录、逐个读取长度和 EXIF，再查询 `MediaStore`，会重复索引工作并产生大量小 I/O。
 
@@ -378,11 +380,11 @@ Android 11 及以上提供四种系统确认请求：
 
 `authority` 是内容提供方在 `content://` 内容标识符中的唯一名称，`MediaStore` 使用 `media`；每个 `Uri` 都必须由 `MediaStore` 的 `authority` 托管，并指向带 `_ID` 的具体媒体项。
 
-收藏、回收站或删除请求在系统返回结果前已经执行完成；`createWriteRequest()` 的成功结果只代表用户授予写权限，应用随后还要执行写入。该写权限与发起请求的 `Activity`（界面组件）生命周期相关，不能持久保存，也不能扩展到同一路径前缀。
+收藏、回收站或删除请求在系统返回结果前已经执行完成；`createWriteRequest()` 的成功结果只代表用户授予了写权限，应用随后还要自己执行写入。这份写权限跟随发起请求的 `Activity` 生命周期，既没法持久保存，也没法扩展到同一路径前缀。
 
-Android 17 中，`targetSdkVersion` 为 36（Android 16）及以上的应用，每次请求最多传入 2000 个 `Uri`，超出会抛出 `IllegalArgumentException`。2000 是 API 输入上限，并非建议一次让用户确认 2000 项。实际批次应由确认界面的可理解程度、失败恢复方式和设备测量决定。
+`targetSdkVersion` 为 36——也就是 Android 16——及以上的应用，每次请求最多传入 2000 个 `Uri`，超出会抛出 `IllegalArgumentException`。2000 只是 API 输入上限；一次让用户确认多少项，要看确认界面的可理解程度、失败恢复方式和设备测量的结果。
 
-这段代码在创建系统删除请求前校验 Android 17 的输入边界：
+这段代码在创建系统删除请求前先校验输入上限：
 
 ```kotlin
 fun createDeleteRequestForItems(
@@ -401,7 +403,7 @@ fun createDeleteRequestForItems(
 }
 ```
 
-这段校验防止代表整张表的集合 `Uri` 和超限列表进入请求。代码在所有目标版本上都采用 2000 项上限，便于服务端或共享模块使用同一分批规则。用户取消时不能修改本地媒体状态；收到 `RESULT_OK` 后重新查询受影响项，不能假定旧缓存仍然有效。
+这段校验把代表整张表的集合 `Uri` 和超限列表挡在请求之外，并在所有目标版本上都采用 2000 项上限，便于服务端或共享模块使用同一分批规则。用户取消时，本地媒体状态保持原样；收到 `RESULT_OK` 后要重新查询受影响项，旧缓存一律按待验证处理。
 
 ### 缩略图、预览图与解码成本
 
@@ -445,11 +447,11 @@ fun loadMediaThumbnail(
 - 目标物理像素宽高。
 - 裁剪、旋转、色彩和 HDR/SDR 处理参数；HDR 是高动态范围，SDR 是标准动态范围。
 
-同一 `Uri` 的小网格图和详情预览不能共用一个无尺寸缓存键。`generation` 改变时，只让对应媒体的派生图缓存失效；`version` 改变时，重新校验整个 `MediaStore` 缓存索引。
+同一 `Uri` 的小网格图和详情预览尺寸不同，缓存键里必须带上尺寸，否则两种用途会错拿同一张图。`generation` 改变时，只让对应媒体的派生图缓存失效；`version` 改变时，重新校验整个 `MediaStore` 缓存索引。
 
 ### 兼容媒体转码只用于明确的格式边界
 
-Android 12 引入兼容媒体转码。设备可以保存 HEVC（H.265，高效率视频编码）或 HDR 媒体；读取方明确声明不支持源格式时，`MediaProvider` 与媒体转码服务可以返回兼容版本，例如把 HDR 视频转为 SDR。首次转码需要完成解码、重新编码和文件 I/O，后续读取才可能复用系统缓存。等待时间取决于片长、分辨率、格式、硬件编解码能力、温度和系统负载，不能拿一台旧设备的单次耗时作为 Android 17 的固定预算。
+Android 12 引入兼容媒体转码。设备可以保存 HEVC（H.265，高效率视频编码）或 HDR 媒体；读取方明确声明不支持源格式时，`MediaProvider` 与媒体转码服务可以返回兼容版本，例如把 HDR 视频转为 SDR。首次转码要完成解码、重新编码和文件 I/O，后续读取才可能复用系统缓存。等待时间取决于片长、分辨率、格式、硬件编解码能力、温度和系统负载，一台旧设备上测到的单次耗时，别拿来当固定预算。
 
 平台文档建议本机播放和缩略图生成不要触发兼容转码：
 
@@ -462,7 +464,7 @@ Android 12 引入兼容媒体转码。设备可以保存 HEVC（H.265，高效�
 
 `ApplicationMediaCapabilities` 用于描述当前代码路径支持的视频 MIME 类型和 HDR 类型。把它放入 `MediaStore.EXTRA_MEDIA_CAPABILITIES`，再通过 `openTypedAssetFileDescriptor()` 打开媒体，平台便能据此判断是否需要转换。
 
-这段示例表示当前上传路径可以处理 HEVC，但不能处理 HDR10：
+这段示例声明当前上传路径可以处理 HEVC，而 HDR10 超出了它的支持范围：
 
 ```kotlin
 val capabilities = ApplicationMediaCapabilities.Builder()
@@ -485,13 +487,13 @@ contentResolver.openTypedAssetFileDescriptor(
 }
 ```
 
-调用级声明优先于应用资源中的通用声明，适合“本机播放器支持 HDR、上传服务只接受 SDR”这类不同路径。能力声明过宽，应用可能收到自身无法处理的源格式；声明过窄则会增加转码。应用完全不声明媒体能力时，当前平台按“支持所有格式”处理，兼容转码默认关闭。依赖转换的路径必须显式声明不支持的格式。
+调用级声明优先于应用资源中的通用声明，适合“本机播放器支持 HDR、上传服务只接受 SDR”这类不同路径。能力声明过宽，应用可能收到自己处理不了的源格式；声明过窄则会增加转码。应用完全不声明媒体能力时，当前平台按“支持所有格式”处理，兼容转码默认关闭。依赖转换的路径必须显式声明不支持的格式。
 
 资源级声明会影响应用的多条媒体访问路径。仅在各路径能力一致时使用，否则缩略图或本机播放也可能受到不需要的转换影响。
 
 ### 用指标、Perfetto 和 `dumpsys` 分段定位
 
-单个“查询耗时”无法区分 Binder 等待、`MediaProvider` 执行、`Cursor` 读取和应用对象构造。应用应给每个阶段单独计时，并用 `Trace.beginSection()` 或 AndroidX Tracing 添加跟踪区间。Perfetto 是 Android 的系统跟踪工具，可以把应用区间与进程调度、Binder、文件 I/O 等事件放到同一时间线上分析。
+单个“查询耗时”拆不开 Binder 等待、`MediaProvider` 执行、`Cursor` 读取和应用对象构造这几段，应用要给每个阶段单独计时，并用 `Trace.beginSection()` 或 AndroidX Tracing 添加跟踪区间。Perfetto 可以把应用区间与进程调度、Binder、文件 I/O 等事件放到同一时间线上分析。
 
 记录这些字段时，媒体身份使用散列值或内部编号，避免把完整 `Uri` 和文件名写入日志：
 
@@ -501,11 +503,11 @@ contentResolver.openTypedAssetFileDescriptor(
 - 转码：能力声明类别、源格式、接收端要求、描述符等待、读取耗时、取消与失败原因。
 - 同步：卷、`version` 是否变化、起止 `generation`、变更行数、`_ID` 集合差异、`ContentObserver` 唤醒次数。
 
-Perfetto 采集至少包含应用进程和 `com.android.providers.media.module` 进程的调度、CPU 频率、Binder、文件系统、块设备 I/O 与内存信息；块设备 I/O 表示发送到存储设备的读写请求。应用自己的跟踪区间用于区分 `query()`、`Cursor` 读取、缩略图、文件打开和转码。只有明确启用或插入 SQLite 跟踪后，界面中才会出现可用于归因的数据库事件；不能只凭一条名称类似 `database` 的轨道判断耗时来源。
+Perfetto 采集至少包含应用进程和 `com.android.providers.media.module` 进程的调度、CPU 频率、Binder、文件系统、块设备 I/O 与内存信息，其中块设备 I/O 指发送到存储设备的读写请求。应用自己的跟踪区间用于区分 `query()`、`Cursor` 读取、缩略图、文件打开和转码。只有明确启用或插入 SQLite 跟踪后，界面中才会出现可用于归因的数据库事件；看到名称类似 `database` 的轨道，先确认它的来源，再下耗时结论。
 
 #### Android 17 的 `MediaProvider` 诊断命令
 
-`dumpsys` 是读取 Android 系统服务和组件诊断状态的命令行工具；`ServiceManager` 是 Android 原生 Binder 服务的注册表。`android-17.0.0_r1` 的清单把 `MediaProvider` 注册为 `com.android.providers.media.module` 包中的 `ContentProvider`，`authority` 为 `media`，它没有注册成名为 `media_provider` 的 `ServiceManager` 服务。因此 `adb shell dumpsys media_provider` 不是该版本可依赖的命令。
+排查时常用 `dumpsys` 读取系统服务和组件的诊断状态；`ServiceManager` 登记着 Android 原生 Binder 服务。`android-17.0.0_r1` 的清单把 `MediaProvider` 注册为 `com.android.providers.media.module` 包中的 `ContentProvider`，`authority` 为 `media`，并没有注册成名为 `media_provider` 的 `ServiceManager` 服务，因此 `adb shell dumpsys media_provider` 在该版本上并不可依赖。
 
 先列出匹配的 `ContentProvider` 状态：
 
@@ -525,7 +527,7 @@ adb shell dumpsys activity provider \
 
 Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、卷与用户缓存、转码辅助器、Photo Picker 数据库与同步控制器、访问日志等状态。这些字段属于调试实现，不构成应用 API；不同 Mainline `MediaProvider` 版本可能变化。
 
-诊断顺序可以按现象缩小范围：
+诊断时我们按现象缩小范围：
 
 1. 仅 `query()` 阶段慢：查看调用线程、Binder 往返、`MediaProvider` CPU 和磁盘等待。
 2. `Cursor` 很快返回但列表仍慢：查看 `Cursor` 遍历、对象分配和排序后的界面更新。
@@ -545,7 +547,7 @@ Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、�
 
 快速滑动时优先取消已经离开预取窗口的缩略图，保留当前可见项。新筛选条件到来时取消旧 `Cursor` 查询。界面中的稳定键可使用“卷名 + `_ID`”，但 `MediaStore` 的 `version` 改变后必须重新建立映射。
 
-后台同步可以采用这组状态转换；状态机表示任务在条件满足后从一个明确状态进入另一个状态：
+后台同步可以采用这组状态转换，任务在条件满足后从一个明确状态进入下一个：
 
 ```text
 检查卷是否挂载与权限范围
@@ -572,7 +574,7 @@ Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、�
 
 ### 拥有 `MANAGE_EXTERNAL_STORAGE` 权限的应用仍要限制扫描
 
-`MANAGE_EXTERNAL_STORAGE` 是“所有文件访问”特殊权限。Google Play 当前只允许它服务于需要广泛文件访问的核心功能，例如文件管理、备份与恢复、防病毒、文档管理、设备内文件搜索、文件加密和设备迁移。开发者需要在 Play Console 提交权限声明并通过审核。只访问媒体，或让用户手动选择单个文件，不属于允许申请该权限的理由；这些场景应使用 `MediaStore` 或 Storage Access Framework（由系统文件选择器和文档提供方组成的授权框架）。
+`MANAGE_EXTERNAL_STORAGE` 是“所有文件访问”特殊权限。Google Play 当前只允许它服务于需要广泛文件访问的核心功能，例如文件管理、备份与恢复、防病毒、文档管理、设备内文件搜索、文件加密和设备迁移。开发者需要在 Play Console 提交权限声明并通过审核。只访问媒体，或让用户手动选择单个文件，都算不上申请该权限的理由；这些场景应使用 `MediaStore` 或 Storage Access Framework，也就是由系统文件选择器和文档提供方组成的那套授权框架。
 
 这项权限不会让目录遍历或随机 I/O 自动变快，也不会取消 FUSE 的所有工作。可见范围扩大后，待扫描条目更多，启动时全盘遍历会增加 I/O、电量、温度和隐私成本。
 
@@ -583,14 +585,14 @@ Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、�
 - 全盘扫描：保存目录与文件检查点，响应卷挂载变化，并按电量、温度和前后台条件限流。
 - 媒体变更：避免为每个文件主动触发重复扫描，也不要与系统媒体扫描同时进行大批元数据回写。
 
-发布前应按当前 Google Play 的 [All files access 政策](https://support.google.com/googleplay/android-developer/answer/10467955)重新核对资格。系统提供该权限，不代表应用一定符合商店政策；性能设计也不能以审核一定通过为前提。
+发布前应按当前 Google Play 的 [All files access 政策](https://support.google.com/googleplay/android-developer/answer/10467955)重新核对资格。系统侧提供这个权限，商店侧另有政策门槛；性能设计要按“审核可能不通过”来准备预案。
 
 ### MediaStore 路径检查清单
 
 - 查询是否按具体卷、必要列和稳定的排序位置分页，并带 `CancellationSignal`。
 - 是否区分完整媒体权限、部分媒体权限、Photo Picker 授权和应用自有媒体。
 - `version` 改变时是否全量同步；`version` 未变时是否使用 `generation`。
-- 是否处理 `android-17.0.0_r1` 的 `generation` 不含删除记录这一边界，并按扩展版本选择 `queryDeletedFiles()` 或 `_ID` 集合比较。
+- 是否处理 `android-17.0.0_r1` 的 `generation` 不含删除记录这一限制，并按扩展版本选择 `queryDeletedFiles()` 或 `_ID` 集合比较。
 - `ContentObserver` 是否只唤醒重新查询，没有充当持久事件日志。
 - 是否避免在 RecyclerView 或 Compose 条目绑定期间同步打开文件、提取视频帧或解码原图。
 - 缩略图缓存键是否包含内容版本、目标尺寸和变换参数。
@@ -628,7 +630,7 @@ Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、�
 
 ### Photo Picker 负责选择授权，后续处理仍在应用侧
 
-Photo Picker（系统照片选择器）把“用户允许应用读取哪些图片或视频”交给系统界面。只需临时选择媒体的应用不用申请整个媒体库的读取权限，也不用维护相册索引和权限页面。
+Photo Picker（系统照片选择器）把“用户允许应用读取哪些图片或视频”交给系统界面：应用临时要几张图、几段视频，就用不着申请整个媒体库的读取权限，也不必自己维护相册索引和权限页面。
 
 选择完成后，应用仍需处理：
 
@@ -638,13 +640,13 @@ Photo Picker（系统照片选择器）把“用户允许应用读取哪些图�
 - 大图采样、视频读取、上传与取消。
 - 应用私有临时文件和失败任务的清理。
 
-本文以 Android 17 / API 37 / `android-17.0.0_r1` 为准，重点讨论选择完成后的应用处理流程。`MediaStore` 索引、FUSE、缩略图和兼容媒体转码原理见本文前半部分；图片解码与 Bitmap 缓存见 22.9；文件 I/O 与网络上传见 24.1、24.3。
+这一部分重点讨论选择完成后的应用处理流程。`MediaStore` 索引、FUSE、缩略图和兼容媒体转码的原理见本文前半部分；图片解码与 Bitmap 缓存见 22.9，文件 I/O 与网络上传见 24.1、24.3。
 
 ### Photo Picker 的性能边界
 
-标准 Photo Picker 返回只读 picker `Uri`。应用可以查询 `MediaStore.PickerMediaColumns` 中有限的元数据，也可以按读取模式打开；不能把它当作可写文件路径。云媒体提供方返回的内容还可能在打开时通过网络获取。
+标准 Photo Picker 返回的是只读 picker `Uri`：应用可以查询 `MediaStore.PickerMediaColumns` 中有限的元数据，也可以按读取模式打开；把它当可写文件路径来用是行不通的。云媒体提供方返回的内容，还可能在打开时才通过网络获取。
 
-SAF（Storage Access Framework，存储访问框架）是 Android 的通用文件选择与访问体系。URI 的 authority 是 `content://` 后标识内容提供方身份的部分，例如 MediaStore 常用 `media`；它决定应用该向哪个 `ContentProvider`（跨进程提供数据的 Android 组件）发起查询或打开请求。
+SAF（Storage Access Framework，存储访问框架）是 Android 通用的文件选择与访问体系，URI 的 authority 决定内容由哪个 `ContentProvider` 提供，例如 `MediaStore` 用 `media`。
 
 常见选择入口的差异如下：
 
@@ -675,11 +677,11 @@ fun chooseVideo() {
 }
 ```
 
-这段代码只记录选择结果。回调发生时，视频未必已经在本地准备完成；`onMediaSelected()` 应把 `Uri` 交给后台准备流程，不能在主线程立即读取视频。
+这段代码只记录选择结果。回调发生时视频未必已在本地准备好，`onMediaSelected()` 应把 `Uri` 交给后台准备流程，视频读取放到后台去做。
 
 #### 把一次选择分成五个阶段
 
-性能数据应按以下顺序记录：
+我们把一次选择的性能数据按以下顺序记录：
 
 ```text
 启动选择器
@@ -690,13 +692,13 @@ fun chooseVideo() {
   → 业务数据准备完成
 ```
 
-这段阶段图用于确定等待发生的位置。标准 Picker 运行在系统 Activity（承载一个界面的 Android 组件）中，普通应用无法在线上准确观测“系统网格首张缩略图出现”的时间；点击到回调还包含用户浏览和选择的时间。实验室可用 UiAutomator 驱动系统界面，用 Macrobenchmark 执行跨进程性能测试，再用 Perfetto 系统跟踪分析调度与 I/O。线上会话时长不能反推出 Picker 的启动或缩略图性能。
+这张阶段图用来定位等待发生在哪一段。标准 Picker 运行在系统 Activity 里，“系统网格首张缩略图出现”的时间，普通应用在线上无法准确观测；点击到回调的时长里还混着用户浏览和选择的时间。实验室里可用 UiAutomator 驱动系统界面，用 Macrobenchmark 执行跨进程性能测试，再用 Perfetto 系统跟踪分析调度与 I/O；线上会话时长反推不出 Picker 的启动或缩略图性能。
 
-`Uri` 回调到文件描述符返回的时间可能包含云媒体下载或转码。文件描述符是进程访问已打开文件或数据流的句柄。描述符返回后还要单独测“首字节可读”的时间，因为系统可能先返回管道的一端，再异步供应内容。上传流程能够读取完整内容，或编辑流程取得可用输入与本地副本时，才算完成媒体准备。
+`Uri` 回调到文件描述符返回的这段时间，可能包含云媒体下载或转码；文件描述符是进程访问已打开文件或数据流的句柄。描述符返回后还要单独测“首字节可读”的时间——系统可能先返回管道的一端，再异步供应内容。上传流程能读完整内容、编辑流程拿到可用输入与本地副本，媒体准备才算完成。
 
 #### API 36 及以上优先使用 `MediaStore.open*`
 
-Android 16 / API 36 起，`MediaStore.openFileDescriptor()`、`openAssetFileDescriptor()` 和 `openTypedAssetFileDescriptor()` 可用于打开 `ACTION_PICK_IMAGES` 返回的 MediaStore URI；三者也通过 Android 11（R）SDK Extension 15 提供。官方 API 文档建议优先使用这些入口，以增强系统稳定性。AndroidX 回退到 SAF 时，URI authority 不再是 `media`，仍需使用 `ContentResolver`。
+Android 16 / API 36 起，`MediaStore.openFileDescriptor()`、`openAssetFileDescriptor()` 和 `openTypedAssetFileDescriptor()` 可用于打开 `ACTION_PICK_IMAGES` 返回的 MediaStore URI；同组入口也通过 Android 11 R 的 SDK Extension 15 提供。官方 API 文档建议优先使用这些入口，以增强系统稳定性。AndroidX 回退到 SAF 时，URI authority 不再是 `media`，此时仍需使用 `ContentResolver`。
 
 下面的函数按版本和 authority 选择读取入口，并把取消信号传给 Provider：
 
@@ -721,11 +723,11 @@ fun openSelectedMedia(
 
 调用方拥有返回的描述符，使用后必须关闭。用户取消任务、页面退出或新选择替代旧选择时调用 `signal.cancel()`。云端失败、权限取消、Provider 崩溃和媒体被删除都应作为可恢复的读取失败处理。
 
-Picker URI 可查询 `SIZE`、`DISPLAY_NAME`、`MIME_TYPE`、`DURATION_MILLIS`、`WIDTH`、`HEIGHT`、`ORIENTATION` 等只读列。MIME type（媒体类型标识，例如 `video/mp4`）描述内容格式。`SIZE` 和路径信息只能作为提示；云媒体可能依赖网络，应用也不应根据 `DATA` 拼装文件路径。
+Picker URI 可查询 `SIZE`、`DISPLAY_NAME`、`MIME_TYPE`、`DURATION_MILLIS`、`WIDTH`、`HEIGHT`、`ORIENTATION` 等只读列，其中 MIME type 标识媒体类型，例如 `video/mp4`。`SIZE` 和路径信息只能作为提示：云媒体可能依赖网络，拼装文件路径别指望 `DATA`。
 
 #### 临时授权与持久授权
 
-默认授权持续到设备重启或应用停止。后台上传、WorkManager（Jetpack 的可延迟后台任务调度器）恢复、草稿跨进程重启等场景应在收到 URI 后调用：
+默认授权持续到设备重启或应用停止。后台上传、WorkManager（可延迟后台任务调度器）恢复、草稿跨进程重启等场景，应在收到 URI 后调用：
 
 ```kotlin
 fun persistPickerGrant(
@@ -743,7 +745,7 @@ fun persistPickerGrant(
 
 #### Android 17 可在 Picker 中执行选择限制
 
-`android-17.0.0_r1` 的 `MediaStore.getPickImagesMaxLimit()` 返回 100。应用的多选数量不能超过平台上限；设备回退到 `ACTION_OPEN_DOCUMENT` 时，系统会忽略 AndroidX 传入的最大数量，因此回调后仍需执行数量校验。
+`android-17.0.0_r1` 的 `MediaStore.getPickImagesMaxLimit()` 返回 100，应用的多选数量以平台值为上限。设备回退到 `ACTION_OPEN_DOCUMENT` 时，系统会忽略 AndroidX 传入的最大数量，回调后仍要做一次数量校验。
 
 API 37 的 `PhotoPickerSelectionParams` 还能按 MIME、单项大小、批次总大小、分辨率和视频时长限制可选内容。超出限制的媒体仍显示在网格中，但处于禁选状态；这能减少选择完成后才拒绝文件的情况。限制值必须来自服务端协议、设备可用空间上限或产品规则。
 
@@ -771,11 +773,11 @@ fun createConstrainedVideoPicker(
 }
 ```
 
-SDK Extension 是模块化系统组件的功能版本号，同一 Android 大版本可因系统组件更新获得新增 API。这段代码以 `@RequiresApi(37)` 表示平台版本分支；同一 API 也通过 Android 14（U）的 SDK Extension 22 提供，因此扩展路径要检查 U Extension 22，并把调用隔离在受 `@RequiresExtension` 约束的函数中。更早的版本需要在选择后校验。Picker 的元数据限制可以减少无效选择，却不能保证云端内容已经下载，也不能代替打开、读取和上传阶段的错误处理。
+SDK Extension 是模块化系统组件的功能版本号，同一 Android 大版本可因系统组件更新获得新增 API。这段代码以 `@RequiresApi(37)` 表示平台版本分支；同一 API 也通过 Android 14 U 的 SDK Extension 22 提供，扩展路径要检查 U Extension 22，并把调用隔离在受 `@RequiresExtension` 约束的函数中。更早的版本需要在选择后校验。Picker 的元数据限制能减少无效选择，但云端内容是否已下载、打开读取上传阶段的错误，仍要由后续流程自己确认。
 
 ### 嵌入式 Photo Picker 的接入成本
 
-嵌入式 Photo Picker 把系统媒体网格放在应用页面的 `SurfaceView` 中。`SurfaceView` 为独立图形表面预留显示区域，`setChildSurfacePackage()` 再把系统进程提供的 `SurfacePackage` 接入该区域。宿主 Activity 保持 Resumed（可交互的前台生命周期）状态，可以连续接收选择与取消选择事件；媒体内容的授权边界与标准 Picker 相同。
+嵌入式 Photo Picker 把系统媒体网格放进应用页面的 `SurfaceView`：`SurfaceView` 为独立图形表面预留显示区域，`setChildSurfacePackage()` 再把系统进程提供的 `SurfacePackage` 接入该区域。宿主 Activity 保持 Resumed（可交互的前台生命周期）状态，可以连续接收选择与取消选择事件；媒体内容的授权范围与标准 Picker 相同。
 
 该能力要求 Android 14 及以上，且 U SDK Extension 至少为 15。平台类从 API 36 公开，也通过扩展提供给 Android 14。当前 Jetpack `androidx.photopicker` 版本为 1.0.0-alpha02，API 仍标记 `ExperimentalPhotoPickerApi`；Alpha 阶段允许接口变化，升级依赖时应复核回调和生命周期行为。不满足条件或会话打开失败时，使用标准 Photo Picker。
 
@@ -786,26 +788,26 @@ SDK Extension 是模块化系统组件的功能版本号，同一 Android 大版
 - 媒体网格：索引、缩略图和云媒体仍由系统 Picker 加载。
 - 连续选择：每次授权和撤销都可能更新附件列表、校验规则和准备队列。
 
-`Activity.onCreate()` 到首帧只覆盖宿主页面，不能代表 Picker 已经可用。会话打开、Picker 内容可见和首次选择回调应分别测量。系统没有向应用提供稳定的“首张缩略图已绘制”业务回调，这一项仍需借助界面自动化和 Perfetto 测量。
+`Activity.onCreate()` 到首帧只覆盖宿主页面，离“Picker 已经可用”还有距离：会话打开、Picker 内容可见和首次选择回调应分别测量。系统没有向应用提供稳定的“首张缩略图已绘制”业务回调，这一项仍要借助界面自动化和 Perfetto 测量。
 
 #### 连续选择需要双向维护状态
 
-Jetpack 提供 `onUriPermissionGranted` 和 `onUriPermissionRevoked`，分别通知用户选择和取消选择的 URI，应用据此更新附件列表。应用主动调用 `deselectUri()` / `deselectUris()` 时还应同步删除自己的选中状态；不能靠 `onUriPermissionRevoked` 维护客户端状态，这个回调只为“用户取消选择”定义。否则，附件条与系统网格可能出现选择不一致。
+Jetpack 提供 `onUriPermissionGranted` 和 `onUriPermissionRevoked`，分别通知用户选择和取消选择的 URI，应用据此更新附件列表。应用主动调用 `deselectUri()` / `deselectUris()` 时，要同步删除自己的选中状态；`onUriPermissionRevoked` 只为“用户取消选择”定义，客户端状态要靠自己维护，这样附件条与系统网格才不会选择不一致。
 
-选择事件只应安排后台准备任务。缩略图预览、元数据查询、云媒体打开和上传准备都不应在回调的主线程中完成。用户取消选择后，依次取消该 URI 的打开信号、解码任务和尚未开始的上传任务。
+选择事件只用来安排后台准备任务，我们把缩略图预览、元数据查询、云媒体打开和上传准备都放到回调的主线程之外。用户取消选择后，依次取消该 URI 的打开信号、解码任务和尚未开始的上传任务。
 
 折叠屏、多窗口、横竖屏和输入法显示会改变宿主与 `SurfaceView` 尺寸。应用应保存选择 URI 和页面模式，把窗口尺寸更新交给现有会话；不要因为普通布局变化反复销毁并创建嵌入式 Picker。退出页面时关闭会话并释放监听，防止图形表面和回调继续持有 Activity。
 
 ### 视频转码的时间与存储成本
 
-HDR（High Dynamic Range，高动态范围）可保留更大的亮度与色彩范围，SDR（Standard Dynamic Range，标准动态范围）兼容面通常更广。Photo Picker 的 HDR→SDR 与 MediaProvider 的兼容媒体转码都根据应用声明的媒体能力决定是否转换，但两者属于不同入口：
+HDR 能保留更大的亮度与色彩范围，SDR 的兼容面通常更广。Photo Picker 的 HDR→SDR 与 MediaProvider 的兼容媒体转码都根据应用声明的媒体能力决定是否转换，两者属于不同入口：
 
 | 入口 | 启用方式 | 返回行为 | Android 17 边界 |
 | --- | --- | --- | --- |
 | Photo Picker HDR→SDR | 启动 Picker 时通过 AndroidX `MediaCapabilities` 声明支持的 HDR 类型 | 发生转换时，Picker 返回转码结果 URI | Android 13 及以上；只处理不超过 1 分钟的视频；结果缓存会在设备空闲维护时清理 |
 | MediaProvider 兼容转码 | 打开媒体时传入 `ApplicationMediaCapabilities`，或使用资源声明 | 支持源格式时返回原内容；不支持时可能返回 AVC/SDR 或缓存结果 | Android 12 及以上；设备、格式、来源、片长和系统资源都影响是否转换 |
 
-两条路径都不会只因应用“可能不支持”便无条件转换。应用必须准确声明能力，并在接收端检查最终媒体能否处理。旧 Pixel 3 的测量值不能直接作为 Android 17 的耗时目标；片长、分辨率、源格式、编解码器、存储、温度和并发负载都会改变等待时间。
+两条路径都不会只因应用“可能不支持”就无条件转换，应用必须准确声明能力，并在接收端检查最终媒体能否处理。旧 Pixel 3 的测量值直接拿来当 Android 17 的耗时目标会出偏差；片长、分辨率、源格式、编解码器、存储、温度和并发负载都会改变等待时间。
 
 #### Photo Picker HDR→SDR
 
@@ -835,7 +837,7 @@ fun chooseCompatibleVideo(
 }
 ```
 
-这段代码需要 AndroidX Activity 1.11.0 或更高版本。Picker 执行转换时会返回转换后的 URI；调用方不能通过解析 URI 路径判断是否命中缓存。
+这段代码需要 AndroidX Activity 1.11.0 或更高版本。Picker 执行转换时会返回转换后的 URI；是否命中缓存，从 URI 路径上看不出来。
 
 应用按业务路径决定是否请求转换：
 
@@ -847,11 +849,11 @@ fun chooseCompatibleVideo(
 
 #### MediaProvider 兼容转码
 
-Android 17 延续 Android 12 引入的兼容转码。AOSP 文档规定的标准来源是 OEM（设备制造商）原生相机写入主外部卷 `DCIM/Camera/` 的本机视频；二级存储以及通过邮件、SD 卡等外部来源导入的媒体不在标准支持范围内。厂商只能通过资源覆盖增加 `DCIM/` 中的路径。
+Android 17 延续 Android 12 引入的兼容转码。AOSP 文档规定的标准来源，是 OEM 原生相机写入主外部卷 `DCIM/Camera/` 的本机视频；二级存储以及通过邮件、SD 卡等外部来源导入的媒体不在标准支持范围内，厂商只能通过资源覆盖增加 `DCIM/` 中的路径。
 
-标准转换包含 HEVC（H.265，高效率视频编码）8-bit→AVC（H.264，高级视频编码），以及设备具备色调映射插件时的 HDR10+ 10-bit→AVC SDR。色调映射会把 HDR 的亮度和颜色映射到 SDR 可表达的范围。MediaStore、直接路径、SAF、使用 MediaStore URI 的系统分享，以及 MTP/PTP（USB 媒体或相机传输协议）都可能进入转码。取出 SD 卡以及 Nearby Share、蓝牙等设备间传输路径会绕过它。
+标准转换包含 HEVC 8-bit→AVC（H.264），以及设备具备色调映射插件时的 HDR10+ 10-bit→AVC SDR；色调映射把 HDR 的亮度和颜色映射到 SDR 可表达的范围。MediaStore、直接路径、SAF、使用 MediaStore URI 的系统分享，以及 MTP/PTP（USB 媒体或相机传输协议）都可能进入转码；取出 SD 卡以及 Nearby Share、蓝牙等设备间传输路径会绕过它。
 
-标准实现只处理不超过 1 分钟的视频。平台还限制连续转码会话和累计运行时间；AOSP 文档给出的限制是连续 10 个会话、累计 3 分钟，两项都超出后返回原描述符。设备缺少 HDR 插件时也会返回原描述符。多选上传不能假定所有不支持的媒体都会被系统转换。
+标准实现只处理不超过 1 分钟的视频。平台还限制连续转码会话和累计运行时间，AOSP 文档给出的限制是连续 10 个会话、累计 3 分钟，两项都超出后返回原描述符；设备缺少 HDR 插件时同样返回原描述符。多选上传仍要按“可能拿到原内容”设计处理分支。
 
 资源级 `media_capabilities.xml` 会影响应用的多条读取路径，可能让本机播放或缩略图发生非预期转换。播放、上传等功能支持的格式不同时，宜在每次打开媒体时传入对应的 `ApplicationMediaCapabilities`，具体代码见本文前半部分“按调用路径声明媒体能力”。
 
@@ -865,9 +867,9 @@ Android 17 延续 Android 12 引入的兼容转码。AOSP 文档规定的标准�
 | Photo Picker HDR 转码缓存 | Picker 返回的兼容视频 | Picker 的设备空闲维护 | 只能依赖仍有效的 URI 授权，不能依赖缓存文件持续存在 |
 | 应用私有临时数据 | 上传副本、压缩结果、编辑中间文件、业务缩略图 | 应用 | 必须有持久记录、容量上限和删除策略 |
 
-在 Android 17 AOSP 实现中，`TranscodeHelperImpl.java` 把兼容转码文件放在 `/storage/emulated/<user>/.transforms/transcode/`，以 MediaStore 数据库行 ID 生成内部文件名，并实现 `freeCache()` 与单项删除。该路径不是公开 API 契约，只适合源码阅读和系统调试；应用无权据此定位或清理文件，也不能从一次缓存命中推断后续仍会命中。
+在 Android 17 AOSP 实现中，`TranscodeHelperImpl.java` 把兼容转码文件放在 `/storage/emulated/<user>/.transforms/transcode/`，以 MediaStore 数据库行 ID 生成内部文件名，并实现 `freeCache()` 与单项删除。该路径不属于公开 API 契约，只适合源码阅读和系统调试：应用无权据此定位或清理文件，一次缓存命中也预示不了下一次仍会命中。
 
-同一版本的 `PhotoPickerTranscodeHelper.java` 把 Picker HDR 转码结果放在 `/storage/emulated/<user>/.picker_transcoded/`，按媒体提供方 authority 与媒体 ID 生成缓存名，并提供按容量、全量和单项清理入口。缓存名中的 host 是被 Picker URI 包装的媒体提供方 authority。两种目录都由 MediaProvider 模块管理，但服务于不同的请求路径；应用只能通过有效 URI 读取，不能直接访问这些目录。
+同一版本的 `PhotoPickerTranscodeHelper.java` 把 Picker HDR 转码结果放在 `/storage/emulated/<user>/.picker_transcoded/`，按媒体提供方 authority 与媒体 ID 生成缓存名，并提供按容量、全量和单项清理入口；缓存名中的 host 是被 Picker URI 包装的媒体提供方 authority。两种目录都由 MediaProvider 模块管理，但服务于不同的请求路径，应用访问它们的唯一途径是持有仍然有效的 URI。
 
 系统设备空闲维护不会处理应用的 `cacheDir`、草稿数据库和失败上传。应用应给每个私有临时文件记录：
 
@@ -877,18 +879,18 @@ Android 17 延续 Android 12 引入的兼容转码。AOSP 文档规定的标准�
 - 创建时间、最近访问时间和任务状态。
 - 预期大小、已写大小与校验结果。
 
-发送完成、用户取消选择、草稿删除和账号退出都应触发对应清理。失败任务是否保留副本、保留多久，应根据允许重试的时间和可用存储上限确定，不能统一套用一个时间值。
+发送完成、用户取消选择、草稿删除和账号退出都应触发对应清理。失败任务的副本保不保留、保留多久，按允许重试的时间和可用存储上限分别确定，各自给出答案。
 
 #### 什么时候复制到应用私有目录
 
-服务端接受源格式、上传库支持顺序流，且任务不需要随机定位（seek）时，可直接从 picker URI 上传，避免额外副本。以下情况更适合复制一次：
+服务端接受源格式、上传库支持顺序流，且任务不需要 seek 这类随机定位时，可直接从 picker URI 上传，避免额外副本。以下情况更适合复制一次：
 
 - 需要断点续传或多次重试，而源 URI 可能依赖网络。
 - 图片编辑、视频分析或编码器需要在文件中反复定位。
-- 任务要跨进程重启，且不能接受系统缓存清理后重新下载或重新转码。
+- 任务要跨进程重启，并且要求系统缓存清理后无需重新下载或重新转码。
 - 需要在上传前生成稳定摘要并核对完整内容。
 
-复制过程使用 `.partial` 后缀标记“尚未写完”的临时文件，写完并校验后再切换为 ready（内容完整、可供业务使用）状态。进程中止后，清理程序只删除没有活跃任务引用的 partial 文件。`cacheDir` 仍可能在存储压力下被系统删除。必须保证跨重启保留的内容，应放在应用管理的私有目录，并由数据库状态控制删除。
+复制过程使用 `.partial` 后缀标记“尚未写完”的临时文件，写完并校验后再切换为 ready 状态。进程中止后，清理程序只删除没有活跃任务引用的 partial 文件。`cacheDir` 仍可能在存储压力下被系统删除；必须跨重启保留的内容，应放在应用管理的私有目录，并由数据库状态控制删除。
 
 一条可恢复的准备状态如下：
 
@@ -906,7 +908,7 @@ selected
 
 ### 大图、多选和云端媒体的 I/O 与内存压力
 
-多选要形成有容量限制的任务队列，不能按 URI 数量同时启动单选处理。选择数量、源文件总字节、解码后的 Bitmap、转换后的临时文件和上传并发属于不同预算，任一项都可能先触及设备上限。
+多选要形成有容量限制的任务队列，URI 有多少个就同时启动多少个单选处理，这条路走不通：选择数量、源文件总字节、解码后的 Bitmap、转换后的临时文件和上传并发属于不同预算，任一项都可能先触及设备上限。
 
 收到 URI 后可先查询允许的 Picker 列，避免为列表预览打开原内容：
 
@@ -982,15 +984,15 @@ fun queryPickedMediaMeta(
 }
 ```
 
-这段代码只用于 authority 为 `media` 的 picker URI，并及时关闭 Cursor（查询结果游标）。`MIME_TYPE`、`SIZE` 和 `DURATION_MILLIS` 从 API 33 / R Extension 2 可用；`WIDTH`、`HEIGHT` 从 API 34 / R Extension 5 可用，所以查询投影先做能力判断。这里的“投影”是一次查询请求返回的列集合。
+这段代码只用于 authority 为 `media` 的 picker URI，读取后及时关闭 Cursor。`MIME_TYPE`、`SIZE` 和 `DURATION_MILLIS` 从 API 33 / R Extension 2 可用，`WIDTH`、`HEIGHT` 从 API 34 / R Extension 5 可用，所以查询投影先做能力判断。
 
-AndroidX 回退到 SAF 时，使用 `ContentResolver.getType()` 与 `OpenableColumns.SIZE` / `DISPLAY_NAME`，不要请求 Picker 专用列。即使列已定义，值也可能为空；`SIZE` 不能代替流式读取时的实际字节计数。元数据适合做排队和界面提示，安全校验仍需在读完整个内容后完成。
+AndroidX 回退到 SAF 时，使用 `ContentResolver.getType()` 与 `OpenableColumns.SIZE` / `DISPLAY_NAME`，不要请求 Picker 专用列。即使列已定义，值也可能为空；流式读取时以实际字节计数为准，`SIZE` 只作参考。元数据适合做排队和界面提示，安全校验仍需在读完整个内容后完成。
 
 #### 图片路径
 
 网格预览使用 `ContentResolver.loadThumbnail()` 或支持 `content://` 的图片库，并传入控件所需的像素尺寸。上传服务接受 HEIC、AVIF、JPEG 或 PNG 源文件时，直接流式上传，避免生成 Bitmap。
 
-只有裁剪、缩放、去除元数据或转换格式时才解码。解码器应设置目标尺寸或采样，再依据 Bitmap 字节数限制并发。压缩后的文件字节数无法预测解码内存，宽高、像素格式、色彩空间和中间 Bitmap 都会影响内存峰值。
+只有裁剪、缩放、去除元数据或转换格式时才解码。解码器应设置目标尺寸或采样，再依据 Bitmap 字节数限制并发；压缩后的文件字节数预测不了解码内存，宽高、像素格式、色彩空间和中间 Bitmap 都会影响内存峰值。
 
 #### 视频路径
 
@@ -1011,7 +1013,7 @@ URI 打开和顺序复制主要消耗 I/O；图片缩放、编码和哈希摘要
 
 ### 监控与回归测试
 
-这里的监控是把一次媒体处理拆成可记录的时间段，以确定等待发生在哪一步。线上数据和实验室数据要分开设计。标准 Picker 的系统网格绘制对调用应用不可见，线上埋点不能声称测到了 Picker 首帧或首张缩略图。应用可记录的阶段如下：
+这里的监控把一次媒体处理拆成可记录的时间段，用来确定等待发生在哪一步。线上数据和实验室数据要分开设计：标准 Picker 的系统网格绘制对调用应用不可见，线上埋点测不到 Picker 首帧或首张缩略图，这一段留给实验室。应用可记录的阶段如下：
 
 | 指标 | 起点与终点 | 说明 |
 | --- | --- | --- |
@@ -1025,7 +1027,7 @@ URI 打开和顺序复制主要消耗 I/O；图片缩放、编码和哈希摘要
 
 事件公共字段包括 Picker 路径、Android 版本、SDK Extension、是否嵌入式、是否 SAF 回退、媒体类型、数量、声明的能力类别、持久授权结果和取消阶段。不要记录原始 URI、文件名、相册名或云账号。
 
-应用无法仅从 URI 可靠判断系统是否执行过兼容转码。实验室可结合：
+系统是否执行过兼容转码，仅凭 URI 判断不出来，实验室可结合：
 
 ```bash
 adb shell dumpsys media.transcoding
@@ -1049,7 +1051,7 @@ Perfetto 可采集应用、MediaProvider 和媒体服务的调度、Binder 跨�
 
 媒体组合包括本地与云端、云端离线、JPEG/HEIC/AVIF、HEVC、各业务支持的 HDR 类型、1 分钟边界两侧的视频、单选与业务允许的最大多选。生命周期用例包括设备重启、进程终止、持久授权、授权释放、选择后立即取消、准备中取消、存储空间不足和 Provider 读取失败。
 
-验收使用目标设备的 P50/P95/P99、峰值内存、临时文件峰值和取消后残留任务数。P50、P95、P99 分别表示 50%、95%、99% 的样本不超过该值，可同时观察典型体验与长尾等待；不应照搬其他设备的耗时阈值。
+验收使用目标设备的 P50/P95/P99、峰值内存、临时文件峰值和取消后残留任务数。P50、P95、P99 分别表示 50%、95%、99% 的样本不超过该值，可同时观察典型体验与长尾等待；耗时阈值要从目标设备自己的测量中来。
 
 ### Photo Picker 与 Android 版本适配表
 
@@ -1065,11 +1067,11 @@ Perfetto 可采集应用、MediaProvider 和媒体服务的调度、Binder 跨�
 | 多选数量 | `android-17.0.0_r1` 上限为 100 | 运行时读取 `getPickImagesMaxLimit()`；业务上限不得超过平台值 |
 | 兼容媒体转码 | Android 12 及以上 | 受设备、来源、格式、片长和会话限制；调用方必须能处理原内容回退 |
 
-Android 11/12 的模块更新与 Android 4.4–10 的 Google Play services backport 不是同一分发路径。backport 指把新系统能力移植到仍受支持的旧 Android 版本。是否安装成功、厂商是否提供系统回退 Picker、AndroidX 是否走 SAF，都应通过能力探测和实际启动结果记录，不能只看 `SDK_INT`。
+Android 11/12 的模块更新与 Android 4.4–10 的 Google Play services backport 不是同一分发路径；backport 指把新系统能力移植到仍受支持的旧 Android 版本。是否安装成功、厂商是否提供系统回退 Picker、AndroidX 是否走 SAF，都要通过能力探测和实际启动结果记录，`SDK_INT` 单独说明不了这些问题。
 
 ### 与隐私权限、应用锁和 OEM 相册能力的关系
 
-Photo Picker 适合“用户明确选择少量媒体”的流程，可以减少 `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` 整库权限申请。相册管理、备份、文件管理和云图库同步仍需依据功能选择 `MediaStore`、部分媒体访问、SAF 或特殊合规权限，不能用 Picker 模拟全库同步。
+Photo Picker 适合“用户明确选择少量媒体”的流程，可以减少 `READ_MEDIA_IMAGES` / `READ_MEDIA_VIDEO` 整库权限申请。相册管理、备份、文件管理和云图库同步仍需依据功能选择 `MediaStore`、部分媒体访问、SAF 或特殊合规权限；全库同步要靠这些入口完成，Picker 替代不了。
 
 系统认证、厂商私密相册、工作资料、云媒体账号和离线状态都可能改变可见内容或让读取失败。应用只应依赖公开回调与 URI 授权：
 
@@ -1078,13 +1080,13 @@ Photo Picker 适合“用户明确选择少量媒体”的流程，可以减少 
 - 嵌入式会话报错时关闭会话并使用标准 Picker，不在同一页面无限重连。
 - SAF 回退 URI 按其 authority 和可持久化授权处理。
 
-OEM 差异通过 `isPhotoPickerAvailable(context)`、SDK Extension、实际 Intent 解析结果和错误分类观测。只有官方兼容方案不能覆盖且有长期验证要求时，才增加厂商专用分支。
+OEM 差异通过 `isPhotoPickerAvailable(context)`、SDK Extension、实际 Intent 解析结果和错误分类观测。官方兼容方案覆盖不到、且有长期验证要求时，才增加厂商专用分支。
 
 ### 与本节前文 MediaStore / MediaProvider 内容的关系
 
-本节前文已说明 `MediaStore` 查询、`MediaProvider` 索引、FUSE、缩略图、version/generation（索引整体版本与逐项变更编号）和兼容媒体转码。这里补充选择器启动、Picker URI 生命周期、云媒体读取、HDR 请求、私有临时文件和多选队列。
+本节前文已说明 `MediaStore` 查询、`MediaProvider` 索引、FUSE、缩略图、version/generation 与兼容媒体转码；这里补充选择器启动、Picker URI 生命周期、云媒体读取、HDR 请求、私有临时文件和多选队列。
 
-媒体选择慢可按阶段定位：
+媒体选择慢时，我们按阶段定位：
 
 1. 系统 Picker 在实验室打开慢：检查平台、模块、嵌入式/标准路径与 MediaProvider 状态。
 2. 回调后描述符打开慢：检查授权、云媒体、兼容转码和取消信号。
@@ -1115,7 +1117,7 @@ OEM 差异通过 `isPhotoPickerAvailable(context)`、SDK Extension、实际 Inte
 
 MediaStore 用索引、卷、`version` 与 `generation` 管理共享媒体集合，适合轻量分页和增量同步；打开文件、生成缩略图与兼容转码则是后续独立成本。应用要把查询、游标读取、描述符打开、首字节、解码和转码分别计时，并在权限收窄、卷卸载和删除记录缺失时保留可恢复的同步路径。
 
-Photo Picker 负责逐项选择授权，不负责把云媒体、格式转换和后台任务变成零成本。长时处理要持久化并回收 URI 授权，按业务路径准确声明 HDR/编码能力，以有容量上限的 I/O、CPU、临时存储和上传队列准备内容。系统转码缓存与应用私有副本的所有权必须分开，最终格式和可读性仍由调用方验证。
+Photo Picker 负责逐项选择授权；云媒体、格式转换和后台任务的成本并不会因此消失。长时处理要持久化并回收 URI 授权，按业务路径准确声明 HDR/编码能力，以有容量上限的 I/O、CPU、临时存储和上传队列准备内容。系统转码缓存与应用私有副本的所有权必须分开，最终格式和可读性仍由调用方验证。
 
 
 ## Photo Picker 部分的参考资料

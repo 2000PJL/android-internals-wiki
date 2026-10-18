@@ -5268,6 +5268,217 @@
       "summary": "frontmatter 仍含 4 个已被 ALLOWED_FIELDS 移除的字段（pipeline_stage/task2b_state/task6_state/task9_state），check-metadata 在 base_sha 即失败，阻塞中文改写车道",
       "type": "metadata",
       "updated_at": "2026-10-18T01:13:45.615090+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "created_at": "2026-10-18T08:10:08.342167+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-080520-b3e487e8",
+      "details": "多进程场景把不可信插件与限制访问权限并列为普通分进程用途，却未说明 :remote 默认仍共享应用 UID/权限。需区分崩溃与地址空间隔离、isolatedProcess 服务权限隔离，并保留系统组件限制。",
+      "id": "finding-448725d9385e",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "https://developer.android.com/guide/topics/manifest/service-element#isolated",
+        "https://developer.android.com/guide/components/processes-and-threads"
+      ],
+      "status": "open",
+      "summary": "android:process 分进程被当成不可信代码的权限隔离方案",
+      "type": "security-boundary",
+      "updated_at": "2026-10-18T08:10:08.342167+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "created_at": "2026-10-18T08:10:08.423315+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-080520-b3e487e8",
+      "details": "官方 JNI tips 说明 Android 14 起为经 CTS 测试的公开 API。原段缺失 CriticalNative ABI、GC 阻塞、Android 8-11 显式注册等适用条件。",
+      "id": "finding-d84b62c3cc66",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/ndk/guides/jni-tips#fast_critical_native"
+      ],
+      "status": "open",
+      "summary": "FastNative 与 CriticalNative 被错误限定为系统级场景",
+      "type": "version-boundary",
+      "updated_at": "2026-10-18T08:10:08.423315+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "created_at": "2026-10-18T08:10:08.477226+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-080520-b3e487e8",
+      "details": "进程章节泛称刚启动时只有主线程，前文却确认 zygoteInit/nativeZygoteInit 先启动 Binder 线程池。需明确 fork 瞬间与 ActivityThread.main 之前两个时点，避免按单线程进程排障。",
+      "id": "finding-15fd256033c0",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java#983",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/cmds/app_process/app_main.cpp#92"
+      ],
+      "status": "open",
+      "summary": "应用进程进入业务入口仍只有主线程的描述与 Binder 初始化顺序冲突",
+      "type": "contradictory-claim",
+      "updated_at": "2026-10-18T08:10:08.477226+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "created_at": "2026-10-18T08:10:08.529505+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-080520-b3e487e8",
+      "details": "原建议从普通 Worker 时长限制直接转到长任务/前台服务规则，未交代长任务仍依赖 JobScheduler、Android 16 起可能耗尽 quota，以及 target API34+ 的前台服务类型要求。",
+      "id": "finding-aa7ff2b8e762",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running",
+        "https://developer.android.com/reference/androidx/work/Worker"
+      ],
+      "status": "open",
+      "summary": "WorkManager 长任务建议缺失 Android 14 服务类型与 Android 16 作业配额边界",
+      "type": "missing-lifecycle-warning",
+      "updated_at": "2026-10-18T08:10:08.529505+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "created_at": "2026-10-18T08:10:08.582855+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-080520-b3e487e8",
+      "details": "libcore current.txt 中 isVirtual 无 FlaggedApi，工厂接口受 virtual_thread_api_v1 控制；ContinuationSupport 则依赖 ART virtualThreadImplV1，ThreadBuilders 在不支持 continuation 时可返回 BoundVirtualThread。API 存在不能保证轻量线程实现。",
+      "id": "finding-e9e030f0e85f",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt#4598",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadBuilders.java#403",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/jdk/internal/vm/ContinuationSupport.java#30"
+      ],
+      "status": "open",
+      "summary": "虚拟线程 API 公开开关与运行时实现支持混为一层",
+      "type": "availability-boundary",
+      "updated_at": "2026-10-18T08:10:08.582855+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "created_at": "2026-10-18T08:10:08.637431+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-080520-b3e487e8",
+      "details": "HAL 官方总览明确 Android 13 起废弃 HIDL、仍支持既有实现；AIDL HAL 指南警告 vendor 原生代码不能直接依赖不稳定 libbinder C++ 接口，需使用 NDK 后端等稳定接口。需补到接口边界说明，避免 Stable AIDL 被理解为只加稳定性声明。",
+      "id": "finding-405f66e31785",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/architecture/hal",
+        "https://source.android.com/docs/core/architecture/aidl/aidl-hals"
+      ],
+      "status": "open",
+      "summary": "HAL 迁移说明缺少 HIDL 废弃版本与 vendor AIDL 后端限制",
+      "type": "missing-lifecycle-warning",
+      "updated_at": "2026-10-18T08:10:08.637431+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "created_at": "2026-10-18T08:12:43.633553+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-080520-b3e487e8",
+      "details": "BroadcastReceiver.goAsync 自 API11 起允许 onReceive 返回后维持广播活跃至 PendingResult.finish，仍受广播超时限制；原句无条件把返回视为失去保护。需区分普通回调与 goAsync，并禁止把延期解释为持久后台执行。",
+      "id": "finding-d1ab8240e5cb",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/content/BroadcastReceiver#goAsync()"
+      ],
+      "status": "open",
+      "summary": "广播回调返回即失去活跃状态的描述遗漏 goAsync 有限延期",
+      "type": "lifecycle-boundary",
+      "updated_at": "2026-10-18T08:12:43.633553+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "created_at": "2026-10-18T08:16:05.990135+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-080520-b3e487e8",
+      "details": "ACK android17-6.18-2026-06_r6 binder.c 的 BR_SPAWN_LOOPER 条件有 force_spawn 或默认判断两条入口，原文把默认判断当成全部条件。需明确默认路径与厂商钩子覆盖。",
+      "id": "finding-d0f60de1c3c4",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c#5402"
+      ],
+      "status": "open",
+      "summary": "Binder 动态增线程条件遗漏 ACK force_spawn 厂商钩子",
+      "type": "vendor-policy-boundary",
+      "updated_at": "2026-10-18T08:16:05.990135+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "created_at": "2026-10-18T08:16:06.042146+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-080520-b3e487e8",
+      "details": "官方 VINTF 文档明确 manifest 描述提供什么、compatibility matrix 描述要求什么；原段把清单描述为接口要求，会混淆 system/vendor 匹配方向。",
+      "id": "finding-902e491e0d39",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/architecture/vintf"
+      ],
+      "status": "open",
+      "summary": "VINTF 清单与兼容性矩阵的提供和要求方向混淆",
+      "type": "interface-contract",
+      "updated_at": "2026-10-18T08:16:06.042146+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "created_at": "2026-10-18T08:17:34.231391+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-080520-b3e487e8",
+      "details": "android-17.0.0_r1 task_profiles.json 中 SCHED_SP_TOP_APP 仅组合 MaxPerformance、MaxIoPriority、TimerSlackNormal；原文额外声称最大进程容量，且漏掉正常 timer slack，需按固定标签更正。",
+      "id": "finding-a8252c94b368",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json#724"
+      ],
+      "status": "open",
+      "summary": "SCHED_SP_TOP_APP 的组合项沿用不存在的最大进程容量配置",
+      "type": "stale-source-mapping",
+      "updated_at": "2026-10-18T08:17:34.231391+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "created_at": "2026-10-18T08:18:00.455058+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-080520-b3e487e8",
+      "details": "selinux_binder_transaction 实际判断 current_sid 与 cred_sid(from) 是否不同，不是比较完整凭据对象。应写明 SID 差异，CALL 检查保持独立。",
+      "id": "finding-d3d2b63d43a8",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/security/selinux/hooks.c#2047"
+      ],
+      "status": "open",
+      "summary": "Binder SELinux IMPERSONATE 检查被误写为任意凭据差异触发",
+      "type": "security-condition",
+      "updated_at": "2026-10-18T08:18:00.455058+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md",
+      "created_at": "2026-10-18T08:20:14.022092+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-080520-b3e487e8",
+      "details": "官方通用文档保留 ro.lmk.use_psi 选项，但 android-17.0.0_r1 lmkd.cpp 已无该属性读取，init_monitors 直接初始化 PSI 并在失败时返回 false。需区分历史配置说明与固定标签的真实入口。",
+      "id": "finding-f339c349e99c",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp#3649",
+        "https://source.android.com/docs/core/perf/lmkd"
+      ],
+      "status": "open",
+      "summary": "Android 17 lmkd 被描述为仍由 ro.lmk.use_psi 开关选择 PSI",
+      "type": "stale-configuration",
+      "updated_at": "2026-10-18T08:20:14.022092+08:00"
     }
   ],
   "schema_version": 1

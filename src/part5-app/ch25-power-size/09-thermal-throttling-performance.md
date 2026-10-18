@@ -73,16 +73,16 @@ last_rework_at: 2026-08-15 16:58:28+08:00
 
 ## 公开 API 的实际入口
 
-热节流指设备为控制温度而限制 CPU、GPU、充电或其他热源的过程。Android SDK 没有公开的 `ThermalManager` Java 类，应用侧入口在 `android.os.PowerManager`：
+热节流指设备为控温而限制 CPU、GPU、充电或其他热源的过程。应用侧入口在 `android.os.PowerManager`，Android SDK 没有公开的 `ThermalManager` Java 类：
 
 - `getCurrentThermalStatus()`、`addThermalStatusListener()`：API 29；
 - `getThermalHeadroom(forecastSeconds)`：API 30；
 - `getThermalHeadroomThresholds()`：API 35；
 - `addThermalHeadroomListener()`：API 36。
 
-这四个入口逐个补齐，覆盖的都是读取：应用能读取全局热状态和表面温度对应的 thermal headroom，系统当前启用了哪组 CPU、GPU、屏幕或充电限制查不到——`PowerManager.isThermalStatusProtectionEnabled()`、`getThermalMitigations()` 或“热缓解动作（thermal mitigation）列表”这类公开接口也没有。
+这四个入口逐个补齐，覆盖的都是读取：应用能读取全局热状态和表面温度对应的 thermal headroom，系统当前启用了哪组 CPU、GPU、屏幕或充电限制查不到——`PowerManager.isThermalStatusProtectionEnabled()`、`getThermalMitigations()` 或“热缓解动作列表”这类公开接口也没有。
 
-后面反复用到三个词，先说清楚：热状态用 0—6 的 severity（限制等级）表示；skin 指机身表面温度传感器或厂商建立的虚拟表面温度模型；thermal headroom（热余量）是接近严重热限制阈值的归一化数值。
+先把后面反复用到的三个词定下来：热状态用 0—6 的 severity（限制等级）表示；skin 指机身表面温度传感器，或厂商建立的虚拟表面温度模型；thermal headroom（热余量）是接近严重热限制阈值的归一化数值。
 
 ## 热治理的系统路径
 
@@ -117,9 +117,9 @@ flowchart TB
 
 限制 CPU/GPU、充电或屏幕的动作通常发生在内核、固件和厂商策略层，不需要等应用回调。`PowerManager` 递给应用的是产品级热压力信号，应用拿它决定减多少自己的工作量。
 
-系统内部的服务是 `ThermalManagerService`：它连接 Thermal HAL，由 HAL 把厂商硬件实现转换成 Android 统一接口。另一组能力来自 Power HAL，覆盖 Performance Hint Session（性能提示会话）与 CPU/GPU capacity headroom（容量余量）。两套 HAL 可以在厂商策略中协同，但 AOSP 接口和 Binder 服务彼此独立。
+系统内部的服务是 `ThermalManagerService`：它连接 Thermal HAL，由 HAL 把厂商硬件实现转换成 Android 统一接口。另一组能力来自 Power HAL，覆盖 Performance Hint Session（性能提示会话）与 CPU/GPU capacity headroom。两套 HAL 可以在厂商策略中协同，但 AOSP 接口和 Binder 服务彼此独立。
 
-Framework 服务源码在 [`services/core/java/com/android/server/power/thermal/ThermalManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java)。旧版本资料里的 `server/power/ThermalManagerService.java` 路径不能直接套到当前源码标签。
+Framework 服务源码在 [`services/core/java/com/android/server/power/thermal/ThermalManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java)。旧版本资料里的 `server/power/ThermalManagerService.java` 路径与当前源码标签对不上，套用前先核对。
 
 ### Thermal HAL 的当前接口
 
@@ -140,11 +140,11 @@ AIDL 用来生成稳定的 Binder 接口，HIDL 是更早一代的 HAL 接口体
 
 “冷却设备”是 Thermal HAL 对限制执行器的抽象，未必是风扇：CPU 限频、GPU 限频、充电限流或屏幕亮度限制都可以表现为冷却设备。Framework 侧的原始温度、热事件与冷却设备 Binder 方法都需要特权权限 `DEVICE_POWER`，所以普通应用拿不到逐个传感器的摄氏温度，也读不到冷却档位或功率上限。
 
-HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：0 表示未限制，值越高限制越深。这个值到 MHz、亮度或充电电流的映射由驱动与产品配置决定，适合系统调试和 statsd（Android 的系统指标收集服务）使用，不适合作为普通应用的兼容协议。
+HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：0 表示未限制，值越高限制越深。这个值到 MHz、亮度或充电电流的映射由驱动与产品配置决定，适合系统调试和 statsd 这类系统指标服务使用，不适合作为普通应用的兼容协议。
 
 ## 全局热状态的含义
 
-`ThermalManagerService.onTemperatureMapChangedLocked()` 遍历缓存温度，只考虑 `Temperature.TYPE_SKIN`，并取最高限制等级作为默认设备的全局热状态。由此带来几个直接推论：
+`ThermalManagerService.onTemperatureMapChangedLocked()` 遍历缓存温度，只考虑 `Temperature.TYPE_SKIN`，并取最高限制等级作为默认设备的全局热状态。这个聚合方式带来几个直接推论：
 
 - CPU 传感器温度很高、表面温度的限制等级还没提高时，全局热状态可能仍然较低；
 - 多个表面温度传感器同时上报时，Framework 采用限制等级较高的一路；
@@ -165,11 +165,11 @@ HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：
 
 这张表定义响应强度，不给通用产品参数。游戏从 120 FPS 调到 90、60 还是 30，视频是否降低分辨率，要由目标设备的帧时间、功耗、温升和质量实验决定；某个状态换算不成固定的频率或画质档位。
 
-任何 CPU、GPU、NPU 或 SKIN 传感器到达 `SHUTDOWN` 时，Framework 会以 thermal-state（热状态）原因请求关机，BATTERY 传感器则使用 battery-thermal（电池过热）原因。应用可能来不及收到 `SHUTDOWN` 回调，状态保存和媒体文件收尾不能拖到这一档才开始。
+任何 CPU、GPU、NPU 或 SKIN 传感器到达 `SHUTDOWN` 时，Framework 会以 thermal-state 原因请求关机，BATTERY 传感器则使用 battery-thermal 原因。应用可能来不及收到 `SHUTDOWN` 回调，状态保存和媒体文件收尾要赶在这一档之前开始。
 
 ## Thermal headroom：提前量与读取边界
 
-[`PowerManager.getThermalHeadroom()`](https://developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int)) 基于表面温度这类慢变化传感器。headroom 把当前或预测的温度位置归一化到严重热限制阈值附近，数值方向如下：
+热状态只给档位；要量化距离，就看 [`PowerManager.getThermalHeadroom()`](https://developer.android.com/reference/android/os/PowerManager#getThermalHeadroom(int))。它基于表面温度这类慢变化传感器，把当前或预测的温度位置归一化到严重热限制阈值附近，数值方向如下：
 
 - 0 是公开值域的下界，但 API 不承诺它对应某个热状态或固定摄氏温度；
 - 1 表示当前或预测将到达 `THERMAL_STATUS_SEVERE`；
@@ -185,7 +185,7 @@ HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：
 
 API 35 的 [`getThermalHeadroomThresholds()`](https://developer.android.com/reference/android/os/PowerManager#getThermalHeadroomThresholds()) 返回热状态到 headroom 的映射表。只有厂商为某个热状态提供了对应阈值，那一项才会出现；同一个 headroom 在不同机型上可能对应不同限制等级。
 
-`SEVERE` 的归一化位置固定是 1，LIGHT、MODERATE、CRITICAL 则要读映射表，不能写成跨设备固定的 0.7、0.8 或 0.9。从 Android 16 开始，阈值映射表还可能在运行时变化，API 36 的监听器会把新映射表随回调交给应用。
+`SEVERE` 的归一化位置固定是 1，LIGHT、MODERATE、CRITICAL 则要逐台读映射表，0.7、0.8、0.9 这类跨设备固定值没有依据。从 Android 16 开始，阈值映射表还可能在运行时变化，API 36 的监听器会把新映射表随回调交给应用。
 
 `getThermalHeadroomThresholds()` 可能抛出 `UnsupportedOperationException` 或 `IllegalStateException`，产品代码应保留一条只依赖热状态的回退路径。
 
@@ -401,7 +401,7 @@ fun requestedTier(signals: ThermalSignals): WorkloadTier {
 }
 ```
 
-这个函数只给出目标档位。生产实现还要在外面维护一个状态机：热压力升高时可以快速减少工作量；恢复则要等 headroom 低于退出阈值并持续一段冷却驻留时间，再逐级增加。退出余量（margin）用来拉开进入与退出阈值，驻留时间用来确认设备已经稳定冷却；两者都应来自产品实验，不能写成平台常量。
+这个函数只给出目标档位。生产实现还要在外面维护一个状态机：热压力升高时可以快速减少工作量；恢复则要等 headroom 低于退出阈值并持续一段冷却驻留时间，再逐级增加。退出余量用来拉开进入与退出阈值，驻留时间用来确认设备已经稳定冷却；两者都应从产品实验里取值，套用平台常量行不通。
 
 每个档位对应一组不可拆分的配置，所有相关模块在同一次状态切换中采用同一档位，避免渲染已经降载、相机或推理仍维持高负载的错位：
 
@@ -417,23 +417,23 @@ fun requestedTier(signals: ThermalSignals): WorkloadTier {
 
 ## CPU、GPU 与应用性能的证据
 
-信号驱动策略，性能退化则要另行取证：热状态升高可能伴随 CPU/GPU 限制，但热状态本身说明不了系统采取了哪项动作——CPU 主线程变慢、GPU 帧延长、充电速度下降、屏幕亮度变化，每一项都要分别取证。
+信号驱动策略，性能退化则要另行取证：热状态升高可能伴随 CPU/GPU 限制，但热状态本身说明不了系统采取了哪项动作。CPU 主线程变慢、GPU 帧延长、充电速度下降、屏幕亮度变化，每一项都要分别取证。
 
 ### 把热限制与卡顿连成因果链
 
-“设备发热”和“界面卡顿”同时出现，只能建立相关性。要确认热节流导致性能退化，我们至少要按时间顺序取得这些证据：
+“设备发热”和“界面卡顿”同时出现，只能建立相关性。要确认热节流导致性能退化，我们至少要按时间顺序取到下面这些佐证：
 
 1. 固定场景输入后，目标进程或相关系统组件形成持续负载；
 2. 热状态、headroom、temperature trip（温度跨过配置阈值）或冷却档位发生可重复变化；
 3. CPU/GPU 频率上限、可用容量或完成时间显示资源受到约束；
-4. 工作量保持稳定时，线程执行时间、Runnable（可运行但等待 CPU 调度）时长、GPU 完成时间或帧时间随后恶化；
+4. 工作量保持稳定时，线程执行时间、Runnable 等待时长、GPU 完成时间或帧时间随后恶化；
 5. 设备降温，或主动降低单一负载变量后，限制与性能退化按预测回落。
 
-对照一下缺了哪一环：没有第 2、3 项，观测到的 CPU/GPU 低频可能只是 DVFS（动态电压频率调整）应对普通负载变化的常规选择；没有稳定工作量与对照组，排除不了业务负载本身的变化；没有回落过程，还要检查省电模式（Battery Saver）、刷新率切换、后台争用和厂商短时提频（boost）策略。
+对照一下缺了哪一环：没有第 2、3 项，观测到的 CPU/GPU 低频可能只是 DVFS 应对普通负载变化的常规选择；没有稳定工作量与对照组，排除不了业务负载本身的变化；没有回落过程，还要检查省电模式、刷新率切换、后台争用和厂商短时提频（boost）策略。
 
 Perfetto 取证时，我们把 `ThermalManagerService.status`、热状态与冷却设备事件、`cpu_frequency_limits`、调度器、FrameTimeline、RenderThread 与 GPU fence 放在同一时间窗口；单条异常帧或一次温度读数撑不起归因。
 
-时间尺度也要分开：单帧和输入反馈用短时跟踪，数分钟温升用持续跟踪或周期快照；屏幕熄灭后的 WakeLock、后台作业（Job）与网络重试，则回到 [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md) 的 Batterystats（系统电量统计）窗口。三类结果靠同一设备、系统构建版本（build）、场景和时间戳关联；power rail 是设备级供电轨的能量统计，不能直接归因到某个 Java 方法。
+时间尺度也要分开：单帧和输入反馈用短时跟踪，数分钟温升用持续跟踪或周期快照；屏幕熄灭后的 WakeLock、后台 Job 与网络重试，则回到 [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md) 的 Batterystats 窗口。三类结果靠同一设备、系统构建版本、场景和时间戳关联；power rail 是设备级供电轨的能量统计，粒度到不了单个 Java 方法。
 
 ### CPU 受限
 
@@ -444,11 +444,11 @@ CPU 频率或可用核心预算降低后，常见的表现包括：
 - 线程处于 Runnable 状态的等待时间增长，同时 CPU 持续繁忙；
 - GC、JIT、序列化等原本勉强能放进帧预算的工作开始超时。
 
-证明热限制的因果关系时，把 `ThermalManagerService.status`、`thermal zone`（内核温度源与冷却设备抽象）、冷却档位、CPU 频率上限、调度器与应用执行片段放到同一时间轴上。
+证明热限制的因果关系时，我们把 `ThermalManagerService.status`、`thermal zone`、冷却档位、CPU 频率上限、调度器与应用执行片段放到同一时间轴上。
 
 ### GPU 受限
 
-GPU devfreq 或厂商固件降低预算时，GPU 完成时间延后，FrameTimeline 可能记录 GPU 错过帧截止时间。这时先减少像素量和渲染 pass（一次完整的渲染处理阶段），再评估目标 FPS。仅凭 `SEVERE` 推断 GPU 已降到某个频点，证据不足。
+GPU devfreq 或厂商固件降低预算时，GPU 完成时间延后，FrameTimeline 可能记录 GPU 错过帧截止时间。这时先减少像素量和渲染 pass，再评估目标 FPS。仅凭 `SEVERE` 推断 GPU 已降到某个频点，依据不足。
 
 ### 充电与其他缓解动作
 
@@ -464,7 +464,7 @@ ADPF（Android Dynamic Performance Framework，Android 动态性能框架）把 
 
 热策略把游戏从较高 FPS 切到较低 FPS 时，新的每帧目标耗时要通过 `updateTargetWorkDuration()` 跟着更新。继续上报旧截止时间，平台收到的性能需求就与应用当前的质量策略对不上了。
 
-API 36 的 CPU/GPU capacity headroom 位于 [`SystemHealthManager`](https://developer.android.com/reference/android/os/health/SystemHealthManager)：
+API 36 的 CPU/GPU capacity headroom（容量余量）位于 [`SystemHealthManager`](https://developer.android.com/reference/android/os/health/SystemHealthManager)：
 
 - `getCpuHeadroom()` / `getGpuHeadroom()` 返回 0—100，0 表示没有更多可分配容量；
 - thermal headroom 的数值方向与 capacity headroom 相反：越高越接近严重热限制；
@@ -475,13 +475,13 @@ API 36 的 CPU/GPU capacity headroom 位于 [`SystemHealthManager`](https://deve
 
 ### Game Mode
 
-Game Mode 表达用户选择的 `PERFORMANCE`（性能优先）、`BATTERY`（续航优先）或 `STANDARD`（标准）偏好。应用应在 `onResume()` 重新读取模式，并选择相应的初始质量档位。热安全与稳定体验的优先级更高，性能优先模式同样受热限制约束。
+Game Mode 表达用户选择的偏好：`PERFORMANCE` 性能优先，`BATTERY` 续航优先，`STANDARD` 标准。应用应在 `onResume()` 重新读取模式，并选择相应的初始质量档位。热安全与稳定体验的优先级更高，性能优先模式同样受热限制约束。
 
 续航优先模式只影响游戏自己的策略，与系统省电模式是两回事。Game Mode 干预（interventions）是 OEM 在应用外部施加的帧率、分辨率等优化，应用未接入 Game Mode API 时也可能被采用。跨厂商验证时要记录当前模式、应用是否声明自行支持，以及系统实际启用的干预项。
 
 ### Sustained Performance Mode
 
-API 24 的 Sustained Performance Mode（持续性能模式）面向长时间负载。应用先调用 `PowerManager.isSustainedPerformanceModeSupported()`，受支持时通过 `Window.setSustainedPerformanceMode(true)` 请求较稳定的性能区间。它通常降低冷机峰值来换取更平稳的长时表现，但不保证固定频率或固定 FPS，也替代不了应用的工作量档位。Fixed Performance Mode 用于基准测试，不能作为线上绕过热策略的手段。
+API 24 的 Sustained Performance Mode（持续性能模式）面向长时间负载。应用先调用 `PowerManager.isSustainedPerformanceModeSupported()`，受支持时通过 `Window.setSustainedPerformanceMode(true)` 请求较稳定的性能区间。它通常降低冷机峰值来换取更平稳的长时表现，但不保证固定频率或固定 FPS，也替代不了应用的工作量档位。Fixed Performance Mode 用于基准测试，线上想借它绕过热策略是行不通的。
 
 ## 与后台调度、Doze 和 App Standby 的关系
 
@@ -514,9 +514,9 @@ Doze（设备空闲节电）、App Standby、Battery Saver 和热限制规则是
 - 目标 FPS / 实际 FPS、FrameTimeline 卡顿帧、编码或推理延迟；
 - 设备型号、系统构建版本、应用版本和实验组。
 
-`elapsedRealtime` 只随设备运行时间递增，不受用户改时间或网络校时影响，适合计算状态持续时间。回调日志要做去重，只记录转换和区间持续时间；headroom 适合按区间统计或抽样，不适合高频逐点上传。恢复阶段也要记录，这样才能发现策略在 LIGHT/MODERATE 边界反复切换。
+`elapsedRealtime` 只随设备运行时间递增，不受用户改时间或网络校时影响，适合计算状态持续时间。回调日志要做去重，只记录转换和区间持续时间；headroom 适合按区间统计或抽样，不适合高频逐点上传。恢复阶段也要记录，这样才能发现策略在 LIGHT 与 MODERATE 之间反复切换。
 
-线上看板按热状态和工作量档位拆分统计。把所有状态混在一起，热机样本会拉高尾延迟，冷机与热机的不同退化模式就看不清了。
+我们在线上看板里按热状态和工作量档位拆分统计。把所有状态混在一起，热机样本会拉高尾延迟，冷机与热机的不同退化模式就看不清了。
 
 ### 有用的指标
 
@@ -542,7 +542,7 @@ Doze（设备空闲节电）、App Standby、Battery Saver 和热限制规则是
 
 ## 本地测试与 Perfetto
 
-本地验证用这几条命令读取服务状态、查询 10 秒 headroom，并模拟 Framework 热状态回调：
+本地验证时，我们用这几条命令读取服务状态、查询 10 秒 headroom，并模拟 Framework 热状态回调：
 
 ```bash
 adb shell dumpsys thermalservice
@@ -567,7 +567,7 @@ WHERE t.name = 'ThermalManagerService.status'
 ORDER BY c.ts;
 ```
 
-查询为空时，先检查 trace 是否启用了 power atrace 类别，再枚举 `counter_track` 中的设备轨道。完整证据还需要 CPU/GPU 频率、温度阈值事件、冷却档位、调度器、FrameTimeline 与应用执行片段。
+查询为空时，先检查 trace 是否启用了 power atrace 类别，再枚举 `counter_track` 中的设备轨道。完整的因果链还需要 CPU/GPU 频率、温度阈值事件、冷却档位、调度器、FrameTimeline 与应用执行片段。
 
 可复现实验至少固定这些条件：
 
@@ -584,7 +584,7 @@ ORDER BY c.ts;
 
 AOSP 定义 HAL、限制等级和公开 API，但 Qualcomm、MediaTek、Samsung 或某家整机厂采用哪个常驻进程、阈值表、豁免列表或频率策略，不在规定之列。用厂商名称制作固定的“激进/保守”表格，缺少可移植性。
 
-同一 SoC 在不同机身、散热材料、传感器位置、电池和充电方案中的表现也不同。跨设备策略应依赖热状态与 OEM 阈值映射表，设备专项优化则保留系统构建指纹、性能跟踪和实验报告。
+同一 SoC 在不同机身、散热材料、传感器位置、电池和充电方案中的表现也不同。我们做跨设备策略时依赖热状态与 OEM 阈值映射表，做设备专项优化时则保留系统构建指纹、性能跟踪和实验报告。
 
 测试覆盖范围建议包括：
 
@@ -592,10 +592,10 @@ AOSP 定义 HAL、限制等级和公开 API，但 Qualcomm、MediaTek、Samsung 
 - 充电、电池供电、Wi-Fi 与蜂窝；
 - 高亮屏幕、相机、导航、视频通话、游戏和端侧推理；
 - 横屏/竖屏、手持/支架、保护壳；
-- 短时突发负载（burst）与长时间持续负载（sustained workload）；
+- 短时突发负载与长时间持续负载；
 - 热状态、thermal headroom、capacity headroom、频率、功耗和业务质量。
 
-还会遇到一种兼容问题：某 OEM 构建版本的热状态长期停在 NONE，但 headroom、频率与性能已经明显变化。这时把它记录为设备兼容问题，并以 headroom 趋势和 trace 作为性能受限的补充证据。sysfs 是内核向用户空间暴露设备状态的虚拟文件系统，私有节点会随内核和厂商实现变化，应用不要把它当作跨设备接口。
+还会遇到一种兼容问题：某 OEM 构建版本的热状态长期停在 NONE，但 headroom、频率与性能已经明显变化。这时把它记录为设备兼容问题，并以 headroom 趋势和 trace 作为性能受限的旁证。sysfs 是内核向用户空间暴露设备状态的虚拟文件系统，私有节点会随内核和厂商实现变化，应用不要把它当作跨设备接口。
 
 ## 常见错误
 
@@ -651,14 +651,14 @@ headroom 跟踪缓慢变化的表面温度信号，高频调用会增加开销�
 
 - [5.2 DVFS、Thermal 与 Android 功耗管理](../../part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md)：调节器、冷却设备、Thermal HAL、Framework 热状态/headroom 与 Perfetto。
 - [5.4 ADPF 自适应性能框架](../../part1-fundamentals/ch05-cpu-power/04-adpf.md)：Performance Hint Session、Game Mode 与 capacity headroom。
-- [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md)：功耗与性能实验方法，以及 BatteryUsageStats、PowerMonitor 与 UID 归因边界。
+- [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md)：功耗与性能实验方法，以及 BatteryUsageStats、PowerMonitor 与 UID 归因范围。
 - [25.7 应用层 CPU 优化实战指南](07-application-cpu-optimization.md)：持续 CPU 异常、excessive CPU 终止与线上治理。
 
-Android 17 源码锚点：
+源码位置：
 
 - [`PowerManager.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java)：热状态、headroom、阈值与监听器。
 - [`ThermalManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java)：HAL 连接、表面温度聚合、预测、shell 与跟踪计数器。
-- [`IThermalService.aidl`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/IThermalService.aidl)：Framework Binder 边界。
+- [`IThermalService.aidl`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/IThermalService.aidl)：Framework Binder 接口。
 - [`IThermal.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/IThermal.aidl)：Android 17 Thermal HAL。
 - [`ThrottlingSeverity.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/ThrottlingSeverity.aidl)：NONE 到 SHUTDOWN 的 HAL 枚举。
 - [`CoolingDevice.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/CoolingDevice.aidl)：冷却档位与功率字段。

@@ -123,8 +123,8 @@ consolidated_from:
 
 当 `Throwable` 逃出线程入口，Java 层会进入 [`Thread.dispatchUncaughtException()`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)。Android 进程初始化时，[`RuntimeInit.commonInit()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java) 安装两个处理器：
 
-1. `LoggingHandler` 被注册为 pre-handler（前置未捕获异常处理器），负责写入致命异常日志。应用可以替换默认处理器；公开的 `Thread` API 换不掉这个前置处理器。
-2. `KillApplicationHandler` 被注册为 default handler（默认未捕获异常处理器）。它向 ActivityManager 报告 `ParcelableCrashInfo`，并在 `finally` 代码块中依次调用 `Process.killProcess(Process.myPid())` 和 `System.exit(10)`。
+1. `LoggingHandler` 被注册为 pre-handler，在默认处理器之前写入致命异常日志。应用可以替换默认处理器；公开的 `Thread` API 换不掉这个前置处理器。
+2. `KillApplicationHandler` 被注册为 default handler。它向 ActivityManager 报告 `ParcelableCrashInfo`，并在 `finally` 代码块中依次调用 `Process.killProcess(Process.myPid())` 和 `System.exit(10)`。
 
 应用或第三方崩溃采集 SDK 一旦调用 `Thread.setDefaultUncaughtExceptionHandler()`，默认处理器就不再是 `KillApplicationHandler`。自定义处理器应保存并调用安装前的处理器；若只写文件或发网络请求后直接返回，就改变了系统默认语义，进程是否还能安全运行也没有了着落。
 
@@ -142,10 +142,10 @@ Native Crash 的实际链路，比“debuggerd 守护进程捕获信号”这句
 
 1. Android C 库 bionic 与 debuggerd 诊断组件在进程内安装致命信号处理器，处理 `SIGSEGV`、`SIGABRT`、`SIGBUS` 等信号。
 2. [`debuggerd_signal_handler`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp) 保存 `siginfo_t` 与 `ucontext_t`，派生子进程并执行相应位数的 `crash_dump32` 或 `crash_dump64`。
-3. [`crash_dump`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 `ptrace`（进程跟踪接口）暂停并读取目标线程，连接 `tombstoned` 取得输出文件描述符，生成文本和 protobuf（Protocol Buffers，结构化二进制格式）形式的 tombstone。
+3. [`crash_dump`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 `ptrace` 暂停并读取目标线程，连接 `tombstoned` 取得输出文件描述符，生成文本和 protobuf 两种形式的 tombstone。
 4. [`tombstoned`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/tombstoned/tombstoned.cpp) 管理 tombstone 的存储与轮转；栈回溯由 Android 的 `libunwindstack` 完成，与泛指的 `libunwind` 不是同一实现。
 
-tombstone 的诊断价值来自信号、`si_code`、故障地址、寄存器、线程栈、内存映射、Build ID 和内存标签等信息。线上符号化必须按 ABI（Application Binary Interface，二进制接口约定）、Build ID 和发布版本取回未剥离符号；只按 `.so` 文件名匹配，很容易把地址解析到错误源码。系统信号、debuggerd 链路、栈回溯与符号解析统一见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)。
+tombstone 的诊断价值来自信号、`si_code`、故障地址、寄存器、线程栈、内存映射、Build ID 和内存标签等信息。线上符号化必须按 ABI、Build ID 和发布版本取回未剥离符号；只按 `.so` 文件名匹配，很容易把地址解析到错误源码。系统信号、debuggerd 链路、栈回溯与符号解析统一见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)。
 
 ### ANR：系统的超时判定
 
@@ -190,9 +190,9 @@ Native `malloc` 分配失败通常返回 `nullptr` 并设置错误码；调用�
 
 #### 线程和文件描述符
 
-创建线程需要线程控制结构、栈映射和内核任务资源。`pthread_create` 返回 `EAGAIN`（当前资源不足）或其他错误后，Java 层可能抛出带有 `pthread_create` 信息的 `OutOfMemoryError`。这种故障应同时检查线程数量、线程来源、栈大小和进程资源限制。
+创建线程需要线程控制结构、栈映射和内核任务资源。`pthread_create` 返回 `EAGAIN` 等错误后，Java 层可能抛出带有 `pthread_create` 信息的 `OutOfMemoryError`。这种故障应同时检查线程数量、线程来源、栈大小和进程资源限制。
 
-FD（File Descriptor，文件描述符）耗尽的典型信号是 `EMFILE`——进程打开的文件描述符到达上限，随后文件或网络套接字创建失败。它与虚拟地址空间耗尽是两类故障。FD 泄漏还会引发数据库、网络、资源加载或 Binder 相关异常，监控时应单列 FD 数量与类别。[20.7 FD 耗尽监控与故障排查](07-fd-resource-monitoring.md)会展开这类资源故障。
+FD 耗尽的典型信号是 `EMFILE`——进程打开的文件描述符到达上限，随后文件或网络套接字创建失败。它与虚拟地址空间耗尽是两类故障。FD 泄漏还会引发数据库、网络、资源加载或 Binder 相关异常，监控时应单列 FD 数量与类别。[20.7 FD 耗尽监控与故障排查](07-fd-resource-monitoring.md)会展开这类资源故障。
 
 #### LMKD 与内核 OOM
 
@@ -264,7 +264,7 @@ fun readRecentExits(context: Context): List<ApplicationExitInfo> {
 | 用户感知崩溃率（User-perceived crash rate） | 每日用户中，至少一次在活跃使用期间遇到崩溃的用户占比 | 1.09% | 8% |
 | 用户感知 ANR 率（User-perceived ANR rate） | 每日活跃用户中，至少一次遇到用户感知 ANR 的用户占比 | 0.47% | 8% |
 
-用户感知崩溃率的“活跃使用”，官方举例为显示 Activity 或运行前台服务（foreground service）；用户感知 ANR 率目前只统计 input dispatching timed out（输入分发超时）类型。daily active user（DAU，每日活跃用户）按“设备上的一个用户在一天内使用过应用”计数，同一用户、同一设备当天打开多次仍计一次。
+用户感知崩溃率的“活跃使用”，官方举例为显示 Activity 或运行前台服务（foreground service）；用户感知 ANR 率目前只统计 input dispatching timed out 这一类型。daily active user（DAU，每日活跃用户）按“设备上的一个用户在一天内使用过应用”计数，同一用户、同一设备当天打开多次仍计一次。
 
 Google Play 通常使用最近 28 天数据评估质量，出现突增时也可能提前采取措施。达到或超过阈值可能降低应用在 Play 的可见性，也可能在商店详情页显示警告；官方没有把它表述为固定的审核拒绝线。当前阈值以 [Play Console Android vitals 帮助页](https://support.google.com/googleplay/android-developer/answer/9844486) 为准。
 
@@ -275,7 +275,7 @@ Android vitals 与 SDK 看板出现不同结果很常见。这里的 session 指
 - 受隐私最小样本与展示延迟影响；
 - Play 以每日用户或每日活跃用户为主要分母，很多 SDK 使用会话数或事件数作为分母。
 
-期待两个系统使用相同数据源、得到接近的数值并不现实。我们要做的是明确每张看板回答的问题，无须强行对齐数字。定义与数据条件见 [Android Vitals](https://developer.android.com/topic/performance/vitals) 和 [Crash 指标说明](https://developer.android.com/topic/performance/vitals/crash)。
+期待两个系统使用相同数据源、得到接近的数值并不现实。我们要做的是明确每张看板回答的问题，不必强行把两套数字拉到一致。定义与数据条件见 [Android Vitals](https://developer.android.com/topic/performance/vitals) 和 [Crash 指标说明](https://developer.android.com/topic/performance/vitals/crash)。
 
 #### 团队内部指标必须写清分子与分母
 
@@ -326,7 +326,7 @@ Android 17 / API 37 增加 `ProfilingTrigger.TRIGGER_TYPE_OOM`：发生 Java `Ou
 #### 预防
 
 - 用静态检查工具（Lint、Detekt 等）、编译器检查和自定义规则约束空值、资源关闭、线程创建与主线程 I/O。
-- 在调试或测试构建中启用 StrictMode（在运行时发现主线程磁盘或网络访问等问题）、sanitizer（运行时错误检查工具）、GWP-ASan、MTE 等能力，尽早暴露错误。GWP-ASan 与 MTE 用于发现部分 Native 内存安全问题，设备、构建和性能要求见 [20.11 MTE 与 GWP-ASan Native 内存安全检测](11-mte-gwp-asan-native-memory-safety.md)。
+- 在调试或测试构建中启用 StrictMode、sanitizer（运行时错误检查工具）、GWP-ASan、MTE 等能力，尽早暴露错误：StrictMode 能在运行时发现主线程磁盘或网络访问等问题。GWP-ASan 与 MTE 用于发现部分 Native 内存安全问题，设备、构建和性能要求见 [20.11 MTE 与 GWP-ASan Native 内存安全检测](11-mte-gwp-asan-native-memory-safety.md)。
 - 为主线程任务、Binder 调用、启动阶段、缓存和并发数量制定时间或资源预算。
 - 主动制造低内存、进程重建、网络失败、磁盘满、FD 或线程耗尽、服务端降级等条件，验证故障处理路径。这类测试称为故障注入。
 - 对高风险变更使用可远程关闭的功能开关、限制高风险功能的安全模式、逐步扩大用户比例的灰度发布，以及能够恢复旧值的配置。
@@ -383,7 +383,7 @@ Android 17 / API 37 增加 `ProfilingTrigger.TRIGGER_TYPE_OOM`：发生 Java `Ou
 - 灰度暂停、配置撤回和紧急发版的决策人；
 - 修复验证的结束条件里，光记录“代码已合入”不算结束。
 
-### 专题下钻
+### 后续专题
 
 - [20.2 Java Crash、异常架构与线程堆栈分析](02-java-crash-exception-stack-analysis.md)：异常处理器、反混淆、异步异常与恢复边界。
 - [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)：tombstone、符号化和内存安全工具。
@@ -424,9 +424,9 @@ Google Play 和 Firebase 的统计规则独立于 AOSP 版本，文中引用的�
 | 启动尝试 | 以 fatal 或进程异常退出结束的启动尝试 | 有效启动尝试 | 用户能否进入可用界面 |
 | 原始故障事件 | Crash、ANR 或其他故障事件 | 启动数、会话数或运行时长 | 故障发生频率与诊断负荷 |
 
-指标文档、事件上报协议和 SQL 都要写出分子、分母、时间窗、范围和去重键（判断两条记录是否属于同一实体的字段）。
+指标文档、事件上报协议和 SQL 都要写出分子、分母、时间窗、范围和去重键。去重键用来判断两条记录是否属于同一实体。
 
-只写“UV 崩溃率”或“PV 崩溃率”仍然不够：UV 可能指账号、设备或安装实例；PV 在多数分析系统中表示页面浏览量，也代称不了 Session（一次连续使用会话）。
+只写“UV 崩溃率”或“PV 崩溃率”仍然不够：UV 可能指账号、设备或安装实例；PV 在多数分析系统中表示页面浏览量，也代称不了 Session。
 
 #### 原始事件和派生指标分开保存
 
@@ -446,7 +446,7 @@ Google Play 和 Firebase 的统计规则独立于 AOSP 版本，文中引用的�
 - 具备采集能力的版本覆盖率；
 - 会话开始与会话结束的上报完整率；
 - 崩溃本地暂存和下次启动补传的成功率；
-- Java mapping（混淆名称还原表）、Native 符号表和 Build ID（二进制构建标识）的匹配率；
+- Java mapping、Native 符号表和 Build ID 的匹配率；
 - Google Play 安装来源、用户授权和隐私门槛带来的样本范围。
 
 采集或上传缺失会直接改变分子、分母，决定指标能否用于发布判定。
@@ -504,7 +504,7 @@ Crashlytics 当前把冷启动视为新会话；应用进入后台至少 30 分�
 
 #### 启动失败率
 
-把 `Application.onCreate()` 到第一个 Activity `onResume()` 当作启动窗口，会漏掉 `Application.onCreate()` 之前的崩溃，也区分不了“界面出现”与“内容可用”。应为冷启动（新建进程）、温启动（进程存在但 Activity 需要重建）和热启动（Activity 仍在内存）分别建立启动尝试，并为每次尝试记录终态：
+把 `Application.onCreate()` 到第一个 Activity `onResume()` 当作启动窗口，会漏掉 `Application.onCreate()` 之前的崩溃，也区分不了“界面出现”与“内容可用”。冷启动要新建进程，温启动里进程还在、但 Activity 需要重建，热启动时 Activity 仍在内存；三类启动要分别建立启动尝试，并为每次尝试记录终态：
 
 - `first_frame_presented`：第一帧画面已经提交，用户能看到界面；
 - `fully_drawn`：关键内容可用，可与 `Activity.reportFullyDrawn()` 的语义对应；
@@ -586,7 +586,7 @@ User-perceived crash rate 是 Google Play 的 core vital，即会影响应用在
 
 也推不出 `100% - 1.09% = 98.91%` 这样的 Crashlytics Crash-Free Users 发布阈值。两边的故障范围、用户定义、采样范围和时间聚合均不相同。
 
-### Android 17 下的 ANR 观测
+### ANR 的观测数据源
 
 #### 四类数据各有边界
 
@@ -601,7 +601,7 @@ User-perceived crash rate 是 Google Play 的 core vital，即会影响应用在
 
 API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 返回近期进程死亡记录。只有关联记录存在时，才能从 [`ApplicationExitInfo.getTraceInputStream()`](https://developer.android.com/reference/android/app/ApplicationExitInfo#getTraceInputStream()) 尝试读取 trace；该方法允许返回 `null`，系统的全局环形缓冲也可能已经覆盖旧数据。
 
-API 36 起，可以通过 [`ProfilingTrigger.TRIGGER_TYPE_ANR`](https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_ANR) 请求系统在识别 ANR 后提供运行中的 system trace（记录线程调度、CPU 和系统事件的性能时间线）快照。触发不表示应用一定被杀，系统也不保证每次都返回产物。
+API 36 起，可以通过 [`ProfilingTrigger.TRIGGER_TYPE_ANR`](https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_ANR) 请求系统在识别 ANR 后提供运行中的 system trace 快照。触发不表示应用一定被杀，系统也不保证每次都返回产物。
 
 API 37 起，`ApplicationExitInfo.getAnrInfo()` 会在 `reason == REASON_ANR` 时提供结构化 ANR 信息，其他退出原因返回 `null`；新增的 [`ActivityManager.registerAnrWarningListener()`](https://developer.android.com/reference/android/app/ActivityManager#registerAnrWarningListener(java.util.concurrent.Executor,%20java.util.function.Consumer%3Candroid.app.AnrWarningResult%3E)) 则提供预警回调。下面的示意代码只负责在非主线程保存轻量预警字段：
 
@@ -630,7 +630,7 @@ fun registerAnrWarningCollector(
 
 Java/Kotlin 未捕获异常可以由 `Thread.UncaughtExceptionHandler` 记录。自定义处理器必须把异常继续交给安装前保存的默认处理器，并限制磁盘写入量。[`RuntimeInit.KillApplicationHandler`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java) 是这条链最后的终止步骤；吞掉默认处理会破坏系统 Crash 语义，也可能让 OOM profiling trigger 等能力拿不到预期信号。更完整的实现和故障边界见 [20.2 Java Crash、异常架构与线程堆栈分析](02-java-crash-exception-stack-analysis.md)。
 
-Native Crash 的采集，写成“读取 debuggerd tombstone”是不够的。Tombstone 是系统为 native crash 生成的现场记录，普通应用没有任意读取系统文件的权限。可用数据包括自有信号处理器生成的 minidump（只保存必要崩溃上下文的小型文件）、Crash 平台 SDK 产物，以及 API 31+ 在 `ApplicationExitInfo` 中可能提供的 `REASON_CRASH_NATIVE` protobuf tombstone。Native 符号化必须按 ABI、版本和 Build ID 找到完全匹配的未裁剪符号，详见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)。
+Native Crash 的采集，写成“读取 debuggerd tombstone”是不够的。Tombstone 是系统为 native crash 生成的现场记录，普通应用没有任意读取系统文件的权限。可用数据包括自有信号处理器生成的 minidump、Crash 平台 SDK 产物，以及 API 31+ 在 `ApplicationExitInfo` 中可能提供的 `REASON_CRASH_NATIVE` protobuf tombstone。Native 符号化必须按 ABI、版本和 Build ID 找到完全匹配的未裁剪符号，详见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)。
 
 Crash 或 ANR 时进程随时可能结束，端侧应优先写入应用私有目录的短记录，并在下次启动补传。同步网络上报、长时间加锁、大对象序列化和再次分配大量内存都会扩大失败概率。
 
@@ -638,7 +638,7 @@ Crash 或 ANR 时进程随时可能结束，端侧应优先写入应用私有目
 
 问题分组也叫聚类，目的是把可能来自同一根因的报告放在一起。同一根因在混淆、协程、内联和版本变化后，堆栈前几帧可能变化；不同根因也可能共享顶部框架帧。分组至少要考虑：
 
-- Java/Kotlin：异常类型、cause 链（异常的逐层原因链）、归一化后的应用代码根因帧、mapping 版本；
+- Java/Kotlin：异常类型、cause 链、归一化后的应用代码根因帧、mapping 版本；
 - Native：signal、fault 类型、归一化后的应用帧、ABI、Build ID 和符号版本；
 - ANR：ANR 类型、主线程阻塞点、锁持有者或 Binder 对端、组件类型；
 - 公共字段：应用版本、动态模块版本、Android 版本和必要的功能开关。
@@ -649,7 +649,7 @@ Crash 或 ANR 时进程随时可能结束，端侧应优先写入应用私有目
 
 ### 看板怎样组织
 
-看板是集中展示质量指标和诊断信息的页面。一张图承载不了商店风险、发版判断、问题诊断和采集健康度，更清楚的做法是分成四层。
+看板是集中展示质量指标和诊断信息的页面。一张图承载不了商店风险、发版判断、问题诊断和采集健康度；更清楚的做法是拆成四层，我们逐层看。
 
 #### 质量概览
 
@@ -697,7 +697,7 @@ Crash 或 ANR 时进程随时可能结束，端侧应优先写入应用私有目
 
 分阶段发布系统应记录每次提高发布比例、暂停发布和恢复到上一稳定版本的时间点。告警评估要用当时接触到新版本的用户或会话数量做分母，全量 DAU 是错的分母。异常只出现在特定设备、国家或渠道时，可以暂停向对应人群发布；数据还不足时，直接推断所有用户都会出现同样的质量倒退，结论立不住。
 
-### 用 SLO（服务目标）和 Error Budget（错误预算）管理稳定性
+### 用 SLO 和 Error Budget 管理稳定性
 
 #### SLI、SLO 与 SLA
 
@@ -753,7 +753,7 @@ $$
 3. 原始事件是否保留，重复事件与受影响实体是否分别统计；
 4. 启动、Crash、ANR、OOM、LMK 的终态是否互斥且可解释；
 5. 新旧版本是否在相近暴露人群上比较，并展示分母和统计区间；
-6. API 30/31/35/36/37 的采集能力是否按版本降级，系统不保证每次都提供的数据，有没有被误当成必达；
+6. API 30/31/35/36/37 的采集能力是否按版本降级，系统不保证每次都提供的数据有没有被误当成必达；
 7. 看板是否能识别漏报、延迟、符号缺失和 SDK 覆盖变化；
 8. Error Budget 的单位是否与 SLI 一致。
 
@@ -764,7 +764,7 @@ $$
 
 指标发现回归之后，我们要用堆栈、信号、设备和版本字段把事件聚合起来，再结合发布变更定位责任范围。
 
-服务端要把海量 occurrence（单次原始故障报告）归入可解释的问题组，判断问题集中在哪些版本、设备或使用场景，再把证据交给合适的团队。本文所说的“归因”是寻找这些集中条件和候选责任模块，不表示仅凭相关性证明因果关系。
+服务端要把海量 occurrence（单次原始故障报告）归入可解释的问题组，判断问题集中在哪些版本、设备或使用场景，再把证据交给合适的团队。本文所说的“归因”指寻找这些集中条件和候选责任模块，相关性本身证明不了因果关系。
 
 聚合算法本身不属于 Android API，但输入数据受 `Throwable`、R8、debuggerd tombstone、`ApplicationExitInfo` 和构建产物约束。忽略这些约束，哈希做得再复杂也只会稳定地产生错误分组。
 
@@ -804,11 +804,11 @@ flowchart LR
   L --> M["归因、分派、告警"]
 ```
 
-符号化失败的事件仍要保留，但进入 `unsymbolicated`（未符号化）队列。先用不可读的混淆名或绝对地址建立长期 issue、等符号文件到齐再静默改它的含义，是要避免的做法。
+符号化失败的事件仍要保留，但进入 `unsymbolicated`（未符号化）队列。我们要避免的，是先用不可读的混淆名或绝对地址建立长期 issue，等符号文件到齐再静默改它的含义。
 
 #### 先按事件族隔离
 
-Java Crash、Native Crash、ANR 和 OOM/LMK 的证据结构不同，仅凭“顶部堆栈相似”就并进同一个问题组，聚合结果会失真。LMK 是低内存终止的结果，LMKD 是执行这项判断的 low memory killer daemon（低内存终止守护进程）。
+Java Crash、Native Crash、ANR 和 OOM/LMK 的证据结构不同，仅凭“顶部堆栈相似”就并进同一个问题组，聚合结果会失真。LMK 指低内存终止这种结果，LMKD 指执行判定的守护进程。
 
 | 事件族 | 主证据 |
 |---|---|
@@ -829,7 +829,7 @@ R8 混淆后的 `a.b.c` 只在对应构建中有意义。官方 [R8 retrace](htt
 artifact ID 至少包含：
 
 - application ID、version code、build ID；
-- product flavor（产品变体）、build type（例如 debug、release）、动态功能模块版本；
+- product flavor、build type（例如 debug、release）和动态功能模块版本；
 - mapping 文件的内容哈希；
 - 源码提交版本和依赖锁文件版本。
 
@@ -839,14 +839,14 @@ Kotlin inline、协程状态机和 R8 优化可能让一个混淆帧对应多个
 
 #### Native：Build ID 决定符号版本
 
-绝对 PC（program counter，程序计数器）会受到 ASLR（地址空间布局随机化）影响；不同构建的函数布局也会变化。Native 符号化至少使用 ABI、模块路径、ELF Build ID 与模块相对 PC。
+绝对 PC 会受到 ASLR（地址空间布局随机化）影响；不同构建的函数布局也会变化。Native 符号化至少使用 ABI、模块路径、ELF Build ID 与模块相对 PC。
 
 官方 [`ndk-stack` 文档](https://developer.android.com/ndk/guides/ndk-stack) 要求提供对应 ABI 的未裁剪库；[Native debug symbols 指南](https://developer.android.com/build/include-native-symbols) 说明 `SYMBOL_TABLE` 可恢复函数名，`FULL` 还能恢复文件和行号。
 
 发布流水线要验证：
 
 - 每个随包交付的 `.so` 都有 Build ID；
-- stripped（已裁剪调试信息）与 unstripped（保留调试信息）文件的 Build ID 完全相同；
+- stripped 与 unstripped 文件的 Build ID 完全相同；
 - 符号包按 app build、ABI、模块 Build ID 可检索；
 - 动态模块和第三方 Native SDK 也有独立记录；
 - 上传成功与否要有回读或抽样符号化验证，构建任务退出码说明不了问题。
@@ -857,7 +857,7 @@ Android 12/API 31 起，应用可能从 [`ApplicationExitInfo.getTraceInputStrea
 
 #### 行号和偏移在指纹中的权重
 
-同一个方法里可以有多个独立 throw site（抛出异常的位置）；同一个 Native 函数里也可能有多个越界点。删除 Java 行号和 Native 相对偏移，可能把不同根因压进一个 issue。
+我们先看行号和偏移：同一个方法里可以有多个独立 throw site（抛出异常的位置）；同一个 Native 函数里也可能有多个越界点。删除 Java 行号和 Native 相对偏移，可能把不同根因压进一个 issue。
 
 反过来，跨版本仍然保留精确行号，会因为插入一行日志就把同一问题拆开。解决办法是同时生成两类签名：
 
@@ -904,7 +904,7 @@ if event.family == NATIVE_FATAL:
 
 #### Java 指纹该保留什么
 
-Android 17 的 [`Throwable.java`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Throwable.java) 同时保存 message、cause、stack trace 和 suppressed exceptions。聚合只取 root cause（最底层原因异常）会丢掉外层 API 语义，只取最外层异常又可能把相同底层失败拆散。
+[`Throwable.java`](https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Throwable.java) 同时保存 message、cause、stack trace 和 suppressed exceptions。聚合只取 root cause（最底层原因异常）会丢掉外层 API 语义，只取最外层异常又可能把相同底层失败拆散。
 
 更稳的 Java 特征包括：
 
@@ -914,7 +914,7 @@ Android 17 的 [`Throwable.java`](https://android.googlesource.com/platform/libc
 - suppressed 异常的类型摘要，用于并发失败和资源关闭场景；
 - 经过允许值列表（allowlist）规范化的稳定错误码。
 
-默认情况下，异常 message 整段进指纹是下策。文件路径、URL、账号、时间戳、对象地址和服务端文案会产生大量不同取值，还可能携带隐私数据。若 SDK 或业务拥有稳定 error code，优先使用该代码；需要 message 模板时，按异常类型维护明确的 parser（解析规则），并监控规则成功识别模板的比例。
+默认情况下，异常 message 整段进指纹是下策。文件路径、URL、账号、时间戳、对象地址和服务端文案会产生大量不同取值，还可能携带隐私数据。若 SDK 或业务拥有稳定 error code，优先使用该代码；需要 message 模板时，按异常类型维护明确的解析规则，并监控规则成功识别模板的比例。
 
 “系统帧一律删除”也过于粗糙。系统帧是 Android 或 Java 框架代码产生的调用帧；`Looper.loop()`、`ActivityThread.main()` 等公共尾帧几乎没有区分度，可以赋予较低权重。`SQLiteConnection`、`WebView`、Binder proxy 或特定库帧可能正是失败语义的一部分，应保留在辅助特征中。
 
@@ -924,9 +924,9 @@ Native exact fingerprint 常用字段包括：
 
 - signal 与 `si_code`；
 - crash thread 的模块、Build ID、函数和相对 PC；
-- `abort_message` 中经过规则提取的稳定 sanitizer 或 allocator（内存分配器）错误码；
+- `abort_message` 中经过规则提取的稳定 sanitizer 或 allocator 错误码；
 - [MTE、GWP-ASan、HWASan](11-mte-gwp-asan-native-memory-safety.md) 等内存错误检测机制报告的类型；
-- fault address 的类别，例如 near-null（接近空地址）、tag mismatch（内存标签不匹配）或不可访问映射。
+- fault address 的类别，例如接近空地址的 near-null、内存标签不匹配的 tag mismatch，或不可访问映射。
 
 原始 fault address 不适合作为哈希键：ASLR、堆布局和隐私都会使它变化。遇到 near-null，仍要结合 signal、mapping 与指令再定性，单看地址就写空指针为时过早。
 
@@ -938,9 +938,9 @@ ANR fingerprint 可以由 ANR 类型、组件、主线程阻塞帧、锁持有�
 
 Java OOME 至少按 ART message 类别、分配点、进程阶段和堆摘要分组。`Failed to allocate`、`pthread_create`、FD 耗尽、Bitmap/native-backed 分配和 LMKD kill 属于不同问题，详见 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](05-oom-webview-renderer-recovery.md)。
 
-没有堆栈的事件进入带原因的 fallback bucket（信息不足时使用的后备分组），例如 `java_oome:no_stack:startup`。这个分组用于显示数据缺失和影响量，其中所有原始事件同根因的结论，不要自动下。
+没有堆栈的事件进入带原因的 fallback bucket（信息不足时使用的后备分组），例如 `java_oome:no_stack:startup`。这个分组用于显示数据缺失和影响量；组里的原始事件是否同根因，不要自动下结论。
 
-### 相似度分组：只负责寻找候选，不替代证据
+### 相似度分组与候选合并
 
 固定指纹会因为调用路径变化产生重复 issue，相似度层用于寻找“可能属于同一问题”的候选。推荐流程是：
 
@@ -956,7 +956,7 @@ Java OOME 至少按 ART message 类别、分配点、进程阶段和堆摘要分
 
 #### 防止传递式误合并
 
-A 与 B 相似、B 与 C 相似，A 与 C 未必相似。若直接使用 single-link clustering（单链聚类，只要新样本与组内任一样本足够接近就合并），公共中间样本会把两个问题连成一个大组。自动合并应同时满足：
+A 与 B 相似、B 与 C 相似，A 与 C 未必相似。single-link clustering（单链聚类）只要新样本与组内任一样本足够接近就合并，直接用它，公共中间样本会把两个问题连成一个大组。自动合并因此要同时满足：
 
 - 与问题组的代表样本相似；
 - 与组内关键约束一致，例如相同 root type 或 Native signal；
@@ -978,7 +978,7 @@ A 与 B 相似、B 与 C 相似，A 与 C 未必相似。若直接使用 single-
 
 只报一个“分组准确率”没有解释力。数据集规模、版本跨度、事件族分布、标注规则和置信区间都要一并记录。
 
-### 崩溃归因：比较发生率，不比较原始计数
+### 崩溃归因的发生率比较
 
 聚合回答“哪些事件相似”，归因回答“问题在什么条件下更常发生”，例如用户是否接触到该版本或功能。任何归因表都需要分子和分母。表中的“混杂因素”指同时影响分组条件和故障率、可能造成错误解释的第三项因素。
 
@@ -991,7 +991,7 @@ A 与 B 相似、B 与 C 相似，A 与 C 未必相似。若直接使用 single-
 | 页面/功能开关 | 场景内受影响会话 | 进入该场景的有效会话 | 场景使用频次、实验分流 |
 | WebView/SDK 版本 | 该组件版本受影响实例 | 该组件版本活跃实例 | 系统更新与机型分布 |
 
-“某机型有 50 次 Crash”说明不了机型有问题。如果该机型贡献了大部分活跃量，事件多很正常。应比较同一时间窗内的 rate ratio（该组发生率 ÷ 基线发生率）或 rate difference（该组发生率 - 基线发生率），并展示分母、置信区间和最小样本规则。
+“某机型有 50 次 Crash”说明不了机型有问题。如果该机型贡献了大部分活跃量，事件多很正常。应比较同一时间窗内的发生率：rate ratio 是该组发生率除以基线发生率，rate difference 是两者相减；同时展示分母、置信区间和最小样本规则。
 
 #### 首次观测与引入版本
 
@@ -1008,17 +1008,17 @@ A 与 B 相似、B 与 C 相似，A 与 C 未必相似。若直接使用 single-
 
 #### 场景和 breadcrumb 要受控
 
-breadcrumb 是故障前最近一小段页面跳转或用户操作的有界记录。页面、路由、网络类型、前后台状态、实验组和最近操作能缩小范围，但采集要使用允许值列表和枚举值。禁止把完整 URL、搜索词、聊天内容、Intent extras（Intent 携带的额外参数）或账号直接写入 breadcrumb。
+breadcrumb 是故障前最近一小段页面跳转或用户操作的有界记录。页面、路由、网络类型、前后台状态、实验组和最近操作能缩小范围，但采集要使用允许值列表和枚举值。禁止把完整 URL、搜索词、聊天内容、Intent extras 或账号直接写入 breadcrumb。
 
 [Crashlytics 自定义报告文档](https://firebase.google.com/docs/crashlytics/android/customize-crash-reports) 当前限制每份报告最多 64 个自定义键值对、每项最多 1 kB，并把每个会话的日志限制在 64 kB，超出后删除较早记录。文档也警告不要在 exception message 中加入用户 ID、时间戳等唯一值。自建 SDK 同样需要字段数量、单值长度、环形缓冲、采样、脱敏和删除周期。
 
 归因结果使用“相关”“集中”或“候选条件”描述，仅凭线上相关性就认定厂商 ROM、某次代码提交或某个团队制造了故障，结论立不住。
 
-### 自动分派：派给团队，不直接派给个人
+### 自动分派到团队
 
 #### 从符号化帧映射源码
 
-只有 retrace 或 Native symbolization（符号化）成功后，类名、源文件和函数才能可靠映射到代码仓库。分派候选可以来自：
+只有 retrace 或 Native symbolization 成功后，类名、源文件和函数才能可靠映射到代码仓库。分派候选可以来自：
 
 - 模块注册表：构建产物或模块 → 负责团队；
 - 源码路径 → [CODEOWNERS](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners) 中配置的代码评审团队；
@@ -1070,7 +1070,7 @@ breadcrumb 是故障前最近一小段页面跳转或用户操作的有界记录
 3. 某 issue 的 error-budget burn rate（错误预算消耗速度相对预期速度的倍数）在短、长观察窗口同时升高；
 4. 单机型、API、ABI 或功能开关分组出现有分母支持的集中异常。
 
-报告补传和处理延迟会让旧事件在短时间涌入。告警使用 event time（故障实际发生时间）计算趋势，用 ingestion time（服务端收到事件的时间）监控处理延迟；二者混用会把补传误判成线上突增。
+报告补传和处理延迟会让旧事件在短时间涌入。告警使用 event time（故障实际发生时间）计算趋势，用 ingestion time 监控处理延迟——它是服务端收到事件的时间；二者混用会把补传误判成线上突增。
 
 #### 静默期的持续评估
 
@@ -1102,9 +1102,9 @@ exception message、breadcrumb、服务端响应和日志都可能包含用户�
 
 - 脱敏并截断；
 - 区分代码、系统字段和自由文本；
-- 把日志中的指令视为普通数据，防止 prompt injection（攻击者把指令藏进输入文本，诱导模型偏离既定任务）；
+- 把日志中的指令视为普通数据，防止 prompt injection：攻击者把指令藏进输入文本，诱导模型偏离既定任务；
 - 按仓库与团队权限限制源码、工单和用户数据；
-- 记录模型版本、prompt（模型指令模板）版本和检索证据 ID；
+- 记录模型版本、prompt 版本和检索证据 ID；
 - 对输出执行 schema（字段结构与类型规则）校验。
 
 模型输出可以强制为下面的证据结构：
@@ -1124,7 +1124,7 @@ exception message、breadcrumb、服务端响应和日志都可能包含用户�
 
 #### 用标注集评估，不写想象中的提升
 
-AI/ML（机器学习）上线前建立按时间切分的标注集，至少覆盖：
+AI/ML 上线前建立按时间切分的标注集，至少覆盖：
 
 - 常见与低频 Java 异常；
 - Native signal、sanitizer 与未符号化事件；
@@ -1133,7 +1133,7 @@ AI/ML（机器学习）上线前建立按时间切分的标注集，至少覆盖
 - 很相似但根因不同的 hard negatives（困难负样本）；
 - 多团队、第三方 SDK 和负责团队未知的事件。
 
-评估分别报告候选合并的精确率与召回率、负责团队 top-k（前 k 个候选中包含正确团队的比例）、摘要事实错误率、证据引用正确率和人工节省时间。测试集和检索库要避免同时收入同一 issue 的近重复样本，否则模型等于提前看过答案。
+评估分别报告候选合并的精确率与召回率、负责团队 top-k 命中率、摘要事实错误率、证据引用正确率和人工节省时间。测试集和检索库要避免同时收入同一 issue 的近重复样本，否则模型等于提前看过答案。
 
 代码、R8、NDK、SDK 和模型升级后都可能产生漂移，即线上输入分布或模型表现逐渐偏离评估集。应监控人工驳回率、拆分/合并率和各事件族质量；质量下降时恢复使用确定性指纹与人工分类。
 
@@ -1147,7 +1147,7 @@ AI/ML（机器学习）上线前建立按时间切分的标注集，至少覆盖
 6. `fingerprint_schema_version` 是否入库，重新分组是否可审计并能恢复到上一版结果；
 7. 相似度合并是否有强约束、人工区间和防传递误合并；
 8. 归因表是否展示分母、置信区间、实际使用量、观察时间和采集完整率；
-9. first observed（首次观测）是否被错误写成 introduced（首次引入）；
+9. first observed 是否被错误写成 introduced；
 10. CODEOWNERS、模块表和 `git blame` 是否只生成团队候选与证据；
 11. 告警是否区分故障发生时间、服务端接收时间、分阶段发布和补传；
 12. AI 输入是否脱敏、防注入、按权限检索，输出是否带反证和缺失证据。

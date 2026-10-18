@@ -5852,6 +5852,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md",
+      "close_note": "按 Android 17 Binder.java、Binder.cpp 与 ACK 6.18 binder.h/binder.c，就地修正全文 UID/PID/SID：PID 非安全身份且可为 0，SID 显式请求且首次传出前配置，跨线程前取 UID 并鉴权。完整正文与来源断言通过。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-220520-0d7bd7cd",
       "created_at": "2026-10-18T16:19:37.961414+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-160520-5a7119db",
@@ -5865,13 +5868,16 @@
         "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/uapi/linux/android/binder.h",
         "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Binder 调用方 PID/SID 被写成默认可信身份，缺少异步、复用与显式 SID 请求边界",
       "type": "caller-identity",
-      "updated_at": "2026-10-18T16:19:37.961414+08:00"
+      "updated_at": "2026-10-18T22:16:04.446310+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md",
+      "close_note": "补同步嵌套回调可复用等待线程（含主线程），区分任务入队与同步完成；明确等待业务线程仍占 Binder 线程，长任务采用显式异步接口。核对 Handle threads 与 Binder.java。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-220520-0d7bd7cd",
       "created_at": "2026-10-18T16:19:38.015623+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-160520-5a7119db",
@@ -5883,13 +5889,16 @@
         "https://source.android.com/docs/core/architecture/ipc/binder-threading",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Binder.java"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Stub 转交 Handler/Executor 的建议遗漏同步完成语义与嵌套重入",
       "type": "aidl-completion-contract",
-      "updated_at": "2026-10-18T16:19:38.015623+08:00"
+      "updated_at": "2026-10-18T22:16:04.500347+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md",
+      "close_note": "请求使用服务端接收映射，回复使用客户端接收映射，删除对端预算混入本进程的错误；明确部分完成异常。源码与 4/16 KiB 页预算计算通过。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-220520-0d7bd7cd",
       "created_at": "2026-10-18T16:19:38.070563+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-160520-5a7119db",
@@ -5903,13 +5912,16 @@
         "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_alloc.c",
         "https://developer.android.com/reference/android/os/TransactionTooLargeException"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Binder 接收预算段误把对端接收缓冲区计入本进程映射",
       "type": "binder-receive-budget",
-      "updated_at": "2026-10-18T16:19:38.070563+08:00"
+      "updated_at": "2026-10-18T22:16:04.554951+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md",
+      "close_note": "SharedMemory 示例外层 try-with-resources 覆盖映射/写入/降权/远程调用失败，内层 finally 解除映射；删除不完整状态机，改为所有权归还和发布顺序约束。真实 SDK 35 javac 编译通过；不声称设备运行。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-220520-0d7bd7cd",
       "created_at": "2026-10-18T16:19:38.123195+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-160520-5a7119db",
@@ -5922,13 +5934,16 @@
         "https://developer.android.com/reference/android/os/SharedMemory",
         "https://source.android.com/docs/core/architecture/hidl/fmq"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "SharedMemory 示例的映射或写入异常路径缺少确定关闭，协议示意缺少归还与发布约束",
       "type": "sharedmemory-cleanup",
-      "updated_at": "2026-10-18T16:19:38.123195+08:00"
+      "updated_at": "2026-10-18T22:16:04.608963+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md",
+      "close_note": "采集命令增加 aidl 并注明权限边界，聚合增加 is_sync，区分 oneway 提交与业务完成，增加 PRAGMA 表结构排查。两条查询及两条模块导入加载 Android 17 真实 SQL 后通过空输入结构测试；本机 v49 缺 method_name 的兼容失败如实记录。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-220520-0d7bd7cd",
       "created_at": "2026-10-18T16:19:38.175994+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-160520-5a7119db",
@@ -5941,13 +5956,16 @@
         "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/Binder.cpp",
         "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Binder SQL 混合同步与 oneway 提交时长，采集命令未启用其接口解析所需 AIDL 分类",
       "type": "perfetto-binder-metrics",
-      "updated_at": "2026-10-18T16:19:38.175994+08:00"
+      "updated_at": "2026-10-18T22:16:04.662449+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md",
+      "close_note": "保留 DMA-BUF 旧页 5.4-only/弃用/计划移除边界，以 ACK 6.18 dma-heap.c 核对当前设备节点；补 FMQ resetPointers=false 和覆盖读取失败、HAL 稳定运行时与 Java 警告、AVF 宿主未被攻破和通道可转交前提、节点调度 setter 首次传出前限制。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-220520-0d7bd7cd",
       "created_at": "2026-10-18T16:19:38.230746+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-160520-5a7119db",
@@ -5963,13 +5981,16 @@
         "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/Binder.cpp",
         "https://source.android.com/docs/core/virtualization/security"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "DMA-BUF 旧迁移页及 FMQ/HAL/AVF 官方警告与适用前提遗漏",
       "type": "official-source-lifecycle",
-      "updated_at": "2026-10-18T16:19:38.230746+08:00"
+      "updated_at": "2026-10-18T22:16:04.716075+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md",
+      "close_note": "饥饿日志改为顶层命令用户态执行计数达到阈值后计时、回落后结算，不能证明所有线程空闲状况或单事务排队；冻结异步队列区分进程待处理与节点 async_todo，缓存状态不等于冻结。核对 Android 17 IPCThreadState 和 ACK binder_proc_transaction。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-220520-0d7bd7cd",
       "created_at": "2026-10-18T16:19:38.288623+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-160520-5a7119db",
@@ -5981,13 +6002,16 @@
         "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/IPCThreadState.cpp",
         "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "Binder 饥饿日志被解释成全部工作线程无空闲，冻结异步事务被归入单一节点队列",
       "type": "binder-diagnostic-boundaries",
-      "updated_at": "2026-10-18T16:19:38.288623+08:00"
+      "updated_at": "2026-10-18T22:16:04.768475+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md",
+      "close_note": "CursorWindow 初始容量改为 min(16 KiB,inflatedSize)，内联路径按实际占用压紧数据/槽位后复制，不再称通用压缩；保留大窗口只读映射。核对 Android 17 CursorWindow.cpp。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-220520-0d7bd7cd",
       "created_at": "2026-10-18T16:19:38.343259+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261018-160520-5a7119db",
@@ -5998,10 +6022,10 @@
       "source_paths": [
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/CursorWindow.cpp"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "CursorWindow 初始 16 KiB 与压缩说法遗漏请求容量上限并混淆布局压紧",
       "type": "cursor-inline-layout",
-      "updated_at": "2026-10-18T16:19:38.343259+08:00"
+      "updated_at": "2026-10-18T22:16:04.823650+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
@@ -6208,6 +6232,28 @@
       "summary": "图像内存段落越出本文 API 37 目标版本范围",
       "type": "baseline-scope-leak",
       "updated_at": "2026-10-18T18:42:12.793238+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md",
+      "close_note": "新增来源边界已落实：MemoryFile 两个 purgeable 方法 Deprecated、writeBlob 构建禁用宏直接 INVALID_OPERATION、Android 17 isInheritRt/进程级默认值；均有新抓取源码和可定位行号证据。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-220520-0d7bd7cd",
+      "created_at": "2026-10-18T22:12:41.666110+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-220520-0d7bd7cd",
+      "details": "Android 17 MemoryFile.java 将 allowPurging/isPurgingAllowed 标记 Deprecated；Parcel.cpp 在 BINDER_DISABLE_BLOB 下直接返回 INVALID_OPERATION；Binder.cpp 的 isInheritRt 可读取 sGlobalInheritRt，不能断言每个节点都必须单独调用 setInheritRt(true)。正文已就地补充，待本地验证后关闭。",
+      "id": "finding-9c2a1888caeb",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/MemoryFile.java",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/Parcel.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/Binder.cpp"
+      ],
+      "status": "fixed",
+      "summary": "MemoryFile 弃用、writeBlob 构建开关及实时继承进程默认值边界遗漏",
+      "type": "source-implementation-guards",
+      "updated_at": "2026-10-18T22:16:04.878494+08:00"
     }
   ],
   "schema_version": 1

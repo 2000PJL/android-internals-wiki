@@ -2,9 +2,10 @@
 title: Android 分层架构、进程模型与线程协作
 chapter: '1.1'
 section: '1.1'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-09-07'
+last_verified: '2026-10-18'
+last_source_verified_at: '2026-10-18T10:12:40+08:00'
 last_verified_against: 'AOSP android-17.0.0_r1: system/core/init/main.cpp, rootdir init.rc/init.zygote64.rc, frameworks/base ZygoteInit/ZygoteProcess/ZygoteServer/ZygoteConnection/Zygote/RuntimeInit/app_process, SystemServer/SystemServiceManager, SurfaceFlinger, libbinder ProcessState, bionic linker namespaces, ActivityManager ProcessList/OomAdjuster/CachedAppOptimizer/ZramMaintenance, MessageQueue/Looper/Handler/ActivityThread, HWUI RenderThread/DrawFrameTask, libcore Thread/current.txt, system/memory lmkd/mmd; Android Common Kernel android17-6.18-2026-06_r6: drivers/android/binder.c, security/selinux/hooks.c, kernel/cgroup/freezer.c, kernel/sched/psi.c and kernel/sched/fair.c; official Android/source.android.com docs for HAL/AIDL/VINTF/VNDK/Mainline/16 KB page sizes/process lifecycle/threading/WorkManager/AsyncTask.'
 confidence: high
 sources:
@@ -147,6 +148,22 @@ sources:
   path: libcore/api/current.txt @ android-17.0.0_r1
 - type: kernel
   path: kernel/sched/fair.c @ android17-6.18-2026-06_r6
+- type: official
+  path: https://developer.android.com/ndk/guides/jni-tips#fast_critical_native
+- type: official
+  path: https://developer.android.com/guide/topics/manifest/service-element#isolated
+- type: official
+  path: https://source.android.com/docs/security/app-sandbox
+- type: official
+  path: https://developer.android.com/reference/android/content/BroadcastReceiver#goAsync()
+- type: official
+  path: https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running
+- type: official
+  path: https://developer.android.com/reference/androidx/work/Worker
+- type: aosp
+  path: libcore/ojluni/src/main/java/java/lang/ThreadBuilders.java @ android-17.0.0_r1
+- type: aosp
+  path: libcore/ojluni/src/main/java/jdk/internal/vm/ContinuationSupport.java @ android-17.0.0_r1
 tags:
 - architecture
 - 分层架构
@@ -188,8 +205,8 @@ related_chapters:
 - '1.8'
 - '2.3'
 - '2.4'
-last_review_finalize_at: '2026-09-07T22:11:40+08:00'
-last_body_apply_at: '2026-09-07T21:18:59+08:00'
+last_review_finalize_at: '2026-10-18T10:12:40+08:00'
+last_body_apply_at: '2026-10-18T10:12:40+08:00'
 last_rework_at: '2026-10-17T21:36:11+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
@@ -207,10 +224,6 @@ Android 的“五层架构”按职责划分系统组件，并不对应五个严
 定位架构问题时，先确认调用跨越了哪些系统层，再沿进程生命周期和线程调度寻找等待、抢占或回收发生的位置。三条线共同决定一次系统行为最终落在哪个进程、哪条线程以及哪个资源边界。
 
 > 源码基线：AOSP `android-17.0.0_r1`；内核 Android Common Kernel（ACK）`android17-6.18-2026-06_r6`。量产设备通常还会在 ACK 之上叠加片上系统（SoC）驱动、通用内核镜像（GKI）厂商模块与厂商调度策略，公共内核源码标签替代不了设备自己的内核提交版本与配置。
-
-这种分层仍适合用来确定排查方向。面对一次卡顿、启动慢或硬件访问延迟，先确定工作发生在哪个进程，再确认它通过 Binder、JNI、系统调用还是 HAL 接口进入下一个模块。进程、接口和调度状态共同构成证据，单看“属于哪一层”不足以定位问题。
-
-定位架构问题时，先确认调用跨越了哪些系统层，再沿进程生命周期和线程调度寻找等待、抢占或回收发生的位置。三条线共同决定一次系统行为最终落在哪个进程、哪条线程以及哪个资源边界。
 
 ## 系统分层、进程边界与跨层接口
 
@@ -264,17 +277,17 @@ init 进程仍按 first stage、SELinux 访问控制初始化、second stage 三
 
 #### `SystemServer.main()` 之后补齐服务容器
 
-到达 `SystemServer.main()` 时，`system_server` 已经带着一部分能力：Zygote 子进程身份 specialize 已完成，ART、Framework JNI、预加载页面和 Binder IPC 线程池都在。但 System Context、主 Looper 的长期循环、`SystemServiceManager` 以及 AMS/PMS/WMS 等服务对象还要由 `SystemServer.run()` 组织建立。[来源: 技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md；已验证: frameworks/base/core/jni/com_android_internal_os_Zygote.cpp、frameworks/base/cmds/app_process/app_main.cpp 与 frameworks/base/services/java/com/android/server/SystemServer.java @ android-17.0.0_r1]
+到达 `SystemServer.main()` 时，`system_server` 已经带着一部分能力：Zygote 子进程身份 specialize 已完成，ART、Framework JNI、预加载页面和 Binder IPC 线程池都在。但 System Context、主 Looper 的长期循环、`SystemServiceManager` 以及 AMS/PMS/WMS 等服务对象还要由 `SystemServer.run()` 组织建立。[来源: https://juejin.cn/post/7681897078311108623；已验证: frameworks/base/core/jni/com_android_internal_os_Zygote.cpp、frameworks/base/cmds/app_process/app_main.cpp 与 frameworks/base/services/java/com/android/server/SystemServer.java @ android-17.0.0_r1]
 
-`SystemServer.main()` 本身只是 `new SystemServer().run()`。`SystemServer` 是 Java 装配总控，容易和三个名字混淆：`system_server` 是进程，AMS 是其中的系统服务，向全局 ServiceManager 发布的是 Binder 服务端对象；`SystemServer` 只负责装配。[来源: 技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md；已验证: frameworks/base/services/java/com/android/server/SystemServer.java @ android-17.0.0_r1]
+`SystemServer.main()` 本身只是 `new SystemServer().run()`。`SystemServer` 是 Java 装配总控，容易和三个名字混淆：`system_server` 是进程，AMS 是其中的系统服务，向全局 ServiceManager 发布的是 Binder 服务端对象；`SystemServer` 只负责装配。[来源: https://juejin.cn/post/7681897078311108623；已验证: frameworks/base/services/java/com/android/server/SystemServer.java @ android-17.0.0_r1]
 
-我们可以按四段读 `run()` 的骨架：先设置系统进程规则，例如 Binder 阻塞告警、SQLite/Parcel 策略、Binder 后台调度与最大线程数；再准备主线程 Looper 与 `SystemServerInitThreadPool`；随后加载 `android_servers`、建立 System Context/System UI Context 并执行每进程 Mainline 模块初始化；最后创建 `SystemServiceManager`，进入 `startBootstrapServices()`、`startCoreServices()`、`startOtherServices()`、`startApexServices()`。[来源: 技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md；已验证: frameworks/base/services/java/com/android/server/SystemServer.java @ android-17.0.0_r1]
+我们可以按四段读 `run()` 的骨架：先设置系统进程规则，例如 Binder 阻塞告警、SQLite/Parcel 策略、Binder 后台调度与最大线程数；再准备主线程 Looper 与 `SystemServerInitThreadPool`；随后加载 `android_servers`、建立 System Context/System UI Context 并执行每进程 Mainline 模块初始化；最后创建 `SystemServiceManager`，进入 `startBootstrapServices()`、`startCoreServices()`、`startOtherServices()`、`startApexServices()`。[来源: https://juejin.cn/post/7681897078311108623；已验证: frameworks/base/services/java/com/android/server/SystemServer.java @ android-17.0.0_r1]
 
-`SystemServiceManager` 建立后，只是 `system_server` 内部的 Java 管理对象和 `LocalServices` 条目。它的 `startService(Class<T>)` 用 `Context` 构造 `SystemService`、记录到 `mServices`，再调用该服务的 `onStart()`；它管的是已纳管 `SystemService` 的启动和 Boot Phase/User 生命周期分发，创建顺序仍由 `SystemServer.run()` 的调用序列决定，遗留服务的创建也未必经过它。[来源: 技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md；已验证: frameworks/base/services/core/java/com/android/server/SystemServiceManager.java @ android-17.0.0_r1]
+`SystemServiceManager` 建立后，只是 `system_server` 内部的 Java 管理对象和 `LocalServices` 条目。它的 `startService(Class<T>)` 用 `Context` 构造 `SystemService`、记录到 `mServices`，再调用该服务的 `onStart()`；它管的是已纳管 `SystemService` 的启动和 Boot Phase/User 生命周期分发，创建顺序仍由 `SystemServer.run()` 的调用序列决定，遗留服务的创建也未必经过它。[来源: https://juejin.cn/post/7681897078311108623；已验证: frameworks/base/services/core/java/com/android/server/SystemServiceManager.java @ android-17.0.0_r1]
 
-排查 `system_server` 启动卡顿时，我们先分清三条执行路径：主线程按 `SystemServer.run()` 控制总体顺序，末尾进入 `Looper.loop()`；Binder 线程池接收远端 transaction，各自独立于主 Looper 的顺序；`SystemServerInitThreadPool` 和各服务自有线程承载允许并行或服务内部的工作。[来源: 技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md；已验证: frameworks/base/services/java/com/android/server/SystemServer.java 与 frameworks/base/services/core/java/com/android/server/SystemServiceManager.java @ android-17.0.0_r1]
+排查 `system_server` 启动卡顿时，我们先分清三条执行路径：主线程按 `SystemServer.run()` 控制总体顺序，末尾进入 `Looper.loop()`；Binder 线程池接收远端 transaction，各自独立于主 Looper 的顺序；`SystemServerInitThreadPool` 和各服务自有线程承载允许并行或服务内部的工作。[来源: https://juejin.cn/post/7681897078311108623；已验证: frameworks/base/services/java/com/android/server/SystemServer.java 与 frameworks/base/services/core/java/com/android/server/SystemServiceManager.java @ android-17.0.0_r1]
 
-所以 `Looper.loop()` 只说明主启动控制流进入了长期消息循环；要判断“Framework 全部 ready”，我们还要结合 `SystemServerTiming`/trace tag、具体服务的 `StartService ...` 片段、Binder 线程状态和 Boot Phase/`systemReady()` 事件，单看某个线程是否活跃判断不了。[来源: 技术文章/source/juejin-android/2026-09-07-76818970-Android 系统启动机制七：进入 S.md；已验证: frameworks/base/services/java/com/android/server/SystemServer.java 与 frameworks/base/services/core/java/com/android/server/SystemServiceManager.java @ android-17.0.0_r1]
+所以 `Looper.loop()` 只说明主启动控制流进入了长期消息循环；要判断“Framework 全部 ready”，我们还要结合 `SystemServerTiming`/trace tag、具体服务的 `StartService ...` 片段、Binder 线程状态和 Boot Phase/`systemReady()` 事件，单看某个线程是否活跃判断不了。[来源: https://juejin.cn/post/7681897078311108623；已验证: frameworks/base/services/java/com/android/server/SystemServer.java 与 frameworks/base/services/core/java/com/android/server/SystemServiceManager.java @ android-17.0.0_r1]
 
 排查时可以把进程树、socket 和死亡重启分开取证：`ps -A -o PID,PPID,NAME,ARGS`（或 `/proc/<pid>/status` 的 `PPid`）用于确认 `system_server` 的父进程是否指向 Zygote；Zygote socket 只解释后续应用进程 fork 请求；若 `system_server` 退出，Zygote 的 SIGCHLD 处理路径会 `waitpid()` 匹配 `gSystemServerPid` 并杀死 Zygote，让 init 的 Zygote 服务监督链路接管后续重启。[已验证: frameworks/base/core/jni/com_android_internal_os_Zygote.cpp 与 system/core/rootdir/init.zygote64.rc @ android-17.0.0_r1]
 
@@ -303,7 +316,7 @@ Binder 由用户态 `libbinder` 与内核 Binder 驱动共同完成。`framework
 #define DEFAULT_MAX_BINDER_THREADS 15
 ```
 
-`DEFAULT_MAX_BINDER_THREADS = 15` 指的是驱动被允许请求的最大增线程数，不是进程内 Binder 线程总数：`ProcessState::startThreadPool()` 会另行启动池中的首个线程，手工调用 `IPCThreadState::joinThreadPool()` 的线程也不占这 15 个名额。内核通过 `BR_SPAWN_LOOPER` 请求用户态增加线程的条件相当具体：没有等待线程、没有尚未完成的增线程请求、驱动已请求启动的线程数低于 `max_threads`，且当前线程已进入 Binder looper。另外 `setThreadPoolMaxThreadCount()` 用 `BINDER_SET_MAX_THREADS` 配置驱动，线程池启动后这个上限不能再调小。
+`DEFAULT_MAX_BINDER_THREADS = 15` 指的是驱动默认允许动态请求的最大增线程数，不是进程内 Binder 线程总数：`ProcessState::startThreadPool()` 会另行启动池中的首个线程，手工调用 `IPCThreadState::joinThreadPool()` 的线程也不占这 15 个名额。未受厂商钩子覆盖时，内核通过 `BR_SPAWN_LOOPER` 请求用户态增加线程，需要同时满足：没有等待线程、没有尚未完成的增线程请求、驱动已请求启动的线程数低于 `max_threads`，且当前线程已进入 Binder looper。ACK 还提供 `trace_android_vh_binder_spawn_new_thread()` 钩子；钩子设置 `force_spawn` 后，可以绕过这组默认判断。设备上的实际行为需要核对厂商实现。另外，`setThreadPoolMaxThreadCount()` 用 `BINDER_SET_MAX_THREADS` 配置驱动，线程池启动后这个上限不能再调小。
 
 这些常量给不出“应用用 4 到 8 个、系统服务用 30 到 50 个”之类的通用建议：线程数太少会让长事务阻塞后续请求，线程数太多又会增加并发、锁竞争和内存成本。调整前，我们先用 Perfetto 系统跟踪和服务日志确认：
 
@@ -314,7 +327,7 @@ Binder 由用户态 `libbinder` 与内核 Binder 驱动共同完成。`framework
 
 Binder 事务数据由驱动从发送方用户空间复制到接收方可映射的 Binder 缓冲区，常被概括为“一次拷贝”。但端到端延迟由整条请求决定：文件描述符转换、对象解析、权限检查、线程调度和目标服务执行，都在“一次拷贝”之外各自产生开销。
 
-SELinux 也在 Binder 事务路径上参与授权。ACK `android17-6.18-2026-06_r6` 的 `security/selinux/hooks.c` 中，`selinux_binder_transaction()` 会检查 `BINDER__CALL`；当前凭据与事务发起方凭据不同时，还会检查 `BINDER__IMPERSONATE`。源码只能证明这些检查与条件存在；要写固定纳秒开销，需要同设备、同策略与同负载的测量。
+SELinux 也在 Binder 事务路径上参与授权。ACK `android17-6.18-2026-06_r6` 的 `security/selinux/hooks.c` 中，`selinux_binder_transaction()` 会检查 `BINDER__CALL`；当前线程的 SELinux 安全标识符（SID）与事务发起方凭据的 SID 不同时，还会先检查 `BINDER__IMPERSONATE`，通过后再检查 `BINDER__CALL`。这里比较的是 SID，不能扩大成任意凭据字段差异。源码只能证明这些检查与条件存在；要写固定纳秒开销，需要同设备、同策略与同负载的测量。
 
 #### JNI：同一进程里的托管代码与原生代码边界
 
@@ -324,7 +337,11 @@ JNI 是同一进程内从 ART 托管执行环境进入原生函数的应用二�
 
 - 循环中的细粒度调用可以改成一次批量调用，但要同时评估额外内存与延迟。
 - 大块二进制数据可以评估直接缓冲区（direct buffer）或其他共享表示，避免反复构造 Java 对象。
-- `@FastNative` 与 `@CriticalNative` 只适用于满足签名和运行时约束的系统级场景，不能按一组固定倍数估算收益。
+- `@FastNative` 与 `@CriticalNative` 从 Android 14（API 34）起是经 CTS 测试的公开 API，可用于满足约束的应用代码，不能按一组固定倍数估算收益。
+
+两种注解不能同时使用。`@CriticalNative` 只适用于没有托管对象参数、返回值或隐式 `this` 的原生方法，并改变 JNI ABI：原生实现的签名不带 `JNIEnv` 和 `jclass`。两种注解执行期间，GC 都无法按普通 JNI 路径挂起该线程，可能因此受阻；方法必须短小且耗时有界，不应执行大量 I/O 或获取可能长期持有的原生锁。
+
+兼容旧设备时还要区分版本：Android 8–13 已有相关实现，但没有 Android 14 起的 CTS 保证；Android 8–11 必须通过 `RegisterNatives` 显式注册，Android 12 起才支持动态查找，官方仍建议显式注册。Android 7 及以下会忽略这些注解，`@CriticalNative` 的 ABI 不匹配可能导致参数传递错误和崩溃。[JNI tips](https://developer.android.com/ndk/guides/jni-tips#fast_critical_native) 给出了这些限制。
 
 是否值得调整，要用目标设备上的基准和调用栈判断：空 JNI 基准测出的纳秒数，代表不了包含字符串、数组、锁和 I/O 的业务调用。
 
@@ -336,14 +353,16 @@ JNI 是同一进程内从 ART 托管执行环境进入原生函数的应用二�
 
 ### Treble、HIDL 与 Stable AIDL
 
-HIDL 与 AIDL 都用于定义跨进程或 HAL 接口，但生成的传输代码与兼容规则不同。Project Treble 从 Android 8.0 开始约束系统框架与厂商实现之间的接口。VINTF 清单用于描述系统与厂商接口要求，它与框架端、设备端的兼容配置和稳定 HAL 接口共同决定 `system` 与 `vendor` 分区是否兼容。Treble 提供只更新系统框架所需的稳定接口，但不保证任意系统框架与任意厂商实现都能组合，具体组合仍要通过 VINTF 与兼容性测试。
+HIDL 与 AIDL 都用于定义跨进程或 HAL 接口，但生成的传输代码与兼容规则不同。Project Treble 从 Android 8.0 开始约束系统框架与厂商实现之间的接口。VINTF 清单描述一方提供的接口，兼容性矩阵描述另一方要求的接口：设备清单要匹配框架兼容性矩阵，框架清单要匹配设备兼容性矩阵。两组匹配共同约束 `system` 与 `vendor` 分区的组合。Treble 提供只更新系统框架所需的稳定接口，但不保证任意系统框架与任意厂商实现都能组合，具体组合仍要通过 VINTF 与兼容性测试。
 
 HIDL 时代需要区分两种传输：
 
 - 服务化（binderized）HIDL HAL 以服务进程运行，常使用 `/dev/hwbinder`。
 - 直通式（passthrough）HIDL HAL 以共享库加载到调用方进程，调用路径中没有独立 HAL 服务进程。
 
-新 HAL 接口已经转向 Stable AIDL。用于 `system`/`vendor` 边界的 AIDL HAL 需要声明 VINTF 稳定性，并以 Binder 服务运行。旧 HIDL HAL 仍可能为了兼容已有 vendor 镜像而保留；即便在 Android 17 设备上，仅凭系统版本也判断不了全部 HAL 是否都已迁移。
+HIDL 从 Android 13 起废弃，既有实现仍受支持；新 HAL 接口应优先使用 Stable AIDL，上游接口仍为 HIDL 时则按该接口实现。用于 `system`/`vendor` 边界的 AIDL HAL 以 Binder 服务运行，需要在类型上声明 `@VintfStability`，在 `aidl_interface` 中设置 `stability: "vintf"`，加入 VINTF 清单并满足接口冻结等 VTS 检查。旧 HIDL HAL 仍可能为了兼容已有 vendor 镜像而保留；即便在 Android 17 设备上，仅凭系统版本也判断不了全部 HAL 是否都已迁移。
+
+Stable AIDL 还约束运行时后端。vendor 原生代码应使用 NDK 后端并链接 `libbinder_ndk`，通过 `/dev/binder` 通信；不能直接依赖不稳定的 `libbinder` C++ 接口。直接使用 `libbinder` 仅限 `system`/`system_ext`。Java 后端不能在 vendor 分区与 ServiceManager 通信，vendor 分区在 API 34 之后也不能使用新增的 System API。接口稳定性声明不能替代这些分区与后端限制。
 
 排查 HAL 延迟时按实际传输模式处理：
 
@@ -356,7 +375,7 @@ HIDL 时代需要区分两种传输：
 
 #### 16 KB 页大小
 
-从 Android 15 开始，AOSP 支持配置为 16 KB 页大小的设备。应用只包含 Java/Kotlin 代码时通常不需要为 ELF 对齐做改造；包含 NDK 编译的库或通过 SDK 间接引入 `.so` 时，需要检查 ELF 的 `LOAD` 段，以及 APK 内未压缩原生库的 ZIP 对齐。
+从 Android 15 开始，AOSP 支持配置为 16 KB 页大小的设备。应用及其全部库、SDK 都只包含 Java/Kotlin 代码时，不需要为 ELF 对齐做改造，但仍应在 16 KB 环境中回归测试；包含 NDK 编译的库或通过 SDK 间接引入 `.so` 时，需要检查 ELF 的 `LOAD` 段，以及 APK 内未压缩原生库的 ZIP 对齐。
 
 设备运行时页大小可直接读取：
 
@@ -457,7 +476,7 @@ Binder flow 只说明事务关系；调用方时间片的持续时间、目标�
 
 ## 应用进程的创建、状态与回收
 
-分层描述解决组件归属问题，运行时故障还要落实到具体进程。应用进程从 Zygote 创建后，AMS、OomAdjuster、lmkd 与 Freezer 共同改变它的状态和可运行性。本节只建立进程生命周期的总览；组件调度、adj 计算和 system_server 锁模型由 [1.12](12-activitymanager-process-lock-priority.md) 展开，具体 cgroup 落点由 [1.13](13-cgroup-v1-v2-process-isolation.md) 展开，Binder Freezer 的事务语义由 [1.10](10-binder-scheduling-freezer-threadpool.md) 展开。
+分层描述解决组件归属问题，运行时故障还要落实到具体进程。应用进程从 Zygote 创建后，AMS、OomAdjuster、lmkd 与 Freezer 共同改变它的状态和可运行性。组件调度、adj 计算和 system_server 锁模型由 [1.12](12-activitymanager-process-lock-priority.md) 展开，具体 cgroup 落点由 [1.13](13-cgroup-v1-v2-process-isolation.md) 展开，Binder Freezer 的事务语义由 [1.10](10-binder-scheduling-freezer-threadpool.md) 展开。
 
 Android 应用可以创建线程，却不能自行决定进程能活多久。系统根据进程中正在运行的组件、组件与其他进程的依赖关系、用户能否感知这些工作以及整机内存压力，持续计算进程重要性。内存紧张时，重要性较低的进程先成为回收候选。
 
@@ -471,14 +490,14 @@ Android 应用可以创建线程，却不能自行决定进程能活多久。系
 
 ### 应用进程从哪里来
 
-默认情况下，每个应用使用自己的 Linux 用户 ID（UID）和进程，Activity、Service、BroadcastReceiver、ContentProvider 等组件运行在默认进程中。进程刚启动时只有主线程；组件生命周期回调通常由主线程分发，但组件的方法不是只在主线程执行——例如远程 Binder 方法和来自其他进程的 ContentProvider 调用可以落在 Binder 线程池，相关实现仍要满足线程安全要求。
+默认情况下，每个应用使用自己的 Linux 用户 ID（UID）和进程，Activity、Service、BroadcastReceiver、ContentProvider 等组件运行在默认进程中。fork 瞬间，子进程只保留执行 fork 的线程；但在普通应用进入 `ActivityThread.main()` 前，`ZygoteInit.zygoteInit()` 已经经 `nativeZygoteInit()` 启动 Binder 线程池，不能把业务入口处的进程视为只有主线程。组件生命周期回调通常由主线程分发，但组件的方法不是只在主线程执行——例如远程 Binder 方法和来自其他进程的 ContentProvider 调用可以落在 Binder 线程池，相关实现仍要满足线程安全要求。
 
 `AndroidManifest.xml` 可以改变进程边界：
 
 - `<application android:process="...">` 为应用组件指定默认进程。
 - `<activity>`、`<service>`、`<receiver>`、`<provider>` 可以覆盖该值。
 - 以冒号开头的名字，例如 `:player`，表示应用私有进程，实际名字会带上包名前缀。
-- 不以冒号开头的全局进程名只在共享 Linux UID 且签名匹配时才可能跨应用共用。`android:sharedUserId` 从 API 29 起已经废弃，新应用不应依赖这种设计。
+- 不以冒号开头的全局进程名只在共享 Linux UID 且签名匹配时才可能跨应用共用。`android:sharedUserId` 从 API 29 起已经废弃，新应用不应依赖这种设计。已有安装不能通过直接删除该属性迁移出共享 UID；官方建议旧应用设置 `android:sharedUserMaxSdkVersion="32"`，避免新用户安装继续使用共享 UID。
 
 `android.os.Process.start()` 仍把 UID、GID、ABI、targetSdk、数据目录和运行时参数交给 `ZygoteProcess.start()`。fork 发生在 Zygote 一侧，`Process.start()` 只是应用框架的请求入口，并不直接调用 Linux `fork()`。应用进程创建后再经 Binder 向 `system_server` 回连，AMS 才能继续 `bindApplication` 和组件调度。
 
@@ -500,12 +519,14 @@ USAP（Unspecialized App Process）池改变的是“从哪个预备进程完成
 
 多进程会带来额外的隔离成本。一个 `android:process=":remote"` 至少增加一套进程地址空间、ART 运行时状态、Java 与原生堆、线程栈、主线程消息循环和 `Application` 初始化；原来的进程内调用也可能变成 Binder IPC。
 
-适合拆进程的场景通常有明确的故障或内存边界，例如：
+普通 `android:process=":remote"` 默认仍使用应用的 UID 和权限，分开的是地址空间以及一部分崩溃、内存故障；它不能单独作为不可信代码的权限沙箱。若需要让服务不继承应用自身的权限，应评估 `<service android:isolatedProcess="true">` 等系统支持的隔离进程模型，并按该组件允许的 Service 接口交互。传给隔离服务的数据、文件描述符和 Binder 接口仍需限制，不能把宿主权限通过接口重新开放给它。
 
-- 不可信插件或需要隔离访问权限的服务；
+适合普通分进程的场景通常有明确的故障或内存边界，例如：
+
 - 崩溃后不应导致主界面进程一同崩溃的独立模块；
-- 生命周期清楚、结束后希望通过终止整个进程释放大块原生或图形内存的模块；
-- 系统明确提供隔离进程模型的组件。
+- 生命周期清楚、结束后希望通过终止整个进程释放大块原生或图形内存的模块。
+
+系统明确提供隔离进程模型的组件，应遵守对应的 UID、权限与通信限制，不能用普通分进程配置替代。
 
 如果两个模块高频同步调用、共享大量可变状态，拆进程往往只会增加序列化、Binder 线程池、锁和状态同步成本。
 
@@ -532,7 +553,7 @@ USAP（Unspecialized App Process）池改变的是“从哪个预备进程完成
 
 第二，重要性会沿依赖关系传播。高优先级进程绑定另一个进程的 Service，或正在使用另一个进程的 ContentProvider 时，被依赖进程需要获得足以完成请求的保护。绑定标志（flag）、依赖类型和能力传播规则都会影响最终结果，只看服务端自身的组件会漏掉这部分。
 
-第三，组件回调结束就可能撤销保护。`BroadcastReceiver.onReceive()` 返回后，广播接收器就不再被视为活跃；此时普通线程继续工作，进程的存活没有保证。需要可靠完成的任务应交给 JobScheduler、WorkManager 或其他与系统调度约束相匹配的接口。
+第三，组件工作结束就可能撤销保护。没有调用 `goAsync()` 时，`BroadcastReceiver.onReceive()` 返回后，广播接收器通常不再被视为活跃；普通线程继续工作并不能保证进程存活。调用 `goAsync()` 可以在返回后暂时维持广播活跃，但必须在处理完成后调用 `PendingResult.finish()`，且整个异步区间仍受广播执行超时约束。这种有限延期不提供持久后台执行保证；需要可靠完成的任务应交给 JobScheduler、WorkManager 或其他与系统调度约束相匹配的接口。
 
 从 Android 13 开始，缓存进程在重新进入活跃生命周期状态前，可能只得到有限的执行时间，甚至得不到执行时间。应用必须把缓存态视为“可以立即停止”的状态，按低优先级后台运行模式来设计是靠不住的。
 
@@ -546,16 +567,17 @@ USAP（Unspecialized App Process）池改变的是“从哪个预备进程完成
 4. 依赖遍历继续修正服务端、Provider 端及其他可达进程的结果。
 5. 计算值提交后，回调更新调度组、缓存进程冻结器（freezer）、统计信息，并把 OOM 优先级同步给 `lmkd`。
 
-下面的源码片段显示，top app、正在接收广播和正在执行 Service 回调会得到不同的 `procState` 与调度组；这些是初始规则，后续还会处理 Activity、前台服务和进程依赖。
+下面按分支简化的源码片段显示，top app、正在接收广播和正在执行 Service 回调会得到不同的 `procState` 与调度组；片段省略了中间的远程动画、instrumentation 分支及日志，不是完整优先级算法。后续还会处理 Activity、前台服务和进程依赖。
 
 ```java
 // frameworks/base/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java
-// @ android-17.0.0_r1
+// @ android-17.0.0_r1，按分支简化
 if (app == topApp && PROCESS_STATE_CUR_TOP == PROCESS_STATE_TOP) {
     adj = FOREGROUND_APP_ADJ;
     schedGroup = useTopSchedGroupForTopProcess()
             ? SCHED_GROUP_TOP_APP : SCHED_GROUP_DEFAULT;
     procState = PROCESS_STATE_TOP;
+    // 此处省略后续 else-if 中的远程动画、instrumentation 分支及日志。
 } else if (isReceivingBroadcast(app)) {
     adj = FOREGROUND_APP_ADJ;
     schedGroup = app.getReceivers().getBroadcastReceiverSchedGroup();
@@ -579,7 +601,7 @@ if (app == topApp && PROCESS_STATE_CUR_TOP == PROCESS_STATE_TOP) {
 
 ### `lmkd` 决定何时杀、杀谁
 
-Android 使用用户态守护进程 `lmkd` 监控内存压力。Android 10 及以上支持 PSI（Pressure Stall Information，资源压力停顿信息）模式：内核统计任务因 CPU、内存或 I/O 争用而停顿的时间，`lmkd` 订阅内存压力阈值。当前官方配置仍以 `ro.lmk.use_psi=true` 为默认值，前提是设备内核启用了 PSI。
+Android 使用用户态守护进程 `lmkd` 监控内存压力。Android 10 及以上支持 PSI（Pressure Stall Information，资源压力停顿信息）模式：内核统计任务因 CPU、内存或 I/O 争用而停顿的时间，`lmkd` 订阅内存压力阈值。通用官方文档仍列出历史配置项 `ro.lmk.use_psi=true`；在本文固定的 `android-17.0.0_r1` 中，`lmkd.cpp` 已不读取该属性，`init_monitors()` 直接初始化 PSI 监视器，失败时返回 `false`，没有在这里回退到 vmpressure。排查 Android 17 设备时，应核对 PSI 内核支持、监视器初始化日志和产品源码，不能仅靠这个旧属性判断生效路径。
 
 这条路径可以在固定平台与内核源码版本下核对：
 
@@ -647,7 +669,9 @@ Android 17 新增 `mmd`，用来集中处理 ZRAM 的配置、参数和持续维
 - `lmkd` 在内存压力下选择并终止较不重要的进程。
 - `mmd` 处理 ZRAM 重压缩、写回、按进程写回和预取等维护任务。
 
-系统启动完成后，`mmd_setup` 尝试配置 ZRAM，随后启动 `mmd` 服务。`system_server` 中的 `ZramMaintenance` 通过 JobScheduler 在设备空闲且电量不低时安排全局维护，并调用 `IMmd.doZramMaintenanceAsync()`。
+系统启动完成后，`mmd_setup` 尝试配置 ZRAM，随后启动 `mmd` 服务。`system_server` 中的 `ZramMaintenance` 通过 JobScheduler 安排全局维护，默认要求设备空闲且电量不低，这两个条件可由产品属性调整；任务执行时调用 `IMmd.doZramMaintenanceAsync()`。
+
+启用 `mmd.zram.enabled` 管理 ZRAM 后，`swapon_all` 中原有的 ZRAM 配置步骤不再执行，`config.xml` 的 `config_zramWriteback` 和 `ro.zram.*` 写回属性也会被忽略。迁移设备配置时应先确认由哪套实现管理 ZRAM，避免修改已经失效的旧参数。
 
 `CachedAppOptimizer` 还可以在缓存进程压缩后，经进程文件描述符（pidfd）请求 `mmd.asyncWritebackProcessZramMemory()`；用户重新启动已写回的缓存进程时，可以调用 `asyncPrefetchProcessZramMemory()`，减少从后备存储恢复页面造成的主要缺页——这类 major fault 要靠存储 I/O 才能把页面补回来。是否启用、是否有后备块设备以及具体参数都属于产品配置，按进程写回不是每台设备都有。
 
@@ -659,7 +683,7 @@ Android 17 新增 `mmd`，用来集中处理 ZRAM 的配置、参数和持续维
 
 - `SCHED_SP_BACKGROUND` 组合节能、低 I/O 优先级和更大的定时器容许延迟（timer slack）；
 - `SCHED_SP_FOREGROUND` 组合较高性能、较高 I/O 优先级和正常的定时器容许延迟；
-- `SCHED_SP_TOP_APP` 组合最大性能、最大进程容量和最大 I/O 优先级。
+- `SCHED_SP_TOP_APP` 组合 `MaxPerformance`、`MaxIoPriority` 和 `TimerSlackNormal`，分别设置最大性能、最大 I/O 优先级与正常的定时器容许延迟。
 
 任务配置只是平台默认策略的名字，应用时可能涉及 cpuset、uclamp、I/O 优先级或其他控制器。实际 cgroup 层级和文件路径由内核版本、init 配置与厂商产品配置共同决定；不要把某台设备的 `/dev/cpuset/...` 路径直接当成所有设备的固定结构。
 
@@ -983,7 +1007,11 @@ class UserRepository(
 
 `WorkManager` 面向需要在应用退出、进程重建后仍应继续安排的持久后台任务。它会根据系统版本使用 `JobScheduler` 等调度设施，并在约束满足后尽力执行，但不保证精确启动时间，也不保证业务操作只生效一次。
 
-`Worker`（WorkManager 的任务执行单元）可能因为约束变化、进程终止或重试策略重复运行。上传、扣减、写入远端等操作应设计为重复执行也不改变最终结果的幂等操作，或者由服务端提供去重键。普通 `Worker` 还受到单次运行时长限制；需要长时间运行时，应按 WorkManager 长任务和前台服务规则设计，不能无限阻塞一个 `Worker`。
+`Worker`（WorkManager 的任务执行单元）可能因为约束变化、进程终止或重试策略重复运行。上传、扣减、写入远端等操作应设计为重复执行也不改变最终结果的幂等操作，或者由服务端提供去重键。普通 `Worker` 单次最多运行 10 分钟，超过后会收到停止信号；不能把它当成可以无限阻塞的线程。
+
+需要超过普通运行时限时，WorkManager 的长任务可通过 `setForegroundAsync()` 或 `CoroutineWorker.setForeground()` 由前台服务承载并展示通知，但仍依赖 JobScheduler 调度。从 Android 16 起，这类长任务可能耗尽应用的作业配额。符合条件的用户发起数据传输可评估相应 JobScheduler 任务；选择直接启动前台服务时，仍须遵守后台启动、通知、服务类型和权限限制。
+
+以 Android 14（API 34）及以上为目标版本时，所有长任务都必须声明前台服务类型，并在 `ForegroundInfo` 中指定运行时类型；Android 14 起还会按类型检查相应前置条件。更早的目标版本也有专项要求：目标 API 29 起使用位置的长任务要声明 `location`，目标 API 30 起使用相机或麦克风的长任务要声明 `camera` 或 `microphone`。具体声明和迁移方法见 [WorkManager 长任务文档](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running)。
 
 立即发生、只需随当前页面存活的任务不应交给 `WorkManager`。这样会增加调度开销，也会让人难以判断哪个组件负责管理和取消任务。
 
@@ -1056,14 +1084,11 @@ CPU 密集型任务应使用有界并行度，并以目标设备上的吞吐量�
 
 ### Android 17 的虚拟线程边界
 
-Android 17 的 `libcore` 源码和 API 文本已经出现第一版虚拟线程接口，包括 `Thread.ofVirtual()`、`Thread.startVirtualThread()`、`Thread.isVirtual()` 和 `Executors.newVirtualThreadPerTaskExecutor()`。`com.android.libcore.virtual_thread_api_v1` 等发布开关决定这些接口能否对外开放。
+Android 17 的 `libcore/api/current.txt` 包含 `Thread.ofVirtual()`、`Thread.startVirtualThread()` 和 `Executors.newVirtualThreadPerTaskExecutor()`，这些工厂接口带有 `com.android.libcore.virtual_thread_api_v1` 发布开关；同一文件中的 `Thread.isVirtual()` 没有这个 `@FlaggedApi` 标记。不能把它们的公开条件一概而论。
 
-源码与发布开关共同划定使用范围：
+API 是否公开与运行时是否支持可挂起、恢复的 continuation 是两层条件。`ContinuationSupport` 检查 ART 的 `virtualThreadImplV1()`；`ThreadBuilders.newVirtualThread()` 在支持时创建 `VirtualThread`，不支持且未指定自定义调度器时则退回由平台线程承载的 `BoundVirtualThread`。因此，工厂接口存在或 `isVirtual()` 返回 `true`，都不足以证明大量任务能复用少量操作系统线程。
 
-- “Android 的虚拟线程永远没有实现”已经不符合 Android 17 源码；
-- “所有 Android 17 设备都可以无条件使用虚拟线程”同样没有依据。
-
-应用要以实际 SDK 公开的接口、构建开关和目标设备行为为准，并准备兼容路径。虚拟线程适合表达大量阻塞式并发任务，但不会让 CPU 密集计算突破处理器上限，也不会替代主线程、`Looper`、生命周期作用域或 `WorkManager` 的持久调度语义。面向多个 Android 版本的应用，协程和有界 `Executor` 仍是更稳定的基础工具。
+应用要以实际 SDK 公开的接口、构建开关和目标设备行为为准，并准备兼容路径；评估资源成本时还应观察操作系统线程数和阻塞行为。具备相应运行时支持的虚拟线程适合表达大量阻塞式并发任务，但不会让 CPU 密集计算突破处理器上限，也不会替代主线程、`Looper`、生命周期作用域或 `WorkManager` 的持久调度语义。面向多个 Android 版本的应用，协程和有界 `Executor` 仍是更稳定的基础工具。
 
 ### 版本与实现边界
 
@@ -1074,7 +1099,7 @@ Android 17 的 `libcore` 源码和 API 文本已经出现第一版虚拟线程�
 | Android 11 / API 30 | `AsyncTask` 与 `IntentService` 废弃 |
 | Android 12 以后 | 前台服务启动和后台工作的限制持续增加，任务类型必须与系统 API 语义匹配 |
 | Android 17 / API 37 | 以 API 37 为目标的应用启用新的并发 MessageQueue 路径；私有字段反射存在兼容风险 |
-| Android 17 / API 37 | `libcore` 出现受发布开关控制的虚拟线程 v1 API 与实现，不能假定所有构建均启用 |
+| Android 17 / API 37 | 虚拟线程工厂 API 的发布开关与 ART continuation 支持分开控制；`isVirtual()` 没有同一发布标记，不能据此推断线程复用能力 |
 
 分析线程问题时，先确认平台版本、应用 `targetSdk`、设备构建与实际调度配置，再解释系统跟踪数据。只凭线程名称、某个 `nice` 值或旧版 `MessageQueue` 字段，得不出可靠结论。
 
@@ -1099,3 +1124,14 @@ Android 17 的 `libcore` 源码和 API 文本已经出现第一版虚拟线程�
 #### “协程等于后台线程”
 
 协程是可挂起任务的结构。它在哪个线程运行由调度器和上下文决定；`Dispatchers.Main` 上的协程仍会占用主线程。
+
+## 参考资料
+
+- 系统分层与 HAL：[Android 平台架构](https://developer.android.com/guide/platform)、[HAL 总览](https://source.android.com/docs/core/architecture/hal)、[AIDL HAL 与后端限制](https://source.android.com/docs/core/architecture/aidl/aidl-hals)、[VINTF 清单和兼容性矩阵](https://source.android.com/docs/core/architecture/vintf)。
+- 启动与进程入口：[ZygoteInit.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java)、[app_main.cpp](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/cmds/app_process/app_main.cpp)、[SystemServer.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/java/com/android/server/SystemServer.java)。
+- Binder 线程池与权限检查：[ProcessState.cpp](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/ProcessState.cpp)、[ACK binder.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)、[SELinux hooks.c](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/security/selinux/hooks.c)。
+- 进程与权限边界：[进程和线程](https://developer.android.com/guide/components/processes-and-threads)、[应用沙箱](https://source.android.com/docs/security/app-sandbox)、[isolatedProcess](https://developer.android.com/guide/topics/manifest/service-element#isolated)、[进程生命周期](https://developer.android.com/guide/components/activities/process-lifecycle)、[BroadcastReceiver.goAsync()](https://developer.android.com/reference/android/content/BroadcastReceiver#goAsync())。
+- 原生调用与兼容性：[JNI tips](https://developer.android.com/ndk/guides/jni-tips#fast_critical_native)、[16 KB 页大小](https://developer.android.com/guide/practices/page-sizes)、[Mainline](https://source.android.com/docs/core/ota/modular-system)、[VNDK 废弃说明](https://source.android.com/docs/core/architecture/vndk)。
+- 内存和调度策略：[Android 17 lmkd.cpp](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp)、[mmd 配置与迁移](https://source.android.com/docs/core/perf/mmd)、[task_profiles.json](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json)。
+- 持久后台任务：[Worker 运行时限](https://developer.android.com/reference/androidx/work/Worker)、[长任务、配额与前台服务类型](https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running)。
+- Android 17 线程实现：[目标 API 37 的 MessageQueue 变更](https://developer.android.com/about/versions/17/behavior-changes-17)、[libcore API 文本](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt)、[ThreadBuilders.java](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadBuilders.java)、[ContinuationSupport.java](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/jdk/internal/vm/ContinuationSupport.java)。

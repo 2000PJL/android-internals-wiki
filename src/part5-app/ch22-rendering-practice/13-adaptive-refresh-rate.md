@@ -3,8 +3,10 @@ title: 自适应刷新率与帧率策略实战
 chapter: '22.13'
 status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
-last_verified: '2026-08-24'
-last_verified_against: Android Developers ARR（更新于 2026-02-26），AOSP Android 17 android-17.0.0_r1
+last_verified: '2026-10-18'
+last_verified_against: Android Developers ARR、Media frame rate、Display 与 Window API，AOSP Android 17 android-17.0.0_r1
+last_source_verified_at: '2026-10-18'
+last_idle_audit_at: '2026-10-18T22:40:02+08:00'
 confidence: high
 sources:
 - type: official
@@ -165,7 +167,7 @@ ARR 只改变目标节拍。若滚动仍出现“应用错过帧截止时间”�
 
 ## Window 开关属于回退手段
 
-触摸升帧（touch boost）默认开启。收到 `ACTION_DOWN` 后以及手指抬起的一段时间内，系统可以提高渲染速率，用于按压态、拖动起步和窗口内的交互反馈。官方文档明确不建议关闭它。
+触摸升帧（touch boost）默认开启。收到 `ACTION_DOWN` 后以及手指抬起的一段时间内，系统可以提高渲染速率，用于按压态、拖动起步和窗口内的交互反馈。
 
 窗口级 API 可以直接调用，无需手动修改 `WindowManager.LayoutParams` 再写回 `attributes`。下面的函数适合实验开关和少量经验证的窗口策略。
 
@@ -227,7 +229,9 @@ fun Surface.setVideoFrameRate(frameRate: Float) {
 }
 ```
 
-只有在长时间播放且产品接受一次可见切换时，才评估 `CHANGE_FRAME_RATE_ALWAYS`。播放结束、`Surface` 复用或内容帧率改变时要更新请求；API 34 及以上可用 `clearFrameRate()` 清除旧值。调用成功只表示提示已提交，不表示显示设备已选择 24 Hz 或 120 Hz。
+只有在长时间播放且产品接受可见切换时，才评估 `CHANGE_FRAME_RATE_ALWAYS`。非无缝切换还要求用户在系统的「匹配内容帧率」设置中允许此类切换；`ALWAYS` 只表示应用侧接受，不能绕过用户偏好。
+
+视频暂停或播放结束后，若 `Surface` 仍可见且不再提交新帧，应清除帧率请求；API 34 及以上调用 `clearFrameRate()`，API 30—33 可用 `setFrameRate(0f, Surface.FRAME_RATE_COMPATIBILITY_DEFAULT)` 恢复默认。`Surface` 复用或内容帧率改变时，应按新内容更新请求。调用成功只表示提示已提交，不表示显示设备已选择 24 Hz 或 120 Hz。
 
 API 36 及以上的普通界面、动画和滚动 `Surface` 可以使用 `FRAME_RATE_COMPATIBILITY_AT_LEAST`；游戏继续使用 `DEFAULT`，并由引擎控制产帧节奏；视频继续使用 `FIXED_SOURCE`。相机预览要按捕获帧率、宿主界面和产品延迟目标单独评估，不能因为输出到 `Surface` 就套用视频语义。
 

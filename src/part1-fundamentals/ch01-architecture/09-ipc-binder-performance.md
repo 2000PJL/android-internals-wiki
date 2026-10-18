@@ -2,7 +2,7 @@
 title: Android IPC 全景与 Binder 性能
 chapter: '1.9'
 section: '1.9'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
 - binder
@@ -95,7 +95,20 @@ sources:
   path: frameworks/base/libs/androidfw/CursorWindow.cpp @ android-17.0.0_r1
 - type: aosp
   path: bionic/libc/platform/bionic/reserved_signals.h @ android-17.0.0_r1
-last_verified: '2026-07-25'
+- type: aosp
+  path: frameworks/base/core/java/android/os/SharedMemory.java @ android-17.0.0_r1
+- type: aosp
+  path: frameworks/base/core/java/android/os/MemoryFile.java @ android-17.0.0_r1
+- type: kernel
+  path: drivers/dma-buf/dma-heap.c @ android17-6.18-2026-06_r6
+- type: official
+  path: https://source.android.com/docs/core/virtualization/security
+- type: official
+  path: https://source.android.com/docs/core/architecture/aidl/stable-aidl
+- type: official
+  path: https://source.android.com/docs/core/architecture/hidl/binder-ipc
+last_verified: '2026-10-18'
+last_source_verified_at: '2026-10-18'
 last_verified_against: AOSP android-17.0.0_r1; ACK android17-6.18-2026-06_r6; Android Developers; source.android.com
 related_chapters:
 - '1.1'
@@ -179,7 +192,7 @@ IPC 选型先看数据形态、方向、频率、生命周期和权限范围。B
 
 #### 2.3 谁拥有内存，谁负责回收
 
-IPC 出错时，问题多半出在资源所有权没讲清，传输本身常常是好的。我们逐项确认：
+排查 IPC 故障时，除了传输错误，还要逐项确认资源所有权：
 
 - Binder 对象何时调用 `linkToDeath()` 监听远端死亡，何时释放引用。
 - 文件描述符只是临时借用、经 `dup` 复制后由本方拥有，还是随 `ParcelFileDescriptor` 一起关闭。
@@ -198,7 +211,7 @@ IPC 出错时，问题多半出在资源所有权没讲清，传输本身常常�
 
 #### 2.5 安全边界在哪里
 
-Binder 提供调用方 UID/PID、对象引用与 SELinux Binder 策略；套接字依赖命名空间、文件权限、对端凭据和 SELinux。传递文件描述符相当于把访问某个内核对象的能力交给对端。共享内存若未降低保护权限，对端可能获得超出预期的写权限。
+内核 Binder 提供调用方 UID、对象引用与 SELinux Binder 策略；权限检查应使用 UID 和相应的授权规则。`Binder.getCallingPid()` 主要用于调试，PID 会复用，`oneway` 的调用方 PID 为 0，同步调用也可能因调用方退出而得到 0，不能把 PID 当作安全身份。套接字依赖命名空间、文件权限、对端凭据和 SELinux。传递文件描述符相当于把访问某个内核对象的能力交给对端。共享内存若未降低保护权限，对端可能获得超出预期的写权限。
 
 #### 2.6 如何证明性能结论
 
@@ -256,10 +269,10 @@ Java `TransactionTooLargeException` 文档把 Binder 事务缓冲区描述为当
 
 因此：
 
-- 4KB 内存页设备：约 1016KiB。
-- 16KB 内存页设备：约 992KiB。
+- 4 KiB 内存页设备：约 1016 KiB。
+- 16 KiB 内存页设备：约 992 KiB。
 
-992KiB 只是这块映射的总大小。同一进程的并发请求、回复、对象元数据和对端接收缓冲区都在占用它；异常发生时，客户端甚至分不清请求尚未发出，还是回复过大。
+992 KiB 是 16 KiB 页设备上本进程接收映射的总大小，供尚未释放的入站事务数据、对象偏移表等共享。请求占用服务端的接收映射，回复占用客户端的接收映射，两端各自分配，不能把对端缓冲区计入本进程预算。异常发生时，客户端无法仅凭异常区分请求未能发送还是回复失败，应按操作可能部分完成处理。
 
 工程规则很简单：Binder 事务应保持小；大数据改用文件描述符、分页或流式传递。
 
@@ -342,9 +355,9 @@ Provider 的查询、插入、更新和删除属于框架层 RPC，跨进程控�
 
 `CursorWindow.cpp`：
 
-- 初始的内联容量为 16KiB。
-- 数据能放下时，跨进程可把压缩后的窗口直接写入 Parcel。
-- 需要更大空间时，才扩展到兼容 ashmem 的共享区域。
+- 初始内联容量取 16 KiB 与请求容量 `inflatedSize` 的较小值。
+- 数据能放下时，跨进程按实际占用量压紧数据与槽位布局，再直接复制进 Parcel；这里没有通用压缩算法。
+- 需要更大空间且仍可扩容时，才扩展到兼容 ashmem 的共享区域。
 - 大窗口通过文件描述符传递，对端使用只读 `mmap` 映射。
 
 「所有 ContentProvider 结果都零拷贝」因此不成立：列值填充、`CursorWindow` 构建、内联复制或共享区域初始化仍有 CPU 和内存成本。
@@ -462,28 +475,26 @@ bionic 把 `BIONIC_SIGNAL_DEBUGGER` 定义为 `__SIGRTMIN + 3`，这是平台保
 
 #### 7.2 Java `SharedMemory`
 
-`android.os.SharedMemory` 从 API 27 提供，可通过 `Parcelable` 传递文件描述符。下面的示例先写入数据，再移除写权限，最后把共享内存交给远端：
+`android.os.SharedMemory` 从 API 27 提供，可通过 `Parcelable` 传递文件描述符。下面是业务代码片段，`size` 应大于 0 且足够容纳 `payload`，`remote.consume()` 代表自行定义的远程接口；外围方法需处理或声明 `ErrnoException`、`RemoteException`。重点看外层资源关闭和内层解除映射：
 
 ```java
-SharedMemory shm = SharedMemory.create("model-input", size);
-ByteBuffer writable = shm.mapReadWrite();
-try {
-    writable.put(payload);
-} finally {
-    SharedMemory.unmap(writable);
-}
+try (SharedMemory shm = SharedMemory.create("model-input", size)) {
+    ByteBuffer writable = shm.mapReadWrite();
+    try {
+        writable.put(payload);
+    } finally {
+        SharedMemory.unmap(writable);
+    }
 
-if (!shm.setProtect(OsConstants.PROT_READ)) {
-    shm.close();
-    throw new IllegalStateException("failed to remove write access");
-}
+    if (!shm.setProtect(OsConstants.PROT_READ)) {
+        throw new IllegalStateException("failed to remove write access");
+    }
 
-try {
     remote.consume(shm);
-} finally {
-    shm.close();
 }
 ```
+
+外层 `try-with-resources` 保证映射、写入、降权或远程调用失败时也关闭 `SharedMemory`；映射成功后，内层 `finally` 负责解除映射。
 
 `setProtect()` 只能移除权限，加不回来；它也只约束之后创建的映射，已有的可写映射仍保持原权限。因此，示例采用“写入 → 解除映射 → 降为只读 → 传给对端”的最小权限顺序，让接收方只获得完成任务所需的权限。
 
@@ -491,7 +502,7 @@ try {
 
 #### 7.3 `MemoryFile` 是兼容包装
 
-`MemoryFile.java` 已明确实现为 `SharedMemory` 的兼容包装。新代码通常优先使用 SharedMemory；MemoryFile 可被回收（purgeable）的兼容行为留给存量场景，别作为新通用共享内存设计的基础。
+`MemoryFile.java` 已明确实现为 `SharedMemory` 的兼容包装。新代码通常优先使用 SharedMemory；`allowPurging()` 与 `isPurgingAllowed()` 已标记弃用，源码建议应用响应内存回调、按需释放共享区域，不要把历史可回收（purgeable）行为作为新通用共享内存协议的基础。
 
 #### 7.4 ashmem 兼容文件描述符的 memfd 分流
 
@@ -507,7 +518,7 @@ ashmem 是 Android 早期的匿名共享内存机制，memfd 则用匿名内存�
 
 ### 8. `Parcel::writeBlob()`：16KiB 分界的真实含义
 
-C++ `Parcel.cpp` 定义：
+`Parcel.cpp` 在未定义 `BINDER_DISABLE_BLOB` 时，按下面的分支选择内联或共享区域；代码仅示意条件，省略分配与错误处理：
 
 ```cpp
 static const size_t BLOB_INPLACE_LIMIT = 16 * 1024;
@@ -525,6 +536,8 @@ if (!mAllowFds || len <= BLOB_INPLACE_LIMIT) {
 - `len > 16KiB` 且 Parcel 允许传递文件描述符：创建兼容 ashmem 的区域，映射后通过 Parcel 传递文件描述符。
 - `len > 16KiB` 但不允许传递文件描述符：仍直接写入 Parcel。
 
+若构建定义了 `BINDER_DISABLE_BLOB`，`writeBlob()` 直接返回 `INVALID_OPERATION`，上述分支不适用。
+
 `writeBlob()` 返回可写区域给调用者，数据仍要被写进 Parcel 内联缓冲区或共享映射。文件描述符分支避免把整块二进制数据再次塞进 Binder 事务缓冲区，但生产方仍有写入成本。
 
 这个行为也外推不到「所有大 AIDL `byte[]` 都会自动走共享内存」：只有实际使用二进制块或以文件描述符为后端的 `Parcelable` 路径才有这项分流，普通字节数组仍会被内联编组。
@@ -538,7 +551,7 @@ DMA-BUF 用于让 CPU、GPU、显示、相机、编解码器等硬件模块共�
 - Binder 传递句柄与生命周期控制信息。
 - 同步栅栏表达生产方写完、消费方可以开始读取的时序。
 
-Android 12 的 GKI（Generic Kernel Image，通用内核镜像）2.0 路线用 DMA-BUF 堆替代 ION 内存分配器；每个堆通常表现为 `/dev/dma_heap/<name>`。这项迁移改的是硬件缓冲区的分配器路线，推不出「SharedMemory 也从 ashmem 迁到了 DMA-BUF」。
+Android 12 的 GKI（Generic Kernel Image，通用内核镜像）2.0 路线用 DMA-BUF 堆替代 ION 内存分配器。官方旧迁移页限定为「5.4 kernel only」，已标记弃用，并注明原计划于 2026 年 5 月移除；其中的迁移步骤不能作为 Android 17 的内核操作指引。当前节点创建可对照 ACK `android17-6.18-2026-06_r6` 的 `drivers/dma-buf/dma-heap.c`，堆设备表现为 `/dev/dma_heap/<name>`。硬件缓冲区分配器的这项迁移，推不出「SharedMemory 也从 ashmem 迁到了 DMA-BUF」。
 
 | 对象 | 主要用途 | 同步 |
 | --- | --- | --- |
@@ -556,9 +569,11 @@ FMQ 先通过 HIDL 或 AIDL RPC 传递 `MQDescriptor` 描述对象，双方再�
 
 - 只有一个写入方。
 - 同步队列（synchronized queue）：只有一个读取方，不允许写入覆盖尚未读取的数据。
-- 非同步队列（unsynchronized queue）：可有多个读取方，写入方可以覆盖旧数据；落后的读取方会丢数据。
+- 非同步队列（unsynchronized queue）：可有多个读取方，写入方可以覆盖旧数据；读取方落后超过容量后，下一次读取失败并调整本地读位置，不能把该次读取当成有效数据。
 - 两种队列都不允许在没有可读数据时继续读取。
 - 双向协议通常需要两条方向相反的队列。
+
+非同步队列的读取方从描述对象建立队列时，必须使用 `resetPointers=false`，避免重置共享写入位置；读位置由各读取方独立维护。检查可读量之后仍可能发生覆盖，因此还要处理实际读取失败。
 
 因此把 FMQ 表格写成“天然双向”是错误的。它适合固定布局、频繁、小单元的数据流，不适合：
 
@@ -574,8 +589,8 @@ HIDL FMQ 从 Android 8 开始提供；AIDL NDK 代码生成后端从 Android 12 
 Android 8 的 Treble 把系统框架与厂商实现分开升级，并用 HIDL 和独立的 `/dev/hwbinder` 驱动域固定双方接口。Android 10 引入稳定 AIDL 机制，Android 11 开始允许 HAL 使用 AIDL。稳定 AIDL HAL 具有以下特点：
 
 - 使用 `/dev/binder`。
-- 厂商原生代码使用 NDK 或 Rust 代码生成后端等稳定运行时。
-- 通过厂商接口清单（VINTF）、冻结的接口版本和厂商测试套件（VTS）管理兼容性。
+- 厂商原生代码使用 NDK 或 Rust 代码生成后端等稳定运行时。只有 `system/system_ext` 可直接使用 C++ `libbinder`，其他分区应使用 `libbinder_ndk`、`libbinder_rs` 或适用的 Java 后端；Java 后端不能用于与 vendor 分区的服务管理器通信，vendor 分区也不能使用 API 34 之后新增的系统 API。
+- 系统与厂商之间的 AIDL 类型使用 `@VintfStability`，接口构建声明 `stability: "vintf"`，再通过厂商接口清单（VINTF）、冻结的接口版本和厂商测试套件（VTS）管理兼容性。
 
 HIDL 从 Android 13 起进入弃用状态，但既有 HIDL HAL 仍受支持；分析具体设备时，以它实际暴露的接口为准，单看系统版本下不了「所有 HAL 都已迁移到 AIDL」的结论。
 
@@ -604,7 +619,7 @@ host RpcSession
 - socket/vsock 缓冲区与 virtio 虚拟设备 I/O 传输。
 - VM 调度和服务端工作。
 
-AVF 还限制 pVM 之间直接通信；宿主系统的 VirtualizationService 控制连接建立。大文件交换另有带完整性校验的 AuthFS 文件通道，超大的 Binder RPC 事务在这里靠不住。
+宿主系统未被攻破时，Android 限制 guest pVM 之间直接建立 vsock 连接，由宿主的 VirtualizationService 建立通道；已建立的通道可以转交其他进程使用。这些宿主侧访问控制不保证在宿主被攻破后继续成立。大文件交换另有带完整性校验的 AuthFS 文件通道，不能仅凭绕开内核 Binder 映射就假设超大 Binder RPC 事务可安全使用。
 
 ### 13. 定性对比
 
@@ -669,13 +684,13 @@ eventfd/fence/event flag：完成通知与同步
 adb shell perfetto \
   -o /data/misc/perfetto-traces/ipc.perfetto-trace \
   -t 10s -b 64mb \
-  sched freq binder_driver
+  sched freq binder_driver aidl
 
 adb pull \
   /data/misc/perfetto-traces/ipc.perfetto-trace
 ```
 
-轨迹到手后，我们要把 Binder 区段的总耗时分成：
+`aidl` 分类为接口与方法解析提供用户态标记；能否采到目标进程的标记和内核事件，还受构建类型、权限、应用可调试性与采集配置限制。轨迹到手后，把 Binder 区段的总耗时分成：
 
 1. 客户端编组前后的应用轨迹区段。
 2. `binder transaction` 到服务端线程开始执行之间的排队。
@@ -693,17 +708,18 @@ SELECT
   client_thread,
   interface,
   method_name,
+  is_sync,
   COUNT(*) AS calls,
   AVG(client_dur) / 1e6 AS avg_ms,
   MAX(client_dur) / 1e6 AS max_ms
 FROM android_binder_txns
 GROUP BY
-  client_process, client_thread, interface, method_name
+  client_process, client_thread, interface, method_name, is_sync
 ORDER BY max_ms DESC
 LIMIT 50;
 ```
 
-结果按最大耗时降序列出前 50 组调用，比只用 `slice.name LIKE '%binder%'` 猜测更可靠。不同 Perfetto 版本的标准库字段会演进；查询失败时，先查当前 Trace Processor 的 `android.binder` 模块文档。
+结果按最大耗时降序列出前 50 组调用，并以 `is_sync` 区分同步与 `oneway`。同步事务的 `client_dur` 包含等待回复；`oneway` 的该字段只描述客户端提交区间，不能用来衡量服务端业务完成时长。不同 Perfetto 版本的标准库字段会演进；遇到 `method_name` 等列缺失，先用 `PRAGMA table_info(android_binder_txns);` 检查当前表结构，再对照该 Trace Processor 版本的模块文档。
 
 #### 15.2 套接字和管道的轨迹定位
 
@@ -744,7 +760,7 @@ LIMIT 50;
 
 #### 高频 getter 调用
 
-下面的写法会在一帧内发起 N 次同步 Binder 调用：
+下面是业务接口示意，`remote.getState()`、`remote.getStates()` 和 `State` 均由业务定义，不是 Android API。若逐项同步查询，一帧内会发起 N 次 Binder 调用：
 
 ```java
 // 差：一帧里 N 次同步 Binder
@@ -774,17 +790,15 @@ List<State> states = remote.getStates(ids);
 
 #### 共享内存没有协议
 
-只有一块 `mmap` 映射，缺少头部、版本、长度、状态和内存顺序时，接收方就可能读到只写了一半的数据。最小协议至少需要：
+只有一块 `mmap` 映射，缺少头部、版本、长度、状态和内存顺序时，接收方就可能读到只写了一半的数据。协议至少要明确以下约束：
 
-```text
-magic / version
-capacity / payload_length
-sequence
-state: EMPTY → WRITING → READY → READING
-校验与错误恢复
-```
+- 标识与版本：接收方能识别格式，并判断是否支持该版本。
+- 容量与数据长度：读取前校验边界，拒绝越界偏移和长度。
+- 序列号与所有权：定义谁能写、何时发布、何时读取，以及读完后如何归还、复用空间。
+- 发布与读取顺序：状态字段本身不提供同步，需使用跨进程有效的原子操作与内存顺序，或明确的锁协议。
+- 校验与恢复：定义对端退出、写入中断和通知丢失后的处理。
 
-`magic` 用于识别协议，版本决定字段解释方式，容量和数据长度用于边界检查，序列号与状态用于协调读写交接。跨 CPU 或硬件设备时，还要加入正确的原子操作、同步栅栏，以及缓存一致性规则。
+涉及 CPU 与硬件设备共同访问时，还要按相应缓冲区协议处理同步栅栏和缓存一致性；一组状态名字不能代替可执行的同步协议。
 
 #### 传文件描述符后忘记降低权限
 
@@ -861,7 +875,9 @@ Client
 5. 服务端线程收到 `BR_TRANSACTION`，进入服务端 Stub 的 `onTransact()`，反序列化参数并调用实现。
 6. 同步调用把结果与异常状态写入回复事务；驱动再把回复投递给原调用线程。
 
-Binder 还能在传输时转换 Binder 对象、句柄和文件描述符，并把内核可信的 PID、UID、SID 等调用方身份信息交给服务端。服务端权限检查放在 IPC 入口做；客户端写进 `Parcel` 的「身份字段」，一概不作数。
+Binder 还能在传输时转换 Binder 对象、句柄和文件描述符。内核提供调用方 UID，服务端据此结合权限规则鉴权；PID 可能为 0 或被复用，只能作为调试线索。SELinux 安全上下文 SID 也不会默认随每次事务附带，目标节点需显式请求 `FLAT_BINDER_FLAG_TXN_SECURITY_CTX`；原生 `BBinder::setRequestingSid(true)` 必须在对象首次被编组、传给其他进程之前设置。
+
+权限检查应在 IPC 入口完成。将任务交给其他线程前，先获取 `Binder.getCallingUid()` 并完成鉴权；新线程不在原入站事务上下文中，再调用它得到的是本进程 UID。客户端写进 `Parcel` 的「身份字段」不能代替驱动提供的身份。
 
 如果客户端代理发现目标对象就在本进程，`queryLocalInterface()` 可以返回本地实现，调用不经内核驱动。此时 AIDL 的 `oneway` 也没有远程异步语义，方法仍在调用线程同步执行；写性能测试时必须确认接口跨进程。
 
@@ -876,14 +892,16 @@ interface ICounterService {
 }
 ```
 
-编译器生成的关键角色有两个：
+以 Java 后端为例，编译器生成的关键角色有两个：
 
 - `Stub` 继承 `Binder`，把事务码分发到服务端实现。
 - `Proxy` 持有远端 `IBinder`，负责写入请求 `Parcel`、调用 `transact()` 并读取响应。
 
 `getCount()` 没有标记 `oneway`，即使返回类型写成 `void` 也仍是同步调用。`invalidate()` 是远程异步调用：没有业务返回值，调用方据此也确认不了服务端已经执行。
 
-远程 AIDL 调用从目标进程的 Binder 线程池进入，可能落在服务端主线程之外的任何工作线程上，多个调用可以并发，AIDL 实现必须线程安全。若业务只能在单一线程修改状态，应在 `Stub` 入口尽快切换到明确的 `Executor`、`Handler` 或内部队列，别让 Binder 工作线程长时间占着锁等主线程。
+远程 AIDL 调用通常从目标进程的 Binder 线程池进入，多个调用可以并发；同步嵌套回调还可能复用正在等待回复的原调用线程，包括主线程。AIDL 实现既要线程安全，也要处理重入。
+
+业务只能在单一线程修改状态时，可以转交 `Executor`、`Handler` 或内部队列，但必须保留接口约定的完成语义。若同步接口承诺返回已完成的结果，仅入队就返回会破坏约定；留在 Binder 线程上等待业务线程，也仍会占用该 Binder 线程。长任务可改成明确的异步任务接口，通过回调或另一次查询交付结果。
 
 ### 为什么常说 Binder 是“一次拷贝”
 
@@ -952,13 +970,13 @@ libbinder 仍使用以下大小：
 - 一个 Binder 工作线程可以处理不同节点的事务，服务端实现必须允许并发。
 - 同步嵌套调用可能复用正在等待的原调用线程，使远端服务可以沿调用链同步回调原进程。
 
-`IPCThreadState` 还会记录用户态执行中的 Binder 线程数；达到上限的状态持续超过 100 ms 时，libbinder 会输出：
+`IPCThreadState` 在执行顶层驱动命令时递增用户态执行计数，计数达到 `mMaxThreads` 后开始计时；执行结束、计数回落到阈值以下时，若持续超过 100 ms，才输出：
 
 ```text
 binder thread pool (<N> threads) starved for <M> ms
 ```
 
-这条日志只说明「输出日志的进程在该时间段内没有可用 Binder 工作线程」；要判断某个远端服务的线程池是否已满，还要配合别的信号：
+这是用户态阈值统计，日志中的 `<N>` 是配置阈值，不能单独证明所有实际 Binder 线程都没有空闲，也不能证明某个具体事务排队了多久。判断目标服务是否出现线程池饥饿，还要结合：
 
 1. 客户端同步 Binder 的等待时间升高。
 2. 服务端可用工作线程很少，或已经接近它自己的配置上限。
@@ -995,10 +1013,10 @@ libbinder 默认请求启用 `BINDER_ENABLE_ONEWAY_SPAM_DETECTION`。当某个�
 
 #### 冻结进程
 
-对缓存或冻结进程调用 Binder，还有额外语义：
+对已被冻结的进程调用 Binder，还有额外语义；缓存状态本身不等于已经冻结：
 
 - 同步事务会被内核以 `BR_FROZEN_REPLY` 拒绝；平台的缓存进程冻结策略可能终止目标进程，调用方收到 `RemoteException` 或对应的冻结错误。
-- 异步事务可以暂存在节点的 `async_todo` 队列，直到目标解冻；缓冲区溢出时目标进程可能被终止。
+- 异步事务可留在目标进程的待处理队列；同一节点已有异步事务时，后续事务进入该节点的 `async_todo`。它们要等目标解冻后才能继续处理，缓冲区溢出时目标进程可能被终止。
 - 延迟到解冻后才处理的回调可能已经过期。
 
 对客户端来说，「远端进程还活着」和「它现在能处理 IPC」是两回事：解绑后应丢弃旧 Binder 引用；状态型高频回调要支持合并或丢弃，解冻后补发全部历史值没有意义。
@@ -1011,7 +1029,9 @@ Android 支持三层规则：
 
 - 事务优先级继承（transaction priority inheritance）：同步事务继承调用方优先级；`oneway` 默认不继承。
 - 节点最低优先级（node priority inheritance）：服务端通过 `BBinder::setMinSchedulerPolicy()` 为节点设置最低调度优先级。
-- 实时优先级继承（real-time priority inheritance）：默认关闭，服务端节点必须显式调用 `setInheritRt(true)`。
+- 实时优先级继承（real-time priority inheritance）：原生 libbinder 的默认值为关闭，可由节点的 `setInheritRt(true)` 显式启用。Android 17 另有 `BBinder::setGlobalInheritRt()` 改变进程级默认值，分析具体节点时还要核对 `isInheritRt()` 的最终取值，不能据此认定该节点单独调用过 `setInheritRt(true)`。
+
+`setMinSchedulerPolicy()` 与 `setInheritRt()` 都必须在对象首次被编组、传给其他进程之前设置；Android 17 源码对传出后再修改使用 `LOG_ALWAYS_FATAL_IF` 检查。
 
 优先级继承能做到的，是让工作线程更早拿到 CPU；互斥锁、磁盘 I/O、内存回收和下游慢服务都还在原地。Perfetto 中若工作线程已被调度却仍长时间处于睡眠（Sleeping）状态，接下来要查的是锁与 I/O，线程优先级先放一边。
 
@@ -1165,3 +1185,17 @@ Binder 缓冲区是进程级共享资源。大列表、`Bitmap` 和完整对象�
 - [AOSP：ashmem-dev.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/ashmem-dev.cpp)
 - [AOSP：CursorWindow.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/CursorWindow.cpp)
 - [AOSP：reserved_signals.h（android-17.0.0_r1）](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/platform/bionic/reserved_signals.h)
+- [AOSP：Binder.java（android-17.0.0_r1，调用方身份警告）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Binder.java)
+- [AOSP：Binder.cpp（android-17.0.0_r1，SID 请求与调度设置）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/Binder.cpp)
+- [AOSP：IPCThreadState.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/IPCThreadState.cpp)
+- [AOSP：SharedMemory.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SharedMemory.java)
+- [AOSP：MemoryFile.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/MemoryFile.java)
+- [ACK：binder.c（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)
+- [ACK：binder_alloc.c（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_alloc.c)
+- [ACK：dma-heap.c（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-heap.c)
+- [AOSP：ION → DMA-BUF 堆旧迁移页（仅 5.4 内核，已弃用）](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
+- [AOSP：AVF security（含宿主安全前提）](https://source.android.com/docs/core/virtualization/security)
+- [AOSP：Handle threads](https://source.android.com/docs/core/architecture/ipc/binder-threading)
+- [AOSP：Priority inheritance](https://source.android.com/docs/core/architecture/ipc/priority-inheritance)
+- [AOSP：binder.sql（android-17.0.0_r1）](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder.sql)
+- [AOSP：binder_breakdown.sql（android-17.0.0_r1）](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/binder_breakdown.sql)

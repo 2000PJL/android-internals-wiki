@@ -2,8 +2,7 @@
 title: Android IPC 全景与 Binder 性能
 chapter: '1.9'
 section: '1.9'
-status: finalized
-pipeline_stage: ready-to-publish
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
 - binder
@@ -108,9 +107,7 @@ related_chapters:
 - '1.8'
 - '2.8'
 - '4.1'
-task6_state: reviewed
-task9_state: reviewed
-task2b_state: fixed
+last_rework_at: '2026-10-18T13:35:41+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/04-binder.md

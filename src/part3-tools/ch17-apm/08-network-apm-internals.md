@@ -3,8 +3,10 @@ status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 chapter: '17.8'
 confidence: high
-last_verified: '2026-08-14'
-last_verified_against: OkHttp 5.4.0 README, changelog, and EventListener source; AGP API updates and 9.x migration roadmap; Cronet RequestFinishedInfo.Metrics docs updated 2026-07-31 and current Chromium source; AOSP android-17.0.0_r1 and android17-6.18-2026-06_r6 anchors
+last_verified: '2026-10-18'
+last_source_verified_at: '2026-10-18'
+last_idle_audit_at: '2026-10-18'
+last_verified_against: OkHttp 5.3.0/5.4.0 EventListener, CallServerInterceptor and Http1ExchangeCodec source plus JVM HTTP/1.1 split-header, 100 and 103 fixtures; AGP Instrumentation API scope and migration docs; Cronet Metrics docs and RequestFinishedInfo source; AOSP android-17.0.0_r1 and android17-6.18-2026-06_r6 anchors
 related_chapters:
 - '17.0'
 - '15.7'
@@ -25,6 +27,12 @@ sources:
   path: https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/CHANGELOG.md
 - type: reference
   path: https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/CallServerInterceptor.kt
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/CallServerInterceptor.kt
+- type: reference
+  path: https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http1/Http1ExchangeCodec.kt
 - type: official
   path: https://developer.android.com/reference/tools/gradle-api/8.6/com/android/build/api/instrumentation/AsmClassVisitorFactory
 - type: official
@@ -85,7 +93,7 @@ OkHttp 主通道上，我们把 `EventListener`（按阶段通知网络事件的
 - 应用拦截器每个 `Call` 执行一次，适合生成 request id、业务路由和最终响应语义；缓存命中也会经过它。
 - 网络拦截器按网络 exchange 执行，可看到发往网络的 request、连接和中间 response；纯缓存命中不会经过它。
 
-Interceptor 一侧没有 `dnsStart`、`connectStart` 或 `secureConnectStart` 这类阶段事件；网络拦截器离传输层更近，看到的仍是一整段 exchange，拆不出 DNS、TCP 和 TLS。原始 request 用 `EventListener.call.request()` 取；重定向或鉴权后真正发到网络上的 wire request，则要从 `requestHeadersEnd(call, request)` 取。我们把语义层与事件层用 `Request.tag()` 里的 request id 关联，id 本身不含用户信息或业务内容。
+Interceptor 一侧没有 `dnsStart`、`connectStart` 或 `secureConnectStart` 这类阶段事件；网络拦截器离传输层更近，看到的仍是一整段 exchange，拆不出 DNS、TCP 和 TLS。原始 request 用回调参数 `call` 的 `request()` 取；重定向或鉴权后发到网络上的 wire request，则要从 `requestHeadersEnd(call, request)` 取。我们把语义层与事件层用 `Request.tag()` 里的 request id 关联，id 本身不含用户信息或业务内容。
 
 ### 2.1 先读懂事件序列的四个例外
 
@@ -96,7 +104,7 @@ OkHttp 5.3.0 的 `EventListener` 源码把事件顺序写得很明确，我们�
 3. `Expect: 100-continue` 会先等服务端允许再发送 request body，因此 body 事件可能落在 response headers 事件之间；duplex body 还允许两边交错传输。
 4. 除取消外，当前事件通常顺序发生；`canceled` 可以与其他回调并发，甚至可能晚于 `callEnd`。后续版本还可能并发尝试多条 route。
 
-还有一个容易遗漏的版本点：OkHttp 4.3 以前，`responseHeadersStart` 在“客户端准备读取 header”时就过早触发；4.3 起它才表示服务端响应 header 开始返回。旧版本上因此套不进后文的 post-send wait 算法——那套算法量的是“request 发送完到响应 header 开始返回”的等待。`requestHeadersEnd(call, request)` 的稳定签名从 OkHttp 3.9 就存在，但这不改变 `responseHeadersStart` 的 4.3 分界。
+还有一个容易遗漏的版本点：OkHttp 4.3 以前，`responseHeadersStart` 在“客户端准备读取 header”时就过早触发；4.3 起调整了触发位置。按本文使用的 5.3.0 与 5.4.0 实现，它在 `readResponseHeaders()` 返回后触发，HTTP/1.1 此时已读完一个 header block。这个回调不能提供精确的首字节时间；遇到临时响应时，也不能据此确定最终响应的起点。后文按这一边界计算观测值。`requestHeadersEnd(call, request)` 的签名从 OkHttp 3.9 就存在，但不应据此推定不同版本的响应回调语义相同。
 
 ### 2.2 一份不会覆盖 retry/follow-up 的核心实现
 
@@ -129,7 +137,6 @@ data class HttpExchange(
     var requestHeadersEndNs: Long? = null,
     var requestBodyStartNs: Long? = null,
     var requestBodyEndNs: Long? = null,
-    var pendingResponseHeadersStartNs: Long? = null,
     var responseHeadersStartNs: Long? = null,
     var responseHeadersEndNs: Long? = null,
     var responseBodyStartNs: Long? = null,
@@ -141,7 +148,6 @@ data class HttpExchange(
     var protocol: String? = null,
     var requestIsDuplex: Boolean = false,
     var hasExpectContinue: Boolean = false,
-    var informationalResponseCount: Int = 0,
     var requestFailure: String? = null,
     var responseFailure: String? = null,
     var retryPlanned: Boolean? = null,
@@ -364,20 +370,15 @@ private class NetworkMetricEventListener(
 
     override fun responseHeadersStart(call: Call) {
         synchronized(lock) {
-            currentExchange().pendingResponseHeadersStartNs = clock()
+            // 记录回调时刻；它可能对应临时响应，不能标作最终响应的首字节。
+            currentExchange().responseHeadersStartNs = clock()
         }
     }
 
     override fun responseHeadersEnd(call: Call, response: Response) {
         synchronized(lock) {
             currentExchange().apply {
-                val blockStartNs = pendingResponseHeadersStartNs
-                pendingResponseHeadersStartNs = null
-                if (response.code in 100..199 && response.code != 101) {
-                    informationalResponseCount += 1
-                    return@apply
-                }
-                responseHeadersStartNs = blockStartNs
+                // OkHttp 5.3.0 / 5.4.0 已在内部跳过 100、102..199。
                 responseHeadersEndNs = clock()
                 statusCode = response.code
                 protocol = response.protocol.toString()
@@ -507,7 +508,9 @@ val client = OkHttpClient.Builder()
 
 ### 3.2 OkHttp 阶段差值
 
-TTFB（Time to First Byte，首字节时间）描述请求开始后多久见到响应的第一个字节。下表的 Exchange TTFB 以该 exchange 开始写 request header 的时刻为起点，因此可能与以整个 call 为起点的产品指标不同。
+TTFB（Time to First Byte，首字节时间）需要一个首字节到达的观测点。`EventListener` 的响应回调达不到这一精度：在 OkHttp 5.3.0 与 5.4.0 的 `CallServerInterceptor` 中，`responseHeadersStart` 在一次 `readResponseHeaders()` 返回后触发；HTTP/1.1 已经读完状态行和一个 header block。它可能对应 `100 Continue`、`103 Early Hints` 或最终响应，不能直接命名为“最终响应 TTFB”。
+
+下表保留回调能证明的区间。`responseHeadersStart` 与 `responseHeadersEnd` 均指采集器收到回调的时刻：
 
 | 指标 | 算法 | 正确解释 |
 | --- | --- | --- |
@@ -515,28 +518,28 @@ TTFB（Time to First Byte，首字节时间）描述请求开始后多久见到�
 | Transport connect | `connectEnd - connectStart` | Socket 建立到协议可用的总区间；HTTPS 下包含 TLS |
 | Pre-TLS transport | `secureConnectStart - connectStart` | 直连时接近 TCP connect；有 HTTP proxy 时还可能包含隧道协商 |
 | TLS | `secureConnectEnd - secureConnectStart` | TLS 握手区间 |
-| Request headers | `requestHeadersEnd - requestHeadersStart` | 写出 request header 的区间 |
-| Request body | `requestBodyEnd - requestBodyStart` | 写出 body 的区间；没有 body 时为空 |
-| Exchange TTFB | `responseHeadersStart - requestHeadersStart` | 从开始写 request 到首个 response header 字节；包含发送与等待 |
-| Post-send wait estimate | `responseHeadersStart - sendEnd` | request 发完后的等待；仍包含网络往返与服务端处理 |
-| Response headers | `responseHeadersEnd - responseHeadersStart` | 接收并处理 response header 的区间 |
+| Request headers | `requestHeadersEnd - requestHeadersStart` | 客户端写 request header 的区间；数据仍可能在缓冲区中 |
+| Request body | `requestBodyEnd - requestBodyStart` | 客户端写 body 的区间；没有 body 时为空 |
+| Exchange response-header wait | `responseHeadersStart - requestHeadersStart` | 从开始写 request 到首次 header block 可用回调；包含发送、等待与该 block 的读取处理 |
+| Post-write response wait estimate | `responseHeadersStart - sendEnd` | 请求写入结束回调到首次 header block 可用回调；不保证请求已经发上网络 |
+| Header callback interval | `responseHeadersEnd - responseHeadersStart` | 从首次 header block 可用到最终响应 header 回调；可能包含等待后续响应的时间 |
 | Response body consumption | `responseBodyEnd - responseBodyStart` | 应用读取或关闭 body 的窗口，不等于纯下载时间 |
 
 HTTPS 下 `connectEnd` 发生在 `secureConnectEnd` 之后，`connectStart → connectEnd` 已经含了 TLS，再当 TCP 握手用、再与 TLS 相加都会算错。直连 HTTPS 可把 `connectStart → secureConnectStart` 作为 TCP 近似；经过 HTTP proxy 时，这段还混着 CONNECT 隧道协商——代理先为客户端和 HTTPS 目标建立字节通道——所以只能叫 pre-TLS transport。
 
-`sendEnd` 有 body 时取 `requestBodyEnd`，无 body 时取 `requestHeadersEnd`。post-send wait estimate 要满足三个条件：
+`sendEnd` 有 body 时取 `requestBodyEnd`，无 body 时取 `requestHeadersEnd`。post-write response wait estimate 要满足三个条件：
 
-- OkHttp 版本不低于 4.3。
-- `responseHeadersStart >= sendEnd`。
+- 已核对依赖版本的回调实现；本文的边界对应 5.3.0 与 5.4.0，不能套到 4.3 以前的过早触发行为上。
+- `sendEnd` 存在，且 `responseHeadersStart >= sendEnd`。
 - request 不是 duplex，也没有 `Expect: 100-continue` 导致的事件交错。
 
-条件不满足时，`post_send_wait_ms` 记 `null` 并写明 `overlap_reason`；把负数取绝对值或强行归零，都会掩盖真实的协议行为。
+条件不满足时，`post_write_response_wait_ms` 记 `null` 并写明缺失或交错原因；把负数取绝对值或强行归零，都会掩盖协议行为。条件满足也只得到上述回调差值，不能把它解释成精确的“发完请求到响应首字节”。
 
-同一 exchange 可能先收到 `100 Continue` 或 `103 Early Hints`。这些 `1xx` 临时响应的 header block 应单独保存或计数；上表的 `responseHeadersStart` 指最终非 informational response 的起点，`101 Switching Protocols` 则作为协议升级的终止 response 处理。拿首个 `1xx` 去覆盖最终 response，状态码和 TTFB 会一起被破坏。
+同一 exchange 可能先收到 `100 Continue` 或 `103 Early Hints`。这两个版本在内部跳过 `100` 和 `102..199` 后，才用最终响应调用一次 `responseHeadersEnd`；`101 Switching Protocols` 则保留为协议升级响应。因此示例不从 `responseHeadersEnd` 计数临时响应，也不把 `responseHeadersStart` 重标为最终响应起点。仅靠这些公开回调，临时响应数量与最终响应首字节时间都应留空；需要逐个 header block 时，要增加能观察该阶段的客户端探针并验证其版本边界。
 
-“Server Wait”是个便于沟通的旧名字。端上测到的 post-send wait 里混着上行尾部、网络 RTT、服务端排队与执行和下行首字节，单凭它说明不了后端慢。要拆出后端耗时，应结合可信的 `Server-Timing`（服务端自报的耗时）、分布式 trace（跨服务的调用轨迹）或服务端日志，并校验时钟与 request id。
+“Server Wait”也不适合直接作为这些端侧差值的名称。写入、缓冲、网络 RTT、服务端排队与执行和 header 处理都可能包含其中。要拆出后端耗时，应结合可信的 `Server-Timing`（服务端自报的耗时）、分布式 trace（跨服务的调用轨迹）或服务端日志，并校验时钟与 request id。
 
-`responseHeadersStart` 表示 header 开始返回，`responseHeadersEnd` 表示 header 收完。TTFB 的终点是前者；后者字段更完整，把它写成“更精确的 TTFB”就改了定义。
+排查回调边界时，可以用受控 HTTP/1.1 服务先发状态行和部分 header，暂不发结束空行；再测试完整 `103` 后延迟最终 `200`。前者能检查 `responseHeadersStart` 是否等待完整 header block，后者能检查 start 与 end 是否对应不同的响应。不要用只有单个 `200`、一次性写完 header 的样例验证 TTFB 语义。
 
 ### 3.3 空字段也是结论
 
@@ -567,8 +570,8 @@ HTTPS 下 `connectEnd` 发生在 `secureConnectEnd` 之后，`connectStart → c
 
 - `call_total_ms`：用户看到的整次调用生命周期。
 - `route_failure_overhead_ms`：失败 route 覆盖的时间并集。并发 attempt 的时间有重叠，直接相加会重复计时。
-- 每个 exchange 的 TTFB 与 post-send wait。
-- `final_exchange_ttfb_ms`：最终应用响应对应的 exchange 指标。
+- 每个 exchange 的 response-header wait 与 post-write response wait estimate。
+- `final_exchange_header_wait_ms`：最终应用响应对应的 exchange 的 header 回调等待值；仍不表示该响应的精确首字节时间。
 - `redirect_or_auth_overhead_ms`：follow-up 前的中间 exchange 时间。
 
 “只取最终 attempt 的 server wait”会丢掉连接复用、重定向和请求写入后重试等情况。最终 response 属于 exchange；route attempt 可能早已结束，当前 call 也可能没有发生建连。定位原因时，要用同一层级的事件。
@@ -577,7 +580,7 @@ HTTPS 下 `connectEnd` 发生在 `secureConnectEnd` 之后，`connectStart → c
 
 - DNS span 超时或失败，且后续 route 未开始：先看解析器、DoH（DNS over HTTPS）/系统 DNS 和网络切换。
 - route attempt 失败、IP 或 proxy 切换：看地址可达性、TCP/代理/TLS 错误。
-- post-send wait 高：说明“发完请求到首个响应 header”这一路慢，再拿 RTT 与服务端 trace 继续拆。
+- post-write response wait estimate 高：先核对 header block 与缓冲语义，再结合 RTT 与服务端 trace 判断等待来自哪里。
 - body consumption 高：结合传输字节、吞吐、应用读取间隔和下行丢包判断。
 
 ## 5. `HttpURLConnection` 与三方 SDK：在调用点插桩
@@ -602,7 +605,7 @@ androidComponents {
 }
 ```
 
-ASM visitor 会逐条访问 class 中的方法指令；AGP 随后为受影响方法重算 stack map frame，也就是 JVM 验证字节码时要用的栈与局部变量类型信息。默认用 `PROJECT`，只处理当前项目的 class；确认要检查某个依赖时再切到 `ALL`，并通过 `isInstrumentable()` 的精确包名前缀排除 APM runtime、生成代码和不兼容依赖。
+ASM visitor 会逐条访问 class 中的方法指令；AGP 随后为受影响方法重算 stack map frame，也就是 JVM 验证字节码时要用的栈与局部变量类型信息。默认用 `PROJECT`，只处理当前项目的 class。官方 API 限定库模块只能插桩本地项目类；应用与测试模块才可选择 `ALL`，把依赖类纳入范围。启用 `ALL` 时，通过 `isInstrumentable()` 的精确包名前缀排除 APM runtime、生成代码和不兼容依赖。
 
 下面的 visitor 把实例调用替换成静态桥接调用。`URL` receiver 原本在 operand stack 上，替换后成为静态方法的第一个参数，因此无需额外插入 `DUP` 或局部变量。
 
@@ -665,7 +668,7 @@ Cronet 的字段也要按文档解释：
 - socket reuse 为 true 时，DNS、connect 与 SSL 时间为空。
 - metrics 不可用或请求未走到该阶段时，时间为 `null`。
 - `getTtfbMs()` 表示从请求发起到响应 header 首字节的毫秒数；`getTotalTimeMs()` 包括成功、失败或取消前的完整请求时间。实际提供 Cronet 实现的 provider 没有采集时，两者都可能为 `null`。
-- `getResponseStart()` 是最终 response headers 收完的时刻，与 OkHttp 的 `responseHeadersStart` 含义不同，也顶替不了 `getTtfbMs()`；直接 TTFB 字段为空时，用 header 收完时间算出的值要另起字段名。
+- `getResponseStart()` 是最终 response headers 收完的时刻，应与 Cronet 自己的 `getTtfbMs()` 区分。OkHttp 的 header 回调又有第 3.2 节所述边界，不能拿名称相近的字段直接对齐；直接 TTFB 字段为空时，用 header 收完时间算出的值要另起字段名。
 - `getMetrics()` 的总说明称时间和字节覆盖全部 redirect，但 `getReceivedByteCount()` 的字段说明又明确排除先前 redirect，源码也保留了返回完整 metrics 链的 TODO。redirect 字节数是否累计，以实际 Cronet provider/version 的 contract test（固定输入的契约测试）结果为准，别自行假定。
 - 单个 `Metrics` 精确还原不了每一跳；每个 redirect 要结合 `onRedirectReceived()` 另存语义事件。
 
@@ -770,7 +773,7 @@ QUIC 基于 UDP，传输握手与 TLS 1.3 紧密结合，支持连接复用、0-
 | `migration_count` | 通常为 0 | 由 QUIC 栈提供；没有证据时为空 |
 | `retransmission_source` | 内核 TCP | QUIC 库；内核 UDP 无法给出同等语义 |
 
-0-RTT 下请求发送可能早于握手确认，各阶段也就不再严格按“前一个结束、下一个才开始”的顺序发生。`connectEnd - connectStart` 仍可作为库定义的 transport 区间，只是别强行把它放到 sending 之前。跨 HTTP/2 与 HTTP/3 比较时，我们优先看 call/exchange TTFB、成功率和吞吐，再按 transport 分组看连接指标。
+0-RTT 下请求发送可能早于握手确认，各阶段也就不再严格按“前一个结束、下一个才开始”的顺序发生。`connectEnd - connectStart` 仍可作为库定义的 transport 区间，只是别强行把它放到 sending 之前。跨 HTTP/2 与 HTTP/3 比较时，优先看定义一致的请求耗时、成功率和吞吐，再按 transport 分组看连接指标。TTFB 只在有首字节观测依据时比较，OkHttp 的 header 回调差值单列。
 
 ## 10. 一套可维护的接入顺序
 
@@ -811,6 +814,8 @@ QUIC 基于 UDP，传输握手与 TLS 1.3 紧密结合，支持连接复用、0-
 - [OkHttp 当前 Interceptors 文档](https://lysine.dev/okhttp/features/interceptors/)：核对应用拦截器与网络拦截器的职责边界。
 - [OkHttp 5.4.0 changelog](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/CHANGELOG.md)：核对 2026-06-08 版本及变更范围。
 - [OkHttp 5.4.0 `EventListener` 源码](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)：核对当前回调签名与并发说明。
+- [OkHttp 5.3.0 `CallServerInterceptor`](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/CallServerInterceptor.kt) 与 [5.4.0 对应实现](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/CallServerInterceptor.kt)：核对 header 读取后触发 start、跳过临时响应后触发 end 的顺序。
+- [OkHttp 5.3.0 `Http1ExchangeCodec`](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http1/Http1ExchangeCodec.kt)：核对 `readResponseHeaders()` 读取完整状态行与 header block 的边界。
 - [OkHttp 5.3.0 `EventListener` 源码](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)：本文示例使用的事件边界、恢复与并发说明。
 - [OkHttp 5.3.0 Interceptors](https://github.com/square/okhttp/blob/parent-5.3.0/docs/features/interceptors.md)：应用拦截器与网络拦截器的差异。
 - [AGP Instrumentation API 迁移说明](https://developer.android.com/build/releases/gradle-plugin-api-updates)：核对 Transform 移除与 Instrumentation API 注册方式。

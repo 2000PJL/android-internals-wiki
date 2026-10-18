@@ -60,7 +60,7 @@ title: 网络 APM 底层捕获原理
 
 > 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；内核 `android17-6.18-2026-06_r6`。
 
-OkHttp、Cronet 和 Android Gradle Plugin（AGP，Android 构建插件）独立发布，版本要用各自渠道核对，从 Android API 级别推不出来。截至 2026 年 8 月 14 日，OkHttp 官方仓库已从 `square/okhttp` 迁移到 `lysine-dev/okhttp`，当前稳定版是 2026 年 6 月 8 日发布的 5.4.0。本文的大段示例固定在已审计的 5.3.0 接口上；5.4.0 仍保留它使用的 `retryDecision`、`followUpDecision` 和响应事件签名。项目依赖版本不同，仍要按对应源码核对回调语义。
+OkHttp、Cronet 和 Android Gradle Plugin 独立发布，版本要用各自渠道核对，从 Android API 级别推不出来。截至 2026 年 8 月 14 日，OkHttp 官方仓库已从 `square/okhttp` 迁移到 `lysine-dev/okhttp`，当前稳定版是 2026 年 6 月 8 日发布的 5.4.0。本文的大段示例固定在已审计的 5.3.0 接口上；5.4.0 仍保留它使用的 `retryDecision`、`followUpDecision` 和响应事件签名。项目依赖版本不同，仍要按对应源码核对回调语义。
 
 ## 1. “无侵入”指业务入口免埋点
 
@@ -74,7 +74,7 @@ OkHttp、Cronet 和 Android Gradle Plugin（AGP，Android 构建插件）独立�
 | Native 动态链接层 | 库回调、PLT/GOT Hook（通过动态符号入口拦截函数调用） | libc（C 标准库实现）或动态 TLS 库的调用、返回值和 `errno`（系统调用错误码） | 静态链接、隐藏符号、直接系统调用、HTTP 业务语义 |
 | 系统与内核层 | TrafficStats、系统 BPF（在内核中运行受限程序的机制）、受控测试工具 | UID（应用在 Linux 中的身份编号）/socket 流量、RTT（Round-Trip Time，网络往返时延）、重传和内核错误 | TLS 内的 URL、header（请求或响应元数据）和业务请求边界 |
 
-这些层看到的对象并不重合。HTTP 请求、DNS 查询、建连尝试和 socket 之间没有一一对应关系：一次调用可能复用连接，也可能解析一次域名后并行尝试多个地址；HTTP/2 和 HTTP/3 还允许不同请求通过各自的 stream 共享连接，HTTP/3 用的 QUIC 则是基于 UDP、内置加密与多路复用的传输协议。所以我们设计采集 schema（样本的字段结构）时，只放一个 `attempt` 数组是不够的，重试和多路复用很快会让它失真；trace id 也要记清它对应 HTTP 的哪一层。
+这些层看到的对象并不重合。HTTP 请求、DNS 查询、建连尝试和 socket 之间没有一一对应关系：一次调用可能复用连接，也可能解析一次域名后并行尝试多个地址；HTTP/2 和 HTTP/3 还允许不同请求通过各自的 stream 共享连接，HTTP/3 用的 QUIC 则是基于 UDP、内置加密与多路复用的传输协议。所以我们设计采集 schema 时，只放一个 `attempt` 数组是不够的，重试和多路复用很快会让它失真；trace id 也要记清它对应 HTTP 的哪一层。
 
 更稳妥的结构包含四条相互关联的记录：
 
@@ -83,11 +83,11 @@ OkHttp、Cronet 和 Android Gradle Plugin（AGP，Android 构建插件）独立�
 - `route_attempt`：对某个 IP、端口和 proxy 的一次连接尝试。
 - `exchange`：一轮实际发送的 HTTP request/response。重定向、鉴权挑战和部分故障恢复都会产生新 exchange。
 
-关联键要从同一客户端实例内的事件里取；按时间窗口猜，容易把并发请求配错。底层 socket 数据无法可靠还原 HTTP/2 stream 或 QUIC stream 时，就只保留连接维度的关联，并把可信度写进样本。
+关联键要从同一客户端实例内的事件里取；按时间窗口猜，容易把并发请求配错。底层 socket 数据还原不出可靠的 HTTP/2 stream 或 QUIC stream 时，就只保留连接维度的关联，并把可信度写进样本。
 
 ## 2. OkHttp：事件时间线与请求语义分开采
 
-OkHttp 主通道上，我们把 `EventListener`（按阶段通知网络事件的监听器）和两类 `Interceptor` 组合起来用：
+OkHttp 主通道上，我们把 `EventListener` 和两类 `Interceptor` 组合起来用：
 
 - `EventListener` 记录代理选择、DNS、连接、TLS、请求写入、响应读取、缓存与失败事件。
 - 应用拦截器每个 `Call` 执行一次，适合生成 request id、业务路由和最终响应语义；缓存命中也会经过它。
@@ -100,11 +100,11 @@ Interceptor 一侧没有 `dnsStart`、`connectStart` 或 `secureConnectStart` �
 OkHttp 5.3.0 的 `EventListener` 源码把事件顺序写得很明确，我们先把四个例外记牢：
 
 1. 连接复用时，代理选择、DNS 和 connect 事件可能全部缺席。
-2. retry（连接故障后的再次尝试）与 follow-up（重定向、鉴权等后续请求）会重复产生事件序列。`requestFailed`、`responseFailed` 和 `connectFailed` 出现后，整个 `Call` 仍可能继续。
+2. retry 与 follow-up——前者是连接故障后的再次尝试，后者是重定向、鉴权等触发的后续请求——会重复产生事件序列。`requestFailed`、`responseFailed` 和 `connectFailed` 出现后，整个 `Call` 仍可能继续。
 3. `Expect: 100-continue` 会先等服务端允许再发送 request body，因此 body 事件可能落在 response headers 事件之间；duplex body 还允许两边交错传输。
 4. 除取消外，当前事件通常顺序发生；`canceled` 可以与其他回调并发，甚至可能晚于 `callEnd`。后续版本还可能并发尝试多条 route。
 
-还有一个容易遗漏的版本点：OkHttp 4.3 以前，`responseHeadersStart` 在“客户端准备读取 header”时就过早触发；4.3 起调整了触发位置。按本文使用的 5.3.0 与 5.4.0 实现，它在 `readResponseHeaders()` 返回后触发，HTTP/1.1 此时已读完一个 header block。这个回调不能提供精确的首字节时间；遇到临时响应时，也不能据此确定最终响应的起点。后文按这一边界计算观测值。`requestHeadersEnd(call, request)` 的签名从 OkHttp 3.9 就存在，但不应据此推定不同版本的响应回调语义相同。
+还有一个容易遗漏的版本点：OkHttp 4.3 以前，`responseHeadersStart` 在“客户端准备读取 header”时就过早触发；4.3 起调整了触发位置。按本文使用的 5.3.0 与 5.4.0 实现，它在 `readResponseHeaders()` 返回后触发，HTTP/1.1 此时已读完一个 header block。这个回调给不出精确的首字节时间；遇到临时响应时，最终响应的起点单凭这一次回调定不下来。后文按这一触发位置计算观测值。`requestHeadersEnd(call, request)` 的签名从 OkHttp 3.9 就存在，但不同版本的响应回调语义要按各自源码核对。
 
 ### 2.2 一份不会覆盖 retry/follow-up 的核心实现
 
@@ -508,7 +508,7 @@ val client = OkHttpClient.Builder()
 
 ### 3.2 OkHttp 阶段差值
 
-TTFB（Time to First Byte，首字节时间）需要一个首字节到达的观测点。`EventListener` 的响应回调达不到这一精度：在 OkHttp 5.3.0 与 5.4.0 的 `CallServerInterceptor` 中，`responseHeadersStart` 在一次 `readResponseHeaders()` 返回后触发；HTTP/1.1 已经读完状态行和一个 header block。它可能对应 `100 Continue`、`103 Early Hints` 或最终响应，不能直接命名为“最终响应 TTFB”。
+TTFB（Time to First Byte）要的是“首字节到达”这个时刻。`EventListener` 的响应回调达不到这一精度：在 OkHttp 5.3.0 与 5.4.0 的 `CallServerInterceptor` 中，`responseHeadersStart` 在一次 `readResponseHeaders()` 返回后触发；HTTP/1.1 已经读完状态行和一个 header block。它可能对应 `100 Continue`、`103 Early Hints` 或最终响应，字段命名要体现这一点，直接叫“最终响应 TTFB”会出错。
 
 下表保留回调能证明的区间。`responseHeadersStart` 与 `responseHeadersEnd` 均指采集器收到回调的时刻：
 
@@ -529,17 +529,17 @@ HTTPS 下 `connectEnd` 发生在 `secureConnectEnd` 之后，`connectStart → c
 
 `sendEnd` 有 body 时取 `requestBodyEnd`，无 body 时取 `requestHeadersEnd`。post-write response wait estimate 要满足三个条件：
 
-- 已核对依赖版本的回调实现；本文的边界对应 5.3.0 与 5.4.0，不能套到 4.3 以前的过早触发行为上。
+- 已核对依赖版本的回调实现；本文的计时位置对应 5.3.0 与 5.4.0，4.3 以前的过早触发行为要另行核对。
 - `sendEnd` 存在，且 `responseHeadersStart >= sendEnd`。
 - request 不是 duplex，也没有 `Expect: 100-continue` 导致的事件交错。
 
-条件不满足时，`post_write_response_wait_ms` 记 `null` 并写明缺失或交错原因；把负数取绝对值或强行归零，都会掩盖协议行为。条件满足也只得到上述回调差值，不能把它解释成精确的“发完请求到响应首字节”。
+条件不满足时，`post_write_response_wait_ms` 记 `null` 并写明缺失或交错原因；把负数取绝对值或强行归零，都会掩盖协议行为。条件满足时，我们拿到的也只是上述回调差值，把它当精确的“发完请求到响应首字节”还缺依据。
 
-同一 exchange 可能先收到 `100 Continue` 或 `103 Early Hints`。这两个版本在内部跳过 `100` 和 `102..199` 后，才用最终响应调用一次 `responseHeadersEnd`；`101 Switching Protocols` 则保留为协议升级响应。因此示例不从 `responseHeadersEnd` 计数临时响应，也不把 `responseHeadersStart` 重标为最终响应起点。仅靠这些公开回调，临时响应数量与最终响应首字节时间都应留空；需要逐个 header block 时，要增加能观察该阶段的客户端探针并验证其版本边界。
+同一 exchange 可能先收到 `100 Continue` 或 `103 Early Hints`。这两个版本在内部跳过 `100` 和 `102..199` 后，才用最终响应调用一次 `responseHeadersEnd`；`101 Switching Protocols` 则保留为协议升级响应。因此示例不从 `responseHeadersEnd` 计数临时响应，也不把 `responseHeadersStart` 重标为最终响应起点。仅靠这些公开回调，临时响应数量与最终响应首字节时间都应留空；需要逐个 header block 时，要增加能观察该阶段的客户端探针并验证其版本行为。
 
-“Server Wait”也不适合直接作为这些端侧差值的名称。写入、缓冲、网络 RTT、服务端排队与执行和 header 处理都可能包含其中。要拆出后端耗时，应结合可信的 `Server-Timing`（服务端自报的耗时）、分布式 trace（跨服务的调用轨迹）或服务端日志，并校验时钟与 request id。
+“Server Wait”也不适合直接作为这些端侧差值的名称。写入、缓冲、网络 RTT、服务端排队与执行和 header 处理都可能包含其中。要拆出后端耗时，就要借助服务端自报的 `Server-Timing`、记录跨服务调用轨迹的分布式 trace，或服务端日志，并校验时钟与 request id。
 
-排查回调边界时，可以用受控 HTTP/1.1 服务先发状态行和部分 header，暂不发结束空行；再测试完整 `103` 后延迟最终 `200`。前者能检查 `responseHeadersStart` 是否等待完整 header block，后者能检查 start 与 end 是否对应不同的响应。不要用只有单个 `200`、一次性写完 header 的样例验证 TTFB 语义。
+排查回调触发位置时，可以用受控 HTTP/1.1 服务先发状态行和部分 header，暂不发结束空行；再测试完整 `103` 后延迟最终 `200`。前者能检查 `responseHeadersStart` 是否等待完整 header block，后者能检查 start 与 end 是否对应不同的响应。不要用只有单个 `200`、一次性写完 header 的样例验证 TTFB 语义。
 
 ### 3.3 空字段也是结论
 
@@ -578,7 +578,7 @@ HTTPS 下 `connectEnd` 发生在 `secureConnectEnd` 之后，`connectStart → c
 
 排查时我们按下面的顺序找线索：
 
-- DNS span 超时或失败，且后续 route 未开始：先看解析器、DoH（DNS over HTTPS）/系统 DNS 和网络切换。
+- DNS span 超时或失败，且后续 route 未开始：先看解析器、DoH/系统 DNS 和网络切换。
 - route attempt 失败、IP 或 proxy 切换：看地址可达性、TCP/代理/TLS 错误。
 - post-write response wait estimate 高：先核对 header block 与缓冲语义，再结合 RTT 与服务端 trace 判断等待来自哪里。
 - body consumption 高：结合传输字节、吞吐、应用读取间隔和下行丢包判断。
@@ -587,7 +587,7 @@ HTTPS 下 `connectEnd` 发生在 `secureConnectEnd` 之后，`connectStart → c
 
 `java.net.URL` 与 `HttpURLConnection` 的 API 定义在 libcore（Android 的 Java 核心库实现）里，又在 boot classpath 上，应用改不动它。我们让构建插件改写应用或依赖的 class 字节码，把这些 API 的调用导向采集桥接层。
 
-AGP 8.0 已移除旧 Transform API。截至 2026 年 8 月 14 日，AGP 9.x 迁移路线仍要求通过 `androidComponents` 下的 Instrumentation API 与 `AsmClassVisitorFactory` 修改或检查字节码。下面的代码按每个 build variant（如 debug 或 release）注册 ASM visitor：
+AGP 8.0 已移除旧 Transform API。截至 2026 年 8 月 14 日，AGP 9.x 迁移路线仍要求通过 `androidComponents` 下的 Instrumentation API 与 `AsmClassVisitorFactory` 修改或检查字节码。下面的代码按每个 build variant 注册 ASM visitor：
 
 ```kotlin
 androidComponents {
@@ -657,6 +657,8 @@ override fun visitMethodInsn(
 
 ## 6. Cronet、PLT Hook 与 eBPF 的能力边界
 
+OkHttp 和 `HttpURLConnection` 之外，请求还可能走 Cronet、Native 库或系统层。这三类入口的取数手段各不相同：官方 metrics、PLT/GOT Hook 与 eBPF 各覆盖一段，能力范围也各有前提。
+
 ### 6.1 Cronet 优先使用官方 metrics
 
 Cronet 支持 HTTP/1.1、HTTP/2 和 HTTP/3 over QUIC。请求完成后，`RequestFinishedInfo.Metrics` 可提供 DNS、connect、SSL、sending、response start、request end、socket reuse、transport 字节数，以及直接计算的 TTFB 与总耗时，我们优先从这里取数。通过 `UrlRequest.Builder.addRequestAnnotation()` 放入不含敏感信息的 request id，再从 `getAnnotations()` 取回，可以避免按 URL 和时间窗口猜测关联关系。
@@ -668,13 +670,13 @@ Cronet 的字段也要按文档解释：
 - socket reuse 为 true 时，DNS、connect 与 SSL 时间为空。
 - metrics 不可用或请求未走到该阶段时，时间为 `null`。
 - `getTtfbMs()` 表示从请求发起到响应 header 首字节的毫秒数；`getTotalTimeMs()` 包括成功、失败或取消前的完整请求时间。实际提供 Cronet 实现的 provider 没有采集时，两者都可能为 `null`。
-- `getResponseStart()` 是最终 response headers 收完的时刻，应与 Cronet 自己的 `getTtfbMs()` 区分。OkHttp 的 header 回调又有第 3.2 节所述边界，不能拿名称相近的字段直接对齐；直接 TTFB 字段为空时，用 header 收完时间算出的值要另起字段名。
-- `getMetrics()` 的总说明称时间和字节覆盖全部 redirect，但 `getReceivedByteCount()` 的字段说明又明确排除先前 redirect，源码也保留了返回完整 metrics 链的 TODO。redirect 字节数是否累计，以实际 Cronet provider/version 的 contract test（固定输入的契约测试）结果为准，别自行假定。
+- `getResponseStart()` 是最终 response headers 收完的时刻，应与 Cronet 自己的 `getTtfbMs()` 区分。OkHttp 的 header 回调又受第 3.2 节所述触发位置的限制，名称相近的字段要先核对采样点再对齐；直接 TTFB 字段为空时，用 header 收完时间算出的值要另起字段名。
+- `getMetrics()` 的总说明称时间和字节覆盖全部 redirect，但 `getReceivedByteCount()` 的字段说明又明确排除先前 redirect，源码也保留了返回完整 metrics 链的 TODO。redirect 字节数是否累计，以实际 Cronet provider/version 的 contract test 结果为准，先测再定。
 - 单个 `Metrics` 精确还原不了每一跳；每个 redirect 要结合 `onRedirectReceived()` 另存语义事件。
 
-Cronet 的 Google Play services 实现、作为后备的 fallback 与独立发布的 Chromium artifact 之间可能存在 API 或实现差异。统一 schema 要保留 `metric_source = okhttp | cronet`、provider/version 与 `timestamp_semantics`（时间戳指哪个时刻）。上线前用编译依赖对应的 API 和真机契约测试核对空字段、redirect 与字节计算规则；字段名相同不代表采样点相同，跨客户端汇总前要先统一定义。
+Cronet 的 Google Play services 实现、作为后备的 fallback 与独立发布的 Chromium artifact 之间可能存在 API 或实现差异。统一 schema 要保留 `metric_source = okhttp | cronet`、provider/version 与 `timestamp_semantics`——时间戳各自指哪个时刻。上线前用编译依赖对应的 API 和真机契约测试核对空字段、redirect 与字节计算规则；字段名相同，采样点未必相同，跨客户端汇总前先统一定义。
 
-### 6.2 PLT/GOT Hook 只覆盖动态符号路径
+### 6.2 PLT/GOT Hook 的覆盖范围
 
 PLT（Procedure Linkage Table）和 GOT（Global Offset Table）是 ELF 动态链接过程中定位外部函数的表。我们修改这些入口，把部分函数调用转交给采集代码；它只对确实经过动态符号入口的调用生效。
 
@@ -687,11 +689,11 @@ Native 兜底常见目标包括：
 
 设计时要把三条限制写清楚：
 
-1. `SSL_write` 的输入长度不等于链路发送字节，TLS record 分帧、缓冲和重试都会改变数量；`SSL_read` 的输出也可能混着 HTTP/2 frame 等数据，未必就是业务 body。
+1. `SSL_write` 的输入长度对应不上链路发送字节：TLS record 分帧、缓冲和重试都会改变数量；`SSL_read` 的输出也可能混着 HTTP/2 frame 等数据，未必就是业务 body。
 2. `send/recv` 看不到 TCP 重传：重传发生在内核 TCP 栈，用户态 QUIC 的重传又属于协议库。socket 调用失败和“发生重传”是两回事。
 3. Cronet 常把 BoringSSL（Chromium 使用的 TLS 实现）与网络栈静态链接，Mars 或自研库也可能隐藏符号、内联调用或直接执行 syscall。这时 PLT Hook 对 `SSL_*` 或 libc wrapper 的覆盖率可能很低。
 
-Bionic（Android 的 C 标准库）的 `socket()` 仍通过 `NetdClientDispatch` 分派，dynamic linker 负责 ELF 装载与符号解析。这个源码事实只说明存在潜在调用路径，离“所有网络请求都能 Hook 到”还差得远。Hook 实现还要处理线程局部的递归调用保护、原始函数解析、`errno` 保存恢复、fork 与动态加载、ABI（Application Binary Interface，应用二进制接口）和 16 KiB page size 兼容，并在故障时自动关闭采集。
+Bionic（Android 的 C 标准库）的 `socket()` 仍通过 `NetdClientDispatch` 分派，dynamic linker 负责 ELF 装载与符号解析。这个源码事实只说明存在潜在调用路径，离“所有网络请求都能 Hook 到”还差得远。Hook 实现还要处理线程局部的递归调用保护、原始函数解析、`errno` 保存恢复、fork 与动态加载、ABI 和 16 KiB page size 兼容，并在故障时自动关闭采集。
 
 只要网络库提供稳定回调，就优先接回调；PLT Hook 更适合当作覆盖范围已验证、先向少量设备开放并随时可撤回的后备观测，补回调盖不到的部分。
 
@@ -755,7 +757,7 @@ EventListener 回调在请求的关键路径上，我们要给采集器定性能
 - 大量故障同时出现时，要设置每分钟上限、按 route 或错误类型分组的 reservoir sampling（蓄水池采样）和丢弃计数，防止错误期进一步推高 CPU、磁盘和上报流量。
 - 采集队列满时丢弃 APM 样本，不阻塞业务请求；上报端排除自己的网络请求，避免递归采集。
 
-对象池不一定比小型 DTO（Data Transfer Object，数据传输对象）更省：池本身会带来锁、生命周期和残留数据风险，先用基准测试证明对象分配真是瓶颈再上池。采集器至少自报 callback p50/p95/p99，即第 50、95、99 百分位的回调耗时，以及分配量、队列深度、丢弃率和上报字节。超出预算时依次停 body 采集、降成功样本率、再降失败样本率，让诊断价值更高的失败样本留得更久。
+对象池不一定比小型 DTO 更省：池本身会带来锁、生命周期和残留数据风险，先用基准测试证明对象分配真是瓶颈再上池。采集器至少自报 callback p50/p95/p99，即第 50、95、99 百分位的回调耗时，以及分配量、队列深度、丢弃率和上报字节。超出预算时依次停 body 采集、降成功样本率、再降失败样本率，让诊断价值更高的失败样本留得更久。
 
 ## 9. HTTP/3 / QUIC 的字段要显式区分
 
@@ -795,7 +797,7 @@ QUIC 基于 UDP，传输握手与 TLS 1.3 紧密结合，支持连接复用、0-
 ### Android 17 / API 37
 
 - [Android 17 `java.net.URL`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/net/URL.java)：核对 `openConnection()`、代理重载与 `openStream()` 的平台 API。
-- [Android 17 `HttpURLConnection`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/net/HttpURLConnection.java)：核对公开生命周期与能力边界。
+- [Android 17 `HttpURLConnection`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/net/HttpURLConnection.java)：核对公开生命周期与能力范围。
 - [Android 17 Bionic `NetdClientDispatch.cpp`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/NetdClientDispatch.cpp)：核对 libc `socket/connect/send*` 到 `NetdClientDispatch` 的入口。
 - [Android 17 Bionic linker](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker.cpp)：核对 Android 动态链接与符号解析实现。
 - [Android 17 system BPF](https://android.googlesource.com/platform/system/bpf/+/refs/tags/android-17.0.0_r1/)：核对系统 BPF loader 与目录结构。
@@ -811,12 +813,12 @@ QUIC 基于 UDP，传输握手与 TLS 1.3 紧密结合，支持连接复用、0-
 
 - [OkHttp 当前仓库与 5.4.0 版本](https://github.com/lysine-dev/okhttp)：核对当前维护位置与稳定依赖版本。
 - [OkHttp 当前 Events 文档](https://lysine.dev/okhttp/features/events/)：核对事件模型与监听器使用方式；元数据中的 `square.github.io` 同名 URL 是迁移前旧址，现已返回 404，仅为保留历史来源。
-- [OkHttp 当前 Interceptors 文档](https://lysine.dev/okhttp/features/interceptors/)：核对应用拦截器与网络拦截器的职责边界。
+- [OkHttp 当前 Interceptors 文档](https://lysine.dev/okhttp/features/interceptors/)：核对应用拦截器与网络拦截器的职责划分。
 - [OkHttp 5.4.0 changelog](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/CHANGELOG.md)：核对 2026-06-08 版本及变更范围。
 - [OkHttp 5.4.0 `EventListener` 源码](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)：核对当前回调签名与并发说明。
 - [OkHttp 5.3.0 `CallServerInterceptor`](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/CallServerInterceptor.kt) 与 [5.4.0 对应实现](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/CallServerInterceptor.kt)：核对 header 读取后触发 start、跳过临时响应后触发 end 的顺序。
-- [OkHttp 5.3.0 `Http1ExchangeCodec`](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http1/Http1ExchangeCodec.kt)：核对 `readResponseHeaders()` 读取完整状态行与 header block 的边界。
-- [OkHttp 5.3.0 `EventListener` 源码](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)：本文示例使用的事件边界、恢复与并发说明。
+- [OkHttp 5.3.0 `Http1ExchangeCodec`](https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http1/Http1ExchangeCodec.kt)：核对 `readResponseHeaders()` 读取完整状态行与 header block 的行为。
+- [OkHttp 5.3.0 `EventListener` 源码](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt)：本文示例使用的事件顺序、恢复与并发说明。
 - [OkHttp 5.3.0 Interceptors](https://github.com/square/okhttp/blob/parent-5.3.0/docs/features/interceptors.md)：应用拦截器与网络拦截器的差异。
 - [AGP Instrumentation API 迁移说明](https://developer.android.com/build/releases/gradle-plugin-api-updates)：核对 Transform 移除与 Instrumentation API 注册方式。
 - [AGP 9.x/10.0 API 迁移路线](https://developer.android.com/build/releases/gradle-plugin-roadmap)：核对当前 Variant 与 Instrumentation API 方向。

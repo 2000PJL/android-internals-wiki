@@ -6002,6 +6002,151 @@
       "summary": "CursorWindow 初始 16 KiB 与压缩说法遗漏请求容量上限并混淆布局压紧",
       "type": "cursor-inline-layout",
       "updated_at": "2026-10-18T16:19:38.343259+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "统一修改地址空间段、RSS 表格、栈驻留解释及常见判断；依据 r6 do_fault_around 与 smaps_account 区分驻留映射和访问证据。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-180520-434d1483",
+      "created_at": "2026-10-18T18:09:11.123852+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-180520-434d1483",
+      "details": "虚拟地址空间段、RSS 表格、线程栈与常见判断把驻留等同于进程访问；r6 mm/memory.c do_fault_around() 可映射缺页地址周围的就绪文件页，task_mmu.c smaps_account() 对 resident 记账不以 young 为前提。应统一说明 RSS 是驻留映射口径，不能直接证明访问范围或频率。",
+      "id": "finding-e7b789aae225",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/memory.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/task_mmu.c"
+      ],
+      "status": "fixed",
+      "summary": "RSS 被多处写成已访问页规模，遗漏 fault-around 可提前建立邻页映射",
+      "type": "metric-semantics",
+      "updated_at": "2026-10-18T18:18:26.579978+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "补充 Scudo 空闲块复用，分开页分配慢路径与换入；COW 段按 r6 do_wp_page 说明独占复用和实际复制的条件。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-180520-434d1483",
+      "created_at": "2026-10-18T18:09:11.178495+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-180520-434d1483",
+      "details": "正文把 malloc 等用户态请求一概表述为经过内核，并把 fork 后写缺页概括为必然复制。Android 17 r1 Scudo primary64 popBlocks() 先复用空闲块；r6 do_wp_page() 允许独占匿名页走 wp_page_reuse()，不能据 malloc 调用数或写缺页数推导系统调用和页面复制量。",
+      "id": "finding-cd505e13d71c",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/external/scudo/+/refs/tags/android-17.0.0_r1/standalone/primary64.h",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/memory.c"
+      ],
+      "status": "fixed",
+      "summary": "malloc 与 COW 的解释未区分已驻留块复用和实际内核分配或复制",
+      "type": "allocation-boundary",
+      "updated_at": "2026-10-18T18:18:26.632775+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "明确 ViewModel 不跨进程死亡，保存状态仅少量 UI 数据且依赖 Activity 停止时机，可靠业务状态及时持久化；保留官方时机和大小警告。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-180520-434d1483",
+      "created_at": "2026-10-18T18:09:11.233211+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-180520-434d1483",
+      "details": "ViewModel 只保留内存状态，不能跨系统终止进程恢复；saved state 也只适合简单小型 UI 恢复信息。草稿与重要业务状态应按需要持久化，并在生命周期中及时保存，不能等待 onTrimMemory 或杀进程前回调。",
+      "id": "finding-4d3374e89104",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/topic/libraries/architecture/saving-states"
+      ],
+      "status": "fixed",
+      "summary": "MemoryLimiter 应答段把 ViewModel 与持久化并列为业务状态保护方案，缺少进程死亡边界",
+      "type": "state-lifecycle",
+      "updated_at": "2026-10-18T18:18:26.687317+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "将 Thread::FixStackSize 改为 thread.cc 中的文件内静态函数 FixStackSize，已核对 r1 定义。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-180520-434d1483",
+      "created_at": "2026-10-18T18:11:05.438089+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-180520-434d1483",
+      "details": "Android 17 r1 art/runtime/thread.cc 的定义是文件内 static size_t FixStackSize(size_t stack_size)，并非 Thread::FixStackSize。定位源码时应引用文件名与真实函数名。",
+      "id": "finding-32af8b139f8d",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc"
+      ],
+      "status": "fixed",
+      "summary": "线程栈段将文件内静态函数 FixStackSize 误写为 Thread 类成员",
+      "type": "source-symbol",
+      "updated_at": "2026-10-18T18:18:26.740003+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "补齐 Android11+、仅引用图无对象内部数据与分配调用栈；OOME Android14+ 回到 r1 文档和 ART hook 核实，失效线上案例来源改为固定 r1 文档。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-180520-434d1483",
+      "created_at": "2026-10-18T18:11:31.079985+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-180520-434d1483",
+      "details": "Perfetto Java heap profiler 官方页首明确要求 Android 11+，并指出 ART 堆图只含对象引用图，不含对象内部数据和分配调用栈。章节覆盖 Android 8–17，需保留该来源的可用性与产物警告，避免按普通 HPROF 使用。",
+      "id": "finding-0b5a2d93faf0",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/data-sources/java-heap-profiler"
+      ],
+      "status": "fixed",
+      "summary": "Perfetto Java 堆图段缺少 Android 11 起可用及不同于 HPROF 的产物边界",
+      "type": "availability-boundary",
+      "updated_at": "2026-10-18T18:18:26.792665+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "依据 r6 init_lru_gen 与 multigen_lru.rst，区分 lru_gen_full 节点注册和 LRU_GEN_STATS 历史统计内容，保留 debugfs 权限限制。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-180520-434d1483",
+      "created_at": "2026-10-18T18:12:28.033619+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-180520-434d1483",
+      "details": "r6 mm/vmscan.c init_lru_gen() 在 CONFIG_LRU_GEN 下直接创建 lru_gen 与 lru_gen_full；multigen_lru.rst 说明 CONFIG_LRU_GEN_STATS 控制保留已驱逐代际的历史统计，不是该节点存在与否。应区分接口可见性、debugfs 权限与历史统计内容。",
+      "id": "finding-784b33975c73",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/multigen_lru.rst"
+      ],
+      "status": "fixed",
+      "summary": "MGLRU 统计段把 CONFIG_LRU_GEN_STATS 误写为 lru_gen_full 节点存在的前提",
+      "type": "config-boundary",
+      "updated_at": "2026-10-18T18:18:26.845356+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "按 r6 fork.c、dcache.c、slub.c 区分专用对象缓存与通用 kmalloc 缓存，删除对象必然小于一页的假设。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-180520-434d1483",
+      "created_at": "2026-10-18T18:15:29.735656+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-180520-434d1483",
+      "details": "r6 kernel/fork.c 为 task_struct 创建专用 slab 缓存并使用 kmem_cache_alloc_node；fs/dcache.c 对 dentry 亦使用专用缓存。应区分专用对象缓存和通用 kmalloc slab 缓存，不假定这些对象都小于基础页。",
+      "id": "finding-59aecff4ff67",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/fork.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/dcache.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/slub.c"
+      ],
+      "status": "fixed",
+      "summary": "SLUB 段把 task_struct 等专用缓存对象统一称为小于一页的 kmalloc 对象",
+      "type": "allocator-classification",
+      "updated_at": "2026-10-18T18:18:26.905133+08:00"
     }
   ],
   "schema_version": 1

@@ -6254,6 +6254,66 @@
       "summary": "MemoryFile 弃用、writeBlob 构建开关及实时继承进程默认值边界遗漏",
       "type": "source-implementation-guards",
       "updated_at": "2026-10-18T22:16:04.878494+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "close_note": "补齐非无缝切换须用户在系统中允许、ALWAYS 仅代表应用侧同意；对照官方 Media frame rate 的双方 opt-in 要求验证。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261018-223520-idle-audit-bb7b96c6",
+      "created_at": "2026-10-18T22:40:41.958758+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261018-223520-idle-audit-bb7b96c6",
+      "details": "原文只列长视频与产品接受可见切换，遗漏官方文档要求用户与应用双方同意；CHANGE_FRAME_RATE_ALWAYS 不能覆盖系统用户偏好。",
+      "id": "finding-d8d2139dc821",
+      "log_path": "logs/audit/2026-10-18-20261018-223520-idle-audit-bb7b96c6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/media/optimize/performance/frame-rate#non-seamless"
+      ],
+      "status": "verified",
+      "summary": "非无缝帧率切换遗漏用户选择条件",
+      "type": "non-seamless-user-opt-in",
+      "updated_at": "2026-10-18T22:42:41.112445+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "close_note": "补齐暂停/结束且 Surface 仍可见并停止产帧时清理；API 34+ clearFrameRate，API 30—33 setFrameRate(0f, DEFAULT)；官方指南和 Android 17 Surface.java 均支持。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261018-223520-idle-audit-bb7b96c6",
+      "created_at": "2026-10-18T22:40:42.013425+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261018-223520-idle-audit-bb7b96c6",
+      "details": "原文只提播放结束、复用和 API 34 clearFrameRate；官方要求暂停后仍可见且停产帧时清除请求，并提供 setFrameRate(0, ...) 作为清理入口。",
+      "id": "finding-0de516573b29",
+      "log_path": "logs/audit/2026-10-18-20261018-223520-idle-audit-bb7b96c6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/media/optimize/performance/frame-rate#basic-usage"
+      ],
+      "status": "verified",
+      "summary": "视频 Surface 请求遗漏暂停清理与 API 30—33 回退",
+      "type": "surface-frame-rate-lifecycle",
+      "updated_at": "2026-10-18T22:42:41.165989+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "close_note": "删除无当前官方证据的触摸升帧关闭警告归因；保留默认开启、交互测量与省电平衡耗电风险边界。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261018-223520-idle-audit-bb7b96c6",
+      "created_at": "2026-10-18T22:40:42.066545+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261018-223520-idle-audit-bb7b96c6",
+      "details": "ARR 指南明确不建议关闭的是 ARR 省电平衡；触摸升帧章节与 Window/WindowManager API 文档只说明开关行为，未给出原文声称的明确禁用建议。保留默认开启与交互验收建议，删除错误归因。",
+      "id": "finding-f328bfe16d00",
+      "log_path": "logs/audit/2026-10-18-20261018-223520-idle-audit-bb7b96c6-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate#enable-disable-arr"
+      ],
+      "status": "verified",
+      "summary": "将 ARR 省电平衡的官方关闭警告归给触摸升帧",
+      "type": "touch-boost-warning-attribution",
+      "updated_at": "2026-10-18T22:42:41.221622+08:00"
     }
   ],
   "schema_version": 1

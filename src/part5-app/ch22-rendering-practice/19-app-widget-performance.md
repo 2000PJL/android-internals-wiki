@@ -13,8 +13,10 @@ related_chapters:
 - '2.9'
 - '22.3'
 - '14.1'
-last_verified: '2026-08-31'
+last_verified: '2026-10-18'
 last_verified_against: AOSP android-17.0.0_r1；Jetpack Glance 1.2.0 源码 JAR 与官方文档
+last_source_verified_at: '2026-10-18T18:39:38+08:00'
+last_idle_audit_at: '2026-10-18T18:39:38+08:00'
 last_body_apply_at: '2026-08-31T07:18:51+08:00'
 last_review_finalize_at: '2026-08-31T08:38:03+08:00'
 confidence: high
@@ -84,14 +86,15 @@ App Widget 的界面由 Launcher（桌面启动器）、SystemUI（系统界面�
 - 提供方进程中的耗时主要来自取数、构造 `RemoteViews`、准备图像和发起 Binder 调用；Binder 是 Android 的进程间调用机制。
 - `system_server` 负责检查调用者、更新缓存、检查图像内存，并把有效快照通知给宿主。这里的快照是一份 `RemoteViews`，它能够描述 Widget 某一时刻的界面状态。
 - 宿主进程负责布局加载、动作应用、测量、布局、绘制等 UI 工作。
-- 提供方完成 `updateAppWidget()` 调用，只代表更新请求已经交给系统服务，不代表桌面像素已经刷新。
+- 提供方完成 `updateAppWidget()` 调用，不代表桌面像素已经刷新。Android 17 开启旧式集合适配器兼容转换时，主线程调用还可能先把转换工作投递到后台执行器，再由后台提交更新；此时函数返回连“系统服务已收到新快照”也不能保证。
 
-下面的时序图用于定位一次完整更新经过的进程和线程。
+下面的时序图用于定位不含旧式集合转换的一次完整更新；兼容转换开启时，提供方还会在提交前收集集合项。
 
 ```mermaid
 sequenceDiagram
     participant P as "Widget 提供方进程"
     participant S as "system_server / AppWidgetServiceImpl"
+    participant C as "system_server / CallbackHandler"
     participant H as "宿主 Binder 回调"
     participant M as "AppWidgetHost Handler"
     participant V as "AppWidgetHostView"
@@ -99,8 +102,9 @@ sequenceDiagram
     P->>S: "updateAppWidget(id, RemoteViews)"
     S->>S: "校验调用者与 Widget 访问权"
     S->>S: "替换缓存并检查图像内存"
-    S->>H: "IAppWidgetHost.updateAppWidget(...)"
-    H->>M: "投递 UPDATE_APP_WIDGET"
+    S->>C: "投递 MSG_NOTIFY_UPDATE_APP_WIDGET"
+    C->>H: "IAppWidgetHost.updateAppWidget(...)"
+    H->>M: "投递 HANDLE_UPDATE"
     M->>V: "updateAppWidgetView(...)"
     V->>V: "选择尺寸变体"
     alt "现有 View 可复用"
@@ -110,7 +114,7 @@ sequenceDiagram
     end
 ```
 
-图中的两个 Binder 方向分别覆盖“提供方到系统服务”和“系统服务到宿主”。`AppWidgetHost.Callbacks` 收到 Binder 回调后，先向指定的 `Handler` 发送消息；`Handler` 是 Android 在线程消息队列上安排任务的组件，因此宿主还会经历一次线程切换。
+图中的两个 Binder 方向分别覆盖“提供方到系统服务”和“系统服务到宿主”。服务端先把通知投递给 `mCallbackHandler`，由服务线程调用宿主；`AppWidgetHost.Callbacks` 收到 Binder 回调后，再向指定的 `Handler` 发送消息。`Handler` 是 Android 在线程消息队列上安排任务的组件，因此服务端通知队列和宿主消息队列都可能产生等待，测量时要分别定位。
 
 ### 2. `apply()` 与 `reapply()` 由宿主选择
 
@@ -142,9 +146,9 @@ Android 的 Widget 更新接口分为完整更新、局部更新和集合数据�
 | --- | --- | --- | --- |
 | 完整更新 | `updateAppWidget()` | 用新 `RemoteViews` 替换已缓存快照 | 首次显示、结构变化、需要重建完整状态 |
 | 局部更新 | `partiallyUpdateAppWidget()` | 把新动作合并进已缓存快照，再通知宿主 | 布局不变，只更新少量属性 |
-| 集合刷新 | `notifyAppWidgetViewDataChanged()` | 通知旧式远程适配器重新取数 | 仍使用服务适配器的 `ListView`、`GridView`；该入口已在 API 35 弃用 |
+| 集合刷新 | `notifyAppWidgetViewDataChanged()` | 兼容转换关闭时通知宿主重新取数；开启时在提供方重取集合并提交新快照 | 仍使用服务适配器的 `ListView`、`GridView`；该入口已在 API 35 弃用 |
 
-完整更新建立可恢复的缓存基线，局部更新修改这份基线中的少量属性，集合刷新只让服务适配器重新提供列表项。先按当前适配器类型选择入口，再比较每次更新的数据量；三种调用不能仅凭“哪一个看起来更轻”互换。
+完整更新建立可恢复的缓存基线，局部更新修改这份基线中的少量属性。集合刷新使服务适配器重新提供列表项，兼容转换开启时还会重新提交 Widget 快照。先按当前适配器类型和平台分支选择入口，再比较每次更新的数据量；三种调用不能仅凭“哪一个看起来更轻”互换。
 
 ### 1. 完整更新是缓存基线
 
@@ -199,14 +203,20 @@ fun updateWidgetTimestamp(
 
 ### 3. 集合刷新只针对集合数据
 
-旧式集合 Widget 通过 `RemoteViewsService` 创建 `RemoteViewsFactory`，由另一个服务按宿主请求提供列表项。调用 `notifyAppWidgetViewDataChanged(appWidgetId, viewId)` 后，宿主可以继续显示旧数据，同时触发 `onDataSetChanged()`，随后再调用 `getCount()`、`getViewAt()` 等方法读取新数据。
+旧式集合 Widget 通过 `RemoteViewsService` 创建 `RemoteViewsFactory`。在宿主仍使用 `RemoteViewsAdapter` 的传统路径中，服务按宿主请求提供列表项。调用 `notifyAppWidgetViewDataChanged(appWidgetId, viewId)` 后，宿主可以继续显示旧数据，同时触发 `onDataSetChanged()`，随后再调用 `getCount()`、`getViewAt()` 等方法读取新数据。
 
 服务断开连接本身不会触发 `onDataSetChanged()`。把刷新逻辑依赖在断连事件上，会造成不同宿主上行为不一致。
 
-Android 12 / API 31 增加了 `RemoteViews.setRemoteAdapter(viewId, RemoteCollectionItems)`。`RemoteCollectionItems` 是随 `RemoteViews` 一起提交的集合项快照，不需要宿主再绑定 `RemoteViewsService`。Android 17 的 `AppWidgetManager` 也包含旧式远程适配器的兼容转换逻辑。API 35 已弃用 `notifyAppWidgetViewDataChanged()` 及其对应的 `Intent` 适配器，新实现应优先评估 `RemoteCollectionItems`；维护旧实现时可按数据规模判断：
+Android 12 / API 31 增加了 `RemoteViews.setRemoteAdapter(viewId, RemoteCollectionItems)`。`RemoteCollectionItems` 是随 `RemoteViews` 一起提交的集合项快照，不需要宿主再绑定 `RemoteViewsService`。API 35 已弃用 `notifyAppWidgetViewDataChanged()` 及其对应的 `Intent` 适配器，官方迁移方式是设置新的 `RemoteCollectionItems`，再调用适用的完整或局部更新接口。
+
+Android 17 的 `remoteAdapterConversion` 功能开关开启时，旧式 `Intent` 适配器也会转换成集合快照。`AppWidgetManager.tryAdapterConversion()` 在提供方收集列表项后才提交更新；集合刷新则通过 `notifyCollectionWidgetChange()` 重新收集指定集合，再调用服务端的 `updateAppWidgetIds()`。继续使用 `RemoteViewsService` 不能保证宿主仍按滚动位置逐项取数。[已验证: frameworks/base/core/java/android/appwidget/AppWidgetManager.java@android-17.0.0_r1]
+
+转换时，内部方法 `RemoteViewsFactory.getRemoteCollectionItems()` 会顺序读取项目，达到序列化数据或位图容量限制时停止收集。较大的集合需要检查实际交付的项目数量，排查列表缺项时也要检查转换阶段的容量限制。[已验证: frameworks/base/core/java/android/widget/RemoteViewsService.java@android-17.0.0_r1]
+
+维护集合 Widget 时可按数据规模判断：
 
 - 项目较少、每项结构简单、数据已经在内存中：`RemoteCollectionItems` 易于维护。
-- 项目较多、取数需要服务生命周期、希望按宿主请求生成项目：保留 `RemoteViewsService` 路径。
+- 项目较多、取数需要服务生命周期：维护 `RemoteViewsService` 旧实现时，核对兼容转换是否开启，并测量收集整份快照的耗时与容量，不能直接套用传统按需加载模型。
 - 无论使用哪条路径，都要限制单项动作和图像体积。集合会把一次更新的成本放大到多个项目。
 
 ### 4. 集合项的优化位置
@@ -290,7 +300,7 @@ Android 17 在启动时读取真实显示尺寸，并计算：
 
 `mMaxWidgetBitmapMemory = 6 × displayWidth × displayHeight`
 
-源码注释给出的含义是 1.5 个屏幕、每像素 4 字节。每次更新完成缓存合并或替换后，服务都会检查该 Widget 的 `RemoteViews` 图像估算值。`targetSdkVersion` 表示应用声明适配的 Android API 级别。目标版本不高于 37 时，强制上限只计普通位图缓存，超限会清空该次缓存并抛出 `IllegalArgumentException`；`Icon` 对象内携带的位图会计入总量，总量超限时记录警告。目标版本高于 37 后，普通位图与 `Icon` 位图的总量都会用于强制检查。
+源码注释给出的含义是 1.5 个屏幕、每像素 4 字节。对非系统 UID 提交的非空快照，服务会在缓存合并或替换后检查 `RemoteViews` 的图像估算值。`targetSdkVersion` 表示应用声明适配的 Android API 级别。在 Android 17 上，目标版本不高于 37 时，强制上限只计普通位图缓存，超限会清空该 Widget 的缓存并抛出 `IllegalArgumentException`；`Icon` 对象内携带的位图会计入总量，总量超限时记录警告。应用仍应合并估算普通位图与 `Icon` 的内存，不能只以没有异常判断快照大小。
 
 这个上限随设备显示尺寸变化，不能写成固定的 1 MB、8 MB 或某个机型测得值。设计时仍应让峰值显著低于系统上限，因为同一宿主还要同时处理桌面、其他 Widget 和自身图形资源。
 

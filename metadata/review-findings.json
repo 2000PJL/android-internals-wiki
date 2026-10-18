@@ -5573,6 +5573,47 @@
       "summary": "mmd 配置说明遗漏启用后旧 ZRAM 配置失效边界",
       "type": "missing-migration-warning",
       "updated_at": "2026-10-18T10:12:40.972182+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/08-network-apm-internals.md",
+      "close_note": "已重写计时表与相关解释，删除不可观测的 1xx 计数字段及分支；保留回调原始时刻并与 Cronet 语义区分。Kotlin 2.2.21 编译文章原样核心实现，通过真实 OkHttp 5.3.0/5.4.0 的分段最终 header、103→200、100→200 三组本地 HTTP/1.1 fixture。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261018-103520-idle-audit-288906d7",
+      "created_at": "2026-10-18T10:38:54.035201+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261018-103520-idle-audit-288906d7",
+      "details": "5.3.0 与 5.4.0 CallServerInterceptor 都在 readResponseHeaders 返回后触发一次 responseHeadersStart，跳过 100/102..199 后才向 responseHeadersEnd 传最终响应。真实 JVM HTTP/1.1 分段 header、103 与 100 fixture 已复现。原文将其说成首字节时间、最终非 1xx 起点，并从 responseHeadersEnd 分支累计临时响应，会污染 TTFB、post-send wait 与 header duration 的含义。",
+      "id": "finding-3fe90ece6321",
+      "log_path": "logs/audit/2026-10-18-20261018-103520-idle-audit-288906d7-idle-audit.md",
+      "severity": "P1",
+      "source_paths": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/CallServerInterceptor.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/CallServerInterceptor.kt"
+      ],
+      "status": "verified",
+      "summary": "OkHttp responseHeadersStart 被误作首字节及最终响应起点，示例无法观测 1xx 计数",
+      "type": "incorrect-timing-boundary",
+      "updated_at": "2026-10-18T10:42:25.432286+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/08-network-apm-internals.md",
+      "close_note": "已在 ASM 说明中补明库模块只能插桩本地项目类，ALL 用于应用与测试模块；与官方 API updates 的 Support for transforming bytecode 段逐项核对。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261018-103520-idle-audit-288906d7",
+      "created_at": "2026-10-18T10:41:37.830354+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261018-103520-idle-audit-288906d7",
+      "details": "官方 AGP API updates 明确 libraries 仅支持 local project classes；apps 和 tests 才可选择 all classes including dependencies。原文把检查依赖时切换 ALL 作为通用步骤，需补模块适用范围。",
+      "id": "finding-bb756af3956e",
+      "log_path": "logs/audit/2026-10-18-20261018-103520-idle-audit-288906d7-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/build/releases/gradle-plugin-api-updates"
+      ],
+      "status": "verified",
+      "summary": "AGP InstrumentationScope.ALL 的说明遗漏 library 模块只能插桩本地类",
+      "type": "missing-api-scope-boundary",
+      "updated_at": "2026-10-18T10:42:25.484807+08:00"
     }
   ],
   "schema_version": 1

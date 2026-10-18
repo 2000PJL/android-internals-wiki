@@ -5896,6 +5896,30 @@
       "status": "appended",
       "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
     },
+    "source/juejin-android/2026-10-19-76774264-开机自启动预置App最简单、最快方案.md": {
+      "chapter": "ch08-responsiveness",
+      "entry_id": "e9d5da92050e8709",
+      "last_appended": "2026-10-19T05:25:20.368975+08:00",
+      "last_seen": "2026-10-19T05:25:20.368975+08:00",
+      "mtime": 1792354616.098892,
+      "score": 24,
+      "sha256": "f749f5b1eb4c780a9374bd87702f131cb3ce8a5c70494670923f6cb871e095c6",
+      "size": 8667,
+      "status": "appended",
+      "title": "开机自启动预置App最简单、最快方案很多开发者之所以觉得开机拉起慢，是因为采用了“等系统发 BOOT_COMPLETED"
+    },
+    "source/juejin-android/2026-10-19-76948663-我开源了一个 Android-iOS 加.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "9a6f5f39eeb42afa",
+      "last_appended": "2026-10-19T05:25:20.368975+08:00",
+      "last_seen": "2026-10-19T05:25:20.368975+08:00",
+      "mtime": 1792354616.0984015,
+      "score": 7,
+      "sha256": "6331f0492e50e486b9409d739e979ffb73478d471a56595e350b2fe44fa0f359",
+      "size": 5049,
+      "status": "appended",
+      "title": "我开源了一个 Android/iOS 加固工具，顺便聊聊加固到底能防住什么市面上的 APK 加固方案大多是黑盒：付费、上"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -8281,24 +8305,24 @@
     }
   },
   "last_report": {
-    "appended": 3,
-    "considered": 10,
-    "cutoff": "2026-10-17T05:20:20.533855+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-18.md",
+    "appended": 2,
+    "considered": 2,
+    "cutoff": "2026-10-18T05:20:20.579103+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-19.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2203,
+    "scanned": 2205,
     "skipped": {
       "existing_link": 0,
-      "low_score": 7,
+      "low_score": 0,
       "max_files": 0,
       "old_unseen": 1414,
       "path": 31,
-      "unchanged": 748
+      "unchanged": 758
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-18T05:25:20.579103+08:00",
+  "last_run_at": "2026-10-19T05:25:20.368975+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

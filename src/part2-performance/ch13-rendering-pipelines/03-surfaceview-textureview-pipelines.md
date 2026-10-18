@@ -3,8 +3,10 @@ title: SurfaceView 与 TextureView 渲染管线
 section: '13.3'
 chapter: '13.3'
 applicable_versions: Android 1.0 (API 1) - Android 17 (API 37)
-last_verified: '2026-07-31'
-last_verified_against: AOSP android-17.0.0_r1 SurfaceView.java / BLASTBufferQueue / BufferQueueProducer.cpp / BufferQueueConsumer.cpp / BufferQueueCore.cpp / HWComposer.cpp + Android Graphics Architecture overlay docs
+last_verified: '2026-10-18'
+last_source_verified_at: '2026-10-18'
+last_idle_audit_at: '2026-10-18'
+last_verified_against: AOSP android-17.0.0_r1 SurfaceView.java / TextureView.java / DeferredLayerUpdater.cpp / DrawFrameTask.cpp / SurfaceTexture native consumers / BLASTBufferQueue.cpp / BufferQueueCore.cpp / HWComposer.cpp + Android SurfaceView/TextureView/ADB docs + Perfetto FrameTimeline
 confidence: high
 sources:
 - type: internal-reference
@@ -64,6 +66,18 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp
   role: pending layer updates 与 RenderThread 帧同步
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/nativedisplay/surfacetexture/surface_texture.cpp
+  role: ASurfaceTexture_dequeueBuffer 取帧循环与停止条件
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/nativedisplay/surfacetexture/ImageConsumer.cpp
+  role: 输入 acquire fence、outQueueEmpty 与旧 buffer release
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/nativedisplay/surfacetexture/LegacyImageConsumer.cpp
+  role: 旧消费实现中的 acquire fence 与取帧停止保护
+- type: official
+  path: https://developer.android.com/tools/adb#shellcommands
+  role: 主机与设备端 shell 的引用边界、远端命令和文件拉取
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp
   role: 输入队列 dequeue、queue、slot 与背压
@@ -386,12 +400,14 @@ SF 侧入口集中在 `HWComposer::getDeviceCompositionChanges()` 周围的 `pre
 
 #### 怎样验证 composition type
 
-一次 `dumpsys SurfaceFlinger` 只能给出采样时刻的状态，适合快速确认 layer 树和 composition type；分析动画或瞬时回退时，应使用 layer trace/HWC 轨迹。下面的命令先保存完整输出，避免用硬编码 layer 名的 `grep` 漏掉 BLAST child：
+一次 `dumpsys SurfaceFlinger` 只能给出采样时刻的状态，适合快速确认 layer 树和 composition type；分析动画或瞬时回退时，应使用 layer trace/HWC 轨迹。下面的命令先在设备上保存完整输出，再拉到主机，避免用硬编码 layer 名的 `grep` 漏掉 BLAST child：
 
 ```bash
-adb shell dumpsys SurfaceFlinger > /data/local/tmp/sf.txt
+adb shell 'dumpsys SurfaceFlinger > /data/local/tmp/sf.txt'
 adb pull /data/local/tmp/sf.txt
 ```
+
+第一行的单引号让 `>` 交给设备端 shell 处理；第二行把设备文件复制到主机当前目录。主机与设备端 shell 会分别解释命令参数，引用规则见 [ADB shell 文档](https://developer.android.com/tools/adb#shellcommands)。
 
 在输出中应先根据 parent-child 关系、buffer 尺寸、dataspace 和 layer id 确认目标 `mBlastSurfaceControl`，再读取 DEVICE、CLIENT 或 SOLID_COLOR 等类型。composition type 发生变化时，我们要比较同一 DisplayFrame 的整屏 layer 条件；只比较 SurfaceView 自身属性，会漏掉整屏条件的变化。
 
@@ -561,7 +577,7 @@ SurfaceView 的 buffer 直接形成独立 layer，TextureView 的 buffer 先成�
 
 ### 为什么要理解 TextureView 的链路
 
-TextureView 参与普通 View 的布局与绘制顺序，可以跟随父布局应用 alpha、scale、rotation、clip 和 transition，也能与兄弟 View 混合。不过，它显示的主体像素不由普通 `onDraw()` 直接生成：Camera、MediaCodec、EGL/Vulkan 或其他 Producer 先向 `SurfaceTexture` 背后的 BufferQueue 提交 buffer，宿主 HWUI 再把最新输入作为纹理采样，绘入 App Window buffer。
+TextureView 参与普通 View 的布局与绘制顺序，可以跟随父布局应用 alpha、scale、rotation、clip 和 transition，也能与兄弟 View 混合。不过，它显示的主体像素不由普通 `onDraw()` 直接生成：Camera、MediaCodec、EGL/Vulkan 或其他 Producer 先向 `SurfaceTexture` 背后的 BufferQueue 提交 buffer，宿主 HWUI 再把选中的输入作为纹理采样，绘入 App Window buffer。
 
 因此，一次可见更新包含两次 buffer 生产：外部 Producer 生成输入内容，宿主 HWUI 再生成包含该内容的最终窗口 buffer。
 
@@ -604,7 +620,7 @@ Producer 没有统一的线程或进程模式。MediaCodec、Camera 的生产链
 3. listener 调用 `updateLayer()` 与 `invalidate()`：前者设置 `mUpdateLayer` 待更新标志，后者把 View 标记为需要重绘。
 4. 宿主 `Choreographer#doFrame()` 进入 traversal；`TextureView.draw()` 在硬件 Canvas 上执行 `applyUpdate()`。
 5. `TextureLayer.updateSurfaceTexture()` 通过 `HardwareRenderer.pushLayerUpdate()`，把 native updater 加入 RenderThread 的 pending layer updates 列表。
-6. `DrawFrameTask::syncFrameState()` 处理这些待更新对象；`DeferredLayerUpdater::apply()` 调用 `ASurfaceTexture_dequeueBuffer()` 取得最新 `AHardwareBuffer`，即可以跨图形组件共享的硬件 buffer。
+6. `DrawFrameTask::syncFrameState()` 处理这些待更新对象；`DeferredLayerUpdater::apply()` 调用 `ASurfaceTexture_dequeueBuffer()` 取得输入 `AHardwareBuffer`，即可以跨图形组件共享的硬件 buffer。
 7. HWUI 按 slot 建立或复用 `SkImage`，应用 crop、transform、dataspace、HDR metadata、alpha 和过滤，再把内容与其他 View 一起绘入 App Window buffer。
 
 这里有两个容易混淆的入口。公共 `SurfaceTexture.updateTexImage()` 适用于应用自行管理 GLConsumer 的路径；Android 12—17 中，HWUI TextureView 的主要消费入口则是 `DeferredLayerUpdater::apply()` 与 `ASurfaceTexture_dequeueBuffer()`。`onSurfaceTextureUpdated()` 发生在 UI 线程执行 `applyUpdate()` 之后，此时 RenderThread 未必已经取得新 buffer，更说明不了用户已经看到新帧。
@@ -631,7 +647,7 @@ sequenceDiagram
     UI->>UI: "updateLayer + invalidate"
     UI->>UI: "doFrame / traversal / TextureView.draw"
     UI->>RT: "syncAndDrawFrame + pending TextureLayer update"
-    RT->>ST: "ASurfaceTexture_dequeueBuffer(latest)"
+    RT->>ST: "ASurfaceTexture_dequeueBuffer"
     ST-->>RT: "AHardwareBuffer + crop/transform/dataspace/fence"
     RT->>RT: "sample TextureView + draw other Views"
     RT->>SF: "host BLAST buffer transaction"
@@ -641,7 +657,7 @@ sequenceDiagram
     ST-->>P: "input slot reusable after release"
 ```
 
-图中的 `onFrameAvailable()`、RenderThread acquire 和宿主 `BufferTX` 是三个不同的检查点。即使回调进入了当前 traversal，也可能已经错过本轮 RenderThread 的 layer apply；此时宿主仍会使用旧输入，直到下一帧才消费新内容。
+图中的 `onFrameAvailable()`、RenderThread acquire 和宿主 `BufferTX` 是三个不同的检查点。通知先由 UI `applyUpdate()` 提交为待消费更新，RenderThread 随后从输入队列取帧。判断新内容能否进入当前宿主帧，要分别核对 UI 提交更新和 RenderThread 取帧的时刻。
 
 ### SurfaceTexture 机制深入
 
@@ -666,20 +682,22 @@ External Producer
 - `TextureView`：管理 View 生命周期、dirty（待重绘）状态、listener、opaque、内容变换和绘制入口。
 - `SurfaceTexture`：向 Producer 提供 BufferQueue 的生产端，并向应用发送 frame-available 通知。
 - `TextureLayer`：Java 层的 HWUI 对象，持有 native `DeferredLayerUpdater`，通过 `pushLayerUpdate()` 把更新交给 RenderThread。
-- `DeferredLayerUpdater`：取得最新 `AHardwareBuffer`，按 slot 维护对应的 `SkImage` 包装，并处理 crop、transform、dataspace、buffer format 和 HDR 最大亮度。
+- `DeferredLayerUpdater`：取得输入 `AHardwareBuffer`，按 slot 维护对应的 `SkImage` 包装，并处理 crop、transform、dataspace、buffer format 和 HDR 最大亮度。
 - App Window `Surface`/BLAST：接收宿主 HWUI 生成的最终 buffer，再把宿主 layer 提交给 SurfaceFlinger。
 
 HWUI `TextureLayer` 属于应用内的绘制对象，SurfaceFlinger layer 则属于系统合成树。两者名称都含有 “layer”，但位于不同进程和 Consumer 体系中；trace 报告必须注明对象属于应用 HWUI 还是系统合成。
 
 #### 最新帧选择
 
-`DeferredLayerUpdater.cpp` 对 `ASurfaceTexture_dequeueBuffer()` 有明确说明：同步模式下没有途径提前获知队列模式，因此会丢弃最新一帧之外的 pending frame（已排队待消费帧）。该策略避免宿主逐帧显示已经过时的内容；端到端时延是否更低，它保证不了。
+`DeferredLayerUpdater` 使用 `ASurfaceTexture_dequeueBuffer()` 循环取帧，尝试跳过旧的 pending frame（已排队待消费帧），减少旧输入的积压。同步模式也走这条路径，调用方不需要提前判断队列模式。
+
+取帧循环还受 acquire fence 限制：`ImageConsumer::dequeueBuffer()` 取得的 buffer 若带有尚未 signal 的 fence，会先把 `outQueueEmpty` 设为 `true`，再交给 `fenceWait()` 处理依赖；外层循环据此停止继续取帧，避免等待期间 Producer 持续入队造成循环无法结束。`LegacyImageConsumer` 也有相同保护。一次调用可能跳过旧输入，但不保证总能取到返回时队列中最新的 buffer，端到端时延也要另行测量。
 
 以下环节仍可能增加延迟：
 
 - Producer 在目标时间之后才 queue；
 - frame-available 回调被宿主线程上的其他工作延迟；
-- 回调到达时，本轮 RenderThread layer apply 已经结束；
+- 通知晚于 UI `applyUpdate()`，且此前没有其他待消费更新；
 - 输入 acquire fence 迟到；
 - image import、颜色处理、缩放或宿主 GPU 过载；
 - App Window BLAST/HWC 尚未释放宿主 buffer；
@@ -767,9 +785,11 @@ TextureView 的额外成本通常不是 CPU 把整块像素 `memcpy` 到宿主�
 
 #### 宿主调度门槛
 
-`onFrameAvailable()` 只会设置待更新标记并调用 `invalidate()`。宿主已有 pending traversal 时，请求并入该帧；没有的话，ViewRoot 会再申请 VSync。外部 buffer 能否进入当前宿主帧，取决于回调、UI `applyUpdate()` 和 RenderThread pending layer apply 的先后顺序。
+`onFrameAvailable()` 只会设置待更新标记并调用 `invalidate()`。宿主已有 pending traversal 时，请求可以合并；没有的话，ViewRoot 会申请下一次 VSync。通知驱动的更新要先赶上 UI `applyUpdate()`，把待更新对象送入 RenderThread；随后由 `ASurfaceTexture_dequeueBuffer()` 从输入队列取帧。
 
-所以 TextureView 不会固定增加一个刷新周期，它的刷新也离不开宿主帧。回调足够早并赶上当前宿主帧时，额外等待可能小于一个刷新周期；错过 RenderThread 获取输入的截止点时，新内容至少要等到下一次宿主 draw。
+`DrawFrameTask::syncFrameState()` 处理待更新对象后才会解除 UI 线程的同步等待，内部 listener 又运行在同一 ViewRoot 线程，不能在同一次 traversal 中穿插到这个同步阶段之后。外部 Producer 则可继续并发 queue；updater 已有待消费更新时，RenderThread 可能取得比触发通知的那一帧更新的 buffer。
+
+TextureView 不会固定增加一个刷新周期。通知及时触发 UI 更新、输入又赶上当前 RenderThread 取帧时，额外等待可能小于一个刷新周期；本次没有待消费更新，或新输入在取帧结束后才入队时，新内容就要等待后续宿主 draw。
 
 #### 两套同步与背压
 
@@ -849,13 +869,14 @@ mUpdateListener.onFrameAvailable(surfaceTexture)
 
 `invalidate()` 把 dirty region（待重绘区域）交给 ViewRoot。已有 traversal 时，新请求可以并入该帧；没有 pending frame 时，`scheduleTraversals()` 会注册 traversal 回调，再由 Choreographer 申请下一次 VSync。一次外部 queue 不会产生一条独立的 `vsync-app`。
 
-常见时序有三种：
+常见时序如下：
 
-- 新 buffer 在 RenderThread 处理 TextureLayer 之前就绪，本轮可能采到新内容；
-- 回调进入当前 traversal，但晚于 pending layer apply，本轮继续使用旧内容；
+- 通知先于 UI `applyUpdate()`，更新被送入 RenderThread，取帧时输入已入队，本轮可能采到新内容；
+- 通知晚于 UI `applyUpdate()`，且此前没有其他待消费更新，本轮继续使用旧输入，等待后续宿主 draw；
+- 已有待消费更新时，Producer 在 RenderThread 取帧期间又 queue 新 buffer，消费者可能选择更新的输入；通知与输入 frame number 不保证一一对应；
 - 宿主当时没有 pending frame，回调触发下一次宿主帧。
 
-判断新输入是否赶上当前宿主帧，截止点是 RenderThread 对该 `DeferredLayerUpdater` 执行 `apply()` 的时刻。`queueBuffer()`、回调到达或 `Choreographer#doFrame()` 中的任何一个单点，都不足以独立作出判断。
+判断新输入能否赶上当前宿主帧，要先确认待更新对象已进入本次 `syncFrameState()`，再核对 `ASurfaceTexture_dequeueBuffer()` 取得的 frame number。`queueBuffer()`、回调到达或 `Choreographer#doFrame()` 的单个时间点都不能替代这两项证据。
 
 #### 尺寸、opaque 与 transform
 
@@ -886,7 +907,7 @@ Android 15—17 在相关 flag 开启时会注册 `SurfaceTexture.OnSetFrameRate
 | 对象 | 身份字段 | 时间点 |
 |---|---|---|
 | 外部 Producer | 进程/线程、目标 queue、frame number | dequeue、填充、queue 和 completion fence |
-| SurfaceTexture 队列 | Producer/Consumer、slot、queued/acquired | frame available、acquire latest 和 release old |
+| SurfaceTexture 队列 | Producer/Consumer、slot、queued/acquired | frame available、实际 acquire 的 frame 和 release old |
 | TextureView/TextureLayer | ViewRoot、handler、updater | callback、invalidate、applyUpdate、pending update |
 | Host App Window | layer id/name、BLAST queue | doFrame、DrawFrame、宿主 queue、BufferTX 和 latch |
 | DisplayFrame | Display token、composition | validate、client target、present/release fence |
@@ -907,7 +928,7 @@ SurfaceFlinger layer tree 通常只能帮助确认宿主窗口，列不出应用
 8. 宿主 GPU draw 与 host queue；
 9. 宿主 BufferTX、SF/HWC 与 Display present。
 
-如果回调较早到达，但 RenderThread 仍取得旧 frame，应检查 pending update 是否进入该宿主帧、输入 acquire fence 是否已经可用，以及 frame number 是否配对正确。如果回调晚于 layer apply，到下一宿主帧才更新符合当前实现。
+回调较早到达时，仍要检查待更新对象是否进入目标宿主帧，以及取帧循环实际返回了哪个输入 frame。acquire fence 决定已取得的 buffer 何时可读；尚未 signal 的 fence 还会触发取帧循环的停止条件，应把等待依赖和选择输入分开记录。通知晚于 UI `applyUpdate()`、且该帧没有其他待消费更新时，新请求要等后续宿主 draw。
 
 #### 分开等待位置
 
@@ -986,7 +1007,8 @@ TextureView 部分沿用同一组平台与内核版本锚点，重点查阅以�
 - [`TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java)：硬件加速、listener、lifecycle、draw/applyUpdate、visibility 和 frame-rate bridge；
 - [`SurfaceTexture.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/SurfaceTexture.java)：公共 Producer/Consumer、callback、release 和应用自管 GLConsumer 的语义；
 - [`TextureLayer.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/TextureLayer.java)：native updater、`pushLayerUpdate()` 与 SurfaceTexture 绑定；
-- [`DeferredLayerUpdater.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp)：latest buffer、AHardwareBuffer/SkImage、SkiaGL/SkiaVulkan fence、crop、transform、dataspace 和 HDR；
+- [`DeferredLayerUpdater.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp)：输入 buffer、AHardwareBuffer/SkImage、SkiaGL/SkiaVulkan fence、crop、transform、dataspace 和 HDR；
+- [`surface_texture.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/nativedisplay/surfacetexture/surface_texture.cpp)、[`ImageConsumer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/nativedisplay/surfacetexture/ImageConsumer.cpp)、[`LegacyImageConsumer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/nativedisplay/surfacetexture/LegacyImageConsumer.cpp)：循环取帧、acquire fence 与停止条件；
 - [`DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)、[`CanvasContext.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp)：pending layer updates、prepareTree、draw 和宿主 swap；
 - [`BufferQueueProducer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)、[`BufferQueueConsumer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp)：输入队列 slot、acquire/release 与背压；
 - [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)、[SurfaceFlinger FrontEnd](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/FrontEnd/)、[`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)：宿主 BufferTX、layer state、validate/present 和 fence；

@@ -6147,6 +6147,67 @@
       "summary": "SLUB 段把 task_struct 等专用缓存对象统一称为小于一页的 kmalloc 对象",
       "type": "allocator-classification",
       "updated_at": "2026-10-18T18:18:26.905133+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "close_note": "已按 Android 17 源码区分传统宿主取项与 remoteAdapterConversion 提供方收集快照，修正主线程调用返回边界，并保留 API 35 弃用及迁移建议。新增容量截断排查入口。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261018-183520-idle-audit-aa4d2e60",
+      "created_at": "2026-10-18T18:38:09.990134+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261018-183520-idle-audit-aa4d2e60",
+      "details": "remoteAdapterConversion 开启时，AppWidgetManager 在提供方收集集合快照并重新提交；旧文将集合刷新和 RemoteViewsService 一概描述为宿主按需取数，并把 updateAppWidget 返回等同于已经交给系统服务。主线程调用可先投递后台任务再返回；RemoteViewsFactory 的集合转换会受体积上限约束而停止收集。",
+      "id": "finding-e7062cf8e323",
+      "log_path": "logs/audit/2026-10-18-20261018-183520-idle-audit-aa4d2e60-idle-audit.md",
+      "severity": "P1",
+      "source_paths": [
+        "frameworks/base/core/java/android/appwidget/AppWidgetManager.java@android-17.0.0_r1#tryAdapterConversion",
+        "frameworks/base/core/java/android/widget/RemoteViewsService.java@android-17.0.0_r1#getRemoteCollectionItems"
+      ],
+      "status": "verified",
+      "summary": "Android 17 集合更新遗漏兼容转换分支并误述 API 返回边界",
+      "type": "collection-conversion-boundary",
+      "updated_at": "2026-10-18T18:42:12.687622+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "close_note": "时序图补入 CallbackHandler，宿主消息常量核对为 HANDLE_UPDATE；Mermaid 实际渲染成功。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261018-183520-idle-audit-aa4d2e60",
+      "created_at": "2026-10-18T18:38:10.043536+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261018-183520-idle-audit-aa4d2e60",
+      "details": "AppWidgetServiceImpl 先向 mCallbackHandler 投递 MSG_NOTIFY_UPDATE_APP_WIDGET，再由服务线程发起宿主 Binder 回调；旧图直接从服务端处理跳到宿主，会漏掉可观测的排队与线程调度。",
+      "id": "finding-8439c979c13f",
+      "log_path": "logs/audit/2026-10-18-20261018-183520-idle-audit-aa4d2e60-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java@android-17.0.0_r1#scheduleNotifyUpdateAppWidgetLocked"
+      ],
+      "status": "verified",
+      "summary": "完整更新时序图遗漏 system_server CallbackHandler 调度层",
+      "type": "missing-callback-dispatch-layer",
+      "updated_at": "2026-10-18T18:42:12.740466+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "close_note": "删除高于 API 37 目标版本的正文结论，保留 Android 17 范围内普通位图强制检查、Icon 总量警告与系统 UID 豁免。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261018-183520-idle-audit-aa4d2e60",
+      "created_at": "2026-10-18T18:38:10.097468+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261018-183520-idle-audit-aa4d2e60",
+      "details": "源码含 targetSdk > 37 的兼容分支，但本文平台结论限制在 Android 17/API 37；删除更高目标版本的强制检查结论，保留本基线内位图与 Icon 的实际检查和警告。",
+      "id": "finding-ad5e5ad812d5",
+      "log_path": "logs/audit/2026-10-18-20261018-183520-idle-audit-aa4d2e60-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java@android-17.0.0_r1#ensureWidgetViewsMemoryLimitLocked"
+      ],
+      "status": "verified",
+      "summary": "图像内存段落越出本文 API 37 目标版本范围",
+      "type": "baseline-scope-leak",
+      "updated_at": "2026-10-18T18:42:12.793238+08:00"
     }
   ],
   "schema_version": 1

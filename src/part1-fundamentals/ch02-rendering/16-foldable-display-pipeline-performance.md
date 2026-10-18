@@ -21,8 +21,8 @@ related_chapters:
 - '22.13'
 last_verified: '2026-10-18'
 last_verified_against: AOSP android-17.0.0_r1 + Android Developers 2026-10-18
-last_source_verified_at: '2026-10-18T09:40:37+08:00'
-verification_scope_note: Shell Transition、WMS 对象模型、Display 切换条件、Espresso Device、Perfetto 采集与 WindowInfoTracker 边界；未作设备性能实验。
+last_source_verified_at: '2026-10-18T12:42:42+08:00'
+verification_scope_note: Shell Transition、WMS 对象模型、Display 切换条件、Espresso Device、Perfetto 采集与 WindowInfoTracker 边界；补充核对 display layout 配置、Handler 超时、大屏方向规则、HWC present fence 与 SurfaceFlinger dump 参数；未作设备性能实验。
 confidence: medium-high
 sources:
 - type: official
@@ -79,8 +79,23 @@ sources:
   path: external/perfetto/src/perfetto_cmd/config.cc
 - type: official
   path: https://developer.android.com/reference/androidx/window/layout/WindowInfoTracker
+- type: aosp
+  path: frameworks/base/services/core/xsd/display-layout-config/display-layout-config.xsd
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
+- type: aosp
+  path: frameworks/base/core/java/android/os/Handler.java
+- type: aosp
+  path: frameworks/base/services/core/java/com/android/server/wm/DisplayContent.java
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/DisplayHardware/HWComposer.cpp
+- type: aosp
+  path: hardware/interfaces/graphics/composer/2.1/IComposerClient.hal
+- type: aosp
+  path: frameworks/base/core/java/android/view/SurfaceHolder.java
 last_body_apply_at: '2026-09-26T07:15:18+08:00'
 last_rework_at: '2026-10-18T09:40:37+08:00'
+last_deep_review_at: '2026-10-18T12:42:42+08:00'
 ---
 
 # 折叠屏显示切换、窗口连续性与渲染性能
@@ -120,22 +135,26 @@ last_rework_at: '2026-10-18T09:40:37+08:00'
 
 ### 1.2 DeviceStateToLayoutMap 决定什么
 
-`DeviceStateToLayoutMap` 从以下位置读取 display layout：
+`DeviceStateToLayoutMap` 按以下顺序选择一个 display layout 配置文件：
 
 ```text
 /data/system/displayconfig/display_layout_configuration.xml
 /vendor/etc/displayconfig/display_layout_configuration.xml
 ```
 
-这两个文件按 device state 描述显示布局。每个 layout 可以为 Display 配置：
+`getConfigFile()` 在 data 文件存在时直接选择它，否则选择 vendor 文件；两份配置不会合并。排查配置未生效时，先核对 `Loading display layouts from ...` 日志中的实际路径。[源码：`DeviceStateToLayoutMap.java` L90–98、L137–144]
+
+选中的文件按 device state 描述显示布局。每个 layout 可以为 Display 配置：
 
 - 物理 `DisplayAddress`；
-- logical display ID；
+- 是否为默认 Display（`defaultDisplay`）；
 - 是否 enabled；
 - display group；
 - 前后位置；
 - lead display；
 - brightness、refresh-rate、thermal、power throttling 策略 ID。
+
+logical display ID 由框架分配。`Layout.createDisplayLocked()` 调用 `DisplayIdProducer.getId(isDefault)`，将结果保存在 layout 中；`LogicalDisplayMapper` 为默认 Display 返回 `DEFAULT_DISPLAY`，为非默认 Display 递增分配 ID。分析状态切换时，用 `dumpsys display` 核对 layout 保存的 ID 与物理地址映射。[源码：`DeviceStateToLayoutMap.java` L168–179；`Layout.java` L155–163；`LogicalDisplayMapper.java` L223–224]
 
 刷新率和亮度策略可以随 layout 改变，但 AOSP 没有“展开态固定 120 Hz、折叠态固定低刷新率”的通用规则。具体 mode 还要经过 `DisplayModeDirector`、设备配置、内容帧率投票、热限制和用户设置。
 
@@ -143,7 +162,7 @@ last_rework_at: '2026-10-18T09:40:37+08:00'
 
 `config_supportsConcurrentInternalDisplays` 表示设备是否支持同时点亮多个内建 Display。layout 还要把要并发的 Display 设为 enabled，系统才会进入并发内屏状态。
 
-两个 Display 同时工作时，硬件资源未必完全隔离。HWC 会对每个 Display 做 validate 与 present，但 overlay、内存带宽、GPU、显示控制器和功耗预算可能受 SoC 与 vendor 实现的共同约束。
+两个 Display 同时工作时，硬件资源未必完全隔离。HWC 按 Display 处理合成与 present 请求，但 overlay、内存带宽、GPU、显示控制器和功耗预算可能受 SoC 与 vendor 实现的共同约束。
 
 ## 2. 设备状态主线
 
@@ -171,7 +190,7 @@ flowchart TD
     D --> E["LogicalDisplayMapper.setDeviceState()"]
     E --> F["标记需切换的 LogicalDisplay 为 in-transition"]
     F --> G["请求相关 Display 进入 OFF，并处理所需唤醒 / 休眠"]
-    G --> H["Display 全部 OFF 且无待完成交互状态变化，或 500 ms 强制推进"]
+    G --> H["Display 全部 OFF 且无待完成交互状态变化，或 500 ms 超时回调强制推进"]
     H --> I["应用新的 DeviceState layout"]
     I --> J["LogicalDisplay 与 DisplayDevice 重映射 / enabled 更新"]
     J --> K["WMS / Display traversal / SurfaceControl display transaction"]
@@ -197,7 +216,7 @@ flowchart TD
 
 系统先发送 transition 阶段更新，让相关 Display 关闭。正常推进要求所有 transitioning Display 确认 `OFF`，同时没有待完成的设备唤醒或休眠：`finishStateTransitionLocked(false)` 检查 `displaysOff && !waitingToWakeDevice && !waitingToSleepDevice`。后两项由设备状态、`mIsInteractive`、启动完成情况及折叠休眠设置等条件决定。满足后才清除 transition 标记、应用新 layout 并发出后续更新；500 ms 超时则以 `force=true` 强制推进。[源码：`LogicalDisplayMapper.java` L116、L683–705、L720–835、L1748–1752]
 
-display blanking 的作用是遮住 resize 过程中可能出现的错误尺寸。500 ms 是框架状态转换的兜底上限，屏幕未必黑场 500 ms，它也不代表折叠动画时长。
+display blanking 的作用是遮住 resize 过程中可能出现的错误尺寸。500 ms 是 Handler 超时消息的延迟配置：消息回调执行后才会强制推进，实际执行还受队列调度影响，深睡眠也会增加延迟。它不构成状态转换耗时的硬上限，也不代表黑场或折叠动画时长。[源码：`LogicalDisplayMapper.java` L669–670；`Handler.java` L730–734、L752–775]
 
 “固定丢 1～3 帧”“第一帧高 30%～50%”之类数值没有 AOSP 保证。设备的面板时序、power sequence、Shell transition、应用重绘和 HWC 能力都会改变观测结果。
 
@@ -484,12 +503,14 @@ Compose 中 window size 或 posture state 改变后，读取该 state 的 compos
 
 Android 16 起，平台会对 target 36 的应用忽略其大屏方向、宽高比与 resizability 限制，同时提供临时退出项。
 
-Android 17 对 target SDK 37 应用移除该 opt-out（临时退出项）。官方文档将适用范围写为 smallest width（最小宽度）至少 600 dp 的 Display；在这类环境中，以下限制不再能作为布局前提：
+Android 17 对 target SDK 37 应用移除该 opt-out（临时退出项）。Android 17 的 `DisplayContent.isLargeScreen()` 以 `smallestScreenWidthDp >= 600` 判断大屏；在这类 Display 上，以下限制不再能作为布局前提：
 
-- 固定方向的 `screenOrientation` 值；
+- `screenOrientation` 的 `portrait`、`reversePortrait`、`sensorPortrait`、`userPortrait`、`landscape`、`reverseLandscape`、`sensorLandscape`、`userLandscape`；
 - 对应的 `setRequestedOrientation()` 和 `getRequestedOrientation()`；
 - `resizeableActivity="false"`；
 - `minAspectRatio` 与 `maxAspectRatio`。
+
+`locked` 不在上述八个方向值中，`ActivityRecord.isRestrictedFixedOrientation()` 显式排除了它，不能将所有方向值一概视为无效。[源码：`DisplayContent.java` L7188–7192；`ActivityRecord.java` L3153–3161]
 
 官方列出的例外包括：按 `android:appCategory` 分类的 game、smallest width 小于 600 dp 的屏幕，以及用户在设备比例设置中选择应用默认行为的情况。
 
@@ -499,7 +520,7 @@ Android 17 对 target SDK 37 应用移除该 opt-out（临时退出项）。官�
 
 ### 7.1 每个目标 Display 都有自己的 Output
 
-SurfaceFlinger FrontEnd 接收 App、WMS 和 Shell 的 layer transaction。CompositionEngine 针对每个 Display 与 Output 构建可见 layer 集合，HWC 再为该 Display 执行 validate 与 present。
+SurfaceFlinger FrontEnd 接收 App、WMS 和 Shell 的 layer transaction。CompositionEngine 针对每个 Display 与 Output 构建可见 layer 集合，HWC 按 Display 处理合成校验与 present 请求。`validate` 并非每帧必经：没有 `CLIENT` 合成且满足 present 时序条件时，`HWComposer::getDeviceCompositionChanges()` 可以调用 `presentOrValidate()`；直接 present 成功后会跳过独立的 validate。[源码：`HWComposer.cpp` L537–602]
 
 分析并发内外屏时，需要分别记录：
 
@@ -507,7 +528,9 @@ SurfaceFlinger FrontEnd 接收 App、WMS 和 Shell 的 layer transaction。Compo
 - active mode、resolution、density 与 refresh rate；
 - 目标 Output 的 visible layers；
 - `DEVICE` composition 与 `CLIENT` composition——分别由 HWC 和 RenderEngine 合成；
-- 每个 Display 的 present fence（标记显示提交完成的同步栅栏）。
+- 每个 Display 目标帧的 present fence 及其 signal（触发）时间。
+
+present 调用返回与 fence signal 是不同时间点。HWC 契约中，video-mode 面板的 present fence 在该帧合成结果开始出现的 VSync 触发，command-mode 面板在开始向面板内存传输时触发；虚拟 Display 则在输出 buffer 写入完成、可安全读取时触发。它们都不能直接充当整屏内容完整可见的光学时间点。[源码：`IComposerClient.hal` L690–699]
 
 同一 layer 经 mirror 或 projection 出现在两个 Output 时，我们没法把两次 present 合并成一条时间线。
 
@@ -531,12 +554,14 @@ SurfaceFlinger FrontEnd 接收 App、WMS 和 Shell 的 layer transaction。Compo
 - App 按新 bounds 提交的 BLAST buffer；
 - SF 与 HWC 针对目标 Display 的 present。
 
-新 geometry 可以暂时显示旧 buffer，系统也可能用 snapshot、starting window 或背景层遮住重绘间隙。我们判断“第一帧已适配”时，应同时确认：
+新 geometry 可以暂时显示旧 buffer，系统也可能用 snapshot、starting window 或背景层遮住重绘间隙。判断“第一帧已适配”时，应同时确认：
 
 1. 应用收到新 window bounds 与 configuration；
-2. 对应 App Window 提交新尺寸 buffer；
+2. 对应 App Window 提交了包含新布局内容的 buffer；
 3. SF latch 了该 buffer；
-4. 目标 Display 的 present 到达预期边界。
+4. 目标 Display 对应帧的 present fence 已 signal。
+
+buffer 尺寸变化不能单独证明内容完成适配，尺寸保持不变也不能单独否定适配。`SurfaceHolder.setFixedSize()` 可以让 Surface 保持固定尺寸；对 SurfaceView，该设置须在其窗口所属线程调用。排查时还要核对内容布局和缩放关系，不能把“新尺寸 buffer”作为所有渲染路径的必要条件。[源码：`SurfaceHolder.java` L185–202]
 
 ## 8. 性能测量：先定义起点与终点
 
@@ -550,10 +575,10 @@ SurfaceFlinger FrontEnd 接收 App、WMS 和 Shell 的 layer transaction。Compo
 | T1 | DeviceState 已提交 | `DeviceStateChanged` trace instant（瞬时事件） |
 | T2 | display transition 与 WMS switch 开始 | DisplayThread（显示服务线程）、WMS 与 Shell transition |
 | T3 | App 已收到新窗口信息 | configuration 与 WindowLayoutInfo 自定义 trace |
-| T4 | App 新 bounds 的 buffer 被 SF 采纳 | App frame、`BufferTX`、latch |
-| T5 | 目标 Display 完成对应 present | DisplayFrame、HWC、present fence |
+| T4 | App 适配后内容的 buffer 被 SF 采纳 | App frame、`BufferTX`、latch |
+| T5 | 目标 Display 对应帧的 present fence signal | DisplayFrame、HWC、present fence |
 
-测量前我们应声明范围是 T1→T5、T3→T5 还是 T0→光学显示：它们分别衡量系统状态切换、应用窗口响应和完整物理动作到显示的延迟。
+测量前应声明范围是 T1→T5、T3→T5 还是 T0→光学显示：前两者以目标帧的 fence signal 为软件终点，分别观察系统状态提交后和应用收到窗口信息后的响应；完整物理动作到光学显示的延迟需要外部测量，不能用 present 调用返回或 fence signal 代替。
 
 ### 8.2 Perfetto 采集
 
@@ -655,19 +680,25 @@ adb shell cmd device_state state reset
 
 ### 8.5 dumpsys 快照
 
+以下命令分别读取设备状态、DMS/WMS 对象以及 SF 的显示标识、显示设备和合成输出：
+
 ```bash
 adb shell dumpsys devicestate
 adb shell dumpsys display
 adb shell dumpsys window displays
-adb shell dumpsys SurfaceFlinger --display
+adb shell dumpsys SurfaceFlinger --display-id
+adb shell dumpsys SurfaceFlinger --displays
+adb shell dumpsys SurfaceFlinger --comp-displays
 ```
 
-这些命令分别导出设备状态、显示、窗口和 SurfaceFlinger 快照，可以回答：
+SF 的 `--display-id` 输出物理 Display ID、HWC display ID 与标识信息；`--displays` 输出物理和虚拟显示设备快照；`--comp-displays` 输出 CompositionEngine 的 Display 状态。这些选项对应不同的 dump 入口，需分别调用。[源码：`SurfaceFlinger.cpp` L6665–6690、L6809–6868]
+
+这些命令可以回答：
 
 - base、pending、committed DeviceState（基础、待处理和已提交状态）与 override；
 - DeviceState layout、LogicalDisplay、DisplayDevice、enabled、state、mode；
 - WMS 的 DisplayContent、Task 和窗口边界；
-- SF 侧 Display token、layer stack 与输出配置。
+- SF 侧物理 Display 与 HWC 标识的对应关系、显示设备与合成 Output 配置。
 
 快照没有时间信息，代替不了 Perfetto。最好在切换前、异常时、稳定后各保存一份，并用 display ID、physical address 和 layer stack 对齐。
 
@@ -679,7 +710,7 @@ adb shell dumpsys SurfaceFlinger --display
 
 1. 新 Configuration 与 WindowLayoutInfo 的到达时间；
 2. Activity 是否重建，旧 window 是否仍可见；
-3. 新 bounds 的首个 buffer 何时提交；
+3. 包含新布局内容的首个 buffer 何时提交；
 4. Shell transition 是否在缩放旧 buffer 或 snapshot；
 5. SF 何时 latch 新 buffer。
 
@@ -762,6 +793,10 @@ Shell 端没有进度回调时，先沿同一个 transition token 与 sync ID �
 - [`DefaultTransitionHandler.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/DefaultTransitionHandler.java)：系统默认 Handler 链一环，`startAnimation` 驱动 `DefaultSurfaceAnimator`。
 - [`ITransitionPlayer.aidl`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/ITransitionPlayer.aidl)：WMS → Shell 的启动与就绪通知接口。
 - [`atrace.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/cmds/atrace/atrace.cpp)：`ss` 与 system-server trace tag 的映射；Perfetto [`config.cc`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/perfetto_cmd/config.cc)：快速命令的类别与数据源配置。
+- [`display-layout-config.xsd`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/xsd/display-layout-config/display-layout-config.xsd)：显示布局配置字段；[`Handler.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Handler.java)：延迟消息的 uptime 时间基准与队列语义。
+- [`DisplayContent.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java)：`isLargeScreen()` 的 600 dp 等号边界；方向值排除条件见上述 `ActivityRecord.java`。
+- [`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)：`presentOrValidate()` 与跳过校验的条件；[`IComposerClient.hal`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/2.1/IComposerClient.hal)：物理与虚拟 Display 的 present fence signal 契约。
+- [`SurfaceHolder.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceHolder.java)：Surface 固定尺寸与随布局调整尺寸的区别、SurfaceView 的调用线程要求。
 
 ### 应用与测试文档
 

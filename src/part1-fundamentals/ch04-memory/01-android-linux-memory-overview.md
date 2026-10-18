@@ -4,8 +4,8 @@ chapter: '4.1'
 section: '4.1'
 status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-10-17'
-verification_scope_note: '2026-10-17 定点复核 ART r1 的空闲页释放与文件预取、r6 MADV_COLD 和匿名缺页/rmap、Debug.MemoryInfo；其余来源保留各段已有核验范围。'
+last_verified: '2026-10-18'
+verification_scope_note: '2026-10-18 定点复核 RSS/fault-around、Scudo/COW、ART 栈函数、保存状态、Perfetto 堆图及 MGLRU/SLUB；2026-10-17 的 ART 页释放、文件预取、MADV_COLD、匿名缺页/rmap 与 Debug.MemoryInfo 核验范围保留，其余来源沿用各段已有核验范围。'
 last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article / source-index material juejin-android 2026-10-09 Memory Limiter exemption article
 confidence: medium-high
 sources:
@@ -43,8 +43,8 @@ sources:
   path: https://docs.kernel.org/admin-guide/blockdev/zram.html
 - type: official
   path: https://perfetto.dev/docs/data-sources/java-heap-profiler
-- type: official
-  path: https://perfetto.dev/docs/case-studies/android-outofmemoryerror
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/docs/case-studies/android-outofmemoryerror.md
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/am/ActivityManagerShellCommand.java
 - type: aosp
@@ -149,7 +149,19 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/rmap.h
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/internal.h
-last_source_verified_at: '2026-10-17'
+- type: aosp
+  path: https://android.googlesource.com/platform/external/scudo/+/refs/tags/android-17.0.0_r1/standalone/primary64.h
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/perfetto_hprof/perfetto_hprof.cc
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/fork.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/dcache.c
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/slub.c
+- type: official
+  path: https://developer.android.com/topic/libraries/architecture/saving-states
+last_source_verified_at: '2026-10-18'
 last_deep_review_at: '2026-10-17T08:38:48+08:00'
 tags:
   - android-memory
@@ -229,7 +241,7 @@ flowchart TB
 
 #### 虚拟地址空间与实际驻留
 
-64 位应用拥有很大的虚拟地址空间。`mmap`、加载 `.so`、预留线程栈或为堆保留地址范围，都会增加虚拟大小；其中只有被访问并驻留的页才进入 RSS，页还可能是共享的、可回收的或已经换出。
+64 位应用拥有很大的虚拟地址空间。`mmap`、加载 `.so`、预留线程栈或为堆保留地址范围，都会增加虚拟大小；RSS 统计其中已建立驻留映射的页面，不包含仅预留地址或已换出的页。驻留映射不等于进程逐页访问过：内核的 fault-around 可以在一次文件缺页时，把周围已经就绪的文件页一并映射。 [已验证: android17-6.18-2026-06_r6 `mm/memory.c` `do_fault_around()`；`fs/proc/task_mmu.c` `smaps_account()`]
 
 一个 Android 进程常见的映射来源如下：
 
@@ -245,7 +257,7 @@ flowchart TB
 
 `ActivityManager.getMemoryClass()` 给出的是托管堆近似容量，取值来自平台属性 `dalvik.vm.heapgrowthlimit`，没有该属性时回退到 `dalvik.vm.heapsize`；单位是 MiB，即 `2^20` 字节。它的覆盖范围要弄清楚：这个值只针对托管堆，进程总内存上限、原生内存、代码映射、线程栈和图形内存都在它之外；`largeHeap` 对应的容量同样由设备配置决定，要按设备查，没有固定值。
 
-线程栈同样别统一记成“每线程 1 MiB 已用内存”。ART 的 `Thread::FixStackSize()` 会根据请求值、运行时默认值、保护区和运行环境修正栈映射，主线程还继承进程启动时创建的栈。看栈映射时分两个量：VSS 是预留的地址范围，RSS 是已经访问过的页面。
+线程栈同样别统一记成“每线程 1 MiB 已用内存”。ART `thread.cc` 中的文件内静态函数 `FixStackSize()` 会根据请求值、运行时默认值、保护区和运行环境修正栈映射，主线程还继承进程启动时创建的栈。看栈映射时分两个量：VSS 是预留的地址范围，RSS 是当前驻留的页面大小；两者都不直接表示栈中有效数据的字节数。 [已验证: AOSP android-17.0.0_r1 `art/runtime/thread.cc` `FixStackSize()`]
 
 ### VSS、RSS、PSS、USS 各回答什么问题
 
@@ -254,7 +266,7 @@ flowchart TB
 | 指标 | 含义 | 适合回答的问题 | 主要限制 |
 |---|---|---|---|
 | VSS / VmSize | 虚拟集大小（Virtual Set Size）；进程虚拟地址空间中所有映射的总大小 | 地址空间是否异常、是否存在超大预留或映射 | 大量页面可能从未驻留，不能当作物理占用 |
-| RSS | 驻留集大小（Resident Set Size）；当前驻留在 RAM 的页面总量 | 进程此刻访问了多少驻留页 | 共享页会在每个映射进程中重复计算 |
+| RSS | 驻留集大小（Resident Set Size）；当前驻留映射的页面总量 | 进程当前的驻留映射规模 | 共享页会在每个映射进程中重复计算，不能据此推断逐页访问或访问频率 |
 | PSS | 比例分摊集大小（Proportional Set Size）；每个驻留共享页按映射者数量分摊后求和 | 多进程之间较公平的内存归因 | 共享者变化会让 PSS 波动，采集需要遍历页映射 |
 | USS | 独占集大小（Unique Set Size）；通常以 `Private_Clean + Private_Dirty` 估算私有驻留页 | 进程私有驻留规模 | 不等于终止进程后立即增加的可用内存 |
 
@@ -433,9 +445,9 @@ adb pull /data/local/tmp/app.hprof
 
 #### Perfetto Java 堆分析器的适用范围
 
-Perfetto 的 `android.java_hprof` 可把 ART 堆图写入跟踪文件，并支持按进程名或 PID 选择目标。连续快照会产生显著开销和较大的跟踪文件，通常先采单次快照，再根据复现窗口决定是否启用 `continuous_dump_config`。
+Perfetto 的 `android.java_hprof` 从 Android 11 起可用，可把 ART 堆图写入跟踪文件，并支持按进程名或 PID 选择目标。它记录对象引用关系，不包含对象内部数据和分配调用栈，与标准 HPROF 的产物不同。连续快照会产生显著开销和较大的跟踪文件，通常先采单次快照，再根据复现窗口决定是否启用 `continuous_dump_config`。 [已验证: Perfetto《Memory: ART Heap Dumps for Java/Kotlin Heap》的可用性与产物说明]
 
-Android 14 及以后还可以使用 `android.java_hprof.oom` 捕获 `OutOfMemoryError`（OOME）触发的堆信息，Perfetto 服务源码仍注册了该数据源。能否采集目标应用，受应用可分析属性、系统配置和权限限制。
+Android 14 及以后还可以使用 `android.java_hprof.oom` 捕获 `OutOfMemoryError`（OOME）触发的堆信息；Android 17 r1 的官方案例文档与 ART 插件仍提供这条路径。能否采集目标应用，受应用可分析属性、系统配置和权限限制。 [已验证: AOSP android-17.0.0_r1 `external/perfetto/docs/case-studies/android-outofmemoryerror.md`；`art/perfetto_hprof/perfetto_hprof.cc`]
 
 ### 系统内存压力、控制组与进程退出
 
@@ -541,7 +553,7 @@ R8 对文件映射和运行时分配的影响要分开测量。对同一业务�
 - `TRIM_MEMORY_UI_HIDDEN`：UI 不再可见后清理图片缓存、视频预览 buffer、动画资源等大对象；这些对象重新进入页面时通常可以从网络或磁盘重建。
 - `TRIM_MEMORY_BACKGROUND`：进程已进入后台，可一并清空搜索结果缓存、临时 buffer 池等能在下次进入页面时再生成的资源。
 
-在 `onTrimMemory` 里，正在编辑的草稿、支付流程状态或用户选择路径这类难以低成本恢复的业务状态要留下，走持久化或 `ViewModel` / saved state。错误地把业务状态当作普通缓存清掉，反而会触发重保存和重分配，加重后续一次内存事件。 [来源: 技术文章/source/juejin-android/2026-09-23-76471867-Android17内存超限杀App排查.md] [已验证: AOSP android-17.0.0_r1 `ComponentCallbacks2.java` 常量；本章“进程内存域与统计口径”段落]
+在 `onTrimMemory` 里，只清理可以重建的缓存。正在编辑的草稿、支付流程状态或用户选择路径等重要业务状态，应及时持久化到适当的存储。`ViewModel` 可跨配置变化保留内存数据，但不能跨进程死亡恢复；保存状态机制适合保存 ID、查询词等少量 UI 恢复信息，不适合大型对象或完整业务数据。保存状态还依赖 Activity 的停止时机：Activity 已停止后写入的内容，需要再次经过启动、停止才会保存。因此不能等待 trim 或进程被杀前的回调，才保存必须可靠恢复的数据。 [来源: 技术文章/source/juejin-android/2026-09-23-76471867-Android17内存超限杀App排查.md] [已验证: Android Developers《Save UI states》的进程死亡、数据大小与 Activity 停止时机说明]
 
 `onTrimMemory` 按应用状态转换提示清理，并不保证在 MemoryLimiter 越界之前送达。可重建缓存应有自己的生命周期和容量管理，不能依赖 trim 回调替代峰值控制。 [已验证: Android Developers `ComponentCallbacks2` 的状态回调说明；本章 Android 17 MemoryLimiter 按进程状态选择限制档位的流程]
 
@@ -679,7 +691,7 @@ Arm 内存标签扩展（Memory Tagging Extension，MTE）通过分配标签和�
 
 #### “RSS 就是应用独占的 RAM”
 
-RSS 会在每个进程重复计算共享驻留页。比较多个进程的归因时使用 PSS；调查单个进程此刻访问的驻留页时，RSS 仍然有用。
+RSS 会在每个进程重复计算共享驻留页。比较多个进程的归因时使用 PSS；调查单个进程当前的驻留映射规模时，RSS 仍然有用，但不能据此判断逐页访问或访问频率。
 
 #### “PSS 上升一定是泄漏”
 
@@ -747,9 +759,9 @@ Android 内存分析要先区分三件事：
 
 ### 这一层为什么会让应用卡住
 
-应用线程执行 `malloc()`、访问文件映射、创建线程栈或申请图形缓冲区，最终都要经过内核。大多数请求走快速路径，耗时很短；一旦空闲页不足、zone 不满足水位、需要高阶连续页或页面已经换出，请求就会掉进慢路径。
+应用线程执行 `malloc()` 时，分配器可能直接复用已有空闲块；Android 17 r1 的 Scudo `popBlocks()` 会先查空闲链表，再考虑补充映射。访问已驻留且权限满足的页面，也不需要重新进入内核。需要新建映射、补充物理页、处理缺页或向驱动申请缓冲区时，才进入相应内核路径。 [已验证: AOSP android-17.0.0_r1 `external/scudo/standalone/primary64.h` `popBlocks()`；android17-6.18-2026-06_r6 `mm/memory.c`]
 
-慢路径里可能有缺页处理、页面回收、Swap I/O、页面迁移和内存规整。这些工作有些交给后台内核线程，有些则直接占用发起分配的应用线程；后一种落在关键帧或启动关键路径上时，用户就能感知到延迟。
+进入页分配后，空闲页不足、zone 不满足水位或需要高阶连续页，可能使请求进入分配慢路径，其中包括页面回收、页面迁移和内存规整。访问已换出的页则走缺页与换入路径。这些工作有些交给后台内核线程，有些直接占用发起请求的应用线程；发生在关键帧或启动关键路径上时，就可能增加用户可感知的延迟。
 
 > 内核部分同样以 AOSP `android-17.0.0_r1` 与通用内核 `android17-6.18-2026-06_r6` 为基线；厂商内核可以修改配置和页面回收策略，排查时仍以运行设备为准。
 
@@ -797,7 +809,7 @@ ARM64 设备的页表层级要看配置：页大小、`VA_BITS` 和架构能力�
 
 - 首次写匿名映射：内核分配并清零物理页，再建立可写映射；
 - 首次读取文件映射：页面已在页缓存（page cache）时可直接建立映射，缺失时需要读取文件；
-- 写时复制（Copy-on-Write，COW）：Zygote 通过 `fork()` 创建子进程后，共享只读页会在子进程写入时复制；
+- 写时复制（Copy-on-Write，COW）：Zygote 通过 `fork()` 创建子进程后，父子进程的私有映射可以共享物理页；写入时若不能复用原页，内核会分配并复制内容。如果匿名页已满足独占复用条件，r6 的 `do_wp_page()` 可经 `wp_page_reuse()` 恢复可写映射，无需复制页面；
 - 换入（swap-in）：匿名页已换出时，需要从 ZRAM 压缩交换设备或其他交换后端恢复；
 - 权限或无效地址：无法修复时向进程发送 `SIGSEGV`、`SIGBUS` 等信号。
 
@@ -851,7 +863,7 @@ adb shell 'pid=$(pidof com.example.app); cat /proc/$pid/stat'
 
 #### SLUB 服务小型内核对象
 
-伙伴系统的最小单位是页，而 `task_struct`、`dentry`、`inode` 这类常见 `kmalloc` 对象通常小于一页，所以内核在页之上又加了一层 SLUB 小对象分配器：它以 folio（一或多个页面作为整体管理的结构）为单位切分对象，再用 slab 缓存复用相同布局。
+伙伴系统按页分配内存，SLUB 在这些页面上组织对象缓存，再复用相同布局的对象。`task_struct`、`dentry` 等内核对象使用各自的专用 slab 缓存，通用小块请求则使用 `kmalloc` 缓存；两类入口不能混为一谈，对象大小也不保证小于一个基础页。folio 表示内核作为整体管理的一个或多个页面；slab 可以占用一个或多个页面。 [已验证: android17-6.18-2026-06_r6 `kernel/fork.c` `alloc_task_struct_node()`、`fs/dcache.c` `__d_alloc()`；`mm/slub.c` `kmalloc_slab()`]
 
 Linux 6.18 的内核配置文件 `mm/Kconfig` 将 `CONFIG_SLUB` 定义为默认启用；旧的 SLAB、SLOB 是历史背景，Android 17 里并列运行三种实现的说法不成立。arm64 通用内核映像（Generic Kernel Image，GKI）还启用了空闲链表随机化与安全加固，并默认关闭 slab 缓存合并。
 
@@ -936,7 +948,7 @@ adb shell cat /sys/kernel/mm/lru_gen/enabled
 - `/sys/kernel/debug/lru_gen`
 - `/sys/kernel/debug/lru_gen_full`
 
-后者还依赖 `CONFIG_LRU_GEN_STATS`。debugfs 通常不向量产应用开放。
+`lru_gen_full` 提供额外调试统计；`CONFIG_LRU_GEN_STATS=y` 控制是否保留已驱逐代际的历史统计，不是这个节点存在的前提。r6 的 `init_lru_gen()` 在 MGLRU 编译路径中同时注册这两个 debugfs 文件。debugfs 通常不向量产应用开放。 [已验证: android17-6.18-2026-06_r6 `Documentation/admin-guide/mm/multigen_lru.rst` `Experimental features`；`mm/vmscan.c` `init_lru_gen()`]
 
 普通 LRU 与 MGLRU 都在 LRU 列表容器 `lruvec` 的 `lru_lock` 下完成部分列表操作，并把开销较高的 `shrink_folio_list()` 放到锁外；r6 的 `shrink_inactive_list()` 和 `evict_folios()` 都能看到这种结构。所以“普通 LRU 全程持锁、MGLRU 把持锁复杂度从 O(n) 做到 O(1)”这组对比不成立，评价 MGLRU 还是看代际老化、页表扫描、页面再次访问反馈和具体设备指标。
 

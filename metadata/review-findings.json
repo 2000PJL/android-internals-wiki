@@ -5785,6 +5785,70 @@
       "summary": "SurfaceFlinger 显示快照示例使用未注册的 --display 参数",
       "type": "invalid-debug-command",
       "updated_at": "2026-10-18T12:40:09.861112+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md",
+      "close_note": "已给远端 dumpsys 命令整体加单引号，补充主机/设备 shell 解释边界；sh 与 zsh 的语法及 argv-only 验证通过。环境未安装 adb，未声称设备执行成功。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261018-143520-idle-audit-384074e8",
+      "created_at": "2026-10-18T14:39:17.621831+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261018-143520-idle-audit-384074e8",
+      "details": "原命令在 adb shell 外使用 > /data/local/tmp/sf.txt，重定向由主机解释，不能保证在设备上生成随后 adb pull 的文件。应给远端命令整体加单引号，并说明两层 shell 的解释边界。",
+      "id": "finding-26c652730744",
+      "log_path": "logs/audit/2026-10-18-20261018-143520-idle-audit-384074e8-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/tools/adb#shellcommands",
+        "https://android.googlesource.com/platform/packages/modules/adb/+/refs/tags/android-17.0.0_r1/docs/user/adb.1.md"
+      ],
+      "status": "verified",
+      "summary": "SurfaceFlinger 导出命令把设备路径用于主机 shell 重定向",
+      "type": "command-redirection",
+      "updated_at": "2026-10-18T14:43:49.712938+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md",
+      "close_note": "依据 TextureView.java、SurfaceTexture.java 与 DrawFrameTask.cpp 修正 UI applyUpdate/RenderThread 取帧双边界，删除同一 traversal 内回调可晚于 RT apply 的错误时序；源码顺序断言和全文旧句扫描通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261018-143520-idle-audit-384074e8",
+      "created_at": "2026-10-18T14:40:26.737101+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261018-143520-idle-audit-384074e8",
+      "details": "内部回调运行在 ViewRoot handler 所在线程；drawFrame/postAndWait 等待 RenderThread，syncFrameState 先执行 pending layer apply，之后才可能 unblockUiThread。需要区分 UI applyUpdate 提交更新与 RenderThread 从输入队列取帧两项边界，并补充已有待消费更新时通知与输入帧不一一对应的条件。",
+      "id": "finding-8b0a9febb691",
+      "log_path": "logs/audit/2026-10-18-20261018-143520-idle-audit-384074e8-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp"
+      ],
+      "status": "verified",
+      "summary": "TextureView 将同一 traversal 内的回调与 RenderThread layer apply 描述为可任意交错",
+      "type": "callback-ordering",
+      "updated_at": "2026-10-18T14:43:49.765959+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch13-rendering-pipelines/03-surfaceview-textureview-pipelines.md",
+      "close_note": "依据 surface_texture.cpp、ImageConsumer.cpp 与 LegacyImageConsumer.cpp 补充 unsignaled fence 的循环停止保护，移除正文和图表无条件 latest 保证；两条消费实现的顺序断言通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261018-143520-idle-audit-384074e8",
+      "created_at": "2026-10-18T14:40:26.791427+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261018-143520-idle-audit-384074e8",
+      "details": "ASurfaceTexture_dequeueBuffer 按 queueEmpty 循环取帧；ImageConsumer 与 LegacyImageConsumer 在 acquired buffer fence 尚未 signal 时将 outQueueEmpty 设为 true，再调用 fenceWait，外层因此停止继续取帧。不能无条件保证返回调用结束时最新的已入队 buffer。",
+      "id": "finding-7da163ea0ead",
+      "log_path": "logs/audit/2026-10-18-20261018-143520-idle-audit-384074e8-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/nativedisplay/surfacetexture/surface_texture.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/nativedisplay/surfacetexture/ImageConsumer.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/nativedisplay/surfacetexture/LegacyImageConsumer.cpp"
+      ],
+      "status": "verified",
+      "summary": "TextureView 最新输入选择遗漏 unsignaled acquire fence 的循环停止条件",
+      "type": "buffer-selection-boundary",
+      "updated_at": "2026-10-18T14:43:49.818007+08:00"
     }
   ],
   "schema_version": 1

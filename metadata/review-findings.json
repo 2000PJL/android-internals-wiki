@@ -5614,6 +5614,111 @@
       "summary": "AGP InstrumentationScope.ALL 的说明遗漏 library 模块只能插桩本地类",
       "type": "missing-api-scope-boundary",
       "updated_at": "2026-10-18T10:42:25.484807+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "已按 Android 17 DeviceStateToLayoutMap L90–97/L149–179、Layout L155–165 与 mapper L223–224 修正 data/vendor 单选优先级和框架 ID 分配，补 dumpsys 对照方式。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-120520-2554370b",
+      "created_at": "2026-10-18T12:11:01.540655+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-120520-2554370b",
+      "details": "1.2 节将两个配置路径并列描述，并把 logical display ID 列为 XML 可配置项；Android 17 优先选 data 文件，缺失才回退 vendor，Layout.createDisplayLocked 通过 DisplayIdProducer 分配逻辑 ID。需说明 defaultDisplay 的作用，避免读者手工配置不存在的逻辑 ID 字段。",
+      "id": "finding-20e058f0995d",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/DeviceStateToLayoutMap.java#90",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/layout/Layout.java#155"
+      ],
+      "status": "fixed",
+      "summary": "display layout 配置优先级与逻辑 ID 分配边界不准确",
+      "type": "display-layout-semantics",
+      "updated_at": "2026-10-18T12:13:39.996788+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "7.1、7.3 与 8.1 已统一为目标帧 present fence signal 的软件终点；区分 video/command/virtual 边界、API 返回和光学显示，补固定 Surface 尺寸及 validate 可跳过条件。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-120520-2554370b",
+      "created_at": "2026-10-18T12:11:01.594023+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-120520-2554370b",
+      "details": "7.1 节的显示提交完成、8.1 节 T5 完成 present 容易把 API 返回、fence signal 与光学显示终点混用。HAL 对 video-mode、command-mode 与 virtual display 的 signal 边界不同；需用目标 Display 对应帧的 signal 定义软件终点，保留光学测量边界，并避免单靠 buffer 尺寸判断内容适配完成。",
+      "id": "finding-498bf702adc9",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/2.1/IComposerClient.hal#690",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceHolder.java#185"
+      ],
+      "status": "fixed",
+      "summary": "present fence 与屏幕完整可见的测量终点需分开",
+      "type": "present-measurement-boundary",
+      "updated_at": "2026-10-18T12:13:40.048357+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "6.4 按 DisplayContent L7188–7192 定位 >=600，按官方文档列出八个方向值，并保留 ActivityRecord 排除 locked、game/用户设置例外与 target37 退出项移除。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-120520-2554370b",
+      "created_at": "2026-10-18T12:11:01.645897+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-120520-2554370b",
+      "details": "6.4 节将 sw600dp 等号口径归给官方页面，但页面正文写 greater than 600dp、例外写 smaller than sw600dp，需以 Android 17 DisplayContent.isLargeScreen 的 >=600 判断定位。忽略的固定方向值应列明，避免将 locked 等未列值一并包含。",
+      "id": "finding-dae0cb314d53",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/about/versions/17/changes/ff-restrictions-ignored",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java#7188"
+      ],
+      "status": "fixed",
+      "summary": "大屏方向限制条目及 sw600dp 等号边界需要精确定位",
+      "type": "large-screen-applicability",
+      "updated_at": "2026-10-18T12:13:40.100746+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "4.4 已标依赖版本、Activity 节选、自定义函数和 launchWhenX 警告；6.1 已保留小状态/持久化与停止后写入需再次 onStart/onStop 的边界，新增已核验官方引用。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-120520-2554370b",
+      "created_at": "2026-10-18T12:13:39.945286+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-120520-2554370b",
+      "details": "4.4 节需标明 Lifecycle 2.4.0 依赖、Activity 节选和自定义 renderPosture，保留 repeatOnLifecycle 优于 launchWhenX 的取消语义。6.1 节需补少量恢复键与大型编辑内容持久化的区别，并保留停止后继续写入需要再次 onStart/onStop 才会保存的官方限制。",
+      "id": "finding-e681a3179f20",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/topic/libraries/architecture/views/coroutines-views",
+        "https://developer.android.com/topic/libraries/architecture/saving-states"
+      ],
+      "status": "fixed",
+      "summary": "生命周期收集示例与保存状态缺少依赖和停止后的保存边界",
+      "type": "app-state-lifecycle-boundary",
+      "updated_at": "2026-10-18T12:13:48.461678+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/16-foldable-display-pipeline-performance.md",
+      "close_note": "2.3 已改为超时回调配置而非切换耗时硬上限；LogicalDisplayMapper L669–670 与 Handler L721–734/L752–775 证明延迟消息经 uptime 与队列调度。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261018-120520-2554370b",
+      "created_at": "2026-10-18T12:15:07.219233+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261018-120520-2554370b",
+      "details": "2.3 节的兜底上限可能被当作真实切换耗时保证；LogicalDisplayMapper 使用 sendEmptyMessageDelayed 安排超时回调，实际执行仍受 Handler 队列调度影响。正文已改为超时配置，不构成黑场或动画时长硬上限。",
+      "id": "finding-8190b16ad2f5",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/display/LogicalDisplayMapper.java#669",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Handler.java"
+      ],
+      "status": "fixed",
+      "summary": "500 ms Handler 超时配置被表述为状态转换硬上限",
+      "type": "handler-timeout-boundary",
+      "updated_at": "2026-10-18T12:15:50.294207+08:00"
     }
   ],
   "schema_version": 1

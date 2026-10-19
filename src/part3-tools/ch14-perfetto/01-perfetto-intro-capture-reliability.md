@@ -1169,9 +1169,9 @@ Trace 超出浏览器和内存承载能力时，应在采集端控制窗口，�
 
 ### 大 Trace 的压力来自运行时表示
 
-Perfetto UI 默认在浏览器中运行 WebAssembly 版 Trace Processor，也就是让编译后的程序在浏览器沙箱中执行的二进制格式。浏览器通常会限制单个站点可用的内存，官方文档给出的典型运行时上限约为 2 GB。这个数字指解析和查询期间的站点内存，和 Trace 文件大小是两回事，也不是所有浏览器都遵循的固定阈值。
+Perfetto UI 默认在浏览器中运行 WebAssembly 版 Trace Processor，也就是让编译后的程序在浏览器沙箱中执行的二进制格式。浏览器通常会限制单个站点可用的内存，官方文档给出的典型运行时上限约为 2 GB。我们读这个数字时要拆开两层：它指解析和查询期间的站点内存，和 Trace 文件大小是两回事；至于上限具体是多少，还要看浏览器的实现。
 
-Trace Processor 会把输入 packet 解析成便于查询的列式表——按列组织值，扫描和聚合效率更高。对未压缩 protobuf Trace，官方给出的运行时内存经验值是文件体积的 2～4 倍；比例仍会随 data source、事件密度、输入格式和工具版本变化。因此，判断风险要回到具体的 data source、事件密度和工具版本，而不是套用“超过 200 MB 一定打不开”或“500 MB 必然需要多少内存”。
+Trace Processor 会把输入 packet 解析成便于查询的列式表——按列组织值，扫描和聚合效率更高。对未压缩 protobuf Trace，官方给出的运行时内存经验值是文件体积的 2～4 倍；比例仍会随 data source、事件密度、输入格式和工具版本变化。所以“超过 200 MB 一定打不开”“500 MB 必然需要多少内存”这类固定说法都靠不住，判断风险还是要回到具体的 data source、事件密度和工具版本。
 
 本机原生 Trace Processor 可以使用主机可用内存，并避开浏览器站点的内存上限。它依旧要读取并解析完整 Trace，不会把超大文件自动变成内存占用恒定的流式查询。遇到加载问题时，应先检查主机资源和 Trace 质量，再决定使用本机后端、缩小采集范围或分批处理。
 
@@ -1179,7 +1179,7 @@ Trace Processor 会把输入 packet 解析成便于查询的列式表——按�
 
 ### 固定主机工具版本
 
-Android 17 / API 37 的平台源码锚点是 `android-17.0.0_r1`。Trace 生产端与主机分析工具是两条独立版本线：Android 17 设备产生的 Trace 可以交给匹配版本，或经过兼容性验证的较新主机工具分析。我们要复现分析结果，除了设备版本，还必须记录实际使用的主机工具版本。
+Trace 生产端与主机分析工具是两条独立版本线：平台源码固定在 `android-17.0.0_r1`，Android 17 设备产生的 Trace 可以交给匹配版本，或经过兼容性验证的较新主机工具分析。我们要复现分析结果，除了设备版本，还必须记录实际使用的主机工具版本。
 
 下面的命令下载官方启动脚本并打印它选中的 Trace Processor 版本：
 
@@ -1191,7 +1191,7 @@ chmod +x ./trace_processor
 
 下载到的 `trace_processor` 是依赖 Python 3 的轻量启动脚本。首次运行时，它会获取当前平台的原生程序，并缓存到 `~/.local/share/perfetto/prebuilts`。因此归档分析环境时，应记录启动脚本校验和与 `--version` 输出；只有文件名，说明不了最终执行的是哪个原生程序。
 
-若流水线要求长期复现，可以把审核过的原生程序放入受控工具目录，并记录其校验和，再让 Python API 的 `bin_path` 指向它。临时探索可以使用官方启动脚本；正式基线在没有版本记录的情况下不应持续跟随“latest”。
+若流水线要求长期复现，可以把审核过的原生程序放入受控工具目录，并记录其校验和，再让 Python API 的 `bin_path` 指向它。临时探索可以使用官方启动脚本；正式基线应固定到具体版本，在没有版本记录的情况下长期跟随“latest”，复现就无从谈起。
 
 ### 交互式 Trace Processor
 
@@ -1439,7 +1439,7 @@ done
   trace.pftrace "SELECT COUNT(*) AS slice_count FROM slice"
 ```
 
-`export sqlite` 便于交给 SQLite 工具继续处理，但生成数据库前仍要完整解析输入。v57.2 的 `export --help` 只列出 SQLite；当前网页文档已经出现 `perfetto` 可重载归档和 `arrow_tar`，这些格式尚未进入该稳定二进制，不能只看网页就用于 v57.2 流水线。`--no-ftrace-raw` 会阻止类型化 ftrace 事件额外进入通用 `ftrace_event` 原始表，在 SQL 不查询这条路径时可降低内存。`--perf-file` 记录加载和查询耗时，用来区分慢在解析还是 SQL；`--full-sort` 会强制完整排序，不应当作省内存选项。
+`export sqlite` 便于交给 SQLite 工具继续处理，但生成数据库前仍要完整解析输入。v57.2 的 `export --help` 只列出 SQLite；当前网页文档已经出现 `perfetto` 可重载归档和 `arrow_tar`，这些格式尚未进入该稳定二进制，v57.2 流水线能用哪些格式，要以本机 `export --help` 为准。`--no-ftrace-raw` 会阻止类型化 ftrace 事件额外进入通用 `ftrace_event` 原始表，在 SQL 不查询这条路径时可降低内存。`--perf-file` 记录加载和查询耗时，用来区分慢在解析还是 SQL；`--full-sort` 会强制完整排序，用它来省内存行不通。
 
 ### Python API
 
@@ -1584,7 +1584,7 @@ chmod +x ./traceconv
 
 **D 状态就是磁盘 I/O 吗？**
 
-不能这样下结论。D 只表示不可中断睡眠，还要检查 `io_wait`、`blocked_function`、内核事件与调用栈。
+下这个结论还早。D 只表示不可中断睡眠，阻塞来源要检查 `io_wait`、`blocked_function`、内核事件与调用栈。
 
 **Python API 的额外开销可以忽略吗？**
 
@@ -1592,11 +1592,11 @@ SQL 解析和执行在原生进程完成，结果传输与 DataFrame 物化仍�
 
 **导出 JSON 能缓解文件过大吗？**
 
-通常不能。JSON 和 protobuf 文本面向兼容与检查，输出经常更大。分析大文件应优先使用 Trace Processor，或在采集端控制数据量。
+通常缓解不了。JSON 和 protobuf 文本面向兼容与检查，输出经常更大。分析大文件应优先使用 Trace Processor，或在采集端控制数据量。
 
 **Slice 名称匹配到就能作为跨版本指标吗？**
 
-不能。名称可能来自平台实现、atrace 类别、Track Event 或应用自定义标记。指标必须说明来源、版本边界、线程归属和缺失时的处理规则。
+单靠名称还不够。名称可能来自平台实现、atrace 类别、Track Event 或应用自定义标记。指标必须说明来源、版本边界、线程归属和缺失时的处理规则。
 
 ## 丢包、时钟、开销与可复现性
 
@@ -1604,9 +1604,9 @@ SQL 解析和执行在原生进程完成，结果传输与 DataFrame 物化仍�
 
 > 平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，工具基线是该平台 `external/perfetto` 中包含的 Perfetto v54.0。CUJ（Critical User Journey）是启动、滚动或页面切换等用户能直接感知的关键操作；界面操作、SQL 节点图与 Jank CUJ 指标口径见 [14.7 Perfetto SQL、SPAN_JOIN 与 Jank CUJ](07-perfetto-sql-span-join-jank-cuj.md)。
 
-### 1. 先判断 trace 能不能支撑结论
+### 1. Trace 的可信度与检查顺序
 
-性能分析常从时间线开始，但可信度可能在采集阶段就已经丢了：内核调度事件被覆盖、producer 的共享内存写满后丢包、结束 flush 失败，或者 ring buffer 写满后覆盖最早内容，把问题发生前的数据冲掉了。这里的 producer 指生成 trace 数据的进程，flush 指要求它提交仍暂存在本地缓冲区中的数据。我们先把一件事分开：Trace Processor 能打开文件，只说明文件可解析；事件是否完整，要靠下面的检查确认。
+性能分析常从时间线开始，但可信度可能在采集阶段就已经丢了：内核调度事件被覆盖、producer 的共享内存写满后丢包、结束 flush 失败，或者 ring buffer 写满后覆盖最早内容，把问题发生前的数据冲掉了。这里的 producer 指生成 trace 数据的进程，flush 指要求它提交仍暂存在本地缓冲区中的数据。所以我们先把两件事分开：Trace Processor 能打开文件，只说明格式可解析；事件是否完整，要靠下面的检查来回答。
 
 诊断采用一条固定顺序：
 
@@ -1635,7 +1635,7 @@ Perfetto 的系统采集路径可分成四个角色。
 
 Trace Processor 不在设备的采集 hot path（调用频繁且对延迟敏感的路径） 上。它在采集后读取 trace，把 protobuf packet 解析成 `slice`、`sched_slice`、`thread`、`process` 等表，再加载 PerfettoSQL 标准库与 metric。
 
-#### 2.2 三层 buffer 不能混为一谈
+#### 2.2 三层 buffer 的分工
 
 启用 `linux.ftrace` 时，数据通常经过三类 buffer：
 
@@ -1652,13 +1652,13 @@ kernel per-CPU ftrace buffer
 - SMB 是 producer 与 service 共享的短期暂存区，每个 producer 进程一份；
 - central buffer 由 `TraceConfig.buffers` 定义，可接收多个 producer 和 data source 的 packet，最终在会话结束或流式写入时输出。
 
-把 `TraceConfig.buffers.size_kb` 调大，只会扩大 central buffer；它不会同步扩大内核 ftrace buffer 或 SDK producer 的 SMB。ftrace 使用 `ftrace_config.buffer_size_kb`，SDK producer 可通过 `TracingInitArgs.shmem_size_hint_kb` 等初始化参数请求 SMB 大小。三层容量必须分别评估。
+把 `TraceConfig.buffers.size_kb` 调大，扩大的只有 central buffer；内核 ftrace buffer 要用 `ftrace_config.buffer_size_kb` 另行设置，SDK producer 的 SMB 则通过 `TracingInitArgs.shmem_size_hint_kb` 等初始化参数请求。所以三层容量要分别评估，调其中一层管不到另外两层。
 
 #### 2.3 一个 packet 如何到达 central buffer
 
-producer 中的 `TraceWriter` 取得一个 SMB chunk 后，通过 ProtoZero（Perfetto 的低开销 protobuf 写入库） 这个 Perfetto 低开销 protobuf 写入库直接序列化数据。chunk 写满或被主动提交后，producer 发送异步 IPC；service 把已提交 chunk 复制到 central buffer，再把 SMB 空间交还 producer。page 是 SMB 的固定大小内存页，一个 page 可以按布局分成多个 chunk。
+producer 中的 `TraceWriter` 取得一个 SMB chunk 后，用 ProtoZero（Perfetto 的低开销 protobuf 写入库）直接序列化数据。chunk 写满或被主动提交后，producer 发送异步 IPC；service 把已提交 chunk 复制到 central buffer，再把 SMB 空间交还 producer。page 是 SMB 的固定大小内存页，一个 page 可以按布局分成多个 chunk。
 
-共享内存 ABI（producer 与 service 都必须遵守的二进制内存布局约定） 是 producer 与 service 都必须遵守的二进制内存布局约定，其中 chunk 的状态流转为：
+这套共享内存 ABI（producer 与 service 都必须遵守的二进制内存布局约定）里，chunk 的状态流转为：
 
 | 状态 | 含义 |
 | --- | --- |
@@ -1667,9 +1667,9 @@ producer 中的 `TraceWriter` 取得一个 SMB chunk 后，通过 ProtoZero（Pe
 | `Complete` | producer 已完成写入，service 可以取得该 chunk |
 | `BeingRead` | service 正在复制，完成后转回 `Free` |
 
-一个 `TracePacket` 可以跨越多个 chunk，每一段是一个 fragment（分片）；protobuf 的长度字段也可能要等整段消息写完后才能确定。v54 协议用 `CommitDataRequest.ChunkToPatch` 等机制修补已提交 chunk 中预留的长度字段。读取端会按 `{ProducerID, WriterID, ChunkID}` 顺序重组 fragment：只有链条完整且待写字段已经 patch（回填） 回填后，才把它作为完整 packet 输出；遇到缺口时会标记数据丢失，残片要按无效 packet 处理。
+一个 `TracePacket` 可以跨越多个 chunk，每一段是一个 fragment（分片）；protobuf 的长度字段也可能要等整段消息写完后才能确定。v54 协议用 `CommitDataRequest.ChunkToPatch` 等机制修补已提交 chunk 中预留的长度字段。读取端会按 `{ProducerID, WriterID, ChunkID}` 顺序重组 fragment：链条完整、待写字段也 patch（回填）完成后，才把它作为完整 packet 输出；遇到缺口时会标记数据丢失，残片要按无效 packet 处理。
 
-完整 packet 输出规则保证的是“输出即可解析”，而不是每个 packet 都保留：SMB 耗尽、central ring buffer 覆盖或读取不及时，仍可能丢失整个 packet、连续多个 packet，甚至让同一 writer 的后续序列暂时解析不了。
+完整 packet 输出规则保证的是“输出即可解析”，至于 packet 保不保留则是另一回事——SMB 耗尽、central ring buffer 覆盖或读取不及时，都可能丢掉整个 packet、连续多个 packet，甚至让同一 writer 的后续序列暂时解析不了。
 
 ### 3. 顺序、flush 与增量状态
 
@@ -1677,9 +1677,9 @@ producer 中的 `TraceWriter` 取得一个 SMB chunk 后，通过 ProtoZero（Pe
 
 一个 `TraceWriter` sequence 是同一 writer 按顺序生成的一串 packet，该序列内部保持写入顺序。多个 writer 会并发提交，因此 trace 文件中的 packet 只在 writer sequence 内部有序；跨序列的排序由 Trace Processor 导入时在排序窗口内完成。
 
-低频 data source 可能长时间没有填满 SMB page。若没有 flush，一条较早的事件可能在数分钟后才提交，与其他序列的新事件混在文件后部。长 trace 的乱序跨度超过导入器的排序窗口时，可能出现事件到达次序与时间戳次序不一致的 out-of-order（事件到达次序与时间戳次序不一致） 警告或解析问题。
+低频 data source 可能长时间没有填满 SMB page。若没有 flush，一条较早的事件可能在数分钟后才提交，与其他序列的新事件混在文件后部。长 trace 的乱序跨度超过导入器的排序窗口时，可能出现 out-of-order（事件到达次序与时间戳次序不一致）警告或解析问题。
 
-`flush_period_ms` 会周期性向所有 data source 发出 flush 请求，让它们提交尚未送达 service 的数据，从而缩小乱序窗口。v54 的 `TraceConfig` 明确提示高频 flush 会增加 producer 与 service 开销；普通采集若只为追求更低延迟，就不应设置成毫秒级。
+`flush_period_ms` 会周期性向所有 data source 发出 flush 请求，让它们提交尚未送达 service 的数据，从而缩小乱序窗口。v54 的 `TraceConfig` 明确提示高频 flush 会增加 producer 与 service 开销；普通采集若只为追求更低延迟，把它设成毫秒级并不划算。
 
 导入旧 trace 时若已经遇到超大乱序窗口，可让 shell 使用完整排序：
 
@@ -1689,13 +1689,13 @@ producer 中的 `TraceWriter` 取得一个 SMB chunk 后，通过 ProtoZero（Pe
   trace.perfetto-trace
 ```
 
-`--full-sort` 会提高导入内存占用。它只能改变解析排序策略，不能找回采集时已经丢失的数据。
+`--full-sort` 会提高导入内存占用，改变的只是解析排序策略；采集阶段已经丢失的数据，它找不回来。
 
 #### 3.2 环形覆盖为何会破坏后续解释
 
-Track Event 常通过 string interning（把重复字符串登记一次并分配整数 ID） 压缩数据：重复字符串只登记一次并分配整数 ID，后续 packet 只引用 ID。`linux.process_stats` 也可能先记录线程与进程的对应关系，后续 ftrace packet 再引用 TID（线程 ID）。若 ring buffer 覆盖了较早的映射，保留下来的事件就可能缺少解释后续 ID 所需的 incremental state（增量状态）。
+Track Event 常通过 string interning（把重复字符串登记一次并分配整数 ID） 压缩数据，后续 packet 只引用 ID。`linux.process_stats` 也可能先记录线程与进程的对应关系，后续 ftrace packet 再引用 TID（线程 ID）。若 ring buffer 覆盖了较早的映射，保留下来的事件就可能缺少解释后续 ID 所需的 incremental state（增量状态）。
 
-Trace Processor 会检测部分无效增量状态，并跳过依赖缺失 interned data 的 packet。结果未必只是名称为空：整段 sequence 都可能无法进入分析表。
+Trace Processor 会检测部分无效增量状态，并跳过依赖缺失 interned data 的 packet。后果也未必只是名称为空：整段 sequence 都可能进不了分析表。
 
 两种常用缓解方式是：
 
@@ -1706,7 +1706,7 @@ Trace Processor 会检测部分无效增量状态，并跳过依赖缺失 intern
 
 ### 4. 数据完整性检查
 
-#### 4.1 不要只看 `severity = 'data_loss'`
+#### 4.1 `severity = 'data_loss'` 与容量覆盖两级查询
 
 完整性检查从 `stats` 表开始。它汇总 trace 自带的采集统计和 Trace Processor 导入时发现的问题：`severity` 是严重程度，`source` 标明问题来自采集记录还是分析阶段，`idx` 用来区分 CPU 或 buffer。下面的查询列出 severity 为 data loss 或 error 的非零统计：
 
@@ -1773,18 +1773,18 @@ ORDER BY
 
 `source = 'trace'` 指向 trace 自带的采集统计，`source = 'analysis'` 表示导入或建表阶段发现的问题。前者通常要调整采集配置或 producer，后者还可能来自插桩配对、文件内容或分析器版本。
 
-#### 4.3 “有丢失”之后还能不能分析
+#### 4.3 有丢失之后的可分析范围
 
 能否继续分析取决于损失所在的 CPU、buffer、时间段和数据源：
 
-- 目标是主线程锁等待，而目标 CPU 的 sched 事件有丢失，调度因果不能下强结论；
+- 目标是主线程锁等待，而目标 CPU 的 sched 事件有丢失，调度因果的强结论先缓一缓；
 - 只分析一个应用 Track Event 区间，而丢失发生在无关 target buffer，结论可能仍可用；
 - ring buffer 有覆盖，但所需窗口完整保留且增量状态有效，可以限定时间范围继续；
-- 结束 flush 失败时，trace 尾部事件可能缺失，不能把“没看到结束”解释成“操作没有结束”。
+- 结束 flush 失败时，trace 尾部事件可能缺失；“没看到结束”未必说明操作真的没有结束。
 
 报告中应明确写出损失项、下标、数值及它可能影响的结论。重采成本较低时，应先修正配置并重新采集。
 
-### 5. 用数据率计算 buffer，不背固定数值
+### 5. 按数据率估算 buffer 容量
 
 #### 5.1 Central buffer
 
@@ -1872,7 +1872,7 @@ data_sources {
 
 `target_buffer` 使用从 0 开始的下标，把 data source 指向前面声明的 central buffer。高频 ftrace 写入 buffer 0，低频进程映射放在 buffer 1，可降低映射被调度事件覆盖的概率。`scan_all_processes_on_start` 会在会话启动时扫描全部进程，有助于建立初始进程/线程关系，也会增加采集量。
 
-`ftrace_config.buffer_size_kb` 是每 CPU 的请求大小；8192 KiB 在 8 核设备上的名义总量约为 64 MiB。存在并发 ftrace 会话时，内核缓冲区不能随意暂停并重设，实际大小未必等于请求值。多数 v43 及更高版本配置可以先保留默认值；确需调优时，应结合设备 CPU 数、内存限制与 `ftrace_cpu_has_data_loss` 验证。15 秒短采集通常可依赖停止会话时的 final flush，因此示例没有默认加入周期 flush 和增量状态清除。
+`ftrace_config.buffer_size_kb` 是每 CPU 的请求大小；8192 KiB 在 8 核设备上的名义总量约为 64 MiB。存在并发 ftrace 会话时，内核缓冲区不可随意暂停并重设，实际大小也未必等于请求值。多数 v43 及更高版本配置可以先保留默认值；确需调优时，应结合设备 CPU 数、内存限制与 `ftrace_cpu_has_data_loss` 验证。15 秒短采集通常可依赖停止会话时的 final flush，因此示例没有默认加入周期 flush 和增量状态清除。
 
 该配置没有罗列 Binder、IRQ（硬件中断）、workqueue（内核工作队列）、CPU idle、内存和 heap profiling 等所有数据源。应先写出诊断问题，再加入能回答该问题的事件。若 UI 卡顿分析需要 Binder 调用关系，可补充 Binder ftrace；若只关心应用 slice，就无需默认开启高频 syscall。
 
@@ -1888,7 +1888,7 @@ data_sources {
 - 用于计算最终数字的 SQL 或 metric 命令；
 - 操作步骤和观察时间窗口。
 
-只保存 Perfetto UI 截图，会丢掉单位、过滤条件、工具版本与缺失数据提示，其他人也无法重新执行查询。
+只保存 Perfetto UI 截图，会丢掉单位、过滤条件、工具版本与缺失数据提示，其他人想重新执行查询也没有依据。
 
 ### 7. 长 trace：文件流式写入与 v54 flush 策略
 
@@ -1947,7 +1947,7 @@ Running 表示线程正在 CPU 上执行，Runnable 表示线程具备运行条�
 - launcher 点击、ActivityTaskManager 处理、进程创建、Application、Activity 与首帧；
 - 主线程 CPU 执行、调度等待、I/O、类加载和锁。
 
-不要把某个 `slice.dur` 直接命名为完整启动时间。使用 Android startup metric 或 PerfettoSQL 标准库时，应先核对该 metric 对启动类型、起点和终点的定义，再用 slice 解释具体慢在哪里。
+某个 `slice.dur` 只是单个区间的时长，完整启动时间以 metric 的定义为准：使用 Android startup metric 或 PerfettoSQL 标准库时，先核对该 metric 对启动类型、起点和终点的定义，再用 slice 解释具体慢在哪里。
 
 #### 8.3 ANR
 
@@ -1955,10 +1955,10 @@ ANR 查询可从 `android_anrs` 获取事件时间、类型、`subject`（原因
 
 - 主线程当时处于 Running、Runnable、Sleeping 还是阻塞态；
 - binder 调用链是否完整；
-- 是否有线程长时间得不到足够 CPU 的 CPU starvation（线程长时间得不到足够 CPU）、锁竞争、I/O 或长回调；
+- 是否出现 CPU starvation（线程长时间得不到足够 CPU）、锁竞争、I/O 或长回调；
 - `traced_final_flush_failed` 是否让 trace 尾部缺失。
 
-没有看到解锁、Binder reply（服务端返回事务结果） 或回调结束，先别下“从未发生”的结论；应先排除尾部未 flush 与相关 buffer 丢失。
+解锁、Binder reply（服务端返回事务结果）或回调结束在 trace 里看不到时，先排除尾部未 flush 与相关 buffer 丢失，再下“从未发生”的结论。
 
 #### 8.4 功耗
 
@@ -1970,9 +1970,9 @@ ANR 查询可从 `android_anrs` 获取事件时间、类型、`subject`（原因
 - 网络、定位、相机、音频等设备使用；
 - 测量窗口和设备状态。
 
-trace 只能解释已经采到的数据。没有设备功率计、fuel gauge（电池电量计）或 Wattson（基于设备模型估算功耗的 Perfetto/Android 分析能力）支持时，不能把调度时长直接换算成毫瓦时。
+trace 只能解释已经采到的数据。要把调度时长换算成毫瓦时，得先有设备功率计、fuel gauge（电池电量计）或 Wattson（基于设备模型估算功耗的 Perfetto/Android 分析能力）的支持。
 
-### 9. 插桩需要遵守的边界
+### 9. 插桩的基本约束
 
 应用 Track Event 或 atrace 名称应稳定、短小，并表达业务阶段。同步 begin/end 必须在同一线程和控制流上正确配对；异步操作应使用能够区分并发实例的 cookie 或独立 track。
 
@@ -1984,7 +1984,7 @@ trace 只能解释已经采到的数据。没有设备功率计、fuel gauge（�
 - release/user build（面向用户发布的生产构建） 上是否允许该数据源；
 - 关闭 tracing 时高频调用路径的开销是否可接受。
 
-`misplaced_end_event` 增长时，应检查 begin/end 配对和线程迁移。用名称搜索到一段 slice，不代表异步任务边界一定正确。
+`misplaced_end_event` 增长时，应检查 begin/end 配对和线程迁移。单靠名称搜到一段 slice，还确认不了异步任务的边界。
 
 ### 10. 观测开销怎么评估
 
@@ -2002,7 +2002,7 @@ trace 只能解释已经采到的数据。没有设备功率计、fuel gauge（�
 
 ### 11. Data Explorer 在这套流程中的位置
 
-通过完整性检查后，Data Explorer 这个可视化查询构建器适合交互式探索。Table/Query 是表或 SQL 查询数据源，Time Range 用来限定时间窗口，Join 按键连接两组记录，pivot 按维度分组汇总，bar 与 histogram 分别显示条形比较和数值分布。它适合：
+通过完整性检查后，我们可以用 Data Explorer 做交互式探索。它是一个可视化查询构建器：Table/Query 选择表或 SQL 查询数据源，Time Range 限定时间窗口，Join 按键连接两组记录，pivot 按维度分组汇总，bar 与 histogram 分别显示条形比较和数值分布。适合的事情有：
 
 - 从 Table 或 Query 源快速确认字段；
 - 用 Time Range 与问题窗口对齐；
@@ -2028,7 +2028,7 @@ trace 只能解释已经采到的数据。没有设备功率计、fuel gauge（�
   trace.perfetto-trace
 ```
 
-脚本应把非零 data-loss/error 统计和 central buffer 覆盖项保存为结构化结果。是否让 CI（持续集成）任务失败，应根据指标依赖的数据源判断；warning 既不能静默全忽略，也不必因无关 buffer 的单个计数丢弃整份数据。
+脚本应把非零 data-loss/error 统计和 central buffer 覆盖项保存为结构化结果。是否让 CI（持续集成）任务失败，应根据指标依赖的数据源判断；warning 要逐项对待，静默全忽略会掩盖问题，也不必因无关 buffer 的单个计数丢弃整份数据。
 
 ### 12. 源码与文档版本依据
 

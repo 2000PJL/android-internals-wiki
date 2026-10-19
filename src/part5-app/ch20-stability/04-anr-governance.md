@@ -96,7 +96,7 @@ ANR（Application Not Responding，应用无响应）是系统判定应用在特
 
 > 源码基线：AOSP `android-17.0.0_r1`，API 37。
 
-文中会交替提到两类证据：ANR traces 指系统在 ANR 现场采集的线程堆栈与诊断信息，system trace 和 `Trace` section 指性能时间线及其中的标记区间。前者看的是某一刻的栈，后者看的是时间上的分布，我们分析时要选对工具。
+文中会交替提到两类材料：ANR traces 指系统在 ANR 现场采集的线程堆栈与诊断信息，system trace 和 `Trace` section 指性能时间线及其中的标记区间。前者看的是某一刻的栈，后者看的是时间上的分布，我们分析时要选对工具。
 
 ## ANR 触发场景与超时阈值
 
@@ -144,7 +144,7 @@ ANR（Application Not Responding，应用无响应）是系统判定应用在特
 | start foreground / short FGS | Service 回调与停止时序 | 按时调用 `startForeground()` 或停止服务，处理 `onTimeout()` |
 | job service start/stop | `JobService` 主线程回调 | 立即返回并异步执行，遵守通知与完成协议 |
 
-还要提醒一句：一份主线程快照只说明采样那一瞬间。广播可能运行在自定义 `Handler` 上，`goAsync()` 的工作也可能落在后台 worker 线程；主线程栈里出现 `nativePollOnce`，只说明 Looper（线程消息循环） 正在等消息，看到它就把这类 ANR 排除掉，是会漏判的。
+用这张表时还要留意：一份主线程快照只说明采样那一瞬间。广播可能运行在自定义 `Handler` 上，`goAsync()` 的工作也可能落在后台 worker 线程；主线程栈里出现 `nativePollOnce`，只说明 Looper（线程消息循环） 正在等消息，看到它就把这类 ANR 排除掉，是会漏判的。
 
 ## 缩短主线程同步工作并异步化
 
@@ -160,7 +160,7 @@ ANR（Application Not Responding，应用无响应）是系统判定应用在特
 | 需要跨进程的查询 | 后台线程、缓存或异步协议 | 同步 Binder 没有通用调用超时，后文单独说明 |
 | 可推迟且需要进程重启后继续的任务 | [WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager) / JobScheduler | 适合持久、可延迟工作，不适合当前页面必须立即得到的结果 |
 
-要注意的是，线程切换只改变执行位置：无界队列照样积压，不可取消的 I/O 照样占住 worker，错误地切回 `Dispatchers.Main` 照样阻塞界面。
+线程切换改变的只是执行位置：无界队列照样积压，不可取消的 I/O 照样占住 worker，错误地切回 `Dispatchers.Main` 照样阻塞界面。
 
 ### 协程负责结构，线程由我们指定
 
@@ -223,11 +223,11 @@ class ArticleViewModel(
 
 ## IPC（Binder）调用治理
 
-Binder 是 Android 的主要 IPC（inter-process communication，进程间通信）机制，同步调用会让调用线程一直等到对端处理完成。而 Binder 驱动没有为每笔普通同步事务提供应用可配置的通用超时，对端进程 CPU 饥饿、Binder 线程池占满、锁等待或再次调用其他进程，都可能把等待拉长。这一节讨论的就是在调用方和服务端两侧怎么管住这种等待。
+Binder 是 Android 的主要 IPC（inter-process communication，进程间通信）机制，同步调用会让调用线程一直等到对端处理完成。而 Binder 驱动没有为每笔普通同步事务提供应用可配置的通用超时，对端进程 CPU 饥饿、Binder 线程池占满、锁等待或再次调用其他进程，都可能把等待拉长。这一节我们就看在调用方和服务端两侧怎么管住这种等待。
 
 ### 调用方要控制等待位置与协议
 
-主线程上的同步 Binder 只适合经过测量、结果稳定且无法替代的轻量操作，更常见的做法是我们熟知的几条：
+主线程上的同步 Binder 只适合经过测量、结果稳定又没有替代方案的轻量操作，更常见的做法是我们都熟悉的几条：
 
 - 缓存变化不频繁的系统信息，明确缓存失效条件，避免在绘制或输入路径重复查询。
 - 合并多次小事务，减少往返和 Parcel（Binder 传递参数时使用的序列化容器）开销；单次数据量仍要受 Binder 事务大小限制。
@@ -235,7 +235,7 @@ Binder 是 Android 的主要 IPC（inter-process communication，进程间通信
 - 对自有 AIDL（Android Interface Definition Language，Android 接口定义语言）设计异步回调或可取消请求，用 request ID（请求标识）丢弃迟到结果。
 - 只有调用语义允许单向投递时才使用 AIDL 的 `oneway`：调用方提交后不等返回，但远端处理速度跟不上时，事务会在队列中积压，这就是这里所说的背压。可见 `oneway` 解决的是“不必等”，把积压问题原样搬到了对端。
 
-`Future.get(timeout)` 等待后台任务时，调用方可以在超时后停止等待，但执行 Binder 事务的后台工作线程仍可能被占用；协程 `withTimeout` 会发出取消信号，阻塞式 Binder 事务通常不响应这次取消，工作线程仍要等远端返回。两种写法都终止不了远端正在执行的 `onTransact()`，所以主线程也别去阻塞等这类结果。
+`Future.get(timeout)` 等待后台任务时，调用方可以在超时后停止等待，但执行 Binder 事务的后台工作线程仍可能被占用；协程 `withTimeout` 会发出取消信号，阻塞式 Binder 事务通常不响应这次取消，工作线程仍要等远端返回。两种写法都终止不了远端正在执行的 `onTransact()`，主线程也就没有理由阻塞等这类结果。
 
 ### 服务端也会制造调用方 ANR
 
@@ -251,7 +251,7 @@ Binder 是 Android 的主要 IPC（inter-process communication，进程间通信
 
 怀疑系统服务变慢时，用 Perfetto、线程采样和系统 traces 一起判断。`system_server` 承载着 ActivityManager 等 Android 系统服务，它的问题会在多条路径上同时显现。
 
-另外注意，外部 Service 变慢并不会自动给 ContentProvider 判 ANR：要等应用线程在 provider 发布、provider 请求或其他受监控阶段同步等待该 Service，系统计时器到期后，才会形成相应类型的 ANR。
+外部 Service 变慢要传导到 ContentProvider ANR，中间还差一条同步等待路径：应用线程在 provider 发布、provider 请求或其他受监控阶段同步等待该 Service，系统计时器到期后，才会形成相应类型的 ANR。
 
 ## 锁竞争与死锁预防
 
@@ -276,7 +276,7 @@ Binder 是 Android 的主要 IPC（inter-process communication，进程间通信
 - **明确数据所有者**：单线程所有权、不可变对象或消息传递常比多处共享可变状态更容易验证。
 - **主线程可以持有短而无竞争的锁**：一律禁锁反而会逼出复杂的无锁代码，要禁的是不可控等待和锁内阻塞。
 - **粗锁与细锁都要测量**：粗锁减少嵌套却可能扩大竞争，细锁降低局部冲突却会增加顺序错误，怎么选取决于访问模式。
-- **原子类只保护对应的原子操作**：`volatile`、`AtomicReference` 和并发容器无法自动保护跨字段不变量或“检查后执行”。
+- **原子类只保护对应的原子操作**：`volatile`、`AtomicReference` 和并发容器各管各的原子操作，跨字段不变量或“检查后执行”落在自动保护之外。
 - **`tryLock()` 需要安全退路**：超时后能返回旧值、跳过非必要工作或重试才有意义；业务必须等结果时，`tryLock()` 只是把失败换了个样子。
 
 `Thread.getStackTrace()` 能从监测线程拿到处于 `BLOCKED` 状态的主线程栈。线上样本还要同时抓锁持有者和相邻线程——只抓主线程的话，我们只能看到“主线程在等”，看不到等待为什么没有结束。
@@ -305,7 +305,7 @@ Binder 是 Android 的主要 IPC（inter-process communication，进程间通信
 - 把可延迟组件改为显式按需初始化，并处理并发首次访问、失败重试和进程重建。
 - 记录“进程启动 → provider 安装 → `Application.onCreate()`”的分段时间；只统计 provider 方法内部，会把冷启动本身的耗时漏在账外。
 
-provider 发布完成后，`query()`、`insert()`、`call()` 等入口还可能被并发调用：远程调用经 Binder 线程进入进程，同进程调用则可能在调用线程直接执行。所以 provider 实现别依赖“所有方法都在主线程”，也别用一把大锁包住数据库、文件和 IPC。
+provider 发布完成后，`query()`、`insert()`、`call()` 等入口还可能被并发调用：远程调用经 Binder 线程进入进程，同进程调用则可能在调用线程直接执行。所以 provider 实现要按并发入口设计，“所有方法都在主线程”的假设靠不住，一把大锁包住数据库、文件和 IPC 的做法也一样。
 
 publish 基线来自 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`。`ContentProviderHelper` 中等待 provider 就绪、请求方检测 provider 无响应等路径有各自的条件和时限，所以报告里要保留 ANR 类型和描述，看到 provider 名称就套 10 秒发布结论，容易把另一条检测路径当成 publish 超时。
 
@@ -331,7 +331,7 @@ class DiagnosticsProvider : ContentProvider() {
 }
 ```
 
-要强调 trace 只负责测量，不会让初始化变快，决定预算的是 `installLightweightHooks()` 只保留主线程可接受的注册工作。明确支持后台执行的磁盘与解析移出 Provider，可延迟能力改为按需初始化，要求主线程的 SDK 步骤留在主线程并压缩——把所有初始化统一丢给 `Dispatchers.IO`，调用方可能在初始化完成前访问能力，或者违反 SDK 的线程约束。
+trace 只负责测量，初始化不会因此变快，决定预算的是 `installLightweightHooks()` 只保留主线程可接受的注册工作。明确支持后台执行的磁盘与解析移出 Provider，可延迟能力改为按需初始化，要求主线程的 SDK 步骤留在主线程并压缩——把所有初始化统一丢给 `Dispatchers.IO`，调用方可能在初始化完成前访问能力，或者违反 SDK 的线程约束。
 
 修复后至少重放这些场景：
 
@@ -373,9 +373,9 @@ class SyncReceiver(
 }
 ```
 
-默认 `launch` 可能在协程体开始执行前被取消，协程体内的 `finally` 无法覆盖这个分支。`Job.invokeOnCompletion()` 在任务成功、失败或取消后执行一次；注册时任务若已完成，处理器也会立即执行，因此示例把唯一一次 `finish()` 放在完成处理器中。处理器可能在不同线程运行，只负责结束广播，不执行额外耗时工作。
+默认 `launch` 可能在协程体开始执行前就被取消，这个分支协程体内的 `finally` 覆盖不到。`Job.invokeOnCompletion()` 在任务成功、失败或取消后执行一次；注册时任务若已完成，处理器也会立即执行，因此示例把唯一一次 `finish()` 放在完成处理器中。处理器可能在不同线程运行，只负责结束广播，不执行额外耗时工作。
 
-这里的内部预算必须短于对应广播窗口，由线上基线确定；排队时间仍会消耗广播窗口，协程内的计时无法覆盖排队阶段。`processor.handle()` 还要能响应取消——一旦它进入不可取消的阻塞调用，`withTimeout` 就无法保证按时完成任务并调用 `finish()`。超过广播窗口或要求进程重建后继续的任务，在 `onReceive()` 里只入队持久任务即可。
+这里的内部预算必须短于对应广播窗口，由线上基线确定；排队时间仍会消耗广播窗口，协程内的计时把这一段落在账外。`processor.handle()` 还要能响应取消——一旦它进入不可取消的阻塞调用，`withTimeout` 也拦不住这段代码，按时完成任务并调用 `finish()` 就失去了保证。超过广播窗口或要求进程重建后继续的任务，在 `onReceive()` 里只入队持久任务即可。
 
 ### Service：生命周期回调必须很短
 
@@ -391,7 +391,7 @@ class SyncReceiver(
 
 ## ANR Watchdog（看门狗）搭建
 
-应用侧的 Watchdog 思路很简单：后台线程按固定周期向主 Looper 投一个探针（供主线程执行的轻量 `Runnable`），量它多久才被执行。主 Looper 长时间没有响应能靠它发现；但系统判定 ANR 的条件分散在 InputDispatcher、广播、Service、provider 和 `system_server` 各处，Watchdog 复刻不了这些，我们把它当补充证据用。
+应用侧的 Watchdog 思路很简单：后台线程按固定周期向主 Looper 投一个探针（供主线程执行的轻量 `Runnable`），量它多久才被执行，主 Looper 长时间没有响应就能靠它发现。不过系统判定 ANR 的条件分散在 InputDispatcher、广播、Service、provider 和 `system_server` 各处，Watchdog 复刻不了这些，我们把它当补充证据用。
 
 ### 避免探针互相确认
 
@@ -463,7 +463,7 @@ class MainLooperWatchdog(
 
 ### 阈值来自产品基线
 
-Watchdog 阈值没有通用的 3 秒或 5 秒答案：定短了，正常的长消息、调试器暂停和设备休眠边界都会被记成风险事件；定长了又起不到预警作用。配置时我们考虑：
+Watchdog 阈值没有通用的 3 秒或 5 秒答案：定短了，正常的长消息、调试器暂停和设备进出休眠的时刻都会被记成风险事件；定长了又起不到预警作用。配置时我们考虑：
 
 - 对应业务最常见的系统 ANR 类型及其时限。
 - 设备等级、系统版本、温度和应用进程状态。
@@ -471,13 +471,13 @@ Watchdog 阈值没有通用的 3 秒或 5 秒答案：定短了，正常的长�
 - 同一 stall 的去重、两次上报之间的最短间隔和每日上报配额。
 - debug 构建、性能测试和已连接调试器时的排除规则。
 
-Watchdog 报告应包含 token、投递时间、延迟、主线程栈、若干关键线程栈、进程状态和设备负载。`Thread.getStackTrace()` 能抓到主线程等锁时的栈，但单次采样的证据有限，连续样本能帮我们区分“正在推进的慢任务”和“停在同一位置的等待”。
+Watchdog 报告应包含 token、投递时间、延迟、主线程栈、若干关键线程栈、进程状态和设备负载。`Thread.getStackTrace()` 能抓到主线程等锁时的栈，但单次采样说明的东西有限，连续样本能帮我们区分“正在推进的慢任务”和“停在同一位置的等待”。
 
-向自身发送 `SIGQUIT` 会让 ART 生成 thread dump（所有线程在采样时刻的堆栈快照）。这个动作本身有开销，普通应用通常也读不到系统保存在 `/data/anr` 的文件，所以我们只在内部调试或受控的小流量发布里用它，别让每次线上 stall 都触发。
+向自身发送 `SIGQUIT` 会让 ART 生成 thread dump（所有线程在采样时刻的堆栈快照）。这个动作本身有开销，普通应用通常也读不到系统保存在 `/data/anr` 的文件，所以我们只在内部调试或受控的小流量发布里用它，避免每次线上 stall 都触发。
 
 ### Watchdog 的能力边界
 
-- 它只能证明主 Looper 探针未按时执行，不能直接宣布系统已经产生 ANR。
+- 它证明的只是主 Looper 探针未按时执行；系统是否已经判定 ANR，要以系统侧记录为准。
 - receiver 运行在自定义线程或 `goAsync()` worker 卡住时，主 Looper 可能完全正常。
 - 无焦点窗口和部分系统侧等待不一定表现为主线程持续阻塞。
 - 系统可能在 Watchdog 上报前、同时或之后判定 ANR，没有“必定提前通知”的保证。
@@ -487,7 +487,7 @@ Watchdog 报告应包含 token、投递时间、延迟、主线程栈、若干�
 
 ## ANR 预警与主动发现
 
-应用 Watchdog 之外，系统在近两个版本补上了官方的预警能力：Android 17 增加了接近系统 ANR 时限的公开回调，Android 16 增加了 ANR 触发式 profiling。两者都只在系统条件允许时提供，不保证每次事件都有回调或结果，我们接它们是为了多一路证据。
+应用 Watchdog 之外，系统在近两个版本补上了官方的预警能力：Android 17 增加了接近系统 ANR 时限的公开回调，Android 16 增加了 ANR 触发式 profiling。两者都只在系统条件允许时提供，不保证每次事件都有回调或结果，我们接它们是为了多一路现场信息。
 
 ### Android 17：`registerAnrWarningListener`
 
@@ -537,7 +537,7 @@ class AnrWarningCollector(
 
 ### Android 16 及以上：ANR Profiling Trigger
 
-API 36 的 `ProfilingTrigger.TRIGGER_TYPE_ANR` 在系统识别 ANR 后、可能结束应用前触发，返回正在采集的 system trace 快照。Profiling 指按配置采集性能数据，system trace 记录一段时间内的线程调度、CPU 和系统事件。触发器触发不代表应用一定被杀，采集结果也受系统资源、频率限制和配置影响，我们拿它补充 ANR traces、`ApplicationExitInfo` 和业务监控，而不是替代它们。
+API 36 的 `ProfilingTrigger.TRIGGER_TYPE_ANR` 在系统识别 ANR 后、可能结束应用前触发，返回正在采集的 system trace 快照。Profiling 指按配置采集性能数据，system trace 记录一段时间内的线程调度、CPU 和系统事件。触发器触发只说明系统识别到了 ANR，之后应用未必结束；采集结果也受系统资源、频率限制和配置影响，我们拿它补充 ANR traces、`ApplicationExitInfo` 和业务监控，而不是替代它们。
 
 可以把三类信号按时间关联：
 
@@ -559,7 +559,7 @@ Binder 监测优先在自有接口的调用点记录开始、结束和请求 ID�
 
 ## 后台 ANR 与前台 ANR 的差异化治理
 
-谈治理之前，先把前台、后台和 Google Play 三套统计的算法分开说清，混在一起会把问题规模看错。
+谈差异化治理之前，我们先把前台、后台和 Google Play 三套统计的算法分开说清，混在一起会把问题规模看错。
 
 Google Play 当前提供三项以 DAU（daily active users，当日活跃用户）为分母的指标：
 
@@ -583,11 +583,11 @@ User-perceived ANR rate 是 Google Play 用于影响曝光判断的 core vital�
 
 ## 系统负载导致的 ANR 识别与过滤
 
-线上告警里总有一批 ANR 疑似系统负载造成：高 CPU、存储等待、内存压力、Binder 拥塞和 thermal throttling（设备过热后主动降低 CPU 等硬件频率）都会放大同一段代码的耗时。系统负载可以作为归因证据和分组维度，但凭一个信号就删 ANR 记录，很容易把真问题一起删掉。
+线上告警里总有一批 ANR，乍看像是系统负载造成的：高 CPU、存储等待、内存压力、Binder 拥塞和 thermal throttling（设备过热后主动降低 CPU 等硬件频率）都会放大同一段代码的耗时。系统负载可以作为归因依据和分组维度，但凭一个信号就删 ANR 记录，很容易把真问题一起删掉。
 
 ### 多信号判断
 
-所以一条“疑似系统负载”的判断，至少要凑齐以下几类证据再看：
+所以一条“疑似系统负载”的判断，至少要凑齐以下几类信号再看：
 
 - ANR 窗口内本进程和系统 CPU 时间、可运行线程压力。
 - I/O wait（CPU 等待存储设备完成读写的时间）、进程读写量与同设备同期基线。
@@ -601,19 +601,19 @@ User-perceived ANR rate 是 Google Play 用于影响曝光判断的 core vital�
 
 ### 容易误判的信号
 
-- **主线程 `nativePollOnce`**：它只说明采样时主 Looper 正在等待。广播可能在自定义 `Handler` 或工作线程上，快照也可能晚于阻塞点，要按 ANR 类型查看相关线程。对于 executing service 的大量同堆栈晚采样，官方文档允许结合其他证据降低问题组的优先级，这条经验不能套用到所有类型。
+- **主线程 `nativePollOnce`**：它只说明采样时主 Looper 正在等待。广播可能在自定义 `Handler` 或工作线程上，快照也可能晚于阻塞点，要按 ANR 类型查看相关线程。对于 executing service 的大量同堆栈晚采样，官方文档允许结合其他信号降低问题组的优先级；换到其他 ANR 类型，这条经验未必仍然成立。
 - **`am_proc_died` / `am_kill` 密集**：这两个事件分别记录进程死亡和系统终止进程，短时间大量出现支持“系统内存压力高”的判断，但要证明本次 ANR 与应用代码无关，还得回到应用自己的栈。
 - **cached app freezer（缓存应用冻结器）**：系统暂时冻结不活跃的缓存进程，减少其 CPU 使用。应用侧没有可靠的“刚解冻”通用 API，凭时间差跳过必要的状态恢复并不安全，把 freezer 当删除记录的理由同样站不住。
-- **`getRunningAppProcesses()`**：这是采样时刻的进程列表，无法证明先前的 ANR 为假，也不适合做上报有效性过滤。
-- **设备启动后不久**：系统服务可能繁忙，但应用冷启动和同步 IPC 同样可能有优化空间，要与同设备基线和系统 traces 一起判断，别急着归因系统。
+- **`getRunningAppProcesses()`**：这是采样时刻的进程列表，证明不了先前的 ANR 为假，拿来当上报有效性过滤同样不合适。
+- **设备启动后不久**：系统服务可能繁忙，但应用冷启动和同步 IPC 同样可能有优化空间，要与同设备基线和系统 traces 一起判断，再下归因结论。
 
-工程上，监控平台可以增加 `system_load_suspected`（疑似系统负载）及证据字段，降低这类事件在告警列表中的排序优先级，或放入单独队列；原始事件、分母和系统确认状态照常保留。多次版本对比后，如果问题只出现在某个设备系统构建、应用栈又分散，我们再把证据交给设备厂商或平台团队联合排查。
+工程上，监控平台可以增加 `system_load_suspected`（疑似系统负载）及证据字段，降低这类事件在告警列表中的排序优先级，或放入单独队列；原始事件、分母和系统确认状态照常保留。多次版本对比后，如果问题只出现在某个设备系统构建、应用栈又分散，我们再把线索交给设备厂商或平台团队联合排查。
 
 ## 治理与验证流程
 
 最后我们把流程串起来。一个 ANR 修复要能回答三个问题：系统在等什么、哪条线程没有前进、改动如何证明有效。代码改了却没有同场景回归，风险只是换了个位置。
 
-1. **建立事件关联标识**：组合应用版本、进程启动标识、ANR 类型、单调时钟、场景和可用的 `anrId`，用来判断不同证据是否属于同一次事件。
+1. **建立事件关联标识**：组合应用版本、进程启动标识、ANR 类型、单调时钟、场景和可用的 `anrId`，用来判断不同记录是否属于同一次事件。
 2. **保全证据**：系统 traces、ANR 主题、事件日志、`ApplicationExitInfo`、性能采集结果、Watchdog 连续栈和设备状态分别存储。
 3. **还原计时区间**：确认计时开始、结束与已消耗预算，标出冷启动、排队、执行和等待阶段。
 4. **找到等待所有者**：主线程卡住时继续查锁持有者、Binder 对端或工作线程；主线程空闲时转向 receiver 线程、焦点窗口和系统状态。
@@ -622,7 +622,7 @@ User-perceived ANR rate 是 Google Play 用于影响曝光判断的 core vital�
 7. **覆盖慢设备与压力状态**：低 RAM、CPU 受限、存储繁忙、冷热启动和前后台切换都要进入回归测试。
 8. **观察发布前后趋势**：同时看事件数、受影响用户、会话风险事件、设备分组和堆栈问题组，避免分母变化掩盖回归。
 
-每个高频问题组都应有负责人、证据、修复版本和验证结果。证据不完整时标“原因待确认”即可，为了报表整洁直接归入“系统原因”，是把未知当成了已知。
+每个高频问题组都应有负责人、证据、修复版本和验证结果。材料不齐时标“原因待确认”即可，为了报表整洁直接归入“系统原因”，是把未知当成了已知。
 
 ## 小结
 

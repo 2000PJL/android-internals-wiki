@@ -2,16 +2,25 @@
 title: SurfaceFlinger 合成、FrontEnd 与事务队列
 chapter: '2.9'
 section: '2.9'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 12 (API S) - Android 17 (API 37)
-last_verified: '2026-08-20'
+last_verified: '2026-10-19'
 last_verified_against: AOSP android-17.0.0_r1 frameworks/native SurfaceFlinger/FrontEnd/CompositionEngine/HWComposer, hardware/interfaces Composer3; android17-6.18-2026-06_r6 dma-buf/dma-fence; Android 11-16 tags only for version evolution
-confidence: high
+last_source_verified_at: '2026-10-19T09:36:56+08:00'
+verification_scope_note: '本次来源核验限于 commit、unsignaled 与 protected content 的括注；其余技术内容未逐项复核。'
+last_rework_at: '2026-10-19T09:36:56+08:00'
+confidence: medium
 sources:
 - type: aosp
   path: frameworks/native/services/surfaceflinger/
 - type: aosp
   path: frameworks/native/services/surfaceflinger/CompositionEngine/
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp
+- type: aosp
+  path: hardware/interfaces/graphics/common/aidl/android/hardware/graphics/common/BufferUsage.aidl
+- type: official
+  path: https://source.android.com/docs/core/graphics/unsignaled-buffer-latch
 - type: official
   path: https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager
 - type: aosp
@@ -137,7 +146,7 @@ flowchart LR
 
 这张图上有两件事要先说清楚。其一，SurfaceFlinger 面前只有 Layer 与 Display，App 内部的 View 或 Compose 节点在这里看不到身影；其二，同一帧里设备合成与客户端合成可以并存，RenderEngine 先生成 client target，HWC 再把它与可由设备处理的 Layer 一起提交显示。
 
-Android 12 的 `INVALIDATE/REFRESH` 只用于解释旧 Trace，Android 13 之后按 `commit（源码版本标签或提交）/composite` 主线阅读。
+Android 12 的 `INVALIDATE/REFRESH` 只用于解释旧 Trace，Android 13 之后按 `commit`（准备本帧合成状态）/`composite` 主线阅读。
 
 ### 四项核心职责
 
@@ -225,13 +234,13 @@ Transaction 把一组 Layer 修改作为一个提交单元。合并操作具有�
 
 `TransactionHandler` 使用 `LocklessQueue（无锁队列）<QueuedTransactionState>` 接收 transaction；commit 时先调用 `collectTransactions()`，再由 ready（就绪） filter（就绪筛选器） 检查就绪条件，并按每个 `ApplyToken` 的 pending FIFO（First In, First Out，先进先出）执行 `flushTransactions()`。
 
-readiness（可提交条件） 判断会考虑 fence、present time、barrier（屏障依赖） 与 unsignal（发出唤醒信号）ed（未触发） buffer；transaction barrier 的默认 TTL（依赖的最长保留时间） 是 5 秒，用于避免依赖永久悬挂。
+readiness（可提交条件） 判断会考虑 fence、present time、barrier（屏障依赖） 与 unsignaled（acquire fence 尚未触发） buffer；transaction barrier 的默认 TTL（依赖的最长保留时间） 是 5 秒，用于避免依赖永久悬挂。
 
 这里的 lockless queue 只描述 transaction 入队结构。SurfaceFlinger 主流程仍会在 snapshot、display state（显示设备状态） 和 legacy 互操作处使用相应锁；要判断 commit 全程的加锁情况，还得回到这些具体位置看。
 
 #### 原子提交与像素可读
 
-一笔 transaction 可以原子地表达“新 buffer、位置和裁剪一起生效”。buffer 的 Producer 仍可能异步写入，acquire fence 负责保护内容。Android 13 起支持受限的 unsignaled（触发） buffer latch（fence 尚未 signal 时提前接纳 buffer） 模式：满足策略条件的简单更新可以先推进 transaction readiness（事务就绪性），但 RenderEngine/HWC 真正读取内容前仍要等 acquire fence signal。
+一笔 transaction 可以原子地表达“新 buffer、位置和裁剪一起生效”。buffer 的 Producer 仍可能异步写入，acquire fence 负责保护内容。Android 13 起支持受限的 unsignaled（acquire fence 尚未触发） buffer latch（fence 尚未 signal 时提前接纳 buffer） 模式：满足策略条件的简单更新可以先推进 transaction readiness（事务就绪性），但 RenderEngine/HWC 真正读取内容前仍要等 acquire fence signal。
 
 SyncTransaction、WMS transition sync（WindowManager 为窗口过渡组织的同步） 与应用的 `SurfaceSyncGroup`（应用侧把多个 Surface 更新纳入同一同步组的接口） 是三套相关但不同的机制，各自覆盖的参与者和等待条件也有差别。我们排查跨窗口动画时，先确认哪些 Surface 被加入同一个同步组，再检查 transaction barrier、buffer readiness（就绪判断） 和 callback；屏幕上同时移动的 Surface，未必自动属于同一同步事务。
 
@@ -388,7 +397,7 @@ DEVICE composition 通常可以减少 SF 的 GPU client composition 工作，但
 
 - buffer format、modifier（内存排布修饰信息）、usage（生产者与消费者的用途标记）、dataspace 与 HDR metadata（高动态范围内容的描述信息）；
 - crop、scale、rotation、blend（混合方式）、alpha、rounded corner 和 color transform（颜色变换）；
-- protected content（受保护、不能走普通非安全路径的内容） 与 secure display 要求；
+- protected content（需通过受保护路径处理的内容） 与 secure display 要求；
 - overlay plane、scaler、色彩单元和内存带宽是否被其他 Layer 占用；
 - Display 分辨率、刷新率、输出模式和厂商功耗策略；
 - transition leash、SystemUI、IME（输入法窗口）、dim Layer（用于压暗背景的半透明 Layer） 和多个视频流形成的整屏组合。

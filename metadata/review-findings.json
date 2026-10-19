@@ -6317,6 +6317,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md",
+      "close_note": "已修复四处指定括注，保留说明功能：两处 unsignaled 统一为 acquire fence 尚未触发；commit 改为准备本帧合成状态；protected content 改为需通过受保护路径处理的内容。Android 17 行号证据：SurfaceFlinger.cpp:5439-5470、5543-5576、3135-3140；Scheduler.cpp:470-501；Output.cpp:1351-1368；BufferUsage.aidl:71-76。官方 unsignaled-buffer-latch:4918-4962 已核对单层限制及 Always 冻屏/可能弃用警示。章节仅推进 ready-for-review，不作整章终审。完整证据见 logs/rework/2026-10-19-20261019-093520-rework-fc9fdc91-rework.md。",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261019-093520-rework-fc9fdc91",
       "created_at": "2026-10-19T08:18:55.522063+08:00",
       "created_by": "aiw-chinese-rewrite",
       "created_run_id": "20261019-080720-cn-rewrite-fc9fdc918383fbe6",
@@ -6327,10 +6330,10 @@
       "source_paths": [
         "agent-run"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "四处被早期机器括注流程撕开/错注的括注，被 style_lint compare 的括注冻结检查锁住，改写车道无法修复",
       "type": "style-gloss",
-      "updated_at": "2026-10-19T08:18:55.522063+08:00"
+      "updated_at": "2026-10-19T09:39:13.528498+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",

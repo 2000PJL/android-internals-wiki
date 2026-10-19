@@ -4,9 +4,10 @@ chapter: '26.2'
 section: '26.2'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Current Android 17 profiling triggers / ApplicationExitInfo / Android vitals crash / WebView termination / symbolication docs, Firebase Crashlytics docs, and AOSP android-17.0.0_r1 sources retrieved 2026-08-15
+last_verified: '2026-10-19'
+last_source_verified_at: '2026-10-19'
+last_verified_against: AOSP android-17.0.0_r1 crash/ANR paths; Android 10-17 exit-info, profiling, WebView, symbolication and Android vitals docs; Android/Kotlin coroutine suspension docs, retrieved 2026-10-19
+last_idle_audit_at: '2026-10-19T10:40:11+08:00'
 confidence: high
 sources:
 - type: clipping
@@ -85,6 +86,18 @@ sources:
   path: https://developer.android.com/topic/performance/vitals/anr
 - type: official
   path: https://developer.android.com/topic/performance/vitals
+- type: official
+  path: https://developer.android.com/reference/android/webkit/WebViewClient
+- type: official
+  path: https://support.google.com/googleplay/android-developer/answer/9844486
+- type: official
+  path: https://developer.android.com/kotlin/coroutines/coroutines-adv
+- type: official
+  path: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/await.html
+- type: official
+  path: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/lock.html
+- type: official
+  path: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html
 - type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java
 - type: source
@@ -246,7 +259,7 @@ SQLite 适合在进程恢复后做索引，记录“待上传、上传中、已�
 
 #### WebView 渲染进程：由宿主应用观察退出
 
-WebView 渲染进程由系统和 WebView 实现管理，应用没有在里面安装普通 Crash SDK 的入口。API 26 起，[`WebViewClient.onRenderProcessGone()`](https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail（包含是否崩溃及渲染进程优先级等退出信息）)) 会把渲染进程退出通知宿主应用。
+WebView 渲染进程由系统和 WebView 实现管理，应用没有在里面安装普通 Crash SDK 的入口。API 26 起，[`WebViewClient.onRenderProcessGone()`](https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)) 会把渲染进程退出通知宿主应用，并提供 `RenderProcessGoneDetail`（包含是否崩溃及渲染进程优先级等退出信息）。
 
 回调送达时，这个 `WebView` 已经没法继续使用。宿主必须把它从视图层级移除、销毁并清理引用，再决定是否创建新实例。返回 `true` 表示应用已经处理该退出；只要任一共享该渲染进程的 `WebView` 返回 `false`，系统就会按渲染进程的退出情况终止应用，崩溃退出会表现为应用崩溃。多个 `WebView` 可能共享同一个渲染进程，所以每个受影响实例都要正确处理回调。上报字段用宿主回调提供的 `RenderProcessGoneDetail`（是否崩溃、渲染进程优先级等退出信息）、页面的脱敏标识和宿主版本就够了——至于渲染进程内部的 Java 栈，不要假设应用读得到。
 
@@ -263,6 +276,8 @@ WebView 渲染进程由系统和 WebView 实现管理，应用没有在里面安
 ### 用 `ApplicationExitInfo` 补偿退出记录
 
 API 30 起，应用可以通过 [`ActivityManager.getHistoricalProcessExitReasons()`](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int)) 查询近期进程退出信息。它适合发现 SDK 没有保存到的低内存终止、ANR、Java Crash 和 Native Crash，也能帮助核对多进程退出。
+
+低内存终止能否明确报告为 `REASON_LOW_MEMORY`，要先用同为 API 30 引入的 `ActivityManager.isLowMemoryKillReportSupported()` 检查设备支持情况。不支持时，低内存终止会记录为 `REASON_SIGNALED`，`getStatus()` 返回 `SIGKILL`；但仅凭 `SIGKILL` 无法确认低内存原因。
 
 这项 API 不是无限期、无损的崩溃档案库，用的时候要记住四点：
 
@@ -471,7 +486,7 @@ Android 11 引入 `ApplicationExitInfo` 后，App 可以在后续进程启动时
 
 ANR 指标要分两套：内部治理一套，Google Play Android vitals 一套。内部指标面向排查，关注版本、场景、页面、设备和线程状态；vitals 面向分发质量，关注 user-perceived ANR rate（用户感知 ANR 率）。
 
-Play 当前把用户感知 ANR 率列为 core vital（会影响应用可发现性的核心质量指标）。官方口径中，只有 `Input dispatching timed out` 计入用户感知 ANR，而它只覆盖应用全部 ANR 的一部分。公开的不良行为阈值为：全设备维度至少 0.47% 的日活用户遇到用户感知 ANR，单机型维度至少 8%。Google Play 每日使用最近 28 天的平均值评估应用质量；超过阈值可能降低应用在 Google Play 的可发现性，也可能在商品详情中显示警告。
+Play 当前把用户感知 ANR 率列为 core vital（会影响应用可发现性的核心质量指标）。官方口径中，只有 `Input dispatching timed out` 计入用户感知 ANR，而它只覆盖应用全部 ANR 的一部分。公开的不良行为阈值为：全设备维度至少 0.47% 的日活用户遇到用户感知 ANR，单机型维度至少 8%。Android vitals 每日更新；Google Play 通常依据最近 28 天的数据评估应用质量，指标突增时可能提前采取措施。超过阈值可能降低应用在 Google Play 的可发现性，也可能在商品详情中显示警告。
 
 Play 的“用户”按设备和自然日去重：同一账号在两台设备上会计为两个日活用户，同一设备上的多个账号计为一个。Android vitals 的数据又只来自满足这些条件的设备：从 Google Play 安装、通过 Play 认证，且用户选择共享使用情况与诊断信息。内部用户 ANR 率可以用相同的分子和分母去比趋势；逐条对齐 Play Console 的数值，这个预期本身就不成立。
 
@@ -575,9 +590,9 @@ WebView renderer（WebView 渲染进程，负责解析和绘制网页内容的�
 
 #### Kotlin 协程与 ANR 现场
 
-协程不改变 ANR 的系统判定：主线程只要没能及时处理输入或生命周期回调，照样进入系统 ANR。协程带来的差异在于现场更容易分散：主线程可能卡在 `runBlocking`、`withContext` 回切、`Mutex`、`Deferred.await()`，对端任务在 `DefaultDispatcher` 或自定义线程池里。
+协程不改变 ANR 的系统判定：主线程没能及时处理输入或生命周期回调，仍可能触发系统 ANR。排查时要区分线程阻塞与协程挂起。`runBlocking` 会阻塞调用线程，在主线程使用时可能妨碍 Looper 处理消息；`Deferred.await()`、`Mutex.lock()` 等等待操作可以挂起协程，让出线程；`withContext(Dispatchers.IO)` 可以把阻塞 I/O 移到后台。协程回到主线程后执行的长计算或阻塞调用，仍可能造成无响应。
 
-协程项目的 ANR 快照至少保留主线程栈，并在可观测时补充调度线程栈与自定义 dispatcher（协程调度器） / executor（任务执行器） 的队列摘要。Kotlin 公共 API 不保证应用可以在发布构建中安全枚举全部活跃协程；没有稳定观测接口时，应保留线程栈和业务任务标识，避免把调试探针设为生产环境必选项。`Dispatchers.IO` 或 `Default` 中的任务饱和不会直接触发系统 ANR；主线程等任务结果、回调没被及时执行时，才形成与 ANR 相关的现场。Java 崩溃与协程异常处理详见 20.2 节，ANR 治理策略详见 20.4 节。
+协程项目的 ANR 快照至少保留主线程栈，并在可观测时补充调度线程栈与自定义 dispatcher（协程调度器） / executor（任务执行器） 的队列摘要。Kotlin 公共 API 不保证应用可以在发布构建中安全枚举全部活跃协程；没有稳定观测接口时，应保留线程栈和业务任务标识，避免把调试探针设为生产环境必选项。`Dispatchers.IO` 或 `Default` 中的任务饱和不会直接触发系统 ANR；主线程同步阻塞等待任务结果、回调没被及时执行时，才形成与 ANR 相关的现场。Java 崩溃与协程异常处理详见 20.2 节，ANR 治理策略详见 20.4 节。
 
 ### ANR 部分小结
 
@@ -616,6 +631,10 @@ Crash 与 ANR 可以共享事件信封、构建标识、附件存储、符号化
 - [`AnrWarningResult` API](https://developer.android.com/reference/android/app/AnrWarningResult)
 - [`WebViewRenderProcessClient` API](https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient)
 - [Google Play 技术质量说明](https://support.google.com/googleplay/android-developer/answer/9844486)
+- [Android Kotlin 协程：主线程安全与调度器](https://developer.android.com/kotlin/coroutines/coroutines-adv)
+- [Kotlin `Deferred.await()`：不阻塞线程的等待](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/await.html)
+- [Kotlin `Mutex.lock()`：挂起等待互斥锁](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/lock.html)
+- [Kotlin `runBlocking()`：阻塞调用线程](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html)
 - [AOSP Android 17：`AnrHelper`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java)
 - [AOSP Android 17：`ProcessErrorStateRecord`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessErrorStateRecord.java)
 - [AOSP Android 17：`StackTracesDumpHelper`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/StackTracesDumpHelper.java)

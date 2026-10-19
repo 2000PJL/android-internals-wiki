@@ -121,11 +121,11 @@ OOM 通常指内存不足，但稳定性平台常把线程、文件描述符和�
 
 > 源码基线：framework（Android 系统框架） 按 AOSP `android-17.0.0_r1`、Android 17 / API 37 核对；Linux 资源限制按 `android17-6.18-2026-06_r6` 内核源码核对。
 
-Java heap 达到 ART 的 growth limit、由 native 层提供存储的 Java API 分配失败、线程创建失败，都可能抛出 OOME。普通 `malloc()` / `mmap()` 失败则往往只返回错误：FD（文件描述符）耗尽通常表现为 `EMFILE`，把高编号 FD（file descriptor，文件描述符） 误交给 `select()` 还可能触发 FORTIFY（Bionic 运行时边界检查）并 `abort()`；LMKD（低内存终止守护进程）结束进程时则没有 Java 异常。
+同样是“资源不够”，在不同层面的暴露形式各不相同。Java heap 达到 ART 的 growth limit、由 native 层提供存储的 Java API 分配失败、线程创建失败，都可能抛出 OOME。普通 `malloc()` / `mmap()` 失败则往往只返回错误：FD（文件描述符）耗尽通常表现为 `EMFILE`，把高编号 FD（file descriptor，文件描述符） 误交给 `select()` 还可能触发 FORTIFY（Bionic 运行时边界检查）并 `abort()`；LMKD（低内存终止守护进程）结束进程时则没有 Java 异常。
 
-治理时先保留原始错误、退出原因和进程资源快照，再按资源类型和内存区域选取依据。
+面对这张错误清单，我们治理时的第一步是保留原始错误、退出原因和进程资源快照，然后按资源类型和内存区域选取依据——先弄清败在哪类资源上，再谈优化。
 
-OOM 可能来自 Java Heap、Native、图形内存、地址空间或系统低内存终止。WebView Renderer 位于独立进程，它退出时页面可能白屏，应用也可能通过回调重建页面。
+OOM 可能来自 Java Heap、Native、图形内存、地址空间或系统低内存终止；WebView Renderer 是其中一个特殊角色，它位于独立进程，退出时页面可能白屏，应用也可以通过回调重建页面。
 
 ## OOM 类型、现场证据与恢复边界
 
@@ -143,11 +143,11 @@ OOM 可能来自 Java Heap、Native、图形内存、地址空间或系统低内
 | FD 耗尽或高编号 FD 误用 | `EMFILE`、创建 socket/pipe/Looper 失败，或 FORTIFY abort | `/proc/self/fd`、rlimit、FD 创建与关闭记录 | 通常否 |
 | 虚拟地址空间或 VMA（virtual memory area，虚拟内存区域）耗尽 | `mmap` 返回 `ENOMEM`，后续表现取决于调用方 | `/proc/self/maps`、VmSize、映射数、失败栈 | 不一定 |
 
-这张表直接决定采集工具的选择。Heap dump 记录 Java 对象与引用关系，覆盖不到全部 native 映射；heapprofd 采样 native 分配调用栈，覆盖不到 Java 对象引用；LMKD（Low Memory Killer Daemon，低内存终止守护进程） 则是直接终止进程，崩溃捕获 SDK 连执行收尾代码的机会都没有。
+类别放对之后，采集工具的选择也随之确定：Heap dump 记录 Java 对象与引用关系，覆盖不到全部 native 映射；heapprofd 采样 native 分配调用栈，覆盖不到 Java 对象引用；LMKD（Low Memory Killer Daemon，低内存终止守护进程） 则是直接终止进程，崩溃捕获 SDK 连执行收尾代码的机会都没有。
 
 #### ART 如何抛出 OOME
 
-ART 的多条 native 失败路径最终都会调用 `Thread::ThrowOutOfMemoryError()`。它先尝试构造带错误文本的 `java.lang.OutOfMemoryError`；如果构造 OOME 时内存再次耗尽，线程就改用 Runtime 启动阶段预先准备好的 OOME 对象。
+ART 内部有多条 native 失败路径，最终都汇到 `Thread::ThrowOutOfMemoryError()` 这个出口。它先尝试构造带错误文本的 `java.lang.OutOfMemoryError`；如果构造 OOME 时内存再次耗尽，线程就改用 Runtime 启动阶段预先准备好的 OOME 对象。
 
 下面是 `art/runtime/thread.cc` 的关键分支，我们省略了日志和无关代码。
 
@@ -177,7 +177,7 @@ OOME 错误文本用于诊断，格式会随分配器和平台版本变化。监
 
 #### 从错误信息定位
 
-典型 heap OOME 可能包含以下信息：
+定位从错误信息本身开始。典型 heap OOME 可能包含以下信息：
 
 ```text
 java.lang.OutOfMemoryError: Failed to allocate a 48 byte allocation with
@@ -238,19 +238,19 @@ void Heap::ThrowOutOfMemoryError(
 | 分配抖动 | 存活集不高，短时间内频繁创建临时对象，分配速率与 GC 频率很高 | 复用缓冲区、减少中间对象、流式解析、避免热路径装箱 |
 | 单次大对象或尺寸错误 | OOME 栈集中在数组、Bitmap、解压或反序列化入口 | 校验输入上限、分块处理、目标尺寸解码、检查宽高与字节数乘法 |
 
-Heap dump 更适合在资源接近内部告警线、进程还健康时采集。等到 OOME 发生后再做完整 dump，要额外申请内存和 I/O，成功率低，还可能延长用户可见的停顿。线上我们可以先用趋势采样找到内存上升的场景，再在可控设备、受控小流量版本或实验室里复现并抓取 HPROF（Java heap dump 文件格式）。
+抓 heap dump 的时机同样有讲究：它更适合在资源接近内部告警线、进程还健康时采集。等到 OOME 发生后再做完整 dump，要额外申请内存和 I/O，成功率低，还可能延长用户可见的停顿。线上我们可以先用趋势采样找到内存上升的场景，再在可控设备、受控小流量版本或实验室里复现并抓取 HPROF（Java heap dump 文件格式）。
 
-`Runtime.totalMemory() - Runtime.freeMemory()` 统计的是当前已提交 heap 里尚未空闲的部分，与 GC 后存活集是两个概念。判断泄漏，要比较同一场景、同一 GC 状态下的对象数量和 retained size（回收时可一并释放的内存）；一次 Runtime 采样说明不了问题。
+还有一个容易混淆的量：`Runtime.totalMemory() - Runtime.freeMemory()` 统计的是当前已提交 heap 里尚未空闲的部分，与 GC 后存活集是两个概念。判断泄漏，要比较同一场景、同一 GC 状态下的对象数量和 retained size（回收时可一并释放的内存）；一次 Runtime 采样说明不了问题。
 
 #### `largeHeap` 的边界
 
 [`largeHeap`](https://developer.android.com/guide/topics/manifest/application-element) 只改变应用可用的 Java heap 上限：设备的物理内存没有变多，native、图形缓冲、线程栈和其他进程的压力也没有减轻。更大的 heap 反而会容纳更多存活对象，让系统更早进入内存竞争。
 
-只有少数确实有大内存工作集的产品才值得评估 `largeHeap`，前提是低内存设备、后台切换、进程重建和系统压力测试都有数据；泄漏、无界缓存和错误尺寸分配要另想办法。至于修改 ART 私有字段、反射调用隐藏接口或动态“扩堆”，这些做法依赖内部实现，还可能破坏 GC 假设，生产方案里不要采用。
+只有少数有大内存工作集的产品才值得评估 `largeHeap`，前提是低内存设备、后台切换、进程重建和系统压力测试都有数据；泄漏、无界缓存和错误尺寸分配要另想办法。至于修改 ART 私有字段、反射调用隐藏接口或动态“扩堆”，这些做法依赖内部实现，还可能破坏 GC 假设，生产方案里不要采用。
 
 ### Native 内存 OOM
 
-Native 这边没有一个统一的“native heap 上限”可查。`malloc()` 可能因为地址空间用尽、系统拿不出更多内存、allocator 元数据不足或系统策略而失败；`mmap()`、图形缓冲和线程栈又各自走不同的分配路径。有时进程还会在分配函数返回失败之前，就被 LMKD 结束。
+到了 native 这边，我们手上没有一个统一的“native heap 上限”可查。`malloc()` 可能因为地址空间用尽、系统拿不出更多内存、allocator 元数据不足或系统策略而失败；`mmap()`、图形缓冲和线程栈又各自走不同的分配路径。有时进程还会在分配函数返回失败之前，就被 LMKD 结束。
 
 #### 哪些路径会转换为 OOME
 
@@ -277,6 +277,8 @@ Native 这边没有一个统一的“native heap 上限”可查。`malloc()` �
 
 #### 诊断顺序
 
+我们按下面的顺序推进：
+
 1. Android 11 / API 30 及以上，先用 [`ActivityManager.getHistoricalProcessExitReasons()`](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int)) 读取 [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo)（系统保存的历史进程退出记录），把 OOME crash、native crash 和 `REASON_LOW_MEMORY` 分开；Android 10 / API 29 没有这组历史退出 API，只能靠 LMKD/系统日志、崩溃记录和重启前的轻量本地标记。API 30+ 还要先调用 `ActivityManager.isLowMemoryKillReportSupported()` 确认设备支持低内存退出原因；设备不支持时，低内存终止可能记录成 `REASON_SIGNALED` 与 `SIGKILL`，此时就算记录里没有 `REASON_LOW_MEMORY`，系统内存压力也仍然可能存在。系统直接终止进程时，也没有可依赖的未捕获异常回调。
 2. 对比同场景的 PSS（Proportional Set Size）/RSS（Resident Set Size）、Java heap、native malloc、图形内存、线程和映射数，先确定哪一类内存在增长。
 3. `malloc` 分配使用 [heapprofd 或 Android Studio native allocation profiler](https://developer.android.com/studio/profile/record-native-allocations)，保留分配与释放栈；接入条件受构建类型、`profileable`（允许性能工具连接）配置、设备和系统策略影响。
@@ -288,7 +290,7 @@ Native 这边没有一个统一的“native heap 上限”可查。`malloc()` �
 
 ### 线程数 OOM（pthread_create 失败）
 
-`pthread_create()` 是 POSIX 线程创建接口。每个已经启动的 Java platform thread 都对应一个 native thread，占用线程栈、guard 区（栈边缘的越界检测保护页）、ART `Thread`、JNI 环境和内核 task（可调度执行单元）等资源。线程数一涨，虚拟地址空间、native 内存和调度能力会同时被消耗；协程或排队任务的数量，也不能直接换算成操作系统线程数。
+线程创建失败也会以 OOME 的形式出现。`pthread_create()` 是 POSIX 线程创建接口，每个已经启动的 Java platform thread 都对应一个 native thread，占用线程栈、guard 区（栈边缘的越界检测保护页）、ART `Thread`、JNI 环境和内核 task（可调度执行单元）等资源。线程数一涨，虚拟地址空间、native 内存和调度能力会同时被消耗；协程或排队任务的数量，与操作系统线程数之间没有直接的换算关系。
 
 #### 线程创建的失败分支
 
@@ -305,7 +307,9 @@ std::string msg(
 soa.Self()->ThrowOutOfMemoryError(msg.c_str());
 ```
 
-`Could not allocate JNI Env` 说明失败发生在 pthread 启动之前；`pthread_create ... failed` 则要继续看 `strerror()` 给出的原因。Bionic 在 stack/TLS（线程局部存储）映射失败时返回 `EAGAIN`，含义是当前资源不足、稍后重试可能成功。内核 `clone` 还可能因为 task 数、`RLIMIT_NPROC`（每用户可创建的线程数上限）或其他资源不足而失败。`android17-6.18-2026-06_r6/kernel/fork.c` 的 `copy_process()` 会在相关限制失败时返回 `-EAGAIN`；诊断时务必保留设备上的原始 errno（系统错误编号及文本），把所有 `EAGAIN` 记成同一个原因，会丢掉最关键的区分信息。
+`Could not allocate JNI Env` 说明失败发生在 pthread 启动之前；`pthread_create ... failed` 则要继续看 `strerror()` 给出的原因。Bionic 在 stack/TLS（线程局部存储）映射失败时返回 `EAGAIN`，含义是当前资源不足、稍后重试可能成功。内核 `clone` 还可能因为 task 数、`RLIMIT_NPROC`（每用户可创建的线程数上限）或其他资源不足而失败。`android17-6.18-2026-06_r6/kernel/fork.c` 的 `copy_process()` 会在相关限制失败时返回 `-EAGAIN`。
+
+所以诊断时务必保留设备上的原始 errno（系统错误编号及文本）；把所有 `EAGAIN` 记成同一个原因，会丢掉最关键的区分信息。
 
 栈大小由 ART 的 `FixStackSize()` 和线程请求共同决定，“每线程固定 1 MB”换一台设备或架构就不成立。诊断时我们从 OOME 错误文本里的栈大小、`/proc/self/task` 数量和 maps 中的 stack/guard 映射出发。
 
@@ -319,13 +323,13 @@ soa.Self()->ThrowOutOfMemoryError(msg.c_str());
 - 告警阈值来自设备和场景基线，例如场景完成并短暂稳定后的线程数分布、增长速度和剩余地址空间。固定 400 或 500 对不同进程没有通用意义。
 - 线程数超过内部告警线时不要立即调用 `Thread.getAllStackTraces()` 抓取所有栈；它会创建大量对象。平时保留线程名、责任模块和采样栈，超过告警线后只补充少量线程现场。
 
-线程数下降也要看任务是否仍能完成。把线程改成一个无界队列，可能把资源 OOM 改成排队延迟或 ANR（Application Not Responding，应用无响应）。
+反过来，线程数下降也要看任务是否仍能完成：把线程改成一个无界队列，可能把资源 OOM 改成排队延迟或 ANR（Application Not Responding，应用无响应）。
 
 ### FD 泄漏导致的资源型崩溃
 
 FD 是内核分配给文件、socket、pipe 等已打开资源的整数句柄。进程达到 `RLIMIT_NOFILE`（进程级 FD 数量上限）后，`open()`、`socket()`、`pipe()`、`eventfd()` 或 `epoll_create1()` 可能返回 `EMFILE`；系统级打开文件表耗尽还可能表现为 `ENFILE`。`android17-6.18-2026-06_r6/fs/file.c` 的 FD 分配路径会按当前进程的 files table 和限制返回 `-EMFILE`。
 
-FD 耗尽一般不走 ART OOME 这条路。治理上仍应把内存、线程、FD 和地址空间放进同一套进程资源看板，事件类型各自分开统计。
+FD 耗尽一般不走 ART OOME 这条路，但治理上我们仍应把内存、线程、FD 和地址空间放进同一套进程资源看板，事件类型各自分开统计。
 
 #### FORTIFY（Bionic 的运行时边界检查） 与真实上限
 
@@ -377,6 +381,8 @@ FORTIFY: FD_SET: file descriptor >= FD_SETSIZE
 64 位进程也可能因无界映射、VMA 数量、异常地址保留或超大连续映射而收到 `ENOMEM`。`android17-6.18-2026-06_r6/mm/mmap.c` 的 `do_mmap()` 会在长度、地址或 `map_count`（当前进程的 VMA 数量）超过系统约束等条件下返回 `-ENOMEM`；64 位进程仍要管理映射生命周期。
 
 #### 排查顺序
+
+地址空间问题的排查顺序：
 
 1. 保存进程位数、失败 errno、请求长度、调用栈和连续性要求。
 2. 读取 `/proc/self/status` 的 VmSize/VmPeak（当前/历史峰值虚拟地址空间）和 `/proc/self/maps` 区间数量，和同设备同场景健康样本比较。
@@ -434,7 +440,9 @@ override fun onTrimMemory(level: Int) {
 
 全局 `UncaughtExceptionHandler` 不适合执行 `Debug.getMemoryInfo()`、heap dump、JSON 序列化或网络上报，这些动作会继续申请内存。若产品需要 OOM 标记，应预先准备固定大小的记录和写入量受限的路径，失败时立即放弃。
 
-自定义处理器必须保存安装前的处理器，并对所有 `Throwable` 调用它——API 37 的 [`ProfilingTrigger.TRIGGER_TYPE_OOM`](https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_OOM) 可以在 OOME crash 时生成 Java heap dump，官方明确要求这条调用路径，否则自动触发器不可用。触发器还受系统资源和频率限制，每次都产生结果是没有保证的。已生成的结果要等应用后续启动、注册 `registerForAllProfilingResults` 回调后再读取，它不是崩溃线程上的同步恢复机制。
+自定义处理器必须保存安装前的处理器，并对所有 `Throwable` 调用它——API 37 的 [`ProfilingTrigger.TRIGGER_TYPE_OOM`](https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_OOM) 可以在 OOME crash 时生成 Java heap dump，官方明确要求这条调用路径，否则自动触发器不可用。
+
+触发器还受系统资源和频率限制，每次都产生结果是没有保证的。已生成的结果要等应用后续启动、注册 `registerForAllProfilingResults` 回调后再读取，它不是崩溃线程上的同步恢复机制。
 
 在可控的可选分配点捕获 OOME，只适用于输入尺寸已知、没有共享状态写到一半、可以返回低分辨率或失败结果的操作。全局吞掉 OOME 后继续运行，进程的资源使用可能仍接近上限，其他线程也可能已失败。
 
@@ -442,7 +450,7 @@ override fun onTrimMemory(level: Int) {
 
 #### 大型 App 的内存预算管理
 
-预算要同时覆盖 Java、native、图形/媒体缓冲、线程、FD 和地址空间；只看 Java `maxMemory()` 会漏掉大量进程成本。
+制定预算时，我们要同时覆盖 Java、native、图形/媒体缓冲、线程、FD 和地址空间；只看 Java `maxMemory()` 会漏掉大量进程成本。
 
 #### 预算维度与测量方式
 
@@ -484,15 +492,15 @@ OOM 治理达到可发布状态时，每个接近资源预算的事件都有责�
 
 ## Renderer 退出、回调与页面重建
 
-应用进程的 OOM 和 WebView Renderer 的退出是两类问题，归因要分开。Renderer 被终止后，WebView 状态、业务导航和资源释放决定能否安全恢复。
+应用进程的 OOM 之外，还有一类退出要单独讨论：WebView Renderer。它和应用进程的 OOM 是两类问题，归因要分开；Renderer 被终止后，WebView 状态、业务导航和资源释放决定能否安全恢复。
 
 我们常见的现场是：WebView 页面突然变白，宿主 Activity 还能响应，导航栏和原生按钮也都正常。如果这时收到 `onRenderProcessGone()`，就可以确认关联的 Renderer（负责网页解析、脚本执行与绘制的渲染进程）已经退出。旧 `WebView` 随之失效，`reload()`、`goBack()`、`evaluateJavascript()` 和 JS Bridge（JavaScript 与原生代码的通信接口）都救不回它。
 
 本节主要讨论系统在内存压力下结束 Renderer 这一类情况；单次白屏或单个 `didCrash=false`，都还定不到 OOM 上。
 
-下文把一次 `onRenderProcessGone()` 回调简称为 gone 事件，framework 契约以 `android-17.0.0_r1` 为准。WebView provider（向 framework 提供 WebView 实现的可更新系统包） 是向 framework 提供 WebView 实现的系统包，可以独立于系统版本更新，可能来自 Chromium，也可能由厂商定制；排查时要记录设备上的 provider 包名与版本。
+下文把一次 `onRenderProcessGone()` 回调简称为 gone 事件。WebView provider（向 framework 提供 WebView 实现的可更新系统包） 可以独立于系统版本更新，可能来自 Chromium，也可能由厂商定制；排查时要记录设备上的 provider 包名与版本。
 
-文中涉及内核内存压力的源码名词时，以 Android common kernel（公共内核仓库）的 `android17-6.18-2026-06_r6` 标签为参照；这个标签只用来固定源码版本，设备实际运行的内核可能不同。
+文中涉及内核内存压力的源码名词时，以 Android common kernel（公共内核仓库）为参照，标签见文首基线；这个参照只用来固定源码版本，设备实际运行的内核可能不同。
 
 ### 先分清平台、Provider 和进程
 
@@ -501,7 +509,7 @@ OOM 治理达到可发布状态时，每个接近资源预算的事件都有责�
 - Android 平台提供 `WebView`、`WebViewClient`、Renderer 优先级和终止处理 API；
 - WebView provider 包提供 Chromium/Blink、页面合成、沙箱 Renderer 和大部分实现，并可独立于系统版本更新。
 
-`android-17.0.0_r1` 固定的是公开 API 与 framework 注释，设备实际使用的 Chromium 源码版本（revision）要靠 provider 信息确定。复盘时至少记录 Android build（系统构建号）、provider 包名、`versionName`、`versionCode`、ABI、设备型号，以及应用用的是系统 WebView、定制 Chromium 还是第三方内核。
+平台侧固定的是公开 API 与 framework 注释；设备实际使用的 Chromium 源码版本（revision）要靠 provider 信息确定。复盘时至少记录 Android build（系统构建号）、provider 包名、`versionName`、`versionCode`、ABI、设备型号，以及应用用的是系统 WebView、定制 Chromium 还是第三方内核。
 
 我们可以把现代标准 WebView 拆成三个执行域来理解：
 
@@ -518,7 +526,7 @@ Android 8 / API 26 起，`WebViewClient.onRenderProcessGone(view, detail)` 是 R
 - 多个 WebView 可能关联同一个 Renderer；
 - 每个受影响的 WebView 都会收到回调；
 - 当前回调只清理参数中的 `view`，其余实例是否退出，要看它们各自的回调；
-- 传入的 WebView 不能继续使用，必须从 View 层级移除并清理引用。
+- 传入的 WebView 已经失效，必须从 View 层级移除并清理引用。
 
 返回值决定宿主是否继续运行：
 
@@ -560,7 +568,7 @@ ACTIVE
 
 任一步失败都进入原生错误页。`VISUAL_COMMITTED` 对应 `onPageCommitVisible()`：旧导航的内容不会再被绘制，响应正文已经进入 DOM，后续绘制可以出现新页面内容，但 CSS、图片等资源此时可能尚未完成。支付、编辑、登录等页面还需要 H5（WebView 里运行的前端页面）主动发出可校验的 `BUSINESS_READY`，表示业务接口和关键交互已经可用；宿主还要为这次握手设置超时。
 
-恢复前要回答三个问题：
+恢复前我们先回答三个问题：
 
 1. 当前页面能否安全重放？
 2. 是否已有一次自动恢复尝试？
@@ -763,7 +771,7 @@ provider `versionName` 常能帮助定位 Chromium 版本，但厂商格式不�
 
 实验室里我们可以用 Perfetto（系统跟踪工具）、bugreport（系统诊断包）、Chrome DevTools（网页调试工具）和 provider 对应的 Chromium 符号文件调查 Renderer、GPU 与系统内存压力；符号文件负责把原生地址还原成函数名和调用栈。
 
-查看内核侧记录时，reclaim 对应内存回收活动，PSI（内存压力停顿指标）memory 对应任务因内存压力停顿的时间比例，page fault 对应缺页事件，dma-buf 常用来追踪跨进程共享的图形缓冲区；zram 的含义见上文。要和本文源码对应，就固定到 `android17-6.18-2026-06_r6`。
+查看内核侧记录时，reclaim 对应内存回收活动，PSI（内存压力停顿指标）memory 对应任务因内存压力停顿的时间比例，page fault 对应缺页事件，dma-buf 常用来追踪跨进程共享的图形缓冲区；zram 的含义见上文。
 
 线上公开 API 通常拿不到 Renderer 的精确 PSS，不要依赖反射、读取其他进程 `/proc` 或私有 Chromium 接口。
 
@@ -776,7 +784,7 @@ Android 10 / API 29 起，`WebViewRenderProcessClient` 提供：
 - `onRenderProcessUnresponsive()`：Renderer 因长阻塞任务等原因无法及时处理输入或导航；
 - `onRenderProcessResponsive()`：同一 Renderer 恢复响应后回调一次。
 
-源码说明，无响应期间会重复回调，相邻回调最短间隔 5 秒；WebView 自己不会采取动作。一次 unresponsive 回调只说明 Renderer 没有及时处理输入或导航：它说明不了应用发生 ANR，也说明不了 Renderer 必须被结束。此时应记录持续时间、页面阶段、用户是否可退出，以及 H5（运行在 WebView 中的 Web 前端页面） 是否正在执行预期的耗时任务。
+源码说明，无响应期间会重复回调，相邻回调最短间隔 5 秒；WebView 自己不会采取动作。一次 unresponsive 回调只说明 Renderer 没有及时处理输入或导航：它说明不了应用发生 ANR，也说明不了 Renderer 必须被结束。此时我们应记录持续时间、页面阶段、用户是否可退出，以及 H5（运行在 WebView 中的 Web 前端页面） 是否正在执行预期的耗时任务。
 
 当产品允许用户放弃当前页面，且所有共享 WebView 都已实现终止处理时，才考虑调用 `renderer?.terminate()`。调用前要：
 
@@ -832,7 +840,7 @@ Android 10 / API 29 起，`WebViewRenderProcessClient` 提供：
 
 ### 故障演练
 
-测试要覆盖不同退出方式，以及回调与 Activity 生命周期同时变化时可能出现的先后顺序问题：
+设计演练用例时，我们要覆盖不同退出方式，以及回调与 Activity 生命周期同时变化时可能出现的先后顺序问题：
 
 | 用例 | 需要确认 |
 | --- | --- |

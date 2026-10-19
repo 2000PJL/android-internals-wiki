@@ -6,9 +6,10 @@ status: ready-for-review
 applicable_versions: Android 12 (API S) - Android 17 (API 37)
 last_verified: '2026-10-19'
 last_verified_against: AOSP android-17.0.0_r1 frameworks/native SurfaceFlinger/FrontEnd/CompositionEngine/HWComposer, hardware/interfaces Composer3; android17-6.18-2026-06_r6 dma-buf/dma-fence; Android 11-16 tags only for version evolution
-last_source_verified_at: '2026-10-19T09:36:56+08:00'
-verification_scope_note: '本次来源核验限于 commit、unsignaled 与 protected content 的括注；其余技术内容未逐项复核。'
+last_source_verified_at: '2026-10-19T12:43:17+08:00'
+verification_scope_note: '已核验 Android 17 事务队列、barrier 超时、unsignaled 条件、FrontEnd 调用与 Output 准备顺序、present fence 语义，以及 Perfetto 观测边界；Android 13 仅用于消息入口演进。其余历史版本与厂商实现未逐项复核。'
 last_rework_at: '2026-10-19T09:36:56+08:00'
+last_deep_review_at: '2026-10-19T12:43:17+08:00'
 confidence: medium
 sources:
 - type: aosp
@@ -83,6 +84,19 @@ sources:
   path: frameworks/native/libs/gui/include/gui/LocklessQueue.h
 - type: aosp
   path: frameworks/native/services/surfaceflinger/SurfaceFlinger.cpp
+- type: aosp
+  path: hardware/libhardware/include_all/hardware/hwcomposer2.h
+  ref: android-17.0.0_r1
+- type: aosp
+  path: hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl
+  ref: android-17.0.0_r1
+- type: aosp
+  path: frameworks/native/services/surfaceflinger/Scheduler/MessageQueue.cpp
+  ref: android-13.0.0_r1
+- type: official
+  path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: official
+  path: https://perfetto.dev/docs/data-sources/cpu-scheduling
 - type: research
   path: DeepResearch/2026-06-08-android-17-sf-transaction-queue-lockless-architecture.md
 tags:
@@ -187,7 +201,7 @@ SurfaceFlinger 需要知道：
 - 哪个 buffer 被本帧 snapshot 选中；
 - RenderEngine client target 何时可供 HWC 读取；
 - HWC 何时不再使用各 Layer buffer；
-- 该 Display 的 present 工作何时到达完成边界。
+- 该 Display 的 present fence 何时触发。
 
 这些状态决定 buffer 能否 latch、是否复用旧内容、是否产生 backpressure（下游未及时释放 buffer，反过来限制 Producer），也为 FrameTimeline 的 App `SurfaceFrame` 与 SF `DisplayFrame` 提供时间归因。
 
@@ -232,7 +246,7 @@ traverseBottomToTop(node):
 
 Transaction 把一组 Layer 修改作为一个提交单元。合并操作具有顺序语义：后写入的属性可以覆盖前值。FrontEnd README 说明，transaction 按 `ApplyToken`（用于标识顺序队列的 token） 建立队列，相同 `ApplyToken` 内保证顺序；不同 token 之间要约束先后关系，需要显式 barrier（事务间依赖屏障）。
 
-`TransactionHandler` 使用 `LocklessQueue（无锁队列）<QueuedTransactionState>` 接收 transaction；commit 时先调用 `collectTransactions()`，再由 ready（就绪） filter（就绪筛选器） 检查就绪条件，并按每个 `ApplyToken` 的 pending FIFO（First In, First Out，先进先出）执行 `flushTransactions()`。
+`TransactionHandler` 使用 `LocklessQueue<QueuedTransactionState>`（无锁队列）接收 transaction；commit 时先调用 `collectTransactions()`，再由 ready（就绪） filter（就绪筛选器） 检查就绪条件，并按每个 `ApplyToken` 的 pending FIFO（First In, First Out，先进先出）执行 `flushTransactions()`。
 
 readiness（可提交条件） 判断会考虑 fence、present time、barrier（屏障依赖） 与 unsignaled（acquire fence 尚未触发） buffer；transaction barrier 的默认 TTL（依赖的最长保留时间） 是 5 秒，用于避免依赖永久悬挂。
 
@@ -273,7 +287,7 @@ App RenderThread / Producer
 
 普通 BLAST 窗口中的 BufferQueue acquire 常发生在应用进程的 BLAST Consumer，SurfaceFlinger 接收带 buffer 和 fence 的 transaction。把所有现代窗口都写成“SurfaceFlinger 直接调用 BufferQueue `acquireBuffer()`”会混淆进程与所有权。
 
-SurfaceFlinger 不再使用 buffer 后，通过 release callback（释放回调） 把完成信息返回 BLAST，再由 BLAST 释放对应的 `BufferItem`（BufferQueue 中记录 buffer、slot、fence 等信息的条目）。`queueBuffer()`、BLAST acquire、`BufferTX - <layerName>（指定图层的待处理 buffer transaction）` 增加、SF latch、HWC present 与 release callback（buffer 可再次使用时的回调） 各自对应不同的时间点，我们分析时要分开看。
+SurfaceFlinger 不再使用 buffer 后，通过 release callback（释放回调） 把完成信息返回 BLAST，再由 BLAST 释放对应的 `BufferItem`（BufferQueue 中记录 buffer、slot、fence 等信息的条目）。`queueBuffer()`、BLAST acquire、`BufferTX - <layerName>`（指定图层的待处理 buffer transaction）增加、SF latch、HWC present 与 release callback（buffer 可再次使用时的回调） 各自对应不同的时间点，我们分析时要分开看。
 
 ### Android 17 主循环：`onFrameSignal → commit → composite`
 
@@ -334,7 +348,7 @@ void Scheduler::onFrameSignal(ICompositor& compositor,
 7. 更新可见区域、输入、Layer history 与刷新率选择；
 8. 根据 transaction、buffer、Display/HWC 请求判断 `mustComposite`（本轮是否必须进入合成阶段）。
 
-`updateLayerSnapshots()` 会执行 `TransactionHandler:flushTransactions`、`LayerLifecycleManager.apply（提交）Transactions()`、`LayerHierarchyBuilder.update()` 与 `LayerSnapshotBuilder:update`。commit 变长时，我们要先区分时间花在了哪：transaction 数量、Layer 创建销毁、hierarchy（层级）/geometry（层级或几何属性） 变化、buffer latch（把就绪 buffer 接入图层状态），还是锁等待。
+`updateLayerSnapshots()` 会执行 `TransactionHandler:flushTransactions`、`LayerLifecycleManager.applyTransactions()`（应用事务）、`LayerHierarchyBuilder.update()` 与 `LayerSnapshotBuilder:update`。commit 变长时，我们要先区分时间花在了哪：transaction 数量、Layer 创建销毁、hierarchy（层级）/geometry（层级或几何属性） 变化、buffer latch（把就绪 buffer 接入图层状态），还是锁等待。
 
 `commit` 返回 `false` 可能只是本轮没有需要提交到显示的变化，也可能受 mode set 或 backpressure 分支影响；把它直接记成丢帧，结论下早了。
 
@@ -342,11 +356,11 @@ void Scheduler::onFrameSignal(ICompositor& compositor,
 
 `SurfaceFlinger::composite()` 构造 `CompositionRefreshArgs`（一次合成刷新所需参数的集合），把物理/虚拟 Display 对应的 Output 和 frame target 交给 CompositionEngine。每个 Output 会建立自己的 `OutputLayer`，也就是某个全局 Layer 在该 Display 上的合成表示。Output 的主流程包括：
 
-1. 更新输出与 Layer composition（由 HWC 合成） state；
-2. 重建该 Output 的可见 Layer stack；
+1. `prepare()` 重建该 Output 的可见 Layer stack；
+2. `present()` 更新输出与 Layer composition state（合成状态）；
 3. 规划并写入 HWC Layer 状态；
 4. `beginFrame()` 根据 dirty（输出内容或状态是否变化） 状态与 `mMustRecompose` 判断是否重做合成；
-5. `prepareFrame()` / `prepareFrameAsync()` 选择 composition（由 RenderEngine 合成） strategy（CLIENT、DEVICE 等组合）；
+5. `prepareFrame()` / `prepareFrameAsync()` 选择 composition strategy（CLIENT、DEVICE 等类型的组合方案）；
 6. 需要 CLIENT 时由 RenderEngine 生成 client target；
 7. `presentFrameAndReleaseLayers()` 执行 present 并分发 fence。
 
@@ -362,7 +376,7 @@ INVALIDATE 侧处理 transaction、Layer/buffer 状态和脏区；REFRESH 侧推
 
 #### Android 13 起：`commit / composite`
 
-Android 13 的 MessageQueue handle（对象引用句柄）r 已直接进入 `commit()` 与 `composite()`。Android 14 进一步由 `Scheduler::onFrameSignal()` 统一帧入口。Android 17 延续这条主线，并把 per-display `FrameTargeter`、FrontEnd snapshot 和 CompositionEngine Output 纳入当前实现。
+Android 13 的 `MessageQueue::Handler::handleMessage()`（消息处理器的回调）已直接进入 `commit()` 与 `composite()`。Android 14 进一步由 `Scheduler::onFrameSignal()` 统一帧入口。Android 17 延续这条主线，并把 per-display `FrameTargeter`、FrontEnd snapshot 和 CompositionEngine Output 纳入当前实现。
 
 `INVALIDATE/REFRESH` 适合解释 Android 12 历史；讲当前实现时应使用 `commit/composite` 这些调用名。版本对比时先确认系统 build 和 tag，再搜索对应 slice。
 
@@ -480,7 +494,7 @@ CompositionEngine
 Composer HAL / HWC
   validate / present
   ├─ per-layer release fences → buffer 可在满足条件后复用
-  └─ per-display present fence → 本次 Display present 完成边界
+  └─ per-display present fence → 本次 Display present 时间边界
 ```
 
 这四种 fence 各自回答一个问题：
@@ -488,9 +502,11 @@ Composer HAL / HWC
 1. Producer completion/acquire fence：新 buffer 何时可读；
 2. client-target acquire fence：HWC 何时可读取 RenderEngine 输出；
 3. Layer release fence：Consumer 何时不再使用对应 Layer buffer；
-4. Display present fence：一次 Display present 何时到达显示侧的完成点。
+4. Display present fence：物理显示开始呈现，或虚拟显示输出 buffer 写入完成的时间边界。
 
-present fence 属于 Display，不属于某个 App Window。它管不到面板扫描、像素响应和用户感知时间；触摸到光子的测量还需要 driver trace 或外部仪器。
+`hwcomposer2.h` 对物理显示的规定是：present fence 在本帧开始显现（video-mode 面板），或开始向面板内存传输（command-mode 面板）的 VSync 触发。虚拟显示则在输出 buffer 写入完成、可以安全读取时触发。它不能单独证明整屏扫描完成、像素响应结束或用户已看到更新；触摸到光子的测量还需要 driver trace 或外部仪器。
+
+常规 present fence 对应 Display。Composer3 的 `PresentFence.aidl` 还定义了 `LayerPresentFence`：仅限需要逐 Layer 图像处理延迟能力的 TV 设备，用于报告该 Layer 晚于整屏内容呈现的情况。源码明确指出，这个特例会打破通常的 `SurfaceControl.Transaction` 契约，不能将整屏 present 时间当作这类 Layer 的呈现时间。
 
 ### 下游变慢怎样反压到 App
 
@@ -518,6 +534,8 @@ FrameTimeline 用 token（跨轨道关联同一帧记录的标识）串起不同
 - 一个 DisplayFrame 可以包含多个进程、多个 Layer 的 SurfaceFrame。
 
 两类 token 各管一段，合成一个“全程 VSync ID”会丢信息。我们先用 process/layer 锁定 App SurfaceFrame，再查看它进入哪个 DisplayFrame。
+
+Perfetto 的 FrameTimeline 文档要求 Android 12（S）及以上，并仍注明 SurfaceView 尚不受支持。分析 SurfaceView 时，应先确认目标构建是否生成了对应的 SurfaceFrame 和关联关系；缺少记录时，继续检查其独立 Layer 的 `BufferTX`、latch、fence 与 HWC 轨道，不能仅凭 FrameTimeline 轨道缺失判定它没有参与合成。
 
 #### SurfaceFlinger 主线程常见 slice
 
@@ -667,7 +685,7 @@ HWC 能力和策略来自 vendor 实现。plane 数量、格式、缩放、HDR�
 
 #### present fence 的完成范围
 
-它标记 Display present 的同步完成点，panel scanout、像素响应和用户观察时间还在其后。
+它在物理显示上标记开始呈现的时间边界，在虚拟显示上标记输出 buffer 写入完成；整屏扫描完成、像素响应和用户观察时间仍需其他证据。
 
 ### Android 17 源码锚点
 
@@ -745,7 +763,7 @@ flowchart LR
 
 1. `collectTransactions()` 把无锁入口队列中的 transaction 收进 pending queues（待处理队列）；
 2. 新建 layer 先交给 `LayerLifecycleManager::addLayers()`；
-3. `flushTransactions()` 只取出 readiness filter（过滤器）s（就绪过滤器） 判定可应用的 transaction；
+3. `flushTransactions()` 只取出 readiness filters（就绪过滤器）判定可应用的 transaction；
 4. `applyTransactions()` 把属性合入 `RequestedLayerState`；
 5. `LayerHierarchyBuilder::update()` 更新 layer 图；
 6. `LayerSnapshotBuilder::update()` 更新 snapshot；
@@ -1015,13 +1033,15 @@ FrontEnd 文档说明，snapshot 理论上可以 clone（复制）；当前实�
 
 | 证据 | 能说明什么 | 不能单独说明什么 |
 | --- | --- | --- |
-| `TransactionQueue` counter | 尚未从 handler flush 并应用的 transaction 数量 | 卡在时间、barrier、fence，还是线程调度 |
-| `TransactionHandler:flushTransactions` slice | 本轮筛选 pending queues 的 CPU 时间 | 新 buffer 已上屏 |
+| `TransactionQueue` counter | 已进入 handler、尚未被 flush 返回的 transaction 数量 | 卡在时间、barrier、fence，还是线程调度 |
+| `TransactionHandler:flushTransactions` slice | 本轮收集、筛选、应用事务及更新 hierarchy 的区间耗时 | 纯 CPU 执行时间，或新 buffer 已上屏 |
 | `LayerSnapshotBuilder:update` 与 `FastPath` | snapshot 更新耗时，以及是否进入 fast path | HWC 为何选择 `CLIENT` composition |
 | `LayerLifecycleManager:commitChanges` | listener 通知与 change flags 清理耗时 | transaction readiness |
 | `BufferTX - <layerName>` | 某个 buffer layer 的 pending buffer transaction | 全部属性 transaction 的数量 |
 | Winscope transaction 与 layer trace | transaction、层级、可见性和几何随时间的变化 | GPU 或 HWC 已完成读取 |
 | present fence 与 release fence | display present 或 buffer 可复用的时间边界 | 客户端最初提交了什么请求 |
+
+`TransactionHandler:flushTransactions` 这个 slice 在 `updateLayerSnapshots()` 中包住的不止筛选函数，还包括接收新 layer、获取 `mCreatedLayersLock`、登记 layer、应用事务和更新 hierarchy。区间变长时，用 `sched_switch`、`sched_waking` 和线程状态轨道区分 running、runnable delay 与阻塞等待，不能把整段持续时间都算作过滤器的 CPU 开销。
 
 `TransactionQueue` 在 `queueTransaction()` 时增加，在 ready transaction 被 flush 后按数量减少。持续升高说明消费速度跟不上入队速度；具体卡在哪里，还要继续检查：
 
@@ -1502,6 +1522,8 @@ Android 17 的 transaction queue 设计可以拆成三段：
 - [JankInfo.h](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/JankInfo.h)
 - [Composition.aidl](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/Composition.aidl)
 - [DisplayCommand.aidl](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayCommand.aidl)
+- [PresentFence.aidl：Display fence 与 TV 的 LayerPresentFence 特例](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl)
+- [hwcomposer2.h：presentDisplay 的物理与虚拟显示 fence 语义](https://android.googlesource.com/platform/hardware/libhardware/+/android-17.0.0_r1/include_all/hardware/hwcomposer2.h)
 - [BLASTBufferQueue.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)
 - [BufferQueueProducer.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp)
 - [BufferQueueConsumer.cpp](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueConsumer.cpp)
@@ -1519,6 +1541,7 @@ Android 17 的 transaction queue 设计可以拆成三段：
 - [Graphics architecture](https://source.android.com/docs/core/graphics/architecture)
 - [Hardware Composer HAL](https://source.android.com/docs/core/graphics/hwc)
 - [FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [CPU Scheduling events：区分 CPU 执行、可运行等待与阻塞](https://perfetto.dev/docs/data-sources/cpu-scheduling)
 - [Unsignaled buffer latching](https://source.android.com/docs/core/graphics/unsignaled-buffer-latch)
 
 #### 相关章节
@@ -1547,7 +1570,7 @@ Android 17 的 transaction queue 设计可以拆成三段：
 
 版本演进可分别对照以下固定 tag：
 
-- [`android-13.0.0_r1`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-13.0.0_r1/services/surfaceflinger/)；
+- [`android-13.0.0_r1`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-13.0.0_r1/services/surfaceflinger/)；帧入口见 [`MessageQueue::Handler::handleMessage()`](https://android.googlesource.com/platform/frameworks/native/+/android-13.0.0_r1/services/surfaceflinger/Scheduler/MessageQueue.cpp)；
 - [`android-14.0.0_r1`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-14.0.0_r1/services/surfaceflinger/)；
 - [`android-15.0.0_r1`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-15.0.0_r1/services/surfaceflinger/)；
 - [`android-16.0.0_r1`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-16.0.0_r1/services/surfaceflinger/)；

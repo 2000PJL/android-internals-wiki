@@ -3,12 +3,26 @@ title: dumpsys 系列命令
 chapter: '15.4'
 section: '15.4'
 applicable_versions: Android 6.0 (API 23) – Android 17 (API 37)
-last_verified: '2026-08-13'
+last_verified: '2026-10-19'
 last_verified_against: AOSP android-17.0.0_r1
+last_source_verified_at: '2026-10-19T14:47:36+08:00'
+last_idle_audit_at: '2026-10-19T14:47:36+08:00'
 confidence: medium
 sources:
-- type: blog
+- type: official
   path: source.android.com/docs/core/graphics/surfaceflinger-windowmanager
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/JankTracker.cpp
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/ProfileData.cpp
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp
 tags:
   - dumpsys
   - meminfo
@@ -186,16 +200,16 @@ adb shell dumpsys gfxinfo com.example.app framestats
 
 Android 17 的输出同时打印 deadline-aware 与 legacy 两套统计：前者使用每帧 deadline，后者保留旧版固定刷新间隔模型。当前 [`JankTracker::finishFrame()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/JankTracker.cpp) 以 `GpuCompleted` 是否越过调整后的 `FrameDeadline` 记录 `Janky frames`；legacy 路径使用旧的固定间隔、swap deadline 与 triple-buffering（三缓冲队列） 修正规则。VRR/ARR（可变/自适应刷新率）场景优先读 deadline-aware 这套，再用 legacy 行观察兼容指标。
 
-[`ProfileData.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/ProfileData.cpp) 输出以下分类：
+[`ProfileData.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/ProfileData.cpp) 输出以下分类。表中的 `Number Missed Vsync` 与三项 `Number Slow ...` 只在 `finishFrame()` 判定当前帧 deadline miss 后检查；带 `SurfaceCanvas` 标志的帧不参与这些 jank 判定，各阶段差值达到门槛且小于 10 秒才计数。同一帧可同时命中多项，不能把分类计数相加当作 jank 总数，也不能用它们统计所有帧的阶段超时次数。
 
 | 输出 | AOSP 中的区间或判定 | 解读边界 |
 |---|---|---|
 | `Janky frames` | `GpuCompleted >= FrameDeadline` | HWUI deadline miss，仍需 trace 定位责任线程 |
 | `Janky frames (legacy)` | 旧 fixed-interval 模型 | 供历史报表兼容，不宜用于 VRR 精确判定 |
-| `Number Missed Vsync` | `IntendedVsync → Vsync` | App 收到帧回调已晚 |
-| `Number Slow UI thread` | `Vsync → SyncStart` 超过当前 frame interval 的 50% | UI 阶段偏长，原因可能含输入、动画、traversal、draw record |
-| `Number Slow bitmap uploads` | `SyncStart → IssueDrawCommandsStart` 超过 20% | 这是保留的输出名称，不能只凭名称认定发生了图片解码 |
-| `Number Slow issue draw commands` | `IssueDrawCommandsStart → FrameCompleted` 超过 75% | RenderThread 后半段偏长，不直接区分 CPU、GPU、queue 或 fence wait |
+| `Number Missed Vsync` | `IntendedVsync → Vsync` 至少相差 1 ns | App 收到帧回调已晚 |
+| `Number Slow UI thread` | `Vsync → SyncStart` 达到当前 frame interval 的 50% | UI 阶段偏长，原因可能含输入、动画、traversal、draw record |
+| `Number Slow bitmap uploads` | `SyncStart → IssueDrawCommandsStart` 达到当前 frame interval 的 20% | 这是保留的输出名称，不能只凭名称认定发生了图片解码 |
+| `Number Slow issue draw commands` | `IssueDrawCommandsStart → FrameCompleted` 达到当前 frame interval 的 75% | RenderThread 后半段偏长，不直接区分 CPU、GPU、queue 或 fence wait |
 | `Number Frame deadline missed` | 当前 deadline miss 计数 | 与 `Janky frames` 的当前口径对应 |
 
 源码没有名为 `Number Slow RenderThread` 的固定输出。分位值来自 `IntendedVsync → FrameCompleted` 的时长直方图，bucket 就是直方图里的时间区间；99th percentile 为 50 ms，表示该统计窗口内约 1% 的已记录帧落在 50 ms 或更慢的 bucket，别把它换算成“连续丢三帧”。
@@ -273,7 +287,7 @@ adb shell dumpsys input \
   | grep -E 'FocusedApplication|FocusedWindow'
 ```
 
-`DisplayContent.mCurrentFocus` 指向 WMS 当前聚焦的 `WindowState`；`mFocusedApp` 指向该 display 上被选中的 Activity token（系统用来标识 Activity 的 Binder 句柄），也就是系统用来标识 Activity 的 Binder 句柄。通知栏、IME（输入法窗口）、系统对话框、多窗口切换和 transition（窗口状态过渡） 期间，两者可能来自不同组件。多屏设备还要保留 `displayId`，只 grep 一条全局结果会混淆主屏、副屏与虚拟显示。
+`DisplayContent.mCurrentFocus` 指向 WMS 当前聚焦的 `WindowState`；`mFocusedApp` 在 Android 17 中引用该 display 上被选中的 `ActivityRecord`。后者是服务端的 Activity 记录，对应的 Activity token（系统用来标识 Activity 的 Binder 句柄）则供跨进程引用。通知栏、IME（输入法窗口）、系统对话框、多窗口切换和 transition（窗口状态过渡） 期间，两者可能来自不同组件。多屏设备还要保留 `displayId`，只 grep 一条全局结果会混淆主屏、副屏与虚拟显示。
 
 遇到“窗口有焦点但触摸无响应”，我们继续检查 InputDispatcher 的 focused window/application、对应 InputChannel（事件传输通道）、touchable region（可接收触摸的区域）、`FLAG_NOT_TOUCHABLE`、窗口可见性和上层 overlay。WMS 中的 Z-order（窗口前后层级） 与 InputDispatcher 的命中顺序也有不同的过滤条件，单看一个 WindowState 排在前面，断言不了它会收到触摸。
 
@@ -512,14 +526,14 @@ public final class SyncService extends Service {
 }
 ```
 
-下面命令中的 `-c` 表示同时请求 client dump；它必须写在 `service` 子项之前，让 ActivityManager 进入应用进程调用 `Service.dump()`。
+单数 `service <组件>` 会直接请求匹配 Service 的客户端 dump，无需 `-c`。批量查看 `services` 时，`-c` 控制是否请求客户端输出，须写在 `services` 之前。
 
 ```bash
-adb shell dumpsys activity -c service \
+adb shell dumpsys activity service \
   com.example.app/.SyncService
 ```
 
-[`ActiveServices.ServiceDumper.dumpWithClient()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java) 通过 `IApplicationThread.dumpService()` 把请求送到应用主线程，`ActivityThread` 再调用 Service 实例。Service 未运行、主线程阻塞或组件过滤不匹配时，客户端内容不会出现。
+[`ActiveServices.dumpService()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java) 通过 `IApplicationThread.dumpService()` 把单个 Service 的请求送到应用主线程，`ActivityThread` 再调用 Service 实例；`activity -c services` 则走 `ServiceDumper.dumpWithClient()`。Service 未运行、主线程阻塞或组件过滤不匹配时，客户端内容不会出现。
 
 dump 实现应先复制少量状态，再释放业务锁并格式化输出；不要在回调中等待网络、扫描大目录、打印认证 token、帐号或用户内容，也不要持有核心锁执行长时间 I/O。面向自动化的字段要有版本号、明确单位和稳定键名；平台服务可用 `PriorityDumper` 按 CRITICAL/HIGH/NORMAL 拆分输出，或用 proto 提供机器读取入口。
 

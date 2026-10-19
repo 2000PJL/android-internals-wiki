@@ -57,7 +57,7 @@ consolidated_from:
 
 Accessibility、ContentCapture 和 Autofill 都会读取或描述界面状态，但触发条件、数据范围和服务端组件不同，性能问题通常来自频繁事件、视图树遍历、跨进程调用或第三方服务处理。
 
-讨论无障碍开销时，不能只按“无障碍是否开启”分组。无障碍框架既支持屏幕阅读、开关控制、放大和语音控制，也被测试自动化等场景使用；不同服务订阅的事件类型、读取窗口内容的能力、节点查询频率、输入模式和实现方式都有差异。
+讨论无障碍开销时，我们先把“无障碍是否开启”这一档拆开来看。无障碍框架既支持屏幕阅读、开关控制、放大和语音控制，也被测试自动化等场景使用；不同服务订阅的事件类型、读取窗口内容的能力、节点查询频率、输入模式和实现方式都有差异。
 
 > 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`；全文讨论 framework、Binder、应用 UI 线程和无障碍服务进程，不涉及需要厂商内核 trace 标签才能识别的专有机制。
 
@@ -101,11 +101,11 @@ flowchart LR
     AICtrl -->|"result callback"| AIC
 ```
 
-两条路径的等待方向正好相反：事件通过 `oneway` Binder 调用上报，应用发出事务后不等 `AccessibilityService` 处理完；节点查询则是服务侧在等结果，目标应用在自己的 ViewRoot looper（消息循环） 上生成节点。所以我们分析阻塞时，第一步是判断走的是哪条路径，别把事件上报的异步关系套到节点查询上。
+两条路径的等待方向正好相反：事件通过 `oneway` Binder 调用上报，应用把事务发出去就继续往下走，`AccessibilityService` 什么时候处理完由服务侧自己安排；节点查询则是服务侧在等结果，目标应用在自己的 ViewRoot looper（消息循环） 上生成节点。所以我们分析阻塞时，第一步是判断走的是哪条路径，再按各自的等待方向找阻塞的一方。
 
 ### 事件上报：oneway 调用的剩余成本
 
-`IAccessibilityManager.aidl` 把 `sendAccessibilityEvent()` 声明为 `oneway`，意思是调用方不等待同步返回，但调用方的工作一点没少。我们调用 `AccessibilityManager.sendAccessibilityEvent()` 时仍要走完这些步骤：
+`IAccessibilityManager.aidl` 把 `sendAccessibilityEvent()` 声明为 `oneway`，调用方把事务发出去就返回。我们调用 `AccessibilityManager.sendAccessibilityEvent()` 时，仍要按顺序走完这些步骤：
 
 1. View 或 ViewParent 创建并补全 `AccessibilityEvent`；
 2. `AccessibilityManager` 检查当前状态以及 `mRelevantEventTypes`，后者记录当前服务关心的事件类型；
@@ -128,7 +128,7 @@ flowchart LR
 - 敏感事件是否只允许 `isAccessibilityTool=true` 的服务；
 - 当前服务是否具备相应的访问权限。
 
-事件过筛后，每个符合条件的服务会拿到自己的一份副本，投递到 `mEventDispatchHandler`。当 `notificationTimeout > 0` 时，同一服务通常只保留同类型事件中最新的一条待发送记录。但 `TYPE_WINDOW_CONTENT_CHANGED` 是个例外：它走单独分支，不经过这组 `mPendingEvents` 合并，所以同一种去重规则不能默认覆盖所有内容变化事件。
+事件过筛后，每个符合条件的服务会拿到自己的一份副本，投递到 `mEventDispatchHandler`。当 `notificationTimeout > 0` 时，同一服务通常只保留同类型事件中最新的一条待发送记录。但 `TYPE_WINDOW_CONTENT_CHANGED` 是个例外：它走单独分支，绕开这组 `mPendingEvents` 合并，分析去重效果时要把它单独拿出来看。
 
 View 侧还有一层内容变化节流。`ViewRootImpl.SendWindowContentChangedAccessibilityEvent` 会合并可兼容的 change types（变化类型），并按照 `ViewConfiguration.getSendRecurringAccessibilityEventsInterval()` 给出的间隔安排发送。看到 `AccessibilityEvent.obtain()` 或 `recycle()` 只说明对象在复用、分配在减少；发送次数有没有降下来，要看节流那一边。
 
@@ -159,13 +159,13 @@ View 侧还有一层内容变化节流。`ViewRootImpl.SendWindowContentChangedA
 
 #### prefetch（预取） 策略与查询规模
 
-一次查询会带多大的量，要看 prefetch 策略。框架提供 ancestors（祖先节点）、siblings（同级节点），以及 hybrid、depth-first、breadth-first 三种后代节点遍历顺序，并设有三项边界：
+一次查询会带多大的量，要看 prefetch 策略。框架提供 ancestors（祖先节点）、siblings（同级节点），以及 hybrid、depth-first、breadth-first 三种后代节点遍历顺序，同时配了三条硬性限制：
 
 - 单次预取上限为 `MAX_NUMBER_OF_PREFETCHED_NODES = 50`；
 - 可中断的 prefetch 在 ViewRoot handler 中已有用户交互消息等待时会停止；
 - 窗口正在滚动时，`AccessibilityInteractionClient` 会清除 prefetch flags（预取标志）。
 
-有这些边界在，一次 `getRootInActiveWindow()` 查询不能想当然等于递归构造整棵 View 树。我们定位成本时，要同时记录请求 API、prefetch flags、缓存是否命中、虚拟节点 provider 和实际返回的节点数。
+有这三条限制在，一次 `getRootInActiveWindow()` 查询的实际规模，要按缓存命中情况和 prefetch 实际放行的节点数来确认。我们定位成本时，要同时记录请求 API、prefetch flags、缓存是否命中、虚拟节点 provider 和实际返回的节点数。
 
 服务侧的 `AccessibilityInteractionClient` 最多等 5000 ms 拿查询结果，这段等待发生在发起查询的服务线程。目标应用承担的是另一类风险：ViewRoot looper 上多了节点创建任务，同一条线程上的输入分发、traversal（测量、布局与绘制） 或逐帧回调就可能往后排。
 
@@ -178,13 +178,13 @@ View 侧还有一层内容变化节流。`ViewRootImpl.SendWindowContentChangedA
 | `AccessibilityService` | `onAccessibilityEvent()`、cache miss 后的查询、业务处理 | 服务主线程阻塞、事件积压、反馈延迟 |
 | Binder 与调度 | oneway event、query request、result callback | 线程唤醒、Parcel 处理开销、目标线程调度延迟 |
 
-同时开启两个服务，成本也未必是一个服务时的两倍。`eventTypes`、`packageNames`、`notificationTimeout`、读取窗口内容的 capability、缓存使用方式和查询策略，往往比服务数量更能解释差异。
+同时开启两个服务，成本也未必是一个服务时的两倍。我们对比开销时，`eventTypes`、`packageNames`、`notificationTimeout`、读取窗口内容的 capability、缓存使用方式和查询策略，往往比服务数量更能解释差异。
 
 Touch exploration（触摸探索）、按键过滤、手势观察和放大还会改变输入处理链。遇到点击延迟或手势行为变化时，要分别检查输入过滤和 `AccessibilityEvent` / `AccessibilityNodeInfo` 开销；按键过滤的系统路径见 [3.1 Input 分发、拦截与安全边界](../../part1-fundamentals/ch03-input（输入分发）/01-input-dispatch-interception-security.md)。
 
 ### 应用侧：保持语义正确，再去掉无意义工作
 
-无障碍上的优化有一条底线：不能靠移除可操作节点、隐藏状态或停止发送必要事件来换性能。无障碍功能一旦退化，依赖屏幕阅读器、语音控制或开关控制的用户可能连操作都完成不了。
+无障碍上的优化有一条底线：可操作节点保留、状态可见、必要事件照发，性能要从这三者之外的无意义工作里省出来。无障碍功能一旦退化，依赖屏幕阅读器、语音控制或开关控制的用户可能连操作都完成不了。
 
 #### `importantForAccessibility` 只处理装饰与重复语义
 
@@ -201,11 +201,11 @@ Touch exploration（触摸探索）、按键过滤、手势观察和放大还会
     android:src="@drawable/card_decoration" />
 ```
 
-这项设置只用来减少没有信息或操作价值的节点。按钮图标、错误提示、金额和开关状态这些用户需要感知的信息，不该照此隐藏。
+这项设置只用来减少没有信息或操作价值的节点；按钮图标、错误提示、金额和开关状态这些用户需要感知的信息，仍然要留在无障碍树里。
 
 #### 节点回调内只读取已准备好的状态
 
-滚动、焦点移动或自动化查询期间，`onInitializeAccessibilityNodeInfo()` 和 `AccessibilityNodeProvider` 都可能被频繁调用，而它们通常处在目标应用的 UI 工作路径上。回调里就不该出现网络、磁盘或数据库访问，也不该有大型 JSON 解析、位图分析或全量集合排序。
+滚动、焦点移动或自动化查询期间，`onInitializeAccessibilityNodeInfo()` 和 `AccessibilityNodeProvider` 都可能被频繁调用，而它们通常处在目标应用的 UI 工作路径上。回调里只做一件事：读取已经准备好的状态。网络、磁盘或数据库访问，以及大型 JSON 解析、位图分析、全量集合排序，都放到回调之外去做。
 
 下面的自定义 View 在业务状态变化时预先生成语义文本，节点查询时只需读取已有字段。API 34 及以上版本还可以声明高频内容变化的最小通知间隔。
 
@@ -229,7 +229,7 @@ class PriceTickerView(context: Context) : View(context) {
 
 这个示例把格式化工作放在业务状态更新处：`View.setContentDescription()` 在描述变化时通知无障碍框架，后续节点初始化直接读 View 已保存的属性。`AccessibilityService` 可以读取节点声明的最小间隔，据此限制来自该节点的内容变化事件频率。`setMinDurationBetweenContentChanges()` 适合进度、计时器、行情这类持续变化但无须逐次朗读的节点；间隔按用户能理解的更新节奏设置，焦点、错误、可操作状态和关键结果仍要及时上报。
 
-也不要为了批量更新，临时把真实内容设置成 `NO_HIDE_DESCENDANTS`：这会让当前焦点节点消失、改变节点树结构，还可能额外触发内容变化。列表应该用增量数据更新并提供正确的 change type，交给 ViewRoot 或控件库已有的事件合并机制。
+批量更新时，把真实内容临时设置成 `NO_HIDE_DESCENDANTS` 换来的问题更多：当前焦点节点消失、节点树结构改变，还可能额外触发内容变化。列表更新应该走增量数据加正确的 change type，交给 ViewRoot 或控件库已有的事件合并机制。
 
 #### RecyclerView
 
@@ -244,7 +244,7 @@ RecyclerView 只为当前附着到窗口且可访问的 item（列表项） 暴�
 
 ### Compose：按逻辑控件设计 semantics tree（语义树）
 
-Compose 在 UI 树之外维护一棵 semantics tree，供无障碍服务和测试工具读取；只有带语义属性的 layout node（布局节点） 才会成为 semantics node。所以在 `Column` 上添加 `Modifier.semantics {}`，并不意味着框架每次都会递归重建这个 `Column` 的全部子树。
+Compose 在 UI 树之外维护一棵 semantics tree，供无障碍服务和测试工具读取；只有带语义属性的 layout node（布局节点） 才会成为 semantics node。我们给 `Column` 添加 `Modifier.semantics {}` 时，也推不出框架每次都会递归重建这个 `Column` 的全部子树。
 
 分析时要区分：
 
@@ -263,7 +263,7 @@ Compose 属于 AndroidX 依赖，性能行为要按项目锁定的 Compose 版�
 
 ### AccessibilityService 开发者：缩小订阅与查询范围
 
-如果可以修改 `AccessibilityService` 的实现，通常应先检查服务配置和查询策略。
+如果我们可以修改 `AccessibilityService` 的实现，通常应先检查服务配置和查询策略。
 
 下面的配置表示：服务只接收目标包中的点击和窗口切换事件，同时声明可以读取窗口内容。
 
@@ -277,7 +277,7 @@ Compose 属于 AndroidX 依赖，性能行为要按项目锁定的 Compose 版�
     android:isAccessibilityTool="true" />
 ```
 
-如果服务确实需要支持所有应用，就不能为了减少开销随意填写 `packageNames`。配置范围应与产品功能一致；不需要读取窗口内容时，也不应请求对应的 capability（能力声明）。
+如果服务确实需要支持所有应用，`packageNames` 就按产品功能如实填写；配置范围应与产品功能一致，只在确实读取窗口内容时请求对应的 capability（能力声明）。
 
 服务侧建议遵守以下约束：
 
@@ -291,7 +291,7 @@ Compose 属于 AndroidX 依赖，性能行为要按项目锁定的 Compose 版�
 
 服务主线程等待节点查询结果期间，该服务收到的其他事件也可能排队。频繁查询 root 节点既会增加目标应用的 UI 线程工作，也会延迟服务自身的反馈。
 
-### 测量：不要靠“开关前后感觉更卡”
+### 测量条件与 A/B 设计
 
 #### A/B 条件
 
@@ -302,7 +302,7 @@ Compose 属于 AndroidX 依赖，性能行为要按项目锁定的 Compose 版�
 3. 目标服务与用户常用服务共同启用；
 4. 服务功能不变，但减少 event types（事件类型）、节点查询和后台工作的版本。
 
-要停用用户辅助服务的测试，只能在受控测试设备上进行，并确保用户明确知情；线上产品不能为了改善帧率而自动关闭或绕过 `AccessibilityService`。
+要停用用户辅助服务的测试，只能在受控测试设备上进行，并确保用户明确知情；线上产品要改善帧率，从应用和服务自身的配置入手，用户的 `AccessibilityService` 保持原样。
 
 #### Perfetto：定位线程和帧
 
@@ -314,7 +314,7 @@ Compose 属于 AndroidX 依赖，性能行为要按项目锁定的 Compose 版�
 - 服务主线程是否停在 `AccessibilityInteractionClient` 中等待结果；
 - 节点结果返回后，服务是否立即进入长 CPU、I/O 或 Binder 工作。
 
-`BinderProxy.transactNative` 只能证明这里发生了一次 Binder 调用，说明不了调用目的。事件上报和节点查询方向相反，要结合 interface / method（接口与方法）、调用进程和回调时序才能认出具体路径。
+`BinderProxy.transactNative` 能证明的只有这里发生了一次 Binder 调用；调用目的要结合 interface / method（接口与方法）、调用进程和回调时序来认。事件上报和节点查询方向相反，认出具体路径之后再往下归因。
 
 #### Android 17 accessibility trace
 
@@ -337,9 +337,11 @@ adb pull /data/misc/a11ytrace/a11y_trace.winscope
 
 Android 17 源码明确禁止在面向普通用户发布的 user build 上启用这项 trace。停止命令会异步写入 Winscope 文件，拉取前应先确认文件已经生成。Tracing 会记录调用参数、线程和调用栈，本身也会增加运行开销，因此只适合短时间定位问题。
 
-#### dumpsys：确认服务配置，不统计事件速率
+#### dumpsys 的用途与局限
 
-`adb shell dumpsys accessibility` 可以查看当前用户处于 bound、enabled、binding 或 crashed 状态的服务，也就是已连接、已启用、正在连接或已崩溃的服务；每个 bound service 的 dump 会列出 label、feedback type、capabilities、event types、`notificationTimeout` 和 accessibility button 请求。但要测量事件率和查询率，dumpsys 帮不上忙：AOSP dump 没有通用的“Event Dispatch Statistics”或“Interaction Connection Pool”计数器，厂商版本如果扩展了字段，应在报告中标明 build；在 AOSP 设备上，需要通过 trace、自有计数或服务日志来测。
+`adb shell dumpsys accessibility` 可以查看当前用户处于 bound、enabled、binding 或 crashed 状态的服务，也就是已连接、已启用、正在连接或已崩溃的服务；每个 bound service 的 dump 会列出 label、feedback type、capabilities、event types、`notificationTimeout` 和 accessibility button 请求。
+
+配置查到这里就够了；事件率和查询率要换一条路来测。AOSP dump 提供的是配置视图，通用的“Event Dispatch Statistics”或“Interaction Connection Pool”计数器它并不输出，在 AOSP 设备上需要通过 trace、自有计数或服务日志来测；厂商版本如果扩展了字段，应在报告中标明 build。
 
 ### 归因表
 
@@ -352,11 +354,11 @@ Android 17 源码明确禁止在面向普通用户发布的 user build 上启用
 | `system_server` 中 A11yMS 段变长 | bound service 数、窗口计算、锁和 CPU 调度 | framework、WMS 或设备系统实现 |
 | 开启 touch exploration 后输入节奏变化 | `InputFilter`、手势 / 按键配置、事件与帧 | Accessibility input path（无障碍输入路径），不能只看节点树 |
 
-如果现有证据只能证明“无障碍开启时更慢”，还无法完成归因。报告中应写清事件、查询、节点、服务或输入中的哪条路径发生了变化。
+归因要落到具体路径上：“无障碍开启时更慢”只是起点，报告里应写清事件、查询、节点、服务或输入中的哪条路径发生了变化。
 
 ### 运行时上下文与隐私
 
-`AccessibilityManager.isEnabled()` 查询的是框架当前是否启用了无障碍事件发送。Javadoc 明确提醒：应用不应根据这个布尔值切换产品 UI 或交互路径，专门设置的分支往往测试不足，辅助技术用户反而拿到维护较差的体验。
+`AccessibilityManager.isEnabled()` 查询的是框架当前是否启用了无障碍事件发送。Javadoc 明确提醒：这个布尔值留给监控和统计场景，产品 UI 与交互路径要保持同一套实现；专门设置的分支往往测试不足，辅助技术用户反而拿到维护较差的体验。
 
 性能监控可把以下信息作为受控实验上下文：
 
@@ -365,7 +367,7 @@ Android 17 源码明确禁止在面向普通用户发布的 user build 上启用
 - 当前页面是否包含 SurfaceView、WebView、Compose 或大量虚拟节点；
 - 测试设备上启用服务的数量和反馈类型。
 
-`getEnabledAccessibilityServiceList()` 会发起跨 Binder 查询，别在每帧或高频埋点里调用。启用哪些服务还可能暴露敏感的设备使用状态，线上采集前要过隐私评审，优先记录匿名化的能力类别和数量，不上传服务组件名。
+`getEnabledAccessibilityServiceList()` 会发起跨 Binder 查询，调用位置放在低频路径上。启用哪些服务还可能暴露敏感的设备使用状态，线上采集前要过隐私评审，优先记录匿名化的能力类别和数量，服务组件名这类可定位到具体应用的标识留在设备本地。
 
 ### Android 12—17 版本边界
 
@@ -374,7 +376,7 @@ Android 17 源码明确禁止在面向普通用户发布的 user build 上启用
 - **Android 14 / API 34**：新增 `setMinDurationBetweenContentChanges()` 和 accessibility data sensitive（无障碍数据敏感）能力，为高频内容节流和敏感事件过滤提供公开接口。
 - **Android 17 / API 37**：按 `android-17.0.0_r1` 核对。事件仍通过 oneway `sendAccessibilityEvent()` 上报；服务连接仍按配置过滤/延迟；节点请求仍进入目标 ViewRoot looper，并受缓存、prefetch 策略和 50 节点上限约束。
 
-平台版本代替不了 `AccessibilityService`、TalkBack、Compose、WebView 和厂商 framework 的具体版本。任何以百分比表示的性能结论都应附带设备、服务版本、页面、交互过程和 trace 条件，换一台设备就不能直接套用。
+平台版本代替不了 `AccessibilityService`、TalkBack、Compose、WebView 和厂商 framework 的具体版本。任何以百分比表示的性能结论都应附带设备、服务版本、页面、交互过程和 trace 条件，换一台设备就要重新验证。
 
 
 
@@ -393,11 +395,11 @@ Android 17 源码明确禁止在面向普通用户发布的 user build 上启用
 
 ## 内容捕获、自动填充与视图结构传输
 
-无障碍服务面向交互辅助，ContentCapture 和 Autofill 面向内容理解与字段填充。三者都可能遍历同一棵视图树，开关、触发条件和归因却不能互相套用。
+无障碍服务面向交互辅助，ContentCapture 和 Autofill 面向内容理解与字段填充。三者都可能遍历同一棵视图树，但开关状态、触发条件和归因方法要各自独立判断。
 
 入口先分清：ContentCapture 持续向系统选定的服务报告页面内容变化；Autofill 只在需要填充字段时采集一次页面快照并请求候选数据，数据模型和进程路径也随之不同。
 
-> 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`。密码管理器、IME 和 WebView 同时参与时，需要分别判断每条路径产生了什么开销。
+密码管理器、IME 和 WebView 同时参与时，我们要分别判断每条路径产生了什么开销。
 
 ### 三个容易混在一起的数据模型
 
@@ -409,9 +411,9 @@ Android 17 源码明确禁止在面向普通用户发布的 user build 上启用
 | ContentCapture | `ContentCaptureEvent`、轻量 `ViewNode` / `ViewStructure` | 初始结构报告；View 出现、消失、文本变化等增量事件 | 系统选中并授权的 `ContentCaptureService` |
 | Autofill | `AssistStructure`、`FillRequest` | Autofill 会话触发后采集应用窗口结构 | `AutofillService`、密码管理器、Credential Manager 相关提供方 |
 
-ContentCapture 的常规采集不依赖 `AccessibilityEvent`，也不会在每次增量变化时重新创建完整的 `AssistStructure`——承载结构快照的是 Autofill。三者混在一起统称“无障碍全树扫描”，我们就无法判断请求由谁发起、工作在哪个线程执行，也就找不到对应的优化位置。
+ContentCapture 的常规采集不依赖 `AccessibilityEvent`，也不会在每次增量变化时重新创建完整的 `AssistStructure`——承载结构快照的是 Autofill。三者混在一起统称“无障碍全树扫描”时，请求由谁发起、工作在哪个线程执行就看不清了，对应的优化位置也随之丢失。
 
-下图展示了 Android 17 中 ContentCapture 和 Autofill 的主要调用方向。
+下图给出 ContentCapture 和 Autofill 的主要调用方向。
 
 ```mermaid
 flowchart LR
@@ -448,7 +450,7 @@ flowchart LR
     AFMS <-->|"inline request / response"| IME
 ```
 
-看这张图的走向：ContentCapture 会话由 `system_server` 协调，连接建立后，应用通过服务提供的 direct Binder 直接发送事件批次，无须每一批再过一遍 `system_server`；Autofill 的结构请求则由 `system_server` 发回应用，在应用主线程采集完成后再送给数据提供方。两条路径可能在同一时间窗口出现，仅凭时间重叠并不能证明它们重复采集了同一份结构。
+看这张图的走向：ContentCapture 会话由 `system_server` 协调，连接建立后，应用通过服务提供的 direct Binder 直接发送事件批次，无须每一批再过一遍 `system_server`；Autofill 的结构请求则由 `system_server` 发回应用，在应用主线程采集完成后再送给数据提供方。两条路径可能在同一时间窗口出现；时间重叠只说明两边都在工作，是否重复采集了同一份结构，要从各自的数据对象和触发条件确认。
 
 ### ContentCapture：初始 UI 遍历与后台事件管线
 
@@ -484,7 +486,7 @@ Activity 创建时，`ContentCaptureManager` 通过 `IContentCaptureManager.star
 
 批次到达服务端后，`ContentCaptureService` 的 direct Binder stub（接收 Binder 调用的服务端对象） 把消息投递到服务进程的 main looper，再逐个调用 `onContentCaptureEvent()`。回调里如果有大规模解析、同步 I/O 或模型推理，服务自己的事件队列就会延迟；应用侧用的是 `oneway`，所以这种积压通常表现为服务处理滞后、异步 Binder 压力或系统 CPU 上升，应用并没有在同步等待服务方法返回。
 
-ContentCapture 也没有一套适用于所有设备的结构大小或耗时阈值：节点字段、文本长度、虚拟层级、更新频率、服务配置和设备 CPU 都会影响结果，“500 个 View 固定需要 30–100 ms”这类数字换一个页面或设备就不作数。
+ContentCapture 的结构大小和耗时没有全设备通用的阈值：节点字段、文本长度、虚拟层级、更新频率、服务配置和设备 CPU 都会影响结果，“500 个 View 固定需要 30–100 ms”这类数字只对产生它的那组条件有效。
 
 ### Autofill：会话等待、AssistStructure 与提供方响应
 
@@ -494,7 +496,7 @@ ContentCapture 也没有一套适用于所有设备的结构大小或耗时阈�
 
 `IAutoFillManager` 是 `oneway` 接口，但 `AutofillManager` 的 `addClient()` 和 `startSession()` 会附带 `SyncResultReceiver`，通过另一条结果通道等会话建立完成，超时常量 5000 ms。焦点事件通常来自 UI 线程，所以 trace 里出现 `SyncResultReceiver` 等待时，我们要沿 Binder flow（跨进程调用流） 继续查 `system_server` 创建 Autofill 会话的过程。
 
-注意 5000 ms 只是异常情况下的保护上限，别当成正常延迟目标；接口契约也推不出“每次 Binder 约 5–10 ms”这样的固定耗时。
+注意 5000 ms 是异常情况下的保护上限，正常延迟以实测为准；接口契约也保证不了“每次 Binder 约 5–10 ms”这样的固定耗时。
 
 #### AssistStructure 在应用主线程采集
 
@@ -511,9 +513,9 @@ ContentCapture 也没有一套适用于所有设备的结构大小或耗时阈�
 
 `AssistStructure` 不要求把整个对象装进一次 Binder transaction：`ParcelTransferWriter` 在 Parcel 达到 `IBinder.MAX_IPC_SIZE` 边界后写入 continuation token（续传令牌），接收方凭这个令牌请求下一段。`Session.AssistDataReceiver` 调用 `ensureDataForAutofill()` 取回全部数据，建立代表本次填充上下文的 `FillContext`，然后创建 `FillRequest`。
 
-分段传输可以避免单次 transaction 超过 IPC 大小上限，但遍历、字段复制、序列化、反序列化和多次 Binder 往返一样都在。报告里应记录这次结构包含的 window 数、node 数、文本规模、采集时长和分段次数，“中等页面 1–5 MB”这类估计不能直接套用。
+分段传输可以避免单次 transaction 超过 IPC 大小上限，但遍历、字段复制、序列化、反序列化和多次 Binder 往返一样都在。报告里应记录这次结构包含的 window 数、node 数、文本规模、采集时长和分段次数，“中等页面 1–5 MB”这类估计要先换成当次实测的数字再用。
 
-#### 密码管理器与 IME 不会各扫一遍树
+#### 密码管理器、IME 与结构采集的关系
 
 用户选中的 `AutofillService` 通常由密码管理器提供，IME inline suggestions（输入法内联建议） 则是展示 Autofill 数据集的一条界面路径：Autofill Session 先向 IME 获取 `InlineSuggestionsRequest`，随 `FillRequest` 交给提供方，再把 inline response 送回 IME 显示。
 
@@ -532,7 +534,7 @@ IME 自身的启动、`InputConnection` 和窗口动画问题见 [3.5 InputMetho
 | `AutofillService` / 密码提供方 | 无 | 解析 `FillRequest`、生成 dataset、处理认证 | provider CPU / I/O、response latency |
 | IME | 无 | inline request、展示与交互 | IME main/render、窗口动画 |
 
-应用 UI 线程出现一次较长的 traversal 时，先确认触发者是 ContentCapture 初始报告还是 Autofill assist request；后台 `sendEvents()` 变长时，检查事件批次、Parcel 和 Binder 异步压力。如果提供方响应慢但 App frame 正常，用户感受到的只是填充建议出现得晚，这不该记到应用渲染卡顿头上。
+应用 UI 线程出现一次较长的 traversal 时，先确认触发者是 ContentCapture 初始报告还是 Autofill assist request；后台 `sendEvents()` 变长时，检查事件批次、Parcel 和 Binder 异步压力。如果提供方响应慢而 App frame 正常，用户感受到的只是填充建议出现得晚——这笔开销记在提供方和 IME 一侧，应用渲染保持正常。
 
 ### 应用侧结构设计
 
@@ -571,7 +573,7 @@ IME 自身的启动、`InputConnection` 和窗口动画问题见 [3.5 InputMetho
 </LinearLayout>
 ```
 
-`autofillHints` 帮助提供方稳定识别字段用途，系统该做的结构采集一样要做；需要自动填充的用户名、密码、地址和银行卡字段，别为了缩小结构而设置成 `no`。
+`autofillHints` 帮助提供方稳定识别字段用途，系统该做的结构采集一样要做；用户名、密码、地址和银行卡这些待自动填充的字段完整保留，缩小结构的工作交给纯装饰内容。
 
 只有在整块 UI 都没有可填充字段或可采集内容时，才值得考虑在容器上用 `noExcludeDescendants`：ContentCapture 会据此排除整棵子树，之后其中新增的有效内容服务也看不到了。Autofill 的同名模式表达相同意图，但请求 flags 和系统配置选项仍可能要求包含更多节点，复用组件和动态页面都要覆盖回归测试。
 
@@ -600,15 +602,15 @@ IME 自身的启动、`InputConnection` 和窗口动画问题见 [3.5 InputMetho
 
 反过来，每次 `onDraw()`、动画帧，或数据没有变化的 bind 都去调 `requestAutofill()`、`notifyValueChanged()` 或 ContentCapture 文本通知，就纯属浪费；焦点在相邻节点间反复切换，也会产生额外的会话更新、结构请求或建议 UI 显示与隐藏。
 
-`ContentCaptureManager.getContentCaptureConditions()` 用带超时的结果接收器查询系统服务。浏览器可以根据 URL 条件判断是否报告虚拟页面，但这条查询不该出现在每帧执行路径里。
+`ContentCaptureManager.getContentCaptureConditions()` 用带超时的结果接收器查询系统服务。浏览器可以根据 URL 条件判断是否报告虚拟页面，这条查询安排在低频路径上调用即可。
 
 ### 隐私边界也会改变性能路径
 
-`ContentCaptureService` 需要声明 `android.permission.BIND_CONTENT_CAPTURE_SERVICE`，这项绑定权限由系统控制；面向普通应用的 `CAPTURE_CONTENT` 运行时授权流程在 Android 14 里并不存在。`RedactionRule` / `ContentCaptureContext.addRedactionRule()` API 平台上也没有，别依据不存在的接口设计脱敏路径。
+`ContentCaptureService` 需要声明 `android.permission.BIND_CONTENT_CAPTURE_SERVICE`，这项绑定权限由系统控制；面向普通应用的 `CAPTURE_CONTENT` 运行时授权流程在 Android 14 里并不存在。`RedactionRule` / `ContentCaptureContext.addRedactionRule()` API 平台上也没有，脱敏方案要落在平台真实提供的接口上。
 
-`ContentCaptureManager.setContentCaptureEnabled()` 已在 API 37 标记为 deprecated，目标 SDK 为 37 及以上时该调用可能成为 no-op（不执行任何操作）；平台文档要求敏感窗口用 `WindowManager.LayoutParams.FLAG_SECURE` 退出 content capture。但 `FLAG_SECURE` 同时会限制截图和非安全显示，只适合有明确安全需求的窗口，别拿它当临时性能开关。
+`ContentCaptureManager.setContentCaptureEnabled()` 已在 API 37 标记为 deprecated，目标 SDK 为 37 及以上时该调用可能成为 no-op（不执行任何操作）；平台文档要求敏感窗口用 `WindowManager.LayoutParams.FLAG_SECURE` 退出 content capture。但 `FLAG_SECURE` 同时会限制截图和非安全显示，是给有明确安全需求的窗口准备的，性能问题另找开关。
 
-页面内更细的控制仍可用 `importantForContentCapture`。Autofill 有自己独立的敏感数据处理规则，也受用户所选 provider 的信任边界约束；密码字段要由密码管理器填充，就保留 Autofill 结构并依赖框架清理敏感值，别拿 ContentCapture 设置代替 Autofill 设置。
+页面内更细的控制仍可用 `importantForContentCapture`。Autofill 的敏感数据有自己独立的处理规则，信任范围以用户所选的 provider 为准；密码字段要由密码管理器填充时，保留 Autofill 结构并依赖框架清理敏感值，ContentCapture 的设置管好 ContentCapture 自己的采集就够了。
 
 ### WebView 与跨框架页面
 
@@ -621,7 +623,7 @@ WebView 可以通过 `onProvideAutofillVirtualStructure()` 向 Autofill 暴露 H
 - WebView 渲染进程准备虚拟节点的语义数据；
 - provider、IME 与 ContentCaptureService 各自的处理。
 
-是否存在重复计算，取决于 WebView 的版本和实现，所以要同时记录 WebView provider 版本、页面 DOM（文档对象模型） 规模、虚拟节点数、目标字段、ContentCapture 采集条件和 Autofill request ID，再从 trace 判断哪条路径占用了 UI 线程。
+是否存在重复计算，取决于 WebView 的版本和实现，所以我们同时记录 WebView provider 版本、页面 DOM（文档对象模型） 规模、虚拟节点数、目标字段、ContentCapture 采集条件和 Autofill request ID，再从 trace 判断哪条路径占用了 UI 线程。
 
 ### 观测与复现
 
@@ -658,7 +660,7 @@ adb shell dumpsys autofill
 4. ContentCapture 服务允许该页面与不允许该页面的相同操作；
 5. 移除回调中的耗时工作，或排除无关虚拟子树后的版本。
 
-每组都记录 App frame、主线程 `handleRequestAssistContextExtras`、ContentCapture 初始 slice、`BackgroundThread`、`AssistStructure` acquisition 时间、provider 首次响应时间和 IME 建议出现时间。用户日常使用的设备上，别随意关闭密码管理器、辅助服务或内容采集组件。
+每组都记录 App frame、主线程 `handleRequestAssistContextExtras`、ContentCapture 初始 slice、`BackgroundThread`、`AssistStructure` acquisition 时间、provider 首次响应时间和 IME 建议出现时间。用户日常使用的设备上，密码管理器、辅助服务和内容采集组件保持原样，实验放到受控测试设备上做。
 
 ### 归因检查表
 
@@ -679,7 +681,7 @@ adb shell dumpsys autofill
 - **Android 8.0 / API 26**：Autofill Framework 和 `importantForAutofill` 进入公开 API。
 - **Android 10 / API 29**：`ContentCaptureManager`、`ContentCaptureSession` 和 `ContentCaptureService` 进入公开 API。
 - **Android 11 / API 30**：`importantForContentCapture` 和 IME inline suggestions 相关公开 API 可用。
-- **Android 14 / API 34**：Autofill 对 importance、其他 View 属性和优化选项的组合判断发生变化，不能沿用早期版本的固定包含规则。
+- **Android 14 / API 34**：Autofill 对 importance、其他 View 属性和优化选项的组合判断发生变化，早期版本的固定包含规则就此失效。
 - **Android 17 / API 37**：按 `android-17.0.0_r1` 核对。ContentCapture 使用 UI 结构准备、应用 `BackgroundThread` 缓冲和 direct `oneway` Binder；Autofill 仍通过 `ActivityThread` 构建 `AssistStructure`。`setContentCaptureEnabled()` 在 API 37 已 deprecated，目标 SDK 37 及以上版本应按照 `FLAG_SECURE` 契约处理敏感窗口。
 
 这些路径属于 framework 和应用 / 服务进程，理解它们不需要依赖 `android17-6.18-2026-06_r6` kernel tag；Binder 驱动、线程调度和内存压力会影响时延，但本文讨论的调用关系没有引入 Android 17 内核专属机制。

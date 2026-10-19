@@ -4,8 +4,10 @@ chapter: '20.4'
 section: '20.4'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1; Android Developers ANR, API 37 warning, API 36 profiling, FGS and Android vitals docs; kotlinx.coroutines 1.11.0 current on 2026-08-14
+last_verified: '2026-10-19'
+last_verified_against: AOSP android-17.0.0_r1; Android Developers ANR diagnosis, API 37 warning, API 36 profiling, FGS timeout and migrated Android vitals docs; kotlinx.coroutines 1.11.0 launch/invokeOnCompletion API contracts
+last_source_verified_at: '2026-10-19'
+last_idle_audit_at: '2026-10-19'
 confidence: medium-high
 consolidated_from:
 - src/part5-app/ch20-stability/09-stability-case-studies.md#案例三
@@ -39,7 +41,7 @@ sources:
 - type: aosp
   path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/monitor.cc
 - type: official
-  path: https://developer.android.com/topic/performance/vitals/anr
+  path: https://developer.android.com/google/play/vitals/anr
 - type: official
   path: https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs
 - type: official
@@ -62,6 +64,10 @@ sources:
   path: https://developer.android.com/reference/android/content/SharedPreferences.Editor
 - type: official
   path: https://developer.android.com/reference/android/content/BroadcastReceiver
+- type: official
+  path: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/launch.html
+- type: official
+  path: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/invoke-on-completion.html
 - type: clippings-structure-ref
   path: Clippings/线上疑难问题该如何排查和跟踪？-Android开发高手课-极客时间 2.md
 - type: clippings-structure-ref
@@ -305,7 +311,7 @@ publish 基线来自 `ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS`�
 
 #### 案例：清单合并引入的 SDK Provider
 
-一次 SDK 升级后，冷启动 P95 和启动附近 ANR 同时上升，主线程栈停在 SDK Provider 的 `onCreate()`。但这仍只是候选位置，我们依次验证同步磁盘、数据库迁移、Binder/网络等待、类加载与 page fault（访问的内存页尚未映射，需要内核补齐映射，部分情况会读取存储），以及 `Application.onCreate()` 本身的区间。
+如果 SDK 升级后，冷启动 P95 和启动附近 ANR 同时上升，主线程栈又停在 SDK Provider 的 `onCreate()`，这个位置仍只能作为候选。排查时依次验证同步磁盘、数据库迁移、Binder/网络等待、类加载与 page fault（访问的内存页尚未映射，需要内核补齐映射，部分情况会读取存储），以及 `Application.onCreate()` 本身的区间。
 
 调查从 release variant（用于发布的构建变体）的 merged manifest（应用清单合并结果）入手，记录 Provider 的来源依赖、authority（系统识别 Provider 的唯一名称）、process（所属进程）、`initOrder`（初始化顺序）、direct-boot（用户解锁前可否运行）属性和官方关闭自动初始化方式。`ActivityThread.handleBindApplication()` 先安装本地 Provider 再调用 `Application.onCreate()`，清单合并带进来的组件即使业务从不主动调用，也可能占用启动主线程。另外，外部 Provider 访问、Job、Service、Broadcast 或推送都可能触发非桌面启动，数据必须带上启动原因和进程名。
 
@@ -345,7 +351,7 @@ class DiagnosticsProvider : ContentProvider() {
 
 `goAsync()` 返回的 `PendingResult` 允许 `onReceive()` 返回后继续处理，但计时起点仍是广播分发那一刻，直到 `PendingResult.finish()` 为止，异步工作沿用原有截止时间。进程在 receiver 完成后也可能被回收，需要在进程重建后继续的工作交给 WorkManager 或 JobScheduler。
 
-下面的示例只适合能在广播期限内完成、支持协程取消的短任务。`receiverScope` 由应用统一持有，避免每次广播创建无人管理的作用域。
+示例只处理能在广播期限内完成、支持协程取消的短任务。`receiverScope` 由应用统一持有，避免每次广播创建无人管理的作用域；应用还应为它配置受控的后台调度器和异常处理。
 
 ```kotlin
 class SyncReceiver(
@@ -355,20 +361,21 @@ class SyncReceiver(
 
     override fun onReceive(context: Context, intent: Intent) {
         val pending = goAsync()
-        receiverScope.launch {
-            try {
-                withTimeout(processor.internalBudgetMillis) {
-                    processor.handle(intent)
-                }
-            } finally {
-                pending.finish()
+        val job = receiverScope.launch {
+            withTimeout(processor.internalBudgetMillis) {
+                processor.handle(intent)
             }
+        }
+        job.invokeOnCompletion {
+            pending.finish()
         }
     }
 }
 ```
 
-这里的内部预算必须短于对应广播窗口，由线上基线确定；`processor.handle()` 还要能响应取消——一旦它进入不可取消的阻塞调用，`withTimeout` 就无法保证按时执行到 `finish()`。超过广播窗口或要求进程重建后继续的任务，在 `onReceive()` 里只入队持久任务即可。
+默认 `launch` 可能在协程体开始执行前被取消，协程体内的 `finally` 无法覆盖这个分支。`Job.invokeOnCompletion()` 在任务成功、失败或取消后执行一次；注册时任务若已完成，处理器也会立即执行，因此示例把唯一一次 `finish()` 放在完成处理器中。处理器可能在不同线程运行，只负责结束广播，不执行额外耗时工作。
+
+这里的内部预算必须短于对应广播窗口，由线上基线确定；排队时间仍会消耗广播窗口，协程内的计时无法覆盖排队阶段。`processor.handle()` 还要能响应取消——一旦它进入不可取消的阻塞调用，`withTimeout` 就无法保证按时完成任务并调用 `finish()`。超过广播窗口或要求进程重建后继续的任务，在 `onReceive()` 里只入队持久任务即可。
 
 ### Service：生命周期回调必须很短
 
@@ -626,7 +633,7 @@ ANR 治理从系统类型和计时窗口开始：主线程、Binder、锁和组�
 ## 参考资料
 
 - [Android Developers：Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
-- [Android Developers：Android vitals ANR](https://developer.android.com/topic/performance/vitals/anr)
+- [Android Developers：Android vitals ANR](https://developer.android.com/google/play/vitals/anr)
 - [Android Developers：ActivityManager.registerAnrWarningListener](https://developer.android.com/reference/android/app/ActivityManager)
 - [Android Developers：AnrWarningResult](https://developer.android.com/reference/android/app/AnrWarningResult)
 - [Android Developers：ApplicationExitInfo.AnrInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo.AnrInfo)
@@ -637,6 +644,8 @@ ANR 治理从系统类型和计时窗口开始：主线程、Binder、锁和组�
 - [Android Developers：WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager)
 - [Android Developers：SharedPreferences.Editor](https://developer.android.com/reference/android/content/SharedPreferences.Editor)
 - [Android Developers：BroadcastReceiver](https://developer.android.com/reference/android/content/BroadcastReceiver)
+- [kotlinx.coroutines：launch 的启动与取消契约](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/launch.html)
+- [kotlinx.coroutines：Job.invokeOnCompletion](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/invoke-on-completion.html)
 - [AOSP Android 17：ActivityManagerService.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java)
 - [AOSP Android 17：ActivityManagerConstants.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java)
 - [AOSP Android 17：BroadcastConstants.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastConstants.java)

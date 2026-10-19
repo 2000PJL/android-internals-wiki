@@ -86,30 +86,32 @@ verification_scope_note: 核验 Android 17 固定标签下的 LMKD 选进程、M
 
 # ZRAM 压缩交换与应用重启延迟
 
-ZRAM 会用 CPU 换取匿名页的压缩驻留空间，但它既不能保证进程存活，也不能消除重新调页和解压的长尾。分析重启或恢复变慢时，应先区分进程被杀后的冷路径与存活进程的换入路径。
+ZRAM 用 CPU 换取匿名页的压缩驻留空间，为系统争取时间和容量；至于进程是否存活、恢复时要付出多少重新调页和解压的成本，要看后面的机制怎么配合。我们分析重启或恢复变慢，第一步是区分进程被杀后的冷路径与存活进程的换入路径。
 
-平台基线是 Android 17 / API 37 / `android-17.0.0_r1`，内核基线是 `android17-6.18-2026-06_r6`。
+> 源码基线：Android 17 / API 37（AOSP `android-17.0.0_r1`）；内核 `android17-6.18-2026-06_r6`。
 
 ## 先判断进程还在不在
 
-讨论 ZRAM 对应用恢复耗时的影响，应先确认原进程是否仍然存在，再看 `VmSwap`。两种场景的执行成本完全不同：
+排查“应用恢复变慢”这类反馈，我们要先确认一个事实：原进程是否仍然存在，然后才轮到 `VmSwap`。两种场景的执行成本完全不同：
 
 | 场景 | PID | 主要成本 | ZRAM 与本次恢复的关系 |
 | --- | --- | --- | --- |
 | 进程存活，部分匿名页在 ZRAM | 不变 | 换入缺页（swap fault）、解压、可能的后备设备读取，以及恢复后的业务工作 | 直接相关 |
 | 进程已被 LMKD 或其他机制终止 | 改变 | 创建进程、初始化运行时、加载代码和资源、重建组件 | 旧进程的 ZRAM 页面已随交换槽位清理，不构成本次新进程的直接恢复路径 |
 
-Android 的冷启动、温启动和热启动是 Activity 启动分类；论文和系统优化语境中的“重新拉起”（relaunch）范围更宽，可能包含从后台任务恢复、Activity 重建或进程重建。本文用“换入恢复”表示 PID 不变、但需要重新访问已换出页面；用“冷启动”表示原进程已经终止。
+术语先约定清楚：Android 的冷启动、温启动和热启动是 Activity 启动分类；论文和系统优化语境中的“重新拉起”（relaunch）范围更宽，可能包含从后台任务恢复、Activity 重建或进程重建。本文用“换入恢复”表示 PID 不变、但需要重新访问已换出页面；用“冷启动”表示原进程已经终止。
 
-用户感觉“像冷启动”只描述了体验，不能证明进程发生过重建。应先记录 PID 与 Activity 启动类型；在 Android 11（API 30）及以上再结合 `ApplicationExitInfo`，低版本需要依赖日志、`dumpsys activity` 或自有启动埋点。
+用户说“感觉像冷启动”，描述的只是体验；判断进程是否真的重建过，要靠现场记录。先记下 PID 与 Activity 启动类型，在 Android 11（API 30）及以上再结合 `ApplicationExitInfo`，低版本则需要日志、`dumpsys activity` 或自有启动埋点。
 
 ## ZRAM 位于匿名页回收与进程淘汰之间
 
+页面为什么会进 ZRAM、进去之后又到了哪里？我们从匿名页离开物理内存的路径看起。
+
 ### 文件页与匿名页的后备来源不同
 
-干净的文件页（file-backed page）已经有文件作为后备来源。内存不足时，内核可以丢弃这些物理页；再次访问时，再从 APK、DEX、`.so` 或其他文件读取。修改过的文件页则需要先写回，或按具体映射语义处理。
+干净的文件页（file-backed page）自带后备来源：内存不足时，内核可以丢弃这些物理页，再次访问时再从 APK、DEX、`.so` 或其他文件读取。修改过的文件页则需要先写回，或按具体映射语义处理。
 
-匿名页（anonymous page）没有可直接重读的原始文件。Java 堆、原生堆和匿名 `mmap()` 中的大量数据都属于这一类。要在保留进程状态的同时释放原始物理页，内核可以把页面写入交换空间。Android 通常把 ZRAM 块设备用作交换设备：
+匿名页（anonymous page）没有可直接重读的原始文件：Java 堆、原生堆和匿名 `mmap()` 中的大量数据都属于这一类。要在保留进程状态的同时释放原始物理页，内核可以把页面写入交换空间。Android 通常把 ZRAM 块设备用作交换设备：
 
 1. 回收器选中可换出的匿名页。
 2. 交换层为页面分配交换条目（swap entry），用于记录页面被换出后的存放位置。
@@ -118,11 +120,11 @@ Android 的冷启动、温启动和热启动是 Activity 启动分类；论文�
 5. 进程页表保存交换条目，原物理页可以释放。
 6. 进程再次访问该虚拟地址时发生换入缺页，页面从 ZRAM 解压并恢复。
 
-这个过程以 CPU 时间换取容量。压缩率越高，同一段物理内存可以保存更多匿名数据；算法越复杂，压缩与解压占用的 CPU 通常越多。ZRAM 本身仍然消耗内存，其中还包括分配器碎片、元数据和压缩上下文，因此不能把 `SwapTotal - SwapFree` 直接当作节省的物理内存。
+这个过程以 CPU 时间换取容量。压缩率越高，同一段物理内存可以保存更多匿名数据；算法越复杂，压缩与解压占用的 CPU 通常越多。同时 ZRAM 自身也要占内存，分配器碎片、元数据和压缩上下文都算在内，所以 `SwapTotal - SwapFree` 只是换出数据的原始规模，实际节省的物理内存要比这个数字小。
 
 ### ZRAM、写回与磁盘交换的成本等级不同
 
-Android 17 可以为 ZRAM 配置后备设备（backing device）。冷的 ZRAM 条目被写回后，压缩数据或页面内容离开内存，进入 `/data` 上的后备存储。之后的恢复成本取决于页面当前所在位置：
+系统还可以为 ZRAM 配置后备设备（backing device）。冷的 ZRAM 条目被写回后，压缩数据或页面内容离开内存，进入 `/data` 上的后备存储。这时页面在哪儿，恢复成本就跟着变：
 
 | 页面位置 | 恢复时的主要工作 | 常见瓶颈 |
 | --- | --- | --- |
@@ -130,13 +132,13 @@ Android 17 可以为 ZRAM 配置后备设备（backing device）。冷的 ZRAM �
 | 后备设备 | 发起块 I/O，再把内容恢复到 ZRAM 或进程页面 | 存储延迟、队列竞争、解压 |
 | 交换缓存 | 可能复用已在内存中的页面 | 页表更新与普通缺页处理 |
 
-`VmSwap` 相同的两个进程，恢复耗时也可能不同。排查时还要确认对应页面是否已经写回、访问是否集中在首帧之前，以及设备当时的 CPU 与存储负载。
+所以 `VmSwap` 相同的两个进程，恢复耗时也可能不同。排查时我们要逐一确认：对应页面是否已经写回、访问是否集中在首帧之前、设备当时的 CPU 与存储负载。
 
 ## Android 17 的管理者是 MMD
 
-Android 17 引入内存管理守护进程（memory management daemon，`mmd`），负责 ZRAM 配置、重新压缩、写回与按进程维护。`system_server` 决定何时发起任务，MMD 通过 `IMmd` 接口接收请求并执行内核操作。这种分工把 Java 系统服务的调度决策与原生守护进程的内存操作分开。
+换出之后的维护动作由谁驱动？Android 17 引入内存管理守护进程（memory management daemon，`mmd`），负责 ZRAM 配置、重新压缩、写回与按进程维护。`system_server` 决定何时发起任务，MMD 通过 `IMmd` 接口接收请求并执行内核操作。这种分工把 Java 系统服务的调度决策与原生守护进程的内存操作分开。
 
-Android 17 的主要数据流如下，重点是页面被标记为 idle 后，写回与重新压缩之间的分支：
+主要数据流如下，我们重点看页面被标记为 idle 后，写回与重新压缩之间的分支：
 
 ```mermaid
 flowchart TD
@@ -160,7 +162,7 @@ flowchart TD
     M --> O
 ```
 
-图中的重新压缩、写回和按进程预取都依赖内核能力、系统属性、后备存储与产品配置。Android 17 提供了相应实现，但具体设备未必全部启用。
+图中的重新压缩、写回和按进程预取都依赖内核能力、系统属性、后备存储与产品配置：基线代码里这些实现都在，具体设备未必全部打开。
 
 ### 启动配置
 
@@ -174,7 +176,7 @@ flowchart TD
 - `mmd.zram.recompression.algorithm`：次级算法，AOSP MMD 默认值为 `zstd`；
 - `mmd.zram.writeback.enabled`：是否配置并使用后备存储。
 
-启用 `mmd.zram.enabled` 后，`swapon_all` 中的 ZRAM 设置变为空操作，旧资源覆盖项 `config_zramWriteback` 和 `ro.zram.*` 写回属性也会被忽略。因此，Android 17 排障不能只检查历史 `ZramWriteback` 属性；要先确认设备使用 MMD 还是旧方案。
+启用 `mmd.zram.enabled` 后，`swapon_all` 中的 ZRAM 设置变为空操作，旧资源覆盖项 `config_zramWriteback` 和 `ro.zram.*` 写回属性也会被忽略。因此排障时，我们先确认设备使用的是 MMD 还是旧方案，再决定历史 `ZramWriteback` 属性有没有参考价值。
 
 ### 全局维护
 
@@ -185,11 +187,11 @@ flowchart TD
 3. MMD 在同一个全局维护任务中先尝试写回，再尝试重新压缩；源码注释给出的原因是当前写回路径会先把待写回页面从 ZRAM 解压后再写到磁盘。
 4. 高优先级的按进程预取可以先于低优先级维护执行。
 
-维护不是持续扫描。官方默认的首次调度和后续周期均为一小时；重新压缩与写回还有各自的退避时间、空闲时长、容量门槛和每日写入预算。产品可以调整这些值。
+维护按周期调度，而非持续扫描：官方默认的首次调度和后续周期均为一小时；重新压缩与写回还有各自的退避时间、空闲时长、容量门槛和每日写入预算。产品可以调整这些值。
 
 ### 按进程写回与预取
 
-Android 17 的 `CachedAppOptimizer` 把进程冻结器（freezer）与 MMD 接到一起：
+`CachedAppOptimizer` 把进程冻结器（freezer）与 MMD 接到一起：
 
 1. 缓存进程冻结成功后，可以先执行 `FULL` 级应用页面回收；`FULL` 是系统为该流程定义的完整回收档位名称。
 2. 页面回收完成后，延迟投递 `ZRAM_WRITEBACK_MSG`。消息处理阶段要求进程承载 Activity、交换空间占用量低于配置阈值，并且 GPU 内存和 DMA-BUF 共享缓冲区内存没有超过各自阈值。
@@ -202,9 +204,11 @@ pidfd 是内核提供的进程文件描述符，可以避免只用整数 PID 时
 
 ## 恢复耗时为什么容易出现长尾
 
+前面已经出现过 `VmSwap` 相同、恢复耗时不同的情形。长尾的来源可以拆成三类：页面触碰顺序、命中位置，以及 CPU 与 I/O 的竞争。
+
 ### 页面触碰顺序比总量更重要
 
-应用恢复时不会一次读回全部已换出页面。只有 CPU 执行到某条指令并访问尚未驻留的虚拟页后，内核才会处理缺页。以下页面若集中在首帧前被访问，延迟会更明显：
+应用恢复时并不会一次读回全部已换出页面：只有 CPU 执行到某条指令、访问到尚未驻留的虚拟页，内核才会处理缺页。下面这些页面若集中在首帧前被访问，延迟会更明显：
 
 - Activity 与 View 层级的状态对象；
 - 首屏 Bitmap、字体、Skia 或 GPU 资源相关的匿名数据；
@@ -212,11 +216,11 @@ pidfd 是内核提供的进程文件描述符，可以避免只用整数 PID 时
 - 数据库连接、序列化缓存和业务索引；
 - Binder 恢复后立刻消费的大批回调数据。
 
-同样是 100 MiB `SwapPss`，首帧前访问 5 MiB 热页与访问 40 MiB 热页的体验完全不同。`SwapPss` 适合描述当前归属，但不足以预测恢复成本。
+同样是 100 MiB `SwapPss`，首帧前访问 5 MiB 热页与访问 40 MiB 热页，体验完全不同。`SwapPss` 告诉我们页面当前记在谁头上；要预测恢复成本，得看首帧前会碰到多少热页。
 
 ### ZRAM 命中和后备设备命中的成本不同
 
-页面仍在 ZRAM 时，缺页处理主要付出线程调度、查找、分配目标页和解压成本。页面已经写回时，还要等待后备设备 I/O。MMD 的按进程预取会尝试在 Activity 主线程初始化期间异步读回相关条目，以减少后续同步缺页等待；它不能保证全部页面都在应用访问前就绪。
+页面仍在 ZRAM 时，缺页处理主要付出线程调度、查找、分配目标页和解压成本。页面已经写回时，还要等待后备设备 I/O。MMD 的按进程预取会在 Activity 主线程初始化期间尝试异步读回相关条目，减少后续同步缺页等待；但有多少页面能赶在应用访问前就绪，取决于预取 I/O 与应用执行的重叠程度。
 
 分析时可以把恢复窗口分为：
 
@@ -232,13 +236,15 @@ pidfd 是内核提供的进程文件描述符，可以避免只用整数 PID 时
        -> 把条目读回 ZRAM，供后续换入使用
 ```
 
-这段并行时序用于安排性能轨迹标记。进程解除冻结后，应用执行与预取可以重叠；预取完成后，应用仍需通过缺页把条目恢复到进程页面，不能把预取耗时与应用初始化耗时简单相加。
+这段并行时序用于安排性能轨迹标记。进程解除冻结后，应用执行与预取可以重叠；预取完成后，应用仍要通过缺页把条目恢复到进程页面；预取与应用初始化可以重叠，两段耗时简单相加，会把重叠的部分算两遍。
 
 ### CPU 与 I/O 竞争会放大延迟
 
 ZRAM 解压消耗 CPU。低端设备或持续高负载下，解压可能与主线程、渲染线程（RenderThread）、编译线程争用核心。写回和预取又会访问 `/data` 后备设备，可能与 APK、DEX、数据库和图片读取共享队列。即使单次缺页很短，数百次分散缺页仍可能形成明显长尾。
 
 ## Linux 6.18 的 ZRAM 实现
+
+系统侧的配置和维护最终都落在驱动上；这一节我们看驱动内部：条目怎么存、压缩器怎么排、接口怎么设计。
 
 ### 驱动拆分与压缩后端
 
@@ -274,7 +280,7 @@ drivers/block/zram/
 - `huge_pages`：压缩收益不足的页面；
 - `pages_compacted`：ZRAM 内部分配器经过压缩整理后释放的页面数。
 
-评估压缩效率应看 `orig_data_size / mem_used_total` 和 `compr_data_size / mem_used_total`，不能只看 `compr_data_size`。
+评估压缩效率时，我们看 `orig_data_size / mem_used_total` 和 `compr_data_size / mem_used_total` 这两个比值；单看 `compr_data_size` 会漏掉 zsmalloc 的池开销。
 
 ### 最多四个压缩器槽位
 
@@ -296,7 +302,7 @@ drivers/block/zram/
 
 `recompress_slot()` 依次尝试更高优先级的算法。只有新结果进入更小的 zsmalloc 尺寸类别，并满足阈值条件时，才会替换旧对象。重新压缩失败不会破坏旧对象；所有高优先级算法都无法带来收益时，可以标记 `ZRAM_INCOMPRESSIBLE`。
 
-不能把实现概括为“冷页统一改用 zstd”。MMD 的默认次级算法可以是 zstd，驱动本身支持多个后端和优先级，最终可用组合取决于内核配置与设备属性。
+“冷页统一改用 zstd”概括不了这套实现：MMD 的默认次级算法可以是 zstd，驱动本身支持多个后端和优先级，最终可用组合取决于内核配置与设备属性。
 
 ### 后处理串行化
 
@@ -306,7 +312,7 @@ drivers/block/zram/
 
 ### 按进程 ioctl 接口
 
-`include/uapi/linux/zram_ioctl.h` 在 Android 17 内核定义了：
+`include/uapi/linux/zram_ioctl.h` 里定义了：
 
 - `ZRAM_ANDROID_IOC_PROCESS_RANGE_WRITEBACK`；
 - `ZRAM_ANDROID_IOC_PROCESS_PREFETCH`；
@@ -325,19 +331,21 @@ drivers/block/zram/
 
 ## `kswapd`、直接回收与 LMKD
 
+内存压力之下，内核先自己回收，回收扛不住时 Android 再终止进程；我们把相关机制放在一起看。
+
 ### kswapd
 
 空闲页低于水位线后，`kswapd` 会在后台扫描可回收页面，尝试让内存区域（zone）恢复到目标水位。它不在应用主线程的调用栈上，但会消耗 CPU 和内存带宽，并与应用竞争最近最少使用链表（LRU）、内存控制组（memcg）、交换空间及文件系统资源。
 
 ### 直接回收
 
-分配线程无法及时获得页面时，可能在分配路径进入直接回收（direct reclaim）。此时，发起分配的线程会亲自执行页面扫描、回写或换出（swap-out），并等待这些操作完成。若主线程或 RenderThread 进入直接回收，用户更容易感知卡顿。
+分配线程拿不到空闲页时，可能在分配路径进入直接回收（direct reclaim）：发起分配的线程亲自执行页面扫描、回写或换出（swap-out），并等待这些操作完成。若主线程或 RenderThread 进入直接回收，用户更容易感知卡顿。
 
 直接回收还要和物理内存规整（compaction）区分开。高阶页分配失败可能触发内存规整，它解决的是物理页连续性问题，与 ZRAM 重新压缩（recompression）不是一回事。
 
 ### LMKD
 
-Android 17 的 `lmkd` 默认通过 PSI（Pressure Stall Information，压力停顿信息）事件感知任务因内存争用而停顿，再结合内存水位、交换空间、文件缓存重新缺页（refault）、反复换入换出（thrashing）和进程优先级 `adj` 选择终止目标。ZRAM 为系统争取时间和容量，LMKD 则在内存压力不可接受时终止低优先级进程。
+`lmkd` 默认通过 PSI（Pressure Stall Information，压力停顿信息）事件感知任务因内存争用而停顿，再结合内存水位、交换空间、文件缓存重新缺页（refault）、反复换入换出（thrashing）和进程优先级 `adj` 选择终止目标。ZRAM 为系统争取时间和容量，LMKD 则在内存压力不可接受时终止低优先级进程。
 
 `lmkd.cpp` 的 `get_free_swap()` 还有一个 Android 特有修正：
 
@@ -347,7 +355,7 @@ return std::min(
         easy_available * swap_compression_ratio / swap_compression_ratio_div);
 ```
 
-这段简化代码说明了计算意图：ZRAM 的可用交换空间受可用内存与压缩率约束，不能把设备声明的空闲交换空间当成独立的磁盘容量。Android 17 的 LMKD 还会组合以下参数：
+这段简化代码说明了计算意图：ZRAM 的可用交换空间同时受可用内存与压缩率约束，设备声明的空闲交换空间要按这两项折算后才算数。LMKD 还会组合以下参数：
 
 - `ro.lmk.swap_free_low_percentage`；
 - `ro.lmk.swap_compression_ratio`；
@@ -357,15 +365,15 @@ return std::min(
 - `ro.lmk.psi_complete_stall_ms`；
 - `ro.lmk.direct_reclaim_threshold_ms`。
 
-这些值影响设备何时认为交换空间过低，以及何时因反复换入换出或直接回收而终止进程。排查具体设备时要读取实际属性，不能只引用 AOSP 默认值。
+这些值影响设备何时认为交换空间过低，以及何时因反复换入换出或直接回收而终止进程。排查具体设备时，我们以设备上的实际属性为准，AOSP 默认值只作为对照。
 
 ### PSI 事件如何进入 LMKD
 
-PSI 不是简单读取 `/proc/pressure/memory` 的 `avg10`/`avg60` 摘要值。Android common kernel 6.18 的 `kernel/sched/psi.c` 用每 CPU `psi_group_cpu` 中的 `state_start` 与 `state_mask` 记录任务处于 MEM SOME/FULL 等停顿状态的时间，再把结果聚合到 PSI group；Android 17 的 `libpsi` 会向 `/proc/pressure/memory` 写入 `some/full <threshold_us> <window_us>` 监视器，并让 `lmkd` 通过 `EPOLLPRI` 接收阈值事件。[来源: DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md；已验证: android17-6.18-2026-06_r6 kernel/sched/psi.c；android-17.0.0_r1 system/memory/lmkd/libpsi/psi.cpp]
+PSI 的工作机制比读取 `/proc/pressure/memory` 的 `avg10`/`avg60` 摘要值更细：Android common kernel 6.18 的 `kernel/sched/psi.c` 用每 CPU `psi_group_cpu` 中的 `state_start` 与 `state_mask` 记录任务处于 MEM SOME/FULL 等停顿状态的时间，再把结果聚合到 PSI group；Android 17 的 `libpsi` 会向 `/proc/pressure/memory` 写入 `some/full <threshold_us> <window_us>` 监视器，并让 `lmkd` 通过 `EPOLLPRI` 接收阈值事件。[来源: DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md；已验证: android17-6.18-2026-06_r6 kernel/sched/psi.c；android-17.0.0_r1 system/memory/lmkd/libpsi/psi.cpp]
 
-`lmkd.cpp` 的默认 PSI 阈值表包含 low=`some 70ms/1s`、medium=`some 100ms/1s`、critical=`full 70ms/1s`；启用新策略时，low 阈值会被置为 0，medium 与 critical 改用 `ro.lmk.psi_partial_stall_ms` 和 `ro.lmk.psi_complete_stall_ms`。因此，排查 Android 17 设备时应同时记录 `/proc/pressure/memory` 的 `some/full` 增量、`ro.lmk.*` 实际属性和设备是否使用新策略，不能只凭一个 AOSP 默认阈值表推断杀进程时机。[来源: DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md；已验证: android-17.0.0_r1 system/memory/lmkd/lmkd.cpp]
+`lmkd.cpp` 的默认 PSI 阈值表包含 low=`some 70ms/1s`、medium=`some 100ms/1s`、critical=`full 70ms/1s`；启用新策略时，low 阈值会被置为 0，medium 与 critical 改用 `ro.lmk.psi_partial_stall_ms` 和 `ro.lmk.psi_complete_stall_ms`。因此排查设备时，我们要同时记录 `/proc/pressure/memory` 的 `some/full` 增量、`ro.lmk.*` 实际属性和设备是否使用新策略；杀进程的时机要从这些现场数据判断，AOSP 默认阈值表只是起点。[来源: DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md；已验证: android-17.0.0_r1 system/memory/lmkd/lmkd.cpp]
 
-PSI 事件也不等于 `lmkd` 立即杀进程。`__mp_event_psi()` 会把 PSI 唤醒与内存水位、ZRAM-aware free swap、反复换入换出、进程 `oom_score_adj` 等状态合并后再选候选进程。`find_and_kill_process()` 从较大的 `adj` 开始向下遍历；启用 `kill_heaviest_task` 时，`proc_get_heaviest()` 在同一个 `adj` 内比较 `/proc/<pid>/statm` 的 RSS，并在可以读取 `dmabuf_pss` 时加上 DMA-BUF PSS。该比较不包含 swap 用量。[来源: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp，`proc_get_size()`、`proc_get_heaviest()`、`find_and_kill_process()`]
+PSI 事件触发的是一次评估，而非一次杀动作：`__mp_event_psi()` 会把 PSI 唤醒与内存水位、ZRAM-aware free swap、反复换入换出、进程 `oom_score_adj` 等状态合并后再选候选进程。`find_and_kill_process()` 从较大的 `adj` 开始向下遍历；启用 `kill_heaviest_task` 时，`proc_get_heaviest()` 在同一个 `adj` 内比较 `/proc/<pid>/statm` 的 RSS，并在可以读取 `dmabuf_pss` 时加上 DMA-BUF PSS。该比较不包含 swap 用量。[来源: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp，`proc_get_size()`、`proc_get_heaviest()`、`find_and_kill_process()`]
 
 ## 16 KB 页大小的准确影响
 
@@ -377,7 +385,7 @@ Android 17 同时支持 4 KB 与 16 KB 基础页设备。ZRAM 驱动每次按 `P
 - 同样的虚拟地址范围需要的页表项和交换槽位更少；
 - 页面内部只使用一小部分数据时，换入的额外字节可能增加。
 
-这不表示恢复延迟会固定变成 4 KB 设备的四倍。页数减少、TLB（页表项高速缓存）覆盖范围增加、算法吞吐、压缩率、访问局部性和存储队列都会影响结果。对比设备时至少记录：
+不过恢复延迟并不会固定变成 4 KB 设备的四倍：页数减少、TLB（页表项高速缓存）覆盖范围增加、算法吞吐、压缩率、访问局部性和存储队列都会影响结果。对比设备时我们至少记录：
 
 ```bash
 adb shell getconf PAGE_SIZE
@@ -386,13 +394,13 @@ adb shell cat /sys/block/zram0/comp_algorithm
 adb shell cat /sys/block/zram0/mm_stat
 ```
 
-第一条命令确认基础页大小，后三条确认 ZRAM 容量、算法和当前内存效率。比较不同页大小的设备时，直接比较交换槽位数量容易得出错误结论，应优先换算成字节。
+第一条命令确认基础页大小，后三条确认 ZRAM 容量、算法和当前内存效率。比较不同页大小的设备时，槽位数量直接对比容易得出错误结论，我们优先换算成字节。
 
 ## MGLRU 影响“回收哪些页面”，不负责解压
 
 多代最近最少使用算法（Multi-Gen LRU，MGLRU）用“代”（generation）表示页面距上次访问的时间，以改进回收器对冷热页的选择。它可能影响哪些匿名页先进入交换空间、哪些文件页先被丢弃，进而改变应用恢复时需要重新访问的已换出工作集。
 
-MGLRU 不执行 ZRAM 解压，也不决定 LMKD 最终终止哪个进程。设备是否启用 MGLRU 取决于内核配置和运行时设置，Android API 级别本身无法证明其启用状态。诊断文档应记录内核源码标签（kernel tag）、`CONFIG_LRU_GEN` 和运行时状态，避免只写“Android 17 默认使用某种 LRU”。
+MGLRU 影响的是“回收哪些页面”这一步；ZRAM 解压和 LMKD 最终终止哪个进程，由其他模块负责。设备是否启用 MGLRU 取决于内核配置和运行时设置，从 Android API 级别上看不出来。诊断文档应记录内核源码标签（kernel tag）、`CONFIG_LRU_GEN` 和运行时状态，避免只写“Android 17 默认使用某种 LRU”。
 
 ## Ariadne：研究结果与 AOSP 边界
 
@@ -402,7 +410,7 @@ Ariadne 是 HPCA 2025 论文提出的研究系统。针对普通 ZRAM 不区分�
 2. **自适应压缩粒度（size-adaptive compression）**：热数据使用较小的压缩块，以缩短解压时间；冷数据使用较大的压缩块，以提高压缩率；
 3. **主动解压（proactive decompression）**：根据访问局部性预测下一批页面，并提前解压。
 
-论文报告称，在 Pixel 7 上，相比其实验基线 ZRAM，应用重新恢复的平均延迟降低了 50%，压缩和解压的 CPU 使用量降低了 15%。这些数字只适用于论文采用的设备、Android 14 软件栈、应用集合和实验配置，不能直接外推到 Android 17 产品。
+论文报告称，在 Pixel 7 上，相比其实验基线 ZRAM，应用重新恢复的平均延迟降低了 50%，压缩和解压的 CPU 使用量降低了 15%。这些数字绑定在论文采用的设备、Android 14 软件栈、应用集合和实验配置上；换到 Android 17 产品，要重新验证。
 
 Android 17 的按进程写回和预取与 Ariadne 的“提前准备热数据”方向相近，但实现机制不同：
 
@@ -413,9 +421,11 @@ Android 17 的按进程写回和预取与 Ariadne 的“提前准备热数据”
 | 压缩粒度 | 以基础页为一个条目，支持多个压缩器优先级 | 按热度使用自适应块大小（chunk size） |
 | 提前恢复 | 进程因 Activity 激活而解冻后，按进程预取已写回的条目 | 预测下一批将访问的数据并主动解压 |
 
-截至 Android 17 基线，没有证据表明 Ariadne 的完整论文设计已经合入 AOSP。它适合用来说明相关研究方向，但论文中的性能数字不能视为 Android 系统承诺。
+截至 Android 17 基线，没有证据表明 Ariadne 的完整论文设计已经合入 AOSP。它适合用来说明相关研究方向；性能数字方面，Android 系统并没有给出对应的承诺。
 
 ## 观测：把交换、压力和启动放到同一时间窗
+
+定位恢复慢的问题，要把交换、压力和启动放进同一个时间窗对照；我们先从设备快照开始。
 
 ### 设备快照
 
@@ -433,7 +443,7 @@ adb shell getprop | grep -E 'mmd\.zram|mm\.zram|ro\.lmk'
 adb shell dumpsys -l | grep mmd
 ```
 
-要同时记录这些命令的采样时刻。单次快照只能描述当时的状态；若要判断恢复成本，需要在后台稳定期、点击恢复前和首帧后分别采样，或采集一段完整跟踪（trace）。
+这些命令要同时记录采样时刻。单次快照只能描述当时的状态；我们判断恢复成本时，需要在后台稳定期、点击恢复前和首帧后分别采样，或采集一段完整跟踪（trace）。
 
 重点字段包括：
 
@@ -446,7 +456,7 @@ adb shell dumpsys -l | grep mmd
 | ZRAM `mm_stat` | 原始量、压缩量、总占用、超大页 | 压缩效率与内存分配器开销 |
 | ZRAM `bd_stat` | 后备块数量、读取量、写入量 | 写回量与后备设备读取量 |
 
-`pgmajfault` 不能单独代表 ZRAM 换入。交换缓存命中、纯内存 ZRAM 和后备设备 I/O 的缺页记账方式可能不同；应同时查看 `pswpin`、ZRAM 统计、线程调度和 I/O。
+判断 ZRAM 换入要交叉几个来源：交换缓存命中、纯内存 ZRAM 和后备设备 I/O 的缺页记账方式可能不同，所以我们同时查看 `pswpin`、ZRAM 统计、线程调度和 I/O，`pgmajfault` 只作为其中一项。
 
 ### Perfetto
 
@@ -466,7 +476,7 @@ adb shell cat /sys/kernel/tracing/available_events \
   | grep -E 'vmscan|compaction|swap|block|mm_event|rss_stat'
 ```
 
-命令输出决定该设备能够采集哪些事件。不要因为面向调试的 userdebug 版本提供 `mm_event/mm_event_record`，就假定所有 Android 17 设备都有这些跟踪点。
+命令输出决定这台设备能够采集哪些事件。面向调试的 userdebug 版本提供 `mm_event/mm_event_record`，别的 Android 17 设备未必有，跟踪配置要以实际输出为准。
 
 时间轴分析建议使用以下顺序：
 
@@ -482,13 +492,13 @@ Android 11（API 30）及以上，`ActivityManager.getHistoricalProcessExitReaso
 
 - `REASON_LOW_MEMORY`：系统因低内存终止进程；
 - `REASON_FREEZER`（API 33+）：冻结期间的 Binder 等异常导致退出；
-- `REASON_SIGNALED` 与 `SIGKILL`：某些设备无法准确报告低内存终止原因时，可能只记录这两个值。
+- `REASON_SIGNALED` 与 `SIGKILL`：部分设备报告不了低内存终止原因，这时可能只记录这两个值。
 
-Android 11 及以上，应用可以用 `ActivityManager.isLowMemoryKillReportSupported()` 判断设备能否可靠报告低内存终止原因。`ApplicationExitInfo.getPss()` 与 `getRss()` 返回系统最后一次采样的 PSS 与 RSS，单位为 kB；采样时刻可能早于进程退出，数值不代表退出瞬间或峰值。进程在系统尚未采样时就退出，这两个值会返回 0。它们也不能证明哪些页面曾存放在 ZRAM 中。[来源: `ApplicationExitInfo` API reference，`getPss()`、`getRss()`；均自 API 30 提供]
+Android 11 及以上，应用可以用 `ActivityManager.isLowMemoryKillReportSupported()` 判断设备能否可靠报告低内存终止原因。`ApplicationExitInfo.getPss()` 与 `getRss()` 返回系统最后一次采样的 PSS 与 RSS，单位为 kB；采样时刻可能早于进程退出，数值描述的是最后一次采样，而非退出瞬间或峰值。进程在系统尚未采样时就退出，这两个值会返回 0；至于哪些页面曾存放在 ZRAM 中，从这两个值里看不出来。[来源: `ApplicationExitInfo` API reference，`getPss()`、`getRss()`；均自 API 30 提供]
 
 ## 应用能做什么
 
-应用不能直接选择 ZRAM 压缩器、触发 MMD 写回，也不应依赖修改系统属性。应用侧更有效的做法，是缩小后台匿名页工作集和首屏恢复工作集；这里的工作集是进程近期实际需要访问的那部分内存：
+ZRAM 压缩器和 MMD 写回都由系统侧控制，应用没有直接选择的入口；修改系统属性这条路，应用也不该去依赖。应用侧更有效的做法，是缩小后台匿名页工作集和首屏恢复工作集；这里的工作集是进程近期实际需要访问的那部分内存：
 
 - 分开统计 Java 堆、Native 堆、图形内存、匿名 `mmap` 和文件映射。
 - 收到 `TRIM_MEMORY_UI_HIDDEN` 后释放可重建的 UI 缓存。
@@ -498,7 +508,7 @@ Android 11 及以上，应用可以用 `ActivityManager.isLowMemoryKillReportSup
 - 多进程拆分前评估总 PSS、匿名页、Binder 成本和各进程重建成本。
 - 线上同时记录 PID、启动类型、后台时长、设备内存档位、页大小和最近退出原因。
 
-使用 `onTrimMemory()` 时也要考虑版本差异。缓存进程可能被冻结，无法保证每次出现内存压力时都能收到并及时处理这个回调。应用的内存预算应在常态运行中成立，不能把内存整理回调当作最后一道保障。
+使用 `onTrimMemory()` 时也要考虑版本差异。缓存进程可能被冻结，内存压力到来时这个回调未必每次都能收到并及时处理。所以应用的内存预算要在常态运行中就成立，内存整理回调只算补充手段。
 
 ## 系统调优检查表
 
@@ -521,7 +531,7 @@ Android 17 的 ZRAM 已经从单一的压缩交换设备，扩展为由 MMD、`s
 4. 进程存活时，恢复成本来自解压、后备 I/O、页面触碰顺序和资源争用。
 5. 进程已经被 LMKD 终止时，应按冷启动分析；旧进程的页面换入已不再构成本次启动的直接成本。
 
-诊断时先确认 PID 和退出原因，再对齐页面换入换出、ZRAM、MMD、PSI、LMKD 与首帧时间。这样才能判断问题来自应用工作集、内核回收、ZRAM 后处理，还是进程已经被系统终止。
+诊断时我们先确认 PID 和退出原因，再把页面换入换出、ZRAM、MMD、PSI、LMKD 与首帧时间放到同一时间窗里看，才能判断问题来自应用工作集、内核回收、ZRAM 后处理，还是进程已经被系统终止。
 
 ## 参考资料
 

@@ -107,7 +107,7 @@ consolidated_from:
 
 # Java Crash、异常架构与线程堆栈分析
 
-异常处理架构要在最差的时机工作：线程可能持有锁，堆可能已经耗尽，文件系统可能正在写入，系统也可能马上结束进程。架构目标分成三件事：在当前进程保留最小证据，在下次启动限制重复失败，通过分阶段发布、暂停发布和修复版本控制影响范围。
+异常处理架构注定要在最差的时机工作：线程可能持有锁，堆可能已经耗尽，文件系统可能正在写入，系统也可能马上结束进程。我们能为这种时刻做的准备有三件事：在当前进程保留最小证据，在下次启动限制重复失败，再通过分阶段发布、暂停发布和修复版本控制影响范围。
 
 > 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
@@ -119,13 +119,13 @@ Java 异常先在调用栈中传播，未被处理时进入 UncaughtExceptionHan
 
 ## 未捕获异常、现场记录与退出
 
-异常边界决定哪些错误可以局部处理，剩余未捕获异常进入 Crash 路径。现场采集必须避免递归异常、死锁和长时间阻塞。
+这一节回答两个问题：异常边界把哪些错误留在局部处理，剩余的未捕获异常怎样走进 Crash 路径；现场采集又怎样在递归异常、死锁和长时间阻塞的风险下完成。
 
-Java Crash 指 `Throwable` 沿当前线程的调用路径传播时一直没有被处理，最终逃出线程入口，随后由 Android 的默认 fatal（致命、会终止进程） handler 终止应用进程。异常类型只能帮助选择排查方向；能否恢复还取决于失败发生在哪个边界、数据与状态是否一致，以及调用方能否返回明确的失败或降级结果。
+Java Crash 指 `Throwable` 沿当前线程的调用路径传播时一直没有被处理，最终逃出线程入口，随后由 Android 的默认 fatal（致命、会终止进程） handler 终止应用进程。异常类型只帮我们选排查方向；能不能恢复，还要看失败发生在哪个边界、数据与状态是否一致，以及调用方能否返回明确的失败或降级结果。
 
-### Java 异常分类：语法类别不等于恢复策略
+### Java 异常分类与恢复策略
 
-所有 Java 异常都继承自 `Throwable`，主要分为 `Exception` 与 `Error`。工程上要同时看语言规则和故障语义。
+所有 Java 异常都继承自 `Throwable`，向下主要分为 `Exception` 与 `Error`。语言规则只规定编译器怎么对待它们，工程上还要同时看故障语义，两条线索合在下表里。
 
 | 类别 | 编译器约束 | 常见例子 | 治理重点 |
 |---|---|---|---|
@@ -133,15 +133,15 @@ Java Crash 指 `Throwable` 沿当前线程的调用路径传播时一直没有�
 | `RuntimeException` | 编译器不强制处理 | `NullPointerException`、`IndexOutOfBoundsException`、`IllegalStateException` | 修正契约、状态机、生命周期或并发错误 |
 | `Error` | 编译器不强制处理 | `OutOfMemoryError`、`StackOverflowError`、`NoSuchMethodError` | 判断运行时资源、递归、依赖或二进制兼容问题，避免宽泛恢复 |
 
-Checked Exception 也可能由程序错误引起，例如关闭顺序错误导致读写失败；`RuntimeException` 也可能来自系统或第三方 API 的版本差异。分类只是线索。
+这张表只提供线索：Checked Exception 也可能由程序错误引起，例如关闭顺序错误导致读写失败；`RuntimeException` 也可能来自系统或第三方 API 的版本差异。
 
-`Error` 抛出后不会自动由虚拟机终止进程。它和其他 `Throwable` 一样可以被异常捕获；只有未处理并逃出线程入口时，才进入未捕获异常处理链。许多 `Error` 表示进程资源或链接状态已经异常：
+这里要先澄清一个常见误解：`Error` 抛出后，虚拟机并不会自动终止进程。它和其他 `Throwable` 一样可以被异常捕获；只有未处理并逃出线程入口时，才进入未捕获异常处理链。许多 `Error` 表示进程资源或链接状态已经异常：
 
-- `OutOfMemoryError` 发生后，再分配日志对象或创建上传线程都可能失败。不能通过应用代码突破 ART（Android Runtime，执行 Java/Kotlin 字节码并管理对象、线程和垃圾回收的运行时） 为该设备配置的堆上限（heap limit）。
+- `OutOfMemoryError` 发生后，再分配日志对象或创建上传线程都可能失败。堆上限（heap limit）由 ART（Android Runtime，执行 Java/Kotlin 字节码并管理对象、线程和垃圾回收的运行时） 为该设备配置，应用代码突破不了它。
 - `StackOverflowError` 常见于无界递归，也可能来自过深的合法递归或较小线程栈。
 - `NoSuchMethodError`、`NoClassDefFoundError` 属于链接错误（linkage error），应检查依赖解析、R8、动态特性模块、插件化、设备厂商差异和 API 兼容；额外包一层异常捕获通常只会隐藏错误。
 
-判断是否捕获时可以问三个问题：
+判断是否捕获时，我们可以依次问三个问题：
 
 1. 当前层是否拥有足够信息给出业务可解释的结果？
 2. 捕获后，数据与状态机是否仍保持一致？
@@ -153,7 +153,7 @@ Checked Exception 也可能由程序错误引起，例如关闭顺序错误导�
 
 #### 从 ART 到 `Thread.dispatchUncaughtException()`
 
-ART 把当前未处理异常保存在每个线程的 pending exception（待处理异常） 状态中。解释器或已编译代码按照异常处理器表查找处理位置并展开栈帧。异常逃出线程入口后，线程销毁路径中的 [`Thread::HandleUncaughtExceptions()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) 取出并清除该状态，然后调用 Java 层 [`Thread.dispatchUncaughtException(Throwable)`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)。
+我们先看异常在 ART 里如何被保存和分发：ART 把当前未处理异常保存在每个线程的 pending exception（待处理异常） 状态中，解释器或已编译代码按照异常处理器表查找处理位置并展开栈帧。异常逃出线程入口后，线程销毁路径中的 [`Thread::HandleUncaughtExceptions()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) 负责取出并清除该状态，再调用 Java 层 [`Thread.dispatchUncaughtException(Throwable)`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java)。
 
 Java 层的顺序是：
 
@@ -215,18 +215,18 @@ fun installFatalHandler(crashSpool: CrashSpool) {
 
 #### 致命路径只做最少工作
 
-较稳妥的设计把采集拆成正常运行期和致命异常发生时两部分。
+较稳妥的做法，是把采集拆成两段：正常运行期先把数据准备好，致命异常发生时只做最少工作。
 
 正常运行期持续维护：
 
-- 固定容量的 breadcrumb（近期用户操作和状态变化线索） 环形缓冲区，记录近期用户操作和状态变化线索；
+- 固定容量的 breadcrumb（近期用户操作和状态变化线索） 环形缓冲区；
 - 版本、进程、会话、页面和关键状态的紧凑快照；
 - R8 混淆映射文件、构建 ID（符号化匹配用的版本标识）、动态模块与配置版本；
 - 已打开并可独占写入的应用私有暂存区，或不需要复杂初始化的追加写入策略。
 
 致命异常处理器内只尝试写入：
 
-- 墙上时钟时间（可对应日志中的日期）与单调时间（只向前递增，适合计算耗时）：前者可对应日志中的日期，后者只向前递增、适合计算耗时；
+- 墙上时钟时间（可对应日志中的日期）与单调时间（只向前递增，适合计算耗时）；
 - 进程名、线程名和线程 ID（用于把崩溃记录匹配到准确二进制和符号文件的版本标识）；
 - 异常类、限制长度的消息、原因链（cause（异常原因链））与附加异常（suppressed）摘要；
 - 已准备好的 breadcrumb；
@@ -238,7 +238,7 @@ fun installFatalHandler(crashSpool: CrashSpool) {
 
 #### 安装时机与多 SDK 链
 
-`Application.attachBaseContext()` 是应用侧常用的早期安装点。Android 17 的 [`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java) 先创建 `Application` 并在此过程中调用 `attachBaseContext()`，再安装常规 ContentProvider，随后调用 `Application.onCreate()`。
+`Application.attachBaseContext()` 是应用侧常用的早期安装点。[`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java) 先创建 `Application` 并在此过程中调用 `attachBaseContext()`，再安装常规 ContentProvider，随后调用 `Application.onCreate()`。
 
 这个安装点仍覆盖不了自定义 `Application` 构造、类加载或处理器安装前发生的故障。这些事件要依赖平台日志、Android vitals 等进程外来源。
 
@@ -258,13 +258,13 @@ fun installFatalHandler(crashSpool: CrashSpool) {
 
 `Throwable` 默认构造会执行 `fillInStackTrace()`，ART 再通过 [`Thread::CreateInternalStackTrace()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) 遍历当前由 ART 管理的 Java/Kotlin 调用栈。
 
-Android 17 源码中的 `kMaxSavedFrames = 256` 用于减少重复回溯：
+源码中的 `kMaxSavedFrames = 256` 用于减少重复回溯：
 
 1. 第一次 `WalkStack()` 计算深度，并尝试在 `saved_frames` 数组中保存前 256 个栈帧（frame）；
 2. 实际深度小于 256 时，直接使用已保存栈帧构造内部堆栈记录；
 3. 深度达到或超过 256 时，再执行一次 `WalkStack()` 构造完整结果。
 
-所以 256 既非最大 Java 栈深度，也不限定日志展示的栈帧数。最终结果还会受到原因链中重复尾部栈帧的折叠、日志截断、采集 SDK 限制和服务端处理影响。
+所以 256 只管减少重复回溯；最大 Java 栈深度和日志展示的栈帧数由别处决定——原因链中重复尾部栈帧的折叠、日志截断、采集 SDK 限制和服务端处理都会影响最终结果。
 
 #### `Thread.getStackTrace()` 也有成本
 
@@ -278,7 +278,7 @@ Android 17 源码中的 `kMaxSavedFrames = 256` 用于减少重复回溯：
 - 对目标线程的停顿预算；
 - 数据是否包含业务参数、文件路径或其他敏感信息。
 
-性能结论我们要用目标设备和目标构建实测。debug（调试）、profileable（接近发布配置但允许性能采集） 与 release（发布） 构建的运行方式不同；JIT（运行时即时编译）、AOT（安装或构建时预先编译） 和混淆状态也会改变结果。profileable 接近发布配置但允许性能采集，三类构建要分别实测，互相代替不了。
+性能结论我们要用目标设备和目标构建实测。debug（调试）、profileable（接近发布配置但允许性能采集） 与 release（发布） 构建的运行方式不同；JIT（运行时即时编译）、AOT（安装或构建时预先编译） 和混淆状态也会改变结果。三类构建要分别实测，互相代替不了。
 
 #### 一份可诊断的 Java crash 记录
 
@@ -295,7 +295,7 @@ R8 混淆映射文件必须和产生 Crash 的构建一一对应。重复使用�
 
 ### 高频 Crash 模式：从栈顶继续追状态
 
-异常分布由业务和技术栈决定，可泛用的“前五类占 80%”并不存在。下面这些模式常见，但治理优先级仍要依据本应用数据。
+异常分布由业务和技术栈决定，可泛用的“前五类占 80%”并不存在；下面这些模式常见，但治理优先级仍要按本应用的数据来排。
 
 #### `NullPointerException`
 
@@ -362,7 +362,7 @@ RecyclerView 点击时应重新读取 `bindingAdapterPosition` 并处理表示�
 
 当前官方 [Coroutine exceptions handling](https://kotlinlang.org/docs/exception-handling.html) 把协程构建函数（builder）分成两类：根协程 `launch` 把未处理异常视为未捕获异常；根协程 `async` / `produce` 把异常保存在结果中，调用方通过 `await()` / `receive()` 消费。这里的根协程指没有父协程继续接管其异常的协程。
 
-其余场景见上一节的对照表：普通子协程的异常向父协程传播并取消父级；`supervisorScope` 或 `SupervisorJob` 下同级任务不互相取消（每个子任务仍要处理自己的失败），但每个子任务仍要处理自己的失败；`CancellationException` 用于协作取消，通常不进入错误上报。子协程上的 `CoroutineExceptionHandler` 通常不会截断这类传播。
+其余场景见上一节的对照表：普通子协程的异常向父协程传播并取消父级；`supervisorScope` 或 `SupervisorJob` 下同级任务不互相取消（每个子任务仍要处理自己的失败）；`CancellationException` 用于协作取消，通常不进入错误上报。子协程上的 `CoroutineExceptionHandler` 通常不会截断这类传播。
 
 `CoroutineExceptionHandler` 适合记录根协程未处理异常，代替不了 `try/catch`、`await()` 处的错误处理或结构化并发（用父子作用域约束任务生命周期和取消传播）。
 
@@ -391,7 +391,7 @@ Android 模块的 [`AndroidExceptionPreHandler.kt`](https://github.com/Kotlin/ko
 
 协程异常也应遵守下文 Crash 恢复架构的责任边界：致命路径保留最小证据，下次启动再决定降级与恢复。
 
-### 第三方 SDK：线程隔离不等于进程隔离
+### 第三方 SDK 的线程隔离与进程存活
 
 把 SDK 放到独立线程池，可以限制排队长度、线程数和耗时任务之间的干扰，却拦不住未捕获异常。后台线程的异常到达 Android 默认处理器后，`KillApplicationHandler` 仍会终止整个应用进程。
 
@@ -447,11 +447,11 @@ Android 模块的 [`AndroidExceptionPreHandler.kt`](https://github.com/Kotlin/ko
 
 ## 线程快照、锁等待与采集风险
 
-主异常堆栈说明触发点，其他线程和锁关系用于判断并发背景。Crash 状态下运行时可能已经受损，采集策略需要限时并允许降级。
+Crash 发生时，主异常堆栈告诉我们触发点在哪里，其他线程和锁关系用来判断并发背景；而此时的运行时可能已经受损，所以采集策略要有时间上限，也要允许降级。这一节我们把四类故障现场的取证路径依次走一遍。
 
 Crash 时要获取全部 Java 栈，我们先区分四类现场：Java 未捕获异常、Native 致命信号、系统 ANR，以及进程退出后的证据读取。它们的运行时状态、权限和安全边界各不相同。若统一塞进 signal handler（信号处理函数），一次可诊断的故障可能演变成死锁、二次崩溃或残缺报告。
 
-本文的平台与 ART 源码基线见文首；涉及 futex 与线程调度时，内核以 `android17-6.18-2026-06_r6` 为准。futex 是 Linux 的快速用户态互斥机制：无竞争时主要在用户态完成，发生竞争后才进入内核等待。
+涉及 futex 与线程调度时，内核以 `android17-6.18-2026-06_r6` 为准。futex 是 Linux 的快速用户态互斥机制：无竞争时主要在用户态完成，发生竞争后才进入内核等待。
 
 Java monitor（`synchronized` 和 `Object.wait()` 所用的对象锁）的 owner、held lock 和栈帧仍由 ART 解释，单凭一条内核睡眠状态反推不出来。
 
@@ -464,7 +464,7 @@ Java monitor（`synchronized` 和 `Object.wait()` 所用的对象锁）的 owner
 | Native 致命信号 | Java 堆、线程栈或运行时锁都可能不一致 | `siginfo_t`、`ucontext_t`、debuggerd tombstone 或外部 minidump | JNI、Java API、私有 ART 遍历、普通分配和锁 |
 | 进程已经退出 | 进程内 Java 状态已经不存在 | `ApplicationExitInfo`、tombstone/ANR trace、进程退出前写好的记录 | 重启后再查询旧进程的 Java 对象或 monitor |
 
-选路依据是现场边界，而非某个函数在平时能否调用。正常运行期可用的 API 未必适合未捕获异常回调；Java fatal handler 中偶尔成功的代码，同样不要移入 Native signal handler（信号处理函数）。
+选路依据是故障现场本身，而非某个函数在平时能否调用：正常运行期可用的 API 未必适合未捕获异常回调；Java fatal handler 中偶尔成功的代码，同样不要移入 Native signal handler（信号处理函数）。
 
 后文反复出现的术语，按用途列出：
 
@@ -497,7 +497,7 @@ for (int i = 0; i < record.count; i++) {
 
 这段流程会分配线程数组、`HashMap`、各线程的栈数组和 `StackTraceElement` 对象。`getAllThreadsInternal()` 先用 `ThreadGroup.activeCount()` 估算数组大小，再调用 `enumerate()`；若线程正在并发创建，枚举结果不承诺覆盖每条活动线程。线程列表与各条栈的采样时刻也不相同，遍历期间线程仍可运行、创建或退出。公开 API 文档将每条栈定义为快照，并注明它们可能在不同时间取得。
 
-下面两种理解均不符合 Android 17 的实现：
+下面两种理解都与实际实现不符：
 
 - “`getAllStackTraces()` 会先触发一次全局 GC 暂停，再原子地抓取全进程。”
 - “这张 Map 表示同一个时刻的完整线程与锁状态。”
@@ -506,14 +506,14 @@ for (int i = 0; i < record.count; i++) {
 
 #### 2.2 当前线程与其他线程走不同路径
 
-`Thread.getStackTrace()` 会进入 Android 私有的 `VMStack.getThreadStackTrace()`。Android 17 的 [`dalvik_system_VMStack.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/dalvik_system_VMStack.cc) 在 `GetThreadStack()` 中区分两种情况：
+`Thread.getStackTrace()` 会进入 Android 私有的 `VMStack.getThreadStackTrace()`。[`dalvik_system_VMStack.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/dalvik_system_VMStack.cc) 在 `GetThreadStack()` 中区分两种情况：
 
 1. 目标就是调用线程：直接调用 `Thread::CreateInternalStackTrace()`。
 2. 目标是另一条 Java 线程：调用线程先离开 Runnable 状态，再用 `ThreadList::SuspendThreadByPeer()` 挂起目标线程；栈对象生成后恢复目标线程。
 
-Runnable 是 ART 中可执行托管代码并持有 mutator lock 共享访问权的线程状态。mutator lock 是 ART 用来协调 Java 堆访问、垃圾回收与线程挂起的运行时锁。调用线程先离开这个状态，才能等待并检查另一条线程。跨线程取栈会逐个挂起目标线程，不会一次挂起全部线程。目标线程若迟迟到不了 suspend point（安全暂停检查点），取栈延迟会增加；目标已经退出时，结果可以为空。
+这一段有两个术语要先说清：Runnable 是 ART 中可执行托管代码并持有 mutator lock 共享访问权的线程状态；mutator lock 是 ART 用来协调 Java 堆访问、垃圾回收与线程挂起的运行时锁。调用线程要先离开这个状态，才有资格等待并检查另一条线程，跨线程取栈因此变成逐个挂起目标线程，每次只挂一条。目标线程若迟迟到不了 suspend point（安全暂停检查点），取栈延迟会增加；目标已经退出时，结果可以为空。
 
-`CreateInternalStackTrace()` 通过 `StackVisitor` 遍历 managed stack（ART 管理的调用栈），并在 Java 堆上构造内部 trace 和后续的 `StackTraceElement[]`。这条路径要求 ART 的线程协调、对象访问与内存分配仍能工作。它不满足 async-signal-safe（异步信号安全） 要求；该术语指函数可在异步信号打断任意指令时安全调用。OOM 现场也不能依赖它完成最小数据写入。
+`CreateInternalStackTrace()` 通过 `StackVisitor` 遍历 managed stack（ART 管理的调用栈），并在 Java 堆上构造内部 trace 和后续的 `StackTraceElement[]`。这条路径的前提，是 ART 的线程协调、对象访问与内存分配仍能工作；它也不满足 async-signal-safe（异步信号安全） 要求，该术语指函数可在异步信号打断任意指令时安全调用。到了 OOM 现场，同样别指望它完成最小数据写入。
 
 #### 2.3 `Throwable` 栈记录异常发生点
 
@@ -530,13 +530,13 @@ handler 再调用 `thread.getStackTrace()` 得到的是较晚的采样，栈顶�
 
 #### 3.1 SignalCatcher 在普通线程上下文中处理 SIGQUIT
 
-ART 会让相关线程屏蔽 `SIGQUIT`，再由专门的 SignalCatcher 线程通过 `sigwait()` 同步等待这个信号。`sigwait()` 在普通线程控制流里返回信号编号，不会把处理逻辑插入某条业务线程正在执行的指令中。Android 17 的 [`SignalCatcher::HandleSigQuit()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/signal_catcher.cc) 调用 `Runtime::DumpForSigQuit()`，后者再进入 `ThreadList::DumpForSigQuit()` 等诊断模块。
+ART 会让相关线程屏蔽 `SIGQUIT`，再由专门的 SignalCatcher 线程通过 `sigwait()` 同步等待这个信号。`sigwait()` 在普通线程控制流里返回信号编号，不会把处理逻辑插入某条业务线程正在执行的指令中。[`SignalCatcher::HandleSigQuit()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/signal_catcher.cc) 调用 `Runtime::DumpForSigQuit()`，后者再进入 `ThreadList::DumpForSigQuit()` 等诊断模块。
 
 这个流程不会给每条 Java 线程各发送一次 `SIGQUIT`，也不会在任意业务线程的异步 signal handler 中直接遍历 Java 堆。SignalCatcher 已附着到 ART，可以按运行时规则使用锁、C++ 输出流和诊断对象；普通应用的 Native fatal handler 没有这些前提。
 
-Android 17 的 [`ThreadList::Dump()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread_list.cc) 创建 `DumpCheckpoint`，通过 `RunCheckpoint()` 请求各线程执行 dump checkpoint，再等待并按诊断价值排序输出。checkpoint 是 ART 发给线程的协作式诊断请求：运行中的线程到达安全位置后执行；已经挂起的线程可由请求方代为检查。native unwind 指沿保存的寄存器和栈内存回溯 C/C++ 调用帧，也在这条诊断路径中发生。
+[`ThreadList::Dump()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread_list.cc) 创建 `DumpCheckpoint`，通过 `RunCheckpoint()` 请求各线程执行 dump checkpoint，再等待并按诊断价值排序输出。checkpoint 是 ART 发给线程的协作式诊断请求：运行中的线程到达安全位置后执行；已经挂起的线程可由请求方代为检查。native unwind 指沿保存的寄存器和栈内存回溯 C/C++ 调用帧，也在这条诊断路径中发生。
 
-由此得到三个诊断边界：
+由此得到三条诊断上的限制：
 
 - 各线程的 dump 仍不是同一 CPU 指令时刻的原子快照；
 - checkpoint、栈遍历、native unwind 和输出都可能耗时，故障或进程退出也可能让 trace 缺帧；
@@ -544,10 +544,10 @@ Android 17 的 [`ThreadList::Dump()`](https://android.googlesource.com/platform/
 
 #### 3.2 ART dump 可以附加 Java monitor（`synchronized` 和 `Object.wait()` 使用的对象锁结构） 关系
 
-monitor owner 是当前持有对象 monitor 的线程，held lock 是线程在某个栈帧处被识别为仍持有的 monitor。Android 17 的 [`StackDumpVisitor`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) 会把这些信息写在相应 Java frame 附近：
+monitor owner 是当前持有对象 monitor 的线程，held lock 是线程在某个栈帧处被识别为仍持有的 monitor。[`StackDumpVisitor`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) 会把这些信息写在相应 Java frame 附近：
 
 - `waiting to lock ... held by thread N`：线程处于 `BLOCKED` 或 monitor 竞争等待，ART 找到了目标 monitor 及 owner。
-- `waiting on ...`：线程在 `Object.wait()` 一类等待中；它已经释放该对象 monitor，不能把该对象当前 owner 直接解释为唤醒责任方。
+- `waiting on ...`：线程在 `Object.wait()` 一类等待中；它已经释放该对象 monitor，单凭该对象当前的 owner 确定不了唤醒责任方。
 - `locked ...`：该 frame 被识别为持有某个 Java monitor。
 
 下面是用于说明读取方式的简化示例，不是固定的 Android 17 输出格式：
@@ -564,28 +564,28 @@ monitor owner 是当前持有对象 monitor 的线程，held lock 是线程在�
   - waiting on <0x07654321>
 ```
 
-这份样本支持“main 正在等待 thread 23 持有的第一个 monitor”。第二个 `waiting on` 表示 `cache-writer` 在等待通知或超时，第二个对象是否被某线程长期持有，从这里看不出来。`held by thread 23` 应与同一份 ART dump 头部的 Java `tid=23` 对应；`sysTid` 才是 Linux 内核线程 ID，两个编号要分开用。
+我们拿这份样本读一遍：它支持“main 正在等待 thread 23 持有的第一个 monitor”。第二个 `waiting on` 表示 `cache-writer` 在等待通知或超时，第二个对象是否被某线程长期持有，从这里看不出来。`held by thread 23` 应与同一份 ART dump 头部的 Java `tid=23` 对应；`sysTid` 才是 Linux 内核线程 ID，两个编号要分开用。
 
 #### 3.3 `AnnotatedStackTraceElement` 属于隐藏的平台能力
 
-ART 的 `Thread::CreateAnnotatedStackTrace()` 能构造带 `blockedOn`（当前阻塞对象） 与 `heldLocks`（当前持有对象列表） 的对象数组，分别给出当前阻塞对象与持有的锁列表。frameworks/base 中的 [`WatchdogDiagnostics`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/WatchdogDiagnostics.java) 会通过隐藏的 `VMStack.getAnnotatedThreadStackTrace()` 使用这项能力。隐藏 API 指系统镜像内部可调用、普通应用 SDK 不承诺可用或兼容的接口。
+ART 的 `Thread::CreateAnnotatedStackTrace()` 能构造带 `blockedOn`（当前阻塞对象） 与 `heldLocks`（当前持有对象列表） 的对象数组。frameworks/base 中的 [`WatchdogDiagnostics`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/WatchdogDiagnostics.java) 会通过隐藏的 `VMStack.getAnnotatedThreadStackTrace()` 使用这项能力。隐藏 API 指系统镜像内部可调用、普通应用 SDK 不承诺可用或兼容的接口。
 
 这项能力有两个限制：
 
 - 它是 `system_server` 等平台代码可用的内部接口。`system_server` 是承载 Android 大多数 Java 系统服务的核心进程，普通应用不具备相同权限与类路径。
 - 实现会遍历 Java 栈、访问对象并分配数组，不是 Native fatal signal 下的安全替代方案。
 
-公开的 `Thread.getStackTrace()` 只返回 `StackTraceElement[]`，不包含持锁对象、阻塞对象或 owner。普通应用不要假设存在稳定的 `thread.getLockedObjects()`。Java SE 提供 `ThreadMXBean.findDeadlockedThreads()` 等管理接口。Android 17 的[公共 API 清单](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt)中没有 `java.lang.management.ThreadMXBean`，应用代码不应把它当作 Android SDK 能力。
+公开的 `Thread.getStackTrace()` 只返回 `StackTraceElement[]`，不包含持锁对象、阻塞对象或 owner。普通应用不要假设存在稳定的 `thread.getLockedObjects()`。Java SE 提供 `ThreadMXBean.findDeadlockedThreads()` 等管理接口，而[公共 API 清单](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt)里没有 `java.lang.management.ThreadMXBean`，把它当作 Android SDK 能力没有依据。
 
 ### 4. 不同故障现场怎样取 Java 栈
 
 #### 4.1 Java 未捕获异常：以已有 `Throwable` 为主
 
-`Thread.UncaughtExceptionHandler` 是线程即将因未捕获异常退出时收到回调的接口，自定义 handler 通常就在抛出异常的线程上执行。此时 ART 多半还能执行 Java 代码，可用操作多于 Native signal handler；内存、栈空间和锁状态仍无法保证。
+`Thread.UncaughtExceptionHandler` 是线程即将因未捕获异常退出时收到回调的接口，自定义 handler 通常就在抛出异常的线程上执行。此时 ART 多半还能执行 Java 代码，可用操作多于 Native signal handler；内存、栈空间和锁状态则依然没有保证。
 
 建议按下面的顺序限制采集范围：
 
-1. 设置一次性 guard（原子进入标记），用原子进入标记避免多线程同时崩溃时重复进入采集器。
+1. 设置一次性 guard（原子进入标记），避免多线程同时崩溃时重复进入采集器。
 2. 优先保存传入的 `Throwable`、崩溃线程标识和正常运行期已经准备好的 breadcrumb。
 3. 只有在不是 `OutOfMemoryError`、`StackOverflowError`，并且写入预算允许时，补采主线程或少量白名单线程。
 4. 限制 frame 数、cause 深度、suppressed 数量和总字节数。
@@ -595,11 +595,11 @@ ART 的 `Thread::CreateAnnotatedStackTrace()` 能构造带 `blockedOn`（当前�
 
 OOM 路径需要把操作压到最少。`getAllStackTraces()` 会创建 `Map` 和大量对象，完整 JSON、压缩、数据库事务也会继续申请内存。可在正常运行期维护固定容量的记录，让 OOM handler 只写固定字段和已经存在的数据。自定义 handler 仍应按“自定义处理器的最小正确结构”委托原有终止链。
 
-应用要避免通过“吞掉未捕获异常”来保留现场。Android 17 的 [`RuntimeInit.KillApplicationHandler`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java) 会先向 `ActivityManager` 报告 Crash，随后在 `finally` 中调用 `Process.killProcess()` 和 `System.exit(10)`。自定义 handler 若截断这条链，部分线程与业务状态会留在未定义的失败后状态。标准应用进程会退出，因此“崩溃线程留下了一把永远不释放的锁”不适用于默认终止流程；强行续命的进程也没有可依赖的一致性。
+应用要避免通过“吞掉未捕获异常”来保留现场。[`RuntimeInit.KillApplicationHandler`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java) 会先向 `ActivityManager` 报告 Crash，随后在 `finally` 中调用 `Process.killProcess()` 和 `System.exit(10)`。自定义 handler 若截断这条链，部分线程与业务状态会留在未定义的失败后状态。标准应用进程会退出，因此“崩溃线程留下了一把永远不释放的锁”不适用于默认终止流程；强行续命的进程也没有可依赖的一致性。
 
-#### 4.2 Native 致命信号：不要进入 ART 私有遍历
+#### 4.2 Native 致命信号下的采集约束
 
-`SIGSEGV`、`SIGABRT`、`SIGBUS` 等同步致命信号发生时，故障可能位于 allocator（内存分配器）、GC、JNI、线程栈或 ART 自身。应用 signal handler 中不应执行以下工作：
+`SIGSEGV`、`SIGABRT`、`SIGBUS` 等同步致命信号发生时，故障可能位于 allocator（内存分配器）、GC、JNI、线程栈或 ART 自身。下面这些工作，要全部挡在应用 signal handler 之外：
 
 - 调 JNI 或 Java 方法，包括 `Thread.getAllStackTraces()`；
 - 通过偏移寻找 `Runtime::instance_`、`ThreadList`、`ManagedStack` 或 `ArtMethod`；
@@ -609,7 +609,7 @@ OOM 路径需要把操作压到最少。`getAllStackTraces()` 会创建 `Map` �
 
 `ArtMethod` 是 ART 的方法元数据结构，JIT frame 是即时编译代码的调用帧，read barrier 是 GC 读取对象引用时使用的校验或转发屏障，ART APEX 则是可独立更新的运行时系统模块。它们的布局与行为都属于私有实现。按设备版本维护偏移只会增加脆弱性，让已损坏的进程成为可信调试目标是做不到的。采样 profiler 可以在受控挂起点完成 Java unwind（调用栈回溯）；同一逻辑换到任意 fatal signal 中就未必安全。
 
-Android 8 的 debuggerd handler 会先创建一个与故障进程共享地址空间的辅助线程；该线程再创建子进程，并按进程位数 `exec` [`/system/bin/crash_dump32` 或 `crash_dump64`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-8.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)。`exec` 会用指定程序替换子进程当前执行的程序映像。随后 `crash_dump` 连接负责接收保存 tombstone 的 tombstoned（接收并保存系统 tombstone 的守护进程） 守护进程并生成诊断数据。系统 tombstone 至少包含崩溃线程寄存器、进程虚拟内存映射 maps（进程虚拟内存映射） 和进程内各线程的 Native backtrace。
+Android 8 的 debuggerd handler 会先创建一个与故障进程共享地址空间的辅助线程；该线程再创建子进程，并按进程位数 `exec` [`/system/bin/crash_dump32` 或 `crash_dump64`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-8.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)。`exec` 会用指定程序替换子进程当前执行的程序映像。随后 `crash_dump` 连接负责接收保存 tombstone 的 tombstoned（接收并保存系统 tombstone 的守护进程）并生成诊断数据。系统 tombstone 至少包含崩溃线程寄存器、进程虚拟内存映射 maps（进程虚拟内存映射） 和进程内各线程的 Native backtrace。
 
 能否识别托管代码帧取决于运行时与回溯器可获得的信息；采集端要把它与 ART SIGQUIT 的 Java monitor dump 区分开，也不要指望它给出 Java monitor owner。
 
@@ -641,7 +641,7 @@ Android 8 的 debuggerd handler 会先创建一个与故障进程共享地址空
 
 ### 5. 锁等待分析：先确认等待类型
 
-#### 5.1 Java 线程状态不等于锁类型
+#### 5.1 从线程状态到锁类型
 
 `BLOCKED`、`WAITING` 和 `TIMED_WAITING` 是 Java 线程状态，只描述采样时的等待形态。AQS（`ReentrantLock` 等并发工具使用的队列同步框架）、Binder 同步调用、Looper 事件循环和 Native 条件变量都可能让线程等待，却不归 ART Java monitor 的 owner 模型管理。`LockSupport.park()` 是 AQS（AbstractQueuedSynchronizer，`ReentrantLock` 等并发工具使用的队列同步框架） 常用的线程暂停原语，直到收到唤醒许可、中断或发生伪唤醒才返回。
 
@@ -660,7 +660,7 @@ Android 8 的 debuggerd handler 会先创建一个与故障进程共享地址空
 
 #### 5.2 等待图只接受有 owner 的边
 
-wait-for graph（等待关系图）以线程为节点，以“等待者正在等待 owner”作为有向边。从 ART dump 构图时，可以把 `waiting to lock ... held by thread N` 转换为 `waiter -> owner`。`locked ...` 用于核对 owner 当前持有的 monitor；`waiting on ...`、Binder、I/O 和普通 park 没有同类 owner 证据，不要凭猜测加入 monitor 图。
+wait-for graph（等待关系图）以线程为节点，以“等待者正在等待 owner”作为有向边。我们从 ART dump 构图时，可以把 `waiting to lock ... held by thread N` 转换为 `waiter -> owner`。`locked ...` 用于核对 owner 当前持有的 monitor；`waiting on ...`、Binder、I/O 和普通 park 没有同类 owner 证据，不要凭猜测加入 monitor 图。
 
 一个可用的判断流程是：
 
@@ -674,7 +674,7 @@ wait-for graph（等待关系图）以线程为节点，以“等待者正在等
 
 #### 5.3 需要时长时，引入时间轴
 
-堆栈回答“采样时在哪里”，trace 可以回答“持续多久、期间怎样变化”。Perfetto 是 Android 的系统级 trace 采集与分析工具；slice 是 trace 中带开始时间和持续时间的区间事件，data source 是配置中指定的数据生产来源。PerfettoSQL 是查询 Perfetto trace 的 SQL 方言。Android 17 上可按问题类型选择：
+堆栈回答“采样时在哪里”，trace 可以回答“持续多久、期间怎样变化”。Perfetto 是 Android 的系统级 trace 采集与分析工具；slice 是 trace 中带开始时间和持续时间的区间事件，data source 是配置中指定的数据生产来源。PerfettoSQL 是查询 Perfetto trace 的 SQL 方言。可按问题类型选择：
 
 - Java monitor：采集包含 ART monitor-contention slice 的 Perfetto trace，导入 [`android.monitor_contention` PerfettoSQL 模块](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/monitor_contention.sql)，再查询 `android_monitor_contention` 表中的 waiter、owner、双方方法和等待时长。模块名是 SQL 导入入口，不是 trace 配置里的 data source 名。
 - 线程调度：查看 `sched_switch`（内核线程切换事件）和线程状态，确认 owner 正在运行、等待 CPU，还是已经睡眠。
@@ -725,7 +725,7 @@ Perfetto 没记录到锁竞争事件，竞争仍可能存在；trace 配置、�
 | Android 12 / API 31 | `REASON_CRASH_NATIVE` 的 trace stream 可返回 tombstone protobuf |
 | Android 17 / API 37 | 源码锚点；公开 `Thread` API 仍不给普通应用 monitor owner 或原子全线程快照 |
 
-Android 17 的 Java monitor 解释不能直接套到内核。`android17-6.18-2026-06_r6` 的 scheduler/futex 证据用于说明线程为何睡眠或迟迟未运行；`synchronized` 对象、held lock 与 owner 的解释仍以 `android-17.0.0_r1` 的 ART dump 为准。
+Java monitor 的解释到 ART 为止，套不到内核上：`android17-6.18-2026-06_r6` 的 scheduler/futex 证据用来说明线程为何睡眠或迟迟未运行；`synchronized` 对象、held lock 与 owner 的解释仍以 `android-17.0.0_r1` 的 ART dump 为准。
 
 ### 8. 源码与文档入口
 
@@ -778,7 +778,7 @@ Android 17 的 Java monitor 解释不能直接套到内核。`android17-6.18-202
 
 #### 把“当前进程”和“下次启动”分开
 
-下面这张图把故障后的工作分成两段。图中用到的 crash envelope（最小崩溃记录） 指有严格大小上限、只保存关联和诊断字段的最小崩溃记录，并非完整业务快照。
+下面这张图把故障后的工作分成两段。图中用到的 crash envelope（最小崩溃记录） 有严格的大小上限，只保存关联和诊断字段，与完整业务快照是两回事。
 
 ```mermaid
 flowchart LR
@@ -799,11 +799,11 @@ Crash handler（未捕获异常处理器） 所在的左半段只适合做有上
 
 #### Java 未捕获异常入口
 
-Android 17 的 [`RuntimeInit.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java) 在 `commonInit()` 中安装的两个入口见本章「Android 17 的默认致命异常处理链」，这里补应用侧要保留的约束：`LoggingHandler` 通过 `RuntimeHooks.setUncaughtExceptionPreHandler()` 注册为 pre-handler（前置处理器，在默认未捕获异常处理器之前运行），应用不能替换它。
+Android 17 的 [`RuntimeInit.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java) 在 `commonInit()` 中安装的两个入口见本章「Android 17 的默认致命异常处理链」，这里补上应用侧要保留的约束：`LoggingHandler` 通过 `RuntimeHooks.setUncaughtExceptionPreHandler()` 注册为 pre-handler（前置处理器，在默认未捕获异常处理器之前运行），应用换不掉它。
 
 应用或 Crash SDK 替换默认处理器时，要保存替换前的处理器，并在自己的最小记录结束后调用它。不再调用默认处理器，会改变系统对 fatal 异常的处理：可能留下状态损坏的进程，也会绕过 `KillApplicationHandler` 向 ActivityManager 报告并终止进程的默认路径。
 
-多个 SDK 都想接管入口时，注册顺序必须可查询。推荐由宿主统一安装一个分发器，其他 SDK 只注册有超时和大小限制的 observer（观察者回调） 回调。若只能使用处理器链，每一层都要保证：
+多个 SDK 都想接管入口时，注册顺序必须可查询。推荐由宿主统一安装一个分发器，其他 SDK 只注册有超时和大小限制的 observer（观察者回调）。若只能使用处理器链，每一层都要保证：
 
 - 观察者回调抛出异常时仍会进入前一个处理器；
 - 同一个 `Throwable` 不会被多层重复写入大文件；
@@ -816,7 +816,7 @@ Native signal handler 的限制比 Java 处理器更严格。`SIGSEGV`、`SIGABR
 
 生产方案通常使用 Crashpad、Breakpad 或经过验证的 APM（Application Performance Monitoring）Native SDK，由预先打开的文件描述符、独立 dumper（转储） 进程或系统调试守护进程 debuggerd 保留现场。应用自己的信号处理函数还要考虑旧处理函数链、用于取得详细信号信息的 `SA_SIGINFO`、备用信号栈、重入，以及恢复默认 disposition（信号处置动作）。系统信号链路、回溯与符号化细节统一见 [20.3 Native Crash、堆栈回溯与符号化](03-native-crash-unwinding-symbolication.md)。
 
-#### 协程异常不是新的系统 Crash 类型
+#### 协程异常在统一上报模型中的位置
 
 Kotlin 协程改变异常的传播位置，却没有增加一种 Android 进程退出原因。未处理异常到达线程的未捕获异常处理器时，仍按 Java Crash 进入 `RuntimeInit`；在业务边界被捕获并转为失败状态时，它只是一条业务错误或 non-fatal（已捕获上报、不结束进程）记录。
 
@@ -847,9 +847,9 @@ Kotlin 协程改变异常的传播位置，却没有增加一种 Android 进程�
 
 ### Crash 文件的持久化边界
 
-#### 原子替换不等于每次都能落盘
+#### 原子替换的用途与局限
 
-AOSP Android 17 的 [`AtomicFile.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/util/AtomicFile.java) 采用 `.new` 文件：
+AOSP 的 [`AtomicFile.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/util/AtomicFile.java) 采用 `.new` 文件：
 
 1. `startWrite()` 打开新文件；
 2. `finishWrite()` 调用 `FileUtils.sync()`，关闭后重命名为目标文件；
@@ -857,7 +857,7 @@ AOSP Android 17 的 [`AtomicFile.java`](https://android.googlesource.com/platfor
 
 这能让读取者在旧完整版本与新完整版本之间选择，避免直接覆盖目标文件留下半截内容。实现没有对父目录执行 `fsync`（把缓冲中的文件或目录元数据写向存储），所以掉电条件下的严格事务这个说法并不成立。应用若要求重命名后的目录项也尽量持久化，可通过公开的 `android.system.Os.open()`、`Os.fsync()` 和 `Os.close()` 处理父目录的 file descriptor；还要按文件系统能力处理失败，各设备表现未必一致。
 
-文件协议本身还要包含 magic（固定文件头，用来快速识别格式） 文件头、schema version（结构版本）、payload length（有效内容长度）、序号和校验值。下次启动扫描时：
+文件协议本身还要包含 magic（固定文件头，用来快速识别格式）、schema version（结构版本）、payload length（有效内容长度）、序号和校验值。下次启动扫描时：
 
 | 状态 | 处理 |
 |---|---|
@@ -871,7 +871,7 @@ AOSP [`DropBoxManagerService.java`](https://android.googlesource.com/platform/fr
 
 [`ActivityManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 只有在 system_server 自身 Crash 的特定路径上才等待 DropBox 后台线程最多两秒。普通应用要从这些实现推导出“异步 Crash 上报一定来得及”，依据并不充分。
 
-#### Java 与 Native 的写入策略不能共用
+#### Java 与 Native 的写入策略差异
 
 Java 未捕获异常处理器可以尝试一次有大小限制的同步写入，但仍可能遇到 OOM、文件系统阻塞或递归异常。记录器应预先创建目录、限制文件数、避免 JSON 反射和大对象复制；无论写入成功与否，都要调用前一个默认处理器。
 
@@ -879,13 +879,13 @@ Native 信号处理函数只能使用异步信号安全操作。若方案需要�
 
 Crash 文件属于应用私有诊断数据，也要限制文件数量和占用空间，并执行加密与删除策略。存储满时保留事件摘要和丢弃计数，比无限写入直到影响用户数据更安全。
 
-### ApplicationExitInfo：补全证据，不替代应用采集
+### ApplicationExitInfo 与应用采集的分工
 
 API 30 起，`ActivityManager.getHistoricalProcessExitReasons()` 返回近期进程死亡记录。它可以补充异常处理器没来得及写完的事件，也能解释用户强停、系统 LMK（Low Memory Killer，系统因内存压力终止进程） 和包更新等非 Crash 退出。
 
 #### Android 17 的 reason 边界
 
-`android-17.0.0_r1` 的 [`ApplicationExitInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java) 定义 17 个 `REASON_*` 常量，编号为 0～16。SafeMode 判定时要先做分类，而非全部当成启动崩溃。
+我们先看 reason 的构成：`android-17.0.0_r1` 的 [`ApplicationExitInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java) 定义 17 个 `REASON_*` 常量，编号为 0～16。SafeMode 判定时要先做分类，而非全部当成启动崩溃。
 
 | 分类 | reason | SafeMode 处理 |
 |---|---|---|
@@ -958,9 +958,9 @@ fun isCorrelatedStartupFailure(
 
 ### 安全气囊（SafeMode）机制
 
-这里的 SafeMode 是应用自己的 circuit breaker（熔断器） 熔断器：检测到重复启动失败后，下一次启动先关闭可疑模块，阻止同一故障不断重演。它与 Android 系统安全模式无关，也救不了已经发生 fatal 的当前进程。
+这里的 SafeMode 是应用自己的 circuit breaker（熔断器）：检测到重复启动失败后，下一次启动先关闭可疑模块，阻止同一故障不断重演。它与 Android 系统安全模式无关，也救不了已经发生 fatal 的当前进程。
 
-#### 状态机比一个布尔开关可靠
+#### SafeMode 的状态机设计
 
 SafeMode 至少需要区分正常、观察、受限和试运行状态。下面是一套可按产品调整的状态关系：
 
@@ -980,7 +980,7 @@ stateDiagram-v2
 
 #### 判定输入
 
-一次可用于状态迁移的失败记录要同时回答四个问题：
+一次失败要用于状态迁移，我们要求它同时回答四个问题：
 
 1. 是否为同一版本、构建号和进程；
 2. 是否发生在同一次未完成的 `launch_id`；
@@ -1101,7 +1101,7 @@ Compose 没有通用的 Error Boundary（用备用 UI 替换异常的整段组�
 
 #### WebView renderer 退出
 
-系统 WebView renderer 由 WebView 提供方管理，并非应用在 manifest 中声明的 `:web` 进程；应用在该渲染进程内安装不了自己的 Crash 处理器。API 26 起，[`WebViewClient.onRenderProcessGone()`](https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)) 通知宿主清理受影响的 WebView。
+系统 WebView renderer 由 WebView 提供方管理，不同于应用在 manifest 中声明的 `:web` 进程；应用在该渲染进程内安装不了自己的 Crash 处理器。API 26 起，[`WebViewClient.onRenderProcessGone()`](https://developer.android.com/reference/android/webkit/WebViewClient#onRenderProcessGone(android.webkit.WebView,%20android.webkit.RenderProcessGoneDetail)) 通知宿主清理受影响的 WebView。
 
 下面的代码展示单个回调应完成的最小清理：
 
@@ -1193,7 +1193,7 @@ override fun onRenderProcessGone(
 
 ## 小结
 
-Java Crash 治理要把三段责任连起来：正常运行期用异常边界和有界采样保留证据，fatal 阶段委托 Android 默认终止链并避免高开销采集，下次启动再用 SafeMode、发布门禁和历史退出证据恢复。线程快照、锁等待和 Native tombstone 都是为这条链提供证据，原始 `Throwable` 和精确构建信息仍然是它们替代不了的主证据。
+回头看，Java Crash 治理的三段责任要连起来：正常运行期用异常边界和有界采样保留证据，fatal 阶段委托 Android 默认终止链并避免高开销采集，下次启动再用 SafeMode、发布门禁和历史退出证据恢复。线程快照、锁等待和 Native tombstone 都是为这条链提供证据，原始 `Throwable` 和精确构建信息仍然是它们替代不了的主证据。
 
 ## 参考资料
 

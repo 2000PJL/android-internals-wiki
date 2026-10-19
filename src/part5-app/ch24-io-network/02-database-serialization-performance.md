@@ -154,13 +154,13 @@ consolidated_from:
 
 数据库慢很少表现为 CPU 满载，线程多数时间在等：主线程等查询返回，工作线程排队等连接，首次打开被 Migration（数据库迁移）拖长，或者列表滚动时 `CursorWindow`（承载查询结果的内存窗口）反复重填。落到 Perfetto 和线程栈上，常见的名字是 `SQLiteConnectionPool.waitForConnection()`、`SQLiteSession.executeForCursorWindow()`、Room 生成的 DAO（Data Access Object，数据访问对象） 代码，以及 `ContentResolver.query()` 的 Binder 跨进程等待。
 
-排查的第一步，是先确认线程停在哪一种等待上：执行 SQL、等连接、等 Binder，还是等数据库首次打开。位置确定后，再结合 SQLite 并发、`CursorWindow`（分段保存查询结果的内存窗口）、Room 执行模型和 ANR 现场决定动什么——日志模式、查询、索引、事务或迁移。
+我们排查的第一步，是确认线程停在哪一种等待上：执行 SQL、等连接、等 Binder，还是等数据库首次打开。位置确定后，再结合 SQLite 并发、`CursorWindow`（分段保存查询结果的内存窗口）、Room 执行模型和 ANR 现场决定动什么——日志模式、查询、索引、事务或迁移。
 
 ### SQLite WAL 模式与并发优化
 
-回滚日志模式在修改主库页之前先保存旧内容，写事务需要排除读者时，新的读写访问都受锁状态（仍有活跃事务阻止完全推进）限制。WAL（Write-Ahead Logging，预写式日志）换了一个方向：把新页追加到 `-wal` 文件。读事务记下自己的 end mark（当前快照可见的 WAL 终点），也就是当前快照可见的 WAL 终点，再用主库加上该位置之前的 WAL frame（记录一次数据库页变更的帧） 拼出一致快照；读者还在读旧快照时，写者可以继续追加。两种模式都只有一个活跃写者——WAL 给的是读写并发，写入始终是串行的。
+回滚日志模式的思路，是先把旧内容保存下来再修改主库页；写事务需要排除读者时，锁状态（仍有活跃事务阻止完全推进）就限制了新的读写访问。WAL（Write-Ahead Logging，预写式日志）换了一个方向：新页追加进 `-wal` 文件。读事务记下自己的 end mark（当前快照可见的 WAL 终点），再用主库加上该位置之前的 WAL frame（记录一次数据库页变更的帧）拼出一致快照；读者还在读旧快照时，写者可以继续追加。两种模式都只有一个活跃写者——WAL 给的是读写并发，写入始终是串行的。
 
-Android 官方性能文档的建议是：除 `ATTACH DATABASE` 场景外启用 WAL，并在 WAL 下使用 `synchronous=NORMAL`。代价在持久性上：应用进程崩溃后事务仍可恢复，但设备断电或内核崩溃可能回滚已经返回成功的事务。订单、支付或跨库依赖，选同步级别时要把这一点放在吞吐量前面。
+Android 官方性能文档的建议是：除 `ATTACH DATABASE` 场景外启用 WAL，并在 WAL 下使用 `synchronous=NORMAL`。代价在持久性上：应用进程崩溃后事务仍可恢复，但设备断电或内核崩溃可能回滚已经返回成功的事务。订单、支付或跨库依赖这类场景，我们先把这一点的优先级放到吞吐量前面，再选同步级别。
 
 #### Android 9 的 Compatibility WAL 到 Android 17 的变化
 
@@ -191,7 +191,7 @@ Android 9 引入 Compatibility WAL 时，[官方历史文档](https://source.and
 
 #### Checkpoint（检查点）、长读事务与生效值
 
-checkpoint 负责把已提交的 WAL frame 写回主库。`PASSIVE` checkpoint 可以推进到活跃读事务允许的位置；持有较老 end mark 的长读事务会让它提前停下，而后续写入还在继续追加，`-wal` 文件于是可能持续增长。要止住这种增长，先得找到迟迟不结束的读事务和生命周期过长的 Cursor——调小自动 checkpoint 阈值结束不了它们。
+checkpoint 负责把已提交的 WAL frame 写回主库，`PASSIVE` checkpoint 可以推进到活跃读事务允许的位置；持有较老 end mark 的长读事务会让它提前停下，而后续写入还在继续追加，`-wal` 文件于是可能持续增长。要止住这种增长，先得找到迟迟不结束的读事务和生命周期过长的 Cursor——调小自动 checkpoint 阈值结束不了它们。
 
 ```sql
 PRAGMA journal_mode;
@@ -204,7 +204,7 @@ PRAGMA wal_checkpoint(PASSIVE);
 
 #### Room 怎样选择日志模式
 
-判断 Room 2.8.4 的日志模式，先要分清看的是哪个 `source set`（Kotlin Multiplatform 按目标平台区分的源码集合）——Kotlin Multiplatform 会按目标平台区分源码集合。Android `actual` 实现有 `AUTOMATIC`、`TRUNCATE` 和 `WRITE_AHEAD_LOGGING` 三档，Builder 默认 `AUTOMATIC`：普通设备解析为 WAL，低内存设备解析为 `TRUNCATE`。common/KMP（Kotlin Multiplatform） 声明只有后两项，Builder 默认 WAL。官网聚合 API 可能把不同 `source set` 的说明混在一起，所以 Android 项目核对 `RoomDatabase.android.kt`，KMP 或自定义驱动项目核对实际目标和依赖源码。
+判断 Room 2.8.4 的日志模式，我们先要分清看的是哪个 `source set`（Kotlin Multiplatform 按目标平台区分的源码集合）。Android `actual` 实现有 `AUTOMATIC`、`TRUNCATE` 和 `WRITE_AHEAD_LOGGING` 三档，Builder 默认 `AUTOMATIC`：普通设备解析为 WAL，低内存设备解析为 `TRUNCATE`。common/KMP（Kotlin Multiplatform）声明只有后两项，Builder 默认 WAL。官网聚合 API 可能把不同 `source set` 的说明混在一起，所以 Android 项目核对 `RoomDatabase.android.kt`，KMP 或自定义驱动项目核对实际目标和依赖源码。
 
 下面这段配置展示一个可审计的 Room 打开入口：日志模式和 Migration（数据库结构迁移） 都在同一个 builder 里明确声明；执行器先保留 Room 默认值，等追踪结果证明默认调度不合适，再自定义。
 
@@ -221,13 +221,13 @@ val database = Room.databaseBuilder(
 
 注意这段代码并未保证启用 WAL，低内存设备拿到的可能是 `TRUNCATE`。若自定义执行器，Room 文档的要求是：查询执行器有线程上限、避开主线程；事务最多同时执行一个；共享事务执行器还要遵守文档中的死锁约束。固定线程数不要原样复制到所有应用。
 
-使用 Room 3 / `SQLiteDriver`（连接具体 SQLite 引擎的接口）的项目，不能照搬 framework `SQLiteConnectionPool` 的连接数和 `CursorWindow` 结论——驱动换掉了 Room 使用的 SQLite 实现与数据传递路径。具体差异见 [Room 3 与 SQLiteDriver（Room 连接具体 SQLite 引擎的驱动接口） 迁移边界](#room-3-与-sqlitedriver-迁移边界)。
+使用 Room 3 / `SQLiteDriver`（连接具体 SQLite 引擎的接口）的项目，framework `SQLiteConnectionPool` 的连接数和 `CursorWindow` 结论要重新验证——驱动换掉了 Room 使用的 SQLite 实现与数据传递路径。具体差异见 [Room 3 与 SQLiteDriver（Room 连接具体 SQLite 引擎的驱动接口） 迁移边界](#room-3-与-sqlitedriver-迁移边界)。
 
 #### Session、连接池与等待对象
 
 Android framework 的 `SQLiteDatabase` 为每个线程保存一个 `SQLiteSession`。Session 只维护事务与连接使用状态，执行语句时仍要向 `SQLiteConnectionPool` 申请连接。线程停在 `waitForConnection()`，表示它在等一个符合要求的连接；这一停顿与保护连接池状态的 Java 对象监视器锁是两回事。
 
-WAL 下，平台池用非主连接服务只读工作，写事务通常走主连接——所以增加只读连接并不会增加 SQLite 的写连接数量。Room 2.8.4 的默认 SupportSQLite 兼容路径使用 passthrough pool（只转交连接请求、不自行管理物理连接的池），也就是只转交连接请求、物理连接仍由 Android framework 管理；驱动本身没有连接池时，`RoomConnectionManager` 才自建池，把 WAL 映射为最多 4 个只读连接加 1 个写连接，`TRUNCATE` 下各 1 个。
+WAL 下，平台池用非主连接服务只读工作，写事务通常走主连接——所以增加只读连接并不会增加 SQLite 的写连接数量。Room 2.8.4 的默认 SupportSQLite 兼容路径使用 passthrough pool（只转交连接请求、不自行管理物理连接的池），物理连接仍由 Android framework 管理；驱动本身没有连接池时，`RoomConnectionManager` 才自建池，把 WAL 映射为最多 4 个只读连接加 1 个写连接，`TRUNCATE` 下各 1 个。
 
 这些数字属于特定路径的当前实现，随时可能变化。看到连接等待，我们排的顺序是：先查长事务、耗时过长的读取、未关闭资源、写入队列和首次打开，最后才考虑扩池。
 
@@ -243,7 +243,7 @@ WAL 的应用侧检查项：
 
 ### Room 执行模型与常见性能问题
 
-Room 提供编译期 SQL 校验、DAO 生成、迁移管理和异步 API 适配，这些便利都不会自动降低 SQL、连接等待和事务提交本身的成本。`allowMainThreadQueries()` 只关闭主线程保护，查询耗时原封不动；它可以用于受控测试，发布配置里不应出现。
+Room 提供编译期 SQL 校验、DAO 生成、迁移管理和异步 API 适配，这些便利都不会自动降低 SQL、连接等待和事务提交本身的成本。`allowMainThreadQueries()` 只关闭主线程保护，查询耗时原封不动；它可以用于受控测试，发布配置里则要避免出现。
 
 Room 的性能问题集中在四类位置：同步 DAO 被界面路径调用、首次打开落在启动主线程、事务范围过大，以及可观察查询在表失效后反复执行。
 
@@ -315,9 +315,9 @@ class MessageRepository(
 
 事务保证删除与插入要么一起成功、要么一起回滚，还顺带减少了多次独立提交。代价是写连接在整个事务期间被占用，批次大小因此要用真实数据量和尾延迟（第 95/99 百分位耗时，即 95%/99% 的请求耗时不超过对应数值）验证。
 
-要让生产环境里的 Room 问题可定位，还需要记录这些信息：
+要让生产环境里的 Room 问题可定位，我们还需要记录这些信息：
 
-- Room `QueryCallback` 会为每条查询增加回调成本，且回调本身只给出 SQL 与绑定参数，执行耗时要在 DAO/仓库层或 Perfetto 中另行测量。若做短期受控采样，先去除字面参数，再对 SQL 计算散列值（hash，用于归并相同语句）用于归并相同语句，并记录线程，不上传原始参数。
+- Room `QueryCallback` 会为每条查询增加回调成本，且回调本身只给出 SQL 与绑定参数，执行耗时要在 DAO/仓库层或 Perfetto 中另行测量。若做短期受控采样，先去除字面参数，再对 SQL 计算散列值（hash，用于归并相同语句）并记录线程，原始参数不上传。
 - 记录首次打开和 Migration 耗时，把它们和冷启动、首屏、ContentProvider 初始化分开统计。
 - 对高频 Flow 查询统计重查次数。某张表每秒多次更新时，观察者可能被重复触发。
 - 记录连接池等待栈。Perfetto 里看到 `waitForConnection()` 时，要能反查当前持有写连接的任务。
@@ -402,7 +402,7 @@ ORDER BY sent_at DESC
 LIMIT 50;
 ```
 
-输出里出现 `SCAN` 不必立即判定走错了计划：小表扫描、覆盖索引扫描或统计信息变化都可能让扫描成为合理选择，要结合被扫描的对象判断。同时检查扫描对象、临时 B-tree、返回行数和实际耗时；空库或均匀小样本代表不了线上的偏斜分布。
+输出里出现 `SCAN`，我们先结合被扫描的对象判断：小表扫描、覆盖索引扫描或统计信息变化都可能让扫描成为合理选择。同时检查扫描对象、临时 B-tree、返回行数和实际耗时；空库或均匀小样本代表不了线上的偏斜分布。
 
 查询回归可以进 CI（Continuous Integration，持续集成）：为关键 DAO 准备有代表性的规模与分布，验证结果正确性、索引是否存在，并对明显的计划退化和耗时变化报警。断言完整的 `EXPLAIN QUERY PLAN` 文本不可取——SQLite 明确表示不保证该输出格式跨版本稳定。
 
@@ -430,7 +430,7 @@ LIMIT :limit;
 
 普通表的 `INTEGER PRIMARY KEY` 已是 rowid 别名。`WITHOUT ROWID` 更适合较短的非整数或复合主键、查询频繁沿主键访问的表；它不支持 `AUTOINCREMENT`，大主键还会复制进二级索引。迁移前用真实数据比较库大小与读写耗时，它当不了通用的省空间开关。
 
-PRAGMA 同时包含持久状态与每连接状态。`journal_mode`、`synchronous`、`wal_autocheckpoint`、`busy_timeout`、`cache_size` 和 `page_size` 的生效范围各不相同；Room 或平台连接池建了多个连接后，在一个临时连接上执行 per-connection PRAGMA（仅对当前连接生效的配置），并不代表其他连接继承。配置统一下发要走受支持的 Builder、驱动或数据库打开回调，并逐连接验证。`busy_timeout` 只是把锁冲突改成等待，长事务还在那里；UI 或 Binder 路径上的快速失败，被它改写后可能变成长卡顿。
+PRAGMA 同时包含持久状态与每连接状态。`journal_mode`、`synchronous`、`wal_autocheckpoint`、`busy_timeout`、`cache_size` 和 `page_size` 的生效范围各不相同；Room 或平台连接池建了多个连接后，在一个临时连接上执行 per-connection PRAGMA（仅对当前连接生效的配置），改到的只有这个连接，其余连接维持原样。配置统一下发要走受支持的 Builder、驱动或数据库打开回调，并逐连接验证。`busy_timeout` 只是把锁冲突改成等待，长事务还在那里；UI 或 Binder 路径上的快速失败，被它改写后可能变成长卡顿。
 
 [SQLite 文档：[`EXPLAIN QUERY PLAN`](https://sqlite.org/eqp.html)、[Query Planner](https://sqlite.org/queryplanner.html)、[`WITHOUT ROWID`](https://sqlite.org/withoutrowid.html)]
 
@@ -455,10 +455,10 @@ Room 第一次打开数据库时会校验结构，并按版本之间的升级路
 迁移设计分三层：
 
 - 数据库结构改动：新增表、列、索引或视图，SQL 必须与导出的目标结构一致。
-- 数据转换：能在短事务内完成的小规模转换随 `Migration` 执行；大表转换让新旧结构先共存一段时间，再由后台任务分批把旧数据补写到新结构。这类后台回填必须能在中断后继续，未完成的数据库结构也不应暴露给只理解旧结构的代码。
+- 数据转换：能在短事务内完成的小规模转换随 `Migration` 执行；大表转换让新旧结构先共存一段时间，再由后台任务分批把旧数据补写到新结构。这类后台回填必须能在中断后继续；未完成的新结构，也要继续对只理解旧结构的代码隐藏。
 - 发布策略：只有明确可重建的数据才允许破坏性重建，用户资产库必须提供完整迁移路径。
 
-大表转换可以跨两个应用版本完成。版本 N——这里指任意一个起始版本——先增加可空的新列或新表，新代码同时兼容新旧数据表示，写入时维护两份表示；后台任务按稳定主键分批回填，记录最近处理完的主键等进度位置，进程被终止后从已确认的位置继续。回填期间的读取必须能识别“新表示尚未生成”，空值不该被当成业务结果。等监控确认所有受支持版本的回填完成，后续版本再增加非空约束、停止写旧表示并删除旧列或旧表。若仍需支持从更早版本直接升级，迁移路径和读取逻辑也要覆盖这种情况。
+遇到大表转换，我们可以跨两个应用版本完成。版本 N——这里指任意一个起始版本——先增加可空的新列或新表，新代码同时兼容新旧数据表示，写入时维护两份表示；后台任务按稳定主键分批回填，记录最近处理完的主键等进度位置，进程被终止后从已确认的位置继续。回填期间的读取必须能识别“新表示尚未生成”，空值不该被当成业务结果。等监控确认所有受支持版本的回填完成，后续版本再增加非空约束、停止写旧表示并删除旧列或旧表。若仍需支持从更早版本直接升级，迁移路径和读取逻辑也要覆盖这种情况。
 
 下面的 Migration 只新增带默认值的列和索引。它展示的是明确的 8→9 升级路径，对任意大小的 `messages` 表未必够快。
 
@@ -479,7 +479,7 @@ val MIGRATION_8_9 = object : Migration(8, 9) {
 }
 ```
 
-创建索引和重建表都可能扫描或重写大量数据。把首次开放给工作线程，避免的只是主线程直接执行迁移；I/O 还在，与冷启动争用 CPU 和存储的可能也还在。应用应明确数据库何时可用；无法在可接受的启动时间内完成的大迁移，走兼容新旧字段的分阶段版本加可恢复回填。
+创建索引和重建表都可能扫描或重写大量数据。把首次开放给工作线程，避免的只是主线程直接执行迁移；I/O 还在，与冷启动争用 CPU 和存储的可能也还在。应用应明确数据库何时可用；大迁移若超出可接受的启动时间，就走兼容新旧字段的分阶段版本加可恢复回填。
 
 下面的设备端测试（`instrumented test`，真机或模拟器内运行）验证 8→9 的数据库结构和数据：`runMigrationsAndValidate()` 校验目标结构，测试代码再查询旧行，确认默认值与用户数据都被保留。
 
@@ -538,7 +538,7 @@ class AppDatabaseMigrationTest {
 
 ### Room 3 与 SQLiteDriver 迁移边界
 
-Room 3 不是 Room 2 的一次普通小版本升级。`@Database`、`@Entity`、`@Dao` 与 `@Query` 的基本模型还在，换掉的是 Maven 坐标（依赖的 `group:artifact` 标识）、运行期 SQLite 接口、代码生成链和异步 API。截至 2026-08-15，稳定版本是 [Room 3.0.1](https://developer.android.com/jetpack/androidx/releases/room3) 与 [SQLite 2.7.0](https://developer.android.com/jetpack/androidx/releases/sqlite)；两个库要分别固定版本，同属 AndroidX 并不意味着版本号会同步递增。
+Room 3 不是 Room 2 的一次普通小版本升级。`@Database`、`@Entity`、`@Dao` 与 `@Query` 的基本模型还在，换掉的是 Maven 坐标（依赖的 `group:artifact` 标识）、运行期 SQLite 接口、代码生成链和异步 API。截至 2026-08-15，稳定版本是 [Room 3.0.1](https://developer.android.com/jetpack/androidx/releases/room3) 与 [SQLite 2.7.0](https://developer.android.com/jetpack/androidx/releases/sqlite)；两个库要分别固定版本；它们同属 AndroidX，版本号却各走各的。
 
 | 维度 | Room 2.x 常见用法 | Room 3.0.1 | 迁移检查 |
 | --- | --- | --- | --- |
@@ -549,7 +549,7 @@ Room 3 不是 Room 2 的一次普通小版本升级。`@Database`、`@Entity`、
 | 失效通知 | `InvalidationTracker.Observer` | `InvalidationTracker.createFlow()` | 改写观察者注册与注销 |
 | 多平台 | 以 Android 为主 | Android、Apple、JVM、JS、WasmJS | 每个平台分别选择驱动与建立基线 |
 
-Room 3 只生成 Kotlin，KSP（Kotlin Symbol Processing，Kotlin 符号处理） 仍能处理 Java 编写的数据库、DAO 和实体，Java 调用方也可调用生成代码；包含这些声明的模块仍要启用 Kotlin 编译器与 KSP。`androidx.room` 与 `androidx.room3` 可以同时出现在依赖图中，主要用途是避免 WorkManager 等库间接引入旧 Room 后造成类冲突；这并不等于两个 Room 实例可以并发打开同一个数据库文件。
+Room 3 只生成 Kotlin，KSP（Kotlin Symbol Processing，Kotlin 符号处理） 仍能处理 Java 编写的数据库、DAO 和实体，Java 调用方也可调用生成代码；包含这些声明的模块仍要启用 Kotlin 编译器与 KSP。`androidx.room` 与 `androidx.room3` 可以同时出现在依赖图中，主要用途是避免 WorkManager 等库间接引入旧 Room 后造成类冲突；至于两个 Room 实例并发打开同一个数据库文件，这层保证它给不了。
 
 #### 固定依赖、驱动与数据库结构输出
 
@@ -579,7 +579,7 @@ room3 {
 
 Room Gradle Plugin 要求配置 `schemaDirectory`。带构建变体（build type、product flavor 等组合出的构建版本）的项目会在对应目录生成数据库结构 JSON；这些文件是自动迁移与迁移测试的输入，必须提交仓库，并由 CI 检查有没有未提交的结构变化。构建性能分开测：完整构建、DAO/Entity 增量构建、普通 Kotlin 增量构建和远端构建缓存命中。只有 Gradle、JDK、Kotlin、KSP 与缓存条件相同，测量结果才可比。
 
-Android 上的两种驱动，未经验证的性能结论不能共用：
+Android 上的两种驱动各有实现，性能结论要分别验证后再通用：
 
 | 项目 | `AndroidSQLiteDriver` | `BundledSQLiteDriver` |
 | --- | --- | --- |
@@ -646,7 +646,7 @@ SQLite/Room 仍是 Android 本地结构化数据的常用选择：SQL 语义稳�
 
 Realm 与 ObjectBox 换了一套对象存储和查询接口，随之而来的是专有文件格式、原生库、迁移工具和版本兼容责任。本项目没有针对它们当前版本的同机、同数据、同查询基准，性能排名给不出来。
 
-Realm 还有产品生命周期问题。MongoDB 已在 2025 年 9 月 30 日终止 Atlas Device SDKs 和 Device Sync；本地 Realm 数据库继续以开源项目存在。复核时，Realm Kotlin 仓库建议无同步功能的项目使用 3.0.0 以上版本或 `community` 分支。新项目若仍考虑 Realm，先确认所选依赖包、维护分支、Kotlin/Gradle 兼容范围和升级负责人；已终止的云端同步能力，方案里不应再出现。
+Realm 还有产品生命周期问题。MongoDB 已在 2025 年 9 月 30 日终止 Atlas Device SDKs 和 Device Sync；本地 Realm 数据库继续以开源项目存在。复核时，Realm Kotlin 仓库建议无同步功能的项目使用 3.0.0 以上版本或 `community` 分支。新项目若仍考虑 Realm，先确认所选依赖包、维护分支、Kotlin/Gradle 兼容范围和升级负责人；已终止的云端同步能力，要从方案里划掉。
 
 | 核查维度 | SQLite/Room | Realm 系列 | ObjectBox |
 | --- | --- | --- | --- |
@@ -667,7 +667,7 @@ WAL 给的是读写并发，写入始终串行；Android 17 的 Compatibility WA
 
 ## 编码格式、对象分配与兼容性
 
-数据库访问确定行和列之后，序列化接手：把数据转换成内存或网络格式。选择时同时比较体积、CPU、分配和 schema 演进。
+数据库访问确定行和列之后，序列化接手，把数据转换成内存或网络格式；我们选择格式时，同时比较体积、CPU、分配和 schema 演进。
 
 ### 序列化成本出现在哪里
 
@@ -688,7 +688,7 @@ Binder 机制见 [1.9 Android IPC 全景与 Binder 性能](../../part1-fundament
 
 ### JSON（Gson / Moshi / kotlinx.serialization）性能对比
 
-JSON 便于抓包、日志检查和跨语言协作。解析端要做的事一件不少：扫描括号、字段名、数字等词法单元，解码字符串、匹配字段并构造对象；若先建立 `JsonElement` 等表示完整 JSON 层级的树，再转换成业务对象，还要多分配一批节点对象。小响应的解析时间可能低于网络等待；大列表、配置恢复和启动预读，需要单独测量。
+JSON 便于抓包、日志检查和跨语言协作，解析端要做的事却一件不少：扫描括号、字段名、数字等词法单元，解码字符串、匹配字段并构造对象；若先建立 `JsonElement` 等表示完整 JSON 层级的树，再转换成业务对象，还要多分配一批节点对象。小响应的解析时间可能低于网络等待；大列表、配置恢复和启动预读，需要单独测量。
 
 #### 三个库的当前边界
 
@@ -708,7 +708,7 @@ Moshi 同时支持 Java 和 Kotlin。Kotlin 类可以用反射适配器，也可
 
 #### 先验证语义，再比较速度
 
-同一份 JSON 在不同库中未必得到相同对象。基准测试前先固定这些规则：
+同一份 JSON 在不同库中未必得到相同对象。跑基准前，我们先把这几条规则固定：
 
 | 规则 | 需要验证的内容 |
 | --- | --- |
@@ -736,7 +736,7 @@ Moshi 同时支持 Java 和 Kotlin。Kotlin 类可以用反射适配器，也可
 
 #### 用可复现的基准测试比较
 
-下面的设备端 Microbenchmark 只比较“同一字符串解码成同一对象”的稳态成本——稳态指代码完成预热后重复执行时的表现。两个数据类同时启用 kotlinx.serialization 和 Moshi 代码生成。固定输入样本（`test fixture`，即测试样本）的结果校验放在计时循环之外，`BlackHole.consume()` 让编译器和 R8 不能因为结果无人使用而删除被测代码。
+下面的设备端 Microbenchmark 只比较“同一字符串解码成同一对象”的稳态成本——稳态指代码完成预热后重复执行时的表现。两个数据类同时启用 kotlinx.serialization 和 Moshi 代码生成。固定输入样本（`test fixture`，即测试样本）的结果校验放在计时循环之外，`BlackHole.consume()` 把结果标记为已被使用，编译器和 R8 也就失去了“结果无人使用”这条删除被测代码的理由。
 
 ```kotlin
 @Serializable
@@ -801,9 +801,9 @@ Jetpack Microbenchmark 会预热代码，记录执行时间和对象分配次数
 
 ### Protocol Buffers 与 FlatBuffers
 
-Protocol Buffers 为每个字段分配唯一编号，把编号写进二进制数据，再为各语言生成读写代码。客户端、服务端和缓存格式由同一套协议定义管理时，它最合适。至于比 JSON 更小、更快与否，取决于字段类型、字符串比例、压缩方式、运行库和访问方式；该比较的是生产网络实际压缩后的字节数与编解码全程的 CPU 时间，公开排名直接引用不过来。
+Protocol Buffers 为每个字段分配唯一编号，把编号写进二进制数据，再为各语言生成读写代码。客户端、服务端和缓存格式由同一套协议定义管理时，它最合适。至于比 JSON 更小、更快与否，取决于字段类型、字符串比例、压缩方式、运行库和访问方式；我们该比较的是生产网络实际压缩后的字节数与编解码全程的 CPU 时间，公开排名在这里派不上直接用场。
 
-协议结构怎样升级，比格式名称更重要。字段编号发布后不能改作其他含义；删除字段时同时保留编号和名称，阻止后续复用。Proto3 解析二进制消息时会保存当前代码不认识的字段，并在重新编码同一消息时写回；转换成 JSON，或逐字段复制到新消息，都可能丢失这些未知字段。数字、布尔值、字符串等基本类型还要决定是否显式记录字段存在性（`presence`，区分“没有提供”与“提供了默认值”）。
+协议结构怎样升级，比格式名称更重要。字段编号一经发布就锁定含义；删除字段时同时保留编号和名称，阻止后续复用。Proto3 解析二进制消息时会保存当前代码不认识的字段，并在重新编码同一消息时写回；转换成 JSON，或逐字段复制到新消息，都可能丢失这些未知字段。数字、布尔值、字符串等基本类型还要决定是否显式记录字段存在性（`presence`，区分“没有提供”与“提供了默认值”）。
 
 下面的 `.proto` 定义演示字段删除和存在性处理。`legacy_title` 与编号 4 都被保留；`subtitle` 使用 `optional`，生成代码因此能区分缺失和空字符串。
 
@@ -845,9 +845,9 @@ FlatBuffers 的目标是直接从序列化字节中读取字段，省去先解�
 
 ### Parcelable 与 Serializable
 
-`Parcel` 是 Android 为 IPC（Inter-Process Communication，进程间通信）设计的高效传输容器，当通用序列化格式用则不行。Android 17 的 `Parcel.java` 明确禁止把 Parcel 数据写入持久化存储——底层实现一变，旧数据可能读不出来。磁盘缓存和网络协议需要的不是在 Parcelable 与 Serializable 之间二选一，而是有版本规则的持久化格式。
+`Parcel` 是 Android 为 IPC（Inter-Process Communication，进程间通信）设计的高效传输容器，当通用序列化格式用则不行。Android 17 的 `Parcel.java` 明确禁止把 Parcel 数据写入持久化存储——底层实现一变，旧数据可能读不出来。磁盘缓存和网络协议需要的是有版本规则的持久化格式；在 Parcelable 与 Serializable 之间二选一，挑的是另一件事。
 
-组件参数或跨进程接口中，优先使用 Android SDK 和 AIDL 直接支持的基础类型，或明确的 Parcelable。`writeParcelable()` 会同时写类名和数据；`writeTypedObject()`、`writeTypedList()` 等类型明确的 API 由读取方提供 `Parcelable.Creator`，不写对象类信息，因此更紧凑。AIDL 已知参数类型时会生成相应编解码代码，业务层就不必再把对象包进 `Serializable` 或无类型的嵌套容器。
+组件参数或跨进程接口中，我们优先使用 Android SDK 和 AIDL 直接支持的基础类型，或明确的 Parcelable。`writeParcelable()` 会同时写类名和数据；`writeTypedObject()`、`writeTypedList()` 等类型明确的 API 由读取方提供 `Parcelable.Creator`，不写对象类信息，因此更紧凑。AIDL 已知参数类型时会生成相应编解码代码，业务层就不必再把对象包进 `Serializable` 或无类型的嵌套容器。
 
 Android 17 的 `writeValue()` 在其他已支持类型都不匹配时才处理 `Serializable`，并注明通用 Java 序列化开销很大：要处理类描述和对象图（对象及其互相引用形成的结构），还受类结构、`serialVersionUID`（Java 序列化版本标识）与混淆影响。已有低频接口可以在测量后保留；新接口只因为 `implements Serializable` 写起来短就选它，这个理由不成立。
 
@@ -896,7 +896,7 @@ Microbenchmark 的预热与完整编译，适合比较预热后的函数；“�
 
 “Binder 每笔事务有 1 MB”的说法不准确。Android 17 的 `ProcessState.cpp` 把普通 `/dev/binder` 映射大小定义为 `1 MiB - 2 × 运行时页大小`（MiB 是二进制兆字节，1 MiB 等于 1,048,576 字节）；`android17-6.18-2026-06_r6` 的 `binder_alloc.c` 允许的映射上限是 4 MiB，实际缓冲区取用户空间请求值与该上限的较小者。Android 平台原生层请求约 1 MiB，`TransactionTooLargeException` 文档因此把当前容量概括为 1 MB；在 16 KiB 内存页设备上，表达式还会扣除两个 16 KiB 页。
 
-这块空间属于进程，由该进程正在处理的 Binder 事务共享，并非某次调用的独占配额。单个参数看起来很小，并发调用、返回值和其他系统交互同时发生时也可能失败。`TransactionTooLargeException` 不会指出失败发生在发送请求还是返回结果；重试会修改数据的调用前，先采用幂等协议（同一请求重复执行不产生重复副作用），或先查询提交状态。
+这块空间属于进程，由该进程正在处理的 Binder 事务共享，单次调用拿不到独占配额。单个参数看起来很小，并发调用、返回值和其他系统交互同时发生时也可能失败。`TransactionTooLargeException` 不会指出失败发生在发送请求还是返回结果；重试会修改数据的调用前，先采用幂等协议（同一请求重复执行不产生重复副作用），或先查询提交状态。
 
 `rememberSaveable` / `onSaveInstanceState()` 保存的状态也会经由系统进程参与 Binder 传输。Android 官方建议把这类状态控制在 50 KB 以下；这个数值只针对状态保存，对所有 Binder 接口并不通用。状态里保存恢复界面所需的标识和少量输入，列表、位图或完整接口响应都放别处。
 
@@ -911,7 +911,7 @@ Microbenchmark 的预热与完整编译，适合比较预热后的函数；“�
 
 ### 建立序列化选型基线
 
-公开基准测试只能用于发现候选项。应用自己的字段分布、字符串长度、R8 配置、依赖版本、设备 CPU 和协议压缩都会改变结果。至少建立四组可复现数据：
+公开基准测试只能帮我们圈定候选项。应用自己的字段分布、字符串长度、R8 配置、依赖版本、设备 CPU 和协议压缩都会改变结果。至少建立四组可复现数据：
 
 | 基线 | 记录内容 | 回答的问题 |
 | --- | --- | --- |

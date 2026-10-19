@@ -143,7 +143,7 @@ consolidated_from:
 
 线上排障先用指标和版本缩小影响面，再通过受控日志、Trace（追踪记录） 或诊断命令获取增量证据。非 Play 渠道和国内 ROM 缺少部分标准平台能力，需要提前设计替代分发、权限和回传路径。
 
-> 源码基线：AOSP `android-17.0.0_r1`，平台能力上界为 Android 17 / API 37；文中 `ApplicationExitInfo`、`ProfilingManager` 与 StatsD 的版本和权限结论均按这一基线复核。相关结论不依赖内核专有实现，因此不附加内核版本标签（kernel tag）；设备可能使用其他内核分支。
+> 源码基线：AOSP `android-17.0.0_r1`，平台能力上界为 Android 17 / API 37；相关结论不依赖内核专有实现，因此不附加内核版本标签（kernel tag）；设备可能使用其他内核分支。
 
 ## 影响面、假设、证据与止损
 
@@ -163,7 +163,7 @@ consolidated_from:
 
 ### 远程日志与动态日志级别
 
-远程日志要解决的问题是：不安装临时包，把一次会话的必要现场留下来。线上设备始终是用户的设备，得按生产环境对待，别当成远程开发机。设计日志系统时，我们先回答四个问题：这是谁的设备、发生在哪个版本、当时走过哪些业务步骤、失败点附近有哪些系统状态。
+远程日志要解决的问题是，只靠线上已有的安装包，把一次会话的必要现场留下来。线上设备始终是用户的设备，我们按生产环境对待，别当成远程开发机。动手设计前先回答四个问题：这是谁的设备、发生在哪个版本、当时走过哪些业务步骤、失败点附近有哪些系统状态。
 
 一套可用的远程日志方案通常分成四层：
 
@@ -199,7 +199,7 @@ Crashlytics 一类平台的自定义键值字段（custom keys）与自定义日
 
 Trace 适合回答两个问题：时间花在哪里，线程为什么没有运行。它和日志分工明确：日志描述业务状态，Trace 描述线程、调度、锁、Binder 跨进程调用（IPC）、渲染和 I/O 的时间分布，两者要用同一套会话 ID 和时间戳关联。
 
-在用户设备上，发布版 App 不能假设自己可以随意抓取完整系统 Trace。Android 9 起设备提供 System Tracing（系统追踪） 应用，Android 10 起以 Perfetto 格式保存记录，这条路径需要用户或测试人员亲手操作。
+在用户设备上，发布版 App 能抓到什么 Trace，取决于系统给出的路径。Android 9 起设备提供 System Tracing（系统追踪） 应用，Android 10 起以 Perfetto 格式保存记录，这条路径需要用户或测试人员亲手操作。
 
 Android 15 新增的 `ProfilingManager` 为普通 App 提供受系统约束的程序化性能剖析：返回的数据经过裁剪或脱敏、只与请求进程相关，和 adb 条件下的全设备 Trace 是两回事。表中 SDK extension 是可独立于 API level 更新的平台模块版本。
 
@@ -244,7 +244,7 @@ Android 16 的 `ProfilingTrigger` 支持注册 ANR、`APP_FULLY_DRAWN` 等事件
 - **单用户隔离**：经用户同意后，对反馈会话开启受控日志、诊断动作或备用配置。适合弱复现问题。
 - **同类设备隔离**：按设备型号、系统版本、ABI（应用二进制接口）、渠道、地区、网络类型圈定。适合厂商 ROM、SoC（片上系统） 或网络环境相关问题。
 - **版本隔离**：按 App 版本、配置版本、资源版本、热修复版本切分。适合发版后指标异常或配置下发事故。
-- **功能隔离**：用远程配置关闭可疑功能、切回旧实现、降采样、降低图片质量、停用高风险实验。适合无法立刻发版但可以止损的场景。
+- **功能隔离**：用远程配置关闭可疑功能、切回旧实现、降采样、降低图片质量、停用高风险实验。适合一时发不了版、但可以止损的场景。
 
 Google Play 分阶段发布（staged rollout）可以暂停继续分发，但已经收到该版本的用户仍停留在该版本；修复通常需要发布 `version（配置键与版本）Code` 更高的新版本。halt 只停止新增分发，起不到远程降级已安装 APK 的作用。
 
@@ -252,7 +252,7 @@ Firebase Remote Config rollout 支持编辑或回滚灰度配置；客户端只�
 
 远程开关也有失败模式。旧客户端可能不认识新字段，设备可能离线，配置缓存可能尚未刷新，服务端也可能误下发。关键功能应给出向后兼容默认值、配置结构版本和本地有效期；关闭功能的开关要提前演练，别等到事故发生才第一次验证客户端会不会执行。
 
-灰度期间只看崩溃率不够。Android vitals 会评估用户感知崩溃率（user-perceived crash rate）、用户感知 ANR 率（user-perceived ANR rate）、启动、慢渲染、耗电、LMK（Low Memory Killer，低内存终止） 等质量指标；业务侧还要看登录、支付、播放、下载等操作路径指标。排障期间我们同时盯两条线：技术指标不再继续恶化，用户操作指标没有出现新异常。
+灰度期间，崩溃率只是起点。Android vitals 会评估用户感知崩溃率（user-perceived crash rate）、用户感知 ANR 率（user-perceived ANR rate）、启动、慢渲染、耗电、LMK（Low Memory Killer，低内存终止） 等质量指标；业务侧还要看登录、支付、播放、下载等操作路径指标。我们同时盯两条线：技术指标止住恶化势头，用户操作指标没有冒出新异常。
 
 ### 扩展：证据包模板
 
@@ -285,7 +285,7 @@ Firebase Remote Config rollout 支持编辑或回滚灰度配置；客户端只�
 
 ### 平台与 OEM 补充：StatsD 的权限边界
 
-StatsD 是 Android 平台的统计框架，服务对象是 Android 系统、设备厂商（OEM）和具备相应权限的系统组件，为他们提供长期聚合数据；普通第三方 App 没有通用的生产环境查询入口。Android 17 的 `StatsManagerService` 通过 Binder 与本地 `statsd` 守护进程通信，`StatsCompanionService` 负责部分系统协作；这条调用路径不经过 Java Native Interface（JNI） 三层模型。
+StatsD 是 Android 平台的统计框架，服务对象是 Android 系统、设备厂商（OEM）和具备相应权限的系统组件，为他们提供长期聚合数据，普通第三方 App 拿不到通用的生产环境查询入口。它的调用路径是：`StatsManagerService` 通过 Binder 与本地 `statsd` 守护进程通信，`StatsCompanionService` 负责部分系统协作，全程不经过 Java Native Interface（JNI） 三层模型。
 
 权限决定了适用对象：
 
@@ -301,27 +301,27 @@ StatsD 是 Android 平台的统计框架，服务对象是 Android 系统、设�
 
 ### Android 17：StatsD 重启后的注册恢复
 
-这一段只适用于平台、OEM 或具备权限的系统组件。`android-17.0.0_r1` 已公开，StatsD 模块位于 `platform/packages/modules/StatsD/`，不再需要用 Android 16 源码推测 Android 17 行为。
+这一段只适用于平台、OEM 或具备权限的系统组件。`android-17.0.0_r1` 已公开，StatsD 模块位于 `platform/packages/modules/StatsD/`，我们直接按这一版源码讲，不必再用 Android 16 源码推测 Android 17 行为。
 
 `StatsManagerService.registerPullAtomCallback()` 会先把 `PullerKey` 与回调参数写入 `mPullers`，再通过 `getStatsdNonblocking()` 尝试通知本地守护进程。statsd 暂时不可用时，服务保留 Java 侧注册；后续 `statsdReady()` 更新 `mStatsd`、唤醒等待者，并由 `sayHiToStatsd()` 重新注册拉取器（puller）和 PendingIntent 回调订阅。各 `registerAll*()` 方法在锁内复制容器，释放锁后再执行 Binder 跨进程调用，避免持有 `mLock` 调用另一个进程。
 
-数据读取路径使用 `waitForStatsd()`，Android 17 的 `STATSD_TIMEOUT_MILLIS` 为 5000 毫秒。这个常量只限制单次等待守护进程连接的时长；停机期间缺不缺数据，还要看事件入口、队列、配置恢复时点和数据源本身。
+数据读取路径使用 `waitForStatsd()`，`STATSD_TIMEOUT_MILLIS` 为 5000 毫秒。这个常量只限制单次等待守护进程连接的时长；停机期间缺不缺数据，还要看事件入口、队列、配置恢复时点和数据源本身。
 
 排查平台侧 StatsD 时，可以据此区分三类状态：
 
-- 注册调用已返回、守护进程当时不可用：检查 `statsdReady()` 之后是否完成重新注册，而非要求调用方无限重复注册。
+- 注册调用已返回、守护进程当时不可用：检查 `statsdReady()` 之后系统有没有完成重新注册；重新注册由服务端自己收尾，调用方不必无限重复。
 - 读取或配置调用失败：记录具体 API、config key、调用者 UID（Linux 用户标识）、权限 / AppOp 结果和连接超时，重试必须沿用同一配置键，并设置次数或时长上限。
 - 指标时间线有空洞：Java 缓存还在，说明不了停机期间的 atom 已经保存，要同时核对 statsd 生命周期、配置生效时间和 atom 数据源。
 
-本地 `statsd` 在 Android 17 的 `main.cpp` 中仍创建容量上限为 50000 条且不预先分配内存的 `LogEventQueue`，随后启动本地套接字监听器（socket listener）、注册 Binder 服务并与 `StatsCompanionService` 建立联系。拿这个条数上限直接换算 RSS，或单独用它判断 OOM 根因，都不可靠。
+本地 `statsd` 在 `main.cpp` 中仍创建容量上限为 50000 条且不预先分配内存的 `LogEventQueue`，随后启动本地套接字监听器（socket listener）、注册 Binder 服务并与 `StatsCompanionService` 建立联系。这个条数上限说的是队列能攒多少条事件；要换算 RSS 或判断 OOM 根因，还得靠其他证据。
 
 ## 日志缓冲、命令授权与结果回传
 
-问题范围确定后，诊断通道只执行白名单、限时和可审计的采集动作。高开销 Trace 与敏感字段必须受配置控制。
+影响面圈定之后，接下来的问题是怎么从用户设备上安全地拿到证据。诊断通道只执行白名单、限时、可审计的采集动作，高开销 Trace 与敏感字段必须受配置控制。
 
-端侧日志与诊断命令通道处理的是同一类现场：问题发生在用户设备上，常规监控只能看到结果，工程师仍缺少复现路径、运行状态和时间线。本节讨论普通 App 在公开 API 和应用沙箱内可以建设的能力：前文介绍排障流程，26.6 节介绍 `ApplicationExitInfo`、`ProfilingManager` 与 `ProfilingTrigger` 的版本边界。
+这一节处理的始终是同一类现场：问题发生在用户设备上，常规监控只看得到结果，我们手里缺的是复现路径、运行状态和时间线。讨论范围是普通 App 用公开 API 和应用沙箱能建设的能力；排障流程见前文，26.6 节介绍 `ApplicationExitInfo`、`ProfilingManager` 与 `ProfilingTrigger` 的版本适用范围。
 
-本节所说的"高可用"，是让证据在进程被杀、断网或磁盘异常后仍尽量得到保存和恢复。它提高证据可得性，但不承诺每次故障都有完整材料：进程可能在缓冲区刷新前被杀，设备可能没有剩余空间，用户也可能清除数据或卸载 App。验收目标应写成可度量的丢失窗口、上传时限和隐私边界。
+我们说一条日志通道"高可用"，指的是证据在进程被杀、断网或磁盘异常后仍尽量得到保存和恢复。它提高的是证据可得性；每次故障能拿到多少材料，还受三件事约束：进程可能在缓冲区刷新前被杀，设备可能没有剩余空间，用户也可能清除数据或卸载 App。所以验收目标要写成可度量的丢失窗口、上传时限和隐私边界。
 
 ### 日志、Trace、诊断命令的分工
 
@@ -334,15 +334,15 @@ StatsD 是 Android 平台的统计框架，服务对象是 Android 系统、设�
 | 诊断命令 | 配置、网络、缓存和文件元数据是否符合预期 | 中 | 工单、线上告警、受控设备排查 | 越权、重放、重复执行、误操作 |
 | 动态采集规则 | 现有字段不足时，临时提高既有观察点的详细度 | 中到高 | 限定版本、设备和时间窗 | 性能回退、范围扩散、配置未及时失效 |
 
-普通第三方 App 读不到全设备 `logcat`。Android 的 [logging 说明](https://source.android.com/docs/core/tests/debug/understanding-logging)明确把全设备日志访问限定给 OEM App，并受 `READ_LOGS`、前后台状态等条件约束；第三方 App 读取自身日志的规则不受影响。
+先说读取权限：普通第三方 App 读不到全设备 `logcat`。Android 的 [logging 说明](https://source.android.com/docs/core/tests/debug/understanding-logging)明确把全设备日志访问限定给 OEM App，并受 `READ_LOGS`、前后台状态等条件约束；第三方 App 读取自身日志的规则不受影响。
 
 Android 安全文档仍建议生产环境使用应用内部、可治理的日志设施，并避免把敏感数据写进 `logcat`，参见[日志信息泄露风险](https://developer.android.com/privacy-and-security/risks/log-info-disclosure)。
 
-App 自建日志应完成字段约束、脱敏、持久化、上传和删除。bug report、系统日志与 Perfetto 文件属于补充材料，业务状态仍需由应用自己的结构化事件说明。
+所以 App 自建日志要自己完成字段约束、脱敏、持久化、上传和删除；bug report、系统日志与 Perfetto 文件属于补充材料，业务状态仍由应用自己的结构化事件说明。
 
 ### 高可用日志通道的五个目标
 
-"数据不丢"适合作为方向，不适合作为验收条件。可执行的指标是：高优先级事件允许丢失的时间窗或记录数、本地保存时限、网络恢复后的上传时限，以及超出预算后的降级行为。
+"数据不丢"适合当方向；我们把验收落到可执行的指标上：高优先级事件允许丢失的时间窗或记录数、本地保存时限、网络恢复后的上传时限，以及超出预算后的降级行为。
 
 - **丢失窗口有上限**：关键记录尽快从内存缓冲写入带边界校验的文件。同步写入或 `fsync`（要求操作系统把缓冲数据提交给存储设备）会增加延迟和闪存写放大——少量逻辑数据引起更多物理写入。这类操作只用于少数经测量确认的事件，普通日志接受明确的缓冲丢失窗口。
 - **写入开销可控**：主线程与渲染路径不执行压缩、网络发送和大型对象序列化。调用方提交小型结构化字段，后台线程完成组块、压缩等工作。
@@ -354,19 +354,19 @@ App 自建日志应完成字段约束、脱敏、持久化、上传和删除。b
 
 ### 采样、存储、上报三层架构
 
-服务端开关只能表达采集意图。写入成本、崩溃一致性、文件生命周期、后台执行限制和重试语义仍由端侧负责，因此采样、存储与上报应各自拥有独立策略和指标。
+服务端开关表达的只是采集意图；写入成本、崩溃一致性、文件生命周期、后台执行限制和重试语义都落在端侧，因此采样、存储与上报各自拥有独立策略和指标。
 
 #### 采样层：保留可解释的时间线
 
 采样层决定采集对象、事件范围和有效时长。
 
 - **稳定分桶**：同一匿名标识在策略有效期内始终落入相同样本组，避免一条时间线内反复进入和退出样本。哈希输入、盐值（与标识组合以降低反推风险）或密钥版本、分桶算法、配置版本和命中概率都要随事件保存。
-- **避免长期跟踪**：未登录标识设置轮换周期和用途边界。跨设备、跨账号或跨产品关联需要另行评估，它从"稳定采样"自然延伸不出来。
+- **避免长期跟踪**：未登录标识设置轮换周期和用途边界。跨设备、跨账号或跨产品关联需要另行评估，这一步已经超出"稳定采样"的范围。
 - **事件分级**：Crash、ANR、数据一致性故障等可获得更高持久化和上传优先级；具体业务事件的等级由影响与隐私风险共同决定，别只凭名称硬编码。
 - **临时窗口**：指定设备或用户的诊断策略包含生效时间、失效时间、最大记录数、最大文件量、网络预算、命令 ID 和审批 ID。过期后端侧自行恢复默认配置。
-- **未知状态显式化**：配置尚未拉取、匿名标识不可用或策略版本无法识别时，记录 `unknown` 或使用保守默认值，不把未知误写成未命中。
+- **未知状态显式化**：配置尚未拉取、匿名标识不可用或策略版本认不出来时，记录 `unknown` 或使用保守默认值，不把未知误写成未命中。
 
-逐事件独立随机采样容易切断事件连续性。若业务必须采用这种方式，事件要携带纳入概率，分析端再做加权，并把缺失片段视为采样结果，不能将其解释为业务没有发生。
+逐事件独立随机采样容易切断事件连续性。若业务必须采用这种方式，事件要携带纳入概率，分析端再做加权，并把缺失片段视为采样结果：没抽到只说明采样没命中，别读成业务没有发生。
 
 #### 存储层：用记录边界处理崩溃恢复
 
@@ -380,7 +380,7 @@ App 自建日志应完成字段约束、脱敏、持久化、上传和删除。b
 
 `mmap` 让进程通过虚拟内存页访问文件，它只改变访问方式，要判断一条记录是否稳定写入存储，还得看记录自身的持久化信息。无论采用哪种方案，记录都应具有长度、schema（字段与编码结构）版本、序号和校验信息；读取端碰到半条记录时停止在上一条完整边界。关键元数据还要有独立的小型状态记录，别只凭文件名猜测上传状态。
 
-应用私有目录提供进程与普通应用之间的沙箱隔离，但不自动提供业务所需的保密性、完整性和可恢复性。是否额外加密取决于威胁模型，即要保护什么、攻击者是谁、攻击者拥有哪些权限。密钥与密文都由同一已被攻陷的进程访问时，应用层加密挡不住该进程读取明文。
+应用私有目录提供的是进程与普通应用之间的沙箱隔离；业务需要的保密性、完整性和可恢复性要另行设计。是否额外加密取决于威胁模型，即要保护什么、攻击者是谁、攻击者拥有哪些权限。密钥与密文都由同一已被攻陷的进程访问时，应用层加密挡不住该进程读取明文。
 
 #### 上报层：持久调度与幂等恢复
 
@@ -409,7 +409,7 @@ Android 不保证某个应用进程长期存活。各进程可以写自己的文
 - 上传执行者使用跨进程文件锁或带过期时间的租约。持有者退出后其他进程可以接管；即便出现双执行者，服务端幂等键也应避免产生两份业务结果。
 - WorkManager 的 unique work 会按唯一名称和既定冲突策略处理重复入队，可限制同一调度数据库里的重复工作，但它不是任意多进程代码的锁。多进程初始化方式、实际运行进程和数据库访问策略必须在目标 App 中验证。
 
-进程退出时，正在写入的文件可能没有切片。恢复扫描应识别所有进程的遗留文件，校验完整记录，给恢复动作写入 `recovered_by` 与恢复原因，再进入待上传状态。磁盘满时，恢复逻辑也可能无法新建状态文件，因此要预留小额应急空间或采用可原地更新的固定大小索引，并在故障注入测试中验证。
+进程退出时，正在写入的文件可能没有切片。恢复扫描应识别所有进程的遗留文件，校验完整记录，给恢复动作写入 `recovered_by` 与恢复原因，再进入待上传状态。磁盘满时，恢复逻辑可能连新的状态文件都建不了，因此要预留小额应急空间或采用可原地更新的固定大小索引，并在故障注入测试中验证。
 
 事件排序同时保存 wall clock 与 `elapsedRealtime`。后者只在同一次开机周期内可比较，因此还要记录开机会话标识；跨设备或跨重启排序依赖服务端接收时间及已知的时钟偏差，直接按客户端 wall clock 合并会出错。
 
@@ -427,7 +427,7 @@ Android 不保证某个应用进程长期存活。各进程可以写自己的文
 - 允许的网络、文件与时长预算，结果字段 allowlist；
 - 审批 ID、签名算法、签名密钥 ID，以及用于密钥轮换的版本信息。
 
-端侧先验证签名、受众、版本、期限、nonce 和本地政策，再写入持久执行记录。设备 wall clock 不可信时，服务端时间锚点、短有效期与本地单调时间可共同缩小重放窗口；无法确认有效期时采用拒绝或最低权限策略。`command_id` 和 nonce 存入有限期防重放表，服务端也要用同一命令 ID 幂等接收结果。
+端侧先验证签名、受众、版本、期限、nonce 和本地政策，再写入持久执行记录。设备 wall clock 不可信时，服务端时间锚点、短有效期与本地单调时间可共同缩小重放窗口；有效期确认不了时，采用拒绝或最低权限策略。`command_id` 和 nonce 存入有限期防重放表，服务端也要用同一命令 ID 幂等接收结果。
 
 | 命令类型 | 端侧动作 | 返回证据 | 风险控制 |
 |---|---|---|---|
@@ -437,7 +437,7 @@ Android 不保证某个应用进程长期存活。各进程可以写自己的文
 | 配置快照 | 输出允许回传的配置元数据 | 配置版本、规则 ID、分桶结果 | 敏感值不回传，保留命中依据 |
 | 一次性 profile | 请求 `ProfilingManager` 或写入 App Trace 标记 | 系统结果、文件接收与上传状态 | 平台检查、系统配额、短时采集、敏感级别审批 |
 
-服务端和端侧应分别记录 `issued`、`delivered`、`validated`、`started`、`result_created`、`uploaded`、`expired`、`blocked_by_policy` 与失败阶段。没有送达端侧的命令不能计作执行失败；已生成文件但未上传也不能计作 profiling 失败。
+服务端和端侧应分别记录 `issued`、`delivered`、`validated`、`started`、`result_created`、`uploaded`、`expired`、`blocked_by_policy` 与失败阶段。命令没送达端侧，不计入执行失败；结果文件已生成但未上传，也不计入 profiling 失败。
 
 线上协议只暴露经过代码评审的命令类型。任意 Java、Lua、shell、反射、文件读取或网络请求能力会把诊断服务变成远程代码执行入口，不应出现在普通用户路径。熔断开关用于紧急停用某类命令，应能按命令类型、版本、区域和签名密钥缩小范围，并在客户端离线时依靠命令过期自行生效。
 
@@ -449,13 +449,13 @@ Android 15 / API 35 引入 `ProfilingManager`，Android 17 的实现见 [`Profil
 
 官方当前建议多数场景优先使用 AndroidX 高层封装来构造请求，以减少参数组合错误。无论使用哪层封装，系统配额与 `ProfilingResult` 的结果语义都不变。
 
-版本边界还要细分：API 36 加入系统触发器注册；Android 17 / API 37 又加入 `requestRunningSystemTrace()`。App 必须先通过 `addProfilingTriggers()` 或 `addAllProfilingTriggers()` 注册 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`，该方法才会请求系统当前后台 trace 的快照。
+版本差异还要细分：API 36 加入系统触发器注册；Android 17 / API 37 又加入 `requestRunningSystemTrace()`。App 必须先通过 `addProfilingTriggers()` 或 `addAllProfilingTriggers()` 注册 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`，该方法才会请求系统当前后台 trace 的快照。
 
-系统当时没有运行后台 trace、配额不足或请求未被执行时，调用方都拿不到结果；结果只通过全局监听器投递。这项 API 无法让普通 App 任意启动全设备追踪。
+系统当时没有运行后台 trace、配额不足或请求未被执行时，调用方都拿不到结果；结果只通过全局监听器投递。这项 API 给不了普通 App 任意启动全设备追踪的能力。
 
 [官方采集指南](https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture)给出的几个边界需要进入命令协议：
 
-- 请求会被系统限流，也可能因为另一项 profiling 正在执行、磁盘空间不足、请求无效或执行失败而没有文件；提交请求不等于系统会生成结果。
+- 请求会被系统限流，也可能因为另一项 profiling 正在执行、磁盘空间不足、请求无效或执行失败而没有文件；提交了请求，系统也未必生成结果。
 - 请求需要成对提供 `Executor`（决定回调在哪个执行线程运行）与结果监听器，或者提前注册全局结果监听器。没有可投递的监听器时，请求没有可靠的结果出口。
 - 未提供 `CancellationSignal`（取消信号）且未设置时长时，系统使用默认时长；两者都存在时，先到达的结束条件生效。
 - 公开 API 只暴露 Perfetto 配置的一部分。需要任意 Perfetto 配置、设备范围系统追踪或调试构建能力时，应使用受控测试设备上的 Perfetto 工具路径。
@@ -474,7 +474,7 @@ Android 15 / API 35 引入 `ProfilingManager`，Android 17 的实现见 [`Profil
 | `ERROR_FAILED_INVALID_REQUEST` | 请求参数无效 |
 | `ERROR_UNKNOWN` | 未归入上述类型的失败 |
 
-只有 `error_code == ERROR_NONE` 时才使用 `getResultFilePath()`；错误结果的路径可为空。文件位于请求 App 的数据目录，App 负责读取、上传、保留和删除，路径必须来自回调，不能按固定目录拼接。
+只有 `error_code == ERROR_NONE` 时才使用 `getResultFilePath()`；错误结果的路径可为空。文件位于请求 App 的数据目录，App 负责读取、上传、保留和删除，路径必须来自回调，别按固定目录拼接。
 
 系统 trace 会按平台规则脱敏，其他进程的 CPU 活动只合并显示在 `OtherProcesses` 中，以隐藏进程身份和具体行为；这种脱敏不等于文件可以公开。Java heap dump 仍可能包含对象内容、token 和用户数据，应采用最高敏感级别。
 
@@ -482,7 +482,7 @@ Android 15 / API 35 引入 `ProfilingManager`，Android 17 的实现见 [`Profil
 
 触发式采集也不等于后台持续录制。[trigger-based capture 文档](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)说明，触发器只有在系统当时正在采集被抽样的后台 trace 且配额允许时，才可能得到结果；触发结果依赖全局监听器，App 未运行时会在以后启动并注册监听器后尝试投递。服务端应把"触发已登记""系统产生结果""结果已上传"分开统计。
 
-命令回执保存请求参数、平台版本、结果码、错误消息、结果文件 ID 和上传状态。`rate_limited` 这类根据结果码归纳出的字段不能替代原始 `error_code`；请求时长或缓冲设置也应标为 `requested_*`，表示这是请求值，除非系统 API 明确返回实际采用值。
+命令回执保存请求参数、平台版本、结果码、错误消息、结果文件 ID 和上传状态。`rate_limited` 这类根据结果码归纳出的字段替代不了原始 `error_code`；请求时长或缓冲设置也应标为 `requested_*`，表示这是请求值，除非系统 API 明确返回实际采用值。
 
 Perfetto 解释线程、调度、Binder、锁、I/O、渲染与 CPU 时间，App 日志解释业务状态、配置和用户操作。两类文件通过 `command_id`、`trace_session_id`、请求 ID 和单调时间窗关联，且各自保持独立的权限与保留期。
 
@@ -504,13 +504,13 @@ Perfetto 解释线程、调度、Binder、锁、I/O、渲染与 CPU 时间，App
 
 诊断命令不应分发可执行代码。Android 的[动态代码加载安全指南](https://developer.android.com/privacy-and-security/risks/dynamic-code-loading)指出，从远程来源加载代码会增加代码注入与篡改风险，许多远程动态加载形式还可能违反 Google Play 政策。补日志可以通过预埋观察点、结构化配置和签名命令调整采集级别，无需下载新的 Java、DEX、native 或脚本代码。
 
-如果产品另有经过授权的更新或补丁系统，它应作为独立安全系统设计：代码签名、版本约束、回滚保护、兼容性测试、发布审批和分发政策都不能借用诊断命令的较低权限。App 商店与设备管理政策也需要单独核对。
+如果产品另有经过授权的更新或补丁系统，它应作为独立安全系统设计：代码签名、版本约束、回滚保护、兼容性测试、发布审批和分发政策都不得借用诊断命令的较低权限。App 商店与设备管理政策也需要单独核对。
 
 JDWP（Java Debug Wire Protocol，用于调试器与虚拟机通信）、远程调试和高权限脚本只适合明确登记的测试设备、企业受管设备或用户主动参与的专项会话。生产账号和普通用户设备上的诊断命令保持预定义、无任意文件访问、无任意网络目标、无反射调用、无长期驻留。
 
 ### 数据自监控与质量指标
 
-日志通道失效时，服务端天然看不到端侧未送达的数据。任何"到达率"都要注明分母来源、覆盖率和未知量，不能用服务端已收到的记录反推全部端侧生成量。
+日志通道失效时，服务端天然看不到端侧未送达的数据。我们看任何"到达率"，都要先问分母来源、覆盖率和未知量；拿服务端已收到的记录反推全部端侧生成量，是推不出来的。
 
 | 指标 | 定义与边界 | 诊断价值 |
 |---|---|---|
@@ -568,7 +568,7 @@ Android 的[日志安全建议](https://developer.android.com/privacy-and-securi
 
 ## 渠道差异、ROM 能力与替代方案
 
-标准通道不可用时，需要按应用商店、系统权限、后台限制和厂商服务逐项降级。替代方案仍要保持相同事件口径。
+标准通道不可用时，我们要按应用商店、系统权限、后台限制和厂商服务逐项降级，替代方案仍要保持相同事件口径。
 
 ### 非 Play 分发的观测缺口
 
@@ -584,7 +584,7 @@ APM 是 Application Performance Monitoring 的缩写，指持续采集应用性�
 
 ### 端云数据路径
 
-非 Play 场景仍应把指标、崩溃事件和 trace 分开处理。指标是可聚合的数值，崩溃事件描述一次离散故障，trace 则保存一段时间内的细粒度事件与时间戳。三者的体积、采样方式、隐私风险和服务端查询方式不同，塞进同一种日志容易造成容量与上传限额失控。
+数据路径上，非 Play 场景仍要把指标、崩溃事件和 trace 分开处理。指标是可聚合的数值，崩溃事件描述一次离散故障，trace 则保存一段时间内的细粒度事件与时间戳。三者的体积、采样方式、隐私风险和服务端查询方式不同，塞进同一种日志容易造成容量与上传限额失控。
 
 ```text
 应用进程
@@ -637,7 +637,7 @@ ANR 是 Application Not Responding（应用无响应（ANR）），表示主线�
 
 逐字段语义见 [`InstallSourceInfo`](https://developer.android.com/reference/android/content/pm/InstallSourceInfo)。
 
-`installingPackageName` 是当前登记的安装器名称，可以被更改；`initiatingPackageName` 指请求安装或更新的包，来源不可用或该包已经卸载时可能为空。`originatingPackageName` 由发起安装的一方提供且未经框架验证，调用方缺少 `INSTALL_PACKAGES` 权限时无法取得。
+`installingPackageName` 是当前登记的安装器名称，可以被更改；`initiatingPackageName` 指请求安装或更新的包，来源不可用或该包已经卸载时可能为空。`originatingPackageName` 由发起安装的一方提供且未经框架验证，调用方缺少 `INSTALL_PACKAGES` 权限时拿不到。
 
 应用还应保留编译或分包阶段写入的明确渠道字段。平台字段与自有渠道不一致时记录差异，并把结果标为待解释，避免擅自选一个字段回答"用户来自哪个市场"。
 
@@ -709,7 +709,7 @@ standby bucket（应用待机分组）是系统根据近期使用情况给应用
 
 示例只查询当前包，因此 `getAppStandbyBucket()` 不需要 `PACKAGE_USAGE_STATS`。服务端还需归并 `Build.MANUFACTURER` 与 `Build.MODEL` 的别名，并按隐私策略限制原始值的保存期限和访问范围。
 
-Android 17 的 [`ActivityManager.isBackgroundRestricted()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java) 文档给出了明确语义。
+[`ActivityManager.isBackgroundRestricted()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java) 的文档给出了明确语义。
 
 返回 `true` 时，系统至少会阻止作业和闹钟执行，并在应用不处于前台时阻止其启动前台服务；这项用户施加的限制在充电时仍然有效。该值只能证明系统报告了限制状态，具体设置页面、策略模块或厂商组件，要另外排查。
 
@@ -717,15 +717,15 @@ Android 17 的 [`ActivityManager.isBackgroundRestricted()`](https://android.goog
 
 系统可随时调整分组，越受限的分组通常获得越少后台运行机会。它适合解释采集时刻附近的任务等待，别当作稳定的用户属性。
 
-`isIgnoringBatteryOptimizations()` 只说明应用当前是否在电池优化豁免名单中。普通应用不应为了改善统计完整度而诱导用户豁免，豁免也不等于后台常驻承诺。
+`isIgnoringBatteryOptimizations()` 只说明应用当前是否在电池优化豁免名单中。普通应用要改善统计完整度，也别去诱导用户豁免；豁免之后，也换不来后台常驻承诺。
 
 ### 进程退出：用 ApplicationExitInfo 记录事实
 
 Android 11 / API 30 引入 `ApplicationExitInfo`。
 
-Android 17 的 [`ApplicationExitInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java) 定义了退出原因、状态码、进程重要性、时间戳、PSS、RSS、描述和可选 trace 流。
+[`ApplicationExitInfo.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java) 定义了退出原因、状态码、进程重要性、时间戳、PSS、RSS、描述和可选 trace 流。
 
-`getHistoricalProcessExitReasons()` 返回系统仍保留的近期记录，而非一份永久、完整的退出账本。应用应在下次获得运行机会时尽早读取、限量写入本地队列并上传；记录可能被更近的退出覆盖，可选 trace 也可能为空。
+`getHistoricalProcessExitReasons()` 返回的是系统仍保留的近期记录，更近的退出可能把它覆盖掉。应用要在下次获得运行机会时尽早读取、限量写入本地队列并上传；可选 trace 也可能为空。
 
 代码示例按调用方给定的批量上限读取历史记录，并以复合键去重。
 
@@ -787,22 +787,22 @@ fun readUnseenExitRecords(
 
 示例没有读取 trace 内容，因为 trace 的体积、I/O、脱敏和保存策略应由独立采样流程控制。ANR 进程若恢复后因其他原因退出，记录里仍可能带有较早的 ANR trace。
 
-从 API 31 开始，Native 崩溃还可能提供 protobuf 格式的 tombstone。tombstone 是系统保存的 Native 崩溃诊断记录，protobuf 是 Protocol Buffers 的二进制编码格式。消费方必须同时检查退出原因和 trace 类型，存在 trace 不等于本次退出由 ANR 引起。
+从 API 31 开始，Native 崩溃还可能提供 protobuf 格式的 tombstone。tombstone 是系统保存的 Native 崩溃诊断记录，protobuf 是 Protocol Buffers 的二进制编码格式。消费方必须同时检查退出原因和 trace 类型，有 trace，并不说明本次退出由 ANR 引起。
 
 示例中的复合键只用于演示本地去重，也不构成设备身份。生产实现应给字段元组加版本并采用无歧义编码，例如长度前缀或规范化序列化后取摘要，避免进程名中的分隔符造成碰撞。收到上报确认后再持久化已处理标记；只保存"最大时间戳"会漏掉同一毫秒内的其他记录。
 
-PSS 是 proportional set size（比例集大小），会把共享内存页按共享进程数折算后计入；RSS 是 resident set size（常驻集大小），统计当前驻留在物理内存中的页面，共享页会在每个进程的 RSS 中出现。`pss` 与 `rss` 的单位均为 kB，字段保存的是系统最近一次采样值，可能早于退出时刻；系统没有样本时还会返回零。两者适合辅助分组，单独一项证明不了退出由内存引起。
+PSS 是 proportional set size（比例集大小），会把共享内存页按共享进程数折算后计入；RSS 是 resident set size（常驻集大小），统计当前驻留在物理内存中的页面，共享页会在每个进程的 RSS 中出现。`pss` 与 `rss` 的单位均为 kB，字段保存的是系统最近一次采样值，可能早于退出时刻；系统没有样本时还会返回零。两者适合辅助分组；要把一次退出归因到内存，还需要其他证据支持。
 
-解释退出原因时要留意几个边界：
+解释退出原因时，有几处容易读错的地方：
 
 - `REASON_CRASH`、`REASON_CRASH_NATIVE`、`REASON_ANR`、`REASON_USER_REQUESTED`、`REASON_PACKAGE_UPDATED` 等是平台给出的分类，可作为直接信号；
 - `REASON_USER_REQUESTED` 覆盖多种用户发起的停止动作，原因码本身区分不了"设置中的强行停止"和"从最近任务移除"等具体入口；
 - 部分设备不支持可靠报告 `REASON_LOW_MEMORY`。先查 `ActivityManager.isLowMemoryKillReportSupported()`；不支持时，低内存终止可能只表现为 `REASON_SIGNALED` 与 `SIGKILL`；
 - `REASON_FREEZER` 表示系统 freezer 相关退出。freezer 是让目标进程暂停执行的一种系统机制，该原因码用于命名某个厂商的后台管理功能并不合适；
 - `REASON_UNKNOWN` 或一般的 `REASON_SIGNALED` 信息不足，不要自动标记为"被安全中心杀死"；
-- subreason 是比公开 reason 更细的原因码，在平台源码中属于隐藏信息，普通应用不应通过反射建立依赖。
+- subreason 是比公开 reason 更细的原因码，在平台源码中属于隐藏信息，普通应用别通过反射建立依赖。
 
-可以用 `ActivityManager.setProcessStateSummary()` 写入少量、无敏感信息的当前业务阶段，帮助下一次启动解释退出发生前的应用状态。参数最多 128 字节；系统可能限制调用频率，调用过多还可能抛出 `RuntimeException`。这份数据适合版本化的稳定枚举，不适合 UI 恢复，也不能包含 URL、搜索词、账号或自由文本。
+可以用 `ActivityManager.setProcessStateSummary()` 写入少量、无敏感信息的当前业务阶段，帮助下一次启动解释退出发生前的应用状态。参数最多 128 字节；系统可能限制调用频率，调用过多还可能抛出 `RuntimeException`。这份数据适合版本化的稳定枚举；UI 恢复用不上，URL、搜索词、账号和自由文本也不要放进来。
 
 ### 缺失数据也要有语义
 
@@ -867,7 +867,7 @@ Android 17 源码中，`createHintSession()` 在设备不支持 hint session 或
 
 ADPF 是向系统表达负载意图的控制接口，API 返回值只说明能力与请求结果。体验是否改善，要用帧耗时、任务时长、热状态和功耗代理指标验证。若该能力不可用，应用应回到自身已有的质量分级、工作量控制和线程模型，继续记录结果；不要私自写 CPU 频率，也不要把提升线程优先级当成通用替代方案。
 
-### ProfilingManager：请求可能不执行
+### ProfilingManager 的请求与结果
 
 [`ProfilingManager`](https://developer.android.com/reference/android/os/ProfilingManager) 从 Android 15 / API 35 开始提供面向应用的性能采样请求。profile 在这里指一份用于定位性能问题的采样产物，四种类型各自回答不同问题：
 
@@ -882,15 +882,15 @@ executor 决定在哪个执行环境处理回调，listener 接收 `ProfilingRes
 
 Android 16 / API 36 增加 `ProfilingTrigger`。Android 17 / API 37 又增加异常行为、应用兼容问题、冷启动、因 CPU 使用过多而终止及 OOM 等触发类型。OOM 是 Out of Memory，指内存不足异常。
 
-具体常量按 [`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger) 和 [Android 17 功能说明](https://developer.android.com/about/versions/17/features) 适配，不能从主线源码预览推定发布版本行为。
+具体常量按 [`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger) 和 [Android 17 功能说明](https://developer.android.com/about/versions/17/features) 适配，别从主线源码预览推定发布版本行为。
 
 系统触发的结果只投递给 `registerForAllProfilingResults()` 注册的全局 listener。它按 UID 生效；UID 是系统为应用分配的 Linux 用户标识。系统触发同样可能受限而没有产物，进程在采集期间被杀后，系统也可能在应用重新注册全局 listener 时尝试再次投递。
 
-"请求没有结果"应保留为未知状态。可能原因包括版本不支持、参数错误、缺少有效回调组合、频率限制、系统资源状态、进程生命周期或实现问题。应用需要记录请求类型、请求时刻、回调结果和超时状态，再在目标设备上复现。
+遇到"请求没有结果"，我们先把它记成未知状态，可能原因包括版本不支持、参数错误、缺少有效回调组合、频率限制、系统资源状态、进程生命周期或实现问题。处理办法是记录请求类型、请求时刻、回调结果和超时状态，再在目标设备上复现。
 
 API 35 以下没有 ProfilingManager，可使用适合该版本的公共指标、Android Studio、Perfetto 或 Simpleperf 完成实验室诊断。Perfetto 用于记录和查询系统 trace，Simpleperf 用于采样 CPU 性能数据。
 
-读取受保护的 ftrace 内核跟踪节点，或通过 hook 拦截平台私有实现，都不适合作为线上降级方案。hook 在这里指替换或截获函数调用的非公开做法。Android 17 上 profile 的查询与脱敏边界可参考官方的 [ProfilingManager profile 查询说明](https://developer.android.com/topic/performance/tracing/profiling-manager/querying-profiles)。
+读取受保护的 ftrace 内核跟踪节点，或通过 hook 拦截平台私有实现，都不适合作为线上降级方案。hook 在这里指替换或截获函数调用的非公开做法。profile 的查询与脱敏边界可参考官方的 [ProfilingManager profile 查询说明](https://developer.android.com/topic/performance/tracing/profiling-manager/querying-profiles)。
 
 ### 帧、CPU 与系统状态
 
@@ -920,9 +920,9 @@ CPU time 表示进程或线程实际占用处理器运行的累计时间。`Proc
 
 线上分析则按应用版本、产物摘要、API、厂商、型号、系统构建、ABI、page size、地区、安装来源和明确渠道分层，并报告样本量、分位数和置信区间。置信区间给出统计估计在既定假设下的不确定范围，样本偏差仍要另行控制。
 
-跨群组比较时，可用匹配让两组样本在已知特征上更接近，或用回归模型估计并控制这些特征的影响。没有记录或无法建模的差异属于未观测混杂，结论中要明确保留这一限制。
+跨群组比较时，可用匹配让两组样本在已知特征上更接近，或用回归模型估计并控制这些特征的影响。没有记录或建模不了的那些差异属于未观测混杂，结论中要明确保留这一限制。
 
-dexopt 是 Android 对 dex 字节码进行校验、优化或编译的一组处理。启动变慢推不出"应用商店没有执行 dexopt"，启动变快也证明不了市场执行了预优化。验证编译因素时，要在受控设备上检查 package 编译状态、安装会话和用于编译决策的运行时 profile，并保持 APK 与数据状态一致。
+dexopt 是 Android 对 dex 字节码进行校验、优化或编译的一组处理。启动变慢推不出"应用商店没有执行 dexopt"，启动变快也证明不了市场执行了预优化；要验证编译因素，就得在受控设备上检查 package 编译状态、安装会话和用于编译决策的运行时 profile，并保持 APK 与数据状态一致。
 
 ### 厂商安全中心与用户引导
 
@@ -937,11 +937,11 @@ Intent 是 Android 用于描述要执行的操作及目标数据的消息对象�
 
 "白名单"是用户和厂商文档中常见的统称，各设备上的实际开关可能分别控制电池优化、后台启动或任务清理，没有统一公共 API 语义。
 
-所谓"厂商行为库"应保存证据，传闻不进入结论。每条记录至少包含机型、系统构建、应用构建、复现步骤、观察信号、对照组、证据等级和失效日期。系统升级后重新验证，不能沿用旧 ROM 结论。
+所谓"厂商行为库"应保存证据，传闻不进入结论。每条记录至少包含机型、系统构建、应用构建、复现步骤、观察信号、对照组、证据等级和失效日期。系统升级后重新验证，别沿用旧 ROM 结论。
 
 ### 自建与第三方 APM 的选型
 
-产品名单、套餐和厂商支持会变化，静态营销对照表维护不住。选型时用同一组样例事件和目标设备验证以下项目：
+产品名单、套餐和厂商支持会变化，静态营销对照表维护不住。选型时，我们用同一组样例事件和目标设备验证以下项目：
 
 | 维度 | 需要验证的问题 |
 |---|---|
@@ -974,11 +974,11 @@ Tinker 是热修复框架，职责是下发代码补丁，与持续采集和分�
 
 ## 全文小结
 
-线上排障的核心是用最小必要采集得到可验证证据。远程日志保存业务状态，用户反馈给出复现入口，Trace 解释线程与调度时间线，灰度和运行期开关限制新增影响；诊断通道则负责让这些材料在进程退出、断网和多进程环境下可恢复、可授权、可审计。
+线上排障的主线，是用最小必要采集得到可验证证据。远程日志保存业务状态，用户反馈给出复现入口，Trace 解释线程与调度时间线，灰度和运行期开关限制新增影响；诊断通道则负责让这些材料在进程退出、断网和多进程环境下可恢复、可授权、可审计。
 
 非 Play 与 OEM 场景继续复用相同事件口径，并把安装来源、系统能力、后台状态和采集缺口作为分层维度，而不是凭品牌或渠道直接推断根因。
 
-Android 17 的 profiling 与退出记录仍受权限、配额和结果缺失约束，所有结论都应标明证据强度，并用同口径指标或受控实验验证。
+profiling 与退出记录始终运行在权限、配额和结果缺失的约束里；所有结论都应标明证据强度，并用同口径指标或受控实验验证。
 
 ## 参考资料
 

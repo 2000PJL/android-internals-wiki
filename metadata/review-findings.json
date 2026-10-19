@@ -6895,6 +6895,23 @@
       "summary": "SDK Provider 案例以真实既往事件表述，但未给出案例来源或实测证据",
       "type": "unsupported-case-attribution",
       "updated_at": "2026-10-19T22:43:24.342768+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md",
+      "created_at": "2026-10-20T02:14:00.200438+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261020-020020-cn-rewrite-440b6bfb51d86d43",
+      "details": "行内代码 span 内混入 fling 的全角括注（手指离开后继续惯性滚动），把 surfaceflinger 拆成了 surfacefling…er。该 span 位于行内代码集合（style_lint compare 冻结面），中文改写车道无法在不破坏 compare 门禁的情况下修复；正确路径在同一文件 §14 源码索引中已存在（frameworks/native/services/surfaceflinger/Layer.h）。需人工在技术车道修复此一处 span。",
+      "id": "finding-c7e36bb7ffdd",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "run 20261020-020020-cn-rewrite-440b6bfb51d86d43 全文通读发现"
+      ],
+      "status": "open",
+      "summary": "§6.2 源码路径行内代码被历史括注拼接损坏：frameworks/native/services/surfacefling（手指离开后继续惯性滚动）er/Layer.h，应为 frameworks/native/services/surfaceflinger/Layer.h",
+      "type": "technical",
+      "updated_at": "2026-10-20T02:14:00.200438+08:00"
     }
   ],
   "schema_version": 1

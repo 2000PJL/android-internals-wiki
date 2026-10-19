@@ -5920,6 +5920,78 @@
       "status": "appended",
       "title": "我开源了一个 Android/iOS 加固工具，顺便聊聊加固到底能防住什么市面上的 APK 加固方案大多是黑盒：付费、上"
     },
+    "source/juejin-android/2026-10-20-76150734-一次播放器架构升级：Android 直播.md": {
+      "chapter": "ch09-anr",
+      "entry_id": "624630d3fcea614f",
+      "last_appended": "2026-10-20T05:25:20.294753+08:00",
+      "last_seen": "2026-10-20T05:25:20.294753+08:00",
+      "mtime": 1792441055.85473,
+      "score": 9,
+      "sha256": "03264facea6c1070169a9cd25b534fabdda031d1504ac2f95a4ae6e6f753ff1c",
+      "size": 12792,
+      "status": "appended",
+      "title": "一次播放器架构升级：Android 直播间 ANR 下降 60%在教育直播场景中，播放器稳定性直接影响课堂体验。在我们直"
+    },
+    "source/juejin-android/2026-10-20-76535333-Android 17 正式发布！targ.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "f27f4fde42ef575a",
+      "last_appended": "2026-10-20T05:25:20.294753+08:00",
+      "last_seen": "2026-10-20T05:25:20.294753+08:00",
+      "mtime": 1792441055.8572443,
+      "score": 13,
+      "sha256": "5e2008381fb745c9333461583d041ad0cfc5b94536d8946efd4e47a22ffc5e4d",
+      "size": 11076,
+      "status": "appended",
+      "title": "Android 17 正式发布！target 37 一大批旧代码直接不能用了Android 17 已经正式发布，对应 A"
+    },
+    "source/juejin-android/2026-10-20-76573848-自己动手写了一个 Android 虚拟定.md": {
+      "chapter": "待分类",
+      "entry_id": "8c0ec18045bbd7d4",
+      "last_appended": "2026-10-20T05:25:20.294753+08:00",
+      "last_seen": "2026-10-20T05:25:20.294753+08:00",
+      "mtime": 1792441055.8593054,
+      "score": 14,
+      "sha256": "b5a7bd12cf7036ee7c54b49a44113cf67ee876eddfb01b6fdca6c8b8008cecd4",
+      "size": 14942,
+      "status": "appended",
+      "title": "自己动手写了一个 Android 虚拟定位 App：GPSSimulate 技术实自己动手写了一个 Android 虚拟"
+    },
+    "source/juejin-android/2026-10-20-76678955-别再只用 Loading、Success.md": {
+      "chapter": "待分类",
+      "entry_id": "ea324d3d3fcdc9a0",
+      "last_appended": "2026-10-20T05:25:20.294753+08:00",
+      "last_seen": "2026-10-20T05:25:20.294753+08:00",
+      "mtime": 1792441055.860184,
+      "score": 9,
+      "sha256": "2c102aa84636312d927298fb8ac22440b42fe707bb7c27705e650adad36b1c9d",
+      "size": 33267,
+      "status": "appended",
+      "title": "别再只用 Loading、Success、Error 表示所有页面状态了各位 Compose 开发者，周五好。趁着这个愉"
+    },
+    "source/juejin-android/2026-10-20-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "628143987bbbe415",
+      "last_appended": "2026-10-20T05:25:20.294753+08:00",
+      "last_seen": "2026-10-20T05:25:20.294753+08:00",
+      "mtime": 1792441055.8562126,
+      "score": 24,
+      "sha256": "5358f57101327a0784a272ad7f984372907bfbb5c15bc1f182752d327238dc93",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-10-20-76800243-曾经安卓开发人手一个的 EventBus.md": {
+      "chapter": "待分类",
+      "entry_id": "d2cd6524a93a3aae",
+      "last_appended": "2026-10-20T05:25:20.294753+08:00",
+      "last_seen": "2026-10-20T05:25:20.294753+08:00",
+      "mtime": 1792441055.858087,
+      "score": 9,
+      "sha256": "53e752d2fdaae0c18d2723667dfda9f4755fad416827aa02c2c240a42cbeaacf",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -8305,24 +8377,24 @@
     }
   },
   "last_report": {
-    "appended": 2,
-    "considered": 2,
-    "cutoff": "2026-10-18T05:20:20.579103+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-19.md",
+    "appended": 6,
+    "considered": 6,
+    "cutoff": "2026-10-19T05:20:20.368975+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-20.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2205,
+    "scanned": 2211,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1414,
       "path": 31,
-      "unchanged": 758
+      "unchanged": 760
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-19T05:25:20.368975+08:00",
+  "last_run_at": "2026-10-20T05:25:20.294753+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

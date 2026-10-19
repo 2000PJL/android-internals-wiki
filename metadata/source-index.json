@@ -5936,6 +5936,16 @@
         "ch04-memory"
       ],
       "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-20-76150734-一次播放器架构升级：Android 直播.md",
+      "title": "[技术文章] 一次播放器架构升级：Android 直播间 ANR 下降 60%在教育直播场景中，播放器稳定性直接影响课堂体验。在我们直",
+      "summary": "> 发布时间: 2026-03-09T03:44:46.000Z > 原文链接: https://juejin.cn/post/7615073403707817990 2026-03-09 1,803 阅读6分钟 在教育直播场景中，播放器稳定性直接影响课堂体验。在我们直播课项目中，曾经出现一个非常棘手的问题： > **直播间 ANR 在弱网环境下频繁出现。** 经过深入排...",
+      "chapter": "ch09",
+      "processed_at": "2026-10-20T06:20:20.404696+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "route_status": "unrouted-existing-chapter-needed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",

@@ -4,9 +4,9 @@ chapter: '4.1'
 section: '4.1'
 status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-10-18'
-verification_scope_note: '2026-10-18 定点复核 RSS/fault-around、Scudo/COW、ART 栈函数、保存状态、Perfetto 堆图及 MGLRU/SLUB；2026-10-17 的 ART 页释放、文件预取、MADV_COLD、匿名缺页/rmap 与 Debug.MemoryInfo 核验范围保留，其余来源沿用各段已有核验范围。'
-last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article / source-index material juejin-android 2026-10-09 Memory Limiter exemption article
+last_verified: '2026-10-19'
+verification_scope_note: '2026-10-19 定点复核 THP/mTHP 映射、按尺寸策略、defrag 与 MADV_COLLAPSE 边界、迁移类型及 onTrimMemory 的 API 34/35 生命周期说明；2026-10-18 定点复核 RSS/fault-around、Scudo/COW、ART 栈函数、保存状态、Perfetto 堆图及 MGLRU/SLUB；2026-10-17 的 ART 页释放、文件预取、MADV_COLD、匿名缺页/rmap 与 Debug.MemoryInfo 核验范围保留，其余来源沿用各段已有核验范围。'
+last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article / source-index material juejin-android 2026-10-09 Memory Limiter exemption article / Android common kernel android17-6.18-2026-06_r6 THP transhuge.rst+huge_memory.c+mmzone.h+compaction.c (retrieved 2026-10-19)
 confidence: medium-high
 sources:
 - type: official
@@ -161,8 +161,12 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/slub.c
 - type: official
   path: https://developer.android.com/topic/libraries/architecture/saving-states
-last_source_verified_at: '2026-10-18'
-last_deep_review_at: '2026-10-17T08:38:48+08:00'
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/transhuge.rst
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/huge_memory.c
+last_source_verified_at: '2026-10-19'
+last_deep_review_at: '2026-10-19T08:37:07+08:00'
 tags:
   - android-memory
   - memory-model
@@ -975,7 +979,7 @@ r6 的 `try_to_compact_pages()` 是直接规整入口；`kcompactd_do_work()` �
 - `compaction/mm_compaction_kcompactd_wake`
 - `kmem/mm_page_alloc_extfrag`
 
-还可以读取 `/proc/vmstat` 的 `compact_*`、`compact_stall`、`compact_fail`、`compact_success` 和迁移相关字段。一次失败可能来自目标 zone、水位、不可移动（`Movable`）页、CMA 约束或目标 order；总空闲页只是其中一个条件。
+还可以读取 `/proc/vmstat` 的 `compact_*`、`compact_stall`、`compact_fail`、`compact_success` 和迁移相关字段。一次失败可能来自目标 zone、水位、不可移动（`Unmovable`）页、CMA 约束或目标 order；总空闲页只是其中一个条件。 [已验证: android17-6.18-2026-06_r6 `include/linux/mmzone.h` `enum migratetype`；`mm/compaction.c`]
 
 #### CMA 区域与可迁移页
 
@@ -1055,9 +1059,19 @@ Android 官方初始测试报告了应用启动、功耗、相机启动和系统
 
 #### THP 的尺寸与运行时策略
 
-透明大页（Transparent Huge Pages，THP）用 PMD 等较高页表层级的大页映射减轻 TLB 压力。常见 4 KiB 基础页配置下，PMD 层级的 THP 是 2 MiB，其他基础页大小与页表几何会产生不同尺寸；r6 arm64 GKI 编译了 THP，默认策略配置为 `madvise`，实际生效范围仍由运行时 sysfs、内存类型和调用方建议决定。
+透明大页（Transparent Huge Pages，THP）可以用大于基础页的粒度管理内存。常见 4 KiB 基础页配置下，PMD 层级的 THP 是 2 MiB，其他基础页大小与页表几何会产生不同尺寸。多尺寸透明大页（multi-size THP，mTHP）还支持小于 PMD 尺寸的匿名页分配，仍由 PTE 映射；其缺页次数和 TLB 收益取决于分配尺寸、访问模式与架构能力。 [已验证: android17-6.18-2026-06_r6 `Documentation/admin-guide/mm/transhuge.rst` 的 mTHP 说明]
 
-THP 需要规整、迁移和更大粒度的内存管理，适合连续访问的大区域；小而稀疏的工作集可能付出额外内存成本。判断是否有收益应同时观察 TLB、缺页、内存规整与 RSS。
+r6 arm64 GKI 编译了 THP，顶层默认策略配置为 `madvise`。匿名 THP 未被启动参数覆盖时，源码将 PMD 尺寸设为 `inherit`，继承顶层策略，其他尺寸初始为 `never`；编译支持 mTHP 不代表设备已启用各个尺寸。实际行为还受运行时 sysfs、内存类型、进程/VMA 限制和调用方建议影响。 [已验证: android17-6.18-2026-06_r6 `arch/arm64/configs/gki_defconfig`；`mm/huge_memory.c` `hugepage_init_sysfs()`]
+
+缺少合适的连续页时，THP 分配可能触发回收或内存规整；有现成空闲块时可直接分配。`enabled` 控制启用范围，`defrag` 另行控制分配路径中的回收与规整尝试，也可选择在失败后回退到普通页。显式 `MADV_COLLAPSE` 会忽略这些 sysfs 策略，仍受进程和 VMA 限制，因此所有 `enabled` 都显示 `never` 也不能证明进程完全没有 THP。小而稀疏的工作集可能付出额外内存成本，应结合 TLB、缺页、内存规整与 RSS 判断收益。 [已验证: android17-6.18-2026-06_r6 `Documentation/admin-guide/mm/transhuge.rst` 的 `Global THP controls` 与 `process THP controls`]
+
+下面的命令只读取可访问的 THP 策略与尺寸节点，不修改设备配置：
+
+```bash
+adb shell 'base=/sys/kernel/mm/transparent_hugepage; for p in "$base"/enabled "$base"/defrag "$base"/hpage_pmd_size "$base"/hugepages-*kB/enabled; do if [ -r "$p" ]; then printf "%s: " "$p"; cat "$p"; fi; done'
+```
+
+方括号标出当前策略，`hpage_pmd_size` 给出 PMD 大页的字节数。逐尺寸节点中的 `inherit` 要结合顶层 `enabled` 解释；节点不可读或不存在时，需继续核对内核配置和设备权限，不能当作已关闭 THP 的证据。 [已验证: android17-6.18-2026-06_r6 `Documentation/admin-guide/mm/transhuge.rst`；`mm/huge_memory.c` `enabled_show()`、`anon_enabled_show()`]
 
 ### KASAN、MTE 与版本测量
 
@@ -1161,6 +1175,8 @@ D 状态只是不可中断睡眠，来源很多，而且直接回收也可能正
 - [Android 17 kernel `mm/page_alloc.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/page_alloc.c)
 - [Android 17 kernel `mm/vmscan.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/vmscan.c)
 - [Android 17 kernel `mm/compaction.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/compaction.c)
+- [Linux 6.18 THP/mTHP 与运行时策略](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/transhuge.rst)
+- [Android 17 kernel THP 策略实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/huge_memory.c)
 - [Android 17 kernel `mm/madvise.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/madvise.c)
 - [Android 17 kernel arm64 GKI defconfig](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig)
 - [Linux 6.18 physical memory](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/mm/physical_memory.rst)

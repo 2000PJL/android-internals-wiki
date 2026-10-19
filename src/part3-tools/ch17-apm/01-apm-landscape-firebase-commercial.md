@@ -99,6 +99,8 @@ APM 在客户端采集启动、帧、网络、资源、Crash 和 ANR（Applicati
 
 ## 客户端信号、采集架构与选型维度
 
+这一节我们先把地基打好：APM 能采到哪些信号、证据分哪几层、每条采集路线要付出什么代价。这些约定会贯穿本章后面的工具分析。
+
 ### APM 先回答“线上发生了什么”
 
 APM（Application Performance Monitoring，应用性能监控）负责回答三类线上问题：
@@ -109,7 +111,7 @@ APM（Application Performance Monitoring，应用性能监控）负责回答三�
 
 APM SDK（Software Development Kit，软件开发工具包） 通常只能看到应用有权限采集的信号。我们在看板上看到一次慢帧时，它可能来自主线程业务、RenderThread、CPU 抢占、Binder 对端、I/O、GPU 或 SurfaceFlinger 中的任何一环。
 
-进程死亡同样有多种来源：Java crash、native（C/C++ 等本地代码） crash、ANR（Application Not Responding，应用无响应）、LMK（Low Memory Kill）、force-stop、安装更新或系统策略。仅凭一个耗时数字或 `reason`（退出原因字段） 退出原因字段，我们还判断不出根因，需要的是能继续展开的现场。
+进程死亡同样有多种来源：Java crash、native（C/C++ 等本地代码） crash、ANR（Application Not Responding，应用无响应）、LMK（Low Memory Kill）、force-stop、安装更新或系统策略。仅凭一个耗时数字或 `reason`（退出原因字段），我们还判断不出根因，需要的是能继续展开的现场。
 
 所以分工是：APM 负责发现问题和筛选样本，Perfetto、Android Studio Profiler、simpleperf（CPU 采样工具）、heap dump（堆对象快照）、AGI（Android GPU Inspector） 和 dumpsys（系统状态查询命令） 负责复现并定位原因。线上系统先给出分布和样本，我们再挑出样本，用线下及系统工具把它展开到线程、调用栈、资源、GPU 和显示路径。
 
@@ -123,7 +125,7 @@ APM SDK（Software Development Kit，软件开发工具包） 通常只能看到
 | 第三方/自研 APM | 随应用版本固定 | 埋点、采样、堆栈、hook（拦截或替换调用）、缓存、上传和服务端聚合 |
 | Google Play | 当前 Play Console / Reporting API 口径 | Android vitals 的 crash、ANR、wake lock、启动、渲染等聚合数据 |
 
-内核那一行里的 scheduler 是线程调度器，binder driver 是 Binder 的内核驱动；dma-buf 用来在组件间共享缓冲区，fence 负责同步缓冲区的生产者与消费者。它们只是描述内核里的事实，并不是在说普通应用能直接读取这些数据。
+内核那一行里的 scheduler 是线程调度器，binder driver 是 Binder 的内核驱动；dma-buf 用来在组件间共享缓冲区，fence 负责同步缓冲区的生产者与消费者。这些条目描述的是内核里的事实；普通应用能直接读到多少，仍由权限决定。
 
 表中的 jank 指渲染过慢造成的卡顿帧，UI state 是当时的页面与交互状态，wake lock 是阻止设备进入休眠的系统锁。
 
@@ -142,7 +144,7 @@ flowchart LR
     R --> F["修复与灰度\n同口径指标回落"]
 ```
 
-图中的 `slow_frame_rate` 是慢帧占比，`stack`（线程调用栈） 是调用栈，`session（使用会话）_id` 用于关联同一次使用会话。这些字段负责把范围缩小到版本、设备和页面；至于慢帧发生在哪一行代码，要等后面的深证据才能回答。
+图中的 `slow_frame_rate` 是慢帧占比，`stack`（线程调用栈）保存问题发生时的调用现场，`session（使用会话）_id` 用于关联同一次使用会话。这些字段负责把范围缩小到版本、设备和页面；至于慢帧发生在哪一行代码，要等后面的深证据才能回答。
 
 举个完整例子。灰度发布的看板上，图片编辑页的慢帧率只在某个版本和一组低内存设备上升。JankStats 样本带有页面、操作和帧时长，但缺少主线程阻塞点，于是团队从该分组挑选可复现设备，采集 Perfetto，看到每次缩放都会在主线程同步解码大图并伴随 I/O 等待；simpleperf 或方法 trace 再把耗时集中的调用定位出来。
 
@@ -163,9 +165,11 @@ Android 性能工具至少分成四类，依据是采集位置、运行阶段、
 
 这四类各有所长：客户端 APM 覆盖大量真实设备，代价是权限与采样预算；线下工具证据更深，覆盖的却是少量可复现场景；Benchmark 适合改动前后对比，结论限于测试环境；平台信号的指标口径更稳定，受制于版本、设备支持和数据可见性。
 
-Android vitals 与自建 APM 的数值对不上是常态。Play 数据只覆盖认证设备、从 Google Play 安装且同意共享数据的用户，问题率按 DAU（Daily Active Users，日活跃用户） 即日活跃用户计算；第三方 SDK 常按 session、启动次数或采样事件计算。合并看板前，我们先把人群、时间窗口、分母和去重规则写清楚。
+Android vitals 与自建 APM 的数值对不上是常态。Play 数据只覆盖认证设备、从 Google Play 安装且同意共享数据的用户，问题率按 DAU（Daily Active Users，日活跃用户）计算；第三方 SDK 常按 session、启动次数或采样事件计算。合并看板前，我们先把人群、时间窗口、分母和去重规则写清楚。
 
 ### 四类证据各有用途
+
+指标、样本、trace 与上下文各自回答一层问题。先分清我们手里拿的是哪一类证据，才知道下一步该补什么。
 
 #### 指标：发现趋势与影响面
 
@@ -177,7 +181,7 @@ Android vitals 与自建 APM 的数值对不上是常态。Play 数据只覆盖�
 - `lm_kill_user_rate`、`native_crash_rate`；
 - `request_ttfb_p95_ms`、`request_failure_rate`。
 
-指标适合版本门禁、趋势和分组排序。P95 上升只说明分布尾部变差；要落到具体某一行代码，还需要样本和上下文。
+指标适合版本门禁、趋势和分组排序。我们在看板上追一个上升的 P95 时，它只说明分布尾部变差；要落到具体某一行代码，还需要样本和上下文。
 
 这些名称保留英文，便于和看板字段对应：`p50` 是中位数，`p95` / `p99` 是第 95 / 99 百分位，`ms` 是毫秒，`rate` 是发生率；TTFB（Time to First Byte） 表示从发起请求到收到首字节的时间。版本门禁指达到阈值后阻止继续发布。
 
@@ -187,7 +191,7 @@ Android vitals 与自建 APM 的数值对不上是常态。Play 数据只覆盖�
 
 - 慢帧的 UI state、frame duration 与主线程堆栈；
 - ANR 的线程堆栈、reason、前后台和近期操作；
-- Java/native crash 的符号化栈（把地址还原为函数和源码位置）与 Build-ID（构建产物标识），符号化即把地址还原为函数和源码位置；
+- Java/native crash 的符号化栈（把地址还原为函数和源码位置）与 Build-ID（构建产物标识）；
 - OOM/LMK 附近的 PSS（按共享比例折算的内存）、RSS（驻留物理内存）、heap 摘要和页面；
 - 网络请求的 DNS（域名解析） 解析、TCP 建连、TLS 握手和 TTFB 分段。
 
@@ -195,7 +199,7 @@ Android vitals 与自建 APM 的数值对不上是常态。Play 数据只覆盖�
 
 #### Trace / profile：还原时间与资源关系
 
-第三类证据是文件级的现场还原。trace 还原时间线，CPU sample（定期截取调用栈） 定期截取调用栈，heap dump 保存堆对象快照，GPU capture（GPU 命令与资源快照） 记录 GPU 命令与资源，分别对应时间线、CPU、内存与图形现场：
+第三类证据是文件级的现场还原。trace 还原时间线，CPU sample（定期截取调用栈）采样调用栈，heap dump 保存堆对象快照，GPU capture（GPU 命令与资源快照）记录图形现场，分别覆盖时间线、CPU、内存与图形四类证据：
 
 - Perfetto 解释线程调度、Binder、I/O、渲染和系统服务；
 - simpleperf 解释 CPU 耗时集中位置与 native 调用栈；
@@ -219,6 +223,8 @@ Android vitals 与自建 APM 的数值对不上是常态。Play 数据只覆盖�
 上下文字段若随意改名或高基数失控，同一个问题会被拆散，服务端存储（整组操作全部成功或全部回滚）和查询成本也会膨胀。高基数指字段存在大量不同取值，例如未归一化的 URL 或文件路径。
 
 ### 常见采集路线的工程代价
+
+证据类型定了，接下来是采集路线。每条路线决定了能看到的现象，也决定了要付出的代价：
 
 | 采集方式 | 可见范围 | 适合的问题 | 主要边界 |
 |---|---|---|---|
@@ -320,7 +326,7 @@ executor.execute {
 
 API 35 引入 `android.os.ProfilingManager`，支持四类请求：Java heap dump（Java 堆转储）、heap profile、stack sampling（调用栈采样） 和 system trace。请求受频率限制，执行没有保证；结果会裁剪敏感和无权限数据，只包含请求进程可访问的信息。
 
-API 36 增加 `ProfilingTrigger`，应用可注册 ANR、`reportFullyDrawn()` 等系统触发事件。API 37 又增加 OOM、冷启动、应用兼容性异常和过量 CPU 使用等类型；不同 trigger 返回的文件不同，例如 OOM 返回 Java heap dump，冷启动返回 system trace 和 stack sampling。trigger 同样不保证产生结果。调用方要注册一个全局 result listener（接收该 UID 全部结果的回调） 接收该 UID 的全部结果，处理应用重启后的重新交付，并为文件过期、上传和去重设计流程。
+API 36 增加 `ProfilingTrigger`，应用可注册 ANR、`reportFullyDrawn()` 等系统触发事件。API 37 又增加 OOM、冷启动、应用兼容性异常和过量 CPU 使用等类型；不同 trigger 返回的文件不同，例如 OOM 返回 Java heap dump，冷启动返回 system trace 和 stack sampling。trigger 同样不保证产生结果。调用方要注册一个全局 result listener（接收该 UID 全部结果的回调），处理应用重启后的重新交付，并为文件过期、上传和去重设计流程。
 
 把 ProfilingManager 接入少量高价值样本是合适的用法，例如：
 
@@ -353,7 +359,7 @@ API 36 增加 `ProfilingTrigger`，应用可注册 ANR、`reportFullyDrawn()` �
 
 数据合同要先于 SDK 接入写下来。它规定“客户端采什么、服务端怎样解释、多久删除、如何关联构建”，避免同名字段在不同版本中表达不同含义。
 
-下面的 JSON 只展示最小结构，用于讨论字段职责，不代表特定后端协议。
+下面的 JSON 只展示最小结构，用于讨论字段职责，不要把它当成某个特定后端的协议。
 
 ```json
 {
@@ -386,7 +392,7 @@ API 36 增加 `ProfilingTrigger`，应用可注册 ANR、`reportFullyDrawn()` �
 }
 ```
 
-`event_id` 示例使用 ULID（可按时间排序的唯一标识），一种可按时间排序的唯一标识；`schema（表结构和字段定义）_version` 表示事件结构版本。耗时字段要在名称或 schema 中固定单位；`sample_probability` 是该事件被采中的概率，用于加权估计，必须保留；Mapping ID 与 Build-ID 用于还原 Java/Kotlin 和 native 栈。原始机型、URL、文件路径和用户信息取值多、识别风险高，应按数据最小化原则处理。
+`event_id` 示例使用 ULID（可按时间排序的唯一标识）；`schema（表结构和字段定义）_version` 表示事件结构版本。耗时字段要在名称或 schema 中固定单位；`sample_probability` 是该事件被采中的概率，用于加权估计，必须保留；Mapping ID 与 Build-ID 用于还原 Java/Kotlin 和 native 栈。原始机型、URL、文件路径和用户信息取值多、识别风险高，应按数据最小化原则处理。
 
 一份可执行的数据合同至少定义：
 
@@ -400,6 +406,8 @@ API 36 增加 `ProfilingTrigger`，应用可注册 ANR、`reportFullyDrawn()` �
 - SDK 配置版本、远程开关与回滚方式。
 
 ### 端侧采样、缓存与上传
+
+事件从产生到进入服务端，要经过采样、本地缓冲和上传三道关口；每一层都可能丢数据，所以每一层都要有明确的策略。
 
 #### 采样
 
@@ -415,15 +423,15 @@ API 36 增加 `ProfilingTrigger`，应用可注册 ANR、`reportFullyDrawn()` �
 
 #### 本地缓冲
 
-缓冲区应有总字节、单事件、单文件、条数和年龄上限。写入用临时文件加原子 rename（重命名要么完整成功，要么保持原状）——重命名要么完整成功，要么保持原状——或改用具备事务语义的存储，整组操作全部成功或全部回滚，避免进程被杀后留下半文件。重文件与普通指标分目录管理，过期和低价值事件优先淘汰。
+缓冲区应有总字节、单事件、单文件、条数和年龄上限。写入用临时文件加原子 rename（重命名要么完整成功，要么保持原状），或改用具备事务语义的存储——整组操作全部成功或全部回滚——避免进程被杀后留下半文件。重文件与普通指标分目录管理，过期和低价值事件优先淘汰。
 
 敏感数据应在写盘前完成裁剪或脱敏。原始 URL、token（认证凭据）、日志和用户数据一旦落盘，进程死亡后就可能留在磁盘上，等上传阶段再处理已经晚了。
 
 #### 上传
 
-上传要成批量、做压缩，失败后按指数退避（失败越多，重试间隔越长）重试——失败越多间隔越长——并给重试时间加一点随机抖动（给重试时间加入随机偏移）；事件用幂等 event ID（重复上传仍识别为同一事件），重复上传仍识别为同一事件，服务端再做去重。网络、充电、温度、前后台等条件按文件价值设置，别让 APM 自身制造启动竞争、流量尖峰或发热。
+上传要成批量、做压缩，失败后按指数退避（失败越多，重试间隔越长）重试，并给重试时间加一点随机抖动（给重试时间加入随机偏移）；事件用幂等 event ID（重复上传仍识别为同一事件），服务端再做去重。网络、充电、温度、前后台等条件按文件价值设置，别让 APM 自身制造启动竞争、流量尖峰或发热。
 
-服务端收到多少事件，取决于客户端还丢了多少。客户端要上报丢弃原因计数，例如 quota（配额耗尽）、serialization error（序列化失败）、disk full（磁盘已满）、expired（已过期）、rate limited（触发频率限制）、upload failed（上传失败），分别对应配额耗尽、序列化失败、磁盘已满、已过期、触发限流和上传失败；缺了这些计数，看板就只描述“成功上传的人群”。
+服务端收到多少事件，取决于客户端还丢了多少。客户端要上报丢弃原因计数，例如 quota（配额耗尽）、serialization error（序列化失败）、disk full（磁盘已满）、expired（已过期）、rate limited（触发频率限制）、upload failed（上传失败）；缺了这些计数，看板就只描述“成功上传的人群”。
 
 ### 选型：从团队约束推导组合
 
@@ -443,7 +451,7 @@ API 36 增加 `ProfilingTrigger`，应用可注册 ANR、`reportFullyDrawn()` �
 
 测试至少覆盖冷启动、前台空闲、固定交互、高频 Looper Message、后台静置和受控异常；轮次按 baseline 与 variant（构建变体） 交替或随机排列，每轮使用相同的温度、电量、刷新率、网络和数据状态。还要覆盖 4 KB 环境，以及关闭 16 KB backcompat（向后兼容） 模式的 16 KB 环境；后者会让不兼容的 native 二进制立即中止。业务占比高的厂商 ROM 也要单独测试。
 
-CPU 用 Perfetto 里的进程/线程 running time（实际占用 CPU 的时间），即实际占用 CPU 的时间；帧用 FrameTimeline、JankStats 或 FrameMetrics；内存同时记录 PSS（Proportional Set Size，按共享比例分摊后的进程物理内存）、RSS、Java/native heap 和峰值；启动由 Macrobenchmark 固定测试模式。I/O、网络、唤醒、包体、事件丢失、关闭后残留线程和异常恢复也要进入结果。开销数字要来自实测：源码操作数估不出“低于 0.1%”这类结论，周期 tracker（定时采集器） 与一次 heap dump 也不能汇总成同一个平均开销。
+CPU 用 Perfetto 里的进程/线程 running time（实际占用 CPU 的时间）；帧用 FrameTimeline、JankStats 或 FrameMetrics；内存同时记录 PSS（Proportional Set Size，按共享比例分摊后的进程物理内存）、RSS、Java/native heap 和峰值；启动由 Macrobenchmark 固定测试模式。I/O、网络、唤醒、包体、事件丢失、关闭后残留线程和异常恢复也要进入结果。开销数字要来自实测：源码操作数估不出“低于 0.1%”这类结论；周期 tracker（定时采集器）和一次 heap dump 的量级也不同，要分别记录。
 
 发布表同时给绝对差值、相对差值、中位数、尾部值、最差有效轮和样本数。没有实测的数据保留为空；性能差但流程完整的轮次要保留在表里，按异常值删除会丢信息。最终 APK/AAB（Android 安装包/应用包） 中的所有 native 依赖，还要分别检查 ELF 的 LOAD segment（可加载段） 对齐、ZIP 内文件对齐和真机 page size（内存页大小）；三项检查回答的问题不同。
 
@@ -532,7 +540,7 @@ Matrix、KOOM、btrace/RheaTrace、Measure、Firebase、Sentry、APMPlus 等工�
 
 Firebase Performance Monitoring 是 Firebase 提供的托管型性能监控服务：数据接收、存储和控制台由 Firebase 运营，团队只需在应用中接入 SDK，无需自行部署采集服务器。它会采集启动、前后台、屏幕渲染和部分 HTTP/S 请求，也允许应用补充业务 trace。控制台按版本、设备、国家或地区等维度聚合数据。
 
-它适合中小团队快速建立基础性能看板（汇总关键指标的 dashboard），也可以补充成熟监控体系，用来观察各版本的长期变化。边界也要先说清：它没有自托管采集服务，端侧会采样和限流，控制台展示也到不了秒级。单靠它完成不了实时故障发现、还原单次请求的完整过程、解释每一帧为何变慢或诊断 native 问题，这些场景需要与其他工具配合。
+它适合中小团队快速建立基础性能看板（汇总关键指标的 dashboard），也可以补充成熟监控体系，用来观察各版本的长期变化。限制也要先说清：它没有自托管采集服务，端侧会采样和限流，控制台展示也到不了秒级。实时故障发现、还原单次请求的完整过程、解释每一帧为何变慢、诊断 native 问题，这些场景要与其他工具配合完成。
 
 截至 2026 年 8 月 14 日，当前 Firebase 构建版本如下：
 
@@ -547,7 +555,7 @@ BoM（Bill of Materials）用于让一组 Firebase 库采用彼此兼容的版�
 
 ### 数据模型：trace、metric、attribute
 
-Firebase Performance 用 trace 表示一段被计时的执行区间，用 metric 表示数值指标，用 attribute 表示便于筛选的键值标签。自动 trace 和 custom trace 都带有 duration 等内建 metric；custom trace 还能记录自定义 metric 与 attribute。Network request trace 还会保存 URL pattern（把相似 URL 归为一组的匹配规则）——把相似 URL 归为一组的匹配规则——以及 HTTP method、status code、payload size 和 Content-Type 等网络字段。
+Firebase Performance 用 trace 表示一段被计时的执行区间，用 metric 表示数值指标，用 attribute 表示便于筛选的键值标签。自动 trace 和 custom trace 都带有 duration 等内建 metric；custom trace 还能记录自定义 metric 与 attribute。Network request trace 还会保存 URL pattern（把相似 URL 归为一组的匹配规则）以及 HTTP method、status code、payload size 和 Content-Type 等网络字段。
 
 | 对象 | 含义 | 例子 | 使用建议 |
 | --- | --- | --- | --- |
@@ -558,7 +566,7 @@ Firebase Performance 用 trace 表示一段被计时的执行区间，用 metric
 
 metric 适合记录条目数、重试次数等整数；trace duration 由 `start()` 到 `stop()` 自动计算，attribute 用于筛选和分组。用户 id、订单号、完整搜索词等高基数字段会把样本切成许多小组，还可能属于 PII（Personally Identifiable Information，可识别个人的信息），不要交给 Performance Monitoring。
 
-这套模型擅长回答“哪个版本变慢”“哪类设备更慢”“哪条业务路径分布异常”，但不能还原一次故障的完整调用栈。
+这套模型擅长回答“哪个版本变慢”“哪类设备更慢”“哪条业务路径分布异常”；一次故障的完整调用栈，要靠样本和 trace 去还原。
 
 ### 构建接入：插件与运行库分工
 
@@ -710,7 +718,7 @@ suspend fun loadFirstFeed(): List<FeedItem> {
 }
 ```
 
-`trace {}` 内部使用 `try/finally` 停止 trace，因此抛出异常或协程被取消时也能执行 `stop()`。若项目不用该扩展，应显式写 `start()`、`try/finally` 和 `stop()`，避免 trace 一直没有结束时间。`@AddTrace` 适合简单方法计时，但它不能附加 custom metric 和 attribute；需要业务字段时，应使用显式 API。
+`trace {}` 内部使用 `try/finally` 停止 trace，因此抛出异常或协程被取消时也能执行 `stop()`。若项目不用该扩展，应显式写 `start()`、`try/finally` 和 `stop()`，避免 trace 一直没有结束时间。`@AddTrace` 适合简单方法计时；要附带 custom metric 和 attribute 时，改用显式 API。
 
 ### 网络请求聚合和 URL pattern
 
@@ -799,7 +807,7 @@ Performance alerts 也有样本门槛。App start、custom trace、network 和 s
 
 #### BigQuery 导出与采样的关系
 
-Firebase Performance 支持把 captured events（已被采集并接受的事件）——已被采集并接受的事件——导出到 BigQuery，每一行对应一个 performance event。BigQuery 是 Google Cloud 的托管分析型数据仓库，适合使用 SQL 做长期留存和跨版本分析。导出数据已经经过端侧采样与限流，不是设备上全部事件的原始副本。
+Firebase Performance 支持把 captured events（已被采集并接受的事件）导出到 BigQuery，每一行对应一个 performance event。BigQuery 是 Google Cloud 的托管分析型数据仓库，适合使用 SQL 做长期留存和跨版本分析。导出数据已经经过端侧采样与限流，不是设备上全部事件的原始副本。
 
 首次启用导出后，初始数据传播最多可能需要 48 小时；之后的常规同步任务通常会在安排执行后的 24 小时内完成。BigQuery 提供分析和持有数据副本的能力，自托管采集入口则没有；字段 schema 也由 Firebase 制定。
 
@@ -814,7 +822,7 @@ Firebase Performance 支持把 captured events（已被采集并接受的事件�
 | FrameMetrics | `Window` 级帧阶段耗时 | 能观察 layout、draw、同步和 GPU 等阶段 | API 24+；数据较底层，需要自行解释 |
 | Android Vitals | Google Play 分发人群的慢帧、ANR 等质量数据 | 适合设定发布质量门槛和评估用户影响 | 只覆盖 Play 样本，业务上下文少 |
 
-Firebase 的 16/700 ms、screen instance 占比与 Android Vitals 的用户或会话统计口径不能直接比较。看到百分比变化时，我们先确认分母是哪批样本、刷新率、版本分布和采样窗口，再决定用 JankStats、FrameMetrics、Macrobenchmark 或 Perfetto 继续定位。
+Firebase 的 16/700 ms、screen instance 占比与 Android Vitals 的用户或会话统计口径对不上，直接相比会读出错误结论。看到百分比变化时，我们先确认分母是哪批样本、刷新率、版本分布和采样窗口，再决定用 JankStats、FrameMetrics、Macrobenchmark 或 Perfetto 继续定位。
 
 ### 使用建议
 
@@ -899,7 +907,7 @@ Android 17 / API 37 没有一套通用于所有商业 APM 的新采集协议，�
 
 #### Sentry：错误监控起家，移动端 APM 能力逐步补齐
 
-Sentry Android 除了错误捕获，还支持 tracing、profiling（抽样调用栈）、Session Replay（会话画面回放）、logs、user feedback 和 release health（按发布版本统计会话与故障）——release health 按发布版本统计会话与故障。Gradle plugin 负责上传 source context（出错位置附近的源码）、mapping、native symbol 等构建产物；运行时 SDK 负责事件、span、profile 和 replay，两者的版本与开关要分别管理。
+Sentry Android 除了错误捕获，还支持 tracing、profiling（抽样调用栈）、Session Replay（会话画面回放）、logs、user feedback 和 release health（按发布版本统计会话与故障）。Gradle plugin 负责上传 source context（出错位置附近的源码）、mapping、native symbol 等构建产物；运行时 SDK 负责事件、span、profile 和 replay，两者的版本与开关要分别管理。
 
 它适合这些团队：
 
@@ -932,7 +940,7 @@ APMPlus 是火山引擎的应用性能监控产品，覆盖 Android、iOS、鸿�
 
 公开验证页还给出了几个要点：crash 默认 100% 上报；其他监控项要命中平台采样配置；ANR 需要同时接入 crash 组件，只有性能组件时看不到 ANR 日志；网络自动监控依赖 Gradle plugin 和对应网络开关。PoC 设备应加入测试白名单，使其强制进入采集范围，或把目标模块临时调到 100%；否则“没有数据”可能只说明设备没有命中采样。
 
-选型时要验证 SDK 支持的 Android 版本、targetSdk、ABI（此处主要指 `arm64-v8a` 等 CPU 架构）、主流网络库，卡顿 / ANR / OOM / native crash 的采集口径，符号文件与版本的绑定方式，日志回捞授权流程，以及远程采样和阈值调整能力。若采购专有云或私有化形态，应让厂商给出采集网关、消息缓冲、计算、查询存储、对象存储、冷热分层（近期高频数据与历史低频数据分开存放）、备份恢复的实际 BOM（Bill of Materials，组件与资源清单）和容量模型；APMPlus 用了哪种数据库或流处理组件，不能拿同厂商其他产品来推测。
+选型时要验证 SDK 支持的 Android 版本、targetSdk、ABI（此处主要指 `arm64-v8a` 等 CPU 架构）、主流网络库，卡顿 / ANR / OOM / native crash 的采集口径，符号文件与版本的绑定方式，日志回捞授权流程，以及远程采样和阈值调整能力。若采购专有云或私有化形态，应让厂商给出采集网关、消息缓冲、计算、查询存储、对象存储、冷热分层（近期高频数据与历史低频数据分开存放）、备份恢复的实际 BOM（Bill of Materials，组件与资源清单）和容量模型；APMPlus 用了哪种数据库或流处理组件，答案就在这份 BOM 里，同厂商其他产品推测不出来。
 
 #### Bugly：普通版与 Pro 版的分界
 
@@ -1021,9 +1029,9 @@ fun loadHome(): Feed {
 
 漏掉任意一次 `finish()` 都可能让 span 缺失或 duration 失真。生产封装应把 `try/finally` 放进 facade（内部适配层），让业务调用者只提供待计时的代码 block。
 
-如果后端也接了 Sentry 或 OpenTelemetry（跨厂商的可观测数据标准），移动请求携带 trace headers（传播 trace 标识的 HTTP header）——传播 trace 标识的 HTTP header——后，可以从 App span 关联到服务器路径。应通过 `tracePropagationTargets` 只允许自有 API host；host 在这里指服务器域名。`sentry-trace` 和 baggage（随 trace 传播的附加键值） 这类随 trace 传播的附加键值，不要发给广告、支付等第三方域名。客户端与后端的采样规则也要一起核对；一端有数据、另一端缺失，可能来自两端各自的采样决定。
+如果后端也接了 Sentry 或 OpenTelemetry（跨厂商的可观测数据标准），移动请求携带 trace headers（传播 trace 标识的 HTTP header）后，可以从 App span 关联到服务器路径。应通过 `tracePropagationTargets` 只允许自有 API host；host 在这里指服务器域名。`sentry-trace` 和 baggage（随 trace 传播的附加键值）不要发给广告、支付等第三方域名。客户端与后端的采样规则也要一起核对；一端有数据、另一端缺失，可能来自两端各自的采样决定。
 
-Tracing、profiling、Session Replay 和附件要使用彼此独立的采样预算。接入评审里要单列 `tracesSampleRate` 与按上下文决定是否采样的 sampler（按上下文决定是否采样的函数）、`profileSessionSampleRate`、replay 的 `sessionSampleRate` 与 `onErrorSampleRate`，还要记录回放时长、脱敏规则、附件大小、丢弃原因和上传失败策略。`1.0` 适合白名单验收设备，默认生产配置要另选。
+Tracing、profiling、Session Replay 和附件要使用彼此独立的采样预算。接入评审里要单列 `tracesSampleRate` 与 sampler（按上下文决定是否采样的函数）、`profileSessionSampleRate`、replay 的 `sessionSampleRate` 与 `onErrorSampleRate`，还要记录回放时长、脱敏规则、附件大小、丢弃原因和上传失败策略。`1.0` 适合白名单验收设备，默认生产配置要另选。
 
 ### APMPlus 的移动专项能力
 

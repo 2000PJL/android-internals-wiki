@@ -87,17 +87,17 @@ consolidated_from:
 
 # 文件 I/O、SAF 与 ContentResolver 性能
 
-文件 I/O 成本来自系统调用、缓冲、页缓存、同步写和存储设备；SAF 又增加 URI 授权、ContentResolver、Provider 与 Binder。路径选择应同时满足权限模型和性能需求。
+文件 I/O 的成本来自系统调用、缓冲、页缓存、同步写和存储设备；走到 SAF 场景，还要再加上 URI 授权、ContentResolver、Provider 与 Binder 的开销。这一章我们先看直接文件 I/O：主线程、键值存储和持久化同步各有哪些等待点；再看 SAF 与 ContentResolver 的开销从哪里来、怎么分段测量。无论选哪条路径，都要同时满足权限模型和性能需求。
+
+> 源码基线：AOSP `android-17.0.0_r1`，API 37；内核 `android17-6.18-2026-06_r6`。
 
 ## 文件读写、键值存储与同步边界
 
 ### 文件 I/O 的性能边界
 
-> 源码基线：AOSP `android-17.0.0_r1`，API 37；内核 `android17-6.18-2026-06_r6`。
-
 我们排查卡顿时常先看 CPU 火焰图（按调用栈汇总 CPU 采样的图），但文件 I/O 的等待不一定体现在 CPU 计算量上：火焰图里可能看不到明显热点，主线程却停在 `read()`、`write()`、`fsync()`、缺页（所需文件页尚未驻留内存）或 `QueuedWork.waitToFinish()` 上。到 Perfetto 里看，这些线程可能处于可中断睡眠、等待内核 I/O 的不可中断睡眠，或等待锁；落到用户那里，就是启动变慢、点击无响应、页面切换掉帧。
 
-Android 存储栈、I/O 调度、页缓存和 SharedPreferences 的内部路径见 [6.1 Android 存储架构](../../part1-fundamentals/ch06-storage/01-storage-architecture.md)、[6.2 文件系统与 I/O 调度](../../part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md)和 [6.3 SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性](../../part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md)。落到应用侧，要回答四个取舍问题：哪些 I/O 不该放在主线程，哪些键值数据该迁移，什么时候 MMKV 合适，普通文件读写怎样避免并发和同步持久化放大尾延迟（少量最慢操作的延迟）——尾延迟指少量最慢操作的延迟。
+Android 存储栈、I/O 调度、页缓存和 SharedPreferences 的内部路径见 [6.1 Android 存储架构](../../part1-fundamentals/ch06-storage/01-storage-architecture.md)、[6.2 文件系统与 I/O 调度](../../part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md)和 [6.3 SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性](../../part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md)。落到应用侧，我们要回答四个取舍问题：哪些 I/O 要搬离主线程，哪些键值数据该迁移，什么时候 MMKV 合适，普通文件读写怎样避免并发冲突和同步持久化放大尾延迟（少量最慢操作的延迟）。
 
 ### 主线程 I/O 的危害与 StrictMode 检测
 
@@ -125,7 +125,7 @@ class App : Application() {
 }
 ```
 
-同时要清楚，这段策略只报告受该线程策略约束的调用：I/O 切到工作线程之后，它是否占满存储队列、是否持有主线程需要的锁、是否让主线程等结果，StrictMode 都不再过问。这些要结合 Perfetto 的线程状态、应用自定义 trace 区间（标记业务操作的起止时间），以及采集配置中可用的文件系统或块设备事件来判断。
+同时要看清这段策略的管辖范围：它只报告受该线程策略约束的调用。I/O 切到工作线程之后，工作线程是否占满存储队列、是否持有主线程需要的锁、主线程是否在等它的结果，就要靠 Perfetto 来回答了——看线程状态、应用自定义 trace 区间（标记业务操作的起止时间），以及采集配置中可用的文件系统或块设备事件。
 
 [源码锚点：[`StrictMode.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/StrictMode.java)、[`SharedPreferencesImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java)]
 
@@ -137,9 +137,9 @@ class App : Application() {
 
 ### SharedPreferences 的风险与 DataStore 迁移
 
-SharedPreferences（SP）的性能风险集中在首次读取和写入完成阶段：`getString()`、`getAll()` 等 API 会进入 `awaitLoadedLocked()`，后台 XML 加载未完成时，调用线程就在这里等待。写入时，`apply()` 先提交内存变更，再把磁盘任务交给框架内部、未纳入公开 SDK 的 `QueuedWork`；`commit()` 等待 `writtenToDiskLatch`（写盘完成同步信号），并返回本次持久化结果。
+文件之外，应用里最常见的持久化是键值存储。SharedPreferences（SP）的性能风险集中在首次读取和写入完成阶段：`getString()`、`getAll()` 等 API 会进入 `awaitLoadedLocked()`，后台 XML 加载未完成时，调用线程就在这里等待。写入时，`apply()` 先提交内存变更，再把磁盘任务交给框架内部、未纳入公开 SDK 的 `QueuedWork`；`commit()` 等待 `writtenToDiskLatch`（写盘完成同步信号），并返回本次持久化结果。
 
-要注意，`apply()` 调用点很快返回，后续组件切换仍可能要等它。`apply()` 会向 `QueuedWork` 登记 finisher（等待磁盘任务完成的收尾回调）：`ActivityThread` 对 Android 3.0（Honeycomb）及之后的 Activity 在 `handleStopActivity()` 中等待，对更早版本的 Activity 则在 `handlePauseActivity()` 中等待；Service 命令完成和 Service 停止等位置也会调用 `QueuedWork.waitToFinish()`。框架 API 文档明确警告，未完成的 `apply()` 可能在 Activity 或 Service 状态切换时阻塞主线程。页面里连续写入许多状态，代价可能集中出现在稍后的 Activity 停止或 Service 收尾时。
+这里最容易误判的一点是：`apply()` 调用点很快返回，后续组件切换却仍可能要等它。`apply()` 会向 `QueuedWork` 登记 finisher（等待磁盘任务完成的收尾回调），`ActivityThread` 对 Android 3.0（Honeycomb）及之后的 Activity 在 `handleStopActivity()` 中等待，对更早版本的 Activity 则在 `handlePauseActivity()` 中等待；Service 命令完成和 Service 停止等位置也会调用 `QueuedWork.waitToFinish()`。框架 API 文档明确警告：未完成的 `apply()` 可能在 Activity 或 Service 状态切换时阻塞主线程。所以页面里连续写入许多状态，代价可能集中出现在稍后的 Activity 停止或 Service 收尾时。
 
 [源码锚点：[`SharedPreferencesImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java)、[`QueuedWork.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java)、[`ActivityThread.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)]
 
@@ -152,7 +152,7 @@ SP 适合少量、低频、轻量配置。以下场景应迁移或拆分：
 | 多进程同时读写同一份配置 | SP 不支持跨进程一致性 | 使用 `MultiProcessDataStoreFactory`、数据库或单进程服务 |
 | 结构化对象被序列化成字符串塞进 SP | XML 体积膨胀，解析成本上升 | Proto DataStore 或数据库 |
 
-DataStore 用协程和 `Flow`（按时间发出数据的 Kotlin 异步流）提供异步读取与事务性更新：同一次事务更新要么写入新值，要么保留原值。Preferences DataStore 适合没有固定字段模式的小型键值设置；Proto DataStore 适合由 Protocol Buffers 模式定义字段和类型的结构化设置。两者仍面向小型数据，不支持 Room 那样的局部更新、条件查询和表关系。
+DataStore 用协程和 `Flow`（按时间发出数据的 Kotlin 异步流）提供异步读取与事务性更新：同一次事务更新要么写入新值，要么保留原值。Preferences DataStore 适合没有固定字段模式的小型键值设置；Proto DataStore 适合由 Protocol Buffers 模式定义字段和类型的结构化设置。两者仍面向小型数据；局部更新、条件查询和表关系这类能力，在 Room/SQLite 那一侧。
 
 迁移时我们先按一致性要求和读取时机分组：启动必须确认的键、界面可延后键、后台刷新键，各有各的等待策略。允许先显示默认值的设置可在 `Flow` 发出数据后更新界面；认证、隐私和数据迁移状态要在进入相关业务前完成异步读取与校验。用 `runBlocking` 把 DataStore 重新变成主线程同步 I/O，迁移就失去了意义。
 
@@ -178,7 +178,7 @@ fun observeLaunchFlag(context: Context): Flow<Boolean> =
     context.settingsStore.data.map { prefs -> prefs[launchFlagKey] ?: false }
 ```
 
-这段代码没有在调用方同步打开 XML 文件，但业务仍需处理 `data` 流中的读取异常和迁移失败。默认的 `preferencesDataStore` 委托面向单进程；多个进程访问同一文件时，要让所有进程统一使用官方多进程工厂；单进程与多进程实例混用会破坏一致性。
+这段代码把同步打开 XML 文件的动作从调用方拿掉了，但 `data` 流的读取异常和迁移失败仍要业务自己处理。默认的 `preferencesDataStore` 委托面向单进程；多个进程访问同一文件时，要让所有进程统一使用官方多进程工厂；单进程与多进程实例混用会破坏一致性。
 
 DataStore 面向少量配置、强类型设置和 SP 键值迁移；多表查询、条件检索、分页和关系事务应交给 Room/SQLite。
 
@@ -198,19 +198,19 @@ ANR 出现在页面停止、应用进入后台或 Service 回调结束时，我�
 | 文件状态 | 应用内部诊断 | XML 大小、键值条目数、备份文件是否存在 |
 | 生命周期 | Activity、Service 与广播时序 | 写入是否集中在停止、销毁或回调返回前 |
 
-日志只记录经过分类的业务来源，或只记录用于同类来源聚合的稳定散列标识，不输出原始键和值。StrictMode 能发现主线程同步磁盘访问，但此前的 `apply()` 会不会在生命周期切换处造成等待，它管不到，要靠上面这组信息来判断。
+日志只记录经过分类的业务来源，或只记录用于同类来源聚合的稳定散列标识，原始键和值一概不输出。StrictMode 能发现主线程同步磁盘访问；至于之前的 `apply()` 会不会在生命周期切换处造成等待，要靠上面这组信息拼出来判断。
 
-治理时先按数据语义决定迁移方向：小型设置进入 Preferences/Proto DataStore，结构化和可查询数据进入 Room，高频瞬时状态尽量只保留在内存，需要确认的用户操作必须暴露持久化失败，跨进程数据使用明确支持跨进程一致性的存储或单进程服务。固定防抖时间窗冒充不了持久化保证；只有“中间状态可丢，只需保留较新值”的数据才允许合并写入，并且要写明进程终止后的恢复规则。
+治理时先按数据语义决定迁移方向：小型设置进入 Preferences/Proto DataStore，结构化和可查询数据进入 Room，高频瞬时状态尽量只保留在内存，需要确认的用户操作必须暴露持久化失败，跨进程数据使用明确支持跨进程一致性的存储或单进程服务。持久化保证要来自明确的提交结果，固定防抖时间窗顶多算延迟写入；只有“中间状态可丢，只需保留较新值”的数据才允许合并写入，并且要写明进程终止后的恢复规则。
 
-验收要选公开观测得到的指标：同一偏好文件的大小、键值条目数和写入次数，生命周期结束前后的写入分布，Perfetto 中 `queued-work-looper` 与主线程等待，以及 `QueuedWork.waitToFinish()` 相关 ANR 数量除以会话数或活跃用户数后的比例；同一报表要固定分母。“`apply()` 完成耗时”公开观测不到，就不作为指标。回归场景至少覆盖冷启动首次读取、连续修改后立即切后台、Service 停止、进程终止、存储压力、升级迁移和多进程误用。
+验收要选公开观测得到的指标：同一偏好文件的大小、键值条目数和写入次数，生命周期结束前后的写入分布，Perfetto 中 `queued-work-looper` 与主线程等待，以及 `QueuedWork.waitToFinish()` 相关 ANR 数量除以会话数或活跃用户数后的比例；同一报表要固定分母。“`apply()` 完成耗时”公开观测拿不到，就先排除在指标外。回归场景至少覆盖冷启动首次读取、连续修改后立即切后台、Service 停止、进程终止、存储压力、升级迁移和多进程误用。
 
 ### MMKV 的原理与适用场景
 
-MMKV 的设计路线和 SP、DataStore 不同。Tencent MMKV 的设计文档说明，它用 `mmap`（把文件映射进进程虚拟地址空间）读写文件，值使用 Protocol Buffers（protobuf）二进制编码；更新采用追加写，同名键以末次值为准；空间不足时整理有效数据或扩容，文件损坏由 CRC（循环冗余校验） 校验来发现。
+键值存储还有第三条路线。Tencent MMKV 的设计文档说明，它用 `mmap`（把文件映射进进程虚拟地址空间）读写文件，值使用 Protocol Buffers（protobuf）二进制编码；更新采用追加写，同名键以末次值为准；空间不足时整理有效数据或扩容，文件损坏由 CRC（循环冗余校验）来发现。
 
-`mmap` 能减少传统 `read()` / `write()` 路径上的部分复制，并把小写入转成映射页修改，但文件 I/O 本身还在：首次访问仍可能触发缺页，脏页（已修改但尚未写回存储的内存页）仍要回写，初始化还要校验并解析文件。把同步读取放在主线程，延迟未必稳定；StrictMode 也未必把映射缺页报告成普通磁盘读取。
+我们先看清 `mmap` 省掉了什么、没省掉什么：它能减少传统 `read()` / `write()` 路径上的部分复制，并把小写入转成映射页修改，但文件 I/O 本身还在——首次访问仍可能触发缺页，脏页（已修改但尚未写回存储的内存页）仍要回写，初始化还要校验并解析文件。所以把同步读取放在主线程，延迟未必稳定；StrictMode 也未必把映射缺页报告成普通磁盘读取。
 
-MMKV API 返回，只说明调用完成，数据到没到持久化介质是另一回事。若业务需要断电或进程异常下的明确持久性，应核对所用 MMKV 版本的同步接口、返回值与恢复策略，并做故障注入（主动模拟进程终止、存储错误等失败）；“使用 `mmap` 文件映射”推导不出它满足交易数据的持久性要求。
+MMKV 的 API 返回只说明调用完成，数据到没到持久化介质是另一回事。业务需要断电或进程异常下的明确持久性时，应核对所用 MMKV 版本的同步接口、返回值与恢复策略，并做故障注入（主动模拟进程终止、存储错误等失败）；“使用 `mmap` 文件映射”这一句话，推导不出交易数据所要的持久性。
 
 MMKV 适合这些位置：
 
@@ -224,13 +224,13 @@ MMKV 适合这些位置：
 - 需要范围查询、排序、分页的数据：数据库更合适。
 - 要求明确持久化确认的交易数据：应使用能表达事务、失败和恢复语义的存储。
 
-MMKV 与 DataStore 的选择应基于访问行为和一致性要求。需要 Jetpack 组件、`Flow` 订阅、SP 迁移或官方多进程一致性时，可优先评估 DataStore；只有当真实设备基准证明 MMKV 更适合读写频繁的小型键值数据，并且团队能维护第三方库与恢复策略时，再选 MMKV。库作者的一次基准结果，代替不了本应用的冷启动、尾延迟、内存和异常恢复测试。
+MMKV 与 DataStore 的选择应基于访问行为和一致性要求。需要 Jetpack 组件、`Flow` 订阅、SP 迁移或官方多进程一致性时，可优先评估 DataStore；只有当真实设备基准证明 MMKV 更适合读写频繁的小型键值数据，并且团队能维护第三方库与恢复策略时，再选 MMKV。选型依据放在本应用自己的冷启动、尾延迟、内存和异常恢复测试上；库作者的一次基准结果，只能当参考。
 
 [项目来源：[Tencent/MMKV](https://github.com/Tencent/MMKV)、[MMKV Design](https://github.com/Tencent/MMKV/wiki/design_eng)]
 
 ### 文件读写的线程安全与性能
 
-普通文件 I/O 的难点在于并发、可见性和持久性。多个线程同时写一个文件、读取方看到半成品，或写入失败后只留下损坏版本，都会把性能问题变成数据问题。
+键值存储之外，剩下的是普通文件读写，这里的难点从延迟换成了并发、可见性和持久性。多个线程同时写一个文件、读取方看到半成品，或写入失败后只留下损坏版本，都会把性能问题变成数据问题。
 
 `AtomicFile` 把新内容写到 `.new` 文件，`finishWrite()` 对流调用 `FileUtils.sync()`、关闭文件，再用 rename（同一文件系统内的重命名）替换目标文件；调用 `failWrite()` 时会关闭流并删除 `.new`。它保证的是“读到旧版本或完整新版本”，文件锁要调用方自己加，源码注释也要求调用方为所有并发访问建立互斥条件。
 
@@ -262,15 +262,15 @@ class JsonFileStore(
 }
 ```
 
-这段实现只覆盖共享同一个 `JsonFileStore` 实例的进程内写入。若读取也可能与写入并发，应让读取走同一把互斥锁。多个实例或多个进程仍可能互相覆盖；更合适的方案是把写入集中到单进程 Service 或 ContentProvider，或改用具备跨进程事务语义的数据库。
+这段实现覆盖的是共享同一个 `JsonFileStore` 实例的进程内写入。读取也可能与写入并发时，让读取走同一把互斥锁。多个实例或多个进程之间仍可能互相覆盖，更稳妥的做法是把写入集中到单进程 Service 或 ContentProvider，或改用具备跨进程事务语义的数据库。
 
-`AtomicFile.finishWrite()` 返回 `void`，内部同步或 rename 失败主要写日志，业务从这里拿不到丰富的持久化失败信息。支付、订单等需要确认提交的状态，别只依赖这段简单封装。
+`AtomicFile.finishWrite()` 返回 `void`，内部同步或 rename 失败主要写日志，业务从这里拿不到丰富的持久化失败信息。支付、订单等需要确认提交的状态，要在这层封装之外另配明确的提交确认。
 
 [源码锚点：[`AtomicFile.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/util/AtomicFile.java)]
 
 #### `write()`、页缓存与 `fsync()` 的区别
 
-普通缓冲文件写入返回时，数据通常已经复制到内核页缓存，但从返回结果看不出数据是否已经到达持久化介质。Android 17 对应的 Linux 6.18 common kernel 中，`fsync` 系统调用进入 `do_fsync()`，再经 `vfs_fsync()` / `vfs_fsync_range()` 调用具体文件系统的 `fsync` 实现。尾延迟受脏页数量、用于故障恢复的文件系统日志、存储设备和当时 I/O 负载影响。
+普通缓冲文件写入返回时，数据通常只到内核页缓存这一层；是否已经到达持久化介质，返回结果里查不到答案。Android 17 对应的 Linux 6.18 common kernel 中，`fsync` 系统调用进入 `do_fsync()`，再经 `vfs_fsync()` / `vfs_fsync_range()` 调用具体文件系统的 `fsync` 实现。尾延迟受脏页数量、用于故障恢复的文件系统日志、存储设备和当时 I/O 负载影响。
 
 这带来两条工程规则：
 
@@ -296,7 +296,7 @@ class JsonFileStore(
 
 ### 生产环境文件 I/O 观测清单
 
-文件 I/O 的生产监控可以从低成本项开始：
+上线之后，文件 I/O 的生产监控可以从低成本项开始：
 
 - 慢读写采样：记录路径类型、文件大小、耗时、线程名、业务场景，不上传用户文件内容。
 - 主线程违规：调试和内测构建打开 StrictMode，生产环境只做采样记录，避免惩罚策略影响用户。
@@ -316,7 +316,7 @@ class JsonFileStore(
 
 Android 的文件访问入口很多，性能问题往往来自入口与场景不匹配：把 `content://` URI（统一资源标识符）当成本地路径，把 `DocumentFile` 当成批量查询接口，或在取得文件描述符后仍把每次读写都归因于 Binder。
 
-本文说明存储访问框架（Storage Access Framework，SAF）、`DocumentFile`、`ContentResolver`、MediaStore 和直接文件路径各自的性能特征。我们判断快慢的依据，是查询、打开文件和传输数据分别经过哪些组件，而不是给这些入口排一个固定的快慢顺序。
+这一部分说明存储访问框架（Storage Access Framework，SAF）、`DocumentFile`、`ContentResolver`、MediaStore 和直接文件路径各自的性能特征。我们判断快慢，依据是查询、打开文件和传输数据分别经过哪些组件；一张固定的快慢顺序表，回答不了这些入口的比较问题。
 
 ### 先分清五种访问入口
 
@@ -330,7 +330,7 @@ SAF 由系统文件选择器、`DocumentsContract` 协议和文档提供器共�
 - Provider 通过管道（pipe）或成对套接字（socket pair）即时生成的数据流；
 - 没有可直接读取二进制内容的虚拟文档。
 
-因此，同一套 API 在两个 Provider 上可能有不同的延迟、随机访问能力和错误类型。性能记录至少要包含 `authority`、Provider 类型、内容是否已缓存在本机、访问模式和文件大小。SAF 与 `File` 的单一快慢比较定位不了问题，也推不到其他 Provider 上。
+因此，同一套 API 在两个 Provider 上可能有不同的延迟、随机访问能力和错误类型。性能记录至少要包含 `authority`、Provider 类型、内容是否已缓存在本机、访问模式和文件大小；定位问题靠这些字段，“SAF 与 `File` 谁快”这样一句单一比较，既落不到具体环节，也推不到其他 Provider 上。
 
 | 访问入口 | 适合场景 | 调用路径 | 主要边界 |
 | --- | --- | --- | --- |
@@ -340,15 +340,15 @@ SAF 由系统文件选择器、`DocumentsContract` 协议和文档提供器共�
 | MediaStore | 共享图片、视频、音频和下载项的索引访问 | 应用 → `MediaProvider` 数据库；内容读取再打开 URI | 受媒体权限、所有权和用户授权约束 |
 | Photo Picker | 用户选择少量图片或视频 | 系统照片选择器 → 本地或云媒体 Provider | 只覆盖图片和视频；读取前可能下载或转码 |
 
-选择入口时，先按数据归属判断。应用内部数据优先放在 `filesDir`、`cacheDir` 或数据库中，这些位置可以直接使用 `File`，也不经过共享外部存储的 FUSE（Filesystem in Userspace，用户空间文件系统）挂载。用户希望在卸载应用后仍保留的文档，使用 SAF 或合适的共享集合。图片、视频和音频的列表与批量筛选交给 MediaStore；只需用户挑选少量图片或视频时，优先使用 Photo Picker。
+选择入口时，我们先按数据归属判断。应用内部数据优先放在 `filesDir`、`cacheDir` 或数据库中，这些位置可以直接使用 `File`，也不经过共享外部存储的 FUSE（Filesystem in Userspace，用户空间文件系统）挂载。用户希望在卸载应用后仍保留的文档，使用 SAF 或合适的共享集合。图片、视频和音频的列表与批量筛选交给 MediaStore；只需用户挑选少量图片或视频时，优先使用 Photo Picker。
 
 ### SAF 的授权和 URI 语义
 
-`ACTION_OPEN_DOCUMENT` 让用户选择并授权单个文档，`ACTION_CREATE_DOCUMENT` 让用户指定新文档的位置，`ACTION_OPEN_DOCUMENT_TREE` 则授权一棵目录树。这里的 URI 授权（URI grant）是系统赋予调用应用的读写能力，不等同于传统文件权限。
+`ACTION_OPEN_DOCUMENT` 让用户选择并授权单个文档，`ACTION_CREATE_DOCUMENT` 让用户指定新文档的位置，`ACTION_OPEN_DOCUMENT_TREE` 则授权一棵目录树。这里的 URI 授权（URI grant）是系统赋予调用应用的读写能力，和传统文件权限是两套机制。
 
-从 Android 11 / API 30 开始，`ACTION_OPEN_DOCUMENT_TREE` 不能选择内部存储卷或可靠 SD 卡卷的根目录，也不能选择 `Download` 根目录、`Android/data` 和 `Android/obb`。选择器界面是否展示某个位置，与应用能否取得该位置的树授权是两件事。
+从 Android 11 / API 30 开始，`ACTION_OPEN_DOCUMENT_TREE` 可选的范围收窄了：内部存储卷或可靠 SD 卡卷的根目录选不到，`Download` 根目录、`Android/data` 和 `Android/obb` 也一样。另外，选择器界面是否展示某个位置，与应用能否取得该位置的树授权是两件事。
 
-`DocumentsContract.Document.COLUMN_DOCUMENT_ID` 由 Provider 自行定义。客户端只能把它当作不透明标识：可以原样交回同一个 `authority`，不能解析其中的路径含义。一个文档也可能同时出现在多个父目录中。以下假设都不成立：
+`DocumentsContract.Document.COLUMN_DOCUMENT_ID` 由 Provider 自行定义。客户端把它当作不透明标识即可：原样交回同一个 `authority`，路径含义留给 Provider 解释。一个文档也可能同时出现在多个父目录中。以下假设都站不住：
 
 - 从 URI 字符串截取 `/storage/emulated/0/...`；
 - 把显示名称（display name）拼成子文档 URI；
@@ -385,7 +385,7 @@ Photo Picker 返回的媒体 URI 也可以为长任务持久化逐项读取权�
 
 ### `DocumentFile` 的性能成本来自哪里
 
-AndroidX 官方文档将 `DocumentFile` 定义为模仿 `File` 的便利封装，并明确提示它会增加较多开销。需要批量读取元数据或使用完整的文档能力时，应直接调用 `DocumentsContract`。截至 2026 年 8 月，稳定版本仍是 `androidx.documentfile:documentfile:1.1.0`。
+AndroidX 官方文档将 `DocumentFile` 定义为模仿 `File` 的便利封装，并明确提示它会增加较多开销。我们把它用在少量文件的便利操作上；需要批量读取元数据或使用完整的文档能力时，直接调用 `DocumentsContract`。截至 2026 年 8 月，稳定版本仍是 `androidx.documentfile:documentfile:1.1.0`。
 
 #### `listFiles()` 是一次查询
 
@@ -506,11 +506,11 @@ fun queryChildren(
 
 查询授权根目录时，`parentId` 取 `DocumentsContract.getTreeDocumentId(treeUri)`；查询某个子目录时，使用上一轮结果中的 `documentId`。文档 ID 只应交回同一个 `authority`，不参与路径拼接。
 
-这段代码消除了列表页的逐项属性查询。分页和排序仍由 Provider 决定是否支持。`QUERY_ARG_LIMIT`、`QUERY_ARG_OFFSET` 和结构化排序参数都属于可选查询能力；客户端要检查 `Cursor` 附加数据（`getExtras()`）中的 `EXTRA_HONORED_ARGS`，确认哪些参数已被接受。若 Provider 不支持分页，客户端分批遍历 `Cursor` 只能降低自身的峰值内存，无法减少 Provider 生成整个结果集的成本。
+这段代码消除了列表页的逐项属性查询。分页和排序仍由 Provider 决定是否支持。`QUERY_ARG_LIMIT`、`QUERY_ARG_OFFSET` 和结构化排序参数都属于可选查询能力；客户端要检查 `Cursor` 附加数据（`getExtras()`）中的 `EXTRA_HONORED_ARGS`，确认哪些参数已被接受。若 Provider 不支持分页，客户端分批遍历 `Cursor` 只能压低自身的峰值内存；Provider 生成整个结果集的成本，这一侧省不下来。
 
 #### `canWrite()` 与 `COLUMN_FLAGS`
 
-Android 官方 SAF 指南提醒，`DocumentFile.canWrite()` 在文档可删除或目录可创建子项时也可能返回 `true`。判断能否改写文件内容时，应查询 `COLUMN_FLAGS` 并检查 `FLAG_SUPPORTS_WRITE`。创建、删除、重命名、复制、移动和移入回收站分别有自己的能力标志位，不能用一个布尔值代替。
+Android 官方 SAF 指南提醒，`DocumentFile.canWrite()` 在文档可删除或目录可创建子项时也可能返回 `true`。判断能否改写文件内容时，应查询 `COLUMN_FLAGS` 并检查 `FLAG_SUPPORTS_WRITE`。创建、删除、重命名、复制、移动和移入回收站分别有自己的能力标志位，一个布尔值概括不了这组能力。
 
 ### `ContentResolver`：Binder 负责协商，文件描述符负责传输
 
@@ -523,7 +523,7 @@ Binder 是 Android 的进程间通信机制。`ContentResolver.openFileDescripto
 - 描述符上的持续读写吞吐；
 - 刷新与关闭流，以及 Provider 提交远端修改的时间。
 
-`"r"` 或 `"w"` 模式可能得到管道或成对套接字，便于 Provider 边生成边发送或边接收边处理。这类描述符一般只能顺序访问，读写位置不能随意移动。`"rw"` 表示调用方需要可读写、可定位的文件，Provider 仍可以拒绝该模式。写入时是否截断原内容也由 Provider 实现决定。代码不能假定所有 URI 都支持 `FileChannel.position()`、`size()`、`map()` 或 `transferTo()`。
+`"r"` 或 `"w"` 模式可能得到管道或成对套接字，便于 Provider 边生成边发送或边接收边处理。这类描述符一般只支持顺序访问，读写位置移动受限。`"rw"` 表示调用方需要可读写、可定位的文件，Provider 仍可以拒绝该模式。写入时是否截断原内容也由 Provider 实现决定。所有 URI 都支持 `FileChannel.position()`、`size()`、`map()` 或 `transferTo()`，是代码里要避免的假定，用之前先逐个确认。
 
 #### 大文件复制的通用实现
 
@@ -568,13 +568,13 @@ fun copyDocumentBytes(
 
 复制失败后，目标文档可能留下部分内容。应用要记录任务状态，并在适当时机删除未完成的目标。原子复制要求操作失败时不留下部分结果；两个 Provider 之间没有这项保证。
 
-如果两个描述符已经确认对应本机可随机访问的普通文件，可以基准测试 `FileChannel.transferTo()`。在部分文件系统和内核上，它能减少应用进程中的数据复制；它不适用于管道、转码流和云 Provider，带起始偏移的 `AssetFileDescriptor` 也不能拿来直接套用。实现以目标设备和目标 Provider 的测量结果为准，接口名称说明不了速度。
+如果两个描述符已经确认对应本机可随机访问的普通文件，可以基准测试 `FileChannel.transferTo()`。在部分文件系统和内核上，它能减少应用进程中的数据复制；它的适用范围之外是管道、转码流和云 Provider；带起始偏移的 `AssetFileDescriptor` 也要单独验证后再用。实现以目标设备和目标 Provider 的测量结果为准，接口名称说明不了速度。
 
 ### Cursor、批处理和观察器的边界
 
 #### `CursorWindow` 分批承载查询结果
 
-跨进程查询返回 `Cursor` 时，Provider 使用 `CursorWindow` 承载一批行，客户端进程读取其只读视图。当游标移动到当前窗口以外的行时，系统可能要求 Provider 填充另一个窗口。投影包含的列越多，或结果中有大字符串和二进制大对象（BLOB），窗口越容易装满，后续填充次数与内存开销也会增加。
+查询走到跨进程这一步，我们面对的就是 `CursorWindow` 的分批机制：Provider 用它承载一批行，客户端进程读取其只读视图。当游标移动到当前窗口以外的行时，系统可能要求 Provider 填充另一个窗口。投影包含的列越多，或结果中有大字符串和二进制大对象（BLOB），窗口越容易装满，后续填充次数与内存开销也会增加。
 
 查询时遵守四条规则：
 
@@ -583,7 +583,7 @@ fun copyDocumentBytes(
 - 在工作线程遍历 `Cursor`，并用 `use` 及时关闭；
 - 可取消的界面查询传入 `CancellationSignal`。
 
-Provider 是否利用数据库索引，取决于该 `authority` 的公开契约和具体实现。MediaStore 的列、索引与查询策略不能直接套到任意云盘 Provider。第三方 Provider 还可能拒绝或忽略未公开的 SQL 表达式。
+Provider 是否利用数据库索引，取决于该 `authority` 的公开契约和具体实现。MediaStore 的列、索引与查询策略，换一个云盘 Provider 就要重新核对。第三方 Provider 还可能拒绝或忽略未公开的 SQL 表达式。
 
 #### `applyBatch()` 的原子性由 Provider 决定
 
@@ -607,7 +607,7 @@ MediaStore 的批量用户授权属于另一套 API。`createWriteRequest()`、`
 
 `ContentObserver` 是内容变化观察器。`registerContentObserver(uri, notifyForDescendants, observer)` 监听 Provider 通过 `notifyChange()` 发出的通知。Provider 可以通知集合 URI，也可以通知具体项目；插入、更新和删除的操作标志同样是可选信息。回调的数量、粒度和顺序都不构成可靠的文件变更日志。
 
-回调只表示相关数据可能已经变化，收到后重新查询：
+对我们来说，回调只表示相关数据可能已经变化，收到后的动作就是重新查询：
 
 1. 合并短时间内的重复通知。
 2. 在工作线程重新查询受影响的目录或集合。
@@ -618,13 +618,13 @@ MediaStore 的批量用户授权属于另一套 API。`createWriteRequest()`、`
 
 ### MediaStore、SAF 和 Photo Picker 怎么选
 
-MediaStore 是共享媒体索引，适合枚举和筛选图片、视频、音频，也提供缩略图和增量同步所需的世代号（generation）。世代号由 MediaStore 随数据库变化递增，比文件修改时间更适合判断索引变化；如果 MediaStore 的版本发生变化，仍要执行一次全量同步。SAF 面向任意文档类型和用户选择的目录树。Photo Picker 只授予用户选中的图片或视频，无需申请整个媒体库的读取范围。
+在媒体这件事上，我们手里有三个名字相近的入口，先分清分工。MediaStore 是共享媒体索引，适合枚举和筛选图片、视频、音频，也提供缩略图和增量同步所需的世代号（generation）。世代号由 MediaStore 随数据库变化递增，比文件修改时间更适合判断索引变化；如果 MediaStore 的版本发生变化，仍要执行一次全量同步。SAF 面向任意文档类型和用户选择的目录树。Photo Picker 只授予用户选中的图片或视频，无需申请整个媒体库的读取范围。
 
 Photo Picker 从 Android 13 / API 33 进入平台。支持模块化系统更新的 Android 11 及以上设备可以通过系统模块获得它；支持 Google Play 服务的 Android 4.4 至 Android 10 设备，以及部分 Android Go 11/12 设备，还可安装回移版本。AndroidX Activity 的 `ActivityResultContracts.PickVisualMedia` 依次尝试平台 Photo Picker、OEM 或系统应用提供的兼容选择器，最终回退到 `ACTION_OPEN_DOCUMENT`。因此，系统版本本身说明不了设备上用的是哪种选择器实现。
 
 Photo Picker 的范围比 SAF 窄：
 
-- 不能选择任意 PDF、压缩包或源码目录；
+- 选不了任意 PDF、压缩包或源码目录；
 - 不提供目录树编辑；
 - `PickVisualMedia` 返回的 URI 只读，不会授予写权限；
 - 返回项可能来自云媒体 Provider；
@@ -641,19 +641,19 @@ Photo Picker 的范围比 SAF 窄：
 
 FUSE 是一种让用户空间进程处理文件系统请求的机制，Android 用它管理共享外部存储的权限与存储视图。SAF 调用的对象则是 `DocumentsProvider`：云 Provider 可以返回管道，企业 Provider 可以代理远端内容，本地 Provider 也可以直接返回普通文件描述符。只有内容位于 Android 共享外部存储并通过模拟存储挂载访问时，才可能进入 MediaProvider 的 FUSE 路径。
 
-Android 11 弃用 `sdcardfs`，共享外部存储改用新版 FUSE 执行分区存储的权限、隐私与媒体策略。应用内部数据目录（如 `/data/user/0/<package>`）不在这条挂载路径上；`Android/data` 和 `Android/obb` 中的应用专属外部目录也有独立的隔离与访问处理。因此，某次 SAF 访问较慢时，先把实际路径查清楚，再把原因归给 FUSE。
+Android 11 弃用 `sdcardfs`，共享外部存储改用新版 FUSE 执行分区存储的权限、隐私与媒体策略。应用内部数据目录（如 `/data/user/0/<package>`）不在这条挂载路径上；`Android/data` 和 `Android/obb` 中的应用专属外部目录也有独立的隔离与访问处理。因此，某次 SAF 访问较慢时，我们先把实际路径查清楚，再判断要不要把原因归到 FUSE 上。
 
 #### FUSE 透传减少持续读写开销
 
 Android 12 开始支持 FUSE 透传（passthrough）。打开文件时，FUSE 守护进程先完成权限判断；满足条件时，它把下层文件引用交给内核，随后的读写请求可直接转发到下层文件系统，减少内核与用户空间之间的往返。Android 17 内核的 [`fs/fuse/passthrough.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/passthrough.c) 包含 `fuse_passthrough_read_iter()`、`write_iter()`、用于在文件描述符间传递数据的 `splice`，以及内存映射（`mmap`）路径。
 
-透传是否可用取决于设备内核、MediaProvider 和产品配置，应用无法从 API 名称判断某个文件是否启用了透传。打开文件、权限检查、元数据查询和不满足透传条件的访问仍可能进入 FUSE 守护进程。申请更宽的存储权限也不能保证启用透传。
+透传是否可用取决于设备内核、MediaProvider 和产品配置，应用从 API 名称看不出某个文件是否启用了透传。打开文件、权限检查、元数据查询和不满足透传条件的访问仍可能进入 FUSE 守护进程；申请更宽的存储权限，也保证不了启用透传。
 
 #### Android 17 FUSE-BPF 的适用范围
 
 Android 17 的 MediaProvider 包含 FUSE-BPF 支持。BPF 是可在内核受控环境中运行的小程序机制；这里的用途是把匹配路径的请求转给下层文件系统。[`FuseDaemon.cpp`](https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp) 会尝试取得 `/sys/fs/bpf/prog_fuseMedia_fuse_media`，并在源码注释中将当前范围限定为 `Android/data` 和 `Android/obb`。对应的内核支撑代码位于 [`fs/fuse/fuse_bpf_backing.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/fuse_bpf_backing.c)。
 
-普通应用从 Android 11 起不能通过 SAF 选择 `Android/data` 或 `Android/obb`。FUSE-BPF 因而不适合作为普通 SAF 文档读写的性能依据。分析 SAF 性能时，仍应先确认具体 Provider、查询次数、打开延迟和描述符类型。
+从 Android 11 起，普通应用通过 SAF 已经选不到 `Android/data` 或 `Android/obb`。FUSE-BPF 因而不适合作为普通 SAF 文档读写的性能依据。分析 SAF 性能时，仍应先确认具体 Provider、查询次数、打开延迟和描述符类型。
 
 ### Android 17 的文档 API 变化
 
@@ -691,7 +691,7 @@ fun trashIfSupported(
 
 #### `content://` 与 `java.nio.file.Path` 没有通用转换
 
-`java.nio.file.Path` 表示某个文件系统中的路径。Android 没有公开契约可以把任意 `content://` URI 映射成 `Path`。取得支持随机访问的 `ParcelFileDescriptor` 后，可以用 `FileChannel` 操作该描述符；描述符本身仍不能还原出稳定的共享存储路径。
+`java.nio.file.Path` 表示某个文件系统中的路径。Android 没有公开契约可以把任意 `content://` URI 映射成 `Path`。取得支持随机访问的 `ParcelFileDescriptor` 后，可以用 `FileChannel` 操作该描述符；至于描述符本身，还原不出稳定的共享存储路径。
 
 第三方库只接受 `Path` 时，可以选择：
 
@@ -713,11 +713,11 @@ fun trashIfSupported(
 | 用户选择少量图片或视频 | Photo Picker | 云项、持久化逐项授权、转码延迟 |
 | 文件管理、备份恢复、杀毒等核心能力 | 通过权限与政策评估后的 `MANAGE_EXTERNAL_STORAGE` | Play 权限声明、最小化数据访问、仍不可访问其他应用的专属目录 |
 
-这张表先按数据归属缩小选择范围，再依据 Provider 能力与实测结果决定具体实现。单纯为了减少几次查询，不应从 SAF 改成访问范围更广的权限。
+这张表先按数据归属缩小选择范围，再依据 Provider 能力与实测结果决定具体实现。单纯为了减少几次查询，就把 SAF 换成访问范围更广的权限，这笔账并不划算。
 
 #### 文档编辑器
 
-远端文档或不能随机访问的文档，适合采用本地工作副本，并由用户明确触发保存：
+远端文档或随机访问受限的文档，适合采用本地工作副本，并由用户明确触发保存：
 
 1. 打开 URI，复制到内部临时文件。
 2. 编辑期间只操作内部文件。
@@ -755,7 +755,7 @@ WorkManager 负责按约束调度后台工作，不会替应用保存 URI 权限
 
 #### StrictMode 和 Perfetto
 
-StrictMode 是开发期的线程与资源违规检测工具。它的 `detectDiskReads()` 和 `detectDiskWrites()` 可以发现应用自身的主线程磁盘操作；远端 Provider 的耗时不一定表现为调用进程的磁盘违规。应用还应使用 `Trace` 为查询、打开、首字节、复制和关闭分别记录时间片，便于在 Perfetto 中区分各阶段。
+StrictMode 是开发期的线程与资源违规检测工具。它的 `detectDiskReads()` 和 `detectDiskWrites()` 可以发现应用自身的主线程磁盘操作；远端 Provider 的耗时不一定表现为调用进程的磁盘违规，这部分我们交给 `Trace`：为查询、打开、首字节、复制和关闭分别记录时间片，便于在 Perfetto 中区分各阶段。
 
 Perfetto 是 Android 的系统级追踪工具。分析记录时关注：
 
@@ -786,11 +786,11 @@ Perfetto 是 Android 的系统级追踪工具。分析记录时关注：
 
 `MANAGE_EXTERNAL_STORAGE` 是 Android 11 引入的所有文件访问特殊权限。它只适用于以广泛文件访问为核心功能的应用，例如文件管理、备份恢复、杀毒、文档管理、设备迁移和设备内文件搜索。Google Play 要求应用提交权限声明并通过审核；媒体访问或让用户手动选择文件不属于获准理由。
 
-取得该权限后，应用仍不能访问其他应用在 `Android/data` 中的专属目录。它也不会把云 SAF URI 转换成本地路径。为了减少几次 Provider 查询而申请这项权限，会无谓扩大数据访问范围，也不符合普通性能优化的用途。
+取得该权限后，其他应用在 `Android/data` 中的专属目录依然在访问范围之外，云 SAF URI 也依然换不成路径。为了减少几次 Provider 查询而申请这项权限，只会无谓扩大数据访问范围，也偏离了普通性能优化的用途。
 
 ### 实施前检查
 
-提交文件访问方案前，确认：
+提交文件访问方案前，我们对照下面这张清单过一遍：
 
 - 访问对象属于应用内部、共享媒体、用户文档还是云文档；
 - URI 授权是否覆盖任务生命周期；

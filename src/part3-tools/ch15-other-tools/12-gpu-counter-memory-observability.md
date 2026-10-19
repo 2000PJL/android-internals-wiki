@@ -97,24 +97,24 @@ consolidated_from:
 
 # GPU Counter、内存与 GpuService 可观测性
 
-> GPU Counter 与 GPU memory 的信号都在 trace 里，但要回答不同的问题：counter 记录某个 GPU 随时间变化的指标样本，内存事件记录某个时间点全局或各进程的 GPU 内存总量。这两种信号各有自己的采集链路和解释规则，混淆它们是分析中最常见的错误来源。本文沿着两条链路各走一遍：先看 `external/perfetto` 里 GPU counter、GPU memory 事件和 Trace Processor 的导入实现，再看 `frameworks/native/services/gpuservice` 里 GPU 内存采集、驱动统计和各自的消费接口。
+> GPU Counter 与 GPU memory 的信号都在 trace 里，但要回答不同的问题：counter（计数值） 记录某个 GPU 随时间变化的指标样本，内存事件记录某个时间点全局或各进程的 GPU 内存总量。这两种信号各有自己的采集链路和解释规则，混淆它们是分析中最常见的错误来源。本文沿着两条链路各走一遍：先看 `external/perfetto` 里 GPU counter、GPU memory 事件和 Trace Processor 的导入实现，再看 `frameworks/native/services/gpuservice` 里 GPU 内存采集、驱动统计和各自的消费接口。
 >
-> 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。跨厂商性能阈值、Ray Tracing、NPU/ML 协同、远程 GPU 调试与完整 AGI 工作流不在讨论范围内。
+> 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。跨厂商性能阈值、Ray Tracing（光线追踪）、NPU（神经网络处理器）/ML（机器学习） 协同、远程 GPU 调试与完整 AGI 工作流不在讨论范围内。
 
-下文沿用 Perfetto 源码名称。counter 是按时间记录的 GPU 指标样本；producer 是向 Perfetto 声明数据源并写入事件的实现；descriptor 是解释 counter ID、名称、单位和采样能力的元数据；Trace Processor 把 trace packet 解析成可查询的表与时间轨道。
+下文沿用 Perfetto 源码名称。counter 是按时间记录的 GPU 指标样本；producer 是向 Perfetto 声明数据源并写入事件的实现；descriptor 是解释 counter ID、名称、单位和采样能力的元数据；Trace Processor 把 trace packet（追踪数据包） 解析成可查询的表与时间轨道。
 
-GPU 可观测信号分为执行计数器、频率/利用率、内存当前量和分配时间线。Perfetto、GpuService、eBPF 与 statsd 覆盖的对象和时间粒度各不相同，所以查询前要先确定自己要回答的是哪一个问题，再选对用的那条链路。
+GPU 可观测信号分为执行计数器、频率/利用率、内存当前量和分配时间线。Perfetto、GpuService、eBPF 与 statsd（Android 系统统计守护进程） 覆盖的对象和时间粒度各不相同，所以查询前要先确定自己要回答的是哪一个问题，再选对用的那条链路。
 
 ## GPU Counter、频率与内存事件
 
 ### 要点
 
 1. `GpuCounterDescriptor` 提供 counter 的协议级元数据：语义分组、度量单位、counter spec（单项指标说明）与硬件 counter block 容量约束。
-2. `GpuCounterEvent` 有 descriptor 直挂与 interned descriptor 两种事件写入模式。interning 会把 descriptor 存入同一 packet 序列的数据表，后续事件只引用其 ID；多 producer / 多 GPU 场景可借此避免协调全局 counter ID。Android OEM 走 CDD/CTS 合规路径时则必须使用直挂 descriptor。
+2. `GpuCounterEvent` 有 descriptor 直挂与 interned descriptor 两种事件写入模式。interning 会把 descriptor 存入同一 packet（trace 数据包） 序列的数据表，后续事件只引用其 ID；多 producer / 多 GPU 场景可借此避免协调全局 counter ID。Android OEM 走 CDD（Android 兼容性定义文档）/CTS（兼容性测试套件） 合规路径时则必须使用直挂 descriptor。
 3. Trace Processor 在 `gpu_event_parser.h/.cc` 中维护 GPU counter track（时间序列轨道）与上一条 counter row（样本行）的状态，并把回看式采样值写回上一行；`android-17.0.0_r1` 不包含 `gpu_counter_sequence_state.h`。
 4. `gpu_counter_span_view.sql` 用 `LEAD() OVER (PARTITION BY track_id ORDER BY ts)` 将 counter 采样点转为 span（带起止范围的区间），适合按 GPU track 计算持续时间。
-5. `GpuMemTotalEvent` 位于 `protos/perfetto/trace/android/gpu_mem_event.proto`，由 Android `GpuService` 生成；`pid=0` 表示全局总量，其余 pid 表示进程归属。
-6. `GpuCounterEvent` 不携带 pid、tid、layer、FrameTimeline token 或 GPU submission ID。单条 counter track 只能直接说明某个 `gpu_id` 上的设备级变化；要归因到 App、SurfaceFlinger 或某一显示帧，还得拿其他时间线证据来对。
+5. `GpuMemTotalEvent` 位于 `protos/perfetto/trace/android/gpu_mem_event.proto`，由 Android `GpuService` 生成；`pid（进程 ID）=0` 表示全局总量，其余 pid 表示进程归属。
+6. `GpuCounterEvent` 不携带 pid、tid（线程 ID）、layer、FrameTimeline token（帧关联标识） 或 GPU submission ID（GPU 提交批次标识）。单条 counter track 只能直接说明某个 `gpu_id` 上的设备级变化；要归因到 App、SurfaceFlinger 或某一显示帧，还得拿其他时间线证据来对。
 
 ### `GpuCounterDescriptor`：协议层的描述结构
 
@@ -139,7 +139,7 @@ RAY_TRACING  = 7
 
 #### 度量单位
 
-`MeasureUnit` 的 wire value 从 `NONE = 0` 延伸到 `INSTRUCTION = 40`，覆盖 `BIT`、`BYTE`、`HERTZ`、`SECOND`、`VERTEX`、`PIXEL`、`TRIANGLE`、`PRIMITIVE`、`FRAGMENT`、`MILLIWATT`、`WATT`、`JOULE`、`VOLT`、`AMPERE`、`CELSIUS`、`PERCENT`、`INSTRUCTION` 等。`next id: 41` 只是提醒维护者从 41 分配下一个枚举编号，并不是协议字段。派生单位由可重复出现的 `numerator_units` 和 `denominator_units` 组合，例如 `PIXEL / SECOND` 表示每秒像素。
+`MeasureUnit` 的 wire value 从 `NONE = 0` 延伸到 `INSTRUCTION = 40`，覆盖 `BIT`、`BYTE`、`HERTZ`、`SECOND`、`VERTEX`、`PIXEL`、`TRIANGLE`、`PRIMITIVE`、`FRAGMENT`、`MILLIWATT`、`WATT`、`JOULE`、`VOLT`、`AMPERE`、`CELSIUS`、`PERCENT`、`INSTRUCTION` 等。`next id: 41` 只是提醒维护者从 41 分配下一个枚举编号（wire value），并不是协议字段。派生单位由可重复出现的 `numerator_units` 和 `denominator_units` 组合，例如 `PIXEL / SECOND` 表示每秒像素。
 
 #### Counter spec 字段边界
 
@@ -164,7 +164,7 @@ groups
 
 #### Counter block 容量约束
 
-`GpuCounterBlock { block_id, block_capacity, name, description, counter_ids }` 描述共享同一硬件计数资源组的 counter，以及它们能同时启用的数量上限；`block_capacity` 未设置时表示不设上限。所以我们写自动化脚本或 UI 选择 counter 时，要先按 `block_id` / `block_capacity` 校验，再启用，不能只按名称列出就全开。proto 没有规定超限后的处理方式，producer 是拒绝、轮转采样还是不提示地丢弃部分选择，协议层面没有统一答案。
+`GpuCounterBlock { block_id, block_capacity, name, description, counter_ids }` 描述共享同一硬件计数资源组（block）的 counter，以及它们能同时启用的数量上限；`block_capacity` 未设置时表示不设上限。所以我们写自动化脚本或 UI 选择 counter 时，要先按 `block_id` / `block_capacity` 校验，再启用，不能只按名称列出就全开。proto 没有规定超限后的处理方式，producer 是拒绝、轮转采样还是不提示地丢弃部分选择，协议层面没有统一答案。
 
 ### `GpuCounterEvent`：descriptor 直挂与 interned descriptor
 
@@ -192,7 +192,7 @@ message GpuCounterEvent {
 
 `oneof desc` 表示直挂 descriptor 与 `counter_descriptor_iid` 最多出现一种；嵌套的 `oneof value` 同样最多携带整数值或浮点值中的一种。`iid` 是 interned ID，也就是查找已存 descriptor 的编号。源码注释区分了两种事件写入模式：
 
-- **Mode 1：descriptor 直挂**。`counter_descriptor = 1` 直接随事件发送。源码注释要求 Android OEM 用这条路径满足 CDD/CTS 测试；每次 trace session 的首个 packet 必须声明 descriptor。该模式的 counter ID 是全局编号，多 producer 必须自行协调。
+- **Mode 1：descriptor 直挂**。`counter_descriptor = 1` 直接随事件发送。源码注释要求 Android OEM 用这条路径满足 CDD/CTS 测试；每次 trace session（一次录制会话） 的首个 packet 必须声明 descriptor。该模式的 counter ID 是全局编号，多 producer 必须自行协调。
 - **Mode 2：interned descriptor**。`counter_descriptor_iid = 4` 引用 trusted sequence（Perfetto 可信 packet 序列）中的 `InternedGpuCounterDescriptor`，适合多 producer / 多 GPU 场景。descriptor 存在 `InternedData` 中，`sequence-scoped` 表示其 ID 只在该序列内有效；事件随后只传 `iid`，不再重复整份 counter spec。若 event 外层和 interned descriptor 都提供 `gpu_id`，以后者为准。
 
 数据源配置入口在 `protos/perfetto/config/data_source_config.proto`：
@@ -281,7 +281,7 @@ message GpuMemTotalEvent {
 
 注释明确该事件由 Android 系统的 `GpuService` 生成。Trace Processor 的 `ParseGpuMemTotalEvent()` 按 `gpu_id` 建立 GPU 维度：`pid == 0` 时写入全局 GPU memory counter，其他 pid 则关联进程并写入进程 GPU memory counter。`size` 是该时间点的总量值，读的时候要记得它是快照，而非一次内存分配的增量。
 
-这条平台事件能让我们观察全局或进程归属的 GPU 内存总量，但它替代不了厂商 GPU counter，带宽、shader throughput、缓存命中率或功耗阈值也无法由它直接推出。事件里的 pid 归属同样要多想一层：它只说明驱动把总量记在这个进程名下，物理页未必只有该进程持有；跨进程共享 buffer、驱动保留和显示系统引用，要结合 `GpuService`、dma-buf 与厂商工具一起解释。
+这条平台事件能让我们观察全局或进程归属的 GPU 内存总量，但它替代不了厂商 GPU counter，带宽、shader throughput（着色器处理吞吐量）、缓存命中率或功耗阈值也无法由它直接推出。事件里的 pid 归属同样要多想一层：它只说明驱动把总量记在这个进程名下，物理页未必只有该进程持有；跨进程共享 buffer、驱动保留和显示系统引用，要结合 `GpuService`、dma-buf（Linux 跨设备共享 buffer 的机制） 与厂商工具一起解释。
 
 ### 把 counter 放回 Android 显示路径
 
@@ -289,7 +289,7 @@ message GpuMemTotalEvent {
 
 `GpuCounterEvent.GpuCounter` 只有 `counter_id` 和一个数值，外层事件只增加 descriptor 与 `gpu_id`。协议里没有 pid、tid、SurfaceFlinger layer ID、BufferQueue frame number、FrameTimeline token 或 GPU submission ID。Trace Processor 因此创建的是设备级 GPU counter track，不会自动把 counter span 关联到某个 App 或某个显示帧。
 
-这条边界会直接决定结论能下多硬。我们先统一几个术语，再逐行看证据：submission 是一次提交到 GPU queue 的工作批次，slice 是时间线上带开始和结束的事件。producer completion fence 在 producer 完成 buffer 写入后发出信号，传到 consumer 一侧时就是读取该 buffer 前等待的 acquire fence；release fence 通知 producer 何时可以安全复用旧 buffer；present fence 是一轮 display present 的系统时间锚点。
+这条边界会直接决定结论能下多硬。我们先统一几个术语，再逐行看证据：submission 是一次提交到 GPU queue 的工作批次，slice 是时间线上带开始和结束的事件。producer completion fence（表示 GPU 或显示工作何时完成的同步对象） 在 producer 完成 buffer 写入后发出信号，传到 consumer 一侧时就是读取该 buffer 前等待的 acquire fence；release fence 通知 producer 何时可以安全复用旧 buffer；present fence 是一轮 display present 的系统时间锚点。
 
 | 证据 | 可以确认 | 不能单独确认 |
 | --- | --- | --- |
@@ -303,11 +303,11 @@ message GpuMemTotalEvent {
 
 #### 出图拓扑决定 counter 应该和谁对齐
 
-以下判读表基于 Android 17 的显示模型。表中的“GPU counter”均指设备级轨道；厂商若提供更细的 context、queue 或 stage 事件，可以在此基础上继续细分。
+以下判读表基于 Android 17 的显示模型。表中的“GPU counter”均指设备级轨道；厂商若提供更细的 context（GPU 执行上下文）、queue 或 stage 事件，可以在此基础上继续细分。
 
-先统一系统合成术语：SurfaceFlinger（SF）是 Android 系统合成器，layer 是它接收的一项独立合成输入，latch 表示 SF 选中该 layer 的新 buffer 参与当前合成。HWC 负责与显示硬件协商逐层合成；`DEVICE` 表示该 layer 由 HWC 的硬件能力处理，`CLIENT` 表示 SF 用 RenderEngine/GPU 合成。被分配为 CLIENT 的 layers 会先合成到一个结果 buffer，这块 buffer 叫 client target，再交给 HWC 与其他 DEVICE layers 一起完成显示。`BufferTX - <layerName>` 是 SF 侧待处理 buffer transaction 的计数轨道；BLAST child 是 SurfaceView 中实际承载内容 buffer 的子 layer。
+先统一系统合成术语：SurfaceFlinger（SF）是 Android 系统合成器，layer 是它接收的一项独立合成输入，latch 表示 SF 选中该 layer 的新 buffer 参与当前合成。HWC（Hardware Composer） 负责与显示硬件协商逐层合成；`DEVICE` 表示该 layer 由 HWC 的硬件能力处理，`CLIENT` 表示 SF 用 RenderEngine/GPU 合成。被分配为 CLIENT 的 layers 会先合成到一个结果 buffer，这块 buffer 叫 client target，再交给 HWC 与其他 DEVICE layers 一起完成显示。`BufferTX - <layerName>` 是 SF 侧待处理 buffer transaction 的计数轨道；BLAST child 是 SurfaceView 中实际承载内容 buffer 的子 layer。
 
-各类 producer 还有自己的中间节点：HWUI/Skia 是 Android UI 的硬件加速绘制栈，`DeferredLayerUpdater` 是其 RenderThread 取得并更新 TextureView 最新 buffer 的组件；ISP 处理相机像素；codec 是媒体编解码器；blitter 是做图像复制或格式转换的硬件单元；RHI 是游戏引擎对 OpenGL ES（GLES）、Vulkan 等图形 API 的抽象层。
+各类 producer 还有自己的中间节点：HWUI/Skia 是 Android UI 的硬件加速绘制栈，`DeferredLayerUpdater` 是其 RenderThread 取得并更新 TextureView 最新 buffer 的组件；ISP（Image Signal Processor，图像信号处理器） 处理相机像素；codec 是媒体编解码器；blitter 是做图像复制或格式转换的硬件单元；RHI（Render Hardware Interface） 是游戏引擎对 OpenGL ES（GLES）、Vulkan 等图形 API 的抽象层。
 
 | 出图路径 | 可能进入同一 GPU counter 的工作 | 需要同时核对的证据 | 常见误判 |
 | --- | --- | --- | --- |
@@ -318,9 +318,9 @@ message GpuMemTotalEvent {
 | 本地游戏 | engine submit、GPU queue execution、可能的 SurfaceFlinger CLIENT composition | Input、Game/Render/RHI、submission、producer fence、queue depth、latch、present | submit 返回等于 GPU 完成，或 FPS 稳定等于输入延迟低 |
 | 混合出图 | 多个 producer、宿主采样与 RenderEngine 可能共享同一个 `gpu_id` | 每个 Surface/BufferQueue、目标 display 的可见 layer 集合、DEVICE/CLIENT 变化、各自 fence | 用一条全局 GPU track 给某个 layer 定责 |
 
-TextureView 与独立 Surface 的差异尤其容易被 counter 隐藏。TextureView 输入进入宿主 HWUI 后，HWC 通常只看到最终 App Window；独立 Surface 保留单独 layer，HWC 可以逐层选择 DEVICE 或 CLIENT。某次 DEVICE→CLIENT 变化可能让 GPU counter 上升，但触发条件也许来自同屏 layer、透明度、变换、HDR、protected usage，或多个 layer 竞争有限的 HWC hardware plane。这时只盯着目标 App 的 shader 查，很容易漏掉真正的原因。
+TextureView 与独立 Surface 的差异尤其容易被 counter 隐藏。TextureView 输入进入宿主 HWUI 后，HWC 通常只看到最终 App Window；独立 Surface 保留单独 layer，HWC 可以逐层选择 DEVICE 或 CLIENT。某次 DEVICE→CLIENT 变化可能让 GPU counter 上升，但触发条件也许来自同屏 layer、透明度、变换、HDR（High Dynamic Range，高动态范围）、protected usage（受保护内容的 buffer 使用标记），或多个 layer 竞争有限的 HWC hardware plane（硬件叠加层资源）。这时只盯着目标 App 的 shader 查，很容易漏掉真正的原因。
 
-Camera 和视频还存在相反情况：主体内容通过 ISP、codec 与 HWC 路径完成，GPU counter 可能保持很低，画面仍会因 HAL 或 codec 输出晚、acquire fence 晚、requested present timestamp、HWC 或 display driver 延迟而错过显示。这些硬件阶段都落在 GPU counter 的覆盖范围之外。
+Camera 和视频还存在相反情况：主体内容通过 ISP、codec 与 HWC 路径完成，GPU counter 可能保持很低，画面仍会因 HAL（Hardware Abstraction Layer，硬件抽象层） 或 codec 输出晚、acquire fence 晚、requested present timestamp（producer 请求的显示时间）、HWC 或 display driver 延迟而错过显示。这些硬件阶段都落在 GPU counter 的覆盖范围之外。
 
 #### 一次可复用的关联顺序
 
@@ -339,7 +339,7 @@ Camera 和视频还存在相反情况：主体内容通过 ISP、codec 与 HWC �
 3. **区分平台事件与厂商 counter**：`GpuMemTotalEvent` 是 Android 平台 GPU memory 事件；GPU 频率、fragment、triangle 等 counter 仍要靠 GPU counter producer 暴露。
 4. **记录出图拓扑**：同一 counter 峰值在标准 HWUI、TextureView、独立 Surface 与视频 overlay 等场景中的来源不同；这里的视频 overlay 指独立视频 layer 由 HWC 直接合成的路径。采集说明至少要记下 Surface 类型、layer、graphics API、HWC composition 与显示模式，否则两次采集之间没法对比。
 5. **不要强行跨厂商比较**：仅凭同属 `MEMORY`、`FRAGMENTS` 或 `COMPUTE` 分组不足以证明 counter 可比。若要建立跨设备基准，必须记录厂商 producer、counter 名称、单位和采样频率；若用不同名称作为同类指标，还要写明映射依据。
-6. **控制 trace 体积**：样本数量近似为 `counter 数 × 采样频率 × 时长`，但 protobuf 的 `int_value` 用 varint 编码，字节数随数值大小变化；`double_value`、嵌套 message、packet framing、descriptor 与 interning 引用也各有额外成本。所以我们不按固定的“每项 12 bytes”推算容量，而是先做一次短时采集，测出生成 trace 的 bytes/s，再为目标时长设置 buffer 和采样周期。
+6. **控制 trace 体积**：样本数量近似为 `counter 数 × 采样频率 × 时长`，但 protobuf 的 `int_value` 用 varint（按数值大小改变字节数的整数编码） 编码，字节数随数值大小变化；`double_value`、嵌套 message（嵌套消息）、packet framing（数据包边界信息）、descriptor 与 interning 引用也各有额外成本。所以我们不按固定的“每项 12 bytes”推算容量，而是先做一次短时采集，测出生成 trace 的 bytes/s，再为目标时长设置 buffer 和采样周期。
 
 ### 范围外主题
 
@@ -349,7 +349,7 @@ Camera 和视频还存在相反情况：主体内容通过 ISP、codec 与 HWC �
 - UI 渲染、游戏、视频、计算摄影等工作负载下的正常 / 警告 / 异常阈值。
 - Vulkan Ray Tracing 管线开销与 Android 17 设备支持边界。
 - NNAPI（Android 神经网络 API）、厂商 NPU / ML 加速器与 GPU 渲染负载之间的调度影响。
-- `profileable`、权限、SELinux 访问控制或生产采集策略对 GPU counter 可见性的影响。
+- `profileable`、权限、SELinux（Android 强制访问控制机制） 访问控制或生产采集策略对 GPU counter 可见性的影响。
 - AGI Frame Capture、Layer Override（图形 layer 替换）、GAPID 到 AGI 迁移等完整工具工作流。
 
 ### 信息源
@@ -373,9 +373,9 @@ Camera 和视频还存在相反情况：主体内容通过 ISP、codec 与 HWC �
 
 `frameworks/native/services/gpuservice/` 下承载多条 GPU 观测路径。这里的“可观测性”指把驱动上报的数值和事件提供给诊断工具；GpuService 本身不承担这些内存的管理职责。
 
-GPU 内存路径从 `gpu_mem_total` tracepoint 开始。`gpuMem.c` 中的 BPF 程序读取事件，把每个 GPU 与进程最近上报的当前总量写入 map；`GpuMem` 再读取 map，通过 dumpsys 和 Perfetto 暴露结果。
+GPU 内存路径从 `gpu_mem_total` tracepoint（内核或驱动预先定义的静态追踪事件） 开始。`gpuMem.c` 中的 BPF 程序读取事件，把每个 GPU 与进程最近上报的当前总量写入 map；`GpuMem` 再读取 map，通过 dumpsys 和 Perfetto 暴露结果。
 
-`GpuStats` 是另一条路径，只记录 GL、Vulkan、ANGLE 驱动加载和图形功能使用信息，并通过 dumpsys 与 statsd 输出；它不记录 GPU 内存字节。buffer 的分配、复用与回收仍由 gralloc、图形实现和厂商驱动负责。
+`GpuStats` 是另一条路径，只记录 GL、Vulkan、ANGLE 驱动加载和图形功能使用信息，并通过 dumpsys 与 statsd 输出；它不记录 GPU 内存字节。buffer 的分配、复用与回收仍由 gralloc（系统与厂商之间的图形 buffer 分配接口）、图形实现和厂商驱动负责。
 
 平台侧核验基线是 `android-17.0.0_r1`，内核侧核验基线是 `android17-6.18-2026-06_r6`；设备可能使用其他内核分支。Android 12 至 Android 16 在后文只用于说明能力演进。
 
@@ -395,7 +395,7 @@ GpuService 中与 GPU 内存和驱动状态相关的主体分为三条链路。�
 - ftrace：把内核 tracepoint 事件写入 trace 的追踪机制；
 - statsd pull atom：statsd 在采集时向数据提供方主动拉取的结构化记录。
 
-`GpuMem` 持有只读 BPF map，`GpuMemTracer` 通过 `GpuMem::traverseGpuMemTotals()` 遍历它，Perfetto 的 ftrace 更新来自驱动的同一个 tracepoint ABI。所以排查 GPU 内存增长时，GpuMem 与 Perfetto 负责占用趋势，GpuStats 只用来补充驱动选择和失败模式的信息。
+`GpuMem` 持有只读 BPF map，`GpuMemTracer` 通过 `GpuMem::traverseGpuMemTotals()` 遍历它，Perfetto 的 ftrace 更新来自驱动的同一个 tracepoint ABI（事件字段与布局约定）。所以排查 GPU 内存增长时，GpuMem 与 Perfetto 负责占用趋势，GpuStats 只用来补充驱动选择和失败模式的信息。
 
 ### GpuService 启动与初始化边界
 
@@ -421,12 +421,12 @@ GpuService::GpuService()
 这段代码给我们三个信息：
 
 1. `GpuMem → GpuMemTracer` 是串行依赖：`GpuMemTracer::initialize()` 要求传入的 `GpuMem` 已经初始化成功，否则读不到 BPF map 里的起始 counter。
-2. `GpuWork` 独立并行：GPU work period 的 BPF 聚合与 GPU memory total 的 BPF 聚合是两条互补链路，这里只把 GpuWork 作为旁路观测来源。
+2. `GpuWork` 独立并行：GPU work period（GPU 工作时长区间） 的 BPF 聚合与 GPU memory total 的 BPF 聚合是两条互补链路，这里只把 GpuWork 作为旁路观测来源。
 3. 主服务构造不等待 BPF attach：attach 指把 BPF 程序挂到 tracepoint，使事件发生时执行该程序。`mGpuMem->initialize()` 会等待 bpfloader（系统 BPF 加载器），并可能等待 GPU tracepoint 出现；独立线程让构造函数先返回。
 
 析构期会给 GpuMem 与 GpuWork 设置停止标志，再用 `join()` 等待两条初始化线程退出。成员对象随后析构，`GpuMem::~GpuMem()` 调用 `bpf_detach_tracepoint()`。
 
-`stop()` 只会让 attach 重试循环退出。已经启动的 `GpuMemTracerThread` 是 detached thread，不能再 `join()`，源码也没有为它定义独立停止协议。gpuservice 通常与所在进程同寿命，所以这段实现不能当作可反复创建和销毁的通用组件模板。
+`stop()` 只会让 attach 重试循环退出。已经启动的 `GpuMemTracerThread` 是 detached thread（与创建者分离、不能再 `join()` 的线程），不能再 `join()`，源码也没有为它定义独立停止协议。gpuservice 通常与所在进程同寿命，所以这段实现不能当作可反复创建和销毁的通用组件模板。
 
 ### GpuMem：基于 eBPF 的进程级 GPU 内存快照
 
@@ -485,21 +485,21 @@ DEFINE_BPF_PROG("tracepoint/gpu_mem/gpu_mem_total", AID_ROOT, AID_GRAPHICS,
 }
 ```
 
-key 是 `uint64_t = (gpu_id << 32) | pid`：高 32 位放 `gpu_id`，低 32 位放 `pid`。value 保存该 GPU / PID 组合最近一次上报的总字节数。`cur_val == 0` 时 BPF 程序删除 entry；只要驱动完整遵守 tracepoint ABI，条目消失就说明该组合已归零。
+key 是 `uint64_t = (gpu_id << 32) | pid`：高 32 位放 `gpu_id`，低 32 位放 `pid`。value 保存该 GPU / PID 组合最近一次上报的总字节数。`cur_val == 0` 时 BPF 程序删除 entry（map 中的一条键值记录）；只要驱动完整遵守 tracepoint ABI，条目消失就说明该组合已归零。
 
 这里还有三个容易漏掉的限制：
 
-1. tracepoint payload 只有 `gpu_id`、`pid`、`size`，没有 DMA-BUF inode、fd、buffer handle 或 allocation callsite。DMA-BUF 是 Linux 跨设备共享 buffer 的机制，inode 是内核对象标识，callsite 是触发分配的代码位置；
+1. tracepoint payload（事件携带的字段） 只有 `gpu_id`、`pid`、`size`，没有 DMA-BUF inode、fd、buffer handle 或 allocation callsite。DMA-BUF 是 Linux 跨设备共享 buffer 的机制，inode 是内核对象标识，callsite 是触发分配的代码位置；
 2. `GPU_MEM_TOTAL_MAP_SIZE = 1024` 限制的是 `(gpu_id, pid)` entry 数，pid 0 的全局 entry 也占一个位置；
-3. 新 key 使用 `BPF_NOEXIST`，即仅当 key 不存在时插入，程序没有检查插入返回值。map 填满后，新组合可能没有进入统计。
+3. 新 key 使用 `BPF_NOEXIST`（仅当 key 不存在时插入），即仅当 key 不存在时插入，程序没有检查插入返回值。map 填满后，新组合可能没有进入统计。
 
-`dump()` 和 `traverseGpuMemTotals()` 通过 `getFirstKey()` / `getNextKey()` 逐项读取 map。遍历期间驱动仍可更新 map，因此输出是 best-effort 快照，不同 entry 可能取自相邻时刻，没有跨 entry 的原子一致性；中途的 value 或 next-key 读取错误还会提前结束遍历。
+`dump()` 和 `traverseGpuMemTotals()` 通过 `getFirstKey()` / `getNextKey()` 逐项读取 map。遍历期间驱动仍可更新 map，因此输出是 best-effort（尽力而为、不同 entry 可能取自相邻时刻） 快照，不同 entry 可能取自相邻时刻，没有跨 entry 的原子一致性；中途的 value 或 next-key 读取错误还会提前结束遍历。
 
-到这一步，GpuMem 能回答驱动最近上报的进程总量；再往下问“哪一个 DMA-BUF 或 BufferQueue slot 占用最大”，它就答不上来了，那要靠后文的 DMA-BUF 数据源。
+到这一步，GpuMem 能回答驱动最近上报的进程总量；再往下问“哪一个 DMA-BUF 或 BufferQueue slot（队列中复用 buffer 的槽位） 占用最大”，它就答不上来了，那要靠后文的 DMA-BUF 数据源。
 
 ### `dumpsys gpu`：即时查询入口
 
-C++ 组件名是 `GpuService`，注册到 ServiceManager 的服务名是 `gpu`：`GpuService::SERVICE_NAME = "gpu"`。`dumpsys` 按 Binder 服务名查找目标，因此命令入口是 `dumpsys gpu`。
+C++ 组件名是 `GpuService`，注册到 ServiceManager（Binder 系统服务注册表） 的服务名是 `gpu`：`GpuService::SERVICE_NAME = "gpu"`。`dumpsys` 按 Binder 服务名查找目标，因此命令入口是 `dumpsys gpu`。
 
 `GpuService.cpp::doDump()` 对 shell / dump 权限调用方开放，调用方需要满足 `uid == AID_SHELL` 或持有 `android.permission.DUMP`。常用命令如下：
 
@@ -528,7 +528,7 @@ static constexpr char kGpuMemDataSource[] = "android.gpu.memory";
 
 该名称是 `android.gpu.memory`，下划线形式 `android.gpu_mem` 不对应这份源码。
 
-初始化后，GpuMemTracer 向 system backend 注册 data source，并启动分离的 `GpuMemTracerThread`。Perfetto 调用 `OnStart()` 时，线程执行一次 `traceInitialCounters()`。遍历到的每个 map entry 会形成一个 `GpuMemTotalEvent`：
+初始化后，GpuMemTracer 向 system backend（系统 Perfetto tracing service） 注册 data source，并启动分离的 `GpuMemTracerThread`。Perfetto 调用 `OnStart()` 时，线程执行一次 `traceInitialCounters()`。遍历到的每个 map entry 会形成一个 `GpuMemTotalEvent`：
 
 ```cpp
 auto* event = packet->set_gpu_mem_total_event();
@@ -563,7 +563,7 @@ data_sources {
 }
 ```
 
-`android.gpu.memory` 写入 trace 启动时已有的非零 entry；`linux.ftrace` 记录会话期间驱动发出的更新。只启用前者会得到一次起始遍历，只启用后者可能缺少首次变化之前的基线。该链路由事件触发，没有固定周期 polling；驱动没有发出 tracepoint 时，轨道就不会变化。
+`android.gpu.memory` 写入 trace 启动时已有的非零 entry；`linux.ftrace` 记录会话期间驱动发出的更新。只启用前者会得到一次起始遍历，只启用后者可能缺少首次变化之前的基线。该链路由事件触发，没有固定周期 polling（定时读取）；驱动没有发出 tracepoint 时，轨道就不会变化。
 
 ### GpuStats：statsd 驱动加载与功能使用统计
 
@@ -575,7 +575,7 @@ static const size_t MAX_NUM_APP_RECORDS   = 100;
 static const size_t APP_RECORD_HEADROOM   = 10;
 ```
 
-每个 App 的 GL、Vulkan 和 ANGLE loading-time 数组各自最多保存 16 个样本。App 记录达到 100 条时，`purgeOldDriverStats()` 按 `lastAccessTime` 排序并删除最旧的 10 条，为后续记录预留空间。源码注释给出的目标是让 GpuStats 内存占用低于约 10KB。
+每个 App 的 GL、Vulkan 和 ANGLE loading-time（驱动加载耗时） 数组各自最多保存 16 个样本。App 记录达到 100 条时，`purgeOldDriverStats()` 按 `lastAccessTime` 排序并删除最旧的 10 条，为后续记录预留空间。源码注释给出的目标是让 GpuStats 内存占用低于约 10KB。
 
 Android 17 把 ANGLE 作为独立驱动类别。下面的分支累计全局加载次数和失败次数：
 
@@ -586,7 +586,7 @@ case GpuStatsInfo::Driver::ANGLE:
     break;
 ```
 
-应用维度用 driver enum 或包名识别本次报告是否使用 ANGLE：
+应用维度用 driver enum（驱动类别枚举值） 或包名识别本次报告是否使用 ANGLE：
 
 ```cpp
 appInfo.angleInUse =
@@ -595,7 +595,7 @@ appInfo.angleInUse =
 
 现有记录再次收到 `insertDriverStats()` 时，`angleInUse` 会被这次判断覆盖，因此它当不了只增不减的历史标志。`angleLoadingCount` 与 `angleLoadingFailureCount` 可以帮助解释驱动路径差异，但它们与 GPU 内存泄漏没有证明关系。
 
-GpuStats 在第一次收到驱动或目标统计时，才向 statsd 注册 `GPU_STATS_GLOBAL_INFO` 与 `GPU_STATS_APP_INFO` 两个 pull callback。每次 pull 成功返回后，对应的 `mGlobalStats` 或 `mAppStats` 都会被清空。
+GpuStats 在第一次收到驱动或目标统计时，才向 statsd 注册 `GPU_STATS_GLOBAL_INFO` 与 `GPU_STATS_APP_INFO` 两个 pull callback（由 statsd 拉取时调用的回调）。每次 pull 成功返回后，对应的 `mGlobalStats` 或 `mAppStats` 都会被清空。
 
 所以一个 atom 只表示相邻两次 pull 之间累计的信息，别把它当成开机以来永不清零的计数。
 
@@ -603,7 +603,7 @@ GpuStats 在第一次收到驱动或目标统计时，才向 statsd 注册 `GPU_
 
 `toggleAngleAsSystemDriver(enabled)` 只允许 appId 为 `AID_SYSTEM` 且持有 `android.permission.ACCESS_GPU_SERVICE` 的调用方切换，开启时尝试写入持久系统属性 `persist.graphics.egl=angle`。
 
-`/system/etc/angle/feature_config_vk.binarypb` 是另一条配置路径，其中 `binarypb` 表示二进制 protobuf 文件。`FeatureOverrideParser` 在 GpuService 构造期间解析一次并缓存，文件后续变化不会自动重载。系统驱动属性、feature override 与 GpuStats 彼此有关联，但源码没有把它们实现成单向的三阶段处理链。
+`/system/etc/angle/feature_config_vk.binarypb` 是另一条配置路径，其中 `binarypb` 表示二进制 protobuf 文件。`FeatureOverrideParser` 在 GpuService 构造期间解析一次并缓存，文件后续变化不会自动重载。系统驱动属性、feature override（功能覆盖配置） 与 GpuStats 彼此有关联，但源码没有把它们实现成单向的三阶段处理链。
 
 ### 从进程总量走到 DMA-BUF
 
@@ -618,7 +618,7 @@ GpuStats 在第一次收到驱动或目标统计时，才向 statsd 注册 `GPU_
 | `dumpsys SurfaceFlinger` / `--list` | 当前 layer 与合成状态 | 哪些 layer 与当前 buffer 状态可关联？ |
 | Perfetto GPU memory | 初始总量和 tracepoint 更新 | 增长发生在哪个业务时间窗？ |
 
-memtrack HAL 是厂商实现的设备内存核算接口，`dumpsys meminfo` 会使用其数据。`/proc/<pid>/smaps` 是按进程内存映射列出核算信息的内核接口，PSS 把共享内存按引用者比例分摊。GPU private 指厂商 memtrack 按 GL 类别报告、未计入 smaps 的 GPU 私有分配，它不一定有 DMA-BUF identity。inode 是 DMA-BUF 的内核对象标识，exporter 是创建并导出该 DMA-BUF 的驱动或子系统。
+memtrack HAL 是厂商实现的设备内存核算接口，`dumpsys meminfo` 会使用其数据。`/proc/<pid>/smaps` 是按进程内存映射列出核算信息的内核接口，PSS（Proportional Set Size） 把共享内存按引用者比例分摊。GPU private 指厂商 memtrack 按 GL 类别报告、未计入 smaps 的 GPU 私有分配，它不一定有 DMA-BUF identity。inode 是 DMA-BUF 的内核对象标识，exporter 是创建并导出该 DMA-BUF 的驱动或子系统。
 
 `IMemtrack.aidl`（memtrack 的稳定 AIDL 接口定义）对核算口径有明确约束：
 
@@ -629,7 +629,7 @@ memtrack HAL 是厂商实现的设备内存核算接口，`dumpsys meminfo` 会�
 
 GpuMem、memtrack 与 DMA-BUF 统计的数字因此不要求相等：它们覆盖的对象、共享内存分摊方式和去重规则各不相同。严谨的表述是“多种口径同时增长”或“某口径没有同步回落”，逐字节守恒是要求不出来的。
 
-Android 17 的 `dmabuf_dump` 来自 `system/memory/libmeminfo`。在 6.18 及更新内核上，VTS 要求 DMA-BUF BPF iterator 可用；iterator 是由 BPF 实现的内核对象遍历接口。
+Android 17 的 `dmabuf_dump` 来自 `system/memory/libmeminfo`。在 6.18 及更新内核上，VTS（Vendor Test Suite，供应商接口测试） 要求 DMA-BUF BPF iterator 可用；iterator 是由 BPF 实现的内核对象遍历接口。
 
 较早内核还可能通过 `CONFIG_DMABUF_SYSFS_STATS` 提供 per-buffer（逐 buffer）统计。这个 BPF iterator 与 GpuMem 的 `gpu_mem_total_map` 是两套独立机制。
 
@@ -658,7 +658,7 @@ adb shell dumpsys SurfaceFlinger
 
 #### 一次增长排查的时间顺序
 
-1. 记录包名、PID、进程启动时间、GPU ID 和场景起止 marker；
+1. 记录包名、PID、进程启动时间、GPU ID 和场景起止 marker（写入 trace 的阶段标记）；
 2. 在场景前保存一次 `--gpumem`、meminfo 与 DMA-BUF 数据；
 3. Perfetto 同时启用 `android.gpu.memory` 和 `gpu_mem/gpu_mem_total`；
 4. 执行固定输入的场景，保留峰值和退出后的稳定窗口，即数值不再明显变化的一段时间；
@@ -686,7 +686,7 @@ adb shell dumpsys SurfaceFlinger
 
 初始化失败可能发生在 pinned program 获取、tracepoint attach 或 map 打开阶段。attach 会在约 30 秒内重试；超时后该 GpuMem 实例不会在后台无限重试，GpuMemTracer 也因 `isInitialized() == false` 而不注册数据源。
 
-设备晚加载驱动时，要结合 logcat、tracefs event 与 pinned object 状态判断具体停在哪一步。
+设备晚加载驱动时，要结合 logcat（Android 系统日志）、tracefs（内核追踪文件系统） event 与 pinned object 状态判断具体停在哪一步。
 
 #### map 为空
 

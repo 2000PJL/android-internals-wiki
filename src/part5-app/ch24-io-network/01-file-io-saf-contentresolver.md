@@ -95,9 +95,9 @@ consolidated_from:
 
 > 源码基线：AOSP `android-17.0.0_r1`，API 37；内核 `android17-6.18-2026-06_r6`。
 
-我们排查卡顿时常先看 CPU 火焰图，但文件 I/O 的等待不一定体现在 CPU 计算量上：火焰图里可能看不到明显热点，主线程却停在 `read()`、`write()`、`fsync()`、缺页（所需文件页尚未驻留内存）或 `QueuedWork.waitToFinish()` 上。到 Perfetto 里看，这些线程可能处于可中断睡眠、等待内核 I/O 的不可中断睡眠，或等待锁；落到用户那里，就是启动变慢、点击无响应、页面切换掉帧。
+我们排查卡顿时常先看 CPU 火焰图（按调用栈汇总 CPU 采样的图），但文件 I/O 的等待不一定体现在 CPU 计算量上：火焰图里可能看不到明显热点，主线程却停在 `read()`、`write()`、`fsync()`、缺页（所需文件页尚未驻留内存）或 `QueuedWork.waitToFinish()` 上。到 Perfetto 里看，这些线程可能处于可中断睡眠、等待内核 I/O 的不可中断睡眠，或等待锁；落到用户那里，就是启动变慢、点击无响应、页面切换掉帧。
 
-Android 存储栈、I/O 调度、页缓存和 SharedPreferences 的内部路径见 [6.1 Android 存储架构](../../part1-fundamentals/ch06-storage/01-storage-architecture.md)、[6.2 文件系统与 I/O 调度](../../part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md)和 [6.3 SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性](../../part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md)。落到应用侧，要回答四个取舍问题：哪些 I/O 不该放在主线程，哪些键值数据该迁移，什么时候 MMKV 合适，普通文件读写怎样避免并发和同步持久化放大尾延迟——尾延迟指少量最慢操作的延迟。
+Android 存储栈、I/O 调度、页缓存和 SharedPreferences 的内部路径见 [6.1 Android 存储架构](../../part1-fundamentals/ch06-storage/01-storage-architecture.md)、[6.2 文件系统与 I/O 调度](../../part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md)和 [6.3 SharedPreferences 与 DataStore：I/O、ANR 与多进程一致性](../../part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md)。落到应用侧，要回答四个取舍问题：哪些 I/O 不该放在主线程，哪些键值数据该迁移，什么时候 MMKV 合适，普通文件读写怎样避免并发和同步持久化放大尾延迟（少量最慢操作的延迟）——尾延迟指少量最慢操作的延迟。
 
 ### 主线程 I/O 的危害与 StrictMode 检测
 
@@ -206,7 +206,7 @@ ANR 出现在页面停止、应用进入后台或 Service 回调结束时，我�
 
 ### MMKV 的原理与适用场景
 
-MMKV 的设计路线和 SP、DataStore 不同。Tencent MMKV 的设计文档说明，它用 `mmap`（把文件映射进进程虚拟地址空间）读写文件，值使用 Protocol Buffers（protobuf）二进制编码；更新采用追加写，同名键以末次值为准；空间不足时整理有效数据或扩容，文件损坏由 CRC 校验来发现。
+MMKV 的设计路线和 SP、DataStore 不同。Tencent MMKV 的设计文档说明，它用 `mmap`（把文件映射进进程虚拟地址空间）读写文件，值使用 Protocol Buffers（protobuf）二进制编码；更新采用追加写，同名键以末次值为准；空间不足时整理有效数据或扩容，文件损坏由 CRC（循环冗余校验） 校验来发现。
 
 `mmap` 能减少传统 `read()` / `write()` 路径上的部分复制，并把小写入转成映射页修改，但文件 I/O 本身还在：首次访问仍可能触发缺页，脏页（已修改但尚未写回存储的内存页）仍要回写，初始化还要校验并解析文件。把同步读取放在主线程，延迟未必稳定；StrictMode 也未必把映射缺页报告成普通磁盘读取。
 
@@ -327,7 +327,7 @@ SAF 由系统文件选择器、`DocumentsContract` 协议和文档提供器共�
 - 本机共享存储上的普通文件；
 - USB、SD 卡或工作资料中的文件；
 - 云文档提供方按需下载的对象；
-- Provider 通过管道或成对套接字即时生成的数据流；
+- Provider 通过管道（pipe）或成对套接字（socket pair）即时生成的数据流；
 - 没有可直接读取二进制内容的虚拟文档。
 
 因此，同一套 API 在两个 Provider 上可能有不同的延迟、随机访问能力和错误类型。性能记录至少要包含 `authority`、Provider 类型、内容是否已缓存在本机、访问模式和文件大小。SAF 与 `File` 的单一快慢比较定位不了问题，也推不到其他 Provider 上。
@@ -635,9 +635,9 @@ Photo Picker 的范围比 SAF 窄：
 
 24.4 节给出了媒体查询、分页、缩略图和世代号同步的完整实现。
 
-### Scoped Storage、FUSE 与 BPF
+### Scoped Storage、FUSE（用户空间文件系统） 与 BPF
 
-#### SAF 请求不一定经过 FUSE
+#### SAF 请求不一定经过 FUSE（Filesystem in Userspace）
 
 FUSE 是一种让用户空间进程处理文件系统请求的机制，Android 用它管理共享外部存储的权限与存储视图。SAF 调用的对象则是 `DocumentsProvider`：云 Provider 可以返回管道，企业 Provider 可以代理远端内容，本地 Provider 也可以直接返回普通文件描述符。只有内容位于 Android 共享外部存储并通过模拟存储挂载访问时，才可能进入 MediaProvider 的 FUSE 路径。
 

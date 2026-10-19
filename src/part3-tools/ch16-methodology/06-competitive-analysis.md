@@ -56,7 +56,7 @@ related_chapters:
 
 > 在指定设备、系统版本、应用版本、账号状态和操作路径下，两个应用的观测结果有多大差异？
 
-先把边界记住：一轮竞品测试量出的是差异有多大、出现在哪个阶段。至于差异由哪段代码造成、放到全部用户身上是否成立，它回答不了，要回到源码、Trace 和更多设备上补证据。所以实验条件必须随结果一起写进报告；缺了条件，一个启动耗时或卡顿率几乎无法复现，更撑不起版本决策。
+先把边界记住：一轮竞品测试量出的是差异有多大、出现在哪个阶段。至于差异由哪段代码造成、放到全部用户身上是否成立，它回答不了，要回到源码、Trace（系统时间线记录） 和更多设备上补证据。所以实验条件必须随结果一起写进报告；缺了条件，一个启动耗时或卡顿率几乎无法复现，更撑不起版本决策。
 
 本文的源码结论只用于解释 Android 平台的计时和帧数据。竞品的业务实现我们看不见，写原因时只能写成假设，并列出还缺哪些证据。
 
@@ -75,7 +75,7 @@ related_chapters:
 
 **同场景**：使用用户可感知的起点、终点和成功条件。例如“从 Launcher 点击图标，到首个可操作 Feed 出现”，还要补上账号是否登录、缓存是否存在、广告是否展示、列表有多少项。两个产品的信息架构不同，页面名称对不上没关系，工作量和用户目标要相近。
 
-**同网络**：记录 Wi-Fi 或蜂窝网络、带宽、往返延迟、丢包、DNS、代理和服务端数据集。可控环境可以使用网络整形和固定响应；真实网络测试则交替执行 A/B，并把网络时间单列。TLS 会话是否复用、内容是否命中 CDN 边缘缓存、服务端负载如何，这三样靠“连同一个 Wi-Fi”消不掉，要单独记录。
+**同网络**：记录 Wi-Fi 或蜂窝网络、带宽、往返延迟、丢包、DNS（域名解析）、代理和服务端数据集。可控环境可以使用网络整形和固定响应；真实网络测试则交替执行 A/B（在同一条件下交替测试应用 A 和 B），并把网络时间单列。TLS 会话（加密连接是否复用）是否复用、内容是否命中（内容是否来自边缘缓存） CDN 边缘缓存、服务端负载如何，这三样靠“连同一个 Wi-Fi”消不掉，要单独记录。
 
 **同热状态**：记录电池温度、Thermal Service（热管理服务）状态和测试前的静置条件。别连续测完 A 再测 B：用 ABBA 交错顺序，例如 A1、B1、B2、A2，减少时间漂移对单方结果的偏置，或者预先随机排序。设备一旦进入新的 thermal status（热状态等级），该轮作废，等它恢复再继续。用户体验测试不要锁定 CPU 频率——固定频率会改变商用设备上的调度和温控行为。
 
@@ -87,7 +87,7 @@ related_chapters:
 - App 的包名、versionName、versionCode、安装来源、签名摘要，以及 APK 和 split APK（按设备配置拆分的安装包）文件摘要；
 - 账号、地区、语言、主题、权限、实验开关和本地数据状态；
 - 电量、充电状态、节电/性能模式、亮度、音量、屏幕方向和网络参数；
-- ART 编译策略，以及 Baseline Profile（随 App 发布的热点代码清单）是否保留；Cloud Profile 由 Google Play 按线上使用数据生成，是否保留同样要记录；
+- ART（Android Runtime） 编译策略，以及 Baseline Profile（随 App 发布的热点代码清单）是否保留；Cloud Profile（Google Play 根据线上数据生成的热点代码清单） 由 Google Play 按线上使用数据生成，是否保留同样要记录；
 - 测试脚本版本、数据版本、执行时间和测试顺序。
 
 `adb shell am kill-all` 只结束系统认为可以安全清理的后台进程，离“设备恢复到一致状态”还差得远；划掉最近任务同样未必让进程退出。所以每个测试维度要有自己的复位动作：启动测试控制目标进程与任务，滑动测试恢复列表位置，网络测试恢复响应数据，功耗测试恢复电量和热状态。
@@ -104,7 +104,7 @@ related_chapters:
 - 最大轮数，或置信区间达到目标宽度时停止；
 - 查看结果前已经确定的主指标。
 
-A/B 在同一设备、相近时间内成对执行。报告给出每轮原始值、配对差值、差值中位数、P90/P99 和置信区间；分位数的读法是 P90 表示 90% 的样本不高于该值。置信区间描述在既定统计方法下，真实差异的合理范围。
+A/B 在同一设备、相近时间内成对执行。报告给出每轮原始值、配对差值、差值中位数、P90/P99（90%/99% 的样本不高于该值） 和置信区间；分位数的读法是 P90 表示 90% 的样本不高于该值。置信区间描述在既定统计方法下，真实差异的合理范围。
 
 平均值、标准差可以照报，但别用“均值相差两倍标准差”来代替显著性检验：数据有长尾时，用配对 bootstrap（对配对差值重复重采样）估计区间，或用预先选定、不要求正态分布的非参数检验，并同时报告效应量，也就是差异本身有多大。
 
@@ -149,7 +149,7 @@ Complete
 
 - **LaunchState**：`WaitResult` 明确区分 `COLD`、`WARM`、`HOT`、`RELAUNCH`。报告必须保存这个字段；预期是 COLD 却得到其他状态时，该轮无效。
 - **TotalTime**：Activity 启动跟踪开始到目标窗口完成首轮绘制的延迟，接近 TTID 的系统口径，量到窗口绘制为止；页面数据是否齐备、业务是否可操作，要再对照 TTFD 的埋点。
-- **WaitTime**：`ActivityManagerShellCommand` 在调用前后用 uptime 计算阻塞时间。uptime 是设备开机后的运行时长，深度休眠时不增长；WaitTime 包含 shell 发起、系统等待和返回路径，适合诊断命令等待，别拿它替代 `TotalTime`。
+- **WaitTime**：`ActivityManagerShellCommand` 在调用前后用 uptime（设备开机后的运行时间，深度休眠时不增长） 计算阻塞时间。uptime 是设备开机后的运行时长，深度休眠时不增长；WaitTime 包含 shell 发起、系统等待和返回路径，适合诊断命令等待，别拿它替代 `TotalTime`。
 
 旧版本曾输出 `ThisTime`，Android 17 的 [`WaitResult.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/WaitResult.java) 已无该字段，[`ActivityManagerShellCommand.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java) 也不再打印它。解析脚本要按目标系统版本识别字段，别假定三个时间值一直都在。
 
@@ -162,13 +162,13 @@ Complete
 - **Hot**：进程和 Activity 可复用，任务被带回前台。
 - **Relaunch**：Android 17 还会报告 `RELAUNCH`，例如配置变化使已有 Activity 销毁重建。
 
-测试脚本应让平台返回的 `LaunchState` 参与校验，少用“按了返回键所以一定是 warm”这类间接判断。一个竞品可能通过透明 Activity、deep link（直达指定页面的链接）、多进程或不同 task（Activity 任务栈）策略进入首页，`TotalTime` 覆盖到哪个 Activity，取决于本次实际启动链。Perfetto 中的 Android App Startups 派生指标和 Activity transition 能补足这段时间线。
+测试脚本应让平台返回的 `LaunchState` 参与校验，少用“按了返回键所以一定是 warm”这类间接判断。一个竞品可能通过透明 Activity、deep link（直达指定页面的链接）、多进程或不同 task（Activity 任务栈）策略进入首页，`TotalTime` 覆盖到哪个 Activity，取决于本次实际启动链。Perfetto 中的 Android App Startups 派生指标（由原始 Trace 计算出的启动区间）和 Activity transition（页面切换过程） 能补足这段时间线。
 
 ### 启动对比的注意事项
 
 **SplashScreen**：Android 12 起的系统启动画面会早于应用首帧出现，但 `TotalTime` 的完成点仍来自目标 Activity 的窗口绘制，到不了“页面数据可用”。报告可以同时保留“启动画面出现”“应用首帧”“业务可操作”三个视觉时间点；后两者需要 Trace、视频或等价的 UI 状态检测。
 
-**编译状态**：Play 安装的包可能带 Baseline Profile，用一段时间后还可能积累 JIT 产物或 Cloud Profile。竞品对比先选一种协议并写进报告：
+**编译状态**：Play 安装的包可能带 Baseline Profile，用一段时间后还可能积累 JIT（Just-In-Time，运行时即时编译） 产物或 Cloud Profile。竞品对比先选一种协议并写进报告：
 
 - **商店现实状态**：保留各自经商店分发和正常使用形成的编译状态，回答用户现实体验问题；
 - **统一实验状态**：对所有包执行同一安装、交互和编译流程，回答固定 ART 条件下的差异。
@@ -185,16 +185,16 @@ adb shell cmd package compile -m speed -f com.example.app
 
 ## 竞品流畅性对比
 
-平均 FPS 会把停顿的位置和长度抹平，所以我们看流畅性时不只盯这一个数：帧 deadline（每帧的完成时限）命中情况、长尾帧、连续卡顿段、场景阶段和帧归属至少要有。加载中的临时界面、页面转场和稳定滑动分开统计。
+平均 FPS（Frames Per Second，每秒帧数） 会把停顿的位置和长度抹平，所以我们看流畅性时不只盯这一个数：帧 deadline（每帧的完成时限）命中情况、长尾帧、连续卡顿段、场景阶段和帧归属至少要有。加载中的临时界面、页面转场和稳定滑动分开统计。
 
 ### 抓 Trace 对比帧耗时分布
 
-Android 12 起，SurfaceFlinger 的 FrameTimeline 能把 App 产生的帧和显示端呈现的帧关联起来；固定源码版本可查 [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp) 与 [`frame_timeline_event.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/trace/android/frame_timeline_event.proto)。
+Android 12 起，SurfaceFlinger（负责图层合成与呈现的系统服务） 的 FrameTimeline 能把 App 产生的帧和显示端呈现的帧关联起来；固定源码版本可查 [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp) 与 [`frame_timeline_event.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/trace/android/frame_timeline_event.proto)。
 
 一次 Trace 需要包含：
 
 - `android.surfaceflinger.frametimeline` 数据源；
-- `linux.ftrace` 中与 View、input、window manager、graphics 相关的 atrace 分类；
+- `linux.ftrace`（内核事件 Trace 数据源） 中与 View、input、window manager、graphics 相关的 atrace 分类；
 - 目标包的 atrace events，也就是 App 通过 Android Trace 标记写入的事件；
 - 场景开始、结束和阶段切换标记。
 
@@ -204,13 +204,13 @@ Trace 时长要覆盖完整的操作路径，没有通用值：“至少 10 秒�
 
 ### 帧耗时分析的关键指标
 
-**deadline miss 率**：未按时完成的帧占比。判断要用每帧自己的 deadline，不硬编码 60 Hz 的 16.6 ms 或 120 Hz 的 8.3 ms——可变刷新率、App 对期望帧率的投票和 SurfaceFlinger 调度都会让相邻帧的预算不同。
+**deadline（平台为每帧分配的完成时限） miss 率**：未按时完成的帧占比。判断要用每帧自己的 deadline，不硬编码 60 Hz 的 16.6 ms 或 120 Hz 的 8.3 ms——可变刷新率、App 对期望帧率的投票和 SurfaceFlinger 调度都会让相邻帧的预算不同。
 
 **P50/P90/P99**：分位数描述主体与长尾。统计对象必须写明：应用帧实际时长、预期时长、超出 deadline 的时长，还是帧间隔；不同字段的 P99 不能直接比较。
 
 **连续卡顿段**：记录同一交互中连续 miss 的帧数和持续时间。单个长帧与连续多个超时帧，即使落在相似的百分位，也会形成不同的视觉现象。
 
-**归属**：FrameTimeline 的 App Jank、SurfaceFlinger Jank 和 jank type（平台标记的卡顿来源类型）是定位线索。要把责任落到业务代码、GPU 驱动或系统服务，还得回到 UI thread、RenderThread、GPU 和 SurfaceFlinger 时间线里找直接阻塞关系。
+**归属**：FrameTimeline 的 App Jank、SurfaceFlinger Jank 和 jank type（平台标记的卡顿来源类型）是定位线索。要把责任落到业务代码、GPU 驱动或系统服务，还得回到 UI thread（处理界面事件与布局绘制的主线程）、RenderThread（承担部分渲染工作的线程）、GPU 和 SurfaceFlinger 时间线里找直接阻塞关系。
 
 **有效帧集合**：标出首帧、窗口转场、无内容变化帧和测试脚本空等帧。排除规则在看数据之前设定，并对 A/B 使用同一规则。
 
@@ -241,15 +241,15 @@ activity.getWindow().addOnFrameMetricsAvailableListener(
 
 Android 17 的 [`FrameMetrics.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java) 定义 `TOTAL_DURATION = INTENDED_VSYNC → FRAME_COMPLETED` 和 `DEADLINE = INTENDED_VSYNC → FRAME_DEADLINE`，源码注释用 `TOTAL_DURATION < DEADLINE` 表示按时完成；两者相等时别判为命中。`FIRST_DRAW_FRAME` 通常应从动画卡顿统计中单列。
 
-`dumpsys gfxinfo <package> framestats` 可以作为无侵入备选，但它主要反映 HWUI 窗口帧，输出字段随平台演进，覆盖面也不等同 FrameTimeline。解析器必须按 API 版本测试，并保留原始 dump 输出。
+`dump（命令原始输出）sys gfxinfo <package> framestats` 可以作为无侵入备选，但它主要反映 HWUI（Android 硬件加速界面渲染管线） 窗口帧，输出字段随平台演进，覆盖面也不等同 FrameTimeline。解析器必须按 API 版本测试，并保留原始 dump 输出。
 
 ## 竞品包体积对比
 
-“包有多大”至少对应四种对象：AAB（Android App Bundle，上传到应用商店的发布包）、单个 APK、某设备收到的 base + split APK 集合，以及压缩下载估算。先选定同一种对象再比：只拿竞品的 `base.apk` 对自家 universal APK（含多种设备资源的通用包），这种比较得不出有意义的结果。
+“包有多大”至少对应四种对象：AAB（Android App Bundle，上传到应用商店的发布包）、单个 APK、某设备收到的 base + split APK（按设备配置拆分交付的安装包） 集合，以及压缩下载估算。先选定同一种对象再比：只拿竞品的 `base.apk` 对自家 universal APK（含多种设备资源的通用包），这种比较得不出有意义的结果。
 
 ### APK Analyzer 的使用
 
-Android Studio 的 APK Analyzer 可以查看 APK 或 App Bundle 的压缩大小、下载大小估算、DEX、资源、assets（原样打包的资源文件）和 native libraries（C/C++ 等原生库）。使用竞品安装包前，先确认获取与分析符合渠道条款，并保存下载来源、版本、签名和文件哈希。
+Android Studio 的 APK Analyzer 可以查看 APK 或 App Bundle 的压缩大小、下载大小估算、DEX（Android 字节码文件）、资源、assets（原样打包的资源文件）和 native libraries（C/C++ 等原生库）。使用竞品安装包前，先确认获取与分析符合渠道条款，并保存下载来源、版本、签名和文件哈希。
 
 图形界面的基本流程如下：
 
@@ -258,7 +258,7 @@ Android Studio 的 APK Analyzer 可以查看 APK 或 App Bundle 的压缩大小�
 3. 展开 DEX、`resources.arsc`、`res/`、`assets/` 和 `lib/<abi>/`。
 4. 使用 Compare with previous APK 比较同一个产品的相邻版本。
 
-横向对比时，先为目标设备收集完整 split 集合，再按相同 ABI（CPU 指令集）、density、language 和动态功能模块计算；取不到完整集合时，报告写明缺哪些 split。
+横向对比时，先为目标设备收集完整 split 集合，再按相同 ABI（CPU 指令集）、density（屏幕密度）、language（语言资源） 和动态功能模块计算；取不到完整集合时，报告写明缺哪些 split。
 
 ### 命令行工具 apkanalyzer
 
@@ -277,7 +277,7 @@ apkanalyzer -h apk compare --different-only app-a.apk app-b.apk
 
 **DEX**：大小受功能量、依赖、编译器、R8（Android 代码压缩与优化工具）配置、字符串、调试信息和压缩率共同影响。看到 DEX 大就断言代码质量差、或归因到 Kotlin/Java 的语言选择，都跳步了；它只说明上面某几项大。
 
-**Native libraries**：按 ABI 和压缩状态拆分。AAB 交付通常只向设备发送匹配的 ABI；universal APK 则可能包含多套 `.so`。还要看调试符号是否剥离、库是否按内存页边界对齐，以及相同库是否在多个动态模块重复出现。
+**Native libraries**：按 ABI 和压缩状态拆分。AAB 交付通常只向设备发送匹配的 ABI；universal APK（包含多种设备资源的通用安装包） 则可能包含多套 `.so`。还要看调试符号是否剥离、库是否按内存页边界对齐，以及相同库是否在多个动态模块重复出现。
 
 **Resources 与 `resources.arsc`**：分别检查图片、字体、音视频、密度/语言变体和资源表。位图改成矢量图可能减小文件，也可能增加运行时栅格化（把矢量图转换成像素）成本，要结合场景判断。
 
@@ -309,7 +309,7 @@ SoC（System on Chip，系统级芯片）、GPU 驱动、内存、存储、厂�
 
 ### 误区六：把相关性写成实现原因
 
-没有竞品源码时，Trace 能证明某线程、Binder 调用、GPU 或系统阶段占用了时间；再往产品设计动机上推，就超出证据范围了。包体积分类显示的是字节分布，DEX 大小同样推不出混淆质量。结论分成“观测”“候选原因”“验证办法”三列来写。
+没有竞品源码时，Trace 能证明某线程、Binder（Android 跨进程调用机制） 调用、GPU 或系统阶段占用了时间；再往产品设计动机上推，就超出证据范围了。包体积分类显示的是字节分布，DEX 大小同样推不出混淆质量。结论分成“观测”“候选原因”“验证办法”三列来写。
 
 ## 扩展：自动化竞品对比测试流水线
 
@@ -333,7 +333,7 @@ Macrobenchmark 很适合自有应用的启动、滚动和动画基准，并自�
 
 ### 软件测量方案
 
-Battery Historian 已不再积极维护，但仍可把 batterystats 里的 wake lock（唤醒锁）、job、alarm、网络和进程状态放到时间线上，帮我们解释行为。注意它展示的是组件何时活跃；组件消耗了多少能量，还要另行测量。
+Battery Historian 已不再积极维护，但仍可把 batterystats（Android 系统累计的电池使用统计） 里的 wake lock（唤醒锁）、job（系统调度任务）、alarm（定时唤醒事件）、网络和进程状态放到时间线上，帮我们解释行为。注意它展示的是组件何时活跃；组件消耗了多少能量，还要另行测量。
 
 下面的命令用于重置统计，并在执行场景后导出 bugreport（包含系统诊断信息的压缩包）：
 
@@ -346,7 +346,7 @@ adb bugreport bugreport.zip
 
 AndroidX Macrobenchmark 的实验性 `PowerMetric` 可以读取 CPU、DISPLAY、GPU、MEMORY、NETWORK 等类别，但它测量**全系统**功耗/能量。官方截至 2026-08-14 仍把高精度采集限制在 Pixel 6、Pixel 6 Pro 及后续实体设备。它适合在支持设备上做受控场景比较；结果对应整个系统，分不出竞品进程独占的能量。
 
-Android 17 平台的 Power Stats 入口可从 [`PowerStatsService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 继续追到设备 HAL；具体可用的 channel（能量测量通道）和 consumer（逻辑耗能单元）由硬件实现决定。
+Android 17 平台的 Power Stats 入口可从 [`PowerStatsService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 继续追到设备 HAL（Hardware Abstraction Layer，硬件抽象层）；具体可用的 channel（能量测量通道）和 consumer（逻辑耗能单元）由硬件实现决定。
 
 ### 硬件测量方案
 

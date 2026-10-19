@@ -51,7 +51,7 @@ last_review_finalize_at: 2026-08-15 16:58:28+08:00
 last_rework_at: 2026-08-15 16:58:28+08:00
 ---
 
-# 热节流适配与性能退化治理
+# 热节流（thermal throttling）适配与性能退化治理
 
 热节流是设备为守住安全温度而动态控制的结果，不同机型的阈值和降级动作不会完全一致。我们把热状态和 headroom 当作趋势信号：热压力上来时提前减掉可选工作，验收看持续性能，不看瞬时峰值。
 
@@ -80,13 +80,13 @@ last_rework_at: 2026-08-15 16:58:28+08:00
 - `getThermalHeadroomThresholds()`：API 35；
 - `addThermalHeadroomListener()`：API 36。
 
-这四个入口逐个补齐，覆盖的都是读取：应用能读取全局热状态和表面温度对应的 thermal headroom，系统当前启用了哪组 CPU、GPU、屏幕或充电限制查不到——`PowerManager.isThermalStatusProtectionEnabled()`、`getThermalMitigations()` 或“热缓解动作列表”这类公开接口也没有。
+这四个入口逐个补齐，覆盖的都是读取：应用能读取全局热状态和表面温度对应的 thermal headroom，系统当前启用了哪组 CPU、GPU、屏幕或充电限制查不到——`PowerManager.isThermalStatusProtectionEnabled()`、`getThermalMitigations()` 或“热缓解动作（thermal mitigation）列表”这类公开接口也没有。
 
 先把后面反复用到的三个词定下来：热状态用 0—6 的 severity（限制等级）表示；skin 指机身表面温度传感器，或厂商建立的虚拟表面温度模型；thermal headroom（热余量）是接近严重热限制阈值的归一化数值。
 
 ## 热治理的系统路径
 
-先看应用可见信号和系统内部动作的关系。图里的 governor 是内核选择冷却档位的策略，vendor daemon 执行厂商策略，firmware policy 运行在设备固件中：
+先看应用可见信号和系统内部动作的关系。图里的 governor（调节器） 是内核选择冷却档位的策略，vendor daemon（厂商常驻进程） 执行厂商策略，firmware policy（固件策略） 运行在设备固件中：
 
 ```mermaid
 flowchart TB
@@ -134,13 +134,13 @@ AIDL 用来生成稳定的 Binder 接口，HIDL 是更早一代的 HAL 接口体
 
 限制等级变化由 `IThermalChangedCallback.notifyThrottling(Temperature)` 推送，AIDL v3 另有低频阈值更新 `notifyThresholdChanged(TemperatureThreshold)`；`sendThermalNotify()` 在这个 AIDL 里并不存在。
 
-`android-17.0.0_r1` 冻结了 AIDL v1、v2、v3，没有 v4：v1 覆盖温度、阈值、冷却设备与热状态回调，v2 增加冷却设备变化回调，v3 增加表面温度预测与阈值变化回调。兼容旧厂商系统镜像的设备仍可能连接 HIDL Thermal HAL 2.0、1.1 或 1.0；AIDL 版本号和旧 HIDL“2.0”属于两套版本体系，别把 AIDL v2 当成 HIDL 2.0。
+`android-17.0.0_r1` 冻结了 AIDL v1、v2、v3，没有 v4：v1 覆盖温度、阈值、冷却设备与热状态回调，v2 增加冷却设备变化回调，v3 增加表面温度预测与阈值变化回调。兼容旧厂商系统镜像（vendor image）的设备仍可能连接 HIDL Thermal HAL 2.0、1.1 或 1.0；AIDL 版本号和旧 HIDL“2.0”属于两套版本体系，别把 AIDL v2 当成 HIDL 2.0。
 
 ### CoolingDevice 的定位
 
 “冷却设备”是 Thermal HAL 对限制执行器的抽象，未必是风扇：CPU 限频、GPU 限频、充电限流或屏幕亮度限制都可以表现为冷却设备。Framework 侧的原始温度、热事件与冷却设备 Binder 方法都需要特权权限 `DEVICE_POWER`，所以普通应用拿不到逐个传感器的摄氏温度，也读不到冷却档位或功率上限。
 
-HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：0 表示未限制，值越高限制越深。这个值到 MHz、亮度或充电电流的映射由驱动与产品配置决定，适合系统调试和 statsd 这类系统指标服务使用，不适合作为普通应用的兼容协议。
+HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：0 表示未限制，值越高限制越深。这个值到 MHz、亮度或充电电流的映射由驱动与产品配置决定，适合系统调试和 statsd（Android 的系统指标收集服务） 这类系统指标服务使用，不适合作为普通应用的兼容协议。
 
 ## 全局热状态的含义
 
@@ -165,7 +165,7 @@ HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：
 
 这张表定义响应强度，不给通用产品参数。游戏从 120 FPS 调到 90、60 还是 30，视频是否降低分辨率，要由目标设备的帧时间、功耗、温升和质量实验决定；某个状态换算不成固定的频率或画质档位。
 
-任何 CPU、GPU、NPU 或 SKIN 传感器到达 `SHUTDOWN` 时，Framework 会以 thermal-state 原因请求关机，BATTERY 传感器则使用 battery-thermal 原因。应用可能来不及收到 `SHUTDOWN` 回调，状态保存和媒体文件收尾要赶在这一档之前开始。
+任何 CPU、GPU、NPU 或 SKIN 传感器到达 `SHUTDOWN` 时，Framework 会以 thermal-state（热状态） 原因请求关机，BATTERY（续航优先） 传感器则使用 battery-thermal（电池过热） 原因。应用可能来不及收到 `SHUTDOWN` 回调，状态保存和媒体文件收尾要赶在这一档之前开始。
 
 ## Thermal headroom：提前量与读取边界
 
@@ -175,7 +175,7 @@ HAL `CoolingDevice.value` 的取值范围是 0 到驱动给出的 `max_state`：
 - 1 表示当前或预测将到达 `THERMAL_STATUS_SEVERE`；
 - 大于 1 表示越过 `SEVERE` 的归一化位置，再往上没有到 CRITICAL、EMERGENCY 的固定映射。
 
-另一类返回值是 `NaN`，表示设备不支持、数据不足、HAL 未就绪或调用太频繁。
+另一类返回值是 `NaN`（Not a Number，非数值哨兵），表示设备不支持、数据不足、HAL 未就绪或调用太频繁。
 
 `forecastSeconds` 的允许范围是 0 到 60。预测以近期工作负载趋势保持相近为前提，预测时间越远越容易受场景切换影响，所以别把一次预测值当成未来温度的承诺。
 
@@ -356,7 +356,7 @@ class AppThermalObserver(
 }
 ```
 
-API 36 的类型被隔离在 `Api36` 中，旧系统不会进入对应分支。使用时我们把 observer 绑定到明确的生命周期，避免重复注册；`callbackExecutor` 宜用串行执行器，`pollForecast()` 也进同一控制队列，免得多个回调同时改写状态。回调中只更新状态并投递轻量事件，画质重建、编码器重配交给业务线程。
+API 36 的类型被隔离在 `Api36` 中，旧系统不会进入对应分支。使用时我们把 observer（状态观察对象） 绑定到明确的生命周期，避免重复注册；`callbackExecutor` 宜用串行执行器，`pollForecast()` 也进同一控制队列，免得多个回调同时改写状态。回调中只更新状态并投递轻量事件，画质重建、编码器重配交给业务线程。
 
 API 30—35 的 `pollForecast()` 每次只发起一次 headroom 查询。调度器统一管理调用频率，避免多个模块各自轮询；若连续得到 `NaN`，策略回退到热状态监听器，不要用无间隔循环反复查询。
 
@@ -401,7 +401,7 @@ fun requestedTier(signals: ThermalSignals): WorkloadTier {
 }
 ```
 
-这个函数只给出目标档位。生产实现还要在外面维护一个状态机：热压力升高时可以快速减少工作量；恢复则要等 headroom 低于退出阈值并持续一段冷却驻留时间，再逐级增加。退出余量用来拉开进入与退出阈值，驻留时间用来确认设备已经稳定冷却；两者都应从产品实验里取值，套用平台常量行不通。
+这个函数只给出目标档位。生产实现还要在外面维护一个状态机：热压力升高时可以快速减少工作量；恢复则要等 headroom 低于退出阈值并持续一段冷却驻留时间，再逐级增加。退出余量（margin）用来拉开进入与退出阈值，驻留时间用来确认设备已经稳定冷却；两者都应从产品实验里取值，套用平台常量行不通。
 
 每个档位对应一组不可拆分的配置，所有相关模块在同一次状态切换中采用同一档位，避免渲染已经降载、相机或推理仍维持高负载的错位：
 
@@ -426,14 +426,14 @@ fun requestedTier(signals: ThermalSignals): WorkloadTier {
 1. 固定场景输入后，目标进程或相关系统组件形成持续负载；
 2. 热状态、headroom、temperature trip（温度跨过配置阈值）或冷却档位发生可重复变化；
 3. CPU/GPU 频率上限、可用容量或完成时间显示资源受到约束；
-4. 工作量保持稳定时，线程执行时间、Runnable 等待时长、GPU 完成时间或帧时间随后恶化；
+4. 工作量保持稳定时，线程执行时间、Runnable（可运行但等待 CPU 调度） 等待时长、GPU 完成时间或帧时间随后恶化；
 5. 设备降温，或主动降低单一负载变量后，限制与性能退化按预测回落。
 
 对照一下缺了哪一环：没有第 2、3 项，观测到的 CPU/GPU 低频可能只是 DVFS 应对普通负载变化的常规选择；没有稳定工作量与对照组，排除不了业务负载本身的变化；没有回落过程，还要检查省电模式、刷新率切换、后台争用和厂商短时提频（boost）策略。
 
-Perfetto 取证时，我们把 `ThermalManagerService.status`、热状态与冷却设备事件、`cpu_frequency_limits`、调度器、FrameTimeline、RenderThread 与 GPU fence 放在同一时间窗口；单条异常帧或一次温度读数撑不起归因。
+Perfetto 取证时，我们把 `ThermalManagerService.status`、热状态与冷却设备事件、`cpu_frequency_limits`、调度器、FrameTimeline（Android 帧时间线）、RenderThread 与 GPU fence 放在同一时间窗口；单条异常帧或一次温度读数撑不起归因。
 
-时间尺度也要分开：单帧和输入反馈用短时跟踪，数分钟温升用持续跟踪或周期快照；屏幕熄灭后的 WakeLock、后台 Job 与网络重试，则回到 [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md) 的 Batterystats 窗口。三类结果靠同一设备、系统构建版本、场景和时间戳关联；power rail 是设备级供电轨的能量统计，粒度到不了单个 Java 方法。
+时间尺度也要分开：单帧和输入反馈用短时跟踪，数分钟温升用持续跟踪或周期快照；屏幕熄灭后的 WakeLock、后台 Job 与网络重试，则回到 [25.1 功耗诊断与 OEM 后台限制](01-power-diagnosis-oem-background.md) 的 Batterystats（系统电量统计） 窗口。三类结果靠同一设备、系统构建版本（build）、场景和时间戳关联；power rail 是设备级供电轨的能量统计，粒度到不了单个 Java 方法。
 
 ### CPU 受限
 
@@ -444,11 +444,11 @@ CPU 频率或可用核心预算降低后，常见的表现包括：
 - 线程处于 Runnable 状态的等待时间增长，同时 CPU 持续繁忙；
 - GC、JIT、序列化等原本勉强能放进帧预算的工作开始超时。
 
-证明热限制的因果关系时，我们把 `ThermalManagerService.status`、`thermal zone`、冷却档位、CPU 频率上限、调度器与应用执行片段放到同一时间轴上。
+证明热限制的因果关系时，我们把 `ThermalManagerService.status`、`thermal zone`（内核热区域，即温度源及其阈值和关联冷却设备的内核抽象）、冷却档位、CPU 频率上限、调度器与应用执行片段放到同一时间轴上。
 
 ### GPU 受限
 
-GPU devfreq 或厂商固件降低预算时，GPU 完成时间延后，FrameTimeline 可能记录 GPU 错过帧截止时间。这时先减少像素量和渲染 pass，再评估目标 FPS。仅凭 `SEVERE` 推断 GPU 已降到某个频点，依据不足。
+GPU devfreq 或厂商固件降低预算时，GPU 完成时间延后，FrameTimeline 可能记录 GPU 错过帧截止时间。这时先减少像素量和渲染 pass（一次完整的渲染处理阶段），再评估目标 FPS。仅凭 `SEVERE` 推断 GPU 已降到某个频点，依据不足。
 
 ### 充电与其他缓解动作
 
@@ -456,7 +456,7 @@ Thermal HAL 指南要求设备把会限制性能的电池功率约束也报告�
 
 ## Thermal API、ADPF 与 Game Mode 的分工
 
-ADPF（Android Dynamic Performance Framework，Android 动态性能框架）把 Thermal API、Performance Hint、Game Mode 和容量余量这些协作接口收在一起。它们各提供一组不同维度的信号或意图，都不会替代系统的热安全限制。
+ADPF（Android Dynamic Performance Framework（Android 动态性能框架），Android 动态性能框架）把 Thermal API、Performance Hint、Game Mode 和容量余量这些协作接口收在一起。它们各提供一组不同维度的信号或意图，都不会替代系统的热安全限制。
 
 ### Performance Hint Session
 
@@ -475,15 +475,15 @@ API 36 的 CPU/GPU capacity headroom（容量余量）位于 [`SystemHealthManag
 
 ### Game Mode
 
-Game Mode 表达用户选择的偏好：`PERFORMANCE` 性能优先，`BATTERY` 续航优先，`STANDARD` 标准。应用应在 `onResume()` 重新读取模式，并选择相应的初始质量档位。热安全与稳定体验的优先级更高，性能优先模式同样受热限制约束。
+Game Mode 表达用户选择的偏好：`PERFORMANCE`（性能优先） 性能优先，`BATTERY` 续航优先，`STANDARD`（标准） 标准。应用应在 `onResume()` 重新读取模式，并选择相应的初始质量档位。热安全与稳定体验的优先级更高，性能优先模式同样受热限制约束。
 
-续航优先模式只影响游戏自己的策略，与系统省电模式是两回事。Game Mode 干预（interventions）是 OEM 在应用外部施加的帧率、分辨率等优化，应用未接入 Game Mode API 时也可能被采用。跨厂商验证时要记录当前模式、应用是否声明自行支持，以及系统实际启用的干预项。
+续航优先模式（Battery Game Mode）只影响游戏自己的策略，与系统省电模式是两回事。Game Mode 干预（interventions）是 OEM 在应用外部施加的帧率、分辨率等优化，应用未接入 Game Mode API 时也可能被采用。跨厂商验证时要记录当前模式、应用是否声明自行支持，以及系统实际启用的干预项。
 
 ### Sustained Performance Mode
 
-API 24 的 Sustained Performance Mode（持续性能模式）面向长时间负载。应用先调用 `PowerManager.isSustainedPerformanceModeSupported()`，受支持时通过 `Window.setSustainedPerformanceMode(true)` 请求较稳定的性能区间。它通常降低冷机峰值来换取更平稳的长时表现，但不保证固定频率或固定 FPS，也替代不了应用的工作量档位。Fixed Performance Mode 用于基准测试，线上想借它绕过热策略是行不通的。
+API 24 的 Sustained Performance Mode（持续性能模式）面向长时间负载。应用先调用 `PowerManager.isSustainedPerformanceModeSupported()`，受支持时通过 `Window.setSustainedPerformanceMode(true)` 请求较稳定的性能区间。它通常降低冷机峰值来换取更平稳的长时表现，但不保证固定频率或固定 FPS，也替代不了应用的工作量档位。Fixed Performance Mode（固定性能模式） 用于基准测试，线上想借它绕过热策略是行不通的。
 
-## 与后台调度、Doze 和 App Standby 的关系
+## 与后台调度、Doze 和 App Standby（按应用活跃度限制后台任务） 的关系
 
 热状态还会向后台调度传导：[`ThermalStatusRestriction`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/restrictions/ThermalStatusRestriction.java) 监听 PowerManager 热状态，并随限制等级提高而收缩 JobScheduler 的可运行范围。这条规则用到几个 Job 术语，先交代含义：
 
@@ -498,9 +498,9 @@ API 24 的 Sustained Performance Mode（持续性能模式）面向长时间负�
 - `SEVERE` 及以上限制所有非 TOP_APP job；
 - TOP_APP bias 不受这条限制规则影响。
 
-新的停止/等待原因功能标志和兼容开关同时生效时，应用可以收到专门的热设备状态原因；旧配置可能只返回通用设备状态原因，任务实现仍要支持停止、保存进度和幂等重试。
+新的停止/等待原因（stop/pending reason）功能标志和兼容开关同时生效时，应用可以收到专门的热设备状态原因（thermal device-state reason）；旧配置可能只返回通用设备状态原因，任务实现仍要支持停止、保存进度和幂等重试。
 
-Doze（设备空闲节电）、App Standby、Battery Saver 和热限制规则是各自独立的状态机。设备可以同时处于多种限制状态，平台没有面向应用的“叠加系数”。排查延迟任务时，我们把执行/停止原因、设备空闲状态、App Standby bucket（应用待机分桶）、充电状态和热状态放在一起看。
+Doze（设备空闲节电）、App Standby、Battery Saver（系统省电模式） 和热限制规则是各自独立的状态机。设备可以同时处于多种限制状态，平台没有面向应用的“叠加系数”。排查延迟任务时，我们把执行/停止原因、设备空闲状态、App Standby bucket（应用待机分桶）、充电状态和热状态放在一起看。
 
 ## 线上监控
 
@@ -511,7 +511,7 @@ Doze（设备空闲节电）、App Standby、Battery Saver 和热限制规则是
 - `elapsedRealtime` 单调时钟时间戳、旧状态、新状态；
 - 当前业务场景和工作量档位；
 - 是否插电、屏幕状态、刷新率、网络类型；
-- 目标 FPS / 实际 FPS、FrameTimeline 卡顿帧、编码或推理延迟；
+- 目标 FPS / 实际 FPS、FrameTimeline 卡顿帧（jank）、编码或推理延迟；
 - 设备型号、系统构建版本、应用版本和实验组。
 
 `elapsedRealtime` 只随设备运行时间递增，不受用户改时间或网络校时影响，适合计算状态持续时间。回调日志要做去重，只记录转换和区间持续时间；headroom 适合按区间统计或抽样，不适合高频逐点上传。恢复阶段也要记录，这样才能发现策略在 LIGHT 与 MODERATE 之间反复切换。
@@ -555,7 +555,7 @@ adb shell cmd thermalservice reset
 
 `dumpsys thermalservice` 能显示 HAL 连接、缓存温度、冷却设备、阈值和全局热状态，所需权限与字段随构建类型变化。正式脚本不要依赖冷却设备的固定编号或名称。
 
-热状态变化时，Framework 会写入 `ThermalManagerService.status` 这个 trace counter。这段 Perfetto SQL 用于取出该计数器轨道：
+热状态变化时，Framework 会写入 `ThermalManagerService.status` 这个 trace counter（跟踪计数器）。这段 Perfetto SQL 用于取出该计数器轨道：
 
 ```sql
 SELECT
@@ -567,11 +567,11 @@ WHERE t.name = 'ThermalManagerService.status'
 ORDER BY c.ts;
 ```
 
-查询为空时，先检查 trace 是否启用了 power atrace 类别，再枚举 `counter_track` 中的设备轨道。完整的因果链还需要 CPU/GPU 频率、温度阈值事件、冷却档位、调度器、FrameTimeline 与应用执行片段。
+查询为空时，先检查 trace 是否启用了 power atrace 类别，再枚举 `counter_track` 中的设备轨道。完整的因果链还需要 CPU/GPU 频率、温度阈值事件（temperature trip，即温度跨过配置阈值）、冷却档位、调度器、FrameTimeline 与应用执行片段。
 
 可复现实验至少固定这些条件：
 
-1. 设备、system/vendor 镜像的构建版本，以及应用的 `release` 或 `profileable` 构建；
+1. 设备、system/vendor 镜像的构建版本，以及应用的 `release`（发布） 或 `profileable`（允许受控性能分析） 构建；
 2. 环境温度、气流、保护壳、手持或支架状态；
 3. 屏幕亮度、刷新率、充电与网络条件；
 4. 输入脚本、运行时长和任务量；
@@ -592,7 +592,7 @@ AOSP 定义 HAL、限制等级和公开 API，但 Qualcomm、MediaTek、Samsung 
 - 充电、电池供电、Wi-Fi 与蜂窝；
 - 高亮屏幕、相机、导航、视频通话、游戏和端侧推理；
 - 横屏/竖屏、手持/支架、保护壳；
-- 短时突发负载与长时间持续负载；
+- 短时突发负载（burst）与长时间持续负载（sustained workload）；
 - 热状态、thermal headroom、capacity headroom、频率、功耗和业务质量。
 
 还会遇到一种兼容问题：某 OEM 构建版本的热状态长期停在 NONE，但 headroom、频率与性能已经明显变化。这时把它记录为设备兼容问题，并以 headroom 趋势和 trace 作为性能受限的旁证。sysfs 是内核向用户空间暴露设备状态的虚拟文件系统，私有节点会随内核和厂商实现变化，应用不要把它当作跨设备接口。

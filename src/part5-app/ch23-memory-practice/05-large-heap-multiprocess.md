@@ -90,17 +90,17 @@ consolidated_from:
 
 ## 为什么要了解大内存与多进程策略
 
-大内存问题通常落在两类限制上：Java 堆的增长上限，以及进程可用的虚拟地址范围。Java 堆放的是 ART 管理的 Java / Kotlin 对象；虚拟地址范围则决定一个 32 位进程还能不能继续用 `mmap` 为线程栈、`.so`、`.dex`、Bitmap、图形缓冲或匿名内存保留地址区间。
+大内存问题通常落在两类限制上：Java 堆的增长上限，以及进程可用的虚拟地址范围。Java 堆放的是 ART 管理的 Java / Kotlin 对象；虚拟地址范围则决定一个 32 位进程还能不能继续用 `mmap`（内存映射系统调用） 为线程栈、`.so`、`.dex`、Bitmap、图形缓冲或匿名内存保留地址区间。
 
 `android:largeHeap`、多进程和 64 位迁移各自针对不同的限制：`largeHeap` 抬高应用进程的 ART 堆增长上限；多进程让组件用上独立的地址空间和运行时，同时重复支付进程级内存成本；64 位迁移扩大可用虚拟地址范围，指针和部分原生数据结构却可能变大。这三种手段都不会自动降低 PSS（共享页按参与进程数分摊后的物理内存统计），泄漏也不会因此消失。
 
-选择方案之前，我们先按失败类型定位。Java 堆 OOM 可参阅 [23.1 Java Heap、GC 与 Compose 内存分配](01-java-heap-gc-compose-allocation.md)；进程被低内存终止，可参阅 [4.3 系统内存压力与 lmkd](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)，lmkd 是 Android 根据系统内存压力终止低优先级进程的守护进程。`pthread_create`、`mmap` 或动态链接器报错时，要检查线程数、映射布局、ABI 及资源限制——ABI 规定指令集、调用约定和二进制布局。WebView、图形内存或原生内存在增长，则要定位实际分配者。
+选择方案之前，我们先按失败类型定位。Java 堆 OOM（内存不足异常） 可参阅 [23.1 Java Heap、GC 与 Compose 内存分配](01-java-heap-gc-compose-allocation.md)；进程被低内存终止，可参阅 [4.3 系统内存压力与 lmkd](../../part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md)，lmkd 是 Android 根据系统内存压力终止低优先级进程的守护进程。`pthread_create`、`mmap` 或动态链接器报错时，要检查线程数、映射布局、ABI 及资源限制——ABI 规定指令集、调用约定和二进制布局。WebView、图形内存或原生内存在增长，则要定位实际分配者。
 
 还有一类限制容易被忽略：Android 17 在部分设备上启用了按设备总 RAM 制定的应用内存限制，用来约束极端泄漏和异常占用。它对所有运行在 Android 17 上的应用生效，与 `targetSdkVersion` 无关；某台设备有没有启用、当前限制是多少，都要现场查询，`largeHeap` 和拆进程都绕不开它。怎么识别和归因这类退出，见“Android 17 应用内存限制”一节。
 
 ## `largeHeap` 的使用场景与代价
 
-`android:largeHeap="true"` 写在 `<application>` 元素上。官方文档为它划了三条规则：设置作用于该应用创建的所有进程；同一进程以第一个载入应用的设置为准；共享 UID 且共用进程的多个应用必须保持设置一致。另外，设备给出的大堆内存等级 `large memory class`——大堆模式下建议的 Java 堆容量，单位 MB——可能与普通内存等级相同，开了这个属性未必多出固定容量。
+`android:largeHeap="true"` 写在 `<application>` 元素上。官方文档为它划了三条规则：设置作用于该应用创建的所有进程；同一进程以第一个载入应用的设置为准；共享 UID 且共用进程的多个应用必须保持设置一致。另外，设备给出的大堆内存等级（`large memory class`，大堆模式下建议的 Java 堆容量，单位 MB） `large memory class`——大堆模式下建议的 Java 堆容量，单位 MB——可能与普通内存等级相同，开了这个属性未必多出固定容量。
 
 在源码这一侧，`ActivityThread.handleBindApplication()` 检查 `ApplicationInfo.FLAG_LARGE_HEAP`：设了标志就调用 `VMRuntime.getRuntime().clearGrowthLimit()`，否则调用 `clampGrowthLimit()`。读数接口是 `ActivityManager.getMemoryClass()` 读取 `dalvik.vm.heapgrowthlimit`，`getLargeMemoryClass()` 读取 `dalvik.vm.heapsize`。这些代码只调整 ART Java 堆限制，原生堆、图形内存、线程栈和文件映射都不会因此减少。
 
@@ -151,7 +151,7 @@ fun readHeapPolicyInputs(context: Context): HeapPolicyInputs {
 
 ## 多进程内存隔离与共享
 
-Android 默认让同一应用的组件共用一个 Linux 进程和一个主线程。进程是拥有独立虚拟地址空间的执行容器；组件也可以在清单中用 `android:process` 指定其他进程。跨进程通信常通过 Binder 完成：Binder 把参数序列化到 `Parcel`，再把事务送到目标进程。远程调用进入服务进程后，由系统维护的 Binder 线程池执行，所以服务端方法要能安全处理多个并发调用。进程模型及生命周期见 [1.1 Android 分层架构、进程模型与线程协作](../../part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md)。
+Android 默认让同一应用的组件共用一个 Linux 进程和一个主线程。进程是拥有独立虚拟地址空间的执行容器；组件也可以在清单中用 `android:process` 指定其他进程。跨进程通信（IPC）常通过 Binder 完成：Binder 把参数序列化到 `Parcel`，再把事务送到目标进程。远程调用进入服务进程后，由系统维护的 Binder 线程池执行，所以服务端方法要能安全处理多个并发调用。进程模型及生命周期见 [1.1 Android 分层架构、进程模型与线程协作](../../part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md)。
 
 多进程带来的是地址空间、组件生命周期和崩溃影响范围的隔离。把图片编辑、插件运行时或任务范围清楚的批处理服务放入独立进程后，系统回收该进程时会连同 Java 堆、原生堆、线程栈、JIT 缓存和文件映射一起释放。不过，进程的寿命由 Android 根据活跃组件、进程重要性和系统资源决定，把主动终止子进程当作常规的资源释放手段是行不通的。任务完成时，我们应停止 `Service`、解除绑定并保存结果，让组件状态如实反映还有没有工作在做。
 

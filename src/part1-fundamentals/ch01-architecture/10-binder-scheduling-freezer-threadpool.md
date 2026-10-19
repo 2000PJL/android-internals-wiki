@@ -825,7 +825,7 @@ ORDER BY total_server_ms DESC;
 
 - `enable_frozen_object_error` 等 aconfig 功能开关的启用状态。
 - 厂商对 Binder 扩展钩子（vendor hooks）、线程池上限和服务端工作队列的调整。
-- 用户态是否仍使用 AOSP `BINDER_VM_SIZE`，以及内核是否采用同一 Android 通用内核标签。
+- 用户态是否仍使用 AOSP `BINDER_VM_SIZE`，以及内核是否采用同一 Android 通用内核（common kernel）标签。
 - 系统轨迹配置是否采集 Binder 驱动、AIDL 名称、调度和 freezer 数据。
 
 遇到设备差异时，要同时确认平台构建版本（build）、内核标签、厂商补丁、功能开关值和轨迹配置；只按 API 级别去推底层行为，会推错。

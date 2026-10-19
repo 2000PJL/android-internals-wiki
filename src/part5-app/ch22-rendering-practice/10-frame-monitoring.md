@@ -68,11 +68,11 @@ consolidated_from:
 
 线上出现“滑一下偶尔卡住”时，平均 FPS 很难说明责任在哪。可执行的治理要依次回答四个问题：监控覆盖了渲染路径的哪一段，异常集中在哪类设备和交互状态，代码现场反复出现什么，修复后怎样按同一口径验证。我们按这个顺序展开：先划清每种帧指标的覆盖范围，再过一遍 JankStats、FrameMetrics、系统合成器关联、堆栈采样，最后落到告警和复盘协议；卡顿定义与线下证据流程分别见 7.1 和 7.2。
 
-> 源码基线：AOSP `android-17.0.0_r1`；涉及线程调度与 fence 语义时，另以 Linux 内核 `android17-6.18-2026-06_r6` 为准。
+> 源码基线：AOSP `android-17.0.0_r1`；涉及线程调度与 fence（CPU、GPU 和显示设备之间传递完成状态的同步对象） 语义时，另以 Linux 内核 `android17-6.18-2026-06_r6` 为准。
 
 ## 每种帧指标覆盖到哪一段
 
-一个标准 App Window 的一帧，要经过 VSync → Choreographer → UI 线程 → RenderThread → BLAST / BufferQueue → SurfaceFlinger，最后由 HWC 或 RenderEngine 合成、display present 上屏。这条流水线上每种监控接口都只覆盖一段：
+一个标准 App Window（应用窗口） 的一帧，要经过 VSync（垂直同步信号） → Choreographer（UI 帧调度器） → UI 线程 → RenderThread（HWUI 渲染线程） → BLAST / BufferQueue（窗口缓冲区队列） → SurfaceFlinger（系统合成器），最后由 HWC（硬件合成器） 或 RenderEngine（GPU 合成） 合成、display present（屏幕显示） 上屏。这条流水线上每种监控接口都只覆盖一段：
 
 | 观测入口 | 主要覆盖范围 | 能回答什么 | 不能单独证明什么 |
 |---|---|---|---|
@@ -82,15 +82,15 @@ consolidated_from:
 | `SurfaceControl.JankData` | API 36+ 的系统合成器卡顿分类 | 同一 VSync 是应用、合成器还是其他系统组件错过调度 | 具体哪个 Java 方法导致问题 |
 | 堆栈与 Perfetto | 代码现场与跨进程时间线 | 阻塞方法、线程调度、fence、latch（接收缓冲区）、composition（合成）和 present（显示） | 单次样本能否代表普遍情况 |
 
-观测边界直接影响结论。`queueBuffer()` 只说明 producer 提交了 buffer，接下来 SurfaceFlinger 是否接收、latch、present 都还不一定。FrameMetrics 的 `TOTAL_DURATION` 终点是“应用完成渲染并把帧交给显示子系统”，屏幕面板扫描像素的时间在它之外。
+观测边界直接影响结论。`queueBuffer()` 只说明 producer（缓冲区生产者） 提交了 buffer（缓冲区），接下来 SurfaceFlinger 是否接收、latch、present 都还不一定。FrameMetrics 的 `TOTAL_DURATION` 终点是“应用完成渲染并把帧交给显示子系统”，屏幕面板扫描像素的时间在它之外。
 
 页面里一旦出现 `SurfaceView`、Camera、视频、WebView、Flutter 或游戏引擎，我们还要画清 Surface 拓扑：谁向哪个 Surface 图层提供缓冲区，各图层怎样挂到宿主窗口。
 
-这时宿主 App Window 的指标可能很平稳，独立 producer 的内容却在重复显示旧缓冲区。此类页面的归因要在目标 layer 上补证据：生产者入队、fence、FrameTimeline 与显示结果，宿主 Window 的 JankStats 只能说明宿主自己。
+这时宿主 App Window 的指标可能很平稳，独立 producer 的内容却在重复显示旧缓冲区。此类页面的归因要在目标 layer（图层） 上补证据：生产者入队、fence、FrameTimeline（帧时间线） 与显示结果，宿主 Window 的 JankStats 只能说明宿主自己。
 
 ## Choreographer.FrameCallback：观察调整后的帧时间
 
-`Choreographer` 接收显示侧的 VSync 时序信号，在绑定的 `Looper` 上安排 input、animation、traversal（View 测量、布局与绘制）等回调。`postFrameCallback()` 注册的是一次性回调，持续采样要在回调里再次注册。
+`Choreographer` 接收显示侧的 VSync 时序信号，在绑定的 `Looper`（线程消息循环） 上安排 input（输入）、animation（动画）、traversal（View 测量、布局与绘制）等回调。`postFrameCallback()` 注册的是一次性回调，持续采样要在回调里再次注册。
 
 `doFrame(frameTimeNanos)` 的参数使用 `System.nanoTime()` 时间基准，表示经过平台调整的帧开始时间。主线程迟到或执行 buffer-stuffing recovery（缓冲区积压恢复）时，这个值可能重新同步或向前偏移一个刷新周期，所以拿它当方法开始执行的实际时间或帧完成时间都会出错；需要动画时间和候选帧时间线时，用 API 33+ 的 `VsyncCallback`。
 
@@ -140,11 +140,11 @@ class CallbackCadenceProbe(
 
 这段数据只能说明调整后的帧时间序列出现了空档。自注册回调本身也会申请后续 VSync，观察到的已经是探针参与后的调度节奏。页面没有内容更新时，一串稳定回调并不代表屏幕显示了一串新帧；间隔变大时，原因也还分不出来：CPU 执行、Runnable（等待调度的可运行任务）、锁、Binder 跨进程调用、I/O 等待都在候选之列。
 
-刷新率本身会变：display mode 切换、应用 frame-rate vote、内容类型、节能策略都会动它。把构造时读到的 `Display.getRefreshRate()` 当作整个页面停留期的预算，在自适应刷新设备上会错判。API 31+ 优先用 FrameMetrics 的 `DEADLINE` 或 JankStats 对当前帧的判定；低版本保留原始分布，和同设备、同场景的基线比。
+刷新率本身会变：display mode（显示模式） 切换、应用 frame-rate vote（帧率请求）、内容类型、节能策略都会动它。把构造时读到的 `Display.getRefreshRate()` 当作整个页面停留期的预算，在自适应刷新设备上会错判。API 31+ 优先用 FrameMetrics 的 `DEADLINE` 或 JankStats 对当前帧的判定；低版本保留原始分布，和同设备、同场景的基线比。
 
 ### API 33+ 用 VsyncCallback 保存帧时间线标识
 
-API 33 增加 `Choreographer.VsyncCallback`。它一次给出多条候选 `FrameTimeline` 和平台选中的 preferred timeline，每条时间线包含 deadline、expected presentation time 和 VSync ID。`FrameData` 与其中的 `FrameTimeline` 只在回调期间有效，我们要用哪些基础数值，就当场复制。
+API 33 增加 `Choreographer.VsyncCallback`。它一次给出多条候选 `FrameTimeline` 和平台选中的 preferred timeline（首选帧时间线），每条时间线包含 deadline、expected presentation time（预期显示时间） 和 VSync ID（帧标识）。`FrameData` 与其中的 `FrameTimeline` 只在回调期间有效，我们要用哪些基础数值，就当场复制。
 
 下面的代码保存当前 preferred timeline 的四个标量，供诊断窗口与其他帧记录对时。
 
@@ -306,7 +306,7 @@ API 31+ 可计算 `TOTAL_DURATION - DEADLINE`：结果大于零就是应用没�
 
 ### 指标的时间边界与并行间隙
 
-UI 线程和 RenderThread 共同填写 `FrameInfo` 时间戳数组，`FrameMetrics` 再按固定起止索引算出公开指标。Window listener 创建 observer 时用 `waitForPresentTime=false`，所以回调到达只说明 HWUI 统计已可用；SurfaceFlinger 是否已 latch 这个 buffer、屏幕是否已经 present，要靠后续证据确认。
+UI 线程和 RenderThread 共同填写 `FrameInfo` 时间戳数组，`FrameMetrics` 再按固定起止索引算出公开指标。Window listener 创建 observer 时用 `wait（获取可用缓冲区的等待）ForPresentTime=false`，所以回调到达只说明 HWUI 统计已可用；SurfaceFlinger 是否已 latch 这个 buffer、屏幕是否已经 present，要靠后续证据确认。
 
 | 指标 | API | 时间边界或含义 | 常见排查入口 |
 | --- | ---: | --- | --- |
@@ -433,15 +433,15 @@ class CompositorJankSession(
 
 ## Android 17 的 buffer-stuffing recovery
 
-buffer-stuffing recovery 实现在 `Choreographer` 里。BLAST producer 等待 buffer release（可复用缓冲区被释放）的时间超过半个 frame interval 后，`onWaitForBufferRelease()` 会标记 stuffed 状态；后续 `doFrame()` 可以主动延后一帧，减少排队缓冲区，并在恢复期调整动画时间线。
+buffer-stuffing recovery 实现在 `Choreographer` 里。BLAST producer 等待 buffer release（可复用缓冲区被释放）的时间超过半个 frame interval（刷新周期） 后，`onWaitForBufferRelease()` 会标记 stuffed（队列积压） 状态；后续 `doFrame()` 可以主动延后一帧，减少排队缓冲区，并在恢复期调整动画时间线。
 
 相关 aconfig flag（Android 平台功能配置开关）会影响同一段动画能否多次恢复，以及累计主动延迟是否受 100 ms 上限约束；设备上的实际取值要从 trace 或配置里确认。
 
 所以 Perfetto 里看到 `Buffer stuffing recovery`、`buffer stuffed` 或 `Negative offset` 时，这一帧的迟到可能来自系统为降低队列深度安排的恢复动作。
 
-归因时我们同时检查 `dequeueBuffer` wait、queued buffer、FrameTimeline 的 `Buffer Stuffing` 分类和恢复后的 backlog（仍未消费的积压）。只看 UI / CPU 时长就把责任归给业务代码，会漏掉“队列已经过深”这个前因。
+归因时我们同时检查 `dequeueBuffer` wait、queued buffer（已排队缓冲区）、FrameTimeline 的 `Buffer Stuffing` 分类和恢复后的 backlog（仍未消费的积压）。只看 UI / CPU 时长就把责任归给业务代码，会漏掉“队列已经过深”这个前因。
 
-这个机制只消化排队造成的额外延迟，GPU 和显示吞吐量并不会因此变好。恢复频繁出现时，还要追查 producer 产出节奏、RenderThread / GPU 完成时间、release fence（缓冲区释放栅栏）和 consumer 的释放速度。
+这个机制只消化排队造成的额外延迟，GPU 和显示吞吐量并不会因此变好。恢复频繁出现时，还要追查 producer 产出节奏、RenderThread / GPU 完成时间、release fence（缓冲区释放栅栏）和 consumer（缓冲区消费者） 的释放速度。
 
 ## 线上卡顿堆栈：按策略采样，为指标补代码现场
 
@@ -533,7 +533,7 @@ class MainThreadStackSampler(
 | `Buffer stuffing recovery` 与队列积压同时出现 | 系统正在主动降低队列深度 | 追查积压来源和 release fence |
 | `telemetryReportsDropped` 升高 | 监控消费者过重或队列容量不足 | 降低采样、缩短回调、修复报告完整率后再比较 |
 
-主线程处于等待态时，栈顶只是等待位置。trace 显示线程 Runnable 却长期拿不到 CPU，我们再去查 `android17-6.18-2026-06_r6` 的 scheduler 证据；`dequeueBuffer` 或缓冲区复用被 fence 阻塞时，查 dma-fence / sync_file 与厂商 GPU、显示驱动。应用层证据指向这些方向后再查内核；从一个 Java 样本直接猜内核原因，是猜不准的。
+主线程处于等待态时，栈顶只是等待位置。trace 显示线程 Runnable（可运行但等待调度） 却长期拿不到 CPU，我们再去查 `android17-6.18-2026-06_r6` 的 scheduler 证据；`dequeueBuffer` 或缓冲区复用被 fence 阻塞时，查 dma-fence / sync_file 与厂商 GPU、显示驱动。应用层证据指向这些方向后再查内核；从一个 Java 样本直接猜内核原因，是猜不准的。
 
 ## 自动告警：用策略、基线和置信区间减少误报
 

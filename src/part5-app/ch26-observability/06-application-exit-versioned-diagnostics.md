@@ -112,7 +112,7 @@ consolidated_from:
 
 # ApplicationExitInfo 与版本化线上诊断
 
-`ApplicationExitInfo` 是 Android 保存的近期进程退出记录，带有系统对退出事件的分类和现场信息。进程可能来不及执行崩溃采集 SDK 的回调，Android 仍可保存退出原因 `reason`、退出状态 `status`、进程重要性 `importance`、时间、最近一次内存采样和部分 trace。Android 11 / API 30 起，应用可以在新进程启动后查询这些记录，用来分类崩溃、ANR、低内存终止、用户操作和包状态变化。
+`ApplicationExitInfo` 是 Android 保存的近期进程退出记录，带有系统对退出事件的分类和现场信息。进程可能来不及执行崩溃采集 SDK 的回调，Android 仍可保存退出原因（`reason`） `reason`、退出状态（`status`） `status`、进程重要性（`importance`） `importance`、时间、最近一次内存采样和部分 trace。Android 11 / API 30 起，应用可以在新进程启动后查询这些记录，用来分类崩溃、ANR、低内存终止、用户操作和包状态变化。
 
 > 源码基线：AOSP `android-17.0.0_r1`，Android 17 / API 37；相关内容集中在框架和应用接口，不涉及特定 Linux 内核版本特有的机制，因此不记录内核标签。
 
@@ -124,7 +124,7 @@ consolidated_from:
 
 ### 进程退出归因的观测目标
 
-线上稳定性排查通常同时跑着几路采集：Java 崩溃处理器记录未捕获异常，原生崩溃 SDK 记录操作系统信号和自己生成的现场，ANR 监控记录主线程状态与系统超时，`ApplicationExitInfo` 则在进程结束后补上系统一侧的记录。我们要先把各来源的原始事件保存下来，再依据进程、时间、构建和现场特征归并；直接相加会把同一次故障重复计数。
+线上稳定性排查通常同时跑着几路采集：Java 崩溃处理器记录未捕获异常，原生崩溃 SDK 记录操作系统信号（signal）和自己生成的现场，ANR 监控记录主线程状态与系统超时，`ApplicationExitInfo` 则在进程结束后补上系统一侧的记录。我们要先把各来源的原始事件保存下来，再依据进程、时间、构建和现场特征归并；直接相加会把同一次故障重复计数。
 
 一条退出记录至少要回答六个问题：
 
@@ -137,9 +137,9 @@ consolidated_from:
 | 可用的内存证据 | `pss`、`rss` 与应用最近一次资源摘要 | PSS 是按比例分摊共享页后的物理内存，RSS 是包含共享页的驻留物理内存；两者都是最近一次系统采样，可能为 0 |
 | 是否有系统附件 | `traceInputStream`、Android 17 的 `AnrInfo` | 补充 ANR 跟踪记录或 tombstone（系统生成的原生崩溃现场文件）；附件和结构化信息都可能缺失 |
 
-表里的几种 UID 要分清：package UID 是安装包被分配的 UID，real UID 是进程实际运行时使用的内核 UID，隔离进程中两者可能不同；defining UID 在外部服务使用应用 Zygote 时标识服务提供方。普通单进程应用里这些值常常相同，多进程和外部服务场景仍要分别保留。
+表里的几种 UID（PID） 要分清：package UID（多个包使用同一个系统身份） 是安装包被分配的 UID，real UID 是进程实际运行时使用的内核 UID，隔离进程中两者可能不同；defining UID 在外部服务使用应用 Zygote（预先加载运行环境并派生应用进程的模板进程） 时标识服务提供方。普通单进程应用里这些值常常相同，多进程和外部服务场景仍要分别保留。
 
-公开 `ApplicationExitInfo` 没有 `getSubReason()`。AOSP 服务内部的细分原因 subreason 不在第三方应用可读取的 SDK 合约里，普通应用的数据结构不应把它设为必填字段。`description` 只供人阅读，系统不保证它在不同设备或版本上的格式稳定，想靠解析这段字符串恢复内部 subreason，给不了稳定结果。
+公开 `ApplicationExitInfo` 没有 `getSubReason()`。AOSP 服务内部的细分原因（subreason） subreason 不在第三方应用可读取的 SDK 合约里，普通应用的数据结构不应把它设为必填字段。`description` 只供人阅读，系统不保证它在不同设备或版本上的格式稳定，想靠解析这段字符串恢复（resume）内部 subreason，给不了稳定结果。
 
 归因之外，我们还要把事件分类和产品严重度分开：`REASON_CRASH`、`REASON_CRASH_NATIVE` 和 `REASON_ANR` 通常可直接进入内部稳定性事件流；`REASON_LOW_MEMORY` 要结合 `importance` 和场景判断；用户、包更新、权限与多用户状态变化通常作为时间线背景。计算指标前必须跨来源去重，并明确分子、分母和“用户可感知”的定义。
 
@@ -154,7 +154,7 @@ Android 11 引入 `ActivityManager.getHistoricalProcessExitReasons(packageName, 
 
 公开文档只承诺历史信息放在环形缓冲区里，容量满后淘汰旧记录。AOSP `android-17.0.0_r1` 的默认资源 `config_app_exit_info_history_list_size` 是每包 16 条，但设备厂商可以覆盖这个资源值，它不属于 SDK 合约。该标签下 `AppExitInfoContainer` 用的是 `ArrayList<ApplicationExitInfo>`，容量超限时删除时间最早的记录，同一 PID 可以保留多次退出——所以“以 PID 为键、同一 PID 必然覆盖”只是旧实现的结论，放到这个标签上并不成立。
 
-这段代码只读取轻量元数据，也不在调用线程复制 trace，调用要放到应用自己的 executor 里。`maxNum = 0` 读的是系统当前保留的记录，去重交给服务端或本地处理游标，由它记住已经处理到哪一条。
+这段代码只读取轻量元数据，也不在调用线程复制 trace，调用要放到应用自己的 executor 里。`maxNum = 0` 读的是系统当前保留的记录，去重交给服务端或本地处理游标（记录已处理位置），由它记住已经处理到哪一条。
 
 ```kotlin
 @RequiresApi(Build.VERSION_CODES.R)
@@ -201,9 +201,9 @@ fun readExitSummaries(
 
 `importance` 记录进程死亡前的系统重要性级别，能区分前台、前台服务、可见、服务、缓存等进程状态，具体页面它恢复不了。所以应用仍要自己保存最近场景、最近一次 Activity resume、首帧是否完成和升级迁移状态。
 
-PSS/RSS 是系统最近一次采样，进程在采样前死亡时可能为 0。服务端应把 0 标记为“不可用”，既不要插值，也别把它当作进程死亡时刻的精确内存。`timestamp` 来自可被校时调整的墙上时钟，应用性能事件的时间轴则常用只向前递增的单调时钟；关联这两类时间戳，要用应用记录的 wall/elapsed 校准点换算，直接相减会出错。
+PSS/RSS 是系统最近一次采样，进程在采样前死亡时可能为 0。服务端应把 0 标记为“不可用”，既不要插值，也别把它当作进程死亡时刻的精确内存。`timestamp` 来自可被校时调整的墙上时钟（wall clock），应用性能事件的时间轴则常用只向前递增的单调时钟（elapsed time）；关联这两类时间戳，要用应用记录的 wall/elapsed 校准点换算，直接相减会出错。
 
-`ActivityManager.setProcessStateSummary()` 可保存最多 128 字节的应用状态，系统可能限制高频调用并抛出 `RuntimeException`。这块空间放的是不含个人数据的场景码、实验或配置版本和短状态位；账号、令牌、自由文本，以及恢复界面所需的状态，都要另找去处。只在状态变化时更新，实验归属以服务端实验分组记录 assignment 为准。
+`ActivityManager.setProcessStateSummary()` 可保存最多 128 字节的应用状态，系统可能限制高频调用并抛出 `RuntimeException`。这块空间放的是不含个人数据的场景码、实验或配置版本和短状态位；账号、令牌、自由文本，以及恢复界面所需的状态，都要另找去处。只在状态变化时更新，实验归属以服务端实验分组记录（assignment） assignment 为准。
 
 ### ANR 与原生崩溃的现场关联
 
@@ -226,9 +226,9 @@ Android 17 / API 37 的 `getAnrInfo()` 还提供 ANR ID、类型、系统等待�
 
 API 37 还增加 `ActivityManager.registerAnrWarningListener()`：应用接近 ANR 超时时它会尽力回调，执行回调的 executor 要避开主线程。这个回调可能不来，也可能来了却来不及做完工作，所以只适合写入预分配好的轻量摘要或触发受控采集，拿它当 ANR 覆盖率保证是不行的。
 
-原生崩溃事件有两类独立的原始来源：一类是 Crashpad、Breakpad 或自研 SDK 生成的小型转储 minidump 和事件封装 envelope，另一类是 `REASON_CRASH_NATIVE` 对应的 tombstone。服务端用构建 ID、ABI、操作系统信号、故障地址、崩溃线程和符号化后的栈顶帧匹配候选。两边互为补充：SDK 现场缺失时，tombstone 可以补证据；tombstone 缺失时，SDK 事件照样保留——某个附件缺席，不该连带删掉事故记录。
+原生崩溃事件有两类独立的原始来源：一类是 Crashpad、Breakpad 或自研 SDK 生成的小型转储（minidump） minidump 和事件封装 envelope，另一类是 `REASON_CRASH_NATIVE` 对应的 tombstone。服务端用构建 ID、ABI、操作系统信号、故障地址（fault address）、崩溃线程和符号化后的栈顶帧匹配候选。两边互为补充：SDK 现场缺失时，tombstone 可以补证据；tombstone 缺失时，SDK 事件照样保留——某个附件缺席，不该连带删掉事故记录。
 
-Play Console、Crashlytics 和自研 APM 在安装来源、采样、去重和用户统计口径上各不相同，`ApplicationExitInfo` 则是系统自己的近期进程记录。同一次崩溃或 ANR 可能同时出现在多个来源里，统一报表必须先归并事件，并保留来源事件 ID 列表 `source_event_ids` 与归并置信度。
+Play Console、Crashlytics 和自研 APM 在安装来源、采样、去重和用户统计口径上各不相同，`ApplicationExitInfo` 则是系统自己的近期进程记录。同一次崩溃或 ANR 可能同时出现在多个来源里，统一报表必须先归并事件，并保留来源事件 ID 列表（`source_event_ids`） `source_event_ids` 与归并置信度。
 
 ### Android 11 以下的替代路径
 
@@ -248,9 +248,9 @@ API 29 及以下没有公开的历史退出原因 API。应用可以保存退出
 
 系统或应用崩溃可能发生在标记落盘中途，状态文件需要原子替换、版本号和校验。标记还会受清除数据、备份恢复和时钟变化影响；把一次残留标记直接计为 LMK，证据是不够的。
 
-开源内存监控库 KOOM 的一类 fork-dump 方案——派生子进程执行转储——会暂停 Android Runtime，通过 `fork` 创建子进程，再由子进程生成 HPROF。它依赖 ART 私有符号、动态链接和特定版本兼容代码，不属于 Android SDK 能力。项目若采用此类方案，要把支持版本、厂商 ROM 验证、失败回退、隐私、磁盘峰值和停用开关列为准入条件；正式发布构建不应为了兼容旧版本而默认启用私有 ART 依赖。
+开源内存监控库 KOOM 的一类 fork-dump（派生子进程执行转储） 方案——派生子进程执行转储——会暂停 Android Runtime（ART），通过 `fork` 创建子进程，再由子进程生成 HPROF。它依赖 ART 私有符号、动态链接和特定版本兼容代码，不属于 Android SDK 能力。项目若采用此类方案，要把支持版本、厂商 ROM 验证、失败回退、隐私、磁盘峰值和停用开关列为准入条件；正式发布构建不应为了兼容旧版本而默认启用私有 ART 依赖。
 
-API 30+ 上轻量状态机仍值得保留，用来提供业务场景和发现系统记录缺失，但 reason 以公开系统字段为主；低版本状态机只能输出带置信度的候选类别。
+API 30+ 上轻量状态机仍值得保留，用来提供业务场景和发现系统记录缺失，但 reason 以公开系统字段为主；低版本状态机只能输出（I/O）带置信度的候选类别。
 
 #### 低版本证据等级与统一事件模型
 
@@ -267,17 +267,17 @@ Android 5–10 的退出推断要把结论、置信度和原始证据分开保�
 
 统一数据域中，`system_reason_code` 只接收 API 30+ `ApplicationExitInfo` 的公开 `reason`；`legacy_reason` 只接收应用规则结论；`reason_source` 区分 `android_system`、`external_platform`、`app_confirmed` 和 `app_inferred`。
 
-`coalesce()` 返回第一个非空值，拿它把两类原因合成一个字段，会丢掉证据来源。事件还应保留 `session_id`、`process_name`、设备启动周期、前一进程启动的单调时间、发现旧会话的时间、`confidence`、原始证据数组 `evidence[]`、附件引用、采集器与规则版本。
+`coalesce()（返回第一个非空值的数据库函数）` 返回第一个非空值，拿它把两类原因合成一个字段，会丢掉证据来源。事件还应保留 `session_id`、`process_name`、设备启动周期、前一进程启动的单调时间、发现旧会话的时间、`confidence`、原始证据数组 `evidence[]`、附件引用、采集器与规则版本。
 
-低版本没有可靠的退出时间，下一次启动时间只表示何时发现旧会话未闭合；PID 还会复用。关联时用会话、进程、构建、设备启动周期和证据指纹——由多项稳定特征生成的匹配键。外部 ANR 或崩溃记录匹配不上唯一来源时，保留候选及分数，别为了凑一个统一事件而丢掉来源关系。
+低版本没有可靠的退出时间，下一次启动时间只表示何时发现旧会话未闭合；PID 还会复用。关联时用会话、进程、构建、设备启动周期和证据指纹（evidence fingerprint，由多项稳定特征生成的匹配键）——由多项稳定特征生成的匹配键。外部 ANR 或崩溃记录匹配不上唯一来源时，保留候选及分数，别为了凑一个统一事件而丢掉来源关系。
 
-调试环境里，`/data/anr/`、系统事件日志、导出系统服务状态的 `dumpsys` 和 LMKD 记录都可以补充证据，但普通发布包把它们当稳定的生产接口是行不通的。KOOM 一类 fork-dump 方案只能在进程仍有执行机会时保存 Java 堆现场，并依赖 ART 私有实现；这类记录可以进入 `evidence[]`，但疑似内存压力要升格为系统确认，还差着证据。所有 minidump、HPROF、内存映射 maps、线程栈和日志附件都要分别控制采样、存储、加密、访问和删除。
+调试环境里，`/data/anr/`、系统事件日志、导出系统服务状态的 `dumpsys`（导出系统服务状态的诊断命令） 和 LMKD 记录都可以补充证据，但普通发布包把它们当稳定的生产接口是行不通的。KOOM 一类 fork-dump 方案只能在进程仍有执行机会时保存 Java 堆现场，并依赖 ART 私有实现；这类记录可以进入 `evidence[]`，但疑似内存压力要升格为系统确认，还差着证据。所有 minidump、HPROF、内存映射（maps） maps、线程栈和日志附件都要分别控制采样、存储、加密、访问和删除。
 
 ### 端侧存储与上报设计
 
 退出历史容量有限，应用要在后续活跃进程里及时查询，但查询和附件 I/O 都别进入首帧关键路径。应用可交互后，由后台 executor 读取轻量元数据，再交给受系统调度约束的任务处理 trace 与上传。
 
-下面的流程图里，我们把元数据与大附件分开处理：trace 复制失败不挡退出摘要进队列；上传成功后仍保留来源键，避免下一次启动重复计数。图中的 upsert 表示“来源指纹已存在则更新，不存在则插入”。
+下面的流程图里，我们把元数据与大附件分开处理：trace 复制失败不挡退出摘要进队列；上传成功后仍保留来源键（key），避免下一次启动重复计数。图中的 upsert 表示“来源指纹已存在则更新，不存在则插入”。
 
 ```mermaid
 flowchart TD
@@ -320,13 +320,13 @@ flowchart TD
 
 多进程应用容易出现归因错位。`getHistoricalProcessExitReasons(null, 0, maxNum)` 会匹配调用者 UID 下的包，外部服务进程的记录也可能被卷进来；主进程读到推送进程或外部服务进程的 `REASON_LOW_MEMORY`，直接记成主进程启动失败就归错位了。查询包名、`processName`、package UID、real UID 和 defining UID 都要进入明细。
 
-`REASON_USER_REQUESTED` 分不出用户是在设置里强行停止，还是从最近任务移除。Android 14 / API 34 以前，包更新或组件状态变化还可能落到这个 `reason` 上；API 34 才加入 `REASON_PACKAGE_UPDATED` 与 `REASON_PACKAGE_STATE_CHANGE`。跨版本报表要结合系统 API 级别解释，旧系统的 `REASON_USER_REQUESTED` 里混着包更新，全部标成用户行为就错了。
+`REASON_USER_REQUESTED` 分不出用户是在设置里强行停止，还是从最近任务（Recents）移除。Android 14 / API 34 以前，包更新或组件状态变化还可能落到这个 `reason` 上；API 34 才加入 `REASON_PACKAGE_UPDATED` 与 `REASON_PACKAGE_STATE_CHANGE`。跨版本报表要结合系统 API 级别解释，旧系统的 `REASON_USER_REQUESTED` 里混着包更新，全部标成用户行为就错了。
 
 `REASON_USER_STOPPED` 指多用户设备上的系统用户或工作资料被停止，与用户点击 Force stop 是两种事件。`REASON_SIGNALED` 只说明进程因操作系统信号退出；在不支持 LMK 分类上报的设备上，低内存终止可能表现为 `SIGKILL`，而其他原因同样可能发送 `SIGKILL`。没有更多证据时，光凭信号编号定不了唯一原因。
 
 `AppExitInfoTracker.preventExitInfoUpdate()` 会保护已有的 `REASON_ANR`、`REASON_CRASH` 和 `REASON_CRASH_NATIVE` 记录，后续显式终止信息另起新记录，减少相邻终止动作覆盖故障原因。这是 `android-17.0.0_r1` 的实现细节，各设备厂商和旧版本是否一致没有 SDK 保证，外推要小心。
 
-Android 框架会把退出历史持久化，并在系统服务就绪后加载，但公开 API 只承诺近期的环形缓冲区记录——固定文件路径、固定条数、跨重启永久保留，这些都不在承诺里。没有历史记录，可能出自缓冲淘汰、系统尚未记录、数据被清除或厂商实现差异中的任何一种，拿它断定“进程未异常退出”是靠不住的。
+Android 框架会把退出历史持久化，并在系统服务就绪（system ready）后加载，但公开 API 只承诺近期的环形缓冲区记录——固定文件路径、固定条数、跨重启永久保留，这些都不在承诺里。没有历史记录，可能出自缓冲淘汰、系统尚未记录、数据被清除或厂商实现差异中的任何一种，拿它断定“进程未异常退出”是靠不住的。
 
 ### 退出原因与稳定性指标体系的映射
 
@@ -339,13 +339,13 @@ Android 框架会把退出历史持久化，并在系统服务就绪后加载，
 | 需要排查 | `REASON_INITIALIZATION_FAILURE`、`REASON_DEPENDENCY_DIED`、`REASON_FREEZER`、未知信号 | 独立观察趋势并调查样本，不并入崩溃或 ANR 指标 |
 | 用户或系统状态 | `REASON_USER_REQUESTED`、`REASON_USER_STOPPED`、包或权限状态变化、`REASON_EXIT_SELF` | 作为时间线背景；按 API 级别处理旧版本复用语义 |
 
-无崩溃用户比例、ANR 率等产品指标需要稳定的用户分母和来源去重，光凭退出记录数量生成不了。报告同时保留用户可感知故障率、内部退出事件率与数据完整性；三者分别描述用户影响、系统记录数量和数据可信程度。
+无崩溃用户比例（crash-free users）、ANR 率等产品指标需要稳定的用户分母和来源去重，光凭退出记录数量生成不了。报告同时保留用户可感知故障率、内部退出事件率与数据完整性；三者分别描述用户影响、系统记录数量和数据可信程度。
 
 `ApplicationExitInfo` 在线 API 参考已经把 `REASON_MEMORY_LIMITER` 与 `REASON_ANOMALY` 标到 Android 17 minor release 37.2，但这两个常量不在 `android-17.0.0_r1` 源码中。覆盖 `android-17.0.0_r1` / API 37 基线的数据协议不要把它们设为必填枚举；若设备实际返回这些 reason，应保存原始整数、API 级别和 `SDK_INT_FULL`，再按后续版本能力扩展解析。
 
-### ApplicationExitInfo 与 GWP-ASan / MTE 报告拼接
+### ApplicationExitInfo 与 GWP-ASan（抽样检测堆内存越界与释放后使用） / MTE（硬件内存标记扩展） 报告拼接
 
-GWP-ASan 抽样检测堆内存越界与释放后使用，MTE 是硬件内存标记扩展，HWASan 基于地址标记检测原生内存错误；它们发现内存安全错误时，进程可能以原生崩溃或 `abort` 结束。这时原生崩溃事件封装应保存构建是否启用相关工具、ABI、操作系统信号、故障地址、构建 ID 和工具提供的结构化信息，后续再用 `REASON_CRASH_NATIVE` 与 tombstone protobuf 补充系统现场。
+GWP-ASan 抽样检测堆内存越界与释放后使用，MTE 是硬件内存标记扩展，HWASan（基于地址标记的原生内存错误检测器） 基于地址标记检测原生内存错误；它们发现内存安全错误时，进程可能以原生崩溃或 `abort` 结束。这时原生崩溃事件封装应保存构建是否启用相关工具、ABI、操作系统信号、故障地址、构建 ID 和工具提供的结构化信息，后续再用 `REASON_CRASH_NATIVE` 与 tombstone protobuf 补充系统现场。
 
 关联的时间容差要按两类采集来源的时间精度、排队延迟和设备 wall clock 质量确定。`processName`、ABI、操作系统信号、故障地址、原生栈顶帧与构建 ID 一致时，可以提高匹配置信度。工具报告用于解释内存错误类型，tombstone 用于补充线程、寄存器、内存映射和系统现场信息；原始来源仍需保留。GWP-ASan/MTE 原理见 15.10、17.9 和 20.3。
 
@@ -394,7 +394,7 @@ GWP-ASan 抽样检测堆内存越界与释放后使用，MTE 是硬件内存标�
 | Android 16 minor release / API 36.1 | 增加主动请求后台 trace 快照、注册全部 trigger 及三类用户终止 trigger | 运行时按完整 SDK 版本检查 |
 | Android 17 / API 37 | 增加 cold start、OOM、anomaly、CPU kill、app compat trigger；部分设备启用 MemoryLimiter | 设备覆盖、系统限流和无产物路径都要监控 |
 
-API 36.1 是 Android 16 的 minor SDK release，也就是次版本 SDK 发布，同一大版本内也可以新增 API；它和 `SdkExtensions.getExtensionVersion()` 表示的 Mainline SDK Extension 是两套版本机制——后者是可由模块更新提供的扩展版本。
+API 36.1 是 Android 16 的 minor SDK release（次版本 SDK 发布），也就是次版本 SDK 发布，同一大版本内也可以新增 API；它和 `SdkExtensions.getExtensionVersion()` 表示的 Mainline SDK Extension（可由模块更新提供的扩展版本） 是两套版本机制——后者是可由模块更新提供的扩展版本。
 
 调用 36.1 新 API 前，应检查 `Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1`；`SDK_INT` 只记录大版本，靠 `SDK_INT >= 36` 分不出 36.0 和 36.1。Android 17 的 `SDK_INT_FULL` 高于该值，同样满足条件。
 
@@ -408,9 +408,9 @@ Android 10 只能依赖 App 自有状态、Crash SDK，以及受控场景下的 
 
 Android 15 / API 35 引入公开的 `ProfilingManager`，实现位于 Mainline Profiling 模块 `packages/modules/Profiling`——Mainline 模块是可以经系统组件更新升级、无需完整系统 OTA 的 Android 组件。直接 API 签名为：
 
-`requestProfiling(int profilingType, Bundle parameters, String tag, CancellationSignal cancellationSignal, Executor executor, Consumer<ProfilingResult> listener)`
+`requestProfiling(int profilingType, Bundle parameters, String tag（调用方附加的短标识）, CancellationSignal cancellationSignal, Executor executor, Consumer<ProfilingResult> listener)`
 
-应用也可以用 AndroidX Profiling 提供的 request builder 构造请求，省去直接维护 `Bundle` 参数和平台版本分支的成本。`Bundle` 是 Android 用键值对传递参数的容器。平台支持四种请求类型：
+应用也可以用 AndroidX Profiling 提供的 request builder（请求构造器） 构造请求，省去直接维护 `Bundle` 参数和平台版本分支的成本。`Bundle` 是 Android 用键值对传递参数的容器。平台支持四种请求类型：
 
 | profiling type | 适用问题 | 主要成本或限制 |
 |---|---|---|
@@ -419,14 +419,14 @@ Android 15 / API 35 引入公开的 `ProfilingManager`，实现位于 Mainline P
 | stack sampling | 定期抽取线程调用栈，用较低成本观察 CPU 热点 | 短函数和瞬态热点可能未被采到 |
 | system trace | 记录调度、Binder、应用 trace 等系统时间线，用于分析启动和卡顿 | 缓冲区和时长影响文件大小与覆盖范围 |
 
-请求通过异步回调返回，并且可能不执行。系统级与进程级 rate limiter、已有任务、执行或后处理错误、磁盘不足、非法参数都可能使请求失败，系统也可能延后开始。应用要归档 `ProfilingResult#getErrorCode()` 和可选的 `getErrorMessage()`，并把“请求已发出”和“结果已生成”作为两个状态。
+请求通过异步回调返回，并且可能不执行。系统级与进程级 rate limiter（频率限制器）、已有任务、执行或后处理错误、磁盘不足、非法参数都可能使请求失败，系统也可能延后开始。应用要归档 `ProfilingResult#getErrorCode()` 和可选的 `getErrorMessage()`，并把“请求已发出”和“结果已生成”作为两个状态。
 
 结果回调有两个入口：
 
 - 请求专用的 `Executor` 与 `Consumer<ProfilingResult>`，用于当前 `requestProfiling()`。`Executor` 决定在哪个线程执行回调，`Consumer` 接收结果对象。
 - `registerForAllProfilingResults()` 注册的全局监听器，既接收应用请求结果，也接收系统 trigger 结果。
 
-如果请求没有同时提供专用 listener / executor，进程也没有已注册的全局 listener / executor 组合，系统会丢弃该请求，不会启动采集。系统触发的结果没有请求现场的 callback，只能经全局监听器交付；应用若在生成结果时未运行，下次启动并重新注册监听器后仍可能收到该结果。
+如果请求没有同时提供专用 listener / executor，进程也没有已注册的全局 listener / executor 组合，系统会丢弃该请求，不会启动采集。系统触发的结果没有请求现场的 callback（回调），只能经全局监听器交付；应用若在生成结果时未运行，下次启动并重新注册监听器后仍可能收到该结果。
 
 成功文件的位置必须读取 `ProfilingResult#getResultFilePath()`；目录结构和文件命名属于实现细节，上传器不要自行拼接 `/data/user/0/<package>/files/profiling/...`。`ProfilingResult` 可直接读取 error code、error message、结果路径、tag 和 trigger type，其中 tag 是调用方附加的短标识；它没有 `getProfilingType()`。
 
@@ -434,7 +434,7 @@ Android 15 / API 35 引入公开的 `ProfilingManager`，实现位于 Mainline P
 
 ### Android 16-17：系统事件触发 profiling
 
-trigger 注册表达的是“应用希望接收某类系统事件对应的采集结果”。系统不会持续运行后台 trace，而是在系统设定的时间范围内随机启动采样；事件发生时，只有后台 trace 正在运行、应用已注册且限流允许，系统才可能保存结果。后台 trace 用的是 ring buffer，空间满后覆盖较早事件，所以附件通常保留触发前最近一段活动。
+trigger 注册表达的是“应用希望接收某类系统事件对应的采集结果”。系统不会持续运行后台 trace，而是在系统设定的时间范围内随机启动采样；事件发生时，只有后台 trace 正在运行、应用已注册且限流允许，系统才可能保存结果。后台 trace 用的是 ring buffer（环形缓冲区），空间满后覆盖较早事件，所以附件通常保留触发前最近一段活动。
 
 #### API 36
 
@@ -478,7 +478,7 @@ Android 17 在部分设备上实施 MemoryLimiter，且不受应用 `targetSdkVe
 
 多个 package 共享同一 UID、并同时注册某些异常 trigger 时，系统可能不提供附件。这时结果处理器先看 trigger type、tag 和文件，再选择解析器。
 
-`TRIGGER_TYPE_COLD_START` 会尽早启动一份新的 system trace 和 stack sampling profile，持续到应用调用 `reportFullyDrawn()`；未调用时，公开 API 文档给出的默认停止时间为 5 秒。它用的 discard buffer 满后丢弃新事件，以此保留启动初期的内容。采集启动仍可能有延迟，因此产物不保证覆盖进程创建后的每个事件。
+`TRIGGER_TYPE_COLD_START` 会尽早启动一份新的 system trace 和 stack sampling profile，持续到应用调用 `reportFullyDrawn()`；未调用时，公开 API 文档给出的默认停止时间为 5 秒。它用的 discard buffer（满后丢弃新事件的缓冲区） 满后丢弃新事件，以此保留启动初期的内容。采集启动仍可能有延迟，因此产物不保证覆盖进程创建后的每个事件。
 
 `TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 仍有官方文档差异：`android-17.0.0_r1` 源码注释和 2026-08-03 更新的 API reference 写的是后台 system trace 快照，Android 17 features 页面写的是 call-stack sample。接入端应保存系统返回的原始产物及文件类型，解析器不要按 trigger 名写死。本文以版本化源码和 API reference 作为接口语义依据，并保留差异记录，等待官方文档统一。
 

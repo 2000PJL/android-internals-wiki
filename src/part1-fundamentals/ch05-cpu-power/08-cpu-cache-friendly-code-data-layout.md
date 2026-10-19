@@ -61,7 +61,7 @@ consolidated_from:
 
 # CPU Cache 友好代码与数据布局优化
 
-Cache 优化要解决两个问题：让经常一起使用的数据在时间和地址上靠近；让被不同 CPU 频繁写入的数据各自分开，避免挤在同一条 cache line 上。动手之前，我们先要证明当前负载确实受内存层级限制，再让数据布局去匹配访问模式；停在“顺序数组比链表快”这类经验判断上，很容易把力气花错地方。这里的内存层级，包括各级 cache、地址转换缓存和 DRAM。不同移动 SoC 的 CPU 核心、频率、cache 容量、共享层级和可用的 PMU（Performance Monitoring Unit，性能监控单元）事件都不一样，在一个机型上成立的结论换个 SoC 未必成立；没有测量支撑的 padding、prefetch 或对象池，常常只是增加了内存占用，延迟却没有改善。
+Cache 优化要解决两个问题：让经常一起使用的数据在时间和地址上靠近；让被不同 CPU 频繁写入的数据各自分开，避免挤在同一条 cache line（缓存行，即硬件成块传输和维护的一段连续数据） 上。动手之前，我们先要证明当前负载确实受内存层级限制，再让数据布局去匹配访问模式；停在“顺序数组比链表快”这类经验判断上，很容易把力气花错地方。这里的内存层级，包括各级 cache、地址转换缓存和 DRAM。不同移动 SoC（系统级芯片） 的 CPU 核心、频率、cache 容量、共享层级和可用的 PMU（Performance Monitoring Unit，性能监控单元）事件都不一样，在一个机型上成立的结论换个 SoC 未必成立；没有测量支撑的 padding（填充）、prefetch（预取） 或对象池，常常只是增加了内存占用，延迟却没有改善。
 
 > 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。设备可能使用其他内核分支。
 
@@ -71,7 +71,7 @@ Cache 优化要解决两个问题：让经常一起使用的数据在时间和�
 
 动手优化之前，先把我们要依赖的 cache 模型建立对：层级结构是什么样的、每层的容量和延迟由什么决定。模型错了，后面每个判断都会跟着错。
 
-现代移动 CPU 通常有每核私有的 L1 指令 cache 和数据 cache、每核或小组共享的 L2，以及 cluster 或 SoC 级共享 cache。具体容量、组相联路数、上下级是否互相包含、访问延迟，都由 CPU 与 SoC 实现决定：Cortex-A510、A710、A715 等核心本身就允许采用多种 L1/L2 配置，芯片厂商还可以加入系统级 cache。
+现代移动 CPU 通常有每核私有的 L1 指令 cache 和数据 cache、每核或小组共享的 L2，以及 cluster（核心簇） 或 SoC 级共享 cache。具体容量、组相联路数、上下级是否互相包含、访问延迟，都由 CPU 与 SoC 实现决定：Cortex-A510、A710、A715 等核心本身就允许采用多种 L1/L2 配置，芯片厂商还可以加入系统级 cache。
 
 所以，一张“L1 2 周期、L2 10 周期、主存 200 周期”的表，只能当数量级参考；把它当作所有 Android 设备的通用参数，从第一步就会走偏。实际延迟还要受频率、尚未完成的访存请求数、预取、TLB（Translation Lookaside Buffer，地址转换缓存）、DRAM 状态和资源争用影响。工程上更有参考价值的是数量级与相对关系：
 
@@ -131,7 +131,7 @@ inline cache 的影响是间接的：它可能让编译器生成更直接的调�
 - `ByteArray` / `FloatArray` 适合紧凑的批量处理；
 - Java 多维数组是“数组的数组”，每一行是独立对象。
 
-把热循环从装箱集合改成 primitive array，收益可能同时来自减少装箱、减少分配和改善局部性。写报告时我们要把这几个因素都列出来，别把全部收益都归给 cache。
+把热循环从装箱集合改成 primitive（基本类型） array（基本类型数组），收益可能同时来自减少装箱、减少分配和改善局部性。写报告时我们要把这几个因素都列出来，别把全部收益都归给 cache。
 
 ### 时间局部性
 
@@ -148,9 +148,9 @@ inline cache 的影响是间接的：它可能让编译器生成更直接的调�
 - 多线程分别更新数组中的相邻计数器；
 - 一个线程频繁写状态，其他线程频繁读取同一 cache line 中的配置；
 - 锁与被其他 CPU 高频读取的数据挤在同一 cache line；
-- 多生产者把各自的 head/tail 或统计字段放得过近。
+- 多生产者把各自的 head/tail（读写位置） 或统计字段放得过近。
 
-看到这类模式先别急着定性：锁竞争、atomic 重试、调度和内存带宽不足，都会产生相似的症状，要靠后面的测量把它们分开。
+看到这类模式先别急着定性：锁竞争、atomic（原子操作） 重试、调度和内存带宽不足，都会产生相似的症状，要靠后面的测量把它们分开。
 
 ### 先调整并发模型，再考虑 padding
 
@@ -177,7 +177,7 @@ struct alignas(64) CounterSlot {
 static_assert(sizeof(CounterSlot) == 64);
 ```
 
-它保证的是 C++ 对象布局满足本次构建的 64 字节设计。目标硬件若采用更大的一致性维护粒度，或数组起始地址、allocator、ABI 发生变化，就要重新验证。原子操作也必须采用符合算法要求的 memory order；padding 解决不了 data race。
+它保证的是 C++ 对象布局满足本次构建的 64 字节设计。目标硬件若采用更大的一致性维护粒度，或数组起始地址、allocator（内存分配器）、ABI 发生变化，就要重新验证。原子操作也必须采用符合算法要求的 memory order（内存序）；padding 解决不了 data race（数据竞争）。
 
 Java/Kotlin 的对象布局属于 ART 实现细节，靠添加若干 `long` 字段保证不了字段独占 cache line；`@Contended` 也不是 Android 公共 SDK 契约。应用层更稳的路线是减少共享可变对象、分片计数、批量提交，再以基准测试验证。
 
@@ -185,9 +185,9 @@ Java/Kotlin 的对象布局属于 ART 实现细节，靠添加若干 `long` 字�
 
 `MessageQueue` 在 Android 17 有 Legacy、Combined 与 CombinedDeli 等实现变体，字段布局还要再经过一层 ART 对象布局。`mPtr` 与 `mMessages` 在源码中相邻，只说明源码里相邻；它们是否落在同一条 cache line，要看到实际布局才算数，“引发了可测 false sharing”又是更远的一步。
 
-`enqueueMessage()` 与队列消费里还混着锁、native 层的 poll/wake 等待唤醒和主线程调度。所以在没有 PMU、地址级采样和对照布局的时候，这个例子适合当作共享队列案例来分析；要标成“framework 已经存在 false sharing”，证据还不够。
+`enqueueMessage()` 与队列消费里还混着锁、native 层的 poll/wake 等待唤醒（poll/wake）和主线程调度。所以在没有 PMU、地址级采样和对照布局的时候，这个例子适合当作共享队列案例来分析；要标成“framework 已经存在 false sharing”，证据还不够。
 
-## C/C++ 数据布局：AoS、SoA 与 hot/cold split
+## C/C++ 数据布局：AoS、SoA 与 hot/cold split（冷热字段拆分）
 
 ### AoS 与 SoA 的选择由访问模式决定
 
@@ -226,7 +226,7 @@ struct ParticleBatch {
 
 ### hot/cold split 还要考虑对象生命周期
 
-hot/cold split 把每次迭代都读取的字段放入紧凑的热结构，把调试字符串、低频统计和错误信息放到 cold side，以此缩小热工作集。常见形式是：
+hot/cold split 把每次迭代都读取的字段放入紧凑的热结构，把调试字符串、低频统计和错误信息放到 cold side（冷数据区），以此缩小热工作集。常见形式是：
 
 ```cpp
 struct RenderItemHot {
@@ -247,11 +247,11 @@ struct RenderItemCold {
 
 ### 连续内存也有扩容与复制成本
 
-`std::vector` 和 Binder `Parcel` 使用连续缓冲区，顺序读写的空间局部性很好，但容量增长可能触发重新分配和复制。已知大小时合理调用 `reserve()` 可以减少扩容，过度预留则会推高 RSS。
+`std::vector` 和 Binder `Parcel` 使用连续缓冲区，顺序读写的空间局部性很好，但容量增长可能触发重新分配和复制。已知大小时合理调用 `reserve()` 可以减少扩容，过度预留则会推高 RSS（常驻内存）。
 
 `frameworks/native/libs/binder/Parcel.cpp` 中，`mData`、`mDataSize`、`mDataCapacity` 和 `mDataPos` 管理连续数据区，写入按 4 字节 padding，增长路径使用 `realloc` 或分配并复制。Parcel 另有对象偏移数组，读取时也可以调整 data position，所以“Parcel 只能从头顺序读”这个说法并不成立。Parcel 字段与增长路径的完整说明见本章「Binder Parcel：连续数据与独立对象表」。
 
-Parcel 的布局主要服务于 Binder 传输格式、安全检查和对象管理，cache 局部性只是连续数据区顺带带来的性质。它也支撑不了“Parcel 总比 JSON 快”这种结论：序列化格式、数据规模、解析器和 IPC 拷贝都要放进比较。
+Parcel 的布局主要服务于 Binder 传输格式（wire format）、安全检查和对象管理，cache 局部性只是连续数据区顺带带来的性质。它也支撑不了“Parcel 总比 JSON 快”这种结论：序列化格式、数据规模、解析器和 IPC（instructions per cycle，每周期执行的指令数） 拷贝都要放进比较。
 
 ## 应用层热路径：先减少工作，再谈对象池
 
@@ -273,11 +273,11 @@ ART 的线程局部分配路径很快，存活时间短的对象也能在 GC 年
 - 旧对象未必仍在目标 CPU 的 cache；
 - 池自身产生锁竞争或共享写入。
 
-`Message.obtain()` 的回收池只说明 framework 在这个场景采用了特定复用策略，推广到“所有临时对象都适合池化”就过了。先用 allocation profiler、GC pause、CPU 和内存数据确认分配成本，再比较“直接分配”“批量分配”“复用”三种方案。
+`Message.obtain()` 的回收池只说明 framework 在这个场景采用了特定复用策略，推广到“所有临时对象都适合池化”就过了。先用 allocation profile（用于指导构建或运行时优化的配置文件）r（分配分析器）、GC pause（垃圾回收停顿）、CPU 和内存数据确认分配成本，再比较“直接分配”“批量分配”“复用”三种方案。
 
 ### 分支与 cache 要分开归因
 
-不可预测分支会造成 pipeline flush，推测执行的指令被清空重来；间接跳转则影响取指和译码。这些与 data-cache miss 属于不同机制。三元表达式未必生成无分支指令，`__builtin_expect` 也只是向编译器提供分支概率提示。
+不可预测分支会造成 pipeline flush（清空流水线中推测执行的指令），推测执行的指令被清空重来；间接跳转则影响取指和译码。这些与 data-cache miss 属于不同机制。三元表达式未必生成无分支指令，`__builtin_expect` 也只是向编译器提供分支概率提示。
 
 优化分支时，我们要把 `branch-misses`、生成后的机器码和端到端时间放在一起看。把错误路径移出热函数可能改善指令布局，但函数内联、LTO（链接时优化）和 PGO（运行数据驱动的优化）会再次改变代码，源码排列直接代表不了最终的 instruction-cache 布局。
 
@@ -285,18 +285,18 @@ ART 的线程局部分配路径很快，存活时间短的对象也能在 GC 年
 
 `__builtin_prefetch()` 是提示，编译器和硬件可以按各自规则处理。线性数组通常已有硬件预取兜底；链表、树或多流访问有时能从软件 prefetch 获益。
 
-prefetch 距离太近，数据可能来不及到达；距离太远，又可能提前挤出仍在使用的 cache line。目标地址不在页表中时，还可能增加地址转换工作。至少要在两类核心、冷/热数据和有/无并发负载下比较，并检查能耗；只看一次 microbenchmark 的 p50 结果就把改动放进通用库，依据是不够的。
+prefetch 距离太近，数据可能来不及到达；距离太远，又可能提前挤出仍在使用的 cache line。目标地址不在页表中时，还可能增加地址转换工作。至少要在两类核心、冷/热数据和有/无并发负载下比较，并检查能耗；只看一次 microbenchmark（微基准） 的 p50（中位数） 结果就把改动放进通用库，依据是不够的。
 
 ## DEX 局部性：Startup Profile 与构建配置
 
-DEX 标识符与类定义受格式排序约束，和“按源码出现顺序排列”是两回事；ART 的 AOT 和 JIT 产物也不会机械复制 DEX 顺序。
+DEX 标识符与类定义受格式排序约束，和“按源码出现顺序排列”是两回事；ART 的 AOT（Ahead-of-Time，预先编译） 和 JIT（Just-in-Time，即时编译） 产物也不会机械复制 DEX 顺序。
 
 Android 当前的官方工具链让两类 profile 各管一段：
 
 - Baseline Profile 供 ART 对常用方法进行 AOT 编译；
 - Startup Profile 在构建期指导 R8/D8 优化 DEX 中启动代码的布局。
 
-Startup Profile 让启动关键类和方法更集中，并尽量放入首个 `classes.dex`，从而减少启动阶段需要触及的代码页。收益可能同时来自 DEX page locality、page fault 减少、解压或映射过程变化，以及编译产物布局变化；把它们全归到 instruction-cache miss 头上，是立不住的。
+Startup Profile 让启动关键类和方法更集中，并尽量放入首个 `classes.dex`，从而减少启动阶段需要触及的代码页。收益可能同时来自 DEX page locality（代码页局部性）、page fault（缺页） 减少、解压或映射过程变化，以及编译产物布局变化；把它们全归到 instruction-cache miss 头上，是立不住的。
 
 ### 当前构建要求
 
@@ -312,7 +312,7 @@ Startup Profile 让启动关键类和方法更集中，并尽量放入首个 `cl
 
 ### 生成、验证、A/B 测量
 
-Startup Profile 应覆盖 launcher、常见 deep link、通知入口等真实启动路径，也要避免让大量与启动无关的 journey 占满首个 DEX。
+Startup Profile 应覆盖 launcher、常见 deep link（直接打开应用内指定页面的链接）、通知入口等真实启动路径，也要避免让大量与启动无关的 journey 占满首个 DEX。
 
 验证分四步：
 
@@ -337,7 +337,7 @@ simpleperf list raw
 simpleperf stat --print-hw-counter
 ```
 
-第一条列出内核封装的事件，第二条列出当前 Arm PMU 直接暴露的 raw event，第三条显示可用硬件 counter 数量。`raw-l2-dcache-refill` 未必每台设备都支持，某个 Cortex 文档中的 event number 也未必适用于另一款 SoC，先确认自己这台设备有什么。
+第一条列出内核封装的事件，第二条列出当前 Arm PMU 直接暴露的 raw event（原始硬件事件），第三条显示可用硬件 counter（计数器） 数量。`raw-l2-dcache-refill` 未必每台设备都支持，某个 Cortex 文档中的 event number 也未必适用于另一款 SoC，先确认自己这台设备有什么。
 
 ### 先做分组计数
 
@@ -350,9 +350,9 @@ simpleperf stat \
   -p <pid> --duration 10
 ```
 
-同组事件会尽量同时调度，适合计算 IPC（instructions per cycle，每周期指令数）或 miss ratio。硬件 counter 不足时会发生 multiplexing（分时复用）；引用输出时要连 enabled/running 时间和警告一起保留。不同 cluster 可能使用不同 PMU，线程迁移也会影响结果解释。
+同组事件会尽量同时调度，适合计算 IPC（instructions per cycle，每周期指令数）或 miss ratio（未命中比例）。硬件 counter 不足时会发生 multiplexing（分时复用）；引用输出时要连 enabled/running 时间和警告一起保留。不同 cluster 可能使用不同 PMU，线程迁移也会影响结果解释。
 
-“cache miss 超过 10% 就该优化”这样的通用阈值并不存在。miss 的种类、每次 miss 的代价、内存访问并行度和业务 deadline 都会影响结果。更有用的做法是比较相同工作量下的前后变化，并确认延迟或吞吐也随之改善。
+“cache miss 超过 10% 就该优化”这样的通用阈值并不存在。miss 的种类、每次 miss 的代价、内存访问并行度和业务 deadline（截止时间） 都会影响结果。更有用的做法是比较相同工作量下的前后变化，并确认延迟或吞吐也随之改善。
 
 ### 再做热点采样
 
@@ -376,13 +376,13 @@ IPC 低的原因不止 memory-bound（主要受内存访问限制）一种：
 - branch miss 或 instruction-cache / TLB 压力；
 - 长依赖链；
 - 锁等待附近的短运行片段；
-- 指令前端或执行后端的 stall；
+- 指令前端或执行后端的 stall（停顿）；
 - 不同核心宽度与频率；
 - PMU multiplexing 或统计窗口错误。
 
-要判断负载是否真的受内存访问限制，我们至少要结合以下几类信息中的一部分：cache/TLB refill、backend stall、内存带宽或访问延迟采样；同时通过改变数据布局或工作集做可控实验，看指标是否随之移动。
+要判断负载是否真的受内存访问限制，我们至少要结合以下几类信息中的一部分：cache/TLB refill、backend stall（执行后端停顿）、内存带宽或访问延迟采样；同时通过改变数据布局或工作集做可控实验，看指标是否随之移动。
 
-Perfetto 的 sched、CPU frequency、thread state 和应用 slice 可以提供时间上下文。默认 trace 不会自动产生每线程 instructions/cycles，也没有一段可以直接套用的通用 SQL，能把任意 counter 按线程换算成 IPC。可以用相同 workload 的时间窗口关联 Simpleperf 与 Perfetto，但需注明数据来自两次采集还是同一次采集。
+Perfetto 的 sched、CPU frequency、thread state 和应用 slice（带起止时间的自定义事件区间） 可以提供时间上下文。默认 trace 不会自动产生每线程 instructions/cycles，也没有一段可以直接套用的通用 SQL，能把任意 counter 按线程换算成 IPC。可以用相同 workload 的时间窗口关联 Simpleperf 与 Perfetto，但需注明数据来自两次采集还是同一次采集。
 
 ### False sharing 需要地址级证据
 
@@ -391,16 +391,16 @@ Perfetto 的 sched、CPU frequency、thread state 和应用 slice 可以提供�
 - 支持 Arm SPE（Statistical Profiling Extension，统计分析扩展）的设备；
 - 内核提供的 perf data-source（访存来源）信息；
 - `perf c2c`（cache-to-cache 分析）或等价的厂商工具；
-- 带符号信息的 binary；
+- 带符号信息的 binary（二进制文件）；
 - 结构体布局信息，例如 `pahole` / `offsetof`。
 
 这些条件在量产 Android 手机上经常凑不齐。可行的替代实验是固定线程和工作量，只改变计数器分片或字段间距，同时比较吞吐量、atomic retry、cache event 与功耗。拿不到地址级证据时，结论就写到“现象与共享 cache line 竞争一致”为止，别声称已经定位到某个字段。
 
 ### 内存统计与 cache 证据的分工
 
-PSS（按共享比例折算的进程内存）中的 Dalvik/native/other 分类用于内存归因，说明不了 CPU cache 的数据布局或访问局部性；`anon_huge_pages`、`file_pmd_mapped` 等 smaps 字段反映大页映射状态，同样证明不了 false sharing。它们是内存统计和 TLB/页表侧的数据，顶替不了 cache 事件与地址级采样。
+PSS（按共享比例折算的进程内存）中的 Dalvik/native/other 分类用于内存归因，说明不了 CPU cache（高速缓存，下文保留 cache） 的数据布局或访问局部性；`anon_huge_pages`、`file_pmd_mapped` 等 smaps 字段反映大页映射状态，同样证明不了 false sharing。它们是内存统计和 TLB/页表侧的数据，顶替不了 cache 事件与地址级采样。
 
-同样，Linux 的 SLUB slab allocator（小对象分配器）并不会把所有对象统一向上取整到 cache-line 大小的整数倍；具体 alignment 取决于架构、cache flags、对象大小和创建参数。16 KiB page 对 slab order（一个 slab 占用的连续页阶数）、内存碎片和 TLB 的影响，也需要单独测量。
+同样，Linux 的 SLUB slab allocator（小对象分配器）并不会把所有对象统一向上取整到 cache-line 大小的整数倍；具体 alignment（对齐方式） 取决于架构、cache flags、对象大小和创建参数。16 KiB page 对 slab order（一个 slab 占用的连续页阶数）、内存碎片和 TLB 的影响，也需要单独测量。
 
 ## 系统源码中的局部性设计
 
@@ -408,13 +408,13 @@ PSS（按共享比例折算的进程内存）中的 Dalvik/native/other 分类�
 
 ### ART CardTable：一字节表示 1 KiB 堆区间
 
-Android 17 ART 的 `CardTable`（卡表）定义 `kCardShift = 10`，卡表里每个 byte 对应 1 KiB 堆区间。对象引用的 write barrier 会把对应 byte 标为 `kCardDirty`，GC 随后只需扫描这些 dirty card（脏卡）覆盖的堆区间。
+Android 17 ART 的 `CardTable`（卡表）定义 `kCardShift = 10`，卡表里每个 byte 对应 1 KiB 堆区间。对象引用的 write barrier（写屏障） 会把对应 byte 标为 `kCardDirty`，GC 随后只需扫描这些 dirty card（脏卡）覆盖的堆区间。
 
 `CardTable::Create()` 为表额外分配 256 字节，并调整 `biased_begin`（带偏置的基地址），使其地址低字节等于 `kCardDirty`。源码注释说明，这样 JIT 生成的写屏障不必另行构造或加载 dirty 常量，可以减少生成代码中的指令。
 
 可以确认的事实：
 
-- card granularity 是 1 KiB heap / 1 byte table；
+- card granularity 是 1 KiB heap（堆内存） / 1 byte table；
 - `biased_begin` 用于高效计算 card 地址并写入 dirty 状态；
 - dirty、aged、aged2 是 GC 状态。
 
@@ -455,7 +455,7 @@ Android 17 ART 的 `CardTable`（卡表）定义 `kCardShift = 10`，卡表里�
 
 分别比较：
 
-- primitive array 与 boxed collection；
+- primitive array 与 boxed collection（装箱元素集合）；
 - AoS、SoA、AoSoA；
 - 每线程分片与共享 atomic；
 - 有无 reserve；

@@ -123,7 +123,7 @@ consolidated_from:
 - 按压反馈：从 `ACTION_DOWN` 的事件时间开始，到包含按钮按下状态的帧实际呈现为止。
 - 点击结果：从 `ACTION_UP` 的事件时间开始，到包含操作结果的帧实际呈现为止。Android 的普通 `View` 通常在抬手后才确认点击，因此不宜从 `ACTION_DOWN` 计算业务完成时间。
 
-拖动和滚动要换一种测法：逐个考察输入样本与对应画面更新之间的 event-to-photon 延迟，并观察整段手势中的延迟分布是否稳定。只记录“手指开始移动到列表开始滚动”，会漏掉手势中段偶发的延迟波动。
+拖动和滚动要换一种测法：逐个考察输入样本与对应画面更新之间的 event-to-photon（事件采样到画面发光） 延迟，并观察整段手势中的延迟分布是否稳定。只记录“手指开始移动到列表开始滚动”，会漏掉手势中段偶发的延迟波动。
 
 TTID（Time to Initial Display）表示从启动请求到首帧显示，TTFD（Time to Full Display）表示从启动请求到应用报告内容已经完整呈现。一个量首帧、一个量完整可用状态，各自回答不同的问题。
 
@@ -137,7 +137,7 @@ TTID（Time to Initial Display）表示从启动请求到首帧显示，TTFD（T
 | 应用启动 | 系统接收启动请求 | TTID 或 TTFD | TTID 只到首帧，与“内容可交互”含义不同 |
 | 长任务 | 用户确认操作 | 进度反馈帧与业务完成点 | 只量业务耗时会漏掉反馈延迟 |
 
-`MotionEvent.getEventTimeNanos()` 接近输入样本的时间基准，但不等同于手指接触屏幕玻璃的物理时刻。帧的 present 信号也不表示面板像素已经完成发光。若要测量实验室级 touch-to-photon 延迟，需要高速相机、光电传感器或厂商显示链路 trace；普通应用采集的 Perfetto 更适合定位软件路径中的耗时阶段。
+`MotionEvent.getEventTimeNanos()` 接近输入样本的时间基准，但不等同于手指接触屏幕玻璃的物理时刻。帧的 present 信号也不表示面板像素已经完成发光。若要测量实验室级 touch-to-photon（触摸到画面发光） 延迟，需要高速相机、光电传感器或厂商显示链路 trace；普通应用采集的 Perfetto 更适合定位软件路径中的耗时阶段。
 
 ### RAIL 在 Android 中怎样使用
 
@@ -150,7 +150,7 @@ TTID（Time to Initial Display）表示从启动请求到首帧显示，TTFD（T
 | Idle | 空闲任务分块，每块不超过约 50 ms | 将可延后的工作切片，并允许高优先级交互抢占 | 50 ms 的主线程任务仍可能跨过多个高刷新率帧期限 |
 | Load | 首次可交互约 5 s、后续约 2 s | 区分首屏反馈与完整可用状态 | Web 网络条件下的 load 目标不等于 Android 启动告警 |
 
-Android 动画和滚动应以系统为当前帧分配的 deadline 为准。60 Hz 屏幕的刷新周期约为 16.67 ms，120 Hz 约为 8.33 ms；留给应用 CPU 的时间通常更少，因为 RenderThread、GPU、SurfaceFlinger 和显示提交还要继续工作。从 Android 12（API 31）开始，Perfetto FrameTimeline 会同时给出 expected timeline 和 actual timeline，也就是系统预期的时序与实际执行的时序；直接比较二者，比套用固定的 16 ms 更可靠。
+Android 动画和滚动应以系统为当前帧分配的 deadline（截止时间） 为准。60 Hz 屏幕的刷新周期约为 16.67 ms，120 Hz 约为 8.33 ms；留给应用 CPU 的时间通常更少，因为 RenderThread、GPU、SurfaceFlinger 和显示提交还要继续工作。从 Android 12（API 31）开始，Perfetto FrameTimeline 会同时给出 expected timeline（预期时序） 和 actual timeline（实际时序），也就是系统预期的时序与实际执行的时序；直接比较二者，比套用固定的 16 ms 更可靠。
 
 支持 Adaptive Refresh Rate（ARR，自适应刷新率）的设备还会动态改变刷新节奏。ARR 从 Android 15 开始面向启用该能力的设备提供，是否生效仍取决于设备显示能力、系统策略以及应用或窗口的帧率请求。Android 16 增加了 `Display.hasArrSupport()` 和 `Display.getSuggestedFrameRate(int)` 等查询能力。解释数据时仍需结合当前帧率、应用请求的帧率和 FrameTimeline——设备未必一直跑在最高刷新率上。
 
@@ -194,7 +194,7 @@ flowchart LR
     I -->|finishInputEvent ACK| F
 ```
 
-图中的 ACK 只表示应用已经完成这次输入事件的分发处理；界面此时可能还没绘制，对应 buffer 也可能还没由 HWC 呈现到显示设备。
+图中的 ACK（确认消息） 只表示应用已经完成这次输入事件的分发处理；界面此时可能还没绘制，对应 buffer 也可能还没由 HWC（Hardware Composer，硬件合成器） 呈现到显示设备。
 
 #### 输入读取与目标窗口选择
 
@@ -202,11 +202,11 @@ flowchart LR
 
 `InputManager` 分别启动 `InputReader` 和 `InputDispatcher` 的 native 线程，二者都由 `system_server` 中的 `InputManagerService` 托管。我们按这两个组件本来的归属记录即可；“InputFlinger 进程”“InputFlinger 线程”这类叫法在源码里没有对应实体。
 
-`InputDispatcher` 根据当前窗口、触摸目标、焦点和系统策略选择接收端。`publishMotionEvent()` 通过 `InputPublisher` 将事件写入目标 `InputChannel`。`InputTransport.cpp` 中的 `InputChannel::sendMessage()` 和 `receiveMessage()` 展示了这条逐事件传输通道，其底层使用 Unix domain socket。Binder 负责窗口与通道的建立、配置和控制调用，不传输每一条 `MotionEvent`。
+`InputDispatcher` 根据当前窗口、触摸目标、焦点和系统策略选择接收端。`publishMotionEvent()` 通过 `InputPublisher` 将事件写入目标 `InputChannel`。`InputTransport.cpp` 中的 `InputChannel::sendMessage()` 和 `receiveMessage()` 展示了这条逐事件传输通道，其底层使用 Unix domain socket（本机进程间套接字）。Binder 负责窗口与通道的建立、配置和控制调用，不传输每一条 `MotionEvent`。
 
 #### 应用接收、排队与 ACK
 
-应用侧的 `NativeInputEventReceiver` 监听 `InputChannel` 文件描述符，并将输入消息转换为 Java `InputEvent`。窗口接收端通常绑定主线程 Looper；事件随后进入 `ViewRootImpl` 的输入阶段，依次经过窗口前处理、IME、View 后处理等环节，最后到达 `View.dispatchTouchEvent()`。
+应用侧的 `NativeInputEventReceiver` 监听 `InputChannel` 文件描述符，并将输入消息转换为 Java `InputEvent`。窗口接收端通常绑定主线程 Looper（消息循环）；事件随后进入 `ViewRootImpl` 的输入阶段，依次经过窗口前处理、IME、View 后处理等环节，最后到达 `View.dispatchTouchEvent()`。
 
 这一段至少包含三类等待：
 
@@ -220,9 +220,9 @@ flowchart LR
 
 #### 状态变更与帧调度
 
-调用 `invalidate()`、`requestLayout()` 或改变 Compose 状态，会促使窗口安排后续遍历。`ViewRootImpl.scheduleTraversals()` 会向 `Choreographer` 投递 traversal callback，并在消息队列中设置同步屏障。允许穿过屏障的异步帧消息会优先执行，普通同步消息不会继续排在本帧遍历之前。
+调用 `invalidate()`、`requestLayout()` 或改变 Compose 状态，会促使窗口安排后续遍历。`ViewRootImpl.scheduleTraversals()` 会向 `Choreographer` 投递 traversal callback（遍历回调），并在消息队列中设置同步屏障。允许穿过屏障的异步帧消息会优先执行，普通同步消息不会继续排在本帧遍历之前。
 
-`Choreographer` 需要生成新帧时，会通过 `DisplayEventReceiver.scheduleVsync()` 请求 VSync。主路径中的回调顺序如下：
+`Choreographer` 需要生成新帧时，会通过 `DisplayEventReceiver.scheduleVsync()` 请求 VSync（显示垂直同步信号）。主路径中的回调顺序如下：
 
 1. input；
 2. animation；
@@ -234,7 +234,7 @@ flowchart LR
 
 #### UI Thread、RenderThread、GPU 与 SurfaceFlinger
 
-View 体系的 traversal 会依次执行 measure、layout 和 draw，也就是测量、布局与绘制。启用硬件加速时，UI Thread 记录或更新渲染节点和绘制命令，RenderThread 在 `DrawFrame` 等阶段完成同步、命令提交和 buffer 生产。GPU 工作可能与 CPU 工作部分重叠，也可能等待 fence、内存或驱动。
+View 体系的 traversal 会依次执行 measure、layout 和 draw，也就是测量、布局与绘制。启用硬件加速时，UI Thread 记录或更新渲染节点和绘制命令，RenderThread 在 `DrawFrame` 等阶段完成同步、命令提交和 buffer 生产。GPU 工作可能与 CPU 工作部分重叠，也可能等待 fence（表示前序图形工作完成的同步对象）、内存或驱动。
 
 生成的 buffer 经 Surface / BufferQueue 交给 SurfaceFlinger。SurfaceFlinger 按显示调度选择可用 buffer 并计算合成策略，再由 HWC 使用 device composition 或 client composition 完成显示提交。应用帧即使按时结束，仍可能遇到 SurfaceFlinger、GPU 或 HWC 延迟；我们一路要追到呈现为止，单看 `Choreographer#doFrame` 只覆盖应用这一段。
 
@@ -260,13 +260,13 @@ View 体系的 traversal 会依次执行 measure、layout 和 draw，也就是�
 - `t4 - t3` 长：检查应用事件处理、同步 Binder、锁、GC 和主线程 I/O。
 - `t5 - t4` 长：检查帧请求、VSync 相位和主线程消息队列。
 - `t6 - t5` 长：检查 UI Thread、RenderThread、GPU 和 buffer dequeue（获取可写缓冲区）。
-- `t7 - t6` 长：检查 SurfaceFlinger、合成策略、present fence 和显示设备。
+- `t7 - t6` 长：检查 SurfaceFlinger、合成策略、present fence（显示提交完成信号） 和显示设备。
 
 每一段都按 trace 里实际看到的来判断。先给输入系统、主线程或 GPU 预设一个固定毫秒阈值，刷新率、芯片、触摸采样率或系统负载一变，结论就容易错。
 
 ### Perfetto：直接查询 input 到 present
 
-较新的 Perfetto trace processor 标准库提供 `android_input_events` 表，其中包含 input dispatch、应用接收、ACK，以及能够关联到帧时的 input-to-present 时间。前提是 trace 启用了对应的 input 和 FrameTimeline 数据；关联不到帧时，`end_to_end_latency_dur` 就会是 `NULL`。
+较新的 Perfetto trace processor 标准库提供 `android_input_events` 表，其中包含 input dispatch、应用接收、ACK，以及能够关联到帧时的 input-to-present（输入到呈现） 时间。前提是 trace 启用了对应的 input 和 FrameTimeline 数据；关联不到帧时，`end_to_end_latency_dur` 就会是 `NULL`。
 
 下面的 SQL 查询用于找出指定进程中输入处理总时长最长的 50 个事件，并分别列出分发、应用处理、ACK 和画面呈现耗时：
 
@@ -293,7 +293,7 @@ LIMIT 50;
 Perfetto UI 中可按以下顺序核对：
 
 1. 用 input event id 或时间范围定位 InputReader、InputDispatcher 和应用接收事件。
-2. 查看接收线程的 thread state，区分 Running、Runnable、Sleeping 和不可中断 I/O。
+2. 查看接收线程的 thread state（线程状态），区分 Running、Runnable、Sleeping 和不可中断 I/O。
 3. 展开应用 FrameTimeline 的 expected / actual 轨道，确认关联的 frame id 和 jank type。
 4. 查看 `Choreographer#doFrame`、`performTraversals`、RenderThread `DrawFrame`、GPU 工作与 fence。
 5. 延伸到 SurfaceFlinger 和 HWC，确认应用 buffer 是否被该显示帧采用。
@@ -302,11 +302,11 @@ Perfetto UI 中可按以下顺序核对：
 
 ### Capacity 与 Jitter
 
-AOSP 的 [Evaluate performance](https://source.android.com/docs/core/tests/debug/eval_perf) 将系统性能问题分为 capacity 和 jitter 两类。
+AOSP 的 [Evaluate performance](https://source.android.com/docs/core/tests/debug/eval_perf) 将系统性能问题分为 capacity（资源容量） 和 jitter（偶发抖动） 两类。
 
 按这个分类，我们先看 capacity：它表示一段时间内可用的 CPU、GPU、I/O 和内存带宽等资源总量。布局、绘制或计算在稳定状态下持续超过 deadline，通常说明资源容量不足或工作量过大。
 
-Jitter 表示偶发工作阻塞了用户能感知到的执行路径。常见来源包括调度延迟、IRQ 和 softirq（软件中断）、长时间禁止抢占的代码区间、锁竞争、Binder 等待、I/O、CPU idle 状态切换和 page cache 波动。提高 CPU 或 GPU 频率或许能缩短计算时间；固定时长的驱动等待或锁持有属于另一类问题，加频率解决不了。
+Jitter 表示偶发工作阻塞了用户能感知到的执行路径。常见来源包括调度延迟、IRQ 和 softirq（软件中断）、长时间禁止抢占的代码区间、锁竞争、Binder 等待、I/O、CPU idle 状态切换和 page cache（页缓存） 波动。提高 CPU 或 GPU 频率或许能缩短计算时间；固定时长的驱动等待或锁持有属于另一类问题，加频率解决不了。
 
 平均值会掩盖 jitter。响应速度报告至少应保留 P50、P90、P99（第 50、90、99 百分位）、最大值、超过目标的样本占比和总样本量，并按设备档位、刷新率、温度、前后台状态及交互类型分组。平均耗时降低，最慢的那批交互未必跟着改善——这正是要保留高分位的原因。
 
@@ -495,15 +495,15 @@ Android 17 默认不再因以下变化重建 Activity：
 
 #### FragmentTransaction 是主线程异步队列
 
-`FragmentTransaction.commit()` 会把事务加入主线程队列，不会在调用点同步完成。`setReorderingAllowed(true)` 允许 FragmentManager 合并同一批事务中的中间状态，官方建议每个事务都启用。`replace()` 的效果接近在同一容器中先 remove 再 add；事务加入 back stack 后，旧 Fragment 实例和它的 View 生命周期会分别转换状态，返回时可能重新创建 View。
+`FragmentTransaction.commit()` 会把事务加入主线程队列，不会在调用点同步完成。`setReorderingAllowed(true)` 允许 FragmentManager 合并同一批事务中的中间状态，官方建议每个事务都启用。`replace()` 的效果接近在同一容器中先 remove 再 add；事务加入 back stack（返回栈） 后，旧 Fragment 实例和它的 View 生命周期会分别转换状态，返回时可能重新创建 View。
 
 Fragment 切换的常见成本包括：
 
-- pending transaction 在主线程队列中等待执行；
+- pending transaction（待处理事务） 在主线程队列中等待执行；
 - Fragment 实例与依赖创建；
 - `onCreateView()` / ComposeView 首次组合；
 - FragmentStateManager 状态推进；
-- `SpecialEffectsController` 管理的动画或 transition；
+- `SpecialEffectsController` 管理的动画或 transition（转场）；
 - RecyclerView、图片和数据在同一帧集中更新；
 - 返回栈恢复时重新创建 View。
 
@@ -517,7 +517,7 @@ AndroidX Fragment 没有保证为每个生命周期或事务自动生成稳定�
 - 将依赖注入放在 Factory 或 DI 容器中，把路由参数放在 arguments / Navigation route 中，构造过程不访问磁盘和网络；
 - 目标页尽快提交稳定骨架或缓存内容，把次要区域放到首帧后；
 - View 销毁后取消与 `viewLifecycleOwner` 绑定的图片、列表和动画工作；
-- `postponeEnterTransition()` 只等待 shared element 等转场必需内容，并同时设置 `postponeEnterTransition(timeout, unit)`；
+- `postponeEnterTransition()` 只等待 shared element（共享元素） 等转场必需内容，并同时设置 `postponeEnterTransition(timeout, unit)`；
 - 成功、失败、取消和超时路径都要调用或触发 `startPostponedEnterTransition()`；
 - 返回栈频繁重建 View 时，应区分数据复用和 View 复用；长期保留大型 View 树换速度的做法并不可取。
 
@@ -578,7 +578,7 @@ override fun onResume() {
 预取结果需要：
 
 - 与页面 key、账号和筛选条件绑定；
-- 有容量和 TTL 限制；
+- 有容量和 TTL（存活时间） 限制；
 - 页面远离、查询变化或宿主销毁时可取消；
 - 失败时不覆盖正常加载的错误处理；
 - 避免和页面自己的首次请求重复；
@@ -603,12 +603,12 @@ override fun onResume() {
 5. `ViewRootImpl.WindowInputEventReceiver` 把事件交给应用主线程输入阶段；
 6. DecorView / ViewGroup 执行 `dispatchTouchEvent()`、拦截和命中测试；
 7. 目标 View 维护 pressed、长按和手势状态；
-8. 合法点击在 `ACTION_UP` 后通过 `performClick()` 调用 listener；
+8. 合法点击在 `ACTION_UP` 后通过 `performClick()` 调用 listener（监听器）；
 9. 下一次遍历、渲染与合成把反馈像素呈现到屏幕。
 
 上面这些平台步骤来自 `android-17.0.0_r1` 的 InputDispatcher、InputTransport、ViewRootImpl 和 View；驱动调度和 CPU 运行状态对应内核基线。每个阶段的时长都会受到触控采样、队列、刷新率和系统负载影响，判断时以 trace 实测为准。
 
-`MotionEvent.getEventTime()` 和 `SystemClock.uptimeMillis()` 可以在应用内粗略比较事件采样时间和回调开始时间。`Choreographer.postFrameCallback()` 只表示帧回调发生；精确分析 input-to-display 延迟、核对面板呈现时间时，应使用 Perfetto 的 Input 关联、FrameTimeline 和显示轨迹。
+`MotionEvent.getEventTime()` 和 `SystemClock.uptimeMillis()` 可以在应用内粗略比较事件采样时间和回调开始时间。`Choreographer.postFrameCallback()` 只表示帧回调发生；精确分析 input-to-display（输入到显示） 延迟、核对面板呈现时间时，应使用 Perfetto 的 Input 关联、FrameTimeline 和显示轨迹。
 
 #### pressed 与 Ripple 也依赖主线程和帧
 
@@ -697,7 +697,7 @@ val searchState: StateFlow<SearchUiState> = query
 
 搜索结果呈现时，键盘、焦点和无障碍播报也会影响响应。大量结果一次性触发布局和 accessibility event，可能出现网络请求很快、界面更新却仍然迟缓的情况。
 
-### Deep Link：路由正确性属于响应时间
+### Deep Link（外部链接进入应用的路径）：路由正确性属于响应时间
 
 Android 使用 Intent filter 路由 Deep Link。从 Android 12（API 31）开始，普通 HTTP(S) 链接如果没有通过域名验证，通常会交给默认浏览器；自有域名应使用 verified App Links（已验证应用链接），避免出现 chooser（应用选择器）或先进入浏览器再返回应用。
 
@@ -746,7 +746,7 @@ val pendingIntent = PendingIntent.getActivity(
 remoteViews.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 ```
 
-`requestCode` 和 Intent data 都参与 `PendingIntent` 身份判断，因而可以避免多个 Widget 实例错误复用旧路由。只有系统或宿主必须补充 Intent 内容的 API 才使用 mutable 模式；直接打开 Activity 的简单点击应保持 immutable。Widget 顶层背景使用 `@android:id/background`，可以让 Android 12 及以上版本的 Launcher 识别转场背景。
+`requestCode` 和 Intent data 都参与 `PendingIntent` 身份判断，因而可以避免多个 Widget 实例错误复用旧路由。只有系统或宿主必须补充 Intent 内容的 API 才使用 mutable（可变） 模式；直接打开 Activity 的简单点击应保持 immutable（不可变）。Widget 顶层背景使用 `@android:id/background`，可以让 Android 12 及以上版本的 Launcher 识别转场背景。
 
 切换开关或执行轻量命令时，可以把 `PendingIntent` 指向 Receiver。`onReceive()` 应尽快返回：先更新可见状态，再把可延迟工作交给受约束的后台机制；长时间网络请求要放到 Receiver 之外。还要分别测试应用进程存活、进程不存在、设备锁定、Widget 多实例，以及目标页面已经位于 Task 中的情况。
 
@@ -778,11 +778,11 @@ Macrobenchmark 可以通过 UIAutomator 重复执行点击、滑动和输入，�
 
 ### 平台改动与进入内核分析的时机
 
-Android 17 会为 targetSdk 37 及以上的应用启用 lock-free `MessageQueue`。它可能减少消息生产者和 Looper 之间的锁竞争，也会让通过反射读取 `mMessages` 或调用私有方法的旧监控失效。页面切换和点击监控应使用公开 trace、FrameTimeline 和测试 API；队列实现发生变化后，仍需进行应用侧对照测量。
+Android 17 会为 targetSdk 37 及以上的应用启用 lock-free（无锁） `MessageQueue`。它可能减少消息生产者和 Looper 之间的锁竞争，也会让通过反射读取 `mMessages` 或调用私有方法的旧监控失效。页面切换和点击监控应使用公开 trace、FrameTimeline 和测试 API；队列实现发生变化后，仍需进行应用侧对照测量。
 
 Android 17 还引入了 generational Concurrent Mark-Compact GC，也就是按对象代际管理、并以并发标记和压缩方式回收内存的 GC；它还可能通过 ART Mainline 更新覆盖部分较早系统。这会改变停顿和 CPU 时间分布。看到点击或切换附近出现 GC slice 时，应检查对象分配速率、堆状态和 collector 事件；固定收益要从测量来，单看平台版本推不出来。
 
-只有在出现线程长时间处于 runnable 却未获得 CPU、频繁被抢占、CPU frequency 不足、input driver 延迟或 I/O wait 时，才需要进入 `android17-6.18-2026-06_r6` 分析调度和驱动。Activity、View、InputDispatcher、MessageQueue 和配置变更仍应依据 `android-17.0.0_r1` 的平台源码。
+只有在出现线程长时间处于 runnable（可运行但未获得 CPU） 却未获得 CPU、频繁被抢占、CPU frequency 不足、input driver 延迟或 I/O wait 时，才需要进入 `android17-6.18-2026-06_r6` 分析调度和驱动。Activity、View、InputDispatcher、MessageQueue 和配置变更仍应依据 `android-17.0.0_r1` 的平台源码。
 
 ### 场景审计清单
 
@@ -864,7 +864,7 @@ Reddit 进行了四项工程改动：
 3. 为每条 CUJ 生成 Baseline Profile，并随版本自动更新。
 4. 分阶段发布 R8、Profile 和 Compose 改动，观察实验室结果和线上分位数是否同向变化。
 
-Baseline Profile 让 ART 在安装或后台优化阶段优先编译已标记的热点方法，从而减少关键路径上的解释执行和 JIT。I/O、锁等待或低效布局仍在原地，页面指标还要结合 Perfetto 和帧数据分析。
+Baseline Profile 让 ART 在安装或后台优化阶段优先编译已标记的热点方法，从而减少关键路径上的解释执行和 JIT（运行时即时编译）。I/O、锁等待或低效布局仍在原地，页面指标还要结合 Perfetto 和帧数据分析。
 
 #### 优化后数据
 
@@ -906,7 +906,7 @@ Gmail Wear OS 团队公开了诊断步骤和相对收益，但没有披露优化
 1. 在 Perfetto 中固定显示 `Android App Startups`、应用主线程状态和主线程 tracepoint（代码埋入的跟踪点）。
 2. 比较主线程 `Running` 与 `Runnable` 的时间。`Runnable` 表示线程已可运行却暂时没有获得 CPU；占比偏高时继续检查 CPU 争用。
 3. 查看 `bindApplication` 附近的 `OpenDexFilesFromOat*`，判断读取 OAT / DEX 和代码体积是否占用了启动时间窗口。
-4. 沿 `binder transaction` 找到 `system_server` 的 reply 线程，再查看它是否处于 `Runnable (Preempted)`，也就是可运行但刚被其他线程抢占。
+4. 沿 `binder transaction` 找到 `system_server` 的 reply（回复） 线程，再查看它是否处于 `Runnable (Preempted)`，也就是可运行但刚被其他线程抢占。
 5. 检查首帧前后的 JIT 线程。案例中首帧前的 JIT 很少，但 `Application creation` 附近仍有后台 JIT 活动，说明 Profile 的录制范围可以延伸到页面达到可用状态。
 
 这套步骤进一步判断“主线程没有执行”的原因究竟是等待 Binder、等待调度、等待 I/O，还是 CPU 被应用自己的动画和工作线程占用。只查看主线程方法栈，无法完整区分这些情况。

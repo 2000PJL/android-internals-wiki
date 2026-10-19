@@ -92,7 +92,7 @@ Baseline/Startup Profile 只处理由 ART 管理的 DEX 代码；[AutoFDO](../..
 
 #### 1.1 Profile 规则包含什么
 
-Profile 规则以 HRF（Human Readable Format，可读文本格式）记录，内容是类名和方法签名。方法规则前可带：
+Profile 规则以 HRF（Human Readable Format（HRF，可读文本格式），可读文本格式）记录，内容是类名和方法签名。方法规则前可带：
 
 - `H`：Hot，运行中频繁使用的方法；
 - `S`：Startup，启动阶段使用的方法；
@@ -106,7 +106,7 @@ ART 这一侧的分工是：[`profman`](https://android.googlesource.com/platfor
 
 `speed-profile` 表示由 profile 指定热点、按需编译。看到这个 filter，我们不妨把它当成一组待核对的问题：
 
-- 整个应用是否都已 AOT；
+- 整个应用是否都已 AOT（Ahead-Of-Time，运行前预编译）；
 - 每条规则是否仍与当前 DEX 匹配；
 - 静态初始化代码是否还要执行；
 - 类加载、验证和页面创建成本是否消失；
@@ -130,7 +130,7 @@ APK/AAB 中的 binary baseline.prof
 ART profile-guided 编译产物
 ```
 
-这张图表达的是分层关系，别把它读成适用于所有渠道的严格时间线。Google Play 或支持 DexMetadata 的安装器可以提供 reference profile（作为编译基准安装的 profile），并以 `install-dm` 等原因触发编译；ProfileInstaller 则把包内规则写入设备可持续更新的 current profile，等待后台 `dexopt`。`dexopt` 是系统对 DEX 做验证、编译和优化的过程。
+这张图表达的是分层关系，别把它读成适用于所有渠道的严格时间线。Google Play 或支持 DexMetadata 的安装器可以提供 reference profile（作为编译基准安装的 profile），并以 `install-dm` 等原因触发编译；ProfileInstaller 则把包内规则写入设备可持续更新的 current profile，等待后台 `dexopt`（DEX 优化/编译流程）。`dexopt` 是系统对 DEX 做验证、编译和优化的过程。
 
 图中的每一层都需要单独验证：源码里有 `baseline-prof.txt`，release 包未必带着它；包里有 `baseline.prof`，设备也未必已完成由 profile 指导的编译。
 
@@ -526,7 +526,7 @@ Profile 能减少的是解释器逐条执行、JIT 预热和部分 DEX 读取的
 
 Google 的 Baseline Profiles 文档给出了两条重要事实：
 
-- Cloud Profile 属于 PGO，需要 Android 9（API 28）或更高版本、足够的用户样本以及聚合时间；新版本发布后的数小时到数天内，要按尚未可用来安排验证。
+- Cloud Profile 属于 PGO（Profile-Guided Optimization，按真实运行特征优化），需要 Android 9（API 28）或更高版本、足够的用户样本以及聚合时间；新版本发布后的数小时到数天内，要按尚未可用来安排验证。
 - Baseline Profile 随当前版本发布，可以覆盖 Day-0，也就是用户安装或升级这个版本后的首次使用阶段。Cloud Profile 无法及时替代它。
 
 Baseline/Cloud Profile 与 Startup Profile 因此要分开评估。前两者主要影响哪些方法被 AOT 编译；Startup Profile 由 D8/R8 在构建期使用，主要改变 DEX 布局，目标是减少启动阶段分散读取文件和触发内存缺页的成本。一次构建可以同时使用两类规则，但 A/B 实验（把条件相同的用户随机分组对比）需要明确改变的是编译状态、DEX 布局，还是两者一起改变。
@@ -660,7 +660,7 @@ adb shell pm art clear-app-profiles com.example.app
 adb shell pm compile -m speed-profile -f -v com.example.app
 ```
 
-第一条命令清除 current profile（ART 当前采集的运行记录）和 reference profile（已合并、供后续编译参考的记录），但保留 Cloud Profile 等 external profile——由 APK 或安装器从外部提供的 profile——已有编译产物也不会删除。第二条命令的判定依据是输出：`actualCompilerFilter=speed-profile` 表示找到了有效 profile；`actualCompilerFilter=verify` 表示没有可用 profile。典型原因包括文件名错误、格式错误和 DEX checksum 不匹配。
+第一条命令清除 current profile（ART 当前采集的运行记录）和 reference profile（已合并、供后续编译参考的记录），但保留 Cloud Profile 等 external profile（由 APK 或安装器从外部提供的 profile）——由 APK 或安装器从外部提供的 profile——已有编译产物也不会删除。第二条命令的判定依据是输出：`actualCompilerFilter=speed-profile` 表示找到了有效 profile；`actualCompilerFilter=verify` 表示没有可用 profile。典型原因包括文件名错误、格式错误和 DEX checksum 不匹配。
 
 这个测试区分不了 APK 内嵌 Baseline Profile、相邻 `.prof` 与 `.dm` 中的 profile——它们对 ART 都是可选的外部输入。要区分来源，必须控制安装产物，只看 `actualCompilerFilter` 是不够的。
 
@@ -672,7 +672,7 @@ adb shell pm compile -m speed-profile -f -v com.example.app
 adb shell pm compile --reset com.example.app
 ```
 
-Android 17 的 `ArtShellCommand` 对该命令有精确定义：它清除 current/reference profile；保留 external profile 供以后 dexopt 使用，但这次 reset 不读取它们；主 DEX 当前等价于 `verify`，secondary DEX（运行期发现的附加 DEX）的 dexopt 产物会被删除。该命令与“卸载并从某个商店重新安装”并不等价，因为安装来源、数据状态和交付文件都没有重建。
+Android 17 的 `ArtShellCommand` 对该命令有精确定义：它清除 current/reference profile；保留 external profile 供以后 dexopt 使用，但这次 reset（重置） 不读取它们；主 DEX 当前等价于 `verify`，secondary DEX（运行期发现的附加 DEX）的 dexopt 产物会被删除。该命令与“卸载并从某个商店重新安装”并不等价，因为安装来源、数据状态和交付文件都没有重建。
 
 若只想生成不含 AOT 代码的产物而不清 profile，可以使用下面的命令。
 

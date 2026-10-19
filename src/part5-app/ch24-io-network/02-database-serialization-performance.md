@@ -144,7 +144,7 @@ consolidated_from:
 ---
 # 数据库与序列化性能
 
-数据持久化链路上的每一环都有成本：对象序列化、数据库事务、索引查询、结果反序列化。我们排查“数据库慢”时，SQL 本身往往只是嫌疑之一，格式转换、对象分配和主线程等待占掉主要时间的情况同样常见。
+数据持久化链路上的每一环都有成本：对象序列化、数据库事务、索引查询（也称 `keyset` 分页，以上一页末行的排序键作为下一页边界）、结果反序列化。我们排查“数据库慢”时，SQL 本身往往只是嫌疑之一，格式转换、对象分配和主线程等待占掉主要时间的情况同样常见。
 
 ## 事务、索引、查询计划与并发
 
@@ -152,13 +152,13 @@ consolidated_from:
 
 > 源码基线：AOSP `android-17.0.0_r1`，Android 17 / API 37；涉及 WAL 同步与文件持久性时，内核基线为 `android17-6.18-2026-06_r6`，见 [24.1 文件 I/O、SAF 与 ContentResolver 性能](01-file-io-saf-contentresolver.md)。Room 是独立发布的 AndroidX 组件，行为以项目锁定的 Room 版本为准。
 
-数据库慢很少表现为 CPU 满载，线程多数时间在等：主线程等查询返回，工作线程排队等连接，首次打开被 Migration（数据库迁移）拖长，或者列表滚动时 `CursorWindow`（承载查询结果的内存窗口）反复重填。落到 Perfetto 和线程栈上，常见的名字是 `SQLiteConnectionPool.waitForConnection()`、`SQLiteSession.executeForCursorWindow()`、Room 生成的 DAO 代码，以及 `ContentResolver.query()` 的 Binder 跨进程等待。
+数据库慢很少表现为 CPU 满载，线程多数时间在等：主线程等查询返回，工作线程排队等连接，首次打开被 Migration（数据库迁移）拖长，或者列表滚动时 `CursorWindow`（承载查询结果的内存窗口）反复重填。落到 Perfetto 和线程栈上，常见的名字是 `SQLiteConnectionPool.waitForConnection()`、`SQLiteSession.executeForCursorWindow()`、Room 生成的 DAO（Data Access Object，数据访问对象） 代码，以及 `ContentResolver.query()` 的 Binder 跨进程等待。
 
-排查的第一步，是先确认线程停在哪一种等待上：执行 SQL、等连接、等 Binder，还是等数据库首次打开。位置确定后，再结合 SQLite 并发、`CursorWindow`、Room 执行模型和 ANR 现场决定动什么——日志模式、查询、索引、事务或迁移。
+排查的第一步，是先确认线程停在哪一种等待上：执行 SQL、等连接、等 Binder，还是等数据库首次打开。位置确定后，再结合 SQLite 并发、`CursorWindow`（分段保存查询结果的内存窗口）、Room 执行模型和 ANR 现场决定动什么——日志模式、查询、索引、事务或迁移。
 
 ### SQLite WAL 模式与并发优化
 
-回滚日志模式在修改主库页之前先保存旧内容，写事务需要排除读者时，新的读写访问都受锁状态限制。WAL（Write-Ahead Logging，预写式日志）换了一个方向：把新页追加到 `-wal` 文件。读事务记下自己的 end mark，也就是当前快照可见的 WAL 终点，再用主库加上该位置之前的 WAL frame 拼出一致快照；读者还在读旧快照时，写者可以继续追加。两种模式都只有一个活跃写者——WAL 给的是读写并发，写入始终是串行的。
+回滚日志模式在修改主库页之前先保存旧内容，写事务需要排除读者时，新的读写访问都受锁状态（仍有活跃事务阻止完全推进）限制。WAL（Write-Ahead Logging，预写式日志）换了一个方向：把新页追加到 `-wal` 文件。读事务记下自己的 end mark（当前快照可见的 WAL 终点），也就是当前快照可见的 WAL 终点，再用主库加上该位置之前的 WAL frame（记录一次数据库页变更的帧） 拼出一致快照；读者还在读旧快照时，写者可以继续追加。两种模式都只有一个活跃写者——WAL 给的是读写并发，写入始终是串行的。
 
 Android 官方性能文档的建议是：除 `ATTACH DATABASE` 场景外启用 WAL，并在 WAL 下使用 `synchronous=NORMAL`。代价在持久性上：应用进程崩溃后事务仍可恢复，但设备断电或内核崩溃可能回滚已经返回成功的事务。订单、支付或跨库依赖，选同步级别时要把这一点放在吞吐量前面。
 
@@ -189,7 +189,7 @@ Android 9 引入 Compatibility WAL 时，[官方历史文档](https://source.and
 
 [源码锚点：[`SQLiteGlobal.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteGlobal.java)、[`config.xml`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/values/config.xml)]
 
-#### Checkpoint、长读事务与生效值
+#### Checkpoint（检查点）、长读事务与生效值
 
 checkpoint 负责把已提交的 WAL frame 写回主库。`PASSIVE` checkpoint 可以推进到活跃读事务允许的位置；持有较老 end mark 的长读事务会让它提前停下，而后续写入还在继续追加，`-wal` 文件于是可能持续增长。要止住这种增长，先得找到迟迟不结束的读事务和生命周期过长的 Cursor——调小自动 checkpoint 阈值结束不了它们。
 
@@ -204,9 +204,9 @@ PRAGMA wal_checkpoint(PASSIVE);
 
 #### Room 怎样选择日志模式
 
-判断 Room 2.8.4 的日志模式，先要分清看的是哪个 `source set`——Kotlin Multiplatform 会按目标平台区分源码集合。Android `actual` 实现有 `AUTOMATIC`、`TRUNCATE` 和 `WRITE_AHEAD_LOGGING` 三档，Builder 默认 `AUTOMATIC`：普通设备解析为 WAL，低内存设备解析为 `TRUNCATE`。common/KMP 声明只有后两项，Builder 默认 WAL。官网聚合 API 可能把不同 `source set` 的说明混在一起，所以 Android 项目核对 `RoomDatabase.android.kt`，KMP 或自定义驱动项目核对实际目标和依赖源码。
+判断 Room 2.8.4 的日志模式，先要分清看的是哪个 `source set`（Kotlin Multiplatform 按目标平台区分的源码集合）——Kotlin Multiplatform 会按目标平台区分源码集合。Android `actual` 实现有 `AUTOMATIC`、`TRUNCATE` 和 `WRITE_AHEAD_LOGGING` 三档，Builder 默认 `AUTOMATIC`：普通设备解析为 WAL，低内存设备解析为 `TRUNCATE`。common/KMP（Kotlin Multiplatform） 声明只有后两项，Builder 默认 WAL。官网聚合 API 可能把不同 `source set` 的说明混在一起，所以 Android 项目核对 `RoomDatabase.android.kt`，KMP 或自定义驱动项目核对实际目标和依赖源码。
 
-下面这段配置展示一个可审计的 Room 打开入口：日志模式和 Migration 都在同一个 builder 里明确声明；执行器先保留 Room 默认值，等追踪结果证明默认调度不合适，再自定义。
+下面这段配置展示一个可审计的 Room 打开入口：日志模式和 Migration（数据库结构迁移） 都在同一个 builder 里明确声明；执行器先保留 Room 默认值，等追踪结果证明默认调度不合适，再自定义。
 
 ```kotlin
 val database = Room.databaseBuilder(
@@ -221,13 +221,13 @@ val database = Room.databaseBuilder(
 
 注意这段代码并未保证启用 WAL，低内存设备拿到的可能是 `TRUNCATE`。若自定义执行器，Room 文档的要求是：查询执行器有线程上限、避开主线程；事务最多同时执行一个；共享事务执行器还要遵守文档中的死锁约束。固定线程数不要原样复制到所有应用。
 
-使用 Room 3 / `SQLiteDriver`（连接具体 SQLite 引擎的接口）的项目，不能照搬 framework `SQLiteConnectionPool` 的连接数和 `CursorWindow` 结论——驱动换掉了 Room 使用的 SQLite 实现与数据传递路径。具体差异见 [Room 3 与 SQLiteDriver 迁移边界](#room-3-与-sqlitedriver-迁移边界)。
+使用 Room 3 / `SQLiteDriver`（连接具体 SQLite 引擎的接口）的项目，不能照搬 framework `SQLiteConnectionPool` 的连接数和 `CursorWindow` 结论——驱动换掉了 Room 使用的 SQLite 实现与数据传递路径。具体差异见 [Room 3 与 SQLiteDriver（Room 连接具体 SQLite 引擎的驱动接口） 迁移边界](#room-3-与-sqlitedriver-迁移边界)。
 
 #### Session、连接池与等待对象
 
 Android framework 的 `SQLiteDatabase` 为每个线程保存一个 `SQLiteSession`。Session 只维护事务与连接使用状态，执行语句时仍要向 `SQLiteConnectionPool` 申请连接。线程停在 `waitForConnection()`，表示它在等一个符合要求的连接；这一停顿与保护连接池状态的 Java 对象监视器锁是两回事。
 
-WAL 下，平台池用非主连接服务只读工作，写事务通常走主连接——所以增加只读连接并不会增加 SQLite 的写连接数量。Room 2.8.4 的默认 SupportSQLite 兼容路径使用 passthrough pool，也就是只转交连接请求、物理连接仍由 Android framework 管理；驱动本身没有连接池时，`RoomConnectionManager` 才自建池，把 WAL 映射为最多 4 个只读连接加 1 个写连接，`TRUNCATE` 下各 1 个。
+WAL 下，平台池用非主连接服务只读工作，写事务通常走主连接——所以增加只读连接并不会增加 SQLite 的写连接数量。Room 2.8.4 的默认 SupportSQLite 兼容路径使用 passthrough pool（只转交连接请求、不自行管理物理连接的池），也就是只转交连接请求、物理连接仍由 Android framework 管理；驱动本身没有连接池时，`RoomConnectionManager` 才自建池，把 WAL 映射为最多 4 个只读连接加 1 个写连接，`TRUNCATE` 下各 1 个。
 
 这些数字属于特定路径的当前实现，随时可能变化。看到连接等待，我们排的顺序是：先查长事务、耗时过长的读取、未关闭资源、写入队列和首次打开，最后才考虑扩池。
 
@@ -288,7 +288,7 @@ interface MessageDao {
 }
 ```
 
-在 framework SQLite 驱动下，少读列能直接降低 `CursorWindow` 填充、跨 JNI 复制和对象构造成本；换用其他 AndroidX SQLite 驱动后，保存查询结果的数据结构可能不同，但“少读行、少读列”始终成立。过滤、排序和聚合也尽量交给 SQL 完成。
+在 framework SQLite 驱动下，少读列能直接降低 `CursorWindow` 填充、跨 JNI（Java Native Interface，Java 与原生代码的调用接口） 复制和对象构造成本；换用其他 AndroidX SQLite 驱动后，保存查询结果的数据结构可能不同，但“少读行、少读列”始终成立。过滤、排序和聚合也尽量交给 SQL 完成。
 
 可观察查询按“引用到的表”失效，与结果集里的具体行无关。表内任意相关写入都可能让查询重跑；`distinctUntilChanged()` 能减少相同结果向下游发射，已经发生的 SQL 查询省不掉。高频更新的表，要么拆小观察范围，要么减少无关写入。
 
@@ -313,11 +313,11 @@ class MessageRepository(
 }
 ```
 
-事务保证删除与插入要么一起成功、要么一起回滚，还顺带减少了多次独立提交。代价是写连接在整个事务期间被占用，批次大小因此要用真实数据量和尾延迟验证。
+事务保证删除与插入要么一起成功、要么一起回滚，还顺带减少了多次独立提交。代价是写连接在整个事务期间被占用，批次大小因此要用真实数据量和尾延迟（第 95/99 百分位耗时，即 95%/99% 的请求耗时不超过对应数值）验证。
 
 要让生产环境里的 Room 问题可定位，还需要记录这些信息：
 
-- Room `QueryCallback` 会为每条查询增加回调成本，且回调本身只给出 SQL 与绑定参数，执行耗时要在 DAO/仓库层或 Perfetto 中另行测量。若做短期受控采样，先去除字面参数，再对 SQL 计算散列值用于归并相同语句，并记录线程，不上传原始参数。
+- Room `QueryCallback` 会为每条查询增加回调成本，且回调本身只给出 SQL 与绑定参数，执行耗时要在 DAO/仓库层或 Perfetto 中另行测量。若做短期受控采样，先去除字面参数，再对 SQL 计算散列值（hash，用于归并相同语句）用于归并相同语句，并记录线程，不上传原始参数。
 - 记录首次打开和 Migration 耗时，把它们和冷启动、首屏、ContentProvider 初始化分开统计。
 - 对高频 Flow 查询统计重查次数。某张表每秒多次更新时，观察者可能被重复触发。
 - 记录连接池等待栈。Perfetto 里看到 `waitForConnection()` 时，要能反查当前持有写连接的任务。
@@ -326,11 +326,11 @@ Android 17 的 `dumpsys meminfo <package>` 在 `DATABASES` 和 `POOL STATS` 中�
 
 #### CursorWindow 与窗口重填
 
-framework 驱动下，`SQLiteCursor` 不要求一次把全部结果装进内存。目标行离开现有窗口时，`SQLiteCursor.onMove()` 经 `fillWindow()`、`SQLiteQuery.fillWindow()` 进入 `SQLiteSession.executeForCursorWindow()`，大结果集于是在 trace 里可能表现为多轮 SQL 步进与窗口重填。窗口容量取 Android 17 的系统资源默认值 2048 KB；OEM 资源覆盖和显式构造仍可能改变它。
+framework 驱动下，`SQLiteCursor` 不要求一次把全部结果装进内存。目标行离开现有窗口时，`SQLiteCursor.onMove()` 经 `fillWindow()`、`SQLiteQuery.fillWindow()` 进入 `SQLiteSession.executeForCursorWindow()`，大结果集于是在 trace（可在 Perfetto 时间轴上定位的事件区间） 里可能表现为多轮 SQL 步进与窗口重填。窗口容量取 Android 17 的系统资源默认值 2048 KB；OEM 资源覆盖和显式构造仍可能改变它。
 
-窗口装得下多行，未必装得下任意大的单行。单行文本或 BLOB（二进制大对象）放不进窗口时，减少总行数没有帮助，该做的是缩小这一行的宽度、收紧投影列集合。窗口创建成功、滚动时却不断跨出窗口重填，则要减少结果宽度、改进分页，并在 trace 里统计 refill 次数——先别急着放大窗口。调用方还应及时关闭 Cursor，给允许取消的查询传入 `CancellationSignal`。
+窗口装得下多行，未必装得下任意大的单行。单行文本或 BLOB（二进制大对象）放不进窗口时，减少总行数没有帮助，该做的是缩小这一行的宽度、收紧投影列集合。窗口创建成功、滚动时却不断跨出窗口重填，则要减少结果宽度、改进分页，并在 trace 里统计 refill（窗口重新填充） 次数——先别急着放大窗口。调用方还应及时关闭 Cursor，给允许取消的查询传入 `CancellationSignal`。
 
-ContentProvider 跨进程返回 Cursor 时，Provider 侧的 `CursorToBulkCursorAdaptor` 按位置获取或重新填充窗口。原生函数 `CursorWindow::writeToParcel()` 会为基于 ashmem（匿名共享内存）的窗口传递一份文件描述符副本；没有 ashmem FD 时，则按已用容量把数据写进 Parcel。所以 `TransactionTooLargeException`、单行过宽和窗口反复填充是三类不同的问题，都归因到“2 MB Binder 限制”会把三类问题混成一类。
+ContentProvider 跨进程返回 Cursor 时，Provider 侧的 `CursorToBulkCursorAdaptor` 按位置获取或重新填充窗口。原生函数 `CursorWindow::writeToParcel()` 会为基于 ashmem（匿名共享内存）的窗口传递一份文件描述符副本；没有 ashmem（anonymous shared memory，匿名共享内存） FD（file descriptor，文件描述符） 时，则按已用容量把数据写进 Parcel（Binder 传输的数据容器）。所以 `TransactionTooLargeException`、单行过宽和窗口反复填充是三类不同的问题，都归因到“2 MB Binder 限制”会把三类问题混成一类。
 
 #### 从 ANR 还原数据库等待
 
@@ -350,7 +350,7 @@ ContentProvider 跨进程返回 Cursor 时，Provider 侧的 `CursorToBulkCursor
 
 索引跟着查询形状和数据分布走：查询形状指过滤、排序、分组用到哪些列、按什么顺序。查询同时按 `conversation_id` 等值过滤、按 `sent_at` 排序时，两个互不相关的单列索引通常只有一个能派上用场，过滤与排序难以同时完成。`EXPLAIN QUERY PLAN` 能显示 `SCAN`、`SEARCH`、`USING INDEX` 和 `USING COVERING INDEX` 等策略，输出格式则不属于稳定的应用接口。
 
-下面的 Room 实体展示与前述查询配套的复合索引：等值过滤列放在索引前缀，排序列跟在后面；SQLite 支持反向扫描 B-tree，所以同一索引也能服务 `sent_at DESC`。
+下面的 Room 实体展示与前述查询配套的复合索引：等值过滤列放在索引前缀，排序列跟在后面；SQLite 支持反向扫描 B-tree（按键有序组织数据的树形索引），所以同一索引也能服务 `sent_at DESC`。
 
 ```kotlin
 @Entity(
@@ -404,7 +404,7 @@ LIMIT 50;
 
 输出里出现 `SCAN` 不必立即判定走错了计划：小表扫描、覆盖索引扫描或统计信息变化都可能让扫描成为合理选择，要结合被扫描的对象判断。同时检查扫描对象、临时 B-tree、返回行数和实际耗时；空库或均匀小样本代表不了线上的偏斜分布。
 
-查询回归可以进 CI：为关键 DAO 准备有代表性的规模与分布，验证结果正确性、索引是否存在，并对明显的计划退化和耗时变化报警。断言完整的 `EXPLAIN QUERY PLAN` 文本不可取——SQLite 明确表示不保证该输出格式跨版本稳定。
+查询回归可以进 CI（Continuous Integration，持续集成）：为关键 DAO 准备有代表性的规模与分布，验证结果正确性、索引是否存在，并对明显的计划退化和耗时变化报警。断言完整的 `EXPLAIN QUERY PLAN` 文本不可取——SQLite 明确表示不保证该输出格式跨版本稳定。
 
 #### Paging 的 OFFSET 与基于排序键的分页
 
@@ -430,7 +430,7 @@ LIMIT :limit;
 
 普通表的 `INTEGER PRIMARY KEY` 已是 rowid 别名。`WITHOUT ROWID` 更适合较短的非整数或复合主键、查询频繁沿主键访问的表；它不支持 `AUTOINCREMENT`，大主键还会复制进二级索引。迁移前用真实数据比较库大小与读写耗时，它当不了通用的省空间开关。
 
-PRAGMA 同时包含持久状态与每连接状态。`journal_mode`、`synchronous`、`wal_autocheckpoint`、`busy_timeout`、`cache_size` 和 `page_size` 的生效范围各不相同；Room 或平台连接池建了多个连接后，在一个临时连接上执行 per-connection PRAGMA，并不代表其他连接继承。配置统一下发要走受支持的 Builder、驱动或数据库打开回调，并逐连接验证。`busy_timeout` 只是把锁冲突改成等待，长事务还在那里；UI 或 Binder 路径上的快速失败，被它改写后可能变成长卡顿。
+PRAGMA 同时包含持久状态与每连接状态。`journal_mode`、`synchronous`、`wal_autocheckpoint`、`busy_timeout`、`cache_size` 和 `page_size` 的生效范围各不相同；Room 或平台连接池建了多个连接后，在一个临时连接上执行 per-connection PRAGMA（仅对当前连接生效的配置），并不代表其他连接继承。配置统一下发要走受支持的 Builder、驱动或数据库打开回调，并逐连接验证。`busy_timeout` 只是把锁冲突改成等待，长事务还在那里；UI 或 Binder 路径上的快速失败，被它改写后可能变成长卡顿。
 
 [SQLite 文档：[`EXPLAIN QUERY PLAN`](https://sqlite.org/eqp.html)、[Query Planner](https://sqlite.org/queryplanner.html)、[`WITHOUT ROWID`](https://sqlite.org/withoutrowid.html)]
 
@@ -549,7 +549,7 @@ Room 3 不是 Room 2 的一次普通小版本升级。`@Database`、`@Entity`、
 | 失效通知 | `InvalidationTracker.Observer` | `InvalidationTracker.createFlow()` | 改写观察者注册与注销 |
 | 多平台 | 以 Android 为主 | Android、Apple、JVM、JS、WasmJS | 每个平台分别选择驱动与建立基线 |
 
-Room 3 只生成 Kotlin，KSP 仍能处理 Java 编写的数据库、DAO 和实体，Java 调用方也可调用生成代码；包含这些声明的模块仍要启用 Kotlin 编译器与 KSP。`androidx.room` 与 `androidx.room3` 可以同时出现在依赖图中，主要用途是避免 WorkManager 等库间接引入旧 Room 后造成类冲突；这并不等于两个 Room 实例可以并发打开同一个数据库文件。
+Room 3 只生成 Kotlin，KSP（Kotlin Symbol Processing，Kotlin 符号处理） 仍能处理 Java 编写的数据库、DAO 和实体，Java 调用方也可调用生成代码；包含这些声明的模块仍要启用 Kotlin 编译器与 KSP。`androidx.room` 与 `androidx.room3` 可以同时出现在依赖图中，主要用途是避免 WorkManager 等库间接引入旧 Room 后造成类冲突；这并不等于两个 Room 实例可以并发打开同一个数据库文件。
 
 #### 固定依赖、驱动与数据库结构输出
 
@@ -841,7 +841,7 @@ FlatBuffers 的目标是直接从序列化字节中读取字段，省去先解�
 | Android 代价 | 解析、字符串和对象分配 | 运行库、生成代码和消息分配 | 原生/Java 依赖包、构建器与缓冲区生命周期 |
 | 适用判断 | 协议变化快、可读性重要 | 跨端稳定协议、高频编解码 | 大型稳定数据、局部读取 |
 
-把现有 JSON 传输对象逐字段改写成 `.proto` 或 `.fbs` 后直接复用为界面对象，这条路不要走。网络协议、持久化结构和界面状态的升级周期各不相同；在仓储层显式转换，由哪一层处理默认值和兼容逻辑才清楚。
+把现有 JSON 传输对象逐字段改写成 `.proto` 或 `.fbs` 后直接复用为界面对象，这条路不要走。网络协议、持久化结构和界面状态的升级周期各不相同；在仓储层（连接数据来源与业务模型的边界）显式转换，由哪一层处理默认值和兼容逻辑才清楚。
 
 ### Parcelable 与 Serializable
 
@@ -888,7 +888,7 @@ fun parcelSizeBytes(card: UserCard): Int {
 - 在真实冷启动中测首次类加载、生成序列化器初始化、磁盘读取、解析和业务模型转换。
 - 解析后的内容要跨启动复用时，写成有版本的数据库或文件格式——Parcel 持久化不了。
 
-Microbenchmark 的预热与完整编译，适合比较预热后的函数；“这次解析是否延迟初始画面或可交互状态”，要靠 Macrobenchmark 和 Perfetto 回答。可以添加只包围解析调用的自定义追踪区段，再结合采样调用栈、对象分配与 GC，判断时间花在 JSON 扫描、对象构造还是业务转换。
+Microbenchmark 的预热与完整编译，适合比较预热后的函数；“这次解析是否延迟初始画面或可交互状态”，要靠 Macrobenchmark（Android 宏基准测试） 和 Perfetto 回答。可以添加只包围解析调用的自定义追踪区段，再结合采样调用栈、对象分配与 GC，判断时间花在 JSON 扫描、对象构造还是业务转换。
 
 [应用启动性能](https://developer.android.com/topic/performance/vitals/launch-time)
 

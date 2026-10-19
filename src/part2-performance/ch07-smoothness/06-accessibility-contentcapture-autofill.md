@@ -53,7 +53,7 @@ consolidated_from:
 - src/part2-performance/ch07-smoothness/14-contentcapture-autofill-performance.md
 ---
 
-# Accessibility、ContentCapture 与 Autofill 性能
+# Accessibility（无障碍）、ContentCapture 与 Autofill 性能
 
 Accessibility、ContentCapture 和 Autofill 都会读取或描述界面状态，但触发条件、数据范围和服务端组件不同，性能问题通常来自频繁事件、视图树遍历、跨进程调用或第三方服务处理。
 
@@ -101,7 +101,7 @@ flowchart LR
     AICtrl -->|"result callback"| AIC
 ```
 
-两条路径的等待方向正好相反：事件通过 `oneway` Binder 调用上报，应用发出事务后不等 `AccessibilityService` 处理完；节点查询则是服务侧在等结果，目标应用在自己的 ViewRoot looper 上生成节点。所以我们分析阻塞时，第一步是判断走的是哪条路径，别把事件上报的异步关系套到节点查询上。
+两条路径的等待方向正好相反：事件通过 `oneway` Binder 调用上报，应用发出事务后不等 `AccessibilityService` 处理完；节点查询则是服务侧在等结果，目标应用在自己的 ViewRoot looper（消息循环） 上生成节点。所以我们分析阻塞时，第一步是判断走的是哪条路径，别把事件上报的异步关系套到节点查询上。
 
 ### 事件上报：oneway 调用的剩余成本
 
@@ -130,7 +130,7 @@ flowchart LR
 
 事件过筛后，每个符合条件的服务会拿到自己的一份副本，投递到 `mEventDispatchHandler`。当 `notificationTimeout > 0` 时，同一服务通常只保留同类型事件中最新的一条待发送记录。但 `TYPE_WINDOW_CONTENT_CHANGED` 是个例外：它走单独分支，不经过这组 `mPendingEvents` 合并，所以同一种去重规则不能默认覆盖所有内容变化事件。
 
-View 侧还有一层内容变化节流。`ViewRootImpl.SendWindowContentChangedAccessibilityEvent` 会合并可兼容的 change types，并按照 `ViewConfiguration.getSendRecurringAccessibilityEventsInterval()` 给出的间隔安排发送。看到 `AccessibilityEvent.obtain()` 或 `recycle()` 只说明对象在复用、分配在减少；发送次数有没有降下来，要看节流那一边。
+View 侧还有一层内容变化节流。`ViewRootImpl.SendWindowContentChangedAccessibilityEvent` 会合并可兼容的 change types（变化类型），并按照 `ViewConfiguration.getSendRecurringAccessibilityEventsInterval()` 给出的间隔安排发送。看到 `AccessibilityEvent.obtain()` 或 `recycle()` 只说明对象在复用、分配在减少；发送次数有没有降下来，要看节流那一边。
 
 #### 高频从哪里产生
 
@@ -146,7 +146,7 @@ View 侧还有一层内容变化节流。`ViewRootImpl.SendWindowContentChangedA
 
 ### 节点查询：工作落在目标应用的 ViewRoot looper
 
-再看另一条路径。`AccessibilityService` 调用 `getRootInActiveWindow()`、`event.source`、`findFocus()` 或节点查找 API 时，`AccessibilityInteractionClient` 会先查当前服务连接对应的 `AccessibilityCache`：命中就直接返回，缓存未命中才发起跨进程请求。
+再看另一条路径。`AccessibilityService` 调用 `getRootInActiveWindow()`、`event.source`、`findFocus()` 或节点查找 API 时，`AccessibilityInteraction（无障碍操作）Client` 会先查当前服务连接对应的 `AccessibilityCache`：命中就直接返回，缓存未命中才发起跨进程请求。
 
 请求先由 `AccessibilityServiceConnection` 找到目标窗口的 `IAccessibilityInteractionConnection`，随后进入目标应用的 `AccessibilityInteractionController`。这个 controller 用的是 `ViewRootImpl.mHandler` 所在线程的 looper，所以常规 View 树的节点生成和应用的 UI 工作跑在同一条线程上。
 
@@ -157,17 +157,17 @@ View 侧还有一层内容变化节流。`ViewRootImpl.SendWindowContentChangedA
 
 这解释了 trace 里一个常见现象：应用没有主动刷新 UI，主线程上却出现无障碍节点构造。触发查询的可能是另一个进程里的 `AccessibilityService`，也可能是测试工具使用的 `UiAutomation`。
 
-#### prefetch 策略与查询规模
+#### prefetch（预取） 策略与查询规模
 
-一次查询会带多大的量，要看 prefetch 策略。框架提供 ancestors、siblings，以及 hybrid、depth-first、breadth-first 三种后代节点遍历顺序，并设有三项边界：
+一次查询会带多大的量，要看 prefetch 策略。框架提供 ancestors（祖先节点）、siblings（同级节点），以及 hybrid、depth-first、breadth-first 三种后代节点遍历顺序，并设有三项边界：
 
 - 单次预取上限为 `MAX_NUMBER_OF_PREFETCHED_NODES = 50`；
 - 可中断的 prefetch 在 ViewRoot handler 中已有用户交互消息等待时会停止；
-- 窗口正在滚动时，`AccessibilityInteractionClient` 会清除 prefetch flags。
+- 窗口正在滚动时，`AccessibilityInteractionClient` 会清除 prefetch flags（预取标志）。
 
 有这些边界在，一次 `getRootInActiveWindow()` 查询不能想当然等于递归构造整棵 View 树。我们定位成本时，要同时记录请求 API、prefetch flags、缓存是否命中、虚拟节点 provider 和实际返回的节点数。
 
-服务侧的 `AccessibilityInteractionClient` 最多等 5000 ms 拿查询结果，这段等待发生在发起查询的服务线程。目标应用承担的是另一类风险：ViewRoot looper 上多了节点创建任务，同一条线程上的输入分发、traversal 或逐帧回调就可能往后排。
+服务侧的 `AccessibilityInteractionClient` 最多等 5000 ms 拿查询结果，这段等待发生在发起查询的服务线程。目标应用承担的是另一类风险：ViewRoot looper 上多了节点创建任务，同一条线程上的输入分发、traversal（测量、布局与绘制） 或逐帧回调就可能往后排。
 
 ### 成本应按四个进程位置拆开
 
@@ -180,7 +180,7 @@ View 侧还有一层内容变化节流。`ViewRootImpl.SendWindowContentChangedA
 
 同时开启两个服务，成本也未必是一个服务时的两倍。`eventTypes`、`packageNames`、`notificationTimeout`、读取窗口内容的 capability、缓存使用方式和查询策略，往往比服务数量更能解释差异。
 
-Touch exploration、按键过滤、手势观察和放大还会改变输入处理链。遇到点击延迟或手势行为变化时，要分别检查输入过滤和 `AccessibilityEvent` / `AccessibilityNodeInfo` 开销；按键过滤的系统路径见 [3.1 Input 分发、拦截与安全边界](../../part1-fundamentals/ch03-input/01-input-dispatch-interception-security.md)。
+Touch exploration（触摸探索）、按键过滤、手势观察和放大还会改变输入处理链。遇到点击延迟或手势行为变化时，要分别检查输入过滤和 `AccessibilityEvent` / `AccessibilityNodeInfo` 开销；按键过滤的系统路径见 [3.1 Input 分发、拦截与安全边界](../../part1-fundamentals/ch03-input（输入分发）/01-input-dispatch-interception-security.md)。
 
 ### 应用侧：保持语义正确，再去掉无意义工作
 
@@ -233,23 +233,23 @@ class PriceTickerView(context: Context) : View(context) {
 
 #### RecyclerView
 
-RecyclerView 只为当前附着到窗口且可访问的 item 暴露节点，所以视图回收机制不会让每次查询都构造全部数据项。应用侧更常见的额外开销来自这些做法：
+RecyclerView 只为当前附着到窗口且可访问的 item（列表项） 暴露节点，所以视图回收机制不会让每次查询都构造全部数据项。应用侧更常见的额外开销来自这些做法：
 
-- item delegate 动态拼接复杂描述；
-- 每次 bind 都重复安装 delegate，或创建大量 action；
+- item delegate（列表项无障碍代理） 动态拼接复杂描述；
+- 每次 bind（绑定数据） 都重复安装 delegate，或创建大量 action；
 - 使用全量 `notifyDataSetChanged()`，使语义信息和可见内容一起大范围失效；
 - item 的语义状态没有随数据更新，导致服务反复调用 `refresh()`。
 
 改法也直接：用 `DiffUtil` / `ListAdapter` 精确更新发生变化的列表项，复用稳定的 delegate，并在业务状态改变时同步更新简洁的 `stateDescription`、文本和 action。
 
-### Compose：按逻辑控件设计 semantics tree
+### Compose：按逻辑控件设计 semantics tree（语义树）
 
-Compose 在 UI 树之外维护一棵 semantics tree，供无障碍服务和测试工具读取；只有带语义属性的 layout node 才会成为 semantics node。所以在 `Column` 上添加 `Modifier.semantics {}`，并不意味着框架每次都会递归重建这个 `Column` 的全部子树。
+Compose 在 UI 树之外维护一棵 semantics tree，供无障碍服务和测试工具读取；只有带语义属性的 layout node（布局节点） 才会成为 semantics node。所以在 `Column` 上添加 `Modifier.semantics {}`，并不意味着框架每次都会递归重建这个 `Column` 的全部子树。
 
 分析时要区分：
 
-- **unmerged tree**：保留各个 semantics node，`AccessibilityService` 会结合 `mergeDescendants` 自行处理；
-- **merged tree**：测试 API 默认使用的视图，会按照 `mergeDescendants` 和 `clearAndSetSemantics` 简化节点。
+- **unmerged tree（未合并树）**：保留各个 semantics node，`AccessibilityService` 会结合 `mergeDescendants` 自行处理；
+- **merged tree（合并树）**：测试 API 默认使用的视图，会按照 `mergeDescendants` 和 `clearAndSetSemantics` 简化节点。
 
 Material 与 Foundation 中的 `Button`、`clickable`、`toggleable` 已经提供常用语义和合并规则。自定义组件可以减少重复或没有信息价值的节点，但仍要把一项逻辑控件需要的说明和操作完整保留下来：
 
@@ -295,18 +295,18 @@ Compose 属于 AndroidX 依赖，性能行为要按项目锁定的 Compose 版�
 
 #### A/B 条件
 
-先把条件钉死：设备、build、刷新率、温度、账号数据和交互脚本保持一致，至少比较以下四组条件。
+先把条件钉死：设备、build（系统构建版本）、刷新率、温度、账号数据和交互脚本保持一致，至少比较以下四组条件。
 
 1. 没有目标服务；
 2. 只启用目标服务；
 3. 目标服务与用户常用服务共同启用；
-4. 服务功能不变，但减少 event types、节点查询和后台工作的版本。
+4. 服务功能不变，但减少 event types（事件类型）、节点查询和后台工作的版本。
 
 要停用用户辅助服务的测试，只能在受控测试设备上进行，并确保用户明确知情；线上产品不能为了改善帧率而自动关闭或绕过 `AccessibilityService`。
 
 #### Perfetto：定位线程和帧
 
-采 trace 时至少带上 FrameTimeline、应用主线程、`system_server`、`AccessibilityService` 进程、Binder driver、sched、freq，以及应用自定义的业务 slice——sched / freq 记录线程调度和 CPU 频率，slice 是应用标注的一段工作区间。拿到 trace 后，我们按这条线检查：
+采 trace 时至少带上 FrameTimeline、应用主线程、`system_server`、`AccessibilityService` 进程、Binder driver、sched、freq，以及应用自定义的业务 slice（时间片标记）——sched / freq 记录线程调度和 CPU 频率，slice 是应用标注的一段工作区间。拿到 trace 后，我们按这条线检查：
 
 - App frame（应用帧）迟到前，是否出现节点查询任务或耗时较长的 `onInitializeAccessibilityNodeInfo()`；
 - 事件上报的 oneway Binder 数量与 Parcel 大小是否异常；
@@ -314,7 +314,7 @@ Compose 属于 AndroidX 依赖，性能行为要按项目锁定的 Compose 版�
 - 服务主线程是否停在 `AccessibilityInteractionClient` 中等待结果；
 - 节点结果返回后，服务是否立即进入长 CPU、I/O 或 Binder 工作。
 
-`BinderProxy.transactNative` 只能证明这里发生了一次 Binder 调用，说明不了调用目的。事件上报和节点查询方向相反，要结合 interface / method、调用进程和回调时序才能认出具体路径。
+`BinderProxy.transactNative` 只能证明这里发生了一次 Binder 调用，说明不了调用目的。事件上报和节点查询方向相反，要结合 interface / method（接口与方法）、调用进程和回调时序才能认出具体路径。
 
 #### Android 17 accessibility trace
 
@@ -454,19 +454,19 @@ flowchart LR
 
 #### `system_server` 负责会话，事件直送服务
 
-Activity 创建时，`ContentCaptureManager` 通过 `IContentCaptureManager.startSession()` 请求 `ContentCaptureManagerService` 建立会话。这个 AIDL 接口是 `oneway`，结果另行通过 `IResultReceiver` 返回；服务端做完权限、用户、组件和 allowlist 检查，把 `IContentCaptureDirectManager` Binder 交给应用。
+Activity 创建时，`ContentCaptureManager` 通过 `IContentCaptureManager.startSession()` 请求 `ContentCaptureManagerService` 建立会话。这个 AIDL 接口是 `oneway`，结果另行通过 `IResultReceiver` 返回；服务端做完权限、用户、组件和 allowlist（允许列表） 检查，把 `IContentCaptureDirectManager` Binder 交给应用。
 
-有了 direct Binder，后续事件就无须逐批经过 `system_server`：`MainContentCaptureSession` 调用 direct interface 的 `sendEvents()`，把装有一批 `ContentCaptureEvent` 的 `ParceledListSlice` 直接发往 `ContentCaptureService`，这个接口同样是 `oneway`。
+有了 direct Binder，后续事件就无须逐批经过 `system_server`：`MainContentCaptureSession` 调用 direct interface（直连接口） 的 `sendEvents()`，把装有一批 `ContentCaptureEvent` 的 `ParceledListSlice` 直接发往 `ContentCaptureService`，这个接口同样是 `oneway`。
 
-和事件上报一样，`oneway` 只是发送方不等服务方法处理结束；应用仍要创建事件、复制文本、写入 Parcel，并把 transaction 放进 Binder 队列。服务处理过慢，还会消耗异步 Binder 配额和系统 CPU。
+和事件上报一样，`oneway` 只是发送方不等服务方法处理结束；应用仍要创建事件、复制文本、写入 Parcel，并把 transaction（事务） 放进 Binder 队列。服务处理过慢，还会消耗异步 Binder 配额和系统 CPU。
 
 #### 初始结构生成仍在 UI 线程
 
-初始结构是另一回事，它就发生在 UI 线程上。窗口首帧成功 draw 后，`ViewRootImpl` 执行一次 `performContentCaptureInitialReport()`：先调用根 View 的 `dispatchInitialProvideContentCaptureStructure()`，再由 `ViewGroup.dispatchProvideContentCaptureStructure()` 遍历允许采集的子节点，每个节点通过 `onProvideContentCaptureStructure()` 填充自己的结构信息。
+初始结构是另一回事，它就发生在 UI 线程上。窗口首帧成功 draw（绘制） 后，`ViewRootImpl` 执行一次 `performContentCaptureInitialReport()`：先调用根 View 的 `dispatchInitialProvideContentCaptureStructure()`，再由 `ViewGroup.dispatchProvideContentCaptureStructure()` 遍历允许采集的子节点，每个节点通过 `onProvideContentCaptureStructure()` 填充自己的结构信息。
 
 这段工作属于 ViewRoot 的一次 traversal 路径。自定义 View 如果在回调中访问磁盘、数据库或网络，或者临时解析大型对象，会直接延长这次主线程任务。
 
-遍历范围由 `importantForContentCapture` 和 View 的启发式判断共同决定。`no` 只排除当前节点，框架仍可能访问它的子节点；`noExcludeDescendants` 才是整棵子树都不参与采集。父节点一旦用了 exclude-descendants 模式，子节点即使显式设置为重要，也回不到这次采集里。
+遍历范围由 `importantForContentCapture` 和 View 的启发式判断共同决定。`no` 只排除当前节点，框架仍可能访问它的子节点；`noExcludeDescendants` 才是整棵子树都不参与采集。父节点一旦用了 exclude-descendants（排除后代） 模式，子节点即使显式设置为重要，也回不到这次采集里。
 
 #### 后续变化按 traversal 批量转交
 
@@ -482,7 +482,7 @@ Activity 创建时，`ContentCaptureManager` 通过 `IContentCaptureManager.star
 
 #### 服务回调运行在服务主线程
 
-批次到达服务端后，`ContentCaptureService` 的 direct Binder stub 把消息投递到服务进程的 main looper，再逐个调用 `onContentCaptureEvent()`。回调里如果有大规模解析、同步 I/O 或模型推理，服务自己的事件队列就会延迟；应用侧用的是 `oneway`，所以这种积压通常表现为服务处理滞后、异步 Binder 压力或系统 CPU 上升，应用并没有在同步等待服务方法返回。
+批次到达服务端后，`ContentCaptureService` 的 direct Binder stub（接收 Binder 调用的服务端对象） 把消息投递到服务进程的 main looper，再逐个调用 `onContentCaptureEvent()`。回调里如果有大规模解析、同步 I/O 或模型推理，服务自己的事件队列就会延迟；应用侧用的是 `oneway`，所以这种积压通常表现为服务处理滞后、异步 Binder 压力或系统 CPU 上升，应用并没有在同步等待服务方法返回。
 
 ContentCapture 也没有一套适用于所有设备的结构大小或耗时阈值：节点字段、文本长度、虚拟层级、更新频率、服务配置和设备 CPU 都会影响结果，“500 个 View 固定需要 30–100 ms”这类数字换一个页面或设备就不作数。
 
@@ -492,13 +492,13 @@ ContentCapture 也没有一套适用于所有设备的结构大小或耗时阈�
 
 标准 View 获得焦点时会间接调用 `AutofillManager.notifyViewEntered()`，自定义控件也可以在用户发起自动填充操作时调用 `requestAutofill()`。Autofill 通常就从这类焦点或显式请求开始，View 树每次构建完并不会自动采集完整结构。
 
-`IAutoFillManager` 是 `oneway` 接口，但 `AutofillManager` 的 `addClient()` 和 `startSession()` 会附带 `SyncResultReceiver`，通过另一条结果通道等会话建立完成，超时常量 5000 ms。焦点事件通常来自 UI 线程，所以 trace 里出现 `SyncResultReceiver` 等待时，我们要沿 Binder flow 继续查 `system_server` 创建 Autofill 会话的过程。
+`IAutoFillManager` 是 `oneway` 接口，但 `AutofillManager` 的 `addClient()` 和 `startSession()` 会附带 `SyncResultReceiver`，通过另一条结果通道等会话建立完成，超时常量 5000 ms。焦点事件通常来自 UI 线程，所以 trace 里出现 `SyncResultReceiver` 等待时，我们要沿 Binder flow（跨进程调用流） 继续查 `system_server` 创建 Autofill 会话的过程。
 
 注意 5000 ms 只是异常情况下的保护上限，别当成正常延迟目标；接口契约也推不出“每次 Binder 约 5–10 ms”这样的固定耗时。
 
 #### AssistStructure 在应用主线程采集
 
-会话建立后，Autofill Session 需要新响应时通过 `ActivityTaskManager.requestAutofillData()` 请求应用提供 assist data。应用的 `ActivityThread.handleRequestAssistContextExtras()` 在主线程创建 `AssistStructure`——描述当前窗口和可填充节点的结构快照。构造时枚举 Activity 的 ViewRoot，调用根 View 的 `dispatchProvideAutofillStructure()`：
+会话建立后，Autofill Session 需要新响应时通过 `ActivityTaskManager.requestAutofillData()` 请求应用提供 assist data（辅助上下文数据）。应用的 `ActivityThread.handleRequestAssistContextExtras()` 在主线程创建 `AssistStructure`——描述当前窗口和可填充节点的结构快照。构造时枚举 Activity 的 ViewRoot，调用根 View 的 `dispatchProvideAutofillStructure()`：
 
 1. `View.onProvideAutofillStructure()` 写入资源 ID、尺寸、可见性、autofill type、hints、value 等字段；
 2. `View.onProvideAutofillVirtualStructure()` 允许 WebView、自绘控件等暴露没有对应实体 View 的虚拟节点；
@@ -509,13 +509,13 @@ ContentCapture 也没有一套适用于所有设备的结构大小或耗时阈�
 
 #### 大结构采用分段传输
 
-`AssistStructure` 不要求把整个对象装进一次 Binder transaction：`ParcelTransferWriter` 在 Parcel 达到 `IBinder.MAX_IPC_SIZE` 边界后写入 continuation token，接收方凭这个令牌请求下一段。`Session.AssistDataReceiver` 调用 `ensureDataForAutofill()` 取回全部数据，建立代表本次填充上下文的 `FillContext`，然后创建 `FillRequest`。
+`AssistStructure` 不要求把整个对象装进一次 Binder transaction：`ParcelTransferWriter` 在 Parcel 达到 `IBinder.MAX_IPC_SIZE` 边界后写入 continuation token（续传令牌），接收方凭这个令牌请求下一段。`Session.AssistDataReceiver` 调用 `ensureDataForAutofill()` 取回全部数据，建立代表本次填充上下文的 `FillContext`，然后创建 `FillRequest`。
 
 分段传输可以避免单次 transaction 超过 IPC 大小上限，但遍历、字段复制、序列化、反序列化和多次 Binder 往返一样都在。报告里应记录这次结构包含的 window 数、node 数、文本规模、采集时长和分段次数，“中等页面 1–5 MB”这类估计不能直接套用。
 
 #### 密码管理器与 IME 不会各扫一遍树
 
-用户选中的 `AutofillService` 通常由密码管理器提供，IME inline suggestions 则是展示 Autofill 数据集的一条界面路径：Autofill Session 先向 IME 获取 `InlineSuggestionsRequest`，随 `FillRequest` 交给提供方，再把 inline response 送回 IME 显示。
+用户选中的 `AutofillService` 通常由密码管理器提供，IME inline suggestions（输入法内联建议） 则是展示 Autofill 数据集的一条界面路径：Autofill Session 先向 IME 获取 `InlineSuggestionsRequest`，随 `FillRequest` 交给提供方，再把 inline response 送回 IME 显示。
 
 这组协作会增加 `system_server`、提供方、IME 和渲染服务之间的 IPC 与等待，也可能与键盘显示动画重叠。不过 IME 不需要为此单独再建一份 `AssistStructure`，主、次提供方路径也可以复用已有的 `FillContext`，所以提供方数量换算不成应用 View 树的遍历次数。
 
@@ -575,7 +575,7 @@ IME 自身的启动、`InputConnection` 和窗口动画问题见 [3.5 InputMetho
 
 只有在整块 UI 都没有可填充字段或可采集内容时，才值得考虑在容器上用 `noExcludeDescendants`：ContentCapture 会据此排除整棵子树，之后其中新增的有效内容服务也看不到了。Autofill 的同名模式表达相同意图，但请求 flags 和系统配置选项仍可能要求包含更多节点，复用组件和动态页面都要覆盖回归测试。
 
-从 Android 14 / API 34 开始，Autofill 会结合 importance、其他 View 属性、请求 flags 和系统配置选项，决定是否触发以及结构中包含哪些节点；手动请求、compat mode、PCC detection 或设备配置，都可能把原本标记为不重要的节点纳进来。`importantForAutofill` 是语义提示，保不了每种请求模式都减少相同数量的节点。
+从 Android 14 / API 34 开始，Autofill 会结合 importance、其他 View 属性、请求 flags 和系统配置选项，决定是否触发以及结构中包含哪些节点；手动请求、compat mode（兼容模式）、PCC detection（Autofill 的字段分类检测流程） 或设备配置，都可能把原本标记为不重要的节点纳进来。`importantForAutofill` 是语义提示，保不了每种请求模式都减少相同数量的节点。
 
 #### 保持结构回调纯内存
 
@@ -606,7 +606,7 @@ IME 自身的启动、`InputConnection` 和窗口动画问题见 [3.5 InputMetho
 
 `ContentCaptureService` 需要声明 `android.permission.BIND_CONTENT_CAPTURE_SERVICE`，这项绑定权限由系统控制；面向普通应用的 `CAPTURE_CONTENT` 运行时授权流程在 Android 14 里并不存在。`RedactionRule` / `ContentCaptureContext.addRedactionRule()` API 平台上也没有，别依据不存在的接口设计脱敏路径。
 
-`ContentCaptureManager.setContentCaptureEnabled()` 已在 API 37 标记为 deprecated，目标 SDK 为 37 及以上时该调用可能成为 no-op；平台文档要求敏感窗口用 `WindowManager.LayoutParams.FLAG_SECURE` 退出 content capture。但 `FLAG_SECURE` 同时会限制截图和非安全显示，只适合有明确安全需求的窗口，别拿它当临时性能开关。
+`ContentCaptureManager.setContentCaptureEnabled()` 已在 API 37 标记为 deprecated，目标 SDK 为 37 及以上时该调用可能成为 no-op（不执行任何操作）；平台文档要求敏感窗口用 `WindowManager.LayoutParams.FLAG_SECURE` 退出 content capture。但 `FLAG_SECURE` 同时会限制截图和非安全显示，只适合有明确安全需求的窗口，别拿它当临时性能开关。
 
 页面内更细的控制仍可用 `importantForContentCapture`。Autofill 有自己独立的敏感数据处理规则，也受用户所选 provider 的信任边界约束；密码字段要由密码管理器填充，就保留 Autofill 结构并依赖框架清理敏感值，别拿 ContentCapture 设置代替 Autofill 设置。
 
@@ -621,7 +621,7 @@ WebView 可以通过 `onProvideAutofillVirtualStructure()` 向 Autofill 暴露 H
 - WebView 渲染进程准备虚拟节点的语义数据；
 - provider、IME 与 ContentCaptureService 各自的处理。
 
-是否存在重复计算，取决于 WebView 的版本和实现，所以要同时记录 WebView provider 版本、页面 DOM 规模、虚拟节点数、目标字段、ContentCapture 采集条件和 Autofill request ID，再从 trace 判断哪条路径占用了 UI 线程。
+是否存在重复计算，取决于 WebView 的版本和实现，所以要同时记录 WebView provider 版本、页面 DOM（文档对象模型） 规模、虚拟节点数、目标字段、ContentCapture 采集条件和 Autofill request ID，再从 trace 判断哪条路径占用了 UI 线程。
 
 ### 观测与复现
 

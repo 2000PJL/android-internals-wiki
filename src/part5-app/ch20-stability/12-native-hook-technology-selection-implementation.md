@@ -32,11 +32,11 @@ last_review_finalize_at: '2026-07-28T08:18:33+08:00'
 
 # Native Hook 技术选型与实现
 
-Native Hook 指在进程内修改本地代码的函数解析结果或执行入口，让调用先经过代理函数。改一个地址这一步通常很简单，难点集中在命中范围、并发发布、ABI 一致性、动态装载和平台防护。只按 PLT/GOT、Inline、Trap 三个名字选型，容易把不同层级的机制混在一起。
+Native Hook 指在进程内修改本地代码（C/C++）的函数解析结果或执行入口，让调用先经过代理函数。改一个地址这一步通常很简单，难点集中在命中范围、并发发布、ABI 一致性、动态装载和平台防护。只按 PLT/GOT、Inline、Trap 三个名字选型，容易把不同层级的机制混在一起。
 
 > 源码基线：AOSP `android-17.0.0_r1`。本文讨论普通应用进程中的 arm64（AArch64）Native Hook。
 
-Android 17 没有公开的 Hook API，Hook 框架也拿不到额外权限。业务代码优先走公开 NDK API、编译期插桩、显式代理或系统诊断工具；只有无法改造调用方、诊断收益又足以覆盖稳定性成本时，我们再评估运行时 Hook。
+Android 17 没有公开的 Hook API，Hook 框架也拿不到额外权限。业务代码优先走公开 NDK（Native Development Kit） API、编译期插桩、显式代理或系统诊断工具；只有无法改造调用方、诊断收益又足以覆盖稳定性成本时，我们再评估运行时 Hook。
 
 文中沿用源码和业内常用名称：proxy 指 Hook 命中后先进入的代理函数；linker 指 bionic 动态链接器；debuggerd 指 Android 的 Native 崩溃转储组件；ART 指 Android Runtime。
 
@@ -52,7 +52,7 @@ Native Hook 的常见方案分别改写三个不同对象，我们先把它们�
 
 PLT/GOT Hook 按调用方修改重定位槽，Inline Hook 按目标指令地址修改执行流。同样是拦 `malloc`，两者覆盖面也不同：修改 `libfoo.so` 中 `malloc` 的导入槽，只影响 `libfoo.so` 经该槽发出的调用；修改 `libc.so` 中 `malloc` 的入口，可能影响进程内更多调用者，也会放大递归和并发风险。
 
-Trap Hook 接近用户态软件断点：用断点指令触发 `SIGTRAP`，再由信号处理函数改写执行现场。它与 debuggerd 之间没有扩展接口，也不同于调试器用 `ptrace` 控制目标线程。框架要管理或正确串接 `SIGTRAP` 的 signal disposition（信号处置），识别自有断点，并通过 `ucontext_t` 读取或修改信号发生时的寄存器和 PC。
+Trap Hook 接近用户态软件断点：用断点指令触发 `SIGTRAP`，再由信号处理函数改写执行现场。它与 debuggerd 之间没有扩展接口，也不同于调试器用 `ptrace` 控制目标线程。框架要管理或正确串接 `SIGTRAP` 的 signal disposition（信号处置），识别自有断点，并通过 `ucontext_t` 读取或修改信号发生时的寄存器和 PC（Program Counter，程序计数器）。
 
 ## 2. 选型从“能否命中”开始
 
@@ -67,7 +67,7 @@ Trap Hook 接近用户态软件断点：用断点指令触发 `SIGTRAP`，再由
 | ART、linker、debuggerd 私有函数 | 原则上不用于应用线上路径 | 私有符号、结构和调用约定没有兼容性承诺 |
 | 分配器、线程同步等高频基础函数 | 优先 heapprofd、GWP-ASan、Perfetto 等平台工具 | 代理函数极易递归，故障影响整个进程 |
 
-heapprofd 是采样式 Native 堆分析器，GWP-ASan 通过抽样加 guard page 捕获部分堆越界和释放后使用，Perfetto 面向系统级跟踪。三者覆盖面各不相同，共同点是都能替我们省掉直接改写分配器或同步原语的工作。
+heapprofd 是采样式 Native 堆分析器，GWP-ASan 通过抽样加 guard page（不可访问的保护页） 捕获部分堆越界和释放后使用，Perfetto 面向系统级跟踪。三者覆盖面各不相同，共同点是都能替我们省掉直接改写分配器或同步原语的工作。
 
 “PLT Hook 失败就换 Inline Hook”属于跳过风险判断。动手之前，我们先把这些问题过一遍：
 
@@ -98,7 +98,7 @@ case DT_PLTGOT:
   break;
 ```
 
-随后 `link_image()` 调用 `relocate()`。`process_relocation_impl<RelocMode::General>()` 的 fast path 负责常见类型的快速处理，把 `R_GENERIC_JUMP_SLOT` 的解析结果写入对应的 GOT 槽位：
+随后 `link_image()` 调用 `relocate()`。`process_relocation（重定位）_impl<RelocMode::General>()` 的 fast path（常见类型的快速处理分支） 负责常见类型的快速处理，把 `R_GENERIC_JUMP_SLOT` 的解析结果写入对应的 GOT 槽位：
 
 ```cpp
 if (r_type == R_GENERIC_JUMP_SLOT) {
@@ -151,7 +151,7 @@ bool soinfo::link_image(...) {
 
 监听 `dlopen()` 解决的只是“何时重新扫描”；linker 从重定位结束到 `protect_relro()` 之间并没有公开插入点，要卡这个时机就得 Hook linker 私有实现，版本风险随之增加。
 
-ByteHook 的当前实现会记录 program header 推导出的原页权限，对不可写槽加 `PROT_WRITE`，先回调原函数地址，再用原子写替换 GOT。它的权限恢复语句在源码里目前是被注释掉的，所以“写完是否恢复原权限”要作为框架策略显式记录，别指望库自动恢复。可靠的 PLT/GOT Hook 涵盖 ELF 解析、权限处理、发布顺序和错误恢复，扫一遍 `/proc/self/maps` 再写一个指针远远不够。
+ByteHook 的当前实现会记录 program header（程序头） 推导出的原页权限，对不可写槽加 `PROT_WRITE`，先回调原函数地址，再用原子写替换 GOT。它的权限恢复语句在源码里目前是被注释掉的，所以“写完是否恢复原权限”要作为框架策略显式记录，别指望库自动恢复。可靠的 PLT/GOT Hook 涵盖 ELF 解析、权限处理、发布顺序和错误恢复，扫一遍 `/proc/self/maps` 再写一个指针远远不够。
 
 ### 3.3 `DT_TEXTREL` 与 Inline Hook 受不同机制约束
 
@@ -178,9 +178,9 @@ linker namespace（动态链接器命名空间）决定一组 ELF 可访问哪�
 
 如果诊断方案必须依赖私有符号，至少要把设备 API、ABI、Build ID（二进制构建标识）、符号名和函数开头的指令摘要纳入允许列表；任何一项不匹配就停用，猜测的偏移一律不上线。
 
-### 3.5 16 KB page size
+### 3.5 16 KB page size（页大小）
 
-内核以页为单位管理虚拟内存、设置页权限，页大小就是这个最小粒度。Android 从 15 起已支持 16 KB 页设备，这项约束自那时就有。arm64 指令仍固定为 4 字节，`B` 的编码范围也不随页大小变化；受影响的是 `mmap()`、`mprotect()`、trampoline 分配和页权限恢复：
+内核以页为单位管理虚拟内存、设置页权限，页大小就是这个最小粒度。Android 从 15 起已支持 16 KB 页设备，这项约束自那时就有。arm64（AArch64，64 位 Arm 指令集） 指令仍固定为 4 字节，`B` 的编码范围也不随页大小变化；受影响的是 `mmap()`、`mprotect()`、trampoline（保存原指令并跳回原函数的跳板代码） 分配和页权限恢复：
 
 - 用 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)` 获取运行时页大小；
 - 按运行时页大小向下、向上对齐保护区间；
@@ -228,7 +228,7 @@ runtime_slot = load_bias + relocation.r_offset
 6. 用对齐的原子指针写更新槽，记录调用方、槽地址、旧值、新值和结果。
 7. 明确决定是否恢复原权限；若保留写权限，记录原因、影响范围和框架版本。
 
-orig 指代理函数继续调用的原目标地址，它必须先于新槽值发布；如果槽已替换而 `orig` 对其他线程还不可见，proxy 就可能在这个窗口跳到空地址。发布顺序要用与并发模型匹配的原子操作和 memory order，普通 C 赋值给不了多线程可见性保证。
+orig 指代理函数继续调用的原目标地址，它必须先于新槽值发布；如果槽已替换而 `orig` 对其他线程还不可见，proxy 就可能在这个窗口跳到空地址。发布顺序要用与并发模型匹配的原子操作和 memory order（内存序），普通 C 赋值给不了多线程可见性保证。
 
 ### 4.3 覆盖盲区
 
@@ -248,7 +248,7 @@ orig 指代理函数继续调用的原目标地址，它必须先于新槽值发
 
 `dlopen()` 成功后，新 ELF 才进入普通应用可枚举的模块集合，此时它的 relocation 和构造函数都已执行完；我们再装 Hook，覆盖的就只有后续调用，构造函数里的调用补采不回来。若框架声称能在构造函数之前介入，就要检查它是否依赖 linker 私有路径以及适配范围。
 
-ByteHook 会在动态装载后刷新 ELF 管理器；ShadowHook 也能为尚未装载的目标保存 pending task，等目标出现再安装。无论选哪种，都要把新装载、卸载和重复装载纳入生命周期测试。
+ByteHook 会在动态装载后刷新 ELF 管理器；ShadowHook 也能为尚未装载的目标保存 pending task（等待目标出现的安装任务），等目标出现再安装。无论选哪种，都要把新装载、卸载和重复装载纳入生命周期测试。
 
 业务 proxy 里要避免随意递归调用 `dlopen()`、`dlsym()` 或日志组件，它们可能再次经过被 Hook 的路径。常见处理方式包括：
 
@@ -309,7 +309,7 @@ AArch64 的直接 `B` 使用 26 位有符号立即数并按 4 字节缩放，目
 Android 17 的 arm64 代码可能同时使用几类控制流保护：
 
 - **PAC（Pointer Authentication Code，指针认证码）**：函数序言或返回路径可能对 LR 签名、认证。搬迁序言时，这些指令和它们依赖的栈状态都要原样保留，遗漏、重复或改动都会引入风险。
-- **BTI（Branch Target Identification，分支目标识别）**：bionic linker 会读取 ELF note 里的 GNU property（处理器特性声明）；ELF 声明兼容且硬件支持时，为可执行段加入 `PROT_BTI`。若 proxy 或 trampoline 所在映射受 BTI 保护，间接 `BR/BLR` 到达的入口必须落在匹配的 landing pad 上，也就是允许间接分支落入的入口指令。
+- **BTI（Branch Target Identification，分支目标识别）**：bionic linker 会读取 ELF note 里的 GNU property（处理器特性声明）；ELF 声明兼容且硬件支持时，为可执行段加入 `PROT_BTI`。若 proxy 或 trampoline 所在映射受 BTI 保护，间接 `BR/BLR` 到达的入口必须落在匹配的 landing pad（允许间接分支落入的入口指令） 上，也就是允许间接分支落入的入口指令。
 - **CFI（Control-Flow Integrity，控制流完整性）**：函数指针等间接调用到达签名不兼容的代理地址时，可能触发类型检查并终止进程。Hook 私有 CFI helper 以绕过检查，又会新增一组没有兼容性承诺的依赖。
 
 Hook 框架要把这些能力纳入测试组合，CPU 架构只能当第一层筛选；至少覆盖启用 `-mbranch-protection`、LTO/CFI、不同链接可见性和不同系统库 Build ID 的产物。
@@ -346,7 +346,7 @@ debuggerd_register_handlers(&action);
 
 `debuggerd_signal_handler()` 处理 `SIGTRAP`、`SIGSEGV`、`SIGBUS`、`SIGFPE`、`SIGILL`、`SIGABRT` 等信号。致命路径会暂时允许 `crash_dump` 用 `ptrace` 读取进程，通过 `clone()` 建立共享地址空间的 pseudothread（分派崩溃转储的轻量线程），再由 `crash_dump` 暂停线程、生成 tombstone（Native 崩溃转储）。可恢复 GWP-ASan 和 permissive MTE（记录后继续执行的宽松模式）这类特定路径可能在记录后返回，其余致命路径会重新发出信号。
 
-应用消费自有 `SIGTRAP` 时未必生成 tombstone，结果取决于 signal chain 的串接顺序、`si_code`、调试器状态，以及事件是否继续传给 debuggerd。在 ART 进程中，sigchain（ART 的信号串接库）还可能把平台 special handler 和用户 handler 组合起来。别把一次 `sigaction()` 调用当作拿到了 `SIGTRAP` 的独占控制权。
+应用消费自有 `SIGTRAP` 时未必生成 tombstone，结果取决于 signal chain（信号处理函数调用顺序） 的串接顺序、`si_code`、调试器状态，以及事件是否继续传给 debuggerd。在 ART 进程中，sigchain（ART 的信号串接库）还可能把平台 special handler（优先运行的特殊处理函数） 和用户 handler 组合起来。别把一次 `sigaction()` 调用当作拿到了 `SIGTRAP` 的独占控制权。
 
 这条链路给我们两条硬约束：
 
@@ -391,7 +391,7 @@ ssize_t proxy_read(int fd, void* buffer, size_t count) {
 
 这个示例仍省略了 cancellation point（pthread 取消的响应点）、异常退出、信号重入和多线程同时初始化的竞态。
 
-`thread_local` 标记只能约束当前线程的常规递归，记录函数的异步信号安全要另行保证。生产代码里我们用 RAII 或等价的 scope guard 兜住每条返回路径，清理线程局部状态，并逐项确认代理声明与目标导出声明一致。
+`thread_local` 标记只能约束当前线程的常规递归，记录函数的异步信号安全要另行保证。生产代码里我们用 RAII（让对象析构时自动执行清理） 或等价的 scope guard（退出当前作用域时自动清理） 兜住每条返回路径，清理线程局部状态，并逐项确认代理声明与目标导出声明一致。
 
 ## 8. 生命周期设计
 
@@ -432,9 +432,9 @@ DECLARED -> RESOLVING -> INSTALLING -> ACTIVE
 
 ### 9.1 文件描述符监控
 
-观察自有或指定第三方 ELF 的 `openat`、`close`、`dup`、`socket` 等导入调用时，PLT/GOT Hook 通常比进程级 Inline Hook 更容易限定影响面。代理函数保存 `errno`、走无分配记录路径，并把“未经过导入槽的直接 syscall”写进覆盖盲区。
+观察自有或指定第三方 ELF 的 `openat`、`close`、`dup`、`socket` 等导入调用时，PLT/GOT Hook 通常比进程级 Inline Hook 更容易限定影响面。代理函数保存 `errno`、走无分配记录路径，并把“未经过导入槽的直接 syscall（系统调用）”写进覆盖盲区。
 
-FD 即 file descriptor。这类方案适合辅助定位 FD 泄漏，仍要结合 `/proc/self/fd` 快照、资源所有权和调用栈采样。参见 20.7《FD 耗尽监控与故障排查》。
+FD 即 file descriptor（文件描述符）。这类方案适合辅助定位 FD 泄漏，仍要结合 `/proc/self/fd` 快照、资源所有权和调用栈采样。参见 20.7《FD 耗尽监控与故障排查》。
 
 ### 9.2 分配器监控
 
@@ -454,7 +454,7 @@ FD 即 file descriptor。这类方案适合辅助定位 FD 泄漏，仍要结合
 
 ### 9.5 API level 不能替代二进制身份
 
-对照 `android-16.0.0_r1` 与 `android-17.0.0_r1` 可以确认：两者都不支持 `RTLD_LAZY` 的延迟解析，debuggerd 都会设置 `SA_EXPOSE_TAGBITS`，也都包含 permissive MTE 和 MTE globals 相关路径。所以这些机制区分不了 Android 16 与 17，更当不成某个 Hook 可安装的充分条件。
+对照 `android-16.0.0_r1` 与 `android-17.0.0_r1` 可以确认：两者都不支持 `RTLD_LAZY` 的延迟解析，debuggerd 都会设置 `SA_EXPOSE_TAGBITS`，也都包含 permissive MTE（记录 MTE 故障后允许继续执行的宽松模式） 和 MTE globals 相关路径。所以这些机制区分不了 Android 16 与 17，更当不成某个 Hook 可安装的充分条件。
 
 API level 只适合作为第一层筛选。安装前还要检查：
 
@@ -504,10 +504,10 @@ API level 只适合作为第一层筛选。安装前还要检查：
 
 - [bionic linker.cpp](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker.cpp)：`DT_JMPREL`、`DT_PLTGOT`、`DT_TEXTREL`、`protect_relro()`。
 - [bionic linker_relocate.cpp](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_relocate.cpp)：`R_GENERIC_JUMP_SLOT`、`GLOB_DAT`、IRELATIVE 等重定位处理。
-- [bionic linker_phdr.cpp](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr.cpp)：GNU property 与 arm64 `PROT_BTI`。
+- [bionic linker_phdr.cpp](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr.cpp)：GNU property（ELF 中声明处理器特性的 note） 与 arm64 `PROT_BTI`。
 - [bionic unistd.h](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/include/unistd.h)：`cacheflush()` 的架构条件与 builtin 建议。
 - [debuggerd handler.h](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/include/debuggerd/handler.h)：致命信号集合与 `SIGTRAP` 注册。
-- [debuggerd_handler.cpp](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)：pseudothread、`crash_dump` 和 `ptrace` 配合链路。
+- [debuggerd_handler.cpp](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp)：pseudothread（专用于分派崩溃转储的轻量线程）、`crash_dump` 和 `ptrace` 配合链路。
 - [ART sigchain.cc](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/sigchainlib/sigchain.cc)：special handler、debuggerd recovery hook 与用户 handler 的转发次序。
 
 版本对照使用以下 `android-16.0.0_r1` 源码：

@@ -64,7 +64,7 @@ sources:
 
 一次 Binder 调用抛出异常，我们最先拿到的一般只是一个 `RemoteException`。它说明的只是 IPC 链路上出了错；服务端到底执行没有、业务提交没有，要靠后面的证据回答。`oneway` 调用在本地就返回，目标是否处理，同样要另行确认。
 
-Binder 是 Android 最主要的本机 IPC 机制。socket、pipe、共享内存和文件描述符等机制也能跨进程传递数据，Binder 额外负责远端对象引用、调用者身份传递和服务端线程分派。AIDL 用于描述接口并生成调用代码，Parcel 是 Binder 参数和返回值的序列化容器。
+Binder 是 Android 最主要的本机 IPC 机制。socket、pipe（字节流管道）、共享内存和文件描述符等机制也能跨进程传递数据，Binder 额外负责远端对象引用、调用者身份传递和服务端线程分派。AIDL（Android Interface Definition Language，Android 接口定义语言） 用于描述接口并生成调用代码，Parcel 是 Binder 参数和返回值的序列化容器。
 
 一次看似普通的方法调用，会同时受 Parcel 大小、目标进程存活、Binder 线程池、进程冻结状态和远端异常影响。排查时，我们分别记录三个结果：**传输是否完成、服务端是否执行、业务是否成功。** 文中的 transaction 指一笔 Binder 请求或回复。
 
@@ -89,7 +89,7 @@ Android 官方要求客户端把 `TransactionTooLargeException` 当作“部分�
 
 ### 2.1 `RemoteException` 家族
 
-落到 Java 层，我们最常见到的是 `RemoteException` 家族。它是受检异常，编译器要求调用方捕获它，或在方法签名中继续声明。常见子类包括：
+落到 Java 层，我们最常见到的是 `RemoteException` 家族。它是受检异常（checked exception），编译器要求调用方捕获它，或在方法签名中继续声明。常见子类包括：
 
 | 类型 | 含义 | 注意点 |
 |---|---|---|
@@ -98,7 +98,7 @@ Android 官方要求客户端把 `TransactionTooLargeException` 当作“部分�
 | `TransactionTooLargeException` | 大 transaction 失败后的推测性分类 | 请求和回复都可能失败；异常名不能证明精确的字节原因 |
 | 其他 `RemoteException` | 未实现 transaction、底层传输失败等 | 要结合接口版本、日志和服务端证据 |
 
-`proxy` 是远端接口在客户端的本地代理对象。framework 管理类是系统 API 的 Java 外观：普通应用调用 `PackageManager`、`ActivityManager` 时，管理类往往已经在内部捕获 `RemoteException`，再调用 `rethrowFromSystemServer()` 或转换成该 API 约定的运行时异常。所以“给所有系统 API 加 `catch (RemoteException)`”不一定能编译，也覆盖不了全部失败路径；要在调用处处理这组受检异常的，是自有 AIDL 代理对象，或方法签名明确声明 `RemoteException` 的接口。
+`proxy` 是远端接口在客户端的本地代理对象。framework 管理类（系统 API 的 Java 外观类）是系统 API 的 Java 外观：普通应用调用 `PackageManager`、`ActivityManager` 时，管理类往往已经在内部捕获 `RemoteException`，再调用 `rethrowFromSystemServer()` 或转换成该 API 约定的运行时异常。所以“给所有系统 API 加 `catch (RemoteException)`”不一定能编译，也覆盖不了全部失败路径；要在调用处处理这组受检异常的，是自有 AIDL 代理对象，或方法签名明确声明 `RemoteException` 的接口。
 
 ### 2.2 回复中传播的运行时异常
 
@@ -138,7 +138,7 @@ Android 官方要求客户端把 `TransactionTooLargeException` 当作“部分�
 - 小 Parcel 也可能因并发占用而失败，异常未必叫 `TransactionTooLargeException`。
 - 回复过大时，客户端日志中的请求大小可能很小；服务端可能已经执行完成，只在返回结果时失败。
 
-200 KiB 是当前 Java JNI 层选择异常类型时的阈值，协议里并没有这笔预算。公开 API `IBinder.getSuggestedMaxIpcSizeBytes()` 从 API 30 起返回 64 KiB 的安全建议值，文档还建议 transaction 尽量更小。团队可以为具体接口设置更低预算；64 KiB 是建议上界，驱动硬上限是另一回事。
+200 KiB 是当前 Java JNI（Java Native Interface，Java 与 native 代码的接口） 层选择异常类型时的阈值，协议里并没有这笔预算。公开 API `IBinder.getSuggestedMaxIpcSizeBytes()` 从 API 30 起返回 64 KiB 的安全建议值，文档还建议 transaction 尽量更小。团队可以为具体接口设置更低预算；64 KiB 是建议上界，驱动硬上限是另一回事。
 
 ### 3.3 大块内容的传递方式
 
@@ -182,7 +182,7 @@ fun marshalledSize(bundle: Bundle): Int {
 
 1. 递增连接代次（epoch，每次重连都会变化的编号），并把当前代理对象标成不可用。
 2. 清除依附于旧进程的会话、回调注册和缓存句柄。
-3. 把重新 bind 或获取服务的工作交给应用统一管理的 executor。
+3. 把重新 bind 或获取服务的工作交给应用统一管理的 executor（任务执行器）。
 
 死亡回调线程里只做这三件事，磁盘、网络操作和等待新服务都安排到别处。重新连接后要获取新的代理对象，重新协商接口版本并恢复必要状态；旧代理对象就此作废。
 
@@ -244,17 +244,17 @@ API 36 起，`IBinder.addFrozenStateChangeCallback()` 是公开 API。服务端�
 
 设置冻结策略后应通过 `broadcast(Consumer)` 广播回调；`beginBroadcast()` 只支持 `FROZEN_CALLEE_POLICY_UNSET`，其他策略下会抛 `UnsupportedOperationException`。
 
-通过 `bindService()` 连接的 bound service，通常会因绑定关系提高进程重要性；能否进入缓存或冻结状态，还取决于绑定标志和当前进程状态。冻结状态从包名是猜不出来的，要判断就观察具体的远程 Binder，或在回调管理器中选择明确策略。
+通过 `bindService()` 连接的 bound service（通过 `bindService()` 连接的服务），通常会因绑定关系提高进程重要性；能否进入缓存或冻结状态，还取决于绑定标志和当前进程状态。冻结状态从包名是猜不出来的，要判断就观察具体的远程 Binder，或在回调管理器中选择明确策略。
 
-## 6. 线程池耗尽、嵌套调用与 ANR
+## 6. 线程池耗尽、嵌套调用与 ANR（Application Not Responding，应用无响应）
 
 同步 Binder 调用会阻塞调用线程，直到收到回复或失败。主线程上的一次慢系统服务调用就足以造成卡顿，多次连续调用还会累加延迟；ANR 指南也把“主线程等待缓慢的 Binder 回复”列为常见原因。
 
 ### 6.1 Binder 线程数的构成
 
-Android 17 C++ libbinder 的 `DEFAULT_MAX_BINDER_THREADS` 是 15。这个值表示内核最多还能按需启动多少线程；`startThreadPool()` 会先额外启动 1 个线程，手工调用 `joinThreadPool()` 也可能让调用线程加入线程池。Java 应用、native 守护进程、HAL 和 `system_server` 的配置并不完全相同。
+Android 17 C++ libbinder 的 `DEFAULT_MAX_BINDER_THREADS` 是 15。这个值表示内核最多还能按需启动多少线程；`startThreadPool()` 会先额外启动 1 个线程，手工调用 `joinThreadPool()` 也可能让调用线程加入线程池。Java 应用、native 守护进程（用 C/C++ 等实现的常驻进程）、HAL（硬件抽象层） 和 `system_server` 的配置并不完全相同。
 
-排障时，我们从 Perfetto trace 或 bugreport 读取目标进程实际存在的 Binder 线程及其状态。看到 15 个线程先别急着下结论，看到 16 个也未必触到了哪个通用上限，各进程的配置本来就不一样。
+排障时，我们从 Perfetto trace 或 bugreport（系统诊断报告） 读取目标进程实际存在的 Binder 线程及其状态。看到 15 个线程先别急着下结论，看到 16 个也未必触到了哪个通用上限，各进程的配置本来就不一样。
 
 ### 6.2 三类常见耗尽路径
 
@@ -281,7 +281,7 @@ Android 17 C++ libbinder 的 `DEFAULT_MAX_BINDER_THREADS` 是 15。这个值表�
 ### 8.1 客户端证据
 
 - 完整的 Java/Kotlin 堆栈，保留 `BinderProxy.transactNative` 上方的 AIDL 或管理类方法。
-- 接口名、方法或 transaction code、同步或 `oneway`、调用线程、耗时。
+- 接口名、方法或 transaction code（方法在 Binder 协议中的编号）、同步或 `oneway`、调用线程、耗时。
 - 自有协议的请求和回复估算字节数、列表项数、FD 数和字段结构版本。
 - request ID、重试序号、连接代次，以及调用前后对代理对象存活状态的观察。
 - 原始异常类型、消息和原因链；异常消息脱敏后再上传。
@@ -295,11 +295,11 @@ Android 17 C++ libbinder 的 `DEFAULT_MAX_BINDER_THREADS` 是 15。这个值表�
 
 ### 8.3 工具边界
 
-Perfetto 是 Android 的系统级追踪工具，它的时间轴由若干 track 组成：track 是时间轴中的一条轨道，slice 是轨道上的一段事件。采集 `binder_driver`、`sched` 和相关应用或系统 atrace 类别后，我们可以把客户端 transaction、服务端处理、回复与线程调度放在同一时间轴上；PerfettoSQL 的 `android.binder` 标准库还提供 transaction 耗时分解、阻塞函数和调用关系。筛选 slice 时按具体的 track 和事件来，别只按名称模糊匹配。
+Perfetto 是 Android 的系统级追踪工具，它的时间轴由若干 track 组成：track 是时间轴中的一条轨道，slice 是轨道上的一段事件。采集 `binder_driver`、`sched` 和相关应用或系统 atrace（Android 追踪标记） 类别后，我们可以把客户端 transaction、服务端处理、回复与线程调度放在同一时间轴上；PerfettoSQL 的 `android.binder` 标准库还提供 transaction 耗时分解、阻塞函数和调用关系。筛选 slice 时按具体的 track 和事件来，别只按名称模糊匹配。
 
 分析 ANR 时，先看主线程是否停在 `BinderProxy.transactNative`，再沿 Perfetto flow（连接跨线程事件的箭头）找到服务端线程，确认它正在运行、等待锁、执行 I/O，还是等待下游 Binder。只有客户端堆栈时，最多能证明“客户端正在等待某次 IPC”。
 
-`/sys/kernel/debug/binder` 或 binderfs 的统计节点受系统构建类型、SELinux 权限策略、root 权限和设备配置限制，适合带调试能力的 userdebug、eng 构建或实验室设备。`dumpsys binder <pid>` 在量产设备上不一定可用，使用前先通过 `dumpsys -l` 和设备构建信息确认；线上应用更不要指望内核调试节点。
+`/sys/kernel/debug/binder` 或 binderfs（Binder 文件系统） 的统计节点受系统构建类型、SELinux 权限策略、root（最高系统权限） 权限和设备配置限制，适合带调试能力的 userdebug、eng 构建或实验室设备。`dumpsys binder <pid>` 在量产设备上不一定可用，使用前先通过 `dumpsys -l` 和设备构建信息确认；线上应用更不要指望内核调试节点。
 
 日志中可以搜索 `FAILED BINDER TRANSACTION`、`oneway spamming`、`Sending oneway calls to frozen process`，但日志标签、级别和可见性会随构建变化，只能作为辅助证据。
 
@@ -314,7 +314,7 @@ marshal + driver out + server queue + server execution
 
 其中，`marshal`/`unmarshal` 表示序列化/反序列化，`server queue` 表示请求在服务端等待线程处理的时间。这个总值适合衡量用户体验，指标命名避开“Binder 传输耗时”。`oneway` 外层计时只覆盖序列化和本地提交，远端是否执行它说明不了；同进程的本地 Binder 可能直接调用 Stub（服务端入口对象），应与跨进程样本分开统计。
 
-普通应用找不到可依赖的全局 Binder 拦截点。`Binder.ProxyTransactListener` 和 `BinderInternal.Observer` 属于隐藏或平台内部接口，native/Rust Binder 也不一定经过同一个 Java 入口。所以监控要贴着自己拥有的接口做：拥有 AIDL 契约时，在明确的客户端和服务端包装层记录；调用系统服务时，只在少数公开管理类方法外记录有用的业务信息。
+普通应用找不到可依赖的全局 Binder 拦截点（Hook）。`Binder.ProxyTransactListener` 和 `BinderInternal.Observer` 属于隐藏或平台内部接口，native/Rust Binder 也不一定经过同一个 Java 入口。所以监控要贴着自己拥有的接口做：拥有 AIDL 契约时，在明确的客户端和服务端包装层记录；调用系统服务时，只在少数公开管理类方法外记录有用的业务信息。
 
 下面的包装器记录逻辑接口、线程、耗时和原始失败类型，不依赖隐藏 API：
 
@@ -366,7 +366,7 @@ inline fun <T> measuredIpc(
 }
 ```
 
-标签只能来自编译期确定的枚举，URI、用户 ID、参数和异常消息都放不进去。`recorder` 使用固定容量缓冲区，写满后丢弃新样本并计数；高频接口可以写入预先分配的环形缓冲区，写到末尾后从头复用空间，编码和上传则放到独立线程。
+标签只能来自编译期确定的枚举，URI、用户 ID、参数和异常消息都放不进去。`recorder` 使用固定容量缓冲区，写满后丢弃新样本并计数；高频接口可以写入预先分配的环形缓冲区（ring buffer，写到末尾后从头复用空间），写到末尾后从头复用空间，编码和上传则放到独立线程。
 
 服务端包装层记录 `server_enter` 和 `server_exit`。两端需要关联时，把 request ID 纳入业务协议；两端日志可能存在时钟偏差，拿日志猜关联不可靠。
 

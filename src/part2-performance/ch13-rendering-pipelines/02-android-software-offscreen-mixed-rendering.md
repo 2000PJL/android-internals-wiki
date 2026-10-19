@@ -113,9 +113,9 @@ consolidated_from:
 ---
 # Android 软件、离屏与混合渲染路径
 
-软件渲染回答“谁生成像素”，离屏渲染回答“像素先写到哪里”，这是两个独立的维度：CPU 可以直接写可见 `Surface`，GPU 也可以先把结果画进离屏纹理或 `HardwareBuffer`——一块可以在 CPU、GPU 和硬件模块之间共享的图形 buffer。拿到一个渲染问题，我们先按顺序确认 Producer、输出位置、Consumer 和最终可见 layer。
+软件渲染回答“谁生成像素”，离屏渲染回答“像素先写到哪里”，这是两个独立的维度：CPU 可以直接写可见 `Surface`，GPU 也可以先把结果画进离屏纹理或 `HardwareBuffer`（可在 CPU、GPU 和硬件模块之间共享的图形 buffer）——一块可以在 CPU、GPU 和硬件模块之间共享的图形 buffer。拿到一个渲染问题，我们先按顺序确认 Producer（生成 buffer 的组件）、输出位置、Consumer（取得并读取 buffer 的组件） 和最终可见 layer。
 
-> 源码基线：平台 AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`（涉及 dma-buf、dma-fence、sync_file、调度与内存回收时以内核为准）。
+> 源码基线：平台 AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`（涉及 dma-buf（共享 buffer 的内核机制）、dma-fence（内核同步对象）、sync_file（把 fence 暴露为文件描述符的接口）、调度与内存回收时以内核为准）。
 
 ## CPU 光栅化与离屏缓冲区
 
@@ -174,7 +174,7 @@ flowchart TD
 - `lockHardwareCanvas()` 返回硬件加速 Canvas，走的是 GPU 路径；
 - `SurfaceHolder` 的生产循环可以放在业务线程中，节奏由应用决定，未必跟随宿主窗口 `Choreographer`。
 
-在 trace 里看到 lock/post 循环（先取得 Canvas 再提交）时，我们要同时确认线程、Surface/layer 和 Canvas 类型：它可能是软件 Producer，也可能是独立硬件 Canvas Producer。
+在 trace 里看到 lock/post（取得 Canvas 后提交） 循环（先取得 Canvas 再提交）时，我们要同时确认线程、Surface/layer 和 Canvas 类型：它可能是软件 Producer，也可能是独立硬件 Canvas Producer。
 
 #### 单个 View 的 software layer
 
@@ -220,25 +220,25 @@ ViewRootImpl.drawSoftware(...)
 
 #### Lock：取得可写 buffer
 
-`Surface::lock()` 先以 `NATIVE_WINDOW_API_CPU` 连接 Surface，通过 `dequeueBuffer()` 取得候选 `GraphicBuffer` 和 fence fd——承载同步 fence 的文件描述符，再调用 `GraphicBuffer::lockAsync()`。这一步可能撞上三类成本：
+`Surface::lock()` 先以 `NATIVE_WINDOW_API_CPU` 连接 Surface，通过 `dequeueBuffer()` 取得候选 `GraphicBuffer` 和 fence fd（承载同步 fence 的文件描述符）——承载同步 fence 的文件描述符，再调用 `GraphicBuffer::lockAsync()`。这一步可能撞上三类成本：
 
 - 没有满足约束的 FREE slot，Producer 只能等 Consumer 释放；
 - slot 已返回，但 release fence 尚未允许 CPU 写入；
-- buffer 首次映射、page fault 或 reclaim 拖慢了映射路径。
+- buffer 首次映射、page fault（访问页尚未映射） 或 reclaim（内存回收） 拖慢了映射路径。
 
-`lockCanvas()` 的耗时没有跨设备通用的正常值：它除了可能执行 mmap 把 buffer 映射进进程地址空间，还要先经过 dequeue、fence 等步骤。16KB page size 可能改变页表和 fault 行为，但单凭页大小就断定某次 GraphicBuffer 映射必然更快是站不住的，图形 buffer 分配器 gralloc、buffer 复用、访问模式和内存压力都要放进测量。
+`lockCanvas()` 的耗时没有跨设备通用的正常值：它除了可能执行 mmap（把 buffer 映射到进程地址空间） 把 buffer 映射进进程地址空间，还要先经过 dequeue、fence 等步骤。16KB page size（内存页大小） 可能改变页表和 fault 行为，但单凭页大小就断定某次 GraphicBuffer 映射必然更快是站不住的，图形 buffer 分配器 gralloc（图形 buffer 分配器）、buffer 复用、访问模式和内存压力都要放进测量。
 
 #### Draw：CPU 生成像素
 
 software Canvas 的 `drawPath()`、`drawText()`、`drawBitmap()` 等操作由 Skia 的 CPU 后端栅格化，写入锁定的像素内存。硬件 Canvas 走的是另一条路：先录制宿主窗口 DisplayList，再由 RenderThread 提交 GPU draw；software Canvas 则在当前线程直接生成像素。
 
-CPU 栅格化成本由脏区面积、像素格式、混合、裁剪区域、路径复杂度、文字与图片采样共同决定。“每条命令逐像素串行执行”是对它的常见误解：Skia 和 vendor 库可以使用 SIMD、专用实现或内部任务。反过来，也别据此假设 Android View software Canvas 会自动把一帧均匀分摊到多个 CPU。
+CPU 栅格化成本由脏区面积、像素格式、混合、裁剪区域、路径复杂度、文字与图片采样共同决定。“每条命令逐像素串行执行”是对它的常见误解：Skia 和 vendor（设备或芯片厂商） 库可以使用 SIMD（单条指令并行处理多个数据）、专用实现或内部任务。反过来，也别据此假设 Android View software Canvas 会自动把一帧均匀分摊到多个 CPU。
 
 #### Unlock & Post：把 buffer 交给 Consumer
 
-`Surface::unlockAndPost()` 调用 `GraphicBuffer::unlockAsync(&fd)`，再用该 fd 构造 fence 并 `queueBuffer()`。CPU 路径没有 HWUI 的 GPU draw completion fence，但 gralloc unlock 仍可能返回有效 fd，所以软件渲染同样可能携带同步 fence。
+`Surface::unlockAndPost()` 调用 `GraphicBuffer::unlockAsync(&fd)`，再用该 fd 构造 fence 并 `queueBuffer()`。CPU 路径没有 HWUI 的 GPU draw completion fence（完成同步信号），但 gralloc unlock 仍可能返回有效 fd，所以软件渲染同样可能携带同步 fence。
 
-下游把 Producer 完成信号作为 acquire 边界，Consumer 读取 buffer 前必须遵守它；SurfaceFlinger/HWC 完成消费后，再通过 release fence 约束 Producer 何时可以复用旧 buffer。
+下游把 Producer 完成信号作为 acquire（取得可读输入） 边界，Consumer 读取 buffer 前必须遵守它；SurfaceFlinger/HWC 完成消费后，再通过 release fence 约束 Producer 何时可以复用旧 buffer。
 
 下面的时序图以 App Window 的 `drawSoftware()` 为主，把 CPU 生产、BLAST/SF transaction 和显示消费分开：
 
@@ -270,16 +270,16 @@ sequenceDiagram
     SF-->>BQ: release callback / fence
 ```
 
-看图要注意两点：`queueBuffer()` 返回了，还证明不了 buffer 已经上屏；latch 发生了，panel（物理显示面板）也未必完成扫描。CPU buffer 可能被 HWC 直接消费，也可能由 RenderEngine 采样进 client target；走哪条路，由 format、dataspace、transform、crop、alpha、保护属性、设备能力和本轮其他 layer 共同决定。
+看图要注意两点：`queueBuffer()` 返回了，还证明不了 buffer 已经上屏；latch 发生了，panel（物理显示面板）也未必完成扫描。CPU buffer 可能被 HWC 直接消费，也可能由 RenderEngine 采样进 client target（GPU 合成后的显示目标）；走哪条路，由 format（像素格式）、dataspace（颜色空间与范围）、transform（变换）、crop（裁剪）、alpha（透明度）、保护属性、设备能力和本轮其他 layer 共同决定。
 
-自定义 Surface Producer 可能连接自己的 BufferQueue/layer，未必经过图中同一个 App Window BLAST adapter，它的生产线程和节奏也要单独确认。
+自定义 Surface Producer 可能连接自己的 BufferQueue/layer，未必经过图中同一个 App Window BLAST adapter（适配层），它的生产线程和节奏也要单独确认。
 
-#### Dirty Rect 与 copyback
+#### Dirty Rect 与 copyback（从旧 buffer 补回复用区域）
 
-software Canvas 支持 dirty region，也就是只重画需要更新的区域，但分析不能停在“只重画脏区”这一步。`Surface::lock()` 会比较本轮待写入的 back buffer 与上一块已提交的 `mPostedBuffer`：
+software Canvas 支持 dirty region（需要重画的区域），也就是只重画需要更新的区域，但分析不能停在“只重画脏区”这一步。`Surface::lock()` 会比较本轮待写入的 back buffer（待写入的后备 buffer） 与上一块已提交的 `mPostedBuffer`：
 
 - 尺寸和 format 兼容时，计算上一轮有效区域与本轮新脏区的差集，通过 `copyBlt()` 执行 copyback，把需要保留的像素复制到当前 back buffer；
-- 无法 copyback、补不回旧 buffer 里的复用区域时，把新脏区扩成整个 bounds，并清理 slot 的 dirty-region 状态；
+- 无法 copyback、补不回旧 buffer 里的复用区域时，把新脏区扩成整个 bounds（buffer 边界），并清理 slot 的 dirty-region 状态；
 - 随后用最终 dirty bounds 执行 `lockAsync()`。
 
 所以小脏区是一笔双向的账：CPU 重画可能少了，旧 buffer 到新 buffer 的内存复制却可能多了。尺寸变化、format 变化、Surface 重建、buffer 被丢弃或大范围脏区都会削弱收益。要判断 Dirty Rect 是否有效，我们同时测量 CPU draw 与 copyback 的内存流量。
@@ -294,11 +294,11 @@ software Canvas 支持 dirty region，也就是只重画需要更新的区域，
 
 #### GPU 离屏与 `HardwareBuffer`
 
-`HardwareBufferRenderer` 属于 GPU 离屏生产，与整窗口 software Canvas 是两回事。它把 RenderNode 输出到调用方持有的 `HardwareBuffer`，completion fence 只证明像素生产结束，证明不了结果已经送显。复用、清屏、所有权和后续提交的完整规则统一见 [13.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md)；本节只用它说明“离屏”与“软件”是两个独立维度。
+`HardwareBufferRenderer` 属于 GPU 离屏生产，与整窗口 software Canvas 是两回事。它把 RenderNode 输出到调用方持有的 `HardwareBuffer`，completion fence（生产完成信号） 只证明像素生产结束，证明不了结果已经送显。复用、清屏、所有权和后续提交的完整规则统一见 [13.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md)；本节只用它说明“离屏”与“软件”是两个独立维度。
 
 #### `SurfaceControl.Transaction#setBuffer()` 直接提交
 
-`Transaction#setBuffer()` 可以绕过该 layer 的常规 `dequeueBuffer()` / `queueBuffer()` 循环，但绕不过 SurfaceFlinger：仍在生产的 buffer 要携带 production/acquire fence，连续复用还要等待 release callback。usage 只声明这块 buffer 允许被哪些消费者使用，离“HWC 选择 DEVICE composition”还差一轮协商。完整提交与回收协议由 [13.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md) 维护。
+`Transaction#setBuffer()` 可以绕过该 layer 的常规 `dequeueBuffer()` / `queueBuffer()` 循环，但绕不过 SurfaceFlinger：仍在生产的 buffer 要携带 production/acquire fence，连续复用还要等待 release callback。usage（buffer 的允许用途标志） 只声明这块 buffer 允许被哪些消费者使用，离“HWC 选择 DEVICE（显示硬件合成） composition”还差一轮协商。完整提交与回收协议由 [13.6 SurfaceControl 与 HardwareBufferRenderer](06-surfacecontrol-hardwarebuffer-renderer.md) 维护。
 
 ### 与硬件加速路径的核心差异
 
@@ -314,7 +314,7 @@ software Canvas 支持 dirty region，也就是只重画需要更新的区域，
 | 部分更新 | dirty region 可能触发 copyback | RenderNode/display list 复用、damage（内容变化区域）与 GPU/HWC 策略 |
 | 适合的证据 | App 线程 Running、lock/post、CPU memory traffic | `doFrame`、`syncAndDrawFrame`、`DrawFrame`、GPU、queue |
 
-选路径时还要算上 GPU 的初始化、同步和资源转换成本。极小、低频、一次性的 Bitmap 生成交给 CPU 可能更划算；持续窗口动画、大面积混合、模糊和高分辨率重绘通常更适合硬件路径。最终结论要由目标设备的 CPU/GPU 时间、内存流量、功耗和 deadline 数据支持。
+选路径时还要算上 GPU 的初始化、同步和资源转换成本。极小、低频、一次性的 Bitmap 生成交给 CPU 可能更划算；持续窗口动画、大面积混合、模糊和高分辨率重绘通常更适合硬件路径。最终结论要由目标设备的 CPU/GPU 时间、内存流量、功耗和 deadline（截止时间） 数据支持。
 
 #### 三类 fence 的分工
 
@@ -342,7 +342,7 @@ software Canvas 支持 dirty region，也就是只重画需要更新的区域，
 较强的组合证据包括：
 
 - 窗口配置关闭硬件加速，或调用栈进入 `ViewRootImpl.drawSoftware()`；
-- MainThread traversal 内出现 `Surface.lockCanvas()`、`mView.draw()`、`unlockCanvasAndPost()`；
+- MainThread traversal（测量、布局和绘制遍历） 内出现 `Surface.lockCanvas()`、`mView.draw()`、`unlockCanvasAndPost()`；
 - 目标 App Window 仍有 buffer transaction / latch；
 - 同一窗口帧没有对应 HWUI `DrawFrame` 和 GPU window draw。
 
@@ -363,7 +363,7 @@ slice 名会随渲染后端、vendor 和 trace 配置变化。找不到固定 `u
 
 `lockCanvas()` 变长时先看线程状态：
 
-- Sleeping/blocked 且落在 dequeue、futex 或 fence wait：优先查 slot、release 和 Consumer 节奏；
+- Sleeping/blocked 且落在 dequeue、futex（线程同步原语） 或 fence wait：优先查 slot、release 和 Consumer 节奏；
 - Running 且伴随 page fault、reclaim 或高内存流量：查映射、copyback 和内存压力；
 - lock 成功后 `View.draw()` / Canvas draw 长时间 Running：再归因到 CPU 栅格化与业务绘制。
 
@@ -371,7 +371,7 @@ slice 名会随渲染后端、vendor 和 trace 配置变化。找不到固定 `u
 
 #### 离屏结果的证据链
 
-`HardwareBufferRenderer` callback 变晚时，先区分 common RenderThread 排队、GPU 执行与 completion fence signal 三段。`setBuffer()` 已 apply 但 layer 未更新时，再依次检查 production fence、transaction readiness 是否满足、desired present time 是否已到、layer 可见性，以及旧 buffer 是否被沿用。
+`HardwareBufferRenderer` callback 变晚时，先区分 common RenderThread 排队、GPU 执行与 completion fence signal 三段。`setBuffer()` 已 apply 但 layer 未更新时，再依次检查 production fence、transaction readiness（事务是否满足处理条件） 是否满足、desired present time（期望呈现时间） 是否已到、layer 可见性，以及旧 buffer 是否被沿用。
 
 纯离屏任务没有目标 SF layer 属于正常现象；这时我们去找编码器、ImageReader、缓存或算法 Consumer，用 buffer id、fence 和 request/callback 把生产和消费关联起来。
 
@@ -384,7 +384,7 @@ slice 名会随渲染后端、vendor 和 trace 配置变化。找不到固定 `u
 - buffer 池耗尽后迫使 Producer 等待；
 - App 按时提交，但 SF/HWC/display 后段错过 deadline。
 
-FrameTimeline 只覆盖进入相应可见 SurfaceFrame/DisplayFrame 的部分。Bitmap、纯离屏 GPU pass 或编码输入生成完成，并不会自动得到 FrameTimeline present 结论。
+FrameTimeline 只覆盖进入相应可见 SurfaceFrame/DisplayFrame 的部分。Bitmap、纯离屏 GPU pass（一次离屏渲染过程） 或编码输入生成完成，并不会自动得到 FrameTimeline present 结论。
 
 ### 性能特征与适用场景
 
@@ -400,14 +400,14 @@ RGBA_8888 的红、绿、蓝、透明度通道各占 8 bit，每个像素占 4 b
 
 #### 常见成本
 
-- 大面积 CPU raster：路径、模糊、复杂 clip、图片缩放和多层 alpha 会增加算术与访存；
+- 大面积 CPU raster：路径、模糊、复杂 clip（裁剪区域）、图片缩放和多层 alpha 会增加算术与访存；
 - copyback：小脏区减少重画时，也可能产生旧 buffer 到新 buffer 的内存复制；
 - software layer 失效：重复生成 Bitmap、CPU draw、上传，以及 GC 或 native 分配带来的回收与分配开销；
 - GPU 离屏 pass：中间 render target 过大、渲染次数过多或 completion fence 较晚；
 - buffer 池过深：内存占用和在途 buffer 的延迟一起增加；
-- format/transform/alpha 不匹配：可能增加 RenderEngine CLIENT composition。
+- format/transform/alpha 不匹配：可能增加 RenderEngine CLIENT（SurfaceFlinger 使用 GPU 合成） composition。
 
-另外，单看 CPU 高占用推不出温控降频。要写 thermal throttling 结论，应同时看到温度/thermal event、频率上限变化、调度状态和持续负载；单帧 CPU raster 只证明该帧存在 CPU 绘制工作。
+另外，单看 CPU 高占用推不出温控降频。要写 thermal throttling（温控降频） 结论，应同时看到温度/thermal event、频率上限变化、调度状态和持续负载；单帧 CPU raster 只证明该帧存在 CPU 绘制工作。
 
 #### CPU 与离屏路径的适用场景
 
@@ -449,7 +449,7 @@ Kernel 固定到 `android17-6.18-2026-06_r6`：
 
 - [`Documentation/driver-api/dma-buf.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst)：共享 buffer；
 - [`Documentation/driver-api/sync_file.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/sync_file.rst) 与 [`drivers/dma-buf/sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)：dma-fence 到 fence fd；
-- [`mm/`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/)：page fault、reclaim、PSI（Pressure Stall Information，压力停顿信息）等内存侧证据。实际 gralloc、GPU driver 和 dma-buf heap 行为仍需用目标设备补充证据。
+- [`mm/`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/)：page fault、reclaim、PSI（Pressure Stall Information（PSI，压力停顿信息），压力停顿信息）等内存侧证据。实际 gralloc、GPU driver 和 dma-buf heap 行为仍需用目标设备补充证据。
 
 交叉阅读：
 
@@ -468,7 +468,7 @@ CPU `lockCanvas()` 可以直接生成可见 Surface buffer；`LAYER_TYPE_SOFTWAR
 
 离屏结果进入最终窗口后，可能与 HWUI、SurfaceView 或 GPU 内容共同合成，这时我们要明确每块内容的生产者和同步信号。混合渲染页面可能包含普通 View、Compose、`TextureView`、`SurfaceView`、嵌入式 `SurfaceControlViewHost`、视频、Camera、地图或游戏引擎等多种内容路径。
 
-AOSP 能证明的是公共接口与系统合成行为；目标应用采用哪种 Producer、buffer format 和 layer 拓扑，还要根据当前 trace、实际图层层级和业务配置确认。
+AOSP 能证明的是公共接口与系统合成行为；目标应用采用哪种 Producer、buffer format（像素格式） 和 layer 拓扑，还要根据当前 trace、实际图层层级和业务配置确认。
 
 ### 什么是混合渲染
 
@@ -477,7 +477,7 @@ AOSP 能证明的是公共接口与系统合成行为；目标应用采用哪种
 - 存在两条以上能区分 Producer 或 Consumer 的内容路径；
 - 这些路径共同影响同一屏的可见结果。
 
-只看到多个线程、多个 `queueBuffer()` 或多个 SurfaceFlinger layer 还不够，SystemUI、壁纸、输入法和导航栏本来就会参与 display composition；我们关注的是目标页面自身引入的多路内容关系。
+只看到多个线程、多个 `queueBuffer()` 或多个 SurfaceFlinger layer 还不够，SystemUI、壁纸、输入法和导航栏本来就会参与 display composition（显示合成）；我们关注的是目标页面自身引入的多路内容关系。
 
 #### 三种拓扑
 
@@ -489,7 +489,7 @@ SurfaceFlinger 通常只看到最终宿主 layer，看不到与该 Texture 输�
 
 ##### 独立 layer 型
 
-`SurfaceView`、应用自管 `SurfaceControl` 或嵌入式 Surface hierarchy 保留独立 buffer layer。宿主与独立内容各自提交，SurfaceFlinger/HWC 决定目标 display frame 使用哪块 buffer，以及哪组位置、裁剪等几何状态。
+`SurfaceView`、应用自管 `SurfaceControl` 或嵌入式 Surface hierarchy（图层层级） 保留独立 buffer layer。宿主与独立内容各自提交，SurfaceFlinger/HWC 决定目标 display frame 使用哪块 buffer，以及哪组位置、裁剪等几何状态。
 
 ##### 组合型
 
@@ -530,14 +530,14 @@ flowchart TD
 
 以“宿主控制层 + TextureView 地图 + SurfaceView 视频”为例，一次可见更新要经过这些阶段：
 
-1. 地图 Producer 向 `SurfaceTexture` 提交 buffer，frame-available 回调带着新帧可用的通知请求宿主更新；
+1. 地图 Producer 向 `SurfaceTexture` 提交 buffer，frame-available（新帧可用） 回调带着新帧可用的通知请求宿主更新；
 2. 宿主 MainThread 在 `Choreographer#doFrame()` 中更新 View/Compose 状态和 RenderNode；
 3. RenderThread 在 `DrawFrameTask::syncFrameState()` 处理待更新的 `DeferredLayerUpdater`，取得 Texture 输入的最新可用 buffer；
 4. HWUI 将地图、普通 View、遮罩和控制层画入宿主 App Window buffer；
 5. 宿主 BLAST 把 host buffer transaction 交给 SurfaceFlinger；
-6. 视频 Producer 按自己的 cadence 向 SurfaceView BLAST child 提交独立 buffer 和 acquire fence；
-7. SurfaceView container 的 position、crop、alpha、visibility 与 relative Z 都由相应 Transaction 更新——container 管位置和层级，relative Z 决定相对其他 layer 的叠放顺序；
-8. SurfaceFlinger FrontEnd 处理各路状态和 buffer readiness；没有选中新 buffer 的 layer 可以沿用此前已选中的内容；
+6. 视频 Producer 按自己的 cadence（输出间隔） 向 SurfaceView BLAST child 提交独立 buffer 和 acquire fence；
+7. SurfaceView container（控制位置和层级的容器 layer） 的 position、crop、alpha、visibility 与 relative Z（相对其他 layer 的叠放顺序） 都由相应 Transaction 更新——container 管位置和层级，relative Z 决定相对其他 layer 的叠放顺序；
+8. SurfaceFlinger FrontEnd 处理各路状态和 buffer readiness（buffer 是否具备处理条件）；没有选中新 buffer 的 layer 可以沿用此前已选中的内容；
 9. CompositionEngine/HWC 针对整屏可见 layer 集合协商 DEVICE 合成还是 CLIENT 合成，前者交给显示硬件，后者在必要时由 SurfaceFlinger 用 RenderEngine 生成 client target；
 10. present 路径返回 display 级 present fence 和各 layer 的 release fence，信号稍后异步完成。
 
@@ -585,18 +585,18 @@ flowchart TD
 
 #### TextureView 由宿主采样
 
-地图或视频 Producer 向 `SurfaceTexture` queue buffer。`TextureView` 在 frame-available 回调中安排 layer update 和 View invalidation 请求重绘，宿主硬件 draw 记录 `TextureLayer`。进入宿主绘制后，`DrawFrameTask::syncFrameState()` 遍历 pending layer 并调用 `DeferredLayerUpdater::apply()`，由该方法通过 `ASurfaceTexture_dequeueBuffer()` 取得当前内容。
+地图或视频 Producer 向 `SurfaceTexture` queue buffer。`TextureView` 在 frame-available 回调中安排 layer update 和 View invalidation（请求重绘） 请求重绘，宿主硬件 draw 记录 `TextureLayer`。进入宿主绘制后，`DrawFrameTask::syncFrameState()` 遍历 pending（待更新） layer 并调用 `DeferredLayerUpdater::apply()`，由该方法通过 `ASurfaceTexture_dequeueBuffer()` 取得当前内容。
 
 源码注释明确指出，`ASurfaceTexture_dequeueBuffer()` 会丢弃此前尚未消费的帧，只保留最新一帧。所以外部 Producer 已经 queue buffer，证明不了宿主本帧采到了它；我们逐段对齐 frame-available、宿主 traversal、`DeferredLayerUpdater` acquire 与 host draw 的时序。
 
 #### 独立 Surface
 
-视频、Camera、游戏或嵌入式 UI 可以向独立 Surface 提交 buffer。它可能由应用线程、codec、provider/HAL、引擎或远端进程生产，未必统一经过 App UI Thread、HWUI RenderThread 或同一个 BLAST adapter。
+视频、Camera、游戏或嵌入式 UI 可以向独立 Surface 提交 buffer。它可能由应用线程、codec、provider/HAL（服务提供进程或硬件抽象层）、引擎或远端进程生产，未必统一经过 App UI Thread、HWUI RenderThread 或同一个 BLAST adapter（适配层）。
 
-内容节奏可以是 24/30/60 fps、sensor 节奏或引擎 VSync，与宿主 `vsync-app` 不同，但几路内容仍共享：
+内容节奏可以是 24/30/60 fps、sensor（传感器） 节奏或引擎 VSync，与宿主 `vsync-app` 不同，但几路内容仍共享：
 
 - SurfaceFlinger/HWC 的 display composition；
-- overlay plane、scaler、bandwidth 等硬件资源，以及 GPU 与内存；
+- overlay plane（硬件叠加平面）、scaler（硬件缩放器）、bandwidth（内存带宽） 等硬件资源，以及 GPU 与内存；
 - container 的 position、crop、alpha、visibility 和 Z-order；
 - display mode、present 与 release 节奏。
 
@@ -631,9 +631,9 @@ SurfaceView 内部还要分清三个对象：
 
 - `mSurfaceControl`：container，管理位置、裁剪、透明度、blur 等状态；
 - `mBlastSurfaceControl`：承载 Producer buffer 的 BLAST content child；
-- `mBackgroundControl`：按 format、Z-order 和配置决定显隐的背景纯色 color layer。
+- `mBackgroundControl`：按 format、Z-order 和配置决定显隐的背景纯色 color layer（纯色图层）。
 
-container 的 position 更新了，content child 未必用上了新 buffer——position update listener 还会把 parent scale、child buffer scale 与 crop 同步提交，以降低缩放和移动时的闪烁。把两个对象分开看，才不会误判更新已生效。
+container 的 position 更新了，content child 未必用上了新 buffer——position update listener（位置更新监听器） 还会把 parent scale、child buffer scale 与 crop 同步提交，以降低缩放和移动时的闪烁。把两个对象分开看，才不会误判更新已生效。
 
 SurfaceView 位于宿主上方时无需对宿主打洞；API 34 起 alpha 规则也区分 Z-above 与 Z-below。`TextureView` 没有独立可见 SurfaceView child：它的内容被宿主 GPU 采样，也就没有这套打洞问题。
 
@@ -641,11 +641,11 @@ SurfaceView 位于宿主上方时无需对宿主打洞；API 34 起 alpha 规则
 
 SurfaceFlinger 先为当前 display 构造可见 layer 集合，再由 HWC 协商 DEVICE/CLIENT composition。CPU/GPU 生产者类型、YUV format 或 `SurfaceView` 名称，都保证不了该 layer 获得 overlay 硬件平面。
 
-composition strategy 指各 layer 最终采用硬件还是 GPU 合成，影响它的条件包括：
+composition strategy（各 layer 采用硬件还是 GPU 合成） 指各 layer 最终采用硬件还是 GPU 合成，影响它的条件包括：
 
-- format、modifier、dataspace、HDR metadata；
-- protected/secure usage 与目标 display 的保护能力；
-- crop、destination frame、scale、rotation、alpha、blend；
+- format、modifier（buffer 内存布局修饰信息）、dataspace、HDR metadata（HDR 元数据）；
+- protected/secure usage（受保护内容用途标志） 与目标 display 的保护能力；
+- crop、destination frame（输出目标矩形）、scale、rotation、alpha、blend（混合方式）；
 - overlay plane、scaler、bandwidth 和 vendor 限制；
 - 同屏其他 layer 对硬件资源的占用；
 - display mode、color mode 与全局 color transform（颜色变换）。
@@ -738,7 +738,7 @@ external producer
 
 #### SurfaceSyncGroup
 
-API 34 的 `SurfaceSyncGroup` 可以收集 `AttachedSurfaceControl`、`SurfaceControlViewHost.SurfacePackage` 和附加 Transaction，也能协调跨进程 child sync。调用 `markSyncReady()` 后，同步组会等已注册 child 都给出结果，再应用合并后的 merged transaction。
+API 34 的 `SurfaceSyncGroup` 可以收集 `AttachedSurfaceControl`、`SurfaceControlViewHost.SurfacePackage` 和附加 Transaction，也能协调跨进程 child sync。调用 `markSyncReady()` 后，同步组会等已注册 child 都给出结果，再应用合并后的 merged transaction（合并后的事务）。
 
 它等待的只是加入组的对象。MediaCodec、Camera HAL 或引擎 Producer 若没有通过受控 Surface 的同步接口进入组，系统也替业务预测不了它何时生成下一逻辑帧。`SurfaceView` 的部分直接 sync 接口属于 framework/internal 路径，对普通应用并非公开契约。
 
@@ -753,7 +753,7 @@ API 34 的 `SurfaceSyncGroup` 可以收集 `AttachedSurfaceControl`、`SurfaceCo
 
 #### desired present 与 FrameTimeline
 
-API 35 的 `setDesiredPresentTimeNanos()` 请求 transaction 在指定 monotonic clock 时间或之后显示，这种单调时钟不受系统时间校准影响；`setFrameTimeline(vsyncId)` 把 Choreographer 提供的 VSync id 交给 SurfaceFlinger，选择对应的 expected presentation timeline。
+API 35 的 `setDesiredPresentTimeNanos()` 请求 transaction 在指定 monotonic clock（不受系统时间校准影响的单调时钟） 时间或之后显示，这种单调时钟不受系统时间校准影响；`setFrameTimeline(vsyncId)` 把 Choreographer 提供的 VSync id 交给 SurfaceFlinger，选择对应的 expected presentation timeline（预期呈现时间线）。
 
 这两个 API 提供的是调度目标：buffer 仍要业务自己生成，fence wait 也仍然存在。Android 17 Java 文档明确要求：desired present time 再早，也要等所有 acquire fence 发出 signal 后 transaction 才能显示。相关 API 仍受平台 flag 与设备构建配置约束。
 
@@ -777,7 +777,7 @@ Android 13 的 `AutoSingleLayer` latch-unsignaled 模式只适用于满足条件
 
 #### FrontEnd 的对象模型
 
-收到 transaction 后，SurfaceFlinger 把请求合入 `RequestedLayerState`，由 `LayerLifecycleManager` 管理 layer 生命周期和 hierarchy，再由 `LayerSnapshotBuilder` 生成本轮的可见性、几何和效果 snapshot。buffer layer 的 transaction readiness、buffer readiness 与 fence 还要单独判断。
+收到 transaction 后，SurfaceFlinger 把请求合入 `RequestedLayerState`，由 `LayerLifecycleManager` 管理 layer 生命周期和 hierarchy，再由 `LayerSnapshotBuilder` 生成本轮的可见性、几何和效果 snapshot（本轮状态快照）。buffer layer 的 transaction readiness（处理条件检查）、buffer readiness 与 fence 还要单独判断。
 
 旧资料把流程简化成 `SurfaceFlinger::commit()` 逐层调用 `Layer::latchBuffer()`，已经不足以解释 container/content child、FrontEnd state 与 snapshot 这些现状，读旧教程时要留意。
 
@@ -799,7 +799,7 @@ SurfaceFlinger 并未要求每个可见 layer 在每个 display frame 都有新 
 4. 宿主内部的 TextureView 采到了哪个输入 buffer；
 5. 哪些 layer 为 DEVICE，哪些进入 CLIENT。
 
-`BufferTX - <layerName>` 只表示 SurfaceFlinger 侧待处理 buffer transaction 的计数变化。计数增加，说明不了 acquire fence、sync barrier、desired present 或 HWC strategy 的完整状态，还要继续往下游查。
+`BufferTX - <layerName>` 只表示 SurfaceFlinger 侧待处理 buffer transaction 的计数变化。计数增加，说明不了 acquire fence、sync barrier（同步屏障）、desired present 或 HWC strategy 的完整状态，还要继续往下游查。
 
 #### transaction ready 与 fence 的先后
 
@@ -815,7 +815,7 @@ SurfaceFlinger 可能因 sync group、barrier、desired present、acquire fence 
 - Validated：validate 已完成，随后读取 changed composition types/requests 并 `acceptChanges()`；
 - 不满足 skip 条件：走普通 `validate()`，再处理 changes 与 `acceptChanges()`。
 
-存在 CLIENT layer 时，RenderEngine 生成 client target，`setClientTarget()` 携带 output acquire fence。`presentAndGetReleaseFences()` 走 fast path 时只需提交积累的 commands，这一快速路径的前提是上一步已经完成 present；其他路径调用 present 并取得 release fences。
+存在 CLIENT layer 时，RenderEngine 生成 client target，`setClientTarget()` 携带 output acquire fence。`presentAndGetReleaseFences()` 走 fast path（前一步已完成 present 的快速路径） 时只需提交积累的 commands，这一快速路径的前提是上一步已经完成 present；其他路径调用 present 并取得 release fences。
 
 ### 性能特征与陷阱
 
@@ -846,13 +846,13 @@ SurfaceFlinger 可能因 sync group、barrier、desired present、acquire fence 
 1. 锁定异常 present time 与 `display_frame_token`；
 2. 列出该 display 的可见 layer、parent 和 hierarchy；
 3. 标记每个 layer 使用的新/旧 buffer 与几何状态；
-4. 展开宿主 buffer 内的 TextureView、WebView functor 这类把绘制接入宿主 HWUI 的桥接对象，或引擎纹理；
+4. 展开宿主 buffer 内的 TextureView、WebView functor（把 WebView 绘制接入宿主 HWUI 的桥接对象） 这类把绘制接入宿主 HWUI 的桥接对象，或引擎纹理；
 5. 对齐 Transaction、SurfaceSyncGroup、desired present 和 FrameTimeline；
 6. 标明每个 acquire/release/present fence 的所有者；
 7. 比较 DEVICE/CLIENT strategy、client target、display mode 和 color mode；
 8. 找到最早偏离业务期望的 Producer 或同步边界。
 
-判断 App Window 用 FrameTimeline 的 host SurfaceFrame，判断整屏用 SF DisplayFrame。独立 Surface 或 TextureView 输入未必有完整的 app actual slice 记录，需要补充 `BufferTX`、queue/acquire、fence、layer 与 HWC 证据。
+判断 App Window 用 FrameTimeline 的 host SurfaceFrame，判断整屏用 SF DisplayFrame。独立 Surface 或 TextureView 输入未必有完整的 app actual slice（应用实际帧记录） 记录，需要补充 `BufferTX`、queue/acquire、fence、layer 与 HWC 证据。
 
 #### 对比 HWC strategy 变化前后
 
@@ -863,7 +863,7 @@ SurfaceFlinger 可能因 sync group、barrier、desired present、acquire fence 
 - 每个 layer 的 DEVICE/CLIENT composition type；
 - client target 面积和 GPU duration；
 - display mode、刷新率、color mode；
-- vendor Composer request、error 或 fallback 备用路径。
+- vendor Composer request、error 或 fallback（备用处理路径） 备用路径。
 
 静止与动画期间可能使用不同 strategy，测试要覆盖出现问题的动态状态。
 
@@ -891,7 +891,7 @@ SurfaceFlinger 可能因 sync group、barrier、desired present、acquire fence 
 - [`SurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java) 与 [`SurfaceComposerClient.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/SurfaceComposerClient.cpp)：multi-Surface state、listeners、desired present、FrameTimeline 与 fence；
 - [`SurfaceSyncGroup.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/window/SurfaceSyncGroup.java)：child sync、跨进程 `SurfacePackage` 与 merged transaction；
 - [SurfaceFlinger FrontEnd](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrontEnd/)、[`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp)：state、lifecycle、snapshot 与 transaction readiness；
-- [CompositionEngine](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/)、[`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp) 与 [`HWC2.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWC2.cpp)：visible layer、DEVICE/CLIENT、present/release fence。
+- [CompositionEngine](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/)、[`HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp) 与 [`HWC2.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWC2.cpp)：visible layer（可见图层）、DEVICE/CLIENT、present/release fence。
 
 Kernel 固定到 `android17-6.18-2026-06_r6`：
 

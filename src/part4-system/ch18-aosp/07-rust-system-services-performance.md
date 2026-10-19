@@ -84,16 +84,16 @@ sources:
 
 ## 结论
 
-Rust 进入 Android 平台，主要目标是减少新增 native 代码里的内存安全缺陷，落到性能上并没有固定的快慢方向。同样是“跨语言”，同进程跨一次 C ABI，可能只多出一次普通函数调用；换成一笔跨进程 Binder 调用，就要经过 Parcel 序列化、内核事务和线程调度。字符串复制、所有权转换、锁竞争、分配器和代码体积，每一项又都可能把结果拉向另一边。
+Rust 进入 Android 平台，主要目标是减少新增 native（编译为设备机器码） 代码里的内存安全缺陷，落到性能上并没有固定的快慢方向。同样是“跨语言”，同进程跨一次 C ABI（C 二进制调用约定），可能只多出一次普通函数调用；换成一笔跨进程 Binder 调用，就要经过 Parcel 序列化、内核事务和线程调度。字符串复制、所有权转换、锁竞争、分配器和代码体积，每一项又都可能把结果拉向另一边。
 
 下面这些结论，都能在 AOSP `android-17.0.0_r1` 里直接核对：
 
-- Keystore2 与 VirtualizationService 是 Rust Binder 服务，直接使用 Rust AIDL backend 和 `libbinder_rs`，中间没有固定的 C++ AIDL 中转层。
-- DnsResolver 仍是 C++ 与 Rust 的混合模块：Rust 以 `libresolvrs_ffi` 静态 FFI（Foreign Function Interface，跨语言调用接口）库参与 DoH、HTTP/3 和 DNS proxy 等部分，离“整个 resolver 都换成 Rust”还远。
-- UWB 包含 Rust 实现的 UCI（UWB Command Interface）core、packet 与 HAL adapter；Bluetooth 在 `system/rust` 下提供 `libbluetooth_rs`，
-  通过 `cxx` 生成的 CXX bridge 接入现有 C++ 代码。两者都走渐进式替换。
+- Keystore2 与 VirtualizationService 是 Rust Binder 服务，直接使用 Rust AIDL backend（AIDL 的 Rust 代码生成后端） 和 `libbinder_rs`，中间没有固定的 C++ AIDL 中转层。
+- DnsResolver 仍是 C++ 与 Rust 的混合模块：Rust 以 `libresolvrs_ffi` 静态 FFI（Foreign Function Interface，跨语言调用接口）库参与 DoH（DNS over HTTPS）、HTTP/3 和 DNS proxy 等部分，离“整个 resolver 都换成 Rust”还远。
+- UWB 包含 Rust 实现的 UCI（UWB Command Interface）core、packet 与 HAL adapter（硬件抽象层适配器）；Bluetooth 在 `system/rust` 下提供 `libbluetooth_rs`，
+  通过 `cxx` 生成的 CXX bridge（由 `cxx` 生成的 Rust/C++ 桥接层） 接入现有 C++ 代码。两者都走渐进式替换。
 - 设备端 Rust 全局启用 `panic=abort`、整数溢出检查、强栈保护与 unwind table，ThinLTO（链接期轻量全程序优化）默认开启。解释平台上 Rust 的表现时，这些构建配置比通用 Rust 项目的经验数字更合适。
-- 未自定义全局 allocator 的 Rust 标准库代码，通常经 libc `malloc/free` 进入设备配置的 native allocator：常规 Android 设备这里是 Scudo，低内存产品可能换用其他实现。
+- 未自定义全局 allocator（内存分配器） 的 Rust 标准库代码，通常经 libc `malloc/free` 进入设备配置的 native allocator：常规 Android 设备这里是 Scudo，低内存产品可能换用其他实现。
   所以换到 Rust，分配器这层的安全成本依然在。
 
 这一篇我们也不给 “FFI 固定几十纳秒”“Rust 比 C++ 快或慢 5%”“二进制必然大 20%” 这类数字：它们取决于 CPU、工具链、优化级别、参数形态、调用频率、是否跨进程和负载，脱离可复现实验就没有工程意义。
@@ -133,7 +133,7 @@ let ks_service = KeystoreService::new_native_binder(id_rotation_state)?;
 binder::add_service(KS2_SERVICE_NAME, ks_service.as_binder())?;
 ```
 
-代码省略了源码中的错误包装，只保留服务创建和注册的结构。调用发生时，Java framework 侧的 AIDL proxy 发出一笔 Binder transaction，服务端由 Rust AIDL stub 接收；
+代码省略了源码中的错误包装，只保留服务创建和注册的结构。调用发生时，Java framework 侧的 AIDL proxy（客户端代理） 发出一笔 Binder transaction，服务端由 Rust AIDL stub（服务端分发代码） 接收；
 `libbinder_rs` 构建在 `libbinder_ndk` 上，内部虽然跨了 Rust/C ABI 边界，但那里没有第二笔 Binder IPC，业务层也无需先进入 C++ stub。
 
 生成密钥或签名请求的端到端时延，常见来源是 Binder 排队、数据库事务、SELinux 权限检查、KeyMint HAL、TEE（可信执行环境）/StrongBox 和远程密钥供应；只盯着一个空 FFI 函数的纳秒值，解释不了这笔时延。
@@ -157,7 +157,7 @@ Java 或 native client → 语言对应的 AIDL proxy → Binder driver → Rust
 - 服务端锁、数据库、文件系统或硬件调用；
 - 回包与调用方重新调度。
 
-在这条路径上，Rust backend 的价值是让服务端保留 Rust 类型和所有权模型，同时遵守 AIDL wire format；它没有给 Binder transaction 增加新的进程跳转。所以我们先测 transaction 的排队与执行，再看生成代码和对象转换有没有变成高占比路径。
+在这条路径上，Rust backend 的价值是让服务端保留 Rust 类型和所有权模型，同时遵守 AIDL wire format（跨进程传输时的字段编码规则）；它没有给 Binder transaction 增加新的进程跳转。所以我们先测 transaction 的排队与执行，再看生成代码和对象转换有没有变成高占比路径。
 
 ### 2.2 Rust 与 C/C++ 的同进程 FFI
 
@@ -168,7 +168,7 @@ Java 或 native client → 语言对应的 AIDL proxy → Binder driver → Rust
 - 生成的桥接代码可能做分支、长度校验、分配或析构；
 - 回调频率过高会放大每次固定成本。
 
-跨 Rust/C++ 编译单元的调用通常没法互相内联，这和 LTO 配置直接相关。Soong `compiler.go` 对 `lto` 属性的注释写得很清楚：它控制的是最终 Rust 链接的 LTO，管不到 cross-language LTO。所以 r1 默认的 ThinLTO 能优化 Rust crate 依赖图，但 Rust/C++ 边界会不会被跨语言内联，从 ThinLTO 默认值本身读不出来。
+跨 Rust/C++ 编译单元的调用通常没法互相内联，这和 LTO 配置直接相关。Soong `compiler.go` 对 `lto` 属性的注释写得很清楚：它控制的是最终 Rust 链接的 LTO，管不到 cross-language LTO（跨语言链接期优化）。所以 r1 默认的 ThinLTO（链接期的轻量级全程序优化） 能优化 Rust crate（Rust 编译与依赖单元） 依赖图，但 Rust/C++ 边界会不会被跨语言内联，从 ThinLTO 默认值本身读不出来。
 
 数据是否复制取决于接口形态。下面的 CXX bridge 例子用借用 slice 传递指针和长度：
 
@@ -181,8 +181,8 @@ mod ffi {
 }
 ```
 
-这种接口可以避免为 payload 建立第二份字节数组，代价是调用期间 Rust 借用的内存必须保持有效。
-若接口改成拥有所有权的 `String`、`Vec`、C++ `std::vector`，或要求以 NUL 结尾的 `CString`——NUL 是值为 0 的终止字节——分配与复制策略就会跟着变。
+这种接口可以避免为 payload（实际传入的数据） 建立第二份字节数组，代价是调用期间 Rust 借用的内存必须保持有效。
+若接口改成拥有所有权的 `String`、`Vec`、C++ `std::vector`，或要求以 NUL（值为 0 的终止字节） 结尾的 `CString`——NUL 是值为 0 的终止字节——分配与复制策略就会跟着变。
 
 | 参数形态 | 常见实现 | 主要风险 |
 |---|---|---|
@@ -197,18 +197,18 @@ mod ffi {
 
 ### 2.3 Rust 与 Java 的 JNI
 
-JNI 适合把同进程的 Rust library 暴露给 Java/Kotlin：Soong 用 `rust_ffi_shared` 生成可动态加载的 `cdylib` 共享库，Rust 借助 `jni` crate 就能直接导出 JNI symbol，只有既有接口或依赖有要求时才需要 C++ wrapper。
+JNI 适合把同进程的 Rust library 暴露给 Java/Kotlin：Soong 用 `rust_ffi_shared` 生成可动态加载的 `cdylib`（面向 C ABI 的共享库） 共享库，Rust 借助 `jni` crate 就能直接导出 JNI symbol，只有既有接口或依赖有要求时才需要 C++ wrapper。
 
 我们把 JNI 成本拆成几块来看：
 
-- Java 与本机代码之间的 managed/native transition；
-- local/global reference 管理；
+- Java 与本机代码之间的 managed/native transition（Java 运行时与本机代码之间的切换）；
+- local/global reference（JNI 局部/全局引用） 管理；
 - Java 字符串、数组与 Rust 类型的转换；
-- native thread 接入/移出 Java VM 的 attach/detach；
+- native thread 接入/移出 Java VM 的 attach（附加采样）/detach；
 - Java exception 查询与转换；
 - Rust 函数自身的工作。
 
-大 payload 可以评估 direct `ByteBuffer`、共享内存、文件描述符或批量接口。
+大 payload 可以评估 direct `ByteBuffer`（Java 与 native 共享的直接缓冲区）、共享内存、文件描述符或批量接口。
 纯 JNI 接口要限制对象生存期、单次延迟和取消粒度；数据还要继续跨 Binder 传输时，才需要额外考虑 Binder transaction 的大小上限。
 
 顺带澄清一个常见归类：Keystore2 对外的系统服务入口是 Binder，说它是“Rust JNI 服务”并不合适；把所有 Java→Rust 交互都归为 JNI，等于把 IPC 成本和语言转换成本混成了一项。
@@ -217,7 +217,7 @@ JNI 适合把同进程的 Rust library 暴露给 Java/Kotlin：Soong 用 `rust_f
 
 ### 3.1 设备端的 `panic=abort`
 
-`build/soong/rust/config/global.go` 为 device Rust 添加了 `-C panic=abort`：panic 一旦触发，进程直接终止，不会沿 C/C++ stack frame 展开；`catch_unwind` 在这类设备构建上也提供不了进程内恢复。
+`build/soong/rust/config/global.go` 为 device Rust 添加了 `-C panic=abort`：panic 一旦触发，进程直接终止，不会沿 C/C++ stack frame（调用栈帧） 展开；`catch_unwind` 在这类设备构建上也提供不了进程内恢复。
 
 所以我们在设计 FFI API 时，要把可预期失败编码成 `Result`、错误码、AIDL `Status` 或明确的 nullable/optional 返回值。panic 只留给违反内部不变量这类不可恢复错误，C++ exception 也不要穿过未声明可 unwind 的 Rust ABI 边界。
 
@@ -230,15 +230,15 @@ JNI 适合把同进程的 Rust library 暴露给 Java/Kotlin：Soong 用 `rust_f
 - 分配使用哪个 allocator；
 - 由哪一侧调用析构或 free；
 - 对象能否跨线程；
-- callback 结束后引用是否失效；
-- panic、early return 或进程退出时怎样清理。
+- callback（反向回调） 结束后引用是否失效；
+- panic、early return（提前返回） 或进程退出时怎样清理。
 
 即便 Rust 与 C++ 最终都走同一份 Scudo，`Vec`、`String`、`std::vector` 和 C++ class 的析构规则仍然不同。
 常见做法是让创建对象的一侧导出配套的 destroy 函数，或者用 CXX 的 `Box`/`UniquePtr` 把所有权约束住。
 
 ### 3.3 `unsafe` 的审核边界
 
-Rust 编译器证明不了裸指针、C ABI、设备寄存器与外部库满足安全条件。每个 `unsafe` block、每个承诺类型可跨线程传递或共享的 `unsafe impl Send/Sync`，都应写明：
+Rust 编译器证明不了裸指针、C ABI、设备寄存器与外部库满足安全条件。每个 `unsafe` block、每个承诺类型可跨线程传递或共享的 `unsafe impl Send/Sync`（由开发者承诺类型可跨线程传递或共享），都应写明：
 
 - 指针非空、对齐和长度的来源；
 - 别名规则；
@@ -258,22 +258,22 @@ Rust 编译器证明不了裸指针、C ABI、设备寄存器与外部库满足�
 没有设置 `#[global_allocator]` 的 Android Rust 标准库代码，默认通过系统分配器路径调用 libc `malloc/free`。
 Android 官方 Scudo 文档的说法是：Android 11 起常规设备的 native 分配由 Scudo 提供，low-memory 设备仍使用 jemalloc；落到具体产品，要以进程映射和设备构建为准。
 
-Scudo 是带强化防护的堆分配器：靠 chunk metadata 校验、隔离和 quarantine（延迟复用已释放的内存块）工作，发现可疑 heap 状态时可以终止进程。它的强度到不了 ASan（AddressSanitizer，内存错误检测器）那种完整检测，也不会为每个小对象配置独立的 guard page，所以“每块分配前后都有 guard page”“释放后统一填随机 pattern”这类想象，都不适合当作通用成本模型。
+Scudo 是带强化防护的堆分配器：靠 chunk metadata 校验、隔离和 quarantine（延迟复用已释放的内存块）工作，发现可疑 heap 状态时可以终止进程。它的强度到不了 ASan（AddressSanitizer，内存错误检测器）那种完整检测，也不会为每个小对象配置独立的 guard page（不可访问的保护页），所以“每块分配前后都有 guard page”“释放后统一填随机 pattern”这类想象，都不适合当作通用成本模型。
 
 Rust 和 C++ 共用 native allocator 时，malloc 热点可以用 heapprofd 统一观察。下面这些情况需要单独处理：
 
 - crate 使用自定义 `#[global_allocator]`；
-- `no_std` 组件使用静态 arena 或专用 allocator；
+- `no_std` 组件使用静态 arena（预留内存池） 或专用 allocator；
 - 对象来自共享内存、mmap 或硬件 buffer；
 - 编译器优化消除了短命分配；
 - 采样率太低，漏掉小而频繁的对象。
 
-选择自定义 allocator 之前，要核对安全策略、APEX（可独立更新的系统模块容器）与进程的边界、malloc 调试工具、heap profiler 和所有权协议。
+选择自定义 allocator 之前，要核对安全策略、APEX（可独立更新的系统模块容器）与进程的边界、malloc 调试工具、heap profiler（堆采样器） 和所有权协议。
 若只是一次 benchmark 里 malloc 时延偏高就替换系统 allocator，搭进去的可能是平台防护、诊断能力和跨模块的一致性。
 
 ### 4.2 边界检查与溢出检查
 
-Rust slice 索引可能生成 bounds check，Android device build 还开启整数 overflow check；LLVM 能在循环边界清晰时消除一部分检查，但结果依赖代码形态。常见的优化方向：
+Rust slice 索引可能生成 bounds check（越界检查），Android device build 还开启整数 overflow check（溢出检查）；LLVM 能在循环边界清晰时消除一部分检查，但结果依赖代码形态。常见的优化方向：
 
 - 使用 iterator 或一次验证后的 slice 分段；
 - 避免循环体内重复计算长度；
@@ -285,24 +285,24 @@ Rust slice 索引可能生成 bounds check，Android device build 还开启整�
 
 ### 4.3 锁、原子与 async
 
-锁这块同样给不出统一的纳秒值。`Arc<Mutex<T>>` 把跨线程引用计数和互斥锁组合在一起，而未竞争锁、跨核竞争、优先级反转和持锁 I/O 是不同的问题；`std::sync::Mutex`、Tokio async mutex 与 Binder thread pool 的调度语义也各不相同。
+锁这块同样给不出统一的纳秒值。`Arc<Mutex<T>>` 把跨线程引用计数和互斥锁组合在一起，而未竞争锁、跨核竞争、优先级反转和持锁 I/O 是不同的问题；`std::sync::Mutex`、Tokio async mutex 与 Binder thread pool（处理 Binder 请求的线程池） 的调度语义也各不相同。
 
 分析系统服务时应关注：
 
 - 锁等待时间和持锁区间；
 - Binder thread pool 是否耗尽；
-- async executor 是否被阻塞式 syscall 卡住；
+- async executor（异步任务执行器） 是否被阻塞式 syscall（系统调用） 卡住；
 - callback 是否回到持锁对象；
-- atomic refcount 是否在跨核高频路径中反复争用同一 cache line；
-- channel 是否积压并造成内存增长。
+- atomic refcount（原子引用计数） 是否在跨核高频路径中反复争用同一 cache line；
+- channel（任务间消息队列） 是否积压并造成内存增长。
 
-safe Rust 的类型规则能挡住数据 race；业务层的死锁、队头阻塞和优先级反转，还是要我们在分析里自己去找。
+safe Rust 的类型规则能挡住数据 race（多个线程无同步地读写同一内存）；业务层的死锁、队头阻塞和优先级反转，还是要我们在分析里自己去找。
 
-### 4.4 代码体积与 i-cache
+### 4.4 代码体积与 i-cache（指令缓存）
 
 先看体积从哪来：泛型单态化（按具体类型各生成一份代码）、内联、async state machine、格式化和错误上下文，都可能扩大 ELF 的 `.text` 代码段。
 
-动态链接可以共享代码页；静态 rlib 则让 ThinLTO 删除未使用的代码并跨 crate 优化。两种策略下，文件体积、PSS、启动 relocation 和 i-cache 的行为要分别测量。
+动态链接可以共享代码页；静态 rlib（Rust 静态依赖格式） 则让 ThinLTO 删除未使用的代码并跨 crate 优化。两种策略下，文件体积、PSS（按比例分摊共享页的进程内存指标）、启动 relocation（动态重定位） 和 i-cache 的行为要分别测量。
 
 Soong 在 r1 默认开启 Rust ThinLTO；Keystore2 又显式设置 `prefer_rlib: true`，源码注释给出的理由是当时 `/system` 上使用动态 Rust 的进程数量不足，动态共享未产生预期收益。这是按组件算出来的取舍，推广到所有 Rust 服务并不成立。
 
@@ -315,7 +315,7 @@ r1 的几个全局编译选项可从 `build/soong/rust/config/global.go` 直接�
 -C panic=abort
 ```
 
-优化级别、溢出检查和回溯信息会同时影响性能与体积；发布设备模块默认 strip 掉大部分符号，保留 mini debuginfo。
+优化级别、溢出检查和回溯信息会同时影响性能与体积；发布设备模块默认 strip（移除） 掉大部分符号，保留 mini debuginfo。
 我们分析产物大小时，要区分 unstripped、stripped、磁盘文件页和运行时私有页。
 
 ## 5. Soong 中容易写错的部分
@@ -337,14 +337,14 @@ Soong 的 Rust 模块类型不少，我们先把 r1 里实际注册的那些摆�
 
 `rust_ffi_static` 并不直接产出通用的 Rust `staticlib`：r1 的 `library.go` 把它注册到 `RustLibraryRlibFactory`，注释也写明这个 rlib 会留到最终 C/C++ 静态链接步骤处理。这是 Soong 的实现约定。
 
-`rust_dylib` 不是 r1 注册的 Soong 模块类型，需要强制使用 Rust dylib variant 时可以用 `rust_library_dylib`；一般 Rust 依赖优先写入 `rustlibs`，由构建系统选择兼容的静态或动态 linkage。
+`rust_dylib` 不是 r1 注册的 Soong 模块类型，需要强制使用 Rust dylib variant 时可以用 `rust_library_dylib`；一般 Rust 依赖优先写入 `rustlibs`，由构建系统选择兼容的静态或动态 linkage（静态或动态链接方式）。
 
 ### 5.2 ThinLTO 语法与默认值
 
 `lto` 是一个属性组，合法形式是 `lto: { thin: true }` 或 `lto: { thin: false }`。r1 默认值已经是 `true`，常规生产模块无须重复声明。`lto: "thin"` 与该 tag 的属性类型不符。
 
 Soong 注释指出 ThinLTO 对 Rust code size 收益很大，生产构建若要关闭需要清楚的理由。
-sanitizer、fuzz、构建时间或工具兼容性可能要求例外；这类例外要通过最终的 rustc command 和产物指标来确认，只读一段 Blueprint 是不够的。
+sanitizer（运行时错误检测）、fuzz（模糊测试）、构建时间或工具兼容性可能要求例外；这类例外要通过最终的 rustc command 和产物指标来确认，只读一段 Blueprint（`Android.bp` 使用的描述语言） 是不够的。
 
 ### 5.3 第三方 crate 管理
 
@@ -366,9 +366,9 @@ sanitizer、fuzz、构建时间或工具兼容性可能要求例外；这类例�
 - 1 KiB、64 KiB、1 MiB payload 的转换是否复制？
 - Java→Rust Binder 与 Java→C++ Binder 在等价空服务中的差异是多少？
 - Rust 服务的 CPU 时间花在 bridge、锁、allocator、Binder 或业务代码中的哪一项？
-- static Rust std 与 dynamic linkage 对文件体积、PSS 和启动 relocation 有什么影响？
+- static Rust std 与 dynamic linkage 对文件体积、PSS（Proportional Set Size） 和启动 relocation 有什么影响？
 
-“Rust 服务快不快”这种问法落不到可测的对象上；我们先把业务语义、输入、线程数、CPU affinity、编译配置和设备温度固定下来，再决定用什么工具。
+“Rust 服务快不快”这种问法落不到可测的对象上；我们先把业务语义、输入、线程数、CPU affinity（把线程限制到指定 CPU）、编译配置和设备温度固定下来，再决定用什么工具。
 
 ### 6.2 同进程 FFI microbenchmark
 
@@ -382,7 +382,7 @@ sanitizer、fuzz、构建时间或工具兼容性可能要求例外；这类例�
 - 单线程与并发；
 - 多种 payload 大小。
 
-统计每次调用的 cycles、instructions、branch misses、allocation count 和复制字节：空调用用来估计每次调用的固定开销，业务 payload 用来判断这笔固定开销在总耗时里的占比。
+统计每次调用的 cycles（CPU 周期）、instructions、branch misses（分支预测失败）、allocation count 和复制字节：空调用用来估计每次调用的固定开销，业务 payload 用来判断这笔固定开销在总耗时里的占比。
 
 两侧产物要使用相同优化级别；一侧保留断言或日志、另一侧关闭，比较就失真了。
 
@@ -390,7 +390,7 @@ sanitizer、fuzz、构建时间或工具兼容性可能要求例外；这类例�
 
 Perfetto 中建议同时抓：
 
-- `sched_switch` 与 thread state；
+- `sched_switch` 与 thread state（线程运行、可运行与睡眠状态）；
 - Binder transaction 与目标线程；
 - CPU frequency、idle 与 thermal；
 - process/thread runtime；
@@ -416,11 +416,11 @@ adb shell simpleperf record -p "$keystore_pid" \
 附加采样系统服务所需的权限受 build type、SELinux 和 simpleperf 策略限制；user build 上附加失败，说明的是权限或构建条件不满足。
 
 Soong 使用 Rust v0 symbol mangling（把函数签名编码进链接符号名），并保留 unwind table，但 Simpleperf/Perfetto 报告仍要核对是否成功加载了对应符号。
-看见大量十六进制地址，应先修正 symbol path 和 build ID；把采样归到“unknown”之后继续比较语言，结论是靠不住的。
+看见大量十六进制地址，应先修正 symbol path 和 build ID（唯一标识该 ELF 构建的值）；把采样归到“unknown”之后继续比较语言，结论是靠不住的。
 
 ### 6.5 文件体积、链接与 PSS
 
-下面的主机和设备命令分别检查 ELF section、动态依赖与进程映射：
+下面的主机和设备命令分别检查 ELF section（代码、数据等分段）、动态依赖与进程映射：
 
 ```bash
 llvm-size -A out/target/product/<product>/system/bin/keystore2
@@ -449,12 +449,12 @@ heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录
 1. 减少不必要的 Binder transaction 与 callback 往返。
 2. 缩短持锁区，移出数据库、文件和硬件 I/O。
 3. 避免 payload 的重复编码与复制。
-4. 控制 executor、Binder pool 和 channel 的背压。
+4. 控制 executor、Binder pool 和 channel 的背压（生产速度超过消费速度时限制继续入队）。
 5. 减少热点分配和跨核原子写。
 6. 在证据充分时调整 bridge 表示、linkage 或 compiler 配置。
 
 如果 Binder 排队或硬件操作占掉大部分端到端时间，我们再省下一条普通 call instruction，对总耗时的影响也会很小。
-所以要看 profiler 里 bridge 的占比：已经显示占比高，才值得评估批量调用、借用数据或 ownership transfer；其余情况先处理占比更高的部分。
+所以要看 profiler 里 bridge 的占比：已经显示占比高，才值得评估批量调用、借用数据或 ownership transfer（跨边界移交对象所有权）；其余情况先处理占比更高的部分。
 
 ### 7.2 接口设计
 
@@ -499,7 +499,7 @@ heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录
 | Android 17 / API 37 | `android-17.0.0_r1` 中可核对 Rust Binder 服务、CXX 混合模块、默认 ThinLTO、panic/overflow/unwind 配置与新 Bluetooth Rust 组件 |
 
 这里不讨论内核 Rust 配置或驱动；平台用户态模块也说明不了 `android17-6.18-2026-06_r6` 的内核能力。
-要分析 Rust for Linux，需要另行核对该 kernel tag 的 Kconfig、toolchain、bindings 和具体驱动。
+要分析 Rust for Linux，需要另行核对该 kernel tag 的 Kconfig（内核配置）、toolchain、bindings 和具体驱动。
 
 ## 源码与官方资料
 

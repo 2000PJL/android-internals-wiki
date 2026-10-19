@@ -94,11 +94,11 @@ consolidated_from:
 
 分析 Android 问题时，“这是 Android 17 设备”只是一个起点。我们实际要面对的版本变量至少有五个：
 
-1. 平台版本和具体系统构建；
-2. 应用的 `targetSdkVersion`，以及按目标版本等条件切换的兼容性变更；
+1. 平台版本和具体系统构建（build）；
+2. 应用的 `targetSdkVersion`，以及按目标版本等条件切换的兼容性变更（compat change）；
 3. ART、Media、Permission 等 Mainline 模块的版本，这些模块可以脱离整机更新；
 4. 厂商侧的 system 分区、vendor 分区与 HAL 实现；
-5. 内核分支、内核模块接口（KMI）代际和设备调度配置。
+5. 内核分支、内核模块接口（KMI）代际（generation）和设备调度配置。
 
 同一平台版本的两台设备，可能运行不同的 Mainline 模块和不同代际的受支持内核。反过来，同一个应用安装在同一台设备上，只改变目标 SDK 版本（`targetSdk`），也可能触发不同的 `MessageQueue`、权限或后台执行行为。
 
@@ -118,7 +118,7 @@ consolidated_from:
 | Android 16 / API 36 | GBL 支持、16 KB 兼容模式、系统触发性能剖析（profiling）、`JobScheduler` 配额调整 | 引导链、原生代码兼容和线上诊断出现新的可选能力 |
 | Android 17 / API 37 | 无锁 `MessageQueue`、更多性能剖析触发条件、`JobScheduler` 等待原因统计 | 目标 SDK 版本与 API 37 新接口直接改变性能诊断路径 |
 
-Material You 是 Android 12 在产品与界面上的重要变化，但它没有重构系统与厂商分区或运行时边界。版本表只列出会改变系统分层、二进制兼容或性能分析方法的节点。
+Material You 是 Android 12 在产品与界面上的重要变化，但它没有重构系统与厂商分区或运行时（Android Runtime，ART）边界。版本表只列出会改变系统分层、二进制兼容或性能分析方法的节点。
 
 ## 从 Treble 到 GKI：更新边界的分层变化
 
@@ -136,11 +136,11 @@ GKI 核心内核 + vendor modules
 Boot firmware / 可选 GBL
 ```
 
-我们先看这张分层图怎么读：SDK API 约束应用与平台，厂商接口（VINTF）约束系统框架与厂商实现，KMI 约束通用内核映像（GKI）与厂商内核模块。三者都是稳定契约，各管一层，互相替代不了。
+我们先看这张分层图怎么读：SDK API 约束应用与平台，厂商接口（VINTF）约束系统框架与厂商实现，KMI 约束通用内核（Android Common Kernel，ACK）映像（GKI）与厂商内核模块。三者都是稳定契约，各管一层，互相替代不了。
 
 ### Treble、VINTF 与 HAL
 
-Treble 在 Android 8.0 把系统框架和厂商实现分进明确的分区。新版 system 想搭配旧版 vendor 单独升级，前提是双方都满足声明的兼容契约；契约成立，升级才能减少同步修改。
+Treble 在 Android 8.0 把系统框架（framework）和厂商（vendor）实现分进明确的分区。新版 system 想搭配旧版 vendor 单独升级，前提是双方都满足声明的兼容契约；契约成立，升级才能减少同步修改。
 
 VINTF 就是这份契约的载体：设备一侧的 manifest 声明本机提供哪些 HAL 及版本，系统框架一侧的兼容性矩阵（FCM）声明框架要求哪些 HAL 能力，OTA、启动和兼容性测试再按匹配规则判断组合是否合法。
 
@@ -150,15 +150,15 @@ Android 8.0 初期的跨分区 HAL 主要用硬件接口定义语言（HIDL）�
 
 ### GSI 的验证用途
 
-通用系统映像（GSI）是一份接近纯 AOSP 的 system 映像。Android 9 及以上的相关设备可以用它启动，运行厂商测试套件 VTS 和基于 GSI 的兼容性测试 CTS-on-GSI，验证厂商接口是否满足当前系统框架的要求。
+通用系统映像（GSI）是一份接近纯 AOSP 的 system 映像。Android 9 及以上的相关设备可以用它启动，运行厂商测试套件（VTS） VTS 和基于 GSI 的兼容性测试 CTS-on-GSI，验证厂商接口（Vendor Interface，VINTF）是否满足当前系统框架的要求。
 
 GSI 能启动，只说明分区与接口的组合满足了最低启动条件；完整合规还要看 VTS、CTS-on-GSI 以及设备类型要求的其他测试。性能方面同理：量产系统还包含厂商服务、HAL、调度参数和功耗策略，GSI 的数据代表不了量产表现。
 
-### VNDK 与链接器命名空间的历史位置
+### VNDK 与链接器命名空间（linker namespace）的历史位置
 
 Treble 还要解决原生 ABI 的可见性：厂商原生开发套件（VNDK）曾提供一组 framework 原生库供 vendor 依赖，链接器命名空间则限制不同进程和模块能看到哪些库。
 
-Android 15 起废弃 VNDK：在以 Android 15 构建的 `vendor`/`product` 分区上，原来的 VNDK 库与分区可用的其他库一样安装；VNDK APEX、相关版本属性和厂商快照等机制被移除或缩减。用于兼容旧版 vendor 映像的早期 VNDK APEX 仍可能存在，向 vendor 提供稳定底层原生接口的 LL-NDK 也不在这次废弃范围内。
+Android 15 起废弃 VNDK：在以 Android 15 构建的 `vendor`/`product` 分区上，原来的 VNDK 库与分区可用的其他库一样安装；VNDK APEX、相关版本属性和厂商快照（vendor snapshot）等机制被移除或缩减。用于兼容旧版 vendor 映像的早期 VNDK APEX 仍可能存在，向 vendor 提供稳定底层原生接口的 LL-NDK 也不在这次废弃范围内。
 
 原生代码的隔离如今仍靠分区边界、稳定 AIDL/HIDL、链接器命名空间、LL-NDK 和构建依赖检查共同维持。我们排查库加载问题时，以设备实际的 `ld.config.txt`、APEX 列表和已加载 `.so` 路径为准，不预设所有 Android 15 及以上设备都把依赖放进了 Vendor APEX。
 
@@ -168,11 +168,11 @@ Android 10 的 Project Mainline 把一部分系统组件划为可独立更新的
 
 Mainline 让安全修复和组件更新不必总等整机 OTA。不过“设备运行 Android 10”说明不了后来出现的模块都已可更新——ART 到 Android 12 才进入 Mainline。
 
-这会直接改变我们的复现方法。遇到 ART、加密与安全提供程序 Conscrypt、Media 或 Permission 的行为差异时，构建指纹只能说明系统版本，还要记录当前启用的 APEX/APK 模块版本；只对比 `Build.VERSION.SDK_INT` 很可能漏掉变量。
+这会直接改变我们的复现方法。遇到 ART、加密与安全提供程序 Conscrypt、Media 或 Permission 的行为差异时，构建指纹（build fingerprint）只能说明系统版本，还要记录当前启用的 APEX/APK 模块版本；只对比 `Build.VERSION.SDK_INT` 很可能漏掉变量。
 
 ### GKI 与 KMI
 
-GKI 把通用内核主体和设备相关模块分开；KMI 规定 GKI 向厂商内核模块开放哪些接口，并在对应代际内维持兼容。
+GKI 把通用内核主体和设备相关模块分开；KMI 规定 GKI 向厂商内核模块（vendor kernel modules）开放哪些接口，并在对应代际内维持兼容。
 
 稳定的 KMI 并不表示任意 GKI 内核都能互换：不同 GKI 内核或 KMI 代际之间不承诺模块兼容，厂商模块、设备树、启动配置和厂商功能仍需匹配；同一个 Android 平台还可能同时支持多个历史分支的 Android 通用内核（ACK）。
 
@@ -182,7 +182,7 @@ Android 17 的新内核基线是 `android17-6.18`，本书固定使用 `android1
 
 通用引导加载程序（GBL）是一个标准化、可更新的 UEFI 应用，里面包含通用的 Android 引导逻辑、Fastboot 和厂商扩展接口。Android 16 引入平台支持，并建议符合条件的新 ARM64 设备集成。
 
-GBL 仍依赖设备启动固件提供 UEFI、AVB 和必要协议，也允许厂商扩展。它是一套可部署的标准化方案，说明不了所有 Android 16 设备都具备同一个 Bootloader。我们分析启动时间时，还是要记录实际的启动链，只按系统版本判断是靠不住的。
+GBL 仍依赖设备启动固件（boot firmware）提供 UEFI、AVB 和必要协议，也允许厂商扩展。它是一套可部署的标准化方案，说明不了所有 Android 16 设备都具备同一个 Bootloader。我们分析启动时间时，还是要记录实际的启动链，只按系统版本判断是靠不住的。
 
 ## 从 Dalvik 到 ART：编译策略如何改变
 
@@ -196,7 +196,7 @@ Android 4.4 中，ART 是可选运行时，Dalvik 仍是常见默认路径。ART
 
 ### Android 5.0 到 6.0：以安装期 AOT 为主
 
-Android 5.0 用 ART 取代 Dalvik 成为平台运行时，并正式支持 64 位 ABI。这个阶段 ART 主要通过 `dex2oat` 做安装期 AOT 编译，产物由几个因素共同决定：编译过滤器决定编译范围和优化级别，系统应用会被预编译，类加载上下文决定类加载时能看到哪些代码和依赖，设备配置也会改变结果。要判断一个包的实际状态，直接查它的编译状态，比凭版本印象推测可靠。
+Android 5.0 用 ART 取代 Dalvik 成为平台运行时，并正式支持 64 位 ABI。这个阶段 ART 主要通过 `dex2oat` 做安装期 AOT 编译，产物由几个因素共同决定：编译过滤器（compiler filter）决定编译范围和优化级别，系统应用会被预编译，类加载上下文决定类加载时能看到哪些代码和依赖，设备配置也会改变结果。要判断一个包的实际状态，直接查它的编译状态，比凭版本印象推测可靠。
 
 64 位也不会让应用自动变快。ARM64 提供更多通用寄存器和新的 ABI，但指针、对象或原生数据结构可能变大，性能结果取决于代码、编译器和内存访问模式。64 位设备上的 Zygote 形态同样由产品配置决定：`zygote64`、`zygote64_32`、`zygote32_64` 等配置决定主、辅 Zygote 的位数，init 服务名仍常见 `zygote` 与 `zygote_secondary`。仅凭 Android 版本假设一定存在两个 Zygote，同样靠不住。
 
@@ -206,11 +206,11 @@ Android 7.0 引入带代码使用画像的 JIT，并与 AOT、解释执行组合
 
 1. 未编译代码可以先解释执行；
 2. JIT 编译运行期频繁执行的热点代码；
-3. ART 在画像中记录常用方法与类；
+3. ART 在画像（Profile）中记录常用方法与类；
 4. 后台 DEX 优化按画像做 `speed-profile` 编译；
 5. 已编译代码和画像会随更新、空间压力或校验条件变化。
 
-画像引导编译并不保证“第一次必慢、以后必快”。云端画像可能由安装来源下发，它根据用户使用数据生成；应用和库也可以自带开发阶段准备好的基准画像（Baseline Profile），让 ART 在用户首次运行前就编译关键路径。注意这里分发的是代码使用画像，Play 商店并不会直接给每台设备下发可复用的 `.odex`/`.vdex` 机器码。
+画像引导编译（Profile-Guided Compilation）并不保证“第一次必慢、以后必快”。云端画像（Cloud Profile）可能由安装来源下发，它根据用户使用数据生成；应用和库也可以自带开发阶段准备好的基准画像（Baseline Profile），让 ART 在用户首次运行前就编译关键路径。注意这里分发的是代码使用画像，Play 商店并不会直接给每台设备下发可复用的 `.odex`/`.vdex` 机器码。
 
 Android 16 的无缝应用更新优化也不是“云端编译”：它把 `dexopt`/`dex2oat` 移到安装流程更早的阶段，缩短应用包在代码和资源切换期间的停摆时间。
 
@@ -220,16 +220,16 @@ ART 从 Android 12 起成为 Mainline 模块，Android 12 及以上的设备可�
 
 - 平台构建版本；
 - ART APEX 版本；
-- 应用包的编译过滤器、代码使用画像和 DEX 优化原因；
+- 应用包的编译过滤器、代码使用画像和 DEX 优化原因（dexopt reason）；
 - 是否刚经历安装、OTA 或 Mainline 更新。
 
 `adb shell cmd package art dump <package>` 可以查看 ART Service 维护的应用包编译状态。命令输出属于诊断接口，字段可能随版本变化，自动化脚本应针对目标构建验证。
 
 ## Android 15 到 17：当前需要适配的变化
 
-### 16 KB 内存页
+### 16 KB 内存页（page size）
 
-Android 15 开始支持把平台构建成 16 KB 内存页。更大的页面能扩大地址转换缓存 TLB 的覆盖范围、减少部分页表遍历，但也可能增加页面内部未被利用的空间和小块映射成本。官方基准给出的收益来自特定设备与工作负载，我们把它当参考，不外推成“所有应用都会提升固定百分比”。
+Android 15 开始支持把平台构建成 16 KB 内存页。更大的页面能扩大地址转换缓存（Translation Lookaside Buffer，TLB） TLB 的覆盖范围、减少部分页表遍历，但也可能增加页面内部未被利用的空间和小块映射成本。官方基准给出的收益来自特定设备与工作负载，我们把它当参考，不外推成“所有应用都会提升固定百分比”。
 
 应用兼容性主要取决于原生代码：
 
@@ -253,7 +253,7 @@ adb shell setprop pm.16kb.app_compat.disabled true
 
 Android 15 / API 35 引入 `ProfilingManager` 的应用主动请求接口。Android 16 / API 36 增加系统触发的性能剖析：应用注册关注的触发类型，系统在 `reportFullyDrawn()` 或 ANR 等事件附近采集数据，再把结果交给应用。
 
-Android 16 还调整了 `JobScheduler` 的普通任务和加急任务的运行时配额。配额会考虑应用待机分组（standby bucket）、任务启动时应用是否处于顶层状态，以及任务是否在前台服务运行期间执行；前台服务并不自动豁免 Job 配额。所以我们排查任务未运行时，直接读待执行原因（pending reason）、停止原因和约束，比只看是否启动过前台服务可靠得多。
+Android 16 还调整了 `JobScheduler` 的普通任务和加急任务（expedited job）的运行时配额。配额会考虑应用待机分组（standby bucket）、任务启动时应用是否处于顶层（top）状态，以及任务是否在前台服务运行期间执行；前台服务并不自动豁免 Job 配额。所以我们排查任务未运行时，直接读待执行原因（pending reason）、停止原因（stop reason）和约束，比只看是否启动过前台服务可靠得多。
 
 ### Android 17：MessageQueue、ProfilingTrigger 与 Job 诊断
 
@@ -266,7 +266,7 @@ adb shell am compat disable USE_NEW_MESSAGEQUEUE <package>
 
 它改变的是 `MessageQueue` 内部实现，主线程上的业务、布局和 Binder 等待该怎么走还是怎么走。依赖 `mMessages` 等私有字段的反射代码需要迁移；具体实现见 §1.8。
 
-API 37 扩展了 `ProfilingTrigger`，新增或公开一批触发类型，覆盖冷启动、内存不足、因 CPU 使用过量被终止、异常和应用兼容性等场景。不同触发器产生的采集结果（artifact）和停止条件各不相同，我们逐类确认，别笼统写成“所有异常都自动保存完整系统跟踪数据”。应用仍需注册触发器、接收结果，并遵守系统限额。
+API 37 扩展了 `ProfilingTrigger`，新增或公开一批触发类型，覆盖冷启动（cold start）、内存不足（OOM）、因 CPU 使用过量被终止、异常和应用兼容性等场景。不同触发器产生的采集结果（artifact）和停止条件各不相同，我们逐类确认，别笼统写成“所有异常都自动保存完整系统跟踪数据”。应用仍需注册触发器、接收结果，并遵守系统限额。
 
 `JobScheduler.getPendingJobReasonStats(jobId)` 返回各项待执行原因及其累计等待时长。多个原因可以同时成立，所以各项时长之和可能超过任务实际等待时间。它适合回答“哪类约束长期阻止任务运行”；要还原过程，我们再看 `getPendingJobReasonsHistory()`、`JobParameters.getStopReason()` 和用于识别重复执行的业务日志。
 
@@ -274,15 +274,15 @@ API 37 扩展了 `ProfilingTrigger`，新增或公开一批触发类型，覆盖
 
 ### Android 17 没有统一的“机器学习任务调度器”
 
-固定源码标签里没有面向所有应用、名为 `MLScheduler` 或等价名称的统一任务调度器。常被混写成“机器学习调度”的能力分属不同层次：
+固定源码标签（tag）里没有面向所有应用、名为 `MLScheduler` 或等价名称的统一任务调度器。常被混写成“机器学习调度”的能力分属不同层次：
 
-- `JobScheduler` 根据约束、配额、应用待机分组和截止时间决定后台任务何时可运行；
+- `JobScheduler` 根据约束、配额、应用待机分组和截止时间（deadline）决定后台任务何时可运行；
 - `AppStandbyController` 可以把仅供系统使用的预测结果作为输入，但这不代表 `JobScheduler` 自己运行一个公开的机器学习模型；
 - `OomAdjuster` 与 `ProcessStateController` 计算进程重要性，再把内存回收优先级 `oom_score_adj` 交给低内存终止守护进程 `lmkd`；
 - Android 动态性能框架（ADPF）的 `PerformanceHintManager` 让应用报告工作时长目标，由系统和设备实现选择资源策略；
-- ACK 6.18 的 EEVDF 公平任务选择算法、CPU 利用率上下限 uclamp、CPU 集合 cpuset 与任务配置仍是内核和系统策略机制，也不是 Android 17 新增的通用机器学习调度 API。
+- ACK 6.18 的 EEVDF 公平任务选择算法、CPU 利用率上下限（uclamp） uclamp、CPU 集合（cpuset） cpuset 与任务配置（task profile）仍是内核和系统策略机制，也不是 Android 17 新增的通用机器学习调度 API。
 
-如果设备厂商的产品确有预测式调度扩展，结论至少要包含：组件或包名；模型输入与控制输出；进入任务配置、uclamp 或其他执行机制的调用链；在固定构建指纹下采集的对照跟踪数据。只有营销名称、版本号或一组没有原始数据的百分比，还证明不了平台存在统一调度器。
+如果设备厂商（OEM）的产品确有预测式调度扩展，结论至少要包含：组件或包名；模型输入与控制输出；进入任务配置、uclamp 或其他执行机制的调用链；在固定构建指纹下采集的对照跟踪数据。只有营销名称、版本号或一组没有原始数据的百分比，还证明不了平台存在统一调度器。
 
 ## 隐私与后台限制也会改变性能工具
 
@@ -317,7 +317,7 @@ Android 11 对以 API 30 及以上为目标的应用限制包可见性。`Packag
 5. 涉及 HAL 时确认 HIDL/AIDL、服务进程和 Binder 域；
 6. 涉及原生代码崩溃或内存问题时，记录 `getconf PAGE_SIZE`、ABI 和 ELF 对齐；
 7. 涉及 Job 或前台服务时，记录待执行原因、停止原因、应用待机分组和约束变化；
-8. 在两台设备上使用相同工作负载与采集配置，再比较系统性能跟踪工具 Perfetto 的数据。
+8. 在两台设备上使用相同工作负载（workload）与采集配置，再比较系统性能跟踪工具 Perfetto 的数据。
 
 Perfetto 里的进程名或 slice 名称只提供线索，我们要用它定位，再顺着具体路径确认。例如出现 `hwbinder` 线程，说明某条独立进程形式的 HIDL HAL 路径仍在使用，据此能定位到接口类型，但整台设备是否迁移 AIDL 还要继续查；看到 `dex2oat`，还要区分这次运行是安装、OTA、Mainline 更新还是后台 DEX 优化。
 
@@ -345,6 +345,6 @@ Android 17 支持多个历史 GKI 分支。`android17-6.18` 是当前新基线�
 
 ### “Android 17 用机器学习统一调度 Job、进程与 CPU”
 
-这些职责分别由 `JobScheduler`/App Standby、ActivityManagerService/`OomAdjuster`、ADPF 和内核调度器承担。除非目标设备能给出明确的 OEM 组件和控制链路，否则应把这类说法记录为待验证的产品假设。
+这些职责分别由 `JobScheduler`/App Standby、ActivityManagerService（AMS）/`OomAdjuster`、ADPF 和内核调度器承担。除非目标设备能给出明确的 OEM 组件和控制链路，否则应把这类说法记录为待验证的产品假设。
 
 分析版本演进时，要把“平台发布了什么”“设备启用了什么”“应用因目标 SDK 版本得到了什么行为”分开。这三层对得上之后，才能用版本差异解释性能现象。

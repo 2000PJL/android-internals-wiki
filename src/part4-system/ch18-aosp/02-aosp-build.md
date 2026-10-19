@@ -52,11 +52,11 @@ related_chapters:
 
 # AOSP 源码编译与调试环境
 
-读源码能推出一条路径“可能怎样运行”，构建、启动和测量才能说明目标版本“当前怎样运行”。Framework 调试依赖的正是这样一套完整过程：固定源码版本，修改最小代码面，编译所属模块，把产物同步到匹配的设备镜像，再用测试、日志和 trace 验证。
+读源码能推出一条路径“可能怎样运行”，构建、启动和测量才能说明目标版本“当前怎样运行”。Framework（Android 系统框架层） 调试依赖的正是这样一套完整过程：固定源码版本，修改最小代码面，编译所属模块，把产物同步到匹配的设备镜像，再用测试、日志和 trace（性能轨迹） 验证。
 
 > 源码基线：AOSP `android-17.0.0_r1`，Android 17 / API 37；内核 `android17-6.18-2026-06_r6`。
 
-平台和内核分属两套独立的源码树与构建系统，两个 tag 不能互换；平台仓库里的预编译 kernel 对应哪个 Android Common Kernel 提交，要在内核侧单独确认。
+平台和内核分属两套独立的源码树与构建系统，两个 tag（固定源码快照的标签） 不能互换；平台仓库里的预编译 kernel 对应哪个 Android Common Kernel 提交，要在内核侧单独确认。
 
 ## 构建主机：先满足官方基线
 
@@ -64,7 +64,7 @@ related_chapters:
 
 400 GB 里约 250 GB 是 checkout（检出的完整源码工作区），约 150 GB 是构建产物。做多 target、多工作树或内核构建时还要预留更多空间；这里的 target 指产品、发布配置与构建变体的组合。
 
-官方给过两组构建时间样例：72 核、64 GB 内存的 Google 主机完成全量构建约 40 分钟，6 核、64 GB 主机约 6 小时。两组数字放在一起，用来说明硬件差距；任何一个具体 target 的耗时，还要看磁盘 I/O、内存带宽、远程文件系统、目标产品和当次依赖图。
+官方给过两组构建时间样例：72 核、64 GB 内存的 Google 主机完成全量构建约 40 分钟，6 核、64 GB 主机约 6 小时。两组数字放在一起，用来说明硬件差距；任何一个具体 target 的耗时，还要看磁盘 I/O（输入输出）、内存带宽、远程文件系统、目标产品和当次依赖图。
 
 软件方面还有几条约束：
 
@@ -83,7 +83,7 @@ sudo apt-get install git-core gnupg flex bison build-essential \
   xsltproc unzip fontconfig repo
 ```
 
-安装完成后运行 `repo version`，确认 Repo launcher 可以工作——它负责初始化源码工作区并下载完整的 Repo 工具。官方当前要求 Repo 2.4 或以上；团队环境里最好记录各主机的实际版本，避免差异过大的 launcher 混用。
+安装完成后运行 `repo version`，确认 Repo launcher（负责初始化源码工作区并下载完整 Repo 工具的启动脚本） 可以工作——它负责初始化源码工作区并下载完整的 Repo 工具。官方当前要求 Repo 2.4 或以上；团队环境里最好记录各主机的实际版本，避免差异过大的 launcher 混用。
 
 ## 固定 Android 17 源码
 
@@ -98,7 +98,7 @@ repo init --partial-clone --no-use-superproject \
 repo sync -c -j8
 ```
 
-manifest 是一份 XML 清单，描述各个 Git 项目、存放位置和 revision。`--partial-clone` 减少初始对象下载，`-c` 只同步当前 manifest 分支。`-j8` 来自官方示例，并发数可以按网络、文件系统和服务器响应调整，“CPU 核数的数倍”只是经验参考。
+manifest 是一份 XML 清单，描述各个 Git 项目、存放位置和 revision（项目版本）。`--partial-clone` 减少初始对象下载，`-c` 只同步当前 manifest 分支。`-j8` 来自官方示例，并发数可以按网络、文件系统和服务器响应调整，“CPU 核数的数倍”只是经验参考。
 
 要让构建可复现，我们还需要一份解析到具体 revision 的 manifest。下面的命令把每个项目解析到具体提交：
 
@@ -107,7 +107,7 @@ repo manifest -r -o pinned-manifest.xml
 git -C build describe --tags --always
 ```
 
-`pinned-manifest.xml` 应与实验记录一起归档。即便有它，本地的 cherry-pick、未提交修改或后来单独切换的项目仍可能漏掉，所以还要保存 `repo status` 和补丁集标识。
+`pinned-manifest.xml` 应与实验记录一起归档。即便有它，本地的 cherry-pick（把选定提交应用到当前分支）、未提交修改或后来单独切换的项目仍可能漏掉，所以还要保存 `repo status` 和补丁集标识。
 
 ## Soong、Kati 与 Ninja 的职责
 
@@ -127,7 +127,7 @@ m nothing
 
 这个目标只解析并验证构建结构，产物留到真正构建时生成。通过之后仍要编译受影响的模块：类型检查、链接和生成代码的错误，要到对应 action 真正执行时才会暴露。
 
-平台构建文档把 `Android.bp` 描述为语法接近 Bazel BUILD 文件。平台的常规构建入口仍是 Soong；Android Common Kernel 走的是 Kleaf，一套基于 Bazel 的内核构建规则。在平台树里看到 Bazel 文件时，构建命令仍按平台这一套来用。
+平台构建文档把 `Android.bp` 描述为语法接近 Bazel BUILD 文件。平台的常规构建入口仍是 Soong；Android Common Kernel 走的是 Kleaf（基于 Bazel 的 Android 内核构建规则），一套基于 Bazel 的内核构建规则。在平台树里看到 Bazel 文件时，构建命令仍按平台这一套来用。
 
 ## lunch 的三段式 target
 
@@ -172,7 +172,7 @@ m services
 m surfaceflinger
 ```
 
-模块名来自 `Android.bp` 的 `name`，和文件路径是两回事。同一个 Java 文件可能进入开机时加载的 boot jar、可独立更新的 APEX（系统组件包），或同时进入多个变体。改之前我们先看同目录的 `Android.bp` 和依赖，确认文件属于哪个模块、装进哪个分区。
+模块名来自 `Android.bp` 的 `name`，和文件路径是两回事。同一个 Java 文件可能进入开机时加载的 boot jar（开机时加载的 Framework Java 包）、可独立更新的 APEX（系统组件包），或同时进入多个变体。改之前我们先看同目录的 `Android.bp` 和依赖，确认文件属于哪个模块、装进哪个分区。
 
 常见源码位置包括：
 
@@ -180,7 +180,7 @@ m surfaceflinger
 - `frameworks/base/services/core/java/com/android/server/`：承载主要 Framework 服务的 `system_server` 实现。
 - `frameworks/native/services/surfaceflinger/`：系统显示合成服务 SurfaceFlinger。
 - `frameworks/native/libs/renderengine/`：SurfaceFlinger 使用的渲染后端 RenderEngine。
-- `packages/modules/`：Mainline 模块源码，产物可能位于 APEX 或 APK。
+- `packages/modules/`：Mainline（可独立更新的系统模块） 模块源码，产物可能位于 APEX（可独立更新的系统组件包） 或 APK。
 
 增量构建的耗时取决于改动触发的依赖图：Java API 变化、`Android.bp` 变化、生成代码、APEX、bootclasspath（运行时启动类路径）都可能扩大构建范围，耗时随改动浮动。
 
@@ -205,7 +205,7 @@ ARM64 Linux 主机可以运行匹配架构的 Cuttlefish 预编译镜像；平�
 
 用 Android CI（持续集成系统）产物时，`cvd-host_package.tar.gz` 和设备 image 必须来自同一个 build，也就是同一次 CI 构建记录。主机包、镜像和分支混搭会引入协议或配置层面的兼容性问题；组合受支持的依据是同源，“能启动”不能作为证明。
 
-解压 host package 后，在该目录启动 Cuttlefish，再用包内的 ADB 检查设备。两个命令的主体如下，`HOME` 的处理放在代码块后说明：
+解压 host package 后，在该目录启动 Cuttlefish，再用包内的 ADB（Android Debug Bridge，主机与设备通信工具） 检查设备。两个命令的主体如下，`HOME` 的处理放在代码块后说明：
 
 ```bash
 ./bin/launch_cvd --daemon
@@ -257,9 +257,9 @@ atest FrameworksServicesTests
 
 ### 日志与 Trace
 
-在高频路径上加 Log 会改变锁竞争、调度和 I/O；Choreographer、Binder、SurfaceFlinger 这些路径尤其敏感。临时日志适合确认控制流，进入测量阶段就要移除，或者改成受控的 trace 点。
+在高频路径上加 Log 会改变锁竞争、调度和 I/O；Choreographer、Binder（Android 进程间调用机制）、SurfaceFlinger 这些路径尤其敏感。临时日志适合确认控制流，进入测量阶段就要移除，或者改成受控的 trace 点。
 
-要用动态日志级别，前提是目标代码确实读取了这个属性，而且属性策略允许。`setprop log.tag.Choreographer VERBOSE` 只影响遵循 log tag 属性的调用，其余 Choreographer 诊断是否打开，取决于对应代码是否读取它。日志时间戳还要先与 Perfetto 的时钟域对齐，再做关联分析。
+要用动态日志级别，前提是目标代码确实读取了这个属性，而且属性策略允许。`setprop log.tag.Choreographer VERBOSE` 只影响遵循 log tag 属性的调用，其余 Choreographer 诊断是否打开，取决于对应代码是否读取它。日志时间戳还要先与 Perfetto（Android 系统性能追踪工具） 的时钟域对齐，再做关联分析。
 
 ### System properties
 
@@ -376,7 +376,7 @@ Cuttlefish 可以用 `cvd create` 指定 kernel 和 initramfs（启动早期的�
 
 ### Cuttlefish 结果和真机不同
 
-先确认差异落在 HAL、kernel、GPU、thermal、Power HAL 还是 vendor service。纯 Framework 状态机适合在 Cuttlefish 上复现；硬件相关的性能问题，我们要回到目标设备上看。
+先确认差异落在 HAL、kernel、GPU、thermal（热管理）、Power HAL 还是 vendor service。纯 Framework 状态机适合在 Cuttlefish 上复现；硬件相关的性能问题，我们要回到目标设备上看。
 
 ## 参考资料
 

@@ -148,7 +148,7 @@ Android 项目里的协议能力来自不同组件：
 | Cronet 库 | Chromium 网络栈，支持 HTTP/1.1、HTTP/2 和基于 QUIC 的 HTTP/3 | 能力取决于项目采用的 Cronet 实现与版本 |
 | gRPC Java / Kotlin | RPC 语义、生成的客户端代理（stub）、流式调用、调用截止时间（deadline）与状态码 | Android 常用传输基于 HTTP/2，也可评估 Cronet 传输实现 |
 
-配置允许 HTTP/3，只说明客户端可以选择它。这次请求最终走什么协议，还要看服务端能力、代理、UDP 可达性、证书和客户端状态——服务端常通过 Alt-Svc 声明能力，这个响应首部表示同一资源可以由另一个地址或协议提供。所以线上数据要记录实际协商结果，客户端库名称说明不了最终协议。
+配置允许 HTTP/3，只说明客户端可以选择它。这次请求最终走什么协议，还要看服务端能力、代理、UDP 可达性、证书和客户端状态——服务端常通过 Alt-Svc（服务器声明同一资源可由另一地址或协议提供的响应首部） 声明能力，这个响应首部表示同一资源可以由另一个地址或协议提供。所以线上数据要记录实际协商结果，客户端库名称说明不了最终协议。
 
 ### HTTP/2 多路复用与服务端推送
 
@@ -172,11 +172,11 @@ OkHttp 5.4.0 还给单个 HTTP/2 响应的首部总量设了上限：256 KiB（2
 
 大文件与短 API 要不要共用同一个客户端或 `Dispatcher`？我们按排队情况和 P95、P99 等尾部耗时来定——P95、P99 分别表示 95%、99% 的样本不超过该耗时。只凭“HTTP/2 支持多路复用”这一句，得不出这个结论。
 
-连接能不能复用，还取决于 OkHttp 的 `Address`、`Route`、证书和连接健康状态。把资源分散到多个域名的“域名分片”，可能增加 DNS、TCP 与 TLS 成本，也可能拦住符合条件的 HTTP/2 连接合并。资格检查见 [24.5 移动网络架构、连接与容灾](05-mobile-network-connection-resilience.md)。
+连接能不能复用，还取决于 OkHttp 的 `Address`（连接地址配置）、`Route`（具体连接路径）、证书和连接健康状态。把资源分散到多个域名的“域名分片”，可能增加 DNS、TCP 与 TLS 成本，也可能拦住符合条件的 HTTP/2 连接合并。资格检查见 [24.5 移动网络架构、连接与容灾](05-mobile-network-connection-resilience.md)。
 
 #### 服务器推送（Server Push）在 OkHttp 上的现状
 
-RFC 9113 定义了 `PUSH_PROMISE`，让服务器在客户端请求前声明将主动发送某项资源，不过客户端可以限制或拒绝推送。落到 OkHttp 5.4.0 上：`Http2Connection.Builder` 默认使用内部的 `PushObserver.CANCEL`，该观察器收到推送事件后请求取消；`OkHttpClient.Builder` 也没有向应用开放 `PushObserver` 配置。
+RFC 9113 定义了 `PUSH_PROMISE`（服务器在客户端请求前声明将主动发送某项资源的帧），让服务器在客户端请求前声明将主动发送某项资源，不过客户端可以限制或拒绝推送。落到 OkHttp 5.4.0 上：`Http2Connection.Builder` 默认使用内部的 `PushObserver.CANCEL`，该观察器收到推送事件后请求取消；`OkHttpClient.Builder` 也没有向应用开放 `PushObserver` 配置。
 
 所以在使用 OkHttp 的 Android 应用里，HTTP/2 服务器推送写不进可执行的性能方案。更容易观测和控制的替代方式包括：
 
@@ -191,7 +191,7 @@ RFC 9113 定义了 `PUSH_PROMISE`，让服务器在客户端请求前声明将�
 
 #### 传输层发生了什么变化
 
-HTTP/3 把 HTTP 消息映射到 QUIC 逻辑流，首部压缩换成了 QPACK。QUIC 在 UDP 之上实现可靠传输、拥塞控制、TLS 1.3、逻辑流复用和连接 ID。对我们来说，行为上的变化主要是三条：
+HTTP/3 把 HTTP 消息映射到 QUIC 逻辑流，首部压缩换成了 QPACK。QUIC 在 UDP 之上实现可靠传输、拥塞控制、TLS 1.3、逻辑流复用和连接 ID（不依赖 IP 地址与端口的连接标识）。对我们来说，行为上的变化主要是三条：
 
 - 一条逻辑流丢失的数据需要重传时，其他不依赖该数据的流可以继续交付。HTTP/2 运行在单个 TCP 有序字节流上，丢失字节会阻塞后续字节。
 - TLS 与 QUIC 握手集成，之前建立的状态满足条件时可以使用恢复；0-RTT 仍是可选能力。
@@ -199,7 +199,7 @@ HTTP/3 把 HTTP 消息映射到 QUIC 逻辑流，首部压缩换成了 QPACK。Q
 
 这些机制也有共享的部分。QUIC 的拥塞控制通常作用于整条连接路径，丢包把拥塞窗口压小时，多条逻辑流的吞吐一起受影响；HTTP/3 同样缩短不了 DNS、服务端处理或应用读取的时间。
 
-再往下追一层：QUIC 的协议状态机在 Cronet/Chromium 的进程代码里，Android 通用内核负责 UDP 套接字、IP、路由、队列和设备驱动，没有 HTTP/3 状态机。要追踪 UDP 收发，可以从 `android17-6.18-2026-06_r6` 标签的 [`net/ipv4/udp.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/ipv4/udp.c) 读起。
+再往下追一层：QUIC 的协议状态机在 Cronet/Chromium 的进程代码里，Android 通用内核（common kernel）负责 UDP 套接字、IP、路由、队列和设备驱动，没有 HTTP/3 状态机。要追踪 UDP 收发，可以从 `android17-6.18-2026-06_r6` 标签的 [`net/ipv4/udp.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/ipv4/udp.c) 读起。
 
 #### 连接迁移的生效条件
 
@@ -222,7 +222,7 @@ QUIC 的 0-RTT（零往返恢复）允许恢复中的连接在握手完成前发
 
 HTTP/3 依赖 UDP，而部分企业网络、代理、VPN 或热点会阻断或限制 QUIC，所以客户端要保留基于 TCP 的 HTTP/2 或 HTTP/1.1；RFC 9114 也允许在 QUIC 连接出现问题时改用基于 TCP 的 HTTP。
 
-服务端还要用客户端支持的方式声明 HTTP/3 能力，比如发送 Alt-Svc，或者由应用提供可信的 QUIC 能力提示。`setEnableQuic(true)` 打开后，引擎只是获得了选择 QUIC 的资格，缺少服务端配置的域名仍走不上 HTTP/3。
+服务端还要用客户端支持的方式声明 HTTP/3 能力，比如发送 Alt-Svc，或者由应用提供可信的 QUIC 能力提示（hint）。`setEnableQuic(true)` 打开后，引擎只是获得了选择 QUIC 的资格，缺少服务端配置的域名仍走不上 HTTP/3。
 
 Android 17 / API 37（同时属于 S Extensions 22）为 `HttpEngine.Builder` 增加了 `setProxyOptions()`。注意应用代理配置会覆盖系统代理配置：企业环境依赖系统代理时，一个错误的应用代理、或者代理列表末尾漏掉 `null` 回退，都可能让网络完全不可达。分批启用协议的实验，也要把企业代理和 VPN 场景包含进来。
 
@@ -250,7 +250,7 @@ Android 17 / API 37（同时属于 S Extensions 22）为 `HttpEngine.Builder` �
 
 Cronet 是 Android 应用可以直接使用的 Chromium 网络栈。当前 Android 官方概览确认它原生支持 HTTP/1.1、HTTP/2 与基于 QUIC 的 HTTP/3，但没有承诺每种集成方式都有相同能力——提供方、版本、原生库加载结果和协议支持，要按项目实际依赖与运行时实现来确认。
 
-版本上，Android 10—13 要用 HTTP/3 通常得带外部 Cronet，Android 14 及以上可以评估平台 `HttpEngine`。走哪条路径，再按安装包体积、设备覆盖、更新渠道、现有网络层适配和诊断指标能力来定。
+版本上，Android 10—13 要用 HTTP/3 通常得带外部 Cronet，Android 14 及以上可以评估平台 `HttpEngine`。走哪条路径，再按安装包（APK）体积、设备覆盖、更新渠道、现有网络层适配和诊断指标能力来定。
 
 #### 基础 API 37 能观测什么
 
@@ -563,9 +563,9 @@ fun domainEncryptionMode(hostname: String): String {
 
 `DnsResolver` 在 API 37 增加了返回 `HttpsEndpoint` 的查询重载：并发发出 A、AAAA 和 HTTPS 查询，调用方可以用 `httpsTimeoutMillis` 指定地址记录完成后还要等多久 HTTPS 记录。同在 API 37，`DnsResolver.getInstance()` 已废弃，新代码改用接收 `Context` 与 `Looper` 的构造函数。
 
-`HttpsRecord` 表示 RFC 9460 的 HTTPS 记录。`priority == 0` 是别名模式（AliasMode），只把查询指向另一个名称，不带 IP 提示、端口、ALPN 或 ECH 配置；其他优先级是服务模式（ServiceMode），可以携带连接参数——ALPN 用来声明 HTTP/1.1、HTTP/2 等可选上层协议。`getEchConfigList()` 可能返回 `null`，ECH 配置二进制格式无效时会抛出 `InvalidEchDataException`。
+`HttpsRecord` 表示 RFC 9460 的 HTTPS 记录。`priority == 0` 是别名模式（AliasMode），只把查询指向另一个名称，不带 IP 提示、端口、ALPN（Application-Layer Protocol Negotiation，TLS 握手中的应用层协议协商） 或 ECH 配置；其他优先级是服务模式（ServiceMode），可以携带连接参数——ALPN 用来声明 HTTP/1.1、HTTP/2 等可选上层协议。`getEchConfigList()` 可能返回 `null`，ECH 配置二进制格式无效时会抛出 `InvalidEchDataException`。
 
-`SSLSocket` 封装基于套接字的 TLS 连接，`SSLEngine` 提供不直接绑定套接字的 TLS 状态机。`SSLSockets.setEchConfigList()` 和 `SSLEngines.setEchConfigList()` 要在握手开始前调用，而且只接受平台 TLS 实现创建的对应对象——自带 BoringSSL、OpenSSL 等 TLS 库，或自带 QUIC 实现的 SDK，不会因为应用加了 XML 就自动执行这些 API。
+`SSLSocket` 封装基于套接字（socket）的 TLS 连接，`SSLEngine` 提供不直接绑定套接字的 TLS 状态机。`SSLSockets.setEchConfigList()` 和 `SSLEngines.setEchConfigList()` 要在握手开始前调用，而且只接受平台 TLS 实现创建的对应对象——自带 BoringSSL、OpenSSL 等 TLS 库，或自带 QUIC 实现的 SDK，不会因为应用加了 XML 就自动执行这些 API。
 
 在 `android-17.0.0_r1` 中可以直接核对这些实现：
 

@@ -206,7 +206,7 @@ AOHP 为每个虚拟显示挂接一个 RGBA 像素格式的 `ImageReader`，把 
 论文没有报告虚拟显示的 CPU、GPU、内存、thermal 和能量开销，并把资源调度列为 future work。做工程评估时，至少要记录：
 
 - 同时运行的 display、task 和应用进程数量；
-- `ImageReader` buffer、图形内存、PSS（按共享页折算的进程内存）与 LMKD 压力；
+- `ImageReader` buffer、图形内存、PSS（按共享页折算的进程内存）与 LMKD（Android 的低内存回收守护进程） 压力；
 - SurfaceFlinger layer、GPU busy、帧率和无效重绘；
 - agent 与前台用户争用 CPU/GPU 时的延迟；
 - screen-off、Doze、thermal throttling（过热降频）与进程冻结行为；
@@ -214,7 +214,7 @@ AOHP 为每个虚拟显示挂接一个 RGBA 像素格式的 `ImageReader`，把 
 
 ### 3.2 Structured UI
 
-AOHP 的 Structured UI（SUI）从 Android accessibility tree 导出节点类型、文本、层级、resource ID、可操作性、bounds 和 display 信息——resource ID 是应用为 View 声明的资源标识，bounds 是节点在屏幕上的矩形坐标。相比截图，这种表示省去了纹理、阴影和其他像素细节。
+AOHP 的 Structured UI（SUI）从 Android accessibility tree（可访问性节点树） 导出节点类型、文本、层级、resource ID、可操作性、bounds 和 display 信息——resource ID 是应用为 View 声明的资源标识，bounds 是节点在屏幕上的矩形坐标。相比截图，这种表示省去了纹理、阴影和其他像素细节。
 
 仓库中的 `AohpUiTreeDumper` 负责导出这棵树，`AohpUiTreeSanitizer` 在结果进入 agent 视野前处理敏感字段。当前 sanitizer 靠应用声明识别敏感内容，再用手机号、银行卡号等少量启发式规则补充，谈不上覆盖所有敏感文本。
 
@@ -294,7 +294,7 @@ private static final String PREFIX = "aohp://vault/";
 private final Map<String, Entry> mEntries = new ConcurrentHashMap<>();
 ```
 
-`Entry` 直接保存 plaintext、category、source package 和创建时间。进程一重启，映射就消失了；当前类没有持久加密、硬件密钥绑定、用户切换隔离、自动过期，也没有 secure erase（可验证安全擦除）机制。
+`Entry` 直接保存 plaintext（明文）、category、source package 和创建时间。进程一重启，映射就消失了；当前类没有持久加密、硬件密钥绑定、用户切换隔离、自动过期，也没有 secure erase（可验证安全擦除）机制。
 
 token 的不透明性可以减少 agent 直接接触明文的机会，但单凭这一点，证明不了 vault 达到了凭据存储的安全要求。
 
@@ -327,7 +327,7 @@ o.put("stub", true);
 o.put("reason", "file_read_policy_not_implemented");
 ```
 
-这段代码说明原型愿意在缺少策略时 fail closed，但文件读写的信息流控制还没有完成。写安全报告时，我们要逐个 sink 标明状态——implemented 是已实现、partial 是部分实现、stub 是仅占位、unobserved 是未观测——别用论文架构图盖住代码缺口。
+这段代码说明原型愿意在缺少策略时 fail closed，但文件读写的信息流控制还没有完成。写安全报告时，我们要逐个 sink 标明状态——implemented（已实现） 是已实现、partial（部分实现） 是部分实现、stub（仅占位） 是仅占位、unobserved（未观测） 是未观测——别用论文架构图盖住代码缺口。
 
 ### 4.5 五个 security case 怎样解读
 
@@ -485,7 +485,7 @@ debounce（防抖）会在连续变更后等待一小段时间再处理，避免
 
 1. 对稳定业务能力使用 AppFunctions、公开 SDK、Provider 或受控 deep link（应用内深链入口）；
 2. 对未提供结构化入口的 UI，使用 Accessibility/UI automation 只做兼容路径；
-3. 为每个动作标明 read-only、reversible、destructive 或 external side effect——只读、可撤销、破坏性或有外部副作用；
+3. 为每个动作标明 read-only（只读）、reversible（可撤销）、destructive（破坏性） 或 external side effect（外部副作用）——只读、可撤销、破坏性或有外部副作用；
 4. 对支付、发送、发布、删除和权限变更要求用户确认；
 5. 返回可验证的结果 ID、状态和幂等键；幂等键用于识别重试，防止同一动作执行两次；
 6. 文件通过 `content://` URI 和最小范围 grant 交接；
@@ -527,7 +527,7 @@ AOHP 当前多个服务共用 `MANAGE_AOHP_VIRTUAL_DISPLAY` 这一 `signature|pr
 4. derived value（由敏感输入计算出的派生值）的标签怎样合并和降级；
 5. 每个 sink 的策略是 implemented、partial、stub 还是 unobserved；
 6. consent UI 是否绑定准确的 source、destination、amount 和 action；
-7. prompt injection 能否改变 purpose 或绕过 confirmation；
+7. prompt injection（把外部数据伪装成指令的提示注入） 能否改变 purpose 或绕过 confirmation；
 8. 审计日志是否可篡改，保留多久，由谁读取；
 9. 服务重启、设备重启、备份恢复和用户切换时怎样处理；
 10. fail closed 会不会被攻击者反复触发，形成可利用的拒绝服务。
@@ -543,7 +543,7 @@ AOHP 当前多个服务共用 `MANAGE_AOHP_VIRTUAL_DISPLAY` 这一 `signature|pr
 | AOHP interface | 测量 SUI、event、file、CLI 的组合收益 | 成功率、回退率、事件丢失 |
 | AOHP full security | 加入 vault、consent、policy | 泄露率、误拒绝、审批次数、延迟 |
 
-每个任务运行多次并随机化顺序，固定模型与 tool schema，保存完整的调用 trace——按时间排列的模型、工具和系统调用记录。资源侧同时采集 system_server、agent driver（驱动任务执行的 agent 进程）、目标应用、SurfaceFlinger 和 sandbox 的 CPU、PSS、GPU 与能量；安全侧加入未标注应用、custom View、WebView、native code、恶意 tool output、过期 token、跨用户和进程重启 case。
+每个任务运行多次并随机化顺序，固定模型与 tool schema，保存完整的调用 trace（按时间排列的模型、工具和系统调用记录）——按时间排列的模型、工具和系统调用记录。资源侧同时采集 system_server、agent driver（驱动任务执行的 agent 进程）、目标应用、SurfaceFlinger 和 sandbox 的 CPU、PSS（按共享页比例折算后的进程内存占用）、GPU 与能量；安全侧加入未标注应用、custom View、WebView、native code、恶意 tool output、过期 token、跨用户和进程重启 case。
 
 这些测试做完，才能回答某个 AOHP 机制在目标产品上的收益和风险。论文给出可运行原型与初步结果，Android 17 给出标准化 AppFunctions 控制面，两者都还在快速演进。
 

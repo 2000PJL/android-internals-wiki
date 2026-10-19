@@ -87,7 +87,7 @@ Profile、Dex Metadata 与 Secure Dex Metadata 三样东西名称接近，交付
 
 ## SDM 的定义与收益边界
 
-SDM 的全名是 **Secure Dex Metadata**，Android 16 引入了这种文件，用它携带面向特定 ISA 的云端 AOT 产物；ISA（instruction set architecture）指 `arm64` 这类 CPU 指令集。SDM 必须由与 APK 相同的 signer（签名证书身份）签名。还要说明一点：AOSP `android-17.0.0_r1` 中没有名为 “Staged Dalvik Compilation” 的架构，安装流程里也没有把 SDM 解包到应用 `oat` 目录这一步——运行时是直接从 ZIP 内部打开它的。
+SDM 的全名是 **Secure Dex Metadata**，Android 16 引入了这种文件，用它携带面向特定 ISA 的云端 AOT（ahead-of-time） 产物；ISA（instruction set architecture）指 `arm64` 这类 CPU 指令集。SDM 必须由与 APK 相同的 signer（签名证书身份）签名。还要说明一点：AOSP `android-17.0.0_r1` 中没有名为 “Staged Dalvik Compilation” 的架构，安装流程里也没有把 SDM 解包到应用 `oat` 目录这一步——运行时是直接从 ZIP 内部打开它的。
 
 一组可供 ART 使用的云端产物由三个文件配合：
 
@@ -152,7 +152,7 @@ SDM 的文件名多一段指令集名称，`artd/path_utils.cc` 的构造规则�
 
 同一个 APK 若要覆盖两种 ISA，需要两个不同的 SDM；安装器也不能拿 `arm64` 产物供 `arm` 进程使用。
 
-SDM 通过 APK Signature Scheme v3 校验身份，`ArtManagedInstallFileHelper.validateSdmFile()` 会逐一检查这些条件：
+SDM 通过 APK Signature Scheme v3（APK v3 签名协议） 校验身份，`ArtManagedInstallFileHelper.validateSdmFile()` 会逐一检查这些条件：
 
 - 文件名没有受支持的 ISA 后缀；
 - 找不到同基名 APK；
@@ -160,7 +160,7 @@ SDM 通过 APK Signature Scheme v3 校验身份，`ArtManagedInstallFileHelper.v
 - SDM 的 v3 签名无法验证；
 - APK 与 SDM 的 signer 集合不完全相同。
 
-在 feature flag `artManagedInstallFilesValidationApi()` 对应的新验证分支中，这些结果被标为 `RESULT_SHOULD_DELETE_AND_CONTINUE`：`PackageInstallerSession` 删除无效伴随文件、记录 warning，并继续处理安装。r1 仍保留旧分支，旧分支遇到无效 SDM 时可能直接拒绝安装。分析日志时，我们先确认设备走的是哪条分支，再解读无效 SDM 的处理结果。
+在 feature flag（功能开关） `artManagedInstallFilesValidationApi()` 对应的新验证分支中，这些结果被标为 `RESULT_SHOULD_DELETE_AND_CONTINUE`：`PackageInstallerSession` 删除无效伴随文件、记录 warning，并继续处理安装。r1 仍保留旧分支，旧分支遇到无效 SDM 时可能直接拒绝安装。分析日志时，我们先确认设备走的是哪条分支，再解读无效 SDM 的处理结果。
 
 SDM 的签名约束使安装会话能够验证它的来源。AOSP 没有限定调用方必须是 Play；`adb install-multiple` 可以把 `.apk`、`.dm` 与 `.sdm` 作为独立文件写入同一会话，随后由安装会话和 ART helper 按名称与后缀分类。这只是通用的多文件提交方式，难点在于获得名称正确、与 APK signer 完全一致且适配目标 ISA 的有效产物，普通开发构建通常没有这样的 SDM。
 
@@ -243,7 +243,7 @@ if (status == DexoptResult.DEXOPT_PERFORMED && !mInjector.isPreReboot()) {
 
 Android 14 之后，ART Service 负责应用设备端 AOT 编译的调度与策略。首次开机或 OTA 后第一次启动会优先保证系统可用，后续后台任务再按 Profile 编译；产品可以覆盖这些 compiler filter，Pixel 的默认策略不代表所有 OEM。
 
-[ART Service 配置文档](https://source.android.com/docs/core/runtime/configure/art-service)写明，默认后台 dexopt 每日运行一次，条件是设备空闲且充电；设备退出空闲状态时，任务会立即取消。新安装后立即启动时，后台 dexopt 可能还未发生；多次启动后的编译状态也可能已经被本地 JIT Profile 和后台编译改变。所以比较 Profile 或 SDM 收益时，应固定安装来源和编译状态，把“安装结束”“首次启动”“后台 dexopt 后启动”分成三组。
+[ART Service 配置文档](https://source.android.com/docs/core/runtime/configure/art-service)写明，默认后台 dexopt 每日运行一次，条件是设备空闲且充电；设备退出空闲状态时，任务会立即取消。新安装后立即启动时，后台 dexopt 可能还未发生；多次启动后的编译状态也可能已经被本地 JIT（just-in-time） Profile 和后台编译改变。所以比较 Profile 或 SDM 收益时，应固定安装来源和编译状态，把“安装结束”“首次启动”“后台 dexopt 后启动”分成三组。
 
 `speed-profile` 表示编译器使用了可用 profile，区分不出 Baseline、Cloud 还是设备本地 profile；`install-dm` 也只说明调用中携带过 DM。实际输入、compiler filter、reason 和产物位置，我们要结合 `pm art dump`、安装日志和 trace 判断。
 
@@ -262,7 +262,7 @@ ret->vdex_ = VdexFile::OpenFromDm(dm_filename, error_msg);
 
 ODEX 来自 SDM，VDEX 来自同 APK 的 DM。缺少可用 DM/VDEX 时，仅有 SDM 也组不成这条运行时加载路径；运行时还需要 APK 自身校验 dex checksum 与依赖关系。
 
-`OatFile::OpenFromSdm()` 带有名为 `Open sdm file <path>` 的 `ScopedTrace`。抓取应用启动 trace 时，看这个 slice 是否出现，比检查“`oat` 目录里有没有 `.odex`”更能说明 SDM 被运行时打开。
+`OatFile::OpenFromSdm()` 带有名为 `Open sdm file <path>` 的 `ScopedTrace`。抓取应用启动 trace 时，看这个 slice（trace 中带起止时间的区间事件） 是否出现，比检查“`oat` 目录里有没有 `.odex`”更能说明 SDM 被运行时打开。
 
 ### 3.2 运行时的兼容性检查
 
@@ -343,16 +343,16 @@ AOSP r1 源码没有给出 “安装时间减少 40%～60%”“冷启动减少 
 
 - `adb install-multiple` 的端到端 wall time；
 - Package Manager 的 `dexopt` slice；
-- `dex2oat` 进程是否出现、wall time、CPU time 与峰值 RSS；
+- `dex2oat` 进程是否出现、wall time、CPU time 与峰值 RSS（驻留在物理内存中的大小）；
 - SDM 校验 warning；
 - ART stats 中 `ART_DEX2OAT_REPORTED` 的 compiler filter、compilation reason、DM type、ISA、状态、输出大小与耗时；
 - 安装前后 `/data` 占用变化。
 
 启动阶段记录：
 
-- TTID 与 TTFD；
+- TTID（首帧可见时间） 与 TTFD（应用报告内容完整可用的时间）；
 - `Open sdm file` slice；
-- 主线程 runnable、I/O wait 与 major fault（需要从存储调入内存页的缺页）；
+- 主线程 runnable（可运行但等待 CPU）、I/O wait 与 major fault（需要从存储调入内存页的缺页）；
 - JIT 活动和后台 dexopt；
 - 连续多次启动后的变化。
 

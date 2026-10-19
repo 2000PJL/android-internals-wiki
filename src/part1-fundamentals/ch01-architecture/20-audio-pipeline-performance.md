@@ -68,7 +68,7 @@ last_idle_audit_at: '2026-09-13T14:35:20+08:00'
 
 1. 这条流最终走了 Normal、Fast、MMAP 还是 Offload 路径？
 2. 延迟来自排队、调度、重采样、算法处理，还是硬件路径？
-3. 出现输出欠载 underrun 或输入溢出 overrun（两者统称 xrun）时，哪一环没有按时生产或消费数据？
+3. 出现输出欠载（underrun） underrun 或输入溢出（overrun） overrun（两者统称 xrun（输出欠载与输入溢出的统称））时，哪一环没有按时生产或消费数据？
 4. Android 17 的后台音频限制和新硬件卸载 API，是否改变了现象的含义？
 
 ## 1. 先统一“延迟”的口径
@@ -78,7 +78,7 @@ last_idle_audit_at: '2026-09-13T14:35:20+08:00'
 - **输出延迟**：应用生成音频数据，到扬声器或耳机播放出声音的时间。
 - **输入延迟**：声音到达麦克风等输入端，到对应数据可被应用读取的时间。
 - **往返延迟**：输入延迟、应用处理时间与输出延迟之和。
-- **预热延迟**：首次放入数据后，整条音频链路从关闭或待机状态启动所需的时间。
+- **预热延迟**：首次放入数据后，整条音频链路从关闭或待机（standby）状态启动所需的时间。
 
 这四个指标各测各的：播放器报告的写入耗时不等于输出延迟，`AudioTimestamp` 或 AAudio 时间戳给出的是音频帧位置与时钟的对应关系，声学往返时间则要靠回环测试来量。
 
@@ -111,7 +111,7 @@ Android 没有公共 API 能返回任意路由的完整端到端延迟。系统�
 - `android.hardware.audio.low_latency`：声明连续输出延迟不高于 45ms。
 - `android.hardware.audio.pro`：声明连续往返延迟不高于 20ms，并以前一项为前提。
 
-它们是兼容性能力声明，说明的是设备整体能力，给不出当前蓝牙耳机、音效配置或系统负载下的实时延迟。专业音频应用仍应在目标设备和目标路由上做回环测试：把输出信号送回输入端，测量整条往返链路。
+它们是兼容性能力声明，说明的是设备整体能力，给不出当前蓝牙耳机、音效配置或系统负载下的实时延迟。专业音频应用仍应在目标设备和目标路由上做回环（loopback）测试：把输出信号送回输入端，测量整条往返链路。
 
 下面的代码只能读取设备是否声明了这两项能力：
 
@@ -131,7 +131,7 @@ val proAudio = pm.hasSystemFeature(
 
 控制面负责创建音频流、选择路由和修改状态，数据面负责持续传送音频样本。我们分析音频问题时，先把这两面分开。
 
-数据面上流转的 PCM，是未经有损压缩的数字音频样本表示。
+数据面上流转的 PCM（脉冲编码调制），是未经有损压缩的数字音频样本表示。
 
 ```text
 控制面
@@ -156,7 +156,7 @@ App buffer
 我们先看决定“走哪条路”的一侧：策略侧根据 `AudioAttributes`、设备连接状态、产品音频策略和可用配置档，选择输出或输入。它会影响：
 
 - 扬声器、USB、蓝牙、HDMI 等目标设备。
-- primary（默认主输出）、fast、deep-buffer、direct、offload、MMAP 等输入/输出配置档，描述设备支持的路径、格式、采样率和标志；deep-buffer 用更深的队列换取稳定性或省电。
+- primary（默认主输出）、fast、deep-buffer（通过更深的队列换取稳定性或省电）、direct、offload、MMAP 等输入/输出配置档，描述设备支持的路径、格式、采样率和标志；deep-buffer 用更深的队列换取稳定性或省电。
 - `usage` 对应的音量组和路由策略。
 - 设备切换时重新打开或迁移流。
 
@@ -169,16 +169,16 @@ AudioFlinger 运行在 `audioserver` 中。音频服务在 Android 7 就已从�
 AudioFlinger 用 track 表示一条应用侧播放或录制流。按输出类型，它会使用不同线程或端点：
 
 - `MixerThread`：通用 PCM 混音。
-- `FastMixer`：与某个混音输出关联的短周期快速混音线程。
+- `FastMixer`：与某个混音输出关联的短周期快速混音（Fast）线程。
 - `DirectOutputThread` / `OffloadThread`：绕过通用软件混音器的直接输出或硬件卸载输出。
 - `MmapPlaybackThread`：MMAP 输出的服务端管理路径。
 - `RecordThread`、`FastCapture`、`MmapCaptureThread`：输入侧对应路径。
 
 AudioFlinger 负责创建 track、维护共享缓冲区状态、混音或转交数据、与 HAL 交互，并记录输出欠载等情况。所以最终路径由两道关卡共同决定：AudioPolicyService 选路在先，AudioFlinger 的 track 接纳条件在后。
 
-### 2.3 HAL 的 AIDL 与 HIDL
+### 2.3 HAL 的 AID（tid）L（Android Interface Definition Language） 与 HID（pid）L（HAL Interface Definition Language）
 
-Android 14 起，官方鼓励厂商把 Audio HAL 从 HIDL 迁移到 AIDL；Android 框架仍同时支持两者。AIDL Core HAL 的 `IConfig` 承接一部分原先来自 HIDL XML 的系统级配置。
+Android 14 起，官方鼓励厂商把 Audio HAL 从 HID（uid）L 迁移到 AIDL；Android 框架仍同时支持两者。AIDL Core HAL 的 `IConfig` 承接一部分原先来自 HIDL XML 的系统级配置。
 
 Android 16 扩展了 AIDL Audio HAL 对可配置音频策略（Configurable Audio Policy，CAP）的支持，但迁移进度因产品而异，运行 Android 16/17 的设备未必都已完成。查看具体设备时应确认：
 
@@ -204,7 +204,7 @@ Android 4.1 引入 FastMixer。官方设计文档给出的推荐周期是 2–3m
 FastMixer 保留：
 
 - Normal Mixer 预先混合出的子混音（submix）。
-- 应用快速音轨的混音。
+- 应用快速音轨（client fast tracks）的混音。
 - 每条音轨的音量衰减。
 
 它省掉的是每条快速音轨的重采样、单音轨音效和混音整体音效，混音本身仍然要做：Normal Mixer 先把普通音轨合成一份子混音，经索引 0 送给 FastMixer，FastMixer 再把它与应用快速音轨合并后写向 HAL。
@@ -238,7 +238,7 @@ if (*flags & AUDIO_OUTPUT_FLAG_FAST) {
 6. 快速音轨槽位仍有空位；一个槽位表示 FastMixer 可同时接纳的一条输入音轨。
 7. 会话、输出级或设备上的音效链不会移除 FAST 标志。
 
-“帧数不匹配就一定拒绝 FAST”同样是误写：对流式快速音轨，系统会把缓冲区帧数至少提高到 `mFrameCount * fast_track_multiplier`，改变的是实际缓冲配置，并不落在第一层拒绝条件上。打开音轨后应读取实际配置，builder 里的请求未必原样生效。
+“帧数不匹配就一定拒绝 FAST”同样是误写：对流式快速音轨，系统会把缓冲区帧数至少提高到 `mFrameCount * fast_track_multiplier`，改变的是实际缓冲配置，并不落在第一层拒绝条件上。打开音轨后应读取实际配置，builder（构建器） 里的请求未必原样生效。
 
 ### 4.2 默认为什么最多看到 7 条应用快速音轨
 
@@ -319,7 +319,7 @@ aaudio_performance_mode_t performance =
 
 ### 5.3 MMAP 的数据面与控制面
 
-Android 8.1 扩展了 AAudio MMAP。设备需要在 Audio HAL 和驱动中声明并实现 MMAP/NOIRQ 能力，还要提供对应的音频策略配置档。MMAP 让应用和驱动通过内存映射缓冲区交换数据；NOIRQ 表示这条路径不依赖传统的周期性中断通知方式。
+Android 8.1 扩展了 AAudio MMAP。设备需要在 Audio HAL 和驱动中声明并实现 MMAP/NOIRQ 能力，还要提供对应的音频策略配置档。MMAP 让应用和驱动通过内存映射（MMAP）缓冲区交换数据；NOIRQ 表示这条路径不依赖传统的周期性中断通知方式。
 
 - **EXCLUSIVE**：应用可写入与 ALSA（Linux 的音频驱动框架）驱动共享的内存映射缓冲区，绕过普通软件混音器；延迟最低，但端点更容易因路由变化或资源竞争而断开。
 - **SHARED**：多个流共享端点，由系统侧负责混合与管理；这里没有应用独占的硬件缓冲区。
@@ -476,9 +476,9 @@ int support =
 
 ### 7.4 编解码来源（codec provenance）的用途
 
-这里的 codec provenance 指音频数据原本来自哪种编解码格式。API 37 的 `AudioTrack.Builder.setCodecProvenance()` 接收 `audio/...` MIME 媒体类型，例如 `MediaFormat.MIMETYPE_AUDIO_EAC3_JOC`。它告诉 Android 框架和 HAL：送进 `AudioTrack` 的数据源自哪种编解码器。当前音轨格式与原始格式不同时，这项信息可辅助系统选择空间音频渲染路径。
+这里的 codec provenance 指音频数据原本来自哪种编解码格式。API 37 的 `AudioTrack.Builder.setCodecProvenance()` 接收 `audio/...` MIME 媒体类型，例如 `MediaFormat.MIMETYPE_AUDIO_EAC3_JOC`。它告诉 Android 框架和 HAL：送进 `AudioTrack` 的数据源自哪种编解码器（Codec）。当前音轨格式与原始格式不同时，这项信息可辅助系统选择空间音频渲染路径。
 
-`getCodecProvenance()` 返回配置时保存的媒体类型；未设置时返回空字符串。它给不出 Codec2 组件名或厂商模块名，也证明不了使用的是软件解码、硬件解码还是硬件卸载路径。
+`getCodecProvenance()` 返回配置时保存的媒体类型；未设置时返回空字符串。它给不出 Codec2 组件名或厂商模块名，也证明不了使用的是软件解码、硬件解码还是硬件卸载（Offload）路径。
 
 ### 7.5 Assistant 独立音量
 
@@ -492,7 +492,7 @@ Android 17 为 `USAGE_ASSISTANT` 增加独立的 Assistant 音量流，使语音
 
 我们在采集系统轨迹前，先把测试条件写下来：
 
-- 构建指纹、Android 版本，以及是否为 `userdebug` 调试构建。
+- 构建指纹（标识系统软件版本的一串信息）、Android 版本，以及是否为 `userdebug` 调试构建。
 - 输入、输出设备及其连接方式。
 - 应用使用的 API、`usage`、格式、采样率和声道数。
 - 请求与实际获得的共享模式和性能模式。
@@ -600,7 +600,7 @@ Perfetto 能解释软件时序，却看不到扬声器振膜何时发声，也�
 
 ## 10. 蓝牙音频：不要按编解码器名称给固定延迟
 
-蓝牙路径会在链路上叠加编码、分包、无线调度、抖动缓冲、耳机解码和本地 DSP：分包把音频装进无线传输的数据包，抖动缓冲吸收数据包到达时间的波动。SBC、AAC、aptX、LDAC、LC3 只是其中一部分变量；同一种编解码器在不同缓冲配置、耳机固件、链路质量和模式下也会有明显差异。
+蓝牙路径会在链路上叠加编码、分包（把音频装入无线传输的数据包）、无线调度、抖动缓冲（吸收数据包到达时间的波动）、耳机解码和本地 DSP：分包把音频装进无线传输的数据包，抖动缓冲吸收数据包到达时间的波动。SBC、AAC、aptX、LDAC、LC3 只是其中一部分变量；同一种编解码器在不同缓冲配置、耳机固件、链路质量和模式下也会有明显差异。
 
 因此不应写成：
 

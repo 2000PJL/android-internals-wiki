@@ -129,11 +129,11 @@ consolidated_from:
 
 # Android IPC 全景与 Binder 性能
 
-把 Android 的进程间通信想象成「Binder、Intent、共享内存三选一」，是选型出错的常见起点。一条真实链路经常同时用到两到三层机制：Intent 和 AIDL 描述上层接口与行为；Binder、Unix 域套接字和 vsock 负责传输；共享内存、DMA-BUF 与 FMQ（Fast Message Queue，快速消息队列）常用于持续传送数据。
+把 Android 的进程间通信（Inter-Process Communication，IPC）想象成「Binder、Intent、共享内存三选一」，是选型出错的常见起点。一条真实链路经常同时用到两到三层机制：Intent 和 AID（PID）L（Android Interface Definition Language） 描述上层接口与行为；Binder、Unix 域套接字和 vsock 负责传输；共享内存、DMA-BUF 与 FMQ（Fast Message Queue，快速消息队列）常用于持续传送数据。
 
 > 源码基线：Android 17 / API 37；AOSP `android-17.0.0_r1`。
 
-分析时，我们结合源码、文件描述符、线程和系统轨迹还原真实链路，让每个性能结论都带着自己的成立条件。
+分析时，我们结合源码、文件描述符（file descriptor，fd）、线程和系统轨迹还原真实链路，让每个性能结论都带着自己的成立条件。
 
 IPC 选型先看数据形态、方向、频率、生命周期和权限范围。Binder 适合控制面和结构化调用；共享内存、socket、FMQ 与 DMA-BUF 处理的吞吐、时延和所有权模型各不相同。
 
@@ -169,19 +169,19 @@ IPC 选型先看数据形态、方向、频率、生命周期和权限范围。B
 
 这里的控制信息包括建连、权限、状态和命令；持续数据则可能是图像、音频或传感器样本。这四层经常组合使用：
 
-- AIDL 定义接口，普通跨进程调用由 Binder 承载。
+- AID（UID）L（Stable AIDL） 定义接口，普通跨进程调用由 Binder 承载。
 - Binder 先传递 `SharedMemory` 的文件描述符，之后双方直接读写各自映射出的同一块内存。
 - InputManager 通过 Binder 把 `InputChannel` 的文件描述符交给应用，后续输入事件走 Unix `SOCK_SEQPACKET` 套接字。
 - HAL 用 AIDL/HIDL 建立 FMQ，持续数据走共享内存队列。
 - Microdroid 复用 Binder/AIDL 对象模型，但传输改为 socket/vsock；vsock 是宿主系统与虚拟机之间的套接字通道。
 
-同一套 API 也可能不跨进程：AIDL 的客户端与服务在同一进程、使用同一代码生成后端时可以直接调用，省掉 Parcel 数据编组和 Binder 驱动事务。分析前应先确认双方的 PID。
+同一套 API 也可能不跨进程：AIDL 的客户端与服务在同一进程、使用同一代码生成后端（backend）时可以直接调用，省掉 Parcel 数据编组和 Binder 驱动事务。分析前应先确认双方的 PID。
 
 ### 2. 选型先回答六个问题
 
 #### 2.1 需要 RPC 还是流
 
-- “调用方法并拿到结果”属于远程过程调用，Binder/AIDL 最自然。
+- “调用方法并拿到结果”属于远程过程调用（Remote Procedure Call，RPC），Binder/AIDL 最自然。
 - “持续传任意长度字节流”更接近套接字或管道。
 - “持续传定长元素”可考虑 FMQ。
 - “共享一块大对象”可考虑 SharedMemory 或 DMA-BUF。
@@ -197,7 +197,7 @@ IPC 选型先看数据形态、方向、频率、生命周期和权限范围。B
 - Binder 对象何时调用 `linkToDeath()` 监听远端死亡，何时释放引用。
 - 文件描述符只是临时借用、经 `dup` 复制后由本方拥有，还是随 `ParcelFileDescriptor` 一起关闭。
 - `mmap` 创建的映射何时解除，`SharedMemory` 何时关闭。
-- DMA-BUF 的同步栅栏完成前，哪一方要暂缓复用缓冲区。
+- DMA-BUF 的同步栅栏（fence）完成前，哪一方要暂缓复用缓冲区。
 - FMQ 的写入方或读取方死亡后如何重建队列。
 
 #### 2.4 需要什么顺序和背压
@@ -338,7 +338,7 @@ Messenger 用 Binder 传递 `Message`，接收端最终把消息投递到指定�
 
 #### 4.3 Intent 与 Broadcast 是系统调度协议
 
-`Intent` 是描述操作、组件和附加数据 extras 的 `Parcelable`，本身是一种数据描述；跨进程组件启动或广播通常先经过 `system_server` 中的 ActivityManager 等服务，再由 Binder 调用目标进程。
+`Intent` 是描述操作、组件和附加数据（extra） extras 的 `Parcelable`，本身是一种数据描述；跨进程组件启动或广播通常先经过 `system_server` 中的 ActivityManager 等服务，再由 Binder 调用目标进程。
 
 它附带的是更高层语义：
 
@@ -415,7 +415,7 @@ Unix 套接字更适合：
 
 代价是它不自动提供 Binder 对象身份、调用方 UID API、远端死亡通知和服务管理；把系统服务从 Binder 改成套接字，身份、授权、版本、生命周期和错误协议多半要自己实现一遍。
 
-### 6. Pipe、eventfd 与 Signal
+### 6. Pipe、eventfd 与 Signal（信号）
 
 #### 6.1 Pipe：单向字节流
 
@@ -551,7 +551,7 @@ DMA-BUF 用于让 CPU、GPU、显示、相机、编解码器等硬件模块共�
 - Binder 传递句柄与生命周期控制信息。
 - 同步栅栏表达生产方写完、消费方可以开始读取的时序。
 
-Android 12 的 GKI（Generic Kernel Image，通用内核镜像）2.0 路线用 DMA-BUF 堆替代 ION 内存分配器。官方旧迁移页限定为「5.4 kernel only」，已标记弃用，并注明原计划于 2026 年 5 月移除；其中的迁移步骤不能作为 Android 17 的内核操作指引。当前节点创建可对照 ACK `android17-6.18-2026-06_r6` 的 `drivers/dma-buf/dma-heap.c`，堆设备表现为 `/dev/dma_heap/<name>`。硬件缓冲区分配器的这项迁移，推不出「SharedMemory 也从 ashmem 迁到了 DMA-BUF」。
+Android 12 的 GKI（Generic Kernel Image，通用内核（Android Common Kernel，ACK）镜像（Generic Kernel Image，GKI））2.0 路线用 DMA-BUF 堆替代 ION 内存分配器。官方旧迁移页限定为「5.4 kernel only」，已标记弃用，并注明原计划于 2026 年 5 月移除；其中的迁移步骤不能作为 Android 17 的内核操作指引。当前节点（node）创建可对照 ACK `android17-6.18-2026-06_r6` 的 `drivers/dma-buf/dma-heap.c`，堆设备表现为 `/dev/dma_heap/<name>`。硬件缓冲区分配器的这项迁移，推不出「SharedMemory 也从 ashmem 迁到了 DMA-BUF」。
 
 | 对象 | 主要用途 | 同步 |
 | --- | --- | --- |
@@ -586,7 +586,7 @@ HIDL FMQ 从 Android 8 开始提供；AIDL NDK 代码生成后端从 Android 12 
 
 ### 11. HAL IPC：HIDL/hwbinder 与 Stable AIDL / binder
 
-Android 8 的 Treble 把系统框架与厂商实现分开升级，并用 HIDL 和独立的 `/dev/hwbinder` 驱动域固定双方接口。Android 10 引入稳定 AIDL 机制，Android 11 开始允许 HAL 使用 AIDL。稳定 AIDL HAL 具有以下特点：
+Android 8 的 Treble 把系统框架与厂商（vendor）实现分开升级，并用 HIDL 和独立的 `/dev/hwbinder` 驱动域固定双方接口。Android 10 引入稳定 AIDL 机制，Android 11 开始允许 HAL 使用 AIDL。稳定 AIDL HAL 具有以下特点：
 
 - 使用 `/dev/binder`。
 - 厂商原生代码使用 NDK 或 Rust 代码生成后端等稳定运行时。只有 `system/system_ext` 可直接使用 C++ `libbinder`，其他分区应使用 `libbinder_ndk`、`libbinder_rs` 或适用的 Java 后端；Java 后端不能用于与 vendor 分区的服务管理器通信，vendor 分区也不能使用 API 34 之后新增的系统 API。
@@ -783,7 +783,7 @@ List<State> states = remote.getStates(ids);
 生产速度长期高于服务端消费速度时，`oneway` 只会把压力移到异步事务队列。协议应设计：
 
 - 合并或去重。
-- 有界序列号，以及只保留最新状态的语义。
+- 有界序列号，以及只保留最新状态（latest-state）的语义。
 - 丢弃策略。
 - 服务端健康状态与积压量指标。
 - 缓存进程或冻结进程无法及时消费时的边界行为。
@@ -868,10 +868,10 @@ Client
 
 具体过程是：
 
-1. 客户端 Proxy 把接口标识、方法事务码和参数写入 `Parcel`。
+1. 客户端 Proxy 把接口标识（token）、方法事务码（transaction code）和参数写入 `Parcel`。
 2. libbinder 通过 `BINDER_WRITE_READ` 这个 ioctl 命令把事务交给 Binder 驱动。
-3. 驱动解析目标句柄，找到目标 Binder 节点和宿主进程，为目标进程分配事务缓冲区。
-4. 驱动选择目标线程，或把工作放入目标进程的待处理队列并请求补充工作线程。
+3. 驱动解析目标句柄（handle），找到目标 Binder 节点和宿主进程，为目标进程分配事务缓冲区（transaction buffer）。
+4. 驱动选择目标线程，或把工作放入目标进程的待处理队列并请求补充工作线程（worker）。
 5. 服务端线程收到 `BR_TRANSACTION`，进入服务端 Stub 的 `onTransact()`，反序列化参数并调用实现。
 6. 同步调用把结果与异常状态写入回复事务；驱动再把回复投递给原调用线程。
 
@@ -879,7 +879,7 @@ Binder 还能在传输时转换 Binder 对象、句柄和文件描述符。内�
 
 权限检查应在 IPC 入口完成。将任务交给其他线程前，先获取 `Binder.getCallingUid()` 并完成鉴权；新线程不在原入站事务上下文中，再调用它得到的是本进程 UID。客户端写进 `Parcel` 的「身份字段」不能代替驱动提供的身份。
 
-如果客户端代理发现目标对象就在本进程，`queryLocalInterface()` 可以返回本地实现，调用不经内核驱动。此时 AIDL 的 `oneway` 也没有远程异步语义，方法仍在调用线程同步执行；写性能测试时必须确认接口跨进程。
+如果客户端代理（Proxy）发现目标对象就在本进程，`queryLocalInterface()` 可以返回本地实现，调用不经内核驱动。此时 AIDL 的 `oneway` 也没有远程异步语义，方法仍在调用线程同步执行；写性能测试时必须确认接口跨进程。
 
 ### AIDL 生成了什么
 
@@ -924,7 +924,7 @@ kunmap_local(kptr);
 - 客户端仍要把对象编组为 `Parcel` 可表达的形式。
 - 服务端仍要解析 `Parcel` 并构造业务对象。
 - 响应是反方向的一次新事务，也有自己的拷贝和解析。
-- Binder 对象、文件描述符和安全上下文需要驱动校验与修正。
+- Binder 对象、文件描述符和安全上下文（security context）需要驱动校验与修正。
 
 Android 8 引入 `BC_TRANSACTION_SG`/`BC_REPLY_SG`，让 `binder_buffer_object` 描述的附加缓冲区可以由驱动直接复制到目标布局，减少发送端先聚合连续数据的成本。它没有把所有 AIDL 参数都变成零拷贝。
 
@@ -946,11 +946,11 @@ libbinder 仍使用以下大小：
 - 响应太大可能在服务端返回阶段失败。
 - `TransactionTooLargeException` 只提示事务可能过大；单看异常分不清是请求还是响应失败，处理时按“操作可能部分完成”对待。
 
-内核把一半缓冲区空间作为异步事务的初始可用额度。大量 `oneway` 请求也会耗尽异步事务空间，并可能触发 `-ENOSPC`、`FAILED_TRANSACTION` 或 `oneway` 滥用检测。
+内核把一半缓冲区空间作为异步事务的初始可用额度。大量 `oneway` 请求也会耗尽异步事务空间（async space），并可能触发 `-ENOSPC`、`FAILED_TRANSACTION` 或 `oneway` 滥用检测。
 
 大数据直接塞进 `Bundle`、Intent extras 或 AIDL 列表都是坏味道，常见做法是：
 
-- 通过 Binder 传元数据和 `ParcelFileDescriptor`，数据放在文件或管道里。
+- 通过 Binder 传元数据和 `ParcelFileDescriptor`，数据放在文件或管道（pipe）里。
 - 用 `SharedMemory` 或 memfd 共享大块二进制数据。
 - 分页读取列表，并为每页设置明确上限。
 - 界面状态只保存重建 UI 所需的最小信息。
@@ -1055,7 +1055,7 @@ B 持有 LB -> 同步调用 A -> 等待 LA
 
 ### 在 Perfetto 中还原调用链
 
-用 Perfetto 分析 Binder，至少要采集内核 Binder 跟踪点与线程调度信息。ACK 提供 `binder_transaction`、`binder_transaction_received`、`binder_transaction_alloc_buf` 等跟踪点；要解析 AIDL 接口与方法名，还需同时启用 AIDL atrace 事件——`BBinder::transact()` 用 `ATRACE_TAG_AIDL` 标记服务端调用区间。
+用 Perfetto 分析 Binder，至少要采集内核 Binder 跟踪点（tracepoint）与线程调度信息。ACK 提供 `binder_transaction`、`binder_transaction_received`、`binder_transaction_alloc_buf` 等跟踪点；要解析 AIDL 接口与方法名，还需同时启用 AIDL atrace 事件——`BBinder::transact()` 用 `ATRACE_TAG_AIDL` 标记服务端调用区间。
 
 Trace Processor 的标准库可直接加载：
 
@@ -1093,7 +1093,7 @@ ORDER BY client_dur DESC
 LIMIT 50;
 ```
 
-`client_dur` 是客户端事务时间片段实际经过的总时间（墙钟时间，包括等待），`server_dur` 是服务端响应时间片段实际经过的时间。两者之差里除了驱动，还可能有客户端调度、服务端开始前排队、嵌套调用、系统挂起（suspend）边界和跟踪数据建模差异，直接叫「Binder 驱动耗时」会误导。
+`client_dur` 是客户端事务时间片段（slice）实际经过的总时间（墙钟时间，包括等待），`server_dur` 是服务端响应时间片段实际经过的时间。两者之差里除了驱动，还可能有客户端调度、服务端开始前排队、嵌套调用、系统挂起（suspend）边界和跟踪数据建模差异，直接叫「Binder 驱动耗时」会误导。
 
 Perfetto 标准库还提供：
 

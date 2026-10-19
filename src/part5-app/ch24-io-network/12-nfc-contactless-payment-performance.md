@@ -56,7 +56,7 @@ NFC（Near Field Communication，近场通信）既能读标签，也能反过�
 
 NFC 框架和系统服务的源码在 `packages/modules/Nfc`；旧路径 `frameworks/base/core/java/android/nfc/` 与 `packages/apps/Nfc/` 里已经没有完整实现，查代码以新路径为准。
 
-一次无接触支付会经过支付终端、手机的射频控制器、Android NFC 服务、钱包应用或 SE、收单系统和支付网络。Android 文档与 AOSP 源码只能说明手机一侧的分发、路由、服务绑定和数据传递；固定响应时间、成功率、离线额度等指标由具体终端和支付协议决定。性能目标要在目标设备、终端和协议组合上测量。
+一次无接触支付会经过支付终端、手机的射频控制器（NFC Controller）、Android NFC 服务、钱包应用或 SE、收单系统和支付网络。Android 文档与 AOSP 源码只能说明手机一侧的分发、路由、服务绑定和数据传递；固定响应时间、成功率、离线额度等指标由具体终端和支付协议决定。性能目标要在目标设备、终端和协议组合上测量。
 
 ## 1. 三条 NFC 路径
 
@@ -113,9 +113,9 @@ flowchart LR
 
 ### 首选支付服务的预绑定
 
-`HostEmulationManager.bindPaymentServiceLocked()` 用 `BIND_AUTO_CREATE` 预绑定当前首选支付服务，并保留独立的 `mPaymentService` 连接；普通服务则可能要等 AID 命中后才临时绑定。服务死亡后系统会尝试重新绑定，但进程重建、内存状态丢失和支付令牌失效这些事，仍要应用自己处理。
+`HostEmulationManager.bindPaymentServiceLocked()` 用 `BIND_AUTO_CREATE` 预绑定当前首选支付服务，并保留独立的 `mPaymentService` 连接；普通服务则可能要等 AID 命中后才临时绑定。服务死亡后系统会尝试重新绑定，但进程重建、内存状态丢失和支付令牌（token，用来代替真实卡号的受限凭据）失效这些事，仍要应用自己处理。
 
-从 Android 15 开始，`CATEGORY_PAYMENT` 类别通常由默认钱包角色持有者（Wallet role holder）处理；前台 Activity 也可以用 `CardEmulation.setPreferredService()` 临时指定服务。AID 组是一组必须整体路由到同一服务的标识符，系统同一时刻只启用一个支付类别 AID 组。所以 HCE 服务收不到命令时，我们先核对钱包角色、AID 和用户选择——配置错了，APDU 在路由层就走丢了，再快的应用也接不到。
+从 Android 15 开始，`CATEGORY_PAYMENT` 类别（category）通常由默认钱包角色持有者（Wallet role holder）处理；前台 Activity 也可以用 `CardEmulation.setPreferredService()` 临时指定服务。AID 组是一组必须整体路由到同一服务的标识符，系统同一时刻只启用一个支付类别 AID 组。所以 HCE 服务收不到命令时，我们先核对钱包角色、AID 和用户选择——配置错了，APDU 在路由层就走丢了，再快的应用也接不到。
 
 ## 3. Android 17 / API 37 的 NFC 变化
 
@@ -335,7 +335,7 @@ NFC 终端会循环发送轮询帧（polling frames），找附近可用的卡�
 - 特权进程的 UID（Linux 用户标识）可以调用。
 - 普通应用的 UID 必须属于当前用户的默认钱包或前台首选支付服务。
 - HCE 交易已经激活时，调用会被拒绝。
-- `HostEmulationManager` 会在交易结束后恢复 Observe Mode；交易开始前射频场消失时也会恢复。
+- `HostEmulationManager` 会在交易结束后恢复（suspend/resume） Observe Mode；交易开始前射频场消失时也会恢复。
 
 这个方法管的只是 Observe Mode 下的那一笔 HCE 交易，NFC 调度优先级不受它影响。普通标签应用本来就在调用资格之外；钱包也要等轮询序列匹配自身过滤规则后再调用，免得对任意终端放行。
 
@@ -416,7 +416,7 @@ adb logcat -v threadtime \
   -s NfcService NfcHostEmulationManager RegisteredAidCache CardEmulationManager
 ```
 
-`dumpsys nfc` 会输出 NFC 适配器状态、屏幕状态、节电模式、Observe Mode、轮询与监听技术、当前发现参数、卡模拟管理器、路由表和 NFC 事件日志。`cmd nfc help` 还会列出修改 Observe Mode、Reader Mode、路由与控制器常开状态的命令，其中多数需要 `root` 权限，只适合受控测试设备；日常排查用 `status` 与 `dumpsys` 就够。
+`dumpsys nfc` 会输出 NFC 适配器状态、屏幕状态、节电模式、Observe Mode、轮询与监听技术、当前发现参数、卡模拟管理器、路由表和 NFC 事件日志。`cmd nfc help` 还会列出修改 Observe Mode、Reader Mode、路由与控制器常开状态的命令，其中多数需要 `root`（超级用户） 权限，只适合受控测试设备；日常排查用 `status` 与 `dumpsys` 就够。
 
 HCE 源码在对应功能开关（feature flag）启用时，还会写入 `hce_active`、`hce_bind_payment_service`、`hce_bind_service`、`hce_command_apdu`、`hce_response_apdu` 和 `hce_polling_frames` 异步 Trace。`hce_command_apdu` 从系统发出命令开始，到应用 `Handler` 完成回调并回复确认消息（ACK）为止；应用返回 `null` 之后继续跑的异步工作，落在这个区间之外。`hce_response_apdu` 覆盖应用发送响应到系统回复 ACK 的过程。
 

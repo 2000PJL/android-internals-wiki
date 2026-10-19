@@ -94,7 +94,7 @@ last_review_finalize_at: '2026-08-25T20:23:39+08:00'
 
 # PerformanceHintManager 与 ADPF 能效验证
 
-`PerformanceHintManager` 属于 ADPF（Android Dynamic Performance Framework，Android 动态性能框架）。应用把一组周期性工作的线程、每周期目标耗时和实际耗时作为 performance hint 持续上报给系统，系统据此调整这些线程所在的 CPU 核与频率。这套接口是向系统描述负载的通道，应用侧没有“加速开关”可按。Android 17 延续现有公开 Java 接口。完整的验证链还要覆盖 NDK、协程线程身份、能效模式和 `PowerMonitor` 读数，我们把这些环节依次走一遍。
+`PerformanceHintManager` 属于 ADPF（Android Dynamic Performance Framework，Android 动态性能框架）。应用把一组周期性工作的线程、每周期目标耗时和实际耗时作为 performance hint（性能提示） 持续上报给系统，系统据此调整这些线程所在的 CPU 核与频率。这套接口是向系统描述负载的通道，应用侧没有“加速开关”可按。Android 17 延续现有公开 Java 接口。完整的验证链还要覆盖 NDK（Native Development Kit，原生开发工具包）、协程线程身份、能效模式和 `PowerMonitor` 读数，我们把这些环节依次走一遍。
 
 ## API 版本与调用路径
 
@@ -109,7 +109,7 @@ last_review_finalize_at: '2026-08-25T20:23:39+08:00'
 
 NDK 在 API 36 还加入了 `APerformanceHint_notifyWorkloadIncrease()`、`APerformanceHint_notifyWorkloadReset()` 和 `APerformanceHint_notifyWorkloadSpike()`，用于提示阶段性负载变化或一次高开销周期；固定周期的上报仍走 `reportActualWorkDuration()`。同一头文件把 `APerformanceHint_getPreferredUpdateRateNanos()` 标记为 API 36 起废弃，只想探测设备是否支持某类 hint 时，改用 `APerformanceHint_isFeatureSupported()` 就够了。
 
-Java 侧的一次调用要穿过大半个系统：先经 Android framework 的 JNI 进入原生客户端，再到 `HintManagerService`，最后落到 Power HAL。高频的目标耗时/实际耗时更新，设备支持时可走 FMQ（Fast Message Queue，共享内存消息队列），通道没建立或中途失败时回退到 Binder 跨进程调用，所以“每帧必定一次 Binder”要看设备与通道而定。系统还会按 UID 的进程状态暂停或恢复 Session；应用调用成功之后，每条数据是否被 HAL 采用，决定权在系统。
+Java 侧的一次调用要穿过大半个系统：先经 Android framework（系统框架层） 的 JNI（Java Native Interface，Java 与原生代码的接口） 进入原生客户端，再到 `HintManagerService`，最后落到 Power HAL（电源硬件抽象层）。高频的目标耗时/实际耗时更新，设备支持时可走 FMQ（Fast Message Queue，共享内存消息队列），通道没建立或中途失败时回退到 Binder 跨进程调用，所以“每帧必定一次 Binder”要看设备与通道而定。系统还会按 UID（Linux 用户 ID，通常按应用分配） 的进程状态暂停或恢复 Session；应用调用成功之后，每条数据是否被 HAL 采用，决定权在系统。
 
 ## 适用场景：什么时候该把线程标成节能优先
 
@@ -199,7 +199,7 @@ class PowerEfficientBatchWorker(
 
 ### 协程迁移与 TID 所有权
 
-Session 绑定的是 Linux TID，也就是 `Process.myTid()`，与 `Thread.currentThread().id` 返回的 Java 线程逻辑 ID 是两回事。`Dispatchers.Default`、`Dispatchers.IO` 和 `limitedParallelism()` 都不承诺同一协程挂起恢复后仍在同一个 TID 上。我们在某个 `suspend` 函数开头登记当前线程，恢复后却换到另一工作线程执行时，系统收到的线程集合就和真实负载分开了。
+Session 绑定的是 Linux TID（Thread ID，线程 ID），也就是 `Process.myTid()`，与 `Thread.currentThread().id` 返回的 Java 线程逻辑 ID 是两回事。`Dispatchers.Default`、`Dispatchers.IO` 和 `limitedParallelism()` 都不承诺同一协程挂起恢复后仍在同一个 TID 上。我们在某个 `suspend` 函数开头登记当前线程，恢复后却换到另一工作线程执行时，系统收到的线程集合就和真实负载分开了。
 
 适合 ADPF 的协程负载，由单线程或小规模固定 `Executor` 承载，线程启动后再采集 TID；一个周期的业务块中途不要切换协程调度器。Session 创建、`setThreads()`、目标耗时更新、实际耗时上报和 `close()`，都交给同一管理者串行执行。线程池重建时，API 31—33 的做法是关闭旧 Session 再重建；API 34+ 可以在生命周期边界完整替换线程数组，但不要每周期更新。
 
@@ -207,12 +207,12 @@ API 36 的 `APerformanceHint_borrowSessionFromJava()` 让 JNI 代码借用 Java 
 
 ## Power Efficiency Mode 的系统语义
 
-`setPreferPowerEfficiency(true)` 表达的是调度偏好，具体 CPU 频点、大小核选择、GPU 频率或能耗下降比例都不在承诺里；我们提供工作目标和实际耗时，系统结合 SoC 与设备热设计决定怎么用这些提示。
+`setPreferPowerEfficiency(true)` 表达的是调度偏好，具体 CPU 频点、大小核选择、GPU 频率或能耗下降比例都不在承诺里；我们提供工作目标和实际耗时，系统结合 SoC（System on Chip，片上系统） 与设备热设计决定怎么用这些提示。
 
 发布前，我们把三个层面的限制写清楚：
 
 - API 层面：`PerformanceHintManager` 从 API 31 开始可用，`setThreads()` 的 API reference 标注 API 34，`setPreferPowerEfficiency()` 标注 API 35。编译期、运行期和小流量发布数据都要检查，单凭系统版本推断不出收益。
-- 系统层面：提示进入系统的性能提示路径后，后续行为还受 Power HAL、调度器、CPUfreq（内核 CPU 调频机制）、thermal throttling 和设备厂商策略影响。
+- 系统层面：提示进入系统的性能提示路径后，后续行为还受 Power HAL、调度器、CPUfreq（内核 CPU 调频机制）、thermal throttling（系统因温度过高而降频） 和设备厂商策略影响。
 - 业务层面：节能 hint 可能拉长尾部耗时。验收时要同时看 P50 / P90 / P99 耗时、单位任务能耗和热状态。
 
 回到余量这件事：Power Efficiency Mode 允许系统利用任务 deadline 前的余量；业务没有余量时，把线程标成节能优先，可能让平均耗时看着稳定，却让 P95、P99 等尾部耗时上升。
@@ -221,14 +221,14 @@ API 36 的 `APerformanceHint_borrowSessionFromJava()` 让 JNI 代码借用 Java 
 
 Android 15（API 35）新增的 `PowerMonitor` / `PowerMonitorReadings`，让应用读到设备提供的累计能耗：一个 `PowerMonitor` 表示一个功耗监测项，可以是直接测量的电源轨，也可以是系统建模的能耗消费者。两个入口都是异步方法，`getSupportedPowerMonitors(executor, callback)` 返回支持列表，`getPowerMonitorReadings(monitors, executor, outcomeReceiver)` 返回指定监测项的读数。回调执行器可以传 `null`，但那样回调线程就由实现挑选，应用代码通常还是提供自己的执行器更稳。
 
-AOSP `android-17.0.0_r1` 里，`SystemHealthManager.getSupportedPowerMonitors()` 的注释把监测项分成两类：一类是 ODPM（On-Device Power Rails Monitor，设备电源轨监测器）的原始电源轨，另一类是 modeled energy consumer，即通过模型估算的子系统能耗。设备缺少 ODPM 支持时，公开 API 允许返回空列表；`getPowerMonitorReadings()` 经 `PowerStatsService` 取指定监测项的累计读数，监测项不受支持时由 `onError()` 送回 `IllegalArgumentException`。
+AOSP `android-17.0.0_r1` 里，`SystemHealthManager.getSupportedPowerMonitors()` 的注释把监测项分成两类：一类是 ODPM（On-Device Power Rails Monitor，设备电源轨监测器）的原始电源轨，另一类是 modeled energy consumer（通过模型估算的子系统能耗消费者），即通过模型估算的子系统能耗。设备缺少 ODPM 支持时，公开 API 允许返回空列表；`getPowerMonitorReadings()` 经 `PowerStatsService` 取指定监测项的累计读数，监测项不受支持时由 `onError()` 送回 `IllegalArgumentException`。
 
 `PowerMonitor` 的类型分两类：
 
 - `POWER_MONITOR_TYPE_CONSUMER`：子系统或建模能耗消费者。它可能由多个电源轨组合而来，也可能代表共享电源轨的一部分，例如 Wi-Fi 与 Bluetooth 共用芯片供电时的模型拆分。
 - `POWER_MONITOR_TYPE_MEASUREMENT`：直接测量的电源轨。名称和测量范围由设备厂商决定，同名电源轨的绝对值只在同一设备内有意义。
 
-`PowerMonitorReadings.getConsumedEnergy(powerMonitor)` 返回本次开机以来的累计能耗，单位是微瓦秒 μWs，数值上等于微焦耳 μJ；读数从开机重新累计，包含电池供电和插电状态下的总能耗。`getTimestampMillis(powerMonitor)` 返回快照时刻，时间基准采用包含深度睡眠时间的 `SystemClock.elapsedRealtime()`。找不到对应监测项时，AOSP `android-17.0.0_r1` 返回 `ENERGY_UNAVAILABLE = -1`。
+`PowerMonitorReadings.getConsumedEnergy(powerMonitor)` 返回本次开机以来的累计能耗，单位是微瓦秒（μWs，数值上等于微焦耳 μJ） μWs，数值上等于微焦耳 μJ；读数从开机重新累计，包含电池供电和插电状态下的总能耗。`getTimestampMillis(powerMonitor)` 返回快照时刻，时间基准采用包含深度睡眠时间的 `SystemClock.elapsedRealtime()`。找不到对应监测项时，AOSP `android-17.0.0_r1` 返回 `ENERGY_UNAVAILABLE = -1`。
 
 Android 17 r1 的内部实现还给读数规定了新鲜度和精度上限。普通调用方拿到的是 `MAX_POWER_MONITOR_AGE_MILLIS = 20_000` 的缓存；持有隐藏系统权限 `ACCESS_FINE_POWER_MONITORS` 的调用方走另一组状态缓存，最大年龄 `250 ms`。这个权限只面向系统签名、特权或开发场景，普通第三方应用拿不到。20 秒和 250 ms 都是 r1 的实现细节，公开 API 对其他版本与设备没有这样的承诺。
 
@@ -279,9 +279,9 @@ fun calculatePowerWindowDeltas(
 
 ## 用 Perfetto 电源轨交叉验证
 
-`PowerMonitor` 之外，Perfetto 的电源轨是另一条验证路径，两者都依赖设备提供的功耗统计能力。按 Perfetto 文档的说法，电源轨计数器——随时间记录累计能量的序列——是否存在、分辨率多高，都取决于设备厂商；平台通过 Android `IPowerStats` HAL 轮询数据。
+`PowerMonitor` 之外，Perfetto 的电源轨是另一条验证路径，两者都依赖设备提供的功耗统计能力。按 Perfetto 文档的说法，电源轨计数器（随时间记录累计能量的序列）——随时间记录累计能量的序列——是否存在、分辨率多高，都取决于设备厂商；平台通过 Android `IPowerStats` HAL 轮询数据。
 
-最小采集配置用 Perfetto 的 `android.power` 数据源，并在 `android_power_config` 中打开 `collect_power_rails`；再配上 CPU 频率、`sched` 调度事件和自定义 trace marker，我们才能把能效提示窗口、线程运行、频率变化和电源轨能耗放进同一条时间线。
+最小采集配置用 Perfetto 的 `android.power` 数据源，并在 `android_power_config` 中打开 `collect_power_rails`；再配上 CPU 频率、`sched`（内核线程调度事件） 调度事件和自定义 trace marker（跟踪标记），我们才能把能效提示窗口、线程运行、频率变化和电源轨能耗放进同一条时间线。
 
 ```protobuf
 buffers: {
@@ -314,7 +314,7 @@ data_sources: {
 
 这份配置保证的只是发起采集请求；设备是否真提供电源轨数据，要看厂商实现。拿到 trace 后，我们先确认电源轨轨道存在，再把 `Trace.beginSection("pe_batch_cycle")` 标记的工作窗口与 CPU 频率、线程状态和热状态对齐。只看电池百分比或单次电流值的话，充电状态、屏幕亮度、网络波动和后台任务的影响都混在里面。
 
-开发阶段再执行 `adb shell dumpsys performance_hint`，核对 Session 的 PID、UID、TID、目标耗时、`AllowedByProcState`、`ForcePaused`、`PowerEfficient` 和设备能力。Perfetto 里的 `ADPF Session <id> target duration`、`actual duration`、TID 与 mode counter 轨道，用来确认提示数据已经进入客户端路径，随后与调度事件、频率、超时和热状态对齐。
+开发阶段再执行 `adb shell dumpsys performance_hint`，核对 Session 的 PID（Process ID，进程 ID）、UID、TID、目标耗时、`AllowedByProcState`、`ForcePaused`、`PowerEfficient` 和设备能力。Perfetto 里的 `ADPF Session <id> target duration`、`actual duration`、TID 与 mode counter（模式计数轨道） 轨道，用来确认提示数据已经进入客户端路径，随后与调度事件、频率、超时和热状态对齐。
 
 statsd 是 Android 的系统统计服务，atom 是其中一种结构化记录类型；ADPF atom 属于系统遥测，不是普通应用的实时查询接口。
 
@@ -359,7 +359,7 @@ statsd 是 Android 的系统统计服务，atom 是其中一种结构化记录�
 
 发布策略按“耗时不退化，再看能耗收益”执行。尾部耗时或失败率一旦退化，先关闭能效提示；平均能耗的收益，排在用户可感知路径后面。
 
-## OEM 差异与降级策略
+## OEM（Original Equipment Manufacturer，设备厂商） 差异与降级策略
 
 `PowerMonitor` 与 Perfetto 电源轨的可用性都取决于设备厂商实现：设备可能返回空监测项列表，也可能只提供少量建模能耗消费者；同名电源轨在不同设备上对应的硬件范围也可能不同。`PowerMonitor` 源码还说明监测项索引跨重启未必稳定，这个索引别持久化。
 
@@ -384,7 +384,7 @@ Power Efficiency Mode 的开关同样要按设备型号来。小流量实验中�
 - 中度升温：暂停非必要批处理，降低后台同步频率，避免继续推高热状态。
 - 严重升温：关闭非关键长时任务，只保留用户可感知路径和系统要求任务。
 
-这些策略要满足业务 SLA。照片备份、日志压缩、离线索引可以降频或暂停；实时通话、导航、录制不能只按能耗目标降级。
+这些策略要满足业务 SLA（Service Level Agreement，可量化的服务质量约束）。照片备份、日志压缩、离线索引可以降频或暂停；实时通话、导航、录制不能只按能耗目标降级。
 
 热状态进入高档位前主动降低批处理并发，通常比等系统开始 thermal throttling 后再恢复更可控。阈值和收益必须来自具体设备实验，固定温度不具备跨设备意义。
 
@@ -418,18 +418,18 @@ Perfetto 文档说明，电池计数器在 USB 插电时会反映充电电流，
 
 系统通过 `HintManagerService` 统一管理所有 ADPF 会话，职责有三：
 
-- **会话生命周期管理**：维护 UID → Binder token → Session 的映射，处理会话的创建、更新和清理。
+- **会话生命周期管理**：维护 UID → Binder token（会话句柄） → Session 的映射，处理会话的创建、更新和清理。
 - **CPU/GPU headroom 查询**：headroom 表示当前还可分配的计算能力余量。`SystemHealthManager` 通过 `IHintManager` 转发到 Power HAL 的 `getCpuHeadroom()` / `getGpuHeadroom()`；Java API 返回 0–100 或 `Float.NaN`，0 表示没有更多可分配资源。HAL 的 `CpuHeadroomResult` / `GpuHeadroomResult` 也只暴露 `globalHeadroom`，不提供负载、温度或频率明细。
 - **按版本选择能力**：根据 Power HAL 版本调整可用提示和调度策略。
 
-`HintManagerService` 的内部实现细节，比如状态映射结构、清理间隔，会随版本变化，应以对应源码版本标签为准；引用范围不包含主开发分支特有的内部代码。
+`HintManagerService` 的内部实现细节（如状态映射结构、清理间隔），比如状态映射结构、清理间隔，会随版本变化，应以对应源码版本标签为准；引用范围不包含主开发分支特有的内部代码。
 
 **Power HAL 版本差异**：
 
 - Power HAL V4：基础性能提示会话支持。
 - Power HAL V5：`createHintSessionWithConfig()`、`SessionTag`、`SessionMode.POWER_EFFICIENCY` 与 `getSessionChannel()` 支持。
 - Power HAL V6：CPU/GPU headroom 查询，以及 `GRAPHICS_PIPELINE`、`AUTO_CPU`、`AUTO_GPU` SessionMode 支持。
-- Power HAL V7：加入 `AUDIO_PERFORMANCE` SessionMode；`android-17.0.0_r1` 的冻结 AIDL 已包含 V7。
+- Power HAL V7：加入 `AUDIO_PERFORMANCE` SessionMode；`android-17.0.0_r1` 的冻结 AIDL（Android Interface Definition Language，Android 接口定义语言） 已包含 V7。
 
 ### Power HAL `ML_ACC` Boost
 
@@ -445,7 +445,7 @@ Perfetto 文档说明，电池计数器在 USB 插电时会反映充电电流，
 ML_ACC,
 ```
 
-源文件没有给 `ML_ACC` 写显式整数。HAL 与系统代码引用生成的 `Boost.ML_ACC`，从排列位置推导数值是靠不住的。应用公开 API 也不直接发送这个 boost，把它当通用的应用侧 NPU 加速开关来写会写错。
+源文件没有给 `ML_ACC` 写显式整数。HAL 与系统代码引用生成的 `Boost.ML_ACC`，从排列位置推导数值是靠不住的。应用公开 API 也不直接发送这个 boost，把它当通用的应用侧 NPU（Neural Processing Unit，神经网络处理器） 加速开关来写会写错。
 
 厂商可以在自己的受控路径中决定是否实现该类型以及如何映射到芯片策略，但 AOSP 枚举本身不承诺 CPU、GPU、NPU 频率或持续时间。
 
@@ -488,7 +488,7 @@ enum SessionMode {
 
 ### 电源状态跟踪与统计
 
-`HintManagerService` 还注册了 `ADPF_SYSTEM_COMPONENT_INFO`、`ADPF_SESSION_SNAPSHOT` 和 `ADPF_SUPPORT_INFO` 等 statsd pull atom——statsd 主动拉取的结构化统计记录。会话快照按 UID 与 `SessionTag` 记录最大并发会话数、最大线程数、能效会话数、目标耗时分布和图形管线会话数；支持信息还包含 Power HAL 版本，以及可用的 Session 提示、模式、FMQ、CPU/GPU headroom 能力。这些都是系统统计接口，不是应用的公开诊断 API。
+`HintManagerService` 还注册了 `ADPF_SYSTEM_COMPONENT_INFO`、`ADPF_SESSION_SNAPSHOT` 和 `ADPF_SUPPORT_INFO` 等 statsd pull atom（由 statsd 主动拉取的结构化统计记录）——statsd 主动拉取的结构化统计记录。会话快照按 UID 与 `SessionTag` 记录最大并发会话数、最大线程数、能效会话数、目标耗时分布和图形管线会话数；支持信息还包含 Power HAL 版本，以及可用的 Session 提示、模式、FMQ、CPU/GPU headroom 能力。这些都是系统统计接口，不是应用的公开诊断 API。
 
 ### FMQ 与系统组件开关
 
@@ -501,7 +501,7 @@ Power HAL V5 开始提供 `getSessionChannel()`，服务端可以通过 FMQ 传�
 
 ### PowerStatsService 完整数据通路（系统服务 → IPowerStats HAL → statsd）
 
-`SystemHealthManager.getPowerMonitorReadings()` 最终进入 `IPowerStatsService.Stub`。Binder 入口记下调用方 UID 后，把工作投递给 `PowerStatsService` 的 Handler，避免在 Binder 线程中直接访问 HAL。服务根据监测项类型分别调用：
+`SystemHealthManager.getPowerMonitorReadings()` 最终进入 `IPowerStatsService.Stub`。Binder 入口记下调用方 UID 后，把工作投递给 `PowerStatsService` 的 Handler（消息队列执行器），避免在 Binder 线程中直接访问 HAL。服务根据监测项类型分别调用：
 
 - `IPowerStats.getEnergyConsumed()`：读取建模能耗消费者；
 - `IPowerStats.readEnergyMeter()`：读取直接测量的 ODPM 通道。
@@ -510,7 +510,7 @@ Power HAL V5 开始提供 `getSessionChannel()`，服务端可以通过 FMQ 传�
 
 读数更新后，服务在上一次原始累计值与当前原始累计值之间生成按 UID 稳定的随机返回值。下界不会低于 `current - 10_000_000 μWs`，也不会低于 `prevEnergyUws`；上界是当前原始值。因为 `1 μWs = 1 μJ`，该常量对应 `10 J`，不是 `10 MJ`。这段逻辑降低了公开读数在时间与数值上的精度，也解释了相邻窗口为何可能出现零差值或波动。
 
-`LocalService` 另有 `getEnergyConsumedAsync()`、`getStateResidencyAsync()` 和 `readEnergyMeterAsync()` 三个系统内部入口，返回 `CompletableFuture` 异步结果。`getEnergyConsumedAsync()` 发现 HAL 返回的消费者数量少于请求时，会记录严重级别日志 `Slog.wtf`，随后仍用已有数组完成异步结果。应用 `getPowerMonitorReadings()` 的错误语义要看 `IPowerStatsService` 的结果码和 `OutcomeReceiver` 约定，这条内部路径要分开读。
+`LocalService` 另有 `getEnergyConsumedAsync()`、`getStateResidencyAsync()` 和 `readEnergyMeterAsync()` 三个系统内部入口，返回 `CompletableFuture`（稍后完成的异步结果） 异步结果。`getEnergyConsumedAsync()` 发现 HAL 返回的消费者数量少于请求时，会记录严重级别日志 `Slog.wtf`，随后仍用已有数组完成异步结果。应用 `getPowerMonitorReadings()` 的错误语义要看 `IPowerStatsService` 的结果码和 `OutcomeReceiver` 约定，这条内部路径要分开读。
 
 `StatsPullAtomCallbackImpl` 根据 HAL 提供的信息注册两个 statsd 拉取记录：
 
@@ -519,15 +519,15 @@ Power HAL V5 开始提供 `getSessionChannel()`，服务端可以通过 FMQ 传�
 
 回调通过 `ConcurrentUtils.DIRECT_EXECUTOR` 执行，再等待 Handler 侧的异步结果，超时上限为 `2_000 ms`；异常、超时或空结果一律返回 `PULL_SKIP`。`ON_DEVICE_POWER_MEASUREMENT` 只接收 `durationMs == timestampMs` 的样本，表示能量累计区间从开机开始；缩写成“两个字段为 0”会丢掉“从开机开始”这层含义。
 
-`PowerStatsLogger` 使用三个 Handler 消息，分别采集 meter 直接测量值、model 建模值和 residency 状态驻留时间，存入 `/data/system/powerstats/`；日志前缀是 `log.powerstats.meter.0`、`log.powerstats.model.0` 与 `log.powerstats.residency.0`。`PowerStatsDataStorage` 通过 `FileRotator` 每 4 小时轮转并保留 48 小时，并不固定写成六个 `.pb` 文件。
+`PowerStatsLogger` 使用三个 Handler 消息，分别采集 meter 直接测量值、model 建模值（model）和 residency 状态驻留时间，存入 `/data/system/powerstats/`；日志前缀是 `log.powerstats.meter.0`、`log.powerstats.model.0` 与 `log.powerstats.residency.0`。`PowerStatsDataStorage` 通过 `FileRotator` 每 4 小时轮转并保留 48 小时，并不固定写成六个 `.pb` 文件。
 
-`meterCache`、`modelCache`、`residencyCache` 保存 HAL 元信息的序列化快照——`Channel`、EnergyConsumer、PowerEntity 的 proto bytes——用于识别元信息是否变化；元信息一变，对应旧日志随之删除。这些缓存经 `AtomicFile` 更新，临时文件名属于实现细节，别拿它当稳定存储格式。
+`meterCache`、`modelCache`、`residencyCache` 保存 HAL 元信息的序列化快照（例如 Channel、EnergyConsumer、PowerEntity 的 proto bytes）——`Channel`、EnergyConsumer、PowerEntity 的 proto bytes——用于识别元信息是否变化；元信息一变，对应旧日志随之删除。这些缓存经 `AtomicFile` 更新，临时文件名属于实现细节，别拿它当稳定存储格式。
 
-写入前，`adjustTimeSinceBootToEpoch()` 用服务启动时记录的墙钟时间基准，把 HAL 的开机时间戳换算到墙钟时间线，方便事件报告排序。不过 HAL 的能量和状态驻留时间都以本次开机为起点，累计能量跨重启直接相减，得到的差值没有意义。
+写入前，`adjustTimeSinceBootToEpoch()` 用服务启动时记录的墙钟时间基准，把 HAL 的开机时间戳换算到墙钟时间线，方便事件报告排序。不过 HAL 的能量和状态驻留时间（residency）都以本次开机为起点，累计能量跨重启直接相减，得到的差值没有意义。
 
 再往 HAL 看，`IPowerStats.aidl` 是带 `@VintfStability` 的接口，定义六个方法：`getPowerEntityInfo()`、`getStateResidency()`、`getEnergyConsumerInfo()`、`getEnergyConsumed()`、`getEnergyMeterInfo()` 与 `readEnergyMeter()`。`Channel` 包含 `id`、`name`、`subsystem`；framework 只透传后两个厂商自定义字符串，不解释其含义。`EnergyMeasurement` 包含 `id`、`timestampMs`、`durationMs`、`energyUWs`，其中时间使用 `CLOCK_BOOTTIME`，能量单位是 μWs。
 
-系统动态配置 DeviceConfig 里的 `battery_stats/power_monitor_api_enabled` 由监听器动态刷新：值一变，服务清空监测项列表和两组状态缓存；关闭后返回空列表。它是系统侧控制项，不是应用可用的公开发布开关。
+系统动态配置 DeviceConfig（系统动态配置） 里的 `battery_stats/power_monitor_api_enabled` 由监听器动态刷新：值一变，服务清空监测项列表和两组状态缓存；关闭后返回空列表。它是系统侧控制项，不是应用可用的公开发布开关。
 
 对应用和实验平台有四个直接影响：
 

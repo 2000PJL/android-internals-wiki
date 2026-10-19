@@ -117,11 +117,11 @@ consolidated_from:
 
 ### 为什么要了解手势导航
 
-在 Perfetto 里看到应用的触摸事件流以 `ACTION_CANCEL` 结束，或者从某个时刻起不再有后续 `MOVE`，我们先别急着把原因归到应用：左右边缘的返回手势开始时，SystemUI 的手势监视通道（gesture monitor）和应用可以同时收到同一条指针事件流。系统确认这是返回手势后，通过 `pilferPointers()` 抢占后续指针，把事件交给手势处理方，同时取消原窗口的触摸目标。下文把这一步简称为“指针抢占”。
+在 Perfetto 里看到应用的触摸事件流以 `ACTION_CANCEL` 结束，或者从某个时刻起不再有后续 `MOVE`，我们先别急着把原因归到应用：左右边缘的返回手势开始时，SystemUI（系统界面进程） 的手势监视通道（gesture monitor）和应用可以同时收到同一条指针事件流（pointer stream）。系统确认这是返回手势后，通过 `pilferPointers()` 抢占后续指针，把事件交给手势处理方，同时取消原窗口的触摸目标。下文把这一步简称为“指针抢占”。
 
-Android 10 / API 29 引入全手势导航：从左右边缘向内滑动是返回，底部上滑和横向滑动负责回到主屏、进入最近任务或快速切换。边缘返回采用“并行观察、达到条件后接管”的方式，在 `ACTION_DOWN` 到达前，系统不会无条件把触摸挡在应用外面。手势冲突和输入延迟的分析，都以这个时序为起点。
+Android 10 / API 29 引入全手势导航：从左右边缘向内滑动是返回，底部上滑和横向滑动负责回到主屏（Home）、进入最近任务或快速切换。边缘返回采用“并行观察、达到条件后接管”的方式，在 `ACTION_DOWN` 到达前，系统不会无条件把触摸挡在应用外面。手势冲突和输入延迟的分析，都以这个时序为起点。
 
-Android 13 / API 33 开始提供预测性返回 API，返回处理多出一个预提交阶段：手指移动时，系统解析返回目标、生成进度并准备预览，松手后才提交或取消。Android 15 把返回主屏（back-to-home）、跨任务（cross-task）、跨 Activity（cross-activity）三类系统动画移出开发者选项；Android 16 进一步把它们设为 `targetSdkVersion >= 36` 应用的默认行为。
+Android 13 / API 33 开始提供预测性返回（Predictive Back） API，返回处理多出一个预提交阶段：手指移动时，系统解析返回目标、生成进度并准备预览，松手后才提交或取消。Android 15 把返回主屏（back-to-home）、跨任务（cross-task）、跨 Activity（cross-activity）三类系统动画移出开发者选项；Android 16 进一步把它们设为 `targetSdkVersion >= 36` 应用的默认行为。
 
 文中结论会区分哪些能由 Perfetto 直接确认，哪些还需要 `dumpsys` 或 Winscope 补充。
 
@@ -131,7 +131,7 @@ Android 13 / API 33 开始提供预测性返回 API，返回处理多出一个�
 
 入口仍然是 SystemUI 中的 `EdgeBackGestureHandler`，但职责已经拆开：
 
-- `EdgeBackGestureHandler` 维护导航模式、主屏排除区域、边缘宽度、方向与阈值状态，并把事件送往反馈插件和 WM Shell。WM Shell 是窗口管理组件中承载系统级任务动画和窗口转场的部分。
+- `EdgeBackGestureHandler` 维护导航模式、主屏排除区域、边缘宽度、方向与阈值状态，并把事件送往反馈插件和 WM Shell。WM Shell 是窗口管理组件中承载系统级任务动画和窗口转场（Transition）的部分。
 - `DisplayBackGestureHandlerImpl` 为每块显示屏持有输入监视器、`InputEventReceiver`、排除区域监听器和一个 `BackPanelController`。
 - `InputMonitorCompat("edge-swipe", displayId)` 调用 `InputManagerGlobal.monitorGestureInput()`，取得手势监视器使用的 `InputChannel`。
 - `BackPanelController` 和 `BackPanel.kt` 负责边缘箭头和面板动画；它们使用不可触摸的 `TYPE_NAVIGATION_BAR_PANEL` 受信任叠加层（trusted overlay），不靠这个窗口接收触摸。
@@ -153,7 +153,7 @@ Android 13 / API 33 开始提供预测性返回 API，返回处理多出一个�
 4. 横向位移大于纵向位移并超过 `mTouchSlop` 后，`mThresholdCrossed` 变为 `true`。
 5. 旧式分支此时由 `EdgeBackGestureHandler` 直接调用 `pilferPointers()`；提前分发分支调用 `BackAnimation.onThresholdCrossed()`，由 `BackAnimationController` 决定何时抢占指针，判断依据包括描述返回目标和动画能力的 `BackNavigationInfo`、系统动画是否可用以及应用如何生成进度。
 
-`pilferPointers()` 最终进入 `InputDispatcher`。原目标窗口会收到由分发器合成的 `ACTION_CANCEL`，手势监视器则继续接收后续事件。“监视器收到事件副本”也就说明不了“应用始终能收到完整手势”。
+`pilferPointers()` 最终进入 `InputDispatcher`（输入分发器）。原目标窗口会收到由分发器合成的 `ACTION_CANCEL`，手势监视器则继续接收后续事件。“监视器收到事件副本”也就说明不了“应用始终能收到完整手势”。
 
 #### 旧式与提前分发两条提交路径
 
@@ -180,7 +180,7 @@ flowchart TD
 
 右侧提前分发分支中，`ACTION_DOWN` 和 `MOVE` 经 `dispatchToBackAnimation()` 切到 Shell 执行器。`BackAnimationController` 调用 `IActivityTaskManager.startBackNavigation()` 获取 `BackNavigationInfo`，再决定使用系统动画控制器还是应用回调。`setTriggerBack(true)` 只是记录“松手后提交”的状态；收到 `ACTION_UP` 后，Shell 才执行 `onBackInvoked()` 或启动提交后动画。取消路径则执行 `onBackCancelled()`。如果没有取得 `BackNavigationInfo`，源码仍保留注入返回键的兜底。
 
-预测性返回也可能抢占指针。接管时机交给 `BackAnimationController.tryPilferPointers()`：使用系统动画控制器、应用侧生成不了进度、焦点变化或导航信息为空，都可能触发抢占。排查性能跟踪时，单凭 `ACTION_CANCEL` 区分不出旧式返回与预测性返回，还要结合 Shell 返回动画和回调轨道。
+预测性返回（Predictive Back）也可能抢占指针。接管时机交给 `BackAnimationController.tryPilferPointers()`：使用系统动画控制器、应用侧生成不了进度、焦点变化或导航信息为空，都可能触发抢占。排查性能跟踪时，单凭 `ACTION_CANCEL` 区分不出旧式返回与预测性返回，还要结合 Shell 返回动画和回调轨道。
 
 ### 手势冲突处理：系统手势优先区域与应用的 WindowInsets
 
@@ -200,7 +200,7 @@ override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
 }
 ```
 
-`ViewRootImpl` 的 `ViewRootRectTracker` 收集各 `View` 的矩形，转换到窗口坐标后通过 `WindowSession.reportSystemGestureExclusionChanged()` 上报。WindowManagerService 的 `DisplayContent.calculateSystemGestureExclusion()` 按窗口 Z 序、可触摸区域和显示坐标汇总，再通过 `ISystemGestureExclusionListener` 把限制后的 `Region` 通知 SystemUI。上报成功只说明 WMS 收到了请求，生效范围还要经过可触摸区域相交和配额计算。
+`ViewRootImpl` 的 `ViewRootRectTracker` 收集各 `View` 的矩形，转换到窗口坐标后通过 `WindowSession.reportSystemGestureExclusionChanged()` 上报。WindowManagerService（WMS，窗口管理服务） 的 `DisplayContent.calculateSystemGestureExclusion()` 按窗口 Z 序、可触摸区域和显示坐标汇总，再通过 `ISystemGestureExclusionListener` 把限制后的 `Region` 通知 SystemUI。上报成功只说明 WMS 收到了请求，生效范围还要经过可触摸区域相交和配额计算。
 
 #### 系统手势区域限制
 
@@ -256,7 +256,7 @@ API 37 的观察者优先级值为 `-2`。普通注册参数声明了非负范�
 #### 预测性返回对性能的影响
 
 1. 进度回调每帧都可能执行。优先更新 `translationX`、`alpha`、缩放比例或已准备好的动画状态，避免在 `onBackProgressed()` 中做 I/O、Binder 同步调用、复杂布局或创建大量对象。
-2. 跨 Activity、跨任务和返回主屏会同时涉及当前层、目标层和 Shell 动画。掉帧时要检查当前应用、目标 Activity 或 Launcher、WM Shell、SurfaceFlinger，单看当前 Activity 的 RenderThread 是不够的。
+2. 跨 Activity、跨任务和返回主屏（back-to-home）会同时涉及当前层、目标层和 Shell 动画。掉帧时要检查当前应用、目标 Activity 或 Launcher、WM Shell、SurfaceFlinger，单看当前 Activity 的 RenderThread 是不够的。
 3. 只在提交时改变导航状态。若在进度阶段就执行 `popBackStack()` 或 `finish()`，取消手势时很难恢复一致状态。
 4. 观察者回调适合记录轻量日志。它不消费返回事件，但仍运行在应用回调环境中，耗时工作应异步化。
 
@@ -264,7 +264,7 @@ API 37 的观察者优先级值为 `-2`。普通注册参数声明了非负范�
 
 #### 先找对 SystemUI 线程
 
-`DisplayBackGestureHandlerImpl` 和 `EdgeBackGestureHandler` 使用带 `@BackPanelUiThread` 的 `UiThreadContext`。`SysUIConcurrencyModule` 会根据 `Flags.edgeBackGestureHandlerThread()` 把它映射到独立的 `BackPanelUiThread` 或 SystemUI 主线程，前者采用 `THREAD_PRIORITY_DISPLAY` 对应的显示相关线程优先级。所以下结论前，先确认手势判定落在 `BackPanelUiThread` 还是 SystemUI 主线程，笼统的“所有判定都在 SystemUI 主线程”在这套配置下站不住。
+`DisplayBackGestureHandlerImpl` 和 `EdgeBackGestureHandler` 使用带 `@BackPanelUiThread`（采用 `THREAD_PRIORITY_DISPLAY` 对应的显示相关线程优先级） 的 `UiThreadContext`。`SysUIConcurrencyModule` 会根据 `Flags.edgeBackGestureHandlerThread()` 把它映射到独立的 `BackPanelUiThread` 或 SystemUI 主线程，前者采用 `THREAD_PRIORITY_DISPLAY` 对应的显示相关线程优先级。所以下结论前，先确认手势判定落在 `BackPanelUiThread` 还是 SystemUI 主线程，笼统的“所有判定都在 SystemUI 主线程”在这套配置下站不住。
 
 性能跟踪中，我们先根据线程名和 `InputConsumer processing on...` 等接收器轨迹区段确认事件落在哪条线程，再检查该线程在 `ACTION_DOWN` 到阈值越过之间是否被长任务、锁等待或 Binder 调用占用。`EdgeBackGestureHandler` 没有为每个事件提供稳定的同名区段，必要时应在可控构建中增加自定义跟踪点。
 
@@ -382,12 +382,12 @@ Perfetto 的查询引擎 Trace Processor 在 `android.input` 模块中提供 `an
 
 ## Predictive Back 生命周期与动画同步
 
-预测性返回把返回操作分成“手势预览”和“提交导航”两个阶段。手指移动时，系统或应用只更新可撤销的视觉状态；手势提交后，返回回调才执行 `finish()`、弹出返回栈、隐藏 IME 这些动作。普通手势识别只给出最终动作，预测性返回还要连续传递进度并允许取消，所以应用导航栈和系统窗口动画必须共用同一个提交边界。
+预测性返回把返回操作分成“手势预览”和“提交导航”两个阶段。手指移动时，系统或应用只更新可撤销的视觉状态；手势提交后，返回回调才执行 `finish()`、弹出返回栈（pop back stack）、隐藏 IME 这些动作。普通手势识别只给出最终动作，预测性返回还要连续传递进度并允许取消，所以应用导航栈和系统窗口动画必须共用同一个提交边界。
 
 这个模型让系统可以提前知道返回目的地，但也引入了三条容易混淆的路径：
 
 - 应用回调处理页面内部返回；
-- WM Shell 在系统目标可预测且产品提供对应动画执行器时，对关闭对话框、跨 Activity、跨任务和返回主屏执行系统动画；
+- WM Shell 在系统目标可预测且产品提供对应动画执行器时，对关闭对话框（dialog）、跨 Activity、跨任务和返回主屏执行系统动画；
 - 条件不足时回退到应用回调，极端情况下再回退到 `KEYCODE_BACK`。
 
 应用侧的接入方法见 22.11，边缘手势识别见本节前文。
@@ -468,7 +468,7 @@ Android 17 的 WMS 中没有 `TaskAnimationCoordinator` 这个类，解释跨 Ac
 
 #### 3.2 仍然存在 KEYCODE_BACK 回退
 
-提前返回分发路径也保留了异常回退。例如，`startBackNavigation()` 因找不到有效焦点窗口、当前状态无法建立 `BackNavigationInfo`，或系统正在处理不兼容状态而返回 `null`，Shell 可在手势提交后异步注入 `KEYCODE_BACK`。
+提前返回分发（ahead-of-time）路径也保留了异常回退。例如，`startBackNavigation()` 因找不到有效焦点窗口、当前状态无法建立 `BackNavigationInfo`，或系统正在处理不兼容状态而返回 `null`，Shell 可在手势提交后异步注入 `KEYCODE_BACK`。
 
 这是兜底分支。对目标 SDK 36 及以上且未显式退出新模型的应用，常规路径通过回调分发；官方文档明确指出，`Activity.onBackPressed()` 与返回 `KEYCODE_BACK` 不再作为正常分发入口。
 
@@ -631,7 +631,7 @@ flowchart LR
 
 输入法进程通过 `ImeBackCallbackSender` 把回调注册转发给当前应用。应用侧 `ImeBackCallbackProxy` 收到默认系统回调后，会把它映射到 `PRIORITY_DEFAULT`；若 ViewRoot 已提供 `ImeBackAnimationController`，分发器就用该控制器处理预测动画。
 
-默认情况下，输入法回调的优先级高于 Activity 的框架系统回调，所以一次返回先隐藏输入法。这个行为仍有明确例外：
+默认情况下，输入法回调的优先级高于 Activity 的框架系统回调，所以一次返回先隐藏输入法（IME）。这个行为仍有明确例外：
 
 - 输入法可通过返回处置策略（back disposition）选择跳过默认回调；
 - 应用更高优先级的覆盖层回调可以先处理；
@@ -675,7 +675,7 @@ WMS 的协议缓冲转储（proto dump）与窗口跟踪中还包含 `BackNaviga
 
 #### 11.2 Perfetto 需要覆盖的线程
 
-录制系统跟踪时至少保留：
+录制系统跟踪（System Trace）时至少保留：
 
 - SystemUI 与 WM Shell 主线程；
 - `system_server` 中 WindowManager 与 ActivityTaskManager 相关线程和 Binder；

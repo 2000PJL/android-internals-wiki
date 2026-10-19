@@ -138,7 +138,7 @@ ANR（Application Not Responding，应用无响应）是系统判定应用在特
 | start foreground / short FGS | Service 回调与停止时序 | 按时调用 `startForeground()` 或停止服务，处理 `onTimeout()` |
 | job service start/stop | `JobService` 主线程回调 | 立即返回并异步执行，遵守通知与完成协议 |
 
-还要提醒一句：一份主线程快照只说明采样那一瞬间。广播可能运行在自定义 `Handler` 上，`goAsync()` 的工作也可能落在后台 worker 线程；主线程栈里出现 `nativePollOnce`，只说明 Looper 正在等消息，看到它就把这类 ANR 排除掉，是会漏判的。
+还要提醒一句：一份主线程快照只说明采样那一瞬间。广播可能运行在自定义 `Handler` 上，`goAsync()` 的工作也可能落在后台 worker 线程；主线程栈里出现 `nativePollOnce`，只说明 Looper（线程消息循环） 正在等消息，看到它就把这类 ANR 排除掉，是会漏判的。
 
 ## 缩短主线程同步工作并异步化
 
@@ -284,7 +284,7 @@ Binder 是 Android 的主要 IPC（inter-process communication，进程间通信
 3. 应用 Binder 线程处理回调时也需要锁 A。
 4. 主线程等远端返回，Binder 线程等主线程释放锁 A。
 
-这里锁 A 只存在于应用进程，等待环却跨过了 Binder。规则还是那条：持锁期间不调用未知代码，也不做同步 IPC。
+这里锁 A 只存在于应用进程，等待环却跨过了 Binder。规则还是那条：持锁期间不调用未知代码，也不做同步 IPC（inter-process communication）。
 
 ## ContentProvider、BroadcastReceiver 与 Service 超时治理
 
@@ -378,7 +378,7 @@ class SyncReceiver(
 - 后台工作使用由 Service 持有的 executor 或协程作用域，`onDestroy()` 取消任务并释放资源，免得 Service 销毁后工作还占着线程。
 - `startForegroundService()` 后尽早准备并发布通知，不要等待网络、数据库或远端配置。
 - `shortService` 实现 `onTimeout()` 并立即停止；测试超时、重复 start 和进程重建。
-- 以 Android 15 及以上为目标平台时，`dataSync`、`mediaProcessing` 等受总额度约束的 FGS 要实现 `onTimeout()`，超时后停止，避免被系统以异常结束进程。
+- 以 Android 15 及以上为目标平台时，`dataSync`、`mediaProcessing` 等受总额度约束的 FGS（Foreground Service） 要实现 `onTimeout()`，超时后停止，避免被系统以异常结束进程。
 
 返回 `START_STICKY` 决定的只是服务被杀后的重建策略：当前回调不会因此变短，ANR 时限也不会因此豁免。
 
@@ -452,7 +452,7 @@ class MainLooperWatchdog(
 }
 ```
 
-旧 `Runnable` 的 token 与当前 token 不同时，`compareAndSet()` 不会替新周期盖章；当前 token 未完成前也不再投递探针。示例省略了重复调用 `start()` 时防止创建多个线程的保护、应用退出处理、采样频率上限和持久队列。`onStall` 是发现长时间无响应后的回调，里面别同步做网络或大文件写入。
+旧 `Runnable` 的 token 与当前 token 不同时，`compareAndSet()` 不会替新周期盖章；当前 token 未完成前也不再投递探针（供主线程执行的轻量 `Runnable`）。示例省略了重复调用 `start()` 时防止创建多个线程的保护、应用退出处理、采样频率上限和持久队列。`onStall` 是发现长时间无响应后的回调，里面别同步做网络或大文件写入。
 
 ### 阈值来自产品基线
 

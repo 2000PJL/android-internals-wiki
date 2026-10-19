@@ -36,7 +36,7 @@ sources:
 
 # 设备分级性能策略实战
 
-设备分级要回答的问题很具体：一次具体的工作，该给多大的资源预算。图片解码关心内存和屏幕尺寸，视频播放关心编解码能力，复杂动画关心 GPU、刷新率和当前温控状态。这些维度并不重合，我们若把差异压成一个“高、中、低”总分，往往会让某项能力很强、另一项能力较弱的设备收到错误策略。
+设备分级要回答的问题很具体：一次具体的工作，该给多大的资源预算。图片解码关心内存（非 Java 堆内存）和屏幕尺寸，视频播放关心编解码能力，复杂动画关心 GPU、刷新率和当前温控状态。这些维度并不重合，我们若把差异压成一个“高、中、低”总分，往往会让某项能力很强、另一项能力较弱的设备收到错误策略。
 
 > 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。设备可能使用其他内核分支；涉及内存语义时，以 Android 17 framework 对 Linux 可访问内存的解释为准。
 
@@ -52,7 +52,7 @@ sources:
 | 工作负载策略 | 图片缓存预算、预取条数、视频规格、特效复杂度 | 随应用版本和远端策略版本变化 | 把能力映射到某个业务场景 |
 | 会话期压力 | 温控状态、省电模式、内存压力、丢帧率、启动耗时 | 运行期间变化 | 临时收缩或恢复工作量 |
 
-这三层各用各的信号：`isLowRamDevice()` 适合影响缓存和预加载，Media Performance Class 适合辅助选择媒体体验；热节流和省电模式只描述此刻的运行条件。一次发热带来的收缩，等压力过去就该解除，设备本身保持原样。
+这三层各用各的信号：`isLowRamDevice()` 适合影响缓存和预加载，Media Performance Class 适合辅助选择媒体体验；热节流（系统因温度升高而限制性能）和省电模式只描述此刻的运行条件。一次发热带来的收缩，等压力过去就该解除，设备本身保持原样。
 
 策略名称也应描述约束，例如 `memory_constrained`、`media_enhanced`、`render_reduced`。`low`、`middle`、`high` 看似省事，几个月后很难解释每一档究竟约束了 CPU、内存还是媒体能力。策略数量宜少，但“三档”只是习惯，平台并没有这条规则；一项业务只有两个有效配置时，保留两个配置更容易验证。
 
@@ -62,9 +62,9 @@ sources:
 
 ### Media Performance Class
 
-Media Performance Class（MPC，媒体性能等级）由各 Android 版本的兼容性定义文档 CDD 规定。`Build.VERSION.MEDIA_PERFORMANCE_CLASS` 从 API 31 开始公开；framework 源码从只读设备属性取得该值，返回 `0` 表示设备或当前系统构建没有声明等级。
+Media Performance Class（MPC，媒体性能等级）由各 Android 版本的兼容性定义文档 CDD（Compatibility Definition Document，兼容性定义文档） 规定。`Build.VERSION.MEDIA_PERFORMANCE_CLASS` 从 API 31 开始公开；framework 源码从只读设备属性取得该值，返回 `0` 表示设备或当前系统构建没有声明等级。
 
-当前官方文档列出的已定义等级是 30、31、33、34、35，MPC 32 这一档并不存在。该值在一次开机期间不变；厂商 OTA 可能提高它，平台版本升级后等级也未必跟着提高。
+当前官方文档列出的已定义等级是 30、31、33、34、35，MPC 32 这一档并不存在。该值在一次开机期间不变；厂商 OTA（系统更新） 可能提高它，平台版本升级后等级也未必跟着提高。
 
 Media Performance Class 覆盖媒体、相机、显示、编解码和部分通用要求，适合回答“能否提供某种媒体体验”。它没有承诺所有 App 工作负载的 CPU 或 GPU 吞吐，也当不了整机跑分用。官方建议用 Jetpack Core Performance 统一读取设备声明，并可通过 Google Play services 补充数据；只需要平台声明时，`Build.VERSION.MEDIA_PERFORMANCE_CLASS` 已经给出对应值。
 
@@ -81,7 +81,7 @@ Media Performance Class 覆盖媒体、相机、显示、编解码和部分通�
 
 所以缓存预算要同时受应用堆上限、资源类型和内存回调约束；按整机 `totalMem` 固定取一个百分比，会漏掉进程堆限制以及图形内存等开销。
 
-### CPU、SoC、GPU 与屏幕
+### CPU、SoC（片上系统）、GPU 与屏幕
 
 `Runtime.availableProcessors()` 返回调用当时 Java 虚拟机可用的处理器数量，Java API 明确允许该值在同一进程生命周期内变化。它给出的只是这一个数字，完整 SoC 拓扑、大小核性能、调度容量和当前频率都不在其中；并发策略依赖该值时，应在非关键路径偶尔重读，把每次结果当作当时的快照。
 
@@ -144,7 +144,7 @@ fun collectStableDeviceSignals(context: Context): StableDeviceSignals {
 }
 ```
 
-这份数据仍是“信号集合”，要再经过一层映射才成为性能等级。除 `availableProcessors` 只是采集时快照外，其余结果可连同 `Build.FINGERPRINT`、应用版本和策略版本存入本地，等系统升级、应用升级或远端规则版本变化时再重新计算策略；每个页面、每一帧都重复采集则没有必要。
+这份数据仍是“信号集合”，要再经过一层映射才成为性能等级。除 `availableProcessors` 只是采集时快照外，其余结果可连同 `Build.FINGERPRINT`（系统构建指纹）、应用版本和策略版本存入本地，等系统升级、应用升级或远端规则版本变化时再重新计算策略；每个页面、每一帧都重复采集则没有必要。
 
 若应用最低版本低于示例中的 API 门槛，应保留版本判断。适用范围从 Android 10 开始，`isLowRamDevice`、`memoryClass` 与 `totalMem` 均已可用。
 
@@ -200,7 +200,7 @@ fun resolvePolicy(
 
 ## 会话期压力单独处理
 
-Android 10 起，`PowerManager.getCurrentThermalStatus()` 可读取当前热状态，`isPowerSaveMode()` 可读取省电模式。Android 11 / API 30 增加 `getThermalHeadroom(forecastSeconds)`，参数表示向未来预测 0～60 秒；返回值 `1.0` 对应预计达到 `THERMAL_STATUS_SEVERE` 的阈值；设备不支持时返回 `NaN`。
+Android 10 起，`PowerManager.getCurrentThermalStatus()` 可读取当前热状态，`isPowerSaveMode()` 可读取省电模式。Android 11 / API 30 增加 `getThermalHeadroom(forecastSeconds)`，参数表示向未来预测 0～60 秒；返回值 `1.0` 对应预计达到 `THERMAL_STATUS_SEVERE` 的阈值；设备不支持时返回 `NaN`（Not a Number，用作当前没有有效数值的标记）。
 
 该接口跟踪皮肤温度等慢变化传感器，约一秒以内重复调用没有收益，调用明显过快也可能得到 `NaN`。
 
@@ -273,8 +273,8 @@ class RenderQualityController(
 
 ### 启动
 
-- 保留 Baseline Profile 和 Startup Profile。前者帮助常用方法更早获得 AOT 编译，后者改善启动代码的 DEX 字节码文件布局；较慢设备通常更容易从减少启动工作中受益。
-- 只有 trace 证明并发初始化发生 CPU 争用、锁竞争或 I/O 拥塞时，才减少并发任务；线程少，启动未必更快。
+- 保留 Baseline Profile 和 Startup Profile。前者帮助常用方法更早获得 AOT（ahead-of-time，预先） 编译，后者改善启动代码的 DEX 字节码文件布局；较慢设备通常更容易从减少启动工作中受益。
+- 只有 trace（性能时间线记录） 证明并发初始化发生 CPU 争用、锁竞争或 I/O 拥塞时，才减少并发任务；线程少，启动未必更快。
 - 把非首屏依赖移出启动关键路径，为初始化任务设置明确的触发条件和超时。
 - 不在冷启动期间探测 CPU 峰值、存储吞吐或 GPU 跑分。
 
@@ -293,7 +293,7 @@ class RenderQualityController(
 
 ### 媒体
 
-- 用 Media Performance Class 选择 CDD 已覆盖的体验，再用 `MediaCodecList`、Camera2 characteristics 或图形能力查询确认业务所需特性。
+- 用 Media Performance Class 选择 CDD 已覆盖的体验，再用 `MediaCodecList`、Camera2 characteristics（相机能力属性） 或图形能力查询确认业务所需特性。
 - 编解码器初始化耗时、掉帧与温控表现应进入实验设备组合——厂商驱动质量的差异，靠这些实测来覆盖。
 
 ### 网络与后台任务
@@ -308,7 +308,7 @@ class RenderQualityController(
 
 - APK 内置经过验证的安全默认值。
 - 本地保存上一份通过校验的配置；拉取失败继续使用它。
-- 配置带 `schemaVersion`、`policyRevision`、适用应用版本、过期时间和各项边界。
+- 配置带 `schemaVersion`（格式版本）、`policyRevision`（规则修订号）、适用应用版本、过期时间和各项边界。
 - 未识别字段按兼容规则忽略，越界值拒绝生效。
 - 高风险开关配独立的 kill switch，服务端可快速回退到上一版本。
 - 策略在一个前台会话内保持稳定；运行中收到的新配置先记录，到下一次前台会话再切换。
@@ -328,15 +328,15 @@ class RenderQualityController(
 
 ## 验证分级有没有收益
 
-验证时，我们先给每条策略定一个主要指标和一组护栏指标——护栏就是实验中一旦明显恶化就把实验拦下来的副指标。例如，减少列表预取的主要指标可以是内存峰值，护栏包括滚动卡顿、图片等待时间、网络请求数和用户操作成功率。只看平均 FPS 或平均启动时间，会掩盖长尾和受影响最重的设备。
+验证时，我们先给每条策略定一个主要指标和一组护栏指标——护栏就是实验中一旦明显恶化就把实验拦下来的副指标。例如，减少列表预取的主要指标可以是内存峰值，护栏包括滚动卡顿、图片等待时间、网络请求数和用户操作成功率。只看平均 FPS（每秒帧数） 或平均启动时间，会掩盖长尾和受影响最重的设备。
 
 验证流程可按以下顺序执行：
 
-1. 用 trace 或 heap 数据确认瓶颈归属，明确策略要减少哪类成本。
+1. 用 trace 或 heap（堆内存） 数据确认瓶颈归属，明确策略要减少哪类成本。
 2. 在代表性的设备组合上跑 Macrobenchmark（端到端基准）或场景基准，覆盖冷、温、热启动以及关键交互。
 3. 对每个能力群做随机实验，同时记录策略曝光。
 4. 分别检查 P50、P90、P95、P99 等分位数；例如 P95 表示 95% 的样本不超过该值。失败率、功耗和内存护栏也要同时检查。
-5. 上线后结合 Android vitals 和自有遥测数据，按应用版本、系统版本、策略版本和设备群观察。
+5. 上线后结合 Android vitals（Play Console 提供的稳定性与性能指标） 和自有遥测数据，按应用版本、系统版本、策略版本和设备群观察。
 6. 规则失效或护栏恶化时回退配置，并保留可复现的配置快照。
 
 实验设备要覆盖低 RAM、不同 MPC、主流 SoC 家族、不同屏幕负载和主要系统版本。机型型号用于定位异常就够用；给每个型号长期维护一份手写策略，分支会迅速多到验证不过来。
@@ -374,5 +374,5 @@ class RenderQualityController(
 - [`ComponentCallbacks2` API](https://developer.android.com/reference/android/content/ComponentCallbacks2)：`onTrimMemory()`、API 34 起不再发送的级别与比较方式。
 - [`JobScheduler` API](https://developer.android.com/reference/android/app/job/JobScheduler)：系统配额、运行约束与延后原因。
 - [Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/overview)：AOT 优化与 Startup Profile 的适用方式。
-- [Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)：跨设备场景基准。
+- [Macrobenchmark（端到端性能基准）](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview)：跨设备场景基准。
 - [Device Year Class archive](https://github.com/facebookarchive/device-year-class)：已归档的历史分级实现。

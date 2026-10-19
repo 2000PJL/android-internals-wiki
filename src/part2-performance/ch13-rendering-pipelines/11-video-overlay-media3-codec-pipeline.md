@@ -310,7 +310,7 @@ consolidated_from:
 
 # 视频 Overlay、Media3 与专业编解码管线
 
-视频播放从容器和 ABR 选择进入解码器，经 Surface、BufferQueue 和 HWC 显示。是否使用 tunneled playback 或 overlay 会改变 buffer 流向、音视频同步和功耗；专业视频还叠加格式、色深和编解码能力约束。
+视频播放从容器和 ABR 选择进入解码器，经 Surface、BufferQueue 和 HWC（Hardware Composer，硬件合成器 HAL） 显示。是否使用 tunneled playback 或 overlay 会改变 buffer 流向、音视频同步和功耗；专业视频还叠加格式、色深和编解码能力约束。
 
 > 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；内核 `android17-6.18-2026-06_r6`。
 
@@ -320,7 +320,7 @@ consolidated_from:
 
 ### SurfaceView 给 Overlay 留下了什么
 
-排查视频功耗或掉帧时，我们要先回答一个问题：这一帧视频有没有走显示硬件合成。这里的 Overlay 指显示硬件直接参与某个 Layer 的合成，视频像素无须先由 RenderEngine/GPU 采样进 client target。“使用 `SurfaceView`，视频就会走 Overlay 并绕过 GPU”的说法漏掉了逐帧协商这一条件：`SurfaceView` 会为视频保留独立的 SurfaceFlinger Layer，让 HWC 有机会把它判为 `DEVICE`；最终是否采用显示硬件合成，要等 SurfaceFlinger 把当前帧的完整 Layer 栈交给 HWC 后才能确定。视频格式、缩放、旋转、HDR、受保护属性、叠加 UI、可用 plane 数量和显示带宽都会影响这一帧的选择；plane 是显示硬件可独立读取、缩放或混合一路图像的资源。
+排查视频功耗或掉帧时，我们要先回答一个问题：这一帧视频有没有走显示硬件合成。这里的 Overlay 指显示硬件直接参与某个 Layer 的合成，视频像素无须先由 RenderEngine/GPU 采样进 client target。“使用 `SurfaceView`，视频就会走 Overlay 并绕过 GPU”的说法漏掉了逐帧协商这一条件：`SurfaceView` 会为视频保留独立的 SurfaceFlinger Layer（合成单元），让 HWC 有机会把它判为 `DEVICE`；最终是否采用显示硬件合成，要等 SurfaceFlinger 把当前帧的完整 Layer 栈交给 HWC 后才能确定。视频格式、缩放、旋转、HDR、受保护属性、叠加 UI、可用 plane 数量和显示带宽都会影响这一帧的选择；plane 是显示硬件可独立读取、缩放或混合一路图像的资源。
 
 所以我们把问题拆成四问：
 
@@ -380,7 +380,7 @@ requested present timestamp 只表达期望时间，离显示完成凭据还远�
 | Layer release fence | HWC 读取 Layer → buffer 回到生产者 | 本次显示使用已结束，该 buffer 才可安全复用 |
 | Display present fence | 本次显示提交 → 显示硬件完成相应工作 | 表示整帧 present 的完成边界；是否可当作精确上屏时刻还受 `PRESENT_FENCE_IS_NOT_RELIABLE` 能力影响 |
 
-acquire 与 release 的名称描述某次 buffer 所有权交接的两端；离开具体的交接关系，单看名称还确定不了等待落在 codec、GPU 还是显示端。Android 的 fence 最终由内核 `dma_fence` 表示，跨进程 fd 封装由 `sync_file` 提供。`PRESENT_FENCE_IS_NOT_RELIABLE` 则表示设备声明 present fence 不适合用作精确显示时刻。排查时我们无须记忆 fd 编号，沿生产者、SurfaceFlinger、Composer HAL、显示驱动逐段确认等待关系即可，否则很容易把解码慢、排队晚、fence 晚和显示提交晚都归为“视频掉帧”。
+acquire 与 release 的名称描述某次 buffer 所有权交接的两端；离开具体的交接关系，单看名称还确定不了等待落在 codec、GPU 还是显示端。Android 的 fence 最终由内核 `dma_fence` 表示，跨进程 fd（文件描述符） 封装由 `sync_file` 提供。`PRESENT_FENCE_IS_NOT_RELIABLE` 则表示设备声明 present fence 不适合用作精确显示时刻。排查时我们无须记忆 fd 编号，沿生产者、SurfaceFlinger、Composer HAL、显示驱动逐段确认等待关系即可，否则很容易把解码慢、排队晚、fence 晚和显示提交晚都归为“视频掉帧”。
 
 ### SurfaceView、TextureView 与自定义 GPU 路径
 
@@ -447,7 +447,7 @@ validate 是 SurfaceFlinger 与 HWC 对本帧合成分工的确认过程；非 s
 在 Android 17 的 `HWComposer::getDeviceCompositionChanges()` 中，设备声明 capability 并不会让 `canSkipValidate` 自动成立。framework 还会检查两个前置条件：
 
 - 本帧此刻尚未需要 client composition；
-- 若存在 `earliestPresentTime`，当前 steady clock 必须已到达该时间；如果 Composer 支持 expected present time，framework 可以把期望时间交给 Composer，因而不必在这里等待。
+- 若存在 `earliestPresentTime`，当前 steady clock（单调递增的稳定时钟） 必须已到达该时间；如果 Composer 支持 expected present time，framework 可以把期望时间交给 Composer，因而不必在这里等待。
 
 条件满足后，SurfaceFlinger 调用 `presentOrValidate()`。返回 `PresentSucceeded` 表示这次调用已经完成 present 阶段，framework 会直接保存 release fence 和 present fence，固定流程里再调一次 `presentDisplay()` 的步骤就此省掉。若返回 validate 结果，framework 仍要处理 changed types，并在需要时执行 client composition。
 
@@ -502,7 +502,7 @@ Android 17 公开的 `HardwareBuffer.USAGE_PROTECTED_CONTENT` 与 graphics commo
 
 ### 帧率匹配与 Overlay 是两条问题线
 
-视频 Layer 已经是 `DEVICE`，仍可能出现 judder，也就是帧间节奏不均带来的周期性顿挫；视频 Layer 是 `CLIENT`，也不一定掉帧。所以我们把两条问题线分开看：
+视频 Layer 已经是 `DEVICE`，仍可能出现 judder（因帧间节奏不均产生的周期性顿挫），也就是帧间节奏不均带来的周期性顿挫；视频 Layer 是 `CLIENT`，也不一定掉帧。所以我们把两条问题线分开看：
 
 - **合成路径**：`CLIENT`、`DEVICE` 还是 `SIDEBAND`；
 - **节奏与时序**：codec 输出 PTS（Presentation Timestamp，期望呈现时间）、`releaseOutputBuffer()` 时间、BufferQueue desired present、SurfaceFlinger latch、显示刷新率和 present fence。
@@ -661,7 +661,7 @@ flowchart LR
     AT --> V
 ```
 
-Media3 负责解析 manifest（媒体清单）、下载 segment、维护播放 buffer，再从可用 track（不同码率、分辨率或语言的轨道）里选出当前档位。`MediaCodec` 是应用可见的 codec 控制接口，Stagefright 是其 native 媒体框架，再把请求交给 CCodec/Codec2 或 ACodec/OMX。普通视频帧经 Surface 的 BufferQueue 到达 SurfaceFlinger；tunnel 模式则把 sideband handle 绑定到 layer，逐帧选择主要由 codec、音频同步硬件和 HWC 完成。
+Media3 负责解析 manifest（媒体清单）、下载 segment（媒体分片）、维护播放 buffer，再从可用 track（不同码率、分辨率或语言的轨道）里选出当前档位。`MediaCodec` 是应用可见的 codec 控制接口，Stagefright 是其 native 媒体框架，再把请求交给 CCodec/Codec2 或 ACodec/OMX。普通视频帧经 Surface 的 BufferQueue 到达 SurfaceFlinger；tunnel 模式则把 sideband handle 绑定到 layer，逐帧选择主要由 codec、音频同步硬件和 HWC 完成。
 
 拿到现象后，我们先按这张表归位：
 
@@ -720,7 +720,7 @@ Android 10 已把可更新的软件 Codec2 组件纳入 Media Codecs APEX（可�
 
 #### 低延迟、HDR 与动态元数据属于组合能力
 
-Android 11 / API 30 起，应用可在 codec 声明 `FEATURE_LowLatency` 后设置 `MediaFormat.KEY_LOW_LATENCY`。这项能力要求 decoder 避免额外持有超过编码标准需要的数据，但编码结构所需的 B-frame 重排、吸收网络抖动的 jitter buffer、Surface 排队和显示 VSync 仍可能贡献延迟；运行时还可通过 `PARAMETER_KEY_LOW_LATENCY` 调整。
+Android 11 / API 30 起，应用可在 codec 声明 `FEATURE_LowLatency` 后设置 `MediaFormat.KEY_LOW_LATENCY`。这项能力要求 decoder 避免额外持有超过编码标准需要的数据，但编码结构所需的 B-frame 重排、吸收网络抖动的 jitter buffer（吸收网络抖动的缓冲）、Surface 排队和显示 VSync 仍可能贡献延迟；运行时还可通过 `PARAMETER_KEY_LOW_LATENCY` 调整。
 
 验收要同时记录 codec name、profile/level、首帧、稳态掉帧、功耗和热状态；固定延迟从 API 可用性里是推不出来的。
 
@@ -734,7 +734,7 @@ HDR、Dolby Vision、secure、high-frame-rate、low-latency 与 tunnel 要按实
 
 要走通这条路径，低层播放器要同时满足这些条件：
 
-1. 低层平台接入时，选中的 video decoder 必须支持 `MediaCodecInfo.CodecCapabilities.FEATURE_TunneledPlayback`；audio output 还要能建立 hardware A/V sync，也就是让音视频硬件共享同一个时间基准。Media3 会进一步检查已选 audio、video renderer 的 tunneling support。
+1. 低层平台接入时，选中的 video decoder 必须支持 `MediaCodecInfo.CodecCapabilities.FEATURE_TunneledPlayback`；audio output 还要能建立 hardware A/V sync（让音视频硬件共享同步时间基准），也就是让音视频硬件共享同一个时间基准。Media3 会进一步检查已选 audio、video renderer 的 tunneling support。
 2. 点播场景创建一个有效的 audio session id，并让 `AudioTrack` 与视频 `MediaCodec` 使用同一个 id。
 3. `AudioTrack` 使用带 `AudioAttributes.FLAG_HW_AV_SYNC` 的输出路径，并持续接收带 PTS 的音频数据。只把视频格式标成 tunneled，这条同步关系是建立不起来的。
 4. 输出使用 `SurfaceView` 提供的 Surface。官方低层接入步骤也以 `SurfaceView` 为承载面。
@@ -822,7 +822,7 @@ Media3 1.10.1 的 `DefaultBandwidthMeter` 在一次符合计量条件的全速�
 
 `sampleBitrate = sampleBytesTransferred * 8000 / sampleElapsedTimeMs`
 
-样本以 `sqrt(sampleBytesTransferred)` 作为权重放入 `SlidingPercentile`，按最近的加权样本求分位数。累计传输时间达到 2 秒，或累计字节达到 512 KiB 后，使用 0.5 分位数，即加权中位数，更新 `bitrateEstimate`。尚无足够样本时，初始值按网络类型与国家/地区分组选择；未知或离线的默认初值为 1 Mbps。
+样本以 `sqrt(sampleBytesTransferred)` 作为权重放入 `SlidingPercentile`（按最近加权样本求分位数的窗口），按最近的加权样本求分位数。累计传输时间达到 2 秒，或累计字节达到 512 KiB 后，使用 0.5 分位数，即加权中位数，更新 `bitrateEstimate`。尚无足够样本时，初始值按网络类型与国家/地区分组选择；未知或离线的默认初值为 1 Mbps。
 
 这些阈值属于 Media3 1.10.1 库实现，和 Android 17 平台常量是两回事。更换 Media3 版本后应重新核对源码；设备 API level 在这里帮不上忙。
 
@@ -849,7 +849,7 @@ Media3 1.10.1 的 `AdaptiveTrackSelection` 默认值为：
 
 1.10.1 的 `DefaultBandwidthMeter` 没有覆盖 `BandwidthMeter.getTimeToFirstByteEstimateUs()`，因此使用接口默认值 `TIME_UNSET`；`ExperimentalBandwidthMeter` 则通过 `TimeToFirstByteEstimator` 提供估计。
 
-多条 adaptive selection 共用带宽时，factory 生成的 adaptation checkpoints——把总带宽映射到各自可分配带宽的检查点——还会参与预算分配。因此，`track bitrate < 0.7 × bandwidth estimate` 只覆盖最简单的一种近似，会漏掉直播、倍速、可选 TTFB 和并行选择影响。
+多条 adaptive selection 共用带宽时，factory 生成的 adaptation checkpoints（把总带宽映射到各自可分配带宽的检查点）——把总带宽映射到各自可分配带宽的检查点——还会参与预算分配。因此，`track bitrate < 0.7 × bandwidth estimate` 只覆盖最简单的一种近似，会漏掉直播、倍速、可选 TTFB 和并行选择影响。
 
 `updateSelectedTrack()` 先根据当前带宽预算求出理想档位，再用 buffer 健康度抑制过快切换：
 
@@ -885,7 +885,7 @@ Perfetto 能观察调度、binder、频率、BufferQueue、SurfaceFlinger、HWC 
 
 普通 SurfaceView 路径可按下面顺序复原：
 
-`segment complete → input PTS → codec output → releaseOutputBuffer(timestamp) → queueBuffer → SF latch → HWC present`
+`segment（独立录制片段） complete → input PTS → codec output → releaseOutputBuffer(timestamp) → queueBuffer → SF latch → HWC present`
 
 TextureView 要在 codec queue 之后加上：
 
@@ -901,7 +901,7 @@ Tunnel 的逐帧 decoded buffer 不走普通 BufferQueue 形态，常规 `Buffer
 
 - content/session id、Media3 版本、Android build fingerprint；
 - selected track、selection reason、码率、分辨率、帧率和 MIME；
-- bandwidth estimate、TTFB、buffered duration、live offset；
+- bandwidth estimate、TTFB、buffered duration、live offset（当前播放点落后直播最新位置的时间）；
 - codec name、CCodec/ACodec、secure、HDR、tunnel；
 - SurfaceView/TextureView、display mode、requested frame rate；
 - AudioTrack session、route、underrun 和 timestamp；
@@ -937,7 +937,7 @@ Android 17 增加 VVC/H.266 的 framework MIME、MediaCodec/Codec2 API 与 MP4 e
 
 Tunnel 倍速播放还依赖设备的音频与视频硬件能力。官方实现建议我们把 `MediaFormat.KEY_OPERATING_RATE` 设为内容帧率与倍速的乘积，例如 60 fps 内容以 2 倍速播放时请求 120 fps。该值表达 decoder 所需处理速率，不保证当前 codec 在 secure/HDR/tunnel 组合下可以达到。
 
-Media3 Transformer 的离线转码不属于这里讨论的播放路径。Transformer 还涉及 decoder、effect、encoder、muxer、GPU/CPU 和文件 I/O，应单独分析。
+Media3 Transformer 的离线转码不属于这里讨论的播放路径。Transformer 还涉及 decoder、effect、encoder、muxer（封装音视频轨道）、GPU/CPU 和文件 I/O，应单独分析。
 
 ### Kernel 证据边界
 
@@ -1168,14 +1168,14 @@ XML 为软编码器声明 VBR（Variable Bitrate，可变码率）、CQ 和 `qua
 
 #### 422-10 码流的输出像素格式
 
-AOSP 软编码器默认接受 implementation-defined 和 `YCBCR_420_888`，前者的具体布局由 framework 与设备选择。硬件缓冲区能力允许时，候选格式还包括 P010、P210 与 RGBA1010102。编码前，组件会把不同输入转换成 P210 或内部的 4:2:2 10-bit 表示。由此可得两条工程结论：
+AOSP 软编码器默认接受 implementation-defined（由 framework 与设备选择具体布局） 和 `YCBCR_420_888`，前者的具体布局由 framework 与设备选择。硬件缓冲区能力允许时，候选格式还包括 P010、P210 与 RGBA1010102。编码前，组件会把不同输入转换成 P210 或内部的 4:2:2 10-bit 表示。由此可得两条工程结论：
 
 1. Camera → codec 的 Surface 链路可能避免应用侧 CPU 拷贝，但 codec 内部有没有像素格式转换，从这里是看不出来的。
-2. Camera 能建立 10-bit/HDR session，也说明不了它可以直接用 P210 向 APV encoder 供帧。Camera stream combination——同一 capture session 允许同时配置的输出组合——与 codec 输入能力需要分别查询。
+2. Camera 能建立 10-bit/HDR session，也说明不了它可以直接用 P210 向 APV encoder 供帧。Camera stream combination（同一 capture session 允许同时配置的输出组合）——同一 capture session 允许同时配置的输出组合——与 codec 输入能力需要分别查询。
 
 `C2SoftApvDec.cpp` 的默认输出像素格式是 `HAL_PIXEL_FORMAT_YCBCR_420_888`；平台支持时，候选还包括 P010、P210、RGBA1010102 和 implementation-defined。实际申请 buffer 时，默认 `YCBCR_420_888` 路径会使用 YV12；显式请求且平台支持 P210、P010 或 RGBA1010102 时，代码先按请求格式申请，请求 implementation-defined 或目标格式不可用时，再按 P210、P010、RGBA1010102、YV12 的顺序回退。
 
-P010 是 4:2:0 10-bit 半平面 YUV，P210 是 4:2:2 10-bit，YV12 通常是 4:2:0 8-bit，RGBA1010102 则为每个 R/G/B 通道 10 bit、alpha 通道 2 bit。剪辑或调色 App 若要保留 4:2:2 与 10-bit，我们要核对 decoder 的 `colorFormats`、configure 后的 output format，以及实际收到的 `Image` 或 `HardwareBuffer` 格式。只看 APV bitstream profile，会漏掉输出阶段的色度降采样或位深损失。
+P010 是 4:2:0 10-bit 半平面 YUV，P210 是 4:2:2 10-bit，YV12 通常是 4:2:0 8-bit，RGBA1010102 则为每个 R/G/B 通道 10 bit、alpha 通道 2 bit。剪辑或调色 App 若要保留 4:2:2 与 10-bit，我们要核对 decoder 的 `colorFormats`、configure 后的 output format，以及实际收到的 `Image` 或 `HardwareBuffer` 格式。只看 APV bitstream（编码码流） profile，会漏掉输出阶段的色度降采样或位深损失。
 
 ### 码率、内存带宽和存储要用同一组规格计算
 
@@ -1231,7 +1231,7 @@ flowchart LR
 
 Android 的 `MediaMuxer` 从 API 36 起支持把 APV 写入 MP4。`android-17.0.0_r1` 的 `MPEG4Writer.cpp` 使用 `apv1` sample entry 标识 MP4 中的 APV track，并把解码该轨道所需的 codec-specific data（编解码器配置数据）写入 `apvC` box。APV 编码器可用，也推不出 WebM、3GP 或自定义容器能直接接收同一输出；平台公开支持表只为 APV 标出 MP4。
 
-应用走 scoped storage、共享媒体经 MediaStore 统一管理时，可以把 `MediaStore` 返回的 `FileDescriptor` 交给 `MediaMuxer`。在 `stop()` 成功、文件能够重新打开并通过基本解码校验前，应保持 `IS_PENDING=1`，校验通过后再发布。进程被杀、存储断开、空间耗尽或 `stop()` 抛出异常时，MP4 可能尚未写完索引等必要结构。这类文件应进入待恢复或安全删除状态，直接标成成功素材是会误导用户的。
+应用走 scoped storage（应用通过 MediaStore 管理共享媒体的存储模型）、共享媒体经 MediaStore 统一管理时，可以把 `MediaStore` 返回的 `FileDescriptor` 交给 `MediaMuxer`。在 `stop()` 成功、文件能够重新打开并通过基本解码校验前，应保持 `IS_PENDING=1`，校验通过后再发布。进程被杀、存储断开、空间耗尽或 `stop()` 抛出异常时，MP4 可能尚未写完索引等必要结构。这类文件应进入待恢复或安全删除状态，直接标成成功素材是会误导用户的。
 
 写入队列必须设置容量上限。muxer 或文件系统变慢时，无限缓存 encoder output 会让存储停顿进一步演变为内存耗尽。产品可以按风险停止录制、降低下一段录制的规格，或提示用户切换存储；同一个 MP4 track 里静默更换 codec 是要避免的。
 

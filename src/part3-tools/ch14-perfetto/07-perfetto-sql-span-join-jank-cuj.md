@@ -91,13 +91,13 @@ consolidated_from:
 
 # Perfetto SQL、SPAN_JOIN 与 Jank CUJ
 
-Perfetto UI 适合寻找可疑时间段，SQL 适合回答能复查的定量问题：某一帧错过了多少时间预算，主线程在分析窗口内运行了多久，Binder 客户端时间由哪些调度状态组成，一次 GC 从开始到结束的实际耗时中有多少时间在等待 CPU。我们把这种实际经过的时间称为“墙上时间”，其中既有线程运行时间，也有等待时间。
+Perfetto UI 适合寻找可疑时间段，SQL 适合回答能复查的定量问题：某一帧错过了多少时间预算，主线程在分析窗口内运行了多久，Binder（Android 的进程间通信机制） 客户端时间由哪些调度状态组成，一次 GC（垃圾回收） 从开始到结束的实际耗时中有多少时间在等待 CPU。我们把这种实际经过的时间称为“墙上时间”，其中既有线程运行时间，也有等待时间。
 
-查询结果只覆盖 Trace 里已经采集到的事件。FrameTimeline（帧的期望与实际时间线）、调度、Binder 或 ART 事件缺失时，空表说明的是“Trace 里没有这条数据”，系统是否发生过对应行为要结合采集配置判断；我们先检查数据源，再下结论。
+查询结果只覆盖 Trace 里已经采集到的事件。FrameTimeline（帧的期望与实际时间线）、调度、Binder（Android 进程间通信） 或 ART（Android Runtime） 事件缺失时，空表说明的是“Trace 里没有这条数据”，系统是否发生过对应行为要结合采集配置判断；我们先检查数据源，再下结论。
 
 > 源码基线：Android 17 / API 37 / `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。查询已按该版源码中的表结构复核，主机侧验证版本固定为 Trace Processor v57.2，换版本时需重新检查模块、列和查询结果。
 
-本文示例优先使用 Android 17 Perfetto SQL 标准库，需要理解原始数据时再回到 `slice`、`sched`、`thread_state` 和 `counter` 等基础表。做法上，我们先用表和视图筛出问题窗口，再通过时间跨度关联把线程、帧、调度和业务事件放到同一窗口；Jank CUJ 标准库提供现成语义，DataGrid 负责交互查询和结果检查。
+本文示例优先使用 Android 17 Perfetto SQL 标准库，需要理解原始数据时再回到 `slice`（时间轴区间事件）、`sched`、`thread_state` 和 `counter` 等基础表。做法上，我们先用表和视图筛出问题窗口，再通过时间跨度关联把线程、帧、调度和业务事件放到同一窗口；Jank CUJ 标准库提供现成语义，DataGrid 负责交互查询和结果检查。
 
 ## 数据模型、窗口选择与基础查询
 
@@ -208,7 +208,7 @@ ORDER BY ts;
 帧分析还要区分三个量：
 
 - `Choreographer#doFrame` 的 `dur` 是 UI 线程回调区间，可用于定位 UI 线程工作。
-- FrameTimeline 的期望/实际区间用于判断帧是否按期呈现。
+- FrameTimeline（系统记录的帧期望与实际时间线） 的期望/实际区间用于判断帧是否按期呈现。
 - 刷新周期会随显示模式和可变刷新率变化，固定的 16.67 ms 或 8.33 ms 代替不了每帧截止时间。
 
 ### 帧时间与卡顿分析
@@ -248,7 +248,7 @@ FROM do_frames;
 
 #### FrameTimeline 给出系统判帧依据
 
-FrameTimeline 从 Android 12 / API 31 开始提供每帧的期望与实际时间线。`actual_frame_timeline_slice` 包含 `jank_type`、`jank_severity_type`、`on_time_finish` 和 `present_type` 等平台判定；`android.frames.timeline` 会把 UI 线程的 `Choreographer#doFrame`、RenderThread 的 `DrawFrame` 与时间线事件整理为 `android_frames`。
+FrameTimeline 从 Android 12 / API 31 开始提供每帧的期望与实际时间线。`actual_frame_timeline_slice` 包含 `jank_type`、`jank_severity_type`、`on_time_finish` 和 `present_type` 等平台判定；`android.frames.timeline` 会把 UI 线程的 `Choreographer#doFrame`、RenderThread（应用渲染线程） 的 `DrawFrame` 与时间线事件整理为 `android_frames`。
 
 `android_frames` 目前有几个已知限制：同一帧可能关联多个 `layer`（由系统合成的显示图层），表会聚合它们；当前实现只选第一个 `DrawFrame`，源码保留了对应待改进项；缺失或重复时间线事件时，`actual_frame_timeline_count` 与 `draw_frame_count` 会暴露异常。自动化统计应保留这些完整性列，避免把关联异常算成正常帧。
 
@@ -282,7 +282,7 @@ WHERE frames.process_name = 'com.example.app'
 ORDER BY frames.ts;
 ```
 
-`deadline_overrun_ms > 0` 表示实际结束时间晚于期望结束时间，负值表示仍有余量。`jank_type` 由平台记录，可继续区分应用、SurfaceFlinger、调度等类别。表为空时，应检查采集配置、Android 版本与目标进程是否产生了 FrameTimeline 数据。
+`deadline_overrun_ms > 0` 表示实际结束时间晚于期望结束时间，负值表示仍有余量。`jank_type` 由平台记录，可继续区分应用、SurfaceFlinger（Android 的显示合成服务）、调度等类别。表为空时，应检查采集配置、Android 版本与目标进程是否产生了 FrameTimeline 数据。
 
 按平台标签聚合帧数与超额分布，适合比较同一测试方案的多次运行。查询不设置跨设备通用的“卡顿率及格线”。
 
@@ -450,7 +450,7 @@ GROUP BY state, io_wait, blocked_function
 ORDER BY SUM(dur) DESC;
 ```
 
-较长的 `R` / `R+` 区间说明线程已经具备运行条件，却在运行队列中等待。它可能来自 CPU 争用、优先级、CPU 亲和性、`cgroup` 的配额或调度限制，也可能来自频率策略，归因时要把这些因素放在一起看。较长的 `S` 也要与 Binder、`futex`（同步原语争用时的内核等待）、monitor（Java `synchronized` 使用的对象锁）竞争和应用 `slice` 对时。
+较长的 `R` / `R+` 区间说明线程已经具备运行条件，却在运行队列中等待。它可能来自 CPU 争用、优先级、CPU 亲和性、`cgroup`（控制组的 CPU 配额或调度限制） 的配额或调度限制，也可能来自频率策略，归因时要把这些因素放在一起看。较长的 `S` 也要与 Binder、`futex`（同步原语争用时的内核等待）、monitor（Java `synchronized` 使用的对象锁）竞争和应用 `slice` 对时。
 
 列出最长的 `Runnable` 区间及唤醒方，可以从汇总值回到具体时刻，并定位谁把主线程唤醒。
 
@@ -492,7 +492,7 @@ LIMIT 30;
 
 `android.binder` 模块同时整理同步事务和 `oneway` 异步事务。同步事务中，`client_dur` 覆盖客户端发起调用到收到回复的墙上时间，`server_dur` 覆盖服务端处理与回复区间；异步事务没有同步等待关系，客户端发送与服务端接收可能相隔较远，统计时我们按 `is_sync` 分组。
 
-`interface`、`method_name` 与 `aidl_name` 依赖 AIDL 或 HIDL（硬件抽象层接口定义语言）追踪 `slice`。字段为空时，事务配对仍可能有效，只是 Trace 里缺少接口名。
+`interface`、`method_name` 与 `aidl_name` 依赖 AIDL（Android Interface Definition Language） 或 HIDL（硬件抽象层接口定义语言）追踪 `slice`。字段为空时，事务配对仍可能有效，只是 Trace 里缺少接口名。
 
 `client_monotonic_dur` 和 `server_monotonic_dur` 使用剔除全机休眠时间的单调时钟计时；分析用户感知延迟时仍要保留墙上时间对照。
 
@@ -621,9 +621,9 @@ ORDER BY counter.ts;
 
 #### 平台启动事件优先于手工拼 `slice`
 
-手工用 `bindApplication` 到第一个 `doFrame` 推导冷启动，容易漏掉 `system_server` 发起阶段、`RenderThread` 渲染、可见帧以及热启动分支。
+手工用 `bindApplication` 到第一个 `doFrame` 推导冷启动，容易漏掉 `system_server`（承载 Android 核心系统服务的进程） 发起阶段、`RenderThread` 渲染、可见帧以及热启动分支。
 
-`android.startup.startups` 会按 Trace 中记录的 SDK 版本与事件格式选择解析路径，输出 `android_startups` 和 `android_startup_processes`。`android.startup.time_to_display` 继续关联首帧与 `reportFullyDrawn()`，给出 TTID 与 TTFD。
+`android.startup.startups` 会按 Trace 中记录的 SDK 版本与事件格式选择解析路径，输出 `android_startups` 和 `android_startup_processes`。`android.startup.time_to_display` 继续关联首帧与 `reportFullyDrawn()`，给出 TTID（Time To Initial Display，首次显示耗时） 与 TTFD（Time To Full Display，完全显示耗时）。
 
 列出目标包的启动区间与显示时间，可以保留平台识别的 `cold`、`warm`、`hot` 分类。这三类对应进程和 Activity 是否已经存在的不同启动路径，命名跟耗时长短无关；查询同时区分启动区间、首次显示与完全显示。
 
@@ -720,13 +720,13 @@ ORDER BY startup.startup_id, summed_client_ms DESC;
 
 各事务可能互相重叠，`summed_client_ms` 是事务时长之和，与启动区间内的独占时间是两个概念；同步主线程事务更接近直接阻塞候选，后台线程或异步事务需要继续核对依赖关系。
 
-### ANR 分析
+### ANR（Application Not Responding，应用无响应） 分析
 
 #### ANR 超时因类型而异
 
 输入分发超时常见默认值为 5 秒，Broadcast、Service、JobService、前台服务和 `system_server` 看门狗使用不同规则；这里的看门狗是检测系统线程长时间无响应的超时机制。OEM（设备厂商）与前后台状态还可能改写超时。
 
-`android.anrs` 模块会从 `system_server` 的 ErrorId、Subject 与计时事件中解析 `anr_type`、`anr_dur_ms` 和 `default_anr_dur_ms`；源码也明确标注默认值仅对应 AOSP / Pixel 的常见配置。
+`android.anrs` 模块会从 `system_server` 的 ErrorId、Subject 与计时事件中解析 `anr_type`、`anr_dur_ms` 和 `default_anr_dur_ms`；源码也明确标注默认值仅对应 AOSP（Android Open Source Project） / Pixel 的常见配置。
 
 查询 Trace 中的 ANR，可以检查解析出的类型、主题和时长。这个入口比按日志文字模糊搜索更可靠。
 
@@ -820,7 +820,7 @@ GROUP BY state, io_wait, blocked_function
 ORDER BY SUM(overlap_dur) DESC;
 ```
 
-结果的解释依赖状态：大量 `Running` 要结合调用栈和 `slice` 找 CPU 工作；大量 `R` / `R+` 指向调度排队；`D` 且 `io_wait = 1` 指向内核 I/O 等待；`S` 还需检查 Binder 回复、`futex`、monitor contention 与应用等待事件。`blocked_function` 记录的是内核侧阻塞点，Java 层持锁者不在它的视野内。
+结果的解释依赖状态：大量 `Running` 要结合调用栈和 `slice` 找 CPU 工作；大量 `R` / `R+` 指向调度排队；`D` 且 `io_wait = 1` 指向内核 I/O 等待；`S` 还需检查 Binder 回复、`futex`（用户空间同步原语发生争用时使用的内核等待机制）、monitor contention 与应用等待事件。`blocked_function` 记录的是内核侧阻塞点，Java 层持锁者不在它的视野内。
 
 ### 锁竞争与同步分析
 
@@ -1899,7 +1899,7 @@ DataGrid 最适合承载“窄表”：一行表示一个 CUJ、一帧或一段�
 
 ### 系统 Jank CUJ 的三组输入
 
-系统的 Jank CUJ 指标汇合三组独立数据。FrameTimeline 同时记录一帧原本应在何时完成的 expected timeline，以及它实际完成时刻的 actual timeline；vsync ID 用于标识对应帧。
+系统的 Jank CUJ 指标汇合三组独立数据。FrameTimeline 同时记录一帧原本应在何时完成的 expected timeline，以及它实际完成时刻的 actual timeline；vsync（垂直同步） ID 用于标识对应帧。
 
 | 输入 | 产生者 | 在指标中的用途 |
 |---|---|---|
@@ -1907,7 +1907,7 @@ DataGrid 最适合承载“窄表”：一行表示一个 CUJ、一帧或一段�
 | `J<CUJ_NAME>#totalFrames`、`#weightedAppJank` 等计数器 | Java `FrameTracker.finishTraced()` | 提供 CUJ 结束后的聚合计数 |
 | expected / actual FrameTimeline、`jank_type`、`jank_score` | SurfaceFlinger FrameTimeline | 给出逐帧时序与 App / SF（SurfaceFlinger）分类 |
 
-HWUI 的 C++ `JankTracker` 是另一套帧统计实现：它计算 `kMissedDeadline`、`kSlowUI`、`kSlowSync`、`kSlowRT` 等本地帧指标，通过 FrameMetrics 帧时序报告接口上报，而 `android_jank_cuj` 所需的 Java FrameTracker 计数器仍由 Java 侧产生。两个类名相近，数据来源与职责要分清。[Android 17 Java FrameTracker](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/jank/FrameTracker.java) [Android 17 HWUI JankTracker](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/JankTracker.cpp)
+HWUI（Android 硬件加速 UI 渲染器） 的 C++ `JankTracker` 是另一套帧统计实现：它计算 `kMissedDeadline`、`kSlowUI`、`kSlowSync`、`kSlowRT` 等本地帧指标，通过 FrameMetrics 帧时序报告接口上报，而 `android_jank_cuj` 所需的 Java FrameTracker 计数器仍由 Java 侧产生。两个类名相近，数据来源与职责要分清。[Android 17 Java FrameTracker](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/jank/FrameTracker.java) [Android 17 HWUI JankTracker](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/JankTracker.cpp)
 
 `android.cujs.base` 对输入有明确限制：
 

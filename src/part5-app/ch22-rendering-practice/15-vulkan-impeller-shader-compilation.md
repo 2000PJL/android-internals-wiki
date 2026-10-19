@@ -172,7 +172,7 @@ OpenGL ES 应用可能用设备的原生 GLES 驱动，也可能经 ANGLE 把 GL
 - 着色器阶段及其 SPIR-V；
 - 管线布局、描述符集布局（descriptor set layout）和推送常量（push constant）的范围；
 - 顶点输入（vertex input）、图元拓扑、光栅化、深度/模板和混合状态；
-- 渲染过程及其子过程（render pass / subpass），或动态渲染（dynamic rendering）所用颜色、深度等附件的格式；
+- 渲染过程及其子过程（render pass / subpass），或动态渲染（dynamic rendering）所用颜色、深度等附件（attachment）的格式；
 - 采样数（sample count）、创建管线时固定的专门化常量（specialization constant），以及未声明为动态状态（dynamic state）的其他状态；
 - 驱动版本、GPU 设备及驱动内部策略。
 
@@ -336,7 +336,7 @@ mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 1, &mAHBUploadQueue);
 - `CreateGraphicsPipeline-CompileAfterCacheMiss`
 - `CreateGraphicsPipeline-CacheLookupOrCompile`
 
-这些名称只在相应 Graphite 构建和跟踪配置中有意义。AOSP 没有一条对所有应用保证存在的 `gpu.graphite` 轨道；track 在 Perfetto 里指按线程或数据源组织的一行时间数据。标准 HWUI 用的是 Ganesh，就算看到 `RenderThread` 的 `flush` 区间变长，也谈不上认定 Graphite 任务正在等待。
+这些名称只在相应 Graphite 构建和跟踪配置中有意义。AOSP 没有一条对所有应用保证存在的 `gpu.graphite` 轨道（track，即 Perfetto 中按线程或数据源组织的一行时间数据）；track 在 Perfetto 里指按线程或数据源组织的一行时间数据。标准 HWUI 用的是 Ganesh，就算看到 `RenderThread` 的 `flush` 区间变长，也谈不上认定 Graphite 任务正在等待。
 
 Graphite 的 Vulkan 实现仍提供了一种可参考的控制方式：设备支持管线创建缓存控制（pipeline creation cache control）时，它先带 `FAIL_ON_PIPELINE_COMPILE_REQUIRED` 查询缓存；收到 `VK_PIPELINE_COMPILE_REQUIRED` 后，去掉该标志，再执行允许编译的调用。原生 Vulkan 引擎可以采用相同思路，但必须自行安排编译线程和降级管线。
 
@@ -504,7 +504,7 @@ Vulkan 1.3 核心类型 `VkPipelineCreationFeedback`（或对应的扩展别名�
 
 #### 2. 图形管线库
 
-`VK_EXT_graphics_pipeline_library` 可以把图形管线拆成四部分——顶点输入接口、光栅化前着色器、片段着色器和片段输出接口（vertex input interface / pre-rasterization shaders / fragment shader / fragment output interface）。应用可以复用公共部分，再把它们链接为可执行管线。该扩展依赖 `VK_KHR_pipeline_library`，并提供独立的功能位和属性（properties）；属性是描述设备支持程度的只读值，应用启用不了它。
+`VK_EXT_graphics_pipeline_library` 可以把图形管线拆成四部分——顶点输入接口（vertex input interface）、光栅化前着色器（pre-rasterization shaders）、片段着色器（fragment shader）和片段输出接口（vertex input interface / pre-rasterization shaders / fragment shader / fragment output interface）。应用可以复用公共部分，再把它们链接为可执行管线。该扩展依赖 `VK_KHR_pipeline_library`，并提供独立的功能位和属性（properties）；属性是描述设备支持程度的只读值，应用启用不了它。
 
 应用需要查询并启用 `graphicsPipelineLibrary` 功能位。`graphicsPipelineLibraryFastLinking` 属性会影响即时链接策略：值为 `VK_TRUE` 时，不使用链接时优化的链接成本应与录制一条命令相近；值为 `VK_FALSE` 时，链接通常仍比完整编译便宜，“成本接近命令录制”这个假定就要收回了。链接时优化（link-time optimization）还可能用更长的创建时间换取更好的运行性能。
 
@@ -634,7 +634,7 @@ AGI 能看到一帧内的 API 调用和 GPU 工作；长时间加载阶段光靠
 
 - 编译线程或 `RenderThread` 是否获得 CPU；
 - 唤醒后是否长时间等待调度；
-- `dma-fence` / `sync_file` 何时发出完成信号——这两个机制负责把同步完成状态从内核传到用户空间；
+- `dma-fence` / `sync_file`（Linux 内核与用户空间传递同步完成状态的机制） 何时发出完成信号——这两个机制负责把同步完成状态从内核传到用户空间；
 - CPU 频率、空闲状态、热限制和内存压力是否影响主机端调用；
 - GPU 厂商驱动线程是否出现可观察的等待。
 
@@ -709,7 +709,7 @@ Impeller 的后端同样受原生 Vulkan 这些管线机制的约束，预编译
 
 - **着色器源码编译与反射**：`impellerc` 在 Flutter 引擎或应用构建阶段把 GLSL 转换成目标后端需要的表示，并生成资源绑定信息。设备运行时不再解析同一份 GLSL，也不需要为 Impeller 内建着色器重复执行运行时反射。
 - **着色器模块装载或注册**：运行时还要从引擎内置的着色器归档文件或应用资源中读取目标后端代码，并向图形后端注册可用的着色器函数。
-- **管线状态对象创建**：Vulkan 必须根据着色器阶段、顶点布局、混合模式、颜色或深度附件格式和采样数等描述创建管线状态对象。驱动可以在这个阶段做验证、链接、特化和设备相关优化。
+- **管线状态对象创建**：Vulkan 必须根据着色器阶段、顶点布局、混合模式、颜色或深度附件（attachment）格式和采样数等描述创建管线状态对象。驱动可以在这个阶段做验证、链接、特化和设备相关优化。
 - **GPU 执行与显示**：管线可用后，光栅线程（Raster 线程）才会编码绘制命令。CPU 提交 GPU 工作不等于内容已经显示；缓冲还要经过 Android `Surface`、SurfaceFlinger、硬件合成器 HWC 或 RenderEngine，再由显示系统呈现。
 
 这张流程图用于确定每类耗时属于哪一层。
@@ -790,7 +790,7 @@ Flutter 3.44.7 也允许在 `debug` 或 `profile` 模式指定 Impeller 后端�
 
 #### 3.3 `PipelineCompileQueue` 处理并发、去重与提前执行
 
-Flutter 3.44.7 的 [`PipelineCompileQueue`](https://github.com/flutter/flutter/blob/3.44.7/engine/src/flutter/impeller/renderer/pipeline_compile_queue.cc) 使用并发任务执行器处理管线创建任务，并以 `PipelineDescriptor` 保存尚未执行的任务。Vulkan [`PipelineLibraryVK::GetPipeline()`](https://github.com/flutter/flutter/blob/3.44.7/engine/src/flutter/impeller/renderer/backend/vulkan/pipeline_library_vk.cc) 同时维护描述到异步结果的映射：
+Flutter 3.44.7 的 [`PipelineCompileQueue`](https://github.com/flutter/flutter/blob/3.44.7/engine/src/flutter/impeller/renderer/pipeline_compile_queue.cc) 使用并发任务执行器（executor，即负责把任务交给线程运行的调度实现）处理管线创建任务，并以 `PipelineDescriptor` 保存尚未执行的任务。Vulkan [`PipelineLibraryVK::GetPipeline()`](https://github.com/flutter/flutter/blob/3.44.7/engine/src/flutter/impeller/renderer/backend/vulkan/pipeline_library_vk.cc) 同时维护描述到异步结果的映射：
 
 1. 已存在的描述直接返回同一个异步结果，避免重复创建。
 2. 新描述先写入映射，再把创建任务投到编译队列。

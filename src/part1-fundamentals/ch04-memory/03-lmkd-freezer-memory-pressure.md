@@ -158,7 +158,7 @@ flowchart LR
 图中有两处分工容易看错：
 
 - `OomAdjuster` 负责回答“这个进程对用户有多重要”，`lmkd` 负责回答“当前压力是否需要终止进程，以及在什么优先级范围内选谁”。
-- `lmkd` 会写 `/proc/<pid>/oom_score_adj`，同时在自己的进程表中登记候选；它与活动管理服务（ActivityManagerService，AMS）之间另有一条专用控制套接字，通信并不止“通过 `/proc` 共享信息”这一条路。
+- `lmkd` 会写 `/proc/<pid>/oom_score_adj`，同时在自己的进程表中登记候选；它与活动管理服务（ActivityManagerService（AMS），AMS）之间另有一条专用控制套接字，通信并不止“通过 `/proc` 共享信息”这一条路。
 
 > 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
@@ -179,7 +179,7 @@ flowchart LR
 
 #### 现代方案：用户空间 lmkd
 
-Android 8.1 的源码已经包含用户空间 `lmkd` 及 AMS 控制协议。Android 9 起，在未检测到内核 LMK 驱动时启用用户空间路径；Android 10 引入压力停顿信息（Pressure Stall Information，PSI）监控模式；Android 11 的新策略进一步把内存区域水位、交换空间和工作集页面反复回收后再次访问造成的抖动纳入判断；Android 17 延续这条架构。
+Android 8.1 的源码已经包含用户空间 `lmkd` 及 AMS 控制协议。Android 9 起，在未检测到内核 LMK 驱动时启用用户空间路径；Android 10 引入压力停顿信息（Pressure Stall Information，PSI（Pressure Stall Information，压力停顿信息））监控模式；Android 11 的新策略进一步把内存区域水位、交换空间和工作集页面反复回收后再次访问造成的抖动纳入判断；Android 17 延续这条架构。
 
 迁到用户空间以后，`lmkd` 可以：
 

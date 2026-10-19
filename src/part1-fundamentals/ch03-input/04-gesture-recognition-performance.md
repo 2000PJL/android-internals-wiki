@@ -48,7 +48,7 @@ related_chapters:
 
 - 位移还没超过触摸抖动容差 TouchSlop，控件一直把它当作点击候选；
 - 父容器过早拦截，子控件收到的是 `ACTION_CANCEL`；
-- 速度样本或指针 ID 用错，惯性滑动 Fling 的速度偏小；
+- 速度样本或指针 ID 用错，惯性滑动（Fling） Fling 的速度偏小；
 - `ACTION_MOVE` 回调里有分配、日志或业务计算，主线程来不及处理下一批输入。
 
 排查时我们要分开回答四个问题：事件何时到达、谁拿到事件、事件被识别成什么、识别之后如何驱动滚动。
@@ -102,7 +102,7 @@ public boolean onTouchEvent(MotionEvent event) {
 这段代码里有三处容易用错：
 
 1. `addMovement()` 只负责加入样本，供查询方法读取的速度要由 `computeCurrentVelocity()` 生成；加入一个 `ACTION_MOVE` 之后并不需要每次都重算速度。
-2. `getXVelocity(id)`、`getYVelocity(id)` 传的是指针 ID，它在整个手势里稳定不变；`MotionEvent` 里随指针增减变化的是位置索引 index，两者别混用。
+2. `getXVelocity(id)`、`getYVelocity(id)` 传的是指针 ID，它在整个手势里稳定不变；`MotionEvent` 里随指针增减变化的是位置索引（index） index，两者别混用。
 3. 一个 `VelocityTracker` 本来就能同时记录多个指针 ID。源码里的对象池容量为 2，含义只是最多缓存两个按默认策略（框架内置的轴级策略表）创建的实例，多指场景用同一个实例就够了。
 
 Java 封装层把默认策略实例放进 `Pools.SynchronizedPool<VelocityTracker>(2)`：用默认策略创建的实例在 `recycle()` 时清空并回到池中，显式策略实例则留在池外。我们要做的只是成对调用 `obtain()` 和 `recycle()`，至于池有没有命中，不必进手势算法的设计范围。
@@ -120,7 +120,7 @@ static const std::map<int32_t, VelocityTracker::Strategy>
         };
 ```
 
-触摸屏的 X、Y 是位置轴，默认走 `LSQ2` 二阶最小二乘拟合：用近期的位置与时间样本拟合出二次曲线，再求速度；`AXIS_SCROLL` 是只报告变化量的差分轴，默认走 `IMPULSE`，按冲量模型从连续差分样本估算速度。`configureStrategy()` 还明确禁止差分轴改用调用方覆盖的策略。
+触摸屏的 X、Y 是位置轴，默认走 `LSQ2` 二阶最小二乘拟合（`LSQ2`）：用近期的位置与时间样本拟合出二次曲线，再求速度；`AXIS_SCROLL` 是只报告变化量的差分轴，默认走 `IMPULSE`，按冲量模型从连续差分样本估算速度。`configureStrategy()` 还明确禁止差分轴改用调用方覆盖的策略。
 
 Java 层还保留着 `obtain(int)`、`obtain(String)` 这些隐藏入口，它们服务于系统调试、测试和算法比较；普通 SDK 应用拿公开的 `obtain()` 用就好。
 
@@ -128,7 +128,7 @@ Java 层还保留着 `obtain(int)`、`obtain(String)` 这些隐藏入口，它�
 
 - `ACTION_DOWN` 会先清空旧状态，再加入 X、Y 样本；
 - `ACTION_MOVE` 会遍历历史批次和当前批次，并为每个指针 ID 加入 X、Y；
-- 标记为重采样 resampled 的样本会被跳过，避免根据预测坐标再拟合一次速度；
+- 标记为重采样（resampled） resampled 的样本会被跳过，避免根据预测坐标再拟合一次速度；
 - `ACTION_UP` 和普通 `ACTION_POINTER_UP` 不重复加入抬手位置，以保留末次有效移动的速度；
 - 同一指针超过 40 ms 没有新移动样本时，下一次采样会按“指针已经停下”处理并重建策略状态；
 - `getComputedVelocity()` 最终按 `units / 1000` 缩放，并限制在 `[-maxVelocity, maxVelocity]`。
@@ -266,7 +266,7 @@ public boolean onInterceptTouchEvent(MotionEvent event) {
 }
 ```
 
-这段代码是仲裁骨架，不能直接拿来替换所有容器：多指切换、从右到左布局 RTL、角度滞回（避免在临界角度来回切换），以及子控件能否继续沿该方向滚动，都要按产品语义补上。父容器决定拦截之后，必须接得住随后到来的事件；子控件也要正确清理 `ACTION_CANCEL`。
+这段代码是仲裁骨架，不能直接拿来替换所有容器：多指切换、从右到左布局（RTL） RTL、角度滞回（避免在临界角度来回切换），以及子控件能否继续沿该方向滚动，都要按产品语义补上。父容器决定拦截之后，必须接得住随后到来的事件；子控件也要正确清理 `ACTION_CANCEL`。
 
 ### requestDisallowInterceptTouchEvent 的用法与限制
 
@@ -398,7 +398,7 @@ case MotionEvent.ACTION_MOVE:
 - 可合并的视觉状态交给下一帧更新，不在输入回调里反复请求布局；
 - 慢操作移出主线程，但触摸状态本身仍要按顺序在 UI 线程更新。
 
-设备可能把多个采样点批量放进一个 `MotionEvent` 的历史记录 history。需要高保真轨迹时就读历史样本，只读当前坐标会丢掉中间点；想要“补点”也不要自行插值后送进 `VelocityTracker`。
+设备可能把多个采样点批量放进一个 `MotionEvent` 的历史记录（history） history。需要高保真轨迹时就读历史样本，只读当前坐标会丢掉中间点；想要“补点”也不要自行插值后送进 `VelocityTracker`。
 
 ### View 层级到底影响什么
 
@@ -441,7 +441,7 @@ Modifier.pointerInput(Unit) {
 
 选 API 时从高层往低层走：`clickable`、`scrollable`、`draggable`、`transformable` 这些高层组件和修饰符 modifier，同时处理语义、焦点、可访问性、视觉反馈和事件消费；等现有识别器表达不了所需交互，再下沉到 `awaitEachGesture`、`awaitFirstDown`、`awaitTouchSlopOrCancellation` 这些原始 API。
 
-Compose 对新指针的第一个事件做命中测试，形成可接收指针输入的节点链，同一指针的后续事件沿这条链传播。每个事件要经过三个传播阶段 pass：
+Compose 对新指针的第一个事件做命中测试，形成可接收指针输入的节点链，同一指针的后续事件沿这条链传播。每个事件要经过三个传播阶段（pass） pass：
 
 | 传播阶段 | 方向 | 常见用途 |
 |---|---|---|

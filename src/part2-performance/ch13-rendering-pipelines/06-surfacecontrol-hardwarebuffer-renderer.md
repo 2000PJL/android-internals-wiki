@@ -183,7 +183,7 @@ consolidated_from:
 
 上手 SurfaceControl，我们先把四类对象分开看：`ASurfaceControl` 是 Layer 节点的句柄，`AHardwareBuffer` 携带像素，`ASurfaceTransaction` 收集一批要原子应用的状态变更，fence 说明 buffer 何时可以读取或复用。这四类对象的生命周期和所有权各管各的，后面会反复回到这一点。
 
-本文前半讲 SurfaceControl 的 Layer 树、transaction 提交和 fence 边界，后半讲 HardwareBufferRenderer（HBR）如何把 RenderNode 场景树画进调用方持有的 HardwareBuffer。两者能接起来用：HBR 产出 buffer，SurfaceControl 把它作为独立 Layer 提交给 SurfaceFlinger 合成；中间的 buffer 所有权、fence 方向和回调生命周期由应用自己维护。
+本文前半讲 SurfaceControl 的 Layer 树、transaction（事务） 提交和 fence 边界，后半讲 HardwareBufferRenderer（HBR）如何把 RenderNode 场景树画进调用方持有的 HardwareBuffer。两者能接起来用：HBR 产出 buffer，SurfaceControl 把它作为独立 Layer 提交给 SurfaceFlinger 合成；中间的 buffer 所有权、fence 方向和回调生命周期由应用自己维护。
 
 ## Layer 创建与 SurfaceControl Transaction
 
@@ -199,7 +199,7 @@ consolidated_from:
 | `AHardwareBuffer` | 持有可在 CPU、GPU、编解码器和合成器间共享的图形内存 | 不包含 acquire/release 时序 |
 | sync fence fd | 描述 Producer 写完或 Consumer 用完的同步边界 | 不会延长业务对象或回调上下文的生命周期 |
 
-从实现上看，`frameworks/base/native/android/surface_control.cpp` 里公开的 `ASurfaceControl*` 会转换为 framework native 的 `SurfaceControl*`，`ASurfaceTransaction*` 会转换为 `SurfaceComposerClient::Transaction*`。我们拿到的是 opaque handle：操作只能走公开函数，内部字段随时可能变化，裸指针也不能作为 Binder 参数跨进程传递。
+从实现上看，`frameworks/base/native/android/surface_control.cpp` 里公开的 `ASurfaceControl*` 会转换为 framework native 的 `SurfaceControl*`，`ASurfaceTransaction*` 会转换为 `SurfaceComposerClient::Transaction*`。我们拿到的是 opaque handle（不透明句柄）：操作只能走公开函数，内部字段随时可能变化，裸指针也不能作为 Binder 参数跨进程传递。
 
 #### 创建的是父节点下面的新 Layer
 
@@ -214,7 +214,7 @@ NDK 创建的节点和 “Buffer Layer、Color Layer、Container Layer” 三分
 Android 14（API 34）增加了 `android/surface_control_jni.h`：
 
 - `ASurfaceControl_fromJava()` 从有效的 Java `SurfaceControl` 取得一份本地强引用；用完后必须调用 `ASurfaceControl_release()`。
-- `ASurfaceTransaction_fromJava()` 返回 Java `SurfaceControl.Transaction` 内部 transaction 的 borrowed pointer，只在 Java 对象存活且未 `close()` 时有效；`ASurfaceTransaction_delete()` 不适用于它。
+- `ASurfaceTransaction_fromJava()` 返回 Java `SurfaceControl.Transaction` 内部 transaction 的 borrowed pointer（借用指针），只在 Java 对象存活且未 `close()` 时有效；`ASurfaceTransaction_delete()` 不适用于它。
 
 这两个函数只解决同一进程内 Java 与 native 对象的桥接。跨进程传递仍要通过 Java `SurfaceControl` 的 `Parcelable` 能力、`SurfaceControlViewHost.SurfacePackage` 或系统服务完成。
 
@@ -257,7 +257,7 @@ BLAST 路径通常由 Producer 先通过 BufferQueue `dequeueBuffer()`/`queueBuf
 两条路径只在 transaction 层汇合。`ASurfaceControl` 与 `BLASTBufferQueue` 是不同对象，`ASurfaceControl_createFromWindow()` 也不会接管 parent window 的队列。排查时可以通过三个问题区分：
 
 1. Producer 是在调用 `queueBuffer()`，还是直接调用 `ASurfaceTransaction_setBuffer()`？
-2. buffer slot 和 release 节奏由 BufferQueue 管理，还是由应用自己的池管理？
+2. buffer slot（buffer 池中的一项） 和 release 节奏由 BufferQueue 管理，还是由应用自己的池管理？
 3. Perfetto 中要查的是 BLAST queue 的 frame number，还是应用 transaction 中的独立 Layer/buffer？
 
 同一 transaction 中的几何和 buffer 状态具有统一的应用边界，但显示时刻仍受 acquire fence 与调度目标约束。多个 Producer 各自提交 transaction 时，还需要上层同步协议说明哪些 buffer 属于同一业务帧；SurfaceControl 本身不会自动避免跨 Producer 的时序错配。
@@ -384,7 +384,7 @@ sequenceDiagram
 
 #### Buffer、几何和颜色
 
-`ASurfaceTransaction_setBuffer()` 把 `AHardwareBuffer` 与 acquire fence 一起绑定到 Layer。framework 会为已经应用的 buffer 状态持有引用；应用仍要管理自己在 buffer pool 中的引用，并等所有 release 边界完成后才能再次写入。
+`ASurfaceTransaction_setBuffer()` 把 `AHardwareBuffer` 与 acquire fence 一起绑定到 Layer。framework 会为已经应用的 buffer 状态持有引用；应用仍要管理自己在 buffer pool（缓冲池） 中的引用，并等所有 release 边界完成后才能再次写入。
 
 几何属性的坐标空间容易混淆：
 
@@ -395,7 +395,7 @@ sequenceDiagram
 - `setBufferTransform()` 描述 buffer 内容的旋转或翻转，不会移动 Layer 节点本身；
 - `setDamageRegion()` 提示哪些内容区域发生了更新，传错可能造成显示错误，或者失去局部更新收益。
 
-`setBufferAlpha()` 使用 premultiplied alpha，也就是颜色通道已经预先乘过 alpha。如果通过 `setBufferTransparency(...OPAQUE)` 声明完全不透明，buffer 范围内每个像素都要满足这个条件；把带透明像素的内容标为 OPAQUE，可能造成错误合成。
+`setBufferAlpha()` 使用 premultiplied alpha（颜色通道已经乘过 alpha 的表示），也就是颜色通道已经预先乘过 alpha。如果通过 `setBufferTransparency(...OPAQUE)` 声明完全不透明，buffer 范围内每个像素都要满足这个条件；把带透明像素的内容标为 OPAQUE，可能造成错误合成。
 
 `setColor()` 设置背景色、alpha 和 dataspace。带 buffer 的 Layer 还应通过 `setBufferDataSpace()` 描述 buffer 色彩空间；HDR 内容还要按格式提供相应静态元数据或 headroom（高光亮度余量）。像素格式或色域写错了要回到 Producer 侧修，这些颜色接口帮不上忙。
 
@@ -658,7 +658,7 @@ SurfaceControl 适合把更新节奏不同的少量内容拆开：主画面逐�
 
 #### 画中画与系统动画
 
-进入 PiP 时，WindowManager Shell 通常持有任务 leash 和 PiP container：leash 是承载过渡动画属性的临时父 Layer，Shell 通过 Java/framework transaction 修改位置、裁剪、圆角和层级。普通应用负责提交视频内容；把自己的 Layer 任意 reparent 到系统私有容器，公开 NDK API 做不到。
+进入 PiP 时，WindowManager Shell 通常持有任务 leash（承载过渡动画属性的临时父 Layer） 和 PiP container：leash 是承载过渡动画属性的临时父 Layer，Shell 通过 Java/framework transaction 修改位置、裁剪、圆角和层级。普通应用负责提交视频内容；把自己的 Layer 任意 reparent 到系统私有容器，公开 NDK API 做不到。
 
 分析 PiP 卡顿时应分开看：
 
@@ -671,7 +671,7 @@ SurfaceControl 适合把更新节奏不同的少量内容拆开：主画面逐�
 
 #### 跨进程 View 与 Flutter Platform View
 
-分析跨进程 View 时，优先从 `SurfaceControlViewHost`、`SurfacePackage` 和 `SurfaceSyncGroup` 的公开生命周期入手。Flutter Platform View 可能走 hybrid composition——原生 View 与 Flutter 内容分层合成——也可能走 Texture 路径或 SurfaceProducer，实际拓扑随 Flutter engine、Android 版本和插件实现变化。框架名称本身说明不了是否存在独立 SurfaceControl Layer。
+分析跨进程 View 时，优先从 `SurfaceControlViewHost`、`SurfacePackage` 和 `SurfaceSyncGroup` 的公开生命周期入手。Flutter Platform View 可能走 hybrid composition（原生 View 与 Flutter 内容分层合成）——原生 View 与 Flutter 内容分层合成——也可能走 Texture 路径或 SurfaceProducer，实际拓扑随 Flutter engine、Android 版本和插件实现变化。框架名称本身说明不了是否存在独立 SurfaceControl Layer。
 
 先画出“内容 Producer → 消费位置 → 宿主 buffer 或独立 Layer → SurfaceFlinger”的对象关系，再讨论优化。只按进程名或框架名判断，很容易把应用内的宿主纹理合成误写成系统 overlay。
 
@@ -764,7 +764,7 @@ SurfaceControl 管理 Layer 状态、transaction 提交和 fence 边界，Hardwa
 
 HBR 把一棵 `RenderNode` 场景树光栅化到**调用方拥有的 `HardwareBuffer`**。这块 buffer 之后交给 `SurfaceControl`、其他进程、GPU 还是媒体 consumer，由调用方自己决定，同步与复用也自己负责；我们记住这条分界，再看它和另外两个 Canvas API 的差别：`lockCanvas()` 与 `lockHardwareCanvas()` 都把内容写进 `Surface` 背后的 BufferQueue，输出目标由 Surface 侧决定。
 
-先看基线 `Surface.lockCanvas()`。它让 CPU 直接绘制到 `Surface`：调用方从 `BufferQueue` 取得可写 buffer，Skia software backend 在 CPU 上完成光栅化，`unlockCanvasAndPost()` 再把 buffer 提交回队列。复杂 Path、大尺寸缩放、滤镜或高分辨率离屏内容会吃掉不少 CPU 时间，这正是 HBR 要接手的场景之一。
+先看基线 `Surface.lockCanvas()`。它让 CPU 直接绘制到 `Surface`：调用方从 `BufferQueue` 取得可写 buffer，Skia software backend 在 CPU 上完成光栅化（把矢量绘制命令转成像素），`unlockCanvasAndPost()` 再把 buffer 提交回队列。复杂 Path、大尺寸缩放、滤镜或高分辨率离屏内容会吃掉不少 CPU 时间，这正是 HBR 要接手的场景之一。
 
 把 HBR 当成 `lockCanvas()` 的硬件加速开关是常见误会。Android 还提供 `Surface.lockHardwareCanvas()`：它已经用上 HWUI/GPU，输出目标仍是 `Surface`。三者的边界如下：
 
@@ -1010,7 +1010,7 @@ HBR 的收益取决于原有瓶颈。下表用来筛选候选方案，最终要�
 
 #### CPU 软件光栅化吃紧的离屏内容
 
-PDF 页、复杂图形卡片、自定义贴纸或缩略图生成，如果 CPU raster 已在 trace 中成为主要成本，可以评估 HBR。还要确认后续 consumer 能直接使用 `HardwareBuffer`；若最终仍要把结果读回 CPU，这一步 GPU readback 会把像素从 GPU 复制回 CPU 可访问内存，可能抵消收益。
+PDF 页、复杂图形卡片、自定义贴纸或缩略图生成，如果 CPU raster 已在 trace 中成为主要成本，可以评估 HBR。还要确认后续 consumer 能直接使用 `HardwareBuffer`；若最终仍要把结果读回 CPU，这一步 GPU readback（把 GPU 结果复制回 CPU 可访问内存） 会把像素从 GPU 复制回 CPU 可访问内存，可能抵消收益。
 
 #### 跨进程 buffer 共享
 

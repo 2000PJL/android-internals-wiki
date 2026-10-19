@@ -161,7 +161,7 @@ consolidated_from:
 
 # Vulkan 原生管线与 HWUI 多队列
 
-Vulkan 把资源、命令和同步的管理责任交给应用，但 Android 的显示后半段仍然存在。App 要通过 `VK_KHR_android_surface` 把代表显示目标的 `VkSurfaceKHR` 连接到 `ANativeWindow`；swapchain image 仍映射到 Android GraphicBuffer/BufferQueue，提交之后还要经过 SurfaceFlinger、HWC 和 Display present。
+Vulkan 把资源、命令和同步的管理责任交给应用，但 Android 的显示后半段仍然存在。App 要通过 `VK_KHR_android_surface` 把代表显示目标的 `VkSurfaceKHR` 连接到 `ANativeWindow`；swapchain image（循环用于渲染和显示的图像） 仍映射到 Android GraphicBuffer/BufferQueue，提交之后还要经过 SurfaceFlinger、HWC 和 Display present。
 
 > 源码基线：AOSP `android-17.0.0_r1` 的 Android WSI（窗口系统集成层）与 SurfaceFlinger/RenderEngine；内核 `android17-6.18-2026-06_r6` 的 dma-buf/dma-fence。Vulkan 驱动和 GPU job scheduler 由设备厂商实现，AOSP 只能说明接口与所有权；GPU 工作何时完成，要在目标设备上确认。
 
@@ -175,7 +175,7 @@ Vulkan 应用自行管理实例、设备、交换链、命令缓冲区和同步�
 
 #### 显式控制带来的价值
 
-OpenGL ES 把较多状态验证、资源转换和同步决策放在驱动中；Vulkan 则要求应用预先描述 pipeline、descriptor、resource usage、command buffer 和执行依赖。pipeline 是固定功能与着色器状态的组合，descriptor 描述着色器如何绑定资源。组织得当时，Vulkan 可以：
+OpenGL ES 把较多状态验证、资源转换和同步决策放在驱动中；Vulkan 则要求应用预先描述 pipeline（固定功能与着色器状态组合）、descriptor（着色器访问资源的绑定）、resource usage、command buffer 和执行依赖。pipeline 是固定功能与着色器状态的组合，descriptor 描述着色器如何绑定资源。组织得当时，Vulkan 可以：
 
 - 降低高 draw-call 场景中的 CPU 驱动开销；
 - 把 shader/pipeline 创建从关键帧移到加载或缓存阶段；
@@ -201,9 +201,9 @@ Validation Layer 能发现许多 API、同步和对象生命周期误用；性�
 
 #### Vulkan 与承载结构是两个维度
 
-Vulkan 描述 Producer 如何生成内容。它可以绘制到 SurfaceView/GameActivity/NativeActivity 提供的独立 Surface，也可以写入 TextureView 的输入 Surface 或离屏 `AHardwareBuffer`。SurfaceFlinger 能否看到独立 layer，取决于目标 `ANativeWindow` 连接到哪个 Consumer，仅凭 API 名判断不出来。
+Vulkan 描述 Producer（buffer 生产方） 如何生成内容。它可以绘制到 SurfaceView/GameActivity/NativeActivity 提供的独立 Surface，也可以写入 TextureView 的输入 Surface 或离屏 `AHardwareBuffer`（可跨系统组件共享的图形缓冲区）。SurfaceFlinger 能否看到独立 layer，取决于目标 `ANativeWindow` 连接到哪个 Consumer（buffer 消费方），仅凭 API 名判断不出来。
 
-常见游戏页面会同时包含 Vulkan 主体 Surface、宿主 HWUI、系统栏和弹窗。如果引擎 HUD 已经画入同一个 swapchain image，SurfaceFlinger 看到的仍只有一个主体 buffer layer；画面里有按钮，也说明不了存在额外的 SF layer。
+常见游戏页面会同时包含 Vulkan 主体 Surface、宿主 HWUI、系统栏和弹窗。如果引擎 HUD（抬头显示界面） 已经画入同一个 swapchain image，SurfaceFlinger 看到的仍只有一个主体 buffer layer；画面里有按钮，也说明不了存在额外的 SF layer。
 
 ### Android Vulkan Profile (AVP)
 
@@ -224,11 +224,11 @@ Vulkan Profile 是一组可以由工具检查的 extension、feature、property�
 
 1. 用目标市场的兼容性 profile 定义广覆盖的能力下限；
 2. 对 Android 17 新芯片档位检查 `VP_ANDROID_17_requirements`；
-3. 继续在运行时查询应用必需的 extension/feature/format/limit，并为缺失能力设计 fallback 或明确拒绝启动。
+3. 继续在运行时查询应用必需的 extension/feature/format/limit，并为缺失能力设计 fallback（降级路径） 或明确拒绝启动。
 
 Profile 检查通过，说明的只是能力集合这一层；具体某个 surface、format、present mode 或 protected 路径可用与否，属于物理设备与 `VkSurfaceKHR` 的组合，仍要调用 surface capability/format/present-mode query 获取运行时结果。
 
-#### Dynamic Rendering 例子
+#### Dynamic Rendering（无须预先创建 RenderPass/Framebuffer 的渲染方式） 例子
 
 某项功能进入 Vulkan core version，创建设备后并不会自动启用。以 Dynamic Rendering 为例，它免去预先创建 RenderPass/Framebuffer 的步骤，但应用仍要通过 `VkPhysicalDeviceVulkan13Features` 或对应 extension feature 查询 `dynamicRendering`，并在 device creation feature chain 中显式启用。Profile JSON 是否要求该 bit，应以实际文件为准，单看 API version 判断不出来。
 
@@ -245,7 +245,7 @@ Profile 检查通过，说明的只是能力集合这一层；具体某个 surfa
 5. 创建 swapchain 并取得 images；
 6. 为每个 in-flight frame 准备 command buffer、acquire semaphore、render-finished semaphore 和供 CPU 查询完成状态的 fence。
 
-`minImageCount` 只能在 `minImageCount..maxImageCount` 范围内选择；`maxImageCount == 0` 表示规范未给出显式上限，数量并不因此无限。Android WSI 还受 native window 的 min-undequeued/max-buffer-count 约束，swapchain 具体几个 buffer 要按设备和 surface 的实际约束来定，不宜固定描述成双缓冲或三缓冲。
+`minImageCount` 只能在 `minImageCount..maxImageCount` 范围内选择；`maxImageCount == 0` 表示规范未给出显式上限，数量并不因此无限。Android WSI（Window System Integration，Vulkan 与窗口系统的连接层） 还受 native window 的 min-undequeued/max-buffer-count 约束，swapchain 具体几个 buffer 要按设备和 surface 的实际约束来定，不宜固定描述成双缓冲或三缓冲。
 
 #### 第一阶段：Acquire
 
@@ -322,7 +322,7 @@ vkQueueSubmit2(graphicsQueue, 1, &submit, frameFence);
 
 #### 第三阶段：Present
 
-Present 把 image index 和需要等待的 semaphore 交给 presentation engine，由它把 swapchain image 送入窗口系统：
+Present 把 image index 和需要等待的 semaphore 交给 presentation engine（负责把 swapchain image 送入窗口系统的实现），由它把 swapchain image 送入窗口系统：
 
 ```c
 VkPresentInfoKHR present = {
@@ -381,7 +381,7 @@ sequenceDiagram
 - Fence：把某次 queue 工作的完成状态暴露给 host（CPU）；
 - Pipeline barrier/event：在 command stream 内定义执行顺序、内存可见性、image layout 和 queue-family ownership。
 
-Semaphore signal 只能表达执行依赖，代替不了 image layout transition；barrier 也代替不了 present 对 render-finished semaphore 的等待。分析同步时要同时看三件事：execution dependency 决定谁先执行，memory dependency 决定写入何时对读取可见，resource state 说明资源处于哪种 layout/ownership。
+Semaphore signal 只能表达执行依赖，代替不了 image layout transition；barrier 也代替不了 present 对 render-finished semaphore 的等待。分析同步时要同时看三件事：execution dependency（谁先执行） 决定谁先执行，memory dependency（写入何时对读取可见） 决定写入何时对读取可见，resource state（资源处于哪种 layout/ownership） 说明资源处于哪种 layout/ownership。
 
 #### acquired image 的 layout
 
@@ -700,7 +700,7 @@ RenderThread、`VkUploader` 以及各 `GrDirectContext` 会持有强引用，确
 - device-lost（Vulkan 设备不可继续使用）回调中的上下文标签；
 - queue 0 与 queue 1 各自的提交顺序。
 
-`SkiaVMA::Options{.fThreadSafe = false}` 只表示每个 context 的 allocator 不负责协调多线程并发访问，据此推不出整个 `VkDevice` 无需跨线程同步。共享 Vulkan 对象、queue 和跨 queue 资源依赖仍要遵守 external synchronization 规则，也就是由调用方避免并发访问同一对象，并使用 semaphore 或 fence 表达执行依赖。
+`SkiaVMA::Options{.fThreadSafe = false}` 只表示每个 context 的 allocator 不负责协调多线程并发访问，据此推不出整个 `VkDevice` 无需跨线程同步。共享 Vulkan 对象、queue 和跨 queue 资源依赖仍要遵守 external synchronization（由调用方避免并发访问同一对象） 规则，也就是由调用方避免并发访问同一对象，并使用 semaphore 或 fence 表达执行依赖。
 
 ### 两条 graphics queue 如何创建
 

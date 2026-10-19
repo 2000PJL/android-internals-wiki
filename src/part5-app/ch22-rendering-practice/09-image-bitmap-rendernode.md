@@ -78,11 +78,11 @@ consolidated_from:
 
 # 图片加载、Bitmap 解码与 RenderNode
 
-一张图片从 URL 变成屏幕上的像素，中间要经过获取压缩数据、查找各级缓存、解码、变换、持有像素、更新 UI、HWUI 采样，再提交窗口缓冲区直到 present 上屏。首图慢、列表掉帧或内存峰值，随时可能出在这条链路的任何一段；我们先把整条链路摊开。
+一张图片从 URL 变成屏幕上的像素，中间要经过获取压缩数据、查找各级缓存、解码、变换、持有像素、更新 UI、HWUI（Android 硬件加速 UI 渲染系统） 采样，再提交窗口缓冲区直到 present 上屏。首图慢、列表掉帧或内存峰值，随时可能出在这条链路的任何一段；我们先把整条链路摊开。
 
 > 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
-软件 Bitmap 解码完成后，宿主 View 还要更新 DisplayList，把待执行的绘制命令记录成显示列表；随后专用渲染线程 RenderThread 通过 HWUI 采样 Bitmap，提交应用窗口缓冲区。
+软件 Bitmap 解码完成后，宿主 View 还要更新 DisplayList（记录待执行绘制命令的显示列表），把待执行的绘制命令记录成显示列表；随后专用渲染线程 RenderThread 通过 HWUI 采样 Bitmap，提交应用窗口缓冲区。
 
 硬件 Bitmap 的像素存储位于图形内存，适合只在硬件加速 Canvas 上显示；它仍占用图形资源，图片是否按期上屏还要看显示管线后段。显示阶段可结合 [Android View 标准渲染路径](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) 阅读。
 
@@ -108,15 +108,15 @@ Hardware Bitmap 与 RenderNode 能减少这条链路上的一部分复制或录�
 
 #### Glide 的请求管理与资源释放
 
-Glide 5.0.9 的 `Engine` 先查正在使用的资源和内存缓存；未命中时，同一缓存键对应的 `EngineJob` 还在进行，就直接复用这个加载任务，否则启动新的解码任务 `DecodeJob`。原始数据和变换后资源怎么进磁盘缓存，由请求决定。加载到 `ImageView` 时，新的 `into(imageView)` 会替换该 View 上的旧请求；RecyclerView 回收后若暂时不绑定新图，应调用 `clear(imageView)`，把占位图之外的旧内容一并清掉。
+Glide 5.0.9 的 `Engine` 先查正在使用的资源和内存缓存；未命中时，同一缓存键对应的 `EngineJob`（进行中的加载任务） 还在进行，就直接复用这个加载任务，否则启动新的解码任务 `DecodeJob`（解码任务）。原始数据和变换后资源怎么进磁盘缓存，由请求决定。加载到 `ImageView` 时，新的 `into(imageView)` 会替换该 View 上的旧请求；RecyclerView 回收后若暂时不绑定新图，应调用 `clear(imageView)`，把占位图之外的旧内容一并清掉。
 
-`Glide.with(fragment)`、`Glide.with(activity)` 或 `Glide.with(view)` 可以获得与界面关联的 `RequestManager`。传入 Application Context 得到的是应用级 `RequestManager`，页面停止时它不会自动暂停请求。Glide 返回的 Bitmap 可能受引用计数和 `BitmapPool` 管理：请求清理后继续持有 Bitmap，或在 Transformation 变换中手动调用 `recycle()` 回收原始 Bitmap，都可能造成内容复用错误或崩溃。
+`Glide.with(fragment)`、`Glide.with(activity)` 或 `Glide.with(view)` 可以获得与界面关联的 `RequestManager`。传入 Application Context（应用级 Context） 得到的是应用级 `RequestManager`，页面停止时它不会自动暂停请求。Glide 返回的 Bitmap 可能受引用计数和 `BitmapPool` 管理：请求清理后继续持有 Bitmap，或在 Transformation（变换实现） 变换中手动调用 `recycle()` 回收原始 Bitmap，都可能造成内容复用错误或崩溃。
 
 #### Coil 的实例与网络配置
 
 Coil 3.5.0 建议全应用共享一个 `ImageLoader`：每个实例都持有自己的内存缓存、磁盘缓存和网络资源，按页面创建实例会拆散命中率、增加常驻对象。确实需要不同认证或隔离域时，我们可以显式设计少量 `ImageLoader`，并记录各自的缓存目录和生命周期。
 
-Compose 中，`AsyncImage` 会结合可组合项的布局约束与 `ContentScale` 推导请求尺寸。直接调用 `rememberAsyncImagePainter(model)` 感知不到显示尺寸，默认会请求原始尺寸，所以要自己提供 `SizeResolver`。`SubcomposeAsyncImage` 用子组合为状态插槽建模，官方文档明确提示它不适合性能敏感的 `LazyList` 高频路径。
+Compose 中，`AsyncImage` 会结合可组合项的布局约束（constraints）与 `ContentScale` 推导请求尺寸。直接调用 `rememberAsyncImagePainter(model)` 感知不到显示尺寸，默认会请求原始尺寸，所以要自己提供 `SizeResolver`。`SubcomposeAsyncImage` 用子组合为状态插槽（slot）建模，官方文档明确提示它不适合性能敏感的 `LazyList` 高频路径。
 
 Coil 3 的网络行为要单独配置：
 
@@ -189,7 +189,7 @@ Android 17 的 `BitmapFactory.Options` 仍说明：`inSampleSize <= 1` 按 1 处
 
 #### ImageDecoder：默认结果通常是硬件 Bitmap
 
-`ImageDecoder` 从 API 28 提供。`decodeBitmap()` 是同步调用，头信息回调也不会自动把解码移出主线程。下面的函数接收专用协程调度器，按目标边界等比缩小；只有调用方需要像素访问或软件 Canvas 时，才强制使用软件内存。
+`ImageDecoder` 从 API 28 提供。`decodeBitmap()` 是同步调用，头信息回调也不会自动把解码移出主线程。下面的函数接收专用协程调度器（dispatcher），按目标边界等比缩小；只有调用方需要像素访问或软件 Canvas 时，才强制使用软件内存。
 
 ```kotlin
 @RequiresApi(Build.VERSION_CODES.P)
@@ -225,7 +225,7 @@ suspend fun decodeSized(
 
 #### 从解码完成到图片可见
 
-图片库回调成功，只说明结果已经交给显示目标。软件 Bitmap 第一次被硬件 Canvas 使用时，RenderThread / GPU 可能还要准备纹理；硬件 Bitmap 省掉一部分软件像素到图形资源的转换，但图形内存分配、同步和采样成本还在。排查首图慢时，我们先分四类现象：
+图片库回调成功，只说明结果已经交给显示目标（target）。软件 Bitmap 第一次被硬件 Canvas 使用时，RenderThread / GPU 可能还要准备纹理；硬件 Bitmap 省掉一部分软件像素到图形资源的转换，但图形内存分配、同步和采样成本还在。排查首图慢时，我们先分四类现象：
 
 | 现象 | 观察点 | 可能位置 |
 | --- | --- | --- |
@@ -234,11 +234,11 @@ suspend fun decodeSized(
 | UI 按时，RenderThread 首次绘制变长 | `DrawFrame`、纹理与图形内存、GPU 工作区间 | 软件 Bitmap 上传、图形分配、复杂裁剪或混合 |
 | 应用帧已提交，上屏仍晚 | FrameTimeline、BLAST（应用窗口缓冲区交接）、SurfaceFlinger（系统合成服务）、HWC（硬件合成器） | 缓冲区积压、合成或显示阶段 |
 
-这四类现象要按帧关联到同一张图片、同一次请求和同一个 FrameTimeline——它把应用、系统合成与显示阶段的帧时间线串在一起。单看图片库“加载成功”事件，看不出图片何时对用户可见。
+这四类现象要按帧关联到同一张图片、同一次请求和同一个 FrameTimeline（关联应用、系统合成与显示阶段的帧时间线）——它把应用、系统合成与显示阶段的帧时间线串在一起。单看图片库“加载成功”事件，看不出图片何时对用户可见。
 
-`getAllocationByteCount()` 适合记录单个 Bitmap 的分配空间，临时编解码缓冲区、硬件图形资源和缓存中的其他对象它都覆盖不到。内存分析的视野要放宽：原生堆、图形资源与 dma-buf、PSS、GC、缺页、内存回收和进程 OOM 状态要一起看。
+`getAllocationByteCount()` 适合记录单个 Bitmap 的分配空间，临时编解码缓冲区、硬件图形资源和缓存中的其他对象它都覆盖不到。内存分析的视野要放宽：原生堆、图形资源与 dma-buf（设备间共享缓冲区）、PSS（按比例归属进程的物理内存）、GC（垃圾回收）、缺页（page fault）、内存回收（reclaim）和进程 OOM（内存不足） 状态要一起看。
 
-Linux 6.18 内核基线下，还可以补看 PSI memory 压力停顿、`kswapd` 后台回收、direct reclaim 同步回收、zram 压缩交换和 GPU 驱动等待，避免把内存回收停顿错写成解码器算法问题。
+Linux 6.18 内核基线下，还可以补看 PSI memory（内存压力停顿） 压力停顿、`kswapd` 后台回收、direct reclaim（当前线程同步回收） 同步回收、zram 压缩交换和 GPU 驱动等待，避免把内存回收停顿错写成解码器算法问题。
 
 ### 大图与 BitmapRegionDecoder
 
@@ -317,7 +317,7 @@ fun decodeTile(
 - 信息流要同时计算可见列表项、预取列表项、交叉淡入淡出（crossfade）期间的新旧 Drawable 和请求并发；同一时刻的解码峰值，扩大内存缓存也消不掉。
 - 相册与聊天应让缩略图、预览图、原图使用不同内容标识和目标尺寸，避免原图挤掉高复用缩略图。
 - 多进程各有独立堆和 `ImageLoader`。只有展示图片的进程才应初始化完整图片栈。
-- 收到系统内存压力回调时，先让框架按策略裁剪缓存；页面还要释放 RecyclerView adapter、Compose 状态、预取结果和自建强引用。
+- 收到系统内存压力回调时，先让框架按策略裁剪缓存；页面还要释放 RecyclerView adapter（适配器）、Compose 状态、预取结果和自建强引用。
 - 清空整个缓存会把后续访问变成冷加载。它属于诊断或明确的账户 / 隐私清理操作，不是常规掉帧修复。
 
 #### 响应头与客户端网络缓存
@@ -326,7 +326,7 @@ fun decodeTile(
 
 - Glide 的原始数据磁盘缓存与底层 HTTP 缓存是两层；接入 OkHttp 后也要确认是否配置了 `Cache`；
 - Coil 3 默认磁盘缓存行为不会自动遵循 `Cache-Control`；
-- 使用带签名 URL 时，短期 token 进入 URL 可能降低缓存命中，应由安全与后端共同设计稳定内容标识；
+- 使用带签名 URL 时，短期 token（临时凭证） 进入 URL 可能降低缓存命中，应由安全与后端共同设计稳定内容标识；
 - 失败响应、重定向和认证差异也要进入缓存测试。
 
 命中率统计应分成正在使用的资源、内存、变换结果磁盘、原始数据磁盘、HTTP 与网络六类。只记录 `from cache` 的话，下一步该调整哪一层就无从判断。
@@ -344,7 +344,7 @@ Android 官方文档说明平台从 Android 12 / API 31 支持 AVIF；Android 10
 
 文件更小省的是传输和磁盘字节，解码或首个可见帧却不一定更短。同一组代表性图片要在目标设备上比较：
 
-- CDN 输出字节、TTFB 首字节时间与完整下载时间；
+- CDN 输出字节、TTFB（首字节到达时间） 首字节时间与完整下载时间；
 - 冷 / 热原始数据缓存下的解码与变换时间；
 - 输出 Bitmap 尺寸、配置、分配空间和图形内存；
 - UI 回调、RenderThread 首次采样与 FrameTimeline；
@@ -401,7 +401,7 @@ Android 官方文档说明平台从 Android 12 / API 31 支持 AVIF；Android 10
 3. 根据目标尺寸、采样、裁剪、色彩空间和内存策略确定输出规格；
 4. 编解码器把压缩数据还原成可写像素；
 5. 按需要执行缩放、裁剪、色彩转换、增益图提取或 `PostProcessor`；
-6. 把结果放入普通原生堆、共享内存或 Hardware Bitmap；
+6. 把结果放入普通原生堆（native heap）、共享内存或 Hardware Bitmap；
 7. UI 使用结果时，HWUI 记录绘制命令，其渲染线程 RenderThread 再把图片作为采样资源提交给 GPU。
 
 这几步不会因为调用了一个 Java 方法就变成同一类成本：文件读取受页缓存和存储影响，像素解码主要消耗 CPU 与内存带宽，Hardware Bitmap 的创建还包含图形缓冲分配和上传。诊断时要区分阶段，只记 `decodeBitmap()` 的总耗时就把问题归因到格式，证据是不够的。
@@ -561,7 +561,7 @@ fun decodeSampledFile(
 
 #### 4.3 Hardware Bitmap 在显示管线中的位置
 
-Hardware Bitmap 是应用绘制命令使用的资源，它自己不会变成 SurfaceFlinger 图层；标准窗口仍按这条路径显示：
+Hardware Bitmap 是应用绘制命令使用的资源，它自己不会变成 SurfaceFlinger 图层（layer）；标准窗口仍按这条路径显示：
 
 `UI Thread 记录 DisplayList` → `RenderThread/HWUI` → `Skia GPU` → `App Window buffer` → `BLAST` → `SurfaceFlinger` → `HWC`
 
@@ -589,7 +589,7 @@ Android 14 起，Ultra HDR 图片可以在 SDR 基础图之外携带增益图（
 
 计算这类图片的驻留内存与解码峰值时，要纳入基础 Bitmap、增益图 Bitmap 和解码、缩放期间的临时缓冲；生成硬件结果时，软件像素与硬件像素存储还可能短暂共存。
 
-`Bitmap.getAllocationByteCount()` 只描述当前 Bitmap 的底层像素存储，附着的增益图和全部图形分配都算不进去，跨设备套用的固定倍数也就无从谈起。实测时应同时记录两层 Bitmap 的尺寸、配置、行跨度，以及进程 Graphics、Native Heap 和 PSS 的变化。
+`Bitmap.getAllocationByteCount()` 只描述当前 Bitmap 的底层像素存储，附着的增益图和全部图形分配都算不进去，跨设备套用的固定倍数也就无从谈起。实测时应同时记录两层 Bitmap 的尺寸、配置、行跨度（row stride，即相邻两行像素起始位置之间的字节数），以及进程 Graphics、Native Heap 和 PSS 的变化。
 
 `bitmap.setGainmap(null)` 只解除基础 Bitmap 对增益图的关联；其他 Java 或原生层引用结束后，对应资源才具备释放条件。移除增益图还会改变 HDR 效果、显示能力适配和色彩一致性，把它当作低端机无条件的省内存开关是危险的。
 
@@ -751,7 +751,7 @@ inline fun <T> tracedImageStage(
 6. heapprofd、Java 托管堆与 `dumpsys meminfo` 中的分配峰值；
 7. 冷缓存和热缓存是否混在同一组数据里。
 
-不要编写依赖并不存在的 `Bitmap#allocate` 切片参数的 SQL。若平台源码没有记录所需字段，应由应用 trace counter、请求日志或内存采样补齐。
+不要编写依赖并不存在的 `Bitmap#allocate` 切片参数的 SQL。若平台源码没有记录所需字段，应由应用 trace counter（轨迹计数器）、请求日志或内存采样补齐。
 
 ### 10. 九宫格和瀑布流的调度策略
 
@@ -759,7 +759,7 @@ inline fun <T> tracedImageStage(
 
 设计时依次确定：
 
-1. **请求身份**：URL、目标尺寸、变换、色彩策略和业务版本共同决定缓存键；
+1. **请求身份**：URL、目标尺寸、变换、色彩策略和业务版本共同决定缓存键（key）；
 2. **目标尺寸**：布局尺寸确定后再请求，避免按原图解码后立即缩小；
 3. **任务去重**：相同缓存键的并发请求共享获取和解码工作；
 4. **优先级**：视口内高于预取，滚动方向上的近邻高于远端；
@@ -770,7 +770,7 @@ inline fun <T> tracedImageStage(
 
 按 dp（密度无关像素）把图片固定分成“小、中、大”，内存是估不准的。解码目标最终是像素尺寸，还要受屏幕密度、输出配置、广色域和增益图影响。预算至少用预计 `rowBytes × height`，解码完成后再用实际 `allocationByteCount` 校准。
 
-动态并发若只由上一帧是否超过某个毫秒值控制，同样靠不住。刷新率、FrameTimeline 记录的帧截止时间、CPU 压力和图片内存峰值要一起判断；频繁改变并发本身还会造成队列抖动。可按设备组离线确定安全区间，线上只做缓慢、可回退的调整。
+动态并发若只由上一帧是否超过某个毫秒值控制，同样靠不住。刷新率、FrameTimeline 记录的帧截止时间（deadline）、CPU 压力和图片内存峰值要一起判断；频繁改变并发本身还会造成队列抖动。可按设备组离线确定安全区间，线上只做缓慢、可回退的调整。
 
 ### 11. Glide、Coil 与 Picasso 的版本核查
 

@@ -77,11 +77,11 @@ sources:
 
 治理的第一步是把“SDK”定义清楚：它并不只是一份 AAR。一次商业能力接入可能同时带来：
 
-- 多个 Maven artifact，以及它们继续引入的传递依赖；
+- 多个 Maven artifact（以 groupId、artifactId 和版本区分的独立发布单元），以及它们继续引入的传递依赖；
 - Java/Kotlin 字节码、资源、Manifest 合并项，以及按 ABI（应用二进制接口，如 `arm64-v8a`）区分的 `.so`；
 - `ContentProvider`、`Service`、`Receiver`、`Activity`、独立进程和自定义权限；
 - 初始化代码、线程池、定时任务、网络协议、数据库与本地缓存；
-- consumer ProGuard/R8 规则——库随 AAR 交付、构建时并入应用的压缩与混淆规则——以及基线配置文件和注解处理器；
+- consumer ProGuard/R8 规则（库随 AAR 交付、构建时并入应用的压缩与混淆规则）——库随 AAR 交付、构建时并入应用的压缩与混淆规则——以及基线配置文件和注解处理器；
 - 服务端开关、控制台配置、数据处理关系与供应商运维能力。
 
 因此，“一个应用平均有 20～40 个 SDK”“SDK 代码占 30%～60%”只能当参考，作不了项目结论：这类数字高度依赖统计口径——按供应商、业务能力、Maven 发布单元、DEX 包名前缀，还是按最终安装字节计数？同一家供应商可能拆成十几个发布单元，一个基础库也可能被多个 SDK 复用。
@@ -177,7 +177,7 @@ SDK 评估最常见的误判，是“工具显示了数字，于是数字属于 
 
 - Provider 构造、类加载与静态初始化；
 - SharedPreferences、文件、数据库或 PackageManager 查询；
-- Binder 调用、锁等待和同步网络探测；
+- Binder（Android 跨进程调用机制） 调用、锁等待和同步网络探测；
 - 初始化时注册监听器、创建线程池或加载原生库；
 - 多个 SDK 争用主线程、磁盘和类加载锁。
 
@@ -319,7 +319,7 @@ Android 17 的 [所有应用行为变更](https://developer.android.com/about/ve
 
 ### 6.1 后台线程与后台执行资格
 
-嵌入式 SDK 与宿主共享 UID——Linux 用户标识，也是 Android 权限和部分资源统计的归属单位——以及进程状态、权限和后台限制。把任务提交到线程池、协程或 native 线程（通常由 `pthread` 创建），并不会取得新的后台执行豁免。
+嵌入式 SDK 与宿主共享 UID（Linux 用户标识，也是 Android 权限与部分资源统计的边界）——Linux 用户标识，也是 Android 权限和部分资源统计的归属单位——以及进程状态、权限和后台限制。把任务提交到线程池、协程或 native 线程（通常由 `pthread` 创建），并不会取得新的后台执行豁免。
 
 治理时我们要清点这些入口和资源：
 
@@ -333,7 +333,7 @@ Android 17 的 [所有应用行为变更](https://developer.android.com/about/ve
 
 ### 6.2 CPU 归因需要调用栈
 
-`top` 能告诉我们哪个进程或线程在采样窗口里占了 CPU；至于谁安排了这些工作，要看 simpleperf 与 Perfetto 的调用栈。调用栈更接近归因依据，但仍受这些条件影响：
+`top` 能告诉我们哪个进程或线程在采样窗口里占了 CPU；至于谁安排了这些工作，要看 simpleperf（Android NDK 提供的 CPU 采样与性能计数器工具） 与 Perfetto 的调用栈。调用栈更接近归因依据，但仍受这些条件影响：
 
 - 应用是否可 profile，以及 Java/native 符号是否齐全；
 - 异步提交后，执行线程可能只有公共执行器名称；
@@ -372,7 +372,7 @@ Macrobenchmark [`PowerMetric`](https://developer.android.com/reference/kotlin/an
 
 评估报告要写明 SDK 行为依赖的是公开 API 还是私有实现。Android 17 的目标 SDK 变更可从 [target 37 行为变更](https://developer.android.com/about/versions/17/behavior-changes-17)逐项核对。
 
-## 7. Crash、ANR 与进程退出归因
+## 7. Crash、ANR（Application Not Responding，应用无响应） 与进程退出归因
 
 ### 7.1 栈顶信息的归因分档
 
@@ -539,7 +539,7 @@ class GovernedAnalytics(
 友盟、Bugly、Sentry 等产品覆盖的能力并不完全相同。常见控制点包括：
 
 - 在用户同意和数据配置满足条件后初始化；
-- 统一事件 schema——字段、类型、命名和版本约定——以及采样、批量大小、上传条件和重试；
+- 统一事件 schema（字段、类型、命名和版本约定）——字段、类型、命名和版本约定——以及采样、批量大小、上传条件和重试；
 - 限制 breadcrumb（崩溃前的操作与状态记录）、附件、线程栈与本地队列上限；
 - 保留与业务版本匹配的 mapping 和 native symbols；
 - 让核心错误观测不依赖可能引发故障的同一执行链。

@@ -66,7 +66,7 @@ consolidated_from:
 
 > 源码基线：AOSP `android-17.0.0_r1`（API 37），内核 `android17-6.18-2026-06_r6`；设备可能使用其他内核分支。
 
-整条链路是这样接起来的。`ViewRootImpl` 通过 `Choreographer` 安排一轮 Traversal，按“哪些阶段需要重新执行”的脏标记决定要不要 Measure、Layout 和 Draw；硬件加速路径随后通过 `syncAndDrawFrame()` 同步 RenderNode 绘制节点树，把剩下的工作交给 RenderThread。所以布局变快只说明 App 主线程少做了工作；图形 buffer 有没有被 SurfaceFlinger 按时选中并送往显示，要沿后面的链路继续查。
+整条链路是这样接起来的。`ViewRootImpl` 通过 `Choreographer` 安排一轮 Traversal（遍历 View 树的一轮工作），按“哪些阶段需要重新执行”的脏标记决定要不要 Measure、Layout 和 Draw；硬件加速路径随后通过 `syncAndDrawFrame()` 同步 RenderNode 绘制节点树，把剩下的工作交给 RenderThread。所以布局变快只说明 App 主线程少做了工作；图形 buffer 有没有被 SurfaceFlinger（系统合成服务） 按时选中并送往显示，要沿后面的链路继续查。
 
 View 性能从减少层级、无效遍历和过度绘制开始，自定义 View 还要控制对象分配、Path/Bitmap 复用、invalidate 范围和绘制算法。布局与绘制应在同一帧时间线中验证。
 
@@ -74,19 +74,19 @@ View 性能从减少层级、无效遍历和过度绘制开始，自定义 View 
 
 ### 布局层级对渲染性能的影响
 
-布局优化要从一帧里发生了什么看起。子 View 的 `requestLayout()` 沿父链传播到 `ViewRootImpl` 后，根节点设置 `mLayoutRequested` 并安排一次 Traversal；已有 traversal 尚未执行时，重复的调度请求会被合并。但合并之后一帧仍可能布局两次：View 在首轮 layout 期间留下有效的 `requestLayout()` 时，可以在同一帧再执行一轮 measure/layout；第二轮期间再次提出的请求才会延后。我们再看 `performTraversals()` 这一层：它按窗口和 View 树状态决定是否调用 `performMeasure()`、`performLayout()` 与 `performDraw()`，三段工作并不每帧固定执行。
+布局优化要从一帧里发生了什么看起。子 View 的 `requestLayout()` 沿父链传播到 `ViewRootImpl` 后，根节点设置 `mLayoutRequested` 并安排一次 Traversal；已有 traversal（一次 View 树遍历） 尚未执行时，重复的调度请求会被合并。但合并之后一帧仍可能布局两次：View 在首轮 layout 期间留下有效的 `requestLayout()` 时，可以在同一帧再执行一轮 measure/layout；第二轮期间再次提出的请求才会延后。我们再看 `performTraversals()` 这一层：它按窗口和 View 树状态决定是否调用 `performMeasure()`、`performLayout()` 与 `performDraw()`，三段工作并不每帧固定执行。
 
-Measure 是递归过程：父容器通过 `MeasureSpec` 告诉子节点尺寸是精确值、上限还是未指定，子节点报告测量结果，父容器再据此确定自己的尺寸。Layout 随后为各子节点分配位置。节点越多、嵌套越深、父容器规则越复杂，主线程执行的代码通常越多；多轮测量会进一步放大这部分成本。结论仍要回到当前页面的调用次数、单节点工作量和 FrameTimeline deadline。
+Measure 是递归过程：父容器通过 `MeasureSpec` 告诉子节点尺寸是精确值、上限还是未指定，子节点报告测量结果，父容器再据此确定自己的尺寸。Layout 随后为各子节点分配位置。节点越多、嵌套越深、父容器规则越复杂，主线程执行的代码通常越多；多轮测量会进一步放大这部分成本。结论仍要回到当前页面的调用次数、单节点工作量和 FrameTimeline（记录每帧目标与实际时间的系统轨道） deadline。
 
 布局层级不只涉及深度。更常见的成本来自三类结构：
 
 - **重复测量的容器**：`RelativeLayout`、带 `layout_weight` 的 `LinearLayout`、复杂约束容器都可能让子 View 被测量多次。层级一深，重复测量会沿树放大。
-- **高频出现的列表项**：单个 item 的成本可能很小，但列表首屏会同时 inflate 多个，滑动中又频繁创建和绑定，累计起来仍可能造成连续掉帧。
+- **高频出现的列表项**：单个 item（列表条目） 的成本可能很小，但列表首屏会同时 inflate 多个，滑动中又频繁创建和绑定，累计起来仍可能造成连续掉帧。
 - **提前创建的低频内容**：`View.GONE` 的子节点躲得过测量，通常也躲得过绘制，唯独躲不过 inflate：`ViewGroup.measureChildren()` 会跳过它，但对象与整棵子树在首帧前就已创建，父容器仍要遍历并检查状态，自定义容器还可以另立测量规则。大块低频内容更适合延迟创建。
 
 判断一个布局是否需要优化，要看 trace 里的时间与调用次数。`performMeasure()` 和 `performLayout()` 在 framework trace 里分别是 `measure`、`layout` 两个切片名；`FrameMetrics.LAYOUT_MEASURE_DURATION` 合并报告本帧中被标记需要更新的 View 树部分所花的测量与布局时间。没有跨刷新率通用的“3～5 ms 即异常”阈值，我们要把这两段放回 FrameTimeline 的 deadline、同场景分位数和完整 `Choreographer#doFrame` 里判断——FrameTimeline 是记录每帧目标时间与实际时间的系统轨道。
 
-慢帧若主要耗在 `performDraw()`、UI 等待 RenderThread、RenderThread 的 `dequeueBuffer` / `queueBuffer`、GPU 工作队列或显示侧，压平布局的收益会很小。`queueBuffer()` 按时只说明 Producer 把一块 buffer 提交进了队列；接下来还要核对 `BufferTX - <layerName>` 这类 buffer 事务切片、latch（SurfaceFlinger 选定本帧 buffer）、FrameTimeline actual slice 和 present timing，确认这帧确实按时上了屏。
+慢帧若主要耗在 `performDraw()`、UI 等待 RenderThread、RenderThread 的 `dequeueBuffer` / `queueBuffer`、GPU 工作队列或显示侧，压平布局的收益会很小。`queueBuffer()` 按时只说明 Producer（内容生产者） 把一块 buffer 提交进了队列；接下来还要核对 `BufferTX - <layerName>` 这类 buffer 事务切片、latch（SurfaceFlinger 选定本帧 buffer）、FrameTimeline actual slice（实际完成轨道） 和 present timing（呈现时间），确认这帧确实按时上了屏。
 
 工程上建议按这个顺序处理：
 
@@ -104,7 +104,7 @@ Google 在 2017 年用注册表单页面做过公开测试：传统 `RelativeLay
 
 - **复杂相对关系用 `ConstraintLayout`**：多个 View 需要互相对齐、文字基线对齐、比例约束、Barrier（由多个 View 边界算出的虚拟参考线）或 Chain（把一组 View 按链式规则排列）时，它通常比嵌套容器更合适。
 - **简单线性结构继续用 `LinearLayout` / `FrameLayout`**：2-3 个子 View 的水平或垂直排列，不必为了“统一技术栈”改成 `ConstraintLayout`。
-- **列表 item 要实测**：item 很简单时，约束求解器计算约束关系的固定开销可能抵消层级收益；item 很复杂时，扁平化更容易带来改善。用 Macrobenchmark、Perfetto 或 `FrameMetrics.LAYOUT_MEASURE_DURATION` 对比两版。
+- **列表 item 要实测**：item 很简单时，约束求解器计算约束关系的固定开销可能抵消层级收益；item 很复杂时，扁平化更容易带来改善。用 Macrobenchmark（端到端场景基准）、Perfetto 或 `FrameMetrics.LAYOUT_MEASURE_DURATION` 对比两版。
 
 一个实用的迁移方式是从“层级深、存在重复测量且复用多”的布局下手。Layout Inspector 能帮助定位冗余父节点和多层相对关系，但层数本身没有合格线。对公共卡片、列表 item 或首屏头部区域做一版等价布局，再用同一设备、同一数据量、同一操作路径抓 trace；Measure / Layout 分位数和完整帧指标都改善后再推广。
 
@@ -158,7 +158,7 @@ fun showError(root: View) {
 
 ### `LayoutInflater`：缓存构造器不等于消除创建成本
 
-布局 XML 经 AAPT2 编译成 binary XML，运行时仍要读取节点与属性、创建对象并组装 View 树——binary XML 是编译后的二进制 XML，省掉的只是文本解析这一小段。把整段工作都笼统称为“XML 解析”会漏掉主题、资源和业务构造器的成本。我们按三段拆开看一次 `inflate()`：
+布局 XML 经 AAPT2 编译成 binary XML（编译后的二进制 XML），运行时仍要读取节点与属性、创建对象并组装 View 树——binary XML 是编译后的二进制 XML，省掉的只是文本解析这一小段。把整段工作都笼统称为“XML 解析”会漏掉主题、资源和业务构造器的成本。我们按三段拆开看一次 `inflate()`：
 
 1. `Resources.getLayout()` 提供解析器，inflater 读取 `AttributeSet`，处理 `android:theme`、`<include>`、`<merge>`、`<tag>` 等特殊标签，并让父容器生成 `LayoutParams`；
 2. `createViewFromTag()` 先经过 `Factory2 → Factory → private factory`。都未创建 View 时，才进入 `onCreateView()` 或按完整类名构造；AppCompat 的控件替换、Context 包装和 tint 也在这条 Factory 路径中；
@@ -188,7 +188,7 @@ fun showError(root: View) {
 
 `AsyncLayoutInflater` 的使用边界要写清楚。后台 inflate 要求父容器的 `generateLayoutParams(AttributeSet)` 线程安全，被创建的 View 构造过程不能创建 `Handler` 或调用 `Looper.myLooper()`。它仍不支持直接设置 `LayoutInflater.Factory` / `Factory2`，也不支持包含 fragment 的布局；但 AndroidX 1.1.0 可以在构造时传入 `AsyncLayoutFactory`，AppCompat 场景可使用 `AsyncAppCompatFactory` 正确创建 AppCompat View。遇到无法在后台构建的布局，AndroidX 会回退到 UI 线程 inflate；功能可以继续，但本次解析和构造没有移出 UI 线程。
 
-不传 callback executor 的默认重载会在 UI 线程执行完成回调，而且返回的 View 尚未加入 `parent`。下面的接入在回调中完成 attach 和绑定：
+不传 callback executor（指定完成回调在哪个执行器运行） 的默认重载会在 UI 线程执行完成回调，而且返回的 View 尚未加入 `parent`。下面的接入在回调中完成 attach 和绑定：
 
 ```kotlin
 AsyncLayoutInflater(context).inflate(
@@ -234,14 +234,14 @@ View/Compose 混合场景要同时核对两套边界：`ComposeView` 放进 View
 布局优化完成后，用同一台设备、同一份数据、同一条操作路径验证。至少检查这些项目：
 
 - `Choreographer#doFrame` 中 `measure` / `layout` 的 P50、P90、P95 以及调用次数是否下降（P95 指按耗时排序后 95% 的样本不超过该值）。
-- `FrameMetrics.LAYOUT_MEASURE_DURATION` 和 FrameTimeline overrun 是否同时改善；overrun 是超过该帧 deadline 的时长，单看最小值说明不了问题。
+- `FrameMetrics.LAYOUT_MEASURE_DURATION` 和 FrameTimeline overrun（超过该帧 deadline 的时长） 是否同时改善；overrun 是超过该帧 deadline 的时长，单看最小值说明不了问题。
 - 首帧、页面切换或列表交互的用户可感知耗时是否下降。
 - Layout Inspector 中冗余父节点和重复测量结构是否减少；节点总数只作为解释材料。
 - 低 RAM 设备和高刷新率设备上是否同时通过。120 Hz 的名义 VSync 间隔约为 8.33 ms，当前帧仍应以 FrameTimeline 给出的 deadline 为准。
 - 若 App 侧按时完成，继续核对 RenderThread、`queueBuffer`、`BufferTX`、latch 与 present，避免把显示侧延迟记到布局。
 - 视觉一致性、无障碍层级、点击热区没有被改坏。
 
-布局优化的完成标准，是关键帧里的主线程测量与布局成本下降，同时完整帧指标和用户体验没有退化。布局切片只回答 App 主线程这一段；帧是否显示及时，还要沿标准 HWUI 路径检查到 present——这条边界前文已经划过，验收时它同样适用。
+布局优化的完成标准，是关键帧里的主线程测量与布局成本下降，同时完整帧指标和用户体验没有退化。布局切片只回答 App 主线程这一段；帧是否显示及时，还要沿标准 HWUI（Android 硬件加速 UI 渲染器） 路径检查到 present——这条边界前文已经划过，验收时它同样适用。
 
 ### 源码与文档
 
@@ -259,9 +259,9 @@ View/Compose 混合场景要同时核对两套边界：`ComposeView` 放进 View
 
 布局成本稳定后，自定义绘制继续检查 onDraw 中的分配、离屏层、复杂路径和无效区域。缓存只适合内容变化较少的部分。
 
-优化自定义 View，要顺着状态变化触发的整条渲染路径看。一次变化可能只触发 draw（绘制），也可能通过 `requestLayout()` 连带 measure（测量）和 layout（摆放）；UI 线程把绘制命令记进 DisplayList 之后，这一帧何时上屏就交给了后面的线程和显示系统。
+优化自定义 View，要顺着状态变化触发的整条渲染路径看。一次变化可能只触发 draw（绘制），也可能通过 `requestLayout()` 连带 measure（测量）和 layout（摆放）；UI 线程把绘制命令记进 DisplayList（绘制命令记录） 之后，这一帧何时上屏就交给了后面的线程和显示系统。
 
-普通自定义 View 没有独立 Surface，走应用窗口的标准 HWUI 路径。整条管道是：`Choreographer#doFrame` 驱动一次 traversal，UI 线程更新 RenderNode（保存 View 绘制记录和变换属性的渲染节点）及其 DisplayList，`HardwareRenderer.syncAndDrawFrame()` 把树状态交给 RenderThread，BLAST BufferQueue 提交图形缓冲区，SurfaceFlinger 完成合成，HWC 参与显示，最终得到实际显示时间。我们在 Perfetto 里看到的每一个慢帧，都可以沿这条管道分段认领。显示后段可结合 [Android View 标准渲染链路](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) 阅读。
+普通自定义 View 没有独立 Surface，走应用窗口的标准 HWUI 路径。整条管道是：`Choreographer#doFrame` 驱动一次 traversal，UI 线程更新 RenderNode（保存 View 绘制记录和变换属性的渲染节点）及其 DisplayList，`HardwareRenderer.syncAndDrawFrame()` 把树状态交给 RenderThread，BLAST BufferQueue 提交图形缓冲区，SurfaceFlinger 完成合成，HWC（Hardware Composer，硬件合成器） 参与显示，最终得到实际显示时间。我们在 Perfetto 里看到的每一个慢帧，都可以沿这条管道分段认领。显示后段可结合 [Android View 标准渲染链路](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) 阅读。
 
 ### 测量、摆放、绘制：按触发条件判断成本
 

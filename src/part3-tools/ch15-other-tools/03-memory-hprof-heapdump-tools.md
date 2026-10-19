@@ -55,11 +55,11 @@ consolidated_from:
 - src/part3-tools/ch15-other-tools/06-hprof-heapdump-javahprof-datasource.md
 ---
 
-# 内存分析、HPROF 与 Heap Dump 工具
+# 内存分析、HPROF（Java 堆快照文件） 与 Heap Dump 工具
 
 内存工具按问题域选择：Heap Dump 观察 Java 对象和引用，heapprofd 采样 Native 分配，smaps 与 meminfo 描述映射和系统统计。HPROF 与 Perfetto java_hprof 都面向 Java 堆，但采集和分析路径不同。
 
-> 源码基线：AOSP `android-17.0.0_r1`；内核 `/proc`、dma-buf 与 MTE 相关说明以 `android17-6.18-2026-06_r6` 为准；较早版本只说明最低版本或行为差异。
+> 源码基线：AOSP（Android Open Source Project） `android-17.0.0_r1`；内核 `/proc`、dma-buf 与 MTE 相关说明以 `android17-6.18-2026-06_r6` 为准；较早版本只说明最低版本或行为差异。
 
 ## 按 Java、Native、图形与映射选择工具
 
@@ -94,7 +94,7 @@ flowchart TD
     B -->|"整机内存压力"| I["procrank + LMKD/PSI 证据"]
 ```
 
-图里几个词先说清楚：OOM 是内存不足错误，native crash 指 C/C++ 代码或本地运行库中的崩溃；dma-buf 是内核中跨设备、跨进程共享缓冲区的机制，memtrack 是 Android 图形内存记账接口；LMKD 根据系统内存压力选择终止进程，PSI（Pressure Stall Information）记录任务因 CPU、内存或 I/O 资源紧张而停顿的时间。
+图里几个词先说清楚：OOM（Out of Memory） 是内存不足错误，native crash 指 C/C++ 代码或本地运行库中的崩溃；dma-buf 是内核中跨设备、跨进程共享缓冲区的机制，memtrack 是 Android 图形内存记账接口；LMK（Low Memory Killer，系统在内存压力下终止进程的机制）D（Low Memory Killer Daemon） 根据系统内存压力选择终止进程，PSI（Pressure Stall Information）记录任务因 CPU、内存或 I/O 资源紧张而停顿的时间。
 
 同一个问题往往要走两步：记账工具确认“涨在哪里”，归因工具解释“由谁产生”。单次快照通常只能提出假设。
 
@@ -188,13 +188,13 @@ fun setVisibleHeapDumpThreshold(retainedObjectCount: Int) {
 3. 找到第一条生命周期不合理的强引用，核对它的写入和清理位置。
 4. 修复后重复相同操作，等待保留对象消失，并确认没有换成另一条签名。
 
-LeakCanary 的默认观察范围有限，单例、缓存和业务容器要显式观察。内存膨胀若表现为“大量仍然合法存活的对象”，就转到堆转储的 Histogram 和 Dominator Tree 上去找：Histogram 按类汇总对象，Dominator Tree 反映对象间的支配关系。
+LeakCanary 的默认观察范围有限，单例、缓存和业务容器要显式观察。内存膨胀若表现为“大量仍然合法存活的对象”，就转到堆转储的 Histogram（按类汇总的对象直方图） 和 Dominator Tree（支配树） 上去找：Histogram 按类汇总对象，Dominator Tree 反映对象间的支配关系。
 
 #### Android Studio LeakCanary task 与 CI 接入
 
 CI（Continuous Integration，持续集成）里的泄漏检查要靠可重复的操作和明确的断言，只保存一次人工截图说明不了问题。
 
-Android Studio 从 Panda 3 起提供专用的 LeakCanary Profiler task：设备仍负责运行应用和生成堆现场，Shark 转到开发机分析，报告可以从可疑引用跳回工程源码。截至 2026-08-13，Quail 3 稳定版继续提供这项能力；它跟着 IDE 发布线走，与 Android API 版本没有绑定关系。
+Android Studio 从 Panda 3 起提供专用的 LeakCanary Profiler task：设备仍负责运行应用和生成堆现场，Shark 转到开发机分析，报告可以从可疑引用跳回工程源码。截至 2026-08-13，Quail 3 稳定版继续提供这项能力；它跟着 IDE（Integrated Development Environment，集成开发环境） 发布线走，与 Android API 版本没有绑定关系。
 
 几种入口的职责不同：
 
@@ -226,7 +226,7 @@ val detectLeaksAfterTestSuccess = DetectLeaksAfterTestSuccess()
 
 #### HPROF 包含什么
 
-MAT（Eclipse Memory Analyzer）用来离线分析 HPROF。HPROF 是某一时刻的托管堆快照，包含类、对象、字段、数组、线程与 GC Root 等信息，适合回答“对象为何仍可达”“谁支配了大量 Java 对象”。它记录的只是这一刻的托管堆：历史分配时序、malloc 分配区、未映射的 dma-buf 和 GPU 驱动私有内存，都在它的覆盖之外。
+MAT（Eclipse Memory Analyzer）用来离线分析 HPROF。HPROF 是某一时刻的托管堆快照，包含类、对象、字段、数组、线程与 GC Root 等信息，适合回答“对象为何仍可达”“谁支配了大量 Java 对象”。它记录的只是这一刻的托管堆：历史分配时序、malloc 分配区、未映射的 dma-buf 和 GPU（Graphics Processing Unit，图形处理器） 驱动私有内存，都在它的覆盖之外。
 
 Android Studio 的 Heap Dump 页面能直接采集与浏览 Android HPROF。MAT 的 Dominator Tree、Path to GC Roots、OQL（Object Query Language，对象查询语言）和大堆处理更适合复杂离线分析。
 
@@ -245,7 +245,7 @@ adb pull "${remote_hprof}" "${local_hprof}"
 
 `-g` 能减少已经不可达却尚未回收的对象，但 GC 时机与堆状态仍会受运行时影响。转储权限由 [`ActivityManagerService.enforceDebuggable()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java#6922) 把关：面向量产设备的 user 构建只能转储 debuggable 应用，`profileable` 声明本身换不来 HPROF；userdebug/eng 这类可调试系统构建才允许转储其他目标。两个文件名带有 PID，可避免连续分析不同进程时误用旧文件。另外，采集过程会暂停应用并增加临时内存，是一次有扰动的观测。
 
-MAT 打不开 Android HPROF 时，可用 Android SDK Platform-Tools 的 `hprof-conv` 转为标准 Java SE HPROF。下面的命令检查 SDK 根目录和本次 PID，再转换刚才拉取的文件。
+MAT 打不开 Android HPROF 时，可用 Android SDK（Software Development Kit） Platform-Tools 的 `hprof-conv` 转为标准 Java SE HPROF。下面的命令检查 SDK 根目录和本次 PID，再转换刚才拉取的文件。
 
 ```bash
 : "${ANDROID_SDK_ROOT:?Set ANDROID_SDK_ROOT to the Android SDK directory}"
@@ -274,8 +274,8 @@ Retained size 很大，说明该对象控制着大块对象图，这些字节却
 1. 固定应用版本、设备、测试账号和操作脚本，预热到稳定状态。
 2. 执行基线操作并采集 HPROF A。
 3. 重复进入和退出目标场景，等待异步清理完成，再采集 HPROF B。
-4. 比较 Histogram，找出实例数与 shallow size 持续增加的类。
-5. 在 B 中按 retained size 查看 Dominator Tree。
+4. 比较 Histogram，找出实例数与 shallow size（浅大小） 持续增加的类。
+5. 在 B 中按 retained size（保留大小） 查看 Dominator Tree。
 6. 对目标实例执行 Path to GC Roots，排除弱引用，找到第一条异常强引用。
 7. 回到源码验证写入、移除和生命周期，修复后以同一脚本复测。
 
@@ -328,7 +328,7 @@ Perfetto 的 `tools/heap_profile` 会构造配置、启动会话、拉取原始 
 
 省略 `-i` 时，[`tools/heap_profile`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/heap_profile#780) 使用 4096 字节间隔；省略 `-d` 时持续到中断。结果目录中的 `raw-trace` 可直接交给 Perfetto UI。按进程名采集会匹配已经运行的进程，也会覆盖会话开始后新启动的同名进程；按 PID 只跟踪当前实例。
 
-需要把堆数据与调度、Binder 或自定义 trace 放入同一会话时，可手写 TraceConfig，也就是 Perfetto 的采集配置。下面的配置使用 `tools/heap_profile` 的默认 trace 缓冲区、共享内存、采样间隔和阻塞策略，目标是 userdebug 构建上的真实平台进程 `system_server`；会话由操作者中断。
+需要把堆数据与调度、Binder（Android 进程间调用） 或自定义 trace 放入同一会话时，可手写 TraceConfig，也就是 Perfetto 的采集配置。下面的配置使用 `tools/heap_profile` 的默认 trace 缓冲区、共享内存、采样间隔和阻塞策略，目标是 userdebug 构建上的真实平台进程 `system_server`；会话由操作者中断。
 
 ```protobuf
 buffers {
@@ -351,9 +351,9 @@ duration_ms: 0
 write_into_file: true
 ```
 
-`process_cmdline` 可覆盖已运行及后续启动的匹配进程。`block_client` 在共享内存写满时会暂停目标分配线程，因此高分配率测试还要检查 trace 统计和业务时延。若要改成应用进程，应替换为设备上 `/proc/<pid>/cmdline` 的精确值，并满足前述 AndroidManifest 条件。配置字段以 [`heapprofd_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/heapprofd_config.proto) 为准；文本配置交给 Perfetto CLI 时要使用 `--txt`。
+`process_cmdline` 可覆盖已运行及后续启动的匹配进程。`block_client` 在共享内存写满时会暂停目标分配线程，因此高分配率测试还要检查 trace 统计和业务时延。若要改成应用进程，应替换为设备上 `/proc/<pid>/cmdline` 的精确值，并满足前述 AndroidManifest 条件。配置字段以 [`heapprofd_config.proto`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/heapprofd_config.proto) 为准；文本配置交给 Perfetto CLI（命令行工具） 时要使用 `--txt`。
 
-#### ART 分配分析
+#### ART（Android Runtime，Android 运行时） 分配分析
 
 Android 12 起，heapprofd 还可选择 ART 注册的 `com.android.art` heap。它记录 Java 对象的分配调用栈、类型、累计字节和次数，用于分析频繁分配。
 
@@ -385,7 +385,7 @@ Native 快照常见的两个视角是：
 
 - 结果为空：检查包是否 `debuggable/profileable`、目标进程名是否匹配、是否存在并发 heapprofd 会话。
 - 启动阶段缺样本：运行时挂接会有延迟；按进程名启动会话通常比进程启动后按 PID 连接覆盖更早。
-- 缓冲区溢出：短暂峰值可增大 `--shmem-size`；持续过载应增大 `--interval`，接受较低精度。
+- 缓冲区溢出（buffer overrun）：短暂峰值可增大 `--shmem-size`；持续过载应增大 `--interval`，接受较低精度。
 - native 符号缺失：提供与二进制 Build ID（构建产物的唯一标识）匹配的未剥离符号，再执行 Perfetto 符号化。
 - Java 帧出现 `[DEDUPED]`：ART 的 identical code folding（ICF，相同机器码折叠）让多个方法共享代码，显示名不一定是执行的那个方法。
 
@@ -421,7 +421,7 @@ PSS 可以避免共享页在进程间重复记账，但把所有进程 PSS 相�
 
 内核提供 SwapPss 时，`Debug.MemoryInfo.getTotalPss()` 会把按比例分摊的换出页加入总值。解析脚本应保存原始列名和系统版本，避免把 `TOTAL PSS` 与单独显示的 swap 列重复相加。
 
-Private Dirty 表示页面由该进程独占且内容已经改变，这类页面没法像干净文件页那样直接丢弃；匿名页和私有 COW（Copy-on-Write，写时复制）页仍可换出到 zRAM/swap。可回写文件的共享脏页属于另一种记账，解释不了 Private Dirty。Private Clean 多为可从文件重新加载的私有页，内存压力下更容易回收。
+Private Dirty 表示页面由该进程独占且内容已经改变，这类页面没法像干净文件页那样直接丢弃；匿名页和私有 COW（Copy-on-Write（写时复制），写时复制）页仍可换出到 zRAM/swap。可回写文件的共享脏页属于另一种记账，解释不了 Private Dirty。Private Clean 多为可从文件重新加载的私有页，内存压力下更容易回收。
 
 #### 分类行与 App Summary
 
@@ -429,7 +429,7 @@ Private Dirty 表示页面由该进程独占且内容已经改变，这类页面
 - `Native Heap`：默认 native 分配器对应的 Private Dirty malloc 空间。
 - `Code`：`.so`、`.jar`、`.apk`、`.dex`、`.oat` 等代码与静态资源的私有部分。
 - `Stack`：Java 与 native 线程栈的 Private Dirty。
-- `Graphics`：Gfx、EGL、GL 的 private 统计，部分数据来自 memtrack；EGL 是图形上下文与窗口系统接口，GL 指 OpenGL 图形 API。
+- `Graphics`：Gfx、EGL（图形上下文与窗口系统接口）、GL（OpenGL 图形 API） 的 private 统计，部分数据来自 memtrack；EGL 是图形上下文与窗口系统接口，GL 指 OpenGL 图形 API。
 - `Private Other`：尚未归入前述类别的 Private Clean/Dirty。
 - `System`：摘要中归入系统的共享内存份额。
 
@@ -444,7 +444,7 @@ App Summary 不是上方每一行 PSS 的简单求和：[`Debug.MemoryInfo`](htt
 3. 同时保存 `TOTAL PSS`、RSS、SwapPss、Java Heap、Native Heap、Graphics 和进程列表。
 4. 观察数值是否停止继续增长并趋于稳定，必要时再抓 HPROF、heapprofd 或 dma-buf 明细。
 
-PSS 一次没有回落，离泄漏结论还远：Java 堆会保留已提交空间，native 分配器会保留 arena，图片与代码会进入缓存，线程池也可能延迟销毁。趋势、生命周期和归因调用栈要互相印证。
+PSS 一次没有回落，离泄漏结论还远：Java 堆会保留已提交空间，native 分配器会保留 arena（为批量管理内存而申请的内存区），图片与代码会进入缓存，线程池也可能延迟销毁。趋势、生命周期和归因调用栈要互相印证。
 
 ### `showmap`、`procrank` 与 libmeminfo
 
@@ -521,11 +521,11 @@ dma-buf 的内核对象、文件描述符与 attachment（设备附加到共享�
 
 malloc debug 从 API 24 起提供。它在正常分配器前加入 shim（位于调用方与原分配器之间的转发层），可为 `malloc/free/calloc/realloc` 等调用增加 guard、填充值、指针校验、释放隔离区和分配调用栈。guard 是放在分配块前后的哨兵字节，用于发现越界改写；释放隔离区则暂缓复用已释放内存，以提高 use-after-free 的检出机会。
 
-它适合可控测试，性能基准或生产常开都不合适：`backtrace` 会让分配显著变慢，`free_track` 会延迟释放，`guard` 会增加每次分配大小；这些选项都在改变被测进程。
+它适合可控测试，性能基准或生产常开都不合适：`backtrace`（分配调用栈记录） 会让分配显著变慢，`free_track` 会延迟释放，`guard` 会增加每次分配大小；这些选项都在改变被测进程。
 
 #### debuggable 应用的 `wrap.sh`
 
-没有 root 权限的应用可在 API 27 及以上按 NDK `wrap.sh` 方式为 debuggable APK 设置环境。下面的脚本让 backtrace 初始关闭并等待信号开启，同时输出详细启用日志。
+没有 root 权限的应用可在 API 27 及以上按 NDK（Native Development Kit） `wrap.sh` 方式为 debuggable APK 设置环境。下面的脚本让 backtrace 初始关闭并等待信号开启，同时输出详细启用日志。
 
 ```sh
 #!/system/bin/sh
@@ -533,7 +533,7 @@ export LIBC_DEBUG_MALLOC_OPTIONS="backtrace_enable_on_signal verbose"
 exec "$@"
 ```
 
-脚本应按 ABI（Application Binary Interface，应用二进制接口）放入 Android Studio 工程的 `src/main/resources/lib/<abi>/wrap.sh`，同时把 JNI 库的 `useLegacyPackaging` 设为 `true`，并保证 APK 是 debuggable。`wrap.sh` 是 API 27 加入的应用入口；malloc debug 自身从 API 24 提供。直接写 `wrap.<package>` 属性更适合具有 root 权限的平台调试。Android 12 还存在 bionic README 记录的 Zygote fork-loop 兼容问题：作为应用进程模板的 Zygote 可能反复派生并重启子进程。
+脚本应按 ABI（Application Binary Interface，应用二进制接口）放入 Android Studio 工程的 `src/main/resources/lib/<abi>/wrap.sh`，同时把 JNI 库的 `useLegacyPackaging` 设为 `true`，并保证 APK 是 debuggable。`wrap.sh` 是 API 27 加入的应用入口；malloc debug 自身从 API 24 提供。直接写 `wrap.<package>` 属性更适合具有 root 权限的平台调试。Android 12 还存在 bionic README 记录的 Zygote（应用进程孵化器） fork-loop 兼容问题：作为应用进程模板的 Zygote 可能反复派生并重启子进程。
 
 #### 选择选项
 
@@ -863,7 +863,7 @@ zygote 或 boot image 对象通常不是应用泄漏的分配主体，但它们�
 
 JNI 让 Java/Kotlin 代码与 C/C++ 代码互相调用；JNI global/local 是原生代码持有的全局或局部 Java 引用。
 
-`ProcessBody()` 访问运行时 root、image root，再通过 `Heap::VisitObjectsPaused()` 访问对象。对象按类型写成 class、instance、object array 或 primitive array record。泄漏分析器会据此计算从 GC Root 到对象的路径、可达性和 dominator tree。若从任一 GC Root 到对象 B 的路径都经过对象 A，就说 A 支配 B；单个字段引用只表示图中的一条边，推不出这种支配关系。
+`ProcessBody()` 访问运行时 root、image root，再通过 `Heap::VisitObjectsPaused()` 访问对象。对象按类型写成 class、instance、object array 或 primitive array record。泄漏分析器会据此计算从 GC Root 到对象的路径、可达性和 dominator tree（支配树）。若从任一 GC Root 到对象 B 的路径都经过对象 A，就说 A 支配 B；单个字段引用只表示图中的一条边，推不出这种支配关系。
 
 ### Perfetto `android.java_hprof`：直接采集引用图
 
@@ -873,10 +873,10 @@ JNI 让 Java/Kotlin 代码与 C/C++ 代码互相调用；JNI global/local 是原
 
 1. traced（Perfetto 的跟踪服务）把 `JavaHprofConfig` 交给 `JavaHprofProducer`；
 2. producer 根据 `pid` 或 `process_cmdline` 找到目标，读取有效 UID（Linux 用来标识用户身份的数字）并调用 `CanProfile()`；
-3. producer 用 `sigqueue()` 发送 `__SIGRTMIN + 6` 这个 Linux 实时信号，信号值携带标识本次跟踪会话的 tracing session ID；
-4. ART 插件的信号处理器只向 pipe 写一个通知，专用的 listener thread 收到后再调用 `DumpPerfetto()`；
+3. producer 用 `sigqueue()` 发送 `__SIGRTMIN + 6` 这个 Linux 实时信号，信号值携带标识本次跟踪会话的 tracing session ID（本次跟踪会话的编号）；
+4. ART 插件的信号处理器只向 pipe（进程内管道） 写一个通知，专用的 listener thread（监听线程） 收到后再调用 `DumpPerfetto()`；
 5. ART 进入与 GC 互斥的临界区，暂停托管线程、锁定运行时结构并执行第一次 fork；父进程随后尽快恢复托管线程；
-6. 第一次 fork 出来的子进程调用 `daemon()`，再次派生并脱离原会话；最终由孙进程遍历 fork 时刻的堆副本，用 trace writer 把 `HeapGraph` 数据包写进 Perfetto trace 缓冲区；
+6. 第一次 fork 出来的子进程调用 `daemon()`，再次派生并脱离原会话；最终由孙进程遍历 fork 时刻的堆副本，用 trace writer（向 Perfetto trace 缓冲区写数据的接口） 把 `HeapGraph` 数据包写进 Perfetto trace 缓冲区；
 7. Trace Processor（Perfetto 的导入与 SQL 分析引擎）读取 protobuf 数据包，生成 `heap_graph_*` SQL 表。
 
 Java producer 只负责找进程、做授权和发信号。它不会接收 HPROF 文件描述符，也没有 `ArtHprofParser` 把临时 HPROF 转成 protobuf 的步骤。
@@ -930,7 +930,7 @@ Android 12 及更早版本默认只在数据源启动时扫描 PID；Android 13 
 
 #### `CanProfile()` 如何决定能否采集
 
-`producer_support.cc` 按 build type、UID、trace session initiator 和 `packages.list` 联合判断。`packages.list` 是系统维护的已安装包及其 UID、调试和 profileable 属性清单：
+`producer_support.cc` 按 build type（系统构建类型）、UID（系统服务使用的身份）、trace session initiator（跟踪会话发起者） 和 `packages.list` 联合判断。`packages.list` 是系统维护的已安装包及其 UID、调试和 profileable 属性清单：
 
 - 非 `user` 构建，也就是 `userdebug` 或 `eng` 等开发构建，直接允许；
 - `user` 构建上的普通应用会映射到 `packages.list`；
@@ -1052,7 +1052,7 @@ ORDER BY cumulative_size DESC
 LIMIT 100;
 ```
 
-表中的 `parent_id` 组成按最短 root 路径聚合后的树，`cumulative_size` 是节点及其后代的总和。flamegraph 会用层级块展示这些路径及其大小；这里的类路径树与单对象 dominator tree 含义不同，阅读时不要混用。
+表中的 `parent_id` 组成按最短 root 路径聚合后的树，`cumulative_size` 是节点及其后代的总和。flamegraph（火焰图） 会用层级块展示这些路径及其大小；这里的类路径树与单对象 dominator tree 含义不同，阅读时不要混用。
 
 ### 工具选择与采集流程
 
@@ -1078,7 +1078,7 @@ LIMIT 100;
 - 主线程调度、Binder 和帧时间；
 - native heap 问题需要另行启用的 `android.heapprofd`。
 
-Java heap graph 和 native allocation profile 是两个数据源。Java 对象的 `native_size` 只反映 `NativeAllocationRegistry` 登记给该对象的近似原生内存值，替代不了 native heap 分配采样。
+Java heap graph 和 native allocation profile（原生内存分配采样） 是两个数据源。Java 对象的 `native_size` 只反映 `NativeAllocationRegistry` 登记给该对象的近似原生内存值，替代不了 native heap 分配采样。
 
 #### KOOM fork-dump 的使用边界
 

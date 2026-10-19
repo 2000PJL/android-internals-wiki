@@ -182,7 +182,7 @@ AMS 负责在系统侧协调应用组件与进程生命周期。它不渲染界�
 
 ---
 
-分析 system_server 延迟时，要把业务状态变化、锁等待和 OomAdjuster 计算放在同一条因果线上。我们按这条线组织全文：「进程管理的主路径」看组件与调度入口，也就是 AMS、ATMS、WMS 的分工、进程重要性、冷启动、各类 ANR、广播与 ContentProvider；「system_server 锁模型与竞争」看双锁契约、锁顺序与竞争观测；「进程状态、OomAdjuster 与优先级」看 adj、procState、schedGroup 的计算与应用。版本差异、常见误区与参考资料放在末尾。
+分析 system_server 延迟时，要把业务状态变化、锁等待和 OomAdjuster 计算放在同一条因果线上。我们按这条线组织全文：「进程管理的主路径」看组件与调度入口（AMS、ATMS、WMS 的分工，进程重要性，冷启动，各类 ANR，广播与 ContentProvider），也就是 AMS、ATMS、WMS 的分工、进程重要性、冷启动、各类 ANR、广播与 ContentProvider；「system_server 锁模型与竞争」看双锁契约、锁顺序与竞争观测；「进程状态、OomAdjuster 与优先级」看 adj、procState、schedGroup 的计算与应用。版本差异、常见误区与参考资料放在末尾。
 
 ## 进程管理的主路径
 
@@ -198,7 +198,7 @@ AMS 负责在系统侧协调应用组件与进程生命周期。它不渲染界�
 
 `Instrumentation.execStartActivity()` 直接调用 `ActivityTaskManager.getService().startActivity()`，所以“启动 Activity 都由 AMS 完成”是旧版实现的说法。ATMS 先决定 Activity 应放进哪个任务；只有目标进程不存在时，才请求 AMS/`ProcessList` 创建进程。
 
-AMS 通过 `IActivityManager` Binder 接口接受跨进程请求。请求通常先由 `Binder:system_server_*` 线程接收，随后在持锁代码段内、`Handler` 上或其他系统线程中继续处理。名为 `ActivityManager` 的线程并不是唯一的 AMS 主线程，线程池上限和实际线程数都可能随系统构建及运行状态变化。
+AMS 通过 `IActivityManager` Binder 接口接受跨进程请求。请求通常先由 `Binder:system_server_*` 线程接收，随后在持锁代码段（临界区）内、`Handler`（消息队列处理器） 上或其他系统线程中继续处理。名为 `ActivityManager` 的线程并不是唯一的 AMS 主线程，线程池上限和实际线程数都可能随系统构建及运行状态变化。
 
 #### Perfetto 中先看什么
 
@@ -208,7 +208,7 @@ AMS 通过 `IActivityManager` Binder 接口接受跨进程请求。请求通常�
 - Binder 事务、线程状态和 Java 监视器锁竞争（monitor contention）；
 - 系统事件日志（EventLog），例如 `am_proc_start`、`am_proc_bound`、`am_anr`、`am_crash`、`am_kill`。
 
-EventLog 属于另一类数据：只有跟踪配置启用了 Android 日志数据源并包含事件缓冲区（events buffer），`android_logs` 表中才会有这些记录。下面的查询同时保留消息内容，便于读取 PID、进程名和原因：
+EventLog 属于另一类数据：只有跟踪配置启用了 Android 日志数据源并包含事件缓冲区（events buffer），`android_logs` 表中才会有这些记录。下面的查询同时保留消息内容，便于读取 PID（PID）、进程名和原因（`reason`）：
 
 ```sql
 SELECT
@@ -265,15 +265,15 @@ Android 的进程分级远多过“前台”和“后台”两档。AMS 会综�
 | `SERVICE_B_ADJ` | 800 | 较低优先级的旧 Service |
 | `CACHED_APP_MIN_ADJ`～`CACHED_APP_MAX_ADJ` | 900～999 | 缓存进程 |
 
-表中数值是源码常量，具体进程落在哪一档要看当时的依赖关系：Android 17 还可以通过功能开关（feature flag）对可见进程和上一个应用分配更细的档位。`TOP_SLEEPING` 则是计算分支中的调整类型 `adjType`，常量表里并没有它。
+表中数值是源码常量，具体进程落在哪一档要看当时的依赖关系：Android 17 还可以通过功能开关（feature flag）对可见进程和上一个应用（previous app）分配更细的档位。`TOP（顶部）_SLEEPING` 则是计算分支中的调整类型 `adjType`，常量表里并没有它。
 
-前台 Service 的 `adj` 同样不是“永远 100”。在当前固定源码版本中，常规的非 `shortService` 类型 FGS 通常受 `PERCEPTIBLE_APP_ADJ = 200` 保护；刚从顶层应用进入 FGS 的进程可在宽限期内使用 50。它仍可能在极端内存压力、异常或用户停止服务时退出。
+前台 Service 的 `adj` 同样不是“永远 100”。在当前固定源码版本中，常规的非 `short（短时）Service` 类型 FGS 通常受 `PERCEPTIBLE_APP_ADJ = 200` 保护；刚从顶层应用进入 FGS 的进程可在宽限期内使用 50。它仍可能在极端内存压力、异常或用户停止服务时退出。
 
 #### AMS 如何把分数交给 `lmkd`
 
 实际计算位于 `com.android.server.am.psc.OomAdjuster` 和 `OomAdjusterImpl`。
 
-计算完成后，`ProcessList.setOomAdj()` 通过 socket 向低内存终止守护进程 `lmkd` 发送 `LMK_PROCPRIO` 消息，消息中包含 PID、UID 与 `adj`。`lmkd` 再结合 PSI（资源压力停顿信息）、剩余内存水位、回收压力及候选进程信息，决定是否终止进程以及选择哪个进程。
+计算完成后，`ProcessList.setOomAdj()` 通过 socket 向低内存终止守护进程（lmkd） `lmkd` 发送 `LMK_PROCPRIO` 消息，消息中包含 PID（UID）、UID 与 `adj`。`lmkd` 再结合 PSI（资源压力停顿信息（PSI））、剩余内存水位、回收压力及候选进程信息，决定是否终止进程以及选择哪个进程。
 
 “`lmkd` 每次从 `/proc/<pid>/oom_score_adj` 扫描并按最大值终止进程”过度简化了现行实现。`oom_score_adj` 仍是内核可见的重要状态，但 AMS 与 `lmkd` 之间存在明确的控制消息。
 
@@ -419,7 +419,7 @@ InputDispatcher.processAnrsLocked()
 
 #### 广播 ANR
 
-AMS 创建前台与后台两套 `BroadcastConstants`。`ActivityManagerService` 给它们设置 10 秒和 60 秒基础超时，`BroadcastQueueImpl.dispatchReceivers()` 在向目标进程调度广播接收器时启动 `BroadcastAnrTimer`。
+AMS 创建前台与后台两套 `BroadcastConstants`。`ActivityManagerService`（AMS） 给它们设置 10 秒和 60 秒基础超时，`BroadcastQueueImpl.dispatchReceivers()` 在向目标进程调度广播接收器时启动 `BroadcastAnrTimer`。
 
 计时规则如下：
 
@@ -569,13 +569,13 @@ Android 17 的后台音频规则分两层：
 
 播放和音量 API 在不满足生命周期条件时通常不会生效，也不会抛出显眼错误；音频焦点请求会返回 `AUDIOFOCUS_REQUEST_FAILED`。所以“Android 17 所有后台 FGS 没有 WIU 就静默失败”这样的一句话判断站不住，目标版本、Activity 可见性、FGS 类型和闹钟例外要放在一起看。
 
-可延迟、可重试的工作优先考虑 `JobScheduler` 或 `WorkManager`；用户发起的数据传输可以评估 user-initiated data transfer job；持续媒体播放更适合使用 Media3 的 `MediaSessionService`。选择依据是任务含义和约束，别把所有 FGS 一律替换成 WorkManager。
+可延迟、可重试的工作优先考虑 `JobScheduler` 或 `WorkManager`；用户发起的数据传输可以评估 user-initiated data transfer job（用户发起的数据传输任务）；持续媒体播放更适合使用 Media3 的 `MediaSessionService`。选择依据是任务含义和约束，别把所有 FGS 一律替换成 WorkManager。
 
 ---
 
 ### 广播的进程级调度
 
-这里仅说明广播怎样进入 AMS 的组件调度与进程状态链。队列选择、冷启动槽位、优先级传播、超时与可观测性的完整模型见 [1.14 BroadcastQueue 进程级调度与广播性能边界](14-broadcastqueue-scheduling-performance.md)。
+这里仅说明广播怎样进入 AMS 的组件调度与进程状态（proc state）链。队列选择、冷启动槽位、优先级传播、超时与可观测性的完整模型见 [1.14 BroadcastQueue 进程级调度与广播性能边界](14-broadcastqueue-scheduling-performance.md)。
 
 #### 按进程组织的队列
 
@@ -604,7 +604,7 @@ Context.sendBroadcast()
 
 #### Android 14 及以上版本的缓存态广播
 
-Android 14 起，应用处于缓存态时，系统可以暂存发给运行时注册接收器的广播，等应用离开缓存态后再投递；某些重复广播还可能被合并。发给清单注册接收器的广播不使用这套排队方式，系统可先让应用离开缓存态再投递。
+Android 14 起，应用处于缓存态（cached state）时，系统可以暂存发给运行时注册接收器的广播，等应用离开缓存态后再投递；某些重复广播还可能被合并。发给清单注册接收器的广播不使用这套排队方式，系统可先让应用离开缓存态再投递。
 
 这会改变系统跟踪数据的解释：
 
@@ -694,7 +694,7 @@ Android 14 起，应用处于缓存态时，系统可以暂存发给运行时注
 
 AMS 的状态变化会触发多组共享结构更新。调用落到 system_server 后，我们应先确认持锁范围、锁顺序，以及 Binder 回调有没有把局部操作放大成全局等待。
 
-`ActivityManagerService` 处在 Android 进程管理的中心。进程启动和退出、组件状态、LRU（最近最少使用）次序、OOM adj、应用冻结等操作，都可能在 `system_server` 内并发发生。
+`ActivityManagerService` 处在 Android 进程管理的中心。进程启动和退出、组件状态、LRU（最近最少使用）次序、OOM adj（进程回收优先级分值）、应用冻结等操作，都可能在 `system_server` 内并发发生。
 
 只用一把大锁保护这些状态，代码容易保持一致，却会让互不修改同一组数据的线程排在同一个等待队列中。
 
@@ -1047,7 +1047,7 @@ AMS 用哪把锁、服务端当时怎么持锁，普通应用既选择不了，�
 - `ActivityManager.getRunningAppProcesses()` 是进程可见性查询，不会因为“读取列表”就刷新 LRU。`UsageStatsManager` 提供应用使用记录，语义不同，不能当作进程列表的通用替代品。
 - `ServiceConnection.onServiceConnected()` 等回调在应用进程中按 `ServiceDispatcher` 配置的执行器或 `Handler` 分发。回调里发起新的系统调用可能形成新的同步 IPC；至于 `system_server` 当时是否还持有 AMS 锁，从应用侧判断不出来。
 
-平台代码的优化需要遵守更严格的条件：缩短锁内工作、避免持锁时发起不可控的跨进程调用、在安全时复制所需状态后释放锁，并用相同负载的系统轨迹验证等待时间和持锁时间。任何把代码移到锁外的修改，都要先证明对象生命周期与组合写锁规则仍然成立。
+平台代码的优化需要遵守更严格的条件：缩短锁内工作、避免持锁时发起不可控的跨进程调用（IPC）、在安全时复制所需状态后释放锁，并用相同负载的系统轨迹验证等待时间和持锁时间。任何把代码移到锁外的修改，都要先证明对象生命周期与组合写锁规则仍然成立。
 
 
 ## 进程状态、OomAdjuster 与优先级
@@ -1058,7 +1058,7 @@ Android 不允许应用直接决定自己的进程寿命。`system_server` 根�
 
 API 37 的实现已经迁入 `com.android.server.am.psc` 包。继续以 `com.android.server.am.OomAdjuster.java` 为源码入口，会遗漏 Android 17 的 `ProcessStateController`、批处理会话、能力传播和新的跟踪字段。
 
-以下结论限定于 `android-17.0.0_r1` Android framework / lmkd 和 `android17-6.18-2026-06_r6` 内核跟踪点。ProcessStateController（下文简称 PSC）、freezer、LMKD socket 和 Perfetto 行为均以该基线为准，不外推到后续主线或厂商私有实现。
+以下结论限定于 `android-17.0.0_r1` Android framework / lmkd 和 `android17-6.18-2026-06_r6` 内核跟踪点。ProcessStateController（下文简称 PSC）、freezer、LMKD socket（套接字） 和 Perfetto 行为均以该基线为准，不外推到后续主线或厂商私有实现。
 
 ### 一、一轮计算的四组结果
 
@@ -1071,7 +1071,7 @@ API 37 的实现已经迁入 `com.android.server.am.psc` 包。继续以 `com.an
 | `schedGroup` | libprocessgroup / cgroup（控制组） | 进程和子进程应进入 `background`、`default`、`top-app` 等 CPU 组 |
 | capability（能力位） | 后台启动、网络、CPU / freezer 等策略 | 进程当前被允许做哪些事 |
 
-四者相关，却不是一一映射。同为 `adj=0` 的顶部 Activity、正在执行广播接收者和服务回调，可以拥有不同的 `procState` 与调度组；同为 FGS 进程状态，普通 FGS 和 short FGS 用的 adj 也不同。
+四者相关，却不是一一映射。同为 `adj=0` 的顶部 Activity、正在执行广播接收者和服务回调，可以拥有不同的 `procState` 与调度组；同为 FGS 进程状态，普通 FGS 和 short FGS（短时前台服务） 用的 adj 也不同。
 
 `oom_score_adj` 越小，进程越受保护。Android 给 AMS 管理的进程分配的 `oom_score_adj` 有效范围大部分是 `-1000..999`；`UNKNOWN_ADJ=1001` 是计算中的未定值，不会作为正常结果写给 lmkd。
 
@@ -1173,9 +1173,9 @@ private void computeOomAdjLSP(
 
 非顶部但仍可见的 Activity，例如多窗口中的可见窗口，进入 visible 档。基础值为 `VISIBLE_APP_ADJ=100`，还可按 WindowManager 返回的窗口层级在 visible 范围内细分。
 
-`procState` 反映 `TOP`、`BOUND_TOP`、`IMPORTANT_FOREGROUND` 等进程状态语义；adj 反映内存回收保护程度。把“可见 Activity = adj 0”写死，会高估它相对顶部进程的保护等级。
+`procState` 反映 `TOP`、`BOUND_TOP`（绑定到顶部应用）、`IMPORTANT_FOREGROUND`（重要前台） 等进程状态语义；adj 反映内存回收保护程度。把“可见 Activity = adj 0”写死，会高估它相对顶部进程的保护等级。
 
-#### 4.3 FGS 的普通、short 与 recently-top 档位
+#### 4.3 FGS 的普通、short 与 recently-top（近期顶部） 档位
 
 API 37 的本地策略是：
 
@@ -1254,7 +1254,7 @@ API 37 的 AMS 调度组常量是：
 | `SCHED_GROUP_TOP_APP_BOUND` | 4 | `THREAD_GROUP_TOP_APP` |
 | `SCHED_GROUP_FOREGROUND_WINDOW` | 5 | `THREAD_GROUP_FOREGROUND_WINDOW` |
 
-具体使用哪些 cgroup 控制器、uclamp 和 cpuset，由设备的 task profile（任务配置）和 libprocessgroup 配置决定：uclamp 设定调度器的利用率上下界，cpuset 圈定可运行的 CPU 集合。`schedGroup` 的含义要落到这些具体策略上；把它读成固定 CPU 百分比，或假定 API 37 仍通过某个 `/dev/cpuctl` 路径写值，都会出错。
+具体使用哪些 cgroup 控制器、uclamp（调度器利用率上下界） 和 cpuset（可运行的 CPU 集合），由设备的 task profile（任务配置（task profile））和 libprocessgroup 配置决定：uclamp 设定调度器的利用率上下界，cpuset 圈定可运行的 CPU 集合。`schedGroup` 的含义要落到这些具体策略上；把它读成固定 CPU 百分比，或假定 API 37 仍通过某个 `/dev/cpuctl` 路径写值，都会出错。
 
 进入 `top-app` 时，OomAdjuster 还会更新 UI / RenderThread 优先级；启用 FIFO UI 调度的产品使用先进先出调度回调，否则使用 `THREAD_PRIORITY_TOP_APP_BOOST`。离开 `top-app` 时再恢复。
 
@@ -1362,7 +1362,7 @@ adb shell cat /proc/<pid>/oom_score_adj
 
 #### 9.2 Perfetto 的准确入口
 
-API 37 在 Activity Manager atrace 中用 `updateOomAdj_<reason>` 命名全量 / 局部更新时间片，例如 `updateOomAdj_activityChange`、`updateOomAdj_bindService`。下面的查询可查找耗时较长的计算：
+API 37 在 Activity Manager atrace（Android 系统跟踪标记） 中用 `updateOomAdj_<reason>` 命名全量 / 局部更新时间片，例如 `updateOomAdj_activityChange`、`updateOomAdj_bindService`。下面的查询可查找耗时较长的计算：
 
 ```sql
 SELECT ts, dur, name
@@ -1379,7 +1379,7 @@ ORDER BY dur DESC;
 - 更新前 / 后的能力位；
 - CPU_TIME 与 IMPLICIT_CPU_TIME 的来源。
 
-`proc_state_counter` 分类还会按 procstats 状态输出全局进程数计数器，包括冻结进程数量。查看单个瞬时事件的结构化参数可使用：
+`proc_state_counter` 分类还会按 procstats（进程状态统计） 状态输出全局进程数计数器，包括冻结进程数量。查看单个瞬时事件的结构化参数可使用：
 
 ```sql
 SELECT s.ts, s.name, a.key, a.display_value
@@ -1389,7 +1389,7 @@ WHERE s.name = 'process_state_changed'
 ORDER BY s.ts, a.key;
 ```
 
-内核 `oom/oom_score_adj_update` ftrace 事件用于核对分数写入时间；lmkd 终止事件和 PSI 轨道用于核对何时发生压力、为何选择该目标。“adj 升到 900 后出现 `am_kill`”只是时间上的先后；要下结论，还需检查终止原因、PID、压力事件和进程是否由 AMS 主动清理。
+内核 `oom/oom_score_adj_update` ftrace（内核跟踪框架） 事件用于核对分数写入时间；lmkd 终止事件和 PSI 轨道用于核对何时发生压力、为何选择该目标。“adj 升到 900 后出现 `am_kill`”只是时间上的先后；要下结论，还需检查终止原因、PID、压力事件和进程是否由 AMS 主动清理。
 
 #### 9.3 一次有效的优先级实验
 

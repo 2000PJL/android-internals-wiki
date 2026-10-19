@@ -8,8 +8,9 @@
 
 compare 的两类检查：
   1. 事实保真：frontmatter、代码块、标题数量、行内代码集合、链接集合、数字集合必须一致；
-     汉字数量需在原文的 70%～110% 之间。
-  2. 文风不退化：括注密度、否定密度、重复括注、禁用词都不能变差，且至少有一项明显改善。
+     汉字数量需在原文的 70%～110% 之间。原文括注（全角（）与半角解释性括号）在术语仍在时不得删除。
+  2. 文风不退化：否定密度、重复括注、禁用词都不能变差，且至少有一项明显改善
+     （否定 / 重复括注 / 禁用词 / 「我们」）。括注密度下降不再算改善，也不再作为选题主分。
 """
 import json
 import re
@@ -23,8 +24,12 @@ FENCE = re.compile(r"^```.*?^```", re.S | re.M)
 INLINE_CODE = re.compile(r"`[^`\n]+`")
 LINK = re.compile(r"\]\(([^)\s]+)\)")
 CJK = re.compile(r"[一-鿿]")
-GLOSS = re.compile(r"（[^（）\n]{1,40}）")
-TERM_GLOSS = re.compile(r"([A-Za-z][A-Za-z0-9_/\-\.]*(?: [A-Za-z][A-Za-z0-9_/\-\.]*){0,3})（[^（）\n]{1,40}）")
+GLOSS = re.compile(r"（[^（）\n]{1,80}）")
+TERM_GLOSS = re.compile(r"([A-Za-z][A-Za-z0-9_/\-\.]*(?: [A-Za-z][A-Za-z0-9_/\-\.]*){0,3})（([^（）\n]{1,80})）")
+CJK_GLOSS = re.compile(r"([一-鿿]{1,12})（([^（）\n]{1,80})）")
+HALF_GLOSS = re.compile(
+    r"(?<!\])([A-Za-z][A-Za-z0-9_/\-\.]*(?: [A-Za-z][A-Za-z0-9_/\-\.]*){0,3}|[一-鿿]{1,12}) \(([^)\n]{1,80})\)"
+)
 NEG = re.compile(r"不能|不代表|不等于|无法|不应|并非|不意味着|不能据此")
 JARGON = re.compile(r"口径|边界|锚点|证据")
 NUM = re.compile(r"(?<![A-Za-z_\-./#])\d+(?:\.\d+)?")
@@ -42,6 +47,21 @@ def strip_for_prose(text):
     text = FENCE.sub("", text)
     lines = [l for l in text.split("\n") if not l.lstrip().startswith(("|", "#"))]
     return "\n".join(lines)
+
+
+def gloss_pairs(prose):
+    """Unique (term, gloss) pairs from fullwidth and explanatory halfwidth parentheses."""
+    no_code = INLINE_CODE.sub("", prose)
+    pairs = set()
+    for rx in (TERM_GLOSS, CJK_GLOSS, HALF_GLOSS):
+        for m in rx.finditer(no_code):
+            term, inner = m.group(1), m.group(2)
+            if inner.startswith(("http", "#", "/")):
+                continue
+            if not re.search(r"[A-Za-z一-鿿]", inner):
+                continue
+            pairs.add((term, inner))
+    return pairs
 
 
 def metrics(prose):
@@ -63,7 +83,7 @@ def metrics(prose):
 
 
 def score(m):
-    return m["gloss_per_1k"] + 2 * m["neg_per_1k"] + m["jargon_per_1k"] + m["regloss"] + 3 * len(m["banned"])
+    return 2 * m["neg_per_1k"] + m["jargon_per_1k"] + m["regloss"] + 3 * len(m["banned"])
 
 
 def split_h2(text):
@@ -143,14 +163,28 @@ def cmd_compare(old_path, new_path):
     if not 0.70 <= ratio <= 1.10:
         errors.append(f"汉字数量变化超出范围：{ratio:.0%}")
 
-    mo, mn = metrics(strip_for_prose(old_t)), metrics(strip_for_prose(new_t))
-    for k in ("gloss_per_1k", "neg_per_1k", "regloss"):
+    old_prose = strip_for_prose(old_t)
+    new_prose = strip_for_prose(new_t)
+    new_plain = INLINE_CODE.sub("", new_prose)
+    missing = []
+    for term, inner in sorted(gloss_pairs(old_prose) - gloss_pairs(new_prose)):
+        if term and term in new_plain:
+            missing.append(f"{term}（{inner}）")
+    if missing:
+        errors.append(f"删除括注: {missing[:8]}")
+
+    mo, mn = metrics(old_prose), metrics(new_prose)
+    for k in ("neg_per_1k", "regloss"):
         if mn[k] > mo[k] + 0.05:
             errors.append(f"{k} 变差 {mo[k]} -> {mn[k]}")
     if set(mn["banned"]) - set(mo["banned"]):
         errors.append(f"新增禁用词 {sorted(set(mn['banned']) - set(mo['banned']))}")
-    improved = (mo["gloss_per_1k"] - mn["gloss_per_1k"] >= 0.5 or mo["neg_per_1k"] - mn["neg_per_1k"] >= 0.3
-                or mo["regloss"] - mn["regloss"] >= 2 or len(mo["banned"]) > len(mn["banned"]))
+    improved = (
+        mo["neg_per_1k"] - mn["neg_per_1k"] >= 0.3
+        or mo["regloss"] - mn["regloss"] >= 2
+        or len(mo["banned"]) > len(mn["banned"])
+        or mn["women"] >= mo["women"] + 1
+    )
     if not improved:
         errors.append("文风指标没有明显改善（视为无效润色，不应提交）")
 

@@ -76,7 +76,7 @@ consolidated_from:
 
 # Keystore、Biometric 与 Credential 登录性能
 
-登录流程中的一次签名或解密，可能依次经过 App、`keystore2`、KeyMint HAL，随后进入 TEE（Trusted Execution Environment，可信执行环境）或 StrongBox 安全硬件。若密钥绑定了用户认证，链路上还会出现系统认证 UI、传感器、Gatekeeper 或运行在安全环境里的 biometric TA，以及用于证明认证结果的 Hardware Auth Token。
+登录流程中的一次签名或解密，可能依次经过 App、`keystore2`、KeyMint HAL（硬件抽象层），随后进入 TEE（Trusted Execution Environment，可信执行环境）或 StrongBox 安全硬件。若密钥绑定了用户认证，链路上还会出现系统认证 UI、传感器、Gatekeeper 或运行在安全环境里的 biometric（Android 定义的强生物识别等级） TA（运行在安全环境中的可信应用），以及用于证明认证结果的 Hardware Auth Token。
 
 登录链路可能同时访问 Keystore/KeyMint、BiometricPrompt 和 Credential Manager。排查登录耗时时，我们先做一件事：把链路拆开，密钥操作、硬件认证、系统 UI 与网络请求分段计时，看清时间落在哪一段。一句“Keystore 很慢”既定位不了瓶颈，也可能让性能改动破坏原有安全约束。
 
@@ -110,7 +110,7 @@ flowchart LR
     KS -. "授权校验" .-> Secure
 ```
 
-图中的 `keystore2` 保存 KeyMint 返回的加密 key blob 和元数据；key blob 是由安全环境封装的不透明密钥数据，而 hardware-backed key 的明文密钥材料只存在于对应的安全环境内。不过数据是另一回事：待签名消息、待加密明文或密文，仍会从 App 传到系统进程，再交给 KeyMint 处理，所以“业务数据从未离开 App”这句话在这里站不住。
+图中的 `keystore2` 保存 KeyMint 返回的加密 key blob（由安全环境封装的不透明密钥数据） 和元数据；key blob 是由安全环境封装的不透明密钥数据，而 hardware-backed key（硬件保护密钥） 的明文密钥材料只存在于对应的安全环境内。不过数据是另一回事：待签名消息、待加密明文或密文，仍会从 App 传到系统进程，再交给 KeyMint 处理，所以“业务数据从未离开 App”这句话在这里站不住。
 
 #### 一次操作至少有五段
 
@@ -133,7 +133,7 @@ flowchart LR
 源码还给出两个工程约束：
 
 - `engineGenerateKey()` 和多处 `engineInit()` 会调用 `StrictMode.noteSlowCall()`，或标记磁盘读写，表明这些路径可能阻塞调用线程。
-- `Cipher` 的 reset、成功结束和部分错误都会 abort operation；finalizer 只是对象回收前的兜底清理，别指望 GC 及时释放硬件 slot。
+- `Cipher` 的 reset、成功结束和部分错误都会 abort（中止） operation；finalizer 只是对象回收前的兜底清理，别指望 GC 及时释放硬件 slot。
 
 所以 `Cipher`、`Signature`、`Mac` 在 `init` 之后要尽快用完：提前几分钟把对象建好、再等用户操作，等于白白延长 operation 和 slot 的占用时间。
 
@@ -153,7 +153,7 @@ flowchart LR
 
 #### 密钥生成（key generation）
 
-生成密钥通常比读取已有密钥更耗时。我们把可能产生耗时的环节拆开看：生成安全随机数、创建 key blob、检查硬件能力、持久化，非对称密钥还要生成证书；若设置 attestation challenge（服务端提供的随机质询），还要再生成带密钥证明扩展 attestation extension 的证书链。
+生成密钥通常比读取已有密钥更耗时。我们把可能产生耗时的环节拆开看：生成安全随机数、创建 key blob、检查硬件能力、持久化，非对称密钥还要生成证书；若设置 attestation challenge（服务端提供的随机质询），还要再生成带密钥证明扩展 attestation extension（密钥证明扩展） 的证书链。
 
 生成动作适合放在：
 
@@ -161,28 +161,28 @@ flowchart LR
 - 用户启用支付、设备绑定或安全登录的设置流程；
 - 注册完成后、进入高频登录之前的准备阶段。
 
-同一用途的密钥，没必要在每次 App 冷启动、每次登录点击或每个网络请求里重复生成。检查密钥是否存在时，还要考虑它可能已被删除，或因锁屏重置、biometric enrollment（生物识别模板录入）变化、OTA 系统升级而失效。
+同一用途的密钥，没必要在每次 App 冷启动、每次登录点击或每个网络请求里重复生成。检查密钥是否存在时，还要考虑它可能已被删除，或因锁屏重置、biometric（生物识别） enrollment（生物识别模板录入）变化、OTA 系统升级而失效。
 
 #### begin/update/finish
 
-硬件保护的 operation 适合轻量工作：处理密钥、短 challenge、小 token，或做一次数据密钥封装 data key wrapping。大文件、数据库页或长 JSON 直接送进 Keystore，Binder/KeyMint 往返和数据传输都会变多，operation slot 也被长时间占住。
+硬件保护的 operation 适合轻量工作：处理密钥、短 challenge、小 token，或做一次数据密钥封装 data key wrapping（数据密钥封装）。大文件、数据库页或长 JSON 直接送进 Keystore，Binder/KeyMint 往返和数据传输都会变多，operation slot 也被长时间占住。
 
-大数据加密常改用信封加密 envelope encryption：业务数据交给临时数据密钥加密，Android Keystore 密钥只负责保护这把数据密钥。
+大数据加密常改用信封加密 envelope encryption（信封加密）：业务数据交给临时数据密钥加密，Android Keystore 密钥只负责保护这把数据密钥。
 
 1. 用经过安全审查的密码库生成 data encryption key（DEK，数据加密密钥）。
 2. 用 DEK 对业务数据执行 AEAD（带关联数据的认证加密），同时保证机密性和完整性。
 3. 用 Android Keystore 密钥包装或保护 DEK。
-4. 按协议保存算法版本、nonce、wrapped key 和 ciphertext。
+4. 按协议保存算法版本、nonce（一次性随机数或计数值）、wrapped key（封装后的密钥） 和 ciphertext（密文）。
 
 这套设计能降低安全硬件的数据吞吐压力，前提是整套协议经过威胁模型和密码协议审查；协议定稿后，算法保持既定选择、nonce 保持一次性使用、明文 DEK 只在受控窗口内存在，应用侧没有自行变通的空间。
 
 #### 密钥证明（attestation）
 
-attestation 用证书链证明密钥的属性及其受保护环境，测的时候我们按先后拆成三段：本地密钥生成，本地 attestation 证书链返回，再往后是服务端上传、链验证和策略判断。后两段若都放进一个登录网络 span，设备侧问题会被网络与服务端耗时掩盖。证书链、challenge 和应用标识本身是敏感数据：日志只记录长度、结果类别和版本，原始内容不落盘。
+attestation 用证书链证明密钥的属性及其受保护环境，测的时候我们按先后拆成三段：本地密钥生成，本地 attestation 证书链返回，再往后是服务端上传、链验证和策略判断。后两段若都放进一个登录网络 span（链路追踪区间），设备侧问题会被网络与服务端耗时掩盖。证书链、challenge 和应用标识本身是敏感数据：日志只记录长度、结果类别和版本，原始内容不落盘。
 
 ### 认证绑定密钥：per-use 与 time-based 两套流程
 
-把密钥和用户认证绑在一起，从 `setUserAuthenticationRequired(true)` 开始：设上它之后，secret key 或 private key 的使用就受用户认证约束；API 30 及以上还可用 `setUserAuthenticationParameters(timeoutSeconds, authTypes)` 指定授权有效期和允许的认证类型。
+把密钥和用户认证绑在一起，从 `setUserAuthenticationRequired(true)` 开始：设上它之后，secret key（对称密钥） 或 private key（私钥） 的使用就受用户认证约束；API 30 及以上还可用 `setUserAuthenticationParameters(timeoutSeconds, authTypes)` 指定授权有效期和允许的认证类型。
 
 | 类型 | `timeout` | 推荐流程 | operation 何时创建 |
 |---|---:|---|---|
@@ -224,7 +224,7 @@ BiometricPrompt 等待阶段需要单独记录：
 
 #### 密钥永久失效（invalidation）
 
-关闭安全锁屏、强制重置凭据或改变 biometric enrollment，可能让密钥永久失效，并在初始化时抛出 `KeyPermanentlyInvalidatedException`。恢复策略应明确：
+关闭安全锁屏、强制重置凭据或改变 biometric enrollment（生物识别模板录入状态），可能让密钥永久失效，并在初始化时抛出 `KeyPermanentlyInvalidatedException`。恢复策略应明确：
 
 - 哪些密钥可以删除后重建；
 - 哪些密钥失效后需要重新登录或在服务端解除设备绑定；
@@ -239,7 +239,7 @@ Android 9 / API 28 及以上设备可以提供 StrongBox KeyMint。TEE 已经与
 
 #### 设备能力与业务策略
 
-我们先从设备能力查起。`FEATURE_STRONGBOX_KEYSTORE` 只说明设备声明了 StrongBox 能力，具体到算法、key size、digest、padding 或 attestation 的参数组合，仍可能不受支持。`setIsStrongBoxBacked(true)` 失败时会抛出 `StrongBoxUnavailableException`，平台也不会自动改去生成 TEE 密钥。
+我们先从设备能力查起。`FEATURE_STRONGBOX_KEYSTORE` 只说明设备声明了 StrongBox 能力，具体到算法、key size（密钥长度）、digest（摘要算法）、padding（填充方式） 或 attestation 的参数组合，仍可能不受支持。`setIsStrongBoxBacked(true)` 失败时会抛出 `StrongBoxUnavailableException`，平台也不会自动改去生成 TEE 密钥。
 
 应用需要预先定义三类策略：
 
@@ -249,7 +249,7 @@ Android 9 / API 28 及以上设备可以提供 StrongBox KeyMint。TEE 已经与
 | preferred（优先） | 记录失败，经安全策略批准后重新生成非 StrongBox 密钥 | 中风险签名、可分级设备 |
 | not requested（不要求） | 使用平台选择的普通 Android Keystore 安全级别 | 普通会话和大多数 App |
 
-preferred fallback 意味着由应用重新发起一次密钥生成，新密钥的安全级别已经改变，应用必须记录这次变化并通知服务端；只捕获异常后悄悄继续是不行的。
+preferred fallback（首选方案不可用时的后备流程） 意味着由应用重新发起一次密钥生成，新密钥的安全级别已经改变，应用必须记录这次变化并通知服务端；只捕获异常后悄悄继续是不行的。
 
 #### 查询生成结果
 
@@ -268,14 +268,14 @@ Android 12 / API 31 及以上可通过 `KeyInfo.getSecurityLevel()` 读取：
 
 `vold` 是 Android 的卷管理守护进程，会使用 KeyMint 支撑存储加密。Keystore2 源码里并没有为它写死保留 slot；想给 `vold` 留余量，正确做法是在自测时直接观察 prune 和返回错误，而不是套用旧文档里的“15+1”分配。
 
-AIDL 合同也没有承诺第 32 个请求会排进 FIFO 队列等待，实际处理是这样：
+AIDL 合同也没有承诺第 32 个请求会排进 FIFO（先进先出） 队列等待，实际处理是这样：
 
 1. `IKeyMintDevice.begin()` 返回 `TOO_MANY_OPERATIONS`。
 2. Keystore2 调用 `OperationDb::prune()`，尝试选中并释放一项已有 operation。
-3. `prune()` 用 malus（修剪分）选候选：`malus = 1 + sibling_count + floor(log6(age_in_seconds + 1))`。sibling 是同一 owner 下的其他 operation，owner 即所属的客户端 UID；分值高者优先被修剪，老而久未活动的 sibling 最容易被回收。
-4. 没有合适候选时可能返回 `BACKEND_BUSY`；被 prune 的旧 operation 再次使用时会收到 invalid handle 类错误。
+3. `prune()` 用 malus（修剪分）选候选：`malus = 1 + sibling_count + floor(log6(age_in_seconds + 1))`。sibling 是同一 owner（所属客户端 UID） 下的其他 operation，owner 即所属的客户端 UID；分值高者优先被修剪，老而久未活动的 sibling 最容易被回收。
+4. 没有合适候选时可能返回 `BACKEND_BUSY`；被 prune 的旧 operation 再次使用时会收到 invalid handle（句柄已失效） 类错误。
 
-落到应用侧，做法就是限制并发、缩短 operation 生命周期，并按请求记录 busy、pruned 和 invalid-handle 类错误。旧资料常把这套策略概括成“中止全局最久未使用的 operation”，这漏掉了 owner 和 sibling 数量这个维度；KeyMint AIDL 的 32 是整个 HAL 的下限，App 一次能开多少并发 operation，还要按它再往下折算。
+落到应用侧，做法就是限制并发、缩短 operation 生命周期，并按请求记录 busy、pruned 和 invalid-handle（继续这次预取的句柄） 类错误。旧资料常把这套策略概括成“中止全局最久未使用的 operation”，这漏掉了 owner 和 sibling 数量这个维度；KeyMint AIDL 的 32 是整个 HAL 的下限，App 一次能开多少并发 operation，还要按它再往下折算。
 
 #### 容易耗尽 slot 的写法
 
@@ -330,11 +330,11 @@ suspend fun signChallenge(alias: String, challenge: ByteArray): ByteArray =
 
 #### 超时与取消
 
-JCA Keystore API 没有统一的 per-operation deadline，上层可以用 `withTimeout`、`Future.get(timeout)` 或业务计时器停止等待，让 UI 转入备用登录流程；但调用一旦进入 Binder/KeyMint，计时到点并不保证底层操作立即停止。
+JCA Keystore API 没有统一的 per-operation deadline（单次操作截止时间），上层可以用 `withTimeout`、`Future.get(timeout)` 或业务计时器停止等待，让 UI 转入备用登录流程；但调用一旦进入 Binder/KeyMint，计时到点并不保证底层操作立即停止。
 
 处理超时应遵守：
 
-- 旧 worker 线程尚未结束时，不复用同一个密码对象；
+- 旧 worker（工作线程） 线程尚未结束时，不复用同一个密码对象；
 - 将晚到结果标记为过期，不写入当前会话；
 - BiometricPrompt 取消只按其 API 取消认证 UI；
 - worker 返回后释放对象引用，让 Provider 完成 finish 或 abort；
@@ -359,11 +359,11 @@ JCA Keystore API 没有统一的 per-operation deadline，上层可以用 `withT
 | `result_class` | ok、not-authenticated、invalidated、unavailable、busy | 归类失败 |
 | `device/build/app` | 型号、Build、版本 | 识别设备聚集 |
 
-key alias、明文、密文、签名原文、认证 token、attestation challenge、完整证书链，这些都不进日志：alias 里常带账号或业务含义，拿它当日志标签同样不合适。
+key alias（密钥别名）、明文、密文、签名原文、认证 token、attestation challenge、完整证书链，这些都不进日志：alias 里常带账号或业务含义，拿它当日志标签同样不合适。
 
 #### Perfetto 能看到什么
 
-在能稳定复现问题的设备上，我们采集应用 trace marker、sched、Binder、CPU frequency 和磁盘 I/O，可以回答：
+在能稳定复现问题的设备上，我们采集应用 trace marker、sched（线程调度）、Binder、CPU frequency（CPU 频率） 和磁盘 I/O，可以回答：
 
 - App 主线程是否同步等待；
 - Binder 调用发往 `keystore2` 的起止和调度延迟；
@@ -399,18 +399,18 @@ TEE/StrongBox 内部阶段在普通 Perfetto trace 里通常看不到。时间�
 | 超时或备用登录 | 让 UI 可以继续响应 | 上层超时不代表 operation 已取消 |
 | 能力缓存 | 减少重复探测 | 系统升级、锁屏和 enrollment 变化后失效 |
 
-设备能力结果、密钥是否存在这类非敏感状态、服务端策略版本，都可以缓存。解密后的 refresh token 是另一回事：明文缓存会扩大数据可能暴露的范围，想缓存就要先单独过安全评审，单看 Keystore 耗时这一项撑不起这个决定。
+设备能力结果、密钥是否存在这类非敏感状态、服务端策略版本，都可以缓存。解密后的 refresh token（刷新令牌） 是另一回事：明文缓存会扩大数据可能暴露的范围，想缓存就要先单独过安全评审，单看 Keystore 耗时这一项撑不起这个决定。
 
 ### Passkey / Credential Manager 的角色
 
-Credential Manager 是初始登录的统一凭据入口，也支持后续的重新授权。普通依赖方 App（relying party）请求 passkey 时，私钥通常由凭据提供方 credential provider 管理；用户创建 passkey，并不意味着业务 App 自己新增了一个 `AndroidKeyStore` alias。
+Credential Manager 是初始登录的统一凭据入口，也支持后续的重新授权。普通依赖方 App（relying party）请求 passkey 时，私钥通常由凭据提供方 credential（凭据） provider（凭据提供方） 管理；用户创建 passkey，并不意味着业务 App 自己新增了一个 `AndroidKeyStore` alias。
 
 性能指标应分开：
 
 - Credential Manager 发出请求到 provider UI 出现；
 - 用户选择/认证；
 - provider 返回 credential；
-- App 与服务端完成 assertion 验证；
+- App 与服务端完成 assertion（认证断言） 验证；
 - App 自己用于会话缓存的 Keystore 解密。
 
 只有应用自行生成 Android Keystore 密钥，或应用本身实现 credential provider 并管理相应密钥时，才需要把这些密钥纳入 alias、operation 与 security-level 清单。
@@ -439,19 +439,19 @@ Credential Manager 是初始登录的统一凭据入口，也支持后续的重�
 - Keystore2 [`operation.rs`](https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/operation.rs)：operation 生命周期、并发保护和 pruning 算法。
 - [`IKeyMintDevice.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/security/keymint/aidl/android/hardware/security/keymint/IKeyMintDevice.aidl)：KeyMint HAL 的 generate/import/begin 接口。
 
-App 到 `keystore2`、`keystore2` 到 Binderized KeyMint HAL，这两段都经过 Binder。内核侧按 `android17-6.18-2026-06_r6` 固定查看 [`drivers/android/binder.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)。TEE/StrongBox 的 transport 和 driver 多由设备厂商实现，common kernel 里没有；手头没有设备内核与 HAL 源码时，归因到这里为止，剩余部分明确记为厂商实现内部。
+App 到 `keystore2`、`keystore2` 到 Binderized KeyMint HAL（通过 Binder 暴露的 KeyMint 服务），这两段都经过 Binder。内核侧按 `android17-6.18-2026-06_r6` 固定查看 [`drivers/android/binder.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)。TEE/StrongBox 的 transport（通信通道） 和 driver 多由设备厂商实现，common kernel 里没有；手头没有设备内核与 HAL 源码时，归因到这里为止，剩余部分明确记为厂商实现内部。
 
 ## 生物认证、凭据选择与登录完成
 
 密钥可用之后，认证 UI 和凭据提供方还会引入 Binder、硬件和用户交互的等待，所以最终的登录完成时间，要和密钥阶段分开归因。
 
-如果登录页只记录一个 `login_cost_ms`，慢登录出现时，时间花在哪里，这个数字回答不了。我们把一次凭据登录拆开看，环节可能有：Credential Provider 查询、系统凭据选择器、用户操作、传感器认证、passkey assertion、服务端验证和会话初始化；会话内的重新授权则可能只经过 `BiometricPrompt`、Keystore 与业务操作。两个流程都会显示系统认证界面，但调用者、数据边界和可观测信号各不相同。
+如果登录页只记录一个 `login_cost_ms`（登录总耗时），慢登录出现时，时间花在哪里，这个数字回答不了。我们把一次凭据登录拆开看，环节可能有：Credential Provider（凭据提供方） 查询、系统凭据选择器、用户操作、传感器认证、passkey assertion（通行密钥生成的认证断言）、服务端验证和会话初始化；会话内的重新授权则可能只经过 `BiometricPrompt`、Keystore 与业务操作。两个流程都会显示系统认证界面，但调用者、数据边界和可观测信号各不相同。
 
 分工上，应用初次登录优先使用 Credential Manager；已登录会话内确认敏感操作时，Credential Manager 或 AndroidX `BiometricPrompt` 都可以。这一分工来自当前 [Android 生物认证指南](https://developer.android.com/identity/sign-in/biometric-auth)，也省去了应用自行实现账号选择与认证界面的工作。
 
 ### 两条流程，两个责任边界
 
-登录与重新授权可以共用同一套 `flow_id` 规则，`flow_id` 关联一次用户意图，但两边的阶段名称要分开。下图中的实线表示 Credential Manager 登录，虚线表示会话内重新授权：
+登录与重新授权可以共用同一套 `flow_id`（一次用户意图的短期关联 ID） 规则，`flow_id` 关联一次用户意图，但两边的阶段名称要分开。下图中的实线表示 Credential Manager 登录，虚线表示会话内重新授权：
 
 ```mermaid
 flowchart LR
@@ -492,10 +492,10 @@ AndroidX `BiometricPrompt` 是应用侧推荐使用的封装：Android 9（API 2
 源码把这段工作分到多个进程和对象：
 
 1. Framework 的 [`BiometricPrompt.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/biometrics/BiometricPrompt.java) 在 `authenticateInternal()` 中调用 `IBiometricService.authenticate()`，并把 `CancellationSignal` 连接到返回的请求 ID。
-2. `system_server` 中的 [`BiometricService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/biometrics/BiometricService.java) 接收 Binder 请求后，将 `handleAuthenticate()` 投递到服务 Handler 上串行处理。请求会经过权限、前台状态、认证器可用性和注册状态检查。
+2. `system_server` 中的 [`BiometricService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/biometrics/BiometricService.java) 接收 Binder 请求后，将 `handleAuthenticate()` 投递到服务 Handler（串行处理消息的线程队列） 上串行处理。请求会经过权限、前台状态、认证器可用性和注册状态检查。
 3. [`AuthSession.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/biometrics/AuthSession.java) 保存一次认证会话的状态，并通过状态栏服务请求 SystemUI 显示认证界面。
 4. SystemUI 的 [`AuthController.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/biometrics/AuthController.java) 实现 `showAuthenticationDialog()`，处理界面展示、消失和结果回传。
-5. 每个生物传感器有自己的 [`BiometricScheduler.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/biometrics/sensors/BiometricScheduler.java) 实例。它维护当前操作和待处理队列，再由具体的 sensor service 与厂商 HAL 交互。
+5. 每个生物传感器有自己的 [`BiometricScheduler.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/biometrics/sensors/BiometricScheduler.java) 实例。它维护当前操作和待处理队列，再由具体的 sensor service（传感器系统服务） 与厂商 HAL 交互。
 
 这条调用路径跨越应用进程、`system_server`、SystemUI、传感器服务和厂商 HAL。应用主线程 trace 只能覆盖调用方看到的部分，细分不出这些系统组件各自的耗时。
 
@@ -572,7 +572,7 @@ class LoginActivity : FragmentActivity() {
 
 #### 认证类型与传感器形态
 
-`AuthenticationResult.getAuthenticationType()` 能区分 biometric、device credential 和部分旧版本上的 unknown，但分辨力到认证类型为止：本次用的是指纹、人脸还是虹膜、用的哪一颗传感器，接口都不公开，普通应用也没有可靠的 API 读到本次认证的 modality。
+`AuthenticationResult.getAuthenticationType()` 能区分 biometric、device credential（设备 PIN、图案或密码） 和部分旧版本上的 unknown，但分辨力到认证类型为止：本次用的是指纹、人脸还是虹膜、用的哪一颗传感器，接口都不公开，普通应用也没有可靠的 API 读到本次认证的 modality（传感器形态）。
 
 实验室的设备清单可以标注 UDFPS（屏下指纹传感器）、侧边指纹、后置指纹、2D face 或 3D face，用来解释设备组差异；线上事件则没有依据声称记录到了本次使用的 sensor 类型——设备同时支持多种 modality 时，按机型猜测尤其容易失真。
 
@@ -606,13 +606,13 @@ AndroidX [`prepareGetCredential()`](https://developer.android.com/reference/kotl
 - 页面退出、账号切换或请求失效时能够取消或丢弃旧 handle；
 - 完成阶段使用 Activity context，使系统 UI 依附于当前页面所在的任务栈。
 
-Kotlin 挂起版 `getCredential()` 会随 coroutine scope 取消。需要让请求跨旋转继续时，可以使用 `viewModelScope` 等生命周期跨越配置变更的作用域；页面已结束或账号已切换时，应主动使请求失效。回调版则通过 `CancellationSignal` 传递取消信号。
+Kotlin 挂起版 `getCredential()` 会随 coroutine scope（协程作用域） 取消。需要让请求跨旋转继续时，可以使用 `viewModelScope` 等生命周期跨越配置变更的作用域；页面已结束或账号已切换时，应主动使请求失效。回调版则通过 `CancellationSignal` 传递取消信号。
 
 预取事件可以记录 `prepare_start`、`prepare_result`、`resume_start` 和 `get_result`，从而比较准备阶段与完成阶段的耗时。即使使用预取，依赖方应用仍然拿不到 prompt 出现时间或各 provider 的独立查询时间。
 
 ### Android 15 single tap：provider 侧的集成能力
 
-Android 15（API 35）加入 Credential Manager single tap：单账号场景下，凭据信息可以直接显示在 Biometric Prompt 中，同时保留“更多选项”入口。一个账号即使同时拥有 passkey 和密码等多种凭据，仍可满足单账号条件；存在多个账号时，系统回到标准选择流程。到 Android 17（API 37）为止，这一行为没有变化，详见 [single tap 官方指南](https://developer.android.com/identity/sign-in/single-tap-biometric)。
+Android 15（API 35）加入 Credential Manager single tap（单击登录）：单账号场景下，凭据信息可以直接显示在 Biometric Prompt 中，同时保留“更多选项”入口。一个账号即使同时拥有 passkey 和密码等多种凭据，仍可满足单账号条件；存在多个账号时，系统回到标准选择流程。到 Android 17（API 37）为止，这一行为没有变化，详见 [single tap 官方指南](https://developer.android.com/identity/sign-in/single-tap-biometric)。
 
 `BiometricPromptData` 是 AndroidX Credentials 1.5.0 增加的 provider 侧 API。凭据提供方把它放入 `CreateEntry` 或 `PublicKeyCredentialEntry` 后，系统才获得内嵌认证所需的信息。普通依赖方应用不构造这个对象，也拿不到 provider 侧的 `biometricPromptResult`。
 
@@ -690,7 +690,7 @@ stateDiagram-v2
 
 ### 线上事件的字段设计
 
-建议为一次用户意图生成 `flow_id`，每次重试再生成新的 `attempt_id`；事件只记录应用能够直接观测到的时间点：
+建议为一次用户意图生成 `flow_id`，每次重试再生成新的 `attempt_id`（单次尝试 ID）；事件只记录应用能够直接观测到的时间点：
 
 | 事件 | 时间点 | 推荐字段 |
 |---|---|---|
@@ -714,7 +714,7 @@ SystemUI 和 Framework API 为应用提供一致接口，但 sensor HAL、屏幕
 实验室测试至少覆盖：
 
 - Android 版本、厂商系统版本和升级路径；
-- strong / weak biometric 与 device credential 策略；
+- strong / weak biometric（强/弱生物识别） 与 device credential 策略；
 - 冷启动后的首次请求、会话内再次授权、刚解锁设备、熄屏恢复；
 - 旋转重建、切到后台、锁屏、用户切换和重复点击；
 - 正常识别、连续 reject、临时锁定、永久锁定、硬件不可用；

@@ -52,7 +52,7 @@ consolidated_from:
 
 ## 版本范围与源码依据
 
-自适应界面依据当前应用窗口的可用空间、折叠姿态和输入方式调整布局，设备名称只能拿来概括使用场景。同一台设备上，窗口的实际类别可以差得很远：平板上开一个分屏窗口，宽度可能落到紧凑档；手机连接桌面显示器，反而可能是大档甚至超大档。排查布局问题时以窗口的实际测量为准，不看设备型号。
+自适应界面（Adaptive UI）依据当前应用窗口的可用空间、折叠姿态和输入方式调整布局，设备名称只能拿来概括使用场景。同一台设备上，窗口的实际类别可以差得很远：平板上开一个分屏窗口，宽度可能落到紧凑档；手机连接桌面显示器，反而可能是大档甚至超大档。排查布局问题时以窗口的实际测量为准，不看设备型号。
 
 本文采用这些版本：
 
@@ -64,7 +64,7 @@ consolidated_from:
 | Material 3 Adaptive | 1.2.0 稳定版 | 示例代码使用这一版公开 API；Large / Extra-large 分类需要显式开启 |
 | Jetpack WindowManager | 1.5.1 稳定版 | `WindowInfoTracker`、`FoldingFeature` 与 `WindowMetricsCalculator` 按这一版说明 |
 
-Material 3 Adaptive 1.3.0-rc01 是候选发布版，部分窗口信息 API 已经调整。生产项目若采用 1.3.x，应按该版本的迁移说明改写调用；反过来说，1.3.x 里标记弃用的 API，在 1.2.0 中仍可能是正确用法。
+Material 3 Adaptive 1.3.0-rc01 是候选发布版（release candidate，RC），部分窗口信息 API 已经调整。生产项目若采用 1.3.x，应按该版本的迁移说明改写调用；反过来说，1.3.x 里标记弃用的 API，在 1.2.0 中仍可能是正确用法。
 
 ## 一、窗口尺寸类别描述窗口，不描述设备
 
@@ -83,7 +83,7 @@ Material 3 Adaptive 1.3.0-rc01 是候选发布版，部分窗口信息 API 已�
 | 中等（Medium）高度 | `480dp ≤ height < 900dp` |
 | 扩展（Expanded）高度 | `height ≥ 900dp` |
 
-宽度决定导航形态、窗格数量和信息密度，高度同样要看。我们最容易忽略的就是高度：横屏手机或桌面上的矮窗口，可能宽度已经到中等或扩展档，高度却还在紧凑档。这时只看宽度就机械地切成双窗格，触控区域、列表和详情内容都会被压缩。
+宽度决定导航形态、窗格（pane）数量和信息密度，高度同样要看。我们最容易忽略的就是高度：横屏手机或桌面上的矮窗口，可能宽度已经到中等或扩展档，高度却还在紧凑档。这时只看宽度就机械地切成双窗格，触控区域、列表和详情内容都会被压缩。
 
 Material 3 Adaptive 1.2.0 对宽度分类和窗格数量有几处默认行为：
 
@@ -104,7 +104,7 @@ Material 3 Adaptive 1.2.0 对宽度分类和窗格数量有几处默认行为：
 
 ### 3. 系统栏和窗口装饰仍占用内容空间
 
-再往下扣一层：窗口达到 Expanded 宽度，不等于每个窗格都拿到了设计的最小宽度，中间还隔着系统占用。桌面窗口标题栏、状态栏、导航栏、显示缺口和输入法都会先吃掉一块内容区域；边到边页面应在统一位置处理 `WindowInsets`，否则页面布局容器、窗格和子组件各自加一遍内边距，很容易重复扣除。
+再往下扣一层：窗口达到 Expanded 宽度，不等于每个窗格都拿到了设计的最小宽度，中间还隔着系统占用。桌面窗口标题栏（caption）、状态栏、导航栏、显示缺口和输入法（IME）都会先吃掉一块内容区域；边到边（edge-to-edge）页面应在统一位置处理 `WindowInsets`，否则页面布局容器、窗格和子组件各自加一遍内边距，很容易重复扣除。
 
 `LocalWindowInfo.current.containerSize`、平台 `WindowMetrics`、布局阶段得到的内容约束，这是三套不同层次的尺寸。页面模式可以由窗口级信息决定；具体窗格怎么排，以它自己的测量约束为准。三者混用又不注明坐标空间，就容易重复扣除 Insets，或者把窗口尺寸当成内容尺寸。
 
@@ -123,7 +123,7 @@ dependencies {
 }
 ```
 
-版本目录或 Compose BOM 可以替代这里的硬编码版本，但构建产物仍要能还原最终解析到的依赖模块版本。平台 API 37、Compose UI、Material 3 Adaptive 各有自己的版本号，不能共用一个“Android 17 版本”标签。
+版本目录或 Compose BOM（统一管理 Compose 依赖版本的物料清单） 可以替代这里的硬编码版本，但构建产物仍要能还原最终解析到的依赖模块版本。平台 API 37、Compose UI、Material 3 Adaptive 各有自己的版本号，不能共用一个“Android 17 版本”标签。
 
 ### 2. 一个页面只计算一次上层布局指令
 
@@ -175,7 +175,7 @@ fun AdaptiveArticleRoute(
 }
 ```
 
-`rememberListDetailPaneScaffoldNavigator()` 用可保存状态记录目的地历史，泛型内容键必须能写入 Android 的状态容器 `Bundle`。示例使用 `Long`，完整业务对象就不进保存状态。布局指令随窗口信息变化时，导航器会接收新值；列表数据和选中内容仍由 ViewModel、数据仓库或其他页面状态持有。
+`rememberListDetailPaneScaffoldNavigator()` 用可保存状态记录目的地历史，泛型内容键（key）必须能写入 Android 的状态容器 `Bundle`。示例使用 `Long`，完整业务对象就不进保存状态。布局指令随窗口信息变化时，导航器会接收新值；列表数据和选中内容仍由 ViewModel、数据仓库或其他页面状态持有。
 
 `AnimatedPane` 提供窗格进入、退出和适配动画，但图片解码、数据库查询、复杂内容组合的成本，它管不到。拖动窗口时如果动画和资源加载叠在一起，先把两者分开测量，再根据产品设计缩小动画范围，或停用不必要的过渡。
 
@@ -189,7 +189,7 @@ fun AdaptiveArticleRoute(
 - 分支内是否执行了解析、排序、图片请求或其他不该处于组合阶段的工作？
 - 父级已经给出明确模式时，子级能否直接接收枚举或数据，省去重复分类？
 
-还要把它的开销和 Compose 已有的几类优化分开：强跳过、稳定参数、Lazy 列表项键解决的是各自的问题——强跳过决定参数满足条件时能否省略一次可组合函数调用，稳定的键用于维持列表项身份；父约束变化后的测量和布局，强跳过和稳定的键都取消不了。
+还要把它的开销和 Compose 已有的几类优化分开：强跳过（strong skipping）、稳定参数、Lazy 列表项键解决的是各自的问题——强跳过决定参数满足条件时能否省略一次可组合函数调用，稳定的键用于维持列表项身份；父约束变化后的测量和布局，强跳过和稳定的键都取消不了。
 
 ### 4. 窗格变化时要保留用户状态
 
@@ -201,7 +201,7 @@ fun AdaptiveArticleRoute(
 - Lazy 列表项键使用不可变业务 ID，不使用索引或会变化的标题；
 - 不因窗口尺寸类别变化重新发起同一网络请求或清空导航历史。
 
-说“移动已有界面”只是视觉层面的描述。Compose 用槽位表记录组合结构，调用位置一变，原来的组合实例不一定能复用。性能目标应写成可验证的状态保留、组合范围和帧时间。
+说“移动已有界面”只是视觉层面的描述。Compose 用槽位表（slot table）记录组合结构，调用位置一变，原来的组合实例不一定能复用。性能目标应写成可验证的状态保留、组合范围和帧时间。
 
 ## 三、折叠姿态不等于连续铰链角度
 
@@ -280,7 +280,7 @@ class FoldAwareActivity : ComponentActivity() {
 
 `Choreographer#doFrame` → `ViewRootImpl` 遍历 → HWUI RenderThread → 窗口 BLAST 缓冲区 → SurfaceFlinger → 目标显示设备的 HWC → 呈现栅栏（present fence）。
 
-这条链上各段的分工：`ViewRootImpl` 遍历包含一轮测量、布局和绘制准备；BLAST 负责协调窗口缓冲区与 `SurfaceControl` 事务；HWC 是硬件合成器；呈现栅栏是显示设备完成本轮呈现时发出的同步信号。
+这条链上各段的分工：`ViewRootImpl` 遍历包含一轮测量、布局和绘制准备；BLAST 负责协调窗口缓冲区与 `SurfaceControl` 事务；HWC 是硬件合成器（Hardware Composer）；呈现栅栏是显示设备完成本轮呈现时发出的同步信号。
 
 约束变化可能让 Compose 重新组合、测量、布局、记录绘制命令，也可能只触发其中一部分。而向系统侧请求重新布局的动作由 `ViewRootImpl.performTraversals()` 发起：尺寸、可见性、Insets、`LayoutParams`、Surface 等条件满足时，它才通过 `IWindowSession.relayout()` 请求 WMS 重新布局；内容稳定的帧不会固定执行一次 `relayout()`。再往上是分工：WMS 维护窗口状态，WM Shell 在系统界面进程中负责多窗口和转场等上层交互。
 
@@ -320,7 +320,7 @@ flowchart LR
 
 顺着图往下读：同一 UI Looper 上的多个 `ViewRootImpl` 共享 Choreographer 回调队列，同进程的硬件加速窗口还共享进程级 RenderThread，但每个窗口有自己的 Surface 和缓冲区周转。进程之间呢？UI 线程和 RenderThread 各自独立，可只要落在同一显示设备上，SurfaceFlinger、GPU/内存带宽、HWC 硬件合成平面和显示截止时间就还是共享的。
 
-所以判断窗口数量，要看事实而不是视觉形态。双栏 Compose/View 布局通常仍只有一个顶层窗口、一个应用窗口缓冲区；Activity Embedding 会在同一任务中嵌入多个 Activity；再叠加 Dialog、Popup、画中画、自由窗口或多实例，顶层窗口到底有几个，必须根据实际的 pid、UI 线程编号 tid、`ViewRootImpl`、`WindowState`、SurfaceFlinger 图层和 `displayId` 判断。
+所以判断窗口数量，要看事实而不是视觉形态。双栏 Compose/View 布局通常仍只有一个顶层窗口、一个应用窗口缓冲区；Activity Embedding 会在同一任务中嵌入多个 Activity；再叠加 Dialog、Popup、画中画（PiP）、自由窗口或多实例，顶层窗口到底有几个，必须根据实际的 pid、UI 线程编号（tid） tid、`ViewRootImpl`、`WindowState`、SurfaceFlinger 图层和 `displayId` 判断。
 
 ### 3. 窗口几何、缓冲区和显示呈现对应三个时间点
 
@@ -330,9 +330,9 @@ flowchart LR
 - 应用按新约束绘制的窗口缓冲区；
 - SurfaceFlinger 为目标显示设备选择可见图层并完成本轮呈现。
 
-过渡阶段可能出现新几何配旧缓冲区：系统会缩放旧内容，或用任务快照、启动窗口填补应用重绘的间隙。同步机制也分两侧：WMS 的 `BLASTSyncEngine` 可以等待已加入同步组的窗口容器完成绘制和事务；公开的 `SurfaceSyncGroup` 则面向应用或嵌入式 Surface。未加入同步组的相机、编解码器、渲染引擎这些生产者，时序仍要业务自行协调。
+过渡阶段可能出现新几何配旧缓冲区：系统会缩放旧内容，或用任务快照、启动窗口填补应用重绘的间隙。同步机制也分两侧：WMS 的 `BLASTSyncEngine` 可以等待已加入同步组的窗口容器（WindowContainer）完成绘制和事务；公开的 `SurfaceSyncGroup` 则面向应用或嵌入式 Surface。未加入同步组的相机、编解码器、渲染引擎这些生产者，时序仍要业务自行协调。
 
-这里有一个常见的定位偏差：应用的 `queueBuffer()` 返回，只说明生产者已经提交缓冲区。此刻 GPU 完成栅栏可能尚未发出信号，SurfaceFlinger 也可能还没采纳这个缓冲区，目标显示设备自然尚未完成呈现。所以排查窗口调整卡顿，别只盯 Compose 测量；反过来，应用帧都按时，也排除不了显示端。
+这里有一个常见的定位偏差：应用的 `queueBuffer()` 返回，只说明生产者（Producer）已经提交缓冲区。此刻 GPU 完成栅栏可能尚未发出信号，SurfaceFlinger 也可能还没采纳这个缓冲区，目标显示设备自然尚未完成呈现。所以排查窗口调整卡顿，别只盯 Compose 测量；反过来，应用帧都按时，也排除不了显示端。
 
 ### 4. 每个显示设备有自己的呈现结果
 
@@ -402,7 +402,7 @@ flowchart LR
 
 ## 七、多窗口生命周期和输入不能只看 `onPause()`
 
-多窗口环境下，生命周期和焦点是两回事。多窗口支持多恢复：多个 Activity 可以同时处于 `RESUMED`，但只有一个是 top-resumed，也就是系统当前优先交互的那个；可见窗口也可能没有输入焦点。所以播放器、相机、动画、协作光标和轮询任务做降载决策时，我们要综合：
+多窗口环境下，生命周期和焦点是两回事。多窗口支持多恢复（multi-resume）：多个 Activity 可以同时处于 `RESUMED`，但只有一个是 top-resumed，也就是系统当前优先交互的那个；可见窗口也可能没有输入焦点。所以播放器、相机、动画、协作光标和轮询任务做降载决策时，我们要综合：
 
 - 生命周期状态；
 - 窗口可见性与遮挡；
@@ -415,7 +415,7 @@ flowchart LR
 
 ### 桌面窗口的多实例、拖拽与共享状态
 
-进入桌面窗口化，同一应用会同时拥有多个任务，甚至跨显示器展示同一业务对象。清单属性 `PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI` 只允许系统界面提供“新窗口”入口，启动模式、路由、草稿冲突和数据库并发还是要由应用自己解决。
+进入桌面窗口化，同一应用会同时拥有多个任务（task），甚至跨显示器展示同一业务对象。清单属性 `PROPERTY_SUPPORTS_MULTI_INSTANCE_SYSTEM_UI` 只允许系统界面提供“新窗口”入口，启动模式、路由、草稿冲突和数据库并发还是要由应用自己解决。
 
 状态可以分成三层：
 
@@ -440,7 +440,7 @@ flowchart LR
 
 同一项目可以同时使用这些机制，但每一种只处理自己的层级：间距、最小窗格宽度和列数放在 `values` 资源中，页面结构由窗口尺寸类别和姿态决定，组件内部由约束完成排版。复制多份完整布局则会让维护与状态恢复难度上升，某个资源目录也容易长期无人测试。
 
-检查资源时覆盖横竖屏、分屏、自由窗口、字体缩放、显示缩放、外接屏，以及不同语言和地区设置；另外，图片资源目录不应成为运行时图片尺寸策略的唯一输入。
+检查资源时覆盖横竖屏、分屏、自由窗口、字体缩放、显示缩放、外接屏，以及不同语言和地区设置（locale）；另外，图片资源目录不应成为运行时图片尺寸策略的唯一输入。
 
 ## 九、视觉正确性和帧性能要分别验证
 
@@ -464,11 +464,11 @@ Compose Preview、Compose UI Check、`DeviceConfigurationOverride` 和截图测�
 
 哪些操作适合交给 Macrobenchmark？启动、滚动、窗格导航和预设尺寸切换这类可重复的用户操作都合适。连续拖动桌面窗口的系统手势则不一定：在不同设备和 Shell 实现上难以稳定复现，此时应改用固定环境的脚本化操作，或者手工操作时采集 Perfetto，并记录每次窗口边界。
 
-每组性能数据都要能还原现场：设备、Android 源码标签或系统构建、目标 SDK、Material 3 Adaptive/Compose 版本、窗口尺寸、密度、`displayId`、刷新率、温度、编译模式、基线配置文件和输入脚本都得记。单拿一组平均帧率，解释不了跨断点或调整窗口时的短时异常。
+每组性能数据都要能还原现场：设备、Android 源码标签或系统构建、目标 SDK、Material 3 Adaptive/Compose 版本、窗口尺寸、密度、`displayId`、刷新率、温度、编译模式、基线配置文件（Baseline Profile）和输入脚本都得记。单拿一组平均帧率，解释不了跨断点或调整窗口时的短时异常。
 
 ### 3. FrameTimeline 要按 SurfaceFrame 和 DisplayFrame 读取
 
-窗口调整的问题，我们最终要落到 FrameTimeline 上看。这段 PerfettoSQL 比较目标应用窗口的 Expected 和 Actual `SurfaceFrame`：Expected 是系统预期的帧时间窗，Actual 是实际执行记录。`$target_upid` 是 Perfetto 中的目标进程编号，`$layer_glob` 是目标窗口图层的匹配模式；两者必须依据本次轨迹确定，不能只用包名模糊匹配整个系统。
+窗口调整的问题，我们最终要落到 FrameTimeline 上看。这段 PerfettoSQL 比较目标应用窗口的 Expected 和 Actual `SurfaceFrame`：Expected 是系统预期的帧时间窗，Actual 是实际执行记录。`$target_upid` 是 Perfetto 中的目标进程编号（pid），`$layer_glob` 是目标窗口图层的匹配模式；两者必须依据本次轨迹确定，不能只用包名模糊匹配整个系统。
 
 ```sql
 WITH actual_app AS (

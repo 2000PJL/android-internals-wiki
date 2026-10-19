@@ -138,13 +138,13 @@ last_body_apply_at: '2026-10-11T07:16:50+08:00'
 
 性能工作从用户场景和可测指标开始，经过证据采集、责任定位、单变量修改和回归验证，最后进入长期门禁。经验模式可以帮助提出假设，但结论必须回到当前版本和设备数据。
 
-> 源码基线：AOSP `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`；厂商内核与 common tag 不一致时，按设备 kernel build 和对应源码复核。
+> 源码基线：AOSP（Android Open Source Project，Android 开源项目） `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`；厂商内核与 common tag（版本标签） 不一致时，按设备 kernel build（内核构建版本） 和对应源码复核。
 
 ## 目标、指标、工具与实验设计
 
 ### 道、术、器的分工
 
-性能工程面对的对象，是一个在特定设备、系统版本、构建产物和运行环境中运行的完整系统：Binder 承担跨进程调用，RenderThread 提交绘制命令，GPU 执行图形任务，SurfaceFlinger 完成系统级图层合成。所以一次卡顿可能同时牵涉主线程排队、Binder 等待、RenderThread 提交、GPU 执行和 SurfaceFlinger 合成；一次启动变慢也可能来自编译状态、磁盘缓存、进程状态或业务初始化。我们如果只盯住某个函数的耗时，很容易把症状当成原因。
+性能工程面对的对象，是一个在特定设备、系统版本、构建产物和运行环境中运行的完整系统：Binder 承担跨进程调用，RenderThread 提交绘制命令，GPU 执行图形任务，SurfaceFlinger（系统显示合成服务） 完成系统级图层合成。所以一次卡顿可能同时牵涉主线程排队、Binder 等待、RenderThread 提交、GPU 执行和 SurfaceFlinger 合成；一次启动变慢也可能来自编译状态、磁盘缓存、进程状态或业务初始化。我们如果只盯住某个函数的耗时，很容易把症状当成原因。
 
 「道、术、器」分别承担三类工作：
 
@@ -158,7 +158,7 @@ last_body_apply_at: '2026-10-11T07:16:50+08:00'
 
 #### 从关键用户旅程开始
 
-「应用很慢」这样的反馈没法直接拿去做实验。我们先把反馈改写成可复现的关键用户旅程（Critical User Journey，CUJ），写清楚起点、终点和成功条件，后面的测量才有对象。
+「应用很慢」这样的反馈没法直接拿去做实验。我们先把反馈改写成可复现的关键用户旅程（Critical User Journey（CUJ，即必须稳定完成的关键用户操作路径），CUJ），写清楚起点、终点和成功条件，后面的测量才有对象。
 
 | 用户反馈 | 可复现的 CUJ | 适合观察的结果 |
 |---|---|---|
@@ -168,7 +168,7 @@ last_body_apply_at: '2026-10-11T07:16:50+08:00'
 | 使用一段时间后内存上涨 | 重复进入并退出同一业务流程 | Java/native heap（Java/原生代码堆内存）、RSS/PSS（进程驻留内存/按共享比例计入的物理内存）、对象保留路径、分配调用栈 |
 | 后台耗电 | 固定时长进入后台并保持相同网络条件 | wakelock（唤醒锁）、alarm（定时触发）、job（后台任务）、网络活动、thermal（温控状态）与电量归因 |
 
-TTID 只看首帧什么时候出现，TTFD 还把应用调用 `reportFullyDrawn()` 之前的工作算进来。TTFD 是否可信，取决于应用是否在业务内容稳定可用后才调用这个方法。
+TTID（Time to Initial Display） 只看首帧什么时候出现，TTFD（Time to Full Display） 还把应用调用 `reportFullyDrawn()` 之前的工作算进来。TTFD（Time To Full Display） 是否可信，取决于应用是否在业务内容稳定可用后才调用这个方法。
 
 单个指标回答不了整个用户旅程：冷启动 P50 改善了，温启动、低端机或首次安装后的体验未必跟着改善；平均帧耗时降下来，少量冻结帧还可能藏在里面。所以性能结论至少要写成下面这组条件：
 
@@ -180,22 +180,22 @@ TTID 只看首帧什么时候出现，TTFD 还把应用调用 `reportFullyDrawn(
 
 用户感知告诉我们先修什么，系统指标提供归因线索；两者之间需要一层稳定的映射：
 
-- 启动体验可映射到 TTID、TTFD、冷/温/热启动类型，以及首帧前各阶段耗时。
-- 流畅度可映射到错过 deadline 的帧、冻结帧、实际刷新率和当时的 UI 状态。
+- 启动体验可映射到 TTID（Time To Initial Display）、TTFD、冷/温/热启动类型，以及首帧前各阶段耗时。
+- 流畅度可映射到错过 deadline（每帧完成时限） 的帧、冻结帧、实际刷新率和当时的 UI 状态。
 - 响应性可映射到输入事件、消息队列、线程调度、锁等待、Binder 和 I/O。
-- 稳定性可映射到用户感知 ANR、崩溃、OOM、LMK（系统因低内存结束进程）与对应场景。
+- 稳定性可映射到用户感知 ANR（应用无响应）、崩溃、OOM（内存不足错误）、LMK（系统因低内存结束进程）与对应场景。
 - 功耗可映射到任务执行时间、唤醒来源、网络无线电活动、thermal 状态和电量统计。
 
-指标只负责描述现象。就算 Trace 显示某帧主线程在跑 GC，我们还要继续问：分配来自哪里，这次 GC 有没有跨过该帧 deadline，同一问题能不能在相同条件下复现。
+指标只负责描述现象。就算 Trace 显示某帧主线程在跑 GC（垃圾回收），我们还要继续问：分配来自哪里，这次 GC 有没有跨过该帧 deadline，同一问题能不能在相同条件下复现。
 
 #### 实验室数据与线上数据各有职责
 
 实验室测量适合控制变量、复现问题和验证改动；线上数据适合判断影响范围、设备分布和长尾趋势。二者各有分工，替代不了对方：
 
 - Macrobenchmark（端到端性能基准测试）能把启动或滚动 CUJ 稳定地重复跑起来，但测试设备代表不了全部用户。
-- Android vitals（Google Play 汇总的线上质量数据）给出真实设备上的崩溃、ANR、慢渲染和电量信号，但聚合数据通常定位不到具体代码。
-- JankStats（Jetpack 帧监控库）把帧耗时和应用提供的 UI 状态一起交给回调，但采样、聚合、上传、隐私和版本维度仍要应用自己设计。
-- Perfetto 保存一次复现过程的运行时间线，但没启用的数据源不会事后出现在 Trace 中。
+- Android vitals（Google Play 汇总的线上质量数据）给出真实设备上的崩溃、ANR（Application Not Responding，应用无响应）、慢渲染和电量信号，但聚合数据通常定位不到具体代码。
+- JankStats（Jetpack 帧监控库）把帧耗时和应用提供的 UI 状态一起交给回调（系统要求进程主动收缩内存的通知），但采样、聚合、上传、隐私和版本维度仍要应用自己设计。
+- Perfetto（系统级 trace 工具） 保存一次复现过程的运行时间线，但没启用的数据源不会事后出现在 Trace 中。
 
 推荐的工作顺序是：用线上数据选择场景和设备层级，用实验室环境复现并定位，再用基准测试和按版本、设备等维度分组的线上数据验证改动。
 
@@ -224,7 +224,7 @@ TTID 只看首帧什么时候出现，TTFD 还把应用调用 `reportFullyDrawn(
 
 ##### 3. 采集能区分假设的证据
 
-采集配置由假设决定。比如查启动，我们要进程启动、主线程、Binder、I/O 和 ART 相关事件；查掉帧，要 FrameTimeline、Choreographer、RenderThread、SurfaceFlinger、调度与频率信息；查 C/C++ 等 native CPU 热点，要采样栈和符号。反过来，把所有数据源都打开只会增大 Trace、提高扰动、拖慢分析。
+采集配置由假设决定。比如查启动，我们要进程启动、主线程、Binder、I/O 和 ART（Android Runtime，Android 运行时） 相关事件；查掉帧，要 FrameTimeline、Choreographer（帧回调调度器）、RenderThread、SurfaceFlinger、调度与频率信息；查 C/C++ 等 native CPU 热点，要采样栈和符号。反过来，把所有数据源都打开只会增大 Trace、提高扰动、拖慢分析。
 
 ##### 4. 提出可证伪的假设
 
@@ -236,7 +236,7 @@ TTID 只看首帧什么时候出现，TTFD 还把应用调用 `reportFullyDrawn(
 
 ##### 6. 复测并检查副作用
 
-用相同协议复测，比较分布与置信区间，并检查内存、功耗、稳定性和业务正确性。把主线程工作挪到后台线程可能改善帧耗时，也可能带来 CPU 竞争、启动后的尾部延迟或耗电。
+用相同协议复测，比较分布与置信区间（估计结果的不确定范围），并检查内存、功耗、稳定性和业务正确性。把主线程工作挪到后台线程可能改善帧耗时，也可能带来 CPU 竞争、启动后的尾部延迟或耗电。
 
 #### 用证据等级约束结论
 
@@ -249,7 +249,7 @@ TTID 只看首帧什么时候出现，TTFD 还把应用调用 `reportFullyDrawn(
 | 干预 | 改变该机制后，预期中间量是否随之变化 | 当前改动与改善一致 |
 | 复现 | 不同轮次、设备或灰度（分批发布）对照是否保持同方向 | 结论适用于已经覆盖的总体 |
 
-每个候选原因还应写成“假设—预期观测—反证—状态”。比如我们假设主线程 CPU bound（耗时主要在 CPU 计算上）。这时预期的 wall time 就会接近 on-CPU time（线程真正占用 CPU 的时间），采样栈集中在稳定调用链；如果大部分时间实际花在 Runnable、Binder 等待或锁等待上，这条假设就应降级或被排除。把被证伪的假设也留下来，下一位排查者就不必重复同一条无效路径。
+每个候选原因还应写成“假设—预期观测—反证—状态”。比如我们假设主线程 CPU bound（耗时主要在 CPU 计算上）。这时预期的 wall time（经过的总时间） 就会接近 on-CPU time（线程真正占用 CPU 的时间），采样栈集中在稳定调用链；如果大部分时间实际花在 Runnable、Binder 等待或锁等待上，这条假设就应降级或被排除。把被证伪的假设也留下来，下一位排查者就不必重复同一条无效路径。
 
 #### 测量协议与常见偏差
 
@@ -265,7 +265,7 @@ TTID 只看首帧什么时候出现，TTFD 还把应用调用 `reportFullyDrawn(
 | 采样或插桩 | CPU 时间、调度和 Trace 体积 | 使用能回答问题的最低采样率和最小数据源集合，并做有/无采集对照 |
 | 自动化脚本不稳定 | 手势路径、页面状态和等待条件 | 用语义条件等待页面，不用固定 `sleep` 代替业务完成信号 |
 
-AndroidX 官方把 Macrobenchmark 定位为进程外的端到端测量工具，允许控制启动和编译状态；Microbenchmark 用于进程内代码片段。两者结果的范围不同，不可直接互换。
+AndroidX 官方把 Macrobenchmark（从进程外测量完整用户交互） 定位为进程外的端到端测量工具，允许控制启动和编译状态；Microbenchmark（在进程内循环测量可独立调用的小段代码） 用于进程内代码片段。两者结果的范围不同，不可直接互换。
 
 #### 平台观测能力与限制
 
@@ -273,29 +273,29 @@ AndroidX 官方把 Macrobenchmark 定位为进程外的端到端测量工具，�
 
 `FrameMetrics` 从 API 24 起提供窗口帧的阶段耗时，`FrameMetrics.java` 仍定义 `TOTAL_DURATION`、`DEADLINE`、`GPU_DURATION` 和 `FRAME_TIMELINE_VSYNC_ID` 等指标。源码注释给出的判断关系是 `TOTAL_DURATION < DEADLINE`；用它时我们仍要考虑回调开销、丢失的帧信息和 UI 工具栈差异。
 
-Android 12 引入的 FrameTimeline 为应用帧与 SurfaceFlinger 帧建立关联并给出 jank 信息。我们分析 Trace 时，沿实际 vsync ID、deadline 和 jank type 追，别只按 60 Hz 预算推断。
+Android 12 引入的 FrameTimeline 为应用帧与 SurfaceFlinger 帧建立关联并给出 jank（卡顿帧） 信息。我们分析 Trace 时，沿实际 vsync ID（垂直同步标识）、deadline 和 jank type（卡顿类型） 追，别只按 60 Hz 预算推断。
 
-##### Perfetto
+##### Perfetto（系统 trace 采集与分析工具）
 
-Android 官方文档把 Perfetto 定义为 Android 10 起的平台级 tracing 工具，能合并应用、Framework、Native 服务和内核数据源；但 Trace 里只有采集配置启用、生产者实际写入的事件。没有方法级事件时，系统 Trace 给不出某行 Java/Kotlin 代码的耗时，这类问题要用应用插桩、Android Studio CPU Profiler、Simpleperf 或可映射回函数名的采样栈补上。
+Android 官方文档把 Perfetto 定义为 Android 10 起的平台级 tracing 工具，能合并应用、Framework、Native 服务和内核数据源；但 Trace 里只有采集配置启用、生产者实际写入的事件。没有方法级事件时，系统 Trace 给不出某行 Java/Kotlin 代码的耗时，这类问题要用应用插桩、Android Studio CPU Profiler、Simpleperf（Android CPU 采样工具） 或可映射回函数名的采样栈补上。
 
-Trace Processor 把采集数据解析成可查询的表。SQL 结果能复现筛选和聚合过程，适合放进回归检查；查询时要注明 Perfetto 版本、输入 Trace，以及预置 metric 和表结构的版本。
+Trace Processor 把采集数据解析成可查询的表。SQL 结果能复现筛选和聚合过程，适合放进回归检查；查询时要注明 Perfetto 版本、输入 Trace，以及预置 metric（指标） 和表结构的版本。
 
 ##### ProfilingManager 与 ProfilingTrigger
 
-Profiling Mainline 模块（可独立更新的系统模块）保留主动采集接口 `requestProfiling()`，并用 `registerForAllProfilingResults()` 注册全局结果回调，也支持由系统事件触发的 profiling trigger。`addAllProfilingTriggers()` 和 `requestRunningSystemTrace()` 都存在于 API 37 SDK 与 `ProfilingManager.java` 中，但官方 API 参考把它们的首次引入版本标为 36.1。需要兼容 minor SDK（同一主版本内追加 API 的小版本）的代码，要用 `SDK_INT_FULL` 和 `VERSION_CODES_FULL` 做判断，只比较 `SDK_INT` 是不够的。
+Profiling Mainline 模块（可独立更新的系统模块（可独立更新的系统性能采集模块））保留主动采集接口 `requestProfiling()`，并用 `registerForAllProfilingResults()` 注册全局结果回调，也支持由系统事件触发的 profiling trigger。`addAllProfilingTriggers()` 和 `requestRunningSystemTrace()` 都存在于 API 37 SDK 与 `ProfilingManager.java` 中，但官方 API 参考把它们的首次引入版本标为 36.1。需要兼容 minor SDK（同一主版本内追加 API 的小版本）的代码，要用 `SDK_INT_FULL` 和 `VERSION_CODES_FULL` 做判断，只比较 `SDK_INT` 是不够的。
 
-`ProfilingTrigger.java` 在 `android-17.0.0_r1` 里枚举了 fully drawn、ANR、运行中 trace 请求、若干 kill 原因、OOM、异常、过量 CPU、冷启动和兼容性等类型。源码的 `isValidRequestTriggerType()` 对多种类型使用 feature flag（系统功能开关），系统还会做限流、权限和资源判断。系统触发的结果只能走全局回调，内容可能是 Trace、调用栈采样或 heap dump（堆快照）；注册成功也不保证每次事件都返回文件。
+`ProfilingTrigger.java` 在 `android-17.0.0_r1` 里枚举了 fully drawn、ANR、运行中 trace 请求、若干 kill 原因、OOM（Out of Memory，内存不足）、异常、过量 CPU、冷启动和兼容性等类型。源码的 `isValidRequestTriggerType()` 对多种类型使用 feature flag（系统功能开关），系统还会做限流、权限和资源判断。系统触发的结果只能走全局回调，内容可能是 Trace、调用栈采样或 heap dump（堆快照）；注册成功也不保证每次事件都返回文件。
 
-##### Baseline Profiles 与 ART
+##### Baseline Profiles 与 ART（Android Runtime）
 
-Baseline Profile 是构建、分发和 ART 编译三方的协作能力，不绑定某个 Android 大版本。当前官方流程会先把人类可读的规则编译成二进制：APK 中的路径是 `assets/dexopt/baseline.prof`，AAB 中是 `BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`。Play 安装、ProfileInstaller（Jetpack profile 安装库）和设备后台 dexopt 各自怎么参与，取决于 Android 版本与安装渠道。
+Baseline Profile 是构建、分发和 ART 编译三方的协作能力，不绑定某个 Android 大版本。当前官方流程会先把人类可读的规则编译成二进制：APK 中的路径是 `assets/dexopt（DEX 优化与编译）/baseline.prof`，AAB（Android App Bundle） 中是 `BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof`。Play 安装、ProfileInstaller（Jetpack profile 安装库）和设备后台 dexopt 各自怎么参与，取决于 Android 版本与安装渠道。
 
 `art/profman/profman.cc` 仍负责读取、合并和分析 profile，编译决策还会进入 ART 的 dexopt/dex2oat 路径。`ProfileVerifier` 的安装或编译状态要按其枚举语义读取——APK 里有 `baseline.prof`，本身说明不了目标代码已经完成 AOT 编译。
 
 ##### BLAST 的版本含义
 
-AOSP 在 Android 11 tag 已包含 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`，Android 17 仍保留该实现。BLAST 负责协调图形 buffer 与 SurfaceControl transaction。这个版本节点只说明实现已就位：旧版 BufferQueue 指标是否适用、App 侧某个超时该归因到谁，还要回到渲染诊断里看 FrameTimeline、BufferQueue/SurfaceFlinger 事件、fence 和线程调度。
+AOSP 在 Android 11 tag 已包含 `frameworks/native/libs/gui/BLASTBufferQueue.cpp`，Android 17 仍保留该实现。BLAST 负责协调图形 buffer（缓冲区） 与 SurfaceControl transaction（事务）。这个版本节点只说明实现已就位：旧版 BufferQueue 指标是否适用、App 侧某个超时该归因到谁，还要回到渲染诊断里看 FrameTimeline、BufferQueue/SurfaceFlinger 事件、fence（图形生产者与消费者之间的同步信号） 和线程调度。
 
 #### 按瓶颈类型选择优化方向
 
@@ -336,7 +336,7 @@ AOSP 在 Android 11 tag 已包含 `frameworks/native/libs/gui/BLASTBufferQueue.c
 
 1. Macrobenchmark 固定 `StartupMode`、`CompilationMode` 和 CUJ，建立 TTID/TTFD 分布。
 2. Perfetto 查看进程创建、首帧前主线程、Binder、I/O、ART、RenderThread 与 SurfaceFlinger。
-3. 对可疑函数补充应用 slice、CPU Profiler 或 Simpleperf 采样。
+3. 对可疑函数补充应用 slice（自定义时间区间）、CPU Profiler 或 Simpleperf 采样。
 4. 修改后复跑相同基准，检查启动后的交互、内存和功耗。
 
 ##### 流畅度
@@ -344,12 +344,12 @@ AOSP 在 Android 11 tag 已包含 `frameworks/native/libs/gui/BLASTBufferQueue.c
 1. 用 JankStats 或线上指标找到受影响的页面、版本和设备组。
 2. 在相同刷新率和数据集下采集 FrameTimeline Trace。
 3. 沿超时帧检查主线程、RenderThread、GPU、SurfaceFlinger、fence 和调度。
-4. 用 Macrobenchmark 的 `FrameTimingMetric` 或项目指标做回归测试。
+4. 用 Macrobenchmark 的 `FrameTimingMetric`（帧时序指标） 或项目指标做回归测试。
 
 ##### 内存
 
 1. 用 RSS/PSS、Java/native heap 和 GC 趋势确认增长发生在哪个内存域。
-2. Java 对象保留使用 heap dump；native 分配使用 heapprofd 或采样工具。
+2. Java 对象保留使用 heap dump（堆内对象及引用关系的快照）；native 分配使用 heapprofd 或采样工具。
 3. 将调用栈映射到版本一致的函数符号和源码，区分业务持有、allocator 保留和共享内存。
 4. 重复同一 CUJ，验证增长斜率、峰值和退出后的回落。
 
@@ -362,7 +362,7 @@ AOSP 在 Android 11 tag 已包含 `frameworks/native/libs/gui/BLASTBufferQueue.c
 - **体验损失**：延迟长度、操作是否中断、数据是否丢失、是否导致退出。
 - **修复把握与成本**：证据是否充分，改动范围、验证成本和副作用风险。
 
-可以用“影响人数 × 频率 × 损失程度”帮助排序，但不要把主观评分伪装成精确数学模型。低频的严重 ANR、OOM 或数据损坏仍可能高于高频的轻微波动。
+可以用“影响人数 × 频率 × 损失程度”帮助排序，但不要把主观评分伪装成精确数学模型。低频的严重 ANR、OOM（内存不足） 或数据损坏仍可能高于高频的轻微波动。
 
 #### 预算的最低字段与三层结构
 
@@ -381,7 +381,7 @@ AOSP 在 Android 11 tag 已包含 `frameworks/native/libs/gui/BLASTBufferQueue.c
 
 基准测试适合监控稳定的 CUJ。CI（Continuous Integration，持续集成）里出现波动时，先检查设备、温度、系统任务和测试脚本，再怀疑代码回退；单次失败别急着归因给最近的提交，连续的分布漂移也不该被一句“测试不稳定”长期打发。
 
-线上发布后继续按版本和设备组观察。Android vitals 的用户感知崩溃率、ANR、慢渲染和电量指标各有采集条件与评估窗口，项目内指标也要记录采样率和分母。
+线上发布后继续按版本和设备组观察。Android vitals（Play Console 汇总的应用质量指标） 的用户感知崩溃率、ANR、慢渲染和电量指标各有采集条件与评估窗口，项目内指标也要记录采样率和分母。
 
 ### 性能工程师的能力模型
 
@@ -426,7 +426,7 @@ AOSP 在 Android 11 tag 已包含 `frameworks/native/libs/gui/BLASTBufferQueue.c
 
 ### 固定论文版本与统计口径
 
-引用版本为 [arXiv:2407.05090v3](https://arxiv.org/pdf/2407.05090v3)，revision 日期为 2025-10-11。论文的复现资料位于 [Android-Performance-Analysis](https://github.com/Dianshu-Liao/Android-Performance-Analysis)。
+引用版本为 [arXiv:2407.05090v3](https://arxiv.org/pdf/2407.05090v3)，revision（修订版） 日期为 2025-10-11。论文的复现资料位于 [Android-Performance-Analysis](https://github.com/Dianshu-Liao/Android-Performance-Analysis)。
 
 版本号必须写进引用。当前 arXiv 摘要页、v3 PDF 和复现仓库 README 存在摘要数字不同步：
 
@@ -450,7 +450,7 @@ AOSP 在 Android 11 tag 已包含 `frameworks/native/libs/gui/BLASTBufferQueue.c
 
 Google Play 的 60,684 条负面评论，是情感分析模型从 909,430 条评论里筛出来的，这个模型负责判断文本偏正面还是负面。GitHub 数据来自 1,643 个同时出现在 F-Droid（开源 Android 应用仓库）与 Google Play 的开源应用。人工核查的一致性用 Cohen's kappa 评估——它衡量扣除偶然一致后标注者之间的一致程度，四组结果为 0.868 至 0.944。
 
-论文部分从五个学术数据库检索，先按 venue（期刊、会议等发表场所）过滤，再做人工排除和前后向 snowballing——沿参考文献与被引论文继续查找——最终纳入 85 篇 2012—2024 年的研究。论文、工具与数据集可以同时覆盖多个性能类别，所以“69/85 篇研究能耗”并不是一张互斥的饼图。
+论文部分从五个学术数据库检索，先按 venue（期刊、会议等发表场所）过滤，再做人工排除和前后向 snowballing（沿参考文献与被引论文继续查找）——沿参考文献与被引论文继续查找——最终纳入 85 篇 2012—2024 年的研究。论文、工具与数据集可以同时覆盖多个性能类别，所以“69/85 篇研究能耗”并不是一张互斥的饼图。
 
 #### 比例的适用范围
 
@@ -488,7 +488,7 @@ Google Play 的 60,684 条负面评论，是情感分析模型从 909,430 条评
 
 #### 57.14%、63.41%、70.73% 的正确分子
 
-论文先从现实世界样本归纳出 63 个 contributing factors（促成因素）；把这些因素与文献结果合并后，得到包含 82 个因素的 taxonomy（分类体系）。最终分类体系比 63 个现实因素多 19 项——这个数字由 82−63 推得，论文并没有另列一组 19 项的统计。
+论文先从现实世界样本归纳出 63 个 contributing factor（促成因素）s（促成因素）；把这些因素与文献结果合并后，得到包含 82 个因素的 taxonomy（分类体系）。最终分类体系比 63 个现实因素多 19 项——这个数字由 82−63 推得，论文并没有另列一组 19 项的统计。
 
 | 覆盖对象 | 已覆盖 | 未覆盖 | 未覆盖比例 |
 |---|---:|---:|---:|
@@ -500,7 +500,7 @@ Google Play 的 60,684 条负面评论，是情感分析模型从 909,430 条评
 
 ### 七类性能后果与 63/82 因素
 
-论文刻意把“后果”和“促成因素”分成两层，英文分别是 consequence 与 contributing factor：
+论文刻意把“后果”和“促成因素”分成两层，英文分别是 consequence（后果） 与 contributing factor：
 
 - **后果**描述用户或工程系统观察到什么；
 - **因素**描述哪些行为、资源或代码条件可能促成后果；
@@ -532,7 +532,7 @@ Google Play 的 60,684 条负面评论，是情感分析模型从 909,430 条评
 | Android 10—11 | 可使用 Perfetto system trace；FrameTimeline 尚不可用 |
 | Android 12—17 | 可采集 FrameTimeline，并结合 sched、Binder、frequency、memory 与自定义 trace |
 
-FrameTimeline 要求 Android 12 及以上。Expected Timeline 是调度器给帧分配的时间窗；Actual Timeline 从 app 的 `Choreographer#doFrame` 或 native choreographer 回调开始，结束时间取 GPU 完成与 buffer post 中较晚者。顺着它我们能区分 app 与 SurfaceFlinger 侧的 jank，再往下要看的还有子 slice、线程状态、flow 与 `jank_type`。
+FrameTimeline 要求 Android 12 及以上。Expected Timeline 是调度器给帧分配的时间窗；Actual Timeline 从 app 的 `Choreographer#doFrame` 或 native choreographer 回调开始，结束时间取 GPU 完成与 buffer post 中较晚者。顺着它我们能区分 app 与 SurfaceFlinger 侧的 jank，再往下要看的还有子 slice（有起止时长的区间事件）、线程状态、flow（跨轨道事件关联） 与 `jank_type`（卡顿分类）。
 
 下面的 Trace Processor SQL 用于列出 trace 中的 Actual Timeline 证据。Trace Processor 是 Perfetto 的 SQL 查询引擎：
 
@@ -551,7 +551,7 @@ ORDER BY ts
 LIMIT 200;
 ```
 
-查询结果给出帧归属、时长、present 与 jank 分类，但到这一步还没有定位 app 内部的方法。我们要用 token 和 flow 把 `Choreographer#doFrame`、RenderThread、SurfaceFlinger 对齐起来。线程状态方面，Running 是正在 CPU 上执行，Runnable 是已经可运行但还在等 CPU，Sleeping 通常是在等事件；锁等待也要同时检查。
+查询结果给出帧归属、时长、present 与 jank 分类，但到这一步还没有定位 app 内部的方法。我们要用 token（帧标识） 和 flow 把 `Choreographer#doFrame`、RenderThread、SurfaceFlinger 对齐起来。线程状态方面，Running 是正在 CPU 上执行，Runnable 是已经可运行但还在等 CPU，Sleeping 通常是在等事件；锁等待也要同时检查。
 
 ### 六类现实代码模式
 
@@ -566,7 +566,7 @@ LIMIT 200;
 - 生命周期结束后仍更新旧 UI；
 - 对 API 的线程、顺序、资源释放或参数约束理解错误；
 - 把异步 API 当作“没有 CPU、锁或磁盘成本”；
-- 协程 scope 与工作生命周期不匹配；
+- 协程 scope（作用域） 与工作生命周期不匹配；
 
 `GlobalScope` 不会自动产生泄漏。它缺少结构化父任务；结构化并发要求子任务的生命周期与取消由父任务管理，而 `GlobalScope` 工作可能长于 Activity/Fragment。闭包若捕获页面、View 或回调，就可能延长引用生命周期。
 
@@ -574,7 +574,7 @@ LIMIT 200;
 
 ##### `requestLayout()` 与 `invalidate()` 的分工
 
-`View.requestLayout()` 会清理 measure cache，设置 `PFLAG_FORCE_LAYOUT` 与 `PFLAG_INVALIDATED`，并在父节点尚未请求 layout 时向上传递。到 `ViewRootImpl.requestLayout()` 后，根节点设置 `mLayoutRequested` 并调度 traversal（一次 measure、layout、draw 流程）。当前帧是否重测整棵树，还要看父容器、measure spec（父节点给出的尺寸约束）、缓存、可见性和 traversal 状态。
+`View.requestLayout()` 会清理 measure cache（测量结果缓存），设置 `PFLAG_FORCE_LAYOUT` 与 `PFLAG_INVALIDATED`，并在父节点尚未请求 layout 时向上传递。到 `ViewRootImpl.requestLayout()` 后，根节点设置 `mLayoutRequested` 并调度 traversal（一次 measure、layout、draw 流程）。当前帧是否重测整棵树，还要看父容器、measure spec（父节点给出的尺寸约束）、缓存、可见性和 traversal 状态。
 
 `View.invalidate()` 标记绘制内容或区域失效，向父节点传播 damage（需要重绘的区域），必要时也会让 `ViewRootImpl` 调度 traversal。它通常不要求重新计算尺寸，但同一轮 traversal 可能因为其他状态执行 measure、layout、relayout 或 draw。所以三者的用法是：几何尺寸与位置变了用 `requestLayout()`，内容变了但边界没变用 `invalidate()`，只改 transform、alpha 这类渲染属性时还可能走 RenderThread 友好的属性动画路径。
 
@@ -582,7 +582,7 @@ LIMIT 200;
 
 #### 2. Unreleased References（未释放引用）
 
-这一类关注长生命周期 owner 持有短生命周期对象：
+这一类关注长生命周期 owner（负责管理任务生命周期的对象） 持有短生命周期对象：
 
 - singleton、静态字段或进程级缓存持有 Activity、Fragment、View 或它们的 Context；
 - listener、observer、callback、receiver 注册在长生命周期对象上，没有按协议解除；
@@ -590,13 +590,13 @@ LIMIT 200;
 - Handler、Runnable、线程、coroutine 或 native callback 捕获已销毁页面；
 - 无界缓存、集合或 map 保留旧 key/value。
 
-匿名内部类和 lambda 并不总捕获整个外部对象，我们要看它们实际捕获了哪些字段。注册与注销也一样，按 API 约定和 owner 生命周期判断即可，不必机械地要求所有 listener 都在 `onDestroy()` 注销。
+匿名内部类和 lambda 并不总捕获整个外部对象，我们要看它们实际捕获了哪些字段。注册与注销也一样，按 API 约定和 owner（当前负责推进的人或团队） 生命周期判断即可，不必机械地要求所有 listener 都在 `onDestroy()` 注销。
 
-验证顺序是：先看 retained count（超期仍被保留的对象数）或 heap 增长，再取 heap dump，沿 dominator 树查到 GC root（垃圾回收器起始引用）的路径——dominator 指释放后能连带释放大量下游对象的支配对象——最后确认对象确实越过了预期生命周期。工具分工上，LeakCanary 适合开发和自动化场景，Memory Profiler 可继续分析 Java/Kotlin heap，native 分配问题再上 `heapprofd`。另外记住：单次 heap 大并不就是泄漏。
+验证顺序是：先看 retained count（超期仍被保留的对象数）或 heap 增长，再取 heap dump，沿 dominator（释放后可连带释放大量下游对象的支配对象） 树查到 GC root（垃圾回收器起始引用）的路径——dominator 指释放后能连带释放大量下游对象的支配对象——最后确认对象确实越过了预期生命周期。工具分工上，LeakCanary 适合开发和自动化场景，Memory Profiler 可继续分析 Java/Kotlin heap，native 分配问题再上 `heapprofd`。另外记住：单次 heap 大并不就是泄漏。
 
 #### 3. Redundant Objects（冗余对象）
 
-论文把重复创建等价对象、互相递归创建对象和无意义重复实例化归到这一类。Android 10 及以上的默认 Concurrent Copying（CC）回收器以分代模式运行，会优先回收年轻对象，所以单次小对象分配，还不能直接判定为性能问题。真正要盯的是高频分配：它仍可能增加 GC、CPU 和内存压力，影响要通过 allocation trace、GC 频率和帧证据验证。
+论文把重复创建等价对象、互相递归创建对象和无意义重复实例化归到这一类。Android 10 及以上的默认 Concurrent Copying（CC）回收器以分代模式运行，会优先回收年轻对象，所以单次小对象分配，还不能直接判定为性能问题。真正要盯的是高频分配：它仍可能增加 GC、CPU 和内存压力，影响要通过 allocation trace（分配记录）、GC 频率和帧证据验证。
 
 下面的 View 代码展示可安全复用的绘制状态：
 
@@ -618,7 +618,7 @@ class StatusLineView @JvmOverloads constructor(
 }
 ```
 
-`Paint` 与 View 生命周期相同，又只在 UI 线程使用，复用不会引入跨线程状态冲突。对象池倒不适合当通用修复：池本身有生命周期、容量、清理和并发成本。我们优先移除已经证实的热点分配，改完再比较 allocation rate、GC 与帧指标。
+`Paint` 与 View 生命周期相同，又只在 UI 线程使用，复用不会引入跨线程状态冲突。对象池倒不适合当通用修复：池本身有生命周期、容量、清理和并发成本。我们优先移除已经证实的热点分配，改完再比较 allocation rate（单位时间的分配量）、GC 与帧指标。
 
 Android Lint 的 `DrawAllocation` 能发现一部分 draw/layout 内分配。Lint 告警只是候选信号，优先级由运行时证据决定。
 
@@ -654,7 +654,7 @@ View 体系关注：
 
 通用的“超过 5 层一定慢”“ConstraintLayout 一定更快”并不存在：约束求解、子节点数量、measure spec、权重、嵌套滚动和设备都会改变成本。具体数字用 Perfetto 的 `measure`、`layout`、`draw`、FrameTimeline 与 Macrobenchmark 去量。
 
-Compose 这边关注 state 读取范围、recomposition、remeasure/redraw、稳定性、Lazy 列表 key、昂贵计算和 snapshot 写入；recomposition 指状态变化后重新执行受影响的 Composable，snapshot 是 Compose 的状态系统。View 层级的规则直接搬过来用是不行的。
+Compose 这边关注 state 读取范围、recomposition（状态变化后重新执行受影响的 Composable）、remeasure/redraw、稳定性、Lazy 列表 key、昂贵计算和 snapshot（Compose 状态系统） 写入；recomposition 指状态变化后重新执行受影响的 Composable，snapshot 是 Compose 的状态系统。View 层级的规则直接搬过来用是不行的。
 
 #### 6. Other Patterns（其他模式）
 
@@ -662,7 +662,7 @@ Compose 这边关注 state 读取范围、recomposition、remeasure/redraw、稳
 
 - 主线程锁竞争；
 - 线程池无界排队或并发过高；
-- 反射、序列化或 JNI 往返出现在高频路径；
+- 反射、序列化或 JNI（Java 与 native 代码之间的接口） 往返出现在高频路径；
 - 重试没有上限或退避（失败后逐步拉长间隔）；
 - 小 Binder 调用在循环中累积；
 - 一个 observer、flow 或 callback 同时通知多个下游，造成重复工作。
@@ -671,14 +671,14 @@ Compose 这边关注 state 读取范围、recomposition、remeasure/redraw、稳
 
 ### 现代补充：主线程同步 Binder
 
-主线程同步 Binder 会把远端执行时间、服务端排队、锁、I/O 与 CPU 调度一起传给客户端。Android 官方 ANR 指南把 `slow binder call` 和 `many consecutive binder calls` 列为输入分发 ANR 的常见原因。
+主线程同步 Binder 会把远端执行时间、服务端排队、锁、I/O 与 CPU 调度一起传给客户端。Android 官方 ANR 指南把 `slow binder call`（耗时 Binder 调用） 和 `many consecutive binder calls`（连续多次 Binder 调用） 列为输入分发 ANR 的常见原因。
 
-在经典 kernel Binder 路径中，`IPCThreadState::talkWithDriver()` 通过 `BINDER_WRITE_READ` ioctl 与 Binder driver 交换命令；`ioctl` 是用户空间向设备驱动发控制请求的系统调用。Java Manager、ContentProvider 或第三方 SDK 的一行调用，可能跨到 system_server、另一个 app、SurfaceFlinger 或 vendor service。
+在经典 kernel Binder 路径中，`IPCThreadState::talkWithDriver()` 通过 `BINDER_WRITE_READ` ioctl 与 Binder driver（Binder 内核驱动） 交换命令；`ioctl` 是用户空间向设备驱动发控制请求的系统调用。Java Manager、ContentProvider 或第三方 SDK 的一行调用，可能跨到 system_server、另一个 app、SurfaceFlinger 或 vendor service。
 
 #### Perfetto 确认顺序
 
 1. 先在 app 主线程定位宽的 `binder transaction` 或等待区间。
-2. 再沿 Binder flow 到 reply/server 线程；缺 flow 时用时间、pid/tid 与 transaction 上下文辅助。
+2. 再沿 Binder flow 到 reply/server 线程；缺 flow 时用时间、pid/tid（进程 ID/线程 ID） 与 transaction 上下文辅助。
 3. 检查客户端等待期间的线程状态：Sleeping 可能是在等 reply，Runnable 表示已经可运行但还在等 CPU，D 状态是不可中断睡眠，通常要继续查 I/O。
 4. 检查服务端 Binder 线程是否 Running、Runnable、锁等待、磁盘 I/O，或继续发起下游 Binder。
 5. 检查 Binder 线程池是否耗尽，以及同一主线程是否连续发出大量小调用。
@@ -703,13 +703,13 @@ Cached apps freezer（缓存进程冻结机制）从 Android 11 开始受到平�
 
 资源 `config_defaultFreezerDebounceTimeout` 默认是 10,000 ms；DeviceConfig namespace `activity_manager_native_boot` 下的 key `freeze_debounce_timeout` 可以调整它，厂商资源也会影响行为。DeviceConfig 是平台运行时配置系统，“10 秒”不是所有 Android 17 设备不变的常量。
 
-进程冻结后，所有线程停止执行，做不了 GC，也收不到 trim 回调——系统借它要求进程主动收缩内存。Android 14 及以上可能在进入 cached 状态后请求预冻结 GC；冻结后还可能执行 compaction（回收或换出进程内存页），包括把匿名页交换到 ZRAM。系统恢复 Activity 等生命周期时会先解除冻结，之后线程调度、page fault（缺页处理）、GC、消息与业务工作才继续。
+进程冻结后，所有线程停止执行，做不了 GC，也收不到 trim 回调——系统借它要求进程主动收缩内存。Android 14 及以上可能在进入 cached 状态后请求预冻结 GC；冻结后还可能执行 compaction（回收或换出进程内存页），包括把匿名页交换到 ZRAM（内存中的压缩交换设备）。系统恢复 Activity 等生命周期时会先解除冻结，之后线程调度、page fault（缺页处理）、GC、消息与业务工作才继续。
 
 #### 被冻结进程收到同步 Binder
 
 官方 freezer 文档写得很明确：客户端向被冻结的 app 进程发出同步 Binder transaction 时，系统会立即终止被冻结的服务端进程，免得客户端无限等待；异步 `oneway` transaction（不等待返回的单向调用）的 buffer 也在监控之下，空间耗尽同样可能导致被冻结进程被终止。
 
-所以“向 frozen 进程发同步 Binder”要按 kill 路径理解，而不是“系统解冻后处理积压请求”。正常生命周期提升可以触发解冻；错误 IPC 可能走 kill 路径。退出原因可结合 `ApplicationExitInfo.REASON_FREEZER` 和系统日志调查。
+所以“向 frozen 进程发同步 Binder”要按 kill 路径理解，而不是“系统解冻后处理积压请求”。正常生命周期提升可以触发解冻；错误 IPC 可能走 kill 路径。退出原因可结合 `ApplicationExitInfo（系统记录的进程退出信息）.REASON_FREEZER` 和系统日志调查。
 
 #### 解冻与短时卡顿的关联判断
 
@@ -724,7 +724,7 @@ Cached apps freezer（缓存进程冻结机制）从 Android 11 开始受到平�
 
 Unfreeze 与慢帧相邻，只说明时间上相关。要在调度、page fault、GC、Binder 或业务工作上找到耗时，归因才能再往下走；短时 CPU 竞争也要通过 Runnable 时间和同核竞争线程验证。
 
-这一节的 Framework 结论以 `android-17.0.0_r1` 的 `CachedAppOptimizer.java` 为准；cgroup freezer、Binder driver 与调度器属于内核行为，版本依据见文首基线。
+这一节的 Framework 结论以 `android-17.0.0_r1` 的 `CachedAppOptimizer.java` 为准；cgroup（control group，内核资源分组） freezer（通过 control group 暂停进程的内核机制）、Binder driver 与调度器属于内核行为，版本依据见文首基线。
 
 ### 从数据看排查优先级
 
@@ -782,7 +782,7 @@ Stack Overflow、GitHub issue 与 commit 的主导类别都是 Memory Consumptio
 
 `commit()` 同步写盘，主线程上别用它。`apply()` 立即更新进程内数据并异步写盘，但 Framework 会在组件生命周期切换时等待未完成写入；密集 `apply()` 仍可能引发主线程阻塞和 ANR。官方当前文档不建议新存储需求继续采用 SharedPreferences。
 
-审查时还要看读取是否触发磁盘、写入频率、durability——崩溃或重启后数据是否仍可靠保存——以及一致性、多进程需求和迁移方案。把 `commit()` 机械替换成 `apply()`，只消除了调用点的同步写盘，生命周期 I/O 的其余问题还在。
+审查时还要看读取是否触发磁盘、写入频率、durability（崩溃或重启后数据是否仍可靠保存）——崩溃或重启后数据是否仍可靠保存——以及一致性、多进程需求和迁移方案。把 `commit()` 机械替换成 `apply()`，只消除了调用点的同步写盘，生命周期 I/O 的其余问题还在。
 
 ### 实践步骤
 
@@ -792,7 +792,7 @@ Stack Overflow、GitHub issue 与 commit 的主导类别都是 Memory Consumptio
 - 把性能后果、促成因素、代码模式与观测证据分层；
 - 将静态审查结果送入可复现的 benchmark、trace 或线上指标验证。
 
-遇到一条用户“卡”的反馈，我们从 Responsiveness 进入，再判断它对应帧延迟、输入等待、启动、Binder、I/O、锁、调度还是 freezer 恢复。遇到内存修复提交，就区分 retained reference、高频分配与回收、峰值数据、native/graphics 占用和系统回收。遇到研究工具没有规则覆盖的因素，再补充场景化测试与运行时观测。
+遇到一条用户“卡”的反馈，我们从 Responsiveness 进入，再判断它对应帧延迟、输入等待、启动、Binder、I/O、锁、调度还是 freezer 恢复。遇到内存修复提交，就区分 retained reference（超期保留引用）、高频分配与回收、峰值数据、native/graphics 占用和系统回收。遇到研究工具没有规则覆盖的因素，再补充场景化测试与运行时观测。
 
 研究样本跨多个 Android 版本。旧版本演进可以保留，当前结论不外推到 Android 17 之后；平台与内核的版本依据统一见文首基线。
 
@@ -808,7 +808,7 @@ Stack Overflow、GitHub issue 与 commit 的主导类别都是 Memory Consumptio
 
 - 哪些用户旅程属于关键 CUJ；
 - 每条旅程采用什么指标、预算和设备；
-- 什么变化需要评审或阻断，怎样灰度、怎样回滚；
+- 什么变化需要评审或阻断，怎样灰度（先向少量用户发布）、怎样回滚；
 - 异常由谁调查，证据如何交接；
 - 修复通过什么线下测试和线上指标验收。
 
@@ -827,13 +827,13 @@ Stack Overflow、GitHub issue 与 commit 的主导类别都是 Memory Consumptio
 
 一条可执行的流程包含八个阶段：
 
-1. **采集**：按 §16.3 的指标合同记录信号，合同里写清指标定义、分母、单位、采集范围和平台范围。
+1. **采集**：按 §16.3 的指标合同（指标定义、分母、单位、采集范围和平台边界）记录信号，合同里写清指标定义、分母、单位、采集范围和平台范围。
 2. **采样**：把概率已知的基线样本与异常触发的诊断样本分开。
-3. **聚合**：展示分母、样本量、缺失率、schema 和采样配置，schema 指字段、类型、单位这类结构定义。
+3. **聚合**：展示分母、样本量、缺失率、schema（字段、类型、单位等数据结构定义） 和采样配置，schema 指字段、类型、单位这类结构定义。
 4. **归因**：从异常分群进入正常/异常样本，用 trace、源码和对照实验验证假设。
 5. **告警**：同时检查绝对预算、相对回归、最小样本和数据健康。
 6. **流转**：为问题指定当前 owner、状态、时限和下一项动作。
-7. **修复**：记录改动机制、风险、开关、回滚条件和守护指标，守护指标专门用来监测修复的副作用。
+7. **修复**：记录改动机制、风险、开关、回滚条件和守护指标（用于监测副作用的关联指标），守护指标专门用来监测修复的副作用。
 8. **验收**：在线下同协议复测，并在线上同分群确认用户结果。
 
 工单里缺了指标合同、可回查样本、当前 owner、修复版本或验收条件中的任何一项，流程就停在了中间。告警关闭同样不等于修复成功——采样切换、上报中断或用户构成变化也会让曲线掉下来。
@@ -863,9 +863,9 @@ Baseline Profile 是随应用或库发布的类与方法规则，用来指导 AR
 
 预算可以分为三层：
 
-- **用户体验 SLO**（Service Level Objective，服务水平目标）：约束线上启动、帧、ANR、crash、OOM、耗电等用户结果；
+- **用户体验 SLO（Service Level Objective，服务水平目标）**（Service Level Objective，服务水平目标）：约束线上启动、帧、ANR、crash（崩溃）、OOM、耗电等用户结果；
 - **实验室回归预算**：固定设备与场景下的 Macrobenchmark、内存和 CPU 结果；
-- **资源预算**：下载大小、安装大小、DEX/资源增长、启动初始化和后台资源。
+- **资源预算**：下载大小、安装大小、DEX（APK 中的 Android 字节码）/资源增长、启动初始化和后台资源。
 
 这三层各管一段：线下启动稳定，还说明不了全部厂商设备都稳定；线上曲线平稳，也可能只是灰度量小或采样延迟。发布决策要写明依据的是哪一层证据。
 
@@ -874,13 +874,13 @@ Baseline Profile 是随应用或库发布的类与方法规则，用来指导 AR
 预算描述目标，基线描述某组条件下已经测得的水平，两者不是一回事。更新基线时至少保留：
 
 - git commit、version code、依赖锁文件与构建变体；
-- benchmark/library/AGP（Android Gradle Plugin）/JDK 版本；
-- 设备型号、serial 或实验室资产 ID、Android build fingerprint（系统构建指纹）；
+- benchmark/library/AGP（Android Gradle Plugin）/JDK（Java Development Kit） 版本；
+- 设备型号、serial（设备序列号） 或实验室资产 ID、Android build fingerprint（系统构建指纹）；
 - 电量、温度、刷新率、网络与测试数据；
-- compilation mode、startup mode（冷/温/热启动条件）、迭代数；
+- compilation mode（预编译条件）、startup mode（冷/温/热启动条件）、迭代数；
 - JSON 结果、每轮 trace 和失败日志。
 
-基线必须与候选版本用同一设备、同一配置。`CompilationMode.None` 表示不预先编译目标代码，`Partial` 表示按 profile 做部分预编译；拿 Pixel 的结果和另一品牌设备比，拿 None 与 Partial 比，或拿 debug 与 benchmark 变体比，得到的差值里都混进了测试条件的变化。
+基线必须与候选版本用同一设备、同一配置。`CompilationMode.None`（不预先编译目标代码） 表示不预先编译目标代码，`Partial`（按 profile 做部分预编译） 表示按 profile 做部分预编译；拿 Pixel 的结果和另一品牌设备比，拿 None 与 Partial 比，或拿 debug 与 benchmark 变体比，得到的差值里都混进了测试条件的变化。
 
 基线也不是目标。某个历史版本已经超出 SLO 时，继续接受同等表现的唯一理由应该是预算如此，而非“它一直这样”；预算变更与基线更新要作为两个操作分开做，并留下评审记录。
 
@@ -903,9 +903,9 @@ Benchmark 是带噪测量，噪声指同一条件下重复运行仍会出现的�
 - 何时自动复测，复测几次后转人工判断；
 - 哪些 trace 和 JSON 必须归档。
 
-PR（Pull Request，合入请求）上跑 dry run 就够了——只验证脚本、安装和导航能否走通，不用单次结果判断性能；性能数值放到稳定真机池的 nightly（夜间定时任务）、合入队列或发布流水线里评估。官方强烈不建议拿模拟器结果代表用户性能，模拟器可用于 CUJ 脚本冒烟和 Baseline Profile 规则生成。
+PR（Pull Request，合入请求）上跑 dry run（只验证脚本、安装和导航，不用单次结果判断性能） 就够了——只验证脚本、安装和导航能否走通，不用单次结果判断性能；性能数值放到稳定真机池的 nightly（夜间定时任务）、合入队列或发布流水线里评估。官方强烈不建议拿模拟器结果代表用户性能，模拟器可用于 CUJ 脚本冒烟和 Baseline Profile 规则生成。
 
-`debuggable` 允许调试，会显著改变运行性能；`profileable` 允许性能工具读取详细 trace 而无须启用调试。CI 里不要全局压制 Macrobenchmark 的配置错误：target app 为 `debuggable`、Android 10/11 上未设为 `profileable`、设备为 emulator 或低电量时，库会报告可能损害测量的错误，这些错误各有各的修法。单项抑制要记录原因和到期时间。
+`debuggable` 允许调试，会显著改变运行性能；`profileable` 允许性能工具读取详细 trace 而无须启用调试。CI 里不要全局压制 Macrobenchmark 的配置错误：target app 为 `debuggable`、Android 10/11 上未设为 `profileable`、设备为 emulator（模拟器） 或低电量时，库会报告可能损害测量的错误，这些错误各有各的修法。单项抑制要记录原因和到期时间。
 
 #### 4. 灰度观测：验证设备分布
 
@@ -934,7 +934,7 @@ Google Play 的 Android vitals 提供发布质量信号，自建指标看得更�
 - 发布/暂停/回滚决定及批准人；
 - 上线后复查时间和 owner。
 
-验收结果关联 commit、build、benchmark JSON、trace、dashboard 和工单。后续发现回归时，我们就能区分“当时没有信号”“规则没有触发”“例外放行”和“发布后环境变化”这几种情况。
+验收结果关联 commit、build、benchmark JSON、trace、dashboard（监控看板） 和工单。后续发现回归时，我们就能区分“当时没有信号”“规则没有触发”“例外放行”和“发布后环境变化”这几种情况。
 
 ### Benchmark 与 Profile 在治理中的位置
 
@@ -955,9 +955,9 @@ profile 文件存在，既证明不了目标代码已完成预期编译，更证
 - `Application`、ContentProvider、App Startup initializer（AndroidX App Startup 的初始化组件）或首个 Activity 的初始化；
 - 主线程文件/数据库/网络、同步 Binder、锁和反射；
 - 图片、序列化、数据库 schema、缓存和大数据路径；
-- View measure/layout/draw、Compose state/recomposition 与列表绑定；
+- View measure/layout/draw、Compose state/recomposition（状态变化后重新执行受影响的 Composable） 与列表绑定；
 - 新 SDK、动态特性（按需交付的功能模块）、native 库、资源或包体积增长；
-- 后台 Job、alarm、WakeLock、定位、传感器和轮询；
+- 后台 Job、alarm、WakeLock（阻止设备进入部分休眠状态的系统锁）、定位、传感器和轮询；
 - Baseline/Startup Profile 的 CUJ 或构建配置变化。
 
 PR 模板可以要求作者填写：
@@ -982,7 +982,7 @@ PR 模板可以要求作者填写：
 
 每个问题只有一个当前 owner。跨团队协作可以有多名参与者，但调查状态、下一动作和时限由当前 owner 维护。转交给系统或厂商团队时，证据包至少包含：
 
-- app build、复现步骤与发生率；
+- app build（应用构建版本）、复现步骤与发生率；
 - 设备型号、Android build fingerprint、kernel build；
 - 正常与异常对照；
 - Perfetto/bugreport（系统诊断包）/tombstone（native 崩溃现场）等证据；
@@ -1016,11 +1016,11 @@ PR 模板可以要求作者填写：
 | `build_id` / `version_code` | 对齐二进制、mapping、symbols 和发布记录 |
 | `event_schema_version` / `sampling_config_version` | 解释字段、算法与采样策略的变化 |
 
-进程内阶段耗时用明确的 monotonic clock——它只单调递增、不受系统校时影响；跨设备和发布窗口用 UTC wall time，对应日历时间。两类时间戳直接相减没有意义。schema 改变单位、分母或含义时升版本，数据上报端、查询端、看板和告警在同一份变更记录里写明兼容窗口。
+进程内阶段耗时用明确的 monotonic clock（只单调递增，不受系统校时影响）——它只单调递增、不受系统校时影响；跨设备和发布窗口用 UTC wall time（可对应日历时间的 UTC 时间戳），对应日历时间。两类时间戳直接相减没有意义。schema 改变单位、分母或含义时升版本，数据上报端、查询端、看板和告警在同一份变更记录里写明兼容窗口。
 
 存储按用途分层：近期聚合和可检索事件服务告警，降采样（降低时间粒度或样本密度）后的趋势用于长期比较，trace、heap、tombstone 等高敏附件单独加密、缩短保留期并记录访问审计。每个数据源都要写明 owner、日量、保留期、删除机制和停采条件。
 
-多业务线共享平台时，`tenant_id` 必须来自受信任的服务端身份或发布配置，它标识一个独立的业务或组织。查询、缓存、附件、导出、告警和审计全程执行 tenant + role 校验；给 ID 加租户前缀只能避免碰撞，构成访问隔离是做不到的。
+多业务线共享平台时，`tenant_id`（租户，即一个独立业务或组织） 必须来自受信任的服务端身份或发布配置，它标识一个独立的业务或组织。查询、缓存、附件、导出、告警和审计全程执行 tenant + role（租户与权限角色） 校验；给 ID 加租户前缀只能避免碰撞，构成访问隔离是做不到的。
 
 ### 例外机制
 
@@ -1059,7 +1059,7 @@ PR 模板可以要求作者填写：
 - 修复后同时复测线下 CUJ 与线上指标；
 - 只把稳定、可重复的检测方法加入日常门禁。
 
-事故复盘的产物可能是新 CUJ、指标、告警、lint 规则、profile journey 或操作手册——profile journey 指生成 profile 的自动化 CUJ。问题若依赖偶发的外部条件，强行加不稳定硬门禁只会制造噪声，此时线上预警或人工专项更合适。
+事故复盘的产物可能是新 CUJ、指标、告警、lint（静态检查规则） 规则、profile journey（生成 profile 的自动化 CUJ） 或操作手册——profile journey 指生成 profile 的自动化 CUJ。问题若依赖偶发的外部条件，强行加不稳定硬门禁只会制造噪声，此时线上预警或人工专项更合适。
 
 ### 从小规模开始
 
@@ -1082,7 +1082,7 @@ PR 模板可以要求作者填写：
 - §16.5 讨论测试设计与统计可靠性。
 - 本节把这些能力连接到采集、归因、工单、发布和验收流程，各工具的 API 教程不再重复。
 
-Benchmark、Baseline Profile 与 ProfileInstaller 属于 AndroidX/构建工具，版本应在项目依赖和基线记录中单独固定；平台与内核的源码依据统一见文首基线。
+Benchmark、Baseline Profile 与 ProfileInstaller（在设备上安装 Baseline Profile 的 AndroidX 库） 属于 AndroidX/构建工具，版本应在项目依赖和基线记录中单独固定；平台与内核的源码依据统一见文首基线。
 
 ## 常见误区
 

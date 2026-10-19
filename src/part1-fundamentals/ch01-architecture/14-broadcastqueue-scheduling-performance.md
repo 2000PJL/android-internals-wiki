@@ -56,7 +56,7 @@ last_review_finalize_at: '2026-08-16T23:03:53+08:00'
 
 # Android 17 BroadcastQueue 进程级调度与广播性能边界
 
-Android 广播是一种受系统策略调度的事件分发机制。调用 `sendBroadcast()` 只说明系统接受了发送请求，接收方未必立刻执行。目标进程是否存活、是否为没有活跃组件的缓存进程（cached）、接收者类型、广播是否有序，以及可并行投递的进程槽是否空闲，都会改变投递时间。
+Android 广播是一种受系统策略调度的事件分发机制。调用 `sendBroadcast()` 只说明系统接受了发送请求，接收方未必立刻执行。目标进程是否存活、是否为没有活跃组件（例如 Bluetooth、telephony）的缓存进程（cached）、接收者类型、广播是否有序，以及可并行投递的进程槽是否空闲，都会改变投递时间。
 
 早期 Android 示意图里“前台一条队列、后台一条队列”的结构，在 Android 17 上已经找不到了，第一节会专门说明。广播性能由三个层次共同决定：`BroadcastRecord` 记录一次发送和它的接收者，`BroadcastProcessQueue` 记录每个目标进程的待投递项，进程调度槽决定同一时刻有多少个进程队列在投递。
 
@@ -123,7 +123,7 @@ Android 17 标签中不存在 `BroadcastQueueModernImpl.java`。当前的 `Broad
 
 `Intent.java` 将 `FLAG_RECEIVER_OFFLOAD` 标记为 `@hide`；它的语义只是让这条记录进入 offload 调度类别，并不是“允许系统延迟合并”的公开性能开关。
 
-### 2.3 `runnable` 与 `running`：控制跨进程并行度
+### 2.3 `runnable`（等待获得执行槽） 与 `running`（已占用执行槽）：控制跨进程并行度
 
 有待处理项的进程队列会计算最早可运行时刻 `runnableAt`，按时间排序进入 `runnable` 链表等待执行槽；`updateRunningListLocked()` 再从链表中选取队列，放进固定大小的 `running` 数组并开始投递。跨进程并行度就由这个数组控制。
 
@@ -165,7 +165,7 @@ ContextImpl.sendBroadcast()
 
 ### 3.1 冷启动与逐接收者的 Binder 调用
 
-目标进程不存在时，`scheduleReceiverColdLocked()` 请求启动进程；进程完成 attach、与 `system_server` 建立起应用线程连接后，再转入 `scheduleReceiverWarmLocked()`。同一进程的多条广播共用一个进程队列，可以在一次占用 `running` 槽期间连续处理若干项，减少调度槽的反复切换。
+目标进程不存在时，`scheduleReceiverColdLocked()` 请求启动进程；进程完成 attach（与 `system_server` 建立应用线程连接）、与 `system_server` 建立起应用线程连接后，再转入 `scheduleReceiverWarmLocked()`。同一进程的多条广播共用一个进程队列，可以在一次占用 `running` 槽期间连续处理若干项，减少调度槽的反复切换。
 
 不过到了投递这一步，源码仍对每个接收者分别调用 `scheduleRegisteredReceiver()` 或 `scheduleReceiver()`，逐条走 Binder，“同进程多个广播自动合并为一次 IPC”没有源码依据。
 
@@ -173,7 +173,7 @@ ContextImpl.sendBroadcast()
 
 ### 3.2 运行时接收者与清单接收者的完成语义不同
 
-对于无序、没有完成回调（completion callback）的运行时注册接收者，`BroadcastRecord.isAssumedDelivered()` 返回 `true`：`system_server` 成功发出 `scheduleRegisteredReceiver()` 后，就把该项标记为已投递，既不等待应用回报，也不为它启动广播 ANR 定时器。
+对于无序、没有完成回调（completion callback）的运行时注册接收者，`BroadcastRecord.isAssumedDelivered()` 返回 `true`：`system_server` 成功发出 `scheduleRegisteredReceiver()` 后，就把该项标记为已投递（delivered），既不等待应用回报，也不为它启动广播 ANR 定时器。
 
 反过来，以下投递要等 `finishReceiver()`，并受广播超时跟踪：
 
@@ -190,8 +190,8 @@ ContextImpl.sendBroadcast()
 Android 的 `Intent` 里并没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 这组广播字符串。urgent 与否由系统判定，我们直接看条件：API 37 的 `BroadcastRecord.calculateUrgent()` 在以下情况返回 `true`：
 
 - Intent 带 `FLAG_RECEIVER_FOREGROUND`；
-- `BroadcastOptions` 将其标记为交互型广播；
-- `BroadcastOptions` 将其标记为闹钟广播。
+- `BroadcastOptions` 将其标记为交互型（interactive）广播；
+- `BroadcastOptions` 将其标记为闹钟广播（alarm broadcast）。
 
 后两项主要供系统组件使用。普通应用不应为了抢占调度而滥用前台接收者标志：带上这个标志，接收者会以更高调度优先级运行，广播超时基准也缩短到 10 秒。
 
@@ -203,7 +203,7 @@ Android 的 `Intent` 里并没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 
 
 ### 4.3 有序广播仍会建立接收者依赖
 
-有序广播的第 N 个接收者，要等第 N-1 个接收者到达终态或延后状态后才能继续；无序广播的接收者没有这条依赖，可以分散到多个进程队列并行推进——不过“并行”到此为止：同时执行的进程数仍受 `running` 槽、单冷启动槽、目标进程主线程和 cached 策略限制。
+有序广播的第 N 个接收者，要等第 N-1 个接收者到达终态或延后（deferred）状态后才能继续；无序广播的接收者没有这条依赖，可以分散到多个进程队列并行推进——不过“并行”到此为止：同时执行的进程数仍受 `running` 槽、单冷启动槽、目标进程主线程和 cached 策略限制。
 
 进程队列内部按 `urgent` → `normal` → `offload` 选择下一项，同时用两个上限防止低优先级长期等待：默认连续 3 个 `urgent` 后会考虑更早入队的低优先级项，连续 10 个 `normal` 后也会考虑 `offload` 项。若低优先级项被有序广播依赖挡住，就只能等依赖解除。
 
@@ -211,7 +211,7 @@ Android 的 `Intent` 里并没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 
 
 ### 5.1 Android 14 起的公开行为
 
-先看 Android 14 起定下的公开行为：应用处于 cached 状态时，系统可以延后运行时注册接收者的广播；应用重新拥有活跃组件、回到 active 状态后，系统再投递积压项，某些广播的多个实例还可能被合并。
+先看 Android 14 起定下的公开行为：应用处于 cached 状态时，系统可以延后运行时注册接收者的广播；应用重新拥有活跃组件、回到 active（有活跃组件） 状态后，系统再投递积压项，某些广播的多个实例还可能被合并。
 
 清单接收者不走同样的无限延迟路径。重要的清单广播可以让应用离开 cached 状态并启动接收进程，“cached 进程的所有广播都要等待其他原因启动进程”并不是统一规则。
 
@@ -227,20 +227,20 @@ Android 的 `Intent` 里并没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 
 | cached 且不能无限延后 | `+120 s` | 延后处理 |
 | cached 且全部记录 `deferUntilActive` | `Long.MAX_VALUE` | 等进程变为 active 或条件变化 |
 
-这些是 DeviceConfig 默认值，不是 API 时延承诺。积压有兜底：普通设备的队列积压上限 `MAX_PENDING_BROADCASTS` 默认 256，低内存设备默认 128；达到上限后，代码会绕过已施加的延迟，帮助队列排空。
+这些是 DeviceConfig 默认值，不是 API 时延承诺。积压有兜底：普通设备的队列积压上限 `MAX_PENDING_BROADCASTS`（普通设备默认 256、低内存设备默认 128） 默认 256，低内存设备默认 128；达到上限后，代码会绕过已施加的延迟，帮助队列排空。
 
 ### 5.3 延后投递与 delivery group 是两个维度
 
 API 34 加入的 `BroadcastOptions` 提供两组不同能力：
 
 - `setDeferralPolicy(DEFERRAL_POLICY_UNTIL_ACTIVE)`：允许把符合条件的运行时接收者延后到进程 active；它不适用于有序、闹钟、交互型广播和清单接收者；
-- `setDeliveryGroupPolicy(DELIVERY_GROUP_POLICY_MOST_RECENT)`：同一 delivery group（投递组）只保留最近一条，旧的待投递项被跳过。
+- `setDeliveryGroupPolicy(DELIVERY_GROUP_POLICY_MOST_RECENT)`：同一 delivery group（投递组（delivery group））只保留最近一条，旧的待投递项被跳过。
 
-对带完成回调的无序广播，`DEFERRAL_POLICY_UNTIL_ACTIVE` 还有一个容易误读的地方：处于 inactive / cached 进程状态的接收者不计入“回调完成前必须接收”的 eligible 集合。完成回调到达时，它覆盖的只是这个集合，这部分 cached 接收者可能还没执行。
+对带完成回调（completion callback）的无序广播，`DEFERRAL_POLICY_UNTIL_ACTIVE` 还有一个容易误读的地方：处于 inactive / cached 进程状态的接收者不计入“回调完成前必须接收”的 eligible 集合。完成回调到达时，它覆盖的只是这个集合，这部分 cached 接收者可能还没执行。
 
 两组能力解决的是两个维度的问题：延后策略决定何时投递，投递组决定积压项是否都要投递。没有显式投递组策略时，系统不会因为接收者在同一进程就自动合并任意广播。
 
-`FLAG_RECEIVER_REPLACE_PENDING` 也只替换同时满足发送 UID、用户、Intent 匹配、接收者和其他条件的待处理项，对整个 `action` 或整个进程都没有无条件去重。
+`FLAG_RECEIVER_REPLACE_PENDING` 也只替换同时满足发送 UID（用户标识）、用户、Intent 匹配、接收者和其他条件的待处理项，对整个 `action` 或整个进程都没有无条件去重。
 
 ### 5.4 freezer 与广播队列的互动
 
@@ -290,12 +290,12 @@ API 37 另有受 feature flag 控制的发送方广播延迟：可冻结的发�
 
 ### 7.3 广播与低延迟 IPC 的分工
 
-官方文档明确不保证广播投递时延。需要同步响应、调用结果、稳定低延迟，或接收方处理不过来时让发送方减速的背压机制，应使用绑定服务或 AIDL；广播适合一次发送、多个可能接收者的事件通知。
+官方文档明确不保证广播投递时延。需要同步响应、调用结果、稳定低延迟，或接收方处理不过来时让发送方减速的背压机制，应使用绑定服务（bound service）或 AIDL；广播适合一次发送、多个可能接收者的事件通知。
 
 发送侧我们能做的，是把接收范围缩到最小：
 
 - 私有 `action` 使用应用包名前缀；
-- 已知目标时使用显式组件或 `Intent.setPackage()`；
+- 已知目标时使用显式组件（explicit component）或 `Intent.setPackage()`；
 - 对跨应用广播设置发送/接收权限；
 - 高频状态变化只发送必要字段，或通知接收方读取权威状态源；
 - 需要去重时明确使用 delivery group，让系统按声明的规则执行，业务语义它猜不到。
@@ -304,7 +304,7 @@ API 37 另有受 feature flag 控制的发送方广播延迟：可冻结的发�
 
 `goAsync()` 只把完成回执从 `onReceive()` 返回点延后到 `PendingResult.finish()`，既不暂停广播 ANR 计时，也不给进程持久任务保证。实现时先把提交点定义清楚：幂等任务已持久化入队、有序广播结果已写完，或短任务确实完成；随后在 `finally` 中调用 `finish()`。只启动一条不受生命周期管理的裸线程、再立刻结束接收者，进程可能在工作完成前就被回收。
 
-短异步任务也应放进应用级协程作用域、独立调度器，并设置一个短于系统窗口的内部截止时间。下载、上传、数据库迁移、大目录扫描以及要求进程死亡后重试的任务，由接收者做快速校验和去重，再交给 WorkManager、JobScheduler 或有明确生命周期的服务。
+短异步任务也应放进应用级协程作用域（scope）、独立调度器（dispatcher），并设置一个短于系统窗口的内部截止时间（deadline）。下载、上传、数据库迁移、大目录扫描以及要求进程死亡后重试的任务，由接收者做快速校验和去重，再交给 WorkManager、JobScheduler 或有明确生命周期的服务。
 
 ### 7.5 sticky、系统事件与业务状态要分开
 
@@ -332,9 +332,9 @@ adb shell cmd activity get-broadcast-constant bcast_timeout
 
 ### 8.2 Perfetto 轨迹中的广播事件
 
-API 37 定义了 `broadcasts` Perfetto SDK 分类。启用相关 v3 跟踪功能后，每个接收者完成时可产生名为 `broadcast_delivered` 的瞬时事件，并附带结构化字段：
+API 37 定义了 `broadcasts` Perfetto SDK 分类。启用相关 v3 跟踪功能后，每个接收者完成时可产生名为 `broadcast_delivered` 的瞬时事件（instant event），并附带结构化字段：
 
-- 发送方 / 接收方 UID、PID 和进程状态；
+- 发送方 / 接收方 UID、PID（进程 ID） 和进程状态；
 - `action`、接收者类型；
 - cold（需要启动）/ warm（进程已存在）启动类型；
 - `dispatch_delay_ms`、`receive_delay_ms`、`finish_delay_ms`；

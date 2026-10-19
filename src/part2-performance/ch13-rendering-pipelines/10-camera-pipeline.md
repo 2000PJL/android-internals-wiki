@@ -214,7 +214,7 @@ Camera 不是单 Producer 到单 Surface 的线性管线：同一 request 可以
 
 Camera 预览中的像素通常不经过宿主 View 的绘制逻辑。sensor 完成曝光后，ISP（Image Signal Processor，图像信号处理器）与 vendor pipeline（厂商算法处理链）处理图像，Camera HAL 再把结果写入多个输出 buffer。宿主 App 负责配置 Surface、下发拍摄控制、消费分析结果，并选择预览进入窗口系统的承载方式。
 
-同一组 capture request 可以持续产生 preview、record、analysis 和 still capture 输出，每一路都有自己的格式、尺寸、buffer pool、consumer（读取并最终归还 buffer 的一方）和归还节奏。所以预览正常，还说明不了分析或录像也正常：某个 consumer 长时间占用 buffer，可能通过共享的 ISP stage、HAL pipeline 或内存预算影响其他输出。这种下游消费变慢、阻塞上游继续生产的现象就是 backpressure（反压）。
+同一组 capture request 可以持续产生 preview、record、analysis 和 still capture 输出，每一路都有自己的格式、尺寸、buffer pool（可循环复用的一组 buffer）、consumer（读取并最终归还 buffer 的一方）和归还节奏。所以预览正常，还说明不了分析或录像也正常：某个 consumer 长时间占用 buffer，可能通过共享的 ISP stage、HAL pipeline 或内存预算影响其他输出。这种下游消费变慢、阻塞上游继续生产的现象就是 backpressure（反压）。
 
 本文的结论来自平台源码、kernel 与设备实现的对照：AOSP 能说明 framework、cameraserver、HAL 接口和显示系统的公共部分；设备实现这一侧涵盖 Camera provider / AIDL 或 HIDL HAL、ISP firmware、sensor driver、vendor tag 和 CameraX 版本，曝光策略、ISP 算法、buffer 缓存和 vendor tracepoint（厂商自定义跟踪点）取决于设备，需要在目标设备上验证。
 
@@ -271,7 +271,7 @@ CameraService 会把宽高、格式、dataspace、旋转和消费方 usage（用
 - `producerUsage`：输出流上 HAL 需要的 gralloc 用途标志；
 - `consumerUsage`：输入流上 HAL 需要的用途标志；
 - `maxBuffers`：HAL 同时可能持有的最大缓冲区数量；
-- `overrideDataSpace`：允许覆盖的色彩数据空间；
+- `overrideDataSpace`：允许覆盖的色彩数据空间（dataspace）；
 - `enableHalBufferManager`：会话级可配置模式下，决定该流是否由 HAL 按需请求缓冲区。
 
 系统框架会合并生产方与消费方的用途标志，再交给图形内存分配器。对于 `IMPLEMENTATION_DEFINED` 格式，最终布局可能取决于相机写入端以及显示、GPU、编解码器等读取端的组合要求；仅凭公开像素格式，stride（步幅）、plane offset 或压缩方式都推不出来。
@@ -286,7 +286,7 @@ mTotalBufferCount =
     + camera_stream::max_buffers
 ```
 
-这两项的来历不同：消费方要留下自己仍在读取或显示的缓冲区（对应 `maxConsumerBuffers`），HAL 也要有缓冲空间推进它的处理流水线，这部分对应 `camera_stream::max_buffers`。算出的值描述该输出 `Surface` 的基础队列容量；预览显示同步或 `PreviewFrameSpacer` 路径还可能在此基础上追加额外缓冲或 framework 缓存。`Camera3Stream::getBuffer()` 还会检查 HAL 已取走的缓冲区数量，达到 `max_buffers` 时就等缓冲区返回，并把等待时间记进 `wait on max_buffers` 延迟直方图。
+这两项的来历不同：消费方要留下自己仍在读取或显示的缓冲区（对应 `maxConsumerBuffers`），HAL 也要有缓冲空间推进它的处理流水线（pipeline，对应 `camera_stream::max_buffers`），这部分对应 `camera_stream::max_buffers`。算出的值描述该输出 `Surface` 的基础队列容量；预览显示同步或 `PreviewFrameSpacer` 路径还可能在此基础上追加额外缓冲或 framework 缓存。`Camera3Stream::getBuffer()` 还会检查 HAL 已取走的缓冲区数量，达到 `max_buffers` 时就等缓冲区返回，并把等待时间记进 `wait on max_buffers` 延迟直方图。
 
 想靠增大 `maxBuffers` 掩盖消费方处理缓慢是行不通的：增加它可能让处理流水线暂时不阻塞，也会增加该流中可同时驻留的图像内存；而且这个字段由 HAL 根据流水线需求声明，错误的数值还可能破坏系统框架与 HAL 的流量控制约定。
 
@@ -503,7 +503,7 @@ session GraphicBuffer 驻留量
 
 这只是排查起点。单个缓冲区的大小还受步幅、平面对齐、压缩元数据、保护属性、分块布局（tile layout）与厂商分配器影响；HAL、ISP 固件、GPU 和编解码器的内部工作缓冲区，也不一定出现在 CameraService 的流统计中。
 
-常见格式的未压缩有效载荷可以用来检查数量级：
+常见格式的未压缩有效载荷（payload）可以用来检查数量级：
 
 | 格式 | 可见像素数据的粗略量级 | 注意事项 |
 |---|---:|---|
@@ -810,7 +810,7 @@ API 37 上，如果切换只涉及属性可对应的 `OutputConfiguration` Surfa
 
 ### Sensor / ISP pipeline stall
 
-长曝光、HDR、多帧降噪、night extension、把 Quad Bayer 等排列重建为高分辨率 Bayer 数据的 remosaic，或多路高负载输出，都会增加 sensor / ISP 时间。我们结合 exposure、frame duration、SOF（Start of Frame，帧开始）/ readout、HAL result 和 vendor job，区分拍摄场景所需的处理时间与实现异常造成的 stall。
+长曝光、HDR、多帧降噪、night extension、把 Quad Bayer 等排列重建为高分辨率 Bayer 数据的 remosaic（把 Quad Bayer 等排列重建为高分辨率 Bayer 数据），或多路高负载输出，都会增加 sensor / ISP 时间。我们结合 exposure、frame duration、SOF（Start of Frame，帧开始）/ readout、HAL result 和 vendor job，区分拍摄场景所需的处理时间与实现异常造成的 stall。
 
 ### Preview carrier 晚
 
@@ -818,7 +818,7 @@ SurfaceView preview buffer 已 ready 但迟迟没有 present 时，继续检查 
 
 ### 内存、带宽与热限制
 
-多流会增加 GraphicBuffer / dma-buf 占用以及 ISP、内存带宽压力，10-bit、RAW14、高 fps 和大尺寸输出尤其明显。我们诊断时结合 dma-buf 总量、page allocation、IOMMU map、PSI memory（内存压力指标）、direct reclaim、GPU / ISP / memory frequency 和 thermal throttling。固定 buffer 数乘以分辨率算不出真实占用：row stride（每行实际字节跨度）、format、HAL cache、中间 buffer 和 vendor algorithm 都会引入额外空间。
+多流会增加 GraphicBuffer / dma-buf 占用以及 ISP、内存带宽压力，10-bit、RAW14、高 fps 和大尺寸输出尤其明显。我们诊断时结合 dma-buf 总量、page allocation、IOMMU map、PSI memory（内存压力指标）、direct reclaim（同步内存回收）、GPU / ISP / memory frequency 和 thermal throttling。固定 buffer 数乘以分辨率算不出真实占用：row stride（每行实际字节跨度）、format、HAL cache、中间 buffer 和 vendor algorithm 都会引入额外空间。
 
 ## Android 12—17 的版本演进
 
@@ -838,7 +838,7 @@ Android 17 平台继续使用 HAL3 request-result 与多 output Surface 模型�
 
 #### 16 KB page size 不规定 Camera buffer 几何对齐
 
-AOSP 从 Android 15 起支持 16 KB 页大小，主要影响内核页粒度、`mmap()` 映射取整、ELF 文件对齐，以及依赖固定 `PAGE_SIZE` 的原生代码；Android 17 延续了这项兼容能力。
+AOSP 从 Android 15 起支持 16 KB 页大小（page size），主要影响内核页粒度、`mmap()` 映射取整、ELF 文件对齐，以及依赖固定 `PAGE_SIZE` 的原生代码；Android 17 延续了这项兼容能力。
 
 Camera AIDL、`GraphicBuffer` 和 BufferQueue 没有规定：
 

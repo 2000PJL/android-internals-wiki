@@ -76,7 +76,7 @@ ContentProvider 会在 Application.onCreate 之前安装，多进程组件又可
 
 ### 范围
 
-在本文关心的场景里，ContentProvider 常见于两类用途：通过 `content://` URI 提供结构化数据，或借系统自动创建组件的时机完成“零代码接入”初始化。我们聚焦后一类及其启动成本；数据增删改查、承载部分游标结果的 `CursorWindow`，以及 Provider 响应超时引发的 ANR，都放到本文之外。
+在本文关心的场景里，ContentProvider 常见于两类用途：通过 `content://` URI 提供结构化数据，或借系统自动创建组件的时机完成“零代码接入”初始化。我们聚焦后一类及其启动成本；数据增删改查、承载部分游标结果的 `CursorWindow`，以及 Provider 响应超时引发的 ANR（应用无响应），都放到本文之外。
 
 ### 1. Provider 为什么早于 `Application.onCreate()`
 
@@ -94,7 +94,7 @@ Instrumentation.onCreate(...)
 Instrumentation.callApplicationOnCreate(app)
 ```
 
-图中的 attach，指把新建的 `Application` 绑定到进程 `Context` 等运行环境；`bindApplication` 则是系统把应用信息、组件和 `Application` 绑定到新进程的整个启动阶段。`data.providers` 是 `system_server` 为当前进程准备的 Provider 列表，`system_server` 承载着 ActivityManager 等核心系统服务。Provider 属于哪个进程，由最终 Manifest 中的 `android:process` 决定，未声明时属于应用默认进程。
+图中的 attach，指把新建的 `Application` 绑定到进程 `Context` 等运行环境；`bindApplication` 则是系统把应用信息、组件和 `Application` 绑定到新进程的整个启动阶段。`data.providers` 是 `system_server`（运行 Android 核心系统服务的进程） 为当前进程准备的 Provider 列表，`system_server` 承载着 ActivityManager 等核心系统服务。Provider 属于哪个进程，由最终 Manifest 中的 `android:process` 决定，未声明时属于应用默认进程。
 
 `installContentProviders()` 对列表逐个调用 `installProvider()`。本地 Provider 的关键路径是：
 
@@ -122,7 +122,7 @@ Provider 多时，类加载、实例化、`attachInfo()` 和各自 `onCreate()` 
 
 很多项目从 `Application.onCreate()` 第一行开始计时，而 Provider 已经在此之前完成。这类埋点看到的只有 Application 阶段，解释不了完整的 `bindApplication`。
 
-启动基线应以 Macrobenchmark 自动化基准测试得到的端到端 TTID/TTFD 为主——TTID 表示首帧首次显示所需时间，TTFD 表示应用达到完整可用状态所需时间——再结合 Perfetto 系统 Trace 的 Android App Startups 区间和自定义 slice 做分解；slice 是 Trace 上带开始、结束时间的命名区间，正好用来拆分自有 Provider。
+启动基线应以 Macrobenchmark 自动化基准测试得到的端到端 TTID（App 第一帧时间）/TTFD（主要内容可用时间） 为主——TTID 表示首帧首次显示所需时间，TTFD 表示应用达到完整可用状态所需时间——再结合 Perfetto 系统 Trace 的 Android App Startups 区间和自定义 slice 做分解；slice 是 Trace 上带开始、结束时间的命名区间，正好用来拆分自有 Provider。
 
 ### 2. 启动成本从哪里来
 
@@ -148,7 +148,7 @@ Provider 框架本身只占成本的一部分。我们把一次自动初始化�
 
 #### 3.1 检查最终合并结果
 
-源码里的 Manifest 不是安装包中的最终结果。debug/release 这样的 build type、free/paid 这样的 product flavor，组合起来就是 build variant（构建变体）；依赖库、渠道配置、build variant 和构建时替换的 Manifest placeholder，都可能改变最终组件。
+源码里的 Manifest 不是安装包中的最终结果。debug/release 这样的 build type（如 debug/release）、free/paid 这样的 product flavor（如 free/paid 产品配置），组合起来就是 build variant（构建变体）；依赖库、渠道配置、build variant 和构建时替换的 Manifest placeholder，都可能改变最终组件。
 
 Android Gradle Plugin（AGP）的合并决策报告位于模块的 `build/outputs/logs/manifest-merger-<variant>-report.txt`，Android Studio 的 Merged Manifest 视图也能定位某个 Provider 来自哪个依赖。准备发布的每个构建变体都要检查，只看 debug 是不够的。
 
@@ -286,7 +286,7 @@ Manifest Merger 对 `<provider>` 的匹配键是 `android:name`。如果只想�
 - release、debug、渠道和动态特性模块等相关构建变体；
 - 合并后的 Manifest 和合并报告已无目标节点；
 - SDK 显式初始化只执行一次；
-- deep link、推送、后台任务、登录、分享、支付等入口；
+- deep link（从网页或其他应用直达指定页面）、推送、后台任务、登录、分享、支付等入口；
 - 用户同意、拒绝、撤回与无网路径；
 - Direct Boot（用户首次解锁前运行）、备份恢复、升级安装和进程重建；
 - Java 混淆映射文件、原生崩溃符号文件和监控仍可用。
@@ -357,7 +357,7 @@ App Startup 仍基于 ContentProvider。Manifest 发现过程和所有 `Initiali
 
 1.2.0 `AppInitializer` 的核心行为是：
 
-- 从 `InitializationProvider` 的 Manifest metadata 键值配置中发现入口 initializer；
+- 从 `InitializationProvider` 的 Manifest metadata 键值配置中发现入口 initializer（组件初始化器）；
 - 通过反射按运行期类名构造 initializer；
 - 深度优先执行依赖；
 - 用 `initializing` 集合检测环；
@@ -429,7 +429,7 @@ val shareClient = AppInitializer.getInstance(context)
 
 #### 10.1 Provider 属于承载进程
 
-最终 Manifest 决定 Provider 在哪个承载进程创建。每个进程都有自己的一份 Java heap、类静态字段和 App Startup 单例：
+最终 Manifest 决定 Provider 在哪个承载进程创建。每个进程都有自己的一份 Java heap（对象内存区）、类静态字段和 App Startup 单例：
 
 - 默认 Provider 只随应用默认进程安装；
 - `android:process=":push"` 的 Provider 在私有 `:push` 进程运行；
@@ -440,11 +440,11 @@ val shareClient = AppInitializer.getInstance(context)
 
 #### 10.2 Direct Boot
 
-[`android:directBootAware="true"`](https://developer.android.com/privacy-and-security/direct-boot) 允许 Provider 在设备重启后、用户首次解锁前运行。此时只能访问 device-protected storage（设备保护存储）和其他支持 Direct Boot 的能力；默认的 credential-encrypted storage 要等用户解锁后才可用。该属性适用于闹钟、短信等确有解锁前需求的组件——当作普通的“提前初始化”开关来用，或者在设备保护存储里随意保存口令、认证令牌，都属于误用。
+[`android:directBootAware="true"`](https://developer.android.com/privacy-and-security/direct-boot) 允许 Provider 在设备重启后、用户首次解锁前运行。此时只能访问 device-protected storage（设备保护存储）和其他支持 Direct Boot 的能力；默认的 credential-encrypted storage（凭据加密存储） 要等用户解锁后才可用。该属性适用于闹钟、短信等确有解锁前需求的组件——当作普通的“提前初始化”开关来用，或者在设备保护存储里随意保存口令、认证令牌，都属于误用。
 
-#### 10.3 `multiprocess` 与同 UID 多实例
+#### 10.3 `multiprocess` 与同 UID（Linux 用户 ID，Android 用它隔离应用身份） 多实例
 
-Manifest 的 `android:multiprocess="true"` 允许系统在同一 UID（Linux 用户 ID）的其他进程中本地创建 Provider 实例，通常对应应用自己的子进程；Android 用 UID 隔离应用身份。[`ContentProviderRecord.canRunHere()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderRecord.java) 同时检查 `multiprocess` 和 UID；不同 UID 的外部应用仍通过 Binder 访问承载进程中的实例。
+Manifest 的 `android:multiprocess="true"` 允许系统在同一 UID（Linux 用户 ID）的其他进程中本地创建 Provider 实例，通常对应应用自己的子进程；Android 用 UID（Linux 用户身份） 隔离应用身份。[`ContentProviderRecord.canRunHere()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderRecord.java) 同时检查 `multiprocess` 和 UID；不同 UID 的外部应用仍通过 Binder 访问承载进程中的实例。
 
 本地实例可以省去应用自身进程间的部分 Binder 调用，代价是复制对象、缓存和连接，还要各实例自己解决状态一致性。它的适用面很窄，不该当作通用启动优化；迁移前要核对旧应用是否依赖这项少见行为，并在目标 API 37 设备上验证。
 
@@ -488,13 +488,13 @@ Provider 数量减少只是实现层面的变化；用户可见启动、功能�
 
 主进程的 Provider 优化完成后，我们还要检查远程 Service、WebView 或独立业务进程有没有重复加载 SDK、线程池和缓存。
 
-多进程可以隔离崩溃、内存峰值和重型 native 模块，也会新增一套进程运行时、初始化链路和 IPC 通信。这是一项架构取舍，代替不了主进程自身的启动治理。
+多进程可以隔离崩溃、内存峰值和重型 native（C/C++ 等本地代码） 模块，也会新增一套进程运行时、初始化链路和 IPC（Inter-Process Communication，进程间通信） 通信。这是一项架构取舍，代替不了主进程自身的启动治理。
 
 App 可以控制的部分包括：是否拆进程、何时启动、每个进程初始化什么、调用方怎样等待远程能力，以及如何验证收益。进程优先级与回收规则见 [进程模型](../../part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md)，冷启动分段与 TTID、TTFD 见 [启动分析](01-app-startup-path-monitoring.md)，后台任务约束见 [后台执行限制](../../part1-fundamentals/ch05-cpu-power/03-background-jobs-hibernation.md)。
 
 ### 1. 先确认拆进程的目的
 
-在 Manifest 中给组件设置 `android:process=":worker"`，会让它运行在一个私有远程进程中，进程名由应用包名和 `:worker` 拼接而成。这个进程通常仍使用应用的 UID 和权限，但拥有独立的 ART 实例、Java/Kotlin 堆、native 堆、静态字段、线程、ClassLoader 类加载状态和 Binder 线程池——主进程里的单例不会自动出现在远程进程，远程进程修改的内存对象也不会同步回来。
+在 Manifest 中给组件设置 `android:process=":worker"`，会让它运行在一个私有远程进程中，进程名由应用包名和 `:worker` 拼接而成。这个进程通常仍使用应用的 UID 和权限，但拥有独立的 ART（Android Runtime） 实例、Java/Kotlin 堆、native 堆、静态字段、线程、ClassLoader 类加载状态和 Binder 线程池——主进程里的单例不会自动出现在远程进程，远程进程修改的内存对象也不会同步回来。
 
 拆进程要有明确目标。常见的合理目标包括：
 
@@ -524,7 +524,7 @@ WebView 在多进程模式下会把网页内容放进 renderer process（Chromiu
 
 ### 2. 应用进程的启动链路
 
-系统需要运行一个尚无进程可用的组件时，system_server 会请求 Zygote 创建应用进程——system_server 运行着 Android 核心系统服务；Zygote 预加载了通用框架代码，靠 fork 的写时复制快速派生 App 进程，子进程先共享页面，修改时才生成私有副本。`ZygoteProcess.startViaZygote()` 负责整理参数，并通过 Zygote socket 发送创建请求。
+系统需要运行一个尚无进程可用的组件时，system_server 会请求 Zygote 创建应用进程——system_server 运行着 Android 核心系统服务；Zygote 预加载了通用框架代码，靠 fork（用写时复制派生子进程，修改内存页时才生成私有副本） 的写时复制快速派生 App 进程，子进程先共享页面，修改时才生成私有副本。`ZygoteProcess.startViaZygote()` 负责整理参数，并通过 Zygote socket（进程间通信端点） 发送创建请求。
 
 新进程随后进入 `ActivityThread` 的应用绑定流程；`ActivityThread` 是 App 进程接收组件与生命周期调度的核心类，上一部分讲的 Provider 安装顺序就发生在这一步。
 
@@ -597,7 +597,7 @@ class App : Application() {
 - 上传进程只准备任务数据库、网络栈和通知能力，不创建图片 UI、页面路由或主进程业务线程池；
 - 所有进程共用的日志与崩溃采集也要有进程预算，别以“公共基础设施”为由，让每个进程都跑完整线程和周期任务。
 
-静态初始化同样受进程隔离影响。Kotlin `object`、Java 静态字段和 JNI 全局状态都是“每个进程一份”；类第一次加载时触发的重工作，`Application` 分支拦不住，应通过懒加载或显式入口控制。
+静态初始化同样受进程隔离影响。Kotlin `object`、Java 静态字段和 JNI（Java 与 native 代码的调用接口） 全局状态都是“每个进程一份”；类第一次加载时触发的重工作，`Application` 分支拦不住，应通过懒加载或显式入口控制。
 
 ### 4. 控制远程进程的拉起时机
 
@@ -612,13 +612,13 @@ Android 没有面向普通应用的通用“只创建进程、暂不运行组件
 | 临近入口 | 已出现页面曝光、Tab 切换或点击前置动作 | 用明确的产品信号拉起，过期后取消，不做长期无条件预热 |
 | 系统调度 | 上传、同步、清理等不依赖当前页面 | 交给 WorkManager、JobScheduler 或符合规则的前台服务 |
 
-“首帧后执行”仍可能影响启动：低端设备上，新进程会与主进程竞争 CPU、存储 I/O、页缓存和内存。预热实验至少要比较以下三组：
+“首帧后执行”仍可能影响启动：低端设备上，新进程会与主进程竞争 CPU、存储 I/O、页缓存（内存中暂存的文件数据）和内存。预热实验至少要比较以下三组：
 
 1. 不预热，用户进入功能时冷启动；
 2. 首帧后立即预热；
 3. 临近功能入口再预热。
 
-比较指标应包括主进程 TTID/TTFD、远程能力 ready（协议已经可以接受请求的时点）、用户进入功能后的等待、全应用 PSS、低内存回收次数和失败率。只有用户等待时间的下降盖得住资源与稳定性代价，这份预热才值得保留。
+比较指标应包括主进程 TTID/TTFD、远程能力 ready（协议已经可以接受请求的时点）、用户进入功能后的等待、全应用 PSS（Proportional Set Size，按比例分摊共享页后的内存）、低内存回收次数和失败率。只有用户等待时间的下降盖得住资源与稳定性代价，这份预热才值得保留。
 
 ### 5. 把 Binder ready 建模为异步能力
 
@@ -626,7 +626,7 @@ Android 没有面向普通应用的通用“只创建进程、暂不运行组件
 
 远程服务随时可能消失，连接状态至少要区分连接中、可用、断开和失败，并处理 Binder 所在进程死亡。
 
-下面的示例展示一个最小连接状态机。业务协程可以异步等待 ready；主线程上，`CountDownLatch`、自旋和无限期同步调用都要避开：
+下面的示例展示一个最小连接状态机。业务协程可以异步等待 ready；主线程上，`CountDownLatch`（让线程等待计数归零的同步器）、自旋（循环检查状态并持续占用 CPU）和无限期同步调用都要避开：
 
 ```kotlin
 sealed interface RemoteState {
@@ -698,7 +698,7 @@ class WorkerConnection :
 
 状态更新之外的重工作应切换到受控协程或执行器。
 
-远程事务可能包含磁盘、网络或重计算。AIDL 用于声明跨进程接口；客户端应把同步 AIDL 调用放到允许阻塞的调度器，并给业务请求单独设置超时：
+远程事务可能包含磁盘、网络或重计算。AIDL（Android Interface Definition Language） 用于声明跨进程接口；客户端应把同步 AIDL 调用放到允许阻塞的调度器，并给业务请求单独设置超时：
 
 ```kotlin
 suspend fun transcode(
@@ -728,7 +728,7 @@ suspend fun transcode(
 - 配置变更携带 `version` 或 `generation`（状态代次），客户端重连时重新拉取快照；
 - 一次性事件携带请求 ID，避免进程死亡后的重复提交产生副作用。
 
-数据库能被多个进程打开，和业务事务已经具备一致性保证是两回事。我们需要核对所用数据库库的多进程能力、WAL（Write-Ahead Logging）与锁行为、数据失效通知和迁移时序。数据库升级只能有一个受控入口；schema 准备完成前，其他进程应停在带超时的等待状态，由这个入口完成迁移。
+数据库能被多个进程打开，和业务事务已经具备一致性保证是两回事。我们需要核对所用数据库库的多进程能力、WAL（Write-Ahead Logging）与锁行为、数据失效通知和迁移时序。数据库升级只能有一个受控入口；schema（数据库结构） 准备完成前，其他进程应停在带超时的等待状态，由这个入口完成迁移。
 
 ### 7. 面向进程死亡的恢复设计
 
@@ -765,7 +765,7 @@ suspend fun transcode(
 | 资源 | PSS、RSS、Java/native heap、线程、FD（文件描述符） | 衡量拆分和预热的常驻代价 |
 | 稳定性 | `binderDied`、重绑、崩溃、请求重放、失败率 | 验证进程死亡后的恢复质量 |
 
-PSS 会按共享进程数分摊共享内存页，适合估算多个进程合计对系统内存的压力；RSS（Resident Set Size）包含该进程映射的全部共享页，适合观察单进程分配趋势，但直接相加多个进程的 RSS 会重复计算共享页。报告“多进程节省内存”时，要说明用的是哪一种统计口径。
+PSS 会按共享进程数分摊共享内存页，适合估算多个进程合计对系统内存的压力；RSS（Resident Set Size）包含该进程映射的全部共享页，适合观察单进程分配趋势，但直接相加多个进程的 RSS（Resident Set Size，常驻内存大小） 会重复计算共享页。报告“多进程节省内存”时，要说明用的是哪一种统计口径。
 
 本地排查可以先用下面的命令确认进程、内存和长期存活情况：
 
@@ -775,7 +775,7 @@ adb shell dumpsys meminfo com.example.app
 adb shell dumpsys procstats --hours 3
 ```
 
-第一条查看当前进程与组件状态，第二条分项显示应用内存，第三条读取 `procstats` 长期记录的进程状态与内存统计。不同 Android 版本与设备厂商的 `dumpsys` 文本格式可能变化，自动化采集更适合使用稳定 API、Perfetto 数据源，或只解析明确支持的系统版本。
+第一条查看当前进程与组件状态，第二条分项显示应用内存，第三条读取 `procstats`（系统长期记录的进程状态与内存统计） 长期记录的进程状态与内存统计。不同 Android 版本与设备厂商的 `dumpsys` 文本格式可能变化，自动化采集更适合使用稳定 API、Perfetto 数据源，或只解析明确支持的系统版本。
 
 Perfetto 是系统级时间线分析工具。分析时我们把主进程和远程进程放在同一时间轴上，关注进程创建、`bindApplication`、Provider 初始化、自定义 trace、Binder 阻塞、I/O 和 CPU 竞争。一次优化至少要回答三个问题：主进程首帧有没有改善，远程能力可用时间有没有变慢，合计资源与失败率是否可以接受。
 

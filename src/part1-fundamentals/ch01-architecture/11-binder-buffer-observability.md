@@ -104,7 +104,7 @@ Binder 的事务上限常被简化成一句“单笔 1 MiB”，这个说法丢�
 
 > 源码基线：Android 17 / API 37；AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
-排查 Binder 故障时，我们既要看事务是否进入驱动，也要看目标进程的缓冲区和异步预算是否允许继续分配；内核分配状态、AIDL Trace 与 Perfetto 事务切片是同一问题的不同观察面。事务时序观测见后半部分“从 AIDL Trace 到内核事务快照”，`oneway` 排队见 [1.10 Binder 线程池、异步事务与 Freezer](10-binder-scheduling-freezer-threadpool.md)。
+排查 Binder 故障时，我们既要看事务是否进入驱动，也要看目标进程的缓冲区和异步预算是否允许继续分配；内核分配状态、AID（TID）L Trace 与 Perfetto 事务切片是同一问题的不同观察面。事务时序观测见后半部分“从 AIDL Trace 到内核事务快照”，`oneway` 排队见 [1.10 Binder 线程池、异步事务与 Freezer](10-binder-scheduling-freezer-threadpool.md)。
 
 ## 事务缓冲区、分配器与大小限制
 
@@ -150,7 +150,7 @@ mVMStart = mmap(
 );
 ```
 
-这块用户虚拟地址用来接收驱动写入的事务。`MAP_NORESERVE` 只表示不为映射预留交换空间；从它推不出“Binder 页面不计入 RSS”——驱动会在事务需要覆盖相应范围时安装后备物理页，内存统计仍要以目标内核和设备实测为准。
+这块用户虚拟地址用来接收驱动写入的事务。`MAP_NORESERVE` 只表示不为映射预留交换空间；从它推不出“Binder 页面不计入 RSS（进程当前驻留在物理内存中的大小）”——驱动会在事务需要覆盖相应范围时安装后备物理页，内存统计仍要以目标内核和设备实测为准。
 
 16 KiB 页设备的映射长度比 4 KiB 页设备少 24 KiB，差值来自宏中扣除的“两页”。由这个差值推不出“驱动把每笔事务按 16 KiB 对齐”的结论。
 
@@ -326,7 +326,7 @@ bodySize < kRpcTransactionLimitBytes - sizeof(RpcWireHeader)
 
 #### 3. 它不影响普通应用到系统服务的内核 Binder
 
-`BpBinder::transact()` 先判断 `isRpcBinder()`：RPC 端点交给 `RpcSession`，其余调用交给 `IPCThreadState` 和内核 Binder。普通应用调用 Activity Manager、Package Manager 或 ContentProvider 走的通常是后一条路径，RPC 上限从 100 KB 变为 600 KiB，并不会给它们换来更大的内核 Binder 空间。
+`BpBinder::transact()` 先判断 `isRpcBinder()`：RPC 端点（endpoint）交给 `RpcSession`，其余调用交给 `IPCThreadState` 和内核 Binder。普通应用调用 Activity Manager、Package Manager 或 ContentProvider 走的通常是后一条路径，RPC 上限从 100 KB 变为 600 KiB，并不会给它们换来更大的内核 Binder 空间。
 
 `Constants.h` 的注释将设限原因归于 Baklava 时期 RPC Binder 尚不支持共享内存。Android 17 标签仍保留同一常量和注释；设计 RPC 接口时应按 600 KiB 包级上限规划，不要指望一条自动切换到共享内存的后备路径。
 
@@ -340,7 +340,7 @@ bodySize < kRpcTransactionLimitBytes - sizeof(RpcWireHeader)
 
 #### 2. `TF_CLEAR_BUF`
 
-r6 内核在创建目标 `binder_buffer` 时把 `TF_CLEAR_BUF` 写入 `clear_on_free`。释放 buffer 前，`binder_alloc_clear_buf()` 遍历后备物理页，把整个 buffer 清零后再归还分配器。
+r6 内核在创建目标 `binder_buffer` 时把 `TF_CLEAR_BUF` 写入 `clear_on_free`。释放 buffer 前，`binder_alloc_clear_buf()` 遍历后备物理页，把整个 buffer 清零后再归还分配器（allocator）。
 
 同步调用中，`IPCThreadState` 会把 `TF_CLEAR_BUF` 转发给回复；`BBinder::transact()` 还会对用户态回复 Parcel 调用 `markSensitive()`，使 libbinder 在释放自己拥有的数据区前清零。因此，该标志同时覆盖接收方的内核 buffer 和相关用户态回复数据，并不只清用户态。
 
@@ -351,7 +351,7 @@ r6 内核在创建目标 `binder_buffer` 时把 `TF_CLEAR_BUF` 写入 `clear_on_
 16 KiB 页带来两个可直接从源码确认的变化：
 
 1. `BINDER_VM_SIZE` 从 4 KiB 页设备的 1016 KiB 变为 992 KiB；
-2. `binder_install_buffer_pages()` 和页面 LRU 以 16 KiB 为安装、回收粒度。
+2. `binder_install_buffer_pages()` 和页面 LRU（按近期使用情况组织的可回收页列表） 以 16 KiB 为安装、回收粒度。
 
 事务 buffer 的逻辑大小仍按指针宽度对齐，多个小 buffer 可以共享一页。较大的页面可能改变后备物理页数量、回收时机和内存局部性；至于“每个小事务多浪费 12 KiB”这类说法，分配器实现里给不出依据，必须通过实测验证。
 
@@ -532,11 +532,11 @@ if (ret >= 0 && binder_txns_pending_ilocked(target_proc))
 
 所以，`timeout_ms` 等的是旧事务排空，而非“冻结多长时间”。冻结成功后持续到调用 `freeze(pid, false, ...)`；解冻路径同时清除 `sync_recv` 和 `async_recv`。
 
-冻结后的新同步事务会失败，并向发送端返回冻结相关错误。`oneway` 事务可以进入冻结进程的待处理队列，发送端还可能收到 `BR_TRANSACTION_PENDING_FROZEN`。分析长时间的异步 Binder flow 时，冻结是候选原因之一；当前内核没有名为 `binder_freeze` 的 Binder tracepoint，区间标记要用真实存在的事件。
+冻结后的新同步事务会失败，并向发送端返回冻结相关错误。`oneway` 事务可以进入冻结进程的待处理队列，发送端还可能收到 `BR_TRANSACTION_PENDING_FROZEN`。分析长时间的异步 Binder flow 时，冻结是候选原因之一；当前内核没有名为 `binder_freeze` 的 Binder tracepoint（静态跟踪点），区间标记要用真实存在的事件。
 
 #### 3.3 冻结通知是另一条协议
 
-客户端若持有某个远端 Binder 句柄，可以通过 `addFrozenStateChangeCallback()` 请求冻结通知。libbinder 先检查 `freeze_notification` 功能文件，再发送 `BC_REQUEST_FREEZE_NOTIFICATION`；内核以 `BR_FROZEN_BINDER` 回传 `is_frozen` 与用于关联回调对象的 `cookie`。
+客户端若持有某个远端 Binder 句柄（handle），可以通过 `addFrozenStateChangeCallback()` 请求冻结通知。libbinder 先检查 `freeze_notification` 功能文件，再发送 `BC_REQUEST_FREEZE_NOTIFICATION`；内核以 `BR_FROZEN_BINDER` 回传 `is_frozen` 与用于关联回调对象的 `cookie`。
 
 这条协议用于判断持有的远端 Binder 是否发生冻结状态变化。`BINDER_GET_FROZEN_INFO` 则按 PID 查询冻结期间是否收到过事务。两者的对象、数据结构和使用目的不同。
 
@@ -648,7 +648,7 @@ data_sources {
 duration_ms: 10000
 ```
 
-`ATRACE_TAG_AIDL` 只提供方法时间片；跨进程连线来自 Binder ftrace 事件，线程迟迟没有运行的原因则要靠调度事件。只开 `aidl` 分类拿不到后两类信息，录制时要带上 Binder 驱动事件与 `sched` 调度数据。
+`ATRACE_TAG_AIDL` 只提供方法时间片；跨进程连线来自 Binder ftrace（内核跟踪框架） 事件，线程迟迟没有运行的原因则要靠调度事件。只开 `aidl` 分类拿不到后两类信息，录制时要带上 Binder 驱动事件与 `sched` 调度数据。
 
 ### 七、API 37 的 Perfetto 表字段
 
@@ -745,7 +745,7 @@ Sent Parcel Object Offsets
 End
 ```
 
-`TransactionHeader` 只包含 `code`、`flags`、返回状态、RPC 版本标记、秒 / 纳秒时间戳和保留字段；接口名位于独立数据块中。每个数据块由 `uint32_t chunkType`、`uint32_t dataSize`、数据、0～7 字节补齐和 64 位 XOR 校验值组成。未知数据块可以校验后跳过；同类数据块重复出现时，后读到的值会覆盖前值。
+`TransactionHeader` 只包含 `code`、`flags`、返回状态、RPC 版本标记、秒 / 纳秒时间戳和保留字段；接口名位于独立数据块（chunk）中。每个数据块由 `uint32_t chunkType`、`uint32_t dataSize`、数据、0～7 字节补齐和 64 位 XOR 校验值组成。未知数据块可以校验后跳过；同类数据块重复出现时，后读到的值会覆盖前值。
 
 源码明确标记该格式仍在持续开发，协议稳定性没有保证。录制内容可能包含账号标识、令牌、路径和业务数据；同时，序列化与文件写入发生在事务返回路径并受录制锁保护，会改变被测路径的时延，固定的 `100 ns–1 us` 开销在源码里也没有依据。它适合实验设备上的协议复现和离线检查，生产设备的常驻采集应该使用前面那些扰动更小的手段。
 
@@ -785,7 +785,7 @@ End
   - `system/tools/aidl/generate_java_binder.cpp`：Java AIDL 生成的 `getTransactionName()` 映射
   - `external/perfetto/src/trace_processor/perfetto_sql/stdlib/android/binder.sql`：`android_binder_txns` 字段定义
 - 内核 `android17-6.18-2026-06_r6`
-  - `include/uapi/linux/android/binder.h`：冻结状态位与 ioctl UAPI
+  - `include/uapi/linux/android/binder.h`：冻结状态位与 ioctl UAPI（用户态和内核态共享的接口定义）
   - `drivers/android/binder.c`：冻结、扩展错误、oneway 嫌疑告警和事务释放
   - `drivers/android/binderfs.c`：功能文件
   - `drivers/android/binder_trace.h`：Binder tracepoint 字段

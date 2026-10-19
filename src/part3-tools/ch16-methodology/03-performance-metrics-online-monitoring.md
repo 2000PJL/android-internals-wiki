@@ -124,7 +124,7 @@ consolidated_from:
 
 ### 指标合同
 
-“启动耗时”“掉帧率”“OOM 率”都只是名字。团队要拿到可比较的数据，还得把事件、分母、统计窗口和排除条件一并定义；缺了这些，同名看板统计的可能根本是两回事。
+“启动耗时”“掉帧率”“OOM（Out of Memory，内存分配失败） 率”都只是名字。团队要拿到可比较的数据，还得把事件、分母、统计窗口和排除条件一并定义；缺了这些，同名看板统计的可能根本是两回事。
 
 每个长期指标至少包含以下字段：
 
@@ -142,7 +142,7 @@ consolidated_from:
 | 数据源版本 | Android、SDK、Benchmark/Perfetto、schema（字段结构）与采集配置 |
 | 负责人 | 谁解释异常、谁维护埋点、谁批准口径变化 |
 
-这里的“合同”指一份可审查、可复现的指标定义。合同一旦改变，就新建 schema/version 版本，让新旧两套定义分开累计，避免拼进同一条趋势线。
+这里的“合同”指一份可审查、可复现的指标定义。合同一旦改变，就新建 schema/version（字段结构及口径版本） 版本，让新旧两套定义分开累计，避免拼进同一条趋势线。
 
 ### 指标的四种职责
 
@@ -153,39 +153,39 @@ consolidated_from:
 | 门禁指标 | 判断候选版本是否允许发布 | 固定 CUJ 的 Macrobenchmark 分布、内存峰值、功耗区间 |
 | 诊断指标 | 解释为何回退 | thread state、frame overrun、Binder latency、RSS/heap、energy consumer |
 
-用户结果指标里的 TTFD 量的是主要内容完整显示所需时间，click-to-display 量的是从点击到画面可见的端到端延迟。健康指标里的 user-perceived 只统计用户大概率能感知到的故障：ANR 无响应、slow startup 启动过慢、excessive wake lock 局部唤醒锁过量。
+用户结果指标里的 TTFD（Time to Full Display，完整画面显示时间） 量的是主要内容完整显示所需时间，click-to-display 量的是从点击到画面可见的端到端延迟。健康指标里的 user-perceived 只统计用户大概率能感知到的故障：ANR（Application Not Responding，应用无响应） 无响应、slow startup 启动过慢、excessive wake lock 局部唤醒锁过量。
 
-门禁指标里的 Macrobenchmark 是 Jetpack 在真实设备上跨进程跑完整用户流程的基准测试。诊断指标负责解释为什么回退，保留 thread state、frame overrun（帧超出时限的时间）、Binder latency、RSS/heap 和 energy consumer 这类归因线索——线程当时处于什么状态、一次跨进程调用延迟多少、内存落在哪、耗能算到哪个单元。
+门禁指标里的 Macrobenchmark（跨进程测量完整用户流程的 Jetpack 基准测试库） 是 Jetpack 在真实设备上跨进程跑完整用户流程的基准测试。诊断指标负责解释为什么回退，保留 thread state（线程运行或等待状态）、frame overrun（帧超出时限的时间）、Binder（Android 跨进程调用机制） latency（跨进程调用延迟）、RSS/heap（进程驻留内存/堆内存） 和 energy consumer（逻辑耗能单元） 这类归因线索——线程当时处于什么状态、一次跨进程调用延迟多少、内存落在哪、耗能算到哪个单元。
 
-同一数值可以承担不同职责，但合同通常不同。Play 的 bad-behavior threshold 是平台画的一条外部健康线；App 团队仍要另定更严、更贴合自身用户场景的发布目标。
+同一数值可以承担不同职责，但合同通常不同。Play 的 bad-behavior threshold（平台定义的不良行为阈值） 是平台画的一条外部健康线；App 团队仍要另定更严、更贴合自身用户场景的发布目标。
 
 ### 流畅性指标
 
-#### FPS
+#### FPS（Frames Per Second，每秒帧数）
 
 FPS 表示单位时间内实际呈现或生成的帧数。定义时要注明量的是哪一层：
 
 - App 生产帧；
-- SurfaceFlinger 呈现帧；
+- SurfaceFlinger（负责合成图层并把画面送往显示设备的系统服务） 呈现帧；
 - 游戏 session 的实际 frame rate；
 - 采样窗口内的平均值。
 
-高 FPS 只说明这段时间产出帧多，说明不了每一帧都稳：少量长帧会被较长窗口的平均值稀释，静止页面主动少出帧也可能是正确的节能行为。所以 FPS 适合描述持续动画或游戏吞吐，普通 UI 的回归更适合结合 frame deadline、jank 比例和场景状态一起看。
+高 FPS 只说明这段时间产出帧多，说明不了每一帧都稳：少量长帧会被较长窗口的平均值稀释，静止页面主动少出帧也可能是正确的节能行为。所以 FPS 适合描述持续动画或游戏吞吐，普通 UI 的回归更适合结合 frame deadline（平台分配给该帧的完成时限）、jank 比例（错过显示节奏的卡顿帧占比）和场景状态一起看。
 
 #### Android Vitals 的 slow/frozen rendering
 
-当前 Android Vitals 对使用 View/Canvas UI Toolkit 的应用记录：
+当前 Android Vitals 对使用 View/Canvas UI Toolkit（Android 传统 View/Canvas 界面渲染体系） 的应用记录：
 
 - slow frame：渲染时间位于 16 ms 到 700 ms；
 - frozen frame：渲染时间超过 700 ms。
 
 这是 Play 的固定报表口径，Vulkan、Unity、Unreal、OpenGL 等不走该 UI Toolkit 的渲染内容未必出现在这组数据里。游戏要另看 slow sessions 等游戏指标。
 
-16 ms 也不是所有设备的实时 deadline。90 Hz、120 Hz 与可变刷新率设备应改用 FrameTimeline 或 frame overrun 判断是否错过平台分配的窗口——FrameTimeline 把 App 侧的生产和系统侧的呈现按帧关联在一起。
+16 ms 也不是所有设备的实时 deadline。90 Hz、120 Hz 与可变刷新率设备应改用 FrameTimeline（把 App 生产与系统呈现按帧关联起来的 Trace 数据） 或 frame overrun 判断是否错过平台分配的窗口——FrameTimeline（把 App 生产帧与系统呈现帧关联起来的 Trace 数据） 把 App 侧的生产和系统侧的呈现按帧关联在一起。
 
 #### FrameMetrics
 
-`FrameMetrics` 从 API 24 起提供窗口帧各阶段的耗时数据。Android 17 的 `FrameMetrics.java` 定义了 `TOTAL_DURATION`、`GPU_DURATION`、`DEADLINE` 与 `FRAME_TIMELINE_VSYNC_ID` 等指标，源码里明确把 `TOTAL_DURATION < DEADLINE` 写作 App 命中该帧的 intended deadline。
+`FrameMetrics` 从 API 24 起提供窗口帧各阶段的耗时数据。Android 17 的 `FrameMetrics.java` 定义了 `TOTAL_DURATION`、`GPU_DURATION`、`DEADLINE` 与 `FRAME_TIMELINE_VSYNC_ID` 等指标，源码里明确把 `TOTAL_DURATION < DEADLINE` 写作 App 命中该帧的 intended deadline（预定完成时限）。
 
 使用 `Window.OnFrameMetricsAvailableListener` 时，我们要跟着记录：
 
@@ -193,7 +193,7 @@ FPS 表示单位时间内实际呈现或生成的帧数。定义时要注明量�
 - first draw（窗口第一次绘制）与普通交互帧的区分；
 - 页面/CUJ 与刷新率；
 - API level，因为部分字段在较新版本才存在；
-- 指标对应哪个 `Window`；`SurfaceView`、独立渲染 surface 或游戏引擎的输出需另核对。
+- 指标对应哪个 `Window`；`SurfaceView`、独立渲染 surface（独立的图形缓冲区目标） 或游戏引擎的输出需另核对。
 
 `TOTAL_DURATION - DEADLINE` 可以表达 deadline 余量，但前提是对应字段有效；缺失就按缺失记录，不要当作 0。
 
@@ -202,7 +202,7 @@ FPS 表示单位时间内实际呈现或生成的帧数。定义时要注明量�
 当前 `FrameTimingMetric` 输出的主要字段包括：
 
 - `frameOverrunMs`：API 31+ 可用；正值表示错过 deadline，负值表示仍有余量；
-- `frameDurationCpuMs`：UI Thread 与 RenderThread 生产该帧所用的 CPU 时间；
+- `frameDurationCpuMs`：UI Thread（处理界面事件和布局绘制的主线程） 与 RenderThread（负责部分渲染工作的线程） 生产该帧所用的 CPU 时间；
 - `frameCount`：被统计的总帧数。
 
 官方文档建议在可用时优先用 `frameOverrunMs` 检测回归，因为它更适合高刷和可变刷新率。`frameCount` 也要一起观察：移除大量无意义的轻量帧后，剩余帧的分位数可能变差，但总工作量和功耗已经改善。
@@ -219,11 +219,11 @@ P50、P90、P99 分别表示 50%、90%、99% 的样本不高于该值，P50 即�
 
 “P99 高”只说明尾部分布拉长了，要定位根因还得回到样本本身。高分位需要足够样本支撑；样本很少时，直接保留全部观测值反而更诚实。
 
-jank rate 的分子必须写清楚：可以是 `frameOverrunMs > 0` 的帧数、JankStats 按帧时序和界面状态启发式判定的帧数、FrameTimeline 里某一组 jank type，也可以是业务自定阈值。分子不同的几个“卡顿率”，名称也要分开。
+jank rate 的分子必须写清楚：可以是 `frameOverrunMs > 0` 的帧数、JankStats 按帧时序和界面状态启发式判定（根据可用信号推断）的帧数、FrameTimeline 里某一组 jank type（平台标注的卡顿原因类型），也可以是业务自定阈值。分子不同的几个“卡顿率”，名称也要分开。
 
 ### 响应速度指标
 
-#### TTID
+#### TTID（Time to Initial Display，首次画面显示时间）
 
 TTID 量的是从系统收到启动请求到 App 第一帧显示的时间。
 
@@ -249,10 +249,10 @@ TTID 与 TTFD 要分开看。前者适合观察系统启动、Application/Activi
 
 #### Click-to-Display
 
-Click-to-display 是自定义的端到端指标，两端都必须写明：
+Click-to-display（点击到画面可见的延迟） 是自定义的端到端指标，两端都必须写明：
 
-- 起点可选 input reader、input dispatch、App 收到事件或业务点击回调；
-- 终点可选 App 提交帧、SurfaceFlinger present 或外部光学传感器检测到屏幕变化；
+- 起点可选 input reader（系统从触摸设备读取输入）、input dispatch（系统把输入分发给目标窗口）、App 收到事件或业务点击回调；
+- 终点可选 App 提交帧、SurfaceFlinger（负责图层合成与呈现的系统服务） present（系统实际呈现该帧） 或外部光学传感器检测到屏幕变化；
 
 软件 Trace 通常盖不住触控控制器之前和面板 scanout（逐行扫描点亮像素）之后的物理延迟。跨版本比较时应固定起止层级：“点击回调到 App 提交帧”和“手指接触到屏幕发光”是两项指标。没有公开依据时，我们不为它写统一的 100 ms/200 ms 阈值。
 
@@ -260,18 +260,18 @@ Click-to-display 是自定义的端到端指标，两端都必须写明：
 
 #### Android Vitals 的分母
 
-Play Console 的 ANR/crash rate 按 daily active users 归一化：一个单位表示某一天在某台设备上使用 App 的独立用户，可跨多个 session。同一用户当天用了两台设备，贡献两个单位；同一设备当天换了多个用户，Play 仍只计一个单位。次数、受影响用户比例、受影响 session 比例是三种不同的分母。
+Play Console 的 ANR/crash rate 按 daily active users（每日活跃用户） 归一化：一个单位表示某一天在某台设备上使用 App 的独立用户，可跨多个 session。同一用户当天用了两台设备，贡献两个单位；同一设备当天换了多个用户，Play 仍只计一个单位。次数、受影响用户比例、受影响 session 比例是三种不同的分母。
 
-截至 2026-08-14，Play 的 core-vital bad-behavior thresholds 为：
+截至 2026-08-14，Play 的 core-vital bad-behavior thresholds（核心质量指标的不良行为阈值） 为：
 
 | 指标 | Overall | Per device model |
 |---|---:|---:|
 | User-perceived ANR rate | ≥ 0.47% | ≥ 8% |
 | User-perceived crash rate | ≥ 1.09% | ≥ 8% |
 
-Play 当前说明中，user-perceived ANR rate 只计入 `input dispatching timed out` 这一类，即输入事件未在系统规定时间内完成分发和处理。Service、Broadcast、前台服务等其他 ANR 仍要监控，它们归入 overall ANR 或内部稳定性指标。
+Play 当前说明中，user-perceived ANR（用户感知 ANR） rate 只计入 `input dispatching timed out` 这一类，即输入事件未在系统规定时间内完成分发和处理。Service、Broadcast、前台服务等其他 ANR 仍要监控，它们归入 overall ANR（全部 ANR） 或内部稳定性指标。
 
-Play 用最近 28 天数据评估 core vitals。数据只来自允许共享 usage and diagnostics 的用户、认证设备以及通过 Google Play 安装的 App；为保护隐私，样本量不足时报告不展示。所以这组数字只代表这部分用户。
+Play 用最近 28 天数据评估 core vitals。数据只来自允许共享 usage and diagnostics（使用情况和诊断数据） 的用户、认证设备以及通过 Google Play 安装的 App；为保护隐私，样本量不足时报告不展示。所以这组数字只代表这部分用户。
 
 #### Crash/ANR 内部指标
 
@@ -288,7 +288,7 @@ Crash 与 ANR 的分母必须分别记录。一次 session 发生多次同类错
 
 #### ApplicationExitInfo
 
-API 30+ 的 `ActivityManager.getHistoricalProcessExitReasons()` 可以在后续启动时读取系统保留的近期进程退出记录。`ApplicationExitInfo` 每条记录带 reason、timestamp、status、importance（退出前的进程重要级）、PSS/RSS 采样和可选 trace：
+API 30+ 的 `ActivityManager.getHistoricalProcessExitReasons()` 可以在后续启动时读取系统保留的近期进程退出记录。`ApplicationExitInfo` 每条记录带 reason（退出原因）、timestamp（退出时间）、status（退出码或信号）、importance（退出前的进程重要级）、PSS/RSS（按比例分摊的内存/驻留内存） 采样和可选 trace（时间线记录）：
 
 - `REASON_LOW_MEMORY` 的支持度要用 `ActivityManager.isLowMemoryKillReportSupported()` 检查；
 - `getPss()` / `getRss()` 是系统最后一次采样值，不保证等于死亡瞬间峰值；来不及采样时会返回 0；
@@ -308,7 +308,7 @@ API 30+ 的 `ActivityManager.getHistoricalProcessExitReasons()` 可以在后续�
 | Java heap | ART（Android Runtime）管理的对象堆 | 分配速率、GC（Garbage Collection，垃圾回收）、存活对象与 heap 趋势 | 不包含完整 native、graphics、mmap 与共享内存 |
 | Native heap | native allocator（C/C++ 内存分配器）管理的分配 | JNI（Java 与 native 代码的调用接口）/C++ 分配与泄漏诊断 | 不等同于进程所有 native、mmap（内存映射）、GPU 内存 |
 
-PSS/RSS 是占用指标，只是 lmkd 杀进程排序的依据之一；Android 17 `lmkd.cpp` 还会结合 PSI、内存状态、`oom_score_adj`（内核的进程 OOM 优先级修正值）与设备策略选择候选进程。
+PSS/RSS 是占用指标，只是 lmkd（low memory killer daemon，低内存终止守护进程） 杀进程排序的依据之一；Android 17 `lmkd.cpp` 还会结合 PSI、内存状态、`oom_score_adj`（内核的进程 OOM 优先级修正值）与设备策略选择候选进程。
 
 #### PSI 与系统压力
 
@@ -317,7 +317,7 @@ Android common kernel `android17-6.18-2026-06_r6` 的 PSI（Pressure Stall Infor
 - `some` 表示至少部分任务因该资源停顿；
 - `full` 表示所有非 idle 任务同时停顿；system-level CPU 不定义 `full`。
 
-PSI 描述资源争用造成的 stall，看不到单个 App 的 PSS。内存看板可以把 App 占用、系统 PSI、reclaim（系统回收内存页）和 lmkd 事件放到同一时间轴上对照，各自回答各自的问题。
+PSI 描述资源争用造成的 stall（任务因资源不足而停顿），看不到单个 App 的 PSS。内存看板可以把 App 占用、系统 PSI、reclaim（系统回收内存页）和 lmkd 事件放到同一时间轴上对照，各自回答各自的问题。
 
 #### Java heap 与 GC
 
@@ -325,7 +325,7 @@ PSI 描述资源争用造成的 stall，看不到单个 App 的 PSS。内存看�
 
 GC 次数本身说明不了性能好坏，要结合暂停时间、分配速率、帧/响应窗口和存活对象看。大量并发 GC 可能对主线程影响很小，一次短的 stop-the-world（暂停相关 App 线程）也可能恰好跨过 frame deadline。
 
-#### OOM、native allocation failure 与 LMK
+#### OOM、native allocation（定位） failure 与 LMK
 
 建议拆为三类：
 
@@ -341,17 +341,17 @@ GC 次数本身说明不了性能好坏，要结合暂停时间、分配速率�
 
 #### Battery drain rate
 
-电量百分比每小时适合长时场景的粗粒度观察，但电池曲线受充放电状态、温度、电池健康度和系统平滑算法影响。短时实验应优先用可用的能量类计数：energy counter、Power Rails、ODPM（On-Device Power Monitor，设备内功耗监测）、Energy Consumer，或外部功耗仪。其中 Power Rails 量的是硬件电源轨，Energy Consumer 是硬件抽象层提供的逻辑耗能单元。
+电量百分比每小时适合长时场景的粗粒度观察，但电池曲线受充放电状态、温度、电池健康度和系统平滑算法影响。短时实验应优先用可用的能量类计数：energy counter（累计能量计数器）、Power Rails（硬件电源轨测量）、ODPM（On-Device Power Monitor，设备内功耗监测）、Energy Consumer（硬件抽象层提供的逻辑耗能单元），或外部功耗仪。其中 Power Rails 量的是硬件电源轨，Energy Consumer 是硬件抽象层提供的逻辑耗能单元。
 
-若能读取累计能量，平均功率可由同一 counter 的窗口差分计算：
+若能读取累计能量，平均功率可由同一 counter（随时间变化的数值） 的窗口差分计算：
 
 > average power = Δenergy / Δtime
 
 当 Δenergy 使用 uWs、Δtime 使用秒时，结果单位就是微瓦，记作 uW；若时间差用毫秒，则 `average power (uW) = Δenergy (uWs) × 1000 / Δtime (ms)`。
 
-Android 17 Power Stats 的 AIDL 中，`EnergyMeasurement` 记录 `durationMs` 时段内累积的 `energyUWs`，并带 `timestampMs`；`EnergyConsumerResult` 记录从开机起累计的 `energyUWs`，另有 `timestampMs` 与可选的 UID attribution，没有 `durationMs`。时间戳来自 `CLOCK_BOOTTIME`；能量单位为 microwatt-seconds，即微瓦秒 uWs。
+Android 17 Power Stats 的 AIDL（Android Interface Definition Language，Android 接口定义语言） 中，`EnergyMeasurement` 记录 `durationMs` 时段内累积的 `energyUWs`，并带 `timestampMs`；`EnergyConsumerResult` 记录从开机起累计的 `energyUWs`，另有 `timestampMs` 与可选的 UID attribution（按 UID 归因），没有 `durationMs`。时间戳来自 `CLOCK_BOOTTIME`；能量单位为 microwatt-seconds（uWs，微瓦秒），即微瓦秒 uWs。
 
-对 `EnergyConsumerResult` 这类累计 counter，要先取同一 ID 的差值，再按时间换算功率；counter reset、wrap（数值回绕）、缺失与设备不支持，都要显式处理。
+对 `EnergyConsumerResult` 这类累计 counter，要先取同一 ID 的差值，再按时间换算功率；counter reset（重置）、wrap（数值回绕）、缺失与设备不支持，都要显式处理。
 
 #### Active/Idle power
 
@@ -359,11 +359,11 @@ Active 与 Idle 要由项目定义场景：前台静止、后台同步、息屏�
 
 - 屏幕亮度、刷新率和显示内容；
 - 网络类型与信号；
-- 充电状态、电池温度和 thermal state；
+- 充电状态、电池温度和 thermal state（系统热状态）；
 - 设备/App 版本与后台进程；
 - 场景时长、预热和统计窗口。
 
-Power Rails 与 Energy Consumer 的可用项、命名和精度取决于设备硬件与 HAL 实现。CPU frequency 只能提供活动背景，换算不出 App 的精确功耗。
+Power Rails 与 Energy Consumer 的可用项、命名和精度取决于设备硬件与 HAL（Hardware Abstraction Layer，硬件抽象层） 实现。CPU frequency 只能提供活动背景，换算不出 App 的精确功耗。
 
 #### Excessive partial wake locks
 
@@ -371,7 +371,7 @@ Partial wake lock（局部唤醒锁）会在屏幕可关闭时继续保持 CPU �
 
 - 24 小时内合计达到 2 小时或更多，session 被标记为 excessive；
 - 最近 28 天内超过 5% 的 App sessions 命中时，可能影响 Play 可见度；
-- audio、location、JobScheduler user-initiated 等场景有官方豁免。
+- audio（音频播放）、location、JobScheduler user-initiated（用户主动发起的任务） 等场景有官方豁免。
 
 这是一项 Play 健康指标。内部功耗目标还应记录 wake lock 名称、持有区间、调用方和是否存在更合适的调度 API。
 
@@ -391,9 +391,9 @@ Partial wake lock（局部唤醒锁）会在屏幕可关闭时继续保持 CPU �
 
 #### 跨分片的分位数合并
 
-机型 A 的 P90 和机型 B 的 P90 普通平均之后，得到的并不是总体 P90；每日 P99 的平均值同样不是周期 P99。跨分片聚合要走另外的路：合并原始直方图，用 t-digest/DDSketch 这类可合并的近似分位数摘要，或重算原始样本。
+机型 A 的 P90 和机型 B 的 P90 普通平均之后，得到的并不是总体 P90；每日 P99 的平均值同样不是周期 P99。跨分片聚合要走另外的路：合并原始直方图，用 t-digest/DDSketch（可合并的近似分位数摘要） 这类可合并的近似分位数摘要，或重算原始样本。
 
-看板应标明分位数基于 frame、launch、session 还是 user 聚合。高频用户产生更多事件，event-level P99 会因此偏向高频用户；user-level 指标要先在用户内聚合，再在用户间聚合。
+看板应标明分位数基于 frame、launch、session 还是 user 聚合。高频用户产生更多事件，event-level（按事件） P99 会因此偏向高频用户；user-level（按用户） 指标要先在用户内聚合，再在用户间聚合。
 
 #### 均值仍有用途
 
@@ -417,7 +417,7 @@ Partial wake lock（局部唤醒锁）会在屏幕可关闭时继续保持 CPU �
 
 ### Android Vitals 的位置
 
-Android Vitals 由系统采集，App 无需为此再集成一个监控 SDK；数据仍只来自允许共享 usage/diagnostics 的用户、认证设备和通过 Google Play 安装的 App。它提供：
+Android Vitals 由系统采集，App 无需为此再集成一个监控 SDK；数据仍只来自允许共享 usage/diagnostics（使用情况和诊断数据） 的用户、认证设备和通过 Google Play 安装的 App。它提供：
 
 - core vitals 与 bad-behavior thresholds；
 - 版本、Android、设备、形态和地区等分群；
@@ -473,7 +473,7 @@ Play 阈值用于平台健康评估，且可能更新。内部预算需要绑定
 
 ### 为什么线下测试无法替代线上监控
 
-Perfetto、Macrobenchmark 和稳定的实验环境适合回答“某条路径为什么慢”；线上监控回答另一组问题：问题出现在哪些版本、机型和业务场景，波及多少用户，修复后是否回到基线。两类工作用的材料不同，在排障流程里的位置也不同。
+Perfetto（Android 系统时间线分析工具）、Macrobenchmark 和稳定的实验环境适合回答“某条路径为什么慢”；线上监控回答另一组问题：问题出现在哪些版本、机型和业务场景，波及多少用户，修复后是否回到基线。两类工作用的材料不同，在排障流程里的位置也不同。
 
 实验室很难完整复制线上设备的组合：SoC、GPU 驱动、内存容量、温控状态、刷新率、厂商调度策略、网络质量和用户数据规模都会改变结果。测试用例还受预设路径约束；线上用户可能从通知、分享链接、桌面小组件或恢复任务进入应用，启动和渲染路径随之改变。
 
@@ -484,7 +484,7 @@ Perfetto、Macrobenchmark 和稳定的实验环境适合回答“某条路径为
 3. 用稳定分母与采样概率计算总体指标；
 4. 把异常样本关联到 trace、退出记录或实验复现。
 
-帧回调、启动埋点或 ANR watchdog 只能提供局部信号——watchdog 不过是在后台定期探测主线程是否还在响应。这些信号未经统一定义时，容易被误称为“掉帧”“冷启动”或“系统 ANR”，统计结果也就失去了可比性。
+帧回调、启动埋点或 ANR watchdog（定期探测主线程是否响应的监视线程） 只能提供局部信号——watchdog 不过是在后台定期探测主线程是否还在响应。这些信号未经统一定义时，容易被误称为“掉帧”“冷启动”或“系统 ANR”，统计结果也就失去了可比性。
 
 ### 监控系统的三个层次
 
@@ -524,11 +524,11 @@ Perfetto、Macrobenchmark 和稳定的实验环境适合回答“某条路径为
 - deadline miss 表示一帧没有在系统给定的完成时限内完成；
 - 用户可见卡顿还受缓冲、SurfaceFlinger 和重复呈现影响。
 
-应用侧 API 能看到窗口或 View 渲染的一部分信息。要判断一帧是否按期呈现、卡在 App、RenderThread、GPU 还是合成阶段，就要回到 FrameTimeline 和渲染流水线分析，参见 §2.3、§7.1 和 §8.1。
+应用侧 API 能看到窗口或 View 渲染的一部分信息。要判断一帧是否按期呈现、卡在 App、RenderThread（承担部分渲染工作的线程）、GPU 还是合成阶段，就要回到 FrameTimeline 和渲染流水线分析，参见 §2.3、§7.1 和 §8.1。
 
-#### Choreographer.FrameCallback：VSync 邻近信号
+#### Choreographer.FrameCallback：VSync（显示垂直同步） 邻近信号
 
-`Choreographer` 负责让界面工作跟上显示刷新节奏。`Choreographer.FrameCallback.doFrame(frameTimeNanos)` 的参数就是该帧使用的 VSync 时间。我们持续重新注册回调，就能观察主 Looper 能否按 VSync 节奏运行：
+`Choreographer` 负责让界面工作跟上显示刷新节奏。`Choreographer.FrameCallback.doFrame(frameTimeNanos)` 的参数就是该帧使用的 VSync 时间。我们持续重新注册回调，就能观察主 Looper（主线程消息循环） 能否按 VSync 节奏运行：
 
 ```java
 Choreographer.FrameCallback callback = new Choreographer.FrameCallback() {
@@ -551,7 +551,7 @@ Choreographer.getInstance().postFrameCallback(callback);
 
 这个信号有三条限制：
 
-- 回调持续到达，应用未必持续产出新 buffer；没有 UI 更新时，回调仍可按 VSync 执行；
+- 回调持续到达，应用未必持续产出新 buffer（图形缓冲区）；没有 UI 更新时，回调仍可按 VSync 执行；
 - 相邻 `frameTimeNanos` 的差值，读不出某一帧的 CPU、GPU 或端到端呈现耗时；
 - 固定用 16.67 ms 判断卡顿会忽略 90 Hz、120 Hz、动态刷新率和 App 向系统提交的期望帧率。
 
@@ -589,7 +589,7 @@ miss_deadline = TOTAL_DURATION >= DEADLINE
 
 API 24—30 没有公开 `DEADLINE`，用 `1 / display.refreshRate` 只能得到当前显示模式的名义周期，既还原不出系统给某帧的精确预算，也盖不住刷新率切换与不同流水线深度。低版本可以保留“超过名义周期”这个独立指标，字段名里写清它是估算值。
 
-监听器的回调跑在注册时传入的 `Handler` 上。回调里应复制必需字段，做不随历史样本数增长的轻量聚合；序列化、压缩、落盘和网络发送都放到工作线程。`dropCountSinceLastInvocation`——两次回调之间丢掉的样本数——也要记，否则回调积压会让样本看起来比现场更平稳。
+监听器的回调跑在注册时传入的 `Handler`（把任务投递到指定线程消息队列的对象） 上。回调里应复制必需字段，做不随历史样本数增长的轻量聚合；序列化、压缩、落盘和网络发送都放到工作线程。`dropCountSinceLastInvocation`——两次回调之间丢掉的样本数——也要记，否则回调积压会让样本看起来比现场更平稳。
 
 #### JankStats：启发式分类加 UI 状态
 
@@ -630,7 +630,7 @@ JankStats 的 `isJank` 属于库的启发式分类，FrameMetrics 的 duration �
 
 FrameMetrics、JankStats 以及 Android Vitals 的慢帧/冻结帧统计面向使用 View/Canvas UI Toolkit 的窗口。直接使用 OpenGL、Vulkan、Unity 或 Unreal 的主画面不在该套 Vitals 渲染统计范围内。
 
-Google Play 为游戏提供 Slow Sessions 指标，从 SurfaceFlinger 所见的 App surface 估算相邻呈现帧率，覆盖 OpenGL、Vulkan 与 Android UI Toolkit，当前只面向游戏。Play 会在游戏运行满一分钟后开始监控；当前 20 FPS 口径下，一次 session 中超过 25% 的帧呈现间隔达到 50 ms 或更长，就算 slow session，另有 34 ms/30 FPS 口径。
+Google Play 为游戏提供 Slow Sessions（慢会话） 指标，从 SurfaceFlinger 所见的 App surface（应用提交图形内容的渲染目标） 估算相邻呈现帧率，覆盖 OpenGL、Vulkan 与 Android UI Toolkit，当前只面向游戏。Play 会在游戏运行满一分钟后开始监控；当前 20 FPS 口径下，一次 session 中超过 25% 的帧呈现间隔达到 50 ms 或更长，就算 slow session，另有 34 ms/30 FPS 口径。
 
 应用若同时包含普通 View 页面和游戏 surface，要分别定义两套指标与分母；View 帧时长和游戏 session FPS 各看各的趋势图。
 
@@ -691,7 +691,7 @@ TTFD = START_TIMESTAMP_FULLY_DRAWN - START_TIMESTAMP_LAUNCH
 
 #### Jetpack App Startup 的职责
 
-Jetpack App Startup 用单个 `InitializationProvider`（基于 ContentProvider 的统一入口）发现并运行各个 `Initializer`，还能声明初始化依赖与手动延迟初始化。它提供的是组织初始化的方式，不会自动产生 TTID、TTFD 或 initializer 耗时指标。
+Jetpack App Startup 用单个 `InitializationProvider`（基于 ContentProvider 的统一入口）发现并运行各个 `Initializer`（组件初始化器），还能声明初始化依赖与手动延迟初始化。它提供的是组织初始化的方式，不会自动产生 TTID、TTFD 或 initializer 耗时指标。
 
 接入 App Startup 后，可以围绕每个 initializer 增加 `android.os.Trace` 切片和轻量计时，再用 Macrobenchmark 与线上启动记录核对收益。初始化顺序、主线程约束和依赖关系仍要按库文档处理；把多个 provider 迁移到 App Startup 能省多少毫秒，要测了才知道。
 
@@ -725,17 +725,17 @@ watchdog 在 API 30 以下仍有诊断价值，高版本也能捕获应用恢复
 
 #### API 30+：ApplicationExitInfo 在后续进程读取退出历史
 
-进程重新启动后，可调用 `ActivityManager.getHistoricalProcessExitReasons()` 读取 `ApplicationExitInfo`。`REASON_ANR` 表示该进程因 ANR 被系统终止；记录还带时间、PID、importance、PSS/RSS、description 等上下文。
+进程重新启动后，可调用 `ActivityManager.getHistoricalProcessExitReasons()` 读取 `ApplicationExitInfo`。`REASON_ANR` 表示该进程因 ANR 被系统终止；记录还带时间、PID（进程 ID）、importance、PSS/RSS、description 等上下文。
 
 `getTraceInputStream()` 需要按可空结果处理。系统维护的退出记录和 artifact（系统生成的诊断文件）都受环形缓冲区容量限制，旧内容可能被覆盖。ANR 后 App 若恢复运行，后续又因其他原因退出，该条退出记录仍可能附带早先的 ANR trace，因此读取 artifact 时应同时保存退出 reason、trace 类型和时间，避免只在 `REASON_ANR` 分支读取。
 
-API 31+ 的 native crash artifact 可能是 protobuf（二进制结构化格式）编码的 tombstone，别总按文本 ANR trace 去解析。上传前还要限制大小、清理敏感路径与业务 tag，并记录解析失败。
+API 31+ 的 native crash artifact 可能是 protobuf（二进制结构化格式）编码的 tombstone（native crash 系统诊断记录），别总按文本 ANR trace 去解析。上传前还要限制大小、清理敏感路径与业务 tag，并记录解析失败。
 
 `ApplicationExitInfo` 只描述退出历史：用户关闭 ANR 对话框、系统终止进程或 App 自行恢复，结果各不相同；它也做不到实时通知当前进程“刚刚发生了所有类型的 ANR”。Android Vitals 的用户感知 ANR 率只统计同意共享诊断数据的 Play 用户，以日活用户为分母，与本地退出记录的事件率是两回事。
 
 #### API 37：ANR 预警与结构化 AnrInfo
 
-Android 17（API 37）新增 `ActivityManager.registerAnrWarningListener()`。系统在 App 接近某条 ANR timeout 时，以尽力而为的方式调用监听器——回调可能没执行，也可能来不及完成工作；官方要求 executor（执行回调的线程调度器）避开主线程。
+Android 17（API 37）新增 `ActivityManager.registerAnrWarningListener()`。系统在 App 接近某条 ANR timeout（判定超时点） 时，以尽力而为的方式调用监听器——回调可能没执行，也可能来不及完成工作；官方要求 executor（执行回调的线程调度器）避开主线程。
 
 下面的接入只复制结构化字段与内存中的最近状态。监听器对象需要由组件长期持有，注销时传回同一个对象：
 
@@ -768,7 +768,7 @@ fun registerAnrWarning(
 
 #### FileObserver 监听 traces.txt 的历史方案
 
-早期方案常监听 `/data/anr/traces.txt`。Android 17 的 AOSP 已经不用单一固定文件：`StackTracesDumpHelper` 把目录定义为 `/data/anr`，文件带 `anr_` 与 `temp_anr_` 前缀。普通第三方 App 受文件权限与 SELinux 限制，把该目录当稳定、可读的公开接口是行不通的。
+早期方案常监听 `/data/anr/traces.txt`。Android 17 的 AOSP 已经不用单一固定文件：`StackTracesDumpHelper` 把目录定义为 `/data/anr`，文件带 `anr_` 与 `temp_anr_` 前缀。普通第三方 App 受文件权限与 SELinux（Android 强制访问控制机制） 限制，把该目录当稳定、可读的公开接口是行不通的。
 
 因此：
 
@@ -847,7 +847,7 @@ SLO 把团队承诺维持的性能要求写成可检查的数值。可执行的�
 3. 最小数据量：满足统计条件的用户、会话或帧达到统计要求；
 4. 数据健康：覆盖率、延迟、schema 分布和丢弃率正常。
 
-多窗口 burn-rate（错误预算消耗速度）同时观察短窗口和长窗口，既抓短时间急剧恶化，也抓持续缓慢恶化。新版本报警还应关联 rollout（发布覆盖）比例，避免样本量增长造成告警抖动。固定阈值应来自前文的指标合同、Google Play 当前 bad behavior threshold 或团队 SLO，不另设通用 P0/P1 数字。
+多窗口 burn-rate（错误预算消耗速度）同时观察短窗口和长窗口，既抓短时间急剧恶化，也抓持续缓慢恶化。新版本报警还应关联 rollout（发布覆盖）比例，避免样本量增长造成告警抖动。固定阈值应来自前文的指标合同、Google Play 当前 bad behavior threshold（不良行为阈值） 或团队 SLO，不另设通用 P0/P1 数字。
 
 报警事件应附带：
 
@@ -855,14 +855,14 @@ SLO 把团队承诺维持的性能要求写成可检查的数值。可执行的�
 - 时间窗、样本量、覆盖率和采样概率；
 - 受影响最大的可行动分群；
 - 对应发布版本、变更记录与负责人；
-- 可回查的诊断样本、trace 或 ANR cluster；
+- 可回查的诊断样本、trace 或 ANR cluster（按相同原因聚合的问题组）；
 - 数据延迟与完整性状态。
 
 趋势告警不带可回查的样本链接，只会换来一次次人工查询；不做数据健康检查的告警，容易把 SDK 关闭、字段缺失或上传故障误判成性能改善。
 
 ### ProfilingManager：由系统提供重型证据
 
-Android 15（API 35）加入 `ProfilingManager`，App 可以请求四类重型结果：Java heap dump（Java 堆完整快照）、按采样记录内存分配的 heap profile、定期采集调用栈的 stack sampling，以及 system trace。结果通过监听器异步返回，并受系统资源、速率和并发限制；提交了请求，系统也未必生成 artifact。
+Android 15（API 35）加入 `ProfilingManager`，App 可以请求四类重型结果：Java heap dump（Java 堆完整快照）、按采样记录内存分配的 heap profile（按采样记录内存分配）、定期采集调用栈的 stack sampling（定期采集调用栈），以及 system trace（系统时间线记录）。结果通过监听器异步返回，并受系统资源、速率和并发限制；提交了请求，系统也未必生成 artifact。
 
 Android 16（API 36）加入 `ProfilingTrigger`，App 可以登记关注的系统事件，由系统在事件发生时尝试生成诊断结果。到 Android 17 / API 37，触发类型包括：
 
@@ -893,16 +893,16 @@ Android 17 源码位于 `packages/modules/Profiling`。该能力由可通过 Goo
 
 ### 扩展：Perfetto SDK 的线上边界
 
-Perfetto Tracing SDK 是 C++17 库，用 Track Event 或自定义 data source 记录 App 事件。它有两种 backend（数据写入后端）：
+Perfetto Tracing SDK 是 C++17 库，用 Track Event（按时间记录的事件） 或自定义 data source（Trace 数据源） 记录 App 事件。它有两种 backend（数据写入后端）：
 
 | 模式 | 能力 | 适用场景 |
 |---|---|---|
 | in-process | 只采当前进程，应用控制 session 和 trace 数据 | 受采样与隐私约束的应用内诊断 |
 | system | 连接 `traced`（Perfetto 系统守护进程），将 App 事件与调度、syscall（系统调用）等系统事件放到同一时间线 | 本地调试、实验室和受控测试 |
 
-in-process backend 不需要特殊 OS 权限，适合保存 App 自己的短窗口 trace。system backend 的 session 必须从进程外部控制；写入事件的数据 producer 也读不回包含其他进程信息的 system trace，以免信息泄露和侧信道风险——即从时间或资源差异间接推断敏感信息。所以“线上远程让普通 App 自行抓取完整 system trace 并上传”，并不是 SDK system mode 的通用工作方式。
+in-process backend 不需要特殊 OS 权限，适合保存 App 自己的短窗口 trace。system backend 的 session 必须从进程外部控制；写入事件的数据 producer 也读不回包含其他进程信息的 system trace，以免信息泄露和侧信道风险（从时间或资源差异间接推断敏感信息）——即从时间或资源差异间接推断敏感信息。所以“线上远程让普通 App 自行抓取完整 system trace 并上传”，并不是 SDK system mode 的通用工作方式。
 
-Android 侧若只需要有起止时间的 slice、可跨线程结束的 async slice 或随时间变化的 counter，Perfetto 官方建议继续用 `android.os.Trace` 或 NDK `ATrace_*`：这些事件同样能进 Perfetto，接入成本也低于引入完整 C++ SDK。等已有 native 子系统、需要自定义 protobuf data source 或独立 in-process session 时，再评估 Perfetto SDK。
+Android 侧若只需要有起止时间的 slice（有起止时间的区间）、可跨线程结束的 async slice（可跨线程结束的区间） 或随时间变化的 counter，Perfetto 官方建议继续用 `android.os.Trace` 或 NDK `ATrace_*`：这些事件同样能进 Perfetto，接入成本也低于引入完整 C++ SDK。等已有 native 子系统、需要自定义 protobuf data source 或独立 in-process session 时，再评估 Perfetto SDK。
 
 无论使用哪种方式，都要限制时长、buffer、类别与触发频率。trace tag 不记录账号、URL 参数、文本内容和其他敏感数据。
 
@@ -954,7 +954,7 @@ Vitals 的 UI Toolkit 渲染统计不覆盖直接 OpenGL/Vulkan 主画面；游�
 
 线上事件要能对应到可打开的线下记录：
 
-- 帧异常：在 FrameTimeline 里对照 `actual_frame_timeline_slice` 和 `expected_frame_timeline_slice`，再关联主线程、RenderThread、GPU 与 SurfaceFlinger；
+- 帧异常：在 FrameTimeline 里对照 `actual_frame_timeline_slice`（实际帧时间线） 和 `expected_frame_timeline_slice`（预期帧时间线），再关联主线程、RenderThread、GPU 与 SurfaceFlinger；
 - 启动异常：从启动请求、进程创建、`bindApplication`（系统把 App 绑定到新进程）、首帧到 `reportFullyDrawn()` 对齐系统与 App 切片；
 - ANR：查看主线程运行/睡眠状态、锁等待、Binder 调用、调度延迟以及 `am_anr` 等系统事件；
 - 业务阶段：用 `android.os.Trace` 或 ATrace tag（写入系统 Trace 的业务标签）把线上 scene 与 trace slice 对应起来。

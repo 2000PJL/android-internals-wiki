@@ -72,9 +72,9 @@ last_consolidated_at: '2026-08-24'
 
 # Android 端侧 AI Runtime 与 NPU 性能边界
 
-端侧推理进入相机、OCR、语音、搜索和生成式功能之后，模型执行时间就成了前台交互预算的一部分。一次推理可能同时占用 CPU 时间、GPU 带宽、专用加速器、文件映射的内存页和匿名内存，持续执行还会推高温度、触发降频。所以实验室里测得更快的执行后端，放进真实页面后未必换来更稳的帧时间。
+端侧推理进入相机、OCR、语音、搜索和生成式功能之后，模型执行时间就成了前台交互预算的一部分。一次推理可能同时占用 CPU 时间、GPU 带宽、专用加速器（AI accelerator）、文件映射的内存页和匿名内存，持续执行还会推高温度、触发降频。所以实验室里测得更快的执行后端（实际承担计算的 CPU、GPU 或加速器实现），放进真实页面后未必换来更稳的帧时间。
 
-> 源码基线：Android 17 / API 37 / AOSP `android-17.0.0_r1`。
+> 源码基线：Android 17 / API（Neural Networks API，NNAPI） 37 / AOSP `android-17.0.0_r1`。
 
 本文讨论三个工程问题：
 
@@ -82,7 +82,7 @@ last_consolidated_at: '2026-08-24'
 2. CPU、GPU、NPU 与 AICore 分别属于哪条路径；
 3. 如何用可复现的测试和系统证据判断瓶颈，避免只看一组平均耗时。
 
-端侧推理性能由模型、张量布局、运行时、加速器和内存传输共同决定。应用自管 LiteRT 管线、平台提供的 ML Runtime 和系统托管 GenAI 服务，三者的设备访问与资源隔离并不相同。
+端侧推理性能由模型、张量布局、运行时、加速器（accelerator）和内存传输共同决定。应用自管 LiteRT 管线、平台提供的 ML Runtime 和系统托管 GenAI 服务（Google Play services），三者的设备访问与资源隔离并不相同。
 
 ## 模型执行、委托与数据搬运
 
@@ -97,7 +97,7 @@ Android 上的“端侧 AI”包含多套职责不同的组件。排查性能问
 | AICore / ML Kit GenAI | ML Kit GenAI 等高层 API | AICore 管理 Gemini Nano、请求和安全能力 | 由受支持设备的系统实现决定 |
 | NNAPI | 原生开发套件（Native Development Kit，NDK）的 Neural Networks API，或 NNAPI delegate | Android NNAPI runtime 与厂商驱动 | CPU、GPU、数字信号处理器（DSP）、NPU，取决于驱动 |
 
-这四条路径可以同时出现在一台设备上，但应用能控制的部分并不相同：`CompiledModel` 属于 LiteRT，AICore 则是系统服务，Android 17 的 NPU 调度组件只管直接访问 NPU 的资格和调度信息。把这些层次混进同一张调用图，初始化成本、内存归属和失败后的处理方式就都容易看错。
+这四条路径可以同时出现在一台设备上，但应用能控制的部分并不相同：`CompiledModel` 属于 LiteRT，AICore 则是系统服务（service），Android 17 的 NPU 调度组件只管直接访问 NPU 的资格和调度信息。把这些层次混进同一张调用图，初始化成本、内存归属和失败后的处理方式就都容易看错。
 
 ### 为什么端侧推理容易变成性能问题
 
@@ -114,13 +114,13 @@ Android 上的“端侧 AI”包含多套职责不同的组件。排查性能问
   → UI 更新
 ```
 
-用户感知的是从输入到 UI 更新的端到端延迟，而运行时报告的 kernel 时间只覆盖其中一段。常见成本包括：
+用户感知的是从输入到 UI 更新的端到端延迟（latency），而运行时报告的 kernel 时间只覆盖其中一段。常见成本包括：
 
-- **首次准备**：打开模型、映射文件、创建运行时、分配张量（tensor）、加载 delegate、编译子图；
-- **稳态执行**：算子计算、输入输出传输、同步等待和后处理；
+- **首次准备**：打开模型、映射文件、创建运行时、分配张量（tensor）、加载 delegate、编译（prepare / compile）子图；
+- **稳态执行**：算子（operation，op）计算、输入输出传输、同步等待和后处理；
 - **并发干扰**：GPU 推理与渲染、相机或视频处理争用带宽和执行时间；
-- **内存压力**：权重、tensor arena、delegate 临时工作区、硬件缓冲区和编译缓存同时驻留；
-- **热衰减**：连续推理几分钟后，CPU、GPU 或 NPU 频率受热策略限制；
+- **内存压力**：权重、tensor arena、delegate 临时工作区（workspace）、硬件缓冲区（buffer）和编译缓存同时驻留；
+- **热衰减**：连续推理几分钟后，CPU、GPU 或 NPU 频率受热策略（policy）限制；
 - **队列延迟**：请求排队、跨进程调用、系统服务或厂商运行时调度。
 
 这条预处理、模型执行、后处理依次连接的管线，还要明确记录每个 buffer 的所有权和同步点。CPU 预处理、GPU / NPU 执行与 CPU 后处理之间，可能出现 tensor 重排、cache flush / invalidate、`AHardwareBuffer` / `dmabuf` 导入，以及 fence 等待。
@@ -135,7 +135,7 @@ Android 上的“端侧 AI”包含多套职责不同的组件。排查性能问
 
 CPU 路径适合建立同机型对照基线，也适合小模型、dynamic shape、多分支控制流和加速器覆盖不足的模型。LiteRT 的 CPU 后端会使用针对移动 CPU 优化的 kernel；合适的线程数仍需实测。
 
-增加线程数并不保证端到端延迟更低。前台页面还需要主线程、RenderThread、Binder 通信线程和系统合成线程；推理线程占满高性能 CPU 核之后，单独测得的模型耗时可能下降，页面帧时间和整机功耗却可能恶化。所以基准测试要同时记录线程数、CPU 调度、帧时间与温度。
+增加线程数并不保证端到端延迟更低。前台页面还需要主线程、RenderThread（渲染线程）、Binder 通信线程和系统合成线程；推理线程占满高性能 CPU 核之后，单独测得的模型耗时可能下降，页面帧时间和整机功耗却可能恶化。所以基准测试要同时记录线程数、CPU 调度、帧时间与温度。
 
 #### GPU：吞吐与图形争用
 
@@ -145,7 +145,7 @@ LiteRT 在 Android 上公开的 GPU 路径主要使用 OpenCL 和 OpenGL 两类�
 
 - 旧式 `Interpreter` GPU delegate 对创建线程与调用线程有约束，跨线程调用要按文档来；
 - `TensorBuffer`、OpenGL buffer 或 `AHardwareBuffer` 只有在格式、布局、生命周期和后端均兼容时，才可能减少复制；
-- GPU 与 RenderThread、SurfaceFlinger、相机和视频管线共享资源，GPU 推理耗时下降，页面未必跟着更流畅。
+- GPU 与 RenderThread（负责提交渲染工作的线程）、SurfaceFlinger、相机和视频管线共享资源，GPU 推理耗时下降，页面未必跟着更流畅。
 
 GPU 频率变化只说明设备切换了频率点；要判断利用率有没有提高、模型有没有完整交给 GPU，还要结合 GPU work period、驱动 slice、帧时间、delegate 日志和 CPU 等待状态。
 
@@ -168,14 +168,14 @@ DSP 擅长低功耗信号处理，也曾是许多 Android 设备的神经网络�
 
 ### NNAPI 的源码保留与迁移方向
 
-NNAPI（Neural Networks API）在 Android 8.1 / API 27 引入，允许框架构造计算图，再由系统运行时和厂商驱动选择设备并准备执行。Android 15 / API 35 起，官方将 NNAPI 标记为弃用（deprecated），并建议性能敏感的应用迁移。
+NNAPI（Neural Networks API）在 Android 8.1 / API 27 引入，允许框架构造计算图，再由系统运行时（runtime）和厂商驱动选择设备并准备执行。Android 15 / API 35 起，官方将 NNAPI 标记为弃用（deprecated），并建议性能敏感的应用迁移。
 
 Android 17 源码没有删除 NNAPI。当前版本仍包含：
 
 - `packages/modules/NeuralNetworks/runtime/include/NeuralNetworks.h`：NDK API 带有 API 35 弃用标记；
 - `packages/modules/NeuralNetworks/runtime/`：NNAPI runtime；
-- `hardware/interfaces/neuralnetworks/1.3/`：HIDL（HAL 接口定义语言）旧版硬件抽象层；
-- `hardware/interfaces/neuralnetworks/aidl/`：AIDL（Android 接口定义语言）版 NNAPI HAL。
+- `hardware/interfaces/neuralnetworks/1.3/`：HIDL（HAL 接口定义语言（HAL Interface Definition Language，HIDL））旧版硬件抽象层；
+- `hardware/interfaces/neuralnetworks/aidl/`：AIDL（Android 接口定义语言（Android Interface Definition Language，AIDL））版 NNAPI HAL。
 
 “deprecated”的含义是新项目别再把它当长期入口；它并不表示 Android 17 上所有既有 NNAPI 应用会立即失效。迁移期间我们仍要保留旧设备回归测试，直到产品支持的最低版本和设备范围允许移除旧路径。
 
@@ -248,7 +248,7 @@ LiteRT NPU 文档把部署分成提前编译（Ahead-of-Time，AOT）和即时�
 
 ### Android 17：直接访问 NPU 需要 feature 声明
 
-Android 17 的这项变化落在平台控制面：以 API 37 为目标版本且需要直接访问 NPU 的应用，必须在 manifest 中声明 `android.hardware.npu`，系统据此决定这个 UID 能否直接提交 NPU 工作。声明写法、`required` 对安装过滤的影响，以及运行时的能力检测见「`android.hardware.npu`：声明、安装过滤与能力检测」。
+Android 17 的这项变化落在平台控制面：以 API 37 为目标版本且需要直接访问 NPU 的应用，必须在 manifest 中声明 `android.hardware.npu`，系统据此决定这个 UID（应用身份编号） 能否直接提交 NPU 工作。声明写法、`required` 对安装过滤的影响，以及运行时的能力检测见「`android.hardware.npu`：声明、安装过滤与能力检测」。
 
 排查时我们注意两件事：
 
@@ -259,12 +259,12 @@ Android 17 的这项变化落在平台控制面：以 API 37 为目标版本且�
 
 ### AICore / Gemini Nano：系统服务路径
 
-Android 官方将 Gemini Nano 的设备内运行环境描述为 AICore 系统服务，应用通常通过 ML Kit GenAI 等高层 API 请求能力。AICore 负责模型可用性、下载更新、请求处理和相关安全机制；模型经 Private Compute Services 下载，这类网络交互交给隐私计算组件处理，AICore 本身不直接访问互联网。
+Android 官方将 Gemini Nano 的设备内运行环境描述为 AICore 系统服务，应用通常通过 ML Kit GenAI 等高层 API 请求能力。AICore 负责模型可用性、下载更新、请求处理和相关安全机制；模型经 Private Compute Services（负责隐私计算相关网络交互的系统组件） 下载，这类网络交互交给隐私计算组件处理，AICore 本身不直接访问互联网。
 
 这条路径与应用自带 `.tflite` 模型不同：
 
 - 应用要按“模型可能尚未下载”来设计；
-- 首次请求可能包含能力检查、模型准备或下载等待；
+- 首次请求可能包含能力检查、模型准备（preparation）或下载等待；
 - 设备、地区、系统版本和具体 API 会影响可用性；
 - 系统服务可以复用模型资源，但请求上下文与并发策略由服务管理；
 - 应用应按 API 契约处理忙碌、取消、超时与不可用状态。
@@ -273,7 +273,7 @@ AICore 文档没有将其定义为 `CompiledModel` 的调度器，也未公开�
 
 #### AICore 的内存应怎样观察
 
-跨进程推理会把内存分散到调用方、AICore、Private Compute Services、驱动和共享缓冲区。PSS（Proportional Set Size，比例集大小）按比例分摊共享内存页，RSS（Resident Set Size，常驻集大小）统计进程当前映射并驻留在物理内存中的页面；要用它们回答“这次请求的内存归到哪个应用”，还差一层业务归属的换算。
+跨进程推理会把内存分散到调用方、AICore、Private Compute Services、驱动和共享缓冲区。PSS（Proportional Set Size，比例集大小（Proportional Set Size，PSS））按比例分摊共享内存页，RSS（Resident Set Size，常驻集大小（Resident Set Size，RSS））统计进程当前映射并驻留在物理内存中的页面；要用它们回答“这次请求的内存归到哪个应用”，还差一层业务归属的换算。
 
 公开文档没有给出 AICore 全部 PSS/RSS 回算到调用方的保证。排查内存峰值时，应同时观察：
 
@@ -303,7 +303,7 @@ AICore 文档没有将其定义为 `CompiledModel` 的调度器，也未公开�
 
 #### 先优化端到端管线
 
-推理要离开主线程，但换到后台线程只解决了最基本的一层。还要避免：
+推理要离开主线程，但换到后台（normal / background）线程只解决了最基本的一层。还要避免：
 
 - 每次进入页面都重新创建 interpreter 或 delegate；
 - 相机每帧积压，旧帧还没处理完又提交新帧；
@@ -315,7 +315,7 @@ AICore 文档没有将其定义为 `CompiledModel` 的调度器，也未公开�
 
 #### 量化的精度与后端覆盖
 
-INT8（8 位整数）、FP16（16 位浮点）等量化方式可以减少模型体积、内存带宽和计算量，但收益依赖目标后端的 kernel 支持。训练后量化（Post-Training Quantization）接入较快；量化感知训练（Quantization-Aware Training）可以改善部分模型的精度保持，但会增加训练成本。
+INT8（8 位整数（INT8））、FP16（16 位浮点）等量化方式可以减少模型体积、内存带宽和计算量，但收益依赖目标后端的 kernel 支持。训练后量化（Post-Training Quantization）接入较快；量化感知训练（Quantization-Aware Training）可以改善部分模型的精度保持，但会增加训练成本。
 
 每次量化都应同时验证：
 
@@ -331,13 +331,13 @@ INT8（8 位整数）、FP16（16 位浮点）等量化方式可以减少模型�
 
 结构化裁剪会按通道或模块等规则减少参数，更容易真正改变张量尺寸；知识蒸馏则让较小的学生模型学习较大教师模型的输出，以增加训练成本换取更小模型。两种方法都要在目标 delegate 和真实输入上重新测量。
 
-#### 预热、缓存和批处理
+#### 预热、缓存和批处理（batching）
 
 预热可以提前触发内存规划、JIT 编译和 kernel 选择，但也会把 CPU、内存和热成本移到更早的时刻。预热不应与首帧、启动 I/O 或页面动画争用关键资源。
 
 编译缓存的键应包含模型、运行时、设备和驱动版本，并处理缓存失效与磁盘空间不足。批处理可以让多项输入共同承担一次固定调度成本，却会增加等待时间和 tensor 内存；交互式请求通常需要较小的 batch。
 
-### 建立可复现的 benchmark
+### 建立可复现的 benchmark（基准测试）
 
 benchmark 要记录完整的环境和指标，结果才可复现。一次可靠测试至少应报告：
 
@@ -361,11 +361,11 @@ LiteRT 的 `benchmark_model` 工具可以测量初始化、预热和稳态执行
 
 ### 用 Perfetto 建立证据
 
-默认的系统 trace 主要回答“线程何时运行、CPU / GPU 频率如何变化、内存和温度发生了什么”；模型算子、delegate 分区和 NPU 内部阶段，通常要靠运行时、应用或厂商额外记录跟踪事件。
+默认的系统 trace（性能跟踪记录） 主要回答“线程何时运行、CPU / GPU 频率如何变化、内存和温度发生了什么”；模型算子、delegate 分区和 NPU 内部阶段，通常要靠运行时、应用或厂商额外记录跟踪事件。
 
 #### 应用记录分段事件
 
-为了区分输入、推理和输出，我们可以用下面的代码为关键阶段添加 trace section：
+为了区分输入、推理和输出，我们可以用下面的代码为关键阶段添加 trace section（带开始和结束时间的跟踪区间）：
 
 ```kotlin
 Trace.beginSection("ml/preprocess")
@@ -430,7 +430,7 @@ CPU 还要负责预处理、后处理、图中未交给加速器的节点和提�
 
 #### 释放模型后内存没有立刻下降
 
-区分分配器保留空间、文件页缓存、delegate 缓存、驱动分配和仍被引用的 tensor。重复执行“创建—运行—释放—施加内存压力”的周期，观察内存占用是否持续无上限增长；进程 RSS 没有立即回到初始值，本身说明不了泄漏。
+区分分配器（allocator）保留空间、文件页缓存、delegate 缓存、驱动分配和仍被引用的 tensor。重复执行“创建—运行—释放—施加内存压力”的周期，观察内存占用是否持续无上限增长；进程 RSS 没有立即回到初始值，本身说明不了泄漏。
 
 ### Android 版本边界
 
@@ -460,7 +460,7 @@ CPU 还要负责预处理、后处理、图中未交给加速器的节点和提�
 
 `hardware/interfaces/npu/aidl/` 与 `hardware/interfaces/neuralnetworks/` 的职责不同：前者是 Android 17 的 NPU 调度控制接口，后者属于 NNAPI 推理 HAL。项目中两者同时存在，说明不了新的 NPU AIDL 已经替代所有模型执行接口。
 
-LiteRT 是独立演进的 Google AI Edge 项目。API、artifact 和 delegate 支持应以应用实际依赖的 LiteRT 版本为准，平台 AOSP 标签推不出它的最新版本。
+LiteRT 是独立演进的 Google AI Edge 项目。API、artifact 和 delegate 支持应以应用实际依赖的 LiteRT 版本为准，平台 AOSP 标签（tag）推不出它的最新版本。
 
 ### 官方资料
 
@@ -506,7 +506,7 @@ public static final String FEATURE_NEURAL_PROCESSING_UNIT =
 
 大多数同时提供 CPU / GPU 路径的应用应使用 `required="false"`：既保留了 NPU 声明，让 Android 17 能识别应用请求 NPU 能力，又允许没有 NPU 的设备安装应用并改用 CPU 或 GPU。只有核心功能在其他后端上跑不起来时，才适合使用 `required="true"`。
 
-Android 17 源码也体现了这一区别。`packages/modules/NpuManager` 中的 `PriorityManager.doesPackageUseNpuFeature()` 遍历 `PackageInfo.reqFeatures`，检查名称是否等于 `FEATURE_NEURAL_PROCESSING_UNIT`；直接访问资格与 `required` 标志无关，`required` 仍只影响安装兼容性。
+Android 17 源码也体现了这一区别。`packages/modules/NpuManager` 中的 `PriorityManager.doesPackageUseNpuFeature()` 遍历 `PackageInfo.reqFeatures`（应用请求的 feature 列表），检查名称是否等于 `FEATURE_NEURAL_PROCESSING_UNIT`；直接访问资格与 `required` 标志无关，`required` 仍只影响安装兼容性。
 
 下面的代码在运行时检测设备是否声明该 feature：
 
@@ -521,7 +521,7 @@ val hasNpuFeature = context.packageManager.hasSystemFeature(
 - LiteRT NPU 运行时（runtime）和厂商库是否已安装；
 - 当前 SoC 是否在所用 LiteRT 版本的兼容范围内；
 - 模型能否编译；
-- 算子、数据类型、动态形状和量化格式是否受支持；
+- 算子、数据类型、动态形状（dynamic shape）和量化格式是否受支持；
 - 运行时最终使用 NPU、部分回退，还是完全改用其他后端；
 - NPU 路径是否比 CPU/GPU 更快或更省电。
 
@@ -578,7 +578,7 @@ Android 17 的兼容性测试套件（Compatibility Test Suite，CTS）为 NpuMa
 
 - `NpuManager` 是受功能开关控制的系统 API（flagged `@SystemApi`）；
 - 模型装载请求受 `ACCESS_NPU_MODEL_MANAGER_API` 权限保护；
-- 接口用于协调模型能否加载、卸载通知、模型大小和加载策略；
+- 接口用于协调模型能否加载、卸载（model load / unload）通知、模型大小和加载策略；
 - 公共 SDK 没有借此获得提交张量或执行模型的通用接口。
 
 NpuManager 的模型加载策略用于管理共享 NPU 资源：它可以根据普通 / 后台优先级、模型大小和预算，决定某个模型当前能否加载，或请求已经加载的模型释放资源。普通应用把这些 `@SystemApi` 当公共 SDK 调用是行不通的。
@@ -660,9 +660,9 @@ LiteRT NPU 文档将编译分成 AOT 和设备侧 JIT 两类：
 
 官方文档指出，AOT 更适合目标 SoC 已知的大模型，可以降低启动时的编译成本和内存压力。AOT 仍可能需要读取模型文件、校验产物、加载 runtime、分配 buffer 和执行首轮预热，把它描述成“无需初始化”并不成立。
 
-设备侧编译的缓存键至少会受到模型、厂商 compiler plugin、Android build fingerprint 和编译选项影响。应用升级、系统 OTA 或模型替换后出现新的编译峰值，可能是缓存正常失效；要把 cache miss 的原因写进诊断日志。
+设备侧编译的缓存键至少会受到模型、厂商 compiler plugin、Android build fingerprint（精确标识系统构建的字符串） 和编译选项影响。应用升级、系统 OTA 或模型替换后出现新的编译峰值，可能是缓存正常失效；要把 cache miss 的原因写进诊断日志。
 
-#### Play AI Pack 与 runtime library 是两类产物
+#### Play AI Pack（按设备交付 AI 模型的资源包） 与 runtime library 是两类产物
 
 当前官方流程将它们分开：
 
@@ -704,7 +704,7 @@ Google Play 交付不覆盖所有渠道。没有 GMS 的设备或其他应用商
 1. 设备是否声明 `android.hardware.npu`；
 2. LiteRT compatibility checker 是否接受该设备；
 3. AI Pack 是否已交付适配相应 Tensor 代际的模型产物；
-4. 运行时是否成功加载 NPU 调度分发库 / 运行时（dispatch / runtime），并按预期执行或回退。
+4. 运行时是否成功加载 NPU 调度分发库（dispatch library） / 运行时（dispatch / runtime），并按预期执行或回退。
 
 芯片名称、营销材料和 `hasSystemFeature()` 都顶替不了这四项检查。AICore 或其他系统托管模型服务也有独立的设备、地区、模型与更新条件，与应用内嵌 LiteRT 的 NPU 后端并不是一回事。
 
@@ -714,7 +714,7 @@ Android 17 中同时存在名字相近、职责不同的接口。
 
 #### NNAPI NDK API 已进入弃用期
 
-NNAPI 的 NDK API 从 Android 15 起标记为弃用：新项目别再把它当作长期主路径，但 Android 17 并未删除 NNAPI，已发布应用也不会立即失效（背景、源码保留情况和迁移方向见「NNAPI 的源码保留与迁移方向」一节）。
+NNAPI 的 NDK API 从 Android 15 起标记为弃用（deprecated）：新项目别再把它当作长期主路径，但 Android 17 并未删除 NNAPI，已发布应用也不会立即失效（背景、源码保留情况和迁移方向见「NNAPI 的源码保留与迁移方向」一节）。
 
 这里要分的是层次：NNAPI NDK API 是应用通过 NDK 调用的 C API，而下面两套 HAL 分别面向 NNAPI Runtime / 厂商驱动和系统 NPU 调度，都不面向普通应用。
 
@@ -736,7 +736,7 @@ NNAPI 的 NDK API 从 Android 15 起标记为弃用：新项目别再把它当�
 - 当前接口仍有 `IDevice.getSupportedOperations()`、模型 preparation、compilation cache、device buffer、同步 / 围栏执行；
 - AIDL v4 还包含 `ExecutionConfig`、`IExecution` 和接收 config 的执行入口。
 
-这些接口面向 NNAPI Runtime 与厂商驱动，普通应用不要把 AIDL `IDevice` 当公共 SDK 用。
+这些接口面向 NNAPI Runtime 与厂商驱动（vendor driver），普通应用不要把 AIDL `IDevice` 当公共 SDK 用。
 
 #### NPU scheduling HAL 的调度身份与生命周期
 
@@ -792,7 +792,7 @@ LiteRT 官方 NPU 路径支持将未被 NPU 接收的子图交给 CPU / GPU。�
 
 #### Trace 能看到什么
 
-Perfetto 通常可以稳定采集应用 slice、CPU 调度、CPU 频率、进程内存与部分电源 / 温度信号。GPU、NPU、互连和内存频率轨道依赖设备与厂商数据源；没有 NPU track 时，可以联合观察：
+Perfetto 通常可以稳定采集应用 slice、CPU 调度、CPU 频率、进程内存与部分电源 / 温度信号。GPU、NPU、互连和内存频率轨道（track）依赖设备与厂商数据源；没有 NPU track 时，可以联合观察：
 
 - 应用标注的编译 / 运行（compile / run）slice；
 - LiteRT 或厂商 runtime 日志；
@@ -921,7 +921,7 @@ NPU feature 只描述设备能力与访问资格，不会授予应用额外的�
 
 Android 17 还包含受权限保护的 OnDeviceIntelligence（ODI）framework。ODI 由 OEM（设备厂商）提供管理 service 和隔离的推理 service，并通过 `Feature`、prepare/process/streaming request、数据补充回调与 `InferenceInfo` 组织系统级能力。它属于 `@SystemApi` 和特权应用的集成接口，普通 App 拿它替代 ML Kit GenAI 是行不通的；AICore 的模型、配额和设备支持契约也套不到 OEM 的 ODI provider 上。
 
-ODI 的 `system_server` 逻辑会根据调用 UID 的前台 importance，建立带 `BIND_SCHEDULE_LIKE_TOP_APP` 标志的高优先级连接。这可以提高被绑定服务的进程调度地位，但由此推导不出一套按模型、token 或 deadline 排序的统一推理队列，也不会直接控制 NPU 频率。`InferenceInfo` 只记录 UID、开始/结束时间与暂停时长，不包含能量或加速器类型；OEM 要分析功耗归属，还要结合 runtime 和 SoC counter。
+ODI 的 `system_server` 逻辑会根据调用 UID 的前台 importance（进程重要性），建立带 `BIND_SCHEDULE_LIKE_TOP_APP` 标志的高优先级连接。这可以提高被绑定服务的进程调度地位，但由此推导不出一套按模型、token 或 deadline 排序的统一推理队列，也不会直接控制 NPU 频率。`InferenceInfo` 只记录 UID、开始/结束时间与暂停时长，不包含能量或加速器类型；OEM 要分析功耗归属，还要结合 runtime 和 SoC counter（硬件计数器）。
 
 ### AICore 公开保证了什么
 
@@ -954,7 +954,7 @@ App
 - 一定经过 NNAPI HAL，或一定使用 NPU/GPU；
 - 回调一定运行在 Binder 线程池；
 - AICore 对前后台 App 使用某种确定的排队或时间片策略；
-- AICore 拥有固定的 `oom_score_adj`，内存压力时一定先终止其他 App。
+- AICore 拥有固定的 `oom_score_adj`（内核选择 OOM 终止目标时使用的分数调节值），内存压力时一定先终止其他 App。
 
 这些实现可能随设备厂商、AICore 模块和模型版本变化，应用代码不应依赖它们；性能报告也要写清设备、系统构建、AICore/ML Kit 版本、基础模型名，以及测试时的热状态。
 
@@ -1051,7 +1051,7 @@ AICore 管理共享模型，使 App 不必把 Gemini Nano 放进自己的 APK、
 
 - Prompt 字符串、输入图片及其缩放副本属于 App；
 - 请求构造、结果对象、流式文本累计和 UI 富文本缓存属于 App；
-- AICore 管理的模型权重、运行时与服务侧工作不在 App 的 Java/Kotlin heap 中；
+- AICore 管理的模型权重、运行时与服务侧工作不在 App 的 Java/Kotlin heap（堆内存） 中；
 - 驱动共享缓冲区和硬件工作区的归属还会受设备实现与统计口径影响。
 
 所以，`Debug.getMemoryInfo()` 或针对 App 单进程执行 `dumpsys meminfo`，只能回答“调用端增长了多少”，回答不了“这项功能给整机增加了多少内存压力”；公开文档也没有给出适用于所有设备的 Gemini Nano RSS/PSS 数字。
@@ -1083,7 +1083,7 @@ GPU 频率上升单独证明不了 AICore 正在使用 GPU，CPU 频率上升也
 
 ### ADPF 的作用范围
 
-Android 17 的 `PerformanceHintManager.createHintSession()` 要求线程 ID 属于调用进程的线程组；`Session.setThreads()` 遇到不属于该 App 的线程时会抛出 `SecurityException`。`setPreferPowerEfficiency(true)` 描述的也只是该 hint session 内线程的调度偏好。
+Android 17 的 `PerformanceHintManager.createHintSession()` 要求线程 ID 属于调用进程的线程组；`Session.setThreads()` 遇到不属于该 App 的线程时会抛出 `SecurityException`。`setPreferPowerEfficiency(true)` 描述的也只是该 hint session（性能提示会话） 内线程的调度偏好。
 
 App 可以为自己长期存在的预处理、后处理或渲染线程建立 ADPF 会话，但 AICore 内部线程加不进会话，也借它指定不了 AICore 的 NPU/GPU 频率。把 `setPreferPowerEfficiency(true)` 写在 `checkStatus()` 和 `generateContent()` 之间，并不会自动把推理切换到所谓的“能效 NPU 模式”。
 
@@ -1091,12 +1091,12 @@ App 可以为自己长期存在的预处理、后处理或渲染线程建立 ADP
 
 ### 热状态与降级
 
-Android 的 `PowerManager.addThermalStatusListener()` 可以通知设备当前的整体热限制级别。该状态适合作为产品降级信号，但它的粒度较粗，含义随设备实现而变，换算不出固定的 NPU 频率或 token/s。
+Android 的 `PowerManager.addThermalStatusListener()` 可以通知设备当前的整体热限制级别。该状态适合作为产品降级信号，但它的粒度较粗，含义随设备实现而变，换算不出固定的 NPU 频率或 token/s（每秒生成的 token 数）。
 
 “持续 30～60 秒后从 200 ms 上升到 500～1000 ms”没有跨设备依据。性能数据应按机型测量以下指标：
 
 - cold start（无可复用状态）、warm start（部分状态可复用）和主动预热后的首段延迟；
-- prefill（处理输入上下文）时间、首 token 时间、decode token/s 和完整请求时间；
+- prefill（处理输入上下文）时间、首 token 时间、decode token/s（持续生成速度） 和完整请求时间；
 - 连续请求中的 P50、P95、P99 及随时间的变化；
 - 请求期间的 thermal status、thermal headroom（热限制余量）、帧时间与电量消耗；
 - `BUSY`、电量配额、后台阻止、下载失败和模型不可用的比例。
@@ -1136,7 +1136,7 @@ LiteRT-LM 把更多控制权交给 App，也让 App 承担模型存储、进程�
 
 AppFunctions 从 Android 16 起提供 Android 平台 API 和 Jetpack 库，让 App 把自身操作注册成设备上的工具；调用者必须拥有 `EXECUTE_APP_FUNCTIONS` 权限。它与 MCP（Model Context Protocol，模型上下文协议）的概念相近，解决的是“获得授权的调用者如何发现并执行 App 能力”。
 
-截至 Android 17，官方仍把 AppFunctions 标为 experimental preview；截至 2026 年 5 月，与 Gemini 的集成仍是 private preview。AppFunctions 没有承诺由 AICore 执行模型，也没有给出“支持 8 小时 agent”的运行保证。agent 可以使用 AICore、云端模型或其他本地运行时来决定调用哪个工具，这与 AppFunction 本身的执行协议是两个独立问题。
+截至 Android 17，官方仍把 AppFunctions 标为 experimental preview（实验性预览）；截至 2026 年 5 月，与 Gemini 的集成仍是 private preview（小范围预览）。AppFunctions 没有承诺由 AICore 执行模型，也没有给出“支持 8 小时 agent（智能体）”的运行保证。agent 可以使用 AICore、云端模型或其他本地运行时来决定调用哪个工具，这与 AppFunction 本身的执行协议是两个独立问题。
 
 ### 性能测量清单
 
@@ -1162,14 +1162,14 @@ Prompt API 当前要求输入少于 4000 token，并建议避免生成超过 4K 
 | 持续生成 | 第一段到最终一段 | decode（逐 token 生成）速度、配额、热限制 |
 | UI 消费 | 收到分片到画面呈现 | 主线程、解析、重组与布局 |
 
-如果只记录“点击到完整文本出现”的总时间，就判断不出该优化模型准备、请求规模还是 UI。把 wall-clock time 直接命名为 Binder 延迟、NPU 时间或 AICore 排队时间也要慎重，除非 trace 中存在支持这种分解的设备级证据。
+如果只记录“点击到完整文本出现”的总时间，就判断不出该优化模型准备、请求规模还是 UI。把 wall-clock time（从开始到结束的实际经过时间） 直接命名为 Binder 延迟、NPU 时间或 AICore 排队时间也要慎重，除非 trace 中存在支持这种分解的设备级证据。
 
 #### Perfetto 的正确用途
 
 App 应为状态检查、下载、预热、推理请求、首分片和结束点增加自定义 trace 标记。Perfetto 可以用这些标记对齐：
 
 - App 主线程、工作线程和 RenderThread 调度；
-- 帧时间、CPU 频率、设备支持时的 GPU counter；
+- 帧时间、CPU 频率、设备支持时的 GPU counter（设备支持时）；
 - 内存计数器、PSI、lmkd 和 thermal 事件；
 - 可见的 Binder 与系统服务活动。
 

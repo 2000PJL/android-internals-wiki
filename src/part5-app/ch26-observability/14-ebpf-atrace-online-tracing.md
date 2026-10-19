@@ -120,15 +120,15 @@ consolidated_from:
 - src/part5-app/ch26-observability/23-profilo-atrace-online-collection.md
 ---
 
-# eBPF、ATrace 与线上系统追踪
+# eBPF、ATrace（用户态埋点 API 与事件协议） 与线上系统追踪
 
-线上排障通常从日志、应用埋点和短时间的 system trace 入手，但系统调用和 Binder 这一段，常规手段看不全。在具备系统权限的设备上，我们可以用 ftrace 或 eBPF 补上：ftrace 是 Linux 内核自带的事件追踪框架；eBPF 是在内核内运行、先经安全校验的受限程序；Binder 是 Android 最主要的进程间通信机制。这里的“在线”指设备运行期间持续或按条件追踪；普通应用仍无权在商店发布包里自行加载 BPF 程序。
+线上排障通常从日志、应用埋点和短时间的 system trace 入手，但系统调用和 Binder 这一段，常规手段看不全。在具备系统权限的设备上，我们可以用 ftrace 或 eBPF 补上：ftrace 是 Linux 内核自带的事件追踪框架；eBPF 是在内核内运行、先经安全校验的受限程序；Binder 是 Android 最主要的进程间通信（IPC）机制。这里的“在线”指设备运行期间持续或按条件追踪；普通应用仍无权在商店发布包里自行加载 BPF 程序。
 
 > 源码基线：AOSP `android-17.0.0_r1`；内核 Binder 接口与追踪事件核对到 `android17-6.18-2026-06_r39`，适用 Android 12～17。文末保留的 r6 链接是原历史锚点，经复核三个 Binder 文件与 r39 一致。
 
-WOOTdroid 的正式实验跑在两台已 root 的 Pixel 9 上，系统为 Android 16；论文另用 Pixel 7 和 Pixel 9 检查逐系统调用 tracepoint 的可用性。这些结果要挪到 Android 17 量产 user build、其他 SoC 或厂商内核上，得重新验证。
+WOOTdroid 的正式实验跑在两台已 root（取得超级用户权限） 的 Pixel 9 上，系统为 Android 16；论文另用 Pixel 7 和 Pixel 9 检查逐系统调用 tracepoint 的可用性。这些结果要挪到 Android 17 量产 user build、其他 SoC 或厂商内核上，得重新验证。
 
-设备厂商的系统集成、开放额外调试能力的 userdebug 测试机和经过授权的安全实验，用得上这类能力。普通应用优先用应用日志、系统管理的性能分析 API `ProfilingManager`、Android Vitals，以及用户授权生成的 bugreport。
+设备厂商的系统集成、开放额外调试能力的 userdebug 测试机和经过授权的安全实验，用得上这类能力。普通应用优先用应用日志、系统管理的性能分析 API `ProfilingManager`、Android Vitals，以及用户授权生成的 bugreport（系统诊断包）。
 
 线上系统追踪始终要在信号价值、权限、开销和隐私之间取舍：eBPF 在内核侧重建调度或 Binder 事件；Profilo 这类端侧框架靠 ATrace 等数据源组织短窗口 Trace，ATrace 既是用户态埋点 API，也是一套事件协议。
 
@@ -168,24 +168,24 @@ Android 平台自身就在使用 eBPF。AOSP 文档说明，系统镜像中的 B
 WDSys 的论文原型可以拆成五个阶段：
 
 1. **入口**：论文作者在 Pixel 7 和 Pixel 9 上没有找到可用的逐系统调用 tracepoint，于是改挂 `raw_syscalls:sys_enter` 与 `raw_syscalls:sys_exit`，再按 syscall id（系统调用编号）分派。这个观察只代表这两台设备，Android 12～17 的其他内核未必相同，部署前要先枚举目标内核实际提供哪些 tracepoint。
-2. **过滤与配对**：enter 事件保存参数，exit 事件保存返回值。过滤器按 UID、TGID、syscall id 和项目规则筛掉无关事件——UID 标识应用或系统主体，TGID 是 Linux 线程组标识，通常对应一个进程。线程提前退出、tail call 失败，或 map 更新与查询失败，都可能让记录只剩进入或退出一侧。
-3. **复杂度分段**：论文用 program array 和 tail call 拆分逻辑，以满足 verifier 对栈空间和程序复杂度的限制——program array 是一张保存 BPF 程序引用的 map，tail call 让一个 BPF 程序直接跳到另一个程序，verifier 则是内核在加载前执行的安全检查器。tail call 只是这个原型的程序组织方式，Android 系统调用追踪协议没有规定必须这样实现。
+2. **过滤与配对**：enter 事件保存参数，exit 事件保存返回值。过滤器按 UID（应用或系统主体标识）、TGID（Linux 线程组标识，通常对应进程）、syscall id 和项目规则筛掉无关事件——UID 标识应用或系统主体，TGID 是 Linux 线程组标识，通常对应一个进程。线程提前退出、tail call（从一个 BPF 程序直接跳到另一个程序） 失败，或 map 更新与查询失败，都可能让记录只剩进入或退出一侧。
+3. **复杂度分段**：论文用 program array（一张保存 BPF 程序引用的 map） 和 tail call 拆分逻辑，以满足 verifier 对栈空间和程序复杂度的限制——program array 是一张保存 BPF 程序引用的 map，tail call 让一个 BPF 程序直接跳到另一个程序，verifier 则是内核在加载前执行的安全检查器。tail call 只是这个原型的程序组织方式，Android 系统调用追踪协议没有规定必须这样实现。
 4. **传输**：WOOTdroid 使用 perf buffer，论文也称它 perf ring buffer。`BPF_MAP_TYPE_RINGBUF` 是另一种 BPF map 类型；两者在空间预留、事件提交、跨 CPU 顺序和丢失统计上都不同，设计文档应写明用的是哪一种。
 5. **用户态消费**：读取进程负责拼接分片、统一时间表示、落盘和审计。内核程序成功输出，只说明事件进了传输缓冲区；读取进程是否已经消费并持久化，还要单独确认。
 
 为了读取带 tag 的用户地址，论文的 Pixel 原型用了固定按位掩码。tag 指 arm64 可以放在地址高位的标记：TBI（Top Byte Ignore）让处理器忽略地址最高字节，MTE（Memory Tagging Extension）用标签检测内存访问错误。这个掩码常量依赖所测设备的虚拟地址布局，直接当成 Android 17 的通用方案是有风险的。
 
-去除地址标签前，要结合目标 arm64 内核、TBI/MTE 配置、BPF helper 的行为和进程 ABI 一起验证——BPF helper 是内核提供给 BPF 程序的受控函数，ABI 即应用二进制接口；验证失败时只记元数据，用户缓冲区一概不读。
+去除地址标签前，要结合目标 arm64 内核、TBI/MTE 配置、BPF helper（内核提供给 BPF 程序的受控函数） 的行为和进程 ABI（应用二进制接口） 一起验证——BPF helper 是内核提供给 BPF 程序的受控函数，ABI 即应用二进制接口；验证失败时只记元数据，用户缓冲区一概不读。
 
-eBPF 在这里更像内核侧筛选器：尽早排除无关事件，只送出长度有上限的结构化数据。字符串、用户栈和可变长 payload 都会推高校验、内存读取、传输带宽和隐私成本；程序跑在内核里，这部分开销省不掉。
+eBPF 在这里更像内核侧筛选器：尽早排除无关事件，只送出长度有上限的结构化数据。字符串、用户栈和可变长 payload（事件携带的数据内容） 都会推高校验、内存读取、传输带宽和隐私成本；程序跑在内核里，这部分开销省不掉。
 
 ### Binder 语义重建的关键问题
 
 应用调用 AIDL Proxy 后，接口 token 和参数按该接口版本的规则写进 `Parcel`，再由 `IBinder.transact()` 进入 Binder 驱动。这条链路上的几个词我们先摆清楚：AIDL 是 Android 接口定义语言，Proxy 是 AIDL 工具生成的客户端代理，`Parcel` 是 Binder 用来顺序编码参数的二进制容器，接口 token 通常是标识接口的 descriptor 字符串。
 
-驱动只认 transaction code、flags、目标 handle、数据缓冲区和对象 offsets 这几样：flags 是同步、oneway 等事务标志，handle 是进程内的 Binder 引用编号，offsets 记录特殊 Binder 对象在缓冲区中的位置。方法名与 Java/Kotlin 参数类型不在 Binder 内核 ABI 中，这层语义驱动给不出。
+驱动只认 transaction code、flags（同步、oneway 等事务标志）、目标 handle（进程内的 Binder 引用编号）、数据缓冲区和对象 offsets（特殊 Binder 对象在缓冲区中的位置表） 这几样：flags 是同步、oneway 等事务标志，handle 是进程内的 Binder 引用编号，offsets 记录特殊 Binder 对象在缓冲区中的位置。方法名与 Java/Kotlin 参数类型不在 Binder 内核 ABI 中，这层语义驱动给不出。
 
-Android 17 / 6.18 的 UAPI 可以从 `include/uapi/linux/android/binder.h` 核对——UAPI 是内核向用户空间公开的二进制接口。`BINDER_WRITE_READ` 的参数是 `binder_write_read`，其中 `write_buffer` 指向一串 Binder 命令；`BC_TRANSACTION` 和 `BC_TRANSACTION_SG` 后面跟着大小不同的事务结构。
+Android 17 / 6.18 的 UAPI（内核向用户空间公开的二进制接口） 可以从 `include/uapi/linux/android/binder.h` 核对——UAPI 是内核向用户空间公开的二进制接口。`BINDER_WRITE_READ` 的参数是 `binder_write_read`，其中 `write_buffer` 指向一串 Binder 命令；`BC_TRANSACTION` 和 `BC_TRANSACTION_SG` 后面跟着大小不同的事务结构。
 
 驱动的 `binder_ioctl_write_read()` 先用 `copy_from_user()` 读取 `binder_write_read`，再分别处理写入与读取部分。ioctl 我们不陌生：进程通过文件描述符向设备驱动发控制命令，走的就是这个系统调用。
 
@@ -208,7 +208,7 @@ WDBind 在 `raw_syscalls:sys_enter` 事件中运行于内核态，读到的数�
 4. 检查 `data_size`、`offsets_size` 和对象位置是否满足大小上限及 ABI 要求的内存边界。读取失败时保留 transaction code、大小与错误类型。
 5. 用与 `Build.FINGERPRINT`（完整系统构建标识）、AIDL 接口版本和采集器版本绑定的签名表解码；同一个 transaction code 换个系统版本，可能就对应另一个方法，这层对应交给签名表兜底。
 
-WOOTdroid 论文在设备上用 Java reflection（运行时反射）生成 Android framework 的 AIDL 签名表。原型能解析基本类型、`String` 和部分 Binder 对象，也就到此为止：fd 或指针指向的内容不再展开，事务回复（transaction reply）同样不处理。复杂 `Parcelable`、厂商接口和动态注册接口都没有系统性覆盖，论文把 WDBind 的完整性和性能评估列为后续工作。
+WOOTdroid 论文在设备上用 Java reflection（运行时反射）生成 Android framework（系统框架） 的 AIDL 签名表。原型能解析基本类型、`String` 和部分 Binder 对象，也就到此为止：fd 或指针指向的内容不再展开，事务回复（transaction reply）同样不处理。复杂 `Parcelable`（可写入 `Parcel` 的结构化对象）、厂商接口和动态注册接口都没有系统性覆盖，论文把 WDBind 的完整性和性能评估列为后续工作。
 
 只需要路由和时序、用不着参数内容时，Binder tracepoint 更合适。`binder_transaction` 给出事务调试编号、目标进程或线程、reply 标记、code 和 flags，`binder_transaction_received` 表示目标侧收到事务。它们仍受 ftrace 权限和缓冲区限制；这些字段属于内核追踪接口，应用 API 的稳定性保证罩不到它们。
 
@@ -269,7 +269,7 @@ WOOTdroid 案例重建了十个安全相关的 framework 方法，覆盖短信�
 
 #### 冷启动回溯
 
-冷启动包含进程创建、dex/oat 代码加载、资源与文件 I/O、`ContentProvider` 初始化、Binder 查询、权限检查和应用初始化；dex 是 Android 字节码格式，oat 是 Android Runtime 为安装或运行准备的编译产物。系统调用追踪能看到 `openat`、`mmap`、`read`、`futex`、`ioctl` 这些调用，每段应用代码的业务含义从这里面看不出来。
+冷启动包含进程创建、dex/oat 代码加载、资源与文件 I/O、`ContentProvider` 初始化、Binder 查询、权限检查和应用初始化；dex 是 Android 字节码格式，oat 是 Android Runtime（ART） 为安装或运行准备的编译产物。系统调用追踪能看到 `openat`（打开文件）、`mmap`（建立内存映射）、`read`、`futex`、`ioctl` 这些调用，每段应用代码的业务含义从这里面看不出来。
 
 较稳妥的组合是：
 

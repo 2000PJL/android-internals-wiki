@@ -93,7 +93,7 @@ consolidated_from:
 
 # Android 17 ANR 预警与 Input pre-ANR
 
-Android 17 / API 37 增加了公开的 ANR warning API。应用可以向 `ActivityManager` 注册 listener（监听器），在部分 ANR 检测路径接近 deadline（完成期限）时收到 `AnrWarningResult`。
+Android 17 / API 37 增加了公开的 ANR warning（预警） API。应用可以向 `ActivityManager` 注册 listener（监听器），在部分 ANR 检测路径接近 deadline（完成期限）时收到 `AnrWarningResult`。
 
 > 源码基线：本章平台实现以 AOSP `android-17.0.0_r1` 为核对版本。
 
@@ -101,7 +101,7 @@ Android 17 / API 37 增加了公开的 ANR warning API。应用可以向 `Activi
 
 - warning 只表示“某个计时条件已进入预警点”，系统尚未宣告 ANR；
 - 阻塞条件可能在 deadline 前恢复，warning 后未必有 ANR；
-- 回调按 best-effort（尽力而为）方式投递；系统可能来不及调用，也可能在 executor 排队期间到达 deadline。
+- 回调按 best-effort（尽力而为）方式投递；系统可能来不及调用，也可能在 executor（执行器） 排队期间到达 deadline。
 
 warning 不会暂停或延长原计时器。它适合记录轻量状态，并关联 warning 与事后退出记录；全线程 dump、同步写盘或网络上传这类重活，不适合放进回调。
 
@@ -122,9 +122,9 @@ ANR 的 timeout 与报告流程见 [9.1 ANR 机制、类型与触发条件](01-a
 | `ActivityManager.registerAnrWarningListener()` | 注册 executor 与 listener |
 | `ActivityManager.unregisterAnrWarningListener()` | 用同一个 listener 对象注销 |
 
-`IAnrWarningCallback.aidl` 是 ActivityManager 与 AMS（ActivityManagerService）之间的 hidden Binder 接口，应用不需要直接实现它。`ActivityManager` 会在当前进程注册第一个 listener 时创建一个 Binder stub（接收系统跨进程调用的入口）；同一进程后续注册的 listener 会复用同一个 Binder callback。
+`IAnrWarningCallback.aidl` 是 ActivityManager 与 AMS（ActivityManagerService）之间的 hidden（隐藏） Binder 接口，应用不需要直接实现它。`ActivityManager` 会在当前进程注册第一个 listener 时创建一个 Binder stub（接收系统跨进程调用的入口）；同一进程后续注册的 listener 会复用同一个 Binder callback（回调对象）。
 
-这些 API 都在 API 37 加入。公开文档没有要求 `targetSdkVersion >= 37`；应用需要使用 API 37 SDK 编译，并在运行时检查设备版本。`android-17.0.0_r1` 源码还保留 `@FlaggedApi` 注解：`AnrTypes` 与 `ApplicationExitInfo.AnrInfo` 对应 `Flags.FLAG_INCLUDE_ANR_INFO`，warning callback 相关类与注册方法对应 `Flags.FLAG_ENABLE_ANR_WARNING_CALLBACK`。在 AOSP 派生或厂商调试 build 上做兼容性验证时，要把源码 flag 状态和运行平台版本一起核对。
+这些 API 都在 API 37 加入。公开文档没有要求 `targetSdkVersion >= 37`；应用需要使用 API 37 SDK 编译，并在运行时检查设备版本。`android-17.0.0_r1` 源码还保留 `@FlaggedApi` 注解：`AnrTypes` 与 `ApplicationExitInfo.AnrInfo` 对应 `Flags.FLAG_INCLUDE_ANR_INFO`，warning callback 相关类与注册方法对应 `Flags.FLAG_ENABLE_ANR_WARNING_CALLBACK`。在 AOSP 派生或厂商调试 build（系统构建版本） 上做兼容性验证时，要把源码 flag 状态和运行平台版本一起核对。
 
 ### 2. `AnrTypes` 的完整枚举
 
@@ -158,7 +158,7 @@ ANR 的 timeout 与报告流程见 [9.1 ANR 机制、类型与触发条件](01-a
 | short FGS timer | `FOREGROUND_SHORT_SERVICE_TIMEOUT` | `AnrTimer` 运行到 50% split point |
 | start-foreground timer | `START_FOREGROUND_SERVICE` | `AnrTimer` 运行到 50% split point |
 
-InputDispatcher 的 `processPreAnrsLocked()` 在该 tag 中只调用 `processNoFocusedWindowPreAnrLocked()`。普通 input connection timeout 没有沿这段代码发送 warning；ContentProvider call detector、JobService、application start 和 app-triggered ANR 虽然有对应常量，但从常量推不出系统已经投递 warning。
+InputDispatcher 的 `processPreAnrsLocked()` 在该 tag（源码版本） 中只调用 `processNoFocusedWindowPreAnrLocked()`。普通 input connection（输入连接） timeout（输入连接超时） 没有沿这段代码发送 warning；ContentProvider call detector、JobService、application start 和 app-triggered ANR 虽然有对应常量，但从常量推不出系统已经投递 warning。
 
 warning 覆盖还受 feature flag（功能开关）与计时器实现影响。所以生产统计里，“最终 ANR 无 warning”和“warning 后恢复”这两类记录都要单独保留，listener 收到的数量只代表投递量，要得到全量 ANR 分母还得另算。
 
@@ -174,9 +174,9 @@ warning 覆盖还受 feature flag（功能开关）与计时器实现影响。�
 | `getTimeoutMillis()` | 系统为该次计时使用的总期限 |
 | `getDescription()` | 短诊断描述，格式不稳定 |
 
-载荷没有 PID、UID、包名、进程名、组件对象、线程栈、锁状态或 Binder 队列深度。`description` 可能包含 Service component 等提示，但 API 明确声明格式可变；它可以用于人工分析或辅助聚类，要解析成稳定协议就不行了。
+载荷没有 PID、UID、包名、进程名、组件对象、线程栈、锁状态或 Binder 队列深度。`description` 可能包含 Service component（组件名） 等提示，但 API 明确声明格式可变；它可以用于人工分析或辅助聚类，要解析成稳定协议就不行了。
 
-`anrId` 只保证“在每个 `anrType` 内唯一”。所以持久化 key 应至少使用 `(anrType, anrId)`，还应带上用户、应用版本、设备 boot/session（本次开机或应用会话）和本地进程名，避免跨重启或多进程数据混在一起。
+`anrId` 只保证“在每个 `anrType` 内唯一”。所以持久化 key（记录键） 应至少使用 `(anrType, anrId)`，还应带上用户、应用版本、设备 boot/session（本次开机或应用会话）和本地进程名，避免跨重启或多进程数据混在一起。
 
 ### 4. 注册与注销
 
@@ -226,7 +226,7 @@ class AnrWarningRecorder(
 }
 ```
 
-`WarningSnapshot` 是应用自定义的不可变数据类。若 recorder 与进程同寿命，可以在 `Application` 初始化时注册并长期保留；若它属于短生命周期组件，必须用原 listener 实例注销，随后关闭 executor。
+`WarningSnapshot` 是应用自定义的不可变数据类。若 recorder（记录器） 与进程同寿命，可以在 `Application` 初始化时注册并长期保留；若它属于短生命周期组件，必须用原 listener 实例注销，随后关闭 executor。
 
 executor 怎么选？官方文档要求避开应用主线程：主线程可能正是被监视的阻塞线程，把回调再次排到主线程会失去预警机会。容易排满的业务线程池同样不适合。
 
@@ -287,7 +287,7 @@ AMS 的 callback 表按 UID 分组。一个包的主进程和 `:remote` 进程�
 
 #### 6.1 Service timer
 
-`AnrTimer.Args.anrWarning(true)` 会在 native timer 中加入 50% split point。到点后，`AnrTimer` 把 `timerId`、关联对象和 elapsed time 送回相应 Handler，再由 `ActiveServices` 生成 type、timeout 和 description。
+`AnrTimer.Args.anrWarning(true)` 会在 native timer 中加入 50% split point。到点后，`AnrTimer` 把 `timerId`、关联对象和 elapsed time（已经经过的时间） 送回相应 Handler，再由 `ActiveServices` 生成 type、timeout 和 description。
 
 这一过程发生在 timer 到期之前。系统负载、Handler 延迟和 executor 排队都会缩短应用可用的剩余时间。
 
@@ -341,8 +341,8 @@ if (Build.VERSION.SDK_INT >= 37) {
 高价值且成本可控的数据包括：
 
 - `(anrType, anrId)`、consumed/timeout；
-- callback 的 uptime 与 wall clock；
-- 当前 receiver process；
+- callback 的 uptime（开机时长） 与 wall clock（日期时间）；
+- 当前 receiver process（接收回调的进程）；
 - 当前 Activity、业务阶段、最近一次输入或生命周期事件；
 - 已经维护在内存中的主线程消息、Binder 调用和锁等待 breadcrumbs（最近事件轨迹）；
 - 内存压力、thermal 等已有快照的索引。
@@ -350,10 +350,10 @@ if (Build.VERSION.SDK_INT >= 37) {
 下面这些动作风险较高：
 
 - `Thread.getAllStackTraces()` 对全部线程做临时转储；
-- 同步写大文件、压缩或执行数据库 transaction；
+- 同步写大文件、压缩或执行数据库 transaction（事务）；
 - 直接发网络请求；
 - 主线程 `runOnUiThread()` 并等待结果；
-- 临时启动完整 heap dump、长时间 CPU profile 或高频 trace。
+- 临时启动完整 heap dump（堆转储）、长时间 CPU profile 或高频 trace。
 
 想在回调里读 Binder 驱动队列深度或枚举 JVM 中的全部锁持有关系，公开 API 做不到。需要这些信息时，应在平时维护开销较低的 breadcrumbs，或依赖系统 Perfetto snapshot（快照）与 ANR trace。
 
@@ -374,9 +374,9 @@ Android 16（API 36）的 `ProfilingTrigger.TRIGGER_TYPE_ANR` 会在系统识别
 ANR Warning ANR-Id: <id> consumedMs= <value> timeoutMs=<value>
 ```
 
-这段标记提供 warning 时间戳与 ANR id，并帮助 trace redactor 保留相关 slice。应用使用 `ProfilingManager` 的 ANR trigger 时，不需要为了这条内部标记再注册第二个 warning listener。
+这段标记提供 warning 时间戳与 ANR id，并帮助 trace redactor（trace 脱敏裁剪器） 保留相关 slice（带起止时间的事件片段）。应用使用 `ProfilingManager` 的 ANR trigger 时，不需要为了这条内部标记再注册第二个 warning listener。
 
-warning listener 本身不会启动系统 trace，也补不回注册前的历史。`TRIGGER_TYPE_ANR` 是否返回产物，仍受后台 trace、buffer、系统限流和设备配置影响。
+warning listener 本身不会启动系统 trace，也补不回注册前的历史。`TRIGGER_TYPE_ANR` 是否返回产物，仍受后台 trace、buffer（缓冲区）、系统限流和设备配置影响。
 
 在 warning 回调里临时调用 `requestProfiling()`，赶在 deadline 前产出结果的把握也不大。需要 prehistory（预警前历史）的诊断，应依靠系统环形 trace、平时记录的 breadcrumbs，或预先开启且经过开销验证的采集。
 
@@ -386,7 +386,7 @@ warning listener 本身不会启动系统 trace，也补不回注册前的历史
 
 - category：`debug.anr`；
 - instant name：`AnrWarningDetected`；
-- args：`anrId`、`errorId`、`anrTimeoutMs`、`consumedTimeMs`。
+- args（事件参数）：`anrId`、`errorId`、`anrTimeoutMs`、`consumedTimeMs`。
 
 最终 ANR 处理中，`ProcessErrorStateRecord` 还可以发出 `ANR Detected` instant。抓取配置需要启用 `debug.anr` Track Event category，详细配置见 [§9.2](02-anr-kernel-trace-diagnosis.md#3-android-17-中可用的数据源)。
 
@@ -452,13 +452,13 @@ AMS 按 UID 分发。同 UID 的多个已注册进程都可能收到同一 warni
 - 回调只复制轻量内存状态；
 - 多进程按 UID 投递语义去重；
 - warning 与 `ApplicationExitInfo.AnrInfo` 双向匹配；
-- 单独统计 recovered warning、matched ANR 和 ANR-without-warning（分别对应预警后恢复、匹配到最终 ANR、没有预警的 ANR）；
+- 单独统计 recovered（已恢复） warning（预警后恢复）、matched ANR（匹配到最终 ANR） 和 ANR-without-warning（分别对应预警后恢复、匹配到最终 ANR、没有预警的 ANR）；
 - 对 description 只做原文保留或容错聚类；
 - 在目标 build 上验证 feature flag、覆盖类型和剩余窗口。
 
 ### 公开预警 API 的版本与实现边界
 
-API 37 把 ANR 类型、预警载荷和 listener 注册放进了公开 API：它在 deadline 前提供 best-effort 信号，也让 warning id 能与事后的 `ApplicationExitInfo.AnrInfo` 对齐。它没有取代系统 ANR trace，也没有覆盖 Android 17 中的每一种 ANR 类型。
+API 37 把 ANR 类型、预警载荷和 listener 注册放进了公开 API：它在 deadline 前提供 best-effort（尽力而为、不保证到达） 信号，也让 warning id 能与事后的 `ApplicationExitInfo.AnrInfo` 对齐。它没有取代系统 ANR trace，也没有覆盖 Android 17 中的每一种 ANR 类型。
 
 这项能力适合补充已有监控：平时维护轻量 breadcrumbs，收到 warning 时复制一份小型状态快照，ANR 后再与 system trace 和退出记录合并。
 
@@ -466,7 +466,7 @@ API 37 把 ANR 类型、预警载荷和 listener 注册放进了公开 API：它
 
 应用接入方式明确后，我们还要沿 native producer、WMS 和 AMS 调用关系确认预警何时产生，以及它与正式 ANR deadline 的区别。先明确 InputDispatcher 的 pre-ANR（ANR 到期前预警）覆盖范围：
 
-- InputDispatcher pre-ANR 目前只覆盖 **no focused window**；
+- InputDispatcher pre-ANR 目前只覆盖 **no focused window（没有焦点窗口）**；
 - 已有窗口迟迟不确认输入事件的 **window unresponsive（窗口无响应）** 路径没有对应的 producer；
 - pre-ANR 受 feature flag 控制，是到期前按 best-effort 方式投递的 warning；
 - 正式 ANR 仍由原 deadline、WMS（WindowManagerService）责任判断，以及 AMS/AnrHelper 处理流程决定。
@@ -488,19 +488,19 @@ InputDispatcher 处理的两类超时都表现为“输入没有按期完成”�
 
 状态首次建立时保存：
 
-- 输入事件的 `eventTime` 与 `eventId`；
+- 输入事件的 `eventTime`（发生时间） 与 `eventId`（事件标识）；
 - 当前 focused application；
 - `timeoutEndTime`；
-- 本次实际 `timeoutDuration`；
+- 本次实际 `timeoutDuration`（超时时长）；
 - `notifiedPreAnr = false`。
 
 实际 timeout 来自 `focusedApplicationHandle->getDispatchingTimeout(DEFAULT_INPUT_DISPATCHING_TIMEOUT)`，因此每次都按 5 秒算并不成立。应用焦点改变、窗口出现或其他重置条件发生时，InputDispatcher 会清除这次等待。
 
 #### 1.2 window unresponsive
 
-窗口建立 connection 后，InputDispatcher 把等待确认的 `DispatchEntry`（一次事件派发记录）放进 wait queue，并用 `mAnrTracker` 快速找到最近的 deadline。到期后，它取 connection wait queue 中最老的事件来构造诊断 reason。
+窗口建立 connection 后，InputDispatcher 把等待确认的 `DispatchEntry`（一次事件派发记录）放进 wait queue，并用 `mAnrTracker` 快速找到最近的 deadline。到期后，它取 connection wait queue 中最老的事件来构造诊断 reason（原因描述）。
 
-源码特意说明：最老事件未必就是最早达到 deadline 的事件，因为窗口 timeout 可能变化；但应用通常按顺序处理输入，用最老事件解释现场更有诊断价值。因此，reason 中的 event 与精确触发 deadline 的 entry 可能不是同一条记录。
+源码特意说明：最老事件未必就是最早达到 deadline 的事件，因为窗口 timeout 可能变化；但应用通常按顺序处理输入，用最老事件解释现场更有诊断价值。因此，reason 中的 event 与精确触发 deadline 的 entry（队列项） 可能不是同一条记录。
 
 ### 2. `dispatchOnce()` 里的两次检查
 
@@ -514,7 +514,7 @@ nextWakeupTime = std::min({
 });
 ```
 
-这里的一次迭代不是 UI frame。两个函数会在一次 `dispatchOnce()` 循环中、持有 dispatcher lock（InputDispatcher 内部锁）时执行，返回值用于决定 `pollOnce()` 下一次何时醒来。
+这里的一次迭代不是 UI frame（界面帧）。两个函数会在一次 `dispatchOnce()` 循环中、持有 dispatcher lock（InputDispatcher 内部锁）时执行，返回值用于决定 `pollOnce()` 下一次何时醒来。
 
 `processPreAnrsLocked()` 当前只有一个具体分支：
 
@@ -529,7 +529,7 @@ nsecs_t InputDispatcher::processPreAnrsLocked() {
 }
 ```
 
-这段实现为未来增加其他 pre-ANR 类型保留了入口，但 `android-17.0.0_r1` 没有 window-unresponsive pre-ANR helper。`mAnrWarningCallbackInputDispatcherEnabled` 的初始值来自 `enable_anr_warning_callback_input_dispatcher` flag。
+这段实现为未来增加其他 pre-ANR 类型保留了入口，但 `android-17.0.0_r1` 没有 window-unresponsive pre-ANR helper（辅助函数）。`mAnrWarningCallbackInputDispatcherEnabled` 的初始值来自 `enable_anr_warning_callback_input_dispatcher` flag。
 
 ### 3. pre-ANR 时间公式
 
@@ -541,7 +541,7 @@ warning_at = timeout_end - pre_window
 consumed   = actual_timeout - (timeout_end - now)
 ```
 
-`IInputConstants.aidl` 把最小 pre-ANR window 定为 **2000 ms**，这个值还没有乘硬件系数。默认 dispatch timeout 是 **5000 ms**。两项 fallback 常量都会乘 `HwTimeoutMultiplier()`，该值来自产品配置属性 `ro.hw_timeout_multiplier`。
+`IInputConstants.aidl` 把最小 pre-ANR window 定为 **2000 ms**，这个值还没有乘硬件系数。默认 dispatch timeout 是 **5000 ms**。两项 fallback（默认备用） 常量都会乘 `HwTimeoutMultiplier()`，该值来自产品配置属性 `ro.hw_timeout_multiplier`。
 
 `max` 取两者中较长的一个作为 deadline 前的剩余窗口，warning 因此发得更早：默认情况下，留给诊断的时间不少于 2 秒。
 
@@ -583,7 +583,7 @@ flowchart TD
 
 `AnrTypes` 和 `ApplicationExitInfo.AnrInfo` 又由 `FLAG_INCLUDE_ANR_INFO` 标注。Android 17 `AnrTypes` 共 11 个取值（含 `ANR_TYPE_OTHER`），但这条 no-focused-window producer 只发送 `ANR_TYPE_INPUT_DISPATCH_NO_FOCUSED_WINDOW`。
 
-`AnrController.notifyPreAppUnresponsive()` 先解析 `InputApplicationHandle` 对应的 Activity。Activity 不存在、已经 stopped 或没有进程时，部分动作会被跳过。存在进程时，AMS warning 使用以下数据：
+`AnrController.notifyPreAppUnresponsive()` 先解析 `InputApplicationHandle` 对应的 Activity。Activity 不存在、已经 stopped（停止） 或没有进程时，部分动作会被跳过。存在进程时，AMS warning 使用以下数据：
 
 - UID：候选 Activity 所属应用的身份编号；
 - `anrId`：Native 输入事件 id；
@@ -602,10 +602,10 @@ WMS 的 `enableInputDispatcherLongMethodTracing` flag 开启时，pre-ANR 还会
 
 目标 PID 的选择有两种：
 
-1. 当前 focus holder 已经持有焦点至少一个 dispatch timeout 时，WMS 可以把它视为阻碍焦点切换的候选目标；
-2. 没有这样的 focus target 时，使用缺少 focused window 的 Activity 进程。
+1. 当前 focus holder（焦点持有者） 已经持有焦点至少一个 dispatch timeout 时，WMS 可以把它视为阻碍焦点切换的候选目标；
+2. 没有这样的 focus target（焦点目标） 时，使用缺少 focused window 的 Activity 进程。
 
-`LongMethodTracer` 通过基于信号的 native 机制请求固定时长的方法追踪。类注释写明，若目标进程在 tracing window 内或之后发生 ANR，采集信息会进入 ANR report。触发返回 `false`、进程退出或 flag 关闭，都可能导致产物缺失。
+`LongMethodTracer` 通过基于信号的 native 机制请求固定时长的方法追踪。类注释写明，若目标进程在 tracing window（追踪窗口） 内或之后发生 ANR，采集信息会进入 ANR report。触发返回 `false`、进程退出或 flag 关闭，都可能导致产物缺失。
 
 warning callback 与 Long Method Trace 是相互独立的动作。应用收到 callback 不表示追踪已经成功，追踪成功也不保证应用注册了 listener。
 
@@ -642,7 +642,7 @@ warning callback 与 Long Method Trace 是相互独立的动作。应用收到 c
 | `notifyNoFocusedWindowAnr()` | `INPUT_DISPATCH_NO_FOCUSED_WINDOW` | application handle |
 | `notifyWindowUnresponsive()` | `INPUT_DISPATCH_WINDOW_UNRESPONSIVE` | input token、可选 PID、reason |
 
-`InputManagerService.timeoutMessage()` 还会用 `SurfaceControl.getStalledTransactionInfo(pid)` 检查关联 surface 是否因 unsignaled fence 卡住。命中时，reason 会补充 layer、buffer id 和 frame number，提示可能存在 GPU hang。这些信息仍只是诊断上下文，WMS/AMS 还要继续解析责任进程。
+`InputManagerService.timeoutMessage()` 还会用 `SurfaceControl.getStalledTransactionInfo(pid)` 检查关联 surface（图形缓冲区提交目标） 是否因 unsignaled fence（尚未发出完成信号的图形同步栅栏） 卡住。命中时，reason 会补充 layer（图层）、buffer id 和 frame number，提示可能存在 GPU hang（GPU 长时间没有完成工作）。这些信息仍只是诊断上下文，WMS/AMS 还要继续解析责任进程。
 
 ### 8. `TimeoutRecord` 与 `ExpiredTimer` 的准确关系
 
@@ -667,14 +667,14 @@ timeoutRecord.setExpiredTimer(expiredTimer);
 
 两条路径的 duration 口径也不同：
 
-- no focused window 传入配置的 timeout threshold；
+- no focused window 传入配置的 timeout threshold（超时阈值）；
 - window unresponsive 传入 wait queue 最老 entry 截至 `onAnrLocked()` 的实际等待时长。
 
 后续 `ProcessErrorStateRecord.createAnrInfo()` 读取这个对象，生成 API 37 `ApplicationExitInfo.AnrInfo`。`includeAnrInfo` 关闭时不影响 ANR 检测，只会失去这份结构化关联数据。
 
 ### 9. WMS 归因可能改变责任进程
 
-no-focused-window warning 会先投给候选 Activity UID。到期后，`AnrController.notifyAppUnresponsive()` 还会查看当前 input focus。
+no-focused-window warning 会先投给候选 Activity UID。到期后，`AnrController.notifyAppUnresponsive()` 还会查看当前 input focus（输入焦点）。
 
 若当前 focus target 的 focus request age（等待焦点请求的时间）已经达到其 dispatch timeout，WMS 会尝试把正式 window-unresponsive 责任交给该 focus target；否则仍按原 Activity 处理。pre-ANR 的可选 long method trace 也用相同规则挑选候选 PID。
 
@@ -685,7 +685,7 @@ no-focused-window warning 会先投给候选 Activity UID。到期后，`AnrCont
 - 同 UID 内可用 `ApplicationExitInfo.AnrInfo` 关联；
 - 跨 UID 改归因时，普通 App 端读不到另一方退出历史。
 
-系统/OEM 平台应保留 event id、原 application token、focus target 和责任判断过程。普通应用的 APM（应用性能监控）只能把未匹配 warning 标成 recovered、unmatched 或 possible-reattribution（分别对应已恢复、未匹配、可能改判责任方），强行关联到本进程没有依据。
+系统/OEM 平台应保留 event id、原 application token、focus target 和责任判断过程。普通应用的 APM（应用性能监控）只能把未匹配 warning 标成 recovered、unmatched（未匹配） 或 possible-reattribution（分别对应已恢复、未匹配、可能改判责任方），强行关联到本进程没有依据。
 
 ### 10. AMS 与 AnrHelper
 
@@ -753,10 +753,10 @@ pre-ANR 代码附近还有两个常量：
 我们在 trace 里按以下顺序对齐：
 
 1. 找 warning 的 `(anrType, anrId)` 与 callback uptime；
-2. 找 WMS `notifyPreAppUnresponsive()` 和可选的 long-method trace；
+2. 找 WMS `notifyPreAppUnresponsive()` 和可选的 long-method trace（长方法追踪）；
 3. 检查 T0 到 deadline 期间 focused application/window 的变化；
-4. 找 `inputDispatchingTimedOut()` 与 ANR report 的 ErrorId；
-5. 用 main thread、Binder、fence、CPU 和 I/O 时间轴判断为何窗口没有出现。
+4. 找 `inputDispatchingTimedOut()` 与 ANR report 的 ErrorId（错误标识）；
+5. 用 main thread（主线程）、Binder、fence、CPU 和 I/O 时间轴判断为何窗口没有出现。
 
 Perfetto 不会自动生成固定的 `/data/anr` 产物。需要预先配置持续 trace、triggered trace（按事件触发的 trace）或 Profiling trigger，详见 [9.2 ANR 与 Kernel Trace 联合诊断](02-anr-kernel-trace-diagnosis.md)。
 
@@ -774,7 +774,7 @@ Perfetto 不会自动生成固定的 `/data/anr` 产物。需要预先配置持�
 #### 系统与 OEM
 
 - 分别验证 input warning、long method tracing 和 `includeAnrInfo` 三组 flag；
-- 在事件日志中保存 original activity、focus target 和最终 blamed target（被归责目标）；
+- 在事件日志中保存 original activity（最初 Activity）、focus target 和最终 blamed target（被归责目标）；
 - 记录 warning 生成、AMS 投递、listener 接收的三段延迟；
 - 测试自定义 dispatch timeout、硬件乘数和锁竞争；
 - 对 trace 失败、PID 已退出和跨 UID 改归因保留明确状态。

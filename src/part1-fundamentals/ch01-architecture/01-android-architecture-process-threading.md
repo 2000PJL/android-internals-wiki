@@ -219,17 +219,17 @@ consolidated_from:
 
 Android 的“五层架构”按职责划分系统组件，并不对应五个严格套叠的进程。我们从一个应用进程说起：它同时装着应用代码、Framework 客户端代码、ART 和原生库；`system_server` 既运行 Java 系统服务，也加载 JNI 庂；SurfaceFlinger 是独立的显示合成服务进程；HAL 既可能通过 Binder 提供跨进程服务，也可能在旧实现中作为共享库加载到调用方进程。
 
-这种分层仍适合用来确定排查方向。面对一次卡顿、启动慢或硬件访问延迟，我们先确定工作发生在哪个进程，再确认它通过 Binder、JNI、系统调用还是 HAL 接口进入下一个模块。进程、接口和调度状态共同构成证据，单看“属于哪一层”不足以定位问题。
+这种分层仍适合用来确定排查方向。面对一次卡顿、启动慢或硬件访问延迟（debounce），我们先确定工作发生在哪个进程，再确认它通过 Binder、JNI、系统调用还是 HAL 接口进入下一个模块。进程、接口和调度状态共同构成证据，单看“属于哪一层”不足以定位问题。
 
 定位架构问题时，先确认调用跨越了哪些系统层，再沿进程生命周期和线程调度寻找等待、抢占或回收发生的位置。三条线共同决定一次系统行为最终落在哪个进程、哪条线程以及哪个资源边界。
 
-> 源码基线：AOSP `android-17.0.0_r1`；内核 Android Common Kernel（ACK）`android17-6.18-2026-06_r6`。量产设备通常还会在 ACK 之上叠加片上系统（SoC）驱动、通用内核镜像（GKI）厂商模块与厂商调度策略，公共内核源码标签替代不了设备自己的内核提交版本与配置。
+> 源码基线：AOSP `android-17.0.0_r1`；内核 Android Common Kernel（ACK）`android17-6.18-2026-06_r6`。量产设备通常还会在 ACK 之上叠加片上系统（SoC）驱动、通用内核（Android Common Kernel，ACK）镜像（GKI）厂商模块与厂商调度策略，公共内核源码标签替代不了设备自己的内核提交版本（targetSdk）与配置。
 
 ## 系统分层、进程边界与跨层接口
 
 ### 五层分别解决什么问题
 
-Android 通常从上到下分为应用、应用框架、原生库与 ART、HAL、Linux 内核五层：
+Android 通常从上到下分为应用、应用框架（Framework）、原生库与 ART、HAL、Linux 内核五层：
 
 ```mermaid
 flowchart TB
@@ -258,7 +258,7 @@ flowchart TB
 
 ### 启动过程把这些层连在一起
 
-init 进程仍按 first stage、SELinux 访问控制初始化、second stage 三步执行。第二阶段的 init 解析 `.rc` 配置并启动 Zygote、SurfaceFlinger 等服务；Zygote 随后预加载常用类和资源，通过 `fork` 创建 `system_server`，再进入 socket 循环，等待创建应用进程的请求。
+init 进程仍按 first stage、SELinux 访问控制初始化、second stage 三步执行。第二阶段的 init 解析 `.rc` 配置并启动 Zygote（预加载 Android 运行环境、用于派生应用进程的模板进程）、SurfaceFlinger 等服务；Zygote（用于派生应用进程的模板进程） 随后预加载常用类和资源，通过 `fork` 创建 `system_server`，再进入 socket 循环，等待创建应用进程的请求。
 
 `frameworks/base/core/java/com/android/internal/os/ZygoteInit.java` 的 `main()` 给出了这条顺序：
 
@@ -289,7 +289,7 @@ init 进程仍按 first stage、SELinux 访问控制初始化、second stage 三
 
 所以 `Looper.loop()` 只说明主启动控制流进入了长期消息循环；要判断“Framework 全部 ready”，我们还要结合 `SystemServerTiming`/trace tag、具体服务的 `StartService ...` 片段、Binder 线程状态和 Boot Phase/`systemReady()` 事件，单看某个线程是否活跃判断不了。[来源: https://juejin.cn/post/7681897078311108623；已验证: frameworks/base/services/java/com/android/server/SystemServer.java 与 frameworks/base/services/core/java/com/android/server/SystemServiceManager.java @ android-17.0.0_r1]
 
-排查时可以把进程树、socket 和死亡重启分开取证：`ps -A -o PID,PPID,NAME,ARGS`（或 `/proc/<pid>/status` 的 `PPid`）用于确认 `system_server` 的父进程是否指向 Zygote；Zygote socket 只解释后续应用进程 fork 请求；若 `system_server` 退出，Zygote 的 SIGCHLD 处理路径会 `waitpid()` 匹配 `gSystemServerPid` 并杀死 Zygote，让 init 的 Zygote 服务监督链路接管后续重启。[已验证: frameworks/base/core/jni/com_android_internal_os_Zygote.cpp 与 system/core/rootdir/init.zygote64.rc @ android-17.0.0_r1]
+排查时可以把进程树、socket 和死亡重启分开取证：`ps -A -o PID（GID）,PPID（pid）,NAME,ARGS`（或 `/proc/<pid>/status` 的 `PPid`）用于确认 `system_server` 的父进程是否指向 Zygote；Zygote socket 只解释后续应用进程 fork 请求；若 `system_server` 退出，Zygote 的 SIGCHLD 处理路径会 `waitpid()` 匹配 `gSystemServerPid` 并杀死 Zygote，让 init 的 Zygote 服务监督链路接管后续重启。[已验证: frameworks/base/core/jni/com_android_internal_os_Zygote.cpp 与 system/core/rootdir/init.zygote64.rc @ android-17.0.0_r1]
 
 ```java
 // AOSP android-17.0.0_r1
@@ -327,7 +327,7 @@ Binder 由用户态 `libbinder` 与内核 Binder 驱动共同完成。`framework
 
 Binder 事务数据由驱动从发送方用户空间复制到接收方可映射的 Binder 缓冲区，常被概括为“一次拷贝”。但端到端延迟由整条请求决定：文件描述符转换、对象解析、权限检查、线程调度和目标服务执行，都在“一次拷贝”之外各自产生开销。
 
-SELinux 也在 Binder 事务路径上参与授权。ACK `android17-6.18-2026-06_r6` 的 `security/selinux/hooks.c` 中，`selinux_binder_transaction()` 会检查 `BINDER__CALL`；当前线程的 SELinux 安全标识符（SID）与事务发起方凭据的 SID 不同时，还会先检查 `BINDER__IMPERSONATE`，通过后再检查 `BINDER__CALL`。这里比较的是 SID，不能扩大成任意凭据字段差异。源码只能证明这些检查与条件存在；要写固定纳秒开销，需要同设备、同策略与同负载的测量。
+SELinux 也在 Binder 事务路径上参与授权。ACK `android17-6.18-2026-06_r6` 的 `security/selinux/hooks.c` 中，`selinux_binder_transaction()` 会检查 `BINDER__CALL`；当前线程的 SELinux 安全标识符（SID（uid））与事务发起方凭据的 SID 不同时，还会先检查 `BINDER__IMPERSONATE`，通过后再检查 `BINDER__CALL`。这里比较的是 SID，不能扩大成任意凭据字段差异。源码只能证明这些检查与条件存在；要写固定纳秒开销，需要同设备、同策略与同负载的测量（measure）。
 
 #### JNI：同一进程里的托管代码与原生代码边界
 
@@ -341,7 +341,7 @@ JNI 是同一进程内从 ART 托管执行环境进入原生函数的应用二�
 
 两种注解不能同时使用。`@CriticalNative` 只适用于没有托管对象参数、返回值或隐式 `this` 的原生方法，并改变 JNI ABI：原生实现的签名不带 `JNIEnv` 和 `jclass`。两种注解执行期间，GC 都无法按普通 JNI 路径挂起该线程，可能因此受阻；方法必须短小且耗时有界，不应执行大量 I/O 或获取可能长期持有的原生锁。
 
-兼容旧设备时还要区分版本：Android 8–13 已有相关实现，但没有 Android 14 起的 CTS 保证；Android 8–11 必须通过 `RegisterNatives` 显式注册，Android 12 起才支持动态查找，官方仍建议显式注册。Android 7 及以下会忽略这些注解，`@CriticalNative` 的 ABI 不匹配可能导致参数传递错误和崩溃。[JNI tips](https://developer.android.com/ndk/guides/jni-tips#fast_critical_native) 给出了这些限制。
+兼容旧设备时还要区分版本（`targetSdk`）：Android 8–13 已有相关实现，但没有 Android 14 起的 CTS 保证；Android 8–11 必须通过 `RegisterNatives` 显式注册，Android 12 起才支持动态查找，官方仍建议显式注册。Android 7 及以下会忽略这些注解，`@CriticalNative` 的 ABI 不匹配可能导致参数传递错误和崩溃。[JNI tips](https://developer.android.com/ndk/guides/jni-tips#fast_critical_native) 给出了这些限制。
 
 是否值得调整，要用目标设备上的基准和调用栈判断：空 JNI 基准测出的纳秒数，代表不了包含字符串、数组、锁和 I/O 的业务调用。
 
@@ -362,7 +362,7 @@ HIDL 时代需要区分两种传输：
 
 HIDL 从 Android 13 起废弃，既有实现仍受支持；新 HAL 接口应优先使用 Stable AIDL，上游接口仍为 HIDL 时则按该接口实现。用于 `system`/`vendor` 边界的 AIDL HAL 以 Binder 服务运行，需要在类型上声明 `@VintfStability`，在 `aidl_interface` 中设置 `stability: "vintf"`，加入 VINTF 清单并满足接口冻结等 VTS 检查。旧 HIDL HAL 仍可能为了兼容已有 vendor 镜像而保留；即便在 Android 17 设备上，仅凭系统版本也判断不了全部 HAL 是否都已迁移。
 
-Stable AIDL 还约束运行时后端。vendor 原生代码应使用 NDK 后端并链接 `libbinder_ndk`，通过 `/dev/binder` 通信；不能直接依赖不稳定的 `libbinder` C++ 接口。直接使用 `libbinder` 仅限 `system`/`system_ext`。Java 后端不能在 vendor 分区与 ServiceManager 通信，vendor 分区在 API 34 之后也不能使用新增的 System API。接口稳定性声明不能替代这些分区与后端限制。
+Stable AIDL 还约束运行时（ART）后端。vendor 原生代码应使用 NDK 后端并链接 `libbinder_ndk`，通过 `/dev/binder` 通信；不能直接依赖不稳定的 `libbinder` C++ 接口。直接使用 `libbinder` 仅限 `system`/`system_ext`。Java 后端不能在 vendor 分区与 ServiceManager 通信，vendor 分区在 API 34 之后也不能使用新增的 System API。接口稳定性声明不能替代这些分区与后端限制。
 
 排查 HAL 延迟时按实际传输模式处理：
 
@@ -375,7 +375,7 @@ Stable AIDL 还约束运行时后端。vendor 原生代码应使用 NDK 后端�
 
 #### 16 KB 页大小
 
-从 Android 15 开始，AOSP 支持配置为 16 KB 页大小的设备。应用及其全部库、SDK 都只包含 Java/Kotlin 代码时，不需要为 ELF 对齐做改造，但仍应在 16 KB 环境中回归测试；包含 NDK 编译的库或通过 SDK 间接引入 `.so` 时，需要检查 ELF 的 `LOAD` 段，以及 APK 内未压缩原生库的 ZIP 对齐。
+从 Android 15 开始，AOSP 支持配置为 16 KB 页大小的设备。应用及其全部库、SDK 都只包含 Java/Kotlin 代码时，不需要为 ELF（Android 原生可执行文件和共享库使用的二进制格式） 对齐做改造，但仍应在 16 KB 环境中回归测试；包含 NDK 编译的库或通过 SDK 间接引入 `.so` 时，需要检查 ELF 的 `LOAD` 段，以及 APK 内未压缩原生库的 ZIP 对齐。
 
 设备运行时页大小可直接读取：
 
@@ -484,7 +484,7 @@ Android 应用可以创建线程，却不能自行决定进程能活多久。系
 
 - 进程不存在时，启动组件要先由 Zygote（模板进程）创建进程，再经过应用绑定和组件调度，冷启动路径因此更长。
 - 缓存进程能缩短应用切回时间，但会占用内存；系统必须在切回速度与前台可用内存之间取舍。
-- 一个线程即使还在运行，如果所属进程中没有系统认可的活跃组件，进程仍可能进入缓存态并被终止。
+- 一个线程即使还在运行，如果所属进程中没有系统认可的活跃组件，进程仍可能进入缓存态（cached）并被终止。
 
 分析这类问题时，我们把四件事分开看：应用代码是否还有工作、AMS 认为进程处于什么状态、内核是否允许它获得 CPU、低内存策略是否把它列为候选。
 
@@ -562,8 +562,8 @@ USAP（Unspecialized App Process）池改变的是“从哪个预备进程完成
 进程状态相关实现已经进入 `com.android.server.am.psc`，还用“AMS 调用一个旧版 `OomAdjuster.java`”来概括就过时了：
 
 1. Activity、Service、Broadcast 等管理模块把组件和依赖变化交给 `ProcessStateController`。
-2. `ProcessStateController` 提交待处理事件，并触发局部或全量的 OOM 优先级调整。
-3. `OomAdjusterImpl.computeOomAdjLSP()` 从最重要条件开始计算 `adj`、`procState`、`schedGroup` 和能力标志。
+2. `ProcessStateController` 提交待处理事件，并触发局部或全量的 OOM 优先级调整（adjustment）。
+3. `OomAdjusterImpl.computeOomAdjLSP()` 从最重要条件开始计算 `adj`、`procState`、`schedGroup` 和能力标志（capability）。
 4. 依赖遍历继续修正服务端、Provider 端及其他可达进程的结果。
 5. 计算值提交后，回调更新调度组、缓存进程冻结器（freezer）、统计信息，并把 OOM 优先级同步给 `lmkd`。
 
@@ -673,7 +673,7 @@ Android 17 新增 `mmd`，用来集中处理 ZRAM 的配置、参数和持续维
 
 启用 `mmd.zram.enabled` 管理 ZRAM 后，`swapon_all` 中原有的 ZRAM 配置步骤不再执行，`config.xml` 的 `config_zramWriteback` 和 `ro.zram.*` 写回属性也会被忽略。迁移设备配置时应先确认由哪套实现管理 ZRAM，避免修改已经失效的旧参数。
 
-`CachedAppOptimizer` 还可以在缓存进程压缩后，经进程文件描述符（pidfd）请求 `mmd.asyncWritebackProcessZramMemory()`；用户重新启动已写回的缓存进程时，可以调用 `asyncPrefetchProcessZramMemory()`，减少从后备存储恢复页面造成的主要缺页——这类 major fault 要靠存储 I/O 才能把页面补回来。是否启用、是否有后备块设备以及具体参数都属于产品配置，按进程写回不是每台设备都有。
+`CachedAppOptimizer` 还可以在缓存进程压缩后，经进程文件描述符（pidfd）请求 `mmd.asyncWritebackProcessZramMemory()`；用户重新启动已写回的缓存进程时，可以调用 `asyncPrefetchProcessZramMemory()`，减少从后备存储恢复页面造成的主要缺页（major fault，即需要存储 I/O 才能补回页面）——这类 major fault 要靠存储 I/O 才能把页面补回来。是否启用、是否有后备块设备以及具体参数都属于产品配置，按进程写回不是每台设备都有。
 
 这条新路径改变的是缓存进程的内存驻留和再次启动代价，并没有取消 OOM 优先级调整、冻结器或 `lmkd`。
 
@@ -715,7 +715,7 @@ adb logcat -b events -b system | grep -Ei 'lmkd|lowmemory|freez'
 
 1. 进程的重要组件何时消失，`procState` 与 `adj` 何时改变；
 2. 调度组和冻结状态是否随后改变；
-3. PSI、交换空间与页面淘汰后的再次访问（refault）是否显示持续内存压力；
+3. PSI、交换空间（swap）与页面淘汰后的再次访问（refault）是否显示持续内存压力；
 4. 进程是被冻结、被 `lmkd` 终止，还是因其他原因退出；
 5. 下次返回应用时，是原进程解冻、ZRAM 页面预取，还是创建了新进程。
 
@@ -873,7 +873,7 @@ Binder 线程池使用另一条等待路径：Binder 工作线程通过 Binder �
 `postDelayed()` 和 `sendMessageAtTime()` 表达的是“到这个时刻后才有资格执行”，不是“保证在这个时刻执行”。消息到期后仍可能受以下因素影响：
 
 - 队列前方正在执行的长消息；
-- 同步屏障对同步消息的阻挡；
+- 同步屏障（暂时阻止普通同步消息，只允许异步消息越过）对同步消息的阻挡；
 - 线程处于可运行（Runnable）状态，但仍在等待 CPU；
 - 进程冻结、省电策略或系统负载；
 - 系统时钟和休眠语义。
@@ -893,7 +893,7 @@ Binder 线程池使用另一条等待路径：Binder 工作线程通过 Binder �
 主线程主要负责：
 
 - 执行动画和 View 回调；
-- 测量与布局；
+- 测量与布局（layout）；
 - 遍历 View 树并记录显示列表；
 - 把本帧状态同步给渲染管线。
 
@@ -1001,7 +1001,7 @@ class UserRepository(
 
 不要依赖 `Dispatchers.Default` 或 `Dispatchers.IO` 当前的具体线程数。它们会随 Kotlin 版本、系统属性和运行环境调整。协程在挂起后也可能由另一个工作线程继续执行，因此普通 `ThreadLocal` 无法自动保留跨挂起点的上下文；需要时使用协程上下文或 `ThreadLocal.asContextElement()`。
 
-结构化并发要求每项任务都有明确的作用域，由页面、`ViewModel`、服务或应用级组件持有；生命周期结束时，取消操作才能从父任务传播到子任务。任务运行在哪条线程，和哪个组件负责管理、取消它，是两回事。
+结构化并发要求每项任务都有明确的作用域（scope），由页面、`ViewModel`、服务或应用级组件持有；生命周期结束时，取消操作才能从父任务传播到子任务。任务运行在哪条线程，和哪个组件负责管理、取消它，是两回事。
 
 #### WorkManager 用于持久任务调度
 
@@ -1040,7 +1040,7 @@ Android Java 层的 `Process.setThreadPriority()` 调整的是 Linux 的 `nice` 
 
 在 ACK `android17-6.18-2026-06_r6` 中，普通 `SCHED_NORMAL`/`SCHED_BATCH` 线程进入公平调度类。`kernel/sched/fair.c` 使用 EEVDF，根据任务何时具备调度资格和虚拟截止时间来选择下一个可运行任务。`nice` 值会改变调度权重和虚拟时间推进方式，不会把 CPU 简单切成固定份额。
 
-Android 还通过任务配置（task profile）、cgroup 和 cpuset 管理进程或线程。`task_profiles.json` 为后台、前台、顶层应用等组设置不同的性能、I/O、timer slack 和 CPU 容量配置；设备厂商可以覆盖这些配置。所以“前台组必定运行在某几颗大核”并不是跨设备成立的结论。
+Android 还通过任务配置（task profile）、cgroup 和 cpuset 管理进程或线程。`task_profiles.json` 为后台、前台、顶层应用（top app）等组设置不同的性能、I/O、timer slack 和 CPU 容量配置；设备厂商可以覆盖这些配置。所以“前台组必定运行在某几颗大核”并不是跨设备成立的结论。
 
 #### 实时调度与 CPU 亲和性的适用场景
 
@@ -1078,9 +1078,9 @@ CPU 密集型任务应使用有界并行度，并以目标设备上的吞吐量�
 3. 对长区间展开线程状态（thread state），区分线程正在使用 CPU（on-CPU）、等待 CPU 还是阻塞；
 4. 可运行状态持续很久时，查看 CPU 是否被更高优先级或大量线程占用；
 5. 阻塞时沿唤醒事件（wakeup）、futex、Binder、I/O 或锁持有者寻找真正负责唤醒它的线程或事件；
-6. 回到源码确认时间片段对应的执行边界，再决定优化业务、并行度还是跨线程协议。
+6. 回到源码确认时间片段（slice）对应的执行边界，再决定优化业务、并行度还是跨线程协议。
 
-主线程睡在 `Looper` 的轮询等待中，通常表示“当前没有到期消息”，本身不是卡顿证据。相反，如果关键消息已到期而主线程仍被前一条消息占用，才需要缩短那条消息的执行路径。
+主线程睡在 `Looper` 的轮询等待（native poll）中，通常表示“当前没有到期消息”，本身不是卡顿证据。相反，如果关键消息已到期而主线程仍被前一条消息占用，才需要缩短那条消息的执行路径。
 
 ### Android 17 的虚拟线程边界
 

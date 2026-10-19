@@ -69,9 +69,9 @@ sources:
   path: packages/SystemUI/plugin_core/src/com/android/systemui/plugins/Plugin.kt
 ---
 
-# App Widget 更新性能：RemoteViews IPC 与 Glance 渲染
+# App Widget 更新性能：RemoteViews IPC（进程间通信） 与 Glance 渲染
 
-App Widget 的界面绘制发生在宿主进程：提供方生成 `RemoteViews` 交给 `system_server` 校验和缓存，再由 Launcher、SystemUI 或其他实现了 `AppWidgetHost` 的宿主创建 View、执行属性动作并绘制。我们在这套 IPC 模型下做优化，重点就是减少重复更新和无效动作，控制布局创建、集合数据与图像内存的成本。
+App Widget 的界面绘制发生在宿主进程：提供方生成 `RemoteViews` 交给 `system_server`（承载多数系统服务的系统进程） 校验和缓存，再由 Launcher（桌面启动器）、SystemUI（系统界面进程） 或其他实现了 `AppWidgetHost` 的宿主创建 View、执行属性动作并绘制。我们在这套 IPC 模型下做优化，重点就是减少重复更新和无效动作，控制布局创建、集合数据与图像内存的成本。
 
 > 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；Glance 以 1.2.0 为准。文中讨论的更新、缓存和宿主应用逻辑都发生在 Android 框架与 Jetpack 库中，不延伸到内核实现。
 
@@ -119,7 +119,7 @@ sequenceDiagram
 
 ### 2. `apply()` 与 `reapply()` 由宿主选择
 
-`AppWidgetHostView.applyRemoteViews()` 先选择适合当前尺寸的 `RemoteViews`，再判断现有 View 能否复用。同步路径调用 `canRecycleView(mView)`：布局与现有 View 满足复用条件时执行 `reapply()`，否则由 `apply()` 创建新内容；宿主配置了异步 `Executor` 时，代码进入 `inflateAsync()`，按同样的判断分别调用 `reapplyAsync()` 或 `applyAsync()`。复用与否由宿主决定，提供方没有强制宿主执行 `reapply()` 的公开接口。
+`AppWidgetHostView.applyRemoteViews()` 先选择适合当前尺寸的 `RemoteViews`，再判断现有 View 能否复用。同步路径调用 `canRecycleView(mView)`：布局与现有 View 满足复用条件时执行 `reapply()`，否则由 `apply()` 创建新内容；宿主配置了异步 `Executor`（执行任务的线程调度接口） 时，代码进入 `inflateAsync()`，按同样的判断分别调用 `reapplyAsync()` 或 `applyAsync()`。复用与否由宿主决定，提供方没有强制宿主执行 `reapply()` 的公开接口。
 
 下面这些变化容易让复用条件失效，或增加宿主的工作量：
 
@@ -301,7 +301,7 @@ Android 17 / API 37 为 `AlarmManager` 增加了带 `Executor` 的监听器重�
 
 `mMaxWidgetBitmapMemory = 6 × displayWidth × displayHeight`
 
-源码注释给出的含义是 1.5 个屏幕、每像素 4 字节。对非系统 UID 提交的非空快照，服务会在缓存合并或替换后检查 `RemoteViews` 的图像估算值。`targetSdkVersion` 不高于 37 时，强制上限只计普通位图缓存，超限会清空该 Widget 的缓存并抛出 `IllegalArgumentException`；`Icon` 对象内携带的位图会计入总量，总量超限时记录警告。所以应用仍应合并估算普通位图与 `Icon` 的内存，仅凭“没有抛异常”判断快照大小，会漏掉只告警的超限。
+源码注释给出的含义是 1.5 个屏幕、每像素 4 字节。对非系统 UID（Android 用来标识应用身份的 Linux 用户编号） 提交的非空快照，服务会在缓存合并或替换后检查 `RemoteViews` 的图像估算值。`targetSdkVersion` 不高于 37 时，强制上限只计普通位图缓存，超限会清空该 Widget 的缓存并抛出 `IllegalArgumentException`；`Icon` 对象内携带的位图会计入总量，总量超限时记录警告。所以应用仍应合并估算普通位图与 `Icon` 的内存，仅凭“没有抛异常”判断快照大小，会漏掉只告警的超限。
 
 这个上限随设备显示尺寸变化，写死成 1 MB、8 MB 或某个机型的实测值都套不上。设计时仍应让峰值显著低于系统上限——同一宿主还要同时处理桌面、其他 Widget 和自身图形资源。
 
@@ -310,7 +310,7 @@ Android 17 / API 37 为 `AlarmManager` 增加了带 `Executor` 的监听器重�
 - 静态图标和背景优先使用资源 ID，让宿主按资源加载。
 - 网络图片按 Widget 实际显示尺寸解码，避免把相机原图缩放后再塞入 `RemoteViews`。
 - 相同位图在一次快照中尽量复用，避免内容相同却创建多个对象。
-- 使用内容 URI 时确认目标宿主具备读权限，并保证 URI 生命周期覆盖显示周期。
+- 使用内容 URI（统一资源标识符） 时确认目标宿主具备读权限，并保证 URI 生命周期覆盖显示周期。
 - 提交新图片前先取消已经过时的下载或解码任务，防止旧请求覆盖新状态。
 - 集合中的缩略图要按总量估算，只盯着单项大小会漏算。
 
@@ -332,7 +332,7 @@ Android 17 / API 37 为 `AlarmManager` 增加了带 `Executor` 的监听器重�
 
 ### 1. Glance 使用 Compose Runtime，输出仍是 `RemoteViews`
 
-Glance 1.2.0 建立在 Compose Runtime 上，用声明式 API 生成 App Widget 内容：Compose Runtime 根据状态执行可组合函数并形成界面描述，Glance 再把这份描述转换成 `RemoteViews`。这一步不经过 Compose UI 的 `LayoutNode` 和绘制管线——`LayoutNode` 是 Compose UI 内部的布局节点——也不支持任意 Compose UI 可组合组件，应用页面中的 Compose UI 组件不能直接放到桌面。
+Glance 1.2.0 建立在 Compose Runtime 上，用声明式 API 生成 App Widget 内容：Compose Runtime 根据状态执行可组合函数并形成界面描述，Glance 再把这份描述转换成 `RemoteViews`。这一步不经过 Compose UI 的 `LayoutNode`（Compose UI 内部的布局节点） 和绘制管线——`LayoutNode` 是 Compose UI 内部的布局节点——也不支持任意 Compose UI 可组合组件，应用页面中的 Compose UI 组件不能直接放到桌面。
 
 一次 Glance 更新大致包含：
 
@@ -342,7 +342,7 @@ Glance 1.2.0 建立在 Compose Runtime 上，用声明式 API 生成 App Widget 
 4. 通过 AppWidget 更新接口交给系统；
 5. 由宿主应用并绘制结果。
 
-Glance 1.2.0 的 `GlanceAppWidget` 会在 WorkManager 的协程工作单元 `CoroutineWorker` 中执行 `provideGlance()`；内部会话类 `AppWidgetSession` 把组合结果转换成 `RemoteViews`，再调用 `AppWidgetManager.updateAppWidget()`。Glance 简化了状态到 Widget 界面的映射，但 Binder、服务端缓存、宿主布局创建和图像上限都还在，性能分析要覆盖完整跨进程路径。
+Glance 1.2.0 的 `GlanceAppWidget` 会在 WorkManager 的协程工作单元 `CoroutineWorker`（用 Kotlin 协程执行任务的 WorkManager 工作单元） 中执行 `provideGlance()`；内部会话类 `AppWidgetSession` 把组合结果转换成 `RemoteViews`，再调用 `AppWidgetManager.updateAppWidget()`。Glance 简化了状态到 Widget 界面的映射，但 Binder、服务端缓存、宿主布局创建和图像上限都还在，性能分析要覆盖完整跨进程路径。
 
 同一个 `provideGlance()` 仍在运行时，再次调用 `update()` 不会重启它。需要展示的新数据应先写入 Glance 能观察到的状态，由现有会话重新组合；反复调用 `update()` 替代不了状态同步。
 
@@ -435,7 +435,7 @@ adb shell dumpsys appwidget
 - 区分完整更新、局部更新与集合刷新；
 - 同时记录宿主首次创建布局和复用现有布局的更新；
 - 报告多次样本的分布，不用单次最小值代表结果；
-- 检查省电模式、应用待机分桶和工作资料状态。
+- 检查省电模式、应用待机分桶（系统按活跃度限制后台资源的等级）和工作资料状态。
 
 若优化只减少了提供方构造时间，而宿主的布局或绘制没有变化，应如实限定收益范围。
 

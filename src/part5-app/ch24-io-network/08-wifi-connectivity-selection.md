@@ -78,11 +78,11 @@ last_idle_audit_at: '2026-10-02T18:35:34+08:00'
 
 # Wi-Fi 评分、网络选择与连接切换性能
 
-应用看到的“网络可用”，背后是系统的两层选择：Wi-Fi 模块先在可连接的 AP 里挑出要连的网络，Connectivity 模块再在 Wi-Fi、蜂窝、以太网、VPN 等并存网络中，为应用或系统提出的网络请求选出满足条件的那一个。两层决策用的输入不一样，这篇文章把它们拆开讲清楚。
+应用看到的“网络可用”，背后是系统的两层选择：Wi-Fi 模块先在可连接的 AP（access point，无线接入点） 里挑出要连的网络，Connectivity 模块再在 Wi-Fi、蜂窝、以太网、VPN 等并存网络中，为应用或系统提出的网络请求选出满足条件的那一个。两层决策用的输入不一样，这篇文章把它们拆开讲清楚。
 
 > 源码基线：AOSP `android-17.0.0_r1`；平台 Android 17，API 37。
 
-Wi-Fi 图标、RSSI、`NET_CAPABILITY_VALIDATED` 和业务接口成功，分别对应无线关联、无线信号、系统探测到公网可达，以及目标服务可用这四件事，同一个时刻它们完全可能给出不同的结果。所以排查连接切换时，我们要把系统选择事件、HTTP 请求过程和业务恢复时刻分开记录。连接池、TLS 与 HTTP 协议细节见 [12.1 网络请求](../../part2-performance/ch12-apk-network/01-android-network-tls-performance.md)、[24.5 移动网络架构、连接生命周期与容灾策略](05-mobile-network-connection-resilience.md) 和 [24.6 HTTP/2、HTTP/3、gRPC 与 ECH](06-http2-http3-grpc-ech.md)。
+Wi-Fi 图标、RSSI（received signal strength indicator，接收信号强度）、`NET_CAPABILITY_VALIDATED` 和业务接口成功，分别对应无线关联、无线信号、系统探测到公网可达，以及目标服务可用这四件事，同一个时刻它们完全可能给出不同的结果。所以排查连接切换时，我们要把系统选择事件、HTTP 请求过程和业务恢复时刻分开记录。连接池、TLS 与 HTTP 协议细节见 [12.1 网络请求](../../part2-performance/ch12-apk-network/01-android-network-tls-performance.md)、[24.5 移动网络架构、连接生命周期与容灾策略](05-mobile-network-connection-resilience.md) 和 [24.6 HTTP/2、HTTP/3、gRPC 与 ECH](06-http2-http3-grpc-ech.md)。
 
 ## 系统怎样选出默认网络
 
@@ -104,21 +104,21 @@ Wi-Fi 扫描结果
   → App 通过 ConnectivityManager 观察默认网络变化
 ```
 
-顺着这张图看，Wi-Fi 模块回答“连接哪个 Wi-Fi 网络或 BSSID”，Connectivity 模块回答“哪个 `Network` 满足某个 `NetworkRequest`”。`Network` 是 Android 对一条可用网络路径的句柄，`NetworkRequest` 是传输类型与网络能力等条件的集合。我们平时说的默认网络，只是系统请求中的一类；VPN 还可能让不同 UID 看到不同的应用默认网络。
+顺着这张图看，Wi-Fi 模块回答“连接哪个 Wi-Fi 网络或 BSSID（basic service set identifier）”，Connectivity 模块回答“哪个 `Network` 满足某个 `NetworkRequest`”。`Network` 是 Android 对一条可用网络路径的句柄，`NetworkRequest` 是传输类型与网络能力等条件的集合。我们平时说的默认网络，只是系统请求中的一类；VPN 还可能让不同 UID（user identifier，Android 中标识应用身份的整数） 看到不同的应用默认网络。
 
 ### Wi-Fi 模块怎样决定连哪个网络
 
 #### 当前连接是否需要重选
 
-选网的入口，是判断当前连接还要不要留。`WifiNetworkSelector.isNetworkSufficient()` 依次检查连接状态、用户近期选择、OSU、外部评分器给出的可用性、连接分数、OEM 标记、计费属性、历史无互联网状态、IP 配置以及无线质量。其中 OSU 是 Hotspot 2.0 的在线注册流程；OEM paid/private 表示设备厂商或运营商标记的付费网络、专用网络。
+选网的入口，是判断当前连接还要不要留。`WifiNetworkSelector.isNetworkSufficient()` 依次检查连接状态、用户近期选择、OSU（Online Sign-Up）、外部评分器给出的可用性、连接分数、OEM 标记、计费属性、历史无互联网状态、IP 配置以及无线质量。其中 OSU 是 Hotspot 2.0 的在线注册流程；OEM paid/private 表示设备厂商或运营商标记的付费网络、专用网络。
 
 只有 RSSI 不足且收发流量也不活跃时，无线质量这一项才判为不足。这段逻辑使用 Wi-Fi 子系统内部状态和设备配置可覆盖的资源值，我们在应用侧光靠 RSSI 还原不出这项判断。官方《Wi-Fi 网络选择》页面主要描述 Android 12 行为，并提示后续版本应以对应版本的 AOSP 源码为准。
 
 #### 扫描结果怎样过滤、候选怎样提名
 
-`WifiNetworkSelector.filterScanResults()` 先做排除，低于入网 RSSI 阈值、命中 BSSID 阻止列表、被 MBO/OCE 拒绝关联、不满足设备管理策略或使用已弃用安全类型的结果，都进不了候选。MBO 与 OCE 是 Wi-Fi 联盟定义的接入管理和连接优化能力。在这些过滤条件生效前，已连接的当前 BSSID 会先保留；当前 BSSID 未出现在一次扫描中时，源码还可能放弃本轮选择，避免不完整的扫描结果触发不必要的切换。
+`WifiNetworkSelector.filterScanResults()` 先做排除，低于入网 RSSI 阈值、命中 BSSID 阻止列表、被 MBO（Multi Band Operation）/OCE（Optimized Connectivity Experience） 拒绝关联、不满足设备管理策略或使用已弃用安全类型的结果，都进不了候选。MBO 与 OCE 是 Wi-Fi 联盟定义的接入管理和连接优化能力。在这些过滤条件生效前，已连接的当前 BSSID 会先保留；当前 BSSID 未出现在一次扫描中时，源码还可能放弃本轮选择，避免不完整的扫描结果触发不必要的切换。
 
-`getCandidatesFromScan()` 调用已注册的 nominator 产生候选，包括已保存网络、应用通过 `WifiNetworkSuggestion` 提交的 Suggestion 网络等，并把当前连接留在候选集合中。`selectNetwork()` 再把候选交给当时活动的 `CandidateScorer` 选出结果，并应用兼容旧版用户选择的逻辑。系统预设的评分器是 `ThroughputScorer`。
+`getCandidatesFromScan()` 调用已注册的 nominator（候选提名器） 产生候选，包括已保存网络、应用通过 `WifiNetworkSuggestion` 提交的 Suggestion 网络等，并把当前连接留在候选集合中。`selectNetwork()` 再把候选交给当时活动的 `CandidateScorer`（候选评分器） 选出结果，并应用兼容旧版用户选择的逻辑。系统预设的评分器是 `ThroughputScorer`。
 
 #### 候选如何评分
 
@@ -135,7 +135,7 @@ Wi-Fi 扫描结果
 | 历史无互联网、IP 配置超时 | 降低或清除部分奖励 | 与当前回调中的 `VALIDATED` 不是同一项状态 |
 | 近期用户选择 | 在配置窗口内获得显著奖励 | 保护时间与强度可被设备配置改变 |
 
-这些参数由 `ScoringParams` 和资源覆盖控制，资源覆盖指设备厂商对 AOSP 默认资源值的替换，两者决定入网阈值、足够 RSSI、吞吐奖励和多个优先级参数。所以旧资料里的固定阈值只说明特定版本的 AOSP 默认配置，跨版本、跨厂商参考时，要以目标设备的实际配置为准。
+这些参数由 `ScoringParams` 和资源覆盖（设备厂商对 AOSP 默认资源值的替换）控制，资源覆盖指设备厂商对 AOSP 默认资源值的替换，两者决定入网阈值、足够 RSSI、吞吐奖励和多个优先级参数。所以旧资料里的固定阈值只说明特定版本的 AOSP 默认配置，跨版本、跨厂商参考时，要以目标设备的实际配置为准。
 
 ### ConnectivityService 与 NetworkRanker 怎样排序请求
 
@@ -178,7 +178,7 @@ Wi-Fi 模块选出自己的网络之后，轮到 Connectivity 排序：先保留
 | 响应头等待 | 同一次交换的请求结束事件 | `responseHeadersStart` | 上传、网络往返、网关和服务端共同等待 |
 | 业务恢复 | 业务操作进入等待或失败 | 首次满足业务语义的成功结果 | 用户可感知的中断时间 |
 
-默认网络切换的起点，记在 `onAvailable(new)` 上。对默认网络回调而言，它表示回调已经开始跟踪新的最佳网络，之后不会再接收旧网络的事件；`onLost()` 只在正在跟踪的默认网络丢失且没有替代网络时，才表示应用失去默认网络，拿 `onLost(old)` 当切换起点会错位。
+默认网络切换的起点，记在 `onAvailable(new)` 上。对默认网络回调（default callback）而言，它表示回调已经开始跟踪新的最佳网络，之后不会再接收旧网络的事件；`onLost()` 只在正在跟踪的默认网络丢失且没有替代网络时，才表示应用失去默认网络，拿 `onLost(old)` 当切换起点会错位。
 
 OkHttp 的事件序列要整段保留，压成“每种事件只留一个时间戳”会丢掉中间过程。重试、重定向和认证会在同一个 `Call` 中产生多组 DNS、连接、请求和响应事件；复用既有连接时没有 DNS 与 `connect` 事件；双工请求的收发事件还可能交错。
 
@@ -316,7 +316,7 @@ class TimelineEventListener(
 
 这张表帮我们把结论限定在正确的层级：能力字段描述系统掌握的网络属性，业务到底可不可用，要靠一次真实请求回答。
 
-`NetworkMonitor` 会在目标 `Network` 上执行 DNS 与 HTTP/HTTPS 探测，并根据成功、登录门户、部分连通等结果更新 Connectivity。探测 URL、代理、Private DNS 与设备配置都可能影响结果，其中 Private DNS 指 Android 对 DNS-over-TLS 的系统配置。据此有一组处理原则：
+`NetworkMonitor` 会在目标 `Network` 上执行 DNS 与 HTTP/HTTPS 探测，并根据成功、登录门户、部分连通等结果更新 Connectivity。探测 URL、代理、Private DNS（Android 对 DNS-over-TLS 的系统配置） 与设备配置都可能影响结果，其中 Private DNS 指 Android 对 DNS-over-TLS 的系统配置。据此有一组处理原则：
 
 - 没有应用默认网络时，普通默认绑定请求建不了新连接；显式请求的其他网络要单独判断。
 - 有 `INTERNET` 但没有 `VALIDATED` 时，可展示离线数据并降低后台重试，把可用的操作留给用户。
@@ -332,7 +332,7 @@ class TimelineEventListener(
 
 #### 1. 用 NetworkCallback 维护网络状态记录
 
-`registerDefaultNetworkCallback()` 的当前 API 文档和 Android 17 源码都要求 `ACCESS_NETWORK_STATE`。
+`registerDefaultNetworkCallback()` 的当前 API 文档和 Android 17 源码都要求 `ACCESS_NETWORK_STA（同时工作的两个 Wi-Fi 终端接口）TE`。
 
 Android 开发者指南在机制概述中说明，使用 `NetworkCallback` 等方式观察连接状态没有统一的额外权限；同一段也要求按具体方法文档检查权限，`registerDefaultNetworkCallback()` 所需的声明，仍以该方法自己的文档为准。
 
@@ -463,11 +463,11 @@ class DefaultNetworkTracker(
 
 连接层附近的失败要区分原因。官方文档说明，新连接在默认网络变化后使用新网络，旧默认网络上的既有连接稍后会被系统终止；应用不需要在每次 `onAvailable()` 时销毁共享 `OkHttpClient` 或清空整个连接池，这么做还会破坏仍可复用的健康连接。
 
-- DNS 返回多个地址时保留全部结果，让 OkHttp 的路由重试与 `fast fallback` 有选择空间；fast fallback 会错开尝试备用地址，以较快成功的连接继续。
-- HTTPS URL 始终保留原主机名；把 URL 改成 IP 会破坏 SNI、证书校验和虚拟主机路由，SNI 指 TLS 握手中携带目标主机名的扩展。
+- DNS 返回多个地址时保留全部结果，让 OkHttp 的路由重试与 `fast fallback`（错开尝试备用地址，以较快成功的连接继续） 有选择空间；fast fallback 会错开尝试备用地址，以较快成功的连接继续。
+- HTTPS URL 始终保留原主机名；把 URL 改成 IP 会破坏 SNI（Server Name Indication，TLS 握手中携带目标主机名的扩展）、证书校验和虚拟主机路由，SNI 指 TLS 握手中携带目标主机名的扩展。
 - GET 等可安全重试的操作由网络库按配置恢复；POST、支付和提交操作需要幂等键或查询结果接口。幂等键让服务端把相同标识的重复提交识别为同一次操作。
 - WebSocket、流式响应和上传任务保存应用层进度，在一次调用明确失败后按协议重连。
-- 可延后的后台任务使用 WorkManager 的网络约束，避免常驻监听器自行轮询。
+- 可延后的后台任务使用 WorkManager（持久后台任务调度库） 的网络约束，避免常驻监听器自行轮询。
 
 显式使用非默认网络只适合少数场景，把套接字绑定到后台网络还要求 `CHANGE_NETWORK_STATE` 权限。
 
@@ -491,7 +491,7 @@ class DefaultNetworkTracker(
 
 #### dumpsys connectivity
 
-`dumpsys` 是经 ADB 导出系统服务内部状态的诊断命令。保存 ConnectivityService 当前状态用这条命令：
+`dumpsys` 是经 ADB（Android Debug Bridge，Android 调试桥） 导出系统服务内部状态的诊断命令。保存 ConnectivityService 当前状态用这条命令：
 
 ```bash
 adb shell dumpsys connectivity > connectivity.txt
@@ -548,13 +548,13 @@ Perfetto 是 Android 的系统追踪工具，适合判断网络回调之后是�
 
 ### OEM Wi-Fi 评分为何不同
 
-同一份 AOSP，落到不同设备上，Wi-Fi 行为可能差很多。AOSP 的 Connectivity 选择逻辑位于 Mainline 模块，也就是一类可独立于整机系统版本更新的模块化系统组件；设备厂商能通过 `NetworkScore` 属性表达网络策略，也能通过 Wi-Fi 资源覆盖、HAL、芯片固件、内核驱动、漫游策略、双 STA 和厂商服务改变 Wi-Fi 行为。
+同一份 AOSP，落到不同设备上，Wi-Fi 行为可能差很多。AOSP 的 Connectivity 选择逻辑位于 Mainline 模块，也就是一类可独立于整机系统版本更新的模块化系统组件；设备厂商能通过 `NetworkScore` 属性表达网络策略，也能通过 Wi-Fi 资源覆盖、HAL（hardware abstraction layer，连接系统框架与厂商实现的硬件抽象层）、芯片固件、内核驱动、漫游策略、双 STA 和厂商服务改变 Wi-Fi 行为。
 
 `WifiManager.WifiConnectedNetworkScorer` 是只向特定系统组件开放的 `@SystemApi`，并要求签名级权限 `WIFI_UPDATE_USABILITY_STATS_SCORE`，普通第三方应用在这里没有扩展入口。`ScoreUpdateObserver` 对各回传值的用途有明确限定：
 
 - `notifyScoreUpdate()` 的数值只用于 Wi-Fi 统计，不直接驱动网络选择；
 - `notifyStatusUpdate()` 可报告当前连接是否可用；
-- `requestNudOperation()` 请求一次 NUD，即邻居不可达检测，用来确认同一链路上的网关等邻居是否仍可达；
+- `requestNudOperation()` 请求一次 NUD（neighbor unreachability detection，邻居不可达检测），即邻居不可达检测，用来确认同一链路上的网关等邻居是否仍可达；
 - `blocklistCurrentBssid()` 建议暂时阻止当前 BSSID；
 - 受功能标志控制的 `setPreEvaluationEnabled()` 可让下一次连接先进入受限预评估，再决定是否向其他应用开放。功能标志是系统构建或运行时用来开关一项行为的配置。
 
@@ -572,7 +572,7 @@ Perfetto 是 Android 的系统追踪工具，适合判断网络回调之后是�
 
 ### HTTP/3、QUIC 与网络切换
 
-本文的 `EventListener` 示例与正文一致，都以 OkHttp 5.5.0 为准。OkHttp 自带的传输实现支持 HTTP/1.1 与 HTTP/2，要 HTTP/3 需要另外的方案：HTTP/3 运行在 QUIC 传输协议之上，可选路径包括 Android `HttpEngine`（平台网络引擎 API）、Cronet 或官方提供的 Cronet Transport for OkHttp 集成；Cronet 是 Chromium 网络栈的 Android 库。
+本文的 `EventListener` 示例与正文一致，都以 OkHttp 5.5.0 为准。OkHttp 自带的传输实现支持 HTTP/1.1 与 HTTP/2，要 HTTP/3 需要另外的方案：HTTP/3 运行在 QUIC 传输协议之上，可选路径包括 Android `HttpEngine`（平台网络引擎 API）、Cronet（Chromium 网络栈的 Android 库） 或官方提供的 Cronet Transport for OkHttp 集成；Cronet 是 Chromium 网络栈的 Android 库。
 
 QUIC 用连接 ID 标识一条逻辑连接，连接身份没有完全绑在原来的 IP 地址和端口上，这是连接迁移的协议基础。但迁移并不会因为用了 HTTP/3 就自动发生：`HttpEngine` 和 Cronet 都提供连接迁移选项，只有启用默认网络迁移、请求使用 QUIC 且服务端支持迁移时，活动连接才有机会在网络变化后继续；允许迁往非默认网络还可能用到按量计费的流量。
 

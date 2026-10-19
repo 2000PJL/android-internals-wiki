@@ -73,7 +73,7 @@ note: 'Consolidated-source availability: source page not present in the current 
 
 MTE（Memory Tagging Extension，内存标记扩展）会把一部分 Native 内存的越界和释放后访问，转换成可以识别的 `SIGSEGV` 信号。它既是安全缓解，也是稳定性诊断手段：错误会更早终止进程，静默内存破坏随之减少，短期内应用崩溃数却可能上升。所以我们的目标是发现、定位并修复内存安全缺陷，MTE 崩溃数下降应当是修复带来的结果。
 
-> 源码基线：平台与用户空间 Android 17 / API 37 / `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
+> 源码基线：平台与用户空间（内核之外运行的系统库和应用代码） Android 17 / API 37 / `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
 版本上，Android 12 提供了内核和用户空间堆分配器支持，当前应用文档把“部分设备可用”的起点写为 Android 13；本文从 Android 12 讲起，说明的是平台能力出现的版本，某台 Android 12 商用设备能否为应用启用 MTE，仍要以该设备的实测为准。
 

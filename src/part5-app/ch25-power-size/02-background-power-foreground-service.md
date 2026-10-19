@@ -119,12 +119,12 @@ consolidated_from:
 
 后台功耗治理关注应用如何控制不可见阶段的资源消耗，相邻专题的分工如下：
 
-- Doze、App Standby 和 Job 配额的系统实现见 §5.3。
-- WakeLock、Alarm、定位与 FCM（Firebase Cloud Messaging）的横向策略见 §11.2。
+- Doze（设备空闲低功耗模式）、App Standby（应用待机） 和 Job（由系统调度的后台任务） 配额的系统实现见 §5.3。
+- WakeLock（唤醒锁）、Alarm（定时任务）、定位与 FCM（Firebase Cloud Messaging（FCM，Firebase 云消息推送））的横向策略见 §11.2。
 - 诊断流程见 §25.1。
 - 前台服务（Foreground Service，FGS）超时和 Android 16 Job 配额的专题分析见 §25.2。
 
-我们按四条要求设计后台工作：允许延后的交给系统调度，同一目的的工作可以合并，业务条件失效后可以取消，运行与停止的原因可以观测。系统负责限制 CPU、网络、Job、Alarm 和位置访问，但它不知道某次同步是否还有业务价值，也不知道某段轨迹何时可以降低采样频率——任务有效期、停止条件和资源预算，只能由应用自己定义。
+我们按四条要求设计后台工作：允许延后的交给系统调度，同一目的的工作可以合并，业务条件失效后可以取消，运行与停止的原因可以观测。系统负责限制 CPU（中央处理器）、网络、Job、Alarm 和位置访问，但它不知道某次同步是否还有业务价值，也不知道某段轨迹何时可以降低采样频率——任务有效期、停止条件和资源预算，只能由应用自己定义。
 
 还有一个常见误会：进程活着，任务也未必能一直跑。进程存活、组件生命周期、后台启动资格、Job 配额、资源访问权限是五件不同的事；工作已经进了进程，仍可能因为约束变化、配额用完或服务超时被叫停。
 
@@ -132,9 +132,9 @@ consolidated_from:
 
 后台工作能否执行，至少受三组条件共同影响：
 
-- **设备状态**：设备未充电、静止且屏幕关闭一段时间后，可能进入 Doze。系统会暂停后台网络，忽略普通 WakeLock，并延后普通 Job、同步和 Alarm，直到维护窗口或退出 Doze。
+- **设备状态**：设备未充电、静止且屏幕关闭一段时间后，可能进入 Doze。系统会暂停后台网络，忽略普通 WakeLock（用于在特定场景保持 CPU 唤醒的锁），并延后普通 Job、同步和 Alarm，直到维护窗口或退出 Doze。
 - **应用使用状态**：App Standby Buckets（应用待机分组）根据用户近期与应用的交互情况，对 Job、Alarm 和网络施加不同限制。
-- **任务接口与权限**：WorkManager、JobScheduler、AlarmManager 和前台服务各有调度语义、配额、启动资格及权限要求。
+- **任务接口与权限**：WorkManager（Jetpack 的持久后台工作调度库）、JobScheduler（Android 系统任务调度器）、AlarmManager 和前台服务各有调度语义、配额、启动资格及权限要求。
 
 [Doze 与 App Standby 官方说明](https://developer.android.com/training/monitoring-device-state/doze-standby)将前两组条件分开定义。Doze 关注整台设备是否空闲；App Standby 关注某个应用近期是否被使用。这两组条件可以同时作用于同一个 WorkManager 任务：应用不可见时，WorkManager 的持久化工作由 JobScheduler 调度。
 
@@ -149,7 +149,7 @@ consolidated_from:
 | Android 16 | Job 运行配额覆盖更多情形，包括应用离开前台后继续执行的 Job，以及与 FGS 并行的 Job | 记录停止原因和待执行原因历史；不要用 FGS 规避 Job 配额 |
 | Android 17 | 后台音频播放、音频焦点和音量操作受到更严格的生命周期检查 | 媒体任务按 Android 17 的音频资格要求审查，参见 §25.5 |
 
-`restricted` 是限制最严的待机分组，但仍保留受限的执行机会。Android 13 及以上的官方规则是：豁免范围之外的应用每天可在一次十分钟批处理时段内运行 Job，可用的 expedited Job（加急任务）更少，并且每天只能触发一次 Alarm。充电时这些限制仍然存在；设备同时处于充电、空闲和非计费网络时，限制会放宽。OEM 可以调整分组算法，应用别尝试诱导系统把自己放进某个分组。参见 [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)。
+`restricted` 是限制最严的待机分组，但仍保留受限的执行机会。Android 13 及以上的官方规则是：豁免范围之外的应用每天可在一次十分钟批处理时段内运行 Job，可用的 expedited Job（加急任务）更少，并且每天只能触发一次 Alarm。充电时这些限制仍然存在；设备同时处于充电、空闲和非计费网络时，限制会放宽。OEM（设备厂商） 可以调整分组算法，应用别尝试诱导系统把自己放进某个分组。参见 [App Standby Buckets](https://developer.android.com/topic/performance/appstandby)。
 
 #### 平台源码中的职责分工
 
@@ -167,7 +167,7 @@ flowchart LR
     I["内核 suspend 与 wakeup source"] --> B
 ```
 
-`DeviceIdleController` 管理设备空闲与维护窗口，`AppStandbyController` 管理待机分组，`QuotaController` 参与 Job 配额计算；内核只管系统挂起和唤醒源的生命周期，并不认识 `STANDBY_BUCKET_RARE` 这类框架层概念。我们分析一次唤醒时，要把框架调度信息、应用任务日志和内核唤醒事实按时间对齐。
+`DeviceIdleController` 管理设备空闲与维护窗口，`AppStandbyController` 管理待机分组，`QuotaController` 参与 Job 配额计算；内核只管系统挂起和唤醒源（wakeup source）的生命周期，并不认识 `STANDBY_BUCKET_RARE` 这类框架层概念。我们分析一次唤醒时，要把框架调度信息、应用任务日志和内核唤醒事实按时间对齐。
 
 平台源码可以从这些入口开始核对：
 
@@ -328,7 +328,7 @@ fun buildPassiveLocationRequest(
 - 每个业务声明采样目的、前后台状态、精度、最短间隔、最长持续时间。
 - 页面不可见后降级采样；任务结束、权限撤销、账号退出时释放监听。
 - 多业务复用一个位置源，避免首页、推荐、风控、埋点各自启动一套请求。
-- 在同一时间范围内关联 GNSS、传感器、CPU 和网络数据，再用 §25.1 的 BatteryStats 与 Perfetto 分析归因。
+- 在同一时间范围内关联 GNSS（全球卫星导航系统）、传感器、CPU 和网络数据，再用 §25.1 的 BatteryStats 与 Perfetto（Android 系统追踪工具） 分析归因。
 
 ### 后台任务回归守门
 
@@ -357,7 +357,7 @@ adb shell dumpsys battery reset
 1. 记录开始时间，清理测试任务并重置 BatteryStats。
 2. 执行业务场景，覆盖网络变化、任务重复触发、退出账号、权限撤销和进程重启。
 3. 分别在正常状态、Doze 和目标待机分组下运行。
-4. 导出 bugreport、Perfetto 轨迹、WorkManager 或 JobScheduler 原因，以及应用任务日志。
+4. 导出 bugreport（Android 系统诊断报告）、Perfetto 轨迹、WorkManager 或 JobScheduler 原因，以及应用任务日志。
 5. 按时间关联每次唤醒、任务状态变化和资源用量，与稳定版本的分布比较。
 
 不要将多种资源压成一个总分。CPU 下降可能伴随位置请求增加，网络流量减少也可能伴随 FGS 时间增长。每类资源应有独立预算，每个超限项都要能定位到任务名和责任业务。
@@ -389,9 +389,9 @@ Android 17 沿用了 Android 12 至 Android 16 逐步增加的 FGS 限制，并�
 | Service 能否按 AndroidManifest.xml（文中简称 Manifest）声明的类型晋升 | `startForeground()` 进入 `ActiveServices.setServiceForegroundInnerLocked()` 时 | `MissingForegroundServiceTypeException`、`IllegalArgumentException`、`SecurityException` |
 | 晋升后能否访问目标资源并继续运行 | 类型权限、WIU 能力、运行时额度和具体子系统再次检查时 | 资源访问被拒、`onTimeout()`、ANR 或 `RemoteServiceException` |
 
-ANR 指 Application Not Responding：应用主线程长时间失去响应时系统报出的“应用无响应”故障。`RemoteServiceException` 则是系统发现 Service 违反生命周期约束后，向应用进程投递的运行时异常，和 Binder 调用里常见的 `RemoteException` 是两回事。
+ANR 指 Application Not Responding：应用主线程长时间失去响应时系统报出的“应用无响应”故障。`RemoteServiceException` 则是系统发现 Service 违反生命周期约束后，向应用进程投递的运行时异常，和 Binder（Android 的跨进程调用机制） 调用里常见的 `RemoteException` 是两回事。
 
-一条经过确认的 FCM 高优先级消息，可能临时允许应用从后台启动 FGS，却不会自动赋予摄像头、麦克风或位置的 WIU 能力；一个正在运行的 FGS 也不会自动获得 BAL 权限。排查时我们要把这些条件分开记录。
+一条经过确认的 FCM（Firebase Cloud Messaging，Firebase 云消息） 高优先级消息，可能临时允许应用从后台启动 FGS，却不会自动赋予摄像头、麦克风或位置的 WIU 能力；一个正在运行的 FGS 也不会自动获得 BAL 权限。排查时我们要把这些条件分开记录。
 
 这张图把主状态变化压缩成一条可用于日志设计的路径：图中的 `ServiceRecord` 是 AMS 为每个 Service 保存的内部运行记录，不是应用可以创建或持有的公开对象：
 
@@ -567,7 +567,7 @@ fun startUserRequestedSync(context: Context) {
 
 这些例外都有来源和时效。以 FCM 为例，系统可能把高优先级消息下调为普通优先级；应用应在启动前检查 `RemoteMessage.getPriority()`。不要在业务代码里假定“收到推送就一定有 FGS 许可”。
 
-`FgsTempAllowList` 的作用是临时放行 FGS 启动：`ActivityManagerService.mFgsStartTempAllowList` 按 UID 保存到期时间、原因码、原因文本和授权调用方 UID，`ActiveServices` 查询该列表，把命中的原因码用于本次后台启动判断。源码里没有“FCM 固定 10 秒”“每小时固定 5 次”这样的通用规则；持续时间由产生例外的系统组件和 DeviceConfig 决定。
+`FgsTempAllowList` 的作用是临时放行 FGS 启动：`ActivityManagerService.mFgsStartTempAllowList` 按 UID 保存到期时间、原因码、原因文本和授权调用方 UID，`ActiveServices` 查询该列表，把命中的原因码用于本次后台启动判断。源码里没有“FCM 固定 10 秒”“每小时固定 5 次”这样的通用规则；持续时间由产生例外的系统组件和 DeviceConfig（系统组件可动态读取的配置项） 决定。
 
 `OomAdjusterImpl` 根据进程是否已经承载 FGS 来调整进程状态，UID 进入该列表并不会直接换来前台进程档位。授权窗口、进程存活权重和 Doze 的临时豁免列表，三者同样互相替代不了。
 
@@ -603,7 +603,7 @@ Context.startForegroundService() did not then call Service.startForeground()
 
 三个时间都可由 DeviceConfig 调整；约 3 分钟是 API 语义，别当成高精度定时器。
 
-`shortService` 没有 sticky 重启模式——返回 `START_STICKY` 后系统并不会尝试重建它；它也不会因为正在运行就获得从后台启动另一个 FGS 的资格。`shortService` 可以切换为其他类型，但切换时应用必须具备启动新 FGS 的资格。再次用 `shortService` 调用 `startForeground()`，只有在应用当前可见或符合后台启动例外时才能延长时限，重复调用并不是后台续期信号。
+`shortService` 没有 sticky（返回 `START_STICKY` 后由系统尝试重建 Service） 重启模式——返回 `START_STICKY` 后系统并不会尝试重建它；它也不会因为正在运行就获得从后台启动另一个 FGS 的资格。`shortService` 可以切换为其他类型，但切换时应用必须具备启动新 FGS 的资格。再次用 `shortService` 调用 `startForeground()`，只有在应用当前可见或符合后台启动例外时才能延长时限，重复调用并不是后台续期信号。
 
 `shortService` 没有“禁止启动 Activity”的专用规则。Activity 能否启动仍由 BAL 判断；只挂着一个 short FGS，通常拿不到 BAL 许可。
 
@@ -654,7 +654,7 @@ Job/Worker 收到停止，只表示调度器结束了本次执行，应用自建
 | 刚从 TOP 转为普通 FGS 的短暂保护期 | `PERCEPTIBLE_RECENT_FOREGROUND_APP_ADJ = 50` | 依上下文继续计算 |
 | 当前可见或 TOP Activity | 可见 Activity 通常为 100，TOP Activity 为 0 | 由 Activity 可见性决定 |
 
-表中是 FGS 分支给出的基准档位，进程绑定关系、可见组件、ContentProvider 依赖、最近前台状态和 OEM 内存策略还会参与最终计算。LMKD 会结合这些分值与内存压力选择回收对象，所以 FGS 进程仍可能因极端内存压力、崩溃、ANR、用户停止或策略违规而退出。
+表中是 FGS 分支给出的基准档位，进程绑定关系、可见组件、ContentProvider 依赖、最近前台状态和 OEM 内存策略还会参与最终计算。LMKD（Low Memory Killer Daemon，低内存终止守护进程） 会结合这些分值与内存压力选择回收对象，所以 FGS 进程仍可能因极端内存压力、崩溃、ANR、用户停止或策略违规而退出。
 
 表格的结论是：FGS 会提高进程在内存压力下的存活优先级，但不会把进程变成不可回收对象；short FGS 的基准保护还弱于普通 FGS。
 

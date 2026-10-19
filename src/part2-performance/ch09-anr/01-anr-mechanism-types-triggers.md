@@ -138,7 +138,7 @@ ANR（Application Not Responding，应用无响应）机制因此负责三项工
 | 前台服务启动 | `startForegroundService()` 建立前台化期限 | 服务按要求调用 `startForeground()` |
 | ContentProvider | 系统侧的 provider 调用监控被触发 | provider 调用返回 |
 
-输入派发的 AOSP 默认超时是 5 秒，设备还可能用 `ro.hw_timeout_multiplier` 这个硬件超时倍数，加上窗口级配置来调整。广播、Service 等期限也会随前后台状态、目标 SDK 和组件类型变化，具体数值见 [Input、Broadcast、Service 与 Provider 超时](#inputbroadcastservice-与-provider-超时) 一节。把所有 ANR 都概括成“主线程超过 5 秒”，就会盖住不同检测器各自的触发条件。
+输入派发的 AOSP 默认超时是 5 秒，设备还可能用 `ro.hw_timeout_multiplier`（硬件超时倍数） 这个硬件超时倍数，加上窗口级配置来调整。广播、Service 等期限也会随前后台状态、目标 SDK 和组件类型变化，具体数值见 [Input、Broadcast、Service 与 Provider 超时](#inputbroadcastservice-与-provider-超时) 一节。把所有 ANR 都概括成“主线程超过 5 秒”，就会盖住不同检测器各自的触发条件。
 
 #### `TimeoutRecord` 统一表达超时
 
@@ -196,9 +196,9 @@ public static TimeoutRecord forContentProvider(String reason) {
 
 #### 阶段三：期限耗尽
 
-计时器到期后，检测器会再次核实目标是否仍在等待。工作已经完成、进程已经退出或对象已被替换的，旧超时直接丢弃。确认仍然超时后，检测器创建 `TimeoutRecord`，把目标进程交给 AMS。
+计时器到期后，检测器会再次核实目标是否仍在等待。工作已经完成、进程已经退出或对象已被替换的，旧超时直接丢弃。确认仍然超时后，检测器创建 `TimeoutRecord`，把目标进程交给 AMS（ActivityManagerService）。
 
-输入路径还多一层责任归属判断：`InputDispatcher` 识别出“没有焦点窗口”或“目标连接未确认事件”后，经 `InputManagerCallback` 进入 WMS 的 `AnrController`。`AnrController` 按 input token（输入连接标识）、窗口、Activity 和 PID 找到责任进程；焦点请求来自其他窗口时，也可能把超时归给那个窗口的进程。确认目标后，系统调用 AMS 的 `inputDispatchingTimedOut()`，进入 `AnrHelper`。
+输入路径还多一层责任归属判断：`InputDispatcher` 识别出“没有焦点窗口”或“目标连接未确认事件”后，经 `InputManagerCallback` 进入 WMS（WindowManagerService） 的 `AnrController`。`AnrController` 按 input token（输入连接标识）、窗口、Activity 和 PID 找到责任进程；焦点请求来自其他窗口时，也可能把超时归给那个窗口的进程。确认目标后，系统调用 AMS 的 `inputDispatchingTimedOut()`，进入 `AnrHelper`。
 
 这段路由告诉我们：日志里的责任进程由窗口和输入状态共同决定，未必是用户当时看到的前台 Activity 所在的进程。
 
@@ -496,7 +496,7 @@ ANR 报告里的 `Reason`，说的就是系统在等哪一个完成信号：Inpu
 
 #### 默认 5 秒从哪里来
 
-`InputDispatcher` 位于 native inputflinger。事件写入应用的 InputChannel 后，待确认的 `DispatchEntry` 会留在 connection 的 `waitQueue` 里；应用完成输入处理，通过 `InputEventReceiver.finishInputEvent()` 发回确认，这条条目才离开等待队列。普通 View 事件通常由主线程处理，所以主线程阻塞是常见根因；不过检测器直接盯着的，是输入连接有没有按时确认事件。
+`InputDispatcher` 位于 native inputflinger（原生输入系统服务）。事件写入应用的 InputChannel（输入通道） 后，待确认的 `DispatchEntry` 会留在 connection 的 `waitQueue` 里；应用完成输入处理，通过 `InputEventReceiver.finishInputEvent()` 发回确认，这条条目才离开等待队列。普通 View 事件通常由主线程处理，所以主线程阻塞是常见根因；不过检测器直接盯着的，是输入连接有没有按时确认事件。
 
 下面的源码展示系统怎样从 5 秒基础值、硬件超时倍率和窗口级配置算出实际超时：
 
@@ -519,11 +519,11 @@ std::chrono::nanoseconds InputDispatcher::getDispatchingTimeoutLocked(
 }
 ```
 
-`IInputConstants.UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS` 是 5000。默认 5 秒适用于没有单独配置的窗口和 input monitor；窗口也可以提供自己的 dispatching timeout，所以要以报告里的实际等待值为准，结合目标设备和窗口状态解读。
+`IInputConstants.UNMULTIPLIED_DEFAULT_DISPATCHING_TIMEOUT_MILLIS` 是 5000。默认 5 秒适用于没有单独配置的窗口和 input monitor（输入监视连接）；窗口也可以提供自己的 dispatching timeout，所以要以报告里的实际等待值为准，结合目标设备和窗口状态解读。
 
 #### Connection ANR
 
-`processAnrsLocked()` 从 `mAnrTracker` 取出已到期的 connection。进入 `onAnrLocked(connection)` 后，源码取 `waitQueue.front()`——队首最早的那条待确认事件——作为诊断线索，再用 `now() - deliveryTime` 算它已经等了多久。
+`processAnrsLocked()` 从 `mAnrTracker` 取出已到期的 connection。进入 `onAnrLocked(connection)` 后，源码取 `waitQueue.front()`——队首最早的那条待确认事件——作为诊断线索，再用 `now() - delivery（投递）Time` 算它已经等了多久。
 
 源码注释还说明一个限制：oldest entry 最适合帮助排查，却不一定是触发计时器到期的那一个事件——窗口超时配置在等待期间变化过的话，较新的事件反而可能更早到自己的期限。所以报告里的事件描述是重要线索，单靠它下因果结论还不够。
 
@@ -531,7 +531,7 @@ std::chrono::nanoseconds InputDispatcher::getDispatchingTimeoutLocked(
 
 `<input-channel> is not responding. Waited <N>ms for <event-description>`
 
-随后 `processConnectionUnresponsiveLocked()` 把事件、持续时间和 connection token 交给 policy 层，由 WMS/AMS 构造 ANR 记录；`cancelEventsForAnrLocked()` 取消该 connection 上的后续事件，不再向已判定无响应的连接投递输入。
+随后 `processConnectionUnresponsiveLocked()` 把事件、持续时间和 connection token（输入连接标识） 交给 policy 层，由 WMS/AMS 构造 ANR 记录；`cancelEventsForAnrLocked()` 取消该 connection 上的后续事件，不再向已判定无响应的连接投递输入。
 
 我们排查 connection ANR 时，要覆盖这些可能性：
 
@@ -541,9 +541,9 @@ std::chrono::nanoseconds InputDispatcher::getDispatchingTimeoutLocked(
 - 线程长时间处于 Runnable（可运行但等待 CPU）状态；
 - 系统端或跨进程依赖拖住主线程，触发点仍落在应用的输入窗口。
 
-#### No focused window ANR
+#### No focused window（实际接收输入的焦点窗口） ANR
 
-InputDispatcher 已经知道 focused application 是哪个应用，却等不到实际接收输入的 focused window 出现，这时会启动另一只计时器。到期 reason 是：
+InputDispatcher 已经知道 focused application（当前应获得焦点的应用） 是哪个应用，却等不到实际接收输入的 focused window 出现，这时会启动另一只计时器。到期 reason 是：
 
 `<application> does not have a focused window`
 
@@ -581,13 +581,13 @@ mService.appNotResponding(queue.app, tr);
 
 系统尚未完成启动，或广播带有 `timeoutExempt`（豁免超时）标记时，这只计时器不会启动；带 `assumeDelivered`（系统无需等待明确回执）标记的广播同样不启动。动态注册的无序 receiver 可能走 assumed-delivered 路径，所以不是每个 BroadcastReceiver 都有 10/60 秒 ANR 计时器。
 
-#### `goAsync()` 与广播 deadline
+#### `goAsync()` 与广播 deadline（截止时间）
 
 同步 receiver 以 `onReceive()` 返回作为完成信号；调用 `goAsync()` 后，完成信号改为 `PendingResult.finish()`，但广播原有的 deadline 仍在继续计时。后台线程池拥塞、网络等待、锁竞争或漏调 `finish()`，都可能让同一个 deadline 到期。
 
 进程冷启动也要算进分析。广播需要拉起进程时，创建进程、执行 `bindApplication`、`Application` 和静态 Provider 初始化，都先消耗广播交付时间；而 ANR 栈只记录超时附近那一瞬间，启动早期已经结束的慢步骤，可能早就不在栈顶了。
 
-常见 `Reason` 以 `Broadcast of Intent` 开头，并携带 action、component 或 receiver 包名。诊断时同时记录：
+常见 `Reason` 以 `Broadcast of Intent` 开头，并携带 action、component（组件） 或 receiver 包名。诊断时同时记录：
 
 - 是否设置 `FLAG_RECEIVER_FOREGROUND`；
 - receiver 是在 manifest 中声明还是运行时注册，广播是否为 ordered（有序广播）；
@@ -738,7 +738,7 @@ static final long ANR_PRE_UDC_APIS_ON_SLOW_RESPONSES = 258236856L;
 
 ### 公开分类 `AnrTypes`
 
-平台在 `frameworks/base/core/java/android/app/AnrTypes.java` 里给出公开分类常量。这项能力受 feature flag（功能开关）控制，OEM 也可能保留额外的私有 detector。`AnrTypes` 适合统一平台分类，但信息比原始 `Reason` 和 `TimeoutRecord` 粗，替代不了这两者。
+平台在 `frameworks/base/core/java/android/app/AnrTypes.java` 里给出公开分类常量。这项能力受 feature flag（功能开关）控制，OEM 也可能保留额外的私有 detector（检测器）。`AnrTypes` 适合统一平台分类，但信息比原始 `Reason` 和 `TimeoutRecord` 粗，替代不了这两者。
 
 | 值 | 常量 | 含义 |
 |---:|---|---|
@@ -799,7 +799,7 @@ Perfetto 回答的是“超时窗口内线程和 CPU 在做什么”；单靠一
 
 对 Broadcast、Service 和 JobService，要围绕系统调度 transaction 和应用回调开始点对齐时间；冷启动样本则把 process start、`bindApplication`、Provider 初始化和回调执行放到同一条时间线上。只看 ANR 时刻的栈，容易漏掉此前已经结束的启动耗时。
 
-对 Provider 远程调用，要关联 caller 的 Binder transaction、Provider 进程的 binder thread 和主线程。caller 在等的时候，Provider 可能正在主线程干活、在 Binder 线程池排队、等锁，或发起下游 Binder 调用——单看一个线程的状态，还原不出完整调用链。
+对 Provider 远程调用，要关联 caller（调用方） 的 Binder transaction、Provider 进程的 binder thread 和主线程。caller 在等的时候，Provider 可能正在主线程干活、在 Binder 线程池排队、等锁，或发起下游 Binder 调用——单看一个线程的状态，还原不出完整调用链。
 
 ### 版本演进：只保留会影响判断的变化
 
@@ -811,7 +811,7 @@ Perfetto 回答的是“超时窗口内线程和 CPU 在做什么”；单靠一
 - **Android 15 / API 35**：targetSdk 35+ 的 `dataSync`、`mediaProcessing` 采用后台累计 6 小时限制，并通过 `Service.onTimeout(int, int)` 给出停止机会；未停止的结果是远程服务异常崩溃。
 - **Android 17 / API 37**：源码基线为 `android-17.0.0_r1`，Broadcast 使用 `BroadcastQueueImpl`、`BroadcastAnrTimer` 和通用 `AnrTimer`；平台给出 `AnrTypes` 分类，并可为部分 ANR timer 接入预警回调。各 detector 的完成信号，仍要逐类判断。
 
-版本号只说明平台能力。DeviceConfig、compat change、targetSdk、广播 flags 和厂商修改都会影响具体设备的行为，所以分析报告还要记下 build fingerprint、API level、targetSdk 和原始超时值。
+版本号只说明平台能力。DeviceConfig、compat change（兼容性变更开关）、targetSdk、广播 flags 和厂商修改都会影响具体设备的行为，所以分析报告还要记下 build fingerprint（系统构建指纹）、API level、targetSdk 和原始超时值。
 
 ### 排查清单
 

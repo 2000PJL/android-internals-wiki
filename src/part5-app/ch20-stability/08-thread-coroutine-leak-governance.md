@@ -96,9 +96,9 @@ last_consolidated_at: '2026-08-24'
 
 > 源码基线：Android 17 / API 37 / AOSP `android-17.0.0_r1`；涉及 task 创建、`/proc` 和资源限制时，内核为 `android17-6.18-2026-06_r6`。
 
-全文围绕几类对象展开，先把词定下来。Linux task 是内核调度的执行实体，应用线程会在 `/proc/self/task` 中各有一个目录；FD 是 file descriptor，即进程访问文件、socket、pipe 等内核对象时使用的整数句柄。pool 指复用一组执行线程的线程池，worker 是其中执行任务的线程，owner 是负责创建、取消和关闭该资源的组件或生命周期对象。
+全文围绕几类对象展开，先把词定下来。Linux task 是内核调度的执行实体，应用线程会在 `/proc/self/task` 中各有一个目录；FD 是 file descriptor，即进程访问文件、socket、pipe 等内核对象时使用的整数句柄。pool 指复用一组执行线程的线程池，worker（工作线程） 是其中执行任务的线程，owner 是负责创建、取消和关闭该资源的组件或生命周期对象。
 
-线程载体也要分清：Java peer 是 ART 线程关联的 `java.lang.Thread` 对象，Java platform thread 是由操作系统线程承载的普通 Java 线程，raw pthread 是 C/C++ 代码直接通过 `pthread_create()` 创建、没有 Java peer 的线程。这三者的回收协议不同，后文会反复用到。
+线程载体也要分清：Java peer 是 ART 线程关联的 `java.lang.Thread` 对象，Java platform thread 是由操作系统线程承载的普通 Java 线程，raw pthread（直接通过 POSIX 线程接口创建的线程） 是 C/C++ 代码直接通过 `pthread_create()` 创建、没有 Java peer 的线程。这三者的回收协议不同，后文会反复用到。
 
 ## 线程创建、所有者与退出监控
 
@@ -106,7 +106,7 @@ last_consolidated_at: '2026-08-24'
 
 “线程数很多”只是现象。线程处于 `WAITING` 未必是泄漏：线程池空闲 worker、Binder 线程、GC 线程和等待消息的 `HandlerThread` 都可能长期休眠。我们把“泄漏”限定为资源超过约定生命周期后仍存活，或仍被强引用；动手排查前，先确认讨论的是哪一类对象。
 
-pthread 的回收分两种：joinable pthread 退出后保留回收信息，必须由另一个线程调用 `pthread_join()`；detached pthread 在线程退出时自行回收。协程侧的对应概念是，`Job` 表示可取消、可等待完成的任务生命周期，`CoroutineScope` 管理一组子 `Job`，dispatcher 决定这些任务在哪些线程上运行。堆分析则会用到两个词：GC root 是垃圾回收器判定为天然存活的引用起点，heap dominator 是堆分析中的支配对象，移除它即可让其支配的对象失去这条存活路径。
+pthread 的回收分两种：joinable pthread 退出后保留回收信息，必须由另一个线程调用 `pthread_join()`；detached pthread 在线程退出时自行回收。协程侧的对应概念是，`Job` 表示可取消、可等待完成的任务生命周期，`CoroutineScope` 管理一组子 `Job`，dispatcher 决定这些任务在哪些线程上运行。堆分析则会用到两个词：GC root（没有业务 parent 的根 `Job`） 是垃圾回收器判定为天然存活的引用起点，heap dominator 是堆分析中的支配对象，移除它即可让其支配的对象失去这条存活路径。
 
 | 问题 | 仍能在 `/proc/self/task` 看到吗 | 主要证据 | 典型修复 |
 | --- | --- | --- | --- |
@@ -119,7 +119,7 @@ pthread 的回收分两种：joinable pthread 退出后保留回收信息，必�
 
 上表几类问题可以同时发生。OOM 的含义是某层内存或相关资源满足不了分配请求，`ThreadLocal` 是按线程保存值的线程局部存储：某个 SDK 每次初始化都创建一个 pool，每个 worker 又持有 `ThreadLocal<Activity>`，每个任务还打开 socket，于是 Linux task、Java heap 和 FD 一起增长——这推不出“每条线程固定占一个 FD”。
 
-OpenJDK 的 `Thread.exit()` 会调用 `clearReferences()`，清空 `target`、`threadLocals`、`inheritableThreadLocals`、`blocker` 和未捕获异常处理器等引用；Android 17 的行为不同，`android-17.0.0_r1` 标签的 `Thread.getThreadGroup()` 源码明确注明 ART 在线程退出时没有调用 `Thread.exit()`。
+OpenJDK 的 `Thread.exit()` 会调用 `clearReferences()`，清空 `target`、`threadLocals`、`inheritableThreadLocals`、`block（传入的挂起代码块）er` 和未捕获异常处理器等引用；Android 17 的行为不同，`android-17.0.0_r1` 标签的 `Thread.getThreadGroup()` 源码明确注明 ART 在线程退出时没有调用 `Thread.exit()`。
 
 ART 的 `Thread::Destroy()` 会分发未捕获异常、从 `ThreadGroup` 移除 Java peer、清除 Native peer，并唤醒等待 `join()` 的线程，但不会代替 Java `clearReferences()` 清空上述字段。
 
@@ -133,7 +133,7 @@ ART 的 `Thread::Destroy()` 会分发未捕获异常、从 `ThreadGroup` 移除 
 2. 它执行哪类任务，由谁取消或关闭？
 3. 同一个 owner 在一次进程生命周期中允许创建多少个 pool 和 worker？
 
-Linux task 名称还有长度限制。`comm` 是内核保存的 task 短名称；bionic 的 `pthread_setname_np()` 把缓冲区长度上限定为 16 字节，名称达到 16 字节时返回 `ERANGE`，表示参数超出允许范围；内核 `TASK_COMM_LEN` 同样是 16，而且要把末尾值为 0 的 NUL 结束字节算在内。所以 Java 里较长的 `Thread.name` 与 `/proc/self/task/<tid>/comm` 可能对不上。用于 Native 快照的模块标识应放在前 15 个 ASCII 字节内，完整来源另存到固定容量的注册表。
+Linux task 名称还有长度限制。`comm` 是内核保存的 task 短名称；bionic 的 `pthread_setname_np()` 把缓冲区长度上限定为 16 字节，名称达到 16 字节时返回 `ERANGE`，表示参数超出允许范围；内核 `TASK_COMM_LEN` 同样是 16，而且要把末尾值为 0 的 NUL（值为 0 的字符串结束字节） 结束字节算在内。所以 Java 里较长的 `Thread.name` 与 `/proc/self/task/<tid>/comm` 可能对不上。用于 Native 快照的模块标识应放在前 15 个 ASCII 字节内，完整来源另存到固定容量的注册表。
 
 命名格式推荐短而稳定的 `模块-用途-序号`，例如 `img-dec-3`、`net-dns-2`；账号、URL、订单号等用户数据不要放进线程名。改名补不回历史创建栈，所以命名要和创建入口记录一起实施。
 
@@ -200,13 +200,13 @@ fun snapshotNativeThreads(
 }
 ```
 
-`listFiles()` 失败通过 `Result.failure` 表示，调用方应把它记录为“缺测”，别上报成 0 条线程。遍历期间某个 TID 目录消失，表示该线程已经结束，属于正常竞态。`truncated` 为 `true` 时只能分析已采到的名称分布，`rows.size` 代表的也只是已采到的行数。这个函数会产生文件 I/O 和对象分配，不要放在主线程、crash handler 或高频定时器中。
+`listFiles()` 失败通过 `Result.failure` 表示，调用方应把它记录为“缺测”，别上报成 0 条线程。遍历期间某个 TID 目录消失，表示该线程已经结束，属于正常竞态。`truncated` 为 `true` 时只能分析已采到的名称分布，`rows.size` 代表的也只是已采到的行数。这个函数会产生文件 I/O 和对象分配，不要放在主线程、crash handler（崩溃回调） 或高频定时器中。
 
-Java `Thread.threadId()` 从 API 36 起可用，加上旧的 `getId()`，两者都是 Java 生命周期 ID，和 Linux TID 是两个体系。要拿到真正的 TID，得在线程内部调用 `Process.myTid()`，或在可靠的 Native 创建事件中取得，这样才能与 Perfetto、tombstone 和 `/proc` 对齐。TID 在线程退出后会复用，跨时间关联还必须带进程启动标识和采样时间。
+Java `Thread.threadId()（API 36 起）` 从 API 36 起可用，加上旧的 `getId()`，两者都是 Java 生命周期 ID，和 Linux TID 是两个体系。要拿到真正的 TID，得在线程内部调用 `Process.myTid()`，或在可靠的 Native 创建事件中取得，这样才能与 Perfetto、tombstone 和 `/proc` 对齐。TID 在线程退出后会复用，跨时间关联还必须带进程启动标识和采样时间。
 
 ### 4. 从创建入口保存来源
 
-能控制的 Java worker 应统一经过 `ThreadFactory`。下面的示例在线程开始执行后登记 Java ID 和 Linux TID，并在任务入口退出时删除记录；`ThreadRegistry` 是示例里自造的线程注册表，Android 没有对应 API。实现时要限制容量，采用无锁或低竞争数据结构，并保证注册失败不影响业务线程。
+能控制的 Java worker 应统一经过 `ThreadFactory`（创建和配置线程的工厂）。下面的示例在线程开始执行后登记 Java ID 和 Linux TID，并在任务入口退出时删除记录；`ThreadRegistry` 是示例里自造的线程注册表，Android 没有对应 API。实现时要限制容量，采用无锁或低竞争数据结构，并保证注册失败不影响业务线程。
 
 ```kotlin
 class TrackedThreadFactory(
@@ -253,12 +253,12 @@ class TrackedThreadFactory(
 }
 ```
 
-这里用不超过 7 个 ASCII 字节的 `sourceId` 和固定 7 位 base-36 序号，把 Java 名称控制在内核 `comm` 的 15 字节载荷内。注册表记录的是 worker 生命周期，每个提交任务的生命周期要另行采集：若一个 pool 长期复用 worker，还要单独包装任务，采集队列等待、执行时长、取消和异常。创建栈成本较高，可以在新 pool 出现、数量增长或诊断开关开启时采样，每次任务提交都存完整堆栈就太重了。
+这里用不超过 7 个 ASCII 字节的 `sourceId` 和固定 7 位 base-36（36 进制） 序号，把 Java 名称控制在内核 `comm` 的 15 字节载荷内。注册表记录的是 worker 生命周期，每个提交任务的生命周期要另行采集：若一个 pool 长期复用 worker，还要单独包装任务，采集队列等待、执行时长、取消和异常。创建栈成本较高，可以在新 pool 出现、数量增长或诊断开关开启时采样，每次任务提交都存完整堆栈就太重了。
 
 第三方 SDK 接不进 factory 时，可按风险从低到高采用：
 
 - 记录 SDK 版本、初始化次数和进程角色，与线程名前缀和数量变化对齐；
-- 对可修改的依赖入口传入自有 executor；
+- 对可修改的依赖入口传入自有 executor（任务执行器）；
 - 在内部或诊断构建中做有限范围的字节码插桩，即在编译产物中自动加入创建事件记录；
 - 对必须诊断的 Native SDK，在受控版本中跟踪 pthread 生命周期。
 
@@ -284,7 +284,7 @@ raw `pthread_create()` 在未传 detached 属性时使用 joinable 语义，bion
 
 #### 5.2 监控必须覆盖成对事件
 
-对自有 C/C++ 代码，优先提供 RAII 或统一包装层，让清理在对象析构时自动发生，并明确以下约束：
+对自有 C/C++ 代码，优先提供 RAII（对象析构时自动执行清理） 或统一包装层，让清理在对象析构时自动发生，并明确以下约束：
 
 - 无需返回结果、创建方不再等待的 worker 在创建前设置 detached；
 - 需要结果的 joinable worker 只能由一个 owner join；
@@ -294,13 +294,13 @@ raw `pthread_create()` 在未传 detached 属性时使用 joinable 语义，bion
 - 进程退出前输出成功创建总数、创建失败数，以及 `running`、`exited-unjoined`、`joined-reclaimed`、`detached-reclaimed` 等互斥生命周期状态；
 - 不要把可重叠计数直接相减。
 
-PLT（Procedure Linkage Table，过程链接表）hook 通过改写动态链接跳转表拦截函数，inline hook 则改写函数入口指令。它们可以观察三方库，但会受 ABI、加载顺序、静态链接、设备厂商改动和重入影响——重入指 hook 内部再次触发被 hook 函数。在 hook 里采完整 Native 栈、扩容容器或写文件，还会引入新故障。所以这类方案要限定构建类型、进程、启用时长和事件上限，并用 `/proc/self/task` 核对；把它写成所有版本默认开启的稳定接口是不可靠的。
+PLT（Procedure Linkage（存活时长） Table，过程链接表）hook 通过改写动态链接跳转表拦截函数，inline hook 则改写函数入口指令。它们可以观察三方库，但会受 ABI（二进制接口）、加载顺序、静态链接、设备厂商改动和重入影响——重入指 hook 内部再次触发被 hook 函数。在 hook 里采完整 Native 栈、扩容容器或写文件，还会引入新故障。所以这类方案要限定构建类型、进程、启用时长和事件上限，并用 `/proc/self/task` 核对；把它写成所有版本默认开启的稳定接口是不可靠的。
 
 ### 6. 每条线程的资源成本
 
 “每条线程默认占用 1 MiB 栈空间”过于简化，还容易把虚拟地址预留误算成 RSS。先分清两个量：虚拟地址空间是进程可寻址的范围，RSS（resident set size，常驻内存集）只统计当前驻留在物理内存中的页面，两者怎么算完全不同。
 
-bionic 对 raw pthread 的默认栈常量是 1 MiB 减去独立信号栈的可用部分。这条 pthread 的主映射里还有：用于捕获越界的 guard page、static TLS、专用 libgen buffers 和另一侧保护页，并使用 `MAP_NORESERVE`，也就是创建映射时不要求内核预留等量交换空间。架构和内存安全能力还可能增加 alternate signal stack、shadow call stack（单独保存返回地址、用于检测破坏的影子调用栈）等线程私有区域。
+bionic 对 raw pthread 的默认栈常量是 1 MiB 减去独立信号栈的可用部分。这条 pthread 的主映射里还有：用于捕获越界的 guard page（设置为不可访问、用于捕获越界的保护页）、static TLS（线程局部存储）、专用 libgen buffer（环形缓冲区）s 和另一侧保护页，并使用 `MAP_NORESERVE`，也就是创建映射时不要求内核预留等量交换空间。架构和内存安全能力还可能增加 alternate signal stack（处理信号时使用的备用栈）、shadow call stack（单独保存返回地址、用于检测破坏的影子调用栈）等线程私有区域。
 
 Java `Thread` 还会经过 ART 的 `FixStackSize()`：传入 0 时先取运行时 `-Xss` 默认值，随后为 Dalvik/Android 兼容增加 1 MiB，再加入栈溢出保护与保留区并按页对齐。`Thread` 构造器的 `stackSize` 参数只是依赖虚拟机实现的提示，没跑过深递归、JNI 和低内存压力测试，就不要随意缩小。
 
@@ -310,13 +310,13 @@ Java `Thread` 还会经过 ART 的 `FixStackSize()`：传入 0 时先取运行�
 - 已提交并驻留的物理页面；
 - task、TLS、信号栈和运行时附属结构。
 
-估算别只做“线程数 × 1 MiB”。应在目标 ABI、页大小、设备内存和相同业务负载上，比较 `/proc/self/maps`、`smaps_rollup`、RSS 与 task 数的共同变化——`/proc/self/maps` 列出进程内存映射，`smaps_rollup` 是各映射内存统计的进程级汇总。
+估算别只做“线程数 × 1 MiB”。应在目标 ABI、页大小、设备内存和相同业务负载上，比较 `/proc/self/maps（进程内存映射列表）`、`smaps_rollup`（各映射内存统计的进程级汇总）、RSS 与 task 数的共同变化——`/proc/self/maps` 列出进程内存映射，`smaps_rollup` 是各映射内存统计的进程级汇总。
 
-线程也不会天然持有一个 FD：`/proc/self/task/<tid>` 只是 procfs 视图，进程并没有为每条线程常驻打开文件描述符。线程和 FD 一起增长，通常说明同一模块在同时创建 worker 与 socket、pipe、eventfd 或文件；关联是否成立，还要按 owner 和时间线证明。FD 的计数、限额与复用规则见 [FD 耗尽监控与故障排查](07-fd-resource-monitoring.md)。
+线程也不会天然持有一个 FD：`/proc/self/task/<tid>` 只是 procfs（内核导出的进程信息伪文件系统） 视图，进程并没有为每条线程常驻打开文件描述符。线程和 FD 一起增长，通常说明同一模块在同时创建 worker 与 socket、pipe、eventfd 或文件；关联是否成立，还要按 owner 和时间线证明。FD 的计数、限额与复用规则见 [FD 耗尽监控与故障排查](07-fd-resource-monitoring.md)。
 
 ### 7. 线程创建失败的多层来源
 
-内核 `copy_process()` 会检查 `RLIMIT_NPROC` 上限和系统 `max_threads`，前者按 real user——内核记账使用的真实用户 ID——统计。超过数量限制时返回 `-EAGAIN`，表示当前资源条件不允许再次创建；task 结构、内核栈等分配失败还可能返回 `-ENOMEM`，表示内存不足。设备若启用 cgroup pids controller，还会按控制组受到额外的 task 数约束。
+内核 `copy_process()` 会检查 `RLIMIT_NPROC` 上限和系统 `max_threads`，前者按 real user（内核记账使用的真实用户 ID）——内核记账使用的真实用户 ID——统计。超过数量限制时返回 `-EAGAIN`，表示当前资源条件不允许再次创建；task 结构、内核栈等分配失败还可能返回 `-ENOMEM`，表示内存不足。设备若启用 cgroup（按线程组管理资源的控制组） pids controller（按控制组限制 task 数的内核机制），还会按控制组受到额外的 task 数约束。
 
 在到达内核 `clone` 前，bionic 还要建立线程映射并初始化 TLS；ART 创建 Java 线程前还要分配内部 `Thread`、JNI 环境和 Java peer 关联。所以同一个“线程创建失败”报错，可能来自：
 
@@ -329,7 +329,7 @@ Java `Thread` 还会经过 ART 的 `FixStackSize()`：传入 0 时先取运行�
 
 `/proc/self/limits` 的 Max processes 读出来的数字，算不出“本进程还能创建多少条线程”。`RLIMIT_NPROC` 按 real user 计数，Android 的应用 UID、共享 UID 和进程角色都会影响结果，其他限制也可能更早触发。
 
-诊断时要保存 bionic/ART 原始错误和 errno，以及进程角色、ABI、task 数、`VmSize`、RSS 和近期增长，别只记 Java heap 剩余空间。
+诊断时要保存 bionic/ART 原始错误和 errno（C 库错误编号），以及进程角色、ABI、task 数、`VmSize`（虚拟地址空间总量）、RSS 和近期增长，别只记 Java heap 剩余空间。
 
 Android 17 bionic 还在线程映射中加入页对齐的专用 libgen buffers，并加强备用信号栈初始化失败的处理。这些是内存布局和错误处理层面的变化，从中推导不出“应用最多 500 条线程”之类的平台规则。
 
@@ -345,13 +345,13 @@ Android 17 bionic 还在线程映射中加入页对齐的专用 libgen buffers�
 - pool 创建来源、实例数、`isShutdown`、`isTerminated`；
 - 前后台状态和对应功能是否仍然存活。
 
-固定线程池常用无界队列，worker 数稳定时仍可能发生任务或内存堆积；cached pool 会按需增加 worker，阻塞任务突发时线程数可能快速上升，空闲 worker 默认在 keep-alive 到期后回收。两类线程池要用不同的证据判断。
+固定线程池常用无界队列，worker 数稳定时仍可能发生任务或内存堆积；cached pool 会按需增加 worker，阻塞任务突发时线程数可能快速上升，空闲 worker 默认在 keep-alive（空闲存活时间） 到期后回收。两类线程池要用不同的证据判断。
 
 #### 8.2 `ScheduledThreadPoolExecutor` 要看取消策略
 
-周期任务会持续执行到取消；一次性延迟任务被取消后，默认仍可能留在按执行时间排序的 delay queue 里，直到原延迟到期，大量长延迟任务因此造成对象滞留。业务允许时可启用 `setRemoveOnCancelPolicy(true)`，并由 owner 保存代表计划任务句柄的 `ScheduledFuture`，在生命周期结束时取消任务，再关闭专用 executor。
+周期任务会持续执行到取消；一次性延迟任务被取消后，默认仍可能留在按执行时间排序的 delay queue（按执行时间排序的延迟队列） 里，直到原延迟到期，大量长延迟任务因此造成对象滞留。业务允许时可启用 `setRemoveOnCancelPolicy(true)`，并由 owner 保存代表计划任务句柄的 `ScheduledFuture`，在生命周期结束时取消任务，再关闭专用 executor。
 
-`ScheduledThreadPoolExecutor` 基于固定数量的 core worker 和无界 delay queue，调大 `maximumPoolSize` 通常没有作用。“worker 没退出”和“取消任务仍在队列”要分开看，两者的修复点不同。
+`ScheduledThreadPoolExecutor` 基于固定数量的 core worker（核心 worker） 和无界 delay queue，调大 `maximumPoolSize` 通常没有作用。“worker 没退出”和“取消任务仍在队列”要分开看，两者的修复点不同。
 
 #### 8.3 重复创建 pool 的排查信号
 
@@ -384,11 +384,11 @@ OkHttp 官方建议复用一个 `OkHttpClient`：通过已有 client 的 `newBui
 
 WorkManager 里重复的 `WorkRequest` 更常见的是任务重复，未必产生一条新 worker。unique work 用业务唯一名称约束同类工作，`WorkInfo` 记录任务状态、输出和停止原因；排查时还要检查约束与重试策略。自定义 `Configuration` 时，执行器要有容量上限，并区分运行 Worker 的 executor 与 WorkManager 内部协调任务用的 task executor。
 
-多进程应用要按进程记录 PID、进程名和角色。每个进程都有自己的 ART、Binder 和库初始化开销，把主进程与远程进程 task 数相加再套单进程阈值会误报；若某个依赖在每个进程都自动初始化，应通过 AndroidX Startup、manifest 配置或进程判断缩小初始化范围。
+多进程应用要按进程记录 PID（进程 ID）、进程名和角色。每个进程都有自己的 ART、Binder 和库初始化开销，把主进程与远程进程 task 数相加再套单进程阈值会误报；若某个依赖在每个进程都自动初始化，应通过 AndroidX Startup、manifest 配置或进程判断缩小初始化范围。
 
 ### 11. 告警要看基线、增量和持续时间
 
-`200 / 400 / 500` 可以是某个产品在特定设备分组上的经验值，别把它写成 Android 平台通用阈值。主进程、WebView 进程、音视频进程和 isolated process——以隔离 UID 运行、权限受限的进程——基线各不相同；ABI、设备内存、页大小、目标版本和功能开关也会改变成本。
+`200 / 400 / 500` 可以是某个产品在特定设备分组上的经验值，别把它写成 Android 平台通用阈值。主进程、WebView 进程、音视频进程和 isolated process（以隔离 UID 运行、权限受限的进程）——以隔离 UID 运行、权限受限的进程——基线各不相同；ABI、设备内存、页大小、目标版本和功能开关也会改变成本。
 
 我们把一条可解释的线程风险规则拆成这些信号：
 
@@ -403,7 +403,7 @@ WorkManager 里重复的 `WorkRequest` 更常见的是任务重复，未必产�
 
 建议使用分层触发：
 
-1. 常态只采 `Threads`、pool 摘要和历史高水位，即进程生命周期内观测到的最大值；
+1. 常态只采 `Threads`、pool 摘要和历史高水位（进程生命周期内观测到的最大值），即进程生命周期内观测到的最大值；
 2. 增长持续多个窗口后，读取 `/proc/self/task` 名称分布；
 3. 某来源异常时，短时开启创建事件或采样栈；
 4. 接近故障或出现创建失败时，写入预留的有界摘要；
@@ -413,7 +413,7 @@ WorkManager 里重复的 `WorkRequest` 更常见的是任务重复，未必产�
 
 ### 12. 用 Perfetto 还原生命周期
 
-实验室或可控设备上，我们可以用 Perfetto 把“某时段线程数增加”细化成创建、改名、调度和退出事件。下面的配置片段通过 ftrace——Linux 内核事件跟踪机制——采集 task 生命周期与调度切换，同时轮询进程统计；实际 buffer 大小、时长与权限应按测试场景调整。
+实验室或可控设备上，我们可以用 Perfetto 把“某时段线程数增加”细化成创建、改名、调度和退出事件。下面的配置片段通过 ftrace（Linux 内核事件跟踪机制）——Linux 内核事件跟踪机制——采集 task 生命周期与调度切换，同时轮询进程统计；实际 buffer 大小、时长与权限应按测试场景调整。
 
 ```textproto
 data_sources: {
@@ -479,13 +479,13 @@ Perfetto 不会自动给出 Java 创建调用点，也看不到已退出未 join
 
 #### 13.4 WorkManager 多进程 task 数上升
 
-先按 PID 分组，确认哪些进程加载了 WorkManager 和业务依赖，再检查有没有重复 enqueue 同一工作、有没有用 unique work、有没有在远程进程重复初始化自定义 executor。多进程的固定基线开销，和同一进程内的持续增长，是两类信号。
+先按 PID 分组，确认哪些进程加载了 WorkManager 和业务依赖，再检查有没有重复 enqueue（入队） 同一工作、有没有用 unique work、有没有在远程进程重复初始化自定义 executor。多进程的固定基线开销，和同一进程内的持续增长，是两类信号。
 
 ### 14. Android 17 的虚拟线程边界
 
 API 36 已公开 `Thread.isVirtual()` 查询方法，从它推不出普通应用已经稳定获得虚拟线程创建能力。`android-17.0.0_r1` 的 `isVirtual()` 实现会检查 `VirtualThreadContext` 或 `BaseVirtualThread`，与同一文件中“Android 总返回 false”的旧注释不一致，判断以该标签实现和设备行为为准。
 
-Android 17 还包含 `Thread.ofVirtual()`、`startVirtualThread()`、`Executors.newVirtualThreadPerTaskExecutor()` 及对应 ART 实现；这些创建入口仍带 `FlaggedApi` 标记——由平台功能开关控制的 API——底层实现还受 `is_exported: false` 的 `virtual_thread_impl_v1` ART flag 控制。
+Android 17 还包含 `Thread.ofVirtual()`、`startVirtualThread()`、`Executors.newVirtualThreadPerTaskExecutor()` 及对应 ART 实现；这些创建入口仍带 `FlaggedApi`（由平台功能开关控制的 API 标记） 标记——由平台功能开关控制的 API——底层实现还受 `is_exported: false` 的 `virtual_thread_impl_v1` ART flag 控制。
 
 所以面向普通应用的设计，要当作 Project Loom（OpenJDK 的虚拟线程项目）尚未成为默认能力；生产监控仍要把 Java platform thread 和 Native pthread 映射到 Linux task，Kotlin coroutine 和 Java virtual thread 也是两回事。若未来版本全面公开并启用虚拟线程，监控模型要新增“虚拟线程数量”和“carrier platform thread 数量”两个维度——carrier thread 是某一时刻承载并执行虚拟线程的操作系统线程，届时“一条 Java 线程对应一个 Linux task”的假设就不再成立。
 
@@ -565,7 +565,7 @@ Android 17 还包含 `Thread.ofVirtual()`、`startVirtualThread()`、`Executors.
 
 前半篇的线程监控看 OS 线程有没有结束；协程这边我们还要沿父子 Job、取消传播和 Dispatcher 找到任务所有者——协程泄漏未必增加线程数。
 
-> 源码基线：Android 17 / API 37 / AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`；协程与 Lifecycle 库版本以 `kotlinx.coroutines 1.11.0`、AndroidX Lifecycle 2.11.0 公开文档为准。
+> 源码基线：Android 17 / API 37 / AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`；协程与 Lifecycle（Jetpack 的组件生命周期库） 库版本以 `kotlinx.coroutines 1.11.0`、AndroidX Lifecycle 2.11.0 公开文档为准。
 
 协程与 Lifecycle 独立发布，Android 版本代替不了库版本。平台调度的是 `Handler` 消息、Java 线程和 Linux task，内核没有单独的“协程”类型；协程的 `Job` 树（父子任务关系）、挂起状态、Flow 订阅与取消传播都由 Kotlin/Jetpack 库管理。排查时要把平台线程线索和库层任务线索关联起来，单凭某个 `DefaultDispatcher-worker` 工作线程长期存在，证明不了协程泄漏。
 
@@ -574,18 +574,18 @@ Android 17 还包含 `Thread.ofVirtual()`、`startVirtualThread()`、`Executors.
 本文把 owner 定义为负责启动任务、确定生命周期并在结束时取消任务的 Activity、ViewModel、service 或进程级组件。“协程泄漏”限定为以下情况之一：
 
 - owner 结束后，`Job` 仍未完成，包括继续执行或等待，以及卡在取消清理阶段的情况；
-- 挂起 continuation——保存挂起函数恢复位置与局部状态的对象——捕获 Activity、Fragment View、回调或大对象，使其超过预期生命周期；
-- Flow、Channel 或 callback bridge（把回调式 API 转成 Flow/Channel 的适配层）的生产者没有退出，底层 listener、socket、sensor 等资源继续注册；
+- 挂起 continuation（保存挂起函数恢复位置与局部状态的对象）——保存挂起函数恢复位置与局部状态的对象——捕获 Activity、Fragment View、回调或大对象，使其超过预期生命周期；
+- Flow、Channel 或 callback（回调函数） bridge（把回调式 API 转成 Flow/Channel 的适配层）的生产者没有退出，底层 listener（监听器）、socket、sensor 等资源继续注册；
 - 重复创建的长期任务没有替换或取消，造成未结束的 `Job`、缓冲数据或业务请求持续累积；
 - 自建 dispatcher/executor 的 owner 已结束，但 scope 和线程池没有关闭。
 
 “Job 已经 completed，但监控表还保存着它”属于监控器自身的对象滞留；“线程池仍有空闲 worker”属于线程资源治理。两者都要修，只是别和未结束的协程混为一类。
 
-协程挂起时不占用专属线程，却仍保留 continuation、`CoroutineContext` 和被 lambda 捕获的对象——`CoroutineContext` 随协程携带 `Job`、dispatcher、名称等上下文元素——恢复时还可能换到另一个 worker。所以线程数和协程数没有一一对应关系；线程层的归因与阈值，直接沿用前半篇建立的 task、pool 和 owner 模型。
+协程挂起时不占用专属线程，却仍保留 continuation、`CoroutineContext`（随协程携带的 `Job`、dispatcher、名称等上下文元素） 和被 lambda 捕获的对象——`CoroutineContext` 随协程携带 `Job`、dispatcher、名称等上下文元素——恢复时还可能换到另一个 worker。所以线程数和协程数没有一一对应关系；线程层的归因与阈值，直接沿用前半篇建立的 task、pool 和 owner 模型。
 
 #### 1.1 判断泄漏要同时满足“超期”和“仍被持有”
 
-长期运行本身算不上泄漏：进程级事件总线、WebSocket 接收循环和应用级缓存刷新，都可以合法地存活到进程结束。反过来，一个早已挂起、CPU 为零的 collector——Flow 下游的数据接收者——仍可能持有 Fragment View。
+长期运行本身算不上泄漏：进程级事件总线、WebSocket 接收循环和应用级缓存刷新，都可以合法地存活到进程结束。反过来，一个早已挂起、CPU 为零的 collector（Flow 下游的数据接收者）——Flow 下游的数据接收者——仍可能持有 Fragment View。
 
 每类任务需要预先定义：
 
@@ -644,7 +644,7 @@ class FeatureScope(
 
 `close()` 必须由组件确定的结束回调调用；`ownerId` 用取值范围有限的短标识，别带账号、搜索词或 URL。一次请求内部需要并发子任务时，用 `coroutineScope { ... }` 或 `supervisorScope { ... }`，不要为每个请求再造一个 root。
 
-`GlobalScope` 是带 `DelicateCoroutinesApi` 标记的进程级独立 scope——这个标记提示该 API 容易破坏结构化生命周期——启动的任务没有业务 parent。只有任务明确允许存活到进程结束、不会捕获短生命周期 owner、并且有自己的失败与资源清理协议时，才有理由用它；工程上更易审阅的做法，是注入命名的 application scope，由进程级 owner 管理。
+`GlobalScope` 是带 `DelicateCoroutinesApi`（提示该 API 容易破坏结构化生命周期） 标记的进程级独立 scope——这个标记提示该 API 容易破坏结构化生命周期——启动的任务没有业务 parent。只有任务明确允许存活到进程结束、不会捕获短生命周期 owner、并且有自己的失败与资源清理协议时，才有理由用它；工程上更易审阅的做法，是注入命名的 application scope（由进程级 owner 管理的 scope），由进程级 owner 管理。
 
 `MainScope()` 每次调用都会创建一个新的 `SupervisorJob + Dispatchers.Main`。它适合没有 Lifecycle 的 UI owner，但 owner 必须保存实例并在结束时调用 `cancel()`；在不同方法里反复 `MainScope().launch`，调用方就再也找不到此前的 root。
 
@@ -672,7 +672,7 @@ collector 是从 Flow 接收数据的下游任务，producer 是生成数据或�
 
 冷 `Flow` 每次 `collect` 都启动一条新的上游执行。取消 collector 通常会沿挂起调用取消该次上游。若在同一个页面重复启动 collector，每次都会重复网络、数据库或 callback 注册。
 
-`StateFlow`/`SharedFlow` 是热流，取消某个 collector 只结束该订阅者，不会取消其他订阅者，也不会自动结束生产者。由 `shareIn`/`stateIn` 创建的 sharing coroutine——负责把单一上游共享给多个订阅者的协程——由传入的 scope 管理：
+`StateFlow`/`SharedFlow` 是热流，取消某个 collector 只结束该订阅者，不会取消其他订阅者，也不会自动结束生产者。由 `shareIn`/`stateIn` 创建的 sharing coroutine（负责把单一上游共享给多个订阅者的协程）——负责把单一上游共享给多个订阅者的协程——由传入的 scope 管理：
 
 - `SharingStarted.Eagerly` 立即启动；
 - `Lazily` 在首个订阅者出现后启动，之后即使没有订阅者也继续；
@@ -728,11 +728,11 @@ fun SensorClient.events(): Flow<SensorEvent> = callbackFlow {
 }
 ```
 
-collector 取消、上游失败或 channel 关闭时，`awaitClose` 的清理 block 都应解除注册。`trySend` 失败时，要按业务决定丢弃、计数或释放 element 自带的资源；若流里传输的 element 持有需要 `close()` 的句柄，可用带 `onUndeliveredElement` 的 Channel 设计资源回收，避免取消与缓冲区操作并发时漏掉清理。
+collector 取消、上游失败或 channel 关闭时，`awaitClose` 的清理 block 都应解除注册。`trySend` 失败时，要按业务决定丢弃、计数或释放 element（传输的数据项） 自带的资源；若流里传输的 element 持有需要 `close()` 的句柄，可用带 `onUndeliveredElement` 的 Channel 设计资源回收，避免取消与缓冲区操作并发时漏掉清理。
 
-`produce`/`produceIn` 返回 `ReceiveChannel`。若 consumer 提前退出而 owner scope 仍活跃，应取消 channel；owner scope 被取消时，producer 会随结构化关系退出。单看“channel 是否 close”判定不了泄漏，关键仍是 producer job、consumer job 和底层资源是否终止。
+`produce`/`produceIn` 返回 `ReceiveChannel`。若 consumer（从 Channel 读取数据的消费端） 提前退出而 owner scope 仍活跃，应取消 channel；owner scope 被取消时，producer 会随结构化关系退出。单看“channel 是否 close”判定不了泄漏，关键仍是 producer job、consumer job 和底层资源是否终止。
 
-`flatMapMerge` 的并发 child 会随下游取消而取消，但并发度会影响同时活跃的上游数量和缓冲规模。把 `concurrency` 参数、buffer capacity 与 owner 生命周期放在一起监控，才好区分合法并发与任务积压。
+`flatMapMerge` 的并发 child 会随下游取消而取消，但并发度会影响同时活跃的上游数量和缓冲规模。把 `concurrency`（并发上限） 参数、buffer capacity（缓冲容量） 与 owner 生命周期放在一起监控，才好区分合法并发与任务积压。
 
 ### 4. Dispatcher 管线程，scope 管任务
 
@@ -748,11 +748,11 @@ dispatcher 决定协程每次恢复后由哪个线程或线程池执行，scope 
 
 `Dispatchers.Main.immediate` 在已经位于目标 Looper 时可以直接执行，省一次 `Handler.post`；但它也带来同步重入语义，别只为省一次调度就全量替换。
 
-`Dispatchers.IO.limitedParallelism(n)` 创建的是 dispatcher view——复用原 dispatcher、只改并行额度的视图——无需 `close()`。IO 的 view 具有弹性，各 view 的 parallelism 之和不受 IO 默认并行值约束。
+`Dispatchers.IO.limitedParallelism(n)` 创建的是 dispatcher view（复用原 dispatcher、只改变并行额度的视图）——复用原 dispatcher、只改并行额度的视图——无需 `close()`。IO 的 view 具有弹性，各 view 的 parallelism 之和不受 IO 默认并行值约束。
 
-它限制同时执行的 task 数，不保证固定使用某几条线程，也不限制挂起协程的数量。CPU permit 是 `CoroutineScheduler` 内部用于限制同时执行 CPU 任务的额度，不是业务请求许可。
+它限制同时执行的 task 数，不保证固定使用某几条线程，也不限制挂起协程的数量。CPU permit（计数信号量中的一个许可） 是 `CoroutineScheduler` 内部用于限制同时执行 CPU 任务的额度，不是业务请求许可。
 
-Default 与 IO 共享调度器线程，`withContext(Dispatchers.IO)` 从 Default 进入时不保证发生一次 OS 线程切换。dispatcher 切换的工程成本还包括队列等待、任务粒度和 context element——`CoroutineContext` 中随协程传递的元素——评估它别只用“协程切换比线程切换快”的固定数字。更完整的调度与背压分析见 [8.4 Kotlin Coroutine、Flow 与线程调度实践](../../part2-performance/ch08-responsiveness/04-coroutine-performance.md)。
+Default 与 IO 共享调度器线程，`withContext(Dispatchers.IO)` 从 Default 进入时不保证发生一次 OS 线程切换。dispatcher 切换的工程成本还包括队列等待、任务粒度和 context element（`CoroutineContext` 中随协程传递的元素）——`CoroutineContext` 中随协程传递的元素——评估它别只用“协程切换比线程切换快”的固定数字。更完整的调度与背压（生产速度超过消费速度后形成的排队压力）分析见 [8.4 Kotlin Coroutine、Flow 与线程调度实践](../../part2-performance/ch08-responsiveness/04-coroutine-performance.md)。
 
 #### 4.2 限并行与限业务并发
 
@@ -782,13 +782,13 @@ suspend fun fetch(request: Request): Response =
     }
 ```
 
-图片处理每次占用 CPU 时最多并行 2 个；`Semaphore` 的 permit 会跨 `withContext` 和挂起点持续持有，把 in-flight 请求——已经开始、尚未完成——限制在 8 个。数据库连接池、服务端配额这类资源，用 `Semaphore` 或资源池本身限流，别从 dispatcher 线程数间接推断。
+图片处理每次占用 CPU 时最多并行 2 个；`Semaphore` 的 permit 会跨 `withContext` 和挂起点持续持有，把 in-flight（已经开始、尚未完成） 请求——已经开始、尚未完成——限制在 8 个。数据库连接池、服务端配额这类资源，用 `Semaphore` 或资源池本身限流，别从 dispatcher 线程数间接推断。
 
 如果通过 `ExecutorService.asCoroutineDispatcher()` 创建独立 dispatcher，owner 结束时要关闭返回的 `ExecutorCoroutineDispatcher`；公共的 `Dispatchers.Default`、`IO`、`Main` 则轮不到业务去关。
 
 #### 4.3 协程没有独立的 Linux 调度优先级
 
-Android 内核调度的是线程。协程恢复到哪个 worker，就临时继承该 worker 的 nice、cgroup 和调度属性。在线程池协程里调用 `Process.setThreadPriority()` 改的是可复用 worker：后续无关任务可能继承这个值，协程换 worker 后预期又落空。
+Android 内核调度的是线程。协程恢复到哪个 worker，就临时继承该 worker 的 nice（Linux 线程调度权重）、cgroup 和调度属性。在线程池协程里调用 `Process.setThreadPriority()` 改的是可复用 worker：后续无关任务可能继承这个值，协程换 worker 后预期又落空。
 
 需要稳定线程属性的组件，应使用有界的专用 executor，在 `ThreadFactory` 里设好线程属性，再把它转成 dispatcher；这些线程由 owner 关闭，并纳入前半篇定义的 task/线程池监控。
 
@@ -796,7 +796,7 @@ Android 内核调度的是线程。协程恢复到哪个 worker，就临时继�
 
 #### 5.1 `kotlinx-coroutines-debug` 的 JVM agent 与 ART
 
-JVM agent 是在 JVM 启动时或运行中附加、用于观察或改写类行为的模块。`kotlinx-coroutines-debug` 的 `DebugProbes.install()` 依赖 ByteBuddy——运行时字节码改写库——和 Java Instrument API（JVM 类重定义接口）；1.11.0 的官方 README 明确说明 ART 不支持所需的 Instrument API，打包进 Android 项目还可能遇到资源合并问题。
+JVM agent 是在 JVM 启动时或运行中附加、用于观察或改写类行为的模块。`kotlinx-coroutines-debug` 的 `DebugProbes.install()` 依赖 ByteBuddy（运行时字节码改写库）——运行时字节码改写库——和 Java Instrument API（JVM 类重定义接口）；1.11.0 的官方 README 明确说明 ART 不支持所需的 Instrument API，打包进 Android 项目还可能遇到资源合并问题。
 
 `kotlinx.coroutines 1.11.0` 的公开 API 与源码里，也没有面向 Android 应用的稳定 `CoroutineTracing` 或 `correlate()` 接口；别把这些名称当成“1.7+ 已提供”的版本结论。
 
@@ -808,9 +808,9 @@ JVM agent 是在 JVM 启动时或运行中附加、用于观察或改写类行�
 - `kotlinx.coroutines.internal.recoverStackTrace`；
 - 替换 `DebugProbesKt.bin` 或探测 continuation 内部字段。
 
-`CoroutineStackFrame` 属于 Kotlin continuation 调试协议，`recoverStackTrace` 在 coroutines 源码中是 internal 实现。它们的对象布局和调用时机没有应用级兼容承诺，R8、Kotlin 编译器或 coroutines 升级都可能改变行为。
+`CoroutineStackFrame` 属于 Kotlin continuation 调试协议，`recoverStackTrace` 在 coroutines 源码中是 internal 实现。它们的对象布局和调用时机没有应用级兼容承诺，R8（Android 字节码优化与压缩工具）、Kotlin 编译器或 coroutines 升级都可能改变行为。
 
-常规 JVM 进程可以借助 Kotlin 插件的 Coroutine Debugger 查看运行/挂起状态、creation stack 和 coroutine dump。这项能力依赖 coroutine agent，而 1.11.0 官方文档明确说明 ART 不支持该 agent，Android 模拟器也用不上这套 Coroutine Debugger。Android debuggable 构建仍可用普通断点查看当前线程栈和局部变量，只是别把 IDE 的全局协程面板当成 Android 可用的枚举接口。
+常规 JVM 进程可以借助 Kotlin 插件的 Coroutine Debugger 查看运行/挂起状态、creation stack（创建调用栈） 和 coroutine dump（协程快照）。这项能力依赖 coroutine agent，而 1.11.0 官方文档明确说明 ART 不支持该 agent，Android 模拟器也用不上这套 Coroutine Debugger。Android debuggable 构建仍可用普通断点查看当前线程栈和局部变量，只是别把 IDE 的全局协程面板当成 Android 可用的枚举接口。
 
 `-Dkotlinx.coroutines.debug` 是常规 JVM 进程的启动属性，会在调试模式下把 coroutine ID/`CoroutineName` 附加到执行线程名，便于日志分析。它需要在 coroutines 运行时初始化前配置；Android 应用没有通用的应用级 `-D` 启动入口。该属性也不会生成可供生产环境遍历的 `Job` 注册表，更不会让 Perfetto 自动理解父子 `Job`。
 
@@ -828,7 +828,7 @@ JVM agent 是在 JVM 启动时或运行中附加、用于观察或改写类行�
 - 同一 owner/operation 的峰值基数；
 - 诊断灰度下采样的创建栈或调用点 ID。
 
-下面的 helper 用公开 API 登记一个 operation，并用 `androidx.tracing` 1.3.0 的 suspend `traceAsync` 在 Perfetto 中标出逻辑时段。
+下面的 helper（辅助函数） 用公开 API 登记一个 operation，并用 `androidx.tracing` 1.3.0 的 suspend `traceAsync` 在 Perfetto 中标出逻辑时段。
 
 ```kotlin
 private val nextTraceCookie = AtomicInteger()
@@ -883,13 +883,13 @@ fun CoroutineScope.launchTracked(
 }
 ```
 
-`onCreated` 到 `onStarted` 是调度等待，`onStarted` 到 `onCompleted` 是包含挂起时间的逻辑持续时间，和 CPU time——线程实际占用 CPU 的时间——是两个量。`invokeOnCompletion` 也能覆盖尚未开始就被取消的 job。监控实现必须线程安全、无阻塞、不抛异常，并在 completion 后移除对应的未完成任务记录，否则监控器自己就成了新的泄漏源。
+`onCreated` 到 `onStarted` 是调度等待，`onStarted` 到 `onCompleted` 是包含挂起时间的逻辑持续时间，和 CPU time（线程实际占用 CPU 的时间）——线程实际占用 CPU 的时间——是两个量。`invokeOnCompletion` 也能覆盖尚未开始就被取消的 job。监控实现必须线程安全、无阻塞、不抛异常，并在 completion 后移除对应的未完成任务记录，否则监控器自己就成了新的泄漏源。
 
 创建栈通过 `Throwable().stackTrace` 采集成本较高，只应在低比例灰度或异常触发后启用。成本更低的做法是在调用点传入编译期常量 ID，再通过应用版本与自维护的“ID → 源码调用点”映射表离线还原。
 
 #### 5.3 `ThreadContextElement` 的适用范围
 
-`ThreadContextElement.updateThreadContext()`/`restoreThreadContext()` 会在协程 resume、切换线程前后运行，适合传播 MDC（日志诊断上下文）、trace token 等少量线程上下文——trace token 用来串接同一次请求。实现必须处理恢复顺序和并发，其中不该 unwind 调用栈、写文件或上传网络。
+`ThreadContextElement.updateThreadContext()`/`restoreThreadContext()` 会在协程 resume、切换线程前后运行，适合传播 MDC（日志诊断上下文）、trace token（串接同一次请求的追踪标识） 等少量线程上下文——trace token 用来串接同一次请求。实现必须处理恢复顺序和并发，其中不该 unwind（还原调用栈） 调用栈、写文件或上传网络。
 
 它看不到没携带该 element 的协程，给不出全局创建/完成计数。用它传播已存在的 trace ID 没问题，拿它替代 operation 注册表则会留下大量盲区。
 
@@ -902,11 +902,11 @@ Perfetto slice 是时间轴上的一段有起止时间的事件。系统 trace �
 - CPU 频率、唤醒和线程迁移；
 - 应用主动写入的同步/异步 trace event。
 
-suspend block 可能跨线程恢复，所以同步 `trace {}` 包不住可能挂起并换线程的完整操作——同步 section 必须在同一线程成对开始和结束。`androidx.tracing` 的 suspend `traceAsync` 用 name+cookie 配对，适合表示跨挂起的逻辑时段。
+suspend block 可能跨线程恢复，所以同步 `trace {}` 包不住可能挂起并换线程的完整操作——同步 section 必须在同一线程成对开始和结束。`androidx.tracing` 的 suspend `traceAsync` 用 name+cookie（事件名与整数标识） 配对，适合表示跨挂起的逻辑时段。
 
 异步 slice 的长度包含排队、delay、I/O 等待和 CPU 执行。判断性能问题时要将它和 sched/线程 slice 对齐：
 
-- async slice 很长、CPU 很短：多半在等待 I/O、timer、lock 或 dispatcher；
+- async slice 很长、CPU 很短：多半在等待 I/O、timer（定时器）、lock 或 dispatcher；
 - Main 上连续 CPU slice 很长：主线程工作过重；
 - scheduled→started 很长：dispatcher、executor 或 Main queue 积压；
 - 大量同名重叠 async slice：缺少去重、并发上限或旧请求取消；
@@ -920,7 +920,7 @@ Android Studio 的 Java/Kotlin method tracing 会做运行时插桩——在每�
 
 ### 7. Compose 的 scope 边界
 
-Composition 是 Compose 当前保留的 UI 节点与状态集合。`LaunchedEffect(keys...)` 进入 Composition 时启动协程，key——决定 effect 实例身份的输入——改变时取消旧任务并启动新任务，离开 Composition 时取消。`rememberCoroutineScope()` 返回绑定到调用点的 scope，适合点击、动画等事件回调，调用点离开 Composition 时取消。
+Composition 是 Compose 当前保留的 UI 节点与状态集合。`LaunchedEffect(key（决定 effect 实例身份的输入）s...)` 进入 Composition 时启动协程，key——决定 effect 实例身份的输入——改变时取消旧任务并启动新任务，离开 Composition 时取消。`rememberCoroutineScope()` 返回绑定到调用点的 scope，适合点击、动画等事件回调，调用点离开 Composition 时取消。
 
 下面的代码区分“由状态驱动的 effect”和“由用户事件启动的任务”：
 
@@ -957,7 +957,7 @@ fun DetailScreen(
 
 `itemId` 变化会重启加载；`rememberUpdatedState` 让 effect 读到最新的 callback，又不会因 callback 实例变化重启 effect。点击任务使用与 Composition 生命周期绑定的 scope。代码显式重抛 `CancellationException`，避免 `runCatching` 把正常取消改写成失败处理。
 
-高频变化或不稳定的 key 会造成反复取消和重启，表现为请求抖动与重复分配；这未必泄漏，却浪费计算与网络资源。需要跨页面或跨 configuration change——例如旋转屏幕引发的 Activity 重建——的工作，应提升到合适的 `ViewModel`/repository owner，不要把 Compose scope 存进单例。
+高频变化或不稳定的 key 会造成反复取消和重启，表现为请求抖动与重复分配；这未必泄漏，却浪费计算与网络资源。需要跨页面或跨 configuration change（例如旋转屏幕引发的 Activity 重建）——例如旋转屏幕引发的 Activity 重建——的工作，应提升到合适的 `ViewModel`/repository owner，不要把 Compose scope 存进单例。
 
 ### 8. 协程如何引发 ANR
 
@@ -966,9 +966,9 @@ fun DetailScreen(
 - 在 `Dispatchers.Main` 上执行长循环、解码、压缩或大量序列化；
 - 在 suspend 函数中调用阻塞 I/O，却没有切换到合适 dispatcher；
 - 在主线程调用 `runBlocking` 等待 child；
-- 持有 monitor/lock 后挂起，或恢复后争用主线程所需的锁；
+- 持有 monitor/lock（互斥锁） 后挂起，或恢复后争用主线程所需的锁；
 - 大量 Main resume 同时入队，形成消息队列积压；
-- `NonCancellable` cleanup——不会响应取消的清理代码——没有时长上限或 timeout。
+- `NonCancellable` cleanup（不会响应取消的清理代码）——不会响应取消的清理代码——没有时长上限或 timeout。
 
 `delay` 会挂起并让出线程，`Thread.sleep` 则占住当前线程。`withTimeout` 通过取消协程实现，自动中断不了不响应取消的阻塞调用：对支持线程中断的 Java 阻塞 API 可用 `runInterruptible(Dispatchers.IO)`，对 socket、stream、codec 等资源还要提供能关闭底层对象的 close/cancel 方法。
 
@@ -997,7 +997,7 @@ WorkManager 可以在 `CoroutineWorker` 内使用协程，但可靠性来自 Wor
 按 owner/operation 聚合，不上传任意协程名，避免标签取值无限增长或夹带账号、搜索词等业务数据：
 
 - created、started、completed、cancelled、failed；
-- active、cancelling，以及覆盖所有未完成状态的 not-completed gauge 与峰值；
+- active、cancelling，以及覆盖所有未完成状态的 not-completed gauge（某一时刻的任务数量） 与峰值；
 - scheduled→started 延迟；
 - operation duration；
 - owner end→completion 取消延迟；
@@ -1033,7 +1033,7 @@ WorkManager 可以在 `CoroutineWorker` 内使用协程，但可靠性来自 Wor
 - 自建 executor/dispatcher 被关闭；
 - monitor completion 会删除对应的未完成任务记录。
 
-`runTest`、`TestScope` 和 Lifecycle test utilities 可以控制虚拟时间与状态切换；Lifecycle 2.8 起可向 `ViewModel` 注入 test scope，减少替换 `Dispatchers.Main` 的隐式依赖。测试结束时还应检查该 owner 持有的 root `Job.children`——它只覆盖这个 root 的结构树，谈不上进程全局枚举。
+`runTest`、`TestScope` 和 Lifecycle test utilities（生命周期测试工具） 可以控制虚拟时间与状态切换；Lifecycle 2.8 起可向 `ViewModel` 注入 test scope，减少替换 `Dispatchers.Main` 的隐式依赖。测试结束时还应检查该 owner 持有的 root `Job.children`——它只覆盖这个 root 的结构树，谈不上进程全局枚举。
 
 ### 11. 评审清单
 

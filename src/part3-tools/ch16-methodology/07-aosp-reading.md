@@ -41,9 +41,9 @@ related_chapters:
 last_review_finalize_at: '2026-07-31T08:12:00+08:00'
 ---
 
-# AOSP 代码阅读
+# AOSP（Android Open Source Project，Android 开源项目） 代码阅读
 
-我们在排查设备问题时抓到的日志、slice 和调用栈，最终都要回到源码才能解释：这段行为由哪一版代码、在什么条件下产生。所以源码阅读要由具体运行证据驱动——先固定平台 tag、模块和调用入口，再沿日志、trace 或 Binder 接口向上下游展开。这样得到的是可验证的实现解释，而不是在当前主干代码里找一个可能不存在于目标设备的答案。
+我们在排查设备问题时抓到的日志、slice 和调用栈，最终都要回到源码才能解释：这段行为由哪一版代码、在什么条件下产生。所以源码阅读要由具体运行证据驱动——先固定平台 tag（标签）、模块和调用入口，再沿日志、trace 或 Binder（Android 的进程间通信机制） 接口向上下游展开。这样得到的是可验证的实现解释，而不是在当前主干代码里找一个可能不存在于目标设备的答案。
 
 ## 阅读源码前，固定三个坐标
 
@@ -53,21 +53,21 @@ last_review_finalize_at: '2026-07-31T08:12:00+08:00'
 2. **Git 项目**：例如 `platform/frameworks/base` 或 `platform/frameworks/native`。
 3. **项目内路径**：例如 `core/java/android/view/Choreographer.java`。
 
-这里的“AOSP 源码”实际上是 Repo 协调管理的一组 Git 项目，manifest 记录每个项目的路径和 revision，checkout 出来才是我们看到的目录树。顶层目录与 Git 项目并不总是一一对应，`frameworks/base` 与 `art` 就是两个并列的项目。只写“我看了 AOSP 最新代码”别人无法复核，因为 `main`、`android-latest-release`、发布 tag 和厂商分支可能早已分开。
+这里的“AOSP 源码”实际上是 Repo 协调管理的一组 Git 项目，manifest（清单） 记录每个项目的路径和 revision（分支、tag 或 commit），checkout 出来才是我们看到的目录树。顶层目录与 Git 项目并不总是一一对应，`frameworks/base` 与 `art` 就是两个并列的项目。只写“我看了 AOSP 最新代码”别人无法复核，因为 `main`、`android-latest-release`、发布 tag（日志标签） 和厂商分支可能早已分开。
 
 阅读时再保留一份运行现场：
 
 - Build fingerprint（整套设备软件构建的标识）、`ro.build.version.sdk` 和厂商版本；
 - 进程、线程、时间窗；
-- Logcat 原文或 Perfetto trace；
+- Logcat 原文或 Perfetto trace（系统时间线记录）；
 - 复现条件；
 - 源码 tag、项目和文件路径。
 
-这份记录帮我们避开两类误判：用 Android 17 源码解释旧设备行为，或用 AOSP 行为代替厂商实现。厂商可以修改 Framework、SurfaceFlinger、HAL 和内核；AOSP 是参照系，设备证据决定现场是否走了同一条路径。
+这份记录帮我们避开两类误判：用 Android 17 源码解释旧设备行为，或用 AOSP 行为代替厂商实现。厂商可以修改 Framework、SurfaceFlinger、HAL（Hardware Abstraction Layer，硬件抽象层） 和内核；AOSP 是参照系，设备证据决定现场是否走了同一条路径。
 
 ## 在线阅读：Android Code Search
 
-在线阅读主要用 [Android Code Search](https://cs.android.com)：它把 Repo 组合后的 AOSP 目录放在同一个界面里，全文搜索、符号交叉引用、目录浏览和版本切换都支持。官方说明见 [Android Code Search](https://source.android.com/docs/setup/contribute/code-search)，查询语法见 [Code Search syntax reference](https://developers.google.com/code-search/reference)。
+在线阅读主要用 [Android Code Search](https://cs.android.com)：它把 Repo 组合后的 AOSP 目录放在同一个界面里，全文搜索、符号交叉引用（cross references，即定义与引用列表）、目录浏览和版本切换都支持。官方说明见 [Android Code Search](https://source.android.com/docs/setup/contribute/code-search)，查询语法见 [Code Search syntax reference](https://developers.google.com/code-search/reference)。
 
 ### 固定版本，再打开文件
 
@@ -95,7 +95,7 @@ file:services/surfaceflinger symbol:composite
 点击已索引的符号可以看到定义和引用，快捷键 `x` 可以直接打开 cross references。它对 Java、C++ 等已索引源码很有帮助，但引用结果需要我们逐条判断：
 
 - 虚方法调用指向静态类型，运行时对象可能是子类；
-- 反射、JNI、Binder、消息分发和回调会中断普通调用层次；
+- 反射、JNI（Java 与 native 代码之间的接口）、Binder、消息分发和回调会中断普通调用层次；
 - 宏展开、生成代码、条件编译和产品变体可能改变入口；
 - 某些 revision 或语言没有完整索引；
 - 引用列表只说明语法关系，设备运行时是否执行要另行确认；
@@ -117,20 +117,20 @@ file:services/surfaceflinger symbol:composite
 - `packages/SystemUI/`：状态栏、通知、锁屏和系统界面；
 - `graphics/java/android/graphics/`：Canvas、Bitmap、Paint 和渲染接口。
 
-路径只是初始范围。以应用启动为例，应用进程侧会进入 `ActivityThread`，system_server 侧会进入 `ActivityTaskManagerService`、`ActivityManagerService` 和进程启动代码，运行时还会涉及 ART 与 zygote。
+路径只是初始范围。以应用启动为例，应用进程侧会进入 `ActivityThread`，system_server（承载核心 Java 系统服务的进程） 侧会进入 `ActivityTaskManagerService`、`ActivityManagerService` 和进程启动代码，运行时还会涉及 ART（Android Runtime） 与 zygote（预加载运行环境并派生应用进程的进程）。
 
 ### `frameworks/native`：图形、Binder 与原生系统组件
 
 做性能分析时，我们常进入下面这些路径：
 
 - `services/surfaceflinger/`：SurfaceFlinger、CompositionEngine、DisplayHardware；
-- `libs/gui/`：Surface、BufferQueue、BLAST 和图形 IPC 数据结构；
-- `libs/ui/`：显示、颜色、像素格式和 Fence 相关抽象；
+- `libs/gui/`：Surface、BufferQueue、BLAST 和图形 IPC（进程间通信） 数据结构；
+- `libs/ui/`：显示、颜色、像素格式和 Fence（表示图形工作完成时点的同步对象） 相关抽象；
 - `libs/binder/`：Native Binder；
 - `services/inputflinger/`：输入读取与分发；
 - `cmds/atrace/`：atrace 命令及类别配置。
 
-SurfaceFlinger 的实现分布在 `SurfaceFlinger.cpp`、`CompositionEngine/`、`DisplayHardware/`、`Scheduler/` 等多个子目录，只在单个文件里找整条合成流程，会漏掉输出策略，也看不清 HWC 与 RenderEngine 之间的分工。
+SurfaceFlinger 的实现分布在 `SurfaceFlinger.cpp`、`CompositionEngine/`、`DisplayHardware/`、`Scheduler/` 等多个子目录，只在单个文件里找整条合成流程，会漏掉输出策略，也看不清 HWC（Hardware Composer，硬件合成器） 与 RenderEngine（SurfaceFlinger 的 GPU 合成组件） 之间的分工。
 
 ### `system/core`：init、日志与系统基础组件
 
@@ -173,14 +173,14 @@ shell 命令还可能来自 `external/toybox` 或独立项目。看到设备命�
 
 ### 先读 `Android.bp`
 
-这里要先澄清一个常见误会：源码文件存在，未必说明它进入当前产品。`Android.bp` 是 Soong（AOSP 构建系统）的模块配置文件，Soong 会根据模块、依赖、架构、产品变量、feature flag 和生成规则选择源文件。我们读它，至少能回答四个问题：
+这里要先澄清一个常见误会：源码文件存在，未必说明它进入当前产品。`Android.bp` 是 Soong（AOSP 构建系统）的模块配置文件，Soong 会根据模块、依赖、架构、产品变量、feature flag（功能开关） 和生成规则选择源文件。我们读它，至少能回答四个问题：
 
 - 这个文件属于哪个模块；
 - 模块编进哪个分区、APK、JAR、APEX 或二进制；
 - 同名接口使用哪套实现与变体；
-- AIDL、proto、aconfig（平台 flag 声明）、sysprop（类型化系统属性 API 声明）等生成代码从哪里来。
+- AIDL（Binder 接口定义）、proto（Protocol Buffers 数据定义）、aconfig（平台 flag 声明）、sysprop（类型化系统属性 API 声明）等生成代码从哪里来。
 
-当 Code Search 找到多个实现时，构建图比文件路径更能说明 Android 17 选用了哪一个。Soong 语法与模块规则可从 [`build/soong`](https://android.googlesource.com/platform/build/soong/+/refs/tags/android-17.0.0_r1) 复核。
+当 Code Search 找到多个实现时，构建图（模块及其依赖关系）比文件路径更能说明 Android 17 选用了哪一个。Soong 语法与模块规则可从 [`build/soong`](https://android.googlesource.com/platform/build/soong/+/refs/tags/android-17.0.0_r1) 复核。
 
 ### 问题到目录的初始映射
 
@@ -215,18 +215,18 @@ I/Choreographer: Skipped 42 frames!  The application may be doing too much work 
 
 ### 可复用的日志定位步骤
 
-1. 保留原始时间戳、priority、tag、pid、tid 和进程名。
+1. 保留原始时间戳、priority（级别）、tag、pid（进程 ID）、tid（线程 ID） 和进程名。
 2. 去掉数字、地址、对象 ID、包名等动态字段。
 3. 选择一段有区分度的稳定文本，使用 `content:"..."` 搜索。
 4. 固定源码 tag，查看日志调用周围的条件分支和参数来源。
-5. 追调用者，并记录日志是否受 debug flag、系统属性或 build type 控制。
+5. 追调用者，并记录日志是否受 debug flag（调试开关）、系统属性或 build type（构建类型） 控制。
 6. 回到设备证据，对照进程、线程、版本和条件。
 
 tag 只能缩小范围：多个类可以共用 tag；厂商日志可能没有对应 AOSP 源码；资源、proto、EventLog 结构化事件、statsd（系统统计守护进程）或格式化模板也可能让完整文本不以连续字面量存在。字面量找不到时，依次搜索：
 
 - tag 常量和日志方法；
 - 字符串中的稳定片段；
-- error code、event ID 或 stats atom；
+- error code、event ID 或 stats atom（statsd 的结构化事件定义）；
 - 调用栈里的类与方法；
 - 生成源的输入文件；
 - 厂商仓库或对应开源组件。
@@ -248,20 +248,20 @@ repo grep -n 'presentAndGetReleaseFences'
 
 ### 先确定 slice 的轨道和进程
 
-再看 trace 这条线。Perfetto 的 slice 是带起止时间的区间事件，显示在一条 track 上；同名 slice 可以由多个模块产生。所以搜索源码前，先记录：
+再看 trace 这条线。Perfetto 的 slice 是带起止时间的区间事件，显示在一条 track（轨道） 上；同名 slice 可以由多个模块产生。所以搜索源码前，先记录：
 
 - track 名称；
 - process / thread 名称与 pid / tid；
 - slice 完整名称；
 - 起止时间和相邻 slice；
 - trace 配置里启用的数据源和 atrace 类别；
-- slice args、cookie、flow（跨事件连接）或 Binder 关联；
+- slice args（事件参数）、cookie（异步事件配对 ID）、flow（跨事件连接）或 Binder 关联；
 
 为什么要记这么全？比如 `measure` 出现在应用 UI 线程时，通常指向 View traversal（measure/layout/draw 调度）；出现在工具进程或厂商线程时，含义可能完全不同。只按名字搜索，容易选错实现。
 
 ### Java trace：字符串与 tag 都要看
 
-`Choreographer.doFrame()` 会在 `TRACE_TAG_VIEW` 启用时生成带 VSync ID 的 slice。下面的节选只保留反查所需的调用形态：
+`Choreographer.doFrame()` 会在 `TRACE_TAG_VIEW` 启用时生成带 VSync ID（帧时间线标识） 的 slice。下面的节选只保留反查所需的调用形态：
 
 ```java
 Trace.traceBegin(
@@ -313,7 +313,7 @@ SFTRACE_NAME(
 
 ### atrace 类别只控制 atrace 事件
 
-`ATRACE_TAG_GRAPHICS`、`ATRACE_TAG_INPUT`、`ATRACE_TAG_VIEW` 等 tag 会参与 atrace enable mask 判断。预期 slice 缺失时，先检查抓取配置、tag、build flag 和代码分支。
+`ATRACE_TAG_GRAPHICS`、`ATRACE_TAG_INPUT`、`ATRACE_TAG_VIEW` 等 tag 会参与 atrace enable mask（启用位掩码） 判断。预期 slice 缺失时，先检查抓取配置、tag、build flag（构建开关） 和代码分支。
 
 另外，Perfetto 还能通过 `ftrace` 采集内核调度（sched）事件，以及 Binder 事件、堆分析数据源 `heapprofd`、应用或 native 埋点 `TrackEvent` 等。某条数据源没有使用 atrace tag 时，启用或关闭 atrace 类别都控制不了它；所以分析缺失事件时，我们要先识别数据源类型。
 
@@ -323,7 +323,7 @@ SFTRACE_NAME(
 
 路径：`frameworks/base/core/java/android/app/ActivityThread.java`
 
-应用进程由 zygote fork 后，经 RuntimeInit 进入 `ActivityThread.main()`。`main()` 调用 `Looper.prepareMainLooper()`，创建 `ActivityThread`，执行 `attach(false, startSeq)`，随后进入 `Looper.loop()`。它是应用进程的 Java 主入口——进程创建在它之前已经经过 zygote、native runtime 和 RuntimeInit。
+应用进程由 zygote fork（派生） 后，经 RuntimeInit（Java 运行时初始化入口） 进入 `ActivityThread.main()`。`main()` 调用 `Looper.prepare（并行开展 HWC 协商与可能的 GPU 合成准备）MainLooper()`，创建 `ActivityThread`，执行 `attach(false, startSeq)`，随后进入 `Looper.loop()`。它是应用进程的 Java 主入口——进程创建在它之前已经经过 zygote、native runtime 和 RuntimeInit。
 
 阅读应用启动时，我们常看这几个方法：
 
@@ -340,7 +340,7 @@ SFTRACE_NAME(
 
 路径：`frameworks/base/core/java/android/view/ViewRootImpl.java`
 
-顶层 View 与窗口系统的连接点就是 `ViewRootImpl`：`WindowManagerGlobal.addView()` 为加入 WindowManager 的顶层 View 创建 `ViewRootImpl`，由它管理 View 树 traversal、窗口 relayout、Surface、输入接收和与 WMS 的会话。
+顶层 View 与窗口系统的连接点就是 `ViewRootImpl`：`WindowManagerGlobal.addView()` 为加入 WindowManager 的顶层 View 创建 `ViewRootImpl`，由它管理 View 树 traversal、窗口 relayout、Surface、输入接收和与 WMS（WindowManagerService，窗口管理系统服务） 的会话。
 
 它的调度关系是：
 
@@ -397,7 +397,7 @@ SFTRACE_NAME(
 
 Client composition 指 RenderEngine 使用 GPU 完成的客户端合成，device composition 则交给 HWC/HAL 与显示硬件。还要注意 `getDeviceCompositionChanges()` 不保证每帧都单独执行 `validate()`：没有 client composition 且满足提交时序条件时，它会先尝试 `presentOrValidate()`；如果该调用已经完成 present，后续 `presentAndGetReleaseFences()` 会刷新待执行命令并使用已保存的 fences。
 
-`Output::present()` 还可能走几条特殊路径：composition prediction 沿用上一帧策略、同时验证本帧 HWC 结果；异步 prepare 并行开展 HWC 协商与可能的 GPU 合成准备；present offload 把本帧提交临时交给 worker 线程。一次 trace 中采用哪条分支，要看 output state、composition type、HWC 结果、Fence 与相关 slice。
+`Output::present()` 还可能走几条特殊路径：composition prediction（沿用上一帧策略，同时验证本帧 HWC 结果） 沿用上一帧策略、同时验证本帧 HWC 结果；异步 prepare 并行开展 HWC 协商与可能的 GPU 合成准备；present offload（把本帧提交临时交给 worker 线程） 把本帧提交临时交给 worker 线程。一次 trace 中采用哪条分支，要看 output state（输出状态）、composition type、HWC 结果、Fence 与相关 slice。
 
 旧资料常出现 `onMessageRefresh()`、`composeSurfaces()`、`Layer::onDraw()` 或直接的 `validateDisplay()` / `presentDisplay()`，这些名字适合对应版本。读 Android 17 应从当前的封装层（wrapper）和 CompositionEngine 结构出发；HWC wrapper 内部仍会调用 Composer HAL，只是 Framework 侧入口已经有明确封装。
 
@@ -418,7 +418,7 @@ Client composition 指 RenderEngine 使用 GPU 完成的客户端合成，device
 
 ### 跨 Binder 边界
 
-Java 调用栈停在 Binder proxy 时，我们按以下步骤查：
+Java 调用栈停在 Binder proxy（客户端代理对象） 时，我们按以下步骤查：
 
 1. 搜索 `.aidl` 接口；
 2. Java 服务端搜索 `extends IXXX.Stub`，Native AIDL 搜索 `BnXXX`、`BpXXX` 或 NDK binder 基类；
@@ -426,11 +426,11 @@ Java 调用栈停在 Binder proxy 时，我们按以下步骤查：
 4. 从 Perfetto 的 `binder transaction` / `binder reply` 读取客户端和服务端 pid/tid；
 5. 在服务端入口继续追同步调用、线程切换和锁。
 
-生成的 Stub/Proxy 说明 transaction 的编解码和分派方式；业务耗时通常要继续进入服务实现、HAL 或回调。
+生成的 Stub/Proxy（服务端桩与客户端代理） 说明 transaction 的编解码和分派方式；业务耗时通常要继续进入服务实现、HAL 或回调。
 
 ### 消息、回调与线程切换
 
-遇到 `Handler.post()`、`Executor.execute()`、`Choreographer` callback、native scheduler 或 Future 时，普通 Call Hierarchy 会断开。记录下面这些信息，可以把两侧重新连起来：
+遇到 `Handler.post()`、`Executor.execute()`、`Choreographer` callback、native scheduler 或 Future 时，普通 Call Hierarchy（IDE 静态调用层次） 会断开。记录下面这些信息，可以把两侧重新连起来：
 
 - 投递点与 Runnable/callback 类型；
 - 消息 `what`、token、callback 对象；
@@ -484,7 +484,7 @@ git -C frameworks/native rev-parse HEAD
 repo manifest -r
 ```
 
-`repo manifest -r` 会把 manifest 中各项目 revision 固定为 commit SHA，适合作为复现记录。tag 是否签名可信还可以按官方文档执行 `git tag -v android-17.0.0_r1`。
+`repo manifest -r` 会把 manifest 中各项目 revision 固定为 commit SHA（提交哈希），适合作为复现记录。tag 是否签名可信还可以按官方文档执行 `git tag -v android-17.0.0_r1`。
 
 ## IDE、AIDEGen 与 clangd
 
@@ -498,7 +498,7 @@ lunch aosp_cf_x86_64_only_phone-aosp_current-userdebug
 aidegen frameworks/base
 ```
 
-`lunch` target 由 product、release config 和 build variant 三段组成，示例中的 `userdebug` 是保留调试能力的系统构建变体。target 应与研究对象一致，这个示例来自当前官方 AOSP 入门文档。AIDEGen 会解析模块依赖，优于把目录当作普通 Gradle 项目打开；完成 `repo sync` 后，依赖变化较大时应重新运行 AIDEGen。
+`lunch` target 由 product（产品）、release config（发布配置） 和 build variant（构建变体） 三段组成，示例中的 `userdebug` 是保留调试能力的系统构建变体。target 应与研究对象一致，这个示例来自当前官方 AOSP 入门文档。AIDEGen 会解析模块依赖，优于把目录当作普通 Gradle 项目打开；完成 `repo sync` 后，依赖变化较大时应重新运行 AIDEGen。
 
 ### C/C++：AIDEGen 或 Soong compdb
 
@@ -522,7 +522,7 @@ SOONG_LINK_COMPDB_TO="$ANDROID_BUILD_TOP" \
 m nothing
 ```
 
-compdb 是 compilation database 的简称，只包含本次 Soong 构建图中收集到的编译单元。产品、架构、flag 或模块范围变化后，旧 compdb 可能指向错误的 include path、宏和变体。
+compdb 是 compilation database（编译数据库） 的简称，只包含本次 Soong 构建图中收集到的编译单元。产品、架构、flag 或模块范围变化后，旧 compdb 可能指向错误的 include path（头文件搜索路径）、宏和变体。
 
 ## 用 Git 与 Gerrit 追版本
 
@@ -560,7 +560,7 @@ git -C frameworks/base blame -L 1074,1212 \
 
 AOSP 提交消息通常包含 `Change-Id: I...`，它是一次 Gerrit 评审在多版提交间保持不变的标识。复制完整 Change-Id，在 [AOSP Gerrit](https://android-review.googlesource.com) 的搜索框查询。
 
-公开 change 页面可能包含 patch set（同一评审的某一版改动）、测试说明、review comment 和关联 bug。部分历史提交、上游导入或受限讨论没有完整公开信息，此时只能依据 commit message、diff、公开 bug 与代码行为。
+公开 change 页面可能包含 patch（源码改动） set（同一评审的某一版改动）、测试说明、review comment 和关联 bug。部分历史提交、上游导入或受限讨论没有完整公开信息，此时只能依据 commit message、diff、公开 bug 与代码行为。
 
 ## 一次源码阅读应产出什么
 

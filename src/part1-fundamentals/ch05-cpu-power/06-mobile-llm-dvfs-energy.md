@@ -52,7 +52,7 @@ last_idle_audit_at: '2026-08-22T18:35:18+08:00'
 
 # 移动端 LLM 推理的 DVFS 与能效边界
 
-端侧 LLM 推理会同时占用 CPU、GPU 或 NPU 与内存带宽，还要消耗设备的散热余量。计算方式随阶段变化：prefill 一次处理输入上下文，decode 持续生成输出；模型加载、后端编译、采样和 KV cache 管理又会在这两段计算之外引入额外开销。
+端侧 LLM 推理会同时占用 CPU、GPU 或 NPU 与内存带宽，还要消耗设备的散热余量。计算方式随阶段变化：prefill 一次处理输入上下文，decode 持续生成输出；模型加载、后端编译、采样（sampling）和 KV cache 管理又会在这两段计算之外引入额外开销。
 
 只看平均 CPU 利用率或某一次 tokens/s，通常解释不了用户感受到的等待、速度波动和发热。本文围绕四个工程问题展开：
 
@@ -89,7 +89,7 @@ request_energy_per_output_token
 
 按这套定义，TTFT 覆盖了分词器（tokenizer）处理、排队和冷启动，描述的是用户实际等待的时间。如果还要分析执行后端，我们另外报告 `t_prefill_end - t_prefill_start`，并分别测量模型文件读取、权重映射、delegate 初始化、计算图编译和首轮 kernel 预热。预热之后量到的后端时间，就不能再当作冷启动 TTFT 报出去。
 
-TPOT 是整段 decode 的平均值，容易掩盖个别 token 的停顿，工程报告还应给出相邻 token 延迟（inter-token latency）的第 50、95 百分位数（P50、P95）、最大值和随时间变化的曲线。在采用推测解码（speculative decoding）、并行解码或一次提交多个 token 的运行时里，输出回调与硬件 kernel 可能不再一一对应；这时 token 到达间隔仍能描述用户体验，要推断每个 token 在硬件上的执行周期，还需要另找依据。
+TPOT 是整段 decode 的平均值，容易掩盖个别 token 的停顿，工程报告还应给出相邻 token 延迟（inter-token latency）的第 50、95 百分位数（P50、P95）、最大值和随时间变化的曲线。在采用推测解码（speculative decoding）、并行解码（decode）或一次提交多个 token 的运行时里，输出回调与硬件 kernel 可能不再一一对应；这时 token 到达间隔仍能描述用户体验，要推断每个 token 在硬件上的执行周期，还需要另找依据。
 
 能耗同样要写清分母：
 
@@ -159,7 +159,7 @@ Prefill 一次处理较长的输入序列，张量运算容易组织成批量工
 
 Linux 提供了 devfreq 框架和通用 governor，但 Android 设备的 GPU、片上互连和内存控制器多由 SoC 厂商的驱动与策略管理，带宽请求和相关遥测数据（telemetry）也是。
 
-AOSP 没有给普通应用提供指定 GPU 或 DRAM 频点的统一 API。某台设备上存在的 sysfs 节点、tracepoint 或频率表，换一台设备就未必还在。
+AOSP 没有给普通应用提供指定 GPU 或 DRAM 频点的统一 API。某台设备上存在的 sysfs（内核向用户空间暴露状态和控制项的虚拟文件系统） 节点、tracepoint 或频率表，换一台设备就未必还在。
 
 GPU delegate、NPU delegate 或厂商运行时可以通过驱动提交工作，间接触发性能状态变化；是否升频、升到哪里、维持多久，取决于厂商实现、系统功耗模式和热预算。
 
@@ -181,7 +181,7 @@ AIDL 接口 `IPower` 支持创建性能提示会话（hint session）。Framewor
 6. **热与功率上限**：观测到的低频可能来自 thermal clamp 或平台功率预算，不一定是 governor 低估了利用率；
 7. **后台竞争**：相机、显示、网络、系统服务和其他应用会共同消耗 CPU、内存带宽与热余量。
 
-所以诊断要从 token 时间线开始，再关联 CPU 放置、CPU / GPU 频率、调度、内存、功耗和温度。单张利用率截图说明不了升频策略的问题。
+所以诊断要从 token 时间线开始，再关联 CPU 放置、CPU / GPU 频率、调度、内存、功耗和温度。单张利用率（utilization）截图说明不了升频策略的问题。
 
 ## FUSE 论文：Pixel 7 上的频点组合实验
 
@@ -260,8 +260,8 @@ if (session != null) {
 - `updateTargetWorkDuration(long)`：目标发生变化时更新期限；
 - `reportActualWorkDuration(long)`：每个周期报告实际时长；
 - `setThreads(int[])`：长期 worker 集合变化时更新线程；
-- `setPreferPowerEfficiency(boolean)`：在相应的 flagged API（功能开关控制可用性）可用时表达能效偏好；
-- `reportActualWorkDuration(WorkDuration)`：在相应 flagged API 可用时报告总时长及 CPU / GPU 时长；
+- `setPreferPowerEfficiency(boolean)`：在相应的 flagged API（功能开关（flag）控制可用性）可用时表达能效偏好；
+- `reportActualWorkDuration(WorkDuration)`：在相应 flagged API（由平台功能开关控制是否可用的 API） 可用时报告总时长及 CPU / GPU 时长；
 - `close()`：工作结束后释放 session。
 
 LLM decode 具有周期性，可以把一个稳定的 token 生成过程或一组 token 作为工作周期，但要满足三个条件：
@@ -286,7 +286,7 @@ Prefill 往往是一段较长的批量工作。如果运行时没有稳定、可
 
 - 后端是否原生支持该位宽与分组方式；
 - 不支持的算子是否回退 CPU；
-- 反量化是否增加临时内存和计算；
+- 反量化（将低位宽数值转换为计算所需格式）是否增加临时内存和计算；
 - 精度、输出稳定性和安全评测是否仍满足产品要求。
 
 ### KV cache 与上下文长度

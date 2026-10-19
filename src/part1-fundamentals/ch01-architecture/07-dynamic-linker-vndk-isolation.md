@@ -59,15 +59,15 @@ consolidated_from:
 - src/part1-fundamentals/ch01-architecture/50-dynamic-linker-native-library.md
 ---
 
-# Dynamic Linker、VNDK 与 Native 库隔离
+# Dynamic Linker、VNDK（Vendor Native Development Kit，厂商原生开发套件） 与 Native 库隔离
 
 Android 进程执行原生代码之前，要把 ELF（Executable and Linkable Format，可执行与可链接格式）文件映射进地址空间，找到依赖库，解析动态符号，写入重定位结果，再调整页面权限并运行初始化函数。这些工作由 bionic 自带的 dynamic linker（动态链接器）完成；64 位进程的常见解释器路径是 `/system/bin/linker64`，下文简称 linker64。
 
-> 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；内核 `android17-6.18-2026-06_r6`。涉及 `mmap()`、文件缺页和写时复制的内核行为以该分支为准；设备可能使用其他内核分支。
+> 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；内核 `android17-6.18-2026-06_r6`。涉及 `mmap()`、文件缺页和写时复制（Copy-on-Write，COW）的内核行为以该分支为准；设备可能使用其他内核分支。
 
 启动慢、找不到库、符号不匹配，这三类症状都要沿同一条装载路径逐段定位：linker64 先解析依赖、确定命名空间并完成重定位，再受分区隔离与稳定 ABI 规则约束。本文前半部分讲 linker64 的执行顺序，以及各阶段对启动时间、内存和故障定位的影响；VNDK 的可见性规则放在后半部分。
 
-正文沿用 linker 源码里的名称：DSO（Dynamic Shared Object）指 `.so` 动态共享对象，SONAME 是 ELF 内用于依赖匹配的逻辑库名，linker namespace 约束库的搜索路径和可见范围。内存布局方面还会用到几个名字：RELRO 是“重定位完成后只读”的内存区域，TLS 是每个线程独立保存的数据区，PLT/GOT 是动态函数调用和地址重定位所用的表，ABI 则是二进制接口约定。
+正文沿用 linker 源码里的名称：DSO（Dynamic Shared Object）指 `.so` 动态共享对象，SONAME 是 ELF 内用于依赖匹配的逻辑库名，linker namespace（链接器命名空间） 约束库的搜索路径和可见范围。内存布局方面还会用到几个名字：RELRO（重定位后改为只读的区域） 是“重定位完成后只读”的内存区域，TLS 是每个线程独立保存的数据区，PLT/GOT 是动态函数调用和地址重定位所用的表，ABI 则是二进制接口约定。
 
 ## linker64 装载、重定位与命名空间
 
@@ -164,7 +164,7 @@ linker64 从新任务中生成待映射列表：普通路径会随机化映射�
 
 `soinfo::link_image()` 对 local group 里尚未链接的库逐个执行以下工作：
 
-1. 按 global/local lookup list 解析重定位；
+1. 按 global/local lookup list（全局/局部符号查找列表） 解析重定位；
 2. 把 `PT_GNU_RELRO` 对应页面改为只读；
 3. 完成 16 KB app compatibility 路径需要的权限调整；
 4. 处理 MTE globals；

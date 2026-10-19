@@ -80,13 +80,13 @@ consolidated_from:
 
 排查性能问题时，Perfetto 和 Android Studio Profiler 回答的是“时间花在哪里”，自动化基准测试回答的是“从哪次改动开始变慢”。Trace 本身是带时间戳的性能事件记录：手工抓一次可以定位眼前的问题，但要在每次提交后按相同条件重放启动、滚动或热点函数就很难了，这件事得靠自动化。
 
-Jetpack Benchmark 把场景、编译状态、重复次数和产物格式都写进了测试代码，CI 系统因此可以保存每次运行的 JSON 结构化结果与 Perfetto Trace，并把本次数据与同一设备上的历史数据比较。不过自动执行只解决了重复性这一件事；构建类型、设备温度、系统版本、编译模式和操作范围仍要我们逐项固定，否则得到的主要是设备波动。
+Jetpack Benchmark 把场景、编译状态、重复次数和产物格式都写进了测试代码，CI 系统因此可以保存每次运行的 JSON（结构化文本格式） 结构化结果与 Perfetto Trace，并把本次数据与同一设备上的历史数据比较。不过自动执行只解决了重复性这一件事；构建类型、设备温度、系统版本、编译模式和操作范围仍要我们逐项固定，否则得到的主要是设备波动。
 
 ### Macrobenchmark 与 Microbenchmark：两种层次，两种用途
 
 两套库面向的层级不同：Macrobenchmark 测量完整用户场景，Microbenchmark 测量可独立调用的代码片段。
 
-先对齐两个词：APK 是 Android 应用或测试程序的安装包；AOT 指运行前把字节码编译为机器码，JIT 指运行期间编译热点代码。
+先对齐两个词：APK 是 Android 应用或测试程序的安装包；AOT（Ahead-of-Time） 指运行前把字节码编译为机器码，JIT（Just-in-Time） 指运行期间编译热点代码。
 
 两套库的区别集中在进程边界和测量对象，我们逐项看：
 
@@ -100,11 +100,11 @@ Jetpack Benchmark 把场景、编译状态、重复次数和产物格式都写�
 
 #### Macrobenchmark：端到端的用户体验测量
 
-Macrobenchmark 从目标应用外部启动 Activity、注入手势并采集系统 Trace，测的是启动、滚动和动画这类完整交互。测试代码必须放在独立的 `com.android.test` 模块中；目标 APK 用接近 release 的非 debuggable 构建，并保留 R8 的压缩和优化。Manifest 中的 `<profileable>` 让 shell 可以对非 debuggable 应用进行低干扰 Trace 采集。这里 R8 指 Android 构建中的代码压缩与优化工具。
+Macrobenchmark 从目标应用外部启动 Activity、注入手势并采集系统 Trace，测的是启动、滚动和动画这类完整交互。测试代码必须放在独立的 `com.android.test` 模块中；目标 APK 用接近 release 的非 debuggable 构建，并保留 R8（Android 构建中的代码压缩与优化工具） 的压缩和优化。Manifest 中的 `<profileable>` 让 shell 可以对非 debuggable 应用进行低干扰 Trace 采集。这里 R8 指 Android 构建中的代码压缩与优化工具。
 
 入口是 `MacrobenchmarkRule.measureRepeated()`。`setupBlock` 把应用放到一致的初始状态，`measureBlock` 定义计入测量的操作。iteration 是同一次测试启动中的一次重复测量；一次 `measureRepeated()` 会执行多个 iteration，并为每个测量 iteration 保存一份系统 Trace。
 
-`StartupTimingMetric` 的汇总值是 min、median、max；`FrameTimingMetric` 输出 P50、P90、P95、P99。P90 表示 90% 的样本不超过该值，其余分位数同理，读结果时要按分位数来读，而不是概括成“重复 N 次取平均值”。
+`StartupTimingMetric` 的汇总值是 min、median（中位数）、max；`FrameTimingMetric` 输出 P50、P90、P95、P99。P90 表示 90% 的样本不超过该值，其余分位数同理，读结果时要按分位数来读，而不是概括成“重复 N 次取平均值”。
 
 常用指标及其边界如下：
 
@@ -157,7 +157,7 @@ class JsonBenchmark {
 
 #### 测量启动时间
 
-Baseline Profile 是应用交给 ART 的预编译方法与类列表。下面这段测试测量 Baseline Profile 可用时的冷启动，代码主体省略了 import：
+Baseline Profile 是应用交给 ART（Android Runtime） 的预编译方法与类列表。下面这段测试测量 Baseline Profile 可用时的冷启动，代码主体省略了 import：
 
 ```kotlin
 // 省略 import；替换为被测应用的真实包名。
@@ -221,7 +221,7 @@ fun scrollList() = benchmarkRule.measureRepeated(
 
 `killProcess()` 与重新启动发生在测量区间之外，让每次迭代都从列表初始位置开始。`check` 让页面未准备好时直接失败，避免“没有找到列表但测试仍通过”这种假绿灯。`setGestureMargin()` 避开系统返回手势区域，`fling()` 产生可重复的滚动输入。业务场景要求固定距离时可改用 `swipe()`，并把方向、速度、距离和列表初始位置写成稳定条件。
 
-`FrameTimingMetric` 报告 P50、P90、P95、P99。API 31+ 的 `frameOverrunMs` 使用系统为每一帧计算的 deadline，60 Hz、高刷新率和可变刷新率设备都适用；正值表示超期，负值表示仍有余量。`frameDurationCpuMs` 只描述 UI 线程与 RenderThread 生成帧的 CPU 时间，GPU 等待和合成问题还要回到 FrameTimeline 与系统 Trace 上判断。FrameTimeline 是系统记录的预期帧与实际帧时序，后文多处会用到。
+`FrameTimingMetric` 报告 P50、P90、P95、P99。API 31+ 的 `frameOverrunMs` 使用系统为每一帧计算的 deadline，60 Hz、高刷新率和可变刷新率设备都适用；正值表示超期，负值表示仍有余量。`frameDurationCpuMs` 只描述 UI 线程与 RenderThread 生成帧的 CPU 时间，GPU 等待和合成问题还要回到 FrameTimeline（系统记录的预期帧与实际帧时序） 与系统 Trace 上判断。FrameTimeline（逐帧预期与实际时间轨道） 是系统记录的预期帧与实际帧时序，后文多处会用到。
 
 #### CompilationMode：量化编译优化效果
 
@@ -257,9 +257,9 @@ Android 14（API 34）起，Macrobenchmark 可以在重置编译状态时保留�
 
 Baseline Profile 的收益，应由同一 APK、同一设备、同一启动模式下的 `None()` 与 `Partial()` 实测得出；跨项目引用“提升约 30%”替代不了本应用自己的数据。
 
-### adb shell am instrument：性能测试的命令行入口
+### adb（Android Debug Bridge） shell am instrument：性能测试的命令行入口
 
-Gradle、Android Studio 和云设备平台最终都要走到同一个入口：启动 instrumentation。这是 Android 的系统测试机制——系统启动测试 APK 中的 runner，并为它建立测试连接。ADB 下最直接的入口是 `am instrument`，基本语法如下：
+Gradle、Android Studio 和云设备平台最终都要走到同一个入口：启动 instrumentation。这是 Android 的系统测试机制——系统启动测试 APK 中的 runner，并为它建立测试连接。ADB（Android Debug Bridge） 下最直接的入口是 `am instrument`，基本语法如下：
 
 ```bash
 adb shell am instrument -w <test_package>/<runner_class>
@@ -297,7 +297,7 @@ Benchmark 常用参数由测试库解释，不属于 `am` 内建选项：
 
 Benchmark 1.1.0 之前要用 `androidx.benchmark.output.enable=true` 手动开启 JSON；当前版本已默认输出，这个历史参数可以放下了。
 
-源码这一侧，[`Instrument`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/cmds/am/src/com/android/commands/am/Instrument.java) 解析 `-w`、`-e`、用户、ABI 等参数——ABI 指 APK 中 native 代码面向的 CPU 架构与二进制接口。解析完成后，`Instrument` 调用 Binder 接口 `IActivityManager.startInstrumentation()`。
+源码这一侧，[`Instrument`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/cmds/am/src/com/android/commands/am/Instrument.java) 解析 `-w`、`-e`、用户、ABI（Application Binary Interface） 等参数——ABI 指 APK 中 native 代码面向的 CPU 架构与二进制接口。解析完成后，`Instrument` 调用 Binder（Android 进程间通信机制） 接口 `IActivityManager.startInstrumentation()`。
 
 [`ActivityManagerShellCommand`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java) 的帮助文本也明确区分了 `am instrument` 入口。平台这一层只负责启动和传递参数，指标含义由 AndroidX Benchmark 决定。
 
@@ -311,7 +311,7 @@ UI Automator 可以检查用户应用和系统应用的 accessibility node（无
 
 平台把 [`UiAutomation`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/UiAutomation.java) 定义为一种特殊的 `AccessibilityService` 客户端；`am instrument` 创建 `UiAutomationConnection` 并把它交给 instrumentation。整个过程中用户无需安装或常驻启用一个普通无障碍服务，UI Automator 在测试进程中通过这条系统连接读取节点和注入手势。
 
-测试进程与目标应用进程分离，可以避免驱动代码计入目标进程的堆和调用栈，但两个进程仍共享 CPU、内存带宽、Binder 服务和内核调度资源，节点查询与输入注入还有 IPC 开销。想降低扰动，就把页面查找、登录和数据准备放入 `setupBlock`，`measureBlock` 中只保留固定输入和必要等待。
+测试进程与目标应用进程分离，可以避免驱动代码计入目标进程的堆和调用栈，但两个进程仍共享 CPU、内存带宽、Binder 服务和内核调度资源，节点查询与输入注入还有 IPC（跨进程通信） 开销。想降低扰动，就把页面查找、登录和数据准备放入 `setupBlock`，`measureBlock` 中只保留固定输入和必要等待。
 
 UI Automator 2.4.0 已于 2026 年 7 月 1 日稳定发布，引入了 `uiAutomator {}`、`onElement {}`、`waitForAppToBeVisible()` 等 Kotlin DSL（针对测试场景设计的调用语法），并加入内置等待、应用状态管理和截图能力。
 
@@ -335,7 +335,7 @@ Macrobenchmark 的自 instrumentation 测试 APK 运行在目标应用进程之�
 
 #### Monkey：低成本压力测试
 
-`Monkey` 在设备端生成伪随机点击、滑动、按键和系统事件，适合在夜间任务里发现崩溃与 ANR。seed 是伪随机数生成器的初始值，固定 seed 可以重放相同事件序列；不过页面数据、网络响应和系统弹窗仍可能让后续路径分叉。
+`Monkey` 在设备端生成伪随机点击、滑动、按键和系统事件，适合在夜间任务里发现崩溃与 ANR（Application Not Responding，应用无响应）。seed 是伪随机数生成器的初始值，固定 seed 可以重放相同事件序列；不过页面数据、网络响应和系统弹窗仍可能让后续路径分叉。
 
 这条命令把事件限制在单个包中，固定 seed，并监控 native crash：
 
@@ -352,7 +352,7 @@ adb shell monkey -p com.example.app \
 
 #### SoloPi：专项性能脚本和视觉拆帧
 
-SoloPi 提供录制回放、CPU / 内存 / FPS 性能面板和启动耗时辅助工具，适合线下走查和测试同学复现长流程。它的开源仓库构建说明仍以 Target API 29、Gradle 6.1.1 与 NDK 16 为基准——NDK 是 Android 的 C/C++ 开发工具集。接入 Android 17 设备前，权限、无线调试、无障碍节点和厂商系统兼容性都要单独验证。SoloPi 的面板数据可以用来发现异常区间；发布门禁还是要用可追溯的 Benchmark JSON 与 Trace。
+SoloPi 提供录制回放、CPU / 内存 / FPS（每秒帧数） 性能面板和启动耗时辅助工具，适合线下走查和测试同学复现长流程。它的开源仓库构建说明仍以 Target API 29、Gradle 6.1.1 与 NDK 16 为基准——NDK 是 Android 的 C/C++ 开发工具集。接入 Android 17 设备前，权限、无线调试、无障碍节点和厂商系统兼容性都要单独验证。SoloPi 的面板数据可以用来发现异常区间；发布门禁还是要用可追溯的 Benchmark JSON 与 Trace。
 
 #### Appium：跨端业务脚本编排
 
@@ -360,7 +360,7 @@ Appium 3 是基于 W3C WebDriver 的模块化自动化框架：W3C WebDriver 定
 
 WebDriver 服务、driver、设备自动化后端和显式/隐式等待都会影响输入时序。Appium 负责场景编排时，性能指标仍由设备侧 Macrobenchmark、Perfetto 或明确的系统 counter（计数器读数）采集。
 
-### 性能自动化测试的 CI/CD 集成方案
+### 性能自动化测试的 CI/CD（持续集成与持续交付） 集成方案
 
 CI/CD 分别指持续集成与持续交付/部署。一条可靠的性能 CI 要同时保存代码版本、APK、测试 APK、设备指纹、Benchmark JSON 和 Trace，缺哪一项，回归曲线都很难复查。
 
@@ -474,7 +474,7 @@ Google 的 [performance-samples FTL workflow](https://github.com/android/perform
 
 #### 结果持久化与趋势追踪
 
-JSON 的 `context` 包含设备型号、build fingerprint 和 CPU 等运行上下文。写入趋势数据库时，这些上下文要和测试名、参数、指标数组一起保存，只取一个 median 数字是不够的。设备重刷系统、Benchmark 库升级、编译模式变化或 Baseline Profile 更新时，应建立新基线，别让环境迁移显示成代码回归。
+JSON 的 `context` 包含设备型号、build fingerprint（构建的唯一标识字符串） 和 CPU 等运行上下文。写入趋势数据库时，这些上下文要和测试名、参数、指标数组一起保存，只取一个 median 数字是不够的。设备重刷系统、Benchmark 库升级、编译模式变化或 Baseline Profile 更新时，应建立新基线，别让环境迁移显示成代码回归。
 
 告警可同时使用“相对近期稳定窗口”与“绝对体验预算”：前者比较近期多次稳定运行，用来发现小幅持续退化；后者是业务能接受的最大耗时或功耗，可防止历史基线本身已经过慢。命中告警后查看对应 iteration 的 Trace——只靠一个百分比，分不清应用回归、温度变化、系统任务和云设备实例差异。
 
@@ -496,7 +496,7 @@ AndroidX JSON schema（字段与类型约定）会随库版本扩展。门禁前
 
 `StartupMode.COLD` 会停止目标进程，默认配置还可能清理 shader cache（GPU 着色器编译缓存），并请求系统清理 page cache（内核的文件页缓存），这相当于设备重启后的部分缓存状态，而非全部：DNS 域名解析、GPU 驱动、系统服务和业务数据缓存各有生命周期。page cache 清理影响整机，同一性能设备上不要并行运行其他任务，也不要在外层脚本重复清理。
 
-指标退化后，我们找到 candidate 的异常 iteration 和同设备 baseline，按相同 journey（完整用户操作路径）的时间范围比较 Trace：启动看 process start、Binder、class load、GC、I/O 和首帧；帧问题看 FrameTimeline、UI thread、RenderThread、GPU 与 SurfaceFlinger。这里 SurfaceFlinger 指系统的显示合成服务。
+指标退化后，我们找到 candidate 的异常 iteration 和同设备 baseline，按相同 journey（完整用户操作路径）的时间范围比较 Trace：启动看 process start、Binder、class load（类加载）、GC（垃圾回收）、I/O（输入/输出） 和首帧；帧问题看 FrameTimeline、UI thread、RenderThread、GPU 与 SurfaceFlinger（系统显示合成服务）。这里 SurfaceFlinger 指系统的显示合成服务。
 
 最后用版本固定的 Trace Processor SQL 查询量化同一时间窗。门禁负责发现回归，Trace 负责解释原因。
 
@@ -512,9 +512,9 @@ project_root/module/build/outputs/connected_android_test_additional_output/debug
 
 启动 Trace 的阅读顺序可以固定为：
 
-1. 在 App Startups 或启动相关 slice 中确认 launch、TTID、TTFD 边界。
+1. 在 App Startups 或启动相关 slice（Trace 中带起止时间的事件片段） 中确认 launch、TTID、TTFD 边界。
 2. 沿目标进程主线程查看 `ActivityThread`、`bindApplication`、`Activity` 生命周期和首帧 `Choreographer#doFrame`。
-3. 查看 RenderThread、GPU queue 与 FrameTimeline，区分 UI 线程、RenderThread、GPU 和 SurfaceFlinger 侧等待。
+3. 查看 RenderThread、GPU queue（提交给 GPU 的工作队列） 与 FrameTimeline，区分 UI 线程、RenderThread、GPU 和 SurfaceFlinger 侧等待。
 4. 用 Binder、线程调度和 CPU frequency 轨道解释空洞或抢占，避免把所有墙钟时间都归给应用函数。
 
 滚动 Trace 以 FrameTimeline 的 expected/actual slice 为主——它们分别表示系统预期的帧时序与实际执行时序，jank 标记表示帧未按预期时序完成。看完标记再回到主线程 `doFrame`、RenderThread 与 GPU 轨道定位原因。单看 `doFrame` 是否超过固定 16.67 ms，容易误判高刷新率、可变刷新率和 GPU / 合成侧超期。
@@ -546,15 +546,15 @@ Android CLI 把项目、SDK、设备、APK、UI 状态和 IDE 查询接到同一
 
 - Android CLI 版本：决定命令、参数、默认模板和 skill 安装行为；
 - 设备 build fingerprint 与 Android 17 / API 37 平台版本：决定 framework、ART、SurfaceFlinger 合成器和 Perfetto 事件；
-- 设备实际 kernel 与 vendor driver 版本：决定 scheduler tracepoint（调度器事件记录点）、CPU/GPU 能力和设备特有数据。`android17-6.18-2026-06_r6` 只能作为 Android common kernel 的源码参照，真机可能包含厂商修改。
+- 设备实际 kernel 与 vendor driver（厂商驱动） 版本：决定 scheduler tracepoint（调度器事件记录点）、CPU/GPU 能力和设备特有数据。`android17-6.18-2026-06_r6` 只能作为 Android common kernel 的源码参照，真机可能包含厂商修改。
 
 举例来说，APA 或 Perfetto 读取的录制配置，对应 `external/perfetto/protos/perfetto/config/trace_config.proto`；调度分析使用 `include/trace/events/sched.h` 中的 `sched_switch`、`sched_wakeup` 等事件，分析真机 trace 时以该设备内核实际提供的事件为准。CLI 能启动 App、保存画面或触发测试，这些事件的含义不会因它而变。
 
-截图、布局树和 Journey 结果只能证明“agent 看到了什么、执行了什么”；帧耗时、CPU 调度、GPU 执行和功耗结论，依据仍是 trace、benchmark metric 或硬件测量。官方 Macrobenchmark 文档不建议用模拟器产出的性能数字代表终端用户体验，并把模拟器测量视为配置错误。模拟器更适合验证安装、页面路径和断言，发布级性能结论放到受控的物理设备上采集。
+截图、布局树和 Journey 结果只能证明“agent 看到了什么、执行了什么”；帧耗时、CPU 调度、GPU 执行和功耗结论，依据仍是 trace、benchmark metric（基准测试指标） 或硬件测量。官方 Macrobenchmark 文档不建议用模拟器产出的性能数字代表终端用户体验，并把模拟器测量视为配置错误。模拟器更适合验证安装、页面路径和断言，发布级性能结论放到受控的物理设备上采集。
 
 ### 项目描述、SDK 与设备基线
 
-做性能复现实验，先固定环境。`android --version`、`describe`、`info`、`sdk` 和 `emulator` 命令适合在 agent 操作前生成基线记录。注意 `android update` 更新的是 Android CLI 本身，`android sdk update` 更新的是 SDK package，两条命令用途不同。
+做性能复现实验，先固定环境。`android --version`、`describe`、`info`、`sdk` 和 `emulator` 命令适合在 agent 操作前生成基线记录。注意 `android update` 更新的是 Android CLI 本身，`android sdk update` 更新的是 SDK package（SDK 软件包），两条命令用途不同。
 
 | 命令 | 适合记录的基线 | 在性能流程里的用法 |
 |---|---|---|
@@ -567,11 +567,11 @@ Android CLI 把项目、SDK、设备、APK、UI 状态和 IDE 查询接到同一
 | `android emulator create/list/start/stop` | 虚拟设备 profile、设备名、serial | 先创建 AVD，再启动列表中的设备；Windows 侧 `android emulator` 命令当前被官方禁用 |
 | `android docs search/fetch` | Android Knowledge Base（官方知识库）查询及返回内容 | 为 agent 提供官方文档上下文；不能替代项目源码与设备 trace |
 
-`android describe` 输出一个 JSON 文件路径，该文件描述项目结构、build target 和 artifact 位置。命令本身不执行 Gradle 构建，调用前仍要明确 build variant，如 `debug`、`benchmark` 或 `release`，并确认 APK 的时间戳、校验值和代码提交。这样 agent 就不必从 `app/build/outputs/` 猜文件，也不必把临时路径写死在提示词里。
+`android describe` 输出一个 JSON 文件路径，该文件描述项目结构、build target（构建目标） 和 artifact（构建输出） 位置。命令本身不执行 Gradle 构建，调用前仍要明确 build variant（构建变体，如 `debug`、`benchmark` 或 `release`），如 `debug`、`benchmark` 或 `release`，并确认 APK 的时间戳、校验值和代码提交。这样 agent 就不必从 `app/build/outputs/` 猜文件，也不必把临时路径写死在提示词里。
 
-SDK 和设备基线至少记录 Android SDK 路径、`platforms/android-37` package revision、build-tools / platform-tools 版本，以及设备 serial 或 emulator profile——serial 是 adb 区分设备的标识，emulator profile 是虚拟设备配置。涉及帧率、启动耗时、功耗和 GPU counter 的测试，还要保存设备型号、build fingerprint、刷新率、电池与温度状态及 GPU driver，这些内容要由测试脚本或人工补齐。
+SDK 和设备基线至少记录 Android SDK 路径、`platforms/android-37` package revision（软件包修订号）、build-tools / platform-tools 版本，以及设备 serial 或 emulator profile——serial 是 adb 区分设备的标识，emulator profile 是虚拟设备配置。涉及帧率、启动耗时、功耗和 GPU counter 的测试，还要保存设备型号、build fingerprint、刷新率、电池与温度状态及 GPU driver，这些内容要由测试脚本或人工补齐。
 
-`android emulator create --profile=medium_phone` 用于创建 AVD（Android Virtual Device，Android 虚拟设备），`android emulator start medium_phone` 只能启动已经存在且名称匹配的设备。旧 CI 模板直接调用 `start`，在全新 runner（执行 CI 任务的机器）上会失败，所以虚拟设备的预先创建与配置（AVD provisioning）要在任务开始前完成，或者先用 `emulator list` 检查再按需创建。缺少 API 37 platform 或目标 system image 时，先通过 `sdk list/install` 安装。
+`android emulator create --profile=medium_phone` 用于创建 AVD（Android Virtual Device，Android 虚拟设备），`android emulator start medium_phone` 只能启动已经存在且名称匹配的设备。旧 CI 模板直接调用 `start`，在全新 runner（执行 CI 任务的机器）上会失败，所以虚拟设备的预先创建与配置（AVD provisioning）要在任务开始前完成，或者先用 `emulator list` 检查再按需创建。缺少 API 37 platform 或目标 system image（系统镜像） 时，先通过 `sdk list/install` 安装。
 
 `.androidrc` 把常用全局参数保存在用户目录，例如默认 `--sdk=<path-to-sdk>`。这种配置适合个人机器；团队 CI 的必要配置直接写进任务脚本，显式传入 `--sdk` 后，构建日志也能显示本次使用的环境。
 
@@ -592,11 +592,11 @@ android run --apks=app-debug.apk --device=emulator-5554
 android run --apks=app-debug.apk --type=ACTIVITY --activity=.MainActivity
 ```
 
-前三条命令分别覆盖默认设备、指定 serial 和指定 Activity 三种启动方式。发布级性能测试要用接近 `release` 优化配置、同时满足 non-debuggable 与 profileable（允许 shell 进行低开销性能采样）的构建；`--debug` 适合断点和诊断，相关结果别和发布构建的基线数字放在同一组。官方页面当前还有一处矛盾：示例使用 `--type=SERVICE`，支持类型列表却没有列出 `SERVICE`。涉及后台组件时，以所用 CLI 版本的 `android run --help` 和实机试运行为准，别把这个示例当成稳定接口。
+前三条命令分别覆盖默认设备、指定 serial 和指定 Activity 三种启动方式。发布级性能测试要用接近 `release` 优化配置、同时满足 non-debuggable（不可调试） 与 profileable（允许 shell 进行低开销性能采样）的构建；`--debug` 适合断点和诊断，相关结果别和发布构建的基线数字放在同一组。官方页面当前还有一处矛盾：示例使用 `--type=SERVICE`，支持类型列表却没有列出 `SERVICE`。涉及后台组件时，以所用 CLI 版本的 `android run --help` 和实机试运行为准，别把这个示例当成稳定接口。
 
 `android layout` 返回当前活动 App 的 UI 布局树 JSON，也就是按层级组织的界面节点数据；`--diff` 只输出相对命令内部上一次快照发生变化的节点。我们用它确认 agent 是否进入了正确页面、某个按钮是否出现、操作前后哪些节点改变。它解释不了帧耗时，也没有 Layout Inspector 的完整交互能力；分析 measure / layout / draw 成本，仍要用 Perfetto、Profiler 或相关章节介绍的 View 绘制流程。
 
-`android screen capture` 负责截屏，`--annotate` 给识别到的 UI 元素画编号框。`android screen resolve --screenshot=ui.png --string="input tap #5"` 把截图上的编号替换为实际坐标；命令只返回替换后的字符串，输入命令要由调用方执行。这组能力可以留存当时的屏幕状态、说明点击坐标怎么来的，但解释不了某一帧为什么卡，也替代不了 FrameTimeline、SurfaceFlinger 合成记录或 GPU counter（随时间采样的 GPU 数值）。FrameTimeline 即逐帧的预期与实际时间轨道。
+`android screen capture` 负责截屏，`--annotate` 给识别到的 UI 元素画编号框。`android screen resolve --screenshot=ui.png --string="input tap #5"` 把截图上的编号替换为实际坐标（依赖的 group、artifact 与 version 标识）；命令只返回替换后的字符串，输入命令要由调用方执行。这组能力可以留存当时的屏幕状态、说明点击坐标怎么来的，但解释不了某一帧为什么卡，也替代不了 FrameTimeline、SurfaceFlinger 合成记录或 GPU counter（随时间采样的 GPU 数值）。FrameTimeline 即逐帧的预期与实际时间轨道。
 
 当前 `layout` 与 `screen capture` 文档没有列出 `--device` 参数。多设备 CI runner 应隔离 adb server，或保证任务期间只向 CLI 暴露目标设备，并在截图、布局树和 trace 文件名中记录 serial——只在 `android run` 里指定 `--device`，后续 UI 命令是否还指向同一台设备是确认不了的。
 
@@ -617,13 +617,13 @@ Journeys 用自然语言描述用户在 App 中要完成的路径：agent 把指
 
 Journey 擅长准备登录态、导航到目标页面、确认异常是否出现，并记录失败画面。但自然语言理解、视觉识别、坐标选择和 agent 模型都会带来执行差异，benchmark 的计时区间交给它控制并不合适；测量窗口内的启动、滚动和动画，由 Macrobenchmark 与 UI Automator 驱动——UI Automator 是 Android 的跨 App 界面自动化框架。
 
-指标应来自 Macrobenchmark、Perfetto Trace、APA 或线上 APM（Application Performance Monitoring，应用性能监控）。冷启动耗时、帧时间分布、CPU 调度、GPU counter、GC 暂停和 Binder 等待时间，从 Journey 的成功或失败里直接推导不出来。
+指标应来自 Macrobenchmark、Perfetto Trace、APA 或线上 APM（Application Performance Monitoring，应用性能监控）。冷启动耗时、帧时间分布、CPU 调度、GPU counter、GC（garbage collection，垃圾回收） 暂停和 Binder 等待时间，从 Journey 的成功或失败里直接推导不出来。
 
 官方 Journey 页面没有发布固定的 `android journey ...` 子命令格式，本文也不编造这类命令。文件格式、运行步骤和 CI 接入方式，以当前 Android CLI、Journeys skill 及项目实际生成的文件为准。报告还要记录 CLI、agent、模型、skill 的版本或内容快照，避免直接比较不同执行环境得出的结果。
 
 ### Android Studio 语义命令与性能排查协作
 
-`android studio` 命令仍处于 Preview 状态，接口可能调整。官方文档给出的前提是：项目已在 Android Studio Quail 2 Canary 1 或更高版本中打开，并且 Gemini in Android Studio 已启用、已登录；Canary 是更新快、稳定性低于 Beta 和 Stable 的预览渠道。满足条件后，agent 通过 CLI 连接正在运行的 Android Studio 实例，执行理解代码符号与项目结构的查询——这类查询比纯文本搜索多了声明、引用和类型信息。
+`android studio` 命令仍处于 Preview（预览） 状态，接口可能调整。官方文档给出的前提是：项目已在 Android Studio Quail 2 Canary 1 或更高版本中打开，并且 Gemini in Android Studio 已启用、已登录；Canary 是更新快、稳定性低于 Beta 和 Stable 的预览渠道。满足条件后，agent 通过 CLI 连接正在运行的 Android Studio 实例，执行理解代码符号与项目结构的查询——这类查询比纯文本搜索多了声明、引用和类型信息。
 
 | 命令 | 输出 | 性能排查里的用法 |
 |---|---|---|

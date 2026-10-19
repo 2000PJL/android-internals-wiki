@@ -91,7 +91,7 @@ consolidated_from:
 
 # 后台音频、AudioTrack 与 Offload 功耗
 
-后台音频要先过资格关：媒体会话、前台服务和音频焦点规则同时满足，系统才允许持续发声；资格确定后，播放管线再在 AudioTrack、低延迟路径和硬件 Offload 之间做选择。稳定性、时延和功耗三个目标各有取舍，同一套配置无法同时把它们推到最优。
+后台音频要先过资格关：媒体会话、前台服务和音频焦点（系统在多个应用之间协调播放、暂停和降低音量）规则同时满足，系统才允许持续发声；资格确定后，播放管线再在 AudioTrack、低延迟路径和硬件 Offload 之间做选择。稳定性、时延和功耗三个目标各有取舍，同一套配置无法同时把它们推到最优。
 
 > 源码判断基线：Android 17 / API 37 / `android-17.0.0_r1`。
 
@@ -104,9 +104,9 @@ consolidated_from:
 排查时我们要回答两组问题：
 
 - 系统是否允许这次音频交互：页面是否可见、前台服务（foreground service，FGS）是否存在、服务有没有 while-in-use（WIU，可见或用户操作时授予）能力、音频用途是否符合豁免条件。
-- 播放失效后是否仍消耗资源：网络请求、解码线程、WakeLock、MediaSession（系统媒体会话）和前台服务是否按停止原因释放。
+- 播放失效后是否仍消耗资源：网络请求、解码线程、WakeLock（阻止设备休眠的唤醒锁）、MediaSession（系统媒体会话）和前台服务是否按停止原因释放。
 
-相关机制的出处：AudioFlinger、AAudio 和音频线程调度参见 1.20；后台执行规则参见 5.3 与 25.2；Media3、Codec2 和多媒体管线参见 13.12。
+相关机制的出处：AudioFlinger（原生音频混音与输出服务）、AAudio（原生低延迟音频 API） 和音频线程调度参见 1.20；后台执行规则参见 5.3 与 25.2；Media3（Jetpack 媒体库）、Codec2（Android 多媒体编解码框架） 和多媒体管线参见 13.12。
 
 ### 两级限制：FGS 基础门槛与 WIU 附加门槛
 
@@ -125,7 +125,7 @@ consolidated_from:
 
 当应用以 API 37 为 target 且位于后台时，前台服务还要具有 WIU 能力。常见的获得方式是：在应用可见时启动服务，或由通知点击、桌面小组件、媒体按键等明确的用户操作触发后台启动。
 
-WIU 没有应用自行声明这条路：ActivityManager 根据前台状态、前台服务的启动来源和系统授予的例外条件维护能力状态，音频服务再读取 AppOps（按操作检查权限的机制）结果。`HardeningEnforcer` 既不解析应用的 `startForeground()` 调用栈，也不检查 `PendingIntent` 的创建者或某个固定的“最近交互窗口”。
+WIU 没有应用自行声明这条路：ActivityManager（系统的进程和应用生命周期管理服务） 根据前台状态、前台服务的启动来源和系统授予的例外条件维护能力状态，音频服务再读取 AppOps（按操作检查权限的机制）结果。`HardeningEnforcer` 既不解析应用的 `startForeground()` 调用栈，也不检查 `PendingIntent`（可由其他组件代为触发的延迟操作） 的创建者或某个固定的“最近交互窗口”。
 
 #### 精确闹钟的豁免范围
 
@@ -134,7 +134,7 @@ API 37 应用同时满足两个条件时，可以免除 WIU 要求：
 - 已获准使用 exact alarm（精确闹钟），即持有 `USE_EXACT_ALARM`，或拥有 `SCHEDULE_EXACT_ALARM` 特殊访问。
 - 本次音频使用 `AudioAttributes.USAGE_ALARM`。
 
-这层豁免只免第二级：后台闹钟仍需要可见 Activity 或非 `shortService` 前台服务。普通媒体内容借用 `USAGE_ALARM` 规避限制行不通，用途声明应与用户可感知的功能一致。
+这层豁免只免第二级：后台闹钟仍需要可见 Activity 或非 `shortService`（短时任务前台服务类型） 前台服务。普通媒体内容借用 `USAGE_ALARM` 规避限制行不通，用途声明应与用户可感知的功能一致。
 
 #### 版本差异表
 
@@ -160,9 +160,9 @@ API 37 应用同时满足两个条件时，可以免除 WIU 要求：
 
 `AudioTrack.write()` 返回成功，说明的只是数据被客户端提交，系统有没有把声音送到输出设备还要另查。Media3 的 `playWhenReady`、`playbackState` 描述的是播放器状态机，平台授权状态在别处。线上诊断要额外记录焦点结果、前台服务状态、Activity 可见性、音频用途和 `AudioHardening` 日志，这几项拼起来才能还原一次静默失败。
 
-### FGS 和 MediaSession 的正确职责
+### FGS 和 MediaSession（向系统发布播放状态和控制入口的媒体会话） 的正确职责
 
-资格的最低门槛是“非 `shortService` 前台服务”，但媒体应用选类型要对得上业务：持续音乐、播客和锁屏视频音频用 `mediaPlayback` 类型，并通过 MediaSession 对接系统媒体控件。
+资格的最低门槛是“非 `shortService` 前台服务”，但媒体应用选类型要对得上业务：持续音乐、播客和锁屏视频音频用 `mediaPlayback`（媒体播放） 类型，并通过 MediaSession 对接系统媒体控件。
 
 使用 Media3 时，`MediaSessionService` 负责把 `Player` 与 `MediaSession` 放进服务生命周期，提供媒体通知以及外部控制入口。清单至少要声明对应的前台服务权限和服务类型。
 
@@ -253,7 +253,7 @@ AudioFlinger 为播放 Track 观察 `OP_CONTROL_AUDIO_PARTIAL` 和 `OP_CONTROL_A
 
 #### Offload 与 MMap 的限制适用
 
-`AfPlaybackCommon` 在 Track 创建时注册两条异步 AppOps 会话。Offload 把音频处理交给专用音频处理器，MMAP 走内存映射的低延迟路径，这两类 Track 一样要过检查：源码为它们设置了 40 ms 的 `asyncBroadcast` 异步唤醒延迟，让 partial 与 full 两个权限回调都有机会在音频线程唤醒前到达。这个延迟属于权限状态传播的实现细节，别把它当成应用可调的播放缓冲参数。
+`AfPlaybackCommon` 在 Track 创建时注册两条异步 AppOps（系统按操作检查调用方是否获准的机制） 会话。Offload 把音频处理交给专用音频处理器，MMAP 走内存映射的低延迟路径，这两类 Track 一样要过检查：源码为它们设置了 40 ms 的 `asyncBroadcast` 异步唤醒延迟，让 partial 与 full 两个权限回调都有机会在音频线程唤醒前到达。这个延迟属于权限状态传播的实现细节，别把它当成应用可调的播放缓冲参数。
 
 每条 Track 只记录一次对应的后台播放限制事件，避免同一 Track 反复上报；新建 Track 会重新计算决策，所以重新创建播放器修不好不合规的生命周期，只会得到一条新的受限 Track。
 
@@ -284,7 +284,7 @@ adb shell cmd audio set-enable-hardening disable
 
 r1 的 `clear-hardening` 与 `set-hardening default` 都恢复平台默认行为；`set-hardening disable` 是强制关闭限制，两者有区别。新命令中的 `disable` 同样表示关闭全部限制。
 
-r1 的测试覆盖状态会同步写入 `system_server` 与 `audioserver`，重启后即失效。系统镜像若只提供新命令、没有 `clear` 或 `default` 子命令，要按设备帮助确认恢复方式，必要时重启专用测试设备。测试报告还要记录命令和构建号。
+r1 的测试覆盖状态会同步写入 `system_server`（承载多数 Java 系统服务的进程） 与 `audioserver`（承载原生音频服务的进程），重启后即失效。系统镜像若只提供新命令、没有 `clear` 或 `default` 子命令，要按设备帮助确认恢复方式，必要时重启专用测试设备。测试报告还要记录命令和构建号。
 
 `enable` 会把完整限制应用到所有应用，并取消 target 与闹钟豁免，适合挖掘潜在问题；默认行为下的 target 36/37 对照测试仍要做。`throw` 还会把静默失败改成异常、持续写入错误或崩溃，只用于开发与回归环境。
 
@@ -310,7 +310,7 @@ adb shell dumpsys batterystats > batterystats.txt
 
 我们要把这批文件用统一的会话标识串起来，按同一时钟关联事件。`dumpsys audio` 说明平台为何限制交互，`media_session` 和服务记录说明应用向系统公开了什么状态，`batterystats` 说明播放停止后是否仍有 WakeLock、网络和后台活动。
 
-Perfetto 是 Android 的系统级跟踪工具，采集应覆盖音频、调度、CPU 频率、电源、Binder 和 ActivityManager 相关轨迹。阅读顺序可以固定为：用户操作、FGS 启动、MediaSession 激活、焦点结果、Track 创建、页面退后台或锁屏、网络或路由变化、播放停止、资源释放。若声音消失后 CPU、网络或 WakeLock 仍活跃，说明声音停止后的资源清理不足。
+Perfetto 是 Android 的系统级跟踪工具，采集应覆盖音频、调度、CPU 频率、电源、Binder（Android 跨进程调用机制） 和 ActivityManager 相关轨迹。阅读顺序可以固定为：用户操作、FGS 启动、MediaSession 激活、焦点结果、Track 创建、页面退后台或锁屏、网络或路由变化、播放停止、资源释放。若声音消失后 CPU、网络或 WakeLock 仍活跃，说明声音停止后的资源清理不足。
 
 ### 长时播放的功耗检查
 
@@ -325,7 +325,7 @@ Perfetto 是 Android 的系统级跟踪工具，采集应覆盖音频、调度�
 | 非播放任务 | 歌词、封面、推荐、埋点线程的 CPU 时间与唤醒 | 降低非必要任务频率，避免与解码和输出线程竞争 |
 | 蓝牙 | 路由变更、断连重连、设备类别、控制器活动 | 把路由故障和播放器故障分开统计 |
 
-Audio offload 改变的是解码与输出所使用的计算资源，后台硬化检查的是应用生命周期，两条线相互独立：offload Track 照样受 hardening 控制；反过来，LC3 配置匹配不上 ADSP，也推不出应用会因处于后台而被静音。ADSP 指音频数字信号处理器，LC3 是低复杂度通信编解码器。
+Audio offload 改变的是解码与输出所使用的计算资源，后台硬化检查的是应用生命周期，两条线相互独立：offload Track 照样受 hardening 控制；反过来，LC3（Low Complexity Communication Codec，低复杂度通信编解码器） 配置匹配不上 ADSP（Audio Digital Signal Processor，音频数字信号处理器），也推不出应用会因处于后台而被静音。ADSP（Digital Signal Processor，数字信号处理器） 指音频数字信号处理器，LC3 是低复杂度通信编解码器。
 
 `codec_manager.cc` 的 `IsLc3ConfigMatched()` 逐项比较采样率、帧时长、每条 ISO（等时）流的通道数和每帧字节数，判断 LC3 配置是否匹配；匹配失败影响编解码执行路径，不直接决定 FGS 或 WIU。`target_latency` 表示 Bluetooth LE Audio（低功耗蓝牙音频）配置期望的时延等级，它参与配置选择，但设备能耗要落到具体控制器、耳机和媒体参数上测量，仅凭“低延迟”推算不出来。
 
@@ -375,9 +375,9 @@ Android 17 后台音频硬化分两级条件：所有应用都需要可见 Activ
 
 长音频播放的耗电常出现在屏幕关闭之后。用户在听播客、有声书、长视频背景音或语音助手响应时，界面已经不再绘制，但播放器仍可能持续做网络、解码、写入、埋点和 WakeLock 管理。此时继续用 CPU 解码和高频写入，会让本应低占用的任务持续耗电。
 
-Audio offload（音频卸载）解决的就是这类长时间播放的 CPU 参与度问题：平台把音频处理交给专用硬件或 DSP，应用可以一次写入更多数据；硬件 buffer 保存待播放内容后，框架数据管道可以暂停，CPU 因而有机会休眠。低延迟场景不适合这条路径，游戏音效、乐器、语音通话和实时互动仍应关注 AAudio 的低延迟模式、MMAP、缓冲区大小、callback 的稳定性与线程调度，详见 1.20 节。
+Audio offload（音频卸载）解决的就是这类长时间播放的 CPU 参与度问题：平台把音频处理交给专用硬件或 DSP，应用可以一次写入更多数据；硬件 buffer（缓冲区） 保存待播放内容后，框架数据管道可以暂停，CPU 因而有机会休眠。低延迟场景不适合这条路径，游戏音效、乐器、语音通话和实时互动仍应关注 AAudio 的低延迟模式、MMAP、缓冲区大小、callback（数据回调） 的稳定性与线程调度，详见 1.20 节。
 
-我们要依次完成应用侧的四步：能力探测、接入、验证和小流量发布。AudioFlinger、AAudio 与 MMAP 的机制详见 1.20 节；MediaCodec、Media3 与播放管线详见 13.12 节；Android 17 后台音频 hardening 见本文前半部分。
+我们要依次完成应用侧的四步：能力探测、接入、验证和小流量发布。AudioFlinger、AAudio 与 MMAP 的机制详见 1.20 节；MediaCodec（编解码接口）、Media3 与播放管线详见 13.12 节；Android 17 后台音频 hardening 见本文前半部分。
 
 ### 场景边界：什么时候值得开启 Offload
 
@@ -400,7 +400,7 @@ AAudio 的 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING_OFFLOADED` 从 API 36 可用，
 
 与普通 `AAUDIO_PERFORMANCE_MODE_POWER_SAVING` 相比，offloaded 模式允许应用在短时间内写入数秒压缩数据；数据进入硬件缓冲区后，应用播放线程和框架数据管道可以暂停。这里的“数秒”来自 NDK 接口说明，具体缓冲深度以设备为准。
 
-请求值说明不了是否生效。音频流对象打开后要读取 `AAudioStream_getPerformanceMode(stream)` 确认实际拿到的模式；构造 builder 时也要使用媒体本身的压缩格式、采样率和声道掩码。
+请求值说明不了是否生效。音频流对象（代码中的 `stream`）打开后要读取 `AAudioStream_getPerformanceMode(stream)` 确认实际拿到的模式；构造 builder（流配置构建器） 时也要使用媒体本身的压缩格式、采样率和声道掩码。
 
 下面的函数展示能力探测所需的关键字段，调用方传入从媒体轨道读取的真实配置：
 
@@ -442,7 +442,7 @@ bool openOffloadProbe(
 
 API 36 的 `AAudioStreamBuilder_setPresentationEndCallback()` 会在应用请求停止后，等待系统与硬件中已排队的数据播放完，再通知结束。应用提前关闭 stream，回调就不会发生；回调若与数据回调共用框架的实时线程，其中也不能执行阻塞工作。
 
-Android 17 / API 37 又增加了 `AAudio_getFlushFromFrameSupport(builder)` 和 `AAudioStream_flushFromFrame()`。flush 指丢弃已经写入但尚未播放的数据，frame 是这里的位置计数单位。前者必须在打开流前查询，并要求 builder 已设置 offloaded 性能模式、格式、采样率与声道掩码；后者通过 `inOutPosition` 传入目标 frame，并在成功时写回实际 flush 位置。
+Android 17 / API 37 又增加了 `AAudio_getFlushFromFrameSupport(builder)` 和 `AAudioStream_flushFromFrame()`。flush 指丢弃已经写入但尚未播放的数据，frame（音频帧） 是这里的位置计数单位。前者必须在打开流前查询，并要求 builder 已设置 offloaded 性能模式、格式、采样率与声道掩码；后者通过 `inOutPosition` 传入目标 frame，并在成功时写回实际 flush 位置。
 
 调用返回前不能并发写数据；成功后剩余数据不足时要立即补写，否则会出现 underrun。若要求 `AAUDIO_FLUSH_FROM_FRAME_ACCURATE` 而设备无法从指定位置处理，r1 返回 `AAUDIO_ERROR_OUT_OF_RANGE`，且不会把一次失败当作成功 flush。
 
@@ -457,7 +457,7 @@ Android 17 为 `AudioTrack` 增加了 codec provenance（编解码格式来源�
 | `getFlushWrittenFramesFromPositionSupport(format, attributes)` | API 37，创建 offload `AudioTrack` 前查询 | 给定 `AudioFormat` / `AudioAttributes` 创建的 offload track 是否支持按位置 flush | 不能保证所有设备、所有格式都支持 |
 | `flushWrittenFramesFromPosition(positionInFrames, accuracy)` | API 37，只允许 offload mode | 从指定写入 frame 附近丢弃已写入但未播放的数据，返回实际 flush 位置 | 不是普通 PCM `AudioTrack` 的通用 seek API |
 
-codec provenance 由应用在 Builder 中设置。例如原始内容是 Dolby Atmos 的 E-AC3 JOC，但交给 `AudioTrack` 的数据格式已经转换，此时可以传入相应的 `MediaFormat` MIME 常量。它是来源提示，不做运行时探测。
+codec provenance（原始内容的编解码格式来源） 由应用在 Builder 中设置。例如原始内容是 Dolby Atmos 的 E-AC3 JOC，但交给 `AudioTrack` 的数据格式已经转换，此时可以传入相应的 `MediaFormat` MIME 常量。它是来源提示，不做运行时探测。
 
 `flushWrittenFramesFromPosition()` 的 `positionInFrames` 必须位于 0 到 `getWrittenFramesCount()` 之间。`FLUSH_FROM_ACCURACY_BEST_EFFORT` 允许系统选择不小于目标的位置；`FLUSH_FROM_ACCURACY_EXACT` 要求从目标位置开始。
 
@@ -469,7 +469,7 @@ codec provenance 由应用在 Builder 中设置。例如原始内容是 Dolby At
 - `flushWrittenFramesFromPosition()` 返回新的写入坐标。
 - `getTimestamp()` 提供已呈现或承诺呈现的 frame 及其时间估计。
 
-断点续播和 seek 应以媒体时间线为主，frame 坐标作为底层执行记录；把写入计数直接保存成“用户已经听到的位置”会出错。
+断点续播和 seek（跳转） 应以媒体时间线为主，frame 坐标作为底层执行记录；把写入计数直接保存成“用户已经听到的位置”会出错。
 
 这些 API 在四类场景中各有用途：
 
@@ -596,7 +596,7 @@ DSP offload 改变音频数据经过的处理路径，音量安全、Sound Dose�
 
 ### Offload 小结
 
-音频 Offload 的目标是降低长时间播放的耗电，低延迟场景应使用相应的实时音频路径。接入时要把请求模式、实际模式、设备能力、播放器功能和用户体验放在同一套指标里：AAudio 用 `AAudioStream_getPerformanceMode(stream)` 确认实际模式；AudioTrack API 37 用 support bitmask、实际 flush 位置和 codec provenance 辅助判断；Media3 用 `AudioOffloadPreferences` 表达偏好，再由平台决定是否满足。
+音频 Offload 的目标是降低长时间播放的耗电，低延迟场景应使用相应的实时音频路径。接入时要把请求模式、实际模式、设备能力、播放器功能和用户体验放在同一套指标里：AAudio 用 `AAudioStream_getPerformanceMode(stream)` 确认实际模式；AudioTrack API 37 用 support bitmask（支持位掩码，以二进制位表示能力）、实际 flush 位置和 codec provenance 辅助判断；Media3 用 `AudioOffloadPreferences` 表达偏好，再由平台决定是否满足。
 
 上线前做同机 A/B，线上保留远程关闭能力。CPU 时间、线程唤醒、batterystats 和播放体验同时满足验收阈值后，Offload 才进入可发布状态。
 

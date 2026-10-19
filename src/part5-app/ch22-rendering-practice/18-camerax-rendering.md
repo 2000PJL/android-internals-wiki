@@ -161,7 +161,7 @@ CameraX 是 Jetpack 的相机库。它把预览、拍照、图像分析和录像
 
 截至 2026-08-15，AndroidX 官方版本页列出的 CameraX 稳定版是 1.6.1，预览版是 1.7.0-alpha03；3.0 主版本还查不到可核验的发布物，本文也就不按它描述版本能力。
 
-CameraX 与 Android API level 分开发布：Android 17 设备可以运行较旧的 CameraX，旧库却未必认识平台新增的相机元数据。CameraX 1.5.1 及更早版本在部分 Android 17 设备上遇到新的 dynamic range profile（动态范围档位）时，可能在绑定阶段崩溃，官方要求升级到 1.5.2、1.6.0 或更高版本。本文采用 1.6.1。
+CameraX 与 Android API level 分开发布：Android 17 设备可以运行较旧的 CameraX，旧库却未必认识平台新增的相机元数据（metadata）。CameraX 1.5.1 及更早版本在部分 Android 17 设备上遇到新的 dynamic range（动态范围） profile（动态范围档位）时，可能在绑定阶段崩溃，官方要求升级到 1.5.2、1.6.0 或更高版本。本文采用 1.6.1。
 
 下面的依赖片段用于把相机模块锁定到同一稳定版本。
 
@@ -185,14 +185,14 @@ CameraX 的关键版本变化，我们可以按下面的顺序理解：
 - CameraX 1.2 引入实验性的 ZSL 捕获模式；
 - CameraX 1.3 扩展了并发相机与录像镜像等能力；
 - CameraX 1.5 开始提供 `SessionConfig`、高速录像会话和更完整的特性组合表达；
-- CameraX 1.5.2 修复 Android 17 新 dynamic range profile 造成的绑定崩溃；
+- CameraX 1.5.2 修复 Android 17 新 dynamic range profile（动态范围档位标识） 造成的绑定崩溃；
 - CameraX 1.6 把默认 Camera2 实现迁移到 CameraPipe，录像的 MP4 / 3GPP 封装默认使用 Media3 Muxer，并稳定 `SessionConfig`、`HighSpeedVideoSessionConfig` 与 `isSessionConfigSupported()`；
 - CameraX 1.6.1 修复 1.6.0 的依赖编译问题；
-- CameraX 1.7 仍处于 alpha 阶段。1.7.0-alpha02 加入面向 GPU 的 `ImageAnalysis`、QHD（2560 × 1440）录像等接口；1.7.0-alpha03 又加入新的 Camera2Interop 配置方式、UseCase Kotlin DSL 配置语法，并移除预览与录像镜像控制的实验注解。这些能力均不属于 1.6.1 稳定基线。
+- CameraX 1.7 仍处于 alpha 阶段。1.7.0-alpha02 加入面向 GPU 的 `ImageAnalysis`、QHD（2560 × 1440）录像等接口；1.7.0-alpha03 又加入新的 Camera2Interop 配置方式、UseCase Kotlin DSL（领域专用配置语法） 配置语法，并移除预览与录像镜像控制的实验注解。这些能力均不属于 1.6.1 稳定基线。
 
 ## 2. CameraX 1.6 的位置：CameraPipe 仍在 Camera2 与 HAL 之上
 
-CameraPipe 是 CameraX 内部负责 Camera2 适配、会话和请求管理的模块。CameraX 1.6 里，`Camera2Config.defaultConfig()` 返回的已经是基于 CameraPipe 的配置，早期那套 Camera2 内部实现已经不用了。CameraPipe 调用的仍是平台 Camera2 接口，往下同样要经过相机服务进程 `cameraserver`、Camera HAL、sensor 和 ISP。
+CameraPipe 是 CameraX 内部负责 Camera2 适配、会话和请求管理的模块。CameraX 1.6 里，`Camera2Config.defaultConfig()` 返回的已经是基于 CameraPipe 的配置，早期那套 Camera2 内部实现已经不用了。CameraPipe 调用（Binder 是 Android 的跨进程通信机制）的仍是平台 Camera2 接口，往下同样要经过相机服务进程 `cameraserver`、Camera HAL、sensor 和 ISP。
 
 我们先借助下图分清配置层与数据消费者，归因时才好判断一段耗时该记在谁名下。
 
@@ -227,7 +227,7 @@ flowchart TD
 | `VideoCapture` | 相机输出、编码器、Muxer、文件 | 质量组合、dynamic range、持续吞吐 |
 | Extensions | 扩展会话、厂商算法 | 支持范围、延迟、内存、热与设备差异 |
 
-`Camera3OutputStream` 仍从 `ANativeWindow` 取得缓冲区，等待 acquire fence（生产者允许写入的同步点），再把 HAL 返回的 release fence 随缓冲区交给消费者，release fence 到了，消费者才可以读取。CameraX 的 Java/Kotlin API 不改变这条所有权链；Analyzer 长时间持有 `ImageProxy`、编码器消费变慢或显示端等待，都可能向上游施加压力。
+`Camera3OutputStream` 仍从 `ANativeWindow` 取得缓冲区，等待 acquire fence（生产者允许写入的同步点），再把 HAL 返回的 release fence（消费者可以读取的同步点） 随缓冲区交给消费者，release fence 到了，消费者才可以读取。CameraX 的 Java/Kotlin API 不改变这条所有权链；Analyzer 长时间持有 `ImageProxy`、编码器消费变慢或显示端等待，都可能向上游施加压力。
 
 ## 3. 会话配置先于单个参数优化
 
@@ -266,9 +266,9 @@ if (!cameraInfo.isSessionConfigSupported(sessionConfig)) {
 
 诊断表应同时保存“请求值”和“协商结果”：
 
-- CameraX artifact（发布组件）版本、相机 id、前后摄，以及 logical camera / physical camera（逻辑相机与物理镜头）；
+- CameraX artifact（发布组件）版本、相机 id、前后摄，以及 logical camera（聚合多个镜头的逻辑相机） / physical camera（逻辑相机与物理镜头）；
 - 已绑定用例及其格式、最终尺寸、crop rect（裁剪矩形）与 target rotation；
-- 目标帧率范围、实际 CaptureResult 中的帧时长与曝光时间；
+- 目标帧率范围、实际 CaptureResult（每帧相机结果元数据） 中的帧时长与曝光时间；
 - dynamic range、防抖、ZSL、Extensions、CameraEffect 与 Camera2Interop 配置；
 - `PreviewView` 请求的实现模式及实际 View / 显示 layer；
 - 设备温度、运行时长、充电状态与显示刷新率。
@@ -296,7 +296,7 @@ if (!cameraInfo.isSessionConfigSupported(sessionConfig)) {
 `PreviewView.ImplementationMode.PERFORMANCE` 是默认值。它会尽量使用 `SurfaceView`；`COMPATIBLE` 使用 `TextureView`。
 
 - `SurfaceView` 为预览提供独立 Surface，SurfaceFlinger 可以把它作为独立 layer 参与合成；满足设备条件时，HWC 有机会使用 overlay，从而减少宿主窗口的纹理采样；
-- `TextureView` 把相机图像作为纹理放进宿主窗口，裁剪、旋转、动画和 View 变换更灵活，但每帧还要经过宿主窗口的 HWUI / GPU 路径。
+- `TextureView` 把相机图像作为纹理放进宿主窗口，裁剪、旋转、动画和 View 变换更灵活，但每帧还要经过宿主窗口的 HWUI（Android 界面硬件加速渲染器） / GPU 路径。
 
 overlay 用不用，是 HWC 对当帧 layer 集合逐帧决定的；选 `SurfaceView` 只是让 overlay 成为可能，每帧是否真的走硬件 overlay 仍由 HWC 决定。
 
@@ -349,7 +349,7 @@ CameraX 1.6.1 的 `PreviewView` 说明文档把 target rotation（目标旋转�
 
 `KEEP_ONLY_LATEST` 是默认策略。`BLOCK_PRODUCER` 的默认队列深度为 6，深度包含正在分析的图像；加深队列只能吸收短时抖动，还会增加内存占用和结果等待时间，平均处理速度一旦低于输入速度，队列迟早会占满。
 
-下面的 Analyzer 适合实时识别：它保留最新帧，并用 ATrace 标出处理过程。ATrace 是应用写入 Perfetto 的命名时间区间。
+下面的 Analyzer 适合实时识别：它保留最新帧，并用 ATrace（应用写入 Perfetto 的命名时间区间） 标出处理过程。ATrace 是应用写入 Perfetto 的命名时间区间。
 
 ```kotlin
 val analysis = ImageAnalysis.Builder()
@@ -411,7 +411,7 @@ analysis.setAnalyzer(analysisExecutor) { imageProxy ->
 
 - `CAPTURE_MODE_MINIMIZE_LATENCY`：默认值，优先减少捕获延迟；
 - `CAPTURE_MODE_MAXIMIZE_QUALITY`：允许设备选择更重的画质路径；
-- `CAPTURE_MODE_ZERO_SHUTTER_LAG`：实验能力，从候选历史帧中选择接近按键时刻的帧，再执行 reprocess，把已捕获的图像作为输入重新处理。
+- `CAPTURE_MODE_ZERO_SHUTTER_LAG`：实验能力，从候选历史帧中选择接近按键时刻的帧，再执行 reprocess（把已捕获图像作为输入重新处理），把已捕获的图像作为输入重新处理。
 
 ZSL 这个名称只表达“优先复用历史候选帧”的捕获策略，文件是否立即可得要看后续流程。公开文档描述的能力与 CameraX 1.6.1 的具体实现要分开对待：设备能力、用例组合和单次 ring 取帧都可能让请求降级，固定实现见 6.4。
 
@@ -428,7 +428,7 @@ ZSL 这个名称只表达“优先复用历史候选帧”的捕获策略，文�
 | 编码结果可用 | JPEG、DNG 或内存图像完成 |
 | 文件写入完成 | 包含存储与 MediaStore 工作 |
 
-弱光下曝光时间增长是预期现象，HDR、夜景、Extensions 等多帧处理也会拉长 ISP / 厂商算法段；文件写入慢时，相机数据可能已经完成，这时优化方向应转向编码、磁盘或 `ContentResolver`。
+弱光下曝光时间增长是预期现象，HDR（高动态范围）、夜景、Extensions 等多帧处理也会拉长 ISP / 厂商算法段；文件写入慢时，相机数据可能已经完成，这时优化方向应转向编码、磁盘或 `ContentResolver`。
 
 ### 6.3 Android 17 RAW14 与 CameraX RAW 的对应关系
 
@@ -753,7 +753,7 @@ CameraX 1.6 的 `HighSpeedVideoSessionConfig` 已是稳定 API。我们应使用
 
 ## 8. Extensions：把厂商算法当作独立工作模式
 
-夜景 Night、HDR、背景虚化 Bokeh、人像润饰 Face Retouch 等 Extensions 会建立扩展会话，并调用设备厂商实现。它们可能使用多帧采集、额外中间缓冲区和后处理线程，延迟、内存与热表现无法从普通 `ImageCapture` 推导。
+夜景 Night（夜景）、HDR、背景虚化 Bokeh（背景虚化）、人像润饰 Face Retouch（人像润饰） 等 Extensions 会建立扩展会话，并调用设备厂商实现。它们可能使用多帧采集、额外中间缓冲区和后处理线程，延迟、内存与热表现无法从普通 `ImageCapture` 推导。
 
 CameraX 1.6 提供稳定的 `ExtensionSessionConfig`，可以在绑定前参与 `getCameraInfo()` 和 `isSessionConfigSupported()` 查询，但它不支持 `ImageAnalysis`。需要 Extension 与分析同时运行的产品，要设计模式切换，不能假设普通会话的用例组合可直接搬入扩展会话。
 
@@ -773,9 +773,9 @@ Extensions 的测试记录至少包含：
 ML Kit 集成通常运行在 `ImageAnalysis` 消费端，CameraEffect 或自研 OpenGL / Vulkan 管线则可能位于预览、录像或拍照输出之间。两者的资源竞争方式不同：
 
 - CPU Analyzer 会占用 CPU、内存带宽，并持有分析图像；
-- GPU Analyzer 或效果会增加纹理导入、同步、shader 与输出 Surface 的工作；
+- GPU Analyzer 或效果会增加纹理导入、同步、shader（着色器程序） 与输出 Surface 的工作；
 - NNAPI / GPU 模型可能与预览效果争用 GPU 或内存；
-- 逐帧 YUV → RGB 与 Bitmap 分配会增加 CPU、内存和 GC 压力；
+- 逐帧 YUV → RGB 与 Bitmap 分配会增加 CPU、内存和 GC（垃圾回收） 压力；
 - 结果覆盖层若每帧触发复杂 UI 重绘，还会增加宿主窗口的帧耗时。
 
 性能计时要覆盖从相机 timestamp 到结果显示的端到端延迟——即使模型推理很快，输入帧在队列里等得太久，用户看到的仍是旧结果。
@@ -784,7 +784,7 @@ ML Kit 集成通常运行在 `ImageAnalysis` 消费端，CameraEffect 或自研 
 
 ## 10. 热稳定：峰值数据不能代表持续录像
 
-相机持续运行会同时用到 sensor、ISP、DDR 内存、CPU、GPU、NPU、编码器、显示与存储。短时间测试可能恰好处于高频状态；几分钟后，系统热管理策略可能调整处理器频率或设备算法，帧率和延迟分布也会随之变化。
+相机持续运行会同时用到 sensor、ISP、DDR 内存、CPU、GPU、NPU（神经网络处理器）、编码器、显示与存储。短时间测试可能恰好处于高频状态；几分钟后，系统热管理策略可能调整处理器频率或设备算法，帧率和延迟分布也会随之变化。
 
 长时间场景应固定：
 
@@ -826,7 +826,7 @@ CameraX 问题的基础采集通常包括：
 - thermal（热状态）、CPU / GPU / 内存频率：持续运行；
 - 应用 ATrace：用于标出页面动作、绑定、Analyzer、拍照与录制状态。
 
-FrameTimeline 是系统记录的应用窗口帧时间线，主要解释界面帧。`SurfaceView` 预览作为独立 layer 时，应用窗口的 jank 情况说明的是界面帧，相机输出与预览 layer 的 present 要另外采集。`TextureView` 则还要查看宿主 HWUI 和应用窗口提交。
+FrameTimeline 是系统记录的应用窗口帧时间线，主要解释界面帧。`SurfaceView` 预览作为独立 layer 时，应用窗口的 jank（卡顿帧） 情况说明的是界面帧，相机输出与预览 layer 的 present 要另外采集。`TextureView` 则还要查看宿主 HWUI 和应用窗口提交。
 
 [15.14 Android Camera 性能与 Perfetto 分析](../../part3-tools/ch15-other-tools/14-camera-performance-analysis.md) 给出了 Android 17 的 Perfetto 配置、CameraService 打开相机阶段、输出流首缓冲区、请求延迟直方图与 ZSL 时间点拆分，采集配置可以直接沿用。
 

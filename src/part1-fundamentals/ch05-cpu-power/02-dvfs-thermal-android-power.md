@@ -76,12 +76,12 @@ last_idle_audit_at: '2026-08-25T14:46:47+08:00'
 
 ### 先分清两个问题：完成得多快，以及消耗多少能量
 
-我们先分清两个问题：完成得多快，以及消耗多少能量。调度器决定任务何时运行、跑在哪个 CPU 上；DVFS（Dynamic Voltage and Frequency Scaling，动态电压与频率调节）决定一个共享电压和频率的硬件域用哪个性能档位。这两件事互相影响：
+我们先分清两个问题：完成得多快，以及消耗多少能量。调度器决定任务何时运行、跑在哪个 CPU 上；DVFS（Dynamic Voltage and Frequency Scaling，动态电压与频率调节（DVFS））决定一个共享电压和频率的硬件域用哪个性能档位。这两件事互相影响：
 
 - 同一段 CPU 指令在高频下通常更早完成，但瞬时功率往往更高。
 - 任务更早完成后，CPU 可能更早进入空闲态，整段工作的能量未必更高。
-- 多个 CPU 共享一个频率策略时，一个繁忙 CPU 的需求可能抬高整个策略域的频率。
-- 温控、电池电流限制或固件约束可以压低可用上限，即使调度器希望继续升频。
+- 多个 CPU 共享一个频率策略时，一个繁忙 CPU 的需求可能抬高整个策略域（policy）的频率。
+- 温控、电池电流限制或固件约束可以压低可用上限（cap），即使调度器希望继续升频。
 
 所以看到掉帧附近出现低频，我们先把它当成“低频可能影响帧耗时”的假设，再往下确认：任务是否在运行、是否在等锁或 I/O、是否被迁移，以及设备报告的是软件请求档位还是硬件实测频率。
 
@@ -89,7 +89,7 @@ last_idle_audit_at: '2026-08-25T14:46:47+08:00'
 
 #### 动态功耗、漏电功耗与能量
 
-CMOS 电路的动态功耗常用下面的近似式说明：
+CMOS（Complementary Metal-Oxide-Semiconductor，互补金属氧化物半导体） 电路的动态功耗常用下面的近似式说明：
 
 **P_dynamic ≈ α × C × V² × f**
 
@@ -110,7 +110,7 @@ CMOS 电路的动态功耗常用下面的近似式说明：
 
 #### 为什么频率与电压通常一起变化
 
-时钟频率越高，组合逻辑完成一次传播的时间就越短。要让信号在时钟边沿前稳定下来，还要在目标温度和芯片个体差异下保留足够的时序裕量，所以较高频率通常需要较高电压。SoC 厂商会表征芯片，为每个性能域给出一组经过验证的频率—电压组合。
+时钟频率越高，组合逻辑完成一次传播的时间就越短。要让信号在时钟边沿前稳定下来，还要在目标温度和芯片个体差异下保留足够的时序裕量（让信号能在时钟边沿前稳定下来），所以较高频率通常需要较高电压。SoC 厂商会表征芯片，为每个性能域给出一组经过验证的频率—电压组合。
 
 由此可以得到更严谨的表述：
 
@@ -120,7 +120,7 @@ CMOS 电路的动态功耗常用下面的近似式说明：
 
 ### OPP：离散的工作档位
 
-一个设备域能采用哪些性能状态，由 OPP（Operating Performance Point，工作性能点）描述：典型内容是频率和电压，也可以附带电流、功耗或硬件版本等约束。下面的表只用来说明离散档位，不对应任何量产 SoC：
+一个设备域能采用哪些性能状态（P-state），由 OPP（Operating Performance Point，工作性能点（Operating Performance Point，OPP））描述：典型内容是频率和电压，也可以附带电流、功耗或硬件版本等约束。下面的表只用来说明离散档位，不对应任何量产 SoC：
 
 | 示例档位 | 频率 | 电压 | 含义 |
 | --- | ---: | ---: | --- |
@@ -128,7 +128,7 @@ CMOS 电路的动态功耗常用下面的近似式说明：
 | OPP 1 | 1.2 GHz | 780 mV | 中间档 |
 | OPP 2 | 2.0 GHz | 950 mV | 高性能档 |
 
-Linux OPP 库位于 `drivers/opp/`。OPP 可以来自设备树，也可以由驱动或固件在运行时提供；平台还能根据芯片分档、温控状态等条件启用或禁用某些档位。于是一条实际的选频链是：
+Linux（Security-Enhanced Linux，SELinux） OPP 库位于 `drivers/opp/`。OPP 可以来自设备树（Device Tree），也可以由驱动或固件在运行时提供；平台还能根据芯片分档、温控状态等条件启用或禁用某些档位。于是一条实际的选频链是：
 
 1. governor 计算出的通常是性能需求或目标频率；
 2. CPUFreq 驱动把目标解析到 policy 允许且硬件支持的档位；
@@ -149,7 +149,7 @@ Linux CPUFreq 可以分成三层理解：
 
 #### policy 不等于单个 CPU
 
-`/sys/devices/system/cpu/cpufreq/policyN/` 是一个 CPUFreq policy，里面可以包含多个共享性能状态接口的 CPU。这个 sysfs 目录是内核向用户空间暴露设备状态的入口。分析前我们可以读取：
+`/sys/devices/system/cpu/cpufreq/policyN/` 是一个 CPUFreq policy，里面可以包含多个共享性能状态接口的 CPU。这个 sysfs（Linux 向用户空间暴露设备和内核对象状态的虚拟文件系统） 目录是内核向用户空间暴露设备状态的入口。分析前我们可以读取：
 
 - `related_cpus`：属于该 policy 的 CPU；
 - `scaling_driver`：当前驱动；
@@ -168,16 +168,16 @@ schedutil 是按调度器利用率选择性能需求的 CPUFreq governor。`andr
 
 #### 利用率信号来自哪里
 
-CFS 任务的利用率主要由 PELT（Per-Entity Load Tracking，按调度实体跟踪负载）维护。PELT 以 1024 微秒为周期衰减，半衰期约 32 毫秒；它是一个持续衰减的信号，和“每隔固定毫秒统计一次”的滑动窗口是两回事。在这之上，内核还会结合或约束多类信号：
+CFS（Completely Fair Scheduler，完全公平调度器） 任务的利用率主要由 PELT（Per-Entity Load Tracking，按调度实体跟踪负载）维护。PELT（Per-Entity Load Tracking，每个调度实体的负载跟踪） 以 1024 微秒为周期衰减，半衰期约 32 毫秒；它是一个持续衰减的信号，和“每隔固定毫秒统计一次”的滑动窗口是两回事。在这之上，内核还会结合或约束多类信号：
 
 - CFS 利用率与短期利用率估计 `util_est`；
-- runqueue 上的利用率钳制 UClamp 的最小值和最大值；
+- runqueue 上的利用率钳制（Utilization Clamping，UClamp） UClamp 的最小值和最大值；
 - I/O 等待增强（I/O wait boost）；
-- RT、DL 和 IRQ 对可用 CPU 调度容量 capacity（内核估算的相对算力）的占用；
+- RT、DL 和 IRQ 对可用 CPU 调度容量（capacity，即内核估算的相对算力） capacity（内核估算的相对算力）的占用；
 - 温控压力（thermal pressure）等 capacity 修正；
-- sched_ext（可扩展调度器框架）启用时提供的 CPU 性能目标。
+- sched_ext（可扩展调度器框架）启用时提供的 CPU 性能目标（performance target）。
 
-这个内核分支的 `sugov_get_util()` 会读取 `scx_cpuperf_target()`；没有把全部任务切到 sched_ext 时，还会加上 `CFS boost`（对 fair 类利用率的增强值），再经 `effective_cpu_util()` 和 DVFS headroom 处理。所以拿“CPU 百分比 × 最高频率”来描述当前实现，会漏掉好几个输入。
+这个内核分支的 `sugov_get_util()` 会读取 `scx_cpuperf_target()`；没有把全部任务切到 sched_ext 时，还会加上 `CFS boost`（对 fair 类利用率的增强值），再经 `effective_cpu_util()` 和 DVFS headroom（forecast headroom） 处理。所以拿“CPU 百分比 × 最高频率”来描述当前实现，会漏掉好几个输入。
 
 Android 公共内核 6.18 允许 `sched_ext` 用 `scx_bpf_cpuperf_set()` 提交 CPU 性能目标。该入口与 CFS/PELT 路径会在 schedutil 中汇合，随后仍受 policy 上下限、驱动、固件与 thermal pressure 约束。
 
@@ -196,13 +196,13 @@ raw_frequency = reference_frequency * perf / capacity
 next_frequency = resolve_to_driver_supported_frequency(raw_frequency)
 ```
 
-伪代码中的 `perf` 是经过 UClamp 约束后的性能需求，`capacity` 是当前 CPU 的相对算力尺度。源码会根据频率不变性能力和架构反馈选择参考频率；常规频率映射还带有约 1.25 倍的余量。最终频点由 CPUFreq 驱动在 policy 限制内解析，通常选择不低于目标的受支持频点。这里的 headroom 是调频算法的一部分，不代表应用会获得固定比例的性能提升。
+伪代码中的 `perf` 是经过 UClamp 约束后的性能需求，`capacity` 是当前 CPU 的相对算力尺度。源码会根据频率不变性能力和架构反馈选择参考频率；常规频率映射还带有约 1.25 倍的余量（headroom）。最终频点由 CPUFreq 驱动在 policy 限制内解析，通常选择不低于目标的受支持频点。这里的 headroom 是调频算法的一部分，不代表应用会获得固定比例的性能提升。
 
 若一个 policy 覆盖多个 CPU，共享策略路径会遍历 `policy->cpus`，使用能够代表最高性能需求的利用率与 capacity 组合。看到某个 CPU 负载不高时，也要检查同一 policy 中的其他 CPU。
 
 #### 提交目标有三条主要路径
 
-schedutil 提交目标走哪条路径要看驱动能力，并不能概括成“每次都排队给内核线程”：
+schedutil 提交目标走哪条路径要看驱动能力，并不能概括成“每次都排队给内核线程（kthread）”：
 
 1. policy 开启快速切换（fast switch）时，频率路径可调用 `cpufreq_driver_fast_switch()`；
 2. 驱动支持性能参数调整（adjust-perf）且满足频率不变性条件时，可调用 `cpufreq_driver_adjust_perf()` 传递性能参数；
@@ -237,7 +237,7 @@ I/O wait boost 用来响应刚从 I/O 等待中唤醒的任务。在这个内核
 - 运行 CPU 与该 CPU 所属 policy；
 - CPU 频率事件、CPU 空闲（idle）状态和调度切片；
 - 帧截止时间 deadline、关键 slice 和锁或 I/O 等待；
-- UClamp、thermal throttling、CPU capacity 或厂商电源轨迹（若设备提供）；
+- UClamp、thermal throttling、CPU capacity 或厂商电源轨（power rail）迹（若设备提供）；
 - 同一场景多次复现时，低频与超时是否稳定共现。
 
 如果关键线程大部分时间在睡眠或等锁，升频通常帮不上忙。如果线程持续运行、指令工作量相近，而且低频区间与 deadline miss 反复对齐，我们就有较强理由继续调查 governor、UClamp、驱动响应或温控限制。
@@ -248,7 +248,7 @@ I/O wait boost 用来响应刚从 I/O 等待中唤醒的任务。在这个内核
 
 #### 任务配置（Task Profiles）与 UClamp
 
-Android 可以借助 task profile、cpuset 和 UClamp 调整线程的放置范围与性能提示：cpuset 限制线程可运行在哪些 CPU 上，UClamp min 给 schedutil 一个利用率下界，适合短时拉高响应能力，UClamp max 则限制性能需求。它们仍受 policy 上限、CPU capacity、thermal pressure 和厂商实现约束。
+Android 可以借助 task profile、cpuset（限制线程可运行的 CPU 集合） 和 UClamp 调整线程的放置范围与性能提示：cpuset 限制线程可运行在哪些 CPU 上，UClamp min 给 schedutil 一个利用率下界，适合短时拉高响应能力，UClamp max 则限制性能需求。它们仍受 policy 上限、CPU capacity、thermal pressure 和厂商实现约束。
 
 把 UClamp min 长时间设得很高会增加功耗和温度，也可能挤占其他任务可获得的性能资源。我们应围绕关键线程和关键阶段使用，并用帧时间与能量数据验证效果。
 
@@ -265,7 +265,7 @@ ADPF（Android Dynamic Performance Framework）的 `PerformanceHintManager` 允�
 
 #### Power HAL 的 Mode、Boost 与提示会话
 
-Android 17 的 AIDL 接口 `android.hardware.power.IPower` 提供三类相关能力：
+Android 17 的 AID（UID）L（Android Interface Definition Language，Android 接口定义语言） 接口 `android.hardware.power.IPower` 提供三类相关能力：
 
 - `setMode()`：表达持续或阶段性模式，例如 `INTERACTIVE`、`GAME`、`GAME_LOADING`；
 - `setBoost()`：表达短时 boost，例如 `INTERACTION`、`DISPLAY_UPDATE_IMMINENT`；
@@ -275,13 +275,13 @@ Android 17 的 AIDL 接口 `android.hardware.power.IPower` 提供三类相关能
 
 Android 17 的游戏管理服务 `GameManagerService` 在游戏前台状态变化时控制 `Mode.GAME`；`setGameState()` 和 `notifyGraphicsEnvironmentSetup()` 可触发 `Mode.GAME_LOADING`，源码还为加载模式设置了最长 5 秒的限制。`setGameMode()` 主要改变用户选择与配置，和一次固定时长的升频是两回事。
 
-WakeLock 的职责是约束系统挂起或相关电源状态。AOSP 里没有“每次 acquire WakeLock 都调用 `Boost.INTERACTION` 200 毫秒”的通用链路，排障时我们别把两者混为一谈。
+WakeLock（Userspace Wakelock） 的职责是约束系统挂起或相关电源状态。AOSP 里没有“每次 acquire WakeLock 都调用 `Boost.INTERACTION` 200 毫秒”的通用链路，排障时我们别把两者混为一谈。
 
 #### 从 Framework 提示到频率请求没有固定直连
 
-Power HAL 是场景提示与厂商策略的接口边界，schedutil 是 Linux 内核的 CPUFreq governor。`setMode()`、`setBoost()` 与提示会话进入厂商 HAL 后，可能被实现成 UClamp、cpuset、devfreq、固件投票——也就是向固件提交性能需求——或其他私有策略；AOSP 不规定它们必须写入某个 schedutil 参数。
+Power HAL 是场景提示与厂商策略的接口边界，schedutil 是 Linux 内核的 CPUFreq governor。`setMode()`、`setBoost()` 与提示会话进入厂商 HAL 后，可能被实现成 UClamp、cpuset、devfreq、固件投票（向固件提交性能需求）——也就是向固件提交性能需求——或其他私有策略；AOSP 不规定它们必须写入某个 schedutil 参数。
 
-`IPowerStats` 负责观测能量消费者、meter 计量值和 residency 驻留时间等数据，它只做观测，不反向决定 governor 行为。
+`IPowerStats` 负责观测能量消费者（energy consumer）、meter 计量值（meter）和 residency 驻留时间等数据，它只做观测，不反向决定 governor 行为。
 
 ### 用 Perfetto 观察 CPU DVFS
 
@@ -313,7 +313,7 @@ GROUP BY cpu, freq
 ORDER BY cpu, freq;
 ```
 
-查询结果回答“内核报告在某频点停留多久”。下一步应把目标时间窗与 `sched_slice`、应用切片和帧时间相交，确认关键线程在低频区间内处于 running 状态。只统计整段 Trace 的平均频率，结果容易被空闲时间稀释。
+查询结果回答“内核报告在某频点停留多久”。下一步应把目标时间窗与 `sched_slice`、应用切片和帧时间相交，确认关键线程在低频区间内处于 running 状态。只统计整段 Trace（async trace） 的平均频率，结果容易被空闲时间稀释。
 
 #### CPU idle 的值要按设备解释
 
@@ -340,7 +340,7 @@ GPU 通常有自己的时钟、电压域、利用率统计和 governor 或固件
 
 ADPF 的 `WorkDuration` 可以携带 CPU 和 GPU 的实际工作时长，给平台更完整的反馈；它也不会把 CPUFreq governor 变成 GPU governor。Perfetto 是否显示 GPU 频率、轨迹叫什么、数值是请求等级还是硬件反馈，都取决于 GPU 驱动和数据源。
 
-CPU/GPU headroom API 提供未来时间窗口内的性能余量估计，应用可以据此降低画质或并发量；它和 GPU 利用率、频率或硬件忙碌时间是不同的量。SurfaceFlinger 的 `PowerAdvisor` 也会围绕显示合成工作向 Power HAL 建立提示会话，但这条系统侧反馈链和应用读取 GPU headroom 之间没有固定的直接调用关系。设备有没有把两者映射到同一套 GPU/devfreq 策略，要用厂商 Trace、HAL 实现和 GPU 计数器共同证明。
+CPU/GPU headroom API 提供未来时间窗口内的性能余量（headroom）估计，应用可以据此降低画质或并发量；它和 GPU 利用率、频率或硬件忙碌时间是不同的量。SurfaceFlinger 的 `PowerAdvisor` 也会围绕显示合成工作向 Power HAL 建立提示会话，但这条系统侧反馈链和应用读取 GPU headroom 之间没有固定的直接调用关系。设备有没有把两者映射到同一套 GPU/devfreq 策略，要用厂商 Trace、HAL 实现和 GPU 计数器共同证明。
 
 #### DDR/LPDDR 调频要关注带宽、延迟与竞争
 
@@ -350,7 +350,7 @@ DDR/LPDDR 内存的控制器与互连，也可能采用动态频率或带宽投�
 - 内存访问延迟上升；
 - 多个发起内存访问的主设备（master）相互争用；
 - 热或功率预算限制内存域；
-- CPU 缓存未命中增多，使核心频率上升但吞吐没有同比增加。
+- CPU 缓存未命中（cache miss）增多，使核心频率上升但吞吐没有同比增加。
 
 单看 DDR 频率高低，说明不了内存有没有瓶颈。我们优先用设备提供的内存带宽计数器、LLC 相关计数器、缓存未命中与停顿事件、GPU 计数器和互连轨迹，并核对采样单位。AOSP 也不统一规定厂商的 DDR governor、节点名称或 Perfetto track。
 
@@ -366,13 +366,13 @@ DDR/LPDDR 内存的控制器与互连，也可能采用动态频率或带宽投�
 
 #### 对齐请求、执行和限制
 
-把 schedutil 输入线索、频率事件、idle 状态、温控压力、capacity 与关键切片对齐。设备若提供硬件频率反馈，再把“内核请求”和“硬件反馈”分开比较。
+把 schedutil 输入线索、频率事件、idle 状态、温控压力、capacity 与关键切片（slice）对齐。设备若提供硬件频率反馈，再把“内核请求”和“硬件反馈”分开比较。
 
 #### 建立对照
 
 保持工作负载、温度、电量、屏幕刷新率和网络条件尽量一致，重复采集。工程设备上的 UClamp、提示会话或受控频率上限实验可以帮助验证因果，但每次只改变一个变量，并在实验后恢复策略。
 
-AMU（架构活动监控单元）、PMU（性能监控单元）和厂商 counter 可以帮助解释“同频不同效”：AMU 反映架构活动周期与参考周期，PMU 提供指令数、周期数、cache miss 和 stall 等事件。它们是反馈或诊断来源，AOSP 并没有拿它们做统一的升频仲裁。比较“提频是否有收益”时，我们要在相同 workload 下同时报告完成时间、指令数与周期数、内存停顿、温度和能量，别只凭利用率或频率轨迹下结论。
+AMU（架构活动监控单元（Activity Monitors Unit，AMU））、PMU（性能监控单元（Performance Monitoring Unit，PMU））和厂商 counter 可以帮助解释“同频不同效”：AMU 反映架构活动周期与参考周期，PMU 提供指令数、周期数、cache miss 和 stall 等事件。它们是反馈或诊断来源，AOSP 并没有拿它们做统一的升频仲裁。比较“提频是否有收益”时，我们要在相同 workload 下同时报告完成时间、指令数与周期数、内存停顿、温度和能量，别只凭利用率或频率轨迹下结论。
 
 #### 选择对应修复
 
@@ -398,11 +398,11 @@ AMU（架构活动监控单元）、PMU（性能监控单元）和厂商 counter
 
 #### “CPU 利用率不高，就没有升频需求”
 
-平均利用率会掩盖短时突发负载，也会把不同 CPU 和时间段的数据混在一起。schedutil 还会考虑 `util_est`、UClamp、I/O 等待、RT/DL/IRQ 和 capacity 约束。我们应观察的是关键 policy 在目标时间窗口内的需求。
+平均利用率会掩盖短时突发负载（burst），也会把不同 CPU 和时间段的数据混在一起。schedutil 还会考虑 `util_est`、UClamp、I/O 等待、RT/DL/IRQ 和 capacity 约束。我们应观察的是关键 policy 在目标时间窗口内的需求。
 
 #### “固定最高频率可以解决卡顿”
 
-锁等待、I/O、GPU fence 和调度竞争不会因为 CPU 固定在最高频率而消失。持续最高频还会提高温度，随后可能触发更强的温控降频。限频或定频适合作为受控实验，不是通用产品方案。
+锁等待、I/O、GPU fence 和调度竞争不会因为 CPU 固定在最高频率而消失。持续最高频还会提高温度，随后可能触发更强的温控降频（thermal throttling）。限频或定频适合作为受控实验，不是通用产品方案。
 
 #### “scaling_cur_freq 就是硬件实频”
 
@@ -414,7 +414,7 @@ Linux CPUFreq 文档明确区分了请求状态和硬件反馈。`scaling_cur_fr
 
 ## 温度预算与降频约束
 
-DVFS 按负载调整频率，Thermal 根据温度和设备策略限制频率、功率或功能。持续负载下要同时观察请求频率与实际可用频率。
+DVFS 按负载调整频率，Thermal 根据温度和设备策略限制频率、功率或功能（feature）。持续负载下要同时观察请求频率与实际可用频率。
 
 > 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37），内核 `android17-6.18-2026-06_r6`。温度阈值、传感器布局、降载幅度和恢复曲线属于设备配置，AOSP 推导不出某款手机的具体行为。
 
@@ -493,7 +493,7 @@ Linux 6.18 提供 `step_wise`、`power_allocator`、`fair_share`、`bang_bang` �
 
 #### 限频只是冷却动作的一种
 
-`drivers/thermal/cpufreq_cooling.c` 将 cooling state 映射为 CPUFreq 的 policy 限制。设备还可以限制 GPU/devfreq，进行 CPU 热插拔或隔离，调低显示功耗，或者限制充电和无线功能。
+`drivers/thermal/cpufreq_cooling.c` 将 cooling state 映射为 CPUFreq 的 policy 限制。设备还可以限制 GPU/devfreq，进行 CPU 热插拔（hotplug）或隔离（isolation），调低显示功耗，或者限制充电和无线功能。
 
 “限核”并不是所有 Android 设备到了某个 severity 必然执行的步骤。CPUFreq、hotplug、固件功率预算和厂商策略可能各自独立工作，先后顺序也没有跨设备保证。
 
@@ -517,7 +517,7 @@ frameworks/base/services/core/java/com/android/server/power/thermal/
     ThermalManagerService.java
 ```
 
-服务启动时优先连接 AIDL Thermal HAL，失败后仍保留 HIDL 2.0、1.1 和 1.0 的兼容回退。兼容路径说明旧 HAL 还可能出现在升级设备上；新设备以 VINTF 与 HAL 声明为准。
+服务启动时优先连接 AIDL Thermal HAL，失败后仍保留 HIDL（HAL Interface Definition Language） 2.0、1.1 和 1.0 的兼容回退。兼容路径说明旧 HAL 还可能出现在升级设备上；新设备以 VINTF（Vendor Interface，厂商接口兼容性机制） 与 HAL 声明为准。
 
 #### ThermalManagerService 做什么
 
@@ -673,7 +673,7 @@ data_sources: {
 }
 ```
 
-这段配置适合观察分钟级热趋势。采样周期会影响时间精度，节点访问失败时也可能缺少相应轨道。
+这段配置适合观察分钟级热趋势。采样周期会影响时间精度，节点访问失败时也可能缺少相应轨道（track）。
 
 Linux 6.18 定义了 `thermal/thermal_temperature`、`thermal/thermal_zone_trip` 和 `power/cpu_frequency` 等 ftrace 内核跟踪事件。下面的配置用于观察这些事件的发生顺序：
 
@@ -889,7 +889,7 @@ WakeLock 主要回答第二个问题：它解释不了 CPU 为什么繁忙，也
 - `nativeSetAutoSuspend()`；
 - `nativeSetPowerMode()`。
 
-JNI 文件 `com_android_server_power_PowerManagerService.cpp` 连接 `ISystemSuspend` 与挂起控制服务。启用 autosuspend 后，只要没有有效的 blocker，内核和平台就可以尝试进入 system suspend。
+JNI（Java Native Interface，Java 原生接口） 文件 `com_android_server_power_PowerManagerService.cpp` 连接 `ISystemSuspend` 与挂起控制服务（suspend control service）。启用 autosuspend 后，只要没有有效的 blocker，内核和平台就可以尝试进入 system suspend。
 
 PMS 还会用 `Mode.INTERACTIVE` 向 AIDL Power HAL 通知交互状态。这个模式由厂商映射到自己的电源策略；一次普通的 WakeLock acquire 也不会直接命令 schedutil 升到某个频点。
 
@@ -958,7 +958,7 @@ try {
 
 #### 缓存进程的 WakeLock 可能被禁用
 
-PMS 有 `no_cached_wake_locks` 等配置与缓存进程判断，可以把某些 WakeLock 标记为禁用。具体条件还涉及 UID 状态、豁免、锁类型和设备配置。
+PMS 有 `no_cached_wake_locks` 等配置与缓存进程（cached process）判断，可以把某些 WakeLock 标记为禁用（disabled）。具体条件还涉及 UID 状态、豁免、锁类型和设备配置。
 
 应用不该把 `PARTIAL_WAKE_LOCK` 当作后台永久运行的承诺。即使应用内的对象仍显示 `isHeld`，系统也不会因此保证后台能力、网络或 Job 调度不受限制。
 
@@ -1007,7 +1007,7 @@ Doze 期间，普通应用通常会遇到：
 - 普通 Alarm 延后到维护窗口；
 - Wi-Fi 扫描等高成本操作受限。
 
-`setAndAllowWhileIdle()`、`setExactAndAllowWhileIdle()` 和闹钟提醒有特定例外，但调用频率与权限仍受限制。FCM 高优先级消息适合会产生用户可见通知的时效消息；用它维持静默心跳可能被降级，还会增加功耗。
+`setAndAllowWhileIdle()`、`setExactAndAllowWhileIdle()` 和闹钟提醒（alarm clock）有特定例外，但调用频率与权限仍受限制。FCM 高优先级消息适合会产生用户可见通知的时效消息；用它维持静默心跳可能被降级，还会增加功耗。
 
 Doze 会周期性进入维护窗口，批量执行部分待处理工作。窗口间隔会随空闲延长而变化，应用不能依赖具体分钟数。
 
@@ -1043,7 +1043,7 @@ adb shell am get-standby-bucket com.example.app
 
 当前官方文档对 `RESTRICTED` bucket 给出的是严格预算：通常把 Job 集中到每天一次、最长约 10 分钟的批处理会话，Alarm 也大幅受限；充电时限制可能仍在，只在特定的充电、空闲和非计量网络条件组合下放宽。
 
-这些是 Android 当前的高层行为，设备厂商仍可决定分桶条件和部分限制细节。device owner、profile owner、VPN、默认拨号应用、持久系统应用和用户设为“不受限制”的应用等，可能获得豁免；“正在运行任意前台服务”并不是通用的 `RESTRICTED` bucket 豁免条件。
+这些是 Android 当前的高层行为，设备厂商仍可决定分桶条件和部分限制细节。device owner、profile owner、VPN、默认拨号应用（dialer）、持久系统应用（persistent app）和用户设为“不受限制”的应用等，可能获得豁免；“正在运行任意前台服务”并不是通用的 `RESTRICTED` bucket 豁免条件。
 
 系统设置里的“Restricted/后台受限”是用户明确禁止后台活动，与预测得到的 standby bucket 是两个状态。两者都可能让 Job、Alarm、网络和前台服务启动受限，排障时我们分别读取。
 
@@ -1057,7 +1057,7 @@ Adaptive Battery 可以借助预测结果影响 standby bucket 和后台资源�
 
 Low Power Standby（LPS）与 Doze、App Standby、应用休眠是不同的状态机。Android 13 起，设备进入非交互状态、超过配置的超时时间，且不在 device-idle 维护窗口内时，LPS 可以启用；启用后应用的网络访问被禁用，持有的 WakeLock 被忽略，跑前台服务的应用也在限制范围内。Framework 主要把策略交给两个使用方：网络策略限制部分后台 UID 的联网能力，PowerManagerService 让不在允许范围内的 WakeLock 不再阻止低功耗状态。
 
-LPS 不会删除 WakeLock，也不会取消 Job。设备恢复交互，或应用符合 package、feature、allowed reason 等豁免条件后，限制可以解除。Android 14 / API 34 增加了 `isExemptFromLowPowerStandby()` 与 `isAllowedInLowPowerStandby()`，用于查询当前策略下的豁免和允许能力。这些查询只描述 Low Power Standby，代替不了 Doze 允许名单、standby bucket 或用户后台限制检查。
+LPS 不会删除 WakeLock，也不会取消 Job。设备恢复交互，或应用符合 package、feature、allowed reason 等豁免条件后，限制可以解除。Android 14 / API 34 增加了 `isExemptFromLowPowerStandby()` 与 `isAllowedInLowPowerStandby()`，用于查询当前策略下的豁免和允许能力。这些查询只描述 Low Power Standby，代替不了 Doze 允许名单（allowlist）、standby bucket 或用户后台限制检查。
 
 验证时我们读取 `dumpsys power` 中的 Low Power Standby 状态与 policy，并同时观察网络访问、WakeLock、suspend blocker 和 `power/suspend_resume`；只看到一次请求超时，还分不清是 LPS、Doze、待机桶还是网络故障。
 
@@ -1080,7 +1080,7 @@ JobScheduler 能根据充电、网络、空闲、存储和配额等条件，批�
 | 精确的用户提醒 | AlarmManager，按精确闹钟（exact alarm）政策使用 |
 | 进程存活期内的短异步工作 | 协程或执行器（coroutine/executor），不需要持久化调度器 |
 
-别为了“早点运行”同时叠加 WakeLock、exact alarm、foreground service 和加急工作。每种机制都有独立成本与政策，我们按业务语义选择够用的最小集合。
+别为了“早点运行”同时叠加 WakeLock、exact alarm、foreground service 和加急工作（expedited work）。每种机制都有独立成本与政策，我们按业务语义选择够用的最小集合。
 
 ### 检测 WakeLock 与 suspend 问题
 
@@ -1124,8 +1124,8 @@ data_sources: {
 
 PMS 还会在 `SuspendBlockers` 轨道中写入异步 Trace。我们可以按以下顺序分析：
 
-1. 标记屏幕和交互状态变化；
-2. 检查 `PowerManagerService.WakeLocks` 与显示挂起阻止器何时释放；
+1. 标记屏幕和交互（interactive）状态变化；
+2. 检查 `PowerManagerService.WakeLocks` 与显示挂起阻止器（Display blocker）何时释放；
 3. 检查 wakeup source 是否持续处于活跃状态；
 4. 用 `suspend_resume` 确认是否进入或退出系统睡眠流程；
 5. 恢复后查看第一批硬件中断（IRQ）、唤醒原因（wakeup reason）、线程和硬件活动；
@@ -1146,7 +1146,7 @@ adb bugreport /path/to/output/bugreport.zip
 
 重置会清除旧统计，只应在受控测试开始前执行。测试时应断开 USB 或固定供电条件，并记录亮度、网络、信号、电量、温度和场景时间。
 
-Battery Historian 可以读取 bugreport，显示用户空间 WakeLock、JobScheduler、同步管理器和进程状态等长时间线。但官方已注明该工具不再积极维护；能用系统跟踪、Macrobenchmark 功耗指标或 Android Studio Power Profiler 时，优先用这些工具。Historian 适合查看历史关联，当精确能量仪表用就不合适了。
+Battery Historian 可以读取 bugreport，显示用户空间 WakeLock、JobScheduler、同步管理器（SyncManager）和进程状态等长时间线。但官方已注明该工具不再积极维护；能用系统跟踪、Macrobenchmark 功耗指标（power metric）或 Android Studio Power Profiler 时，优先用这些工具。Historian 适合查看历史关联，当精确能量仪表用就不合适了。
 
 #### 验证能量
 
@@ -1159,7 +1159,7 @@ Battery Historian 可以读取 bugreport，显示用户空间 WakeLock、JobSche
 - 电池电流/电量统计；
 - 条件允许时的外部电源仪表。
 
-Perfetto 能量消费者、Power Profiler 或电源轨数据是否存在，取决于设备 HAL 和硬件。AOSP 不保证靠 RAPL 或静态能量模型就能拿到每个进程的真实能耗。
+Perfetto 能量消费者、Power Profiler 或电源轨数据是否存在，取决于设备 HAL 和硬件。AOSP 不保证靠 RAPL 或静态能量模型（Energy Model）就能拿到每个进程的真实能耗。
 
 ### WakeLock 滥用模式
 
@@ -1181,7 +1181,7 @@ Perfetto 能量消费者、Power Profiler 或电源轨数据是否存在，取�
 
 #### Android vitals 口径
 
-截至 2026 年的 Android vitals 文档，非豁免的 partial WakeLock 在 24 小时内累计达到 2 小时，会被报告为过度使用；这里只统计应用处于后台或运行前台服务时的持锁时长。如果 28 天窗口内受影响的会话超过 5%，从 2026 年 3 月 1 日起可能影响应用在 Google Play 中的可见性。音频、位置和 JobScheduler 用户发起 API 等用户收益明确的场景有统计豁免。
+截至 2026 年的 Android vitals 文档，非豁免的 partial WakeLock 在 24 小时内累计达到 2 小时，会被报告为过度使用（excessive）；这里只统计应用处于后台或运行前台服务（foreground service）时的持锁时长。如果 28 天窗口内受影响的会话超过 5%，从 2026 年 3 月 1 日起可能影响应用在 Google Play 中的可见性。音频、位置和 JobScheduler 用户发起（user-initiated） API 等用户收益明确的场景有统计豁免。
 
 这是 Google Play 的质量政策指标，可能会更新，也等同于不了系统强制释放 WakeLock 的阈值。应用内部应采用更严格、与业务时限匹配的预算。
 
@@ -1201,7 +1201,7 @@ Perfetto 能量消费者、Power Profiler 或电源轨数据是否存在，取�
 - 让测试包含足够长的灭屏或后台阶段；
 - 交错执行基线与候选版本，避免热机和冷机偏差；
 - 同时比较功能正确性；省电不能靠漏同步或丢通知换来；
-- 在报告中区分模型估算能量、电源轨测量、电池电量变化与外部仪表结果。
+- 在报告中区分模型估算能量（modeled energy）、电源轨测量（rail measurement）、电池电量变化（battery delta）与外部仪表结果。
 
 #### 最终选择修复层
 

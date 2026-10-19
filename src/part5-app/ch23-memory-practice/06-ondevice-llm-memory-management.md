@@ -59,7 +59,7 @@ last_draft_polish_at: '2026-08-15T09:04:59+08:00'
 ---
 # 端侧大模型推理的内存管理
 
-我们做端侧大模型，内存风险很少只来自模型文件本身。权重、KV 缓存（`Key/Value Cache`）、prefill 阶段的临时张量、运行时编译产物、GPU/NPU 缓冲区，再加上应用自身的 Java 与 native 内存，会在不同阶段叠加出不同的峰值。所以模型能加载，还只是第一步：长上下文生成、并发会话、后台切换能否稳住，要分开验证。
+我们做端侧大模型，内存风险很少只来自模型文件本身。权重、KV（把缓存切成固定页块管理） 缓存（`Key/Value Cache`）、prefill（预填充） 阶段的临时张量、运行时编译产物、GPU/NPU 缓冲区，再加上应用自身的 Java 与 native 内存，会在不同阶段叠加出不同的峰值。所以模型能加载，还只是第一步：长上下文生成、并发会话、后台切换能否稳住，要分开验证。
 
 > 源码基线：AOSP `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`；平台为 Android 17 / API 37。
 
@@ -69,7 +69,7 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 
 ### 1.1 六类常驻或阶段性内存
 
-动手测内存之前，我们先把几个术语约定好。token 是模型处理文本的离散单元，tensor 是保存输入、中间值或输出的多维数组，delegate 是把部分计算图交给 GPU、NPU 等后端执行的运行时插件。prefill 一次处理完输入提示词并建立 KV 缓存，decode 随后逐个生成输出 token。
+动手测内存之前，我们先把几个术语约定好。token 是模型处理文本的离散单元，tensor（张量） 是保存输入、中间值或输出的多维数组，delegate 是把部分计算图交给 GPU、NPU 等后端执行的运行时插件。prefill 一次处理完输入提示词并建立 KV 缓存（`Key/Value Cache`，保存每层注意力历史键和值的会话缓存），decode（解码） 随后逐个生成输出 token。
 
 | 类别 | 典型内容 | 容易出现峰值的阶段 | 主要控制量 |
 |---|---|---|---|
@@ -88,7 +88,7 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 
 `weight_min_bytes = P × b ÷ 8`
 
-下表按十进制参数量计算，再换算成 GiB。它不包含 scale（量化缩放因子）、zero-point、分组索引、padding、词表、运行时副本和编译产物：
+下表按十进制参数量计算，再换算成 GiB。它不包含 scale（量化缩放因子）、zero-point（非对称量化的零点偏移）、分组索引、padding（对齐填充）、词表、运行时副本和编译产物：
 
 | 参数量 | FP16 下限 | 8-bit 下限 | 4-bit 下限 |
 |---:|---:|---:|---:|
@@ -96,23 +96,23 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 | 7B | 13.04 GiB | 6.52 GiB | 3.26 GiB |
 | 13B | 24.21 GiB | 12.11 GiB | 6.05 GiB |
 
-不过，“4-bit 模型”也可能保留 FP16/FP32 的归一化层、embedding 或输出层。分组量化要为每组保存 scale，非对称方案通常还需要 zero-point。所以表中数字只是权重位数的换算结果，模型文件高于它们并不说明打包出了问题。
+不过，“4-bit 模型”也可能保留 FP16/FP32 的归一化层、embedding 或输出层。分组量化要为每组保存 scale（把量化整数还原到数值范围的缩放因子），非对称方案通常还需要 zero-point。所以表中数字只是权重位数的换算结果，模型文件高于它们并不说明打包出了问题。
 
 量化选择要看的不止压缩率：算子是否被目标后端支持、是否触发 CPU 回退、加载时是否反量化或重排，都会改变运行时内存。精度变化也依赖模型、校准集、量化算法和任务，通用的 MMLU（多学科问答基准）降幅代替不了应用验收。
 
 ### 1.3 KV 缓存要按模型配置计算
 
-我们拿一个每层都保留完整 K/V、没有滑动窗口、逐 token 自回归生成的 decoder 来算，KV 缓存的估算公式是：
+我们拿一个每层都保留完整 K/V、没有滑动窗口、逐 token 自回归生成的 decoder（自回归生成部分） 来算，KV 缓存的估算公式是：
 
 `kv_bytes = 2 × batch × layers × kv_heads × head_dim × cached_tokens × element_bytes`
 
-系数 2 对应 Key 和 Value 两份。这里要用 `kv_heads`：一个 attention head 就是一组并行处理注意力投影的单元。GQA（Grouped-Query Attention）让一组查询头共享 KV 头，MQA（Multi-Query Attention）则让更多查询头共用同一组 K/V，所以 KV 头数可能比 query 头数少，估算时别直接拿 query head 数代入。
+系数 2 对应 Key 和 Value 两份。这里要用 `kv_heads`：一个 attention head（注意力头） 就是一组并行处理注意力投影的单元。GQA（Grouped-Query Attention）让一组查询头共享 KV 头，MQA（Multi-Query Attention）则让更多查询头共用同一组 K/V，所以 KV 头数可能比 query 头数少，估算时别直接拿 query head 数代入。
 
-举个有量级的例子：批大小 1、32 层、8 个 KV 头、每个头的维度 128、缓存 4096 个 token、每个元素 2 字节，结果是 512 MiB；只把 KV 头数改成 32，结果就变成 2 GiB。这两个数是公式演示，不对应某个产品模型。
+举个有量级的例子：批大小 1、32 层、8 个 KV 头、每个头的维度（head dimension） 128、缓存 4096 个 token、每个元素 2 字节，结果是 512 MiB；只把 KV 头数改成 32，结果就变成 2 GiB。这两个数是公式演示，不对应某个产品模型。
 
 在这条公式之上，还要处理几项修正：
 
-- 部分层采用滑动窗口 attention 时，这些层保留的 token 数只能限制到窗口大小，global attention 层仍可能保留完整上下文。
+- 部分层采用滑动窗口 attention 时，这些层保留的 token 数只能限制到窗口大小，global attention（全局注意力） 层仍可能保留完整上下文。
 - KV 量化只有在引擎明确支持时才会减少缓存；权重量化不会自动改变 KV 的元素类型。
 - 并发会话通常各自拥有 KV 缓存，共享同一份权重不代表共享会话状态。
 - 推测解码（speculative decoding）会增加草稿模型的权重和会话状态，内存收益要单独评估，速度收益说明不了它。
@@ -122,17 +122,17 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 
 ### 1.4 文件映射与运行时缓冲区
 
-权重以只读文件映射加载时，VSS 会先增加，RSS 和 PSS 随后随缺页和回收变化，三者的区别可以回看开头的 23.3 一节。文件页可以被内核回收，也可以与其他进程共享页缓存，但后端仍可能为了对齐、布局转换、量化解码或设备私有格式，另外分配一份缓冲区。所以我们要分开观察：模型文件映射的 VSS、RSS/PSS；native heap 与匿名映射；图形统计、DMA-BUF 或 memtrack（硬件内存记账）能看到的设备缓冲区；delegate 初始化前后的增量；第一次推理前后的增量。
+权重以只读文件映射加载时，VSS（虚拟地址映射总量） 会先增加，RSS（当前驻留物理页） 和 PSS（按共享比例分摊的物理内存） 随后随缺页和回收变化，三者的区别可以回看开头的 23.3 一节。文件页可以被内核回收，也可以与其他进程共享页缓存，但后端仍可能为了对齐、布局转换、量化解码或设备私有格式，另外分配一份缓冲区。所以我们要分开观察：模型文件映射的 VSS、RSS/PSS；native heap 与匿名映射；图形统计、DMA-BUF（跨设备共享缓冲区的内核对象） 或 memtrack（硬件内存记账）能看到的设备缓冲区；delegate 初始化前后的增量；第一次推理前后的增量。
 
 还有一点容易算错：把模型文件大小、native heap 和 GPU 缓冲区直接相加，可能重复计算同一物理页。跨进程或跨设备比较时优先用进程 PSS，各分类留作归因线索。
 
 ### 1.5 16 KiB 页与数据搬运也会形成峰值
 
-16 KiB 页设备会改变模型文件映射、原生分配器区域和小映射的页面粒度：自研加载器要避免写死 4096 字节对齐，文件 `mmap()` 的 offset 必须遵守运行时页大小，APK/ELF 也要按[官方 16 KiB 兼容要求](https://developer.android.com/guide/practices/page-sizes)构建。页变大不会自动让每个 tensor 占用独立的 16 KiB，但会改变内部碎片和驻留页的观察结果。
+16 KiB 页设备会改变模型文件映射、原生分配器区域和小映射的页面粒度：自研加载器要避免写死 4096 字节对齐，文件 `mmap()` 的 offset（文件偏移） 必须遵守运行时页大小，APK/ELF 也要按[官方 16 KiB 兼容要求](https://developer.android.com/guide/practices/page-sizes)构建。页变大不会自动让每个 tensor 占用独立的 16 KiB，但会改变内部碎片和驻留页的观察结果。
 
-跨进程或跨硬件后端传递大 tensor 时，Binder 只传控制信息、句柄和小型元数据，数据本体优先走运行时张量缓冲区、`SharedMemory`、文件描述符，或满足消费端约束的 `AHardwareBuffer`。Java direct `ByteBuffer` 通常没有可访问的 Java 数组，别拿 `arrayOffset()` 推断 native 地址。即便共享缓冲区能被后端导入，我们也要用跟踪数据验证有没有发生 CPU staging copy（先复制到过渡缓冲区）、后端重排或额外设备副本。
+跨进程或跨硬件后端传递大 tensor 时，Binder（Android 进程间通信机制） 只传控制信息、句柄和小型元数据，数据本体优先走运行时张量缓冲区、`SharedMemory`、文件描述符，或满足消费端约束的 `AHardwareBuffer`。Java direct `ByteBuffer` 通常没有可访问的 Java 数组，别拿 `arrayOffset()` 推断 native 地址。即便共享缓冲区能被后端导入，我们也要用跟踪数据验证有没有发生 CPU staging copy（先复制到过渡缓冲区）、后端重排或额外设备副本。
 
-最后是线程问题：模型加载、delegate 初始化和首次编译不要放在主线程。在 Perfetto 里，除了计算 slice，我们还要看 Binder 等待、Runnable 排队、page fault、大块 `memcpy` 和后端返回码——数据搬运与初始化等待很容易被误判成“算子计算慢”。
+最后是线程问题：模型加载、delegate 初始化和首次编译不要放在主线程。在 Perfetto 里，除了计算 slice（一段带起止时间的跟踪事件），我们还要看 Binder 等待、Runnable 排队、page fault（缺页事件）、大块 `memcpy` 和后端返回码——数据搬运与初始化等待很容易被误判成“算子计算慢”。
 
 ## 2. 设备 RAM 与应用预算的关系
 
@@ -148,11 +148,11 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 
 这些字段都不是为当前应用预留的可分配额度。所以 `availMem >= model_file_size × 1.5` 这类固定公式会忽略应用基线、KV 缓存、后端副本、进程优先级和并发工作集，并不适合作为上线准入条件。
 
-系统侧的控制在 `system_server` 与系统守护进程内：[`MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java) 和 LMKD/OOM-adj 控制都在那里，LMKD 是低内存终止守护进程，OOM-adj 是系统衡量进程可终止优先级的分值。普通应用没有公共 API 为自己设置 `memory.high`、`memory.swap.high` 或 OOM-adj，也不要通过反射或 shell 权限绕过系统策略。
+系统侧的控制在 `system_server` 与系统守护进程内：[`MemoryLimiter.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java) 和 LMKD/OOM-adj 控制都在那里，LMKD 是低内存终止守护进程，OOM-adj 是系统衡量进程可终止优先级的分值。普通应用没有公共 API 为自己设置 `memory.high`、`memory.swap（换出）.high` 或 OOM-adj，也不要通过反射或 shell 权限绕过系统策略。
 
 ### 2.2 为每个模型变体建立设备档案
 
-可执行的预算来自目标设备测试。每条档案至少包含：模型与量化格式的不可变版本；运行时、delegate 与驱动版本；ABI、Android 版本、页大小、SoC 和物理 RAM 档位；后端与回退结果；上下文上限、并发会话数、输入模态与尺寸；各阶段 PSS、RSS、`VmHWM`、native heap 和可见的图形/DMA 数据；冷加载、热加载、取消、释放和重新加载结果；发生 delegate 编译失败、`mmap`/allocator 失败、Java OOM 或 LMK 的现场。
+可执行的预算来自目标设备测试。每条档案至少包含：模型与量化格式的不可变版本；运行时、delegate 与驱动版本；ABI、Android 版本、页大小、SoC（片上系统） 和物理 RAM 档位；后端与回退结果；上下文上限、并发会话数、输入模态与尺寸；各阶段 PSS、RSS、`VmHWM`、native heap 和可见的图形/DMA 数据；冷加载、热加载、取消、释放和重新加载结果；发生 delegate 编译失败、`mmap`/allocator（内存分配器） 失败、Java OOM 或 LMK 的现场。
 
 即便同一个模型，在两台 RAM 相同的设备上也可能是不同结果：驱动是否复制权重、NPU 编译策略、GPU 共享内存核算、厂商后台进程，都会影响可用余量。
 
@@ -208,11 +208,11 @@ LiteRT、LiteRT-LM 和 MediaPipe LLM Inference 是独立发布的库，能力要
 
 ### 4.1 Memory Advice 的弃用状态
 
-挑选平台压力信号时，先排掉一个已经过时的选项。[Memory Advice API](https://developer.android.com/games/sdk/memory-advice/overview) 的 beta 测试已结束，库已被官方标记为 deprecated；它属于 AGDK（Android Game Development Kit）的实验性 native 库，也不是 Android 17 新增的平台内存接口。现有项目可以在迁移期保留观测，但不要把它作为新推理管线唯一的准入或降级信号；接口状态与迁移去向详见 [内存监控与线上治理](07-memory-monitoring.md)。
+挑选平台压力信号时，先排掉一个已经过时的选项。[Memory Advice API](https://developer.android.com/games/sdk/memory-advice/overview) 的 beta 测试已结束，库已被官方标记为 deprecated（已弃用）；它属于 AGDK（Android Game Development Kit）的实验性 native 库，也不是 Android 17 新增的平台内存接口。现有项目可以在迁移期保留观测，但不要把它作为新推理管线唯一的准入或降级信号；接口状态与迁移去向详见 [内存监控与线上治理](07-memory-monitoring.md)。
 
 ### 4.2 `onTrimMemory()` 的释放语义
 
-`onTrimMemory()` 只负责机会性释放。Android 14 起，系统不再发送大部分旧的 running trim level；Android 15 将这些常量正式标记为已弃用。当前官方建议集中处理 `TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND`。
+`onTrimMemory()` 只负责机会性释放。Android 14 起，系统不再发送大部分旧的 running trim level（运行中进程的压力级别）；Android 15 将这些常量正式标记为已弃用。当前官方建议集中处理 `TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND`。
 
 这段代码在回调中只派发释放任务，不在回调线程执行模型关闭或等待后端：
 
@@ -239,7 +239,7 @@ override fun onTrimMemory(level: Int) {
 
 `MemoryInfo` 适合做信号，不适合做容量承诺。加载前可以读取 `lowMemory`、`availMem` 和当前进程状态，结合已经测得的设备档案决定是否禁用预热、选择较小模型或延后任务；但不要高频轮询，[`ActivityManager.getMemoryInfo()`](https://developer.android.com/reference/android/app/ActivityManager#getMemoryInfo(android.app.ActivityManager.MemoryInfo)) 的文档也建议优先使用 `onTrimMemory()` 回调。
 
-Android 17 的 [`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger) 增加了 `TRIGGER_TYPE_OOM` 与 `TRIGGER_TYPE_ANOMALY` 等触发器。OOM 触发器请求系统生成 Java 堆转储，并要求自定义 `UncaughtExceptionHandler` 继续调用默认处理器；anomaly 触发器返回何种产物取决于异常类型。系统触发的分析不保证一定生成结果，结果只能交给通过 `registerForAllProfilingResults()` 注册的全局监听器。它们适合生产问题取证，不是同步查询“还剩多少字节”的接口；配置细节参阅 [Android 17 ProfilingManager 文档](https://developer.android.com/reference/android/os/ProfilingManager)。
+Android 17 的 [`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger) 增加了 `TRIGGER_TYPE_OOM` 与 `TRIGGER_TYPE_ANOMALY` 等触发器。OOM 触发器请求系统生成 Java 堆转储，并要求自定义 `UncaughtExceptionHandler` 继续调用默认处理器；anomaly（异常） 触发器返回何种产物取决于异常类型。系统触发的分析不保证一定生成结果，结果只能交给通过 `registerForAllProfilingResults()` 注册的全局监听器。它们适合生产问题取证，不是同步查询“还剩多少字节”的接口；配置细节参阅 [Android 17 ProfilingManager 文档](https://developer.android.com/reference/android/os/ProfilingManager)。
 
 ## 5. CPU、GPU 与 NPU 的边界
 
@@ -255,7 +255,7 @@ Android 17 的 [`ProfilingTrigger`](https://developer.android.com/reference/andr
 
 [`AHardwareBuffer`](https://developer.android.com/ndk/reference/group/a-hardware-buffer) 从 API 26 起提供跨进程和图形 API 可共享的缓冲区。格式、usage flags（使用方式标志）、尺寸和设备实现共同决定它能否分配或被某个消费者导入；API 29 起可先用 `AHardwareBuffer_isSupported()` 检查给定描述。
 
-`AHardwareBuffer` 没有“所有 NPU 都可访问”的平台保证。即使 GPU 或 delegate 接受它，我们也要核对：CPU 锁定访问是否允许、是否会等待 fence；GPU/NPU 导入缓冲区时是否产生额外副本；CPU 与设备缓存同步、访问权如何转换；缓冲区的引用计数和关闭时机；memtrack、DMA-BUF 与进程 PSS 分别如何核算。
+`AHardwareBuffer` 没有“所有 NPU 都可访问”的平台保证。即使 GPU 或 delegate 接受它，我们也要核对：CPU 锁定访问是否允许、是否会等待 fence（表示异步硬件操作完成的同步对象）；GPU/NPU 导入缓冲区时是否产生额外副本；CPU 与设备缓存同步、访问权如何转换；缓冲区的引用计数和关闭时机；memtrack（硬件内存记账接口）、DMA-BUF 与进程 PSS 分别如何核算。
 
 OpenCL 同样要小心：它不是 Android NDK 面向所有设备提供的稳定公共计算 API。某个推理库要求声明厂商 OpenCL 原生库，只说明该库在指定设备路径上的依赖，够不上 Android 17 的通用接口。
 
@@ -311,13 +311,13 @@ fun readProcessStatus(): Map<String, Long> =
 - 当前模型、会话、KV 缓存和 I/O 缓冲区数量；
 - 最近一次加载、编译、取消、关闭、内存分配器或 delegate 错误。
 
-这组字段的语义，`/proc` 部分以 [`android17-6.18-2026-06_r6` 的 `proc.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst) 为准。PSS 会按共享比例分摊，比 RSS 更适合比较多进程总成本；诊断单个分配来源时仍要看 `maps`、native 分配分析和运行时日志。
+这组字段的语义，`/proc` 部分以 [`android17-6.18-2026-06_r6` 的 `proc.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst) 为准。PSS 会按共享比例分摊，比 RSS 更适合比较多进程总成本；诊断单个分配来源时仍要看 `maps`（进程内存映射清单）、native 分配分析和运行时日志。
 
 ### 6.3 GPU 与 native 内存需要外部工具
 
-GPU 与 native 内存要靠外部工具。`Debug.java` 中的 `getGpuTotalUsageKb()` 和 `getGpuPrivateMemoryKb()` 是 `@hide` 的系统接口，普通应用没有对应的 SDK 调用面，`dumpsys gfxinfo` 也算不上通用的 LLM GPU 内存计数器。测试环境可以组合：`adb shell dumpsys meminfo <package>` 的 Graphics、GL、DMA/memtrack 分类；Perfetto 的进程、内存和可用 GPU 计数器；[heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler)（native 堆采样器）定位 native 分配调用栈；delegate 或运行时自带的 profiler；SoC 厂商工具，用于只在对应设备上解释驱动内存。
+GPU 与 native 内存要靠外部工具。`Debug.java` 中的 `getGpuTotalUsageKb()` 和 `getGpuPrivateMemoryKb()` 是 `@hide（未纳入公开 SDK）` 的系统接口，普通应用没有对应的 SDK 调用面，`dumpsys gfxinfo` 也算不上通用的 LLM GPU 内存计数器。测试环境可以组合：`adb shell dumpsys meminfo <package>` 的 Graphics、GL、DMA/memtrack 分类；Perfetto 的进程、内存和可用 GPU 计数器；[heapprofd](https://perfetto.dev/docs/data-sources/native-heap-profiler（性能采样器）)（native 堆采样器）定位 native 分配调用栈；delegate 或运行时自带的 profiler；SoC 厂商工具，用于只在对应设备上解释驱动内存。
 
-Native heap 统计与 Scudo 分配器的职责划分详见 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)。同一场景应保留完整工具版本和设备 build fingerprint，避免直接横向比较厂商字段。
+Native heap 统计与 Scudo 分配器的职责划分详见 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)。同一场景应保留完整工具版本和设备 build fingerprint（能够标识系统构建版本的字符串），避免直接横向比较厂商字段。
 
 ## 7. 内存压力下的动作顺序
 
@@ -332,7 +332,7 @@ Native heap 统计与 Scudo 分配器的职责划分详见 [23.3 Native 与虚�
 | GPU delegate 失败后峰值更高 | 回退时旧资源未释放或产生双后端资源 | 记录回退顺序，关闭失败后端后再创建替代路径 |
 | 无 Java OOM 但进程消失 | LMK、原生代码主动终止、驱动崩溃或系统限制 | 查 `ApplicationExitInfo`（进程退出原因记录）、logcat、Vitals 与系统事件 |
 
-表中各类峰值对应不同资源，一个综合压力等级触发同一套降级是行不通的。压力信号到达后，控制器的动作顺序是：先阻止新任务，再取消或完成当前临界操作，然后释放可重建资源。安全底线是：不要在 native 后端执行中途随意 `munmap()` 权重或缓冲区，这会造成 use-after-free 或驱动错误。
+表中各类峰值对应不同资源，一个综合压力等级触发同一套降级是行不通的。压力信号到达后，控制器的动作顺序是：先阻止新任务，再取消或完成当前临界操作，然后释放可重建资源。安全底线是：不要在 native 后端执行中途随意 `munmap()` 权重或缓冲区，这会造成 use-after-free（资源释放后仍被访问） 或驱动错误。
 
 ### 7.2 保存可恢复状态
 
@@ -342,7 +342,7 @@ Native heap 统计与 Scudo 分配器的职责划分详见 [23.3 Native 与虚�
 
 把推理引擎放入私有子进程，收益是两个：原生代码或驱动崩溃不会直接破坏 UI 进程；结束子进程可以一次释放它拥有的运行时与映射。代价则包括第二套 ART 与 native 内存基线、Binder 调用与序列化成本、模型可能重复映射，以及更复杂的恢复协议。进程隔离的通用取舍可参阅 [23.5 大内存与多进程策略](05-large-heap-multiprocess.md)。
 
-评估多进程时，我们要盯住总账：汇总所有应用进程的 PSS——主进程下降只说明内存发生了转移，并不说明总成本下降；确认模型只在需要的进程初始化；大输入优先传文件描述符、`SharedMemory` 或受控的 `HardwareBuffer`，避免 Binder 内复制大数组；定义子进程死亡、任务幂等、结果去重和版本不匹配的处理；也不要用前台服务或频繁绑定服务提高进程存活率，来掩盖过高的内存。
+评估多进程时，我们要盯住总账：汇总所有应用进程的 PSS——主进程下降只说明内存发生了转移，并不说明总成本下降；确认模型只在需要的进程初始化；大输入优先传文件描述符、`SharedMemory` 或受控的 `HardwareBuffer`，避免 Binder 内复制大数组；定义子进程死亡、任务幂等（同一请求重复执行不会产生额外副作用）、结果去重和版本不匹配的处理；也不要用前台服务或频繁绑定服务提高进程存活率，来掩盖过高的内存。
 
 另外，应用不能调用 `ProcessList.batchSetOomAdj()` 或向 LMKD 发送私有控制包——进程重要性由可见组件、服务状态和系统策略决定，伪造高优先级会挤压整机内存。
 

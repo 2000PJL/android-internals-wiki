@@ -124,7 +124,7 @@ com.android.networkstack.process  netd
 - `NetworkCapabilities`：网络的传输类型和能力，例如 Wi-Fi、蜂窝、`INTERNET`、`NOT_METERED`、`NOT_SUSPENDED`；
 - `LinkProperties`：接口名、地址、路由、DNS、代理、MTU；
 - `NetworkScore`：提供者可声明的选择策略，以及仅供兼容和日志使用的 legacy int（旧版整数分数）；
-- `NetworkAgentConfig`：显式选择、是否接受未验证网络、VPN 属性等稳定配置；
+- `NetworkAgentConfig`：显式选择、是否接受未验证网络、VPN（bypass） 属性等稳定配置；
 - `providerId`：创建它的 `NetworkProvider`。
 
 agent 的注册和更新通道是 Binder：
@@ -197,7 +197,7 @@ agent 的注册和更新通道是 Binder：
 
 `NetworkMonitor` 中也不存在表示断网的 `LOST` 状态。物理链路断开或 agent 注销由提供者和 Connectivity 管理；对应用而言，`onLost()` 还可能只表示该网络不再满足当前请求。对于默认网络回调，旧网络被更优网络替代后仍可能继续存在。
 
-native network 与 DNS 缓存由 `ConnectivityService` 协调创建。不同能力和 VPN 场景会让创建发生在 agent 注册期或首次 connected 处理期；销毁时，服务先重新匹配请求和默认网络，再调用 netd、DnsResolver 与 DnsManager 清理旧数据通路，最后释放 netId。这套顺序是为了减少切换中断；排障时看到 DNS 清理动作，先别把断网直接归到它头上。
+native network 与 DNS 缓存由 `ConnectivityService` 协调创建。不同能力和 VPN（lockdown） 场景会让创建发生在 agent 注册期或首次 connected 处理期；销毁时，服务先重新匹配请求和默认网络，再调用 netd、DnsResolver 与 DnsManager 清理旧数据通路，最后释放 netId。这套顺序是为了减少切换中断；排障时看到 DNS 清理动作，先别把断网直接归到它头上。
 
 ## NetworkMonitor 验证的是什么
 
@@ -465,12 +465,12 @@ map 是内核与用户空间交换计数数据的容器，pin 则是为 BPF 对�
 查询和 poll 可能涉及：
 
 - BPF map 遍历与合并；
-- TUN VPN/464xlat 流量归属调整；
+- TUN（向用户空间收发 IP 包的虚拟网络接口） VPN/464xlat 流量归属调整；
 - 历史文件加载、时间 bucket 聚合和按权限裁剪结果；
 - stats provider 同步；
 - 持久化 I/O。
 
-所以 `NetworkStatsManager` 的查询 API 标注为 `@WorkerThread`，UI 主线程上要避开它。数据规模、时间范围、tag 数量、设备 I/O 和缓存状态共同决定耗时，通用的“低于 10 ms”保证并不存在。
+所以 `NetworkStatsManager` 的查询 API 标注为 `@WorkerThread`，UI 主线程上要避开它。数据规模、时间范围、tag（应用为 socket 流量设置的分类标签） 数量、设备 I/O 和缓存状态共同决定耗时，通用的“低于 10 ms”保证并不存在。
 
 需要较高频率观察当前进程收发量时，可以在其统计语义允许的范围内用 `TrafficStats` 算前后差值；要查计费那套统计和跨时间段历史时，再换 `NetworkStatsManager`。两者的统计范围、更新时效和权限都不同。
 
@@ -522,7 +522,7 @@ Connectivity 代码会从 BPF 规则状态取得所跟踪 UID 的 blocked reason
 - 隧道 MTU、重传、分片或 ICMP Packet Too Big 报文；
 - underlying network 变化到隧道恢复的时间；
 - DNS 是否走预期网络；
-- 分流隧道、绕过和强制 VPN 三类规则（split tunnel / bypass / lockdown）是否符合设计。
+- 分流隧道（split tunnel）、绕过和强制 VPN 三类规则（split tunnel / bypass / lockdown）是否符合设计。
 
 “VPN 增加多少 CPU”或“每条规则耗时多少微秒”，要放回具体设备、算法和包长里测，固定数字给不出普适答案。
 
@@ -573,7 +573,7 @@ ECH 属于 TLS 栈和网络安全配置，不由 `ConnectivityManager` 完成，
 2. **agent 是否注册并 connected**：netId、网络接口和 capabilities 是否存在；
 3. **LinkProperties 是否完整**：地址、默认路由、DNS、MTU、代理；
 4. **验证结果**：validated、portal、partial、Private DNS；
-5. **请求是否匹配**：transport、capability、specifier 和 UID；
+5. **请求是否匹配**：transport、capability、specifier（指定某个网络实例或提供者的附加条件） 和 UID；
 6. **为何赢得或失去默认网络**：VPN、validation、即将退出、primary、VCN 等策略；
 7. **UID 是否 blocked**：Data Saver、Doze、应用待机、restricted mode、lockdown VPN；
 8. **socket 和 DNS 绑定**：旧连接是否仍在旧 netId，解析是否使用预期网络；

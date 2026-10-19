@@ -39,7 +39,7 @@ related_chapters:
 
 # Android logd 日志系统性能与开销
 
-一条 `Log.d()` 从调用到被读取客户端看到，要依次经过级别判断、JNI 取字符串、Unix Domain Socket 发送和缓冲保存。分析这条链路时，有三处容易混淆：应用写日志与 logd 保存日志是两段成本；logd 的服务端筛选与 logcat 的客户端筛选是两回事；EventLog 与 StatsD 原子事件走的是两条传输路径。我们把这三处分开，后面的开销归因才站得住。
+一条 `Log.d()` 从调用到被读取客户端看到，要依次经过级别判断、JNI 取字符串、Unix Domain Socket（同一设备上进程间通信使用的本地套接字） 发送和缓冲保存。分析这条链路时，有三处容易混淆：应用写日志与 logd 保存日志是两段成本；logd 的服务端筛选与 logcat 的客户端筛选是两回事；EventLog 与 StatsD 原子事件（atom，即 StatsD 定义的一类结构化指标事件）走的是两条传输路径。我们把这三处分开，后面的开销归因才站得住。
 
 > 源码基线：AOSP `android-17.0.0_r1`，本文结论均以它为准。
 
@@ -67,11 +67,11 @@ android.util.Log.d(tag, message)
 
 这条路径上有四个细节会影响我们后面的判断：JNI 取字符串、native 侧的第二次级别过滤、`writev()` 的提交方式，以及 socket 的凭据传递。
 
-JNI 层用 `GetStringUTFChars()` 取到 tag 和 message 的表示，编码是 Modified UTF-8，也就是 JNI 使用的一种变体，用完即释放。虚拟机会不会复制字符串，取决于具体实现和字符串内容，直接写成“一次堆分配”并不可靠；可以确定的是，取编码和跨一次 JNI 都有成本。
+JNI 层用 `GetStringUTFChars()` 取到 tag 和 message 的表示，编码是 Modified UTF-8（JNI 使用的一种 UTF-8 变体），也就是 JNI 使用的一种变体，用完即释放。虚拟机会不会复制字符串，取决于具体实现和字符串内容，直接写成“一次堆分配”并不可靠；可以确定的是，取编码和跨一次 JNI 都有成本。
 
 文本日志进入 `__android_log_buf_write()` 后会再次执行 `__android_log_is_loggable()`。`Log.d()` 的参数在进入 native 方法前已经求值，所以这层过滤能省去套接字写入，却省不掉调用方已经完成的字符串拼接、对象 `toString()` 或 JSON 序列化。
 
-liblog 用 `writev()` 把头部和 payload 一次提交。旧版内核 logger 的 `/dev/log_main` 等节点留在早期版本里，当前路径已经用不到它们。
+liblog 用 `writev()` 把头部和 payload（日志消息体） 一次提交。旧版内核 logger 的 `/dev/log_main` 等节点留在早期版本里，当前路径已经用不到它们。
 
 `/dev/socket/logdw` 是 datagram socket，保留消息边界、无连接。logd 为它启用凭据传递，`LogListener` 从内核附带的 `SCM_CREDENTIALS` 取得发送方 PID、UID、GID，客户端伪造 payload 也冒充不了另一个进程。SELinux 和文件/socket 权限约束的是谁能连接与写入；至于日志本身，liblog 并不会在每条日志上重新执行一次 SELinux 判定。
 
@@ -88,7 +88,7 @@ liblog 用 `writev()` 把头部和 payload 一次提交。旧版内核 logger �
 
 `LogdWrite()` 给普通日志用的 socket 带 `SOCK_NONBLOCK`：套接字暂时不可用时，写入立即返回。这里的普通日志覆盖 `main`、`system`、`radio`、`events`、`stats`、`crash` 等合法 buffer；`security` 是受权限控制的特殊二进制 buffer，liblog 为它单独准备了阻塞 socket。
 
-logd 一旦来不及接收，socket 就返回 `EAGAIN`，liblog 记一次丢弃并直接返回；等后续写入恢复、liblog 内部日志允许输出时，它会尝试写入 event tag `1006`，也就是 `liblog` 自己的事件，报告此前丢了多少条。这与旧版 `chatty` 行是两套机制。
+logd 一旦来不及接收，socket 就返回 `EAGAIN`（表示“稍后再试”），liblog 记一次丢弃并直接返回；等后续写入恢复、liblog 内部日志允许输出时，它会尝试写入 event tag `1006（`liblog`）`，也就是 `liblog` 自己的事件，报告此前丢了多少条。这与旧版 `chatty` 行是两套机制。
 
 所以应用日志风暴的代价主要落在四处：
 
@@ -97,7 +97,7 @@ logd 一旦来不及接收，socket 就返回 `EAGAIN`，liblog 记一次丢弃�
 - logd 忙于接收、压缩、裁剪和服务读取客户端，增加系统负载；
 - 日志对象和中间字符串增加分配压力。
 
-在这套机制下，“socket 满后 `write()` 阻塞主线程并导致 ANR”的说法与 `android-17.0.0_r1` 的 liblog 实现不符。trace 里如果真有线程长期停在日志相关调用上，我们要查的是自建日志框架的锁、磁盘输出端 sink、格式化、崩溃收集器或厂商改动；AOSP 的 `logdw` 只丢不堵，没有“下游变慢、上游等待”式的反压。
+在这套机制下，“socket 满后 `write()` 阻塞主线程并导致 ANR”的说法与 `android-17.0.0_r1` 的 liblog 实现不符。trace 里如果真有线程长期停在日志相关调用上，我们要查的是自建日志框架的锁、磁盘输出端（sink） sink、格式化、崩溃收集器或厂商改动；AOSP 的 `logdw` 只丢不堵，没有“下游变慢、上游等待”式的反压（下游处理变慢后迫使上游等待）。
 
 对 `EAGAIN` 也不要做无间隔重试——那等于把“允许丢日志”的保护机制变成 CPU 自旋。
 
@@ -140,7 +140,7 @@ logd 一共定义八个 log ID，每个对应一类独立的日志缓冲区：
 | `security` | 受权限控制的安全事件 |
 | `kernel` | logd 收集的内核日志 |
 
-`system/logging/logd/LogSize.h` 给出的通用默认值是每个 buffer 256 KiB，最小 64 KiB，最大 256 MiB。但 `LogSize.cpp` 里启动时读取 `persist.logd.size*` / `ro.logd.size*` 覆盖值的路径，只对 `ro.debuggable=true`、且设备类型为 automotive 或 `ro.hardware=android-desktop` 的设备生效；不可调试的低内存设备会选择 64 KiB。再叠加产品配置和 `logcat -G` 运行时设置，实际容量因设备而异，一张固定容量表代表不了所有设备。
+`system/logging/logd/LogSize.h` 给出的通用默认值是每个 buffer 256 KiB，最小 64 KiB，最大 256 MiB。但 `LogSize.cpp` 里启动时读取 `persist.logd.size*` / `ro.logd.size*` 覆盖值的路径，只对 `ro.debuggable=true`、且设备类型为 automotive 或 `ro.hardware=android-desktop` 的设备生效；不可调试的低内存（low-RAM）设备会选择 64 KiB。再叠加产品配置和 `logcat -G` 运行时设置，实际容量因设备而异，一张固定容量表代表不了所有设备。
 
 所以容量问题直接查目标设备：
 
@@ -148,7 +148,7 @@ logd 一共定义八个 log ID，每个对应一类独立的日志缓冲区：
 adb logcat -g
 ```
 
-输出会列出各 buffer 的环形缓冲区大小、已使用量、可读量以及单条上限。`logcat -G` 配合 `-b` 可以修改运行时大小，但通常需要相应权限。还要清楚一点：调大容量只能延长日志保留窗口，写入成本和 socket 丢包并不会因此消失。
+输出会列出各 buffer 的环形缓冲区大小（ring buffer size）、已使用量、可读量以及单条上限。`logcat -G` 配合 `-b` 可以修改运行时大小，但通常需要相应权限。还要清楚一点：调大容量只能延长日志保留窗口，写入成本和 socket 丢包并不会因此消失。
 
 ### 2.3 默认实现使用序列化数据块
 
@@ -169,21 +169,21 @@ adb logcat -g
 
 ## 3. logcat 的读取与过滤
 
-### 3.1 reader socket 与每个客户端的线程
+### 3.1 reader（读取客户端） socket 与每个客户端的线程
 
 logcat 这边连接的是 `/dev/socket/logdr`。该 reader socket 使用 `SOCK_SEQPACKET`：可靠、面向连接，并保留每条消息的边界。logd 接受连接和读取命令后，会为每个客户端创建独立的 `LogReaderThread`。服务端命令支持的主要筛选条件包括：
 
 - log ID mask；
 - PID；
-- 起始时间或日志序号；
+- 起始时间或日志序号（sequence）；
 - tail 条数；
-- 非阻塞读取，以及等到缓冲区即将回绕才返回的 wrap 读取模式。
+- 非阻塞读取，以及等到缓冲区即将回绕才返回（wrap）的 wrap 读取模式。
 
 安全 buffer 和跨 UID 读取还受凭据与权限约束。面向应用公开的 NDK logging API 通常写入 `main`；读取全局 logcat 所需的 `READ_LOGS` 也只授予受信任的特权组件。
 
 ### 3.2 tag 与正则表达式在 logcat 客户端执行
 
-`*:S MyApp:V` 一类 tag/priority 规则，由 logcat 进程里的 `android_log_shouldPrintLine()` 判断；`--regex` 同样在 logcat 端交给 `std::regex_search()` 执行。这两类过滤都停在 logcat 进程里，不会作为标签表或正则表达式交给 logd。
+`*:S MyApp:V` 一类 tag/priority（标签/优先级） 规则，由 logcat 进程里的 `android_log_shouldPrintLine()` 判断；`--regex` 同样在 logcat 端交给 `std::regex_search()` 执行。这两类过滤都停在 logcat 进程里，不会作为标签表或正则表达式交给 logd。
 
 这条客户端与服务端的分工直接影响性能判断：
 
@@ -199,7 +199,7 @@ adb logcat -b main --pid="$(adb shell pidof -s com.example.app)" \
   -v threadtime 'MyApp:V' '*:S'
 ```
 
-这里 `-b main` 和 `--pid` 控制服务端数据范围，后面的过滤规则决定 logcat 打印哪些 tag。`$(...)` 命令替换应在主机 shell 中执行；多进程应用还要确认 `pidof -s` 选中的进程是不是我们要排查的那个。
+这里 `-b main` 和 `--pid` 控制服务端数据范围，后面的过滤规则（filter spec）决定 logcat 打印哪些 tag。`$(...)` 命令替换应在主机 shell 中执行；多进程应用还要确认 `pidof -s` 选中的进程是不是我们要排查的那个。
 
 ### 3.3 慢速读取客户端与多个 reader
 
@@ -239,7 +239,7 @@ reader 要读的位置一旦落在被裁剪的数据之后，serialized buffer �
 Log.d(TAG, "user=${user.name}, payload=${encodeLargePayload(data)}")
 ```
 
-高频路径应在格式化前判断是否需要输出，并由构建类型或应用日志组件统一控制级别策略：
+高频路径应在格式化前判断是否需要输出，并由构建类型（build type）或应用日志组件统一控制级别策略：
 
 ```kotlin
 if (BuildConfig.DEBUG && Log.isLoggable(TAG, Log.DEBUG)) {

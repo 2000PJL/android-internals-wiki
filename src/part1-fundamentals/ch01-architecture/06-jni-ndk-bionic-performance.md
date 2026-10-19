@@ -87,7 +87,7 @@ consolidated_from:
 - src/part1-fundamentals/ch01-architecture/39-bionic-libc-performance.md
 ---
 
-# JNI、NDK 与 Bionic 原生运行时性能
+# JNI（Java Native Interface，Java 原生接口）、NDK（Native Development Kit） 与 Bionic 原生运行时性能
 
 JNI 用于在 Java/Kotlin 与 C/C++ 之间调用代码，NDK 提供 Android 原生开发工具链。我们优化 JNI 时，先减少跨语言调用次数，再减少数据编组——也就是参数在两侧表示之间来回转换的功夫——然后管好线程与引用生命周期；把单次边界切换（transition）再压十几纳秒，排在这两件事之后。
 
@@ -116,9 +116,9 @@ Native 性能问题通常跨过 Java/Native 调用边界、动态链接器和 li
 
 普通 JNI 调用需要通知 ART：线程将从托管代码状态进入原生代码状态。随后，调用按 JNI 的二进制调用约定（ABI）传递 `JNIEnv*`、`jobject` / `jclass` 和业务参数；返回时再恢复运行时状态，处理引用和异常。
 
-普通入口会经过 ART 的 JNI 跳板代码（trampoline），为本次调用建立本地引用区段，并把线程从可运行的 `Runnable` 状态切换到执行原生代码的 `Native` 状态。
+普通入口会经过 ART 的 JNI 跳板代码（trampoline），为本次调用建立本地引用区段（local-reference segment），并把线程从可运行的 `Runnable` 状态切换到执行原生代码的 `Native` 状态。
 
-返回时，线程再恢复 `Runnable`，检查运行时挂起请求和待处理的 Java 异常（pending exception）。对象参数还要放入引用表，并在原生侧解析为实际对象；纯基本类型参数没有这层对象引用处理。
+返回时，线程再恢复 `Runnable`，检查运行时挂起请求和待处理的 Java 异常（pending exception）。对象参数还要放入引用表，并在原生侧解析为实际对象；纯基本类型（primitive）参数没有这层对象引用处理。
 
 所以一次 JNI 调用没有固定的执行路径，方法属性、参数类型、编译状态和运行时挂起请求都会让它走上不同分支。
 
@@ -177,7 +177,7 @@ private static native void native_set(String key, String def);
 按批次传输，并不是无条件复制 100MB 数据；接口设计要看数据主要由哪一侧访问：
 
 - Java/Kotlin 侧读写更多：基本类型数组通常更自然；
-- C/C++ 侧长期处理：由原生代码拥有的缓冲区，或直接缓冲区更合适；
+- C/C++ 侧长期处理：由原生代码拥有的缓冲区，或直接缓冲区（direct buffer）更合适；
 - 两侧只传控制信息：可以传 `long` 形式的原生句柄，但必须防止句柄指向的对象已释放、重复释放和跨实例误用。
 
 #### 2.2 少做跨语言异步回调
@@ -337,7 +337,7 @@ static jint NativeWriteInt(jlong ptr, jint value) {
 2. 尚未附着且需要调用 JNI 时，使用 `AttachCurrentThread()` 或 `AttachCurrentThreadAsDaemon()`；
 3. 线程退出前调用 `DetachCurrentThread()`。
 
-对已经附着的线程再次调用 attach 不会重复附着，只会直接返回当前环境；每个小任务前后都 attach/detach 一遍同样没有必要。附着与分离应该跟着操作系统线程的生命周期走。
+对已经附着的线程再次调用 attach 不会重复附着，只会直接返回当前环境；每个小任务前后都 attach/detach 一遍同样没有必要。附着与分离（attach/detach）应该跟着操作系统线程的生命周期走。
 
 如果线程本来就要频繁回调 Java，优先考虑通过 Java 的 `Thread.start()` 创建。这样能自然获得合适的栈大小、线程组（ThreadGroup）、类加载器和调试工具中的可见性。
 
@@ -365,7 +365,7 @@ JNI 规范只要求虚拟机保证至少 16 个本地引用槽位。Android 8 �
 
 ### 6. 引用、异常与所有权
 
-#### 6.1 本地、全局与弱全局引用
+#### 6.1 本地、全局与弱全局引用（weak global reference）
 
 - **本地引用**：只在当前线程、当前 JNI 本地引用帧内有效；
 - **全局引用**：跨调用、跨线程保持对象可达，直到调用 `DeleteGlobalRef()`；
@@ -442,7 +442,7 @@ JNI 规范允许 `Get<PrimitiveType>ArrayElements()`：
 - 返回指向托管数组的直接指针，并在此期间固定数组位置；
 - 或分配原生缓冲区，把数组内容复制进去。
 
-这两种实现属于运行时选择，跨版本没有保证。对可能被 GC 移动的基本类型数组，ART 的普通 Elements 路径通常建立原生副本并执行 `memcpy`；`GetPrimitiveArrayCritical()` 则靠限制移动式 GC 和线程翻转——ART 协调线程状态的一种机制——来提供直接地址。
+这两种实现属于运行时选择，跨版本没有保证。对可能被 GC 移动的基本类型数组，ART 的普通 Elements 路径通常建立原生副本并执行 `memcpy`；`GetPrimitiveArrayCritical()` 则靠限制移动式 GC 和线程翻转（thread flip，ART 协调线程状态的一种机制）——ART 协调线程状态的一种机制——来提供直接地址。
 
 这种实现差异说明，大数组既要测量复制成本，也要观察 GC 影响，只比较 API 名称会得出错误结论。所有 Elements 调用仍必须用对应的 `Release<PrimitiveType>ArrayElements()` 结束生命周期。
 
@@ -525,7 +525,7 @@ managed wrapper
 
 #### 9.2 Simpleperf / Perfetto CPU sampling
 
-CPU 采样能回答“处理器时间花在哪些函数”，也可能看到 ART 的 JNI 跳板代码以及后续 C/C++ 调用链。采样按固定频率记录程序当时的位置，给不出每次调用精确的开始和结束时间。
+CPU 采样能回答“处理器时间花在哪些函数”，也可能看到 ART 的 JNI 跳板代码（trampoline，即从托管调用约定转入 JNI 的中间代码）以及后续 C/C++ 调用链。采样按固定频率记录程序当时的位置，给不出每次调用精确的开始和结束时间。
 
 为了把地址还原成可读的 C/C++ 函数名，构建产物至少要保留：
 
@@ -773,7 +773,7 @@ Android 的 `mallopt` 提供若干分配器控制项：
     ((1 * 1024 * 1024) - SIGNAL_STACK_SIZE_WITHOUT_GUARD)
 ```
 
-因此，Bionic 创建的子线程默认 `pthread_attr_t::stack_size` 在指针和 `long` 都是 64 位的 LP64 上是 992 KiB，在 32 位进程上是 1008 KiB。源码随后会从栈顶划出 `pthread_internal_t`，所以这两个数字也不能直接当成业务代码可用的最大栈深。
+因此，Bionic 创建的子线程默认 `pthread_attr_t::stack_size` 在指针和 `long` 都是 64 位的 LP64（指针和 `long` 都为 64 位的 ABI） 上是 992 KiB，在 32 位进程上是 1008 KiB。源码随后会从栈顶划出 `pthread_internal_t`，所以这两个数字也不能直接当成业务代码可用的最大栈深。
 
 主线程走另一条路径。`pthread_attr_getstack` 根据 `RLIMIT_STACK`（进程栈资源限制）和进程映射计算主栈；只有当限制为 `RLIM_INFINITY` 时，Bionic 才把报告值收敛为 8 MiB，避免调用者把无限值当成可用映射。“Android 主线程固定 8 MiB”并不成立。
 
@@ -791,7 +791,7 @@ Android 的 `mallopt` 提供若干分配器控制项：
 高地址
 ```
 
-之后才初始化 TCB（线程控制块）、DTV（动态 TLS 模块表）、stack canary 校验值和 Bionic TLS，并通过带有 `CLONE_SETTLS` 等标志的 `clone` 路径创建内核线程。线程启动后还会建立处理信号时使用的备用栈（alternate signal stack）；arm64/riscv 构建还可能分配用于保护返回地址的 Shadow Call Stack 区域。
+之后才初始化 TCB（线程控制块）、DTV（动态 TLS 模块表）、stack canary（用于检测栈破坏的随机校验值） 校验值和 Bionic TLS，并通过带有 `CLONE_SETTLS` 等标志的 `clone` 路径创建内核线程。线程启动后还会建立处理信号时使用的备用栈（alternate signal stack）；arm64/riscv 构建还可能分配用于保护返回地址的 Shadow Call Stack 区域。
 
 这里有三个性能含义：
 

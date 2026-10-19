@@ -42,7 +42,7 @@ sources:
 
 # 耗电与发热监控 (Battery & Thermal)
 
-耗电监控要解决的是“哪段业务触发了哪些高成本资源活动”。单看“电量下降了多少”远远不够：电池百分比经过 fuel gauge（电量计）平滑，瞬时电流里还混杂着屏幕、蜂窝基带、GPU、充放电和其他进程的影响。所以线上 APM（Application Performance Monitoring，应用性能监控）若把一段方法执行时间直接换算成 mAh，往往只会得到一个看似精确的误差值。
+耗电监控要解决的是“哪段业务触发了哪些高成本资源活动”。单看“电量下降了多少”远远不够：电池百分比经过 fuel gauge（电量计）平滑，瞬时电流里还混杂着屏幕、蜂窝基带、GPU、充放电和其他进程的影响。所以线上 APM（Application Performance Monitoring，应用性能监控）若把一段方法执行时间直接换算成 mAh（毫安时），往往只会得到一个看似精确的误差值。
 
 更可靠的方案是记录资源事件：哪个任务申请了 WakeLock，哪个 Alarm 被系统投递，定位与扫描请求是否收到结果，网络传了多少字节，哪些线程持续消耗 CPU，以及这些事件发生时进程是否在后台。发热侧再记录系统的 thermal status 和应用采取的减负动作。把两组证据放到同一条 monotonic clock（单调时钟）时间线上对齐——这种时钟只向前推进，不受用户修改系统时间影响——就能定位“升温期间仍在运行的高成本任务”；仅有时间重合，还不足以证明该任务是唯一热源。
 
@@ -65,9 +65,9 @@ sources:
 - Alarm 设置成功，只表示系统接收了计划；要确认该次 Alarm 已投递，需要看到接收器或 `OnAlarmListener` 开始执行。
 - 定位和扫描请求窗口是应用意图。系统可能返回缓存、批处理结果，也可能因权限、配额或硬件状态拒绝请求。
 - `TrafficStats` 的 UID（系统为应用分配的标识）字节差能确认流量变化；蜂窝 modem（基带）的活跃时长和能耗，要另找证据。
-- Thermal 状态来自系统对设备传感器的汇总。应用活动与状态上升出现在同一时间窗，只能说明两者存在相关关系；要判断因果，还需要对照实验、system trace 或大量样本统计来支撑。
+- Thermal 状态来自系统对设备传感器的汇总。应用活动与状态上升出现在同一时间窗，只能说明两者存在相关关系；要判断因果，还需要对照实验、system trace（系统跟踪） 或大量样本统计来支撑。
 
-Android 的 `BatteryStats` 使用计时器、计数器和功耗模型维护系统侧统计，普通应用进程拿不到同等完整的数据。开发阶段我们可以用 `dumpsys batterystats --history`、Perfetto、Android Studio Power Profiler 和 Macrobenchmark `PowerMetric` 核对应用端事件。
+Android 的 `BatteryStats` 使用计时器、计数器和功耗模型维护系统侧统计，普通应用进程拿不到同等完整的数据。开发阶段我们可以用 `dumpsys batterystats --history`、Perfetto（Android 系统跟踪工具）、Android Studio Power Profiler 和 Macrobenchmark `PowerMetric`（基准测试的功耗指标） 核对应用端事件。
 
 Battery Historian 仍可读取旧式 batterystats 报告，但官方文档已经注明它不再积极维护，验证时要与其他工具配合使用。
 
@@ -82,11 +82,11 @@ WakeLock 是 Android 用来阻止设备进入某些低功耗状态的锁，最�
 应用侧有几个容易遗漏的语义：
 
 - WakeLock 默认启用引用计数，记录同一对象尚未配对的 acquire 次数：同一对象 acquire 两次，通常需要 release 两次；`setReferenceCounted(false)` 后，一次 release 就能撤销此前的持有。
-- `acquire(timeout)` 通过框架内部 Handler 安排 `release(RELEASE_FLAG_TIMEOUT)`，这个内部释放不会经过业务代码里的公开 `release()` 调用点。
+- `acquire(timeout)` 通过框架内部 Handler（向指定线程投递任务的机制） 安排 `release(RELEASE_FLAG_TIMEOUT)`，这个内部释放不会经过业务代码里的公开 `release()` 调用点。
 - 框架源码在进入服务端前会递增内部计数，release 次数过多就会触发 under-locked（释放次数超过申请次数）异常。非引用计数模式、带 timeout 的多次 acquire，也都超出了一个布尔值的表达能力。
 - `isHeld()` 是公开状态观测点，适合在 timeout 到期后核查；它反映的只是调用那一瞬间的状态，前后都可能变化。
 
-系统 token 是框架私有实现，`mToken`、`mTag`、`mInternalCount`、`mRefCounted` 这些字段都不适合在线上 SDK 里反射读取：隐藏 API 限制、R8、厂商改动和并发访问随时会让这条路径失效，token 本身也没有上传价值。
+系统 token 是框架私有实现，`mToken`、`mTag`、`mInternalCount`、`mRefCounted` 这些字段都不适合在线上 SDK 里反射读取：隐藏 API 限制、R8（Android 代码压缩与混淆工具）、厂商改动和并发访问随时会让这条路径失效，token 本身也没有上传价值。
 
 ### 2.2 插桩点与本地对象身份
 
@@ -97,7 +97,7 @@ WakeLock 是 Android 用来阻止设备进入某些低功耗状态的锁，最�
 3. `acquire()` / `acquire(timeout)` 成功返回后，记录 acquire 事件；异常路径单独记录，只有成功返回才计入“已持有”。
 4. `release()` 成功返回后，记录 release；若抛出 under-locked 异常，保留异常类型和调用栈。
 
-对象注册表要用弱引用和 identity（按对象引用判断同一性）语义，既避免 APM 延长 WakeLock 生命周期，也避免把 `equals()` 的结果误当成身份。`lockId` 只在当前进程和本次启动周期内有效，跨会话统计要依靠清洗后的 tag、业务任务名和调用栈指纹。
+对象注册表要用弱引用和 identity（按对象引用判断同一性）语义，既避免 APM 延长 WakeLock 生命周期，也避免把 `equals()` 的结果误当成身份。`lockId` 只在当前进程和本次启动周期内有效，跨会话统计要依靠清洗后的 tag、业务任务名和调用栈指纹（对调用路径生成的稳定摘要）。
 
 下面的伪代码说明 timeout 到期后的保守处理。它刻意不访问 WakeLock 私有字段。
 
@@ -163,7 +163,7 @@ fun afterRelease(lock: PowerManager.WakeLock) {
 }
 ```
 
-`publicAcquireCount` 只覆盖插桩看到的调用，和框架内部计数是两回事。探针以调用开始时刻计算 deadline（到期时刻），再留一个很短的宽限期，避免和框架 Handler 的 timeout Runnable 撞在一起。探针查到 `isHeld == false`，就可以结束“观测到仍持有”的窗口；查到 `true`，只说明对象在那个瞬间仍被持有，原因也可能是另一次 acquire。进程退出、系统强制释放或未被插桩的第三方调用都会造成状态不完整，报告中要标明证据来源。
+`publicAcquireCount` 只覆盖插桩看到的调用，和框架内部计数是两回事。探针以调用开始时刻计算 deadline（到期时刻），再留一个很短的宽限期，避免和框架 Handler 的 timeout Runnable（超时释放任务） 撞在一起。探针查到 `isHeld == false`，就可以结束“观测到仍持有”的窗口；查到 `true`，只说明对象在那个瞬间仍被持有，原因也可能是另一次 acquire。进程退出、系统强制释放或未被插桩的第三方调用都会造成状态不完整，报告中要标明证据来源。
 
 ### 2.3 告警规则要看场景
 
@@ -180,7 +180,7 @@ fun afterRelease(lock: PowerManager.WakeLock) {
 
 ## 3. Alarm：设置、接受、取消、投递是四个事件
 
-Alarm 里只有 `RTC_WAKEUP` 和 `ELAPSED_REALTIME_WAKEUP` 是 wakeup alarm：被投递时，系统会唤醒设备，并在执行 `BroadcastReceiver.onReceive()` 或 `OnAlarmListener.onAlarm()` 期间持有 partial WakeLock。非 wakeup 类型也可能让应用在设备本来就醒着时执行工作，记录时应把它和“唤醒设备”区分开。
+Alarm 里只有 `RTC_WAKEUP` 和 `ELAPSED_REALTIME_WAKEUP` 是 wakeup alarm（可以把设备从低功耗状态唤醒的定时任务）：被投递时，系统会唤醒设备，并在执行 `BroadcastReceiver.onReceive()` 或 `OnAlarmListener.onAlarm()` 期间持有 partial WakeLock。非 wakeup 类型也可能让应用在设备本来就醒着时执行工作，记录时应把它和“唤醒设备”区分开。
 
 要追踪一条 Alarm，我们把记录拆成四个阶段：
 
@@ -205,13 +205,13 @@ Android 12 开始对精确 Alarm 引入 special app access（特殊应用权限�
 
 `USE_EXACT_ALARM` 安装时自动授予且用户不能撤销，但只适用于闹钟、计时器、日历等受限核心场景，并受 Google Play 政策约束。`SCHEDULE_EXACT_ALARM` 由用户授予，也可能被用户或系统撤销。在 Android 14 及以上设备上，面向 Android 13（API 33）及以上的新安装不会预先获得它；通过备份恢复把应用迁移到 Android 14 新设备时，已授予状态也不会随数据迁移，而原设备上的应用随系统升级到 Android 14 时可以保留授权。
 
-权限被撤销后，系统会停止应用并取消其后续精确 Alarm。对 `PendingIntent` 精确 Alarm，APM 应在调用前记录 `canScheduleExactAlarms()`，调用后再记录成功或 `SecurityException`，并在收到授权变更广播后重新核查。Android 14+ 的 `OnAlarmListener` 路径要另记 callback 载体与进程生命周期；即便 `canScheduleExactAlarms() == false`，listener 调用也未必失败。所有样本都应分别保存 `requested_exact`、`accepted` 和 `delivered`。
+权限被撤销后，系统会停止应用并取消其后续精确 Alarm。对 `PendingIntent` 精确 Alarm，APM 应在调用前记录 `canScheduleExactAlarms()`，调用后再记录成功或 `SecurityException`，并在收到授权变更广播后重新核查。Android 14+ 的 `OnAlarmListener` 路径要另记 callback 载体与进程生命周期；即便 `canScheduleExactAlarms() == false`，listener（监听器） 调用也未必失败。所有样本都应分别保存 `requested_exact`、`accepted` 和 `delivered`。
 
 ### 3.2 Doze 配额与后台任务
 
 Doze 是屏幕关闭且设备静止一段时间后启用的系统省电状态。`setExactAndAllowWhileIdle()` 允许 Alarm 在 Doze/idle 中执行，但系统仍会施加每应用配额和调度限制。投递时间要从实际的 delivery 事件读，凭请求时间推算出来的只是猜测；一次获准调用也只说明系统放行了这一次，谈不上“绕过 Doze”。
 
-Alarm 适合用户可见且时间要求明确的提醒；可延迟的同步、日志上传和周期拉取应优先交给 WorkManager，需要系统级约束和组件回调的任务可使用 JobScheduler。监控时同样要把“入队”和“执行”分开：
+Alarm 适合用户可见且时间要求明确的提醒；可延迟的同步、日志上传和周期拉取应优先交给 WorkManager（可按约束延后并持久化的后台任务库），需要系统级约束和组件回调的任务可使用 JobScheduler。监控时同样要把“入队”和“执行”分开：
 
 - WorkManager：记录 unique work 名、约束、expedited（加急）/foreground（前台执行）属性、入队时间，以及 `Worker.doWork()` / `CoroutineWorker.doWork()` 的开始、结果和重试。
 - JobScheduler：记录 jobId、约束和 schedule 返回值，再记录 `JobService.onStartJob()`、`onStopJob()`、`jobFinished()`。
@@ -233,7 +233,7 @@ GNSS（卫星定位系统）、Wi-Fi、蓝牙和蜂窝基带的完整硬件活�
 
 ### 4.1 网络侧的基带唤醒风险
 
-蜂窝 radio 常在数据传输结束后继续保持一段高功耗状态，具体状态转换由 modem、运营商网络和厂商配置决定。高频小包、失败重试和后台轮询都会推高这类风险；某次传输让基带多保持了多久，仅凭应用侧的 socket 时间线或 UID 字节差还确认不了。
+蜂窝 radio（无线收发部分） 常在数据传输结束后继续保持一段高功耗状态，具体状态转换由 modem（调制解调器，也就是基带）、运营商网络和厂商配置决定。高频小包、失败重试和后台轮询都会推高这类风险；某次传输让基带多保持了多久，仅凭应用侧的 socket 时间线或 UID（Android 为应用或进程分配的用户标识） 字节差还确认不了。
 
 端侧可以报告：
 
@@ -278,7 +278,7 @@ owner 使用开发期配置的低基数标识，不采集用户输入、位置�
 `BatteryManager` 对几项常用属性给出了明确单位：
 
 - `BATTERY_PROPERTY_CURRENT_NOW`：瞬时电流，单位 µA（微安）；正数表示净电流流入电池，负数表示电池放电。
-- `BATTERY_PROPERTY_CURRENT_AVERAGE`：平均电流，单位 µA；平均窗口由 fuel gauge 硬件及其配置决定。
+- `BATTERY_PROPERTY_CURRENT_AVERAGE`：平均电流，单位 µA；平均窗口由 fuel gauge（电量计芯片及其估算算法） 硬件及其配置决定。
 - `BATTERY_PROPERTY_CHARGE_COUNTER`：剩余电荷量，单位 µAh（微安时）。
 - `BATTERY_PROPERTY_ENERGY_COUNTER`：剩余能量，单位 nWh（纳瓦时）。
 - 电压通常来自 `ACTION_BATTERY_CHANGED` 的 `BatteryManager.EXTRA_VOLTAGE`，单位 mV（毫伏）。
@@ -309,7 +309,7 @@ Android Thermal API 的演进可以分成四步：
 
 `getThermalHeadroom()` 返回值 1.0 表示当前或预测会到达 `THERMAL_STATUS_SEVERE` 的阈值；超过 1.0 之后，值和更高状态之间没有确定的对应关系，直接线性映射成 CRITICAL 或 EMERGENCY 是行不通的。`NaN`（Not a Number）表示本次没有可用数值，调用方要把它筛掉，不参与大小比较。官方说明还指出，慢速温度传感器轮询不必高于约每秒一次，过频调用也可能得到 `NaN`；预测需要多个历史样本，刚开始采样时要接受无结果。
 
-headroom listener 适合获知当前值或阈值的显著变化，但它不会只因某个未来预测值变化就持续回调，主动查询仍要保留：需要短期预测的游戏、相机或视频业务，应在受控频率下调用 `getThermalHeadroom(forecastSeconds)`，并处理 `NaN`。阈值由 OEM 根据设备散热和硬件配置提供，经验阈值要按机型各自标定。
+headroom listener 适合获知当前值或阈值的显著变化，但它不会只因某个未来预测值变化就持续回调，主动查询仍要保留：需要短期预测的游戏、相机或视频业务，应在受控频率下调用 `getThermalHeadroom(forecastSeconds)`，并处理 `NaN`。阈值由 OEM（Original Equipment Manufacturer，设备制造商） 根据设备散热和硬件配置提供，经验阈值要按机型各自标定。
 
 ### 6.1 状态与动作的映射
 
@@ -460,12 +460,12 @@ Vitals 来自符合条件的 Google Play 安装和同意共享数据的用户，
 资源事件默认在本地聚合，也就是先在设备上把原始事件合并成次数、持续时间和状态分布，普通会话只上传分钟级摘要。命中异常分位数后，再从受控比例的会话上传少量明细；分位数是样本的相对位置，例如 p95 表示 95% 的样本不高于该值。建议保留：
 
 - `elapsedRealtime`：设备开机后持续递增的单调时间，用于计算进程内持续时间和事件顺序，不受用户修改墙钟影响；
-- wall clock 与 boot/session ID（本次开机或应用会话的标识）：用于关联跨进程日志；设备重启后，旧的 elapsed 时间线就断了；
+- wall clock（可对应日历日期的系统时间） 与 boot/session ID（本次开机或应用会话的标识）：用于关联跨进程日志；设备重启后，旧的 elapsed 时间线就断了；
 - App 版本、Android 版本、机型分组、进程状态、充电/屏幕/网络类型；
 - 低基数业务 ID、清洗后的 tag 哈希、调用栈指纹和采样原因；
 - `evidence_level=request|callback|system_validation`：分别表示应用发出请求、收到系统回调、经过系统统计或实验验证，防止下游把请求事件写成硬件事实。
 
-以下数据不要进入耗电 APM：精确位置、附近 Wi-Fi SSID/BSSID（网络名与接入点标识）、蓝牙设备名和地址、完整 URL/query、请求体、用户 ID、原始 Intent extras（随 Intent 携带的键值参数）。调用栈上报前还要去除动态参数，并设置每日条数与字节预算。
+以下数据不要进入耗电 APM：精确位置、附近 Wi-Fi SSID/BSSID（网络名与接入点标识）、蓝牙设备名和地址、完整 URL/query（包括查询参数）、请求体、用户 ID、原始 Intent extras（随 Intent 携带的键值参数）。调用栈上报前还要去除动态参数，并设置每日条数与字节预算。
 
 结论模板也要与证据匹配：
 
@@ -481,7 +481,7 @@ Alarm 测试覆盖：
 - `PendingIntent` 与 `OnAlarmListener`；
 - wakeup 与 non-wakeup type；
 - 精确能力已授予、未授予、撤销；
-- schedule 后 cancel、同身份替换、进程进入 cached 状态；
+- schedule 后 cancel、同身份替换、进程进入 cached（缓存进程：不再承载前台组件，系统可回收或冻结） 状态；
 - Doze 下普通 Alarm 与允许在 idle 期间执行的 Alarm 的投递时间；
 - callback 内启动 Worker/Job、网络失败与重试。
 

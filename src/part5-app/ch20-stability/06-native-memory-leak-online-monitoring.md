@@ -47,7 +47,7 @@ sources:
 
 # Native 内存泄漏的线上分层监控
 
-排查 Native 内存问题时，我们手里有好几个数字：`malloc` 尚未释放的字节、allocator 向内核映射的页、进程的 RSS、按共享比例分摊后的 PSS，以及 GPU 或 dma-buf 占用。它们各自回答不同的问题，很少能靠其中一条曲线就给泄漏定性。要是把这些数字笼统叫作“Native Heap”，也就是由 `malloc`、`new` 等接口管理的本地堆，告警之间会互相矛盾，定位也容易走偏。本文讨论普通三方应用可以部署的分层监控方法。
+排查 Native 内存问题时，我们手里有好几个数字：`malloc` 尚未释放的字节、allocator（内存分配器） 向内核映射的页、进程的 RSS（Resident Set Size，当前驻留在物理内存中的页）、按共享比例分摊后的 PSS（Proportional Set Size），以及 GPU 或 dma-buf（让进程与硬件驱动共享缓冲区的内核机制） 占用。它们各自回答不同的问题，很少能靠其中一条曲线就给泄漏定性。要是把这些数字笼统叫作“Native Heap”，也就是由 `malloc`、`new` 等接口管理的本地堆，告警之间会互相矛盾，定位也容易走偏。本文讨论普通三方应用可以部署的分层监控方法。
 
 > 源码基线：Android 17 / API 37 / AOSP `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`。涉及 Android 10—16 的内容仅用于说明接口演进和兼容性差异。
 
@@ -57,13 +57,13 @@ Android 17 引入了 App Memory Limits（应用内存限制），它让异常增
 
 AOSP Memory Limiter 文档把目标写成限制单个应用占用过量系统内存，从而降低整体内存压力，并避免关键前台或缓存进程被激进低内存回收。它解释的是系统保护目标，不是应用侧可读取的固定配额。[来源: 03-memory-limiter-body.txt]
 
-在启用该机制的构建中，`MemoryLimiter` 跟随 AMS 的进程生命周期和状态变化调整限制。AOSP 文档写明默认监控应用进程（UID >= 10000），核心系统进程为稳定性而豁免。
+在启用该机制的构建中，`MemoryLimiter` 跟随 AMS（Activity Manager Service，活动管理服务） 的进程生命周期和状态变化调整限制。AOSP 文档写明默认监控应用进程（UID >= 10000），核心系统进程为稳定性而豁免。
 
 `android-17.0.0_r1` 的状态表把进程状态归成几档：`PERSISTENT`/`PERSISTENT_UI` 归为 unrestricted，`TOP`/`BOUND_TOP`/`IMPORTANT_FOREGROUND`/`TOP_SLEEPING` 归为 visible，`FOREGROUND_SERVICE`、`IMPORTANT_BACKGROUND`、`SERVICE`、`RECEIVER`、`HOME`、`LAST_ACTIVITY` 等归为 not visible，`CACHED_*` 归为 cached。cached 状态下进程会先被冻结，再被最大化回收。[来源: 03-memory-limiter-body.txt][已验证: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java @ android-17.0.0_r1]
 
-配置路径上有一处版本差异需要单独记下。AOSP 文档把标准配置文件写成 `/system/etc/memory-limiter-config.xml`，XML 数值单位为 MiB；首个 AOSP 标签 `android-17.0.0_r1` 的 `MemoryLimiter.CONFIG_PATH` 则硬编码 `/vendor/etc/memory-limiter-config.xml`。所以调试时我们先记录设备 build fingerprint，用设备上的 `am memory-limiter status` 和镜像里的实际文件核对，再决定以哪条路径为准——两条路径在不同构建上未必一致。[来源: 03-memory-limiter-body.txt][已验证: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java @ android-17.0.0_r1]
+配置路径上有一处版本差异需要单独记下。AOSP 文档把标准配置文件写成 `/system/etc/memory-limiter-config.xml`，XML 数值单位为 MiB；首个 AOSP 标签 `android-17.0.0_r1` 的 `MemoryLimiter.CONFIG_PATH` 则硬编码 `/vendor/etc/memory-limiter-config.xml`。所以调试时我们先记录设备 build fingerprint（系统构建指纹），用设备上的 `am memory-limiter status` 和镜像里的实际文件核对，再决定以哪条路径为准——两条路径在不同构建上未必一致。[来源: 03-memory-limiter-body.txt][已验证: frameworks/base/services/core/java/com/android/server/am/MemoryLimiter.java @ android-17.0.0_r1]
 
-具体执行靠 JNI 操纵进程所属的 cgroup v2，也就是 Linux 按进程组统计和约束 CPU、内存等资源的接口。`r1` 中可观察的 cgroup 文件名如下，调试时可以直接引用：[来源: 03-memory-limiter-body.txt][已验证: frameworks/base/services/core/jni/com_android_server_am_MemoryLimiter.cpp @ android-17.0.0_r1]
+具体执行靠 JNI（Java Native Interface，Java 与 C/C++ 的调用桥） 操纵进程所属的 cgroup v2，也就是 Linux 按进程组统计和约束 CPU、内存等资源的接口。`r1` 中可观察的 cgroup 文件名如下，调试时可以直接引用：[来源: 03-memory-limiter-body.txt][已验证: frameworks/base/services/core/jni/com_android_server_am_MemoryLimiter.cpp @ android-17.0.0_r1]
 
 - `memory.high`：设置内存高水位；越过后会触发直接回收并减慢新的内存分配，但允许用量短时超过该值；
 - `memory.swap.max`：设置 swap 用量上限；swap 是被换出的匿名页，Android 设备通常由压缩内存设备 zram 承载；
@@ -75,7 +75,7 @@ AOSP Memory Limiter 文档把目标写成限制单个应用占用过量系统内
 
 还有一处容易踩的坑：源码里部分 Java 注释和日志仍把该文件称作 `memory.swap.high`，JNI 实际写入的却是 `memory.swap.max`。应用侧别依赖具体的 cgroup 文件名。
 
-那系统怎么判定异常？`memory.stat` 中的 `anon + shmem` 再加上 `memory.swap.current` 一旦超过组合阈值，系统就会上报 `TRIGGER_TYPE_ANOMALY`。应用若已通过 `ProfilingManager` 注册该触发器，在后台 trace 正在运行、配额也允许的情况下，系统会保存诊断资料；`r1` 的 `MemoryLimiter` 随后延迟 30 秒结束进程。
+那系统怎么判定异常？`memory.stat` 中的 `anon + shmem` 再加上 `memory.swap.current` 一旦超过组合阈值，系统就会上报 `TRIGGER_TYPE_ANOMALY`。应用若已通过 `ProfilingManager`（系统剖析服务的应用接口） 注册该触发器，在后台 trace（带时间轴的性能记录） 正在运行、配额也允许的情况下，系统会保存诊断资料；`r1` 的 `MemoryLimiter` 随后延迟 30 秒结束进程。
 
 历史退出记录可以通过 `ApplicationExitInfo`（系统保存的进程退出元数据）识别：
 
@@ -98,7 +98,7 @@ fun findRecentMemoryLimiterExit(context: Context): ApplicationExitInfo? {
 }
 ```
 
-命中该条件只说明系统因为匿名内存和 swap 约束结束了进程，还证明不了 `malloc` 泄漏——匿名 `mmap`、线程栈、共享内存和分配器页都可能参与增长。上报时我们至少携带应用版本、ABI、设备型号、进程名、前后台状态、运行时长，以及此前采集的内存时间序列。
+命中该条件只说明系统因为匿名内存和 swap 约束结束了进程，还证明不了 `malloc` 泄漏——匿名 `mmap`、线程栈、共享内存和分配器页都可能参与增长。上报时我们至少携带应用版本、ABI（Application Binary Interface，用于区分 arm64-v8a 等二进制架构）、设备型号、进程名、前后台状态、运行时长，以及此前采集的内存时间序列。
 
 在支持该功能的 Android 17 设备上，可以用以下命令验证应用在约束下的行为：
 
@@ -111,13 +111,13 @@ adb shell am memory-limiter ignore none
 
 截至 2026-08-13 的 Android 17 官方文档规定，`manual` 后面的数字是整数 MB，所以上例表示 512 MB。`manual <pid> max` 移除该 PID（进程 ID）的全部内存限制，`manual <pid> none` 清除手动覆盖并恢复系统默认限制；`ignore none` 只清除 UID（Android 用户标识符）维度的忽略设置。
 
-不过首个 AOSP 标签 `android-17.0.0_r1` 与这份公开契约存在实现差异：shell help 把数字写成总 RAM 百分比，执行路径却按 MiB（1,048,576 字节）放大；parser 不接受 `max`，还会先把 `none` 对应的 `-1` 乘以 `1 MiB`，导致 native 层忽略这次更新。这是 `r1` 的源码审计结论，后续 Android 17 构建未必相同，测试前先记录设备 build fingerprint，用设备上的 help 与 `status` 核对实际实现。若使用基于 `r1` 的调试镜像，重启目标进程可让新 PID 重新取得默认限制。
+不过首个 AOSP 标签 `android-17.0.0_r1` 与这份公开契约存在实现差异：shell help 把数字写成总 RAM 百分比，执行路径却按 MiB（1,048,576 字节）放大；parser（命令参数解析器） 不接受 `max`，还会先把 `none` 对应的 `-1` 乘以 `1 MiB`，导致 native 层忽略这次更新。这是 `r1` 的源码审计结论，后续 Android 17 构建未必相同，测试前先记录设备 build fingerprint，用设备上的 help 与 `status` 核对实际实现。若使用基于 `r1` 的调试镜像，重启目标进程可让新 PID 重新取得默认限制。
 
 这些命令在未启用 MemoryLimiter 的设备上没有效果。测试要确认的两件事是：监控数据能在退出前解释增长，重启后能关联上退出原因。压低阈值后出现的退出，别急着归类为泄漏。
 
 ## 2. 先给各类“内存”划清边界
 
-分层的第一步是划清各类“内存”的范围。一次采样至少要保留下面这些维度。表中的 live 指分配器仍记为“在用”，mapped/retained 指已经向内核映射或释放后仍由分配器保留，owner counter 指业务组件自己维护的资源计数。
+分层的第一步是划清各类“内存”的范围。一次采样至少要保留下面这些维度。表中的 live 指分配器仍记为“在用”，mapped/retained 指已经向内核映射或释放后仍由分配器保留，owner（负责创建、持有和释放资源的组件） counter 指业务组件自己维护的资源计数。
 
 | 维度 | 典型来源 | 能回答的问题 | 不能回答的问题 |
 | --- | --- | --- | --- |
@@ -132,7 +132,7 @@ adb shell am memory-limiter ignore none
 用这张表的时候，有三个误判最常见：
 
 1. **RSS 上升未必是泄漏。** 新触达的代码页、文件页、线程栈和 allocator 保留页都会抬高 RSS。
-2. **`uordblks` 回落而 RSS 不回落，未必是 `free()` 失效。** Scudo 可以保留已释放页供后续复用，是否归还内核还受尺寸、碎片和 release 策略影响。
+2. **`uordblks` 回落而 RSS 不回落，未必是 `free()` 失效。** Scudo 可以保留已释放页供后续复用，是否归还内核还受尺寸、碎片和 release（把空闲页归还内核） 策略影响。
 3. **Native Heap 平稳未必代表 Native 资源平稳。** `mmap(MAP_ANONYMOUS)` 的自研内存池、GraphicBuffer、AHardwareBuffer、dma-buf 与驱动内存可能绕过 `malloc`。
 
 所以线上监控要同时回答两个问题：哪类内存在增长，增长是否脱离了业务生命周期。单个数值顾不了两头。
@@ -141,9 +141,9 @@ adb shell am memory-limiter ignore none
 
 ### 3.1 `mallinfo2()` 没有独立实现
 
-在 bionic 的 `<malloc.h>` 里，`struct mallinfo` 的字段已经是 `size_t`。`struct mallinfo2` 具有相同字段布局，`mallinfo2()` 通过 `__RENAME(mallinfo)` 指向同一个 `mallinfo` 符号。所以它并没有一条“Android 12 以后才提供、专门解决 64 位溢出”的独立运行时路径。
+在 bionic（Android 的 C 标准库） 的 `<malloc.h>` 里，`struct mallinfo` 的字段已经是 `size_t`。`struct mallinfo2` 具有相同字段布局，`mallinfo2()` 通过 `__RENAME(mallinfo)` 指向同一个 `mallinfo` 符号。所以它并没有一条“Android 12 以后才提供、专门解决 64 位溢出”的独立运行时路径。
 
-这一点和 glibc 的历史不同：glibc 的 `mallinfo` 用过窄整数。移植跨平台代码时，别把 glibc 的版本规则直接套到 bionic 上。
+这一点和 glibc（GNU C 标准库） 的历史不同：glibc 的 `mallinfo` 用过窄整数。移植跨平台代码时，别把 glibc 的版本规则直接套到 bionic 上。
 
 Scudo 的 C 包装层按以下方式填充主要字段：
 
@@ -179,11 +179,11 @@ NativeAllocatorSnapshot ReadNativeAllocatorSnapshot() {
 
 这个采样函数不做栈回溯、磁盘 I/O 或网络上传，适合放在独立监控线程里按秒级或分钟级间隔调用。我们把它和单调时钟、进程状态、业务场景一起记录；单独保存某个时刻的绝对值看不出趋势。
 
-Java 层的 `Debug.getNativeHeapAllocatedSize()` 覆盖面并不更宽。`android-17.0.0_r1` 的 `android_os_Debug.cpp` 直接调用 `mallinfo()` 并返回 `uordblks`；`getNativeHeapSize()` 返回 `usmblks`，`getNativeHeapFreeSize()` 返回 `fordblks`。这几个接口看到的仍是当前 malloc dispatch，也就是当前生效的分配函数转发表。
+Java 层的 `Debug.getNativeHeapAllocatedSize()` 覆盖面并不更宽。`android-17.0.0_r1` 的 `android_os_Debug.cpp` 直接调用 `mallinfo()` 并返回 `uordblks`；`getNativeHeapSize()` 返回 `usmblks`，`getNativeHeapFreeSize()` 返回 `fordblks`。这几个接口看到的仍是当前 malloc dispatch（当前生效的分配函数转发表），也就是当前生效的分配函数转发表。
 
-### 3.2 sanitizer 与 hook 会改变可观测结果
+### 3.2 sanitizer（内存错误检测工具） 与 hook 会改变可观测结果
 
-bionic 通过 `MallocDispatch` 转发 `mallinfo`、`malloc_info` 和 `mallopt`。heapprofd、GWP-ASan 或其他受支持的 malloc dispatch 一旦处于工作状态，统计就由当前 dispatch 路径提供。换到 HWASan 路径上，`__sanitizer_malloc_info()` 会返回 `-1`，把 `errno` 设为 `ENOTSUP`，相关统计可能拿不到。
+bionic 通过 `MallocDispatch` 转发 `mallinfo`、`malloc_info` 和 `mallopt`。heapprofd（文件描述符）、GWP-ASan（对少量堆分配启用保护检查的低开销工具） 或其他受支持的 malloc dispatch 一旦处于工作状态，统计就由当前 dispatch 路径提供。换到 HWASan（Hardware-assisted AddressSanitizer，硬件辅助内存错误检测工具） 路径上，`__sanitizer_malloc_info()` 会返回 `-1`，把 `errno`（C 接口保存最近一次错误原因的线程局部变量） 设为 `ENOTSUP`，相关统计可能拿不到。
 
 所以采集端必须允许“无数据”：
 
@@ -194,9 +194,9 @@ bionic 通过 `MallocDispatch` 转发 `mallinfo`、`malloc_info` 和 `mallopt`�
 
 ### 3.3 `malloc_info()` 的 XML 不是稳定业务协议
 
-`malloc_info(int options, FILE* fp)` 在 bionic 中从 API 23 起可用。Scudo 输出的结构以 `<malloc version="scudo-1">` 开头，按 size/count 列出当前分配，和旧版 jemalloc 示例的 arena、bin 结构不同。
+`malloc_info(int options, FILE* fp)` 在 bionic 中从 API 23 起可用。Scudo 输出的结构以 `<malloc version="scudo-1">` 开头，按 size/count 列出当前分配，和旧版 jemalloc 示例的 arena、bin（按尺寸组织分配块的内部类别） 结构不同。
 
-拿到这份 XML 的代价也有限制：Scudo 实现要分配临时尺寸数组、暂停 allocator 并遍历 chunks。因此 `malloc_info()` 既不适合放在信号处理器里，也不适合当高频心跳。更合适的用法是：低内存告警后在安全线程执行一次，保存原始 XML 文本，让解析器按 allocator/version 分派。
+拿到这份 XML 的代价也有限制：Scudo 实现要分配临时尺寸数组、暂停 allocator 并遍历 chunks（分配器管理的内存块）。因此 `malloc_info()` 既不适合放在信号处理器里，也不适合当高频心跳。更合适的用法是：低内存告警后在安全线程执行一次，保存原始 XML 文本，让解析器按 allocator/version 分派。
 
 监控平台只需要稳定趋势时，优先保存 `uordblks`、RSS/PSS 和 owner counters。XML 属于诊断附件，别把某个 XML 节点写成长期兼容的告警字段。
 
@@ -243,17 +243,17 @@ VMA 名称会随版本和 allocator 变化。解析器要保留原始名称，�
 - owner counter 与 allocator 增量是否一致；
 - 相同版本、设备档位、ABI 和场景下的分位数变化。
 
-单设备连续增长适合触发诊断；版本级回归则要看同版本、同设备档位等可比样本组的分布。
+单设备连续增长适合触发诊断；版本级回归则要看同版本、同设备档位等可比样本组（cohort）的分布。
 
-还要留意统计显著性和工程意义的差别：千万级 DAU 会让很小的差异也具有统计显著性，所以除了显著性还要设工程意义阈值，例如 P95（95% 分位）增量、退出率和持续增长时长。p-value 只表示在“没有差异”的假设下出现当前或更极端结果的概率，数值小未必值得工程介入。
+还要留意统计显著性和工程意义的差别：千万级 DAU（日活跃用户数） 会让很小的差异也具有统计显著性，所以除了显著性还要设工程意义阈值，例如 P95（95% 分位）增量、退出率和持续增长时长。p-value 只表示在“没有差异”的假设下出现当前或更极端结果的概率，数值小未必值得工程介入。
 
 ## 5. `malloc/free` hook 的覆盖范围
 
 ### 5.1 PLT hook 的工作方式
 
-自建 hook 时，xhook、bhook 一类方案通常修改 ELF 模块的 PLT/GOT relocation，让该模块对 `malloc`、`free` 等导入符号的调用进入代理函数。这类 hook 只改写命中的导入调用，覆盖范围达不到进程级 allocator 替换，Android 平台也没有承诺它是稳定 API。
+自建 hook 时，xhook、bhook 一类方案通常修改 ELF 模块的 PLT/GOT relocation（动态链接器用于解析外部函数地址的跳转表重定位项），让该模块对 `malloc`、`free` 等导入符号的调用进入代理函数。这类 hook 只改写命中的导入调用，覆盖范围达不到进程级 allocator 替换，Android 平台也没有承诺它是稳定 API。
 
-Android 8 以后，linker namespace 会影响库的可见性、加载和符号解析，但并没有一个“namespace 开关”能把 PLT hook 全部禁用。具体能不能覆盖，要看下面几点：
+Android 8 以后，linker namespace（动态链接器的库隔离空间） 会影响库的可见性、加载和符号解析，但并没有一个“namespace 开关”能把 PLT hook 全部禁用。具体能不能覆盖，要看下面几点：
 
 - 目标函数是否经由可改写的 PLT relocation 调用；
 - 模块是否已加载，后续加载模块是否会被注册；
@@ -280,16 +280,16 @@ Android 8 以后，linker namespace 会影响库的可见性、加载和符号�
 - 成功时地址可能不变，也可能搬迁；
 - size 为 0 的行为不宜脱离当前 libc 契约自行假定。
 
-账本也不能只拿裸指针地址当 key：地址释放后会被复用，事件还可能因为异步消费而乱序。记录里要带上单调时间、分配序号、线程 ID、尺寸、模块 Build ID 和原始 PC，消费端才能区分同一地址在不同分配周期中的事件。
+账本也不能只拿裸指针地址当 key（索引键）：地址释放后会被复用，事件还可能因为异步消费而乱序。记录里要带上单调时间、分配序号、线程 ID、尺寸、模块 Build ID（标识某次二进制构建的 ID） 和原始 PC（Program Counter，指令地址），消费端才能区分同一地址在不同分配周期中的事件。
 
 ### 5.3 hook 热路径的设计约束
 
-进了代理函数，首先就不能再走可能分配内存的路径：`std::string`、普通容器、日志格式化、在线符号化、文件 I/O 和完整 unwind 都可能递归回到 allocator 上。
+进了代理函数，首先就不能再走可能分配内存的路径：`std::string`、普通容器、日志格式化、在线符号化、文件 I/O 和完整 unwind（从当前栈帧逐层还原调用链） 都可能递归回到 allocator 上。
 
 稳妥的事件路径通常包含：
 
-- TLS 重入标记；
-- 预分配的有界 ring buffer；
+- TLS（Thread-Local Storage，线程局部存储） 重入标记；
+- 预分配的有界 ring buffer（容量固定、首尾相接的环形缓冲区）；
 - 原子写入的固定长度事件；
 - 少量原始 PC，或仅记录返回地址；
 - 单独消费者线程；
@@ -310,7 +310,7 @@ Android 8 以后，linker namespace 会影响库的可见性、加载和符号�
 
 heapprofd 是 Perfetto 的 Native 堆采样器，从 Android 10 起提供；Android 17 继续完善它的平台剖析 API、触发机制和生产部署路径。
 
-它和自建 PLT hook 的接入点就不同：heapprofd 在 bionic 中接入 `MallocDispatch`，`malloc_heapprofd.cpp` 会检查其他 hook，可以在保留 GWP-ASan backing allocator 的前提下接入，而第三方 hook 要逐个修改各 ELF 的 PLT。
+它和自建 PLT hook 的接入点就不同：heapprofd 在 bionic 中接入 `MallocDispatch`，`malloc_heapprofd.cpp` 会检查其他 hook，可以在保留 GWP-ASan backing allocator（GWP-ASan 下层继续负责实际分配的 allocator） 的前提下接入，而第三方 hook 要逐个修改各 ELF 的 PLT。
 
 heapprofd 能提供：
 
@@ -327,15 +327,15 @@ heapprofd 能提供：
 - `unreleased` 表示采样窗口内尚未匹配到 free 的分配，不等同于从所有业务根不可达；
 - 它没有 Java 对象到 Native 资源的所有权引用图。
 
-生产环境更适合在异常趋势、MemoryLimiter anomaly 或灰度命中之后开启短窗口采样。持续高频 profiling 会推高 CPU、内存、trace 存储和隐私成本。
+生产环境更适合在异常趋势、MemoryLimiter anomaly（内存限制异常触发） 或灰度命中之后开启短窗口采样。持续高频 profiling（性能剖析） 会推高 CPU、内存、trace 存储和隐私成本。
 
-Android 15 / API 35 起，普通应用可以通过 `ProfilingManager` 请求受系统管理的 heap profile。Android 10—14 中能不能采集，取决于应用是否声明 `profileable`、是不是 `debuggable` 调试构建，以及请求是否由 shell 发起。
+Android 15 / API 35 起，普通应用可以通过 `ProfilingManager` 请求受系统管理的 heap profile（堆剖析）。Android 10—14 中能不能采集，取决于应用是否声明 `profileable`、是不是 `debuggable` 调试构建，以及请求是否由 shell 发起。
 
 完整配置见 [26.13 heapprofd、procfs CPU 与 Page Fault 分析](../ch26-observability/13-heapprofd-procfs-page-fault.md)。实施时直接复用该章已经验证过的权限模型、guardrail（平台为控制开销设置的采样护栏）和符号化流程，不要再维护一套私有规则。
 
 ## 7. Scudo、GWP-ASan、HWASan、MTE 各自查什么
 
-选工具前先明确 Scudo 的定位：Android 11 起，Scudo 用于大多数 Android Native 分配；低内存设备仍可能使用 jemalloc。它是 hardened allocator，靠完整性检查、隔离和随机化降低堆破坏风险，但不会自动指出是哪个对象泄漏、归谁所有。
+选工具前先明确 Scudo 的定位：Android 11 起，Scudo 用于大多数 Android Native 分配；低内存设备仍可能使用 jemalloc。它是 hardened allocator（通过完整性检查、隔离和随机化降低堆破坏风险的分配器），靠完整性检查、隔离和随机化降低堆破坏风险，但不会自动指出是哪个对象泄漏、归谁所有。
 
 | 工具 | 适用环境 | 主要能力 | 对普通泄漏的能力 |
 | --- | --- | --- | --- |
@@ -356,7 +356,7 @@ HWASan 官方给出的典型成本约为 CPU +100%、代码 +50%、内存 +10%�
 
 ## 8. Scudo 选项与 `mallopt` 的实际作用
 
-Scudo 支持通过 `__scudo_default_options()` 或 `SCUDO_OPTIONS` 配置部分行为，但只适用于可控的 Native 进程、测试构建或系统组件。由 Zygote 启动的普通三方应用，别把环境变量当作可远程切换的线上开关。
+Scudo 支持通过 `__scudo_default_options()` 或 `SCUDO_OPTIONS` 配置部分行为，但只适用于可控的 Native 进程、测试构建或系统组件。由 Zygote（预加载公共资源并派生应用进程的父进程） 启动的普通三方应用，别把环境变量当作可远程切换的线上开关。
 
 Android 17 也没有公布名为 `options=scudo_options` 的 Scudo 配置语法，选项名称和默认值可能随平台构建变化，用之前以目标版本的 Scudo 文档和源码为准。
 
@@ -397,7 +397,7 @@ malloc 之外的分配是另一块盲区：游戏引擎、数据库、媒体栈�
 - 关联场景、实例 ID 和生命周期；
 - VMA 命名，便于 `smaps` 与 Perfetto 分类。
 
-要是在进程里无差别 hook 所有 `mmap`，得到的结果也不能直接叫业务泄漏。运行时、linker、线程栈、JIT、文件映射和系统库都会使用 mmap，必须结合 flags、fd、VMA 名称与 owner events 来分类。
+要是在进程里无差别 hook 所有 `mmap`，得到的结果也不能直接叫业务泄漏。运行时、linker、线程栈、JIT（运行时即时编译器）、文件映射和系统库都会使用 mmap，必须结合 flags（映射标志）、fd、VMA 名称与 owner events（业务所有者记录的申请/释放事件） 来分类。
 
 截至 2026-08-14，在 Android 公开 NDK、Perfetto 文档和 AOSP Android 17 源码中，没有找到名为“Kohanakai / Android 14+ mmap tracking”的工具或 API 可供应用使用。缺少明确的源码路径、接口契约和发布说明时，别把这个名称写进生产设计。可验证的做法是 owner 侧 mmap 记账、`smaps`/VMA 分类、Perfetto RSS 数据和组件自身统计。
 
@@ -423,7 +423,7 @@ Android 8 以后，Bitmap 像素数据通常由 Native 内存承载，但 Java `
 
 ### 10.3 音视频与相机
 
-媒体内存可能分布在 malloc buffer、codec buffer、Image、GraphicBuffer、AHardwareBuffer、共享内存和驱动侧。排查要从 owner，也就是负责创建、持有和释放资源的组件开始：
+媒体内存可能分布在 malloc buffer、codec buffer（编解码器缓冲区）、Image、GraphicBuffer、AHardwareBuffer、共享内存和驱动侧。排查要从 owner，也就是负责创建、持有和释放资源的组件开始：
 
 - `MediaCodec`、`Image`、`ImageReader` 是否按生命周期 `close()`/`release()`；
 - 队列中 outstanding buffer（已经交出、尚未归还的缓冲区）数量是否持续增加；
@@ -431,7 +431,7 @@ Android 8 以后，Bitmap 像素数据通常由 Native 内存承载，但 Java `
 - allocator live bytes、graphics/dmabuf 与 mmap 哪一类在增长；
 - stop/release 后资源是否回到可复用基线。
 
-heapprofd 平稳而 graphics/dmabuf 上升时，要转向 buffer queue、fence 和组件释放路径；继续加大 malloc 采样率不会带来新证据。
+heapprofd 平稳而 graphics/dmabuf 上升时，要转向 buffer queue（生产者与消费者之间传递图形缓冲区的队列）、fence（表示 GPU/显示操作何时完成的同步对象） 和组件释放路径；继续加大 malloc 采样率不会带来新证据。
 
 ## 11. 一套可运行的线上监控分层
 

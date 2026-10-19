@@ -59,7 +59,7 @@ consolidated_from:
 
 # Privacy Sandbox 退场与广告 SDK 启动治理
 
-Android 上的 Privacy Sandbox 曾是一组用于隐私广告与第三方 SDK 隔离的平台技术：Topics 提供粗粒度兴趣主题，Protected Audience 负责设备端广告受众与选取，Attribution Reporting 负责广告归因，SDK Runtime 用独立进程承载适配后的 SDK。Google 已决定让这四项技术退出。我们翻旧文章和设计页时，仍会看到 `getTopics()`、`selectAds()`、`registerSource()`、`SdkSandboxManager.loadSdk()` 与独立 sandbox 进程的写法；在面向 Android 17 的新代码里，这些已经是历史方案，不再是可采用的平台路径。
+Android 上的 Privacy Sandbox 曾是一组用于隐私广告与第三方 SDK 隔离的平台技术：Topics 提供粗粒度兴趣主题，Protected Audience 负责设备端广告受众与选取，Attribution Reporting 负责广告归因，SDK Runtime 用独立进程承载适配后的 SDK。Google 已决定让这四项技术退出。我们翻旧文章和设计页时，仍会看到 `getTopics()`、`selectAds()`、`registerSource()`、`SdkSandboxManager.loadSdk()` 与独立 sandbox（隔离运行环境） 进程的写法；在面向 Android 17 的新代码里，这些已经是历史方案，不再是可采用的平台路径。
 
 讨论分为两部分：
 
@@ -77,7 +77,7 @@ Android 上的 Privacy Sandbox 曾是一组用于隐私广告与第三方 SDK �
 `packages/modules/AdServices` 源码与公开文档一致：
 
 - `SdkSandboxManager` 类带有 `@Deprecated`，并受 SDK sandbox API deprecation 的 feature flag（功能开关）约束；
-- `SandboxedSdkProvider` 与 `SandboxedSdk` 同样 deprecated；
+- `SandboxedSdkProvider` 与 `SandboxedSdk` 同样 deprecated（已废弃，不应再用于新代码）；
 - `sandbox_app_flags.aconfig` 定义 `sdk_sandbox_no_op_impl` 和 `sdk_sandbox_api_deprecation`；
 - `loadSdk()` 走到 no-op（不执行实际加载）分支时，会在调用方传入的 Executor（回调执行线程）上返回 `LoadSdkException(LOAD_SDK_SDK_SANDBOX_DISABLED, ...)`。
 
@@ -96,7 +96,7 @@ Android 17 Framework 源码里的行为更具体：
 | Attribution Measurement | `MeasurementManager` 已废弃，但注释明确处于 soft removal（先废弃、随后分阶段拒绝调用） | 停止新集成；把当前仍能成功的调用视作迁移窗口，不视作长期保证 |
 | SDK Runtime | API 37 deprecated，官方说明 sandbox 不再受支持 | Android 17 明确关闭平台路径 |
 
-旧 Topics epoch（主题更新周期）、竞价 JavaScript、registration URI（注册端点地址）的网络获取与延迟报告，如今只用来解释遗留流量，算不上还要继续优化的高频启动路径。
+旧 Topics epoch（主题更新周期）、竞价 JavaScript、registration（注册） URI（注册端点地址）的网络获取与延迟报告，如今只用来解释遗留流量，算不上还要继续优化的高频启动路径。
 
 标识符这边没有自动的变化：Privacy Sandbox 退场没有自动扩大 GAID（Google Advertising ID，广告标识符）、App Set ID（同一开发者应用集合标识）或第一方标识的用途，替代方案仍要重新通过隐私、政策、安全和性能评审。
 
@@ -130,7 +130,7 @@ App process
   -> App 通过 Binder 调用 SDK 接口
 ```
 
-链路上有三个对象：`system_server` 是承载 Android 核心系统服务的进程，SDK sandbox process 是为当前 App 创建的隔离进程，`IBinder` 是跨进程接口句柄。整条链路包含进程创建、SDK 代码加载、Provider 准备和 Binder 回调。`loadSdk()` 是异步 API，结果稍后经 receiver（结果接收回调）返回，但这份工作本身有成本：调用方如果在首帧前等 receiver，页面仍然要等 sandbox 冷启动。
+链路上有三个对象：`system_server` 是承载 Android 核心系统服务的进程，SDK sandbox process 是为当前 App 创建的隔离进程，`IBinder`（Android 进程间通信机制） 是跨进程接口句柄。整条链路包含进程创建、SDK 代码加载、Provider 准备和 Binder 回调。`loadSdk()` 是异步 API，结果稍后经 receiver（结果接收回调）返回，但这份工作本身有成本：调用方如果在首帧前等 receiver，页面仍然要等 sandbox 冷启动。
 
 历史 API 还有这些约束：
 
@@ -172,7 +172,7 @@ API 37 上这段判断直接返回 `false`，不再尝试 deprecated 的 `loadSd
 
 ### 2.4 AndroidX compat 的历史语义
 
-旧版 backcompat（向后兼容）方案用 `SdkSandboxManagerCompat` 把接口统一。在没有平台 Runtime 的设备上，Android Gradle Plugin 与 Bundletool 会生成包含 SDK 的 APK 变体，把 SDK 的 DEX 作为 assets（随包资源）保存。
+旧版 backcompat（向后兼容）方案用 `SdkSandboxManagerCompat` 把接口统一。在没有平台 Runtime 的设备上，Android Gradle Plugin 与 Bundletool 会生成包含 SDK 的 APK 变体，把 SDK 的 DEX（Android 字节码文件） 作为 assets（随包资源）保存。
 
 客户端库首次加载时把 DEX 提取到 `code_cache`，再用独立 ClassLoader（类加载器）放进 App 进程执行。
 
@@ -207,7 +207,7 @@ SDK Runtime 退场后，广告 SDK 的常见形态回到宿主进程：AAR、dyn
 | 数据 | 读取字段、同意状态、上传时机、保留与删除策略 |
 | 控制 | 负责人、分批放量开关、关闭广告位和回滚 SDK 的路径 |
 
-即使 SDK 文档声称“异步初始化”，也要在 trace 里验证：异步 API 可能在返回前就同步执行类加载、Manifest 查询、Preferences 读取和线程创建，完成回调也可能回到主线程。
+即使 SDK 文档声称“异步初始化”，也要在 trace（系统时间线） 里验证：异步 API 可能在返回前就同步执行类加载、Manifest 查询、Preferences 读取和线程创建，完成回调也可能回到主线程。
 
 ### 3.2 把广告能力拆成阶段
 
@@ -226,7 +226,7 @@ SDK Runtime 退场后，广告 SDK 的常见形态回到宿主进程：AAR、dyn
 
 SDK init（初始化）不该由每个页面各自触发。广告网关持有 App 级状态，把同时到达的多次请求合并成同一个任务，失败则保存为调用方可以读取的结果。
 
-下面的状态机把初始化收敛为四个状态：`Idle`、`Initializing`、`Ready`、`Failed`。所有调用方共享同一个 `Deferred`，也就是稍后产生结果、可以被多个协程等待的对象。示例没有假设 SDK 能在后台线程初始化，具体 `initializer` 要按供应方要求切到正确线程：
+下面的状态机把初始化收敛为四个状态：`Idle`（未开始）、`Initializing`（进行中）、`Ready`（可用）、`Failed`（会话失败）。所有调用方共享同一个 `Deferred`，也就是稍后产生结果、可以被多个协程等待的对象。示例没有假设 SDK 能在后台线程初始化，具体 `initializer` 要按供应方要求切到正确线程：
 
 ```kotlin
 sealed interface AdSdkState {
@@ -289,7 +289,7 @@ class AdSdkGateway(
 - 等待一个很短的业务 deadline（最晚等待时刻），超时立即进入页面；
 - 广告是业务入口本身时，使用独立且可取消的加载页，并把等待计入 TTFD/业务 ready（业务就绪时间）。
 
-无限加载页等广告、新路径失败后立刻回主线程跑旧 SDK 的同步初始化，这两条路都要避开。若备用路径比正常路径更重，少量错误样本就可能集中到 P99（99% 分位耗时）、ANR 和用户差评上。
+无限加载页等广告、新路径失败后立刻回主线程跑旧 SDK 的同步初始化，这两条路都要避开。若备用路径比正常路径更重，少量错误样本就可能集中到 P99（99% 分位耗时）、ANR（Application Not Responding，应用无响应） 和用户差评上。
 
 广告容器还要避免素材出现后让正文突然移位。预留尺寸时使用产品确定的广告规格；跳过广告时及时移除占位。远程素材到达后触发的布局和图片解码，应纳入首屏帧耗时与内存 guardrail（实验不可越过的保护指标）。
 
@@ -297,7 +297,7 @@ class AdSdkGateway(
 
 ### 5.1 自动初始化发生在 `Application` 之前
 
-广告 SDK 通过 Provider 自动初始化时，`Application.onCreate()` 里的进程分支和延迟开关已经来不及阻止 Provider `onCreate()`。因此要检查最终 merged manifest：
+广告 SDK 通过 Provider 自动初始化时，`Application.onCreate()` 里的进程分支和延迟开关已经来不及阻止 Provider `onCreate()`。因此要检查最终 merged manifest（App 与所有依赖合并后的最终清单）：
 
 - SDK 是否支持移除 Provider metadata 或切换手动初始化；
 - Provider 属于主进程还是指定远程进程；
@@ -349,7 +349,7 @@ class AdSdkGateway(
 | `ad_first_render_ready` | 素材达到可提交 UI 的状态 |
 | `ad_first_impression` | 按供应方定义产生一次广告曝光 |
 
-这些事件与 TTID、TTFD、首屏 frame 和首个操作放在同一条 session timeline（本次启动时间线）里。初始化回调、广告请求、渲染三段耗时要分开记录；合并成一个 `ad_ready` 数字，就说不清慢在 SDK 初始化、网络还是 UI 了。
+这些事件与 TTID（首次显示时间）、TTFD、首屏 frame（UI 帧） 和首个操作放在同一条 session timeline（本次启动时间线）里。初始化回调、广告请求、渲染三段耗时要分开记录；合并成一个 `ad_ready` 数字，就说不清慢在 SDK 初始化、网络还是 UI 了。
 
 ### 7.2 资源与稳定性
 
@@ -377,7 +377,7 @@ A/B 实验是随机把条件相同的用户分到基准组与改动组，再对�
 - 设备档位、Android 版本和渠道；
 - 相同超时、占位和跳过策略。
 
-实验要同时观察启动、稳定性和广告业务保护指标。首帧变快但广告填充骤降，或收入改善但 ANR/P99 上升，都要产品与技术一起决定，单个指标说了不算。
+实验要同时观察启动、稳定性和广告业务保护指标。首帧变快但广告填充骤降，或收入改善但 ANR/P99（99% 的样本不超过的耗时） 上升，都要产品与技术一起决定，单个指标说了不算。
 
 ## 8. 迁移清单
 
@@ -394,8 +394,8 @@ A/B 实验是随机把条件相同的用户分到基准组与改动组，再对�
 
 - [ ] 搜索 `TopicsManager`、`AdSelectionManager`、`CustomAudienceManager` 与 `MeasurementManager` 的调用点、权限、配置和依赖。
 - [ ] 用远程开关停止新请求，页面布局和广告填充不再等待这些结果。
-- [ ] 区分已废弃 deprecated、不支持 unsupported、已关闭 disabled、权限/安全拒绝 security、频率受限 rate limit、网络错误与调用方本地超时；永久废弃错误不进入重试队列。
-- [ ] 盘点 registration、bidding、trusted-data 与 reporting endpoint 的剩余流量，确认旧后台任务和数据库记录的删除范围。
+- [ ] 区分已废弃（deprecated） deprecated、不支持（unsupported） unsupported、已关闭（disabled） disabled、权限/安全拒绝（security） security、频率受限（rate limit） rate limit、网络错误与调用方本地超时；永久废弃错误不进入重试队列。
+- [ ] 盘点 registration、bidding（竞价）、trusted-data（竞价所需可信数据） 与 reporting endpoint（报告地址） 的剩余流量，确认旧后台任务和数据库记录的删除范围。
 - [ ] 只记录受控的功能名、调用位置、平台/Ad Services extension 版本、结果分类、端到端时间和备用路径；不上传 topic、audience、竞价信号或完整 registration URI。
 - [ ] 替代广告、归因和标识方案分别完成合规评审，不把 GAID 当作默认回退。
 

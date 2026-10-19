@@ -97,7 +97,7 @@ GKI（Generic Kernel Image，通用内核镜像）把通用内核与板级 vendo
 
 ### 平台与内核的版本基线
 
-先说清楚 tag 的选择。截至 2026-08-14，官方 `android17-6.18-2026-06` 发布序列已经列到 r38；本文的 AutoFDO profile、基准数据和源码判断都绑定 r6 这个快照，验证 r6 之后的构建时，要按目标 tag 重新比较源码存在性，直接沿用这里的结论会出错。
+先说清楚 tag 的选择。截至 2026-08-14，官方 `android17-6.18-2026-06` 发布序列已经列到 r38；本文的 AutoFDO profile（采样或剖析结果）、基准数据和源码判断都绑定 r6 这个快照，验证 r6 之后的构建时，要按目标 tag 重新比较源码存在性，直接沿用这里的结论会出错。
 
 `android15-6.6` 与 `android16-6.12` 只用于解释 EEVDF、sched_ext 和 AutoFDO 的演进脉络，不作为 r6 的实现结论。平台行为同样要分层次看：Android 17 的 generational CMC 与 lock-free `MessageQueue` 位于 ART 和 `frameworks/base`，属于用户态改动，与 Linux 6.18 的调度或存储改动是两回事。
 
@@ -129,7 +129,7 @@ EEVDF 的全称是 Earliest Eligible Virtual Deadline First，做法是在符合
 
 还要知道这套模型看不到「UI 线程」或 `doFrame` 这类语义，短任务也未必总能排到后台任务前面。我们手上的旋钮是：`nice` 影响 fair class 权重，`uclamp` 限制调度器看到的利用率，cpuset 与 CPU affinity 限定任务可运行的 CPU。
 
-最终结果还叠加 thermal 热约束、CPU frequency selection、RT/DL 实时调度类和厂商扩展。所以评估 EEVDF 时，我们测的是从唤醒到真正运行的时间、runnable 队列等待、slice 长度与 preemption；总 CPU time 一项看不出这些细节。
+最终结果还叠加 thermal 热约束、CPU frequency selection、RT/DL 实时调度类和厂商扩展。所以评估 EEVDF 时，我们测的是从唤醒到真正运行的时间、runnable 队列等待、slice 长度与 preemption（抢占）；总 CPU time 一项看不出这些细节。
 
 #### sched_ext：用 BPF 实现可扩展调度器
 
@@ -142,13 +142,13 @@ sched_ext 在 Linux 6.12 进入上游 mainline，思路是让一组 BPF 程序�
 - `tools/sched_ext/` 提供示例调度器和状态工具；
 - `Documentation/scheduler/sched-ext.rst` 描述启用条件、DSQ 与故障回退。
 
-BPF scheduler 通过 `struct sched_ext_ops` 提供 `select_cpu()`、`enqueue()`、`dispatch()` 等可选回调，必填的只有 `ops.name`。`select_cpu()` 的返回值是优化提示，任务最终落在哪个 CPU，还要过任务 cpumask 和调度核心校验这一关；cpumask 就是「允许这个任务使用哪些 CPU」的位集合。
+BPF scheduler 通过 `struct sched_ext_ops` 提供 `select_cpu()`、`enqueue()`、`dispatch()` 等可选回调，必填的只有 `ops.name`。`select_cpu()` 的返回值是优化提示，任务最终落在哪个 CPU，还要过任务 cpumask（允许使用哪些 CPU 的位集合） 和调度核心校验这一关；cpumask 就是「允许这个任务使用哪些 CPU」的位集合。
 
-任务先进入 dispatch queue，简称 DSQ。6.18 提供全局 FIFO 队列 `SCX_DSQ_GLOBAL` 和每 CPU 的 `SCX_DSQ_LOCAL`，BPF scheduler 也可以创建自定义 DSQ；CPU 取任务时先查本地 DSQ，再查全局 DSQ，然后调用 `ops.dispatch()`。自定义 DSQ 可按 FIFO 或 `dsq_vtime` 虚拟时间排序。
+任务先进入 dispatch queue（DSQ，待分派队列），简称 DSQ。6.18 提供全局 FIFO（先进先出） 队列 `SCX_DSQ_GLOBAL` 和每 CPU 的 `SCX_DSQ_LOCAL`，BPF scheduler 也可以创建自定义 DSQ；CPU 取任务时先查本地 DSQ，再查全局 DSQ，然后调用 `ops.dispatch()`。自定义 DSQ 可按 FIFO 或 `dsq_vtime` 虚拟时间排序。
 
 6.18 的插入接口为 `scx_bpf_dsq_insert()` 与 `scx_bpf_dsq_insert_vtime()`；6.12 示例中的旧名 `scx_bpf_dispatch()` / `scx_bpf_dispatch_vtime()` 只适合阅读旧分支，移植时按目标 tag 编译，不要从函数名猜版本。
 
-这套机制自带安全回退：BPF scheduler 退出、runnable task stall、内部错误或 `SysRq-S` 紧急按键序列，都会让任务回到 fair class；`sched_ext_dump` tracepoint 可以读取诊断 dump。
+这套机制自带安全回退：BPF scheduler 退出、runnable task stall、内部错误或 `SysRq-S` 紧急按键序列，都会让任务回到 fair class；`sched_ext_dump` tracepoint（内核追踪事件点） 可以读取诊断 dump。
 
 GKI 开启了 `CONFIG_SCHED_CLASS_EXT=y`，但文档写明：**BPF scheduler 加载并运行后，sched_ext 才会使用**。也就是说，看到配置项或 `kernel/sched/ext.c`，只说明框架编进去了；设备是否真被自定义调度器接管，用下面的命令确认，量产设备可能因权限或裁剪读不到这些节点。
 
@@ -170,13 +170,13 @@ adb shell 'cat /sys/kernel/sched_ext/enable_seq 2>/dev/null'
 
 6.18 r6 的 `fs/f2fs/super.c` 解析 `checkpoint_merge` / `nocheckpoint_merge`，默认挂载选项会设置 `MERGE_CHECKPOINT`；可写挂载且没有禁用 checkpoint 时，checkpoint kthread 才会启动，`nocheckpoint_merge` 会停止这条路径。请求与等待路径由 `fs/f2fs/checkpoint.c` 中的 `f2fs_issue_checkpoint()`、`issue_list`、`queued_ckpt` 与 `ckpt_wait_queue` 构成。
 
-到设备上，先读 `/proc/mounts` 或 `/proc/self/mountinfo`，确认 data 分区的文件系统和挂载参数。SQLite WAL 即 Write-Ahead Logging 预写日志，commit 会调用同步写入；但一次 commit 是否进入 F2FS checkpoint 路径，取决于文件系统状态和 `f2fs_do_sync_file()` 的判定。从「应用调用了 fsync」到 checkpoint merge 收益，中间隔着上面这些条件。
+到设备上，先读 `/proc/mounts` 或 `/proc/self/mountinfo`，确认 data 分区的文件系统和挂载参数。SQLite WAL（Write-Ahead Logging，预写日志） 即 Write-Ahead Logging 预写日志，commit 会调用同步写入；但一次 commit 是否进入 F2FS checkpoint 路径，取决于文件系统状态和 `f2fs_do_sync_file()` 的判定。从「应用调用了 fsync」到 checkpoint merge 收益，中间隔着上面这些条件。
 
 #### io_uring 在应用层的可用性
 
-6.18 r6 的 `io_uring/` 包含 multishot、registered buffers、ring setup 和 zero-copy 相关路径：multishot 让一次提交产生多次完成结果，registered buffers 预先登记 I/O 内存，zero-copy 着力减少数据复制。每项能力都有自己的 opcode、flag、内存注册和 fallback 条件；以 `IORING_SETUP_NO_MMAP` 为例，它描述 ring 内存的建立方式，应用数据是否 zero-copy 要看别的条件。
+6.18 r6 的 `io_uring/` 包含 multishot、registered buffers、ring setup 和 zero-copy 相关路径：multishot 让一次提交产生多次完成结果，registered buffers 预先登记 I/O 内存，zero-copy 着力减少数据复制。每项能力都有自己的 opcode（操作码）、flag、内存注册和 fallback 条件；以 `IORING_SETUP_NO_MMAP` 为例，它描述 ring 内存的建立方式，应用数据是否 zero-copy 要看别的条件。
 
-AOSP 的 `external/liburing` 提供 native 静态库构建规则，这只说明平台把库准备好了；SQLite、Cronet、OkHttp 或 Java I/O 是否默认使用 io_uring，要另行确认。普通应用这条路上还排着 syscall 可用性、seccomp 系统调用过滤、SELinux、NDK API 与设备内核配置这些关卡。没有调用栈或 syscall 级别的记录，我们就不把 io_uring 计入应用收益。
+AOSP 的 `external/liburing` 提供 native（原生） 静态库构建规则，这只说明平台把库准备好了；SQLite、Cronet、OkHttp 或 Java I/O 是否默认使用 io_uring，要另行确认。普通应用这条路上还排着 syscall 可用性、seccomp（系统调用过滤） 系统调用过滤、SELinux、NDK API 与设备内核配置这些关卡。没有调用栈或 syscall 级别的记录，我们就不把 io_uring 计入应用收益。
 
 #### dm-verity multi-buffer hashing：r6 未合入
 
@@ -192,13 +192,13 @@ AOSP 的 `external/liburing` 提供 native 静态库构建规则，这只说明�
 - dm-verity：cold/warm cache 分开，记录当前 hash driver、数据块大小、CPU time 与块设备吞吐；评估 multi-buffer 补丁必须使用明确包含补丁的自定义内核；
 - io_uring：确认 `io_uring_setup`、`io_uring_enter`、opcode 和 fallback，再比较每次业务操作的提交数与延迟。
 
-采集用 Perfetto，可以拿到 `block_rq_issue` / `block_rq_complete` 和 F2FS tracepoints。dm-verity 没有一条所有 Android 设备通用的「dm-verity track」，我们把 block I/O、CPU sampling 和 `verity_*` 调用栈放到同一业务区间里一起看。
+采集用 Perfetto，可以拿到 `block_rq_issue` / `block_rq_complete` 和 F2FS tracepoints。dm-verity 没有一条所有 Android 设备通用的「dm-verity track（时间轴轨道）」，我们把 block I/O、CPU sampling（定期抽样 CPU 调用栈） 和 `verity_*` 调用栈放到同一业务区间里一起看。
 
 ### AutoFDO Profile-Guided Optimization 的内核应用
 
 AutoFDO 是构建期优化：拿真实执行样本反过来指导 Clang 的内联、分支权重和代码布局。落实到代码，GKI 的 `gki_defconfig` 设置 `CONFIG_AUTOFDO_CLANG=y`，r6 tag 也包含绑定 Linux 6.18.21 的 `gki/aarch64/afdo/kernel.afdo` 与说明文件——这证明该 release build 已具备内核 Profile 接入；至于某台设备运行的内核是否采用同一 Profile，还要看它的构建来源。
 
-r6 README 中 Pixel 8 的 boot、cold launch 与 Binder 数据都标为初步结果，Binder 项还采用多轮最佳值，引用时守住这个范围，跨 SoC 或跨产品先不外推。设备侧要做的是把 release artifact、build config、kernel build ID 与 Profile 对齐，再做只改变 Profile 的 A/B。
+r6 README 中 Pixel 8 的 boot、cold launch 与 Binder 数据都标为初步结果，Binder 项还采用多轮最佳值，引用时守住这个范围，跨 SoC（System on Chip，系统级芯片） 或跨产品先不外推。设备侧要做的是把 release artifact、build config、kernel build ID 与 Profile 对齐，再做只改变 Profile 的 A/B。
 
 Profile 的采集、ETM/ETE/TRBE 数据转换、`vmlinux` 构建接入、质量控制和完整 A/B 方法统一由 [18.4 AutoFDO 反馈导向优化与 Android 验证](04-autofdo-feedback-directed-optimization.md) 展开，本节只看它在 GKI 6.18 功能集合中的启用状态和核查范围。记账时也要分层：ART AOT、Baseline Profile、generational CMC 和 DeliQueue 属于用户态或 Framework，Kernel 6.18 的账上不该有它们。
 
@@ -208,21 +208,21 @@ MGLRU 即 Multi-Gen LRU，按多个代际管理「最近最少使用」页面的
 
 #### generation 表示访问时间窗口
 
-MGLRU 为 memcg 与 NUMA node 维护多代页面——memcg 即 memory cgroup，NUMA node 指具有本地内存访问特性的硬件节点。aging 扫描页表访问位等信号，把近期访问的页面放入较新的 generation；reclaim 从较老 generation 选择回收候选。`min_gen_nr` 到 `max_gen_nr` 形成按时间窗口划分的 working-set histogram，直观上就是各代工作集大小的分布。
+MGLRU 为 memcg（memory cgroup，内存资源组） 与 NUMA node（具有本地内存访问特性的硬件节点） 维护多代页面——memcg 即 memory cgroup，NUMA node 指具有本地内存访问特性的硬件节点。aging 扫描页表访问位等信号，把近期访问的页面放入较新的 generation；reclaim 从较老 generation 选择回收候选。`min_gen_nr` 到 `max_gen_nr` 形成按时间窗口划分的 working-set histogram，直观上就是各代工作集大小的分布。
 
-读 generation 时抓住一个含义：它表达 recency，即最近是否访问，别当成「每秒访问次数」换算。MGLRU 文档还覆盖 refault——页面回收后又被访问——匿名页与文件页选择、swappiness 和不同访问渠道的处理；swappiness 调整匿名页与文件页之间的回收倾向。它对顺序扫描、匿名内存、文件缓存与 swap 的表现，要结合 workload 解释。
+读 generation 时抓住一个含义：它表达 recency（最近是否访问），即最近是否访问，别当成「每秒访问次数」换算。MGLRU 文档还覆盖 refault（页面回收后又被访问）——页面回收后又被访问——匿名页与文件页选择、swappiness 和不同访问渠道的处理；swappiness 调整匿名页与文件页之间的回收倾向。它对顺序扫描、匿名内存、文件缓存与 swap 的表现，要结合 workload 解释。
 
-运行时 stable ABI 位于 `/sys/kernel/mm/lru_gen/`，读主开关用下面的命令；权限不足时，回到内核配置和厂商诊断产物核查。
+运行时 stable ABI（用户态可读取的稳定接口） 位于 `/sys/kernel/mm/lru_gen/`，读主开关用下面的命令；权限不足时，回到内核配置和厂商诊断产物核查。
 
 ```bash
 adb shell 'cat /sys/kernel/mm/lru_gen/enabled 2>/dev/null'
 ```
 
-读出来是一个 bitmask：`0x0001` 表示主功能开启，其余位控制批量清除页表 accessed bit 的能力，设备支不支持这些位还要看 MMU 特性。
+读出来是一个 bitmask（位掩码）：`0x0001` 表示主功能开启，其余位控制批量清除页表 accessed bit 的能力，设备支不支持这些位还要看 MMU（内存管理单元） 特性。
 
 #### 对 lmkd 的影响路径
 
-`lmkd` 是 Android 的 Low Memory Killer Daemon，在高内存压力下选择较不重要的进程终止；它的决策输入是 PSI、内存水位、thrashing 与进程 `oom_score_adj` 这类信号，MGLRU generation 并不在其中。PSI 即 Pressure Stall Information，统计资源压力造成的等待；thrashing 指页面反复回收又重新载入；`oom_score_adj` 表示进程被选择终止时的相对优先级。
+`lmkd` 是 Android 的 Low Memory Killer Daemon，在高内存压力下选择较不重要的进程终止；它的决策输入是 PSI（Pressure Stall Information）、内存水位、thrashing 与进程 `oom_score_adj` 这类信号，MGLRU generation 并不在其中。PSI 即 Pressure Stall Information，统计资源压力造成的等待；thrashing 指页面反复回收又重新载入；`oom_score_adj` 表示进程被选择终止时的相对优先级。
 
 MGLRU 改变的是内核 reclaim 的页面选择和成本，这一层的变化再经 PSI stall、refault、swap 与可用内存这些中间量，才可能传到 `lmkd` 看到的压力上。所以「MGLRU 开启后 kill 次数必然下降」在源码里找不到支撑：有些负载可能减少 refault 和 `kswapd` CPU，另一些负载在 swap、file cache 或 reclaim 参数的作用下走向别的结果。对照实验应同时记录：
 
@@ -299,7 +299,7 @@ lmkd 仍按 Android 的压力与进程优先级策略决策；MGLRU 在页面回
 2. **硬件与固件条件**：CPU 实现架构特性，或固件提供内核所需的漏洞缓解调用。
 3. **运行时条件**：内核没有通过启动参数关闭功能；用户态机制还需要二进制或进程显式启用。
 
-GKI 的基准配置 `gki_defconfig` 明确设置了 `CONFIG_RANDOMIZE_BASE=y`、`CONFIG_SHADOW_CALL_STACK=y` 和 `CONFIG_CFI=y`，同时关闭了 `CONFIG_RANDOMIZE_MODULE_REGION_FULL`。PAC、BTI、MTE 与 GCS 在 `arch/arm64/Kconfig` 中是 `default y`，仍受工具链、硬件和运行时条件约束。
+GKI 的基准配置 `gki_defconfig` 明确设置了 `CONFIG_RANDOMIZE_BASE=y`、`CONFIG_SHADOW_CALL_STACK（SCS）=y` 和 `CONFIG_CFI=y`，同时关闭了 `CONFIG_RANDOMIZE_MODULE_REGION_FULL`。PAC、BTI、MTE 与 GCS 在 `arch/arm64/Kconfig` 中是 `default y`，仍受工具链、硬件和运行时条件约束。
 
 下面这张表用来定排查入口；脱离设备和负载的固定性能百分比，这里给不了。
 
@@ -319,26 +319,26 @@ GKI 的基准配置 `gki_defconfig` 明确设置了 `CONFIG_RANDOMIZE_BASE=y`、
 
 表里两个词先说明：EL0 是非特权用户态执行所在的最低异常级；CPU capability 是内核根据特性寄存器、CPU 型号和勘误表得到的能力标志，与产品宣传中的架构名称是两回事。
 
-这几组机制保护的层面不同：BTI 约束间接分支的落点，Spectre v2 缓解处理分支预测器状态，两者互相替代不了；SCS 保护内核返回地址，KCFI 检查内核间接调用的静态类型，GCS 是内核向用户态提供的受保护返回地址栈 ABI。这里的 ABI 指内核与用户程序约定的寄存器、系统调用和数据结构接口。
+这几组机制保护的层面不同：BTI 约束间接分支的落点，Spectre v2 缓解处理分支预测器状态，两者互相替代不了；SCS 保护内核返回地址，KCFI 检查内核间接调用的静态类型，GCS 是内核向用户态提供的受保护返回地址栈 ABI（Application Binary Interface）。这里的 ABI 指内核与用户程序约定的寄存器、系统调用和数据结构接口。
 
 ### 2. KASLR：启动阶段的地址随机化
 
 KASLR（Kernel Address Space Layout Randomization）在启用并获得有效随机种子后，启动时改变内核及模块的基地址，让攻击者更难预先知道内核对象的位置；ARM64 上由 `CONFIG_RANDOMIZE_BASE` 控制。
 
-种子从哪来？`arch/arm64/Kconfig` 规定 bootloader 可通过设备树 `/chosen/kaslr-seed` 传入随机 `u64`，即 64 位无符号种子；经 UEFI stub 启动时，这段早期引导代码可从 `EFI_RNG_PROTOCOL` 获取熵。熵指难以预测的随机输入，`arch/arm64/kernel/kaslr.c` 用它计算内核镜像与模块区域的偏移。
+种子从哪来？`arch/arm64/Kconfig` 规定 bootloader（引导程序） 可通过设备树 `/chosen/kaslr-seed` 传入随机 `u64`，即 64 位无符号种子；经 UEFI stub 启动时，这段早期引导代码可从 `EFI_RNG_PROTOCOL` 获取熵。熵指难以预测的随机输入，`arch/arm64/kernel/kaslr.c` 用它计算内核镜像与模块区域的偏移。
 
 `CONFIG_RELOCATABLE` 让 AArch64 内核保留运行时重定位所需的信息；重定位是按实际加载基址修正代码或数据中的地址引用，发生在启动阶段。这部分成本要在同一构建、同一设备上实测，从镜像体积推不出固定毫秒数；KASLR 也不会因为地址变化就给每次间接调用附加一项固定成本。
 
 模块区域还有一项容易写错的配置：
 
-- `CONFIG_RANDOMIZE_MODULE_REGION_FULL=y` 会在覆盖核心内核的 2 GiB 窗口内随机化模块区域，并可能让模块到核心内核的调用经过 module PLT veneer——位于模块 PLT 中的跳转桩，用来跨越 AArch64 直接分支指令的距离限制。
+- `CONFIG_RANDOMIZE_MODULE_REGION_FULL=y` 会在覆盖核心内核的 2 GiB 窗口内随机化模块区域，并可能让模块到核心内核的调用经过 module PLT（Procedure Linkage Table） veneer——位于模块 PLT 中的跳转桩，用来跨越 AArch64 直接分支指令的距离限制。
 - 6.18 GKI 的 `gki_defconfig` 明确写着 `# CONFIG_RANDOMIZE_MODULE_REGION_FULL is not set`；模块区域仍会在较小范围内随机化，模块地址并没有因此固定。
 
 量产设备常用 `kptr_restrict` 限制内核指针暴露，`/proc/kallsyms` 可能把地址显示为全零——看到全零就断言 KASLR 失效，会误判。工程构建可结合最终配置、启动日志和多次冷启动后的符号地址检查；量产结论以厂商构建产物与启动链配置为依据。
 
 ### 3. KPTI：是否执行页表切换由 CPU 判定
 
-KPTI（Kernel Page Table Isolation）用于隔离用户态与内核态页表。`CONFIG_UNMAP_KERNEL_AT_EL0` 的帮助文本描述了 ARM64 实现：CPU 在 EL0 运行时取消大部分内核映射；发生系统调用、中断或异常后，CPU 经 exception vector table 找到入口，再由 trampoline page——一块仅保留入口所需映射的跳板页——恢复内核映射。
+KPTI（Kernel Page Table Isolation）用于隔离用户态与内核态页表。`CONFIG_UNMAP_KERNEL_AT_EL0` 的帮助文本描述了 ARM64 实现：CPU 在 EL0 运行时取消大部分内核映射；发生系统调用、中断或异常后，CPU 经 exception vector table（异常向量表） 找到入口，再由 trampoline page（仅保留入口所需映射的跳板页）——一块仅保留入口所需映射的跳板页——恢复内核映射。
 
 Android 17 的内核仍把该选项设为 `default y`。运行时策略比 Kconfig 值更具体，6.18 的启动参数文档对 `kpti=` 的定义是：
 
@@ -346,17 +346,17 @@ Android 17 的内核仍把该选项设为 `default y`。运行时策略比 Kconf
 - `kpti=0` 强制关闭；
 - `kpti=1` 强制开启。
 
-所以按 CPU 产品名、上市年份或营销架构名称去编一张「必定启用/跳过」的表，是编不出来的；ARM64 内核实际综合 CPU capability、MIDR 匹配、架构特性和勘误信息做判定，MIDR 即 Main ID Register，标识 CPU 型号与版本。同一颗 SoC 里还可能混着多种核心，结论以设备的内核日志、漏洞状态节点和源码匹配结果为准。
+所以按 CPU 产品名、上市年份或营销架构名称去编一张「必定启用/跳过」的表，是编不出来的；ARM64 内核实际综合 CPU capability、MIDR（Main ID Register，CPU 型号与版本标识） 匹配、架构特性和勘误信息做判定，MIDR 即 Main ID Register，标识 CPU 型号与版本。同一颗 SoC 里还可能混着多种核心，结论以设备的内核日志、漏洞状态节点和源码匹配结果为准。
 
-KPTI 的开销热点在用户态与内核态的往返路径上：系统调用、缺页异常和中断密集的负载优先测；纯用户态计算的数字，放到 Binder、网络或存储负载上会失真。TLB 缓存虚拟地址到物理地址的转换，ASID 用于区分不同地址空间的缓存项；页表切换对 TLB 的影响取决于 ASID、CPU 特性和内核实现，别按「每次都完整刷新 TLB」来推。
+KPTI 的开销热点在用户态与内核态的往返路径上：系统调用、缺页异常和中断密集的负载优先测；纯用户态计算的数字，放到 Binder、网络或存储负载上会失真。TLB（Translation Lookaside Buffer） 缓存虚拟地址到物理地址的转换，ASID（Address Space Identifier） 用于区分不同地址空间的缓存项；页表切换对 TLB 的影响取决于 ASID、CPU 特性和内核实现，别按「每次都完整刷新 TLB」来推。
 
 ### 4. ARM64 投机执行漏洞缓解
 
 #### 4.1 Spectre v1：局部代码修复
 
-Spectre v1 属于 bounds-check bypass，即边界检查绕过：CPU 可能在边界判断完成前推测执行后续访问。通用 `array_index_nospec()` 会调用架构提供的 mask 实现，6.18 ARM64 的 `array_index_mask_nospec()` 用比较结果生成全零或全一掩码，使越界索引失去可用值，并在返回前执行 `CSDB`，限制后续指令提前使用推测得到的数据。
+Spectre v1 属于 bounds-check bypass（边界检查绕过），即边界检查绕过：CPU 可能在边界判断完成前推测执行后续访问。通用 `array_index_nospec()` 会调用架构提供的 mask 实现，6.18 ARM64 的 `array_index_mask_nospec()` 用比较结果生成全零或全一掩码，使越界索引失去可用值，并在返回前执行 `CSDB`，限制后续指令提前使用推测得到的数据。
 
-`SSBS` 全称 Speculative Store Bypass Safe，管的是 Spectre v4 相关的推测存储绕过，与这条数组索引修复路径是两码事。局部修复分布在各子系统中，开销跟着命中这些路径的次数走；如果性能回退集中在一个驱动或系统调用，我们就去检查该路径生成的指令和采样结果，把整机差异笼统归到 Spectre v1，定位就停在这里了。
+`SSBS`（Speculative Store Bypass Safe） 全称 Speculative Store Bypass Safe，管的是 Spectre v4 相关的推测存储绕过，与这条数组索引修复路径是两码事。局部修复分布在各子系统中，开销跟着命中这些路径的次数走；如果性能回退集中在一个驱动或系统调用，我们就去检查该路径生成的指令和采样结果，把整机差异笼统归到 Spectre v1，定位就停在这里了。
 
 #### 4.2 Spectre v2：CPU、固件和运行时代码选择
 
@@ -380,7 +380,7 @@ adb shell 'for f in /sys/devices/system/cpu/vulnerabilities/*; do
 done'
 ```
 
-第一条命令显示启动参数；第二条遍历 sysfs 的 `vulnerabilities` 节点，读取内核向用户空间报告的漏洞和缓解状态——sysfs 是内核导出的虚拟文件系统。节点集合与文本由设备内核决定，缺哪个节点，就回到那台设备的源码和配置去查。
+第一条命令显示启动参数；第二条遍历 sysfs（内核导出的虚拟文件系统） 的 `vulnerabilities` 节点，读取内核向用户空间报告的漏洞和缓解状态——sysfs 是内核导出的虚拟文件系统。节点集合与文本由设备内核决定，缺哪个节点，就回到那台设备的源码和配置去查。
 
 ### 5. PAC、BTI、SCS 与 KCFI：四条控制流防线
 
@@ -390,7 +390,7 @@ PAC（Pointer Authentication Code）把密钥、指针值及上下文计算成�
 
 内核在 `exec()` 时为进程初始化密钥，同一进程内的线程共享，`fork()` 后子进程继承；文档没有规定密钥必须由 `RNDR` 或 `RNDRRS` 指令直接生成，固定的进程创建耗时也就推导不出来。`CONFIG_ARM64_PTR_AUTH_KERNEL` 的范围更窄，只让编译器为内核函数返回地址加入保护，想当然写成「所有内核函数指针都会被 PAC 签名」就超出了它的实际范围；间接函数指针调用的前向保护，应查看 KCFI 与 BTI。
 
-用户态通过 `HWCAP_PACA` 和 `HWCAP_PACG` 获知相应能力，HWCAP 是内核通过 ELF 辅助向量交给进程的硬件能力位。二进制是否使用 PAC，取决于生成的指令与运行库策略，硬件支持本身并不会给已有代码自动加入函数序言与尾声；ELF note 是二进制中的构建属性记录，可作静态侧的依据，反汇编中的 `PAC*`/`AUT*` 指令才能直接说明目标代码包含认证序列。
+用户态通过 `HWCAP（hardware capability）_PACA` 和 `HWCAP_PACG` 获知相应能力，HWCAP 是内核通过 ELF 辅助向量交给进程的硬件能力位。二进制是否使用 PAC，取决于生成的指令与运行库策略，硬件支持本身并不会给已有代码自动加入函数序言与尾声；ELF note 是二进制中的构建属性记录，可作静态侧的依据，反汇编中的 `PAC*`/`AUT*` 指令才能直接说明目标代码包含认证序列。
 
 #### 5.2 BTI：限制间接分支入口
 
@@ -398,13 +398,13 @@ PAC（Pointer Authentication Code）把密钥、指针值及上下文计算成�
 
 #### 5.3 Shadow Call Stack
 
-`CONFIG_SHADOW_CALL_STACK` 对应 SCS，使用编译器插桩把返回地址的受保护副本保存在独立的 shadow stack 中，降低普通栈内存破坏覆盖返回地址的风险；GKI 的 `gki_defconfig` 已开启该项。它是内核构建期机制，与后文的用户态 GCS 分属两个 ABI。
+`CONFIG_SHADOW_CALL_STACK` 对应 SCS，使用编译器插桩把返回地址的受保护副本保存在独立的 shadow stack（影子调用栈） 中，降低普通栈内存破坏覆盖返回地址的风险；GKI 的 `gki_defconfig` 已开启该项。它是内核构建期机制，与后文的用户态 GCS 分属两个 ABI。
 
 #### 5.4 KCFI
 
 6.18 的 `CONFIG_CFI` 使用 KCFI（Kernel Control-Flow Integrity），编译器在间接函数调用处加入类型检查，只允许目标落到静态类型匹配的函数。这里的前向保护指调用者到间接调用目标的边，SCS 和 PAC return-address protection 则处理函数返回路径。
 
-检查本地 ELF 是否声明 AArch64 branch protection，用 NDK 中对应版本的 `llvm-readelf`；下面的命令观察 GNU property 和 note，回答的是静态声明问题，运行时硬件是否执行检查还要另找依据。
+检查本地 ELF 是否声明 AArch64 branch protection（PAC/BTI 分支保护），用 NDK 中对应版本的 `llvm-readelf`；下面的命令观察 GNU property 和 note，回答的是静态声明问题，运行时硬件是否执行检查还要另找依据。
 
 ```bash
 llvm-readelf -n libexample.so
@@ -415,13 +415,13 @@ llvm-objdump -d libexample.so | grep -E '\bbti\b|\bpaci[ab]sp\b|\bauti[ab]sp\b'
 
 ### 6. MTE 标签粒度与内存开销
 
-ARM64 MTE（Memory Tagging Extension）把内存划分为 16 字节的 allocation granule，每个粒度保存 4 位 allocation tag，指针高位携带 logical tag，CPU 访问内存时比较两者。tag mismatch 可同步报告到出错指令，也可异步延迟到稍后的内核入口；asymmetric 模式对读访问同步报告、对写访问异步报告。
+ARM64 MTE（Memory Tagging Extension）把内存划分为 16 字节的 allocation granule（分配标签粒度），每个粒度保存 4 位 allocation tag（内存标签），指针高位携带 logical tag（逻辑标签），CPU 访问内存时比较两者。tag mismatch（标签不匹配） 可同步报告到出错指令，也可异步延迟到稍后的内核入口；asymmetric 模式对读访问同步报告、对写访问异步报告。
 
-内核支持由 `CONFIG_ARM64_MTE` 控制，硬件与内核同时支持时通过 `HWCAP2_MTE` 告知用户空间。带标签的页只能来自使用 `PROT_MTE` 的匿名映射或 RAM-backed 文件映射，例如 tmpfs 或 `memfd`——RAM-backed 表示内容由内存页支撑，不是普通持久化文件。线程还要通过 `PR_SET_TAGGED_ADDR_CTRL` 设置 tagged-address ABI 与 fault mode，前者允许地址高位携带标签，后者决定标签错误怎么报告。Android 应用通常由 `android:memtagMode`、runtime 和 Scudo 分配器完成进程级原生堆配置，不要求业务代码逐个调用 `mmap()`。
+内核支持由 `CONFIG_ARM64_MTE` 控制，硬件与内核同时支持时通过 `HWCAP2_MTE` 告知用户空间。带标签的页只能来自使用 `PROT_MTE` 的匿名映射或 RAM-backed 文件映射，例如 tmpfs 或 `memfd`——RAM-backed 表示内容由内存页支撑，不是普通持久化文件。线程还要通过 `PR_SET_TAGGED_ADDR_CTRL` 设置 tagged-address ABI（允许地址高位携带标签的约定） 与 fault mode（标签错误的报告模式），前者允许地址高位携带标签，后者决定标签错误怎么报告。Android 应用通常由 `android:memtagMode`、runtime（运行时） 和 Scudo 分配器完成进程级原生堆配置，不要求业务代码逐个调用 `mmap()`。
 
-那 4 位标签是架构标签存储格式，换算不出「PSS 固定增加 3% 或 5%」这样的结论；标签存储、分配器元数据、页提交、工作集和故障模式对 CPU 与内存指标的影响各不相同。评估 MTE 时我们至少分别记录：
+那 4 位标签是架构标签存储格式，换算不出「PSS（Proportional Set Size） 固定增加 3% 或 5%」这样的结论；标签存储、分配器元数据、页提交、工作集和故障模式对 CPU 与内存指标的影响各不相同。评估 MTE 时我们至少分别记录：
 
-- 进程 PSS、RSS、匿名页和 swap；
+- 进程 PSS、RSS（Resident Set Size）、匿名页和 swap；
 - 分配速率、释放速率与 Scudo 路径；
 - 同步 fault 的定位收益和用户可见延迟；
 - 异步 fault 的发现延迟与崩溃归因；
@@ -443,7 +443,7 @@ GCS（Guarded Control Stack）为用户态线程维护一份受硬件保护的�
 
 #### 8.1 核对构建与启动状态
 
-工程构建可尝试读取压缩内核配置；量产设备往往不暴露 `/proc/config.gz`，此时改读构建生成的 `.config` 或厂商发布的内核构建产物。
+工程构建可尝试读取压缩内核配置；量产设备往往不暴露 `/proc/config.gz`，此时改读构建生成的 `.config` 或厂商发布的内核构建产物（kernel build artifact）。
 
 ```bash
 adb shell 'test -r /proc/config.gz &&
@@ -457,7 +457,7 @@ adb shell 'grep -E "paca|pacg|bti|mte|gcs" /proc/cpuinfo'
 
 #### 8.2 为工作负载建立归因
 
-归因按路径选指标。下表中的 PMU 事件指 CPU 硬件计数器记录的周期、分支、缓存或 TLB 等事件，事件名称和可用范围由 SoC 决定。
+归因按路径选指标。下表中的 PMU（Performance Monitoring Unit） 事件指 CPU 硬件计数器记录的周期、分支、缓存或 TLB 等事件，事件名称和可用范围由 SoC 决定。
 
 | 怀疑对象 | 适合的负载 | 需要记录 |
 |---|---|---|
@@ -468,7 +468,7 @@ adb shell 'grep -E "paca|pacg|bti|mte|gcs" /proc/cpuinfo'
 | MTE | native 分配与访存密集负载 | fault mode、分配器指标、PSS/RSS、CPU time、功耗 |
 | GCS | 明确启用 GCS 的 native 进程 | 线程状态、`smaps`、调用密度、fault 记录 |
 
-`simpleperf` 适合核对指令、周期和分支事件，Perfetto 适合把调度、Binder、缺页、I/O 与业务阶段放到同一时间轴；PMU 事件名称随 SoC 和内核权限变化，采集前先跑 `simpleperf list`，只使用设备公布的事件。确认设备支持哪些事件后，再对一个可重复的 native workload 采样：
+`simpleperf` 适合核对指令、周期和分支事件，Perfetto 适合把调度、Binder、缺页、I/O 与业务阶段放到同一时间轴；PMU 事件名称随 SoC 和内核权限变化，采集前先跑 `simpleperf list`，只使用设备公布的事件。确认设备支持哪些事件后，再对一个可重复的 native workload（原生测试负载） 采样：
 
 ```bash
 adb shell simpleperf list
@@ -477,7 +477,7 @@ adb shell simpleperf stat \
   -- /data/local/tmp/security_bench
 ```
 
-拿输出可以算 IPC——instructions per cycle，每周期指令数，这里取性能含义而非进程间通信——以及每次业务操作消耗的 cycles 和 branch-miss 比例。单次采样撑不起归因，预热、固定业务输入、记录温度与频率状态都要做。
+拿输出可以算 IPC（instructions per cycle，每周期指令数；这里不是进程间通信）——instructions per cycle，每周期指令数，这里取性能含义而非进程间通信——以及每次业务操作消耗的 cycles（CPU 周期数） 和 branch-miss（分支预测失败） 比例。单次采样撑不起归因，预热、固定业务输入、记录温度与频率状态都要做。
 
 #### 8.3 A/B 测试的安全边界
 
@@ -508,7 +508,7 @@ AndroidX Security 发布说明显示，`androidx.security:security-state:1.1.0` 
 
 内核缓解策略通常轮不到应用开发者改，拿关闭安全机制换分数更不可取；性能工作从可控路径入手：
 
-- 用 Perfetto 统计 Binder transaction、系统调用、I/O 和调度等待，确认时间花在哪个阶段；
+- 用 Perfetto 统计 Binder transaction（一次 Binder 驱动事务）、系统调用、I/O 和调度等待，确认时间花在哪个阶段；
 - 批量 Binder 请求前先检查接口语义、错误处理和延迟预算，避免只为减少调用次数扩大单次事务；
 - 共享内存适合大块数据传输，但同步、生命周期、权限和一致性成本需要计入；
 - native 热点根据 profile 结果决定内联、数据布局或间接调用调整，为躲避 KCFI/BTI 而破坏类型安全这条路别走；

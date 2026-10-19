@@ -110,9 +110,9 @@ DoKit 提供应用内调试面板和多类检查插件，适合 Debug / QA 现�
 
 ### DoKit 的定位：研发现场工具
 
-排查一个只在真机上出现的问题时，我们最需要的是一台设备上就能改变条件的工具箱。DoraemonKit（DoKit）把网络查看、弱网模拟、Mock、文件与数据库浏览、日志、性能浮窗、UI 检查和业务自定义入口放进同一个 Android 调试包，其中 Mock 用预设数据替换响应。测试人员可以直接在设备上改变测试条件，开发人员也能在相同场景中查看请求与进程状态，这类现场调试正是它擅长的场景。
+排查一个只在真机上出现的问题时，我们最需要的是一台设备上就能改变条件的工具箱。DoraemonKit（DoKit）把网络查看、弱网模拟、Mock（用预设数据替换响应）、文件与数据库浏览、日志、性能浮窗、UI 检查和业务自定义入口放进同一个 Android 调试包，其中 Mock 用预设数据替换响应。测试人员可以直接在设备上改变测试条件，开发人员也能在相同场景中查看请求与进程状态，这类现场调试正是它擅长的场景。
 
-同时要留意，这些工具本身也在改变被测环境：浮窗增加绘制工作，性能面板定时采样，网络模块插入 interceptor（请求拦截器），部分功能还依赖编译期字节码插桩或 hidden API——前者在构建时改写 class，后者是应用 SDK 未公开的接口。所以我们用 DoKit 回答“哪个页面、哪个操作或哪个网络条件值得继续调查”；浮窗读数支撑不了版本级性能结论，生产 APM（Application Performance Monitoring，应用性能监控）的采集也要交给专门的平台。
+同时要留意，这些工具本身也在改变被测环境：浮窗增加绘制工作，性能面板定时采样，网络模块插入 interceptor（请求拦截器），部分功能还依赖编译期字节码插桩（构建时改写 class）或 hidden API（应用 SDK 未公开的接口）——前者在构建时改写 class，后者是应用 SDK 未公开的接口。所以我们用 DoKit 回答“哪个页面、哪个操作或哪个网络条件值得继续调查”；浮窗读数支撑不了版本级性能结论，生产 APM（Application Performance Monitoring，应用性能监控）的采集也要交给专门的平台。
 
 DoKit 没有面向 API 37 的官方兼容承诺，我们说它“可用”，只表示在源码上没有发现确定性阻断；团队仍要用自己的 AGP（Android Gradle Plugin）、完整依赖、目标设备和最终安装包验证。
 
@@ -127,14 +127,14 @@ DoKit 没有面向 API 37 的官方兼容承诺，我们说它“可用”，只
 | GitHub Releases | 最新可见的 `3.1.7` 发布于 2025-06-20，但标题明确是 `iOS: 3.1.7` | 不能把跨平台仓库的 iOS release 当成 Android Maven 新版 |
 | GitHub `master` | 审阅提交为 `626827cddb2feb2f3aee87a52a064b4e5ca2bed4`；`Android/config.gradle` 写的是未公开发布的 `3.7.14.9-kotlin-13` | `master` 可用于理解后续代码，不能替代 3.7.11 发布物的行为 |
 
-3.7.11 的 POM（Maven 依赖描述文件）仍依赖 Kotlin 1.4.32、OkHttp 3.14.7 和较早的 AndroidX 组件。Gradle 能成功下载依赖，只说明 Maven 坐标可解析；这些旧依赖要和当前工程的 Kotlin、R8、AndroidX 或 targetSdk 37 正常配合，还得实际验证。
+3.7.11 的 POM（Maven 依赖描述文件）仍依赖 Kotlin 1.4.32、OkHttp 3.14.7 和较早的 AndroidX 组件。Gradle 能成功下载依赖，只说明 Maven 坐标可解析；这些旧依赖要和当前工程的 Kotlin、R8（代码压缩与优化工具）、AndroidX 或 targetSdk 37 正常配合，还得实际验证。
 
 审阅第三方调试 SDK 时，我们固定收齐四样材料：
 
 - Maven POM：确认传递依赖，也就是该库还会自动带进哪些库。
-- AAR（Android 库归档）与合并后的 manifest：确认权限、组件、资源和 native 库。
-- 同版本 source JAR：确认发布版本的运行语义。
-- 最终 APK/AAB：确认正式构建中实际留下了什么。
+- AAR（Android 库归档）与合并后的 manifest（Android 清单）：确认权限、组件、资源和 native（C/C++ 原生） 库。
+- 同版本 source JAR（源码归档）：确认发布版本的运行语义。
+- 最终 APK/AAB（安装包/应用商店包）：确认正式构建中实际留下了什么。
 
 GitHub `master` 的代码用来理解后续演进是合适的，公开 3.7.11 的行为还要以发布物为准；README 的 AGP 下限也只代表当时验证过的范围。
 
@@ -153,7 +153,7 @@ GitHub `master` 的代码用来理解后续演进是合适的，公开 3.7.11 �
 
 DoKit 负责提供线索和测试条件，可复核的结果由专项工具产出。
 
-### 接入由运行时 AAR 和编译插件两部分组成
+### 接入由运行时 AAR（Android Archive，Android 库归档） 和编译插件两部分组成
 
 `dokitx` 是运行时工具箱，`dokitx-plugin` 负责构建期字节码改写。3.7.11 的插件在 `DoKitPlugin.kt` 中取得旧版 `AppExtension` / `LibraryExtension`，随后调用 `registerTransform()`。AGP 8.0 已移除 Transform API，官方替代接口在 AGP 7.2 时已经齐备，因此 AGP 8+ 的项目加载不了这套旧插件实现，出路见下表的迁移选项。
 
@@ -170,7 +170,7 @@ DoKit 负责提供线索和测试条件，可复核的结果由专项工具产�
 
 3.7.11 发布插件把 OkHttp 改写放在 `CommClassTransformer`，当前 `master` 已拆出 `Okhttp3ClassTransformer`。类名变化说明这是两条源码线，引用实现时要以各自版本的源码为准。
 
-团队若不准备维护插件 fork，在 API 37 工程中更稳妥的选择是只评估运行时 AAR，把字节码类功能交给 Perfetto、Macrobenchmark（Jetpack 场景基准测试）、Profiler，或由网络库显式安装调试 interceptor。
+团队若不准备维护插件 fork，在 API 37 工程中更稳妥的选择是只评估运行时 AAR，把字节码类功能交给 Perfetto（Android 系统 trace 分析工具）、Macrobenchmark（Jetpack 场景基准测试）、Profiler，或由网络库显式安装调试 interceptor。
 
 ### 按构建变体接入依赖
 
@@ -213,20 +213,20 @@ DoKit.Builder(this)
 
 ### 性能面板：数据从哪里来
 
-#### FPS
+#### FPS（frames per second）
 
-浮窗上的 FPS 数字，统计的是每秒收到的帧回调数。3.7.11 的 `PerformanceDataManager` 注册连续的 `Choreographer.FrameCallback`，每次界面帧调度收到一次回调就把计数加一；主线程上的 `Handler` 任务每 1000 ms 读取并清零计数。显示上限取自 `defaultDisplay.refreshRate`，超过上限的计数会被截到该值。
+浮窗上的 FPS 数字，统计的是每秒收到的帧回调数。3.7.11 的 `PerformanceDataManager` 注册连续的 `Choreographer.FrameCallback`（每次界面帧调度时收到回调），每次界面帧调度收到一次回调就把计数加一；主线程上的 `Handler` 任务每 1000 ms 读取并清零计数。显示上限取自 `defaultDisplay.refreshRate`（屏幕刷新率），超过上限的计数会被截到该值。
 
 这套计数有两个问题：
 
 - 统计任务也在主线程。主线程阻塞时，“一秒窗口”可能延后执行，但代码没有按真实经过时间归一化。
 - 内置“健康体检”的保存路径还会把帧率上限压到 60。90 Hz、120 Hz 设备上的高刷新率信息会丢失。
 
-所以浮窗 FPS 能提示“这次滑动明显异常”；慢帧出在应用、RenderThread 还是系统合成阶段，要交给专项数据回答：FrameTimeline 给出帧各阶段时间线，JankStats 把 App 状态与慢帧关联起来。
+所以浮窗 FPS 能提示“这次滑动明显异常”；慢帧出在应用、RenderThread（渲染线程） 还是系统合成阶段，要交给专项数据回答：FrameTimeline（帧各阶段时间线） 给出帧各阶段时间线，JankStats（关联 App 状态与慢帧的库） 把 App 状态与慢帧关联起来。
 
 #### CPU
 
-CPU 百分比在 Android 8.0 及以上来自一条 `top -n 1`：DoKit 每 500 ms 执行一次，查找当前 PID 所在行，再把 `%CPU` 除以 `availableProcessors()`；更早的系统则读取 `/proc/stat` 与 `/proc/<pid>/stat`。
+CPU 百分比在 Android 8.0 及以上来自一条 `top -n 1`：DoKit 每 500 ms 执行一次，查找当前 PID（进程 ID） 所在行，再把 `%CPU` 除以 `availableProcessors()`；更早的系统则读取 `/proc/stat` 与 `/proc/<pid>/stat`。
 
 `top` 的输出格式不属于 Android SDK 兼容契约，执行命令本身也有开销。除以核数后的百分比与 Profiler、Perfetto 或其他监控库未必采用同一算法。它适合发现“某一步骤 CPU 持续升高”，几次浮窗读数不足以支持版本对比。
 
@@ -234,7 +234,7 @@ CPU 百分比在 Android 8.0 及以上来自一条 `top -n 1`：DoKit 每 500 ms
 
 内存面板展示的 MB 值来自系统接口：Android 10 及以上每 500 ms 调用 `Debug.getMemoryInfo()`，展示 `totalPss / 1024`；较低版本使用 `ActivityManager.getProcessMemoryInfo()`。
 
-PSS（Proportional Set Size）是进程在采样时刻的驻留内存：私有页全部计入，共享页按比例分摊。哪个对象仍被引用、一次上涨是不是泄漏，它都回答不了——解释 Java/Kotlin 对象要看 heap dump 和引用链，解释进程整体内存要结合 `dumpsys meminfo`、Perfetto 和 native 分配信息。
+PSS（Proportional Set Size）是进程在采样时刻的驻留内存：私有页全部计入，共享页按比例分摊。哪个对象仍被引用、一次上涨是不是泄漏，它都回答不了——解释 Java/Kotlin 对象要看 heap dump（堆转储） 和引用链，解释进程整体内存要结合 `dumpsys meminfo`、Perfetto 和 native 分配信息。
 
 #### 网络流量
 
@@ -242,7 +242,7 @@ PSS（Proportional Set Size）是进程在采样时刻的驻留内存：私有�
 
 3.7.11 插件能给 OkHttp / HttpURLConnection 路径插入采集逻辑，但现代 AGP 项目如果不加载该插件，覆盖面会随之缩小。健康检查代码还有对响应调用 `peekBody(Long.MAX_VALUE)` 的路径，大响应可能被复制进内存，反过来干扰内存与网络测试。
 
-网络面板适合确认“哪个请求、哪类 Body（请求或响应内容）值得查”。若要分别测量 DNS 解析、TCP connect、TLS 握手、请求发送和响应读取，应使用 OkHttp `EventListener`、服务端 trace 或系统 trace。
+网络面板适合确认“哪个请求、哪类 Body（请求或响应内容）值得查”。若要分别测量 DNS 解析、TCP connect、TLS 握手、请求发送和响应读取，应使用 OkHttp `EventListener`、服务端 trace（一次调用链） 或系统 trace。
 
 #### 启动、函数耗时与卡顿
 
@@ -268,7 +268,7 @@ Android 17 的 `Looper` 仍只有一个 `mLogging` 字段，`setMessageLogging()
 - `ActivityThread.mH`
 - `Handler.mCallback`
 
-`android-17.0.0_r1` 源码中这些成员仍然存在，但它们不在公开 SDK 兼容契约之内。字段“还在”，第三方应用也未必有权访问：hidden API 执行策略、OEM 修改、反射库行为或应用加固都可能让 hook 失败。`HandlerHooker` 会捕获 `Exception` 并打印堆栈，依赖该 hook 的功能可能随之失效，因此 API 37 测试我们要检查日志和具体功能，光看 App 是否崩溃并不够。
+`android-17.0.0_r1` 源码中这些成员仍然存在，但它们不在公开 SDK 兼容契约之内。字段“还在”，第三方应用也未必有权访问：hidden API 执行策略、OEM（设备厂商） 修改、反射库行为或应用加固都可能让 hook 失败。`HandlerHooker` 会捕获 `Exception` 并打印堆栈，依赖该 hook 的功能可能随之失效，因此 API 37 测试我们要检查日志和具体功能，光看 App 是否崩溃并不够。
 
 公开 3.7.11 还在 Android 12（API 31）及以上跳过 SandHook 全局 runtime hook；SandHook 是一种原生方法 hook 框架，源码注释直接写明 Android S 上会崩溃。API 37 设备至少要覆盖冷启动、Activity 跳转、横竖屏、分屏、前后台切换和加固后的安装包，只验证面板能打开远远不够。
 
@@ -441,11 +441,11 @@ DoKit 的优势是把调试入口和测试条件带到设备现场。它可以�
 
 ## Measure APM 的端侧采集与平台组成
 
-DoKit 负责研发现场的调试入口，Measure 则在 Release 中持续采集崩溃、ANR、启动、网络、资源和业务 span，并把事件送入可查询的平台。后者同样需要控制采样与测量扰动，还要负责数据治理、服务端运维、告警和恢复。
+DoKit 负责研发现场的调试入口，Measure 则在 Release 中持续采集崩溃、ANR（Application Not Responding，应用无响应）、启动、网络、资源和业务 span（一段有起止时间的操作），并把事件送入可查询的平台。后者同样需要控制采样与测量扰动，还要负责数据治理、服务端运维、告警和恢复。
 
 ### 产品定位与版本现状
 
-Measure 是一套面向移动端的 APM 与问题诊断平台。项目提供 Android、iOS、Flutter、React Native SDK，官网还提供 KMP（Kotlin Multiplatform）薄封装，让共享 Kotlin 代码调用 Android、iOS 原生 SDK。它的核心是把 Crash、ANR、启动、HTTP、CPU、内存、点击、页面导航、业务 span 和 bug report 放进同一套 session 模型：span 是一段有起止时间的操作，bug report 是用户主动提交的问题报告，session 则是一次连续使用会话。
+Measure 是一套面向移动端的 APM 与问题诊断平台。项目提供 Android、iOS、Flutter、React Native SDK，官网还提供 KMP（Kotlin Multiplatform）薄封装，让共享 Kotlin 代码调用 Android、iOS 原生 SDK。它的核心是把 Crash（未捕获崩溃）、ANR、启动、HTTP、CPU、内存、点击、页面导航、业务 span 和 bug report（用户主动提交的问题报告） 放进同一套 session（一次连续使用会话） 模型：span 是一段有起止时间的操作，bug report 是用户主动提交的问题报告，session 则是一次连续使用会话。
 
 Matrix、KOOM 更偏向在设备内完成专项采集与诊断；Measure 还提供事件入库、检索、聚合、告警、附件保存和团队协作。它们解决的问题有交集，部署层次与运维范围不同，可以同时使用。
 
@@ -489,7 +489,7 @@ flowchart LR
 
 SDK 先把 event 与 span 写入本地 SQLite 数据库，再按批上传；附件走独立上传路径。默认本地空间上限为 50 MB，可配置在 20～1500 MB，达到上限后会先清理旧数据。离线、服务不可达或附件偏大时，本地容量决定故障现场能保留多久，网络重试次数只是其中一个因素。
 
-self-host 的 Docker Compose 文件用 YAML 统一编排容器服务，包含 dashboard、API、agent、ingest、ingest-worker、cleanup、alerts、symboloader、migrator、Symbolicator、PostgreSQL、ClickHouse、MinIO、Apache Iggy 和 Valkey。当前 main 的基础 Compose 还带 `debug` profile，里面提供 ClickStack 日志界面与 Iggy Web 管理界面；生产覆盖文件会移除 ClickStack，Iggy Web 也不会随默认生产配置启动。这份服务清单说明 Measure 需要持续运维，接入工作远超添加一个 AAR 依赖。
+self-host 的 Docker Compose 文件用 YAML 统一编排容器服务，包含 dashboard、API、agent、ingest、ingest-worker、cleanup、alerts、symboloader、migrator、Symbolicator、PostgreSQL、ClickHouse、MinIO、Apache Iggy 和 Valkey。当前 main 的基础 Compose 还带 `debug` profile（调试配置组），里面提供 ClickStack 日志界面与 Iggy Web 管理界面；生产覆盖文件会移除 ClickStack，Iggy Web 也不会随默认生产配置启动。这份服务清单说明 Measure 需要持续运维，接入工作远超添加一个 AAR 依赖。
 
 ### 会话、事件、span 与附件
 
@@ -599,7 +599,7 @@ Span 表示一段持续时间，单独保存；核心字段是 `trace_id`、`spa
 
 #### Android 17 / API 37 的新增机会
 
-Measure 为 `SIGQUIT` ANR 采集带有 `libmeasure-ndk.so`。稳定版 CMake 链接参数包含 `-Wl,-z,max-page-size=16384`，`0.19.0` AAR 内四个 ABI 版本的 `.so` 也都显示 ELF LOAD segment 的 `p_align` 为 `2**14`，即 16 KB。RSS 计算同时读取运行设备的 `_SC_PAGESIZE`，没有把页大小写死为 4 KB；ELF LOAD segment 是系统把 native 库装入内存时使用的段，这两项检查分别覆盖 native 库对齐与内存页换算。应用仍要对最终 release APK/AAB 做 16 KB page-size 检查，因为宿主工程的 AGP、NDK、其他 `.so` 和 ZIP 打包对齐都不由 Measure 控制。
+Measure 为 `SIGQUIT` ANR 采集带有 `libmeasure-ndk.so`。稳定版 CMake 链接参数包含 `-Wl,-z,max-page-size=16384`，`0.19.0` AAR 内四个 ABI 版本的 `.so` 也都显示 ELF LOAD segment 的 `p_align` 为 `2**14`，即 16 KB。RSS 计算同时读取运行设备的 `_SC_PAGESIZE`，没有把页大小写死为 4 KB；ELF LOAD segment 是系统把 native 库装入内存时使用的段，这两项检查分别覆盖 native 库对齐与内存页换算。应用仍要对最终 release APK/AAB 做 16 KB page-size 检查，因为宿主工程的 AGP、NDK（Native Development Kit）、其他 `.so` 和 ZIP 打包对齐都不由 Measure 控制。
 
 Android 17 为 `ProfilingTrigger` 新增了九种类型。与性能和内存最相关的例子包括 `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`：冷启动触发器返回新启动的 system trace 与 stack sampling profile（按时间抽样的调用栈），OOM 返回 Java heap dump，anomaly 的附件随异常类型变化，过量 CPU 退出触发器返回 running system trace 快照。
 

@@ -68,7 +68,7 @@ consolidated_from:
 
 # 触摸延迟、预测与低延迟渲染
 
-触摸体验由采样、事件分发、应用处理、渲染和显示共同决定，单看回调耗时会漏掉前后两端。我们先把“从输入到显示”的测量方式定下来，再判断问题出在采样密度、批处理、主线程、帧调度还是显示提交。
+触摸体验由采样、事件分发、应用处理、渲染和显示共同决定，单看回调耗时会漏掉前后两端。我们先把“从输入到显示”的测量方式定下来，再判断问题出在采样密度、批处理（batching）、主线程、帧调度还是显示提交。
 
 ## 为什么需要关注触摸响应
 
@@ -81,7 +81,7 @@ consolidated_from:
 - **离散响应**：按下按钮后，下一帧何时显示按下状态或业务结果。
 - **连续跟手**：手指或笔持续移动时，屏幕轨迹与当前位置相差多少时间和空间。
 
-连续跟手会反复暴露位置差，通常比一次点击更容易显出延迟。我们做工程测试时，要在目标设备上分别统计点击响应和连续手势，至少报告刷新率、触控模式、冷机与热机状态、P50、P90、P99 以及丢帧情况；缺了这些条件的单一数字，承担不了产品服务水平目标 SLA 的角色。
+连续跟手会反复暴露位置差，通常比一次点击更容易显出延迟。我们做工程测试时，要在目标设备上分别统计点击响应和连续手势，至少报告刷新率、触控模式、冷机与热机状态、P50、P90、P99 以及丢帧情况；缺了这些条件的单一数字，承担不了产品服务水平目标（SLA） SLA 的角色。
 
 ## 先统一测量口径
 
@@ -118,7 +118,7 @@ CPU 与 GPU 可能并行，多个样本也可能合并到同一帧；FrameTimeli
 
 ### 1. 硬件采样（触摸屏 → 驱动）
 
-触控控制器扫描面板，把报告送到 SoC。扫描、滤波、去抖、总线上报和驱动中断都属于设备实现，AOSP 不规定它们必须采用哪种总线或固定采样率。若设备以近似固定频率上报，采样周期可用 `1 / samplingRate` 粗略估算：
+触控控制器扫描面板，把报告送到 SoC（片上系统）。扫描、滤波、去抖、总线上报和驱动中断都属于设备实现，AOSP 不规定它们必须采用哪种总线或固定采样率。若设备以近似固定频率上报，采样周期可用 `1 / samplingRate` 粗略估算：
 
 - **120 Hz**：约 8.33 ms 一个采样周期
 - **240 Hz**：约 4.17 ms 一个采样周期
@@ -170,9 +170,9 @@ void InputReader::loopOnce() {
 
 事件在 InputDispatcher 中经过三个关键队列：
 
-1. **输入队列 InboundQueue，计数器 `iq`**：`InputReader` 交付的事件先进入这里，`InputDispatcher` 从队首取出事件开始处理；
-2. **输出队列 OutboundQueue，计数器 `oq`**：每个目标 `Connection` 都有一条输出队列。事件被包装成 `DispatchEntry` 后进入此队列，等待发布到 `InputChannel`；
-3. **等待队列 WaitQueue，计数器 `wq`**：发布成功后，条目从输出队列移到等待队列，等待应用返回 `FINISHED`。回收路径由 `handleReceiveCallback()` 接收响应，再经 `finishDispatchCycleLocked()` 和 `doDispatchCycleFinishedCommand()` 按序列号删除等待队列条目。
+1. **输入队列（InboundQueue，`iq`） InboundQueue，计数器 `iq`**：`InputReader` 交付的事件先进入这里，`InputDispatcher` 从队首取出事件开始处理；
+2. **输出队列（OutboundQueue，`oq`） OutboundQueue，计数器 `oq`**：每个目标 `Connection` 都有一条输出队列。事件被包装成 `DispatchEntry` 后进入此队列，等待发布到 `InputChannel`；
+3. **等待队列（WaitQueue，`wq`） WaitQueue，计数器 `wq`**：发布成功后，条目从输出队列移到等待队列，等待应用返回 `FINISHED`。回收路径由 `handleReceiveCallback()` 接收响应，再经 `finishDispatchCycleLocked()` 和 `doDispatchCycleFinishedCommand()` 按序列号删除等待队列条目。
 
 `FINISHED` 表示应用结束了这枚输入事件的分发责任，不表示相应画面已经呈现。若事件触发了异步 `InputStage`，或应用主线程迟迟没有执行到 `finishInputEvent()`，等待队列会保持非空；渲染也可以在完成确认之后继续。因此，输入确认延迟与触摸到显示延迟需要分开测量。
 
@@ -523,7 +523,7 @@ FrameTimeline 还可能出现“帧率稳定，但内容整体晚一帧”的高
 
 ## 轨迹预测：面向笔迹与绘图的感知降延迟
 
-轨迹预测（Motion Prediction）涉及四层彼此独立的概念，我们一层一层看：
+轨迹预测（Motion Prediction（轨迹预测））涉及四层彼此独立的概念，我们一层一层看：
 
 - **framework API**：`android.view.MotionPredictor`，API 34 加入。
 - **AndroidX 库**：`androidx.input:input-motionprediction`，为不同系统版本提供封装。
@@ -544,7 +544,7 @@ FrameTimeline 还可能出现“帧率稳定，但内容整体晚一帧”的高
 
 ### 调用与绘制约束
 
-下面的 Java 骨架展示系统框架 API 的最小调用顺序。目标时间必须使用系统运行时间 uptime 时基的纳秒值，而且同一个实例在一次手势中只能记录一个设备的事件流。
+下面的 Java 骨架展示系统框架 API 的最小调用顺序。目标时间必须使用系统运行时间（uptime） uptime 时基的纳秒值，而且同一个实例在一次手势中只能记录一个设备的事件流。
 
 ```java
 MotionPredictor predictor = new MotionPredictor(context);
@@ -601,9 +601,9 @@ Jetpack 低延迟图形组件会把短生命周期的增量内容放到专用前
 
 ### 调度与提频策略
 
-厂商系统常会在输入到来后短时间提高 CPU 或 GPU 频率，或者提高 UI 相关线程的调度优先级；同一类策略在不同平台的名字、触发条件和覆盖范围都不一样，原理与判读方法见上文“4. CPU 频率和调度问题”。策略是否存在、持续多长、是否把线程放到高性能核心，都要以目标设备的系统跟踪、内核和系统实现为准，写成固定数值就失去了意义。排查时直接看 Perfetto 中的 CPU 频率、线程调度、SurfaceFlinger 与 `RenderThread` 行为。
+厂商系统常会在输入到来后短时间提高 CPU 或 GPU 频率，或者提高 UI 相关线程的调度优先级；同一类策略在不同平台的名字、触发条件和覆盖范围都不一样（原理与判读边界见本章“4. CPU 频率和调度问题”），原理与判读方法见上文“4. CPU 频率和调度问题”。策略是否存在、持续多长、是否把线程放到高性能核心，都要以目标设备的系统跟踪、内核和系统实现为准，写成固定数值就失去了意义。排查时直接看 Perfetto 中的 CPU 频率、线程调度、SurfaceFlinger 与 `RenderThread` 行为。
 
-### 交互提示与自适应刷新率的边界
+### 交互提示与自适应刷新率（ARR）的边界
 
 `InputDispatcher` 会把符合条件的按键、触摸动作和其他动作事件归类为用户活动，默认对同类型活动设置 100 ms 的最小通知间隔。PowerManager 的交互提频信号一方面进入 Power HAL，另一方面通知 SurfaceFlinger；Scheduler 随后把仍然有效的触摸计时器转换为全局触摸信号。虽然部分方法名中含有 touch，但上游交互提频并不只由触摸触发。
 

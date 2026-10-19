@@ -310,7 +310,7 @@ class ConstrainedNetworkMonitor(
 
 `registerBestMatchingNetworkCallback()` 反映的是请求的最佳匹配网络。若应用把某个 `Network` 显式绑定到专用客户端，我们应读取该绑定网络自己的能力，全局快照照搬过去会出错。VPN 也可能改变应用的实际出站路径，测试中要覆盖 VPN 开关。
 
-### NTN 状态与数据网络能力的分工
+### NTN（非地面网络） 状态与数据网络能力的分工
 
 NTN 是 non-terrestrial network，即非地面网络。Android 15 的 [`ServiceState.isUsingNonTerrestrialNetwork()`](https://developer.android.com/reference/android/telephony/ServiceState#isUsingNonTerrestrialNetwork%28%29) 表示设备的电话业务注册信息中存在非地面网络。
 
@@ -354,7 +354,7 @@ Android 17 源码中的 `getSatelliteDataOptimizedApps()`、`requestNtnSignalStr
 - 计划的重试时间不早于服务端 `Retry-After` 响应头指定的时间；
 - 新尝试不会越过用户可理解的任务期限。
 
-连续失败后应逐步延长等待时间，这就是重试退避；再在等待时间上加一点随机偏移，避免大量设备在同一时刻再次请求，这个偏移常称为随机抖动。退避状态按主机、接口和业务队列隔离。HTTP 429 表示请求过多，503 表示服务暂时不可用，这两类要和网络不可达分别记录；TLS 证书错误、身份验证失败和业务校验失败则要另行处理，网络重试帮不上忙。应用从无网络恢复时也别同时启动所有队列，调度器应按优先级分批提交。
+连续失败后应逐步延长等待时间，这就是重试退避；再在等待时间上加一点随机偏移，避免大量设备在同一时刻再次请求，这个偏移常称为随机抖动。退避状态按主机、接口和业务队列隔离。HTTP 429 表示请求过多，503 表示服务暂时不可用，这两类要和网络不可达分别记录；TLS 证书错误、身份验证（鉴权）失败和业务校验失败则要另行处理，网络重试帮不上忙。应用从无网络恢复时也别同时启动所有队列，调度器应按优先级分批提交。
 
 Android 后台任务框架 WorkManager 的 `UNMETERED` 约束只表示网络不按流量计费，表达不了 `NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED`。所以 WorkManager 批量任务开始传输前，需要再次读取应用保存的网络预算；发现约束网络后结束本次工作或延后执行，同时避免反复重新入队造成额外唤醒。
 
@@ -378,7 +378,7 @@ FCM HTTP v1 的 Android 配置支持 `bandwidth_constrained_ok`。项目内可�
 }
 ```
 
-这个片段是发不进 FCM HTTP v1 的：`fid` 表示 Firebase Installation ID，而 HTTP v1 的 `Message` 目标应使用注册令牌 `token`、主题 `topic` 或条件 `condition`。保留它是为了帮助维护者识别旧配置；键名要按当前接口定义改写，直接照抄进生产请求是行不通的。
+这个片段是发不进 FCM HTTP v1 的：`fid` 表示 Firebase Installation ID（Firebase 安装标识符），而 HTTP v1 的 `Message` 目标应使用注册令牌 `token`、主题 `topic` 或条件 `condition`。保留它是为了帮助维护者识别旧配置；键名要按当前接口定义改写，直接照抄进生产请求是行不通的。
 
 按当前 FCM HTTP v1 接口定义，向一个设备注册令牌发送低带宽提示可写成：
 
@@ -438,7 +438,7 @@ HTTP/1.1、HTTP/2、HTTP/3、gRPC 和 WebSocket 的表现取决于代理、网�
 - 同步交互改为“本地提交、后台发送、回执更新”，界面不等待一次长往返；
 - WebSocket 和 gRPC 流的心跳、重连受服务端策略控制，后台不可用时停止保活；
 - HTTP/3 需要在真实运营商路径上验证；它使用的 QUIC 传输协议通常基于 UDP，可能受网关和 UDP 路径可用性影响；
-- 大文件使用可恢复上传或 HTTP 范围请求时，要同时控制分块数量，避免过小分块增加往返次数；
+- 大文件使用可恢复上传或 HTTP 范围请求（按字节范围分段下载）时，要同时控制分块数量，避免过小分块增加往返次数；
 - HTTPDNS（通过 HTTP 或 HTTPS 获取域名解析结果）查询不进入 `Dns.lookup()` 的同步路径，按 [24.7 HTTPDNS 与 OkHttp Dns 的执行边界](07-httpdns-okhttp-dns-boundary.md)处理。
 
 卫星网络可能只允许部分应用、目标地址和协议。连接库识别出卫星传输，只说明传输层的事实，运营商允许访问哪些站点是另一层规则。产品界面需要提供“当前服务不可用”的明确状态。
@@ -535,7 +535,7 @@ Android 17 同时增加了流媒体数据计划速率接口和本地网络访问
 - `SubscriptionInfo` 的新接口描述运营商为某个订阅提供的流媒体速率上限，用于视频、音频、直播或实时音视频通信（RTC）的质量预算。
 - `ACCESS_LOCAL_NETWORK` 控制应用能否发现或连接局域网设备，也控制局域网设备能否连接应用进程中的服务器。
 
-登录、信息流、配置和图片列表等互联网请求不受这两项改动影响，仍按域名解析（DNS）、连接、重试与弱网规则处理。
+登录、信息流（Feed）、配置和图片列表等互联网请求不受这两项改动影响，仍按域名解析（DNS）、连接、重试与弱网规则处理。
 
 低带宽与卫星网络的处理见本文前半部分；通用请求预算见 [24.5 移动网络架构、连接生命周期与容灾策略](05-mobile-network-connection-resilience.md)，ECH 与证书透明度见 [24.6 HTTP/2、HTTP/3、gRPC 与 ECH](06-http2-http3-grpc-ech.md)。
 

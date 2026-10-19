@@ -114,13 +114,13 @@ consolidated_from:
 
 发版质量门禁用一组可验证条件决定版本能否进入下一发布阶段。26.1 节负责采集性能指标，26.4 节负责实验设计和回归检测；本节我们把这些证据对应到发版前检查、候选包测试、灰度扩量、暂停和恢复动作。
 
-实际发布还要覆盖目标设备厂商、系统构建指纹和季度更新。源码标签说明的是核对代码时用的版本，发布结论要来自真实设备上的验证。
+实际发布还要覆盖目标设备厂商（OEM）、系统构建指纹（build fingerprint，用于唯一标识设备上的系统构建）和季度更新。源码标签说明的是核对代码时用的版本，发布结论要来自真实设备上的验证。
 
 ### 发版前性能检查清单
 
 发版前的检查清单要能直接执行。每一项至少写清被测产物、场景与设备、指标定义、比较基线、判定方法、失败动作和负责人；缺了任何一项，数字变了也只是数字，落不成明确的发布决定。
 
-发布单要先冻结产物身份：`versionCode`、Git 提交、AAB/APK 文件摘要、签名证书摘要、`compileSdk`、`targetSdk`、构建变体、R8（代码压缩与混淆工具）映射文件、原生代码符号文件、Baseline Profile 版本、动态特性模块版本和远程配置快照。测试报告与生产事件都引用同一个构建 ID，这样实验室和生产环境观察的才是同一份代码与配置。
+发布单要先冻结产物身份：`versionCode`（Android 用来判断版本新旧的整数）、Git 提交、AAB/APK 文件摘要、签名证书摘要、`compileSdk`、`targetSdk`、构建变体、R8（代码压缩与混淆工具）映射文件、原生代码符号文件、Baseline Profile（预先提供给 ART 的热点代码配置） 版本、动态特性模块版本和远程配置快照。测试报告与生产事件都引用同一个构建 ID，这样实验室和生产环境观察的才是同一份代码与配置。
 
 | 检查域 | 证据与口径 | 不通过动作 | 关联章节 |
 | --- | --- | --- | --- |
@@ -155,7 +155,7 @@ Android 官方迁移指南把升级验证分成两条可以并行推进的路径
 
 Android vitals 是 Google Play 汇总的外部质量信号，Play 每天用最近 28 天的平均值检查关键指标。
 
-当前面向所有应用的 Core vitals 直接影响应用在 Google Play 的曝光度，包括用户感知崩溃率、用户感知 ANR 率和 excessive partial wake lock（过度持有局部唤醒锁）；Wear OS 表盘应用的 Core vital 还包含 excessive battery usage（过度耗电）。
+当前面向所有应用的 Core vitals（会影响应用在 Google Play 中曝光度的核心指标） 直接影响应用在 Google Play 的曝光度，包括用户感知崩溃率、用户感知 ANR 率和 excessive partial wake lock（过度持有局部唤醒锁）；Wear OS 表盘应用的 Core vital 还包含 excessive battery usage（过度耗电）。
 
 做发布报告时，我们要把自建应用性能监控（APM）与 vitals 的分子、分母、统计窗口和设备范围分别保存：内部会话数与 Play 的用户、会话统计方式不同，两边不能共用同一个分母。
 
@@ -163,11 +163,11 @@ Android vitals 是 Google Play 汇总的外部质量信号，Play 每天用最�
 
 自动化测试覆盖不了全部真实设备，它的职责是让候选包带着可复现的证据进入灰度。风险较高的候选包若没有实验室性能报告，就停在发布候选阶段。
 
-Android 官方建议在物理设备上运行 Benchmark，模拟器结果会受宿主机和虚拟化环境影响，不宜拿来代表用户体验。目标 APK 要尽量接近生产构建：不可调试、允许性能剖析，R8、资源压缩、签名后处理和 Baseline Profile 与生产保持一致。测试 APK 与目标 APK 分开构建，免得把 Benchmark 专用配置带进生产包。
+Android 官方建议在物理设备上运行 Benchmark，模拟器结果会受宿主机和虚拟化环境影响，不宜拿来代表用户体验。目标 APK 要尽量接近生产构建：不可调试、允许性能剖析（profiling），R8（Android 的代码压缩、优化与混淆工具）、资源压缩、签名后处理和 Baseline Profile 与生产保持一致。测试 APK 与目标 APK 分开构建，免得把 Benchmark 专用配置带进生产包。
 
 Macrobenchmark 指标进门禁之前，我们要逐项核对 API 可用范围和测量语义：
 
-- `StartupTimingMetric.timeToInitialDisplayMs` 测量首帧出现所需时间。`timeToFullDisplayMs` 依赖 `reportFullyDrawn()`，在 Android 10 / API 29 及更早版本可能不可用；场景里没有明确的完整绘制点时，TTFD 也不适合拿来卡门禁。
+- `StartupTimingMetric.timeToInitialDisplayMs` 测量首帧出现所需时间。`timeToFullDisplayMs` 依赖 `reportFullyDrawn()`，在 Android 10 / API 29 及更早版本可能不可用；场景里没有明确的完整绘制点时，TTFD（完整内容可用所需时间） 也不适合拿来卡门禁。
 - `FrameTimingMetric.frameDurationCpuMs` 是 UI 线程与 RenderThread 生成一帧所用的 CPU 时间；`frameOverrunMs` 只在 Android 12 / API 31 及以上可用，表示相对帧截止时间的提前或超时量。这两项指标要分别设阈值。
 - `TraceSectionMetric` 仍标记为实验性 API，用来统计 Trace 中带名称的代码区段（section）。AndroidX Benchmark 1.3.0 及以上默认只统计目标包（`targetPackageOnly = true`），并以 `Mode.Sum` 汇总一次测量中所有同名 section 的耗时；要看第一次或最长一次，必须显式选择 `Mode.First` 或 `Mode.Max`。业务阶段可能重复出现时，先确定需要的聚合方式。
 - `PowerMetric` 仍标记为实验性 API，测量的是系统级功率或能量，没法直接归因到单个应用头上；官方支持 Pixel 6、Pixel 6 Pro 及后续设备，测试时还要压低其他进程的干扰。
@@ -281,7 +281,7 @@ App Performance Score 适合研发阶段的快速评估。官方页面给出 0�
 | Perfetto / Android Studio Profiler | 某次慢启动、慢帧或线程调度异常的时间线证据 | 根因定位、案例复盘、前后 trace 对比 | 单次 trace 不能代表用户总体分布 |
 | 自建应用性能监控（APM） | 版本、设备、渠道、用户路径上的长期指标和报警 | 灰度、发布、线上治理 | 指标口径容易漂移，需要记录定义和版本 |
 
-评分项命中后，我们要带着它回到受测场景：启动问题结合 TTID、TTFD、主线程和进程状态；渲染问题结合 FrameTimeline（每帧预期与实际时间线记录）、UI thread、RenderThread、SurfaceFlinger 与 GPU；设备差异结合 SoC（系统级芯片）、内存、存储、温度和后台负载。分数用来选调查方向，根因还是要靠可复现路径与 trace。
+评分项命中后，我们要带着它回到受测场景：启动问题结合 TTID（首次画面显示所需时间）、TTFD、主线程和进程状态；渲染问题结合 FrameTimeline（每帧预期与实际时间线记录）、UI thread、RenderThread、SurfaceFlinger 与 GPU；设备差异结合 SoC（系统级芯片）、内存、存储、温度和后台负载。分数用来选调查方向，根因还是要靠可复现路径与 trace。
 
 ### 静态评分的检查项
 
@@ -300,7 +300,7 @@ keep 规则会阻止指定代码被裁剪、优化或改名。Baseline Profiles 
 | Compose 稳定版本 | 解析 version catalog、BOM 与直接依赖后的版本 | 获取当前稳定版本的性能与修复 | UI 基建负责人 |
 | `reportFullyDrawn()` | 检查各启动入口是否在内容可交互时报告 | 为 TTFD 提供业务完成点 | 业务页面负责人 |
 
-[Baseline Profiles 官方说明](https://developer.android.com/topic/performance/baselineprofiles/overview)给出的总体经验是：纳入 profile 的路径从首次运行起就能避开解释执行和部分 JIT 成本，许多应用测得约 30% 的代码执行性能改善。这个数字来自多款应用的测量经验，具体收益取决于路径覆盖、设备、构建配置和测量方式。
+[Baseline Profiles 官方说明](https://developer.android.com/topic/performance/baselineprofiles/overview)给出的总体经验是：纳入 profile 的路径从首次运行起就能避开解释执行和部分 JIT（即时编译） 成本，许多应用测得约 30% 的代码执行性能改善。这个数字来自多款应用的测量经验，具体收益取决于路径覆盖、设备、构建配置和测量方式。
 
 Startup Profiles 在构建时影响 DEX 布局，官方建议与 Baseline Profiles 同时使用。
 
@@ -310,7 +310,7 @@ profile 生成构建与发布构建的配置不同：生成 profile 的 variant�
 
 ### 动态评分的运行条件
 
-动态评分依赖运行时数据。官方要求使用物理设备，并建议覆盖能代表用户群体的多台设备——低端设备可能把性能差异放大。分数绑定在特定设备、特定构建和特定观察条件上，脱离这些条件横向排名应用没有意义。
+动态评分依赖运行时（ART）数据。官方要求使用物理设备，并建议覆盖能代表用户群体的多台设备——低端设备可能把性能差异放大。分数绑定在特定设备、特定构建和特定观察条件上，脱离这些条件横向排名应用没有意义。
 
 当前动态评分覆盖两类指标：slow frame 与 frozen frame，即官方对超出渲染时限的帧和长时间停顿帧的分类。本文保留英文名称，免得和团队自行定义的卡顿阈值混为一谈。
 
@@ -386,7 +386,7 @@ App Performance Score 接入门禁时，只保存总分是不够的。门禁需�
 
 业务指标仍要单独监控。一个应用分数高，但支付页点击后要等很久、搜索首屏空白、消息通知进会话慢，用户照样觉得差。业务路径的可用时间、成功率和取消率，交给 APM 与业务埋点记录。
 
-动态评分只能指出受测路径偏慢，根因仍要靠 trace 验证。Perfetto 或 Android Studio Profiler 可以检查线程运行、Runnable 排队、I/O、Binder、锁等待、GPU、SurfaceFlinger 和资源加载。长 slice 里可能混着睡眠或等待，要结合 `thread_state` 判断 CPU 是否持续执行；详见 14.1、16.3 和 26.1。
+动态评分只能指出受测路径偏慢，根因仍要靠 trace 验证。Perfetto 或 Android Studio Profiler 可以检查线程运行、Runnable 排队、I/O、Binder、锁等待、GPU、SurfaceFlinger 和资源加载。长 slice（trace 时间线中带起止时间的任务片段） 里可能混着睡眠或等待，要结合 `thread_state` 判断 CPU 是否持续执行；详见 14.1、16.3 和 26.1。
 
 设备分层也要单独设计：只用一台旗舰机测量，会漏掉低速存储、低内存、高温和 OEM 调度差异。弱网属于业务路径的额外测试条件，当前 App Performance Score 动态评分没有把它列为独立类别。
 
@@ -396,7 +396,7 @@ App Performance Score 接入门禁时，只保存总分是不够的。门禁需�
 
 动态评分发现问题后，我们按工作负载选工具。[Android Performance Analyzer](https://developer.android.com/android-performance-analyzer) 当前官方定位面向游戏性能分析，重点能力包括 Vulkan render pass（组织一组渲染操作的 Vulkan 单元）的调试标注，以及基于项目的多 trace 比较。
 
-普通 Android App 的启动、UI 线程和 FrameTimeline 分析以 Perfetto 或 Android Studio 为主；包含 Vulkan 游戏渲染时，再使用 APA 的专用视图。
+普通 Android App 的启动、UI 线程和 FrameTimeline（记录每帧预期与实际时间线的平台数据） 分析以 Perfetto 或 Android Studio 为主；包含 Vulkan 游戏渲染时，再使用 APA 的专用视图。
 
 不同评分异常对应的工具与后续动作：
 
@@ -459,7 +459,7 @@ headroom 侧重近期历史负载，预测不了未来性能。AOSP 注释里所
 
 Android 17 实现见 [`PerformanceHintManager.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java)。CPU/GPU headroom 查询属于 `SystemHealthManager`。
 
-隐藏的 AIDL、测试专用 hint 常量和 HAL 内部方法，都不是普通 App 可以依赖的稳定接口。
+隐藏的 AIDL（Android 接口定义语言，用于声明跨进程接口）、测试专用 hint 常量和 HAL（硬件抽象层） 内部方法，都不是普通 App 可以依赖的稳定接口。
 
 把这两套 API 放进性能报告时，我们要分清“测量”和“调节”：`SystemHealthManager` 的 headroom 是可选的环境样本，`PerformanceHintManager` 是运行时协作机制。二者都不会自动抬高 App Performance Score；评分改善仍要由同一构建产物、同一设备和同一路径上的动态结果来验证。
 

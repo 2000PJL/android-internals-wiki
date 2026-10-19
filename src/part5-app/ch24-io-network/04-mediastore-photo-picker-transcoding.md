@@ -100,7 +100,7 @@ MediaStore 和 MediaProvider 管理共享媒体的索引、权限与文件访问
 
 我们先看一次媒体查询要经过哪些环节。应用通过 `MediaStore` 这套公开 API 访问共享媒体，执行查询、权限检查和文件访问的是系统模块 `MediaProvider`：一次查询可能从 `ContentResolver` 进入 Binder 跨进程调用，再经过 SQLite 索引和权限过滤；打开查询结果时，还可能进入 FUSE、缩略图生成或兼容媒体转码。FUSE 指 Filesystem in Userspace，部分文件系统请求改在用户空间处理。
 
-列表查询往往很快返回，首屏却可能卡在后续工作上：`Cursor` 遍历时可能继续读取数据；`Bitmap` 保存解码后的像素，分配量直接影响内存；文件打开和图片解码也要分别计时。
+列表查询往往很快返回，首屏却可能卡在后续工作上：`Cursor`（查询结果游标） 遍历时可能继续读取数据；`Bitmap` 保存解码后的像素，分配量直接影响内存；文件打开和图片解码也要分别计时。
 
 相册、即时通信、备份和文件管理应用面对的媒体项可能达到数万甚至更多。常见问题包括：
 
@@ -108,7 +108,7 @@ MediaStore 和 MediaProvider 管理共享媒体的索引、权限与文件访问
 - 列表绑定时打开原文件并解码。
 - 用文件系统遍历重复完成 `MediaProvider` 已经维护的索引工作。
 - 把 `ContentObserver` 回调当作完整、按顺序到达的变更日志。
-- 把 `generation` 查询误当成包含删除记录的完整同步协议，而它只是 `MediaProvider` 递增的变更序号。
+- 把 `generation`（由 `MediaProvider` 递增的变更序号） 查询误当成包含删除记录的完整同步协议，而它只是 `MediaProvider` 递增的变更序号。
 - 未声明媒体能力，导致分享或上传路径发生未计划的转码。
 
 Scoped Storage（分区存储）按文件归属和授权范围限制应用访问，相关演进见 6.1、6.3 节；图片加载与缓存见 22.9、24.3 节；普通文件 I/O 的线程管理见 24.1 节。
@@ -209,7 +209,7 @@ fun queryImagePage(
 }
 ```
 
-这是应用侧的分页方案，`_ID` 没有永久稳定的保证；媒体库 `version` 是整体版本标识，它一变化，旧页位置就应废弃并重新查询。界面销毁、筛选条件变化或新查询取代旧查询时，调用 `signal.cancel()`，`MediaProvider` 会在支持取消的位置尽快终止工作。
+这是应用侧的分页方案，`_ID` 没有永久稳定的保证；媒体库 `version`（整体版本标识） 是整体版本标识，它一变化，旧页位置就应废弃并重新查询。界面销毁、筛选条件变化或新查询取代旧查询时，调用 `signal.cancel()`，`MediaProvider` 会在支持取消的位置尽快终止工作。
 
 #### 用 `IS_PENDING` 发布完整媒体
 
@@ -380,7 +380,7 @@ Android 11 及以上提供四种系统确认请求：
 
 `authority` 是内容提供方在 `content://` 内容标识符中的唯一名称，`MediaStore` 使用 `media`；每个 `Uri` 都必须由 `MediaStore` 的 `authority` 托管，并指向带 `_ID` 的具体媒体项。
 
-收藏、回收站或删除请求在系统返回结果前已经执行完成；`createWriteRequest()` 的成功结果只代表用户授予了写权限，应用随后还要自己执行写入。这份写权限跟随发起请求的 `Activity` 生命周期，既没法持久保存，也没法扩展到同一路径前缀。
+收藏、回收站或删除请求在系统返回结果前已经执行完成；`createWriteRequest()` 的成功结果只代表用户授予了写权限，应用随后还要自己执行写入。这份写权限跟随发起请求的 `Activity`（界面组件） 生命周期，既没法持久保存，也没法扩展到同一路径前缀。
 
 `targetSdkVersion` 为 36——也就是 Android 16——及以上的应用，每次请求最多传入 2000 个 `Uri`，超出会抛出 `IllegalArgumentException`。2000 只是 API 输入上限；一次让用户确认多少项，要看确认界面的可理解程度、失败恢复方式和设备测量的结果。
 
@@ -445,7 +445,7 @@ fun loadMediaThumbnail(
 - 媒体 `Uri`。
 - `GENERATION_MODIFIED` 或应用能够验证的内容版本。
 - 目标物理像素宽高。
-- 裁剪、旋转、色彩和 HDR/SDR 处理参数；HDR 是高动态范围，SDR 是标准动态范围。
+- 裁剪、旋转、色彩和 HDR（High Dynamic Range，高动态范围）/SDR（Standard Dynamic Range，标准动态范围） 处理参数；HDR 是高动态范围，SDR 是标准动态范围。
 
 同一 `Uri` 的小网格图和详情预览尺寸不同，缓存键里必须带上尺寸，否则两种用途会错拿同一张图。`generation` 改变时，只让对应媒体的派生图缓存失效；`version` 改变时，重新校验整个 `MediaStore` 缓存索引。
 
@@ -507,7 +507,7 @@ Perfetto 采集至少包含应用进程和 `com.android.providers.media.module` 
 
 #### Android 17 的 `MediaProvider` 诊断命令
 
-排查时常用 `dumpsys` 读取系统服务和组件的诊断状态；`ServiceManager` 登记着 Android 原生 Binder 服务。`android-17.0.0_r1` 的清单把 `MediaProvider` 注册为 `com.android.providers.media.module` 包中的 `ContentProvider`，`authority` 为 `media`，并没有注册成名为 `media_provider` 的 `ServiceManager` 服务，因此 `adb shell dumpsys media_provider` 在该版本上并不可依赖。
+排查时常用 `dumpsys` 读取系统服务和组件的诊断状态；`ServiceManager` 登记着 Android 原生 Binder 服务。`android-17.0.0_r1` 的清单把 `MediaProvider` 注册为 `com.android.providers.media.module` 包中的 `ContentProvider`（跨进程提供数据的 Android 组件），`authority` 为 `media`，并没有注册成名为 `media_provider` 的 `ServiceManager` 服务，因此 `adb shell dumpsys media_provider` 在该版本上并不可依赖。
 
 先列出匹配的 `ContentProvider` 状态：
 
@@ -574,7 +574,7 @@ Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、�
 
 ### 拥有 `MANAGE_EXTERNAL_STORAGE` 权限的应用仍要限制扫描
 
-`MANAGE_EXTERNAL_STORAGE` 是“所有文件访问”特殊权限。Google Play 当前只允许它服务于需要广泛文件访问的核心功能，例如文件管理、备份与恢复、防病毒、文档管理、设备内文件搜索、文件加密和设备迁移。开发者需要在 Play Console 提交权限声明并通过审核。只访问媒体，或让用户手动选择单个文件，都算不上申请该权限的理由；这些场景应使用 `MediaStore` 或 Storage Access Framework，也就是由系统文件选择器和文档提供方组成的那套授权框架。
+`MANAGE_EXTERNAL_STORAGE` 是“所有文件访问”特殊权限。Google Play 当前只允许它服务于需要广泛文件访问的核心功能，例如文件管理、备份与恢复、防病毒、文档管理、设备内文件搜索、文件加密和设备迁移。开发者需要在 Play Console 提交权限声明并通过审核。只访问媒体，或让用户手动选择单个文件，都算不上申请该权限的理由；这些场景应使用 `MediaStore` 或 Storage Access Framework（由系统文件选择器和文档提供方组成的授权框架），也就是由系统文件选择器和文档提供方组成的那套授权框架。
 
 这项权限不会让目录遍历或随机 I/O 自动变快，也不会取消 FUSE 的所有工作。可见范围扩大后，待扫描条目更多，启动时全盘遍历会增加 I/O、电量、温度和隐私成本。
 
@@ -611,7 +611,7 @@ Android 17 源码中的 `dump()` 输出包含缩略图尺寸、已连接卷、�
 - [Android API：`MediaStore`](https://developer.android.com/reference/android/provider/MediaStore)
 - [Android API：`ContentResolver`](https://developer.android.com/reference/android/content/ContentResolver)
 - [Android API：`ApplicationMediaCapabilities`](https://developer.android.com/reference/android/media/ApplicationMediaCapabilities)
-- [AndroidX API：Photo Picker `MediaCapabilities`](https://developer.android.com/reference/androidx/activity/result/contract/ActivityResultContracts.PickVisualMedia.MediaCapabilities)
+- [AndroidX API：Photo Picker `MediaCapabilities`](https://developer.android.com/reference/androidx/activity/result/contract/Activity（承载一个界面的 Android 组件）ResultContracts.PickVisualMedia.MediaCapabilities)
 - [Android Developers：管理设备上的所有文件](https://developer.android.com/training/data-storage/manage-all-files)
 - [Google Play：All files access 权限政策](https://support.google.com/googleplay/android-developer/answer/10467955)
 - [Android API：`ContentObserver`](https://developer.android.com/reference/android/database/ContentObserver)
@@ -723,7 +723,7 @@ fun openSelectedMedia(
 
 调用方拥有返回的描述符，使用后必须关闭。用户取消任务、页面退出或新选择替代旧选择时调用 `signal.cancel()`。云端失败、权限取消、Provider 崩溃和媒体被删除都应作为可恢复的读取失败处理。
 
-Picker URI 可查询 `SIZE`、`DISPLAY_NAME`、`MIME_TYPE`、`DURATION_MILLIS`、`WIDTH`、`HEIGHT`、`ORIENTATION` 等只读列，其中 MIME type 标识媒体类型，例如 `video/mp4`。`SIZE` 和路径信息只能作为提示：云媒体可能依赖网络，拼装文件路径别指望 `DATA`。
+Picker URI 可查询 `SIZE`、`DISPLAY_NAME`、`MIME_TYPE`、`DURATION_MILLIS`、`WIDTH`、`HEIGHT`、`ORIENTATION` 等只读列，其中 MIME type（媒体类型标识，例如 `video/mp4`） 标识媒体类型，例如 `video/mp4`。`SIZE` 和路径信息只能作为提示：云媒体可能依赖网络，拼装文件路径别指望 `DATA`。
 
 #### 临时授权与持久授权
 
@@ -851,7 +851,7 @@ fun chooseCompatibleVideo(
 
 Android 17 延续 Android 12 引入的兼容转码。AOSP 文档规定的标准来源，是 OEM 原生相机写入主外部卷 `DCIM/Camera/` 的本机视频；二级存储以及通过邮件、SD 卡等外部来源导入的媒体不在标准支持范围内，厂商只能通过资源覆盖增加 `DCIM/` 中的路径。
 
-标准转换包含 HEVC 8-bit→AVC（H.264），以及设备具备色调映射插件时的 HDR10+ 10-bit→AVC SDR；色调映射把 HDR 的亮度和颜色映射到 SDR 可表达的范围。MediaStore、直接路径、SAF、使用 MediaStore URI 的系统分享，以及 MTP/PTP（USB 媒体或相机传输协议）都可能进入转码；取出 SD 卡以及 Nearby Share、蓝牙等设备间传输路径会绕过它。
+标准转换包含 HEVC 8-bit→AVC（H.264），以及设备具备色调映射插件时的 HDR10+ 10-bit→AVC（H.264，高级视频编码） SDR；色调映射把 HDR 的亮度和颜色映射到 SDR 可表达的范围。MediaStore、直接路径、SAF、使用 MediaStore URI 的系统分享，以及 MTP/PTP（USB 媒体或相机传输协议）都可能进入转码；取出 SD 卡以及 Nearby Share、蓝牙等设备间传输路径会绕过它。
 
 标准实现只处理不超过 1 分钟的视频。平台还限制连续转码会话和累计运行时间，AOSP 文档给出的限制是连续 10 个会话、累计 3 分钟，两项都超出后返回原描述符；设备缺少 HDR 插件时同样返回原描述符。多选上传仍要按“可能拿到原内容”设计处理分支。
 
@@ -890,7 +890,7 @@ Android 17 延续 Android 12 引入的兼容转码。AOSP 文档规定的标准�
 - 任务要跨进程重启，并且要求系统缓存清理后无需重新下载或重新转码。
 - 需要在上传前生成稳定摘要并核对完整内容。
 
-复制过程使用 `.partial` 后缀标记“尚未写完”的临时文件，写完并校验后再切换为 ready 状态。进程中止后，清理程序只删除没有活跃任务引用的 partial 文件。`cacheDir` 仍可能在存储压力下被系统删除；必须跨重启保留的内容，应放在应用管理的私有目录，并由数据库状态控制删除。
+复制过程使用 `.partial` 后缀标记“尚未写完”的临时文件，写完并校验后再切换为 ready（内容完整、可供业务使用） 状态。进程中止后，清理程序只删除没有活跃任务引用的 partial 文件。`cacheDir` 仍可能在存储压力下被系统删除；必须跨重启保留的内容，应放在应用管理的私有目录，并由数据库状态控制删除。
 
 一条可恢复的准备状态如下：
 
@@ -1084,7 +1084,7 @@ OEM 差异通过 `isPhotoPickerAvailable(context)`、SDK Extension、实际 Inte
 
 ### 与本节前文 MediaStore / MediaProvider 内容的关系
 
-本节前文已说明 `MediaStore` 查询、`MediaProvider` 索引、FUSE、缩略图、version/generation 与兼容媒体转码；这里补充选择器启动、Picker URI 生命周期、云媒体读取、HDR 请求、私有临时文件和多选队列。
+本节前文已说明 `MediaStore` 查询、`MediaProvider` 索引、FUSE、缩略图、version/generation（索引整体版本与逐项变更编号） 与兼容媒体转码；这里补充选择器启动、Picker URI 生命周期、云媒体读取、HDR 请求、私有临时文件和多选队列。
 
 媒体选择慢时，我们按阶段定位：
 

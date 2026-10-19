@@ -133,7 +133,7 @@ consolidated_from:
 
 # ART 编译、验证与去优化机制
 
-一个方法在 Android 上运行时，可能同时存在几种执行形态：ART 可以解释 DEX 字节码，可以在运行期用 JIT 处理热点代码，也可以加载 `dex2oat` 预先生成的 AOT 代码。
+一个方法在 Android 上运行时（Android Runtime，ART），可能同时存在几种执行形态：ART 可以解释 DEX 字节码，可以在运行期用 JIT（运行时即时编译） 处理热点代码，也可以加载 `dex2oat` 预先生成的 AOT（提前编译） 代码。
 
 分析启动性能时，我们先把“AOT 还是 JIT 更快”这类笼统问题拆开，依次确认：
 
@@ -158,7 +158,7 @@ consolidated_from:
 - `.vdex`：保存验证依赖等信息，某些情况下也包含未压缩 DEX；
 - `.art`：可选的应用映像（app image），保存 ART 内部的类和对象表示。
 
-这些产物跟 APK 的生命周期并不绑定。类加载器上下文（class loader context）描述类加载时可见的代码及依赖；它和 DEX 校验和、启动映像、指令集、ART 版本任一项不匹配，旧产物就可能被判定为不可用，随后改用解释执行或 JIT，也可能重新进行 DEX 优化（dexopt）。
+这些产物跟 APK 的生命周期并不绑定。类加载器上下文（class loader context）描述类加载时可见的代码及依赖；它和 DEX 校验和、启动映像（boot image）、指令集、ART 版本任一项不匹配，旧产物就可能被判定为不可用，随后改用解释执行或 JIT，也可能重新进行 DEX 优化（dexopt）。
 
 ```text
 DEX
@@ -225,7 +225,7 @@ pm.dexopt.inactive=verify
 pm.dexopt.cmdline=verify
 ```
 
-设备厂商可以调整这些属性，ART Service 也会根据代码使用画像、共享代码、存储压力和编译原因选择或降低过滤器级别。所以，“Android 17 安装后一定是 `speed-profile`”这个结论并不可靠。
+设备厂商（OEM）可以调整这些属性，ART Service 也会根据代码使用画像、共享代码、存储压力和编译原因选择或降低过滤器级别。所以，“Android 17 安装后一定是 `speed-profile`（current profile）”这个结论并不可靠。
 
 ### dex2oat 做了什么
 
@@ -260,7 +260,7 @@ Android 14 起，应用在设备上的 DEX 优化由 ART Service 负责。`pm.de
 
 ### JIT：用运行时热度换取机器码
 
-当方法没有可用 AOT 代码时，ART 可以先解释执行并记录执行热度。方法调用、循环跳回起点的次数和线程权重等信息会增加热度计数；达到相应阈值后，ART 把编译任务交给 JIT。
+当方法没有可用 AOT 代码时，ART 可以先解释执行并记录执行热度。方法调用（去虚化）、循环跳回起点的次数和线程权重等信息会增加热度计数；达到相应阈值后，ART 把编译任务交给 JIT。
 
 JIT 源码里有快速（`fast`）、基线（`baseline`）、优化（`optimized`）与栈上替换（On-Stack Replacement，OSR）等编译路径，具体启用哪些层级、阈值是多少，受运行时选项和产品属性影响。`dalvik.vm.jitthreshold` 等属性由 `AndroidRuntime.cpp` 转换为 ART 参数，属于系统侧配置，第三方应用不要依赖它，更不要去改它。
 
@@ -324,7 +324,7 @@ ART 在应用运行时收集热点方法、类和部分调用点类型信息，�
 
 这些是系统内部目录，普通应用和 shell 用户不一定有直接读取权限，路径和布局也不属于公开 SDK 保证稳定的内容。诊断时优先使用 ART Service 或 Package Manager 提供的 shell 命令。
 
-本地画像只反映这台设备、这个用户实际执行过的路径。后台 DEX 优化可以把它与外部画像合并，用于下一轮 `speed-profile` 编译。
+本地画像只反映这台设备、这个用户实际执行过的路径。后台 DEX 优化可以把它与外部画像合并，用于下一轮 `speed-profile`（reference profile） 编译。
 
 #### 基准画像（Baseline Profile）
 
@@ -398,7 +398,7 @@ adb shell pm art dump com.example.app
 - 编译过滤器：ART 最终采用的过滤器，而不是命令行请求的那个；
 - 编译原因：这一轮 `dexopt` 为什么发生，例如 `install`、`bg-dexopt`、`ab-ota`；
 - 主/次 DEX（primary/secondary dex）的产物状态：主 DEX 与次级 DEX 是否各自都有可用的编译产物；
-- 代码使用画像与编译产物是否匹配：profile 是否已经参与过编译，还是只停留在收集阶段。
+- 代码使用画像与编译产物是否匹配：profile（例如 Cloud Profile 或应用内置 profile） 是否已经参与过编译，还是只停留在收集阶段。
 
 较老版本常用 `dumpsys package dexopt`，字段与新 ART Service 不同。诊断脚本需要按平台分支解析。
 
@@ -435,7 +435,7 @@ adb shell pm compile --reset com.example.app
 
 ### 在 Perfetto 中怎样识别编译成本
 
-录制 Perfetto 数据时，可以启用 atrace 的 `dalvik` 类别，再配合调度、CPU 频率和必要的调用栈数据。旧跟踪数据里的固定时间片段名称并不可靠：ART 大量使用 `ScopedTrace(__FUNCTION__)` 或 `__PRETTY_FUNCTION__`，名称会随实现和构建变化。
+录制 Perfetto 数据时，可以启用 atrace 的 `dalvik` 类别，再配合调度、CPU 频率和必要的调用栈数据。旧跟踪数据里的固定时间片段（slice）名称并不可靠：ART 大量使用 `ScopedTrace(__FUNCTION__)` 或 `__PRETTY_FUNCTION__`，名称会随实现和构建变化。
 
 可靠的观察点包括：
 
@@ -617,7 +617,7 @@ pm.dexopt.shared=speed
 
 ### 依赖不匹配时仍可复用部分产物
 
-`dexopt` 的依赖除原始 DEX 外，还包括启动类路径、启动镜像和类加载器上下文（ClassLoaderContext，CLC）。CLC 描述类加载器所看到的依赖及其顺序，由共享库、同一应用的其他 split APK 等共同决定。
+`dexopt` 的依赖除原始 DEX 外，还包括启动类路径（boot classpath）、启动镜像（boot image）和类加载器上下文（ClassLoaderContext，CLC）。CLC 描述类加载器所看到的依赖及其顺序，由共享库、同一应用的其他 split APK 等共同决定。
 
 ART Service 把可以复用的部分分成两层：
 
@@ -1108,7 +1108,7 @@ adb shell dumpsys package com.example.app | grep -E 'DEBUGGABLE|PROFILEABLE|flag
 adb shell pidof com.example.app
 ```
 
-`pm art dump` 反映 dexopt 产物与编译过滤器，看不到某个活动帧是否刚刚发生 deopt。三组信息要与系统构建指纹（build fingerprint）、应用版本、是否连接调试器、JVMTI 代理配置一起记录。
+`pm art dump` 反映 dexopt 产物与编译过滤器（compiler filter），看不到某个活动帧是否刚刚发生 deopt。三组信息要与系统构建指纹（build fingerprint）、应用版本、是否连接调试器、JVMTI 代理配置一起记录。
 
 `-verbose:deopt,jit` 是 API 37 支持的 ART runtime 日志选项，但必须在目标 runtime 启动参数中生效。临时修改启动参数或属性、又不重启对应 runtime / 进程，已有应用未必获得该选项；量产设备也可能限制这类日志。启动参数未经确认时，“logcat 没有 Deoptimizing”离“零 deopt”的结论还差得远。
 

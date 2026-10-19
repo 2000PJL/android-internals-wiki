@@ -31,7 +31,7 @@ status: finalized
 
 `dumpsys` 把各系统服务在某一时刻或一段累计周期内的内部状态打成一份文本快照，适合快速缩小排查范围，但给不了完整的时间线。我们调用每个子命令之前，先确认它的统计窗口、重置行为和字段含义，再与 trace、日志或复现步骤交叉验证。
 
-> 源码基线：AOSP `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`；涉及 `/proc` 记账的说明以后者为准，HWC 与厂商服务扩展按设备对应分支复核。
+> 源码基线：AOSP `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`；涉及 `/proc` 记账的说明以后者为准，HWC（Hardware Composer，硬件合成器接口） 与厂商服务扩展按设备对应分支复核。
 
 ## 为什么需要 dumpsys
 
@@ -57,9 +57,9 @@ adb shell dumpsys --pid SurfaceFlinger
 adb shell dumpsys --priority CRITICAL
 ```
 
-`-t` 的单位是秒，`-T` 的单位是毫秒；二者属于 `dumpsys` 的全局参数，应写在服务名之前。全量模式下，全局 `--proto` 会筛选注册时声明 `DUMP_FLAG_PROTO` 的服务，并向这些服务传入 proto 参数；指定单个服务时，要遵循该服务自己的参数顺序，例如 `dumpsys activity --proto`。proto 只表示 Protocol Buffers 编码，文本输出并不会因此变成字段稳定的 schema。
+`-t` 的单位是秒，`-T` 的单位是毫秒；二者属于 `dumpsys` 的全局参数，应写在服务名之前。全量模式下，全局 `--proto` 会筛选注册时声明 `DUMP_FLAG_PROTO` 的服务，并向这些服务传入 proto 参数；指定单个服务时，要遵循该服务自己的参数顺序，例如 `dumpsys activity --proto`。proto 只表示 Protocol Buffers 编码，文本输出并不会因此变成字段稳定的 schema（结构定义）。
 
-从 `adb shell` 发起的命令通常具备平台 `DUMP` 权限，但输出仍可能被裁剪：普通应用 UID、受限 user build、厂商服务的额外权限检查和 SELinux 策略都会起作用，SELinux 还会按进程域限制可访问的服务和文件。所以脚本应保存 build fingerprint、命令行和采集时间；字段名称也不属于 SDK 兼容承诺。
+从 `adb shell` 发起的命令通常具备平台 `DUMP` 权限，但输出仍可能被裁剪：普通应用 UID、受限 user build、厂商服务的额外权限检查和 SELinux 策略都会起作用，SELinux 还会按进程域限制可访问的服务和文件。所以脚本应保存 build fingerprint（唯一标识这版系统构建的字符串）、命令行和采集时间；字段名称也不属于 SDK 兼容承诺。
 
 ## dumpsys activity：Activity 栈、进程与 ANR 信息
 
@@ -108,7 +108,7 @@ Android 11 起的 `exit-info` 来自 `ApplicationExitInfo` 历史，每条记录
 
 ## dumpsys meminfo：系统和进程内存全景
 
-内存问题通常从一份全景开始。`meminfo` 服务由 ActivityManagerService 注册，[`MemBinder`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 检查 `DUMP` 与 usage stats 权限后，进入 `dumpApplicationMemoryUsage()`。
+内存问题通常从一份全景开始。`meminfo` 服务由 ActivityManagerService 注册，[`MemBinder`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 检查 `DUMP` 与 usage stats（应用使用情况访问） 权限后，进入 `dumpApplicationMemoryUsage()`。
 
 下面的命令覆盖全局、单进程和多进程包三个采集范围。
 
@@ -143,9 +143,9 @@ Android 17 支持 `-a/-d/-c/-s/-S/-p/--unreachable/--oom/--local/--package/--che
 分类行帮我们把问题定位到方向，进一步归因要换工具：
 
 - `Dalvik Heap` / ART 相关行增长，可能来自存活对象、缓存、尚未执行的 GC 或分配抖动；区分对象持有与短命分配，要用 HPROF、LeakCanary 和 allocation profiling。
-- `Native Heap` 主要对应 allocator 管理的 native allocation。大型独立 `mmap`、allocator arena 和碎片，会让它和 heapprofd 记录的存活分配字节对不上。
+- `Native Heap` 主要对应 allocator 管理的 native allocation。大型独立 `mmap`（内存映射）、allocator arena（分配器管理的一组内存区） 和碎片，会让它和 heapprofd 记录的存活分配字节对不上。
 - `Graphics` 依赖 graphics driver 通过 libmemtrack 上报 smaps 未覆盖的归属。GraphicBuffer、dma-buf 这类让驱动和进程共享缓冲区的机制，其内存可能分散在 `Graphics`、`GL`、设备映射及其他类别；某一行下降缓慢，单独看说明不了纹理泄漏。
-- `Code`、`Stack`、`.so mmap` 等文件映射和线程相关分类，要结合进程数、ABI、动态模块与线程数量解释。
+- `Code`、`Stack`、`.so mmap` 等文件映射和线程相关分类，要结合进程数、ABI（应用二进制接口）、动态模块与线程数量解释。
 
 完整的对象图、native 分配栈和 dma-buf 归因流程见 §15.3 [内存分析工具](03-memory-hprof-heapdump-tools.md)。
 
@@ -184,7 +184,7 @@ adb shell dumpsys gfxinfo com.example.app framestats
 
 ### 聚合统计如何生成
 
-Android 17 的输出同时打印 deadline-aware 与 legacy 两套统计：前者使用每帧 deadline，后者保留旧版固定刷新间隔模型。当前 [`JankTracker::finishFrame()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/JankTracker.cpp) 以 `GpuCompleted` 是否越过调整后的 `FrameDeadline` 记录 `Janky frames`；legacy 路径使用旧的固定间隔、swap deadline 与 triple-buffering 修正规则。VRR/ARR（可变/自适应刷新率）场景优先读 deadline-aware 这套，再用 legacy 行观察兼容指标。
+Android 17 的输出同时打印 deadline-aware 与 legacy 两套统计：前者使用每帧 deadline，后者保留旧版固定刷新间隔模型。当前 [`JankTracker::finishFrame()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/JankTracker.cpp) 以 `GpuCompleted` 是否越过调整后的 `FrameDeadline` 记录 `Janky frames`；legacy 路径使用旧的固定间隔、swap deadline 与 triple-buffering（三缓冲队列） 修正规则。VRR/ARR（可变/自适应刷新率）场景优先读 deadline-aware 这套，再用 legacy 行观察兼容指标。
 
 [`ProfileData.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/ProfileData.cpp) 输出以下分类：
 
@@ -241,7 +241,7 @@ adb shell top -H -p "$APP_PID"
 - `minor` / `major faults` 是采样窗口内的进程 fault 增量。
 - 多线程进程能并行占用多个 CPU，进程百分比可能超过 100%。
 
-page fault 表示进程访问的虚拟页尚未准备好：minor fault 通常可直接从内存建立映射，major fault 通常要等存储读取；fault 次数本身并不指向故障或崩溃。
+page fault（缺页异常） 表示进程访问的虚拟页尚未准备好：minor fault 通常可直接从内存建立映射，major fault 通常要等存储读取；fault 次数本身并不指向故障或崩溃。
 
 后台进程并没有一条固定的 5% 告警线，同步、媒体、定位、编译和空闲进程的合理基线差异很大。连续异常时，我们先用 `top` 或 Perfetto `sched` 轨道确认运行时间，再用 Simpleperf 定位函数；`TOTAL` 中 iowait/irq 异常则转向 block I/O、irq/softirq 与设备驱动方向。
 
@@ -273,9 +273,9 @@ adb shell dumpsys input \
   | grep -E 'FocusedApplication|FocusedWindow'
 ```
 
-`DisplayContent.mCurrentFocus` 指向 WMS 当前聚焦的 `WindowState`；`mFocusedApp` 指向该 display 上被选中的 Activity token，也就是系统用来标识 Activity 的 Binder 句柄。通知栏、IME、系统对话框、多窗口切换和 transition 期间，两者可能来自不同组件。多屏设备还要保留 `displayId`，只 grep 一条全局结果会混淆主屏、副屏与虚拟显示。
+`DisplayContent.mCurrentFocus` 指向 WMS 当前聚焦的 `WindowState`；`mFocusedApp` 指向该 display 上被选中的 Activity token（系统用来标识 Activity 的 Binder 句柄），也就是系统用来标识 Activity 的 Binder 句柄。通知栏、IME（输入法窗口）、系统对话框、多窗口切换和 transition（窗口状态过渡） 期间，两者可能来自不同组件。多屏设备还要保留 `displayId`，只 grep 一条全局结果会混淆主屏、副屏与虚拟显示。
 
-遇到“窗口有焦点但触摸无响应”，我们继续检查 InputDispatcher 的 focused window/application、对应 InputChannel、touchable region、`FLAG_NOT_TOUCHABLE`、窗口可见性和上层 overlay。WMS 中的 Z-order 与 InputDispatcher 的命中顺序也有不同的过滤条件，单看一个 WindowState 排在前面，断言不了它会收到触摸。
+遇到“窗口有焦点但触摸无响应”，我们继续检查 InputDispatcher 的 focused window/application、对应 InputChannel（事件传输通道）、touchable region（可接收触摸的区域）、`FLAG_NOT_TOUCHABLE`、窗口可见性和上层 overlay。WMS 中的 Z-order（窗口前后层级） 与 InputDispatcher 的命中顺序也有不同的过滤条件，单看一个 WindowState 排在前面，断言不了它会收到触摸。
 
 dump 入口位于 [`WindowManagerService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java)，每个显示器的焦点状态位于 [`DisplayContent`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java)。insets 是状态栏、导航栏和 IME 等占用或覆盖的屏幕区域；需要跨帧分析窗口层级、transition、insets 和输入区域时，用 Winscope 录制代替反复 grep 文本快照。
 
@@ -313,7 +313,7 @@ adb shell dumpsys batterystats --disable full-wake-history
 
 ### Wakelock 与功耗归因
 
-partial wakelock 会阻止设备进入 CPU suspend，但不会强制 CPU 持续忙碌。`All partial wake locks` 给出 UID/名称维度的持有时长和次数；多个 wakelock 可以重叠，持有时长也推不出 CPU 全程运行时长。分析时对齐 Battery Historian 的 `wake_lock`、`running`、JobScheduler、alarm、network、GNSS 和 screen 状态：异常名称负责定位调用方，功耗影响要由 suspend 机会、CPU 工作、radio tail 和测得能量共同确认，其中 radio tail 指网络传输结束后无线模块继续处于高功耗态的那段时间。
+partial wakelock 会阻止设备进入 CPU suspend，但不会强制 CPU 持续忙碌。`All partial wake locks` 给出 UID/名称维度的持有时长和次数；多个 wakelock 可以重叠，持有时长也推不出 CPU 全程运行时长。分析时对齐 Battery Historian 的 `wake_lock`、`running`、JobScheduler、alarm、network、GNSS（卫星定位） 和 screen 状态：异常名称负责定位调用方，功耗影响要由 suspend 机会、CPU 工作、radio tail（网络传输结束后无线模块继续处于高功耗态的时间） 和测得能量共同确认，其中 radio tail 指网络传输结束后无线模块继续处于高功耗态的那段时间。
 
 [Battery Historian](https://developer.android.com/topic/performance/power/battery-historian) 已不再积极维护，适合查看 bugreport 中的系统级历史；官方当前建议优先考虑 system tracing、Macrobenchmark power metric 或 [Power Profiler](https://developer.android.com/studio/profile/power-profiler)。ODPM（On Device Power Measurement）把设备功耗按 power rail（子系统供电轨）展示，归因到单个 App 还要另外做；官方当前列出的 Power Profiler ODPM 范围是 Android 10 及以上的 Pixel 6 和后续 Pixel 设备，具体 rail 仍随机型变化。
 
@@ -485,8 +485,8 @@ adb shell dumpsys alarm
 adb shell dumpsys jobscheduler
 ```
 
-- `package` 可核对安装用户、权限授予、组件、intent filter、版本和 package state；Manifest 里有声明，说明不了组件此刻正在运行。
-- `alarm` 可核对已注册 alarm、batch、wakeup 类型与目标 UID；一次快照中的 alarm 数量，和一段时间内的实际唤醒频率是两回事。
+- `package` 可核对安装用户、权限授予、组件、intent filter（组件接受哪些 action、data 和 category）、版本和 package state；Manifest 里有声明，说明不了组件此刻正在运行。
+- `alarm` 可核对已注册 alarm、batch（系统合并执行的一组 alarm）、wakeup 类型与目标 UID；一次快照中的 alarm 数量，和一段时间内的实际唤醒频率是两回事。
 - `jobscheduler` 可核对 pending/running job、约束和调度原因。约束包括充电、网络、空闲等执行前提；执行耗时与历史完整度由该版本输出决定，功耗结论还要对照 batterystats 与 trace。
 
 ### 自定义 Service 的 dump 接口
@@ -531,7 +531,7 @@ dump 实现应先复制少量状态，再释放业务锁并格式化输出；不
 - 用一份快照证明趋势：内存、CPU、alarm、job 和 Layer 都可能瞬时波动。固定 workload，重复采样，再用时间工具确认。
 - 把 `gfxinfo` 的分类名当根因：`Slow bitmap uploads` 是历史输出名，`Slow issue draw commands` 也没有区分 CPU、GPU 与 fence。两者都是 trace 入口。
 - 把 `dumpsys meminfo` 与 Android Studio Memory Profiler 强行对比：前者按 OS 页和 memtrack 归组；后者会随 recording 类型呈现 Java/Kotlin allocation、native allocation 或进程内存类别。采样范围、时刻和统计方式都不同，差值本身不构成 bug。
-- 把 batterystats 估算当功率计：估算归属、系统事件和 power rails 各有适用范围，耗电回归要用同条件 A/B 与可测量能量。
+- 把 batterystats 估算当功率计：估算归属、系统事件和 power rail（硬件子系统供电轨）s 各有适用范围，耗电回归要用同条件 A/B 与可测量能量。
 
 ## 采集复核清单
 
@@ -540,7 +540,7 @@ dump 实现应先复制少量状态，再释放业务锁并格式化输出；不
 - 统计是当前快照、最近采样窗口、环形缓冲，还是 since-reset 累计值？
 - reset、`--enable full-wake-history` 等有状态操作是否已记录并恢复？
 - PSS、frame deadline、present、wakelock 和 CPU 百分比的单位与口径是否写清？
-- 结论是否有第二类证据：Perfetto、Winscope、HPROF、heapprofd、bugreport、tombstone 或功率测量？
+- 结论是否有第二类证据：Perfetto、Winscope、HPROF、heapprofd、bugreport、tombstone（native crash 的原生崩溃报告） 或功率测量？
 - 厂商字段是否和 AOSP 字段分开标注？
 
 ## 参考资料

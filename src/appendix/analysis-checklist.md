@@ -50,7 +50,7 @@ FrameTimeline 把应用帧与显示帧对应起来，用来区分应用未按时
   - [ ] 是否在 `dequeueBuffer` 等待可用缓冲区？这时我们继续检查 BufferQueue、SurfaceFlinger 和 GPU 的时间线，再判断是不是 GPU 慢。
 - [ ] SurfaceFlinger 是否及时接收并合成缓冲区？
   - [ ] `latchBuffer` 与事务提交是否延迟？
-  - [ ] HWC 是否从 DEVICE 合成改为 CLIENT 合成，从而增加 GPU 的合成工作？
+  - [ ] HWC（Hardware Composer，硬件合成器） 是否从 DEVICE 合成改为 CLIENT 合成，从而增加 GPU 的合成工作？
 - [ ] CPU 是否因温控降频，线程是否长时间处于 Runnable 却得不到调度，或被其他进程持续抢占？
 - [ ] `kswapd`（内核内存回收线程）是否频繁回收内存，LMKD 是否在内存压力下终止进程？
 - [ ] 若启用 method tracing，是否先做一次无插桩对照？method tracing 记录方法进入与退出，能提供调用级耗时，也会增加开销，还可能制造原本不存在的卡顿。
@@ -64,7 +64,7 @@ FrameTimeline 把应用帧与显示帧对应起来，用来区分应用未按时
 ### 2.1 启动类型与指标
 
 - [ ] 启动类型是否明确？冷启动时应用进程尚不存在；温启动通常复用进程但需重建 Activity；热启动通常把仍在内存中的 Activity 带回前台。
-- [ ] TTID 是否按首帧显示计时？TTFD 是否在关键内容可交互后调用 `reportFullyDrawn()`？两者回答的问题不同，定义见[应用启动时间](https://developer.android.com/topic/performance/vitals/launch-time)。
+- [ ] TTID（Time to Initial Display） 是否按首帧显示计时？TTFD（Time to Full Display） 是否在关键内容可交互后调用 `reportFullyDrawn()`？两者回答的问题不同，定义见[应用启动时间](https://developer.android.com/topic/performance/vitals/launch-time)。
 - [ ] `am start -W` 的 `TotalTime`、Logcat 的 `Displayed`、Macrobenchmark（AndroidX 的进程外基准测试工具）结果和业务埋点是否使用相同的起点与终点？
 - [ ] 是否分别统计中位数、高分位和极端样本，而非用少量手工启动的平均值代替分布？
 
@@ -78,7 +78,7 @@ FrameTimeline 把应用帧与显示帧对应起来，用来区分应用未按时
 - [ ] ContentProvider 是否在应用入口之前隐式初始化大量组件？检查 `attachBaseContext`、`installProvider` 与各 Provider 的 `onCreate()`。
 - [ ] `Activity#onCreate` 到 `onResume` 之间，XML inflate、依赖注入、SharedPreferences、文件或数据库 I/O 是否占用主线程？
 - [ ] 图片解码、字体加载和网络回调是否挡住首帧，或让首帧很快出现但关键内容很晚才可用？分别记录 TTID 与 TTFD 才能分辨。
-- [ ] method tracing 是否改变了启动结果？优先用系统跟踪定位区段，再对较小范围做方法级分析。
+- [ ] method tracing 是否改变了启动结果？优先用系统跟踪（trace）定位区段，再对较小范围做方法级分析。
 
 ### 2.3 检查编译与兼容条件
 
@@ -90,9 +90,9 @@ FrameTimeline 把应用帧与显示帧对应起来，用来区分应用未按时
 
 ---
 
-## 3. ANR 排查清单
+## 3. ANR（Application Not Responding） 排查清单
 
-ANR 表示应用在系统规定的时间内没有响应某类请求。阈值取决于请求类型、Android 版本和设备实现；官方列出的默认值面向 AOSP 与 Pixel，厂商可以调整，详见[ANR 诊断说明](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)。
+ANR 表示应用在系统规定的时间内没有响应某类请求。阈值取决于请求类型、Android 版本和设备实现；官方列出的默认值面向 AOSP（Android 开源项目） 与 Pixel，厂商可以调整，详见[ANR 诊断说明](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)。
 
 ### 3.1 确认触发类型与时间窗口
 
@@ -107,7 +107,7 @@ ANR 表示应用在系统规定的时间内没有响应某类请求。阈值取�
 
 ### 3.2 阅读线程转储与日志
 
-`traces.txt` 或 ANR report 只保存某个采样时刻的线程转储，完整执行历史要靠 trace 补齐：
+`traces.txt` 或 ANR report（无响应报告） 只保存某个采样时刻的线程转储，完整执行历史要靠 trace 补齐：
 
 - [ ] 主线程为 `Blocked` 时，是否能找到锁对象、持有者线程和持锁区间？只看到等锁线程，还定位不到慢代码。
 - [ ] 主线程为 `Runnable` 时，Perfetto 是否显示它在 CPU 上运行？Runnable 只表示具备运行条件；死循环的判断也要另有依据。
@@ -136,7 +136,7 @@ ANR 表示应用在系统规定的时间内没有响应某类请求。阈值取�
 ### 4.1 先区分故障类型
 
 - [ ] Java 堆是否抛出 `OutOfMemoryError`？记录异常消息、堆上限、失败分配大小和分配调用栈。
-- [ ] 原生分配是否失败？检查 tombstone、malloc 日志、Native Heap 和映射区；Java 堆余量充足，排除不了原生内存问题。tombstone 是系统保存的原生崩溃转储，包含线程、寄存器和原生调用栈等现场信息。
+- [ ] 原生分配是否失败？检查 tombstone、malloc 日志、Native Heap（原生堆） 和映射区；Java 堆余量充足，排除不了原生内存问题。tombstone 是系统保存的原生崩溃转储，包含线程、寄存器和原生调用栈等现场信息。
 - [ ] 进程是否被 LMKD 因系统内存压力终止？这种终止通常不会在应用内抛出 Java OOM。
 - [ ] 是否耗尽文件描述符（FD）？`EMFILE` 或 “Too many open files” 表示进程打开的文件、socket、管道等句柄达到限制，与堆 OOM 是两类问题。
 - [ ] Android 11 及更高版本是否用 `ActivityManager.getHistoricalProcessExitReasons()` 读取 `ApplicationExitInfo`？
@@ -147,10 +147,10 @@ ANR 表示应用在系统规定的时间内没有响应某类请求。阈值取�
 PSS（Proportional Set Size，按共享比例分摊的内存）便于估算进程对系统内存的贡献，某个堆的硬上限要单独确认。
 
 - [ ] `dumpsys meminfo` 中的 Java Heap 是否接近当前虚拟机堆上限？`getMemoryClass()` 与 `getLargeMemoryClass()` 只说明配置上限；真到分配失败，还要看当时的现场。
-- [ ] `Native Heap`、`Graphics`、`code`、`stack`、`Ashmem`（旧式共享内存）和其他 `mmap` 映射中，哪一项随复现步骤增长？
+- [ ] `Native Heap`、`Graphics`（图形内存）、`code`（代码映射）、`stack`（线程栈）、`Ashmem`（旧式共享内存）和其他 `mmap` 映射中，哪一项随复现步骤增长？
 - [ ] 不可见窗口、Bitmap、纹理、硬件缓冲区和解码器资源是否在生命周期结束后仍保留？Graphics 数值异常只是入口，接下来要看对象和缓冲区本身。
 - [ ] 系统是否频繁交换、回收页或触发 PSI 内存压力？PSI（Pressure Stall Information）统计任务因 CPU、内存或 I/O 资源不足而停顿的时间；LMKD 会在系统内存不足时按进程重要性选择目标，说明见 [lmkd 文档](https://source.android.com/docs/core/perf/lmkd)。
-- [ ] 曲线是多轮操作后基线持续升高，还是分配与 GC 形成高频锯齿？前者再查泄漏，后者再查分配速率和暂停时间。
+- [ ] 曲线是多轮操作后基线持续升高，还是分配与 GC（Garbage Collection） 形成高频锯齿？前者再查泄漏，后者再查分配速率和暂停时间。
 
 ### 4.3 定位泄漏与分配热点
 

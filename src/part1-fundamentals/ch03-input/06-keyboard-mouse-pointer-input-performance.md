@@ -71,7 +71,7 @@ consolidated_from:
 - 悬停（hover）没有按下状态，却持续触发窗口命中、View 命中、指针图标解析和应用回调；
 - 跨窗口拖放同时涉及 InputDispatcher、WindowManager、SurfaceControl 和应用主线程。
 
-这些事件最终仍通过输入通道进入应用，性能问题的收敛点也相同：应用没有及时处理完事件，`InputDispatcher` 连接上的等待队列持续增长。用户先看到光标、焦点或快捷键响应落后，随后才可能遇到输入分发超时。
+这些事件最终仍通过输入通道（input channel）进入应用，性能问题的收敛点也相同：应用没有及时处理完事件，`InputDispatcher` 连接上的等待队列持续增长。用户先看到光标、焦点或快捷键响应落后，随后才可能遇到输入分发超时（input dispatching timeout）。
 
 > 源码基线：AOSP `android-17.0.0_r1`，API 37；历史版本只用于解释兼容范围。
 
@@ -111,7 +111,7 @@ flowchart LR
 
 ### 事件来源与设备能力
 
-应用应同时查看 `InputDevice` 能力、事件来源、动作类型、轴值和工具类型；单凭设备名称猜输入类型，很容易猜错。
+应用应同时查看 `InputDevice` 能力、事件来源、动作类型（action）、轴值（axis）和工具类型（tool type）；单凭设备名称猜输入类型，很容易猜错。
 
 - `SOURCE_MOUSE` 属于 `SOURCE_CLASS_POINTER`，坐标对应显示空间中的指针位置；
 - `SOURCE_MOUSE_RELATIVE` 属于 `SOURCE_CLASS_TRACKBALL`，用于指针捕获（pointer capture）期间的相对移动；
@@ -124,7 +124,7 @@ flowchart LR
 
 这一节我们沿着数据流走：内核报上来的原始事件，怎么一步步变成 Android 的事件。
 
-### 2.1 映射器由设备类别决定
+### 2.1 映射器由设备类别（device class）决定
 
 `InputDevice::createMappers()` 根据 `EventHub` 识别出的设备类别创建映射器，相关分支为：
 
@@ -138,7 +138,7 @@ flowchart LR
 
 ### 2.2 键盘：扫描码、键码与字符是三层概念
 
-`KeyboardInputMapper` 收到 `EV_KEY` 后，拿扫描码和可选的 HID 用法码去查表。`EventHub::mapKey()` 会先检查按键字符映射文件（KCM），再检查按键布局，之后应用用户按键重映射和 KCM 里的按键行为。查表输出包含：
+`KeyboardInputMapper` 收到 `EV_KEY` 后，拿扫描码和可选的 HID 用法码（usage）去查表。`EventHub::mapKey()` 会先检查按键字符映射文件（KCM），再检查按键布局（key layout），之后应用用户按键重映射和 KCM 里的按键行为（key behavior）。查表输出包含：
 
 - `scanCode`：接近 Linux 输入设备报告的物理按键编号；
 - `keyCode`：Android 的 `KEYCODE_*` 语义键码；
@@ -151,7 +151,7 @@ flowchart LR
 
 普通鼠标由 `CursorInputMapper` 处理 `REL_X`、`REL_Y`、滚轮和按钮。未捕获时：
 
-1. 相对位移先经过指针速度调节；
+1. 相对位移先经过指针速度调节（pointer velocity control）；
 2. `PointerController` 更新显示中的光标位置；
 3. 映射器生成带屏幕光标坐标的 `SOURCE_MOUSE` 事件；
 4. 未按按钮时通常是 `ACTION_HOVER_MOVE`，按下期间是 `ACTION_MOVE`；
@@ -172,7 +172,7 @@ flowchart LR
   → NotifyMotionArgs
 ```
 
-普通模式下，单指移动会更新光标并报告 `SOURCE_MOUSE` 的悬停或移动事件；双指滚动可转成 `ACTION_SCROLL`；捏合和多指滑动带有相应的手势分类，部分系统手势还会被系统消费。掌压过滤、轻触点击、自然滚动、右键区域和加速曲线，都在进入应用前参与了这层解释。
+普通模式下，单指移动会更新光标并报告 `SOURCE_MOUSE` 的悬停或移动事件；双指滚动可转成 `ACTION_SCROLL`；捏合和多指滑动带有相应的手势分类（classification），部分系统手势还会被系统消费。掌压过滤、轻触点击（tap-to-click）、自然滚动、右键区域和加速曲线，都在进入应用前参与了这层解释。
 
 所以应用收到一条触控板事件时，反推不出“硬件只报告了一个相对坐标”：底层可能有多个绝对触点，平台已经把它们解释成鼠标或手势语义。
 
@@ -234,7 +234,7 @@ override fun onCapturedPointerEvent(event: MotionEvent): Boolean {
 1. 事件带有效显示设备 ID（display ID）时使用该显示设备；
 2. 显示设备 ID 无效时使用 `mFocusedDisplayId`；
 3. 在目标显示设备上查找焦点窗口（focused window）；
-4. 若焦点应用已存在，但窗口尚未获得焦点，则进入“无焦点窗口”（no-focused-window）的等待与超时逻辑；
+4. 若焦点应用（focused application）已存在，但窗口尚未获得焦点，则进入“无焦点窗口”（no-focused-window）的等待与超时逻辑；
 5. 对按键事件，分发器还会等待先前未完成的输入，因为前一条点击可能打开新窗口并改变焦点。
 
 第 5 点解释了一个常见现象：主线程积压的鼠标事件拖慢悬停响应，也可能让紧随其后的键盘输入一起等待。这段等待是在保焦点顺序，跟键盘硬件没有关系。
@@ -248,7 +248,7 @@ override fun onCapturedPointerEvent(event: MotionEvent): Boolean {
 - `InputDispatcher` 保存最近按下的可重复按键，等入站队列（inbound queue）为空时合成重复事件；
 - 第一条重复事件的 `repeatCount` 为 1，并带 `FLAG_LONG_PRESS`；
 - 后续重复按 `keyRepeatDelay` 继续产生；
-- 按键抬起、设备重置、分发关闭等状态会清理重复状态。
+- 按键抬起（key-up）、设备重置、分发关闭等状态会清理重复状态。
 
 `InputDispatcherConfiguration` 的默认值是首次等待 500 ms、后续间隔 50 ms。这两个值系统可以重配，应用侧要读 `repeatCount` 和事件时间，把默认值当成业务定时器的协议是靠不住的。
 
@@ -286,7 +286,7 @@ flowchart LR
 
 - `dispatchKeyEventPreIme()` 发生在 IME 之前；
 - `ImeInputStage` 可以异步处理，IME 返回未处理后才进入 post-IME；
-- `ViewPostImeInputStage` 先调用 `dispatchKeyEvent()`，再检查修饰键快捷键、后备策略和自动焦点导航。
+- `ViewPostImeInputStage` 先调用 `dispatchKeyEvent()`，再检查修饰键快捷键、后备策略（fallback policy）和自动焦点导航。
 
 把 IME 描述成 View 未消费后的 Binder 兜底会颠倒执行顺序。Binder 是 Android 的跨进程调用机制；硬件键盘事件可以先交给 IME，软键盘输入又常通过 `InputConnection.commitText()`、`setComposingText()` 等编辑协议送入文本控件，不保证对应一串 `KeyEvent`。
 
@@ -330,7 +330,7 @@ Bounce 和 Slow 的受支持设备必须是非虚拟键盘，且为外接设备�
 
 Slow Keys 会把延后后的 `DOWN` 改写为新的 `downTime/eventTime`，并添加禁止按键重复的策略标志。等待由名为 `InputFilter` 的线程和超时回调完成。遇到“短按稳定消失”或“延迟接近配置阈值”，我们先检查 Slow Keys；如果是 InputDispatcher 反压，也就是下游处理不过来迫使分发端等待，通常还能同时看到目标选择、连接队列或应用线程异常。
 
-Rust 状态初始为关闭，安装任一过滤器后转为启用。“曾开启、随后全部关闭”时，Android 17 可能仍显示 `enabled`，但重建后的链里只剩负责原样转发的 `BaseFilter`，功能上不再有 Bounce、Slow 或 Sticky 语义，只可能多一次本地调用往返。这是 `android-17.0.0_r1` 的实现细节，API 层面并没有相应承诺。
+Rust 状态初始为关闭（disabled），安装任一过滤器后转为启用（enabled）。“曾开启、随后全部关闭”时，Android 17 可能仍显示 `enabled`，但重建后的链里只剩负责原样转发的 `BaseFilter`，功能上不再有 Bounce、Slow 或 Sticky 语义，只可能多一次本地调用往返。这是 `android-17.0.0_r1` 的实现细节，API 层面并没有相应承诺。
 
 ## 5. 鼠标悬停、滚轮与窗口命中
 
@@ -375,7 +375,7 @@ ViewGroup：窗口局部坐标 → child View
 
 应用侧 `BatchedInputEventReceiver` 会尽量在 vsync 输入回调中消费可批处理的运动事件。原生层的 `InputConsumer` 只把兼容样本放进同一批次，设备、事件来源、动作类型、显示设备、指针数量和指针属性都要匹配。
 
-合批后，一个 `MotionEvent` 除当前样本外还包含历史样本。合批减少的是 Java 回调数量，并没有按固定比例丢弃硬件采样，需要轨迹细节的组件应遍历历史样本：
+合批后，一个 `MotionEvent` 除当前样本外还包含历史样本（history）。合批减少的是 Java 回调数量，并没有按固定比例丢弃硬件采样，需要轨迹细节的组件应遍历历史样本：
 
 ```kotlin
 fun consumeMotion(event: MotionEvent, sink: (Long, Float, Float) -> Unit) {
@@ -431,7 +431,7 @@ fun consumeMotion(event: MotionEvent, sink: (Long, Float, Float) -> Unit) {
 
 输入焦点在这里要拆成两个概念：
 
-- `FocusResolver` 记录各显示设备的焦点窗口令牌；
+- `FocusResolver` 记录各显示设备的焦点窗口令牌（focused window token）；
 - `mFocusedDisplayId` 为没有指定显示设备的焦点型事件提供目标显示设备。
 
 键盘事件带显示设备 ID 时，可以投向该显示设备的焦点窗口；未指定时落到焦点显示设备。鼠标事件通常已经绑定显示设备，并按坐标命中窗口。
@@ -537,7 +537,7 @@ adb shell getevent -lt
 
 ### 10.2 InputReader 与 InputDispatcher
 
-再用输入服务的诊断输出检查平台识别、目标选择和连接队列：
+再用输入服务的诊断输出（dump）检查平台识别、目标选择和连接队列：
 
 ```bash
 adb shell dumpsys input
@@ -613,7 +613,7 @@ private fun inputAgeMs(event: InputEvent): Long {
 - 滚动和视角更新是否可以在一帧内合并？
 - 按键重复是否反复启动一次性任务？
 - `ACTION_DRAG_LOCATION` 是否只更新目标状态？
-- `ACTION_DROP` 的内容提供器读取和解码是否移出主线程？
+- `ACTION_DROP` 的内容提供器（ContentProvider）读取和解码是否移出主线程？
 
 ### 桌面场景覆盖
 

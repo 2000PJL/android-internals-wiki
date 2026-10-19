@@ -368,7 +368,7 @@ Android Studio 的 System Trace 与 Java Method Trace 是不同的录制类型�
 3. 记录 `Jank Type`、`Present Type`、`On time finish`、layer 与 token，不只记录颜色。
 4. 回到主线程和 RenderThread，把长 Slice 与 Running、Runnable、S、D 状态求交。
 5. Running 长时结合子 Slice 或调用栈找 CPU 工作；Runnable 长时检查全机 CPU、优先级和放置约束；S 状态沿 Binder、锁、条件变量或 waker；D 状态检查 `blocked_function` 与 `io_wait`。
-6. 沿 FrameTimeline Flow 检查对应 display frame，再读 Android 17 的 `commit`、`composite` 和显示输出阶段。
+6. 沿 FrameTimeline Flow 检查对应 display frame，再读 Android 17 的 `commit`（源码提交）、`composite` 和显示输出阶段。
 7. Binder 或锁跨进程时，把客户端、服务端、持锁线程和 reply 放进同一选区。
 8. 用 SQL 复核同类帧是否重复出现，避免用一个案例代表整段运行。
 
@@ -584,9 +584,9 @@ ORDER BY total_ms DESC;
 4. 在目标 Android 17 build 上验证注册、SELinux、缓冲区、丢包统计和 SQL 表；
 5. 为旧分析器保留可识别的降级标记，或者明确拒绝旧版本工具。
 
-backend 是 SDK 写入 trace 的目标：in-process backend 在本进程内管理缓冲与会话，system backend 连接设备上的 Perfetto tracing service，trace packet 就是 producer 写入服务的 protobuf（Protocol Buffers 序列化格式）数据单元。Android 17 的 tracing service 可以搬运 producer 写入的 packet，但任意新版 SDK 都不保证能接入 system backend——SDK ABI、Unix socket 权限、数据源注册策略和产品 SELinux 强制访问规则都可能卡住连接，必须在目标系统镜像上实测。
+backend 是 SDK 写入 trace 的目标：in-process backend 在本进程内管理缓冲与会话，system backend 连接设备上的 Perfetto tracing service，trace packet 就是 producer 写入服务的 protobuf（Protocol Buffers 序列化格式）数据单元。Android 17 的 tracing service 可以搬运 producer 写入的 packet，但任意新版 SDK 都不保证能接入 system backend——SDK ABI（二进制调用约定）、Unix socket（本机进程间通信端点） 权限、数据源注册策略和产品 SELinux 强制访问规则都可能卡住连接，必须在目标系统镜像上实测。
 
-不建议为了追逐上游版本而单独替换产品镜像中的 `traced` 或 `trace_processor_shell`。这些平台二进制和 Android init 服务启动配置、文件权限、SELinux、AIDL 生成的 Binder 接口、IPC 协议及系统测试一起交付；只覆盖其中一个文件，就可能造成协议、权限或启动流程的不匹配。
+不建议为了追逐上游版本而单独替换产品镜像中的 `traced` 或 `trace_processor_shell`。这些平台二进制和 Android init 服务启动配置、文件权限、SELinux、AIDL（Android 接口定义语言） 生成的 Binder 接口、IPC（进程间通信） 协议及系统测试一起交付；只覆盖其中一个文件，就可能造成协议、权限或启动流程的不匹配。
 
 #### 路径三：维持 Android 17 平台兼容
 

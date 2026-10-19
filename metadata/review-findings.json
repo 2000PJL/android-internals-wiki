@@ -6376,6 +6376,108 @@
       "summary": "规整失败段落把不可移动页错误标为 Movable",
       "type": "terminology-error",
       "updated_at": "2026-10-19T08:39:12.684433+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md",
+      "created_at": "2026-10-19T10:10:28.411816+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261019-100520-e39539ca",
+      "details": "物理 present fence 表示本帧开始出现或开始向 panel memory 传输；虚拟显示是输出写入完成。正文多处笼统写完成，且断言 panel scanout 全在其后；未提 Composer3 仅限 TV picture processing 的 LayerPresentFence 例外。release callback 到达也不等于所携 release fence 已 signal。",
+      "id": "finding-07a3badb4723",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "hardware/interfaces/graphics/composer/2.1/IComposerClient.hal:690-699; hardware/libhardware/include_all/hardware/hwcomposer2.h:1819-1825; composer3/PresentFence.aidl:31-65; BLASTBufferQueue.cpp:490-549"
+      ],
+      "status": "open",
+      "summary": "present fence 被写成显示完成，release callback 被写成可立即复用",
+      "type": "fence-boundary",
+      "updated_at": "2026-10-19T10:10:28.411816+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md",
+      "created_at": "2026-10-19T10:10:28.466203+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261019-100520-e39539ca",
+      "details": "Android 15 ARR 解耦 VSync rate 和实际 refresh rate，同一 display mode 中变化的是刷新节奏；正文误写改变 VSync 周期。Android 11 ViewRootImpl 已有 BLAST 路径，但 WMS wm_use_blast_adapter 默认 false，不能把进入源码等同默认主窗口已迁移。",
+      "id": "finding-4eaed07885f7",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "https://source.android.com/docs/core/graphics/arr:4917-4985; android-11.0.0_r1 WindowManagerService.java:1186-1188; ViewRootImpl.java:1110-1112,7450-7456,9850-9851"
+      ],
+      "status": "open",
+      "summary": "版本表混淆 ARR 刷新间隔与 VSync 周期，并省略 Android 11 BLAST 开关边界",
+      "type": "version-boundary",
+      "updated_at": "2026-10-19T10:10:28.466203+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md",
+      "created_at": "2026-10-19T10:10:28.518612+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261019-100520-e39539ca",
+      "details": "TransactionHandler:flushTransactions 是 SurfaceFlinger 外层 scope，包含 collect、新 layer 登记、flush、apply、hierarchy 更新；slice 是持续时间，不能直接当线程 CPU 执行时间。LayerSnapshotBuilder::tryFastUpdate 的 FastPath slice 在资格判断之前创建，失败时仍会出现；无变化直接返回则不生成该 slice。",
+      "id": "finding-2feb3c5311e4",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "SurfaceFlinger.cpp:2777-2830; LayerSnapshotBuilder.cpp:387-428"
+      ],
+      "status": "open",
+      "summary": "FrontEnd trace scope 被等同纯 flush CPU 时间，FastPath slice 被等同成功命中",
+      "type": "trace-scope",
+      "updated_at": "2026-10-19T10:10:28.518612+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md",
+      "created_at": "2026-10-19T10:10:28.571245+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261019-100520-e39539ca",
+      "details": "正文第三大节步骤 6 先写 hierarchy/snapshot，步骤 7 才写 mStateLock，容易误读为 snapshot 在锁外。实际 hierarchy 在锁外，display transaction、snapshot、兼容回调和 latch 在同一 mStateLock scope 内。",
+      "id": "finding-18c4d2a18440",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "SurfaceFlinger.cpp:2824-2839,2881-2907,2953"
+      ],
+      "status": "open",
+      "summary": "事务队列主路径把 mStateLock 放到 snapshot 更新之后",
+      "type": "lock-order",
+      "updated_at": "2026-10-19T10:10:28.571245+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md",
+      "created_at": "2026-10-19T10:10:28.626399+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261019-100520-e39539ca",
+      "details": "LayerLifecycleManager.apply（提交）Transactions()、MessageQueue handle（对象引用句柄）r、readiness filter（过滤器）s 被拆开；Layer composition state 与 composition strategy 被分别错注为 HWC/RenderEngine 专属；BufferTX trace 名也混入括注。",
+      "id": "finding-0d7d3ebfe584",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "SurfaceFlinger.cpp:2824,2829,2882-2883; Output.cpp:479-499; FrontEnd/TransactionHandler.h:60-68"
+      ],
+      "status": "open",
+      "summary": "机器括注破坏方法标识符、handler 与合成术语含义",
+      "type": "identifier-gloss",
+      "updated_at": "2026-10-19T10:10:28.626399+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md",
+      "created_at": "2026-10-19T10:10:28.684047+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261019-100520-e39539ca",
+      "details": "引用 unsignaled 官方文档但未保留 Always 冻屏/可能弃用警示，也未说明 Android17 getter 实际只由 auto_latch_unsignaled 选 AutoSingleLayer/Disabled。FrameTimeline 文档 Android12+、SurfaceView 未支持声明及旧 onMessageReceived 示例须保留为文档适用边界；短 Perfetto atrace 命令不会自动启用 FrameTimeline 数据源。SIDEBAND、DISPLAY_DECORATION 枚举还各有硬件能力条件。",
+      "id": "finding-22da30d4490a",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "SurfaceFlinger.cpp:598-603; https://source.android.com/docs/core/graphics/unsignaled-buffer-latch:4918-4962; https://perfetto.dev/docs/data-sources/frametimeline; Composition.aidl:66-88"
+      ],
+      "status": "open",
+      "summary": "官方来源的模式风险、采集可用性和特殊 composition 能力条件未交代",
+      "type": "official-lifecycle",
+      "updated_at": "2026-10-19T10:10:28.684047+08:00"
     }
   ],
   "schema_version": 1

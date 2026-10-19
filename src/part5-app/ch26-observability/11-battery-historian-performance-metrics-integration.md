@@ -85,11 +85,9 @@ last_rework_at: '2026-08-15T22:11:00+08:00'
 
 拿到一份功耗数据，我们先要弄清它属于哪一类：状态时间线、本 UID 的资源计数、系统的归因估算，还是设备级能量测量。功耗分析里常见的误判，就是把这几类数据当成同一类混着比。这里先交代三个概念，再对照四类数据。
 
-UID 是 Android 用来归属应用进程和资源用量的用户标识，同一个 UID 可能由多个共享 UID 的包共同使用。
+三个概念里最先要用到的是 UID：Android 用这个用户标识归属应用进程和资源用量，同一个 UID 也可能由多个共享 UID 的包共同使用。设备那一侧的测量靠 ODPM（On-Device Power Rails Monitor，板载电源轨（rail）监视器）——它只在部分设备上提供，计量的电源轨是设备级通道，一条轨对应 CPU、显示或蜂窝网络这样的硬件子系统。
 
-ODPM（On-Device Power Rails Monitor，板载电源轨（rail）监视器）只在部分设备上提供；它计量的电源轨是设备级通道，一条轨对应 CPU、显示或蜂窝网络这样的硬件子系统。
-
-归因指系统按活动记录和功耗模型，把估算能耗分配到 UID 或硬件组件；`BatteryUsageStats` 就是承载这类结果的查询对象，数值仍受设备模型与测量能力限制。
+把两头连起来的是归因：系统按活动记录和功耗模型，把估算能耗分配到 UID 或硬件组件；`BatteryUsageStats` 就是承载这类结果的查询对象，数值仍受设备模型与测量能力限制。
 
 | 数据 | 典型来源 | 能回答什么 | 不能直接回答什么 |
 |---|---|---|---|
@@ -104,21 +102,21 @@ ODPM（On-Device Power Rails Monitor，板载电源轨（rail）监视器）只�
 
 ### BatteryStatsService 与 PowerStatsService 各自负责什么
 
-电池统计与硬件功耗数据仍由两个分工不同的系统服务处理，这一分工在 Android 15 之前就已形成。
+上一节分出的四类数据，在平台上由谁产生？电池统计与硬件功耗数据仍由两个分工不同的系统服务处理，这一分工在 Android 15 之前就已形成。
 
 - [`BatteryStatsService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java) 维护 `BatteryStatsImpl`，接收系统组件上报的状态与活动数据，触发外部统计同步，并通过 `BatteryUsageStatsProvider` 生成 UID 和功耗组件归因。
 - [`PowerStatsService`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java) 访问 `android.hardware.power.stats` HAL。HAL 是系统与厂商硬件实现之间的标准接口；这里可读取 `energy consumer`（HAL 归类的用能组件）、`energy meter`（计量通道）和 `state residency`（硬件处于各功耗状态的累计时长），再把内部接口 `PowerStatsInternal` 发布给系统服务进程 `system_server`，供系统服务之间调用。
 - 两者通过 `PowerStatsInternal` 协作。
 - BatteryStats 还能使用控制器活动、内核时间、网络统计和设备 `power_profile.xml`；该 XML 保存设备厂商提供的功耗估算系数。设备缺少 HAL 电源轨时，系统仍可能给出模型估算。
 
-“Streamlined Battery Stats”的 CPU、misc、connectivity 等 `flag` 只是平台迁移期间的实现开关，公开 API 层面并没有与之对应的“三层架构”承诺；设备构建、季度版本和 OEM（设备厂商） 各自可以采用不同的开关状态。所以监控协议要依赖公开输出语义，不要假设某个内部开关始终开启。
+“Streamlined Battery Stats”的 CPU、misc、connectivity 等 `flag` 只是平台迁移期间的实现开关，公开 API 层面并没有与之对应的“三层架构”承诺；设备构建、季度版本和 OEM（设备厂商） 各自可以采用不同的开关状态。所以监控协议要依赖公开输出语义，把内部开关当作随时可能变化的实现细节。
 
 ### 从采集到 BatteryUsageStats
 
-`com.android.server.power.stats` 包内按五种角色分工：`collector`（采集器） 负责采集，`history`（历史记录） 保存历史记录，`processor`（归因计算器） 做归因计算，`store`（达到容量后覆盖旧记录的轮转存储） 是达到容量后覆盖旧记录的轮转存储，`provider`（查询结果组装器） 组装查询结果。
+`com.android.server.power.stats` 包内按五种角色分工：`collector`（采集器）、`history`（历史记录）、`processor`（归因计算器）、`store`（达到容量后覆盖旧记录的轮转存储）、`provider`（查询结果组装器），采集、留存、计算、轮转、组装各管一段。
 
 1. `PowerStatsCollector` 的组件实现采集 CPU、Wi-Fi、移动网络、蓝牙、GNSS（卫星定位）、屏幕、传感器、WakeLock 等活动或能量样本。
-2. `BatteryStatsHistory` 保存带单调时间的状态变化和 `PowerStats` 样本。历史有容量上限，旧数据会被清理，不能当作永久时序库。
+2. `BatteryStatsHistory` 保存带单调时间的状态变化和 `PowerStats` 样本。历史有容量上限，旧数据会被清理，只适合当作近期窗口的记录。
 3. `PowerAttributor` 根据设备状态、UID 状态和各组件的 `processor` 计算归因，[`PowerAttributor`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/PowerAttributor.java) 把估算结果写入 `BatteryUsageStats.Builder`。
 4. [`BatteryUsageStatsProvider`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java) 根据查询窗口组装当前会话、历史会话或累计统计。
 
@@ -130,13 +128,13 @@ Wi-Fi 与移动网络的归因同样结合控制器活动、网络字节、进�
 
 `com.android.server.powerstats.TimerTrigger` 保留高频与低频触发器，默认周期可由资源配置覆盖；`BatteryTrigger` 在观察到电池整数电量下降时记录状态驻留时间。数据由 `PowerStatsLogger` 分别写入计量、模型与状态驻留三类轮转文件，达到容量上限后覆盖旧记录，供系统诊断或 incident 报告（系统故障事件包）使用。
 
-这些触发器属于 `PowerStatsService` 的内部日志策略。Battery Historian 展示的是 bugreport 中可解析的 Batterystats 与系统材料，我们无法据此宣称 Historian 固定按某个周期“实时采集”；App 的监控协议应落在公开输出语义上，内部周期、保留量与文件格式都算不上公开承诺。
+这些触发器属于 `PowerStatsService` 的内部日志策略。Battery Historian 展示的是 bugreport 中可解析的 Batterystats 与系统材料，我们无法据此宣称 Historian 固定按某个周期“实时采集”；App 的监控协议要落在公开输出语义上；内部周期、保留量与文件格式都留在公开承诺之外。
 
 ## 正确采集 Battery Historian 证据
 
 我们给 Battery Historian 的输入，首选完整 bugreport。官方 [采集流程](https://developer.android.com/topic/performance/power/setup-battery-historian) 的动作序列是：在开启 USB 调试的设备上重置统计、断开供电、执行目标场景，再生成 bugreport。`dumpsys batterystats --proto` 只输出 Protocol Buffers 二进制格式的当前聚合统计且不带历史记录，代替不了完整的 Historian 时间线。
 
-下面的命令用于一台专门的测试设备。`--reset` 会清除该设备当前的 Batterystats 数据；`full-history` 会额外记录 WakeLock、Alarm 和进程事件，官方最小采集流程无需此开关。该开关也会增加报告体积，因此不要在仍需保留现场的设备上运行。
+下面的命令用于一台专门的测试设备。`--reset` 会清除该设备当前的 Batterystats 数据；`full-history` 会额外记录 WakeLock、Alarm 和进程事件，官方最小采集流程无需此开关。该开关也会增加报告体积，所以只开在随时可以清空现场的测试设备上。
 
 ```bash
 adb shell dumpsys batterystats --reset
@@ -161,9 +159,11 @@ adb shell dumpsys batterystats --disable full-history
 - 编译状态、账号同步、系统更新和其他后台活动；
 - 场景开始与结束的单调时间（只随设备运行推进，不受手动改时钟影响），以及 App 自定义 Trace 标记。
 
-bugreport 可能包含账号、网络、日志和设备标识等敏感信息。它适合实验室与用户明确参与的诊断会话，不适合由普通 App 静默采集并上传。
+bugreport 可能包含账号、网络、日志和设备标识等敏感信息。它的合适场景是实验室和用户明确参与的诊断会话；普通 App 要静默采集上传，得走后面本 UID 指标那条路。
 
 ## 如何把性能指标与能量证据关联
+
+性能指标要和能量证据互相对得上，前提是两者出自同一段实验窗口。
 
 ### 用同一实验窗口对齐
 
@@ -187,6 +187,8 @@ bugreport 可能包含账号、网络、日志和设备标识等敏感信息。�
 
 ## 普通 App 能读取什么
 
+落到自己的 App，我们手里有三条公开读取路径：API 35 的 `PowerMonitor` 读设备级能量通道，API 24 的本 UID `HealthStats` 读自家资源计数，`BatteryManager` 读电池与燃料计状态；系统级的全量归因数据则被 `@hide` 接口和 `BATTERY_STATS` 权限挡在普通 App 之外。
+
 ### API 35：PowerMonitor
 
 `SystemHealthManager.getSupportedPowerMonitors()` 与 `getPowerMonitorReadings()` 从 API 35 起公开，[`SystemHealthManager` 源码](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java) 通过 `IPowerStatsService` 异步返回电源轨或 `modeled consumer`（用功耗模型估算的用能组件）。
@@ -195,9 +197,9 @@ bugreport 可能包含账号、网络、日志和设备标识等敏感信息。�
 
 - 支持列表可能为空，电源监视器的名称与含义依设备而变；即使名称相同，不同 OEM 的计量范围也未必等价。
 - [`PowerMonitorReadings`](https://developer.android.com/reference/android/os/PowerMonitorReadings) 返回自开机以来的累计能量，单位是微瓦秒，包含电池供电与插电阶段；重启后不连续。
-- 单次累计值没有场景意义。使用同一组 `PowerMonitor` 在场景前后读取，按各自 `timestamp` 计算非负增量；该时间戳来自 `SystemClock.elapsedRealtime()`。跨重启、计数回退或 `ENERGY_UNAVAILABLE` 的样本应丢弃。
-- 普通 App 读数可能被缓存并加入与调用 UID 相关的随机噪声。连续高频读取拿不到实验室仪器精度，也不应尝试反推去噪。
-- 电源轨是设备级数据。App 只能在受控实验中用 Trace 时间窗做相关分析；电源轨增量应记为设备级观测，而不是当前 App 的能耗。
+- 单次累计值要在场景前后配对读取才有意义：用同一组 `PowerMonitor` 各读一次，按各自 `timestamp` 计算非负增量，该时间戳来自 `SystemClock.elapsedRealtime()`。跨重启、计数回退或 `ENERGY_UNAVAILABLE` 的样本直接丢弃。
+- 普通 App 读数可能被缓存并加入与调用 UID 相关的随机噪声；想靠连续高频读取逼近实验室仪器精度，或者反推出干净数据，都不现实。
+- 电源轨是设备级数据：App 只能在受控实验中用 Trace 时间窗做相关分析，台账里把增量记成设备级观测，当前 App 的能耗要到本 UID 指标那一层回答。
 
 `PowerMonitor` 适合在内部测试版中输出结构化实验记录：类型、原始名称、起止累计值、起止 `timestamp`、增量、设备与 build fingerprint。硬件通道名称可能暴露机型或硬件组合，生产上报前先评估这种设备指纹风险，并对采样频率和保留期设限。
 
@@ -205,11 +207,11 @@ bugreport 可能包含账号、网络、日志和设备标识等敏感信息。�
 
 `SystemHealthManager.takeMyUidSnapshot()` 返回本 UID 的 `HealthStats`，即一组按键查询的累计计数器和计时器。[`UidHealthStats`](https://developer.android.com/reference/android/os/health/UidHealthStats) 提供用户态/内核态 CPU 时间、Wi-Fi 与移动网络字节、部分控制器活动、WakeLock、Job、Sync、传感器和前后台状态等键。
 
-这些值适合作为资源代理指标：用资源活动量提示可能的能耗变化，而不直接充当能量测量。读取时必须先用对应的 `has…()` 方法检查键是否存在，因为设备与版本都可能缺少部分数据。共享 UID 会把多个包的统计记到同一身份下，系统代持的 WakeLock 和库内部调度也会影响解释，读数要放在这两层背景下看。
+这些值适合作为资源代理指标，用资源活动量提示可能的能耗变化；真要落到能量，还得回到实验框架里的能量增量。读取时必须先用对应的 `has…()` 方法检查键是否存在，因为设备与版本都可能缺少部分数据。共享 UID 会把多个包的统计记到同一身份下，系统代持的 WakeLock 和库内部调度也会影响解释，读数要放在这两层背景下看。
 
 ### BatteryManager：电池状态与燃料计
 
-[`BatteryManager`](https://developer.android.com/reference/android/os/BatteryManager) 公开电量、充电状态、瞬时/平均电流、`charge counter`（剩余电荷，单位微安时） 和 `energy counter`（剩余能量，单位纳瓦时） 等属性：前者是剩余电荷，单位微安时；后者是剩余能量，单位纳瓦时。设备可以不支持某个属性：`getIntProperty()` 对 `targetSdkVersion` 为 Android 9 及以上的应用返回 `Integer.MIN_VALUE`，更旧目标返回 0；`getLongProperty()` 返回 `Long.MIN_VALUE`；API 35 新增的 `getStringProperty()` 返回 `null`。
+[`BatteryManager`](https://developer.android.com/reference/android/os/BatteryManager) 公开电量、充电状态、瞬时/平均电流、`charge counter`（剩余电荷，单位微安时） 和 `energy counter`（剩余能量，单位纳瓦时） 等属性。设备可以不支持某个属性：`getIntProperty()` 对 `targetSdkVersion` 为 Android 9 及以上的应用返回 `Integer.MIN_VALUE`，更旧目标返回 0；`getLongProperty()` 返回 `Long.MIN_VALUE`；API 35 新增的 `getStringProperty()` 返回 `null`。
 
 这些属性描述的都是整块电池或燃料计的状态；燃料计指根据电压、电流、温度等信号估算剩余电量的硬件与算法组合。用的时候记住三点：瞬时电流噪声较大，平均电流的时间窗由硬件决定，剩余能量还会受充电状态、温度和估算法影响。它们适合记录实验环境或长窗口变化；到 App 归因这一层，它们帮不上忙。
 
@@ -247,7 +249,7 @@ WakeLock（唤醒锁）用于请求系统暂时保持某类硬件工作。排查
 
 线上还应结合 Play Console 的 [Android vitals 的 excessive partial WakeLock 指标](https://developer.android.com/topic/performance/vitals/excessive-wakelock) 观察真实用户影响，不把单台实验设备的结果直接外推到全量用户。
 
-排查再往下走，证据可能涉及内核 wakeup source（可阻止系统挂起的内核唤醒源）、驱动中断，或者 suspend（系统挂起） 失败——suspend 就是系统挂起。到这一层，用户态 WakeLock tag 与内核 wakeup source 无法按名称一一对应。Android 17 通用内核源码以持续滚动的 `android17-6.18` 分支为基线，具体设备还要核对其内核构建号、驱动配置和厂商改动；分析时结合 Perfetto/ftrace 跟踪，Battery Historian 只提供时间关联线索。
+排查再往下走，证据可能涉及内核 wakeup source（可阻止系统挂起的内核唤醒源）、驱动中断，或者 suspend（系统挂起）失败。到这一层，用户态 WakeLock tag 与内核 wakeup source 无法按名称一一对应。Android 17 通用内核源码以持续滚动的 `android17-6.18` 分支为基线，具体设备还要核对其内核构建号、驱动配置和厂商改动；分析时结合 Perfetto/ftrace 跟踪，Battery Historian 只提供时间关联线索。
 
 ## 网络活动的电池成本
 
@@ -293,7 +295,7 @@ WakeLock（唤醒锁）用于请求系统暂时保持某类硬件工作。排查
 - 将设备温度与 `thermal status`（系统热状态等级）纳入报告，避免把降频后的低功率误判为效率提升；
 - 分别报告总能量、任务数、耗时和失败，不按假设把电源轨强制分配到进程。
 
-内核调度、驱动、显示与基带（modem） modem 可能共同影响电源轨。需要精确到硬件组件时，优先使用设备厂商的电源轨定义、外置功耗仪和受控 system trace；Battery Historian 的柱状状态只能协助缩小时间窗。
+内核调度、驱动、显示与基带（modem）可能共同影响电源轨。需要精确到硬件组件时，优先使用设备厂商的电源轨定义、外置功耗仪和受控 system trace；Battery Historian 的柱状状态只能协助缩小时间窗。
 
 ## APM 集成与指标留存
 
@@ -315,6 +317,8 @@ APM 应保存各层数据原本的含义：
 
 ## 低功耗模式、电池健康与设备差异
 
+前几节解决的是怎么测；这一节我们补两件事：系统策略变化时 App 该怎么响应，以及电池老化、机型差异怎样进入分析。
+
 ### App 应响应系统策略
 
 普通 App 的角色是响应系统策略：CPU 频率、全局屏幕亮度这类决定不该由 App 自行做出。可执行的策略包括：
@@ -328,7 +332,7 @@ APM 应保存各层数据原本的含义：
 
 ### 电池老化作为分层变量
 
-循环次数、温度与健康类别可以帮助解释同型号设备的差异。内阻与容量衰减则要另说：内阻描述电池内部对电流表现出的等效电阻，这两者都不能由 Battery Historian 建立可靠模型，设备使用史、充电策略、环境温度、燃料计算法与换电池记录也通常不可得。
+循环次数、温度与健康类别可以帮助解释同型号设备的差异。内阻与容量衰减则要另说：内阻描述电池内部对电流表现出的等效电阻，想为这两者建立可靠模型，Battery Historian 手里的材料撑不起来——设备使用史、充电策略、环境温度、燃料计算法与换电池记录通常都拿不到。
 
 如果业务需要研究老化对性能的影响：
 

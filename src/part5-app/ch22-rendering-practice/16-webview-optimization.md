@@ -79,7 +79,7 @@ WebView 页面性能由实例初始化、Chromium 渲染、资源加载和页面
 
 ## WebView 优化要同时看四段
 
-页面打开后出现白屏、无法点击、滚动掉帧或页面重载，我们通常把责任点拆到四段里找：
+页面打开后出现白屏、点了没反应、滚动掉帧或页面重载，我们通常把责任点拆到四段里找：
 
 1. 宿主容器创建与 WebView 启动初始化；
 2. 网络、HTTP 缓存、离线资源与页面数据；
@@ -88,13 +88,13 @@ WebView 页面性能由实例初始化、Chromium 渲染、资源加载和页面
 
 为什么要拆开？把所有耗时压成一个“WebView 加载时间”，很难判断改动省下了哪一段。预热能缩短首次 provider 装载，也会提高 App 启动期内存；离线包能省掉网络等待，版本混用时却会制造白屏；WebView 池能省掉实例构造，也可能把旧页面状态带入新页面。每项优化都要带上命中、代价、失败和回退四类指标，方便判断收益落在哪一段。
 
-版本基线分三组看：平台用 Android 17 / API 37 / `android-17.0.0_r1`，用来解释框架、HWUI 和显示系统；内核用 `android17-6.18-2026-06_r6`，用来解释内存回收、dma-buf（设备间共享缓冲区） 和 fence（跨 CPU、GPU 和显示设备传递完成状态的同步对象） 等基础语义；provider 是实现包，随设备上的可更新软件包变化。平台源码能说明 `WebViewFactory` 怎样选择和加载 provider，对应的 Chromium 源码版本（revision）仍要单独核对。更完整的线程与显示路径见 [13.9 Android 17 WebView 渲染管线](../../part2-performance/ch13-rendering-pipelines/09-webview-rendering.md)。
+这条基线怎么用要看内容：框架、HWUI 和显示系统的行为查平台源码；内存回收，以及 dma-buf（设备间共享缓冲区）、fence（跨 CPU、GPU 和显示设备传递完成状态的同步对象）这类基础语义查内核；provider 是实现包，随设备上的可更新软件包变化。平台源码能说明 `WebViewFactory` 怎样选择和加载 provider，对应的 Chromium 源码版本（revision）仍要单独核对。更完整的线程与显示路径见 [13.9 Android 17 WebView 渲染管线](../../part2-performance/ch13-rendering-pipelines/09-webview-rendering.md)。
 
 ## 页面打开时间怎样量
 
 ### 用业务可用性定义终点
 
-一次 H5（App 内嵌网页）打开过程至少记录下列时间点：
+先把“打开”这件事量准，后面每一步优化才有对照。一次 H5（App 内嵌网页）打开过程至少记录下列时间点：
 
 | 时间点 | 含义 | 适合回答的问题 |
 |---|---|---|
@@ -105,7 +105,7 @@ WebView 页面性能由实例初始化、Chromium 渲染、资源加载和页面
 | `page_usable_signal` | 页面主动报告首屏数据、事件处理与关键内容就绪 | 用户何时能完成当前业务动作 |
 | `usable_visual_state` | 收到页面可用信号后，再通过 `postVisualStateCallback()` 确认对应 DOM（页面节点树）状态可被绘制 | 页面状态何时进入 WebView 绘制序列 |
 
-`onPageFinished()` 只说明 main frame（页面顶层框架）完成加载。Android 官方文档明确指出，它不保证下一帧已经反映当时的 DOM 状态，也无法证明首屏数据和交互处理已经就绪。`onPageCommitVisible()` 的用途更窄：它保证后续绘制不会带出上一次导航的旧内容，适合控制复用 WebView 的显示时机。
+`onPageFinished()` 只说明 main frame（页面顶层框架）完成加载。Android 官方文档明确指出，它不保证下一帧已经反映当时的 DOM 状态，也说明不了首屏数据和交互处理已经就绪。`onPageCommitVisible()` 的用途更窄：它保证后续绘制不会带出上一次导航的旧内容，适合控制复用 WebView 的显示时机。
 
 `page_usable_signal` 应由页面按业务定义发出。例如商品页可在标题、价格、主图占位和购买按钮事件完成后上报；帮助页可在首屏正文与目录点击就绪后上报。页面侧还可以上报 FCP（首次内容绘制）、LCP（最大内容绘制）、Long Task（网页主线程长任务）与资源时间，但这些指标由可更新 provider 的 Web 能力实现，采集前要在目标 provider 上验证。
 
@@ -255,7 +255,7 @@ class ActivityWebViewSlot(
 }
 ```
 
-这个实现没有复用加载过页面的实例，也没有跨 Activity 改 Context，两条红线是有意的：用 Application Context 创建后再展示，可能在主题资源、窗口 token（标识所属窗口的令牌）、文件选择、Autofill（自动填充）、弹窗和其他 UI 能力上出问题；用 `MutableContextWrapper` 切换基础 Context，也不等于 provider 内部保存的所有引用都已更新。只为启动初始化提速时，异步启动比缓存一个不可见 WebView 更容易控制。
+这个实现没有复用加载过页面的实例，也没有跨 Activity 改 Context，两条红线是有意的：用 Application Context 创建后再展示，可能在主题资源、窗口 token（标识所属窗口的令牌）、文件选择、Autofill（自动填充）、弹窗和其他 UI 能力上出问题；用 `MutableContextWrapper` 切换基础 Context，provider 内部保存的所有引用也未必都已更新。只为启动初始化提速时，异步启动比缓存一个不可见 WebView 更容易控制。
 
 ### WebView 池的状态机与准入
 
@@ -283,7 +283,7 @@ class ActivityWebViewSlot(
 
 多进程使用 WebView 的 App，要先解决各进程的数据目录分配。Android P / API 28 起，`WebView.setDataDirectorySuffix()` 用于给同一 App 的不同进程分配独立 WebView 数据目录。调用顺序很严格：它必须早于本进程的任何 WebView 实例，也必须早于其他 `android.webkit` 方法。需要异步启动的进程，应先设置 suffix（目录后缀），再调用 `startUpWebView()`。
 
-每个使用 WebView 的进程使用不同 suffix，且 suffix 不能包含路径分隔符。目录分开之后，Cookie、LocalStorage 与缓存也就不会直接共享；确有跨进程登录需求时，要通过受控协议显式同步。大多数 App 更合适的做法是把 WebView 集中在一个进程，并在其他进程尽早调用 `WebView.disableWebView()`，防止 SDK 意外初始化。
+每个使用 WebView 的进程使用不同 suffix，且 suffix 必须避开路径分隔符。目录分开之后，Cookie、LocalStorage 与缓存也就不会直接共享；确有跨进程登录需求时，要通过受控协议显式同步。大多数 App 更合适的做法是把 WebView 集中在一个进程，并在其他进程尽早调用 `WebView.disableWebView()`，防止 SDK 意外初始化。
 
 ## 离线包与资源拦截
 
@@ -303,7 +303,7 @@ WebView 的缓存与预取，我们按谁来控制拆开看：
 
 ### `shouldInterceptRequest()` 的线程与协议边界
 
-`WebViewClient.shouldInterceptRequest()` 在非 UI 线程回调，且可能并发发生。实现中不得访问 View、等待 UI 线程，也不应在高频路径解压大包或校验整包。更新线程应先完成下载、签名与哈希验证和解压，再用不可变索引原子切换到新版本。
+`WebViewClient.shouldInterceptRequest()` 在非 UI 线程回调，且可能并发发生。实现中不得访问 View、等待 UI 线程；解压大包、校验整包这类工作也要离开高频路径，交给更新线程：先完成下载、签名与哈希验证和解压，再用不可变索引原子切换到新版本。
 
 下面的代码只对已经验证并发布的 HTTPS GET 资源返回离线内容。
 
@@ -346,7 +346,7 @@ class SignedOfflineClient(
 
 这个示例把 Range（字节范围） 请求交回 provider；若离线包需要承载音视频或大文件，必须完整实现字节范围与 `206 Partial Content` 语义。返回 `null` 表示交回 provider 正常加载。
 
-响应头同样不能一刀切：要保留页面所需的 CSP（内容安全策略）、缓存与内容类型语义，按资源返回各自的响应头。
+响应头也要按资源返回各自的，页面所需的 CSP（内容安全策略）、缓存与内容类型语义都要保留在内。
 
 该回调还有三个常被漏掉的限制：
 
@@ -354,13 +354,13 @@ class SignedOfflineClient(
 - 发生重定向时，只为初始资源 URL 回调，后续重定向 URL 不会再次进入；
 - Safe Browsing（安全浏览检查） 默认仍会检查相应 URL。
 
-所以离线 manifest 的安全范围不能依赖“拦截重定向后的地址”来维持，main frame 的导航白名单还要在导航策略中独立校验。
+所以离线 manifest 的安全范围，要靠导航策略中独立校验的 main frame 白名单来维持；重定向后的地址拦不到，也指望不上。
 
 ### 静态本地内容使用 `WebViewAssetLoader`
 
-`WebViewAssetLoader` 可以把 APK 的 assets 或 resources 映射到形如 HTTP(S) 的 URL，使页面继续遵守 Same-Origin Policy（同源策略）。它比 `file://` 更适合协议、帮助与内置说明页面。`file://` 与 `data:` 属于 opaque origin（无法与其他来源建立同源关系的不透明来源），无法与其他来源建立同源关系；开启 `setAllowFileAccessFromFileURLs(true)` 或 `setAllowUniversalAccessFromFileURLs(true)` 会扩大文件访问风险。
+`WebViewAssetLoader` 可以把 APK 的 assets 或 resources 映射到形如 HTTP(S) 的 URL，使页面继续遵守 Same-Origin Policy（同源策略）。它比 `file://` 更适合协议、帮助与内置说明页面。`file://` 与 `data:` 属于 opaque origin（无法与其他来源建立同源关系的不透明来源）；开启 `setAllowFileAccessFromFileURLs(true)` 或 `setAllowUniversalAccessFromFileURLs(true)` 会扩大文件访问风险。
 
-使用默认的 `https://appassets.androidplatform.net/` 时，要明确资源路径与线上 origin 的边界；使用自有域名时，要防止本地映射和线上同域资源混在一起。动态离线包仍需自己的签名、版本与回退系统，`WebViewAssetLoader` 不负责这些发布问题。
+使用默认的 `https://appassets.androidplatform.net/` 时，要划清资源路径与线上 origin 各自的范围；使用自有域名时，要防止本地映射和线上同域资源混在一起。动态离线包仍需自己的签名、版本与回退系统，`WebViewAssetLoader` 不负责这些发布问题。
 
 ### 动态离线包的发布协议
 
@@ -395,7 +395,7 @@ HTML、JS 与 CSS 必须来自同一兼容集合。只更新主文档或只更�
 
 ### 明确两侧线程
 
-这里的 Bridge 指 JavaScript 与 App 原生侧之间的通信接口。它在线程上最容易出问题：`addJavascriptInterface()` 暴露的方法虽然运行在该 WebView 的私有后台线程，但调用仍是同步的，JavaScript 要等 Java 方法返回。Bridge 方法里执行磁盘 I/O、数据库等待、网络请求或跨线程 `join()`，会阻塞网页调用方；如果它又同步等待主线程，而主线程正在等待 WebView 相关结果，还可能形成循环等待。
+这里的 Bridge 指 JavaScript 与 App 原生侧之间的通信接口。它在线程上最容易出问题，我们先把两侧的线程规则摆清楚：`addJavascriptInterface()` 暴露的方法虽然运行在该 WebView 的私有后台线程，但调用仍是同步的，JavaScript 要等 Java 方法返回。Bridge 方法里执行磁盘 I/O、数据库等待、网络请求或跨线程 `join()`，会阻塞网页调用方；如果它又同步等待主线程，而主线程正在等待 WebView 相关结果，还可能形成循环等待。
 
 反方向调用也要注意：`evaluateJavascript()` 只能在创建 WebView 的 UI 线程调用，结果回调也在 UI 线程。它是异步 API，用 `CountDownLatch.await()`、`Future.get()` 或阻塞式协程桥接把它改成同步等待是禁止的。
 
@@ -410,7 +410,7 @@ Bridge 的处理步骤更适合保持短小：
 
 ### 优先采用可校验 origin 的消息通道
 
-选 Bridge 通道时还要过安全这一关。`addJavascriptInterface()` 会把对象注入符合页面加载条件的所有 frame（网页框架），而 App 原生侧无法从方法调用中得知具体调用 frame 的 origin。页面包含第三方 iframe（内嵌框架）时，只校验 main frame URL 保护不了 Bridge。
+选 Bridge 通道时还要过安全这一关。`addJavascriptInterface()` 会把对象注入符合页面加载条件的所有 frame（网页框架），而 App 原生侧单看方法调用，无从得知具体调用 frame 的 origin。页面包含第三方 iframe（内嵌框架）时，只校验 main frame URL 保护不了 Bridge。
 
 支持 `WEB_MESSAGE_LISTENER` 的 provider 可以通过 `WebViewCompat.addWebMessageListener()` 指定 origin 规则，并在回调中获得 `sourceOrigin` 与 `isMainFrame`。下面的代码把耗时工作移到传入的协程调度器，并使用 reply proxy（消息回复代理） 返回结果。
 
@@ -504,7 +504,7 @@ fun WebView.resolveBridgeCall(
 }
 ```
 
-用这个辅助函数时注意：`onEvaluated` 收到的是 JavaScript 表达式结果的编码形式，并非页面业务响应本身。业务通常依靠 `requestId` 完成响应配对；页面已销毁或导航身份变化时直接丢弃。脚本函数名也要固定在受控协议中，页面传入任意 JavaScript 代码是不接受的。
+用这个辅助函数时注意：`onEvaluated` 收到的是 JavaScript 表达式结果的编码形式，页面业务响应本身要另行配对：业务通常依靠 `requestId` 完成响应配对；页面已销毁或导航身份变化时直接丢弃。脚本函数名也要固定在受控协议中，页面传入任意 JavaScript 代码是不接受的。
 
 ## 页面侧需要一起治理
 
@@ -528,13 +528,13 @@ fun WebView.resolveBridgeCall(
 
 1. renderer 侧执行 JavaScript、样式计算、布局和绘制，并准备 compositor frame（合成器帧）与光栅化资源；
 2. provider 的 browser（浏览器进程）/ GPU 侧把结果交给宿主 WebView；
-3. App 主线程在 View 树遍历中记录 WebView functor 与绘制边界；
+3. App 主线程在 View 树遍历中记录 WebView functor 与绘制范围；
 4. HWUI RenderThread 执行 DrawFn，把网页内容与其他 View 合入 App 窗口缓冲区；
 5. 窗口缓冲区经 BLAST / BufferQueue（窗口缓冲区队列） 交给 SurfaceFlinger，再由 CompositionEngine（合成引擎） / HWC 送显。
 
 普通 DOM 图层、CSS transform、canvas 和图片通常不会逐个成为 SurfaceFlinger layer。视频、受保护内容、provider overlay（叠加层） 或 `WebChromeClient.onShowCustomView()` 托管的全屏媒体可能增加独立 Surface / `SurfaceControl` layer。所以看到额外 layer 时，先核对所有者、父节点、缓冲区与 transaction（合成事务），再下结论。
 
-窗口关闭硬件加速、目标 Canvas 为软件 Canvas，或 provider 的硬件绘制请求无法执行时，WebView 可能进入软件绘制路径。该结论需要 Canvas 加速状态、调用栈、provider 日志和 GPU / DrawFn trace 共同支持；设备性能较低或某段 CSS 很复杂，只能作为排查线索。
+窗口关闭硬件加速、目标 Canvas 为软件 Canvas，或 provider 的硬件绘制请求执行失败时，WebView 可能进入软件绘制路径。该结论需要 Canvas 加速状态、调用栈、provider 日志和 GPU / DrawFn trace 共同支持；设备性能较低或某段 CSS 很复杂，只能作为排查线索。
 
 ### Perfetto 证据表
 
@@ -550,7 +550,7 @@ fun WebView.resolveBridgeCall(
 
 长时间片还要结合线程状态解释。Running 表示 CPU 正在执行；Runnable 长通常指向调度等待；Sleeping（休眠）、futex（用户态互斥量等待） 或 blocked（阻塞） 状态可能在等 IPC（进程间通信）、任务或 fence。只看时间片的 wall time（实际经过时间），容易把等待误算成计算。
 
-追到这里还有一个常见误判要留意：网页合成器帧已经就绪，也不等于用户已经看到。普通主体要继续追宿主 App 窗口缓冲区与 FrameTimeline；媒体叠加层还要分别追视频缓冲区、几何事务和显示上屏。
+追到这里还有一个常见误判要留意：网页合成器帧就绪，只说明内容已经备好，有没有被用户看到还要沿着显示路径往后追：普通主体要继续追宿主 App 窗口缓冲区与 FrameTimeline；媒体叠加层还要分别追视频缓冲区、几何事务和显示上屏。
 
 ## 内存、泄漏与渲染进程生命周期
 
@@ -633,13 +633,13 @@ OOM（out of memory，内存不足）与恢复设计见 [20.5 OOM、进程资源
 
 ### WebView 预留地址的处理原则
 
-32 位设备上还流传着一种“优化”：部分 32 位系统与 provider 会在进程 maps 中出现 WebView 相关的虚拟地址预留，有人通过 hook（函数挂钩）、`munmap()` 或私有符号去释放这块区域。这条捷径走不得。虚拟地址范围很大，不代表同等大小的物理内存已经被占用；这样释放还会破坏 provider 后续初始化的前提，也适配不了厂商实现和 provider 更新造成的差异。
+32 位设备上还流传着一种“优化”：部分 32 位系统与 provider 会在进程 maps 中出现 WebView 相关的虚拟地址预留，有人通过 hook（函数挂钩）、`munmap()` 或私有符号去释放这块区域。这条捷径走不得。虚拟地址范围很大，同等大小的物理内存未必已经被占用；这样释放还会破坏 provider 后续初始化的前提，也适配不了厂商实现和 provider 更新造成的差异。
 
-工程治理应采用 64 位进程、明确的 WebView 进程范围、受控池容量、页面资源预算、渲染进程恢复与内存压力收缩。预留 VMA（虚拟内存区域） 只作为特定设备上的分析证据，不要当成通用优化方案。
+工程治理应采用 64 位进程、明确的 WebView 进程范围、受控池容量、页面资源预算、渲染进程恢复与内存压力收缩。预留 VMA（虚拟内存区域） 只作为特定设备上的分析线索，不要当成通用优化方案。
 
 ## 一套可执行的优化顺序
 
-这些手段不必同时上，WebView 优化适合按证据逐步推进：
+这些手段不必同时上，WebView 优化适合按测量结果逐步推进：
 
 1. 固定 Android 系统构建版本、provider、App、容器、页面和离线包版本；
 2. 用 `navigationId` 关联原生侧、页面侧与显示端的时间点；
@@ -668,9 +668,9 @@ OOM（out of memory，内存不足）与恢复设计见 [20.5 OOM、进程资源
 
 ## 全文小结
 
-WebView 优化是一条跨越 provider 启动、实例所有权、导航与缓存、页面执行、Bridge 和显示提交的证据链，单个预热开关解决不了全部问题。我们先用 `navigationId` 与 provider 版本固定现场，再只在已证明的阻塞点上引入异步启动、预创建、离线包或推测加载。
+WebView 优化要沿 provider 启动、实例所有权、导航与缓存、页面执行、Bridge 和显示提交一路做下来，段段要有测量支撑，单个预热开关顾不过来这么多环节。我们先用 `navigationId` 与 provider 版本固定现场，再只在已证明的阻塞点上引入异步启动、预创建、离线包或推测加载。
 
-一项方案只有同时定义命中、资源代价、状态隔离、失败恢复和灰度回退才可以发布。页面已发出可用信号也不等于用户已经看到；最后仍要把 renderer、WebView functor、宿主窗口、SurfaceFlinger 与 actual present 放进同一条时间线。
+一项方案只有同时定义命中、资源代价、状态隔离、失败恢复和灰度回退才可以发布。页面发出可用信号，只能说明页面侧就绪，用户当时是否已经看到，要以显示路径为准；收尾时要把 renderer、WebView functor、宿主窗口、SurfaceFlinger 与 actual present 放进同一条时间线核对。
 
 ## Android 17 源码与文档入口
 

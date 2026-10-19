@@ -6727,6 +6727,67 @@
       "summary": "FrameTimeline 诊断入口遗漏官方可用性与 SurfaceView 支持边界",
       "type": "missing-official-availability-boundary",
       "updated_at": "2026-10-19T12:43:04.240195+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/04-dumpsys.md",
+      "close_note": "按 Android 17 DisplayContent.java:620-627 更正为 ActivityRecord，保留并区分 Activity token 的 Binder 括注；源码契约和括注保全检查通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261019-143520-idle-audit-c70bfcb9",
+      "created_at": "2026-10-19T14:47:14.799334+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261019-143520-idle-audit-c70bfcb9",
+      "details": "DisplayContent.java:620-627 将 mCurrentFocus 声明为 WindowState、mFocusedApp 声明为 ActivityRecord；正文混淆服务端 Activity 记录与 Binder token，并重复同一 token 括注解释。",
+      "id": "finding-be30164fd11f",
+      "log_path": "logs/audit/2026-10-19-20261019-143520-idle-audit-c70bfcb9-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 的 mFocusedApp 被误写为 Activity token",
+      "type": "incorrect-field-type",
+      "updated_at": "2026-10-19T14:49:50.377038+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/04-dumpsys.md",
+      "close_note": "补全 deadline miss 前提、SurfaceCanvas 豁免、delta >= threshold 且 delta < 10s、可重叠计数；更正表格包含等号的门槛。源码契约与中文新增行门禁通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261019-143520-idle-audit-c70bfcb9",
+      "created_at": "2026-10-19T14:47:14.853402+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261019-143520-idle-audit-c70bfcb9",
+      "details": "JankTracker.cpp:187-241 显示阶段分类只在当前 deadline miss 分支内计数，忽略 SurfaceCanvas，且 delta >= threshold、delta < 10s。原表容易被当作所有帧的阶段超时计数，并将包含等号的门槛写为超过。",
+      "id": "finding-914ff45146bc",
+      "log_path": "logs/audit/2026-10-19-20261019-143520-idle-audit-c70bfcb9-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/JankTracker.cpp"
+      ],
+      "status": "fixed",
+      "summary": "gfxinfo 阶段分类遗漏 deadline miss 门槛与区间过滤",
+      "type": "missing-statistics-boundary",
+      "updated_at": "2026-10-19T14:49:50.430266+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/04-dumpsys.md",
+      "close_note": "区分文本单数 service 与复数 services；单个组件示例移除非必需 -c，改为 ActiveServices.dumpService 的真实调用路径，并说明批量 -c services 路径。源码契约检查通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261019-143520-idle-audit-c70bfcb9",
+      "created_at": "2026-10-19T14:47:14.906291+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261019-143520-idle-audit-c70bfcb9",
+      "details": "AMS.doDump 的 service 分支直接调用 ActiveServices.dumpService，不依赖 dumpClient；services 分支才以 -c 决定是否进入 ServiceDumper.dumpWithClient。原文将两条命令路径混为一谈。",
+      "id": "finding-dd94fae89fb5",
+      "log_path": "logs/audit/2026-10-19-20261019-143520-idle-audit-c70bfcb9-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java"
+      ],
+      "status": "fixed",
+      "summary": "单数 activity service 被错误描述为依赖 -c 与 ServiceDumper",
+      "type": "incorrect-command-semantics",
+      "updated_at": "2026-10-19T14:49:50.482779+08:00"
     }
   ],
   "schema_version": 1

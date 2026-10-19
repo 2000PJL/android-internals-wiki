@@ -87,7 +87,7 @@ request_energy_per_output_token
     = (E_done - E_request) / N_output
 ```
 
-按这套定义，TTFT 覆盖了分词器（tokenizer）处理、排队和冷启动，描述的是用户实际等待的时间。如果还要分析执行后端，我们另外报告 `t_prefill_end - t_prefill_start`，并分别测量模型文件读取、权重映射、delegate 初始化、计算图编译和首轮 kernel 预热。预热之后量到的后端时间，就不能再当作冷启动 TTFT 报出去。
+按这套定义，TTFT 覆盖了分词器（tokenizer）处理、排队和冷启动，描述的是用户实际等待的时间。如果还要分析执行后端，我们另外报告 `t_prefill_end - t_prefill_start`，并分别测量模型文件读取、权重映射、delegate 初始化、计算图编译和首轮 kernel 预热。预热之后量到的后端时间属于热身后的稳态数据，报告里要与冷启动 TTFT 分开列。
 
 TPOT 是整段 decode 的平均值，容易掩盖个别 token 的停顿，工程报告还应给出相邻 token 延迟（inter-token latency）的第 50、95 百分位数（P50、P95）、最大值和随时间变化的曲线。在采用推测解码（speculative decoding）、并行解码（decode）或一次提交多个 token 的运行时里，输出回调与硬件 kernel 可能不再一一对应；这时 token 到达间隔仍能描述用户体验，要推断每个 token 在硬件上的执行周期，还需要另找依据。
 
@@ -98,11 +98,11 @@ TPOT 是整段 decode 的平均值，容易掩盖个别 token 的停顿，工程
 - `request_energy / output_token` 包含加载、prefill、decode 和应用开销；
 - `joules / successful_request` 以焦耳 / 成功请求为单位，还能反映取消、超时与失败造成的能量浪费。
 
-这些口径可以同时报告。横向比较之前，先确认两边用的是同一个分母，再谈“模型能效”的高下。
+这几组指标可以同时报告。横向比较之前，先确认两边用的是同一个分母，再谈“模型能效”的高下。
 
 ## 一次请求经过哪些硬件
 
-一次端侧推理请求会穿过多个执行层，每层都有一部分容易被漏看的成本；具体分工由模型格式、运行时和 delegate 决定。下表先建立一个排查用的层次视图：
+一次端侧推理请求会穿过多个执行层，每层都有一部分容易被漏看的成本；具体分工由模型格式、运行时和 delegate 决定。我们先用下表建立一个排查用的层次视图：
 
 | 层级 | 常见工作 | 容易漏看的成本 |
 |---|---|---|
@@ -115,6 +115,8 @@ TPOT 是整段 decode 的平均值，容易掩盖个别 token 的停顿，工程
 | 显示、网络及其他进程 | 展示流式文本、下载上下文、系统并发任务 | 全机功耗与模型功耗混在一起 |
 
 ## Prefill 与 Decode 的负载特征
+
+prefill 和 decode 对硬件的压力形态差别很大，我们分开看这两段。
 
 ### Prefill 的负载形态
 
@@ -187,7 +189,7 @@ AIDL 接口 `IPower` 支持创建性能提示会话（hint session）。Framewor
 
 论文 *Dissecting the Impact of Mobile DVFS Governors on LLM Inference Performance and Energy Efficiency*（arXiv:2507.02135）研究的问题很具体：各 governor 独立选出的频率组合，可能偏离某个 LLM 请求在给定能耗预算下的低延迟组合。FUSE 是论文提出并评估的联合频率选择原型。
 
-先看实验条件，它们决定了结论能用到哪里：
+我们先看实验条件，它们决定了结论能用到哪里：
 
 - 设备为已取得 root 权限的 Pixel 7 / Pixel 7 Pro，片上系统（SoC）是 Tensor G2，GPU 是 Mali-G710 MP7；
 - 系统为 Android 13，CPU 使用论文所述 `sched-pixel` / EAS 配置，GPU governor 为 `quickstep`，内存策略为 `interactive`；
@@ -218,9 +220,11 @@ FUSE 联合搜索 CPU、GPU 与内存频率组合，再按请求特征选择配�
 - 未 root 的量产应用；
 - 屏幕点亮、联网、边充边测等不同整机条件。
 
-复现论文时，应将其视为 root 实验机上的机制验证：固定频率脚本无法移植到普通量产应用，而且会绕过平台功耗与温控约束。
+复现这篇论文时，我们把它当作 root 实验机上的机制验证：固定频率脚本依赖 root 接口，普通量产应用没有对应入口，而且会绕过平台功耗与温控约束。
 
 ## 普通应用、系统组件与 root 实验各能做什么
+
+能用的手段取决于代码运行的位置。下表按普通应用、系统 / 厂商组件与 root 实验机分列：
 
 | 能力 | 普通应用 | 系统 / 厂商组件 | root 实验机 |
 |---|---|---|---|
@@ -268,13 +272,13 @@ LLM decode 具有周期性，可以把一个稳定的 token 生成过程或一�
 
 1. session 覆盖长期 worker，避免每生成一个 token 就创建和销毁 session；
 2. target 来自产品可接受的 token 周期或吞吐目标，避免长期填一个达不到的极小值；
-3. actual duration 的边界固定，避免这轮只量 GPU、下一轮又把采样与 UI 回调计入。
+3. actual duration 的起止点固定，避免这轮只量 GPU、下一轮又把采样与 UI 回调计入。
 
 Prefill 往往是一段较长的批量工作。如果运行时没有稳定、可重复的 prefill 分块（chunk）周期，把整段 prefill 硬当作一个高频次重复的周期上报，信号会难以解释。我们可以为起止点明确的 prefill chunk 单独建 session，也可以只为 decode 建立 session，用 trace 另行评估 TTFT。
 
 目标时长也不是越短越好。如果产品只要求稳定达到某个 token 速率，可以将 target 设在体验预算附近，并在温度升高、电量策略变化或应用进入后台时适当放宽。`setPreferPowerEfficiency(true)` 只表达偏好，最终选择仍由平台决定；调用前检查当前 SDK、flag 和设备能力。
 
-普通应用不应直接调用 `IPower.createHintSession()`：Framework API 负责身份、权限、生命周期与版本兼容处理，AIDL HAL 则是系统与厂商实现之间的接口。
+直接调用 `IPower.createHintSession()` 是系统侧的用法：Framework API 负责身份、权限、生命周期与版本兼容处理，AIDL HAL 则是系统与厂商实现之间的接口，普通应用通过 Framework API 使用 hint session。
 
 ## 从模型和运行时减少无效工作
 
@@ -328,6 +332,8 @@ KV bytes ≈ 2 × layers × tokens
 
 ## 建立可复现的能效实验
 
+这一节按五个环节搭建能效实验：固定负载、标记阶段、采集频率、区分功耗、积分与重复试验。我们从固定工作负载开始。
+
 ### 1. 固定工作负载组合
 
 能效实验要能被别人复现，第一步是把工作负载钉死。至少记录以下维度：
@@ -349,7 +355,7 @@ KV bytes ≈ 2 × layers × tokens
 
 ### 3. 同时采集 CPU 频率变化与轮询值
 
-Perfetto 的 `power/cpu_frequency` tracepoint 只在频率变化时产生事件，trace 开始时不保证给出初始频率；`linux.sys_stats` 的 `cpufreq_period_ms` 可以补上周期性读取的频率值。这份精简配置同时采集频率变化、CPU 空闲、调度事件和 100 ms 频率轮询：
+采集频率时要留意两套数据来源：Perfetto 的 `power/cpu_frequency` tracepoint 只在频率变化时产生事件，trace 开始时不保证给出初始频率；`linux.sys_stats` 的 `cpufreq_period_ms` 可以补上周期性读取的频率值。这份精简配置同时采集频率变化、CPU 空闲、调度事件和 100 ms 频率轮询：
 
 ```protobuf
 buffers {
@@ -403,11 +409,11 @@ data_sources {
 }
 ```
 
-这份配置里的电池电流和电压代表整机，屏幕、调制解调器与后台任务都计在结果里。USB 充电会改变电池计数器的含义，边充电边测的数据不能直接与放电测试比较。`collect_power_rails` 依赖设备的 `IPowerStats` 实现，很多量产设备不提供可用的 rail；拿不到 rail 数据时就如实报告“不可用”，别用估算值填补。
+这份配置里的电池电流和电压代表整机，屏幕、调制解调器与后台任务都计在结果里。USB 充电会改变电池计数器的含义，边充电边测到的数据要与放电测试分开比较。`collect_power_rails` 依赖设备的 `IPowerStats` 实现，很多量产设备不提供可用的 rail；拿不到 rail 数据时就如实报告“不可用”，别用估算值填补。
 
 `IPowerStats` 把 energy consumer 与 energy meter 作为厂商定义的数据返回，累计能量以微瓦秒等明确单位计量；调用方还要处理结果暂不可用、缺少按 UID 归因，以及通道名称因设备而异等情况。原始 HAL 数据通常不在普通应用的权限范围内。
 
-使用外置功耗仪时，要记录供电路径、采样频率、电压设置、电池是否被旁路、屏幕状态与 ADB 连接状态。外置仪器能提高采样一致性，但拆机并旁路电池后的结论仍只适用于相应实验条件，不能与正常电池供电数据混用。
+使用外置功耗仪时，要记录供电路径、采样频率、电压设置、电池是否被旁路、屏幕状态与 ADB 连接状态。外置仪器能提高采样一致性，但拆机并旁路电池后的结论仍只适用于相应实验条件，与正常电池供电的数据要分开存放、分开比较。
 
 ### 5. 积分、基线与重复试验
 
@@ -446,6 +452,8 @@ E_request = ∫ V(t) × I(t) dt
 
 ## 常见现象的排查顺序
 
+把前面各节的机制压缩成一张排查表：先按现象定位方向，再做后续验证。
+
 | 现象 | 先检查 | 后续验证 |
 |---|---|---|
 | 冷启动 TTFT 高，热启动正常 | 模型读取、权重映射、计算图编译、缓存（cache）命中 | 分开测量输入输出（I/O）、编译（compile）和首轮 kernel slice |
@@ -458,20 +466,20 @@ E_request = ∫ V(t) × I(t) dt
 | 更换 NPU 后端反而慢 | 计算图分区、编译、数据转换、CPU 回退（fallback） | 查看后端日志和冷 / 热启动差异 |
 | 并发吞吐提高但单请求体验变差 | 队列等待、带宽竞争、热预算 | 分开报告吞吐、TTFT、TPOT 和公平性 |
 
-排查时每轮只改变一个主要变量。同时更换模型、delegate、线程数和系统版本，就算结果改善，也说不清是哪项变化起了作用。
+我们排查时每轮只改变一个主要变量。同时更换模型、delegate、线程数和系统版本，就算结果改善，也说不清是哪项变化起了作用。
 
 ## 发布前检查清单
 
 - [ ] Android 平台结论已按 `android-17.0.0_r1` 复核；
 - [ ] 内核调度与 CPUFreq 结论已按 `android17-6.18-2026-06_r6` 复核；
 - [ ] EAS 选核与 schedutil / CPUFreq 选频已分开解释；
-- [ ] GPU、NPU、内存频率数据标明设备和厂商边界；
-- [ ] TTFT 的冷 / 热启动口径明确；
+- [ ] GPU、NPU、内存频率数据标明设备和厂商差异；
+- [ ] TTFT 的冷 / 热启动统计范围明确；
 - [ ] TPOT 同时提供 P50 / P95 或时间曲线；
 - [ ] 能耗分母和采样窗口明确；
 - [ ] prompt、输出长度、模型、运行时与 delegate 固定；
 - [ ] root 固频实验没有写成普通应用能力；
-- [ ] ADPF session 使用长期 worker，target 与 actual 边界一致；
+- [ ] ADPF session 使用长期 worker，target 与 actual 起止点一致；
 - [ ] Power rail 不可用时，没有用估算值冒充部件能量；
 - [ ] 持续测试包含 thermal status/headroom 与频率上限；
 - [ ] 性能收益通过回答质量、失败率和取消路径验证。
@@ -516,7 +524,7 @@ E_request = ∫ V(t) × I(t) dt
 
 LiteRT-LM 是 Google AI Edge 在 AOSP 之外维护的端侧生成式 AI 运行时项目。其公开仓库提供 Kotlin / C++ 接口、`.litertlm` 模型格式，以及 CPU、GPU、NPU 后端支持说明；具体硬件覆盖受版本、模型和设备影响。应用应固定经过验证的 LiteRT-LM 版本和模型产物，并保存运行时日志。
 
-`android-17.0.0_r1` 只能确定 Android 平台 API、Framework 与 HAL 的版本，确定不了 LiteRT-LM 仓库版本；AOSP 源码和 LiteRT-LM 发布版本（release）必须分别记录。系统服务提供的模型能力也不等同于应用内嵌 LiteRT-LM，二者的模型、权限、更新和资源管理边界不同，详见 5.5 节。
+`android-17.0.0_r1` 能确定的是 Android 平台 API、Framework 与 HAL 的版本；LiteRT-LM 仓库版本要单独查证，AOSP 源码和 LiteRT-LM 发布版本（release）必须分别记录。系统服务提供的模型能力也不等同于应用内嵌 LiteRT-LM，二者的模型、权限、更新和资源管理互不相同，详见 5.5 节。
 
 ### 外部运行时与研究
 

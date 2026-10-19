@@ -4,8 +4,10 @@ chapter: '24.3'
 section: '24.3'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_verified_against: Android Developers app-specific storage, StorageManager and offline-first docs current through 2026-08-15; OkHttp 5.4.0 source, release and Maven Central metadata; RFC 9110/9111; AOSP android-17.0.0_r1
+last_verified: '2026-10-19'
+last_verified_against: Android Developers app-specific storage, offline-first, manage-work, Room release notes and type converters, HiltWorker and Paging network-db docs; OkHttp parent-5.4.0 BridgeInterceptor, CompressionInterceptor, BrotliInterceptor, Cache and CacheStrategy; RFC 9110/9111; AOSP android-17.0.0_r1 Context.java and StorageManager.java (targeted recheck 2026-10-19; other listed sources retain 2026-08-15 verification scope)
+last_source_verified_at: '2026-10-19T18:38:37+08:00'
+last_idle_audit_at: '2026-10-19T18:38:37+08:00'
 confidence: high
 sources:
 - type: official
@@ -257,7 +259,7 @@ RFC 9111 把“能否存储”“当前是否新鲜”“过期后能否验证�
 - `max-age` 表示响应从何时起变为陈旧。当前年龄由 `Date`、`Age` 和本地驻留时间共同计算，单看设备时钟与下载时间会算错。
 - `Expires` 是绝对过期时间；存在适用的 `max-age` 时，优先采用后者。
 - `no-cache` 允许存储，但每次复用前必须向源站验证；源站指生成该资源的原始服务器。它的含义是“先验证”，和“不要存储”是两回事。
-- `no-store` 要求缓存既不存储请求或响应，也不用它满足后续请求。至于传输加密、访问控制和端侧数据保护，要由其他机制承担。
+- 响应中的 `no-store` 要求缓存不存储本次请求或响应，也不把该响应用于后续请求；请求中的 `no-store` 禁止存储本次交换，但 RFC 9111 不禁止用已经存好的响应满足该请求。至于传输加密、访问控制和端侧数据保护，要由其他机制承担。
 - `private` 限制 CDN、代理等共享缓存存储响应，不会禁止私有缓存存储。OkHttp 的磁盘缓存属于私有缓存。
 - `s-maxage` 只为共享缓存指定新鲜期。OkHttp 5.4.0 的私有缓存会解析这个值，复用时间仍由自己的新鲜度计算决定。
 
@@ -276,8 +278,8 @@ RFC 9111 把“能否存储”“当前是否新鲜”“过期后能否验证�
 按 OkHttp 5.4.0 `Cache` 与 `CacheStrategy` 源码：
 
 - 磁盘缓存只写入 `GET` 响应；当前实现不支持缓存 `206 Partial Content` 这类部分响应；
-- 请求或响应含 `no-store` 时不会写入；
-- 请求含 `no-cache` 时会访问网络或执行条件验证；
+- 请求或响应含 `no-store` 时不会写入；请求带该指令时也不复用已有条目，这是 OkHttp 5.4.0 的实现行为；
+- 请求含 `no-cache` 且允许联网时，会绕过已有缓存，缓存层也不会自动添加条件验证头；只需强制验证已有条目时，可改用 `max-age=0`，存在可用验证器时再由缓存层构造条件请求；
 - `only-if-cached` 禁止访问网络，找不到可用条目时由 OkHttp 自己生成 `504 Unsatisfiable Request`；这个状态来自客户端本地，和源站返回的网络错误是两回事；
 - 条件命中会访问网络完成验证，同时复用本地响应体，因此同时计入 `networkCount` 和 `hitCount`；
 - `requestCount`、`networkCount`、`hitCount` 分别记录总请求数、使用网络的请求数和缓存命中数。
@@ -353,7 +355,7 @@ HTTP、内存和可删除文件缓存都在减少重复工作，条目缺失时�
 - [OkHttp 5.4.0 · Cache.kt](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Cache.kt)
 - [OkHttp 5.4.0 · CacheStrategy.kt](https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/cache/CacheStrategy.kt)
 
-以下 5.3.0 链接是上一轮审校使用的源码版本，保留备查：
+以下 5.3.0 源码链接保留供版本对照：
 
 - [OkHttp 5.3.0 · BridgeInterceptor.kt](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/BridgeInterceptor.kt)
 - [OkHttp 5.3.0 · CompressionInterceptor.kt](https://github.com/square/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/CompressionInterceptor.kt)
@@ -482,7 +484,7 @@ data class SyncOutboxEntity(
 
 `localSequence` 由数据库生成，用于稳定选择本地操作顺序；`createdAtMillis` 用于展示和观测，先后不能由它独自决定。服务端确认后可以删除 Outbox 行；业务要求保留审计记录时，转入字段更受控、保留规则独立的历史表。
 
-Room 2.3 及以上在没有自定义转换器时，会把枚举名称转换为字符串保存；自定义 `@TypeConverter` 的优先级更高，当前稳定版 Room 2.8.4 仍保留该行为。枚举常量改名后，旧字符串可能解析失败；要长期演进的数据库格式应使用稳定编码，并为已有数据提供迁移。
+Room 2.3 及以上在没有自定义转换器且未禁用内置枚举转换时，会把枚举名称转换为字符串保存；自定义 `@TypeConverter` 的优先级更高，Room 2.8.4 仍保留该行为。枚举常量改名后，旧字符串可能解析失败；要长期演进的数据库格式应使用稳定编码，并为已有数据提供迁移。
 
 `payloadJson` 可能包含用户输入或凭据派生信息，存储前限定字段、保留时间和日志输出；需要加密时，把密钥失效后的清理路径一并设计好。访问令牌始终留在 Outbox 之外。
 

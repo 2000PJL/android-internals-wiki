@@ -218,7 +218,7 @@ consolidated_from:
 
 本文从普通应用窗口出发，讲清 View、HWUI（Android 的 View 硬件加速渲染管线）、BufferQueue、BLAST（Buffer Layer Async Surface Transactions）、SurfaceFlinger、Hardware Composer（HWC） 和显示设备之间的关系；内核对象只用来解释同步与共享缓冲区。
 
-先明确几个会贯穿全文的对象：buffer 是保存一帧图形内容的缓冲区，Surface 是 Producer（生产者）提交 buffer 的目标接口，BufferQueue 负责在 Producer（生成 buffer 的一方） 与 Consumer（消费者）之间流转 buffer，Layer 则是 SurfaceFlinger 组织合成内容的单位。
+先明确几个会贯穿全文的对象。buffer 保存一帧图形内容；Surface 是 Producer（生产者）提交 buffer 的目标接口；BufferQueue 让 buffer 在 Producer（生成 buffer 的一方） 与 Consumer（消费者）之间流转；Layer 则是 SurfaceFlinger 组织合成内容的单位。
 
 latch（选定本帧使用的 buffer） 指 SurfaceFlinger 选中并取得某个可用 buffer，fence 是表示异步读写何时完成的同步信号。BLAST 用于协调窗口 buffer 与 SurfaceControl transaction（对 Layer 属性或 buffer 的一组原子更新） 的提交。
 
@@ -228,7 +228,7 @@ latch（选定本帧使用的 buffer） 指 SurfaceFlinger 选中并取得某个
 
 ### 1. 输出拓扑分类
 
-拿到一段渲染 trace，我们先要分清内容从哪条路径画出来。这里的输出拓扑，指一类内容由哪个 Producer 生成、经过哪个 Surface 和 BufferQueue，并最终成为哪个 Layer。“Android 渲染”包含多种数据路径，它们可能出现在同一个窗口中，却不一定共享同一个 Producer 或同一条 BufferQueue。
+拿到一段渲染 trace，我们先要分清内容从哪条路径画出来。这里的输出拓扑，指一类内容由哪个 Producer 生成、经过哪个 Surface 和 BufferQueue，并最终成为哪个 Layer。“Android 渲染”包含多种数据路径，它们可能同时出现在一个窗口里，Producer 和 BufferQueue 却未必是同一套。
 
 | 内容类型 | 主要生产者 | 提交目标 | 常见特征 |
 | --- | --- | --- | --- |
@@ -277,9 +277,9 @@ HWC validate：设备合成或客户端合成
 HWC present → present fence → release fence
 ```
 
-其中，client target 是 SurfaceFlinger 执行客户端合成时生成的中间输出缓冲区。present（向显示设备提交本帧） fence 表示这次显示提交何时越过 Android 可观察的 present 边界，release fence 则表示相关 buffer 何时可以安全复用。
+其中，client target 是 SurfaceFlinger 执行客户端合成时生成的中间输出缓冲区。present（向显示设备提交本帧） fence 表示这次显示提交在 Android 能观察到的范围内何时完成，release fence 则表示相关 buffer 何时可以安全复用。
 
-各阶段并非沿单线程排队执行：主线程、RenderThread、GPU、SurfaceFlinger 和显示硬件常常重叠处理不同的帧。所以分析时我们要保留帧号、VSync 周期和 fence 依赖，把各段耗时直接相加得不出整帧的结论。
+这些阶段大多是并行推进的：主线程、RenderThread、GPU、SurfaceFlinger 和显示硬件常常重叠处理不同的帧。所以分析时我们要保留帧号、VSync 周期和 fence 依赖，各段耗时直接相加，得不出整帧的结论。
 
 #### 一帧至少跨越三个调度域
 
@@ -293,7 +293,7 @@ HWC present → present fence → release fence
 
 ### 3. 主线程：从状态变化到 Traversal
 
-Traversal 是 `ViewRootImpl` 发起的一轮窗口级遍历，按当前状态决定是否执行 measure、layout 和 draw；它不等同于每帧都完整遍历并重绘整棵 View 树。
+Traversal 是 `ViewRootImpl` 发起的一轮窗口级遍历，做哪些 measure、layout 和 draw 由当前状态决定；一轮 traversal 未必覆盖整棵 View 树，重绘范围跟着失效状态走。
 
 #### 3.1 `scheduleTraversals()` 合并同一轮请求
 
@@ -313,7 +313,7 @@ void scheduleTraversals() {
 }
 ```
 
-代码路径位于 `frameworks/base/core/java/android/view/ViewRootImpl.java`。同一消息循环内多次 `invalidate()` 或 `requestLayout()` 可以汇入一次待执行的 traversal，但这不保证后续工作量很小：被标记的区域、布局（layout）请求的传播范围和窗口状态仍会决定该帧要做多少工作。
+代码路径位于 `frameworks/base/core/java/android/view/ViewRootImpl.java`。同一消息循环内多次 `invalidate()` 或 `requestLayout()` 可以汇入一次待执行的 traversal；合并的只是调度本身，这一帧要做多少工作，仍由被标记的区域、布局（layout）请求的传播范围和窗口状态决定。
 
 #### 3.2 Choreographer 的回调顺序
 
@@ -331,17 +331,17 @@ CALLBACK_COMMIT
 
 - 输入回调可以先改变状态，动画随后更新属性，traversal 再读取这些结果。
 - 主线程在 INPUT 或 ANIMATION 阶段耗时过长，会挤压同一帧留给 TRAVERSAL 的时间。
-- COMMIT（帧遍历后的提交回调阶段） 位于 traversal 之后；到达 COMMIT，说明不了缓冲区已经显示。
+- COMMIT（帧遍历后的提交回调阶段） 位于 traversal 之后；走到 COMMIT 只代表遍历收尾，缓冲区有没有上屏，要看后面的阶段。
 
 #### 3.3 `performTraversals()` 按条件执行三大流程
 
 `ViewRootImpl.performTraversals()` 是窗口级遍历的核心入口。根据布局请求、尺寸、可见性、Surface 状态和脏区域，它可能执行：
 
-- 测量（measure） measure：计算 View 所需尺寸；
-- 布局 layout：确定 View 在父容器中的位置；
-- 绘制（draw） draw：录制或更新需要重绘的内容。
+- 测量（measure）：计算 View 所需尺寸；
+- 布局（layout）：确定 View 在父容器中的位置；
+- 绘制（draw）：录制或更新需要重绘的内容。
 
-三者都有条件判断。Perfetto 出现 `performTraversals` slice（带起止时间的事件区间） 时，该帧是否完整测量、布局和绘制了整棵 View 树，不能只由这个 slice（Trace 中的一段带起止时间事件） 的出现来回答。
+三者都有条件判断。Perfetto 里出现 `performTraversals` 的 slice（带起止时间的事件区间），只说明这一轮遍历发生过；这一帧实际测了、排了、画了哪些内容，要展开这个 slice（Trace 中的一段带起止时间事件） 内部的分段才能回答。
 
 ##### Measure：父子双方参与尺寸协商
 
@@ -353,17 +353,17 @@ CALLBACK_COMMIT
 | `AT_MOST` | 子 View 可以选择不超过上限的尺寸 |
 | `UNSPECIFIED` | 父容器没有给出这一方向的上限 |
 
-自定义 View 需要依据内容、建议最小尺寸、padding 和 `MeasureSpec` 调用 `setMeasuredDimension()`。测量次数增加可能来自嵌套权重、父容器的多轮协商、窗口尺寸变化或布局请求传播，单凭一次 `AT_MOST` 定不了根因。
+自定义 View 需要依据内容、建议最小尺寸、padding 和 `MeasureSpec` 调用 `setMeasuredDimension()`。测量次数变多时，我们沿嵌套权重、父容器多轮协商、窗口尺寸变化、布局请求传播这几个方向排查；一次 `AT_MOST` 本身给不出根因。
 
 ##### Layout：确定位置，不自动裁剪内容
 
 Layout 通过 `layout(l, t, r, b)` 和 `onLayout()` 确定子 View 的边界。子 View 的位置和尺寸由父容器决定，但内容是否被裁剪属于绘制阶段行为，还会受 `clipChildren`、`clipToPadding`、outline、显式 clip 和变换影响。
 
-因此，“子 View 位于父 View 边界内”和“超出父边界的像素不会显示”是两个不同判断。
+因此，“子 View 位于父 View 边界内”与“超出父边界的像素会不会显示”要分开判断，后者由绘制阶段的裁剪逻辑决定。
 
 ##### Draw：生成绘制记录
 
-硬件加速窗口中，`View.draw()` 及其相关分发逻辑通过 `RecordingCanvas` 记录绘制命令。它们描述“画什么”和状态变换，通常不在主线程当场把最终像素光栅化到显示缓冲区。
+硬件加速窗口中，`View.draw()` 及其相关分发逻辑通过 `RecordingCanvas` 记录绘制命令。它们描述“画什么”和状态变换；主线程通常不在这里当场把最终像素光栅化到显示缓冲区，光栅化留给后面的渲染阶段。
 
 常见绘制顺序如下：
 
@@ -373,7 +373,7 @@ Layout 通过 `layout(l, t, r, b)` 和 `onLayout()` 确定子 View 的边界。�
 4. `dispatchDraw()` 绘制子 View；
 5. 绘制前景、滚动条等装饰。
 
-具体分支受 View 标志、缓存、动画和硬件加速状态影响，这份顺序只是常见情况，所有 View 都固定执行的调用清单并不存在。
+具体分支受 View 标志、缓存、动画和硬件加速状态影响，这份顺序描述的是常见情况；每个 View 实际执行哪些步骤，要看它自己的标志和状态。
 
 #### 3.4 `invalidate()` 与 `requestLayout()` 的边界
 
@@ -382,7 +382,7 @@ Layout 通过 `layout(l, t, r, b)` 和 `onLayout()` 确定子 View 的边界。�
 | `invalidate()` | 某个区域的显示内容失效 | 标记脏区域，调度绘制；不主动表达尺寸变化 |
 | `requestLayout()` | 当前 View 的测量结果或位置可能失效 | 向父级传播布局请求，并调度 traversal |
 
-两者最终都可能通过 `ViewRootImpl` 汇入下一轮 traversal。`requestLayout()` 的传播和框架优化会影响实际遍历范围，所以“每次调用必然完整重测整棵树”也不准确。
+两者最终都可能通过 `ViewRootImpl` 汇入下一轮 traversal。`requestLayout()` 的传播和框架优化会影响实际遍历范围，“每次调用都完整重测整棵树”只是其中一种情况。
 
 我们排查主线程问题时，建议同时看：
 
@@ -427,7 +427,7 @@ Java 层 `RecordingCanvas` 的绘制 API 最终进入 `BaseRecordingCanvas` 等�
 - Skia/HWUI DisplayList 操作；
 - RenderThread 上的执行。
 
-看到 `drawRect()`、`drawBitmap()` 或 `drawRenderNode()` 返回，只能说明相应调用已经完成。对于硬件加速 Canvas，最终 GPU 执行通常尚未完成。
+看到 `drawRect()`、`drawBitmap()` 或 `drawRenderNode()` 返回，说明相应的调用已经完成；对硬件加速 Canvas 来说，GPU 的执行通常还在后面。
 
 #### 4.3 `syncAndDrawFrame()` 是 UI 到 RenderThread 的提交边界
 
@@ -438,7 +438,7 @@ Java 层 `RecordingCanvas` 的绘制 API 最终进入 `BaseRecordingCanvas` 等�
 
 `frameworks/base/libs/hwui/renderthread/DrawFrameTask.cpp` 中的 `DrawFrameTask::run()` 会执行帧状态同步，并按条件决定何时解除 UI 线程等待；随后由 `CanvasContext` 执行绘制和缓冲区交换。
 
-`syncAndDrawFrame()` 的返回值或 slice 结束，只说明这次提交告一段落；GPU、BufferQueue 消费和屏幕呈现是否完成，还要靠后续阶段的证据确认。
+`syncAndDrawFrame()` 的返回值或 slice 结束，只说明这次提交告一段落；GPU、BufferQueue 消费和屏幕呈现推进到哪一步，要看后续阶段的记录。
 
 #### 4.4 RenderThread 和 GPU 允许并行
 
@@ -451,7 +451,7 @@ GPU 执行 Frame N-1
 SurfaceFlinger 合成更早的一帧
 ```
 
-这种重叠是图形管线维持吞吐量的基础。某条 GPU track（Perfetto 中记录 GPU 工作的时间轨道） 超过一个刷新周期，还说明不了当前帧一定掉帧：我们要结合依赖 fence、队列深度和 FrameTimeline，确认该 GPU 工作是否真的挡住了目标帧的 deadline（本周期必须完成的截止时间）。
+这种重叠是图形管线维持吞吐量的基础。所以某条 GPU track（Perfetto 中记录 GPU 工作的时间轨道） 超过一个刷新周期时，先别急着下掉帧的结论：我们要结合依赖 fence、队列深度和 FrameTimeline，确认该 GPU 工作是否真的挡住了目标帧的 deadline（本周期必须完成的截止时间）。
 
 #### 4.5 SkiaGL、SkiaVulkan 与渲染后端
 
@@ -460,9 +460,9 @@ Skia 是 Android 使用的二维图形引擎；渲染后端决定它通过哪套
 - `SkiaOpenGLPipeline`
 - `SkiaVulkanPipeline`
 
-`Properties::peekRenderPipelineType()` 会结合构建时的 `use_vulkan()` 结果和 `debug.hwui.renderer`（实际使用的渲染器/驱动名称） 属性选择 `skiavk` 或 `skiagl`。这是一项设备、构建配置和调试属性共同参与的选择，某台设备是否默认 Vulkan，要把这三项都查一遍，而不是按版本一刀切。
+`Properties::peekRenderPipelineType()` 会结合构建时的 `use_vulkan()` 结果和 `debug.hwui.renderer`（实际使用的渲染器/驱动名称） 属性选择 `skiavk` 或 `skiagl`。这是一项设备、构建配置和调试属性共同参与的选择，某台设备是否默认 Vulkan，要把这三项都查一遍；按版本一刀切，在这里容易出错。
 
-Vulkan 与 OpenGL ES 的 CPU 开销、驱动行为、着色器编译、内存压力和功耗表现依赖具体设备及负载，后端名称本身说明不了某一帧的快慢。
+Vulkan 与 OpenGL ES 的 CPU 开销、驱动行为、着色器编译、内存压力和功耗表现依赖具体设备及负载；要判断某一帧的快慢，回到该帧的 trace 和计数器，后端名称本身给不出答案。
 
 ### 5. BufferQueue：共享缓冲区的流转
 
@@ -488,7 +488,7 @@ queueBuffer(fence)
 
 `queueBuffer()` 主要提交缓冲区槽位、元数据和同步信息。GraphicBuffer 背后的内存通过句柄共享，正常路径不需要在 `queueBuffer()` 时复制整张图片。
 
-`queueBuffer()` 成功只说明生产者把缓冲区置为可消费状态；SurfaceFlinger 是否 latch、显示设备是否呈现，从这里都还看不出来。
+`queueBuffer()` 成功只说明生产者把缓冲区置为可消费状态；SurfaceFlinger 有没有 latch、显示设备有没有呈现，要沿下游的 transaction 和 fence 继续看。
 
 #### 5.2 槽位状态
 
@@ -503,7 +503,7 @@ BufferQueue 中常见的槽位状态为：
 
 生产者能同时持有的 buffer 是有限的：最大已 dequeue 数、最大已 acquire 数、异步模式、消费者是否会阻塞以及当前可用槽位共同决定它要不要等待。
 
-`BufferQueueCore` 的初始配置中可看到最大 acquired 和 dequeued 数的默认值，但实际最大缓冲区数量由运行时条件计算，并不是全系统固定的三个。
+`BufferQueueCore` 的初始配置中可看到最大 acquired 和 dequeued 数的默认值；实际最大缓冲区数量由运行时条件计算，并不是全系统固定的三个，要以当时的队列状态为准。
 
 #### 5.3 “三缓冲”要按队列状态理解
 
@@ -529,7 +529,7 @@ BufferQueue 中常见的槽位状态为：
 - SurfaceFlinger 选择满足 latch 条件的缓冲区；
 - Choreographer 检测 buffer stuffing（缓冲区持续积压）并调整恢复节奏。
 
-不同 Surface 类型、present mode（缓冲区如何排队与呈现的模式） 和 BufferQueue 配置都会改变行为，离开这些条件，“多画的帧都会被丢掉”这类笼统说法就站不住。
+不同 Surface 类型、present mode（缓冲区如何排队与呈现的模式） 和 BufferQueue 配置都会改变行为；“多画的帧都会被丢掉”这类笼统说法，要放回这些具体条件下才能评判。
 
 ### 6. BLAST：把窗口缓冲区与 SurfaceControl 事务对齐
 
@@ -559,7 +559,7 @@ SurfaceFlinger 中对应 Layer 的待处理事务
 
 SurfaceFlinger 的 Layer 追踪中可看到形如 `BufferTX - <layerName>` 的计数器，命名定义位于 `frameworks/native/services/surfacefling（手指离开后继续惯性滚动）er/Layer.h`。
 
-它表达 SurfaceFlinger 侧待处理的 buffer transaction 数量，可用于观察事务积压；和普通应用 BufferQueue 的槽位状态计数、排队等待扫描输出的显示帧数都是两回事。
+它表达 SurfaceFlinger 侧待处理的 buffer transaction 数量，可用于观察事务积压；普通应用 BufferQueue 的槽位状态计数、排队等待扫描输出的显示帧数各有自己的含义，混用会看错对象。
 
 分析时应把下面几类指标分开：
 
@@ -584,7 +584,7 @@ SurfaceFlinger 的 Layer 追踪中可看到形如 `BufferTX - <layerName>` 的�
 
 #### 7.1 Present fence 的边界
 
-Present fence 标记的是 Android 显示栈里可观测的呈现完成时刻，与面板像素的光学响应完成是两回事：面板扫描方式、像素响应时间、显示后处理和外部显示设备都可能落在 Android 软件看得见的范围之外。
+Present fence 标记的是 Android 显示栈里可观测的呈现完成时刻；面板像素的光学响应要另算——面板扫描方式、像素响应时间、显示后处理和外部显示设备都可能落在 Android 软件看得见的范围之外。
 
 对于“输入到用户看到变化的总延迟”，应用 trace、FrameTimeline 和 present fence 只能覆盖其中一部分，还需结合触摸采样、显示扫描和面板特性。
 
@@ -610,7 +610,7 @@ SurfaceFlinger 管理系统可见 Layer 的状态，接收来自 WindowManager�
 2. 更新 Layer 前端状态与可见性；
 3. 为当前组合生成快照，也就是供本轮合成决策使用的不可变状态视图；
 4. 判断缓冲区是否满足 latch 条件；
-5. 结合损伤区域（damage，本帧相对上一帧发生变化的区域） damage（本帧相对上一帧变化的区域）、几何、色彩、protected content（受保护内容）等信息准备合成；
+5. 结合 damage（本帧相对上一帧变化的区域）、几何、色彩、protected content（受保护内容）等信息准备合成；
 6. 调用 HWC validate/ present；
 7. 对需要客户端合成的部分调用 RenderEngine；
 8. 传播 present 与 release 同步信息。
@@ -627,13 +627,13 @@ SurfaceFlinger 选择缓冲区时要考虑：
 - 当前调度和 latch 策略；
 - 当前版本与场景是否允许在严格条件下处理尚未 signal（完成） 的 fence。
 
-Android 13 以后存在受约束的 unsignal（变为完成状态）ed buffer latch 优化，即在特定条件下允许选择 fence 尚未完成的 buffer；它有严格的适用条件，扩写成“SurfaceFlinger 会忽略所有 acquire fence”就错了。部分版本支持这一优化，同步规则仍要按源码条件判断。
+Android 13 以后存在受约束的 unsignaled buffer latch 优化：unsignal（变为完成状态）描述的是 fence 的状态，这个优化允许在特定条件下选择 fence 尚未完成的 buffer；它有严格的适用条件，扩写成“SurfaceFlinger 会忽略所有 acquire fence”就错了。部分版本支持这一优化，同步规则仍要按源码条件判断。
 
 #### 8.2 SurfaceFlinger VSync 与应用 VSync
 
 应用和 SurfaceFlinger 都受显示节拍驱动，但调度器可以给它们设置不同的唤醒相位与 deadline（完成截止时间）。调度目标是让应用先生产，SurfaceFlinger 再在合适的时间消费并提交显示。
 
-高刷新率、可变刷新率和多显示设备让“固定 16.67 ms、应用与 SurfaceFlinger 同时唤醒”的模型失效。性能判断应读取当前显示模式，以及 FrameTimeline 给出的 expected（预期） / actual（实际） 时序。
+高刷新率、可变刷新率和多显示设备让“固定 16.67 ms、应用与 SurfaceFlinger 同时唤醒”的模型失效。这时我们直接读当前显示模式，以及 FrameTimeline 给出的 expected（预期） / actual（实际） 时序。
 
 ### 9. HWC 与 RenderEngine：每帧决定如何合成
 
@@ -652,7 +652,7 @@ Hardware Composer HAL 连接 SurfaceFlinger 与设备显示合成能力。Surfac
 - 设备厂商的 HWC 实现和当前资源占用；
 - 多显示器、虚拟显示器及 client target 约束。
 
-“Layer 太多或有透明混合才会转 GPU 合成”只覆盖少数可能性。
+“Layer 太多或有透明混合才会转 GPU 合成”只覆盖了其中少数几种，归因时要回到上面这些条件上。
 
 #### 9.2 Device composition 与 Client composition
 
@@ -661,7 +661,7 @@ Hardware Composer HAL 连接 SurfaceFlinger 与设备显示合成能力。Surfac
 | 设备合成（Device composition） | 显示控制器 / HWC 能力 | Layer 可由硬件 plane 等资源直接组合 |
 | 客户端合成（Client composition） | SurfaceFlinger 的 RenderEngine | 先把相应 Layer 合成为 client target（供 HWC 使用的中间输出），再交给 HWC |
 
-同一帧可以混合使用两者。某个 Layer 的 composition type 也可能随帧变化，因此我们要查看该帧的 HWC/SurfaceFlinger 数据，按应用或控件类型做出的永久归类靠不住。
+同一帧可以混合使用两者。某个 Layer 的 composition type 也可能随帧变化，因此我们以该帧的 HWC/SurfaceFlinger 数据为准；按应用或控件类型做永久归类，会漏掉这些变化。
 
 #### 9.3 RenderEngine 与应用 HWUI 是两个组件
 
@@ -670,7 +670,7 @@ Hardware Composer HAL 连接 SurfaceFlinger 与设备显示合成能力。Surfac
 - 应用 HWUI 把 View/Compose 绘制记录生成应用窗口缓冲区；
 - SurfaceFlinger RenderEngine 在客户端合成、模糊、色彩处理等系统合成任务中生成输出。
 
-应用 GPU slice 短，SurfaceFlinger 的 client composition（由 RenderEngine/GPU 先生成 client target） 未必短；反过来也一样。我们在 Perfetto 中要按进程和上下文区分 GPU 工作来源。
+应用 GPU slice 短，SurfaceFlinger 的 client composition（由 RenderEngine/GPU 先生成 client target） 未必短，反过来也一样；所以我们在 Perfetto 里按进程和上下文区分 GPU 工作来源。
 
 #### 9.4 色彩处理位于多个可能阶段
 
@@ -716,7 +716,7 @@ Display present
 
 软件 Canvas 由 CPU 执行光栅化，某些小型、低频或特定操作可能成本可控；复杂动画、大面积更新和高分辨率内容通常更容易受 CPU 与内存带宽限制。硬件渲染也可能受驱动、GPU 队列和资源管理影响。
 
-选择渲染方式应基于目标设备、内容和 trace，而不是用“GPU 核心更多”或固定倍数推导速度与功耗。
+选择渲染方式要基于目标设备、内容和 trace；“GPU 核心更多”或固定倍数，推不出速度与功耗的结论。
 
 ### 12. 用 Perfetto 建立证据链
 
@@ -731,7 +731,7 @@ Display present
 - 对应的 application frame（应用生产侧记录） 与 SurfaceFlinger frame（系统合成侧记录） 记录；
 - 当前刷新率、VSync 周期和 deadline。
 
-帧率只适合描述一段时间的吞吐量。定位单帧应以时间线和 deadline 为主。
+帧率描述的是一段时间的吞吐量；定位单帧时，我们以时间线和 deadline 为主。
 
 #### 12.2 第二步：检查应用主线程
 
@@ -755,7 +755,7 @@ Display present
 - GPU queue、GPU completion（完成时间）与相关 fence；
 - 资源上传、shader（GPU 着色程序）/pipeline（图形 API 的渲染状态与处理阶段组合） 编译和缓存抖动。
 
-RenderThread 的 CPU slice 长度说明的是 CPU 侧这段工作，GPU duration 才对应 GPU 实际执行时长（GPU duration）；二者可能重叠，也可能通过 fence 形成依赖。
+RenderThread 的 CPU slice 长度说明的是 CPU 侧这段工作；GPU 侧要看 GPU 实际执行时长（GPU duration），二者可能重叠，也可能通过 fence 形成依赖。
 
 #### 12.4 第四步：检查 BufferQueue 与 BLAST
 
@@ -782,7 +782,7 @@ RenderThread 的 CPU slice 长度说明的是 CPU 侧这段工作，GPU duration
 - present fence 和 release fence 的时间；
 - 多显示器、刷新率切换或显示模式变化。
 
-不要给 SurfaceFlinger 套用固定“只剩几毫秒”的预算。实际预算取决于当前显示模式、调度相位、预测和 FrameTimeline。
+SurfaceFlinger 的预算要按当前显示模式、调度相位、预测和 FrameTimeline 现算；“只剩几毫秒”这类固定值，套不上真实的调度场景。
 
 #### 12.6 常见错误推断
 
@@ -809,7 +809,7 @@ RenderThread 的 CPU slice 长度说明的是 CPU 侧这段工作，GPU duration
 7. 检查 HWC composition type、RenderEngine 工作和 present 时序。
 8. 最终把根因归到“生产晚、GPU 完成晚、队列背压、系统合成晚或显示呈现晚”中的具体一项。
 
-这种顺序可以避免看到主线程的一次长调用，就提前结束对后续异步阶段的检查。
+按这个顺序走，即使主线程出现一次长调用，我们也应把后续异步阶段检查完再下结论。
 
 ### 标准应用窗口的七段边界
 
@@ -904,13 +904,13 @@ HAL 指 framework 与厂商硬件实现之间的接口，QPR 是 Android 的季�
 | Android 16 / API 36 | `Display.hasArrSupport()`、`getSuggestedFrameRate()`；`RuntimeColorFilter` / `RuntimeXfermode`；Vulkan 1.4 launch-device 要求 | App 能查询 ARR；AGSL 可用于滤镜与混合；设备能力仍需运行时查询 |
 | Android 17 / API 37 | Jetpack WebGPU；GLES `prefer_angle` manifest 请求；`Display.getFrameRateVelocityMapping()` | WebGPU 增加现代 GPU 接口但仍需独立依赖；ANGLE 仍是偏好请求；滚动帧率可结合速度映射 |
 
-表中“引入”表示平台或 API 的版本边界，不保证所有升级到该版本的设备拥有相同 GPU、显示 HAL、驱动能力和默认后端。
+表中“引入”标记的是平台或 API 的版本分界；升级到该版本的设备是否拥有同样的 GPU、显示 HAL、驱动能力和默认后端，还要逐台确认。
 
 ### Android 3.0–4.0：View 硬件加速成为标准路径
 
 #### Android 3.0：HWUI 与显示列表
 
-Android 3.0 以前，普通 View 的 `Canvas` 主路径使用 Skia 软件光栅化。应用仍可以通过 OpenGL ES 等 API 自行使用 GPU，所以“Android 2.x 所有图形都由 CPU 绘制”并不准确。
+Android 3.0 以前，普通 View 的 `Canvas` 主路径使用 Skia 软件光栅化。应用仍可以通过 OpenGL ES 等 API 自行使用 GPU，“Android 2.x 所有图形都由 CPU 绘制”的说法只覆盖了默认路径。
 
 API 11 开始，Android 2D View 管线支持硬件加速。硬件加速 Window 中，View 的绘制操作会记录到显示列表，也就是一组可由渲染管线重复执行的绘制指令；未失效的 View 可以复用已有记录，位置、缩放、旋转或 alpha 等属性也可以作为 RenderNode 状态处理。RenderNode 是 HWUI 保存绘制指令与合成属性的节点。早期实现与现代 RenderNode、RenderThread 架构不同，拿 Android 17 的类关系去解释 Android 3.x 的行为会出错。
 
@@ -919,9 +919,9 @@ API 11 开始，Android 2D View 管线支持硬件加速。硬件加速 Window �
 - `View.draw()` / `onDraw()` 的 Java 调用负责描述绘制；
 - GPU 何时把这些命令光栅化为像素，取决于 HWUI 后续回放、buffer 和驱动调度。
 
-“调用 `canvas.drawRect()` 就立即执行一条 GL 命令”不符合显示列表模型。
+按显示列表模型，`canvas.drawRect()` 这类调用先进入记录，GL 命令何时执行由后续回放决定。
 
-API 11 同时提供 `View.setLayerType()`。`LAYER_TYPE_HARDWARE` 可以把稳定内容放入硬件层，便于后续做合成属性动画；它会占用图形内存。内容失效后仍要重新绘制并更新 layer，尺寸或渲染上下文变化时还可能重新分配，所以长期给所有 View 强制开启并不划算。
+API 11 同时提供 `View.setLayerType()`。`LAYER_TYPE_HARDWARE` 可以把稳定内容放入硬件层，便于后续做合成属性动画；它会占用图形内存。内容失效后仍要重新绘制并更新 layer，尺寸或渲染上下文变化时还可能重新分配；要不要长期给所有 View 强制开启，先把这笔图形内存的账算进去。
 
 #### Android 4.0：默认值与 target API 有关
 
@@ -950,7 +950,7 @@ INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT
 
 #### `VSYNC-app` 与 `VSYNC-sf` 的调度含义
 
-Perfetto 里的 `VSYNC-app`、`VSYNC-sf` 或相关预测轨道描述的是调度节拍，逐条解释成“应用直接收到一次硬件中断”会出偏差。现代系统会根据硬件 VSync 样本、显示模式与工作时长，预测 App 和 SurfaceFlinger 的唤醒时间。
+Perfetto 里的 `VSYNC-app`、`VSYNC-sf` 或相关预测轨道描述的是调度节拍：现代系统根据硬件 VSync 样本、显示模式与工作时长，预测 App 和 SurfaceFlinger 的唤醒时间；把它们逐条解释成“应用直接收到一次硬件中断”，会出偏差。
 
 旧 AOSP 资料常出现 `DispSync`，Android 17 的主线使用 Scheduler 与 `VsyncPredictor` 等组件。内部预测器跨版本持续变化，我们分析 Trace 时关注本帧的 expected/actual timeline（预期与实际时间线）、deadline 和 present 就够了，不要靠预测器类名判断问题。
 
@@ -958,7 +958,7 @@ Perfetto 里的 `VSYNC-app`、`VSYNC-sf` 或相关预测轨道描述的是调度
 
 Project Butter 将三重缓冲作为流畅性策略之一。它允许 Producer、GPU 与 Consumer 在更多情况下并行推进，减少“前一块 buffer 未释放，下一帧无处可画”的概率。我们把这里的“三重缓冲”理解成管线并行策略就好，具体 BufferQueue 怎么配置还是要单独查。
 
-三重缓冲并没把所有 Surface 固定成三个 slot（缓冲区槽位），也不保证卡顿之后没有额外延迟。现代 BufferQueue 的 slot 数、dequeue 上限、异步模式和使用者约束共同决定可用容量。Producer 持续快于显示消费时，队列会积压，FrameTimeline 可能标记 buffer stuffing（缓冲区持续积压，旧帧尚未及时消化），用户看到的输入延迟也会增加。
+三重缓冲留下的余量也有限度：它并没把所有 Surface 固定成三个 slot（缓冲区槽位），卡顿之后也可能还有额外延迟。现代 BufferQueue 的 slot 数、dequeue 上限、异步模式和使用者约束共同决定可用容量。Producer 持续快于显示消费时，队列会积压，FrameTimeline 可能标记 buffer stuffing（缓冲区持续积压，旧帧尚未及时消化），用户看到的输入延迟也会增加。
 
 ### Android 5.0–6.0：RenderThread 接管 HWUI 的渲染执行
 
@@ -970,7 +970,7 @@ Android 5.0 的 `libs/hwui/renderthread/RenderThread.cpp` 已包含独立 Render
 4. RenderThread 准备 Skia/GPU 工作，并 dequeue/queue App Window buffer；
 5. GPU completion fence（GPU 写入完成的信号）随 buffer 交给下游，SurfaceFlinger 再处理 transaction、latch 和合成。
 
-主线程与 RenderThread 不是严格首尾相接的两段。同步阶段必须处理本帧状态；在条件满足时，UI 线程可以在 RenderThread 完成本帧 GPU 工作前继续运行。不同 Android 版本与场景的阻塞点也不相同。
+主线程与 RenderThread 的衔接比“首尾相接的两段”更松散：同步阶段必须处理本帧状态，条件满足时，UI 线程可以在 RenderThread 完成本帧 GPU 工作前继续运行；阻塞点在不同 Android 版本与场景里也各不相同。
 
 Perfetto 中 `DrawFrame` 很长只能说明 RenderThread 这段跨度较长。它可能包含：
 
@@ -1008,7 +1008,7 @@ API 24 增加 `Window.addOnFrameMetricsAvailableListener()` 和 `FrameMetrics`�
 | `SWAP_BUFFERS_DURATION` | 把帧 buffer 交给显示子系统 |
 | `TOTAL_DURATION` | 从 intended VSync（该帧原本对应的 VSync）到 frame completed（应用侧完成该帧）的跨度 |
 
-这些阶段可能重叠或并行，`TOTAL_DURATION` 是完整跨度，把其他 duration 直接相加得不到它。`COMMAND_ISSUE_DURATION` 观察的是 CPU 侧发命令阶段，它长，GPU execution 未必长。
+这些阶段可能重叠或并行，`TOTAL_DURATION` 是完整跨度，把其他 duration 直接相加得不到它；`COMMAND_ISSUE_DURATION` 长说明的是 CPU 侧发命令的阶段长，GPU execution 要另外看。
 
 API 31 又增加：
 
@@ -1021,13 +1021,13 @@ API 36 增加 `FRAME_TIMELINE_VSYNC_ID`，可与 compositor（SurfaceFlinger 等
 
 Vulkan 从 API 24 可供 native 应用使用。它减少驱动隐式管理，把 command buffer（记录并提交 GPU 命令的对象）、资源同步和内存管理交给应用显式控制。代价是同步、生命周期和跨设备能力判断更复杂。
 
-Vulkan API 可用，不表示 View/HWUI 一定使用 Vulkan。应用自带的 Vulkan renderer、HWUI SkiaVulkan、ANGLE-on-Vulkan 是三条不同路径。
+Vulkan API 可用只覆盖“公共 API”这一层；应用自带的 Vulkan renderer、HWUI SkiaVulkan、ANGLE-on-Vulkan 是三条不同路径，View/HWUI 走哪条要分别确认。
 
 #### Android 8.x–9：HWUI 转向 Skia GPU 后端
 
 早期 HWUI 自己维护大量 OpenGL renderer 逻辑。Android 8.0/8.1 的 `Properties.cpp` 已识别 `skiagl` 和 `skiavk`，但 `debug.hwui.renderer` 未设置时仍回退旧 OpenGL renderer；Android 9.0 的同一文件把属性默认值明确改为 `skiagl`。绘制 API 仍是 View/Canvas/RenderNode，底层由 HWUI 直接管理 GL 的路径逐步转向 Skia GPU backend（连接图形 API 与驱动的后端）。
 
-Android 17 的 `libs/hwui/pipeline/skia/` 仍有 `SkiaOpenGLPipeline`、`SkiaVulkanPipeline` 和公共 `SkiaGpuPipeline`。设备可以按产品配置、驱动和调试设置选择后端，按 Android 版本断言所有设备都走同一个 backend 是靠不住的。
+Android 17 的 `libs/hwui/pipeline/skia/` 仍有 `SkiaOpenGLPipeline`、`SkiaVulkanPipeline` 和公共 `SkiaGpuPipeline`。设备按产品配置、驱动和调试设置选择后端；判断某台设备走哪个 backend，查它的实际配置比看 Android 版本可靠。
 
 Skia 项目中的 Graphite 是新一代 GPU 后端研发方向。`android-17.0.0_r1` 的 HWUI pipeline 目录没有 Graphite pipeline 或默认启用路径，因此不将它列为 Android 平台里程碑。
 
@@ -1046,7 +1046,7 @@ Skia 项目中的 Graphite 是新一代 GPU 后端研发方向。`android-17.0.0
 
 ### Android 11：BLAST 改变 buffer 与 transaction 的配合
 
-Android 11 的 AOSP 已包含 `BLASTBufferQueue.cpp`，主窗口路径也开始迁移到 BLAST；源码中出现该组件，还说明不了所有 Android 11 设备和所有 Surface 类型都走这条路径。BLAST 的名称来自 Buffer Layer And Surface Transactions，它把窗口 buffer 与几何属性等更新放进同一帧的 Surface transaction。
+Android 11 的 AOSP 已包含 `BLASTBufferQueue.cpp`，主窗口路径也开始迁移到 BLAST；源码里有这个组件，只说明主路径开始迁移，具体设备、具体 Surface 类型走哪条路，还要按实际观察确认。BLAST 的名称来自 Buffer Layer And Surface Transactions，它把窗口 buffer 与几何属性等更新放进同一帧的 Surface transaction。
 
 它没有删除 BufferQueue。BLAST 内部仍使用 Producer/Consumer buffer queue，并把 buffer update 变成 `SurfaceControl::Transaction` 的一部分，便于把 buffer、frame number、crop（裁剪范围）、transform（旋转、缩放等几何变换） 和窗口几何状态按帧关系提交给 SurfaceFlinger。
 
@@ -1077,7 +1077,7 @@ FrameTimeline 在系统侧维护 App `SurfaceFrame` 与 SurfaceFlinger `DisplayF
 
 `Actual Timeline` 上的迟到帧是诊断入口。Perfetto 文档说明 App 帧结束会考虑 buffer post（应用提交 buffer） 和 GPU completion；SurfaceFlinger 侧还可能因 Layer readiness（Layer 内容尚未满足合成条件）、client composition、HWC 或 present 迟到。
 
-私有 `TimelineItem`、`SurfaceFrame` 和 token 保存策略会随版本调整。应用开发者应依赖 Perfetto schema（Trace 数据字段及其关系的定义）、公共 API 和目标版本源码，把某个旧版本的私有结构体定义当长期接口并不稳妥。
+私有 `TimelineItem`、`SurfaceFrame` 和 token 保存策略会随版本调整。应用开发者应依赖 Perfetto schema（Trace 数据字段及其关系的定义）、公共 API 和目标版本源码；旧版本的私有结构体定义随时会变，只适合当阅读材料。
 
 #### Android 13：App 可以读取候选帧时间线
 
@@ -1090,7 +1090,7 @@ API 33 增加：
 
 一份 `FrameData` 可以包含多个候选 timeline，并标出平台偏好的 timeline；不同候选项代表系统允许应用瞄准的不同呈现时刻。native 应用有对应的 AChoreographer frame callback data API，可以为 Surface transaction 选择 frame timeline。
 
-这些 API 提供时间目标，应用未必一定在 deadline 前完成，buffer/fence/present 的直接观测也替代不了。
+这些 API 提供的是时间目标；应用是否真的在 deadline 前完成，还是要看 buffer/fence/present 的直接观测。
 
 #### Android 13–16：AGSL 扩展 Canvas 效果
 
@@ -1106,13 +1106,13 @@ ARR 从 Android 15 开始提供，官方文档把可用条件写为支持相应 
 
 Android 16 / API 36 增加 `Display.hasArrSupport()` 和 `getSuggestedFrameRate()`。应用还可以通过 View、Surface、ANativeWindow 的 frame-rate API 提交帧率偏好。系统会综合同一显示上的多个 View、Layer、系统 UI、触摸和功耗策略；API 调用成功只表示请求已被接收，不保证显示器立刻切到指定 Hz。
 
-在 ARR 设备上看到 8.33 ms、16.67 ms 或更长 VSync 间隔变化时，应检查选定时间线、deadline、requested frame rate（应用请求的帧率） 和 active display mode（当前生效的显示模式），再判断是否异常。
+在 ARR 设备上看到 8.33 ms、16.67 ms 或更长的 VSync 间隔变化时，我们先查选定时间线、deadline、requested frame rate（应用请求的帧率） 和 active display mode（当前生效的显示模式），再判断它是不是异常。
 
 #### ANGLE 是可选 GLES-on-Vulkan 路径
 
 Android 15 起，ANGLE 作为可选兼容层把 OpenGL ES（GLES）调用映射到 Vulkan。它能改善兼容性，并可能改变 CPU/GPU 工作分布，但性能结果取决于设备、驱动和负载。
 
-GLES 应用、原生 Vulkan 应用和 HWUI 页面是三类对象，要分开对待；ANGLE 的启用同样说明不了应用源码已迁移到 Vulkan API。
+GLES 应用、原生 Vulkan 应用和 HWUI 页面是三类对象，要分开对待；ANGLE 是否启用，也回答不了应用源码有没有迁移到 Vulkan API 的问题。
 
 #### Android 16 launch device 的 Vulkan 1.4
 
@@ -1140,7 +1140,7 @@ Android 17 起，游戏可以在 manifest 中请求优先使用 ANGLE 作为 GLE
 </application>
 ```
 
-平台用不了 ANGLE 时会回到厂商 GLES driver。排查问题要记录实际 renderer/driver，只看 manifest 是不够的。
+平台用不了 ANGLE 时会回到厂商 GLES driver。排查问题时我们把实际 renderer/driver 记下来，manifest 只是偏好的起点。
 
 #### API 37 的 frame-rate/velocity mapping
 
@@ -1164,7 +1164,7 @@ Choreographer / UI Thread
   → display present
 ```
 
-页面有 `SurfaceView`、`TextureView`、视频、Camera、WebView、Flutter、游戏或 React Native 时，要先确认 Producer、Consumer 与最终 Layer。`SurfaceView` 常有独立 child Surface；`TextureView` 会先被宿主 HWUI 采样进 App Window；框架名回答不了 Surface 拓扑的问题。
+页面有 `SurfaceView`、`TextureView`、视频、Camera、WebView、Flutter、游戏或 React Native 时，要先确认 Producer、Consumer 与最终 Layer。`SurfaceView` 常有独立 child Surface；`TextureView` 会先被宿主 HWUI 采样进 App Window；Surface 拓扑要按实际页面确认，框架名本身给不出答案。
 
 这里的 child Surface 是挂在宿主窗口层级之下、拥有自己 buffer 提交路径的 Surface。主线末端的 CompositionEngine 为每个 Display 组织可见 Layer，HWComposer 再通过 Composer HAL 与显示硬件协商并 present。
 
@@ -1195,7 +1195,7 @@ UI 线程慢时看 input、animation、traversal、measure/layout 和 display-li
 3. SurfaceFlinger 何时认为 transaction ready 并 latch；
 4. 对应 DisplayFrame 何时 present。
 
-`BufferTX - <layerName>` 只表示 SurfaceFlinger server 侧待处理的 buffer transaction 数量发生了变化；屏幕是否已经显示，它说明不了。
+`BufferTX - <layerName>` 只表示 SurfaceFlinger server 侧待处理的 buffer transaction 数量发生了变化；屏幕有没有显示，要看后续的 present 记录。
 
 #### 4. Android 12+ 用 FrameTimeline 锁定帧
 
@@ -1203,7 +1203,7 @@ UI 线程慢时看 input、animation、traversal、measure/layout 和 display-li
 
 #### 5. Android 15+ 分开渲染帧率与显示刷新率
 
-App 可能以 30 fps 更新，显示以 60/90/120 Hz 或 ARR 步进工作；多个 Layer 也可能按不同 cadence（内容更新与显示刷新的节奏关系）运行。帧是否准时，按选定的 timeline 和 deadline 判断就好；固定拿 16.67 ms 当所有设备、所有帧的预算，并不可靠。
+App 可能以 30 fps 更新，显示以 60/90/120 Hz 或 ARR 步进工作；多个 Layer 也可能按不同 cadence（内容更新与显示刷新的节奏关系）运行。帧是否准时，按选定的 timeline 和 deadline 判断就好；把 16.67 ms 当成所有设备、所有帧的通用预算，在刷新率可变的设备上会出错。
 
 ### API、平台实现与设备能力是三层约束
 

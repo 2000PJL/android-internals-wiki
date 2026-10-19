@@ -101,9 +101,9 @@ last_consolidated_at: '2026-08-24'
 
 ### 分析目标：把异常帧变成可复核因果链
 
-卡顿分析的交付物只写到“主线程有一个长 slice”或“CPU 频率较低”，别人没法复核。一份可复核的结论要记录复现场景、目标 Surface（图形内容提交接口）Frame（某个 Surface 的一帧） 与 DisplayFrame（一次显示合成帧）、责任落在哪个阶段、关键线程或 fence（同步栅栏），以及修复后的同场景对照。这里的 Surface 指的是向显示系统提交图形缓冲区的接口。
+这一节要解决的问题是：拿到 trace 之后，怎样把观察写成别人可以复核的结论。只写“主线程有一个长 slice”或“CPU 频率较低”，别人复核不了；要把结论写扎实，就得记录复现场景、目标 Surface（图形内容提交接口）Frame（某个 Surface 的一帧） 与 DisplayFrame（一次显示合成帧）、责任落在哪个阶段、关键线程或 fence（同步栅栏），以及修复后的同场景对照。
 
-推荐使用以下证据顺序：
+我们按下面的顺序收集和使用证据：
 
 1. 复现并固定环境；
 2. 检查 trace（跟踪记录） 是否已包含所需 probe（采集探针）；
@@ -116,9 +116,9 @@ last_consolidated_at: '2026-08-24'
 
 ### 抓取前先固定现场
 
-复现记录至少要包含：设备与 build、应用版本、刷新率/显示模式、温控状态、是否充电、前后台状态、页面与手势脚本、复现次数，以及首次运行还是稳态运行。涉及 SurfaceView、WebView、Camera、Video、Flutter、游戏或 Native Graphics 时，还要记录 Producer（图形内容生产者）、Surface 与 layer 结构。
+进入采集之前，我们先固定现场。复现记录至少要包含：设备与 build、应用版本、刷新率/显示模式、温控状态、是否充电、前后台状态、页面与手势脚本、复现次数，以及首次运行还是稳态运行。涉及 SurfaceView、WebView、Camera、Video、Flutter、游戏或 Native Graphics 时，还要记录 Producer（图形内容生产者）、Surface 与 layer 结构。
 
-“竞品不卡”只能提供比较线索。两个应用可能使用不同的刷新率请求、Surface 结构、解码路径和画质，仅凭这一点还排除不了设备或系统瓶颈。问题只在低端设备上复现时，也不能直接归为 CPU 调度问题；我们要继续区分计算量、内存带宽、GPU、I/O 与温控因素。
+“竞品不卡”是一条比较线索：两个应用可能使用不同的刷新率请求、Surface 结构、解码路径和画质，设备或系统瓶颈要先排除。问题只在低端设备上复现时，我们先把计算量、内存带宽、GPU、I/O 与温控因素分开看，再判断是不是 CPU 调度的问题。
 
 采集时长由复现概率决定。稳定复现适合短 trace，以减少无关数据；偶发问题适合使用 ring buffer（环形缓冲区）、触发式停止或多轮采样。trace buffer（跟踪缓冲区） 的大小要覆盖目标窗口，采集结束还要检查有没有丢数据。
 
@@ -185,7 +185,7 @@ Android 12 / API 31 起，FrameTimeline 是标准入口。应用的 SurfaceFrame
 
 颜色只用于导航。红色、黄色或浅绿色都只是界面提示，我们读取的是字段本身：`JankType` 是位标志，同一帧可能有多个原因。分析 `BufferStuffing`、Dropped、PredictionError 和显示模式切换时，还要读取相邻帧。
 
-SurfaceView、视频 overlay（硬件叠加层）、Camera 和某些引擎路径可能没有完整的 App FrameTimeline。这时我们改从目标 layer、buffer update、acquire fence（等待生产完成的同步栅栏）、SF latch（锁定本帧 buffer）、composition type（合成类型）、present fence（显示完成栅栏） 与 release fence（buffer 可复用栅栏） 组织证据：acquire fence（缓冲区可读栅栏） 等待生产完成，SF latch 锁定本帧 buffer，present fence 表示显示完成，release fence 之后 buffer 才可复用。出图类型识别参见 [渲染管线总览](../ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)。
+SurfaceView、视频 overlay（硬件叠加层）、Camera 和某些引擎路径可能没有完整的 App FrameTimeline。这时我们改从目标 layer、buffer update、acquire fence（等待生产完成的同步栅栏）、SF latch（锁定本帧 buffer）、composition type（合成类型）、present fence（显示完成栅栏）与 release fence（buffer 可复用栅栏）组织证据。这几个对象各管一段：acquire fence（缓冲区可读栅栏）要等生产完成，SF latch 锁定本帧 buffer，present fence 表示显示完成，release fence 之后 buffer 才可复用。出图类型识别参见 [渲染管线总览](../ch13-rendering-pipelines/01-android-view-pipeline-analysis.md)。
 
 ### 从帧回到线程与系统
 
@@ -230,11 +230,11 @@ Runnable（可运行但尚未获得 CPU） duration（持续时间）描述等�
 | `GPU_DURATION`、`DEADLINE` | API 31 | GPU 完成时间与应用帧预算 |
 | `FRAME_TIMELINE_VSYNC_ID` | API 36 | 把 HWUI frame 与 compositor timeline（合成器时间线）关联 |
 
-`TOTAL_DURATION` 不是各阶段的简单求和，部分阶段可以并行。API 31 及更高版本可以用 `TOTAL_DURATION < DEADLINE` 判断应用是否满足该帧预算；这仍是 HWUI 窗口视角，无法覆盖独立 Surface 的全部像素生产和显示末端。
+`TOTAL_DURATION` 不是各阶段的简单求和，部分阶段可以并行。API 31 及更高版本可以用 `TOTAL_DURATION < DEADLINE` 判断应用是否满足该帧预算；这仍是 HWUI 窗口视角，独立 Surface 的像素生产和显示末端并不都在它的覆盖范围内。
 
 `JankStats` 在 FrameMetrics 和平台计时数据上增加启发式 jank 判断和 UI state（界面状态）。它适合回答“哪个页面或交互经常出问题”；Perfetto 用于解释具体帧的跨进程原因。线上数据按设备、刷新率、场景和版本聚合，不同 API 级别的精度要分开对待。
 
-第三方应用的 Perfetto SDK 主要提供进程内 Track Event（轨道事件） 和受支持的 tracing session（跟踪会话），读取任意 ftrace（Linux 内核跟踪）、SurfaceFlinger 或其他进程数据的权限它给不了。开发环境可以通过 adb/Android Studio 采集系统 trace；生产环境要使用平台允许的 profiling API（性能分析接口）、设备策略或应用内指标，并清楚记录缺少哪些数据源。
+第三方应用的 Perfetto SDK 主要提供进程内 Track Event（轨道事件） 和受支持的 tracing session（跟踪会话）；要读取任意 ftrace（Linux 内核跟踪）、SurfaceFlinger 或其他进程的数据，需要平台权限。开发环境可以通过 adb/Android Studio 采集系统 trace；生产环境要使用平台允许的 profiling API（性能分析接口）、设备策略或应用内指标，并清楚记录缺少哪些数据源。
 
 ### Perfetto SQL：从表结构开始
 
@@ -410,16 +410,16 @@ ORDER BY b.client_dur DESC;
 
 ## 滚动、动画、启动与交互场景
 
-滚动、动画、启动与页面切换的帧生产方式不同，起止点和关键轨道也不同。
+这一节按场景展开：滚动、动画、启动与页面切换的帧生产方式不同，起止点和关键轨道也不同，我们逐个场景列出要看的对象和检查顺序。
 
-### 场景名只负责缩小范围
+### 从场景名到渲染链路
 
 “列表卡”“转场卡”“通知栏卡”描述的是用户当时看到了什么，还没有说明哪条渲染链路迟到。同一个列表里可以同时出现普通 View、SurfaceView 视频和 TextureView 地图；一次页面切换又可能包含应用窗口的 buffer、Shell transition（系统窗口过渡） 的 leash（用于统一控制窗口动画的临时图层）变换、壁纸、IME 与 SurfaceFlinger 合成。我们若从场景名称直接跳到某个线程，很容易把证据落到错误的对象上。
 
 定位顺序如下：
 
 1. 记录发生卡顿的交互阶段、显示屏、刷新率和时间区间。
-2. 列出屏幕上的内容生产者，以及各自产出的 Surface、BufferQueue（连接内容生产者和消费者的缓冲队列） 和 SurfaceFlinger layer（图层）。Surface 是图形内容提交接口，BufferQueue 连接内容生产者和消费者。
+2. 列出屏幕上的内容生产者，以及各自产出的 Surface、BufferQueue（连接内容生产者和消费者的缓冲队列） 和 SurfaceFlinger layer（图层）。
 3. 从 FrameTimeline 的异常 SurfaceFrame/DisplayFrame，或目标 layer 的异常 present 反查。
 4. 沿 token、frame number（帧序号）、transaction、buffer 与 fence 找到最早迟到的阶段。
 5. 回到责任线程，检查执行时间、Runnable 等待、锁、Binder、I/O、GC、GPU 和温控状态。
@@ -514,7 +514,7 @@ AndroidX Fragment 的 `commit()` 会把事务加入 FragmentManager 队列：它
 几个 API 的边界需要分清：
 
 - `commit()` 异步排队；返回时事务通常尚未执行。
-- `commitNow()` 在调用线程同步执行，要求主线程，且不能与 `addToBackStack()` 组合。它会把工作提前到当前调用点，当通用的流畅度开关用并不合适。
+- `commitNow()` 在调用线程同步执行，要求主线程，也不支持与 `addToBackStack()` 组合。它会把工作提前到当前调用点，当通用的流畅度开关用并不合适。
 - `executePendingTransactions()` 会执行当前待处理事务，影响范围可能超过某一次提交。
 - `setReorderingAllowed(true)` 允许 FragmentManager 优化同一批操作的状态变化，并改善 transition/lifecycle（转场/生命周期） 语义。布局、业务初始化或 GPU 工作仍要另行处理。
 - `commitAllowingStateLoss()` 改变的是保存状态后的提交约束，用它规避卡顿会引入状态丢失风险。
@@ -552,7 +552,7 @@ Android 12（API 31）起，系统 SplashScreen API 为冷启动和温启动提�
 
 #### Predictive Back
 
-Android 15 移除了预测性返回的开发者选项。应用完成 opt-in（显式启用） 后，系统可以提供返回桌面、跨 Activity 和跨任务的预测动画；具体效果仍受导航结构、回调类型和系统实现影响。相关的平台与 AndroidX 回调接口需要分清，三者不能混用：
+Android 15 移除了预测性返回的开发者选项。应用完成 opt-in（显式启用） 后，系统可以提供返回桌面、跨 Activity 和跨任务的预测动画；具体效果仍受导航结构、回调类型和系统实现影响。相关的平台与 AndroidX 回调接口需要分清，三者语义不同，要分开使用：
 
 - `OnBackPressedCallback`（AndroidX Activity 1.6 及更高版本）：`handleOnBackPressed()` 由 `OnBackPressedDispatcher` 分发；它只在返回提交时触发，本身不提供连续进度。
 - `OnBackInvokedCallback`（平台，API 33 及更高版本）：只有 `onBackInvoked()`，在返回“提交”时回调。它同样没有 started/progressed/cancelled（开始/进行/取消） 的进度语义。
@@ -587,7 +587,7 @@ Dialog 和 PopupWindow 都会向 WindowManager 增加窗口对象，并拥有各
 
 ### Notification 展开与折叠：责任进程在 SystemUI
 
-通知面板的展开、折叠、分组和 Quick Settings（快捷设置） 动画，主要由 SystemUI 生成 UI 帧。普通应用在发布或更新通知时通过 Binder 提交 Notification；动画期间如果通知内容没有更新，应用进程可能完全不在关键路径上。这时关键路径基本落在 SystemUI 一侧。
+通知面板的展开、折叠、分组和 Quick Settings（快捷设置） 动画，主要由 SystemUI 生成 UI 帧。普通应用在发布或更新通知时通过 Binder 提交 Notification；动画期间如果通知内容没有更新，应用进程可能完全不在关键路径上，关键路径基本落在 SystemUI 一侧。
 
 需要分别检查：
 
@@ -619,7 +619,7 @@ AOSP 的 Launcher3 提供 Workspace、CellLayout、Widget 与 Quickstep（手势
 5. SurfaceFlinger 的可见 layers、composition 与 present；
 6. sched、CPU frequency、thermal 和 GPU 证据。
 
-发现 RenderThread 位于小核时，还要继续验证唤醒等待、CPU capacity、频率与同帧工作量。单帧的 CPU 编号不能单独支持“调度器导致卡顿”的结论。
+发现 RenderThread 位于小核时，还要继续验证唤醒等待、CPU capacity、频率与同帧工作量。单凭一帧的 CPU 编号，还撑不起“调度器导致卡顿”的结论。
 
 #### Recents / Overview
 
@@ -637,7 +637,7 @@ Task snapshot 通过 `TaskSnapshot` 携带 HardwareBuffer（硬件图形缓冲�
 
 在 Winscope 中，应检查 Shell transition 的参与者、WindowManager 状态、SurfaceFlinger layers 和 transactions；再在 Perfetto 中对齐 Launcher/SystemUI/system_server 的线程、输入、snapshot 相关 Binder、GPU 与 DisplayFrame。若动画卡片移动正常而内容停住，需要辨别当前看到的是 snapshot、旧 buffer 还是 live surface。
 
-### 视频：UI 帧与视频帧要分开
+### 视频：UI 帧与视频帧
 
 视频通常由 MediaCodec 或播放器渲染器向 Surface 输出 buffer。使用 SurfaceView 时，视频通常拥有独立的 child layer（子图层）；使用 TextureView 时，视频 buffer 先进入 SurfaceTexture，再由宿主 HWUI 在 App Window 中采样。两条路径的责任线程、buffer 数量和 FrameTimeline 覆盖范围不同。
 
@@ -651,7 +651,7 @@ Task snapshot 通过 `TaskSnapshot` 携带 HardwareBuffer（硬件图形缓冲�
 
 HWC overlay 能减少 GPU 合成压力，但是否可用取决于格式、缩放、旋转、HDR（高动态范围）、受保护内容、其他 layers 与硬件资源。我们检查目标 layer 的实际 composition type，不依据 SurfaceView 或 MediaCodec 名称推断 overlay。详见[视频 Overlay、Media3 与专业编解码管线](../ch13-rendering-pipelines/11-video-overlay-media3-codec-pipeline.md)。
 
-### 地图与 WebView：先确认承载方式
+### 地图与 WebView 的承载方式
 
 #### 地图 SDK
 
@@ -669,7 +669,7 @@ SurfaceView 与 TextureView 的差别参见[SurfaceView 与 TextureView 渲染�
 
 #### WebView
 
-标准硬件加速 WebView 的网页主体通常经 Chromium renderer（渲染进程）、compositor/GPU 服务和 WebView functor（连接 Chromium 与 Android HWUI 的绘制桥接对象） 合入宿主 App Window。视频、受保护内容、provider overlay（WebView 实现提供方添加的叠加层） 或定制内核可能增加独立的 SurfaceControl layer。网页主体与媒体 overlay 需要分开追踪。WebView functor 是连接 Chromium 与 Android HWUI 的绘制桥接对象。
+标准硬件加速 WebView 的网页主体通常经 Chromium renderer（渲染进程）、compositor/GPU 服务和 WebView functor（连接 Chromium 与 Android HWUI 的绘制桥接对象） 合入宿主 App Window。视频、受保护内容、provider overlay（WebView 实现提供方添加的叠加层） 或定制内核可能增加独立的 SurfaceControl layer。网页主体与媒体 overlay 需要分开追踪。
 
 WebView 是可以独立更新的组件。平台源码可以锚定 `android-17.0.0_r1`，分析 Chromium 行为时还必须记录设备上的 WebView provider 包名、版本与 revision（修订版本）。仅凭 Android 17 平台版本标签，确认不了某个 Chromium slice 名称或进程结构。
 
@@ -722,7 +722,7 @@ Renderer 退出应结合进程生命周期、LMK（低内存终止）/OOM（内�
 
 ## 案例：从现场证据到修复判断
 
-场景模板用于提出假设；案例要说明哪条证据排除了其他原因，以及修复后哪项指标发生变化。
+场景模板帮我们提出假设；案例则要回答两件事：哪条证据排除了其他原因，修复后哪项指标发生了变化。
 
 ### 案例证据怎样使用
 
@@ -816,11 +816,11 @@ Renderer 退出应结合进程生命周期、LMK（低内存终止）/OOM（内�
 3. Heap dump（堆转储）、heapprofd（原生堆分析器） 或引用分析指向释放不掉的对象；
 4. 修掉引用或限制缓存后，内存曲线、GC 事件和耗时较长的尾部帧同步改善。
 
-ART 的并发 GC 仍包含暂停阶段，但整个 Concurrent GC slice（并发回收区间） 并非都是主线程 Stop-The-World（所有线程暂停） 时间。我们查看 trace 中明确的 pause、线程状态和分配等待。不同 Android/ART 版本的事件名称会变化，只搜索固定名称 `GC For Alloc` 容易漏掉其他事件。
+ART 的并发 GC 仍包含暂停阶段，但整个 Concurrent GC slice（并发回收区间）里，属于主线程 Stop-The-World（所有线程暂停）时间的只是其中一部分。我们查看 trace 中明确的 pause、线程状态和分配等待。不同 Android/ART 版本的事件名称会变化，只搜索固定名称 `GC For Alloc` 容易漏掉其他事件。
 
 原案例中“弹窗关闭后动画仍持有页面”的引用链能解释对象为何存活。修复动作是结束动画、移除回调或监听器，并释放与页面生命周期绑定的对象。缓存问题还要分别统计 Java heap（Java 堆）、native allocation（原生内存分配）、GraphicBuffer/dma-buf（图形缓冲区/设备间共享缓冲区） 和 GPU 资源。
 
-#### 低内存对照：不要把系统压力误判成应用泄漏
+#### 整机低内存对照
 
 AndroidPerformance 还公开过一组整机低内存冷启动对照：
 
@@ -835,7 +835,7 @@ AndroidPerformance 还公开过一组整机低内存冷启动对照：
 
 表中的 Block I/O 指块设备读写等待，Uninterruptible Sleep/WakeKill 指内核中不可中断、但可被致命信号唤醒的睡眠状态，Running 指线程正在 CPU 上执行。这组数据表明，两次启动的 Running 时间接近，差异主要出现在 I/O、不可中断等待和系统内存活动上。它证明不了所有低内存卡顿都由 I/O 导致，但足以排除“应用 CPU 计算增加”是该次对照的主要原因。
 
-在 Android 17 / `android17-6.18-2026-06_r6` 下，我们查看 PSI memory（内存压力指标）、direct reclaim（内存回收）、kswapd（内核后台回收线程）、swap/zram（压缩内存交换区） I/O（交换空间/压缩内存读写）、major fault（需要从存储读取数据的主缺页）、lmkd（低内存终止守护进程） 事件和前台线程状态。现代 lmkd 主要依据 PSI 与进程优先级工作，旧内核中的 lowmemorykiller 日志和固定 minfree 阈值方案不能直接套用。
+在 Android 17 / `android17-6.18-2026-06_r6` 下，我们查看 PSI memory（内存压力指标）、direct reclaim（内存回收）、kswapd（内核后台回收线程）、swap/zram（压缩内存交换区） I/O（交换空间/压缩内存读写）、major fault（需要从存储读取数据的主缺页）、lmkd（低内存终止守护进程） 事件和前台线程状态。现代 lmkd 主要依据 PSI 与进程优先级工作，旧内核中的 lowmemorykiller 日志和固定 minfree 阈值方案直接套用行不通。
 
 #### 修复与效果
 
@@ -947,7 +947,7 @@ Android Developers 的 Netmarble 案例介绍了《Game of Thrones: Kingsroad》
 - 接入后，持续帧率通常保持在约 50–60 FPS；
 - 动态目标帧率最低可降到 30 FPS，以避免不可持续的高负载。
 
-这些数值来自官方开发者案例，但页面没有完整列出设备覆盖、环境温度和样本分布，其他游戏的 SLA（服务等级协议） 不能照搬。
+这些数值来自官方开发者案例，但页面没有完整列出设备覆盖、环境温度和样本分布，也照搬不到其他游戏的 SLA（服务等级协议）上。
 
 #### 从现象到根因
 
@@ -971,7 +971,7 @@ ADPF Performance Hint Session（性能提示会话） 可以报告参与周期�
 
 #### 效果与 Android 17 边界
 
-这个案例通过提前降低无法长期维持的负载获得收益，画质和目标帧率本身也发生了变化。比较时要同时报告画质档位、实际 render scale、目标/显示/提交帧率、功耗和 thermal headroom，只比较平均 FPS 会漏掉关键差异。
+这个案例的收益来自提前降低长期维持不住的负载，画质和目标帧率本身也发生了变化。比较时要同时报告画质档位、实际 render scale、目标/显示/提交帧率、功耗和 thermal headroom，只比较平均 FPS 会漏掉关键差异。
 
 Android 17 / API 37 继续提供 Thermal API、ADPF 与 CPU/GPU headroom 相关能力。设备支持和厂商映射仍有差异；`getThermalHeadroom()` 返回 NaN（无有效数值） 时，要考虑调用间隔或设备不支持。相同的热状态等级也换算不成统一的 CPU/GPU 频率。
 

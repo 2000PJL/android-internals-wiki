@@ -6331,6 +6331,48 @@
       "summary": "四处被早期机器括注流程撕开/错注的括注，被 style_lint compare 的括注冻结检查锁住，改写车道无法修复",
       "type": "style-gloss",
       "updated_at": "2026-10-19T08:18:55.522063+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "已重写 THP 小节：区分 PTE mTHP 与 PMD THP、按尺寸默认策略与 defrag，保留 MADV_COLLAPSE 绕过 sysfs 的警告及进程/VMA 限制，补只读查询命令。源码核验和 shell 语法检查通过；未做设备性能实验。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261019-083520-deep-review-7eda697f",
+      "created_at": "2026-10-19T08:37:30.582682+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261019-083520-deep-review-7eda697f",
+      "details": "claim: 透明大页用 PMD 等较高层级映射，THP 需要规整、迁移。target_range: THP 的尺寸与运行时策略（修改前 1056-1060 行）。evidence: android17-6.18-2026-06_r6 transhuge.rst 48-61 明确 mTHP 仍为 PTE 映射；152-197 区分 defrag 策略与回退；122-125 警告 MADV_COLLAPSE 忽略 sysfs 禁用值；huge_memory.c 790-796 给出按尺寸初始策略。recommended_action: 重写本小节，区分 PMD THP/mTHP、启用策略/规整策略，补只读节点核对入口，保留稀疏访问风险与设备边界。",
+      "id": "finding-ch04-01-thp-scope-policy",
+      "log_path": "logs/deep-review/2026-10-19-20261019-083520-deep-review-7eda697f-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/transhuge.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/huge_memory.c"
+      ],
+      "status": "fixed",
+      "summary": "THP 定义漏掉 PTE 映射的 mTHP，且把规整写成必要步骤",
+      "type": "mechanism-boundary",
+      "updated_at": "2026-10-19T08:39:12.630160+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "已将不可移动页括注从 Movable 校正为 Unmovable，并关联 r6 enum migratetype 与 compaction.c，正文仅保留一套有效结论。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261019-083520-deep-review-7eda697f",
+      "created_at": "2026-10-19T08:37:30.655398+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261019-083520-deep-review-7eda697f",
+      "details": "claim: 不可移动（Movable）页可导致规整失败。target_range: 怎样证明延迟来自内存规整（修改前 978 行）。evidence: r6 mmzone.h 65-68 将 MIGRATE_UNMOVABLE 与 MIGRATE_MOVABLE 分列；compaction.c 2518-2525 区分 unmovable 分配与 CMA 页块；physical_memory.rst 61-68 解释 movable 可迁移内容。recommended_action: 将括注校正为 Unmovable，保留不可移动页导致规整受限的事实。",
+      "id": "finding-ch04-01-unmovable-label",
+      "log_path": "logs/deep-review/2026-10-19-20261019-083520-deep-review-7eda697f-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/mmzone.h",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/compaction.c"
+      ],
+      "status": "fixed",
+      "summary": "规整失败段落把不可移动页错误标为 Movable",
+      "type": "terminology-error",
+      "updated_at": "2026-10-19T08:39:12.684433+08:00"
     }
   ],
   "schema_version": 1

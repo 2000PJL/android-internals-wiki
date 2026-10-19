@@ -96,7 +96,7 @@ last_consolidated_at: '2026-08-24'
 
 > 源码基线：Android 17 / API 37 / AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。旧版本只用于说明能力的引入时间，不作为当前实现依据。
 
-Native 内存治理，我们先找到分配器、对象所有者和释放路径，再进入虚拟地址映射、页驻留、缺页和回收。malloc 数字、RSS 和 PSS 描述的是不同层面的事，各有各的用途。
+Native 内存治理分两步：先把分配器、对象所有者和释放路径找清楚，再进入虚拟地址映射、页驻留、缺页和回收。malloc 数字、RSS 和 PSS 描述的是不同层面的事，我们先分清它们各自回答什么问题，后面每一节都建立在这个区分上。
 
 ## 分配器、所有权与资源生命周期
 
@@ -104,7 +104,7 @@ Native 内存治理，我们先找到分配器、对象所有者和释放路径�
 
 Java 堆没有持续增长，进程的内存占用也可能在涨。只要应用里有 JNI、音视频 SDK、地图 SDK、游戏引擎、图片库或加密库，原生堆（Native Heap）、匿名 `mmap`、共享库映射和图形缓冲都可能推高 PSS；涨上去的后果，轻则后台进程更早被系统回收，重则前台内存压力或原生崩溃。
 
-所以我们先确认增长落在哪一种系统统计里，再按问题类型挑工具：heapprofd（Android 原生堆采样器）、`libmemunreachable`、`malloc_debug`、ASan、HWASan、GWP-ASan 或 MTE。容量问题和非法访问要的证据不同，前者看分配栈和存活量，后者看越界、释放后访问这些错误现场。内存模型见 [4.1 Android 与 Linux 内存管理全景](../../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md)，工具使用见 [15.3 内存分析、HPROF 与 Heap Dump 工具](../../part3-tools/ch15-other-tools/03-memory-hprof-heapdump（线程转储）-tools.md)，应用进程统计见 [10.1 App 内存分析与案例](../../part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md)。
+所以我们先确认增长落在哪一种系统统计里，再按问题类型挑工具：heapprofd（Android 原生堆采样器）、`libmemunreachable`、`malloc_debug`、ASan、HWASan、GWP-ASan 或 MTE。容量问题和非法访问要看的东西不同：前者看分配栈和存活量，后者看越界、释放后访问这些错误现场。内存模型见 [4.1 Android 与 Linux 内存管理全景](../../part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md)，工具使用见 [15.3 内存分析、HPROF 与 Heap Dump 工具](../../part3-tools/ch15-other-tools/03-memory-hprof-heapdump（线程转储）-tools.md)，应用进程统计见 [10.1 App 内存分析与案例](../../part2-performance/ch10-memory-perf/01-app-memory-analysis-cases.md)。
 
 文中术语含义如下：
 
@@ -124,24 +124,24 @@ Java 堆没有持续增长，进程的内存占用也可能在涨。只要应用
 | HPROF | Java 堆快照的数据格式和分析路径，用于查看 Java 对象，不等同于 heapprofd 记录的原生堆分配。 |
 | producer / client | 在 heapprofd 中，producer 是写入 Perfetto 数据的组件，client 是目标进程内接收配置并记录分配的组件。 |
 
-先按系统统计分区，再选工具，这是全文的操作主线。
+全文的操作主线就是这两步：先按系统统计分区，再选工具。
 
 ### 原生内存包含哪些部分
 
-讨论原生内存时，一个常见误区是把所有非 Java 堆的增长都归到 `malloc`。我们排查时至少区分四类：
+把所有非 Java 堆的增长都归到 `malloc`，是讨论原生内存时的常见误区。我们排查时至少区分四类：
 
 - **原生堆**：C/C++ 代码通过 `malloc`、`calloc`、`realloc`、`new` 申请的堆内存，常见来源是 JNI 层业务代码、第三方 `.so`、音视频编解码、图片库和加密库。
 - **匿名 `mmap` 区域**：代码直接用 `mmap` 申请的私有匿名映射，或者分配器向内核申请的大块 arena。`/proc/<pid>/smaps` 中可能显示为 `[anon:libc_malloc]`、`[anon:scudo:*]` 或业务自定义名称。
 - **`.so` / ELF 映射**：`.so` 文件被动态链接器映射到进程地址空间后，会产生代码段、只读数据、可写数据和重定位相关页面。共享只读页面通常按 PSS 分摊，可写脏页计入当前进程。
-- **图形与硬件缓冲**：Bitmap 像素、OpenGL/Vulkan 纹理、Surface buffer（界面缓冲）、`dma-buf` 等资源可能出现在原生堆、Graphics、GL 或 memtrack 统计中。统计位置受分配方式、驱动和厂商实现影响，不能只根据一个 VMA（virtual memory area，虚拟内存区域） 名称判断资源类型。图片内存见 [23.4 Bitmap 与图片内存优化](04-bitmap-optimization.md)。
+- **图形与硬件缓冲**：Bitmap 像素、OpenGL/Vulkan 纹理、Surface buffer（界面缓冲）、`dma-buf` 等资源可能出现在原生堆、Graphics、GL 或 memtrack 统计中。统计位置受分配方式、驱动和厂商实现影响，VMA（virtual memory area，虚拟内存区域） 名称只能当线索用，资源类型还要结合分配路径确认。图片内存见 [23.4 Bitmap 与图片内存优化](04-bitmap-optimization.md)。
 
-这些分类在系统侧有明确的实现位置：`android_os_Debug.cpp` 的 `android_os_Debug_getDirtyPagesPid()` 调用 libmeminfo 的 `ExtractAndroidHeapStats()` 取得按 VMA 分类的统计，再把 memtrack 返回的图形数据计入相应字段。VMA 分类规则位于 `androidprocheaps.cpp`：`[heap]`、`[anon:libc_malloc]`、`[anon:scudo:]` 和 `[anon:GWP-ASan]` 等名称归入原生堆，`.so` 归入共享库，`.jar`、`.apk` 等归入对应的代码分类。Graphics 数值还可能来自 memtrack，所以 `dma-buf` 的归类要落到具体实现上确认，不能想当然。
+这些分类在系统侧有明确的实现位置：`android_os_Debug.cpp` 的 `android_os_Debug_getDirtyPagesPid()` 调用 libmeminfo 的 `ExtractAndroidHeapStats()` 取得按 VMA 分类的统计，再把 memtrack 返回的图形数据计入相应字段。VMA 分类规则位于 `androidprocheaps.cpp`：`[heap]`、`[anon:libc_malloc]`、`[anon:scudo:]` 和 `[anon:GWP-ASan]` 等名称归入原生堆，`.so` 归入共享库，`.jar`、`.apk` 等归入对应的代码分类。Graphics 数值还可能来自 memtrack，所以 `dma-buf` 的归类要以具体实现为准。
 
-要注意 VMA 分类和总量统计走的是两条读取路径：`androidprocheaps.cpp` 必须扫描详细的 `/proc/<pid>/smaps`，因为分类依赖每个 VMA 的名字；而 `ProcMemInfo::SmapsOrRollup()` 用于计算 PSS、RSS 等聚合值，内核提供 `smaps_rollup` 时读取汇总文件，否则改读 `smaps`。`smaps_rollup` 里没有逐 VMA 名称，这两条路径各有用途。
+另外，VMA 分类和总量统计走的是两条读取路径：`androidprocheaps.cpp` 必须扫描详细的 `/proc/<pid>/smaps`，因为分类依赖每个 VMA 的名字；而 `ProcMemInfo::SmapsOrRollup()` 用于计算 PSS、RSS 等聚合值，内核提供 `smaps_rollup` 时读取汇总文件，否则改读 `smaps`。汇总文件里没有逐 VMA 名称，这两条路径各有用途。
 
 [源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/jni/android_os_Debug.cpp`, `system/memory/libmeminfo/androidprocheaps.cpp`, `system/memory/libmeminfo/procmeminfo.cpp`]
 
-四类内存对应的诊断动作也不一样：原生堆看分配栈；`.so` 映射看装载范围、重定位和脏页；图形缓冲看图像、渲染资源与 memtrack；匿名 `mmap` 要追踪调用方或业务设置的 VMA 名称。把它们合成一个“原生内存”数字固然省事，但定位所需的信息也就丢掉了。
+四类内存对应的诊断动作也各不相同：原生堆看分配栈；`.so` 映射看装载范围、重定位和脏页；图形缓冲看图像、渲染资源与 memtrack；匿名 `mmap` 要追踪调用方或业务设置的 VMA 名称。把它们合成一个“原生内存”数字固然省事，定位要用的线索也就跟着丢了。
 
 ### 排查入口：先看趋势，再记录调用栈
 
@@ -168,11 +168,11 @@ heapprofd 是 Perfetto 的原生堆采样分析器，从 Android 10 开始可用
 
 #### 中央服务默认禁用，由采集请求按需启动
 
-`heapprofd.rc` 把 `heapprofd` 服务声明为 `disabled`：`persist.heapprofd.enable=1` 或 `traced.lazy.heapprofd=1` 时，init（Android 启动后负责管理系统服务的进程） 才启动服务；两个属性都清空后，服务随之停止。所以 heapprofd 平时并不运行，由采集请求按需把它拉起，谈不上从开机起持续采集。
+`heapprofd.rc` 把 `heapprofd` 服务声明为 `disabled`：`persist.heapprofd.enable=1` 或 `traced.lazy.heapprofd=1` 时，init（Android 启动后负责管理系统服务的进程） 才启动服务；两个属性都清空后，服务随之停止。也就是说，平时并没有一个常驻的 heapprofd 在采集，每次采集请求才把它按需拉起。
 
 服务启动后，`heapprofd.cc::StartCentralHeapprofd()` 从 init 进程传入的 socket（本地通信端点） 取得监听端，建立 `HeapprofdProducer`，接收目标进程中分析 client 的连接。应用进程这一侧，`malloc_interceptor_bionic_hooks.cc` 中的 Bionic（Android 的 C 标准库与系统基础库） `MallocDispatch` 拦截 `malloc`、`free`、`calloc`、`realloc` 等入口，并通过 `AHeapProfile_registerHeap` 注册要分析的堆；这条路径不依赖 `LD_PRELOAD`。
 
-这套接口属于 heapprofd 与系统分配器的内部协作面，没有对外提供应用 SDK 的公共 malloc 拦截 API；源码里的 `heapprofd_get_malloc_leak_info` 和 `heapprofd_write_malloc_leak_info` 就是显式的空实现，也谈不上是 LeakCanary 或其他原生泄漏 SDK 的基础接口。
+这套接口属于 heapprofd 与系统分配器的内部协作面，没有对外提供应用 SDK 的公共 malloc 拦截 API；源码里的 `heapprofd_get_malloc_leak_info` 和 `heapprofd_write_malloc_leak_info` 就是显式的空实现，所以它们当不了 LeakCanary 或其他原生泄漏 SDK 的基础接口。
 
 [源码锚点: Perfetto `android-17.0.0_r1`, `heapprofd.rc`, `src/profiling/memory/heapprofd.cc`, `src/profiling/memory/malloc_interceptor_bionic_hooks.cc`]
 
@@ -198,7 +198,7 @@ data_sources: {
 }
 ```
 
-Perfetto 官方文档把 `4096` 字节作为默认采样间隔。`Sampler::SampleSize()` 对小于间隔的分配使用按字节推进的概率采样，含义是长期期望每 N 字节产生一个样本；单次分配大于或等于间隔时绕过该概率路径，记录这次分配的原始大小。所以要估算“某个对象被记了几次”，得回到这套采样语义上算，换算成固定次数行不通；CPU 开销同理，脱离设备、调用栈展开成本和负载都给不出固定百分比。
+Perfetto 官方文档把 `4096` 字节作为默认采样间隔。`Sampler::SampleSize()` 对小于间隔的分配使用按字节推进的概率采样，含义是长期期望每 N 字节产生一个样本；单次分配大于或等于间隔时绕过该概率路径，记录这次分配的原始大小。估算“某个对象被记了几次”要回到这套采样语义上算，固定换算比例给不出来；CPU 开销也一样，脱离设备、调用栈展开成本和负载，给不出固定百分比。
 
 采集完成后，我们到 Perfetto UI 的 Heap Profile（堆分配视图） 中看结果，火焰图按调用栈层级汇总分配。分析泄漏时，比较多个时间点仍然存活的分配及其调用栈；分析频繁申请和释放造成的分配抖动时，看累计分配量与分配频率。采样间隔越小，小分配的细节越多，事件量与运行开销也越高，所以先在目标设备上把开销测出来，再定复现窗口和采样间隔。
 
@@ -206,13 +206,13 @@ Perfetto 官方文档把 `4096` 字节作为默认采样间隔。`Sampler::Sampl
 
 #### 原生堆与 Java HPROF 是两条独立路径
 
-Perfetto 源码为原生 heapprofd 使用 `__SIGRTMIN + 4`，为 Java HPROF 使用 `__SIGRTMIN + 6`；Java HPROF producer 在发送信号前还会通过 `CanProfile()` 检查目标进程是否允许分析。两者使用不同的数据源、信号与权限路径，某一种转储命令能运行，推不出另一种 Perfetto 数据源也可用。
+Perfetto 源码为原生 heapprofd 使用 `__SIGRTMIN + 4`，为 Java HPROF 使用 `__SIGRTMIN + 6`；Java HPROF producer 在发送信号前还会通过 `CanProfile()` 检查目标进程是否允许分析。两者使用不同的数据源、信号与权限路径；某一种转储命令能运行，另一种 Perfetto 数据源还要单独验证。
 
 [源码锚点: Perfetto `android-17.0.0_r1`, `src/profiling/memory/heapprofd_producer.cc`, `src/profiling/memory/java_hprof_producer.cc`]
 
 ### libmemunreachable 与 malloc_debug：本地复现时补充泄漏证据
 
-`libmemunreachable` 在请求发生时扫描原生分配器，找出无法从可达根访问的分配块。默认模式不为每次分配记录回溯，运行期开销低，代价是报告只能提供地址、大小上界和部分内容；启用 `malloc_debug` backtrace（分配回溯栈） 后，报告可以附带分配栈，代价换成明显的运行时开销。
+`libmemunreachable` 在请求发生时扫描原生分配器，找出从可达根走不到的分配块。默认模式不为每次分配记录回溯，运行期开销低，代价是报告只能提供地址、大小上界和部分内容；启用 `malloc_debug` backtrace（分配回溯栈） 后，报告可以附带分配栈，代价换成明显的运行时开销。
 
 固定标签下，面向应用的流程位于独立仓库 `platform/system/memory/libmemunreachable`；`malloc_debug` 实现则从旧目录 `libc/malloc_debug` 移到了 Bionic 的 `libc/memory/malloc_debug`。下面这组命令用于 userdebug 设备上的单个应用，`<process>` 要替换为进程名，设置属性后必须终止并重新启动进程。
 
@@ -226,7 +226,7 @@ adb shell setprop libc.debug.malloc.options backtrace=4
 adb shell dumpsys -t 600 meminfo --unreachable <process>
 ```
 
-`--unreachable` 报告的是扫描时无法到达的分配块，离语言层意义上的确定泄漏还有一步：保守扫描可能把某些整数误认成指针，第三方分配器或自管理内存也可能不在它的观察范围内。所以判断要结合可重复的增长趋势、分配栈和资源生命周期一起做。
+`--unreachable` 报告的是扫描时从可达根走不到的分配块，离语言层意义上的确定泄漏还有一步：保守扫描可能把某些整数误认成指针，第三方分配器或自管理内存也可能不在它的观察范围内。所以下结论要结合可重复的增长趋势、分配栈和资源生命周期一起做。
 
 Bionic README 还记录了 Android 12 起的一个 `wrap.<APP>` 问题。属性未生效时，可在受控测试设备上按 README 设置 `dalvik.vm.force-java-zygote-fork-loop=true`，再重启 Zygote（应用进程的模板进程）；这会影响设备进程启动方式，别在量产设备上尝试。
 
@@ -261,20 +261,20 @@ HWASan 适合测试构建，ASan 只在 HWASan 不可用时作为兼容方案，
 
 #### 装载成本：少装、晚装、按需装
 
-.so 加载后，代码段、只读数据、重定位表和符号相关页面会进入进程地址空间。APK 体积不等于运行时内存，排查时我们要看的是进程 `maps` / `smaps` 中对应 `.so` 的 RSS、PSS 和 Private Dirty。
+.so 加载后，代码段、只读数据、重定位表和符号相关页面会进入进程地址空间。APK 体积和运行时内存是两回事，排查时我们要看的是进程 `maps` / `smaps` 中对应 `.so` 的 RSS、PSS 和 Private Dirty。
 
 可执行动作：
 
 - 只在测量表明 `dlopen` 数量或重复元数据造成显著成本时，评估合并小型原生模块；合并后若低频代码被一并加载，也可能增加常驻映射；
 - 把低频功能的 `.so` 延后到功能入口加载；
 - 清理未使用 ABI（应用二进制接口，决定指令集和数据布局）、未使用架构和重复打包的 `.so`，这主要减少安装包与安装占用；只有相关文件原本会被映射时，才会影响运行时 RSS/PSS；
-- 把发布构建的符号文件作为独立产物保存，供 tombstone、Perfetto 和地址回溯使用；从 App 内移除调试段主要减少文件体积，不能直接视为等量的运行时内存收益。
+- 把发布构建的符号文件作为独立产物保存，供 tombstone、Perfetto 和地址回溯使用；从 App 内移除调试段主要减少文件体积，运行时内存收益要另行评估。
 
 #### 运行时分配：把大块分配变成可解释事件
 
 第三方 `.so` 分配异常时，单靠 `dumpsys meminfo` 只能看到原生堆变大，要把分配归到调用栈，还得靠 heapprofd 或 malloc 拦截；符号文件保留完整的话，还能还原到函数名和源码行。
 
-工程上可以为可控的原生大对象建立统一分配入口，例如模型缓冲、音视频帧缓冲、解码输出池和压缩临时缓冲：封装层记录大小、用途、生命周期与调用位置，生产环境只上报有界的聚合数据，本地再使用 heapprofd 或 `malloc_debug` 取得完整分配栈。遇到改不动的第三方库，就以分析工具的证据为准，别只凭库名归因。
+工程上可以为可控的原生大对象建立统一分配入口，例如模型缓冲、音视频帧缓冲、解码输出池和压缩临时缓冲：封装层记录大小、用途、生命周期与调用位置，生产环境只上报有界的聚合数据，本地再使用 heapprofd 或 `malloc_debug` 取得完整分配栈。遇到改不动的第三方库，就以分析工具的输出为准，别只凭库名归因。
 
 #### 可写脏页：少改共享映射，少做启动期全量初始化
 
@@ -284,7 +284,7 @@ HWASan 适合测试构建，ASan 只在 HWASan 不可用时作为兼容方案，
 
 ### 原生内存监控方案
 
-生产监控别照搬本地分析工具：用户设备上的目标是发现趋势、定位版本和场景，完整调用栈不能在那里长期记录。
+设计生产监控时，我们先记住目标差异：用户设备上要的是发现趋势、定位版本和场景，完整调用栈在那里做不了长期记录。
 
 本节只定义 Native Heap、映射和内存安全错误的原生侧信号；跨 Java、Native、图形与系统回收的统一监控见 [23.7 内存监控与线上治理](07-memory-monitoring.md)。
 
@@ -300,7 +300,7 @@ HWASan 适合测试构建，ASan 只在 HWASan 不可用时作为兼容方案，
 
 Android 应用通常不直接选择系统分配器，但分配器会影响碎片、页归还、错误检测和 `smaps` 命名。Android 11 起常规设备使用 Scudo，低内存设备仍可能使用 jemalloc；设备上到底是哪一个，以构建、VMA 名称和 tombstone 为准。
 
-#### 四种数值不要互相替代
+#### 四种数值的用途分工
 
 | 口径 | 数据来源 | 适合回答的问题 | 覆盖不到的部分 |
 | --- | --- | --- | --- |
@@ -311,17 +311,17 @@ Android 应用通常不直接选择系统分配器，但分配器会影响碎片
 
 `android_os_Debug.cpp` 直接把 `mallinfo().uordblks` 返回为 `getNativeHeapAllocatedSize()`；`libmeminfo` 则把 `[heap]`、`[anon:libc_malloc]`、`[anon:scudo:*]` 和 `[anon:GWP-ASan*]` 等 VMA 归到 Native Heap，并按页面计算 PSS/RSS。两条统计路径不同，所以分配器记录的已分配量降下来之后，原生堆 PSS 未必要同步下降。
 
-#### `free()` 后 RSS 没回落不等于泄漏
+#### `free()` 后的 RSS 回落时机
 
-业务调用 `free()` 后，chunk 已经不能再访问，但分配器可以把它放进 quarantine、线程缓存或空闲结构，等待复用或批量归还操作系统。Scudo 的 quarantine 会延迟复用已释放块，release interval 是批量向系统归还页面的间隔；两者会影响安全检查、锁竞争、复用速度与 RSS 回落。这类系统配置交由平台管理就好，应用侧不要通过 `SCUDO_OPTIONS` 或 `__scudo_default_options` 把它当常规省内存开关。
+业务调用 `free()` 后，chunk 对外已经不可再访问，但分配器可以把它放进 quarantine、线程缓存或空闲结构，等待复用或批量归还操作系统。Scudo 的 quarantine 会延迟复用已释放块，release interval 是批量向系统归还页面的间隔；两者会影响安全检查、锁竞争、复用速度与 RSS 回落。这类系统配置交由平台管理就好，应用侧不要通过 `SCUDO_OPTIONS` 或 `__scudo_default_options` 把它当常规省内存开关。
 
 判断泄漏，还是要同时满足可重复增长和对象归因：固定场景中已分配量持续上升，heapprofd 的未释放样本集中在稳定调用栈，业务缓存过期后仍不回落，并且 Graphics、线程栈、文件映射等其他分区解释不了增量。
 
-#### Scudo ERROR：发现错误的位置不等于破坏内存的位置
+#### Scudo ERROR 与破坏现场
 
 Scudo 发现 `corrupted chunk header`、`invalid chunk state`、`misaligned pointer`、`allocation type mismatch` 或 `invalid sized delete` 等异常时会终止进程。这些是日志里的原始错误标签，其中 chunk header 是分配器保存大小、状态等信息的元数据。
 
-比如线程 B 在 `free()` 时发现 header 已损坏，越界写可能早已发生在线程 A。所以排查要保留完整 tombstone、错误文本、fault address、Build ID、ABI、相关线程和匹配的未剥离符号，再用 GWP-ASan、MTE 或 HWASan 补充分配、释放与访问位置的证据。
+比如线程 B 在 `free()` 时发现 header 已损坏，越界写可能早已发生在线程 A。所以排查要保留完整 tombstone、错误文本、fault address、Build ID、ABI、相关线程和匹配的未剥离符号，再借助 GWP-ASan、MTE 或 HWASan 补上分配、释放与访问位置的信息。
 
 GWP-ASan 是抽样检测，Recoverable（可恢复上报） 模式写出 tombstone 后继续运行，也说明不了进程已经恢复正确状态；MTE 的 SYNC、ASYNC 和平台 ASYMM 模式在定位精度与成本上各有取舍，应用清单请求还受设备硬件和系统配置约束。
 
@@ -329,7 +329,7 @@ GWP-ASan 是抽样检测，Recoverable（可恢复上报） 模式写出 tombsto
 
 16 KiB 页改变的是 ELF 加载段对齐、APK 中未压缩 `.so` 的 ZIP 起始位置对齐、`mmap()（建立内存映射的系统调用）` 参数约束以及分配器管理区域的页面粒度；它既不会让每个小对象都占一个独立 16 KiB，也没法从 PSS 增量直接反推出 `malloc()` 对象数。含原生代码的应用应检查所有 ABI，运行时通过 `getconf PAGE_SIZE` 获取实际页大小，清理动态链接器和第三方库中写死的 4096 字节假设。
 
-Android 15 起支持 16 KiB 页面设备。按 2026-08-15 的 Google Play 规则，面向 Android 15（API 35）及以上的应用更新需要在 64 位设备上支持 16 KiB 页面；从 2027-02-01 起，不兼容的更新将无法发布。兼容性检查要 ELF 加载段和 APK 内未压缩 `.so` 的 ZIP 对齐两边都做，在 4 KiB 设备上运行一次就判定通过是不够的。
+Android 15 起支持 16 KiB 页面设备。按 2026-08-15 的 Google Play 规则，面向 Android 15（API 35）及以上的应用更新需要在 64 位设备上支持 16 KiB 页面；从 2027-02-01 起，不兼容的更新会被拒绝发布。兼容性检查要 ELF 加载段和 APK 内未压缩 `.so` 的 ZIP 对齐两边都做，在 4 KiB 设备上运行一次就判定通过是不够的。
 
 给第三方 `.so` 提报告时，至少保存 SDK 版本、`.so` Build ID、ABI、输入与并发、设备页大小、heapprofd 样本和相同场景的 `meminfo`。Build ID 缺失时，同名 `.so` 可能来自不同二进制，聚合出来的调用栈没有可比性。
 
@@ -347,20 +347,22 @@ Android 15 起支持 16 KiB 页面设备。按 2026-08-15 的 Google Play 规则
 
 ### 分配器与原生堆小结
 
-到这里可以把第一部分收个尾。原生内存调查先用系统分类确认增长属于分配器、映射、代码还是图形缓冲，再用 heapprofd 或本地检测工具取得对应证据。容量增长、内存安全错误和 `free` 后 RSS 暂未下降是三类不同的问题，各自有各自的结论，共用一个“泄漏”就把它抹平了。
+到这里把第一部分收个尾。原生内存调查先用系统分类确认增长属于分配器、映射、代码还是图形缓冲，再用 heapprofd 或本地检测工具拿到对应的信息。容量增长、内存安全错误和 `free` 后 RSS 暂未下降是三类不同的问题，各有各的结论，共用一个“泄漏”就把区别抹平了。
 
 
 ## mmap、页驻留、缺页与回收
 
-对象释放解决的是逻辑所有权；接下来看虚拟内存这一侧——地址空间、文件映射、匿名页和 page fault（访问尚未驻留页面时产生的缺页事件）。调用 `free()` 后的内存也可能暂时留在进程 RSS，这正是下面多节要展开的伏笔。
+对象释放解决的是逻辑所有权；虚拟内存这一侧——地址空间、文件映射、匿名页和 page fault（访问尚未驻留页面时产生的缺页事件）——是另一条线：调用 `free()` 后的内存也可能暂时留在进程 RSS，原因要到后面几节里找。
 
-虚拟内存问题经常和 Java heap OOM（ART 托管对象堆耗尽）、native heap（C/C++ 分配使用的堆） 耗尽、线程资源耗尽混在一起。所以排查的第一步，是先确认失败到底来自地址空间、物理内存、VMA 数量还是线程资源。
+虚拟内存问题经常和 Java heap OOM（ART 托管对象堆耗尽）、native heap（C/C++ 分配使用的堆） 耗尽、线程资源耗尽混在一起。所以我们排查的第一步，是确认失败到底来自地址空间、物理内存、VMA 数量还是线程资源。
 
 VMA 是内核记录的一段连续地址范围，同一 VMA 具有一致的权限和映射来源。只看一个很大的 VSS 数字，容易把正常的地址空间预留（reservation）误判成泄漏。对象持有关系可参阅 [23.2 内存泄漏检测与治理](02-memory-leak-governance.md)，Native Heap 的分配与所有权则见本文前一部分。
 
 Android 10—16 的历史行为只用于解释存量设备，实际诊断仍以目标设备为准。
 
 ### 1. VSS 先看语义，再看数值
+
+这一节从四个指标的分工讲起：同一个进程，VSS、RSS、PSS 各自回答的是不同问题，先分清它们，后面的判断才有依据。
 
 #### 1.1 四个指标回答不同问题
 
@@ -375,7 +377,7 @@ Android 10—16 的历史行为只用于解释存量设备，实际诊断仍以�
 
 #### 1.2 32 位与 64 位的风险差异
 
-32 位进程的用户态地址空间小于 4 GiB，具体布局受内核、ABI、ASLR（地址空间布局随机化）、链接器和厂商配置影响，“3 GiB 用户态 + 1 GiB 内核态”的统一写法套不到所有设备上。真正卡住分配的往往是连续空洞：未映射地址的总量看起来还够，大块 `mmap()` 仍可能因找不到连续区间而返回 `ENOMEM`（无法满足内存或地址空间请求）。
+32 位进程的用户态地址空间小于 4 GiB，具体布局受内核、ABI、ASLR（地址空间布局随机化）、链接器和厂商配置影响，“3 GiB 用户态 + 1 GiB 内核态”的统一写法套不到所有设备上。真正卡住分配的往往是连续空洞：未映射地址的总量看起来还够，大块 `mmap()` 仍可能因找不到连续区间而返回 `ENOMEM`（内核拒绝了这次内存或地址空间请求）。
 
 64 位进程的可用用户态地址范围由架构和内核配置决定，128 GiB、256 GiB、256 TiB 这些常见数字都只是特定配置的结果，具体以目标设备的 `maps` 边界和内核配置为准。64 位地址耗尽很少见，但 VMA 数量、物理内存、commit charge（内核对匿名内存可兑现容量的提交记账）、资源限制和错误的超大地址空间预留仍可能让映射失败。
 
@@ -391,19 +393,19 @@ Android 10—16 的历史行为只用于解释存量设备，实际诊断仍以�
 
 错误类型决定排查入口：线程创建失败先看线程和栈，映射失败先看连续地址与资源限制，进程被终止则先看物理内存压力。VSS 在这里是辅助，现场信号才是入口。
 
-#### 1.3 `VmSwap` 不能当成另一份 VSS
+#### 1.3 `VmSwap` 的记账语义
 
 内核 `proc.rst` 把 `VmSwap` 定义为匿名私有数据使用的 swap（换出空间），不包含 shared（共享映射） memory（共享内存） 的换出量。页被换出后，原虚拟地址仍在 VMA 中，所以该页仍计入 `VmSize`；`VmSwap` 是记账量，不是可以再加到 VSS 上的独立地址空间。
 
 Android 17 及以上还支持内存管理守护进程 `mmd`：`mmd_setup` 负责配置 ZRAM（在 RAM 中保存压缩换出页的块设备），`mmd` 再执行重压缩和可选的 writeback（把冷页写到后备存储）。应用从 `VmSwap` 只能看到按页核算的换出量，ZRAM 里压缩后占多少字节、页面此刻在 ZRAM 还是后备存储，都推不出来。分析卡顿时，应同时查看 `VmSwap` 增长、major fault（需要存储 I/O 才能完成的主缺页）、PSI（Pressure Stall Information，资源压力导致的任务停顿统计）、`lmkd` 事件和业务时间线。
 
-这套内核还包含 Multi-Gen LRU（按访问时间把可回收页划分为多代的 LRU 实现），它按访问新旧程度把可回收页划分成多代、参与页回收选择，但不会改变 VSS、RSS、PSS 的定义；目标设备是否启用仍取决于内核与产品配置。应用侧应减少实际工作集并改善访问局部性；不能据此认定某个 VMA 可以由应用手动解除。
+这套内核还包含 Multi-Gen LRU（按访问时间把可回收页划分为多代的 LRU 实现），它按访问新旧程度把可回收页划分成多代、参与页回收选择，VSS、RSS、PSS 的定义保持原样；目标设备是否启用仍取决于内核与产品配置。应用侧要做的是减少实际工作集、改善访问局部性；某个 VMA 能否手动解除仍取决于它自身的来源，Multi-Gen LRU 改变不了这一点。
 
 ### 2. 建立可复现的地址空间快照
 
 #### 2.1 设备侧基础采集
 
-这段脚本在同一轮中依次采集页大小、VSS、RSS、线程数和 `maps`。调用时显式传入包名与输出目录，避免把示例包名误用于现场：
+判断地址空间问题要靠可复现的快照，我们先在同一轮里采集页大小、VSS、RSS、线程数和 `maps`。调用时显式传入包名与输出目录，避免把示例包名误用于现场：
 
 ```bash
 #!/usr/bin/env bash
@@ -435,7 +437,7 @@ grep -E '^(Name|VmPeak|VmSize|VmRSS|RssAnon|RssFile|VmSwap|Threads):' \
   "$output_directory/status.txt"
 ```
 
-拿到输出后先做两个校验：`VmSize` 应与 `maps` 中各 VMA 长度之和接近——它算的是各段长度之和，两段 VMA 之间的空洞不计入；`Threads` 应与 `/proc/<pid>/task` 数量一致。脚本中的命令顺序执行，并非原子快照，进程变化较快时要缩短采集间隔或连续采两轮验证。`pidof -s` 只选择一个 PID，多进程应用要对每个目标进程分别采集。`dumpsys meminfo` 补充 PSS、RSS 和堆分类；部分量产设备会限制 `showmap` 或 `smaps`，权限失败要记录下来，作为观测上的缺口。
+拿到输出后先做两个校验：`VmSize` 应与 `maps` 中各 VMA 长度之和接近——它算的是各段长度之和，两段 VMA 之间的空洞不计入；`Threads` 应与 `/proc/<pid>/task` 数量一致。脚本中的命令按顺序执行，各条命令之间有时间差，得到的是跨越一段时间的快照；进程变化较快时要缩短采集间隔或连续采两轮验证。`pidof -s` 只选择一个 PID，多进程应用要对每个目标进程分别采集。`dumpsys meminfo` 补充 PSS、RSS 和堆分类；部分量产设备会限制 `showmap` 或 `smaps`，权限失败要记录下来，作为观测上的缺口。
 
 采集点至少覆盖：
 
@@ -455,7 +457,7 @@ grep -E '^(Name|VmPeak|VmSize|VmRSS|RssAnon|RssFile|VmSwap|Threads):' \
 70000000-78000000 ---p 00000000 00:00 0  [anon:libwebview reservation]
 ```
 
-地址范围给出 VMA 起止位置；`rwx` 是读、写、执行权限；第四个字符 `p` 或 `s` 表示私有映射或共享映射；其后依次是文件偏移、设备号、inode（文件系统中的对象编号） 与可选名称。`---p` 只是说明当前没有读、写、执行权限，这块区域是否归应用释放，另说。
+地址范围给出 VMA 起止位置；`rwx` 是读、写、执行权限；第四个字符 `p` 或 `s` 表示私有映射或共享映射；其后依次是文件偏移、设备号、inode（文件系统中的对象编号） 与可选名称。`---p` 只是说明当前没有读、写、执行权限，这块区域是否归应用释放，是另一个问题。
 
 系统侧 [`android_os_Debug.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp) 通过 `meminfo` 解析器读取进程映射并按堆类型汇总。我们要自建分类器时，别假设标签在所有厂商版本上都完全一致。
 
@@ -488,7 +490,7 @@ for name, stat in sorted(
     print(f"{mib:10.1f} MiB  {stat['vmas']:6d} VMAs  {name}")
 ```
 
-汇总结果适合查找大块地址空间预留、线程栈、重复 `.so` 库和 VMA 数量异常。有两点口径要清楚：脚本按文件名而非完整路径聚合，同名但不同路径的库会被合并；同一路径的多个 segment（映射分段） 也可能分别承载代码、只读数据和可写数据。汇总值表示的是虚拟地址长度，离私有物理内存还有距离。
+汇总结果适合查找大块地址空间预留、线程栈、重复 `.so` 库和 VMA 数量异常。有两点要先说清楚：脚本按文件名而非完整路径聚合，同名但不同路径的库会被合并；同一路径的多个 segment（映射分段） 也可能分别承载代码、只读数据和可写数据。汇总值表示的是虚拟地址长度，离私有物理内存还有距离。
 
 #### 2.3 16 KiB 页设备
 
@@ -500,7 +502,9 @@ for name, stat in sorted(
 
 ### 3. 线程栈：先控制线程数量
 
-#### 3.1 Android 17 的 Java 线程栈计算
+每个线程都要占用一段栈地址空间，线程一多，VSS 和 VMA 数量跟着涨。这一节先把栈的预留大小算清楚，再谈控制数量。
+
+#### 3.1 Java 线程栈的预留大小计算
 
 [`Thread::FixStackSize()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc) 按以下顺序计算栈预留大小：
 
@@ -571,15 +575,17 @@ CPU 密集任务的并发度可以从 CPU 核数起步；I/O 任务没有通用�
 
 对 `pthread_create()` 做 PLT hook（通过 Procedure Linkage Table 拦截动态库函数调用） 也覆盖不了所有线程来源，还会改变系统库与三方库的栈假设。诊断时可以在可调试构建中记录调用栈和 `pthread_attr_t` 属性；真要改栈大小，必须按 ABI、4/16 KiB 页、递归深度、JNI 栈帧大小和极端调用链做压力测试。生产环境里，减少线程数量仍然是第一优先级。
 
-#### 3.4 Android 17 的虚拟线程
+#### 3.4 虚拟线程的可用条件
 
 `android-17.0.0_r1` 的 libcore 已包含 `Thread.ofVirtual()`、`startVirtualThread()` 和 `VirtualThread` 实现，但 [`api/current.txt`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt) 给创建入口标记了 `com.android.libcore.virtual_thread_api_v1` `FlaggedApi`，表示公开可用性受功能标志控制。[`ThreadBuilders.newVirtualThread()`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadBuilders.java) 会检查 `ContinuationSupport.isSupported()`：支持时创建由 continuation（可暂停并恢复执行状态的运行时机制）驱动的 `VirtualThread`；不支持且调用方没有指定自定义 scheduler（任务调度器）时，创建一对一绑定平台线程的 `BoundVirtualThread`。
 
 所以“虚拟线程一定不创建 pthread、每个任务都省下 1 MiB”当不了通用结论。产品采用前，要确认目标镜像是否开放该 API、运行时是否支持 continuation，以及 pinning（虚拟线程因特定阻塞或同步操作而无法暂时脱离承载线程） 的行为、调试工具和关键库兼容性。面向 Android 10—17 的通用实现，仍应以协程、有界线程池和结构化取消为主。
 
-更完整的线程泄漏边界参阅 [20.8 线程与协程泄漏治理](../ch20-stability/08-thread-coroutine-leak-governance.md)。
+线程泄漏的完整治理方法参阅 [20.8 线程与协程泄漏治理](../ch20-stability/08-thread-coroutine-leak-governance.md)。
 
-### 4. WebView 地址空间预留：可观测，不手动解除
+### 4. WebView 地址空间预留
+
+在 `maps` 里看到名为 `[anon:libwebview reservation]` 的大块区域时，先别急着处理，这一节讲它是怎么来的、该怎么对待。
 
 #### 4.1 固定标签中的预留
 
@@ -595,7 +601,7 @@ Android 17 的 [`WebViewLibraryLoader.reserveAddressSpace（ART 管理的一类�
 
 这块预留会增加 VSS，但未访问的 `PROT_NONE` 地址不会按预留大小消耗 RSS，64 位进程看到 1 GiB VSS 增量时，别写成“WebView 已消耗 1 GiB RAM”。表中的常量解释的是 Android 17 固定标签源码，其他系统版本仍应按对应标签核对。
 
-#### 4.2 为什么不能 `munmap`
+#### 4.2 这块预留为什么归加载器管
 
 WebView 加载器随后把 `gReservedAddress` 和 `gReservedSize` 交给 `android_dlopen_ext()`，在这段固定预留中加载 provider（提供 WebView 实现的系统组件） 原生库和共享 RELRO（重定位完成后设为只读、可供进程共享的数据）。应用私自调用 `munmap()` 之后，加载器的全局状态没有同步清零，该地址还可能被其他映射占用，稍后任何 WebView 初始化都可能加载失败或破坏进程地址空间——这是 4.1 节那两个全局变量真正的用途。
 
@@ -608,19 +614,21 @@ WebView 加载器随后把 `gReservedAddress` 和 `gReservedSize` 交给 `androi
 
 把 WebView Activity 放到子进程不会自动移除主进程继承的预留；子进程方案的收益主要来自已提交页、WebView 对象与故障边界的隔离。
 
-### 5. ART 托管堆：应用不能释放运行时内存区域
+### 5. ART 托管堆：运行时内存区域归谁管
+
+应用进程里还有一大块内存归 ART 自己管——托管堆的各个 Space。这一节先看 HSC 的适用条件，再看 JNI 临界区这类应用侧要守的约束。
 
 #### 5.1 Homogeneous Space Compact 的适用条件
 
 HSC（Homogeneous Space Compact，同构空间压缩） 把主分配空间中的存活对象复制到备用空间，以整理碎片。[`Heap::SupportHomogeneousSpaceCompactAndCollectorTransitions()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc) 要求同时存在 `main_space_backup_`、`main_space_`，且前台垃圾回收器为 CMS（Concurrent Mark Sweep，并发标记清扫）；`PerformHomogeneousSpaceCompact()` 还会在 moving GC（会移动存活对象的垃圾回收） 已被禁用、当前回收器本身会移动对象，或主空间不允许移动对象时拒绝执行。
 
-同一文件的 Heap 构造路径会对 CC（Concurrent Copying，并发复制） 和 CMC（Concurrent Mark Compact，并发标记压缩） 关闭 `use_homogeneous_space_compaction_for_oom_`。所以 HSC 是受回收器与 Space 布局约束的兼容路径，并非应用普遍执行的内存整理流程，也推不出“每个应用都有两块固定 512 MiB MainSpace”——ART 会按回收器、heap growth limit（托管堆允许增长到的上限）、设备配置和进程类型建立不同 Space。
+同一文件的 Heap 构造路径会对 CC（Concurrent Copying，并发复制） 和 CMC（Concurrent Mark Compact，并发标记压缩） 关闭 `use_homogeneous_space_compaction_for_oom_`。所以 HSC 是受回收器与 Space 布局约束的兼容路径，只有满足上面这些条件的进程才会走到；至于“每个应用都有两块固定 512 MiB MainSpace”，ART 实际会按回收器、heap growth limit（托管堆允许增长到的上限）、设备配置和进程类型建立不同 Space，这个说法立不住。
 
 这些 Space 各管一摊：RegionSpace 用分区支持移动回收，zygote space 保存进程孵化前已有的对象，large object space 管理大对象，image space 映射启动镜像，JIT 代码映射保存即时编译生成的机器码，用途和生命周期互不相同。
 
 #### 5.2 JNI 临界区必须成对释放
 
-[Android JNI tips](https://developer.android.com/training/articles/perf-jni) 对 `GetPrimitiveArrayCritical()` 的约束是：ART 可以返回指向数组的直接指针，也可以返回副本。取得指针到执行 `ReleasePrimitiveArrayCritical()` 之间称为 JNI 临界区；期间 native 代码既不能长时间阻塞，也不能任意调用 JNI，完成访问后必须成对释放。
+[Android JNI tips](https://developer.android.com/training/articles/perf-jni) 对 `GetPrimitiveArrayCritical()` 的约束是：ART 可以返回指向数组的直接指针，也可以返回副本。取得指针到执行 `ReleasePrimitiveArrayCritical()` 之间称为 JNI 临界区；期间 native 代码要避免长时间阻塞和任意调用 JNI，完成访问后必须成对释放。
 
 长期保留临界区指针可能延迟或限制 GC，具体影响取决于 ART 返回直接指针还是副本，以及当前垃圾回收器的实现；两种路径都要求临界区尽快结束，否则可能增加分配等待和线程停顿。对任一 `dalvik-*` 区域调用 `munmap()` 还会破坏 ART 的分配器、card table（记录哪些堆区域可能包含跨区引用的表）、对象位图和引用关系。“禁用 moving GC 后释放备用 Space”走不通，这不是应用能安全使用的方案。
 
@@ -662,6 +670,8 @@ HSC（Homogeneous Space Compact，同构空间压缩） 把主分配空间中的
 较大的数据载荷（payload）可考虑通过 `SharedMemory`、文件描述符或流式接口传输；传输之外仍要定义所有权、校验长度并及时关闭 FD。拿多进程规避应用整体内存预算，这条路走不通。
 
 ### 7. 建立面向原因的监控
+
+快照采回来还要能回答“为什么涨”。我们先把采样字段定下来，再定阈值。
 
 #### 7.1 采样字段
 
@@ -731,7 +741,7 @@ HSC（Homogeneous Space Compact，同构空间压缩） 把主分配空间中的
 | 禁止 | 永久持有 JNI 临界区指针来阻止 moving GC | 高 |
 | 禁止 | 用负数栈大小依赖无符号回绕 | 高 |
 
-最后把虚拟内存这部分收个尾。虚拟内存优化要让每段地址空间都能对应到创建来源和生命周期：32 位进程优先检查连续空洞、线程栈和 VMA 数量；64 位进程优先区分地址空间预留与物理页，并把 PSS/RSS、线程和失败信号放在同一份报告中。只有主进程 VSS 下降、总 PSS 和故障数据没有改善的改动，记不成有效优化。
+最后把虚拟内存这部分收个尾。虚拟内存优化要让每段地址空间都能对应到创建来源和生命周期：32 位进程优先检查连续空洞、线程栈和 VMA 数量；64 位进程优先区分地址空间预留与物理页，并把 PSS/RSS、线程和失败信号放在同一份报告中。只有主进程 VSS 下降、总 PSS 和故障数据没有改善的改动，算不上有效优化。
 
 ### 10. 虚拟内存源码锚点
 
@@ -752,7 +762,7 @@ HSC（Homogeneous Space Compact，同构空间压缩） 把主分配空间中的
 
 ## 全文小结
 
-Native 与虚拟内存优化要把逻辑对象、分配器记录、VMA 和驻留页分开观察。先按故障类型和系统内存分区选择证据，再修复所有权、线程或映射来源；固定 VSS 阈值不要用，手动解除系统预留或 ART 空间制造出来的“下降”也不要信。最终效果应同时体现在 PSS/RSS、失败信号和业务场景稳定性上。
+Native 与虚拟内存优化要把逻辑对象、分配器记录、VMA 和驻留页分开观察。先按故障类型和系统内存分区选定要看的信息，再修复所有权、线程或映射来源；固定 VSS 阈值不要用，手动解除系统预留或 ART 空间制造出来的“下降”也不要信。最终效果应同时体现在 PSS/RSS、失败信号和业务场景稳定性上。
 
 
 ## 参考资料

@@ -138,15 +138,15 @@ Fragment 页面切换的性能问题，光看 `commit()` 是找不到的。它�
 
 > 源码基线：Fragment 事务实现固定到 AndroidX `androidx-fragment-release` 提交 `f39ca3510efb2347ebfef231e25a3e804922450d`；`Choreographer`、`ViewRootImpl`、HWUI、BLASTBufferQueue 与 SurfaceFlinger 固定到 Android 17 / API 37 的 `android-17.0.0_r1`。AndroidX 独立发布，设备采用哪个 Fragment 版本要看应用依赖，平台标签推不出来。
 
-页面切换从 Fragment 或 Navigation 提交开始，经过生命周期、视图创建、动画和首帧。Predictive Back 增加可取消的进度阶段，要求导航状态和系统返回动画在提交前保持一致。
+页面切换从 Fragment 或 Navigation 提交开始，经过生命周期、视图创建、动画和首帧；Predictive Back 在这条链上增加了可取消的进度阶段，要求导航状态和系统返回动画在提交前保持一致。
 
 ## Fragment 提交、生命周期与首帧
 
-### `commit()` 只排队，事务执行在后一个主线程消息里
+在 trace 里看到页面切换卡顿时，先要确认时间花在哪一站：提交排队、事务执行、生命周期推进、View 创建，还是 traversal 和首帧。我们从 `commit()` 的语义开始，把这条链一段段对到屏幕上出现的那一帧。
 
-AndroidX 的 `BackStackRecord` 是 `FragmentTransaction` 的具体实现。`commit()`、`commitAllowingStateLoss()` 和 `commitNow()` 的分叉点很早：前两者走 `commitInternal(..., true)`，把当前事务交给 `FragmentManager.enqueueAction()`；`commitNow()` 跳过待执行队列，直接走 `execSingleAction()`。以下代码保留三个常用分支；第四个提交方法 `commitNowAllowingStateLoss()` 同样调用 `execSingleAction()`，但把 `allowStateLoss` 设为 `true`。
+### `commit()` 的排队与执行时机
 
-这段摘录保留上述三个常用分支：
+AndroidX 的 `BackStackRecord` 是 `FragmentTransaction` 的具体实现，三个常用提交方法的分叉点很早：`commit()` 和 `commitAllowingStateLoss()` 走 `commitInternal(..., true)`，把当前事务交给 `FragmentManager.enqueueAction()` 排队；`commitNow()` 跳过待执行队列，直接走 `execSingleAction()`。第四个提交方法 `commitNowAllowingStateLoss()` 同样调用 `execSingleAction()`，只是把 `allowStateLoss` 设为 `true`。下面这段摘录保留前三个分支：
 
 ```java
 @Override
@@ -222,10 +222,10 @@ void scheduleCommit() {
 
 从性能排查看，我们要记住两件事：
 
-- `commit()` 返回得再快，也不代表页面切换便宜。View 创建、生命周期推进、动画准备和 `SpecialEffectsController` 的动画/过渡处理，都在后面的主线程消息里发生。
+- `commit()` 返回得再快，便宜的也只是排队这一步。View 创建、生命周期推进、动画准备和 `SpecialEffectsController` 的动画/过渡处理，都在后面的主线程消息里发生。
 - 多次连续 `commit()` 可能被同一个 `execPendingActions()` 批处理。排查 Perfetto 时，除了点击回调里的 `commit()`，还要检查随后主线程消息中的生命周期和 View 创建耗时。
 
-### 提交与强制执行 API 的边界
+### 提交与强制执行 API 的差异与选择
 
 state loss 指的是：Activity 已保存 Fragment 状态后又修改了界面，进程重建时这次修改可能恢复不回来；它和业务数据丢失是两回事。`AllowingStateLoss` 只表示调用方接受这项恢复风险，宿主销毁后事务也照样可能被丢弃。
 
@@ -237,17 +237,17 @@ state loss 指的是：Activity 已保存 Fragment 状态后又修改了界面�
 | `commitNowAllowingStateLoss()` | 当前主线程同步执行当前事务 | 不支持 | 可忽略状态保存检查；宿主未连接或已销毁时直接丢弃 | 同步成本与 `commitNow()` 相同，另有无法恢复或不执行的风险 |
 | `executePendingTransactions()` | 调用 `execPendingActions(true)`，随后 `forcePostponedTransactions()` | 执行队列中原有事务，不改变各事务的返回栈属性 | 不检查 `isStateSaved()`；宿主未连接或已销毁时仍会抛异常 | 会把其他模块的待执行事务一起处理，时序影响范围比 `commitNow()` 大 |
 
-`executePendingTransactions()` 是 `FragmentManager` 的队列执行方法，不是另一种事务提交方法。官方文档建议：如果只想同步提交一个不修改返回栈的事务，优先用 `commitNow()`，不要组合（Composition） `commit()` 与 `executePendingTransactions()`；后者会尝试执行当前所有待执行事务。
+`executePendingTransactions()` 属于 `FragmentManager` 的队列执行方法，和四种提交方法放在一张表里只是为了对比。官方文档建议：如果只想同步提交一个不修改返回栈的事务，优先用 `commitNow()`，不要组合（Composition） `commit()` 与 `executePendingTransactions()`；后者会尝试执行当前所有待执行事务。
 
 工程上可以按这条规则选：需要进入返回栈的页面切换使用 `commit()`；必须同步取得 Fragment View 的小型局部初始化，可以考虑 `commitNow()`；通用导航路径不要调用 `executePendingTransactions()` 来追求同步完成。只有界面恢复时允许缺少这次修改，才考虑两个 `AllowingStateLoss` 变体。
 
-`executePendingTransactions()` 还有两点值得单独说。第一，它传入 `allowStateLoss = true` 执行 `execPendingActions(true)`，处理当前 FragmentManager 的全部待执行事务；此前已被 `commit()` 拒绝的事务，并不会因此重新出现。第二，它会在待执行操作处理完后调用 `forcePostponedTransactions()`，强制启动原本延后的入场过渡。页面切换期间如果 Navigation Component 或其他使用同一 FragmentManager 的模块已经排队，这些工作也会进入当前主线程执行窗口。
+`executePendingTransactions()` 还有两点要单独说明。第一，它传入 `allowStateLoss = true` 执行 `execPendingActions(true)`，处理当前 FragmentManager 的全部待执行事务；此前已被 `commit()` 拒绝的事务，并不会因此重新出现。第二，它会在待执行操作处理完后调用 `forcePostponedTransactions()`，强制启动原本延后的入场过渡。页面切换期间如果 Navigation Component 或其他使用同一 FragmentManager 的模块已经排队，这些工作也会进入当前主线程执行窗口。
 
 ### `execPendingActions()`：同一主线程消息中的批处理循环
 
 `mExecCommit` 被 `Handler.post()` 后，主线程会调用 `execPendingActions(true)`。执行前，`ensureExecReady()` 做三类保护：
 
-- `mExecutingActions` 不能为 `true`，避免在事务处理过程中再次同步执行事务。
+- 执行标记 `mExecutingActions` 必须已复位，避免在事务处理过程中再次同步执行事务。
 - 当前线程必须是宿主 `Handler` 所在线程，否则抛出 “Must be called from main thread of fragment host”。
 - 未允许状态丢失（state loss）时执行 `checkStateLoss()`，避免宿主保存状态后继续修改 Fragment 状态。
 
@@ -296,7 +296,7 @@ boolean execPendingActions(boolean allowStateLoss) {
 
 `generateOpsForPendingActions()` 会在同步块内遍历当前 FragmentManager 的 `mPendingActions`，再清空列表并移除已投递的 `mExecCommit`。这里我们先建立一个预期：一次点击即使只调用一次 `commit()`，trace 里仍可能出现多个 Fragment 的生命周期推进。因为同一事务可以操作多个 Fragment，同一 FragmentManager 也可能已有其他事务或 Navigation 操作排队。子 FragmentManager 用的是自己的队列，判断它是否参与了同一主线程消息，要继续看调用栈。
 
-排查时不要停在“FragmentManager 慢”这个结论上，还要列出同一个主线程消息包含的具体工作：`onCreate()`、`onCreateView()`、ViewBinding 创建 View、RecyclerView 适配器初始化、首批图片同步解码、`onViewCreated()` 中的同步 I/O，以及子 Fragment 随父生命周期发生的状态推进或同步事务。
+排查时，我们别停在“FragmentManager 慢”这个结论上，要把同一个主线程消息包含的具体工作列出来：`onCreate()`、`onCreateView()`、ViewBinding 创建 View、RecyclerView 适配器初始化、首批图片同步解码、`onViewCreated()` 中的同步 I/O，以及子 Fragment 随父生命周期发生的状态推进或同步事务。
 
 ### Fragment 事务与一帧渲染的时序
 
@@ -348,7 +348,7 @@ sequenceDiagram
 
 `runOnCommit()` 常被用来“等 Fragment 提交完成后再做事”。它保证的范围比名字听起来窄：只保证事务已经执行；这一帧有没有画完、异步数据有没有加载完，都不在其列。
 
-AndroidX 文档说明，如果事务启用了 reordering（事务重排），`runOnCommit()` 可能在后续事务也执行之后才运行，当前事务中的某些操作也可能因批处理优化被移除。它也不能与 `addToBackStack()` 共用：Runnable（待执行的任务对象） 没法写入返回栈的持久化状态。
+AndroidX 文档说明，如果事务启用了 reordering（事务重排），`runOnCommit()` 可能在后续事务也执行之后才运行，当前事务中的某些操作也可能因批处理优化被移除。它与 `addToBackStack()` 也是互斥的：Runnable（待执行的任务对象） 写不进返回栈的持久化状态。
 
 性能上要避免两类用法：
 
@@ -359,7 +359,7 @@ AndroidX 文档说明，如果事务启用了 reordering（事务重排），`ru
 
 `viewLifecycleOwner.lifecycleScope` 只负责把协程生命周期绑定到 Fragment View，默认启动位置仍是主线程。CPU 密集计算和阻塞 I/O 要放到数据层，或明确使用 `Dispatchers.Default` / `Dispatchers.IO`；回到主线程时只提交小批量 UI 状态。需要随可见性启停的数据收集，再配合 `repeatOnLifecycle()`。
 
-### `setReorderingAllowed(true)` 的性能边界
+### `setReorderingAllowed(true)` 的作用与代价
 
 官方 Fragment transaction 文档建议每个事务使用 `setReorderingAllowed(true)`。这个 API 默认值仍是 `false`，需要显式开启。它不会让单个生命周期回调直接变快；它允许 `FragmentManager` 在一批事务中消除冗余操作，并调整 Fragment 状态变化顺序，让动画和 transition 保持一致。
 
@@ -402,15 +402,15 @@ private void removeRedundantOperationsAndExecute(
 
 1. **事务执行预算**：从点击到 `execPendingActions()` 完成，目标是让 Fragment 生命周期推进和最小 View 树创建尽快结束。
 2. **首帧预算**：从 `requestLayout()` / `invalidate()` 到首个可见帧。Android 12+ 用 App `SurfaceFrame` 与 SF `DisplayFrame` 对齐；Android 10/11 用首个 traversal、RenderThread 和自定义 trace 标记近似分段。目标是先把首屏显示出来，复杂内容暂用占位 UI。
-3. **首帧后预算**：从第一帧之后到页面可完整交互，用来补数据、启动动画、预加载二级内容；这一段也不能继续阻塞输入。
+3. **首帧后预算**：从第一帧之后到页面可完整交互，用来补数据、启动动画、预加载二级内容；这一段同样要让输入保持响应。
 
 对应到实现策略：
 
 - **页面分段创建**：首屏必须出现的 View 留在 Fragment 根布局；非首屏模块可以用按需展开布局的 `ViewStub`、延后创建的子 Fragment，或等数据就绪后再在主线程创建。复杂列表页只创建首屏必要的列表项，后续内容交给 RecyclerView 预取。
-- **异步创建的边界**：`AsyncLayoutInflater` 会在后台线程尝试 inflate。如果 View 构造依赖主线程 Looper / Handler，或父容器无法在线程安全地生成布局参数，失败后仍可能回到 UI 线程重试。1.1.0 已支持显式 `AsyncLayoutFactory`，AppCompat 可使用 `AsyncAppCompatFactory`，因此旧版“不支持 Factory”的结论不再适用于所有用法；要用 trace 确认目标 View 的构造工作是否在线程池执行。详见 [AsyncLayoutInflater 版本说明](https://developer.android.com/jetpack/androidx/releases/asynclayoutinflater)。
+- **异步创建的适用范围**：`AsyncLayoutInflater` 会在后台线程尝试 inflate。如果 View 构造依赖主线程 Looper / Handler，或父容器的布局参数只在主线程生成才安全，失败后仍可能回到 UI 线程重试。1.1.0 已支持显式 `AsyncLayoutFactory`，AppCompat 可使用 `AsyncAppCompatFactory`，因此旧版“不支持 Factory”的结论不再适用于所有用法；要用 trace 确认目标 View 的构造工作是否在线程池执行。详见 [AsyncLayoutInflater 版本说明](https://developer.android.com/jetpack/androidx/releases/asynclayoutinflater)。
 - **事务批处理**：同一 Fragment 容器的连续 `replace()` 尽量合入一次事务，并开启 `setReorderingAllowed(true)`。`add()` / `hide()` / `show()` 可以减少重复创建 View，却会保留更多 Fragment、View 和相关资源；只有测得重建成本高且内存、生命周期都可控时才采用。
-- **`commitNow()` 边界**：只用于不进返回栈、必须同步完成的小型局部事务。为了立刻取得 Fragment View 而普遍使用 `commitNow()`，通常说明组件初始化接口还需分段；通用导航、返回栈操作和深层子 Fragment 批量创建都不适合这条路径。
-- **首帧前后任务切分**：首帧前只在主线程构建最小可见 UI。首屏依赖的网络和数据库读取可以尽早在后台启动，避免等首帧后才增加内容等待；非首屏结果绑定、图片解码提交和批量埋点写入再延后，并遵守 Fragment View 的取消边界。
+- **`commitNow()` 的适用范围**：只用于不进返回栈、必须同步完成的小型局部事务。为了立刻取得 Fragment View 而普遍使用 `commitNow()`，通常说明组件初始化接口还需分段；通用导航、返回栈操作和深层子 Fragment 批量创建都不适合这条路径。
+- **首帧前后任务切分**：首帧前只在主线程构建最小可见 UI。首屏依赖的网络和数据库读取可以尽早在后台启动，避免等首帧后才增加内容等待；非首屏结果绑定、图片解码提交和批量埋点写入再延后，并遵守 Fragment View 的取消时机。
 - **结果通信**：Fragment Result API 适合轻量结果传递；不要为了传结果把页面保活在内存里。共享 ViewModel 只放同一导航图或同一 Activity 范围内的状态，避免无意延长对象生命周期。
 
 线程和 CPU 优先级排在常规页面切换优化后面。《Android 性能优化》的任务调度章节会讨论主线程、RenderThread 优先级和大核绑定，但这些方案依赖设备、权限和厂商策略，风险比布局拆分、任务延后和事务合并更高。
@@ -419,7 +419,7 @@ private void removeRedundantOperationsAndExecute(
 
 AndroidX 源码版本固定到 `androidx-fragment-release` 分支的提交 `f39ca3510efb2347ebfef231e25a3e804922450d`。这个提交可通过 `android.googlesource.com/platform/frameworks/support` 读取 `FragmentManager.java`、`BackStackRecord.java` 和 `FragmentTransaction.java`，避免 `androidx-main` 分支持续更新后改变本文依据。
 
-固定 commit 也不代表 Fragment 1.4 到 1.9 的每条路径都相同。`commitInternal()`、`enqueueAction()`、`scheduleCommit()`、`execPendingActions()` 可以作为主流程；predictive back 相关的 `mTransitioningOp` 取消和重新提交属于较新版本行为，反推不到 Fragment 1.4 / 1.6。排查线上问题时，要同时记录应用依赖的 `androidx.fragment:fragment` 版本和设备 Android 版本。
+固定 commit 之后，Fragment 1.4 到 1.9 的路径也未必条条相同：`commitInternal()`、`enqueueAction()`、`scheduleCommit()`、`execPendingActions()` 可以作为主流程；predictive back 相关的 `mTransitioningOp` 取消和重新提交属于较新版本行为，反推不到 Fragment 1.4 / 1.6。排查线上问题时，要同时记录应用依赖的 `androidx.fragment:fragment` 版本和设备 Android 版本。
 
 ### AndroidX Fragment 版本差异
 
@@ -449,25 +449,25 @@ AndroidX 源码版本固定到 `androidx-fragment-release` 分支的提交 `f39c
 
 Fragment 目标页面没有“绕过 FragmentTransaction”的优化捷径。可行的是减少目标页首帧工作、合并导航期间的重复事务，并为 shared element transition 明确指定参与 View，避免整棵 View 树都进入过渡计算。
 
-### Compose 与 Fragment 混用边界
+### Compose 与 Fragment 混用
 
 `ComposeView` 放在 Fragment 里时，销毁策略要与 Fragment View 生命周期绑定。Composition 是 Compose 保存 UI 结构与状态关联的运行时实例。`ViewCompositionStrategy.Default` 当前对应 `DisposeOnDetachedFromWindowOrReleasedFromPool`：普通容器中的 `ComposeView` 离开窗口时会释放 Composition；位于 RecyclerView 这类会复用子 View 的池化容器中时，会在容器离开窗口或该列表项被池丢弃时释放。Fragment View 更适合使用 `DisposeOnViewTreeLifecycleDestroyed`，让 Composition 随 `ViewTreeLifecycleOwner` 销毁。
 
 页面切换性能上，Compose 与 Fragment 混用有三类风险：
 
-- `ComposeView.setContent {}` 先保存内容；初次 Composition 在 View 接入窗口或显式调用 `createComposition()` 时发生，以较早者为准。因此，复杂初次组合可能出现在 Fragment 事务尾部或后续帧，不能只测 `onCreateView()`。Compose 优化细节见 [22.3 Compose 性能、Compiler 与 Modifier.Node 诊断](03-compose-compiler-modifier-diagnostics.md)，时序定义见 [`ComposeView` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ComposeView)。
+- `ComposeView.setContent {}` 先保存内容；初次 Composition 在 View 接入窗口或显式调用 `createComposition()` 时发生，以较早者为准。因此，复杂初次组合可能出现在 Fragment 事务尾部或后续帧，测量点要覆盖到这两处，单看 `onCreateView()` 会漏。Compose 优化细节见 [22.3 Compose 性能、Compiler 与 Modifier.Node 诊断](03-compose-compiler-modifier-diagnostics.md)，时序定义见 [`ComposeView` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ComposeView)。
 - RecyclerView item 中嵌入 `ComposeView` 时，Composition 复用和池化容器语义要与 RecyclerView、Compose UI 版本一起验证；手动 `disposeComposition()` 可能破坏复用，不释放则可能延长状态生命周期。
-- Fragment 嵌套 Compose，再嵌 `AndroidView` 或 Fragment，会增加生命周期边界。排查时要列出 Activity、Fragment、Fragment View、Compose Composition 与 RecyclerView 回收池分别何时创建和销毁，以及由哪个生命周期拥有者负责清理。
+- Fragment 嵌套 Compose，再嵌 `AndroidView` 或 Fragment，生命周期关系就多了一层。排查时要列出 Activity、Fragment、Fragment View、Compose Composition 与 RecyclerView 回收池分别何时创建和销毁，以及由哪个生命周期拥有者负责清理。
 
-纯 Compose 的新导航图可以评估稳定版 Navigation 3；截至 2026-08-15，稳定版为 1.1.5。仍含 View 或 Fragment 目标页面的迁移工程可以继续使用基于 Fragment 的 Navigation，等页面逐步替换为 Compose 后再规划导航迁移。迁移期可以混用，但不要把 Fragment 当作每个 Compose 子页面的默认容器。Fragment 适合承接既有生命周期、返回栈、权限和多模块边界，无需给每个 Composable 再套一层事务。版本记录见 [Navigation 3 release notes](https://developer.android.com/jetpack/androidx/releases/navigation3)。
+纯 Compose 的新导航图可以评估稳定版 Navigation 3；截至 2026-08-15，稳定版为 1.1.5。仍含 View 或 Fragment 目标页面的迁移工程可以继续使用基于 Fragment 的 Navigation，等页面逐步替换为 Compose 后再规划导航迁移。迁移期可以混用，但不要把 Fragment 当作每个 Compose 子页面的默认容器。Fragment 适合承接既有生命周期、返回栈、权限和多模块划分，无需给每个 Composable 再套一层事务。版本记录见 [Navigation 3 release notes](https://developer.android.com/jetpack/androidx/releases/navigation3)。
 
 ### 源码与文档入口
 
 - [`BackStackRecord.java`](https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java)、[`FragmentManager.java`](https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java) 与 [`FragmentTransaction.java`](https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentTransaction.java)：核对固定 AndroidX commit 下的提交、队列、批处理、reordering 与 `runOnCommit()` 语义。
 - [Fragment transactions](https://developer.android.com/guide/fragments/transactions) 与 [Fragment release notes](https://developer.android.com/jetpack/androidx/releases/fragment)：核对公开 API 用法、稳定版、预览版和 maintenance mode。
-- [Compose in Views](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)、[`ComposeView` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ComposeView)、[Navigation 3](https://developer.android.com/guide/navigation/navigation-3) 与 [Navigation 3 release notes](https://developer.android.com/jetpack/androidx/releases/navigation3)：核对 Fragment View 中 Composition 的创建/销毁时机及纯 Compose 导航边界。
+- [Compose in Views](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)、[`ComposeView` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ComposeView)、[Navigation 3](https://developer.android.com/guide/navigation/navigation-3) 与 [Navigation 3 release notes](https://developer.android.com/jetpack/androidx/releases/navigation3)：核对 Fragment View 中 Composition 的创建/销毁时机及纯 Compose 导航的适用条件。
 - [`Choreographer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java)、[`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java) 与 [`ThreadedRenderer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java)：核对 Android 17 主线程帧调度、traversal 与 HWUI 入口。
-- [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp) 与 [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)：核对 App Window buffer transaction、SurfaceFrame 和 DisplayFrame 的实现边界；字段解释再对照 [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)。
+- [`BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp) 与 [`FrameTimeline.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)：核对 App Window buffer transaction、SurfaceFrame 和 DisplayFrame 的实现细节；字段解释再对照 [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)。
 
 ### Fragment 切换小结
 
@@ -487,7 +487,7 @@ Fragment 页面切换有三个主要判断点：`commit()` 只负责排队，事
 
 Android 13 引入 `OnBackInvokedDispatcher` / `OnBackInvokedCallback`，提供新的返回完成分发；Android 14 的 `OnBackAnimationCallback` 才把开始、进度和取消事件公开给应用。AndroidX Activity 1.8.0 为 `OnBackPressedCallback` 增加 `handleOnBackStarted()`、`handleOnBackProgressed()`、`handleOnBackCancelled()` 和 `handleOnBackPressed()`，但 Android 13 及更低版本没有平台进度事件，由连续手势进度控制的同类动画跑不起来。
 
-Android 15 起，返回主屏幕、跨任务和跨 Activity 的系统动画不再受开发者选项控制，但应用仍须迁移到受支持的返回 API，并且没有启用中的消费型回调拦截本次返回——消费型回调会接管返回动作，系统就没法继续预览原来的返回目标。对于运行在 Android 16 及更高版本、同时以 API 36 及更高版本为目标的应用，这些系统动画默认启用；旧的 `onBackPressed()` 不再被调用，`KEYCODE_BACK` 也不再作为返回键事件分发。迁移期间可以在应用或 Activity 上设置 `android:enableOnBackInvokedCallback="false"` 临时关闭：系统动画会停用，平台 `OnBackInvokedCallback` 会被忽略，但 AndroidX `OnBackPressedCallback` 的完成回调仍可工作。
+Android 15 起，返回主屏幕、跨任务和跨 Activity 的系统动画不再受开发者选项控制。应用要做好两件事：迁移到受支持的返回 API，并保证当前没有启用中的消费型回调拦截本次返回——消费型回调会接管返回动作，系统就没法继续预览原来的返回目标。对于运行在 Android 16 及更高版本、同时以 API 36 及更高版本为目标的应用，这些系统动画默认启用；旧的 `onBackPressed()` 不再被调用，`KEYCODE_BACK` 也不再作为返回键事件分发。迁移期间可以在应用或 Activity 上设置 `android:enableOnBackInvokedCallback="false"` 临时关闭：系统动画会停用，平台 `OnBackInvokedCallback` 会被忽略，但 AndroidX `OnBackPressedCallback` 的完成回调仍可工作。
 
 这几个入口分别负责不同层次的返回处理：
 
@@ -561,7 +561,7 @@ fun createPredictiveBackCallback(
 
 Fragment 1.7.0+ 支持应用内预测式返回，但连续按进度定位动画只在 Android 14 / API 34+ 生效。返回事务使用 `Animator` 或 AndroidX Transition 1.5.0+ 时，FragmentManager 可以按手势进度控制动画，再根据完成或取消提交或回滚；旧的 `Animation` 和平台 `Transition` 不支持这条路径。
 
-项目应明确记录这些版本边界：
+项目应明确记录这些版本要求：
 
 | 场景 | 最低版本 | 性能边界 |
 | --- | --- | --- |
@@ -626,7 +626,7 @@ val callback = object : OnBackPressedCallback(true) {
 }
 ```
 
-`controlDelayedTransition()` 需要 Android 14+，每次动画只能使用一个控制器，自定义 Transition 也要明确支持按进度控制。设备版本过低、同一容器正在捕获另一个 Transition，或者容器尚未完成布局时，该方法可能返回 `null`。这里要重点排查 `showPreviousStateForPreview()`：一旦它触发新的 Fragment View 创建、`RecyclerView` 首屏绑定或图片加载，返回手势一开始就会占满主线程预算。Fragment 1.5+ 已自行控制返回栈动画时，就别再手动创建第二个控制器或额外调用 `popBackStack()`；事务执行边界见本文第一节。
+`controlDelayedTransition()` 需要 Android 14+，每次动画只能使用一个控制器，自定义 Transition 也要明确支持按进度控制。设备版本过低、同一容器正在捕获另一个 Transition，或者容器尚未完成布局时，该方法可能返回 `null`。这里要重点排查 `showPreviousStateForPreview()`：一旦它触发新的 Fragment View 创建、`RecyclerView` 首屏绑定或图片加载，返回手势一开始就会占满主线程预算。Fragment 1.5+ 已自行控制返回栈动画时，就别再手动创建第二个控制器或额外调用 `popBackStack()`；事务执行时序见本文第一节。
 
 ### Compose NavigationEvent：把进度状态限制在动画层
 
@@ -704,7 +704,7 @@ try {
 预测式返回不必一次改完整个导航系统，可以按页面类型分批接入：
 
 1. 清点返回入口：Activity、Fragment、Compose、WebView、Dialog、底部弹窗分别列出当前使用的 `onBackPressed()`、`OnBackPressedCallback`、`BackHandler`、`OnBackInvokedCallback`。
-2. 固定依赖：记录 Activity、Fragment、Transition、Navigation / NavigationEvent 的确切版本。新接入优先使用当前稳定版；最低版本只用于解释功能边界。
+2. 固定依赖：记录 Activity、Fragment、Transition、Navigation / NavigationEvent 的确切版本。新接入优先使用当前稳定版；最低版本只用于解释功能出现的条件。
 3. 检查临时关闭项：查看 application 与各 Activity 的 `android:enableOnBackInvokedCallback`。先在返回目标单一的页面移除 `false`，再验证系统动画、自定义回调和低版本回退。
 4. 分离埋点和消费：日志用 Android 16+ 的 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`，或者在页面销毁时记录，别为了打点去注册消费型回调。API 36 还要遵守只能注册一个观察型回调的限制。
 5. 压低进度回调成本：只改属性、动画进度或轻量状态；禁止同步 I/O、图片解码、数据库读取、网络请求和新的 Fragment 事务。
@@ -712,7 +712,7 @@ try {
 7. 覆盖取消测试：半滑取消、快速连续返回、返回时切后台、横竖屏切换、空返回栈、进程恢复后返回。
 8. 建立 Perfetto 基线：每类页面至少保留一条正常返回轨迹和一条半滑取消轨迹，并记录设备刷新率、Android 版本以及 Activity / Fragment / Compose 版本。
 
-混合栈页面要明确返回优先级：WebView 浏览历史、页面内弹层、Fragment 返回栈和 Activity 结束不能同时处理同一次手势。优先级不清会造成预览目标与最终返回目标不一致。
+混合栈页面要明确返回优先级：WebView 浏览历史、页面内弹层、Fragment 返回栈和 Activity 结束，同一次手势只交给其中一个处理。优先级不清会造成预览目标与最终返回目标不一致。
 
 ### 扩展：WebView 预测式返回
 
@@ -752,13 +752,13 @@ ahead-of-time dispatch 要求在手势开始前就确定哪个处理器接管返
 
 ## Navigation Compose 状态、过渡与保留
 
-Compose 导航把目的地状态和过渡放进 composition。需要控制 back stack、saveable state 和动画期间的重组范围。
+Compose 导航把目的地状态和过渡放进 composition，我们要控制的就是 back stack、saveable state 和动画期间的重组范围。
 
-本文只分析 Navigation 2.x 的 Compose API，也就是由 `NavController`、`NavHost` 和 `NavBackStackEntry` 组成的导航方案。`NavBackStackEntry` 表示返回栈里的一次目的地实例，本文简称 entry；同一个目的地连续入栈，会产生多个 entry。Navigation 3 已有稳定版 1.1.6，它改由应用持有返回栈、`NavDisplay` 根据栈内容显示页面，两套库的状态与生命周期实现不同，本文结论也不能直接套到 Navigation 3 上。[Navigation 3 发布说明](https://developer.android.com/jetpack/androidx/releases/navigation3#1.1.6)
+本文只分析 Navigation 2.x 的 Compose API，也就是由 `NavController`、`NavHost` 和 `NavBackStackEntry` 组成的导航方案。`NavBackStackEntry` 表示返回栈里的一次目的地实例，本文简称 entry；同一个目的地连续入栈，会产生多个 entry。Navigation 3 已有稳定版 1.1.6，它改由应用持有返回栈、`NavDisplay` 根据栈内容显示页面，两套库的状态与生命周期实现不同，把本文结论用到 Navigation 3 前要重新核对。[Navigation 3 发布说明](https://developer.android.com/jetpack/androidx/releases/navigation3#1.1.6)
 
-导航性能光看 `navigate()` 的执行时间是不够的。目标页何时开始组合、转场期间保留几份内容、状态保存多久，以及哪一帧送到显示设备，都会影响用户感受到的速度。本文沿 Navigation 2.9.8 的返回栈、转场和状态恢复实现说明这些边界，并给出可复现的测量方法。
+导航性能光看 `navigate()` 的执行时间是不够的。目标页何时开始组合、转场期间保留几份内容、状态保存多久，以及哪一帧送到显示设备，都会影响用户感受到的速度。本文沿 Navigation 2.9.8 的返回栈、转场和状态恢复实现说明这些行为，并给出可复现的测量方法。
 
-### 1. 版本基线与边界
+### 1. 版本基线
 
 本文的 Navigation 2.x 基线固定为 `androidx.navigation:navigation-compose:2.9.8`。截至 2026 年 8 月 15 日，它仍是 2.x 稳定版；该版本于 2026 年 4 月 22 日发布，并修复了 `NavHost` 在预测返回期间可能触发空指针异常的竞态。这里的“竞态”指多个异步状态变化的先后顺序不定，某种次序恰好触发错误。类型安全路由从 Navigation 2.8.0 起已经稳定，示例统一使用这套 API。[Navigation 2.9.8 发布说明](https://developer.android.com/jetpack/androidx/releases/navigation#2.9.8)
 
@@ -772,7 +772,7 @@ Navigation 2 已进入维护模式，仍会收到关键修复。新的纯 Compos
 
 Hilt 示例采用 AndroidX Hilt 1.4.0。从 Hilt 1.3.0 起，Compose 的 `hiltViewModel()` 已迁移到 `androidx.hilt:hilt-lifecycle-viewmodel-compose` 依赖和 `androidx.hilt.lifecycle.viewmodel.compose` 包；旧包中的同名函数已经弃用并指向新包。`hilt-lifecycle-viewmodel-compose:1.4.0` 使用 `compileSdk 37`，引用它的模块至少需要 AGP 9.2.0；Hilt 1.4.0 还要求 Kotlin Gradle Plugin（KGP）不低于 2.2.0。[Hilt 发布说明](https://developer.android.com/jetpack/androidx/releases/hilt#1.4.0)
 
-源码只能说明生命周期、状态与渲染边界，给不出固定的性能收益。耗时和内存差异都要在目标应用上做基准测试。
+源码只能说明生命周期、状态与渲染的行为规律，给不出固定的性能收益。耗时和内存差异都要在目标应用上做基准测试。
 
 ### 2. 一次导航跨过哪些阶段
 
@@ -865,7 +865,7 @@ Navigation Compose 2.9.8 的 `currentBackStackEntryAsState()` 实现只有一行
 
 “顶层读取一次”并不会自动让整棵 UI 都执行昂贵重组。Compose 从 `State` 的读取位置安排重组，后续子节点还能依据参数稳定性被跳过。不过，把读取放在包含大量本地计算的宽作用域中，会让这段父级代码每次都重新执行。标题、底栏选中态和目标内容，最好各自在最窄的使用位置读取，或接收已经归一化的值。
 
-`remember(currentRoute) { derivedStateOf { currentRoute.toTopLevelTab() } }` 不适合这里。`derivedStateOf` 只有在读取 Compose `State`，且派生结果比输入更少变化时，才可能减少读取方的无效执行。这里的代码块没有读取 Compose `State`，无法减少上游发值次数；route 到 Tab 的映射也很轻，直接计算即可。
+`remember(currentRoute) { derivedStateOf { currentRoute.toTopLevelTab() } }` 不适合这里。`derivedStateOf` 只有在读取 Compose `State`，且派生结果比输入更少变化时，才可能减少读取方的无效执行。这里的代码块没有读取 Compose `State`，上游发值次数也就减不下来；route 到 Tab 的映射也很轻，直接计算即可。
 
 底栏可以在自己的作用域收集当前 entry，再用目的地层级（destination hierarchy）判断嵌套图归属：
 
@@ -948,7 +948,7 @@ Android 14 到 Android 17 的系统返回手势由平台和 Activity 返回事�
 
 这段过程会让前一页提前参与组合和绘制。前一页恢复时若同步重建列表、重新发起请求或恢复昂贵资源，拖动过程就可能出现慢帧。2.9.8 已修复一处预测返回竞态，但应用仍需在 Android 14、15、16、17 的真机上覆盖完成、取消、快速反向与连续返回。
 
-平台手势输入、Activity 返回事件分发器（back dispatcher）、Navigation 动画和 HWUI 画面生成属于不同层。某一层出现修复，其余层有没有问题仍要分别验证。预测返回的专项边界已由本文前一节说明。
+平台手势输入、Activity 返回事件分发器（back dispatcher）、Navigation 动画和 HWUI 画面生成属于不同层。某一层出现修复，其余层有没有问题仍要分别验证。预测返回的专项内容已由本文前一节说明。
 
 ### 7. 多返回栈：恢复位置会延长状态寿命
 
@@ -1013,7 +1013,7 @@ navigation<CheckoutGraph>(
 
 ### 9. Lazy 列表：分别检查滚动和点击
 
-列表滚动阶段关注列表项的 key、`contentType`、参数稳定性、测量、预取与图片工作；导航点击阶段关注事件重复、route 构造和目标页首帧。把两类采样混在一起，很难判断耗时来自哪一段。
+我们把两类采样分开看：列表滚动阶段关注列表项的 key、`contentType`、参数稳定性、测量、预取与图片工作；导航点击阶段关注事件重复、route 构造和目标页首帧。混在一起采样，很难判断耗时来自哪一段。
 
 列表项只在点击发生时创建轻量 route：
 
@@ -1052,7 +1052,7 @@ URI 到 route 的转换应保持纯粹和轻量：
 
 冷启动深链与已运行应用内的深链要使用两套场景。前者用 `StartupTimingMetric` 观察 `timeToInitialDisplayMs`（TTID，从启动请求到目标页首帧）和 `timeToFullDisplayMs`（TTFD，从启动请求到完整内容就绪后的首帧）。Compose 页面应在内容就绪条件满足时用 `ReportDrawnWhen` 或 `ReportDrawnAfter` 发出 fully drawn 信号，不要直接调用 Activity 的 `reportFullyDrawn()`。后者用 `FrameTimingMetric` 覆盖导航和转场帧。[Macrobenchmark 指标](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)
 
-认证跳转还要检查循环：深链目标需要登录时，登录完成后只处理一次待导航 route；旋转、进程恢复或重复 Intent 都不应把同一目标压入多次。
+认证跳转还要检查循环：深链目标需要登录时，登录完成后只处理一次待导航 route；旋转、进程恢复或重复 Intent 到来时，同一目标也只压入一次。
 
 ### 11. 大屏、多窗格与可访问性
 
@@ -1084,7 +1084,7 @@ TalkBack、键盘和旋钮导航会增加焦点与语义状态恢复要求。减
 | 进程死亡恢复 | 专用恢复场景 | 重建任务并恢复状态 | 恢复正确性、TTFD、重复请求 |
 | 大屏双窗格 | 应用已运行 | 选择、缩放窗口、返回 | 两个窗格的重组、生命周期、焦点 |
 
-这张表先固定场景边界，再为每类问题选择指标；不同场景的 TTID、帧分布或内存值要分开统计，混成一个“导航耗时”就失去了对照意义。
+这张表先固定场景范围，再为每类问题选择指标；不同场景的 TTID、帧分布或内存值要分开统计，混成一个“导航耗时”就失去了对照意义。
 
 工具各自回答不同问题：
 
@@ -1128,7 +1128,7 @@ Navigation 请求最终仍要生成并显示一帧。Android 17 的普通 Compos
 | 帧测量 | [Macrobenchmark metrics](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics)、[StartupMode API](https://developer.android.com/reference/androidx/benchmark/macro/StartupMode)、[Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline) | TTID/TTFD、完整绘制信号、启动条件、帧时间、显示截止时间 |
 | Compose 诊断 | [Compose tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)、[Stability diagnosis](https://developer.android.com/develop/ui/compose/performance/stability/diagnose) | 组合跟踪时间片、重组与跳过 |
 
-本文对 Navigation 2 行为的判断以 2.9.8 源码 JAR 为准；Android 17 与固定内核源码标签只用于说明宿主帧和调度边界。升级 Navigation 2 后，应重新核对 `NavHost`、entry 生命周期、状态恢复和预测返回实现；迁移到 Navigation 3 时，则要按 `NavDisplay` 和应用自有返回栈重新分析。
+本文对 Navigation 2 行为的判断以 2.9.8 源码 JAR 为准；Android 17 与固定内核源码标签只用于说明宿主帧与调度行为。升级 Navigation 2 后，应重新核对 `NavHost`、entry 生命周期、状态恢复和预测返回实现；迁移到 Navigation 3 时，则要按 `NavDisplay` 和应用自有返回栈重新分析。
 
 ### 检查清单
 
@@ -1151,6 +1151,6 @@ Navigation 请求最终仍要生成并显示一帧。Android 17 的普通 Compos
 
 ## 全文小结
 
-无论页面由 Fragment 还是 Navigation Compose 承载，切换成本都不等于 `commit()` 或 `navigate()` 返回所用的时间。事务或返回栈更新之后，还有目标内容创建、转场两端共存、生命周期与状态恢复、布局绘制和窗口显示。Predictive Back 只是把这条链进一步拆成可取消的开始、进度、完成与恢复。
+无论页面由 Fragment 还是 Navigation Compose 承载，`commit()` 或 `navigate()` 返回所用的时间，都只是切换成本的第一段；事务或返回栈更新之后，还有目标内容创建、转场两端共存、生命周期与状态恢复、布局绘制和窗口显示。Predictive Back 只是把这条链进一步拆成可取消的开始、进度、完成与恢复。
 
 工程上应先固定导航所有者、返回优先级、entry/ViewModel 作用域和转场期间的资源生命周期，再把首帧前工作压到最小可见集合。验收时从点击或返回输入出发，沿主线程消息、Composition/Traversal、RenderThread/GPU、SurfaceFlinger 到 actual present 闭合，并为完成、取消、深链、多栈和进程恢复分别建立用例。

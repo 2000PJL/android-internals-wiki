@@ -6642,6 +6642,91 @@
       "summary": "TraversalPath.detached 被等同于从屏上根节点可达",
       "type": "traversal-path-boundary",
       "updated_at": "2026-10-19T12:17:02.478491+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md",
+      "close_note": "已按固定版本源码或官方文档修正文中对应结论；metadata、SUMMARY links、git diff --check 与新增中文硬门检查通过。证据见 logs/deep-review/2026-10-19-20261019-123520-deep-review-fc9fdc91-deep-review.md。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261019-123520-deep-review-fc9fdc91",
+      "created_at": "2026-10-19T12:39:34.190841+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261019-123520-deep-review-fc9fdc91",
+      "details": "{\"claim\": \"present fence 只是笼统的显示完成点，panel scanout 必然在其后；它一律不对应 Layer。\", \"evidence\": [\"android-17.0.0_r1 hwcomposer2.h:1805-1825：物理显示为开始显现或开始向面板内存传输的 VSync；虚拟显示为输出 buffer 写入完成。\", \"android-17.0.0_r1 PresentFence.aidl:31-65：逐 Layer 图像处理延迟的 LayerPresentFence 仅限需要该功能的 TV 设备；源码明确说明其违反通常的 Transaction 契约。\"], \"target_range\": \"原文 461-493、668-670 行\", \"recommended_action\": \"直接改写所有重复的 fence 结论，区分物理/虚拟显示及 TV 特例，不保留错误的先后关系。\"}",
+      "id": "finding-sf-present-fence-boundary",
+      "log_path": "logs/deep-review/2026-10-19-20261019-123520-deep-review-fc9fdc91-deep-review.md",
+      "severity": "P1",
+      "source_paths": [
+        "https://android.googlesource.com/platform/hardware/libhardware/+/android-17.0.0_r1/include_all/hardware/hwcomposer2.h",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl"
+      ],
+      "status": "fixed",
+      "summary": "present fence 混淆开始呈现、扫描完成与虚拟显示写入完成",
+      "type": "incorrect-fence-semantics",
+      "updated_at": "2026-10-19T12:43:04.080820+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md",
+      "close_note": "已按固定版本源码或官方文档修正文中对应结论；metadata、SUMMARY links、git diff --check 与新增中文硬门检查通过。证据见 logs/deep-review/2026-10-19-20261019-123520-deep-review-fc9fdc91-deep-review.md。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261019-123520-deep-review-fc9fdc91",
+      "created_at": "2026-10-19T12:39:34.245593+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261019-123520-deep-review-fc9fdc91",
+      "details": "{\"claim\": \"括注插入 LocklessQueue 模板名、applyTransactions 方法名、MessageQueue handler；Output 在更新合成状态后重建可见层，composition state/strategy 被分别限为 HWC/RenderEngine。\", \"evidence\": [\"TransactionHandler.h:95-99 使用 LocklessQueue<QueuedTransactionState>。\", \"LayerLifecycleManager.h:56-57 与 SurfaceFlinger.cpp:2824 使用 applyTransactions。\", \"android-13.0.0_r1 MessageQueue.cpp:45-56 为 Handler::handleMessage，按 commit 返回值决定 composite。\", \"android-17.0.0_r1 Output.cpp:441-487 在 prepare 中 rebuildLayerStacks，present 中才 updateCompositionState；1177-1204 通过 choose/applyCompositionStrategy 处理合成策略。\"], \"target_range\": \"原文 235、276、337、343-351、365、748 行\", \"recommended_action\": \"恢复可检索的完整标识符，解释移到标识符外；纠正消息处理器解释和 prepare/present 顺序，合成状态与策略不限定为某一种后端。\"}",
+      "id": "finding-sf-frontend-identifiers-output-order",
+      "log_path": "logs/deep-review/2026-10-19-20261019-123520-deep-review-fc9fdc91-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrontEnd/TransactionHandler.h",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrontEnd/LayerLifecycleManager.h",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-13.0.0_r1/services/surfaceflinger/Scheduler/MessageQueue.cpp"
+      ],
+      "status": "fixed",
+      "summary": "FrontEnd 标识符被括注拆断且 Output 准备顺序与源码不符",
+      "type": "incorrect-source-identifiers-and-flow",
+      "updated_at": "2026-10-19T12:43:04.134280+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md",
+      "close_note": "已按固定版本源码或官方文档修正文中对应结论；metadata、SUMMARY links、git diff --check 与新增中文硬门检查通过。证据见 logs/deep-review/2026-10-19-20261019-123520-deep-review-fc9fdc91-deep-review.md。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261019-123520-deep-review-fc9fdc91",
+      "created_at": "2026-10-19T12:39:34.298028+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261019-123520-deep-review-fc9fdc91",
+      "details": "{\"claim\": \"TransactionHandler:flushTransactions slice 只表示筛选 pending queues 的 CPU 时间。\", \"evidence\": [\"android-17.0.0_r1 SurfaceFlinger.cpp:2778-2830：同名 SFTRACE_NAME 的作用域包含 collectTransactions、mCreatedLayersLock、addLayers、flushTransactions、applyTransactions 和 hierarchy 更新。\", \"Perfetto CPU Scheduling events 文档区分线程运行、被抢占、阻塞和唤醒，CPU 执行时间需要调度证据。\"], \"target_range\": \"原文 1016-1032 行\", \"recommended_action\": \"表格改为完整区间耗时，说明锁等待与 runnable delay 可包含在其中，结合 sched_switch/sched_waking 判断 CPU 执行与等待。\"}",
+      "id": "finding-sf-transaction-trace-walltime-scope",
+      "log_path": "logs/deep-review/2026-10-19-20261019-123520-deep-review-fc9fdc91-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://perfetto.dev/docs/data-sources/cpu-scheduling"
+      ],
+      "status": "fixed",
+      "summary": "事务处理 slice 的区间耗时被误写成过滤器 CPU 时间",
+      "type": "incorrect-trace-attribution",
+      "updated_at": "2026-10-19T12:43:04.187154+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/09-surfaceflinger-frontend-transaction.md",
+      "close_note": "已按固定版本源码或官方文档修正文中对应结论；metadata、SUMMARY links、git diff --check 与新增中文硬门检查通过。证据见 logs/deep-review/2026-10-19-20261019-123520-deep-review-fc9fdc91-deep-review.md。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261019-123520-deep-review-fc9fdc91",
+      "created_at": "2026-10-19T12:39:34.351082+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261019-123520-deep-review-fc9fdc91",
+      "details": "{\"claim\": \"引用 FrameTimeline 官方文档时未向读者交代其 Android 12+ 可用范围和 SurfaceView 支持声明。\", \"evidence\": [\"Perfetto FrameTimeline 官方文档开头明确 requires Android 12(S) or higher，并仍标注 SurfaceViews are currently not supported；文档也保留 onMessageReceived 历史命名，不能据此推断 Android 17 内部调用名或特定构建能力。\"], \"target_range\": \"原文 510-520 行\", \"recommended_action\": \"补充文档边界，并要求对 SurfaceView 验证目标构建是否有 SurfaceFrame/关联关系；无记录时回到独立 Layer、BufferTX、latch、fence 与 HWC，不将轨道缺失判为未合成。\"}",
+      "id": "finding-sf-frametimeline-availability-surfaceview",
+      "log_path": "logs/deep-review/2026-10-19-20261019-123520-deep-review-fc9fdc91-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "status": "fixed",
+      "summary": "FrameTimeline 诊断入口遗漏官方可用性与 SurfaceView 支持边界",
+      "type": "missing-official-availability-boundary",
+      "updated_at": "2026-10-19T12:43:04.240195+08:00"
     }
   ],
   "schema_version": 1

@@ -6915,6 +6915,47 @@
       "summary": "§6.2 源码路径行内代码被历史括注拼接损坏：frameworks/native/services/surfacefling（手指离开后继续惯性滚动）er/Layer.h，应为 frameworks/native/services/surfaceflinger/Layer.h",
       "type": "technical",
       "updated_at": "2026-10-20T09:41:22.611387+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "按 android17-6.18-2026-06_r6 的 zram.rst 与 zram_drv.c 修正 mm_stat 字段：区分逻辑槽位、池内数据、同值页与回写；明确 mem_used_total 未含槽位表；补 backing_dev/bd_stat 只读命令、CONFIG_ZRAM_WRITEBACK 边界及固定 4 KiB 单位。源码不变量检查、单位换算检查和 bash 语法检查已通过。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261020-100520-9f5f9480",
+      "created_at": "2026-10-20T10:09:26.604074+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261020-100520-9f5f9480",
+      "details": "原文直接把 orig_data_size/compr_data_size 当作数据压缩比，并把 mem_used_total 当作物理 RAM 成本。r6 的同值页会增加 pages_stored 而不增加 compr_data_size；回写会扣除 compr_data_size 而保留逻辑槽位。mm_stat_show 的 mem_used_total 只取 zs_get_total_pages，单独 vzalloc 的槽位表不在其中。需要改为设备容量口径并补 backing_dev/bd_stat 的只读观察入口及固定 4 KiB 单位。",
+      "id": "finding-badcdd1187a2",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/blockdev/zram.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/block/zram/zram_drv.c"
+      ],
+      "status": "fixed",
+      "summary": "ZRAM 压缩比与 RAM 成本未区分同值页、回写和槽位表",
+      "type": "zram-accounting-boundary",
+      "updated_at": "2026-10-20T10:12:16.652342+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "已将无条件的“一定重复计算”改为“同一缓冲区被多个进程引用时，跨进程直接求和会重复计算”，与 r6 DMA-BUF 文档的共享对象语义一致。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261020-100520-9f5f9480",
+      "created_at": "2026-10-20T10:09:26.660305+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261020-100520-9f5f9480",
+      "details": "“跨进程直接求和一定重复计算”缺少同一缓冲区被多个进程引用的条件；不同进程持有互不重叠的缓冲区时不成立。应保留共享场景下按缓冲区身份核对归属的建议，删除无条件断言。",
+      "id": "finding-31d1a5eab82b",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/driver-api/dma-buf.rst"
+      ],
+      "status": "fixed",
+      "summary": "DMA-BUF 跨进程求和被写成必然重复计算",
+      "type": "dmabuf-accounting-scope",
+      "updated_at": "2026-10-20T10:12:16.706980+08:00"
     }
   ],
   "schema_version": 1

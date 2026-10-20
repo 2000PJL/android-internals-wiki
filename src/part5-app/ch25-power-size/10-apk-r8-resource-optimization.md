@@ -20,9 +20,10 @@ related_chapters:
 - '1.7'
 - '4.5'
 confidence: high
-last_verified: '2026-09-04'
-last_source_verified_at: '2026-09-04'
-last_verified_against: Android Developers R8 / keep rules / Configuration Analyzer / app optimization / APK Analyzer / D8 / bundletool / multidex / Startup Profile / NDK ABI / native symbols / 16 KB page size / AAPT2 / resource shrinker docs spot-checked 2026-09-04; Google android/skills r8-analyzer reference spot-checked 2026-09-04; AOSP android-17.0.0_r1 ART DEX, bionic linker, package ABI, NativeLibraryHelper, androidfw and Soong anchors spot-checked; android17-6.18 kernel mmap anchor retained
+last_verified: '2026-10-20'
+last_source_verified_at: '2026-10-20'
+last_verified_against: '2026-10-20 spot-check: Android Developers R8 Configuration Analyzer, APK Analyzer, App Bundle format, ABIs, page sizes, Retrace, image formats and Android 17 target behavior; AOSP android-17.0.0_r1 libunwindstack ElfInterfaceArm and Arm EHABI section naming. Earlier 2026-09-04 verification of ART DEX, bionic linker, package ABI, NativeLibraryHelper, androidfw and Soong anchors retained; android17-6.18 kernel mmap anchor retained.'
+last_idle_audit_at: '2026-10-20T10:39:06+08:00'
 sources:
 - type: official
   path: Dalvik executable format (source.android.com/docs/core/runtime/dex-format)
@@ -116,6 +117,14 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/tools/aapt2/ResourceTable.cpp
 - type: official
   path: https://developer.android.com/tools/apksigner
+- type: official
+  path: https://developer.android.com/tools/retrace
+- type: official
+  path: https://developer.android.com/guide/topics/media/media-formats#image-formats
+- type: aosp
+  path: https://android.googlesource.com/platform/system/unwinding/+/refs/tags/android-17.0.0_r1/libunwindstack/ElfInterfaceArm.cpp
+- type: reference
+  path: https://github.com/ARM-software/abi-aa/blob/main/ehabi32/ehabi32.rst
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageAbiHelperImpl.java
 - type: aosp
@@ -148,17 +157,17 @@ consolidated_from:
 
 # 应用体积分析与优化：DEX（Dalvik Executable，Dalvik 可执行格式）、Native（本地代码） SO 与资源
 
-应用体积主要由 DEX、Native SO 与资源文件组成。同一个 APK（feature split） 数字背后是四组不同的口径：上传、下载、安装与运行时映射。我们先固定交付制品和设备条件，再沿字节码、原生库与资源三条路径归因，最后回到下载、安装、运行时和功能兼容验证。
+应用体积主要由 DEX、Native SO 与资源文件组成。同一应用可以通过完整 APK 或 feature split（功能拆分包）等形式交付；比较大小时要区分上传、下载、安装与运行时映射。我们先固定交付制品和设备条件，再沿字节码、原生库与资源三条路径归因，最后回到下载、安装、运行时和功能兼容验证。
 
 > 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。构建工具语义按 2026 年 8 月 30 日检索的官方文档核对；平台版本与 AGP/NDK/R8 版本是两条独立的轴。
 
 ## 先统一制品与体积口径
 
-体积治理要先固定四件事：用户拿到哪组 APK（configuration APK）、下载多少字节、安装后占用多少空间、运行时映射了哪些页；删哪个目录是之后的事。这四个结果可能沿不同方向变化。
+体积治理要先固定四件事：用户拿到哪组 APK（如基础 APK 和 configuration APK，即配置 APK）、下载多少字节、安装后占用多少空间、运行时映射了哪些页；删哪个目录是之后的事。这四个结果可能沿不同方向变化。
 
-### APK（universal APK） 是带平台约束的 ZIP
+### APK（包括 universal APK）是带平台约束的 ZIP
 
-APK（per-ABI APK） 使用 ZIP 组织文件，但在这套 ZIP 之上，Android 还有自己的安装和加载语义：
+APK（包括按 ABI 单独构建的 per-ABI APK）使用 ZIP 组织文件，但在这套 ZIP 之上，Android 还有自己的安装和加载语义：
 
 - `classes*.dex` 保存字节码。单个 DEX 的 `method_ids`（方法引用 ID 表） 上限是 65,536 个条目，约束的是单个 DEX 的引用表，整个应用的方法总数可以随 multidex（在一个 APK 中放置多个 DEX） 突破它；
 - `resources.arsc` 与 `res/` 组成编译资源，`assets/` 保存按原始文件接口读取的内容。asset 是否仍被使用，静态缩减器仅凭业务代码难以判断，要靠运行时引用验证；
@@ -433,7 +442,7 @@ R8 能删除不可达代码，但有几处例外：
 
 独立 D8 的 `--release` 会减少调试信息，并在存在主 DEX 类清单（main dex list）时尝试把更多类填入主 DEX。它不会执行 R8 的整程序代码裁剪、重命名和高级优化。
 
-AGP 已按构建变体选择 D8/R8 模式。应用发布构建无需额外执行一次 `d8 --release`；对 R8 输出再做第三方 DEX 重写还可能破坏性能配置文件、布局和 Retrace（性能轨迹） 映射。
+AGP 已按构建变体选择 D8/R8 模式。应用发布构建无需额外执行一次 `d8 --release`；对 R8 输出再做第三方 DEX 重写还可能破坏性能配置文件、布局和 Retrace（混淆堆栈还原）映射。
 
 #### `--min-api`
 
@@ -927,7 +936,7 @@ android {
 - 崩溃时从 PC（program counter，程序计数器）逐帧恢复调用链；
 - 手写汇编和省略帧指针（frame pointer）的函数。
 
-所以，删不删 `.eh_frame`、`.ARM（arm64）.exidx` 或紧凑栈展开（compact unwind）相关节区，要先做个对照：我们用发布构建制造一次受控 Native 崩溃，确认 tombstone 帧、离线符号化和 profiler 都还能工作，再谈体积收益。
+删除 `.eh_frame`、`.ARM.exidx`（32 位 ARM 的异常展开索引）或紧凑栈展开（compact unwind）相关节区前，应先用发布构建制造一次受控 Native 崩溃，确认 tombstone 帧、离线符号化和 profiler 都能工作，再评估体积收益。Android 17 的 [`ElfInterfaceArm`](https://android.googlesource.com/platform/system/unwinding/+/refs/tags/android-17.0.0_r1/libunwindstack/ElfInterfaceArm.cpp) 基于 `ElfInterface32` 读取 `PT_ARM_EXIDX`；`.ARM.exidx` 的节区命名由 [Arm EHABI](https://github.com/ARM-software/abi-aa/blob/main/ehabi32/ehabi32.rst) 定义。
 
 ### ABI：构建集合与单设备交付要分开
 
@@ -1596,9 +1605,9 @@ Android 8 / API 26 及以上平台均支持有损、无损与透明 WebP。常�
 
 #### AVIF 的版本边界
 
-Android 12 / API 31 起支持 AVIF 图片。对 `minSdk 26` 的应用，把唯一一份首屏图片直接换成无限定 AVIF 是不安全的；低版本需要可解码的回退资源（fallback）。
+Android 12 / API 31 起支持基线配置的 8 位 AVIF 解码；10 位解码是可选能力，不能仅按 API 级别判断，具体边界见 [Supported media formats](https://developer.android.com/guide/topics/media/media-formats#image-formats)。对 `minSdk 26` 的应用，把唯一一份首屏图片直接换成无限定 AVIF 是不安全的；低版本需要可解码的回退资源（fallback）。
 
-下面的目录结构让 Android 12+ 选择 AVIF，Android 8—11 继续使用 WebP：
+下面的目录结构为 Android 12+ 提供 8 位 AVIF，Android 8—11 继续使用 WebP：
 
 ```text
 src/main/res/drawable/hero.webp
@@ -1899,8 +1908,8 @@ ZIP 条目发生变化会破坏签名和对齐。所有转换必须进入受支�
 | 版本 | 与资源体积相关的边界 |
 |---|---|
 | Android 5.0（API 21） | 平台支持拆分 APK；AAB 后来以此为基础按设备配置交付资源 |
-| Android 8.0（API 26） | 本文适用范围的最低版本；平台支持随应用打包或下载的字体，以及可变字体使用场景 |
-| Android 12（API 31） | 平台支持 AVIF 图片，低版本仍需回退资源 |
+| Android 8.0（API 26） | 平台支持随应用打包或下载的字体，以及可变字体使用场景；早于本文 Android 10—17 的适用范围 |
+| Android 12（API 31） | 平台支持 8 位基线 AVIF 解码，10 位解码为可选能力；低版本仍需回退资源 |
 | Android 13（API 33） | 提供系统级应用语言设置；语言清单与拆分策略需要协同配置 |
 | AGP 8.8 | `resourceConfigurations` 弃用；应用语言过滤迁移到 `androidResources.localeFilters` |
 | AGP 8.12/8.13 | 可显式启用协同资源缩减流程 |

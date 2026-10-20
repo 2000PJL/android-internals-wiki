@@ -69,7 +69,7 @@ Microbenchmark 测量可重复的局部工作，Macrobenchmark 从外部进程�
 
 Jetpack Benchmark 回答的是一个受约束的问题：同一场景、同一设备、同一编译状态下，candidate（待评估版本） 相对 baseline 是变快了还是变慢了。它替我们管理测量循环、采集指标、保存结果；真实用户那边的分布，交给线上 APM（Application Performance Monitoring，应用性能监控）、Android Vitals、JankStats 和故障样本去回答。
 
-这两类证据可以互相接续：
+线上和实验室这两条线可以互相接续：
 
 1. 线上数据定位到受影响的机型、页面和业务阶段。
 2. 团队把该阶段压缩成可重复的本地数据与交互脚本。
@@ -77,7 +77,7 @@ Jetpack Benchmark 回答的是一个受约束的问题：同一场景、同一�
 4. 数字发生变化时，打开随迭代生成的 Perfetto trace（系统执行时间线） 解释原因。
 5. 修复上线后，再由线上指标确认真实用户分布是否改善。
 
-线上看 P95（95% 的观测值不超过该数值），即 95% 的观测值不超过的数值；实验室看 median（中位数）。两者的样本来源、设备分布和负载都不同，能放在一起比较的是指向的阶段和变化方向；数值门槛各自维护。
+线上看 P95（95% 的观测值不超过该数值），实验室看 median（中位数）。两边的样本来源、设备分布和负载都不同，能放在一起比较的是它们指向的业务阶段和变化方向；数值门槛要各自维护。
 
 ### 2026 年版本与平台锚点
 
@@ -99,7 +99,7 @@ Benchmark 1.5.0-rc01 的四个 Android AAR 都把 `minSdkVersion` 提到 24；�
 
 ### Microbenchmark：只测可重复的局部工作
 
-Microbenchmark 在测试进程内反复执行同一段代码，适合纯 CPU 或内存分配路径，例如：
+拿到一段想优化的解析、排序或缓存代码时，我们先考虑 Microbenchmark：它在测试进程内反复执行同一段代码，适合纯 CPU 或内存分配路径，例如：
 
 - JSON、Protocol Buffers（Proto）、图片元数据等解析和编码。
 - diff（新旧数据的差量计算）、排序、查找、正则与格式转换。
@@ -164,7 +164,7 @@ class FeedParserBenchmark {
 
 这个测试里，被测对象是 `parser.parse(payload)`，准备数据固定为 seed 42，循环交给 Benchmark 管理，指标是执行时间和库采集到的分配信息。准备阶段会校验条目数，解析异常直接让测试失败；`BlackHole.consume()` 挡住编译器和 R8，让未使用的结果不至于连同计算一起被删掉。结论的适用范围也随之收窄：它只说明这一固定输入下的局部解析成本。
 
-可变状态要在每轮恢复，但恢复成本不应混进算法时间。下面的片段演示对原数组做副本，再只测排序。
+可变状态要在每轮恢复，而恢复的成本要留在算法时间之外。下面的片段演示对原数组做副本，再只测排序。
 
 ```kotlin
 benchmarkRule.measureRepeated {
@@ -195,7 +195,7 @@ Java 仍可通过 `BenchmarkRule.getState()` 和 `while (state.keepRunning())` �
 
 ### Macrobenchmark：从外部进程测完整用户路径
 
-Macrobenchmark 用单独安装的 test APK（只包含测试与控制代码的应用包） 控制目标应用，这个 APK 里只有测试与控制代码，适合启动、滚动、转场、动画和关键用户旅程。它的控制流可以概括为：
+要测启动、滚动、转场、动画和关键用户旅程这类完整路径时，我们用 Macrobenchmark：它通过单独安装的 test APK（只包含测试与控制代码的应用包） 控制目标应用。它的控制流可以概括为：
 
 ```text
 重置目标应用的编译状态
@@ -208,7 +208,7 @@ Macrobenchmark 用单独安装的 test APK（只包含测试与控制代码的�
      }
 ```
 
-`setupBlock` 不计入指标，但它决定每轮起点是否一致。`measureBlock` 里任何等待都会进入 trace 的测量窗口；某项 metric 是否计入这段等待，则由该 metric 的定义决定。
+`setupBlock` 决定每轮起点是否一致，本身不计入指标；`measureBlock` 里任何等待都会进入 trace 的测量窗口，而某项 metric 是否计入这段等待，由它自己的定义决定。
 
 #### `StartupMode` 只描述进程和 Activity 起点
 
@@ -218,7 +218,7 @@ Macrobenchmark 用单独安装的 test APK（只包含测试与控制代码的�
 | `WARM` | 进程存活，需要新建并显示 Activity | 不等于页面数据已缓存 |
 | `HOT` | 进程与 Activity 存活，把现有 Activity 带回前台 | 不等于零工作量 |
 
-冷启动实验还要另外记录登录态、数据库、磁盘缓存、shader cache（图形着色器编译缓存） 和编译状态；只写 `StartupMode.COLD`，实验还复现不了。
+冷启动实验还要另外记录登录态、数据库、磁盘缓存、shader cache（图形着色器编译缓存） 和编译状态；报告里只写 `StartupMode.COLD`，这些条件就丢了，实验也就复现不了。
 
 #### `CompilationMode` 决定代码处于什么编译状态
 
@@ -235,7 +235,7 @@ Macrobenchmark 用单独安装的 test APK（只包含测试与控制代码的�
 
 API 23 只有 `Full()`，而 `Full()` 也未必更快：已编译代码变大后，磁盘读取和 instruction cache（CPU 存放近期执行指令的缓存） 的压力都可能跟着上来。验证 Baseline Profile 时，我们用 `Partial(BaselineProfileMode.Require)` 与 `None()` 成对比较；`DEFAULT` 留给模拟默认体验，严格的收益验证要靠这一对。
 
-Android 14 / API 34 之前，Macrobenchmark 为重置编译状态可能重装目标 APK，从而丢失应用数据。依赖预置账号或数据库的场景需要在每次重装后重新准备，或者由外部脚本控制编译并使用 `CompilationMode.Ignore()`。Android 14 及以上才适合在这一步保留应用状态。
+版本上还有一个前提要留意：Android 14 / API 34 之前，Macrobenchmark 为重置编译状态可能重装目标 APK，从而丢失应用数据。依赖预置账号或数据库的场景要在每次重装后重新准备，或者由外部脚本控制编译并使用 `CompilationMode.Ignore()`。Android 14 及以上才适合在这一步保留应用状态。
 
 ### 工程结构：把测量代码与目标应用隔开
 
@@ -248,7 +248,7 @@ Android 14 / API 34 之前，Macrobenchmark 为重置编译状态可能重装目
 :macrobenchmark      com.android.test，从外部驱动 :app
 ```
 
-`:app` 不应为了 benchmark 关闭 R8、保留 debug 日志或改变业务实现。build type 是同一应用的构建配置变体；`benchmark` build type 应继承 release 的压缩和优化，仅用本地签名方便安装。
+`:app` 在 benchmark build type 下要维持工程本来的 release 形态：R8 沿用 release 的设置，日志处理与 release 一致，业务实现原样。build type 是同一应用的构建配置变体；`benchmark` build type 应继承 release 的压缩和优化，仅用本地签名方便安装。
 
 下面是目标应用需要关注的核心配置。
 
@@ -341,7 +341,7 @@ androidComponents {
 
 测试代码放在这个 test-only module 的 `src/main`。test APK 的 `benchmark` variant 可以 debuggable，受测的 `:app` benchmark APK 则必须保持 non-debuggable。`self-instrumenting` 让测试 APK 与目标应用分进程运行。`benchmark-macro-junit4:1.4.1` 已依赖 UI 自动化库 UiAutomator 2.3.0；若项目显式覆盖 UiAutomator 版本，需要重新验证选择器与手势行为。
 
-Microbenchmark module 应应用与依赖同版本的 Gradle 插件。
+Microbenchmark module 应使用与依赖同版本的 Gradle 插件。
 
 ```kotlin
 // 根 build.gradle.kts
@@ -429,7 +429,7 @@ class StartupBenchmark {
 
 这个测试量的是完整启动过程：从 launch intent（启动 Activity 的意图） 一路到首帧和 `reportFullyDrawn()`。每轮由 `StartupMode.COLD` 杀进程，应用数据不自动清除；指标是 TTID（Time to Initial Display，首帧显示时间），以及可用时的 TTFD（Time to Full Display，完整内容显示时间）。找不到就绪标记、没有启动事件或超时，测试都会失败。10 轮够我们看 median 和逐次 trace；要稳定估计 P95 还得加样本，CI 若使用 P95，需要从 JSON 的 `runs` 计算。
 
-`startActivityAndWait()` 只保证启动 Activity 并等待平台可观察的启动完成。额外的 `home_ready` 检查用于防止下一轮在异步数据仍加载时开始；TTFD 是否正确仍取决于应用报告 fully drawn（应用报告完整内容已显示） 的时机。
+`startActivityAndWait()` 只保证启动 Activity 并等待平台可观察的启动完成；下一轮会不会在异步数据还没加载完时就开始，要靠额外的 `home_ready` 检查来防住。TTFD 是否正确，仍取决于应用报告 fully drawn（应用报告完整内容已显示） 的时机。
 
 ### 示例二：只把列表滚动放进测量窗口
 
@@ -514,7 +514,7 @@ TTID 低只说明用户较快看到第一帧。若首屏仍是骨架屏或不可
 
 它输出每帧样本并在多次迭代后形成分位数：
 
-- `frameDurationCpuMs`：UI thread 和 RenderThread 产出一帧所用的 CPU duration（RenderThread 负责提交绘制命令）；API 31 前无法计入 `Choreographer#doFrame` 开始前的时间。
+- `frameDurationCpuMs`：UI thread 和 RenderThread 产出一帧所用的 CPU duration（RenderThread 负责提交绘制命令）；API 31 前未计入 `Choreographer#doFrame` 开始前的时间。
 - `frameOverrunMs`：API 31+ 相对帧 deadline（系统给这一帧分配的时间预算） 的超期或余量；正值表示超过 deadline，负值表示仍有余量。
 - `frameCount`：测量窗口内产出的帧数，用来解释“删掉无效帧后分位数上升”之类的样本变化。
 
@@ -566,7 +566,7 @@ Android 17 设备的报告应记录 `android-17.0.0_r1` 对应系统构建信息
 
 这里的门禁是 CI 根据性能预算自动放行或阻止代码变更的规则。
 
-Benchmark 结果是连续数值，不能像普通单元测试那样仅看一次 pass/fail。建议按以下方式建设门禁：
+Benchmark 结果是连续数值，一次 pass/fail 判断不了回归；门禁要比较的是差值相对历史噪声的位置。建议按以下方式建设门禁：
 
 1. 固定一小组物理设备，建立每台设备自己的历史序列。
 2. 对 main 分支定时运行，估计每个 metric 的自然波动带。
@@ -585,7 +585,7 @@ Benchmark 结果是连续数值，不能像普通单元测试那样仅看一次 
 
 - 启动做 10 次时，适合看 median 和逐次 trace，P95 接近极值。
 - 帧指标一轮就有许多帧样本，可以看 p90/p95/p99，但要同时看 frame count。
-- 功耗与稀疏事件需要更长测量窗口，而不只是增加启动次数。
+- 功耗与稀疏事件需要的是更长的测量窗口，单纯增加启动次数并不够。
 
 官方 Gradle 运行会把 JSON 和 trace 复制到 `build/outputs/connected_android_test_additional_output/...`。Macrobenchmark 每个 measured iteration（计入指标的一轮）生成一份 Perfetto trace；Microbenchmark 每个测试通常生成一份覆盖全部迭代的 trace。控制台摘要不够用，CI 应按 commit、设备和场景归档原始 JSON 与 trace。
 
@@ -653,7 +653,7 @@ class BaselineProfileGenerator {
 - `CompilationMode.None()`：无预编译对照。
 - `CompilationMode.Partial(BaselineProfileMode.Require)`：要求 APK 内 profile 可安装，否则直接失败。
 
-两组测试使用相同目标 APK、fixture、设备和 iteration。`Partial(Require)` 需要 API 24+、APK 由 AGP 7.0+ 打包 profile，并包含 ProfileInstaller；当前工程宜使用 AGP 8.2+ 模板与 ProfileInstaller 1.4.1。API 23 只能运行 `Full()`，无法完成这组收益对照。
+两组测试使用相同目标 APK、fixture、设备和 iteration。`Partial(Require)` 需要 API 24+、APK 由 AGP 7.0+ 打包 profile，并包含 ProfileInstaller；当前工程宜使用 AGP 8.2+ 模板与 ProfileInstaller 1.4.1。API 23 只能运行 `Full()`，这组收益对照在那里凑不齐。
 
 生成后的 profile 要跟着工程走：关键用户旅程、R8 映射（压缩后名称与原始名称的对应关系）、启动依赖或大版本任一变化，都应重新生成。文件存在只说明产物被创建；`Partial(Require)`、`ArtMetric` 与启动/滚动指标才能证明它在当前 APK 和设备上发挥作用。
 
@@ -661,7 +661,7 @@ class BaselineProfileGenerator {
 
 ### 源码核验记录
 
-以下内容对 stable 1.4.1 的已发布 AAR 和 sources 做了交叉核对，并用 1.5.0-rc01 发布物确认预发布线边界：
+以下内容对 stable 1.4.1 的已发布 AAR 和 sources 做了交叉核对，并用 1.5.0-rc01 发布物确认了预发布线的适用范围：
 
 - `benchmark-common` / `benchmark-junit4` manifest：`minSdkVersion=21`。
 - `benchmark-macro` / `benchmark-macro-junit4` manifest：`minSdkVersion=23`。

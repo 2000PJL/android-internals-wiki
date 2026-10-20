@@ -198,7 +198,10 @@ related_chapters:
 - '2.4'
 - '2.9'
 - '2.7'
-status: finalized
+status: ready-for-review
+last_rework_at: '2026-10-20T09:39:58+08:00'
+last_source_verified_at: '2026-10-20'
+verification_scope_note: '2026-10-20 的来源核验范围为 §6.2 的 Layer.h 路径与 BufferTX 定义（AOSP android-17.0.0_r1，第 556–566 行）；其余技术结论未重新核验。'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/01-rendering-overview.md
@@ -557,7 +560,7 @@ SurfaceFlinger 中对应 Layer 的待处理事务
 
 #### 6.2 `BufferTX - <layerName>` 的含义
 
-SurfaceFlinger 的 Layer 追踪中可看到形如 `BufferTX - <layerName>` 的计数器，命名定义位于 `frameworks/native/services/surfacefling（手指离开后继续惯性滚动）er/Layer.h`。
+SurfaceFlinger 的 Layer 追踪中可看到形如 `BufferTX - <layerName>` 的计数器，命名定义位于 `frameworks/native/services/surfaceflinger/Layer.h`。
 
 它表达 SurfaceFlinger 侧待处理的 buffer transaction 数量，可用于观察事务积压；普通应用 BufferQueue 的槽位状态计数、排队等待扫描输出的显示帧数各有自己的含义，混用会看错对象。
 

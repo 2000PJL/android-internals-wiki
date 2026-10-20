@@ -6956,6 +6956,83 @@
       "summary": "DMA-BUF 跨进程求和被写成必然重复计算",
       "type": "dmabuf-accounting-scope",
       "updated_at": "2026-10-20T10:12:16.706980+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "close_note": "已按官方 App Bundle / Retrace 文档修正通用 APK 与子类型及堆栈还原解释；按 Arm EHABI 与 android-17.0.0_r1 ElfInterfaceArm 将节区名恢复为 .ARM.exidx 并明确 32 位 ARM。完整代码块、其他括注与 Android17 基线保留，三个本地 gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261020-103520-idle-audit-0604e499",
+      "created_at": "2026-10-20T10:38:18.105780+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261020-103520-idle-audit-0604e499",
+      "details": "APK 被分别解释为 feature split、configuration APK、universal APK 和 per-ABI APK，混淆通用容器与交付形式；Retrace 被误译为性能轨迹；.ARM（arm64）.exidx 破坏节区标识符并误指 64 位 ARM。按 Android 官方 App Bundle、Retrace 文档及 Android 17 libunwindstack / Arm EHABI 修正。",
+      "id": "finding-0798e0caec85",
+      "log_path": "logs/audit/2026-10-20-20261020-103520-idle-audit-0604e499-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/guide/app-bundle/app-bundle-format"
+      ],
+      "status": "verified",
+      "summary": "APK 子类型、Retrace 与 ARM unwind 的括注含错误定义",
+      "type": "corrupted-technical-gloss",
+      "updated_at": "2026-10-20T10:40:10.544581+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "close_note": "已将资源表 Android8 行改为字体能力的历史边界，明确早于全文 Android10—17 范围；frontmatter applicable_versions 不变，metadata 与 SUMMARY/diff gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261020-103520-idle-audit-0604e499",
+      "created_at": "2026-10-20T10:38:18.161007+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261020-103520-idle-audit-0604e499",
+      "details": "frontmatter 和正文主基线均为 Android 10—17，资源表却称 Android 8/API26 为本文最低版本。保留 Android 8 字体能力历史说明，移除错误的文章适用范围定义。",
+      "id": "finding-ae51a5898869",
+      "log_path": "logs/audit/2026-10-20-20261020-103520-idle-audit-0604e499-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md"
+      ],
+      "status": "verified",
+      "summary": "资源版本表把 Android 8 错称为本文最低适用版本",
+      "type": "inconsistent-version-scope",
+      "updated_at": "2026-10-20T10:40:10.603972+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "close_note": "已按官方 Supported media formats 的 AVIF baseline profile 行，将说明、drawable-v31 示例用途句和版本表限定到 8 位解码，并注明 10 位可选；低版本 WebP 回退、解码测试要求与原代码块保留。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261020-103520-idle-audit-0604e499",
+      "created_at": "2026-10-20T10:38:18.215443+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261020-103520-idle-audit-0604e499",
+      "details": "无限定 AVIF 与 drawable-v31 示例只按 Android12/API31 区分，未说明官方媒体格式表中的 8 位支持与可选 10 位能力边界。应将示例限定到 8 位 AVIF，保留低版本 WebP 回退与设备解码测试。",
+      "id": "finding-49e8c28679b7",
+      "log_path": "logs/audit/2026-10-20-20261020-103520-idle-audit-0604e499-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/guide/topics/media/media-formats"
+      ],
+      "status": "verified",
+      "summary": "AVIF 版本示例未区分 8 位基线解码与可选 10 位解码",
+      "type": "missing-format-availability-boundary",
+      "updated_at": "2026-10-20T10:40:10.664348+08:00"
+    },
+    {
+      "chapter": "11.1",
+      "created_at": "2026-10-20T10:45:39.523341+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261020-103020-cn-rewrite-d4f62ead7a6eac52",
+      "details": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md 的 H4 标题「#### 2.3 mode（授权模式）m、Wi-Fi 与 Bluetooth 还有 controller 数据」中，术语 modem 被错误拆分为 mode（授权模式）m，且「授权模式」与本节内容（power_profile 中 modem/Wi-Fi/Bluetooth 的 controller 参数）无关，疑似早期自动括注把 mode 误配到 modem。本次中文重写车道冻结技术内容且 GPT 语义审查反对在无人工确认下删除该括注，故保留原标题并记录待人工修复；修复建议改为「#### 2.3 modem、Wi-Fi 与 Bluetooth 的 controller 数据」。无锚点引用该标题（grep 全 src 无 md#anchor 引用）。",
+      "id": "finding-4b6a58132170",
+      "log_path": "",
+      "severity": "P3",
+      "source_paths": [
+        "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md"
+      ],
+      "status": "open",
+      "summary": "标题 2.3 疑似历史括注注入损坏：modem 被写成 mode（授权模式）m，需人工确认后修复",
+      "type": "content-quality",
+      "updated_at": "2026-10-20T10:45:39.523341+08:00"
     }
   ],
   "schema_version": 1

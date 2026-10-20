@@ -115,7 +115,7 @@ consolidated_from:
 
 # Android 网络与 TLS（传输层安全） 性能优化
 
-一次接口调用的等待时间，分散在客户端排队、DNS（域名系统） 解析、路由尝试、建连与拥塞控制、加密握手、上传、边缘节点、服务端、响应传输、解析和界面更新里。“接口耗时 2 秒”只给了我们一个结果，还回答不了“这 2 秒花在哪一段”。
+一次接口调用的等待时间，分散在客户端排队、DNS（域名系统） 解析、路由尝试、建连与拥塞控制、加密握手、上传、边缘节点、服务端、响应传输、解析和界面更新里。拿到“接口耗时 2 秒”这样一个结果，我们还回答不了“这 2 秒花在哪一段”。
 
 移动网络持续变化，但客户端能控制的始终是请求时机、复用、总期限、缓存、重试和内容降级这几件事。所以优化工作的第一步是把计时方式统一起来，再按协议、请求组织和网络状态选择策略——这也是全篇的展开顺序。
 
@@ -127,13 +127,13 @@ consolidated_from:
 
 ### 应用网络栈和主线程边界
 
-Android 应用的 HTTP 路径有几类，落点各不相同：OkHttp 自己管理连接池，TCP 通常经 `java.net.Socket`，TLS 走平台 JSSE/Conscrypt（Java 与 Android 的 TLS 实现）；Cronet 使用 Chromium native（原生代码） 网络栈；API 34 起的 `HttpEngine` 则交给设备提供的实现。讨论主线程边界之前，我们先弄清自己这条路径落在哪一类。
+动手优化之前，我们先弄清应用的 HTTP 请求走哪条路径——不同路径的落点各不相同：OkHttp 自己管理连接池，TCP 通常经 `java.net.Socket`，TLS 走平台 JSSE/Conscrypt（Java 与 Android 的 TLS 实现）；Cronet 使用 Chromium native（原生代码） 网络栈；API 34 起的 `HttpEngine` 则交给设备提供的实现。这条路径决定了哪些环节在我们手里，也是后面讨论主线程问题的前提。
 
-HTTP/3/QUIC 的状态机跑在 Cronet/HttpEngine 的用户空间 provider（实现提供方） 里，内核只看到 UDP/IP/socket；OkHttp 5.3.0 则没有稳定公开的 HTTP/3 配置入口。
+路径不同，HTTP/3 的位置也不同：HTTP/3/QUIC 的状态机跑在 Cronet/HttpEngine 的用户空间 provider（实现提供方） 里，内核只看到 UDP/IP/socket；OkHttp 5.3.0 则没有稳定公开的 HTTP/3 配置入口。
 
 主线程的网络限制要区分“直接发起网络”与“等待后台网络”两种情况。`Inet6AddressImpl` 在 DNS 缓存检查前调用 `BlockGuard.getThreadPolicy().onNetwork()`，BlockGuard 就靠这类钩子检测线程违规 I/O；`BlockGuardOs` 还覆盖 connect、阻塞 poll（等待文件描述符事件） 与 recvmsg（接收 socket 消息） 等 socket 入口，JNI 直接 I/O 则可能避开部分检测。
 
-`Future.get()`、`CountDownLatch.await()` 或 `runBlocking` 虽不会抛 `NetworkOnMainThreadException`，仍会让 UI 等待后台请求，带来卡顿甚至 ANR（应用无响应）。判断主线程问题时，要分的正是这两种情况。
+`Future.get()`、`CountDownLatch.await()` 或 `runBlocking` 虽不会抛 `NetworkOnMainThreadException`，仍会让 UI 等待后台请求，带来卡顿甚至 ANR（应用无响应）——这就是第二种情况。判断主线程问题时，我们先分清卡顿属于哪一种，再往下定位。
 
 ### 一次请求应当怎样计时
 
@@ -151,7 +151,7 @@ enqueue / execute
   → 反序列化、业务处理与界面更新
 ```
 
-缓存命中或连接复用会跳过若干阶段，重定向、认证、路由回退和重试又可能让某些阶段出现多次；双工请求还允许请求体与响应交错。所以监控系统要保存的是事件序列；某段计时从哪里开始、到哪里结束，看的是它前后的事件，而非预设每种事件只出现一次。
+缓存命中或连接复用会跳过若干阶段，重定向、认证、路由回退和重试又可能让某些阶段出现多次；双工请求还允许请求体与响应交错。所以监控系统要保存的是事件序列；某段计时从哪里开始、到哪里结束，看的是它前后的事件；每种事件出现几次，以实际序列为准。
 
 #### 需要分开的指标
 
@@ -171,21 +171,21 @@ OkHttp 5.3.0 的 `callStart` 在调用 `enqueue()` 或 `execute()` 后触发。�
 
 #### TTFB 的两种起点
 
-TTFB（Time to First Byte，首字节时间）在不同平台可能采用不同起点，客户端常见的有两种：
+同样是 TTFB（Time to First Byte，首字节时间），不同平台可能从不同起点算起；客户端常见的起点有两种：
 
 - 从 `callStart` 到 `responseHeadersStart`（开始收到响应头）：包含排队、DNS、连接、握手、上传和等待响应，接近用户等待响应头的时间。
 - 从请求发送结束到 `responseHeadersStart`：把前置阶段排除掉了，但网络往返、代理、CDN（内容分发网络）、服务端排队与处理仍在其中。
 
-只看一个高的 TTFB，还归因不到服务端：要缩小范围，得把服务端 trace（性能跟踪）、`Server-Timing`、CDN cache（节点/缓存） 状态和客户端分段计时放在一起用，统计时固定响应头与响应体的分段方式。另外 OkHttp 的 `responseHeadersStart` 表示开始读取响应头，和业务已经拿到可展示数据是两回事。
+只看一个高的 TTFB，我们还归因不到服务端：要缩小范围，得把服务端 trace（性能跟踪）、`Server-Timing`、CDN cache（节点/缓存） 状态和客户端分段计时放在一起用，统计时固定响应头与响应体的分段方式。另外 OkHttp 的 `responseHeadersStart` 表示开始读取响应头，和业务已经拿到可展示数据是两回事。
 
 #### 传输速率怎么算
 
 传输速率适合用在大响应、上传和媒体流上。计算时至少记录：
 
-- 有效载荷字节数与计时边界；
+- 有效载荷字节数与计时起止点；
 - 内容编码，例如 gzip、Brotli；
 - 是否命中 HTTP cache；
-- 应用是否因读取响应过慢产生 backpressure（上游被迫等待的背压），也就是上游被迫等待的背压；
+- 应用是否因读取响应过慢产生 backpressure（上游被迫等待的背压）；
 - 协议、网络 transport（传输类型）、是否 metered（按流量计费）、是否 roaming（漫游）；
 - 中断、续传和重试字节。
 
@@ -202,21 +202,21 @@ TTFB（Time to First Byte，首字节时间）在不同平台可能采用不同�
 | 丢包影响 | 该 TCP 连接等待缺失字节 | 同一 TCP 连接上的 stream 都受传输层顺序约束 | 丢失数据所属 stream 等待重传；共享拥塞控制仍会影响整条连接 |
 | 网络迁移 | 通常重建连接 | 通常重建连接 | 协议具备 Connection ID（连接标识）与路径验证能力，能否迁移取决于实现和服务端 |
 
-从表格往下看，HTTP/2 首先把应用层组织并发时对多条连接的依赖降了下来，靠 multiplexing（多路复用） 和 HPACK 减少重复开销。但 TCP 仍按字节顺序交付，一段数据丢失后，后续字节都要等重传；服务端允许的最大并发 stream、优先级实现和单连接拥塞也会影响最终结果。
+把三代协议放在一起看，HTTP/2 首先把应用层组织并发时对多条连接的依赖降了下来，靠 multiplexing（多路复用） 和 HPACK 减少重复开销。但 TCP 仍按字节顺序交付，一段数据丢失后，后续字节都要等重传；服务端允许的最大并发 stream、优先级实现和单连接拥塞也会影响最终结果。
 
 HTTP/3 把 HTTP 映射到 QUIC stream，某个 stream 丢失的数据不再要求其他 stream 等待同一字节序列。但连接级拥塞窗口、设备 CPU、服务器调度和 UDP 路径仍是共享资源，存在丢包时 HTTP/3 也不一定更快。
 
 #### 0-RTT 的边界
 
-QUIC 恢复连接时可能发送 TLS early data（握手完成前的早期数据），把一次往返省下来，这个过程称为 0-RTT。它需要已有会话状态、客户端允许、服务端接受并保留相应配置。服务端也可以拒绝 early data，客户端随后按正常握手继续。所以功能正确性要按 0-RTT 失败的路径设计，把它当成可能落空的一次往返节省。
+QUIC 恢复连接时可能发送 TLS early data（握手完成前的早期数据），把一次往返省下来，这个过程称为 0-RTT。它需要已有会话状态、客户端允许、服务端接受并保留相应配置。服务端也可以拒绝 early data，客户端随后按正常握手继续。所以我们按 0-RTT 失败的路径设计功能正确性，把它当成可能落空的一次往返节省。
 
-Early data 可能被重放——同一份请求数据可能被攻击者再发一遍，安全属性弱于新握手后的 1-RTT 数据。所以业务只能发送能够容忍重放的操作：支付、发帖、创建订单这类要等握手完成，或者靠服务端幂等键、去重记录和明确的重放策略兜底。HTTP 方法名只能当线索，判断依据还是业务语义。
+Early data 可能被重放——同一份请求数据可能被攻击者再发一遍，安全属性弱于新握手后的 1-RTT 数据。所以业务能发送的，是那些能够容忍重放的操作：支付、发帖、创建订单这类要等握手完成，或者靠服务端幂等键、去重记录和明确的重放策略兜底。HTTP 方法名只能当线索，判断依据还是业务语义。
 
 Cronet 侧由 `QuicOptions.Builder.enableTlsZeroRtt()` 控制 TLS 0-RTT；`addAllowedQuicHost()` 只配置允许使用 QUIC 的 host（目标主机） allowlist（主机允许列表）。跨进程会话恢复还与磁盘 cache、provider（安全服务提供者，即具体的密码实现） 和服务端状态有关。
 
 #### QUIC 连接迁移的条件
 
-QUIC 的 Connection ID 允许连接在 IP 或端口变化后从新路径继续，Cronet 还提供 `ConnectionMigrationOptions`。迁移能否成功，要看 provider 配置、服务器支持、路径验证、NAT（网络地址转换）、VPN 和中间网络，切换 Wi‑Fi 与蜂窝时仍可能出现请求失败。所以业务层要保留取消、重试和幂等处理，把连接迁移当成有条件的优化，别指望它总是无感知完成切换。
+QUIC 的 Connection ID 允许连接在 IP 或端口变化后从新路径继续，Cronet 还提供 `ConnectionMigrationOptions`。迁移能否成功，要看 provider 配置、服务器支持、路径验证、NAT（网络地址转换）、VPN 和中间网络，切换 Wi‑Fi 与蜂窝时仍可能出现请求失败。所以业务层要保留取消、重试和幂等处理，把连接迁移当成有条件的优化——切换是否无感知，取决于上面这些条件是否同时满足。
 
 #### Android 上怎样使用 HTTP/3
 
@@ -228,7 +228,7 @@ dependencies {
 }
 ```
 
-构造 `CronetEngine` 前要调用 `CronetProviderInstaller.installProvider(Context)`，并处理 Play services 缺失、需要更新或安装失败。官方 `cronet-fallback` 是能力较弱的 Java fallback（备用实现） 实现，别预设它与 native（C/C++ 层） Cronet 有相同的 HTTP/3、性能和连接迁移表现。
+构造 `CronetEngine` 前要调用 `CronetProviderInstaller.installProvider(Context)`，并处理 Play services 缺失、需要更新或安装失败。官方 `cronet-fallback` 是能力较弱的 Java fallback（备用实现） 实现，它的 HTTP/3、性能和连接迁移表现要按 fallback 本身单独验证，再决定能否沿用 native（C/C++ 层） Cronet 的结论。
 
 一个进程通常只创建一个 `CronetEngine`，多个 engine 避免并发使用同一个 storage directory（存储目录）。若应用打包 native Cronet provider，还要按 [25.10 应用体积分析与优化：DEX、Native SO 与资源](../../part5-app/ch25-power-size/10-apk-r8-resource-optimization.md) 验证 ABI（应用二进制接口）、符号和 16 KB page size（内存页大小） 兼容性；页大小变化对初始化耗时没有通用收益比例。
 
@@ -243,9 +243,11 @@ HTTP/3 发布至少要按这些维度分组：
 - P50、P95、P99 延迟（50/95/99 分位数），以及失败率、回退率和重试率；
 - 请求大小、响应大小与电量成本。
 
-发布 HTTP/3 要客户端、服务端和网络路径一起就位：服务器正确发布能力，CDN 和防火墙放行相应 UDP 路径，客户端还要保留 HTTP/2 回退。先向少量流量开放；之后若尾部延迟或失败率变差，应按网络与地区定位，只看整体平均值会掩盖问题。
+发布 HTTP/3 要客户端、服务端和网络路径一起就位：服务器正确发布能力，CDN 和防火墙放行相应 UDP 路径，客户端还要保留 HTTP/2 回退。先向少量流量开放；之后若尾部延迟或失败率变差，我们按网络与地区逐组定位，整体平均值在这一步容易掩盖问题。
 
 ### 请求组织：复用、并发、合并与预热
+
+协议之外，客户端能直接下手的是请求组织。这一节按连接复用、并发与聚合、预连接预热的顺序展开，它们共同决定一次请求要重复付出多少建连和调度成本。
 
 #### 共享 OkHttpClient
 
@@ -276,7 +278,7 @@ fun clientFor(
 
 `newBuilder()` 派生的 client 会共享连接池和线程资源。我们可按交互请求、上传、流式读取等类别配置策略；只有代理、信任管理器、证书固定、DNS 或协议要求相互冲突时，才值得认真评估独立 client。
 
-OkHttp 5.3.0 默认最多保留 5 条**空闲**连接 5 分钟，这是空闲连接的回收策略，不是连接总数或域名数量上限。正在承载 HTTP/2 stream 的连接不属于空闲连接，并发仍受 Dispatcher、服务端 stream 配置、socket 与系统资源共同约束。要判断池子够不够用，我们先统计新建连接率、空闲回收和服务端 keep-alive（保持连接） 策略，而不是只凭默认数字扩大连接池。
+OkHttp 5.3.0 默认最多保留 5 条**空闲**连接 5 分钟——这条默认值只描述空闲连接的回收；连接总数与域名数量另有约束，正在承载 HTTP/2 stream 的连接也不算空闲，并发由 Dispatcher、服务端 stream 配置、socket 与系统资源共同决定。要判断池子够不够用，我们先统计新建连接率、空闲回收和服务端 keep-alive（保持连接） 策略，再决定是否调整默认数字。
 
 连接能否复用还受 scheme（协议）、port、代理、DNS、socket/TLS 配置、hostname verifier（主机名校验器） 和 certificate pin（证书固定规则）ner（证书固定器） 等完整 `Address` 条件约束。HTTP/2 的跨主机 connection coalescing（连接合并） 还要求现有连接指向同一 IP/端口、证书覆盖新主机，并使用兼容的主机名校验与 pin；两个域名是否共享连接，要按这些条件逐项核对。
 
@@ -286,12 +288,12 @@ OkHttp 5 默认启用 fast fallback（快速回退），并行尝试可用路由
 
 聚合接口能减少网络往返、重复 header（请求头） 和客户端调度，但也会放大响应体、缓存失效范围和单次失败的影响。反过来，HTTP/2 / HTTP/3 的并行请求允许各数据块独立缓存、独立失败和按优先级展示。
 
-两种组织方式怎么选，可以比较：
+两种组织方式怎么选，我们把几组量摆在一起比较：
 
 - 页面最早可展示时间与全部数据完成时间；
-- 每个接口的缓存周期和权限边界；
+- 每个接口的缓存周期和权限范围；
 - 部分失败是否允许展示；
-- 聚合服务的超时与下游 fan-out（一次请求扇出为多个下游调用），也就是一次请求扇出为多个下游调用；
+- 聚合服务的超时与下游 fan-out（一次请求扇出为多个下游调用）；
 - header、序列化和重复字段占比；
 - 取消页面后还有多少无用请求继续执行。
 
@@ -309,13 +311,15 @@ OkHttp 并不保证任意业务请求都能通过公开的 `preconnect()` API �
 - 不阻塞首屏，也不把失败展示给用户；
 - 记录复用命中率、额外字节和电量变化。
 
-DNS 预解析只减少 resolver（解析器） 阶段，做不了 TCP、TLS 或 QUIC 握手。Cronet 的 QUIC hint（提示） 与会话元数据也只用于提示和状态复用，不构成功能保证。
+DNS 预解析只减少 resolver（解析器） 阶段，TCP、TLS 或 QUIC 握手仍在它的工作范围之外；Cronet 的 QUIC hint（提示） 与会话元数据也只用于提示和状态复用，建连结果仍以运行时为准。
 
 ### CDN、DNS 与图片
 
+请求组织之外，CDN、DNS 和图片体量同样影响每一段耗时。这一节看客户端在这三处分别能观察到什么、能改动什么。
+
 #### 客户端如何观察 CDN
 
-CDN 会改变 DNS 答案、边缘节点距离、TLS 会话、协议协商、缓存命中和回源（边缘节点访问源站）路径——这里回源指边缘节点访问源站。客户端可在不泄露敏感信息的前提下记录：
+CDN 会改变 DNS 答案、边缘节点距离、TLS 会话、协议协商、缓存命中和回源（边缘节点访问源站）路径。客户端可在不泄露敏感信息的前提下记录：
 
 - 业务域名的匿名分组；
 - 协议与 IP family；
@@ -323,13 +327,13 @@ CDN 会改变 DNS 答案、边缘节点距离、TLS 会话、协议协商、缓�
 - DNS、connect、TLS、响应头等待和传输耗时；
 - 响应码、重试、回退和字节数。
 
-客户端很难仅凭 TTFB 区分边缘排队、cache miss（缓存未命中） 与源站处理。CDN 日志和服务端 trace ID 应采用白名单传递，并避免把完整 URL、query（查询参数）、Cookie、Authorization 或用户标识写入 APM（应用性能监控系统）。
+单靠客户端的 TTFB，我们很难分清边缘排队、cache miss（缓存未命中） 与源站处理，CDN 日志和服务端 trace ID 要补上这一环；两者都应采用白名单传递，并避免把完整 URL、query（查询参数）、Cookie、Authorization 或用户标识写入 APM（应用性能监控系统）。
 
 #### 自定义 DNS 与系统边界
 
 OkHttp 的 `Dns` 接口允许自定义解析。HTTPDNS（通过 HTTP 查询的业务 DNS） 通过 HTTP 查询域名，DoH（DNS over HTTPS）把 DNS 查询放进 HTTPS 通道，接入这类业务 DNS 服务要处理 TTL（解析结果有效期）、IPv6、多个地址、负缓存（缓存解析失败结果）、取消、故障回退和缓存隔离。URL 仍应保留域名，让 Host、SNI（TLS 握手中的服务器名称） 和证书校验使用域名；把 HTTPS URL 改成裸 IP 会破坏这些语义——这一条在后面证书小节还会再遇到。
 
-自定义解析还可能绕开 Android Private DNS（系统加密 DNS）、VPN、企业 split DNS（按域名分流解析）、局域网域名和 captive portal（需要登录认证的网络） 流程，采用前要确认安全与网络治理要求。如果怀疑系统 DNS 慢，证据应来自按网络分组的事件数据，个别超时不足以支撑全量切换。
+自定义解析还可能绕开 Android Private DNS（系统加密 DNS）、VPN、企业 split DNS（按域名分流解析）、局域网域名和 captive portal（需要登录认证的网络） 流程，采用前要确认安全与网络治理要求。如果怀疑系统 DNS 慢，判断依据应来自按网络分组的事件数据，个别超时不足以支撑全量切换。
 
 #### 图片网络优化
 
@@ -339,25 +343,27 @@ OkHttp 的 `Dns` 接口允许自定义解析。HTTPDNS（通过 HTTP 查询的�
 - 列表优先缩略图，进入详情后再请求大图；
 - 使用内存与磁盘 cache，服务端提供稳定 cache key（缓存键）、`ETag` 或合理的 `Cache-Control`；
 - 页面离开后取消不再可见的请求；
-- 根据请求观测和用户设置选择画质，别拿 Wi‑Fi / 蜂窝标签直接判定质量；
+- 根据请求观测和用户设置选择画质，Wi‑Fi / 蜂窝标签只作参考信号；
 - 渐进式图片仅在编码格式、解码器和渲染组件均支持时采用。
 
 缩略图和原图要使用可推导或可关联的 cache key，防止列表滚动时重复下载。渐进式传输如果需要多次解码，还会增加 CPU 和内存成本，这时必须同时测量首个可用画面出现时间与完整解码时间。
 
 ### 弱网策略：期限、重试、缓存与降级
 
+弱网下的体验，取决于期限、重试、缓存与降级这四件事怎么配置，这一节按这个顺序展开。
+
 #### 各层超时的含义
 
 OkHttp 5.3.0 的默认 connect、read、write timeout 都是 10 秒，默认没有覆盖完整 `Call` 的总 timeout。这几个数字的含义并不相同：
 
 - `callTimeout` 覆盖整个调用，包括 DNS、建连、写入、服务端处理、读取、重定向和内部恢复。
-- `connectTimeout` 约束新 TCP socket 的连接阶段，不约束 DNS 和完整调用。
-- `readTimeout` 约束 socket 与单次读取操作，不等同于整个响应体期限。
-- `writeTimeout` 约束写入操作，不等同于上传业务的完整截止时间。
+- `connectTimeout` 只约束新 TCP socket 的连接阶段，DNS 和完整调用在它之外。
+- `readTimeout` 约束 socket 与单次读取操作，覆盖不了整个响应体的时间。
+- `writeTimeout` 约束写入操作，上传业务的完整截止时间要另行设定。
 
 超时值应来自接口 SLO（服务目标）、用户等待预算、请求体大小和可恢复方式。交互接口需要明确总期限；大文件上传更适合分片、进度与断点续传；长连接和流媒体要按心跳或 segment（媒体分段） 设计；后台同步应使用 WorkManager 的网络约束与重试调度。
 
-把弱网 timeout 一律调大，会延长用户等待并占用并发资源；一律调小，则会放大尾部网络上的失败与重试。每类请求都要先记录超时发生在哪一段，再调整对应的那一项。
+把弱网 timeout 一律调大，会延长用户等待并占用并发资源；一律调小，则会放大尾部网络上的失败与重试。每类请求都先记录超时发生在哪一段，我们再据此调整对应的那一项。
 
 #### 失败分类与重试决策
 
@@ -372,11 +378,11 @@ OkHttp 5.3.0 的默认 connect、read、write timeout 都是 10 秒，默认没�
 | 其他 4xx | 请求、权限或业务状态通常需要修改 | 按响应语义处理 |
 | 响应体中途失败 | 已接收部分数据 | 支持 Range / ETag 的下载可续传，其他请求按业务语义恢复 |
 
-指数退避要加入随机抖动（随机延迟），并受尝试次数、总期限、前后台状态和用户取消约束。服务端给出 `Retry-After`（建议的重试时间） 时优先遵守；恢复网络时也不要让所有挂起请求同时重发。
+指数退避要加入随机抖动（随机延迟），并受尝试次数、总期限、前后台状态和用户取消约束。服务端给出 `Retry-After`（建议的重试时间） 时优先遵守；恢复网络时，挂起请求要避免同时齐发。
 
 OkHttp 的 `retryOnConnectionFailure` 默认开启，处理部分路由和连接层恢复；重定向、认证与某些响应也会在一个 `Call` 内产生 follow-up（后续请求） 请求。应用层重试叠加在其上时，要分别记录网络库 attempt 与业务 attempt，避免重试次数相乘。在 Interceptor（拦截器） 内阻塞等待退避会占用执行资源，重试调度更适合放在请求编排层或 WorkManager。
 
-HTTP 方法的规范语义也不足以保证业务安全：一个声明为 PUT 或 DELETE 的接口仍可能包含审计、通知或外部系统副作用。支付、订单和发帖等写操作，应由服务端提供幂等键和可查询结果。
+HTTP 方法的规范语义只是初筛线索：一个声明为 PUT 或 DELETE 的接口，仍可能包含审计、通知或外部系统副作用。支付、订单和发帖等写操作，应由服务端提供幂等键和可查询结果。
 
 #### HTTP cache 与业务离线数据
 
@@ -392,7 +398,7 @@ fun withHttpCache(
     .build()
 ```
 
-服务端应正确返回 `Cache-Control`、`ETag`、`Last-Modified` 和 `Vary`。客户端 cache 只保存符合规则的 HTTP 响应，代替不了 Room、SQLite 或文件层的业务离线数据。
+服务端应正确返回 `Cache-Control`、`ETag`、`Last-Modified` 和 `Vary`。客户端 cache 只保存符合规则的 HTTP 响应；Room、SQLite 或文件层的业务离线数据，要在对应的层里另建。
 
 离线时若产品允许使用已经过期但仍在可接受时限内的 stale 响应，我们可以显式构造只读 cache 请求：
 
@@ -429,9 +435,11 @@ WebSocket 适合高频双向消息，但长连接不会自动省电。固定 pin
 
 Retrofit 的 suspend adapter（协程适配器） 也不会让协议本身变快。EventListener 已显示网络完成、业务仍迟迟拿不到数据时，我们要继续区分 Converter/JSON 解析、数据库和 UI 映射；协程取消还要确认会传到 `Call.cancel()`。网络、CPU 解析和界面提交分别记录 trace，避免把网络完成后的 CPU 时间计入 TTFB。
 
-日志、遥测和可延迟同步应在应用内合批，交给 WorkManager/JobScheduler 设置网络、电量和充电约束。蜂窝 tail time（请求结束后基带继续活跃的时长），也就是请求结束后基带继续活跃的时长，会受设备、RAT（无线接入技术）、信号和运营商配置影响，写死一个固定时长会出错；是否节能要比较唤醒次数、radio 活跃窗口、字节量和任务完成率。
+日志、遥测和可延迟同步应在应用内合批，交给 WorkManager/JobScheduler 设置网络、电量和充电约束。蜂窝 tail time（请求结束后基带继续活跃的时长）会受设备、RAT（无线接入技术）、信号和运营商配置影响，写死一个固定时长会出错；是否节能要比较唤醒次数、radio 活跃窗口、字节量和任务完成率。
 
 ### 监控：EventListener 与 NetworkCallback
+
+前面的策略都要靠数据支撑。这一节我们看客户端的两条观测通道——OkHttp 的 EventListener 与系统的 NetworkCallback——以及怎样用 Perfetto 把网络事件和线程对齐。
 
 #### OkHttp EventListener
 
@@ -505,7 +513,7 @@ val monitoredClient = OkHttpClient.Builder()
     .build()
 ```
 
-生产监控可以按同样的方式增加 DNS、connect、secure connect、request、response 和 `connectionAcquired`（取得可用连接） span（时间区间）。DNS、connect、请求与响应事件可能因重定向和恢复重复出现，应追加到 attempt 列表；连接复用时 DNS 和 connect 事件会缺席，这属于正常结果。
+生产监控可以按同样的方式增加 DNS、connect、secure connect、request、response 和 `connectionAcquired`（取得可用连接） span（时间区间）。DNS、connect、请求与响应事件可能因重定向和恢复重复出现，应追加到 attempt 列表；连接复用时 DNS 和 connect 事件会缺席，这是复用生效的正常表现。
 
 指标上传要限制基数——控制字段不同取值的数量——并保护隐私。建议记录经过白名单映射的接口模板、协议、状态码、错误类别和时间分段；完整 URL、query、header、请求体、响应体、Cookie 与 token 都要留在网络性能日志之外。
 
@@ -513,13 +521,13 @@ val monitoredClient = OkHttpClient.Builder()
 
 Perfetto 不会自动把 OkHttp `Call` 展成 DNS、TLS 和 TTFB。我们可以用 AndroidX Tracing 的异步 slice（时间片段） 标记整个逻辑调用，用唯一 cookie（关联编号） 区分同名并发请求；阶段事件仍由 EventListener 使用单调时钟记录，单调时钟只持续递增，不受系统时间校准影响，之后再按 Call、route（路由） 和 attempt 关联。trace 名称沿用同一套低基数与隐私约束，不写完整 URL、用户 ID、token 或查询参数。
 
-主线程出现 `nativePollOnce` 通常只说明 Looper 正在等待消息。只有调用栈、线程状态和时间重叠共同指向 `Future.get()`、锁、socket 或协程桥接点时，我们才能判断 UI 在等待网络。网络 slice 与主线程慢区间重叠只能建立相关性，要补足因果证据，还得靠业务 request ID（贯穿两端的同一请求标识） 和同步对象栈。
+主线程出现 `nativePollOnce` 通常只说明 Looper 正在等待消息。只有调用栈、线程状态和时间重叠共同指向 `Future.get()`、锁、socket 或协程桥接点时，我们才能判断 UI 在等待网络。网络 slice 与主线程慢区间重叠只能建立相关性，要补足因果依据，还得靠业务 request ID（贯穿两端的同一请求标识） 和同步对象栈。
 
 #### NetworkCallback 的职责范围
 
 `NetworkCallback` 测不了业务 host 的 DNS、TLS 或响应延迟。`INTERNET` 是网络能力声明，`VALIDATED` 是系统公网探测结果，业务请求成功仍取决于目标域名、路由、证书、CDN 和服务端。应用只需把 capability（网络能力）、metered、blocked（是否被系统阻止）、VPN 与网络切换作为请求策略输入；回调顺序、每 UID 100 个共享 request/callback 配额、注册生命周期、FullScore（系统内部用于选网的完整评分） 和 linger（旧网络短暂保留期） 统一见 [1.22 Connectivity 服务、网络选择与回调](../../part1-fundamentals/ch01-architecture/22-connectivity-service.md)。
 
-后台任务若只关心“有网”或“非计费网络”，优先使用 WorkManager/JobScheduler constraint（约束条件）。网络切换后也不要统一清空连接池或立即重放全部失败请求，先让网络库处理连接状态，再由业务幂等和退避策略决定恢复。
+后台任务若只关心“有网”或“非计费网络”，优先使用 WorkManager/JobScheduler constraint（约束条件）。网络切换后不要统一清空连接池或立即重放全部失败请求；先让网络库处理连接状态，再由业务幂等和退避策略决定恢复。
 
 ### 排查清单
 
@@ -597,7 +605,7 @@ Android 10（API 29）起，平台 TLS 实现默认启用 TLS 1.3；同一版本
 
 连接复用能否命中，取决于池内是否还有可用连接；池容量与 keep-alive 的默认值见前文「共享 OkHttpClient」。要判断复用有没有发生，我们先统计 `connectionAcquired` 回调、新建连接率、域名数量和服务端空闲超时，再调整 `maxIdleConnections` 与 keep-alive。
 
-会话恢复发生在新连接上。客户端持有可用的 session ticket（会话票据），并不保证服务端接受恢复：服务端重启、用于保护票据的 ticket key 轮换、负载均衡把请求转到其他节点，以及票据过期，都可能让这次连接退回完整握手。要确认恢复是否发生，只看客户端的 `secureConnectStart`/`secureConnectEnd` 并不可靠，还要结合 TLS 库日志或服务端的 full/resumed handshake（完整/恢复握手） 指标。
+会话恢复发生在新连接上。客户端持有可用的 session ticket（会话票据），服务端仍可能让这次连接退回完整握手：服务端重启、用于保护票据的 ticket key 轮换、负载均衡把请求转到其他节点，以及票据过期，都可能造成这个结果。要确认恢复是否发生，我们把客户端的 `secureConnectStart`/`secureConnectEnd` 和 TLS 库日志、服务端的 full/resumed handshake（完整/恢复握手） 指标放在一起看。
 
 #### 0-RTT 与可重放风险
 
@@ -622,11 +630,11 @@ OkHttp 5.3 的稳定公开协议配置没有 HTTP/3 或 TLS early-data 开关；
 | Android 16 / API 36 | 应用可在 Network Security Configuration 中选择启用 CT | 升级 targetSdk 37 前可先做兼容性验证 |
 | Android 17 / API 37 | ECH 进入平台网络安全配置；targetSdk 37 及以上默认启用 CT；新增应用层 HPKE API | 同时核对运行系统、targetSdk、网络库和服务端 |
 
-Android 的 Java TLS 路径由 Conscrypt 等安全 provider 实现，底层使用 BoringSSL。模块化更新能让部分实现随 Google Play 系统更新交付，但设备、模块版本和厂商支持存在差异，所以诊断报告要记录设备 build fingerprint（用于定位系统镜像版本的构建指纹）、provider 名称与版本，别只记一句“Android 17”。
+Android 的 Java TLS 路径由 Conscrypt 等安全 provider 实现，底层使用 BoringSSL。模块化更新能让部分实现随 Google Play 系统更新交付，但设备、模块版本和厂商支持存在差异，所以诊断报告要记录设备 build fingerprint（用于定位系统镜像版本的构建指纹）、provider 名称与版本——一句“Android 17”概括不了这些差异。
 
 ### Android 17 的 Encrypted Client Hello（ECH，加密客户端问候）
 
-普通 TLS ClientHello 会暴露 SNI（Server Name Indication）等元数据，也就是通常包含目标主机名的那部分。ECH（RFC 9849）把敏感内容放入加密的 inner ClientHello（承载真实连接参数的内层 ClientHello），承载真实连接参数的内层报文就此不可见，外层仍保留完成路由和兼容协商所需的信息。不过网络观察者仍可能依据 IP、流量形态和 DNS 看到部分元数据——ECH 隐藏的只是 ClientHello 里的内容，访问行为本身还在那里。
+普通 TLS ClientHello 会暴露 SNI（Server Name Indication）等元数据——SNI 通常就包含目标主机名。ECH（RFC 9849）把敏感内容放入加密的 inner ClientHello（承载真实连接参数的内层 ClientHello），真实连接参数就此不可见，外层仍保留完成路由和兼容协商所需的信息。不过网络观察者仍可能依据 IP、流量形态和 DNS 看到部分元数据——ECH 隐藏的只是 ClientHello 里的内容，访问行为本身还在那里。
 
 #### 四个生效条件
 
@@ -658,7 +666,7 @@ ClientHello 加密使用 HPKE。客户端只在新 TLS 握手中执行相关密�
 
 #### CT 默认值的决定条件
 
-Android 16（API 36）允许应用选择启用 CT。应用运行在 Android 17 且 targetSdk 37 及以上时，平台默认启用 CT；运行在旧系统上的同一 APK 拿不到 Android 17 的平台 CT 验证，targetSdk 低于 37 的应用仅凭“设备是 Android 17”也推断不出默认已开启。
+Android 16（API 36）允许应用选择启用 CT。应用运行在 Android 17 且 targetSdk 37 及以上时，平台默认启用 CT；运行在旧系统上的同一 APK 拿不到 Android 17 的平台 CT 验证，targetSdk 低于 37 的应用仅凭“设备是 Android 17”也推断不出默认已开启，判断时要连同 targetSdk 一起看。
 
 Network Security Configuration 的规则还包含一个容易遗漏的分支：
 
@@ -702,15 +710,15 @@ Hybrid Public Key Encryption（HPKE，混合公钥加密，RFC 9180）把 KEM（
 Android 的 API 演进分为两步：
 
 - Android 15 / API 35 新增 `android.crypto.hpke.HpkeSpi`。它是安全 provider 实现 HPKE 引擎的 SPI，供加密服务实现者接入平台；对应用开发者来说它不是日常加密入口。
-- Android 17 / API 37 新增 `Hpke`、`Sender`、`Recipient`、`Message` 及参数规范。`Hpke.getInstance()` 用于获取实例，`seal()`/`open()` 是 one-shot（单次调用完成一次加密或解密） 操作，一次调用完成一次加密或解密；`Sender`/`Recipient` 面向需要在同一上下文中处理多条消息的场景。
+- Android 17 / API 37 新增 `Hpke`、`Sender`、`Recipient`、`Message` 及参数规范。`Hpke.getInstance()` 用于获取实例，`seal()`/`open()` 是 one-shot（单次调用完成一次加密或解密） 操作；`Sender`/`Recipient` 面向需要在同一上下文中处理多条消息的场景。
 
-当前 Android 文档标明平台 HPKE 只支持 RFC 9180 的 base mode（基本模式）：它使用接收方公钥建立加密上下文，但不认证发送方身份。如果业务要求发送方认证，应在协议层增加经过审计的签名或身份绑定设计；“使用接收方公钥加密”本身当不了双向身份认证。
+当前 Android 文档标明平台 HPKE 只支持 RFC 9180 的 base mode（基本模式）：它用接收方公钥建立加密上下文，发送方身份则不在认证范围内。业务要求发送方认证时，应在协议层增加经过审计的签名或身份绑定设计——“使用接收方公钥加密”本身当不了双向身份认证。
 
 ECH 协议内部也使用 HPKE 加密 inner ClientHello，但应用不需要调用 `android.crypto.hpke.Hpke` 来实现 ECH；自行用应用层 HPKE 包裹 HTTP payload（业务载荷），也得不到 ECH 对 ClientHello 元数据的保护。
 
 ### 加密 DNS 与 ECH 的关系
 
-Android 9 引入 Private DNS 的 DNS over TLS（DoT）设置。AOSP `android-17.0.0_r1` 的 DnsResolver `PrivateDnsConfiguration.cpp` 同时包含 DoT 与 DNS over HTTPS（DoH（DNS over HTTPS，通过 HTTPS 加密传输的 DNS））的配置和查询路径。DoT/DoH 保护客户端到解析器之间的 DNS 传输；ECH 保护 TLS ClientHello 中的敏感字段。两者处理不同的泄露面：
+Android 9 引入 Private DNS 的 DNS over TLS（DoT）设置。AOSP `android-17.0.0_r1` 的 DnsResolver `PrivateDnsConfiguration.cpp` 同时包含 DoT 与 DoH（DNS over HTTPS，通过 HTTPS 加密传输的 DNS）的配置和查询路径。DoT/DoH 保护客户端到解析器之间的 DNS 传输，ECH 保护 TLS ClientHello 中的敏感字段，两者处理的是不同的泄露面：
 
 - 只有 DoT/DoH：能够观察链路流量的第三方不易读取 DNS 查询内容，但普通 TLS SNI（Server Name Indication，服务器名称指示，通常包含目标主机名） 仍可能暴露目标域名；
 - 只有 ECH：ClientHello 的敏感字段被保护，但明文 DNS 仍可能暴露查询；

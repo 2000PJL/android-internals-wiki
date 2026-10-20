@@ -72,7 +72,7 @@ last_consolidated_at: '2026-08-24'
 
 # Baseline、Startup 与 Cloud Profile 编译优化
 
-Baseline Profile 和 Startup Profile 由应用构建流程提供热路径，Cloud Profile 由分发侧根据真实使用生成，DM（DexMetadata）文件把 Profile 随安装包交付给 ART。最终收益取决于安装后编译状态和代码版本匹配。
+Baseline Profile 和 Startup Profile 由应用构建流程提供热路径，Cloud Profile 由分发侧根据真实使用生成，DM（DexMetadata）文件把 Profile 随安装包交付给 ART。三者能否兑现成启动收益，取决于安装后的编译状态和代码版本匹配，下面我们沿构建侧到设备侧把这条链路完整走一遍。
 
 ## 应用构建侧：生成、打包与基准验证
 
@@ -86,13 +86,13 @@ Baseline Profile 能让关键路径更早获得合适的编译状态；磁盘、
 
 截至 2026-09-29，官方列出的最低推荐稳定组合是 AGP 8.0.0、Macrobenchmark 1.5.0 和 ProfileInstaller 1.4.1；Android Studio 的 Baseline Profile Generator 模板从 Android Studio Iguana / AGP 8.2 开始提供，Startup Profile 的 DEX layout 优化从 AGP 8.1 可用、AGP 8.3 起默认启用。AGP、Macrobenchmark、ProfileInstaller 和 Google Play 各自演进，我们要固定一组经过验证的版本，并写进实验记录。
 
-Baseline/Startup Profile 只处理由 ART 管理的 DEX 代码；[AutoFDO](../../part4-system/ch18-aosp/04-autofdo-feedback-directed-optimization.md) 用采样或硬件分支轨迹指导 LLVM/Clang 优化 native 可执行文件和共享库。OEM dexpreopt 则发生在系统镜像构建阶段，处理 boot classpath、`system_server`、系统组件和预装 APK。这三条链路相邻：预装应用可能同时受它们影响，但输入数据、消费者、产物位置和验证工具互不通用。
+Baseline/Startup Profile 只处理由 ART 管理的 DEX 代码；[AutoFDO](../../part4-system/ch18-aosp/04-autofdo-feedback-directed-optimization.md) 用采样或硬件分支轨迹指导 LLVM/Clang 优化 native 可执行文件和共享库。OEM dexpreopt 则发生在系统镜像构建阶段，处理 boot classpath、`system_server`、系统组件和预装 APK。这三条链路相邻，预装应用可能同时受它们影响，但输入数据、消费者、产物位置和验证工具各走各的路。
 
 ### 1. Baseline Profile 是编译提示
 
 #### 1.1 Profile 规则包含什么
 
-Profile 规则以 HRF（Human Readable Format（HRF，可读文本格式），可读文本格式）记录，内容是类名和方法签名。方法规则前可带：
+Profile 规则以 Human Readable Format（HRF，可读文本格式）记录，内容是类名和方法签名。方法规则前可带：
 
 - `H`：Hot，运行中频繁使用的方法；
 - `S`：Startup，启动阶段使用的方法；
@@ -100,9 +100,9 @@ Profile 规则以 HRF（Human Readable Format（HRF，可读文本格式），�
 
 构建工具会把应用与依赖库的规则合并，按 release 产物的混淆和优化结果重写，再生成 ART 可消费的紧凑二进制 profile。二进制规则会关联具体 APK 中的 DEX 标识与校验信息，所以旧版本 profile 套不进新 APK。
 
-#### 1.2 Android 17 上的 ART 关系
+#### 1.2 ART 侧的分工
 
-ART 这一侧的分工是：[`profman`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/profman/profman.cc) 负责 profile 处理与合并，`dex2oat` 根据 compiler filter 和 profile 选择编译工作，源码入口见 [`dex2oat.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/dex2oat/dex2oat.cc)。compiler filter 是 ART 的编译策略名称，用来决定编译范围和优化程度。
+ART 这一侧的分工是：[`profman`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/profman/profman.cc) 负责 profile 处理与合并，`dex2oat` 根据 compiler filter 和 profile 选择编译工作，源码入口见 [`dex2oat.cc`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/dex2oat/dex2oat.cc)。compiler filter 是 ART 的编译策略名称，决定编译范围和优化程度，后面的排查我们要反复和它打交道。
 
 `speed-profile` 表示由 profile 指定热点、按需编译。看到这个 filter，我们不妨把它当成一组待核对的问题：
 
@@ -130,7 +130,7 @@ APK/AAB 中的 binary baseline.prof
 ART profile-guided 编译产物
 ```
 
-这张图表达的是分层关系，别把它读成适用于所有渠道的严格时间线。Google Play 或支持 DexMetadata 的安装器可以提供 reference profile（作为编译基准安装的 profile），并以 `install-dm` 等原因触发编译；ProfileInstaller 则把包内规则写入设备可持续更新的 current profile，等待后台 `dexopt`（DEX 优化/编译流程）。`dexopt` 是系统对 DEX 做验证、编译和优化的过程。
+这张图表达的是分层关系，具体时间线因渠道而异。Google Play 或支持 DexMetadata 的安装器可以提供 reference profile（作为编译基准安装的 profile），并以 `install-dm` 等原因触发编译；ProfileInstaller 则把包内规则写入设备可持续更新的 current profile，等待后台 `dexopt`（DEX 优化/编译流程）。`dexopt` 是系统对 DEX 做验证、编译和优化的过程。
 
 图中的每一层都需要单独验证：源码里有 `baseline-prof.txt`，release 包未必带着它；包里有 `baseline.prof`，设备也未必已完成由 profile 指导的编译。
 
@@ -151,7 +151,7 @@ Android 7 / API 24 已经具备混合执行、JIT、本地 profile 与后台 pro
 
 ### 3. 什么场景可能受益
 
-TTID 是首帧首次显示所需的时间，TTFD 是应用达到完整可用状态所需的时间。优先检查这些现象：
+TTID 是首帧首次显示所需的时间，TTFD 是应用达到完整可用状态所需的时间。一个启动问题该不该往 profile 方向查，先对照这些现象：
 
 - 新装/升级后的启动明显慢于稳定使用后的启动；
 - Trace 中启动阶段有解释执行、JIT 编译、类加载和大量首次执行；
@@ -289,7 +289,7 @@ unzip -l app-release.aab \
   | rg 'BUNDLE-METADATA/com\\.android\\.tools\\.build\\.profiles/baseline\\.prof$'
 ```
 
-没有输出时，检查构建变体、source set、generator 依赖和 AGP 任务。编译后的 `baseline.prof` 必须小于 1.5 MB；这个限制不适用于通常更大的 HRF 文本规则。工具链还可能打包 `baseline.profm`，它保存 profile 格式转换所需的元数据，以便 ProfileInstaller 适配不同 ART 版本。验收仍要以当前 AGP 与目标设备格式为准，只凭扩展名推断可用性是不够的。
+没有输出时，检查构建变体、source set、generator 依赖和 AGP 任务。编译后的 `baseline.prof` 必须小于 1.5 MB；这个限制不适用于通常更大的 HRF 文本规则。工具链还可能打包 `baseline.profm`，它保存 profile 格式转换所需的元数据，以便 ProfileInstaller 适配不同 ART 版本。验收仍要以当前 AGP 与目标设备格式为准，扩展名本身只是一个线索。
 
 库 profile 也要在最终应用产物中验证：AAR 自身有规则只完成了一半，宿主所用 AGP 有没有正确消费，要看最终包。
 
@@ -299,7 +299,7 @@ unzip -l app-release.aab \
 
 Android 7～8.1 主要依靠 `ProfileInstaller` 在首次运行后写入 current profile，再等待后台 dexopt。Android 9+ 可以由 Google Play 或支持 DexMetadata 的 package installer 交付 reference profile。当前官方调试文档指出，Google Play 的 Baseline Profile 编译可能发生在后台设备更新；APK 安装命令返回时编译状态如何，要另查。
 
-侧载、第三方商店、Android Studio、Gradle 和 Play 的行为不能互相代替。其他安装工具通常由 ProfileInstaller 把规则排入下一次后台 dexopt；非 Play 渠道也可能要等设备空闲时才获得编译收益。AGP 8.4+ 会让 Android Studio 或 Gradle Wrapper 安装的本地不可调试构建（non-debuggable）自动执行设备端编译，但发布验收仍要覆盖目标渠道。
+侧载、第三方商店、Android Studio、Gradle 和 Play 各有各的行为，互相替代不了。其他安装工具通常由 ProfileInstaller 把规则排入下一次后台 dexopt；非 Play 渠道也可能要等设备空闲时才获得编译收益。AGP 8.4+ 会让 Android Studio 或 Gradle Wrapper 安装的本地不可调试构建（non-debuggable）自动执行设备端编译，但发布验收仍要覆盖目标渠道。
 
 #### 7.2 `ProfileVerifier` 能说明什么
 
@@ -509,7 +509,7 @@ CI 至少执行：
 
 ### Profile 在发布后如何生效
 
-前半篇已经完成 Baseline/Startup Profile 的生成、打包与受控基准；从这里开始，我们追踪发布后的安装来源、外部 profile、DM、ART Service 与 dexopt 状态。“规则打包成功”和“设备已按规则编译”要分开证明，同一条证据兼顾不了两件事。
+前半篇已经完成 Baseline/Startup Profile 的生成、打包与受控基准；从这里开始，我们追踪发布后的安装来源、外部 profile、DM、ART Service 与 dexopt 状态。“规则打包成功”和“设备已按规则编译”要分开证明，同一条依据兼顾不了两件事。
 
 Profile 能减少的是解释器逐条执行、JIT 预热和部分 DEX 读取的开销；数据库迁移、网络等待、锁竞争、SDK 同步初始化该等多久还是等多久。一次冷启动混着这些成本，只看总耗时很容易误判。
 
@@ -527,13 +527,13 @@ Profile 能减少的是解释器逐条执行、JIT 预热和部分 DEX 读取的
 Google 的 Baseline Profiles 文档给出了两条重要事实：
 
 - Cloud Profile 属于 PGO（Profile-Guided Optimization，按真实运行特征优化），需要 Android 9（API 28）或更高版本、足够的用户样本以及聚合时间；新版本发布后的数小时到数天内，要按尚未可用来安排验证。
-- Baseline Profile 随当前版本发布，可以覆盖 Day-0，也就是用户安装或升级这个版本后的首次使用阶段。Cloud Profile 无法及时替代它。
+- Baseline Profile 随当前版本发布，可以覆盖 Day-0，也就是用户安装或升级这个版本后的首次使用阶段，Cloud Profile 赶不上这个时点，替代不了它。
 
-Baseline/Cloud Profile 与 Startup Profile 因此要分开评估。前两者主要影响哪些方法被 AOT 编译；Startup Profile 由 D8/R8 在构建期使用，主要改变 DEX 布局，目标是减少启动阶段分散读取文件和触发内存缺页的成本。一次构建可以同时使用两类规则，但 A/B 实验（把条件相同的用户随机分组对比）需要明确改变的是编译状态、DEX 布局，还是两者一起改变。
+因此我们要把 Baseline/Cloud Profile 与 Startup Profile 分开评估。前两者主要影响哪些方法被 AOT 编译；Startup Profile 由 D8/R8 在构建期使用，主要改变 DEX 布局，目标是减少启动阶段分散读取文件和触发内存缺页的成本。一次构建可以同时使用两类规则，但 A/B 实验（把条件相同的用户随机分组对比）需要明确改变的是编译状态、DEX 布局，还是两者一起改变。
 
 ### DM 文件与 ART 编译模式
 
-`.dm` 是 Dex Metadata 容器，与某个 APK 一一对应。Android 17 framework 中的 `android.content.pm.dex.DexMetadataHelper` 把 `base.apk` 映射为同目录下的 `base.dm`；split APK（App Bundle 拆出的功能或配置 APK）也按各自文件名匹配，不能拿 base 的 `.dm` 替代 split 的 metadata。
+`.dm` 是 Dex Metadata 容器，与某个 APK 一一对应。framework 的 `android.content.pm.dex.DexMetadataHelper` 把 `base.apk` 映射为同目录下的 `base.dm`；split APK（App Bundle 拆出的功能或配置 APK）也按各自文件名匹配，base 的 `.dm` 顶替不了 split 的 metadata。
 
 关于 `.dm`，先澄清三件事：
 
@@ -548,13 +548,13 @@ Baseline/Cloud Profile 与 Startup Profile 因此要分开评估。前两者主�
 - `PrimaryDexopter.buildDmPath()` 按当前 base/split APK 构造 `.dm` 路径。
 - `Dexopter` 只有在存在有效 profile 时才保留 profile-guided filter；profile 为空时，会把请求的 `speed-profile` 调整为 `verify`。
 
-Android 17 framework 的安装流程会先检查每个 `.dm` 是否有同名 APK 与之配对。完成路径匹配后，`android.content.pm.dex.DexMetadataHelper.validateDexMetadataFile()` 只确认 `.dm` 能作为 ZIP 归档打开；它的注释仍提到校验 `manifest.json` 中的包名和版本号，但 `android-17.0.0_r1` 的方法体没有执行这项语义校验。
+framework 的安装流程会先检查每个 `.dm` 是否有同名 APK 与之配对。完成路径匹配后，`android.content.pm.dex.DexMetadataHelper.validateDexMetadataFile()` 只确认 `.dm` 能作为 ZIP 归档打开；它的注释仍提到校验 `manifest.json` 中的包名和版本号，但 `android-17.0.0_r1` 的方法体没有执行这项语义校验。
 
 ART 在消费 profile 时还会检查 profile 格式和 DEX 匹配关系；安装期的检查和编译期的检查是两个阶段，要分别看各自的结果。
 
 `PackageManager.INSTALL_IGNORE_DEXOPT_PROFILE` 也能说明安装期与后续 dexopt 是两个时机：该安装标志会在安装时忽略 `.dm` 和 APK 内嵌 profile，并不报告无效安装 profile 的警告；以后由后台 dexopt 或 `pm compile` 发起的编译仍可使用 profile。
 
-#### Android 17 的执行链路
+#### 从安装到编译的执行链路
 
 下面的路径图用于区分输入、调度者和编译执行者。Package Manager 负责安装流程，ART Service 负责制定这次 dexopt 参数，`artd` 是执行 ART 文件与编译操作的系统守护进程，`dex2oat` 则把 DEX 编译为设备可执行的 ART 产物。
 
@@ -590,7 +590,7 @@ Package Manager ──发起安装期 dexopt──► ART Service
 | `speed-profile` | 只 AOT 编译有效 profile 选中的方法 | 成本取决于 profile；没有有效 profile 时，实际 filter 会变成 `verify` |
 | `speed` | 面向速度 AOT 编译全部方法 | 编译耗时和产物体积更高，不适合作为普通第三方 App 的默认对照目标 |
 
-排查时必须同时记录 requested filter（请求的编译强度）和 actual filter（ART 最终采用的编译强度）。命令参数 `-m speed-profile` 只说明我们请求了什么，profile 是否命中要看 actual：Android 17 的 `Dexopter.java` 在找不到有效 profile 时会把它改为 `verify`。
+排查时必须同时记录 requested filter（请求的编译强度）和 actual filter（ART 最终采用的编译强度）。命令参数 `-m speed-profile` 只说明我们请求了什么，profile 是否命中要看 actual：`Dexopter.java` 在找不到有效 profile 时会把它改为 `verify`。
 
 ### dex2oat、bg-dexopt-job 与空闲编译
 
@@ -604,17 +604,17 @@ ART Service 的标准默认值包括：
 - `pm.dexopt.bg-dexopt=speed-profile`
 - `pm.dexopt.inactive=verify`
 - `pm.dexopt.cmdline=verify`
-- `pm.dexopt.shared=speed`，作为共享代码无法使用本地 profile 时的备用 filter
+- `pm.dexopt.shared=speed`，共享代码用不上本地 profile 时的备用 filter
 
 共享代码的规则需要额外说明。某个包的代码被其他 App 通过 `<uses-library>` 共享库声明或动态加载方式使用时，ART Service 不会把只反映单个用户行为的本地 profile 用到公共编译产物上，以免泄露使用特征。系统会先尝试 Cloud Profile；缺失时才使用 `pm.dexopt.shared` 指定的 filter。
 
-Android 14 及更高版本中，后台 dexopt 默认每天在设备空闲且充电时运行。设备退出 idle（无人操作的空闲状态），或温度达到 `THERMAL_STATUS_MODERATE` 阈值时，任务会立即取消。ART Service 没有旧 Package Manager 的 post-boot（开机后）dexopt job，因此不能把旧版本的开机后前台资源竞争直接套用到 Android 17。
+Android 14 及更高版本中，后台 dexopt 默认每天在设备空闲且充电时运行。设备退出 idle（无人操作的空闲状态），或温度达到 `THERMAL_STATUS_MODERATE` 阈值时，任务会立即取消。ART Service 没有旧 Package Manager 的 post-boot（开机后）dexopt job，旧版本的开机后前台资源竞争直接套不到 Android 17 上。
 
 普通 App 进程无权要求用户设备立即完成后台 dexopt。`pm.dexopt.disable_bg_dexopt` 和 `pm bg-dexopt-job --disable` 是系统开发者用于测试的入口，第三方 App 的线上优化方案里用不上它们。
 
 #### 查看包的 dexopt 状态
 
-下面的命令用于 Android 14—17 测试设备，读取目标包当前的主 DEX 与 split DEX 编译状态。
+在 Android 14—17 测试设备上，我们用下面的命令读取目标包当前的主 DEX 与 split DEX 编译状态。
 
 ```bash
 adb shell pm art dump com.example.app
@@ -634,7 +634,7 @@ adb shell getprop | grep -E 'pm\.dexopt|dex2oat'
 
 #### 第一道检查：发布产物里有什么
 
-下面的命令用于确认 APK 和 AAB 是否包含 Baseline Profile；它不判断规则覆盖率。
+我们先跑下面的命令，确认 APK 和 AAB 是否包含 Baseline Profile；规则覆盖率要另行评估。
 
 ```bash
 unzip -l app-release.apk | grep 'assets/dexopt/baseline.prof'
@@ -660,9 +660,9 @@ adb shell pm art clear-app-profiles com.example.app
 adb shell pm compile -m speed-profile -f -v com.example.app
 ```
 
-第一条命令清除 current profile（ART 当前采集的运行记录）和 reference profile（已合并、供后续编译参考的记录），但保留 Cloud Profile 等 external profile（由 APK 或安装器从外部提供的 profile）——由 APK 或安装器从外部提供的 profile——已有编译产物也不会删除。第二条命令的判定依据是输出：`actualCompilerFilter=speed-profile` 表示找到了有效 profile；`actualCompilerFilter=verify` 表示没有可用 profile。典型原因包括文件名错误、格式错误和 DEX checksum 不匹配。
+第一条命令清除 current profile（ART 当前采集的运行记录）和 reference profile（已合并、供后续编译参考的记录），但保留 Cloud Profile 等 external profile（由 APK 或安装器从外部提供的 profile），已有编译产物也不会删除。第二条命令的判定依据是输出：`actualCompilerFilter=speed-profile` 表示找到了有效 profile；`actualCompilerFilter=verify` 表示没有可用 profile。典型原因包括文件名错误、格式错误和 DEX checksum 不匹配。
 
-这个测试区分不了 APK 内嵌 Baseline Profile、相邻 `.prof` 与 `.dm` 中的 profile——它们对 ART 都是可选的外部输入。要区分来源，必须控制安装产物，只看 `actualCompilerFilter` 是不够的。
+这个测试区分不了 APK 内嵌 Baseline Profile、相邻 `.prof` 与 `.dm` 中的 profile——它们对 ART 都是可选的外部输入。要区分来源，必须控制安装产物；`actualCompilerFilter` 只回答“有没有可用 profile”，回答不了“它从哪来”。
 
 #### 第三道检查：构造无 AOT 编译基线
 
@@ -672,7 +672,7 @@ adb shell pm compile -m speed-profile -f -v com.example.app
 adb shell pm compile --reset com.example.app
 ```
 
-Android 17 的 `ArtShellCommand` 对该命令有精确定义：它清除 current/reference profile；保留 external profile 供以后 dexopt 使用，但这次 reset（重置） 不读取它们；主 DEX 当前等价于 `verify`，secondary DEX（运行期发现的附加 DEX）的 dexopt 产物会被删除。该命令与“卸载并从某个商店重新安装”并不等价，因为安装来源、数据状态和交付文件都没有重建。
+Android 17 的 `ArtShellCommand` 对该命令有精确定义。它清除 current/reference profile；external profile 会保留给以后的 dexopt，但这次 reset（重置）不读取它们；主 DEX 当前等价于 `verify`，secondary DEX（运行期发现的附加 DEX）的 dexopt 产物则会被删除。该命令与“卸载并从某个商店重新安装”并不等价，因为安装来源、数据状态和交付文件都没有重建。
 
 若只想生成不含 AOT 代码的产物而不清 profile，可以使用下面的命令。
 
@@ -704,13 +704,13 @@ Macrobenchmark 的 `CompilationMode.None` 与 `Partial` 用来评估 Baseline Pr
 - 是否处于后台 dexopt 之后；
 - 是否清进程、清数据，以及是否清过文件页缓存。
 
-“冷进程”与“冷文件页缓存”不是同一条件。杀进程只能重建进程状态，系统仍可能把 APK、DEX 和资源文件内容保留在内核页缓存中；常规 App 启动基准也不应依赖需要 root 权限的全局 cache drop（清空页缓存）。
+“冷进程”与“冷文件页缓存”是两个条件。杀进程只能重建进程状态，系统仍可能把 APK、DEX 和资源文件内容保留在内核页缓存中；常规 App 启动基准也用不着依赖需要 root 权限的全局 cache drop（清空页缓存）。
 
 ### 灰度发布中的 Profile 风险
 
 Profile 是编译输入，覆盖不足会损失收益，覆盖过宽会增加编译时间和产物体积。分批放量（灰度）阶段需要同时看启动、安装/升级与稳定性。
 
-Profile 与 APK 紧密绑定，同一版本里的运行时开关拿不掉已经打包或编译的 profile。需要线上对照时，应使用只改变 profile 的小流量受控版本或专项小版本，并在 Cloud Profile 尚未充分传播的发布早期按安装来源、安装时间和编译状态分组。代码、资源、服务端配置与用户入口必须保持一致；否则无法把变化归因给 profile。
+Profile 与 APK 紧密绑定，同一版本里的运行时开关拿不掉已经打包或编译的 profile。需要线上对照时，应使用只改变 profile 的小流量受控版本或专项小版本，并在 Cloud Profile 尚未充分传播的发布早期按安装来源、安装时间和编译状态分组。代码、资源、服务端配置与用户入口必须保持一致；否则变化说不清是不是 profile 带来的。
 
 | 风险 | 触发条件 | 可能表现 | 核查方法 |
 |---|---|---|---|
@@ -737,7 +737,7 @@ profile 不匹配通常表现为编译优化缺失，本身不会直接改变 Ap
 2. 检查 APK/AAB 条目、安装来源和每个 APK 各自对应的 `.dm`。
 3. 用 `pm art dump` 与 `pm compile -v` 读取 actual filter 和 compilation reason。
 4. 用 Perfetto 区分 JIT/类加载成本与业务初始化成本。
-5. 按 [21.1 App 启动路径、监控与度量](01-app-startup-path-monitoring.md)的口径，分版本、渠道和设备监控 TTID/TTFD。
+5. 沿用 [21.1 App 启动路径、监控与度量](01-app-startup-path-monitoring.md)的度量方式，分版本、渠道和设备监控 TTID/TTFD。
 
 ART 编译原理可回看 1.5，冷/温/热启动路径可回看 8.2。若问题已经定位到数据库、网络、锁或 SDK 同步任务，应治理对应任务，不要继续扩大 profile 规则。
 
@@ -749,7 +749,7 @@ ART 编译原理可回看 1.5，冷/温/热启动路径可回看 8.2。若问题
 
 1. 设备 build fingerprint（唯一标识系统构建的字符串）、ART 模块版本、ABI 与安装来源；
 2. 安装后立即读取的 per-APK filter/reason；
-3. 同一自动化脚本采集的启动 trace；固定“启动三次”无法保证样本条件一致；
+3. 同一自动化脚本采集的启动 trace；固定“启动三次”保证不了样本条件一致；
 4. idle/charging 维护窗口前后的 filter/reason；
 5. 设备温度、低电量与低存储状态；
 6. ROM 的 `pm.dexopt` 与 `dex2oat` 系统属性快照。
@@ -771,7 +771,7 @@ App Bundle 的每个安装单元都要单独检查。Base APK 已按 `speed-prof
 
 ### 排查手册
 
-一次完整排查有七步：
+我们把一次完整排查整理成七步：
 
 1. 固定 release 产物、设备 build、ART 模块和安装来源。
 2. 检查 APK/AAB 中的 Baseline Profile；有外部 `.prof`/`.dm` 时，按 base/split 核对文件名与版本。

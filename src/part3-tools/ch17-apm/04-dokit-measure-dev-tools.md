@@ -110,9 +110,9 @@ DoKit 提供应用内调试面板和多类检查插件，适合 Debug / QA 现�
 
 ### DoKit 的定位：研发现场工具
 
-排查一个只在真机上出现的问题时，我们最需要的是一台设备上就能改变条件的工具箱。DoraemonKit（DoKit）把网络查看、弱网模拟、Mock（用预设数据替换响应）、文件与数据库浏览、日志、性能浮窗、UI 检查和业务自定义入口放进同一个 Android 调试包，其中 Mock 用预设数据替换响应。测试人员可以直接在设备上改变测试条件，开发人员也能在相同场景中查看请求与进程状态，这类现场调试正是它擅长的场景。
+排查一个只在真机上出现的问题时，我们最需要的是一台设备上就能改变条件的工具箱。DoraemonKit（DoKit）把网络查看、弱网模拟、Mock（用预设数据替换响应）、文件与数据库浏览、日志、性能浮窗、UI 检查和业务自定义入口放进同一个 Android 调试包。测试人员用它直接在设备上改变测试条件，开发人员也在同一场景里查看请求与进程状态——这类现场调试正是它擅长的场景。
 
-同时要留意，这些工具本身也在改变被测环境：浮窗增加绘制工作，性能面板定时采样，网络模块插入 interceptor（请求拦截器），部分功能还依赖编译期字节码插桩（构建时改写 class）或 hidden API（应用 SDK 未公开的接口）——前者在构建时改写 class，后者是应用 SDK 未公开的接口。所以我们用 DoKit 回答“哪个页面、哪个操作或哪个网络条件值得继续调查”；浮窗读数支撑不了版本级性能结论，生产 APM（Application Performance Monitoring，应用性能监控）的采集也要交给专门的平台。
+同时要留意，这些工具本身也在改变被测环境：浮窗增加绘制工作，性能面板定时采样，网络模块插入 interceptor（请求拦截器），部分功能还依赖编译期字节码插桩（构建时改写 class）或 hidden API（应用 SDK 未公开的接口）。所以我们用 DoKit 回答“哪个页面、哪个操作或哪个网络条件值得继续调查”，把浮窗读数当作现场线索；版本级性能结论交给专项测量，生产 APM（Application Performance Monitoring，应用性能监控）的持续采集交给专门的平台。
 
 DoKit 没有面向 API 37 的官方兼容承诺，我们说它“可用”，只表示在源码上没有发现确定性阻断；团队仍要用自己的 AGP（Android Gradle Plugin）、完整依赖、目标设备和最终安装包验证。
 
@@ -127,7 +127,7 @@ DoKit 没有面向 API 37 的官方兼容承诺，我们说它“可用”，只
 | GitHub Releases | 最新可见的 `3.1.7` 发布于 2025-06-20，但标题明确是 `iOS: 3.1.7` | 不能把跨平台仓库的 iOS release 当成 Android Maven 新版 |
 | GitHub `master` | 审阅提交为 `626827cddb2feb2f3aee87a52a064b4e5ca2bed4`；`Android/config.gradle` 写的是未公开发布的 `3.7.14.9-kotlin-13` | `master` 可用于理解后续代码，不能替代 3.7.11 发布物的行为 |
 
-3.7.11 的 POM（Maven 依赖描述文件）仍依赖 Kotlin 1.4.32、OkHttp 3.14.7 和较早的 AndroidX 组件。Gradle 能成功下载依赖，只说明 Maven 坐标可解析；这些旧依赖要和当前工程的 Kotlin、R8（代码压缩与优化工具）、AndroidX 或 targetSdk 37 正常配合，还得实际验证。
+3.7.11 的 POM（Maven 依赖描述文件）仍依赖 Kotlin 1.4.32、OkHttp 3.14.7 和较早的 AndroidX 组件。Gradle 能把依赖下载下来，只说明 Maven 坐标可解析；这些旧依赖能否与当前工程的 Kotlin、R8（代码压缩与优化工具）、AndroidX 或 targetSdk 37 正常配合，还要靠实际构建和运行来回答。
 
 审阅第三方调试 SDK 时，我们固定收齐四样材料：
 
@@ -222,7 +222,7 @@ DoKit.Builder(this)
 - 统计任务也在主线程。主线程阻塞时，“一秒窗口”可能延后执行，但代码没有按真实经过时间归一化。
 - 内置“健康体检”的保存路径还会把帧率上限压到 60。90 Hz、120 Hz 设备上的高刷新率信息会丢失。
 
-所以浮窗 FPS 能提示“这次滑动明显异常”；慢帧出在应用、RenderThread（渲染线程） 还是系统合成阶段，要交给专项数据回答：FrameTimeline（帧各阶段时间线） 给出帧各阶段时间线，JankStats（关联 App 状态与慢帧的库） 把 App 状态与慢帧关联起来。
+所以浮窗 FPS 能提示“这次滑动明显异常”；慢帧出在应用、RenderThread（渲染线程） 还是系统合成阶段，要交给专项数据回答：用 FrameTimeline（帧各阶段时间线）看慢在哪个阶段，用 JankStats（关联 App 状态与慢帧的库）把慢帧和它发生时的页面状态关联起来。
 
 #### CPU
 
@@ -234,7 +234,7 @@ CPU 百分比在 Android 8.0 及以上来自一条 `top -n 1`：DoKit 每 500 ms
 
 内存面板展示的 MB 值来自系统接口：Android 10 及以上每 500 ms 调用 `Debug.getMemoryInfo()`，展示 `totalPss / 1024`；较低版本使用 `ActivityManager.getProcessMemoryInfo()`。
 
-PSS（Proportional Set Size）是进程在采样时刻的驻留内存：私有页全部计入，共享页按比例分摊。哪个对象仍被引用、一次上涨是不是泄漏，它都回答不了——解释 Java/Kotlin 对象要看 heap dump（堆转储） 和引用链，解释进程整体内存要结合 `dumpsys meminfo`、Perfetto 和 native 分配信息。
+PSS（Proportional Set Size）是进程在采样时刻的驻留内存：私有页全部计入，共享页按比例分摊。要判断哪个对象仍被引用、一次上涨是不是泄漏，我们还得往下走一层：解释 Java/Kotlin 对象看 heap dump（堆转储）和引用链，解释进程整体内存要把 `dumpsys meminfo`、Perfetto 和 native 分配信息放在一起看。
 
 #### 网络流量
 
@@ -246,7 +246,7 @@ PSS（Proportional Set Size）是进程在采样时刻的驻留内存：私有�
 
 #### 启动、函数耗时与卡顿
 
-启动和函数耗时很依赖插件插桩，没有插件时这些面板不具备完整采集路径。即便插件能够运行，Debug 构建、字节码改写和浮窗也会改变启动与方法耗时，正式性能结论仍应使用 Macrobenchmark 与 Perfetto 复测。
+启动和函数耗时的采集主要落在插件插桩上，不加载插件时，这些面板就没有完整的采集路径。即便插件能够运行，Debug 构建、字节码改写和浮窗本身也会改变启动与方法耗时，正式性能结论仍要用 Macrobenchmark 与 Perfetto 复测。
 
 DoKit 自带的卡顿监控按固定机制工作：
 
@@ -278,7 +278,7 @@ Android 17 的 `Looper` 仍只有一个 `mLogging` 字段，`setMessageLogging()
 
 合并 manifest 时要特别审查：
 
-- `READ_EXTERNAL_STORAGE`、`WRITE_EXTERNAL_STORAGE`：target 30 及以上不能靠 `requestLegacyExternalStorage` 恢复旧存储模型。文件工具应使用应用私有目录、SAF（Storage Access Framework，由用户选择文件）或受控的测试导出路径。
+- `READ_EXTERNAL_STORAGE`、`WRITE_EXTERNAL_STORAGE`：target 30 及以上，`requestLegacyExternalStorage` 恢复不了旧存储模型。文件工具应改用应用私有目录、SAF（Storage Access Framework，由用户选择文件）或受控的测试导出路径。
 - `SYSTEM_ALERT_WINDOW`：这是允许界面显示在其他 App 上方的特殊权限。能用应用内悬浮层完成的调试包，优先避免请求系统级悬浮窗。
 - `POST_NOTIFICATIONS`：库没有声明。target 33 及以上若依赖通知展示状态，需要由宿主声明并按产品流程请求；拒绝通知时功能也应可诊断。
 - `FOREGROUND_SERVICE_MEDIA_PROJECTION`：库的录屏 service 标了 `mediaProjection` 类型，却没有 Android 14 起所需的对应前台服务权限。宿主还要先通过 `createScreenCaptureIntent()` 让用户授权，再按规定启动服务；不准备维护这套流程时应禁用录屏工具。
@@ -295,7 +295,7 @@ AAR 还声明了未导出的 `FileProvider`，authority（ContentProvider 的唯
 - `dokitx-gps-mock` 带多 ABI（CPU 架构）的 native 库。3.7.11 AAR 中 6 个 arm64 `.so` 的 ELF `LOAD` 段对齐均为 `0x10000`（64 KB），满足 16 KB 的 ELF 对齐要求；最终 APK/AAB 的 ZIP 条目对齐和设备安装运行仍要另测。
 - `dokitx-pthread-hook` 会传递依赖 Matrix 2.0.2 的 hooks / fd 模块。`matrix-hooks` 与 `matrix-fd` AAR 中 6 个 arm64 `.so` 的 `LOAD` 对齐均为 `0x1000`（4 KB），不满足 16 KB ELF 对齐要求。
 
-面向 Android 17 的项目如果启用这些可选模块，应展开完整依赖图，替换或重新编译 4 KB native 依赖，再对最终 APK/AAB 运行 16 KB 检查。这里要分别检查 ELF `LOAD` 段、包内 ZIP 对齐和目标设备运行。
+面向 Android 17 的项目如果启用这些可选模块，应展开完整依赖图，替换或重新编译 4 KB native 依赖，再对最终 APK/AAB 做 16 KB 检查，内容分别覆盖 ELF `LOAD` 段、包内 ZIP 对齐和目标设备运行。
 
 早期审阅记录使用过 `android17-6.18-2026-06_r6`，截至本次复核同系列已到 `r39`。common kernel tag 说明的是 AOSP 通用内核代码版本，App 原生库与量产设备的验证替代不了；vendor kernel（设备厂商内核）和实际页大小仍以目标机为准。
 
@@ -441,11 +441,11 @@ DoKit 的优势是把调试入口和测试条件带到设备现场。它可以�
 
 ## Measure APM 的端侧采集与平台组成
 
-DoKit 负责研发现场的调试入口，Measure 则在 Release 中持续采集崩溃、ANR（Application Not Responding，应用无响应）、启动、网络、资源和业务 span（一段有起止时间的操作），并把事件送入可查询的平台。后者同样需要控制采样与测量扰动，还要负责数据治理、服务端运维、告警和恢复。
+DoKit 负责研发现场的调试入口；到了 Release 环境，持续采集崩溃、ANR（Application Not Responding，应用无响应）、启动、网络、资源和业务 span（一段有起止时间的操作）的工作交给 Measure，它把事件送入可查询的平台。生产侧的考量也随之变化：既要控制采样与测量扰动，还要承担数据治理、服务端运维、告警和恢复。
 
 ### 产品定位与版本现状
 
-Measure 是一套面向移动端的 APM 与问题诊断平台。项目提供 Android、iOS、Flutter、React Native SDK，官网还提供 KMP（Kotlin Multiplatform）薄封装，让共享 Kotlin 代码调用 Android、iOS 原生 SDK。它的核心是把 Crash（未捕获崩溃）、ANR、启动、HTTP、CPU、内存、点击、页面导航、业务 span 和 bug report（用户主动提交的问题报告） 放进同一套 session（一次连续使用会话） 模型：span 是一段有起止时间的操作，bug report 是用户主动提交的问题报告，session 则是一次连续使用会话。
+Measure 是一套面向移动端的 APM 与问题诊断平台。项目提供 Android、iOS、Flutter、React Native SDK，官网还提供 KMP（Kotlin Multiplatform）薄封装，让共享 Kotlin 代码调用 Android、iOS 原生 SDK。它的核心是把 Crash（未捕获崩溃）、ANR、启动、HTTP、CPU、内存、点击、页面导航、业务 span 和 bug report（用户主动提交的问题报告） 放进同一套 session（一次连续使用会话） 模型。
 
 Matrix、KOOM 更偏向在设备内完成专项采集与诊断；Measure 还提供事件入库、检索、聚合、告警、附件保存和团队协作。它们解决的问题有交集，部署层次与运维范围不同，可以同时使用。
 
@@ -455,7 +455,7 @@ Matrix、KOOM 更偏向在设备内完成专项采集与诊断；Measure 还提�
 
 评估前我们先记住三件事：
 
-- Android 端尚不支持 C/C++ native crash reporting（原生层崩溃上报）。`ApplicationExitInfo` 能记录 `REASON_CRASH_NATIVE`，这只是退出原因；Measure 还不能解析、聚合并 symbolicate（把地址或混淆名称还原成可读符号）这类崩溃。
+- Android 端尚不支持 C/C++ native crash reporting（原生层崩溃上报）。`ApplicationExitInfo` 能记录 `REASON_CRASH_NATIVE`，这只是退出原因；解析、聚合并 symbolicate（把地址或混淆名称还原成可读符号）这类崩溃的能力，Measure 还没有实现。
 - Measure 能给出线上问题发生前后的上下文，但 CPU 抖动、对象泄漏、掉帧或调度问题仍需 Perfetto、heap dump 和 Android Studio Profiler 等专项工具继续定位。
 - 当前 SDK 源码以 `compileSdk 36` 构建，`compileSdk` 表示编译时可见的最高 Android API。这个 SDK 可以按向后兼容规则运行在 Android 17 设备上，但还没有接入 API 37 新增的全部 `ProfilingTrigger`（由系统事件触发性能采样的配置对象）。后文会单独说明这个差距。
 
@@ -485,7 +485,7 @@ flowchart LR
     N --> L
 ```
 
-图中的 Ingest API 是数据接收入口，Apache Iggy 是在写入存储前缓冲消息的流式消息系统。ClickHouse 保存适合聚合查询的事件数据，PostgreSQL 保存团队、应用和配置等关系数据，MinIO 保存截图、profile（性能采样文件）和符号文件等对象，Valkey 提供缓存。Symboloader 负责接收 mapping 等符号文件，Symbolicator 再用这些文件把混淆栈还原成可读调用栈。
+我们沿着图从左往右看：事件先进入 Ingest API 这个接收入口，再由 Apache Iggy 这样的流式消息系统在写入存储前缓冲；落库时按数据形态分流，ClickHouse 存适合聚合查询的事件数据，PostgreSQL 存团队、应用和配置等关系数据，截图、profile（性能采样文件）和符号文件这类对象交给 MinIO，Valkey 提供缓存。符号链路单独一条：Symboloader 接收 mapping 等符号文件，Symbolicator 再用这些文件把混淆栈还原成可读调用栈。
 
 SDK 先把 event 与 span 写入本地 SQLite 数据库，再按批上传；附件走独立上传路径。默认本地空间上限为 50 MB，可配置在 20～1500 MB，达到上限后会先清理旧数据。离线、服务不可达或附件偏大时，本地容量决定故障现场能保留多久，网络重试次数只是其中一个因素。
 
@@ -599,7 +599,9 @@ Span 表示一段持续时间，单独保存；核心字段是 `trace_id`、`spa
 
 #### Android 17 / API 37 的新增机会
 
-Measure 为 `SIGQUIT` ANR 采集带有 `libmeasure-ndk.so`。稳定版 CMake 链接参数包含 `-Wl,-z,max-page-size=16384`，`0.19.0` AAR 内四个 ABI 版本的 `.so` 也都显示 ELF LOAD segment 的 `p_align` 为 `2**14`，即 16 KB。RSS 计算同时读取运行设备的 `_SC_PAGESIZE`，没有把页大小写死为 4 KB；ELF LOAD segment 是系统把 native 库装入内存时使用的段，这两项检查分别覆盖 native 库对齐与内存页换算。应用仍要对最终 release APK/AAB 做 16 KB page-size 检查，因为宿主工程的 AGP、NDK（Native Development Kit）、其他 `.so` 和 ZIP 打包对齐都不由 Measure 控制。
+Measure 为 `SIGQUIT` ANR 采集带有 `libmeasure-ndk.so`。稳定版 CMake 链接参数包含 `-Wl,-z,max-page-size=16384`，`0.19.0` AAR 内四个 ABI 版本的 `.so` 也都显示 ELF LOAD segment 的 `p_align` 为 `2**14`，即 16 KB。RSS 计算同时读取运行设备的 `_SC_PAGESIZE`，没有把页大小写死为 4 KB；ELF LOAD segment 是系统把 native 库装入内存时使用的段，这两项检查分别覆盖 native 库对齐与内存页换算。
+
+应用这边仍要对最终 release APK/AAB 做 16 KB page-size 检查，因为宿主工程的 AGP、NDK（Native Development Kit）、其他 `.so` 和 ZIP 打包对齐都不由 Measure 控制。
 
 Android 17 为 `ProfilingTrigger` 新增了九种类型。与性能和内存最相关的例子包括 `TRIGGER_TYPE_COLD_START`、`TRIGGER_TYPE_OOM`、`TRIGGER_TYPE_ANOMALY`、`TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`：冷启动触发器返回新启动的 system trace 与 stack sampling profile（按时间抽样的调用栈），OOM 返回 Java heap dump，anomaly 的附件随异常类型变化，过量 CPU 退出触发器返回 running system trace 快照。
 
@@ -613,7 +615,7 @@ Android 17 为 `ProfilingTrigger` 新增了九种类型。与性能和内存最�
 
 ### 接入还包括平台侧工作
 
-当前官方接入页列出的最低要求是 minSdk 21、targetSdk 35、AGP 8.1.0；minSdk 表示能够安装 SDK 的最低系统版本，targetSdk 表示宿主应用声明适配的 Android 行为版本。稳定坐标如下，升级时应同时查看 release notes（版本说明）和 self-host 兼容表。
+当前官方接入页列出的最低要求是 minSdk 21、targetSdk 35、AGP 8.1.0——minSdk 是能够安装 SDK 的最低系统版本，targetSdk 是宿主应用声明适配的 Android 行为版本。稳定坐标如下，升级时应同时查看 release notes（版本说明）和 self-host 兼容表。
 
 ```kotlin
 plugins {
@@ -627,7 +629,7 @@ dependencies {
 
 Gradle 插件负责 OkHttp、HttpURLConnection、AndroidX Navigation 等字节码插桩，还负责构建大小与 R8/ProGuard mapping 上传。R8/ProGuard 会压缩并混淆 Java/Kotlin 字节码，mapping 文件记录混淆前后的名称对应关系，服务端用它还原调用栈。禁用某个 variant 的插件会减少构建步骤，也可能让该 variant 缺少自动网络采集、包大小趋势或混淆栈还原。
 
-初始化要尽量靠近 `Application.onCreate()` 开头，并把 API key 与 ingest URL 放在不同 build type、product flavor 的 manifest placeholder 或其他受控配置中；build type 是 release/debug 等构建模式，product flavor 是产品或环境维度，manifest placeholder 会在构建时把指定值代入 Manifest。若延迟初始化，早期 Crash 与启动耗时会缺少数据，之后无法补采。
+初始化要尽量靠近 `Application.onCreate()` 开头，并把 API key 与 ingest URL 放在不同 build type、product flavor 的 manifest placeholder 或其他受控配置中；build type 是 release/debug 等构建模式，product flavor 是产品或环境维度，manifest placeholder 会在构建时把指定值代入 Manifest。若延迟初始化，早期 Crash 与启动耗时会缺少数据，事后也补不回来。
 
 SDK 接好后，平台侧仍有这些工作：
 
@@ -774,7 +776,7 @@ Measure 把远端采集配置称为 Adaptive Capture：可以在 Dashboard 修�
 | 本地磁盘 | 默认 50 MB，离线时保留到上限 | 退出登录、账号切换和用户拒绝采集时定义本地数据处置方式 |
 | 服务端 retention | 30～365 天，默认 30 天 | 把线上库、对象存储与备份的期限放在同一张清单 |
 
-`clearUserId()` 会清除本地持久化标识，让后续 event 不再带该 ID，已经上传的历史 session 则不会自动删除。公开 API 中可验证的是应用 retention 配置，“按 user ID 擦除所有历史数据”的完整流程目前还验证不到。上线前要用自己的部署版本演练检索、导出、删除、缓存失效、对象删除和备份到期，做不到这些，就不应上传可直接识别个人的数据。
+`clearUserId()` 会清除本地持久化标识，让后续 event 不再带该 ID，已经上传的历史 session 则不会自动删除。公开 API 中可验证的是应用 retention 配置，“按 user ID 擦除所有历史数据”的完整流程目前还验证不到。上线前要用自己的部署版本演练检索、导出、删除、缓存失效、对象删除和备份到期；在这些演练做到位之前，先不上传可直接识别个人的数据。
 
 ### Firebase、Sentry 与 Measure 怎样选
 

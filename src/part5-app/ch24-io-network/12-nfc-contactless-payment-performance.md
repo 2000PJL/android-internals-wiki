@@ -56,7 +56,7 @@ NFC（Near Field Communication，近场通信）既能读标签，也能反过�
 
 NFC 框架和系统服务的源码在 `packages/modules/Nfc`；旧路径 `frameworks/base/core/java/android/nfc/` 与 `packages/apps/Nfc/` 里已经没有完整实现，查代码以新路径为准。
 
-一次无接触支付会经过支付终端、手机的射频控制器（NFC Controller）、Android NFC 服务、钱包应用或 SE、收单系统和支付网络。Android 文档与 AOSP 源码只能说明手机一侧的分发、路由、服务绑定和数据传递；固定响应时间、成功率、离线额度等指标由具体终端和支付协议决定。性能目标要在目标设备、终端和协议组合上测量。
+一次无接触支付会经过支付终端、手机的射频控制器（NFC Controller）、Android NFC 服务、钱包应用或 SE、收单系统和支付网络。Android 文档与 AOSP 源码覆盖的是手机一侧的分发、路由、服务绑定和数据传递；固定响应时间、成功率、离线额度这些指标，取决于具体终端和支付协议。性能目标要在目标设备、终端和协议组合上测量。
 
 ## 1. 三条 NFC 路径
 
@@ -131,7 +131,7 @@ API 37 的官方差异页列出了 `NfcAdapter`、`NfcAdapter.ReaderCallback` �
 | NFC 节电模式查询与设置 | 系统或特权集成 | 设置接口需要 `NFC_SET_CONTROLLER_ALWAYS_ON`；普通应用不能用它控制省电 |
 | `NfcAntennaInfo.isDeviceFoldable()` 废弃 | 展示天线位置的界面 | 不再根据该布尔值推断设备形态 |
 
-这张表把标签分发、读卡、支付和特权硬件控制分开列。新增方法进入 API 37 SDK，只说明接口就绪，具体设备支不支持对应硬件能力，仍要以 `is...Supported()` 的查询结果为准。表中的 Observe Mode 让手机先监听终端轮询、暂缓进入交易；退出帧与 Reader Mode 注释帧是依赖 NFCC 固件的可选能力。这三项都在第 5 节展开。
+我们按标签分发、读卡、支付和特权硬件控制把变化分开看。新增方法进入 API 37 SDK，只说明接口就绪，具体设备支不支持对应硬件能力，仍要以 `is...Supported()` 的查询结果为准。表中的 Observe Mode 让手机先监听终端轮询、暂缓进入交易；退出帧与 Reader Mode 注释帧是依赖 NFCC 固件的可选能力。这三项都在第 5 节展开。
 
 官方差异页还列出 `getGestureExchangeAid()`：它需要 `PERFORM_GESTURE_EXCHANGE` 权限，只服务于 Tap to Share 的手势交换。
 
@@ -139,7 +139,7 @@ API 37 的官方差异页列出了 `NfcAdapter`、`NfcAdapter.ReaderCallback` �
 
 ### 3.1 目标 SDK 37 的 NFC `Intent` 适配
 
-这个 Manifest 片段接收一种明确 MIME 类型的 NDEF 标签：
+适配从 Manifest 开始。这个片段接收一种明确 MIME 类型的 NDEF 标签：
 
 ```xml
 <uses-permission android:name="android.permission.NFC" />
@@ -161,7 +161,7 @@ API 37 的官方差异页列出了 `NfcAdapter`、`NfcAdapter.ReaderCallback` �
 </application>
 ```
 
-`DISPATCH_NFC_MESSAGE` 写在 Activity 的 `android:permission` 上，意思是：要启动该组件的调用方必须持有这项签名级权限。它由 Android NFC 系统服务持有，普通应用无需申请，也无法按普通运行时权限取得。
+`DISPATCH_NFC_MESSAGE` 写在 Activity 的 `android:permission` 上，意思是：要启动该组件的调用方必须持有这项签名级权限。它由 Android NFC 系统服务持有，普通应用既无需申请，在普通运行时权限体系里也拿不到它。
 
 `NfcDispatcher.isMatchAdditionalActivityFilters()` 会检查目标 SDK、应用的 stopped 标志和 Activity 声明。尚未被用户启动过、或被强行停止（force-stop）的应用处于 stopped 状态，收不到 NFC `Intent`；用户手动启动一次之后，这个状态才解除。
 
@@ -214,7 +214,7 @@ Reader Mode 只在 Activity 位于前台时有效。API 并未承诺 `ReaderCall
 
 ### 4.1 HCE 服务声明与 AID 组
 
-一个 HCE 服务能不能被系统接受，先看声明。下面这份声明注册一个示例 HCE 服务，示例 AID 只用于演示，和任何支付网络的正式 AID 都没关系：
+系统接受一个 HCE 服务，先看声明。下面这份声明注册一个示例 HCE 服务，示例 AID 只用于演示，和任何支付网络的正式 AID 都没关系：
 
 ```xml
 <service
@@ -230,7 +230,7 @@ Reader Mode 只在 Activity 位于前台时有效。API 并未承诺 `ReaderCall
 </service>
 ```
 
-系统扫描 HCE 服务时检查两件事：应用声明了 `NFC` 权限，服务由 `BIND_NFC_SERVICE` 保护。任一条不满足，`RegisteredServicesCache` 都会忽略该服务。
+系统扫描 HCE 服务时检查两件事：应用声明了 `NFC` 权限，服务由 `BIND_NFC_SERVICE` 保护；两条都齐了，`RegisteredServicesCache` 才会收录这个服务。
 
 配套的 XML 把一个示例 AID 组注册给同一服务：
 
@@ -247,15 +247,15 @@ Reader Mode 只在 Activity 位于前台时有效。API 并未承诺 `ReaderCall
 </host-apdu-service>
 ```
 
-路由以 AID 组为单位：系统把整组交给同一服务，组内单个 AID 拆不开也分不走。生产支付应用要使用按规范分配的 AID、正确的 `payment` 类别和钱包角色；示例值仅用于演示，上不了线。
+路由以 AID 组为单位：系统把整组 AID 交给同一个服务，想给组里某一个 AID 单独换服务，整组都得跟着动。生产支付应用要使用按规范分配的 AID、正确的 `payment` 类别和钱包角色；示例值只够演示用，上不了线。
 
 ### 4.2 `processCommandApdu()` 的线程模型
 
-`HostApduService.processCommandApdu()` 运行在应用主线程上，官方文档对此有明确说明；实现上也是如此：`HostApduService` 用一个绑定主线程 `Looper` 的 `Handler` 接收 `MSG_COMMAND_APDU`，消息一到就直接调用回调。
+命令进入应用后，`HostApduService.processCommandApdu()` 运行在应用主线程上，官方文档对此有明确说明；实现上也是如此：`HostApduService` 用一个绑定主线程 `Looper` 的 `Handler` 接收 `MSG_COMMAND_APDU`，消息一到就直接调用回调。
 
 能立即算出的响应直接返回；要异步处理就返回 `null`，工作完成后从任意线程调用非阻塞的 `sendResponseApdu()`。
 
-这个骨架展示同步响应、异步响应和链路断开后的取消边界：
+这个骨架同时展示同步响应、异步响应和链路断开后的取消处理：
 
 ```kotlin
 class DemoApduService : HostApduService() {
@@ -326,7 +326,7 @@ override fun processCommandApdu(commandApdu: ByteArray, extras: Bundle?): ByteAr
 
 ## 5. Observe Mode 与 API 37 的单次交易
 
-NFC 终端会循环发送轮询帧（polling frames），找附近可用的卡。观察模式（Observe Mode）让手机只听这些帧、暂不应答，也暂不进入卡交易。它从 Android 15（API 35）开始提供；API 37 在此之上增加了单次允许交易、退出帧能力查询和 Reader Mode 注释帧支持。
+NFC 终端会循环发送轮询帧（polling frames），找附近可用的卡。观察模式（Observe Mode）让手机先只听这些帧，暂缓应答，也暂缓进入卡交易。它从 Android 15（API 35）开始提供；API 37 在此之上增加了单次允许交易、退出帧能力查询和 Reader Mode 注释帧支持。
 
 ### `allowOneTransaction()` 的调用条件
 
@@ -337,11 +337,11 @@ NFC 终端会循环发送轮询帧（polling frames），找附近可用的卡�
 - HCE 交易已经激活时，调用会被拒绝。
 - `HostEmulationManager` 会在交易结束后恢复（suspend/resume） Observe Mode；交易开始前射频场消失时也会恢复。
 
-这个方法管的只是 Observe Mode 下的那一笔 HCE 交易，NFC 调度优先级不受它影响。普通标签应用本来就在调用资格之外；钱包也要等轮询序列匹配自身过滤规则后再调用，免得对任意终端放行。
+这个方法管的只是 Observe Mode 下的那一笔 HCE 交易，NFC 调度优先级与它无关。普通标签应用本来就在调用资格之外；钱包也要等轮询序列匹配自身过滤规则后再调用，免得对任意终端放行。
 
 ### 退出帧与注释帧的能力查询
 
-退出帧让 NFCC 固件在特定的自动交易轮询过滤器命中时离开 Observe Mode；`isExitFramesSupported()` 要固件支持、且控制器报告了至少一个可用退出帧，才会返回 `true`。
+退出帧让 NFCC 固件在特定的自动交易轮询过滤器命中时离开 Observe Mode；我们判断它可用与否，看 `isExitFramesSupported()`——固件支持、且控制器报告了至少一个可用退出帧，它才会返回 `true`。
 
 `isReaderModeAnnotationSupported()` 同样来自设备能力。`NfcProprietaryCaps` 解析控制器上报的厂商能力数据，里面就有节电模式、自动交易过滤器、退出帧数量和 Reader Mode 注释帧支持。
 
@@ -381,11 +381,11 @@ API 37 SDK 提供三个接口：
 | 密钥位置 | 由钱包方案决定，可能结合 Android Keystore、可信执行环境（TEE）或服务端 | 通常由 SE 安全域与 applet 管理 |
 | Android 可观测点 | 服务绑定、Binder、应用 Trace、NFC 服务日志 | 路由和交易事件可见，applet 内部耗时一般不可见 |
 
-表里的 `OffHostApduService` 只是一份路由声明：交易时这个 Android Service 不会被启动，SE 里的 APDU 处理也轮不到它；Android 卡模拟 API 提供不了任意控制 SE 交易 APDU 的能力。
+回到两条卡模拟路线的分工：表里的 `OffHostApduService` 只是一份路由声明，交易发生时真正处理 APDU 的是 SE 里的卡应用，这个 Android Service 全程停留在声明层面；想借 Android 卡模拟 API 任意控制 SE 的交易 APDU，平台并没有给出这样的能力。
 
 OMAPI（Open Mobile API）是应用访问 SE 的另一套接口，访问规则独立，与 NFC 终端侧的 APDU 通道各走各的。
 
-支付令牌化（tokenization，用受限令牌替代真实卡号）、动态密码、持卡人验证、离线额度、风险控制、收单结果和终端认证，都由具体支付方案决定；AOSP 未提供统一配置这些策略的公开 NFC API，支付方案的规则也就无法写成 Android 平台能力。
+支付令牌化（tokenization，用受限令牌替代真实卡号）、动态密码、持卡人验证、离线额度、风险控制、收单结果和终端认证，都由具体支付方案决定；AOSP 没有提供统一配置这些策略的公开 NFC API，这些规则因此留在支付方案一侧，写不进 Android 平台能力。
 
 ## 8. 可复现的性能测量
 
@@ -402,7 +402,7 @@ OMAPI（Open Mobile API）是应用访问 SE 的另一套接口，访问规则�
 | `T_response_rx` | 外部读卡器 | 终端何时收到 R-APDU |
 | `T_deactivate` | 应用与系统日志 | 链路何时结束、为何结束 |
 
-`T_apdu_in - T_select_tx` 覆盖 Android 路由和可能的服务绑定；`T_response_ready - T_apdu_in` 是应用生成响应的区间；`T_response_rx - T_response_ready` 覆盖 Binder、NCI、NFCC 和射频回传。两端时钟对不上时，就用同一测试动作的序号和相对间隔把记录关联起来——亚毫秒精度已经超出证据能支撑的范围。
+`T_apdu_in - T_select_tx` 覆盖 Android 路由和可能的服务绑定；`T_response_ready - T_apdu_in` 是应用生成响应的区间；`T_response_rx - T_response_ready` 覆盖 Binder、NCI、NFCC 和射频回传。两端时钟对不上时，就用同一测试动作的序号和相对间隔把记录关联起来——亚毫秒精度已经超出这些记录能支撑的范围。
 
 ### 8.2 Android 侧只读诊断
 
@@ -420,7 +420,7 @@ adb logcat -v threadtime \
 
 HCE 源码在对应功能开关（feature flag）启用时，还会写入 `hce_active`、`hce_bind_payment_service`、`hce_bind_service`、`hce_command_apdu`、`hce_response_apdu` 和 `hce_polling_frames` 异步 Trace。`hce_command_apdu` 从系统发出命令开始，到应用 `Handler` 完成回调并回复确认消息（ACK）为止；应用返回 `null` 之后继续跑的异步工作，落在这个区间之外。`hce_response_apdu` 覆盖应用发送响应到系统回复 ACK 的过程。
 
-设备构建未启用相应功能开关时，这些 slice 根本不会产生；slice 缺席，说明不了 NFC 是不是在正常工作。
+这些 slice 要在设备构建启用相应功能开关后才会产生；slice 缺席，说明不了 NFC 是不是在正常工作。
 
 ### 8.3 指标按场景分组
 
@@ -434,7 +434,7 @@ HCE 源码在对应功能开关（feature flag）启用时，还会写入 `hce_a
 - 成功、AID 未路由、需要解锁、服务绑定失败、链路丢失和终端超时；
 - CPU 调度延迟、主线程阻塞、内存分配量、垃圾回收（GC）、本地存储与后端请求。
 
-同一次实验只改一个变量，记录系统版本、NFC 模块版本、应用版本和测试卡配置。支付终端自身有协议超时和重试策略，Android 侧没有公开统一的 APDU 响应时限，目标值应来自所用协议、认证要求和目标终端组合。
+实验安排上，我们同一次只改一个变量，并记录系统版本、NFC 模块版本、应用版本和测试卡配置。支付终端自身有协议超时和重试策略，Android 侧没有公开统一的 APDU 响应时限，目标值应来自所用协议、认证要求和目标终端组合。
 
 ## 9. 故障现象与定位入口
 
@@ -455,7 +455,7 @@ HCE 源码在对应功能开关（feature flag）启用时，还会写入 `hce_a
 
 内核版本基线为 `android17-6.18-2026-06_r6`。NFC 控制器可能挂在 I²C、SPI、UART 等芯片间总线或厂商专用通道上；驱动、设备树、时钟、电源域、IRQ 和挂起/恢复的行为，还可能出自 SoC 或 OEM 的私有分支。Android common kernel 标签只是共用内核的分析起点，某款设备用的是哪个 NFC 驱动，从它上面看不出来。
 
-拿着下面这些证据，我们再去查内核与厂商实现：
+拿到下面这些线索，我们再去查内核与厂商实现：
 
 - NFCC IRQ 长时间得不到调度；
 - 总线传输出现异常重试、超时或运行时电源管理（runtime PM）唤醒延迟；
@@ -463,7 +463,7 @@ HCE 源码在对应功能开关（feature flag）启用时，还会写入 `hce_a
 - 原生 NFC 协议栈已发出命令，但厂商 HAL 或传输层没有响应；
 - 问题只跟某个 NFCC、固件或 OEM 构建相关。
 
-AID 选择、HCE 服务绑定、`processCommandApdu()` 主线程和钱包角色属于 Android 框架或 NFC 模块的行为，无法直接从内核调度器状态推导；跨层排查时保留同一交易序号，应用 Trace、NFC 日志、HAL 日志、内核事件和外部读卡器记录才能相互对应。
+AID 选择、HCE 服务绑定、`processCommandApdu()` 主线程和钱包角色属于 Android 框架或 NFC 模块的行为，仅凭内核调度器状态是直接推不出来的；跨层排查时保留同一交易序号，应用 Trace、NFC 日志、HAL 日志、内核事件和外部读卡器记录才能相互对应。
 
 ## 11. 性能改动的安全约束
 
@@ -494,9 +494,9 @@ HCE 服务由 `BIND_NFC_SERVICE` 保护，只有 Android 系统能绑定，APDU 
 
 ## 全文小结
 
-标签分发、Reader Mode、HCE 与 off-host 卡模拟走不同的路由和进程边界；Android 17 的 Intent 保护、标签离场回调、Observe Mode 和控制器能力变化也各对各的入口。先把模式、目标 SDK、钱包角色和硬件能力确认清楚，再谈性能。
+标签分发、Reader Mode、HCE 与 off-host 卡模拟走不同的路由，数据经过的进程也不同；Android 17 的 Intent 保护、标签离场回调、Observe Mode 和控制器能力变化也各对各的入口。先把模式、目标 SDK、钱包角色和硬件能力确认清楚，再谈性能。
 
-HCE 延迟要拆成射频激活、AID 路由、服务绑定、应用处理、响应回传和外部支付协议，其中只有应用处理这一段能由 `HostApduService` 直接优化。可靠测量靠外部读卡器与 Android Trace 的关联；缓存、日志和异步执行的任何调整，都不得削弱密钥、令牌、重放防护和交易生命周期的边界。
+HCE 延迟要拆成射频激活、AID 路由、服务绑定、应用处理、响应回传和外部支付协议，其中只有应用处理这一段能由 `HostApduService` 直接优化。可靠测量靠外部读卡器与 Android Trace 的关联；缓存、日志和异步执行的任何调整，都不得削弱密钥、令牌、重放防护和交易生命周期方面的安全约束。
 
 ## 参考资料
 

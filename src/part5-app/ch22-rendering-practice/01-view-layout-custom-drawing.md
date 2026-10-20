@@ -68,15 +68,17 @@ consolidated_from:
 
 整条链路是这样接起来的。`ViewRootImpl` 通过 `Choreographer` 安排一轮 Traversal（遍历 View 树的一轮工作），按“哪些阶段需要重新执行”的脏标记决定要不要 Measure、Layout 和 Draw；硬件加速路径随后通过 `syncAndDrawFrame()` 同步 RenderNode 绘制节点树，把剩下的工作交给 RenderThread。所以布局变快只说明 App 主线程少做了工作；图形 buffer 有没有被 SurfaceFlinger（系统合成服务） 按时选中并送往显示，要沿后面的链路继续查。
 
-View 性能从减少层级、无效遍历和过度绘制开始，自定义 View 还要控制对象分配、Path/Bitmap 复用、invalidate 范围和绘制算法。布局与绘制应在同一帧时间线中验证。
+View 侧的性能工作分两条线：布局侧减少层级、无效遍历和过度绘制；自定义 View 再控制对象分配、Path/Bitmap 复用、invalidate 范围和绘制算法。我们先走布局这条线，两条线最后都要放回同一帧时间线里验证。
 
 ## 层级、inflate、测量与布局失效
 
 ### 布局层级对渲染性能的影响
 
-布局优化要从一帧里发生了什么看起。子 View 的 `requestLayout()` 沿父链传播到 `ViewRootImpl` 后，根节点设置 `mLayoutRequested` 并安排一次 Traversal；已有 traversal（一次 View 树遍历） 尚未执行时，重复的调度请求会被合并。但合并之后一帧仍可能布局两次：View 在首轮 layout 期间留下有效的 `requestLayout()` 时，可以在同一帧再执行一轮 measure/layout；第二轮期间再次提出的请求才会延后。我们再看 `performTraversals()` 这一层：它按窗口和 View 树状态决定是否调用 `performMeasure()`、`performLayout()` 与 `performDraw()`，三段工作并不每帧固定执行。
+布局优化要从一帧里发生了什么看起。子 View 的 `requestLayout()` 沿父链传播到 `ViewRootImpl` 后，根节点设置 `mLayoutRequested` 并安排一次 Traversal；已有 traversal（一次 View 树遍历） 尚未执行时，重复的调度请求会被合并。
 
-Measure 是递归过程：父容器通过 `MeasureSpec` 告诉子节点尺寸是精确值、上限还是未指定，子节点报告测量结果，父容器再据此确定自己的尺寸。Layout 随后为各子节点分配位置。节点越多、嵌套越深、父容器规则越复杂，主线程执行的代码通常越多；多轮测量会进一步放大这部分成本。结论仍要回到当前页面的调用次数、单节点工作量和 FrameTimeline（记录每帧目标与实际时间的系统轨道） deadline。
+合并之后，一帧仍可能布局两次：View 在首轮 layout 期间留下有效的 `requestLayout()` 时，可以在同一帧再执行一轮 measure/layout；第二轮期间再次提出的请求才会延后。再往里看 `performTraversals()` 这一层，它按窗口和 View 树状态决定要不要调用 `performMeasure()`、`performLayout()` 与 `performDraw()`，三段工作并不每帧固定执行。
+
+Measure 是递归过程：父容器通过 `MeasureSpec` 告诉子节点尺寸是精确值、上限还是未指定，子节点报告测量结果，父容器再据此确定自己的尺寸；Layout 随后为各子节点分配位置。所以节点越多、嵌套越深、父容器规则越复杂，主线程执行的代码通常越多，多轮测量还会进一步放大这部分成本。判断要不要动手优化时，我们看的仍是当前页面的调用次数、单节点工作量和 FrameTimeline（记录每帧目标与实际时间的系统轨道） deadline。
 
 布局层级不只涉及深度。更常见的成本来自三类结构：
 
@@ -84,9 +86,9 @@ Measure 是递归过程：父容器通过 `MeasureSpec` 告诉子节点尺寸是
 - **高频出现的列表项**：单个 item（列表条目） 的成本可能很小，但列表首屏会同时 inflate 多个，滑动中又频繁创建和绑定，累计起来仍可能造成连续掉帧。
 - **提前创建的低频内容**：`View.GONE` 的子节点躲得过测量，通常也躲得过绘制，唯独躲不过 inflate：`ViewGroup.measureChildren()` 会跳过它，但对象与整棵子树在首帧前就已创建，父容器仍要遍历并检查状态，自定义容器还可以另立测量规则。大块低频内容更适合延迟创建。
 
-判断一个布局是否需要优化，要看 trace 里的时间与调用次数。`performMeasure()` 和 `performLayout()` 在 framework trace 里分别是 `measure`、`layout` 两个切片名；`FrameMetrics.LAYOUT_MEASURE_DURATION` 合并报告本帧中被标记需要更新的 View 树部分所花的测量与布局时间。没有跨刷新率通用的“3～5 ms 即异常”阈值，我们要把这两段放回 FrameTimeline 的 deadline、同场景分位数和完整 `Choreographer#doFrame` 里判断——FrameTimeline 是记录每帧目标时间与实际时间的系统轨道。
+判断一个布局要不要优化，看的是 trace 里的时间与调用次数。`performMeasure()` 和 `performLayout()` 在 framework trace 里分别是 `measure`、`layout` 两个切片名；`FrameMetrics.LAYOUT_MEASURE_DURATION` 合并报告本帧中被标记需要更新的 View 树部分所花的测量与布局时间。“3～5 ms 即异常”这类阈值并不跨刷新率通用，我们要把这两段放回 FrameTimeline 的 deadline、同场景分位数和完整 `Choreographer#doFrame` 里判断。
 
-慢帧若主要耗在 `performDraw()`、UI 等待 RenderThread、RenderThread 的 `dequeueBuffer` / `queueBuffer`、GPU 工作队列或显示侧，压平布局的收益会很小。`queueBuffer()` 按时只说明 Producer（内容生产者） 把一块 buffer 提交进了队列；接下来还要核对 `BufferTX - <layerName>` 这类 buffer 事务切片、latch（SurfaceFlinger 选定本帧 buffer）、FrameTimeline actual slice（实际完成轨道） 和 present timing（呈现时间），确认这帧确实按时上了屏。
+反过来，如果慢帧主要耗在 `performDraw()`、UI 等待 RenderThread、RenderThread 的 `dequeueBuffer` / `queueBuffer`、GPU 工作队列或显示侧，压平布局的收益会很小。`queueBuffer()` 按时只说明 Producer（内容生产者） 把一块 buffer 提交进了队列；要确认这帧确实按时上了屏，还要核对 `BufferTX - <layerName>` 这类 buffer 事务切片、latch（SurfaceFlinger 选定本帧 buffer）、FrameTimeline actual slice（实际完成轨道） 和 present timing（呈现时间）。
 
 工程上建议按这个顺序处理：
 
@@ -96,9 +98,11 @@ Measure 是递归过程：父容器通过 `MeasureSpec` 告诉子节点尺寸是
 
 ### ConstraintLayout vs 传统布局的性能对比
 
-`ConstraintLayout` 的价值是用约束关系减少嵌套。一个“图标 + 标题 + 副标题 + 操作按钮”的卡片，如果用多层 `LinearLayout` / `RelativeLayout` 组合，常见结果是 3～5 层；改成 `ConstraintLayout` 后，子 View 可以直接挂在同一个父容器下，Measure/Layout 的遍历路径更短。
+压平层级最常用的工具是 `ConstraintLayout`，它的价值是用约束关系减少嵌套。一个“图标 + 标题 + 副标题 + 操作按钮”的卡片，用多层 `LinearLayout` / `RelativeLayout` 组合，常见结果是 3～5 层；改成 `ConstraintLayout` 后，子 View 可以直接挂在同一个父容器下，Measure/Layout 的遍历路径更短。
 
-Google 在 2017 年用注册表单页面做过公开测试：传统 `RelativeLayout` 嵌套版本在 20 秒 Systrace 窗口中出现 80 次 expensive measure/layout alerts——当时工具按启发式阈值给出的高成本测量/布局警告；改成扁平的 `ConstraintLayout` 后警告明显减少，`FrameMetrics.LAYOUT_MEASURE_DURATION` 平均耗时下降约 40%。测试环境是 Nexus 5X、Android 8.0 和 ConstraintLayout 1.0.2，约 40% 是 100 帧的平均结果。这个实验支持的是“压平该页面层级有收益”，放到自己的项目里还要重新测：设备、AndroidX 版本、布局复杂度和刷新率都会改变结果。
+Google 在 2017 年用注册表单页面做过公开测试：传统 `RelativeLayout` 嵌套版本在 20 秒 Systrace 窗口中出现 80 次 expensive measure/layout alerts——当时工具按启发式阈值给出的高成本测量/布局警告；改成扁平的 `ConstraintLayout` 后警告明显减少，`FrameMetrics.LAYOUT_MEASURE_DURATION` 平均耗时下降约 40%。测试环境是 Nexus 5X、Android 8.0 和 ConstraintLayout 1.0.2，约 40% 是 100 帧的平均结果。
+
+这个实验支持的是“压平该页面层级有收益”，换到自己的项目里还要重新测：设备、AndroidX 版本、布局复杂度和刷新率都会改变结果。
 
 选型时用三条规则：
 
@@ -106,7 +110,7 @@ Google 在 2017 年用注册表单页面做过公开测试：传统 `RelativeLay
 - **简单线性结构继续用 `LinearLayout` / `FrameLayout`**：2-3 个子 View 的水平或垂直排列，不必为了“统一技术栈”改成 `ConstraintLayout`。
 - **列表 item 要实测**：item 很简单时，约束求解器计算约束关系的固定开销可能抵消层级收益；item 很复杂时，扁平化更容易带来改善。用 Macrobenchmark（端到端场景基准）、Perfetto 或 `FrameMetrics.LAYOUT_MEASURE_DURATION` 对比两版。
 
-一个实用的迁移方式是从“层级深、存在重复测量且复用多”的布局下手。Layout Inspector 能帮助定位冗余父节点和多层相对关系，但层数本身没有合格线。对公共卡片、列表 item 或首屏头部区域做一版等价布局，再用同一设备、同一数据量、同一操作路径抓 trace；Measure / Layout 分位数和完整帧指标都改善后再推广。
+动手迁移时，从“层级深、存在重复测量且复用多”的布局开始。Layout Inspector 能帮我们定位冗余父节点和多层相对关系，不过层数本身没有合格线。对公共卡片、列表 item 或首屏头部区域做一版等价布局，再用同一设备、同一数据量、同一操作路径抓 trace，等 Measure / Layout 分位数和完整帧指标都改善后再推广。
 
 ### ViewStub、merge、include 的正确使用
 
@@ -120,7 +124,7 @@ Google 在 2017 年用注册表单页面做过公开测试：传统 `RelativeLay
 
 `ViewStub` 适合“大概率不显示”的内容。错误页、空态页、折叠的高级筛选区，如果直接写在主布局里，首帧就会执行 inflate 和对象创建；换成 `ViewStub` 后，首帧只创建一个轻量占位符。首次需要显示时再调用 `inflate()`，拿到真实根 View 后缓存引用，后续切换只改 `visibility`。
 
-`ViewStub` 调用 `inflate()` 后会被新 View 替换，不能对原 stub 再次 inflate。以下代码缓存替换后的 View，避免每次显示都查找并创建：
+`ViewStub` 调用 `inflate()` 后会被新 View 替换，原 stub 随之从树里移除，后续展示都复用替换结果。以下代码缓存替换后的 View，避免每次显示都查找并创建：
 
 ```kotlin
 private var errorPanel: View? = null
@@ -156,9 +160,9 @@ fun showError(root: View) {
 
 `<include>` 更偏工程复用。它不会自动让布局更快，`LayoutInflater.parseInclude()` 仍要解析被 include 的资源并创建 View。被 include 的布局可以用 `<merge>` 去掉冗余根容器，也可以把 `<include>` 放进 `ViewStub` 指向的低频子树；是否有收益取决于运行时少创建、少测量了什么。
 
-### `LayoutInflater`：缓存构造器不等于消除创建成本
+### `LayoutInflater` 的构造成本与构造器缓存
 
-布局 XML 经 AAPT2 编译成 binary XML（编译后的二进制 XML），运行时仍要读取节点与属性、创建对象并组装 View 树——binary XML 是编译后的二进制 XML，省掉的只是文本解析这一小段。把整段工作都笼统称为“XML 解析”会漏掉主题、资源和业务构造器的成本。我们按三段拆开看一次 `inflate()`：
+布局 XML 经 AAPT2 编译成 binary XML（编译后的二进制 XML），但运行时仍要读取节点与属性、创建对象并组装 View 树，省掉的只是文本解析这一小段。把整段工作笼统称为“XML 解析”，会漏掉主题、资源和业务构造器的成本。我们按三段拆开看一次 `inflate()`：
 
 1. `Resources.getLayout()` 提供解析器，inflater 读取 `AttributeSet`，处理 `android:theme`、`<include>`、`<merge>`、`<tag>` 等特殊标签，并让父容器生成 `LayoutParams`；
 2. `createViewFromTag()` 先经过 `Factory2 → Factory → private factory`。都未创建 View 时，才进入 `onCreateView()` 或按完整类名构造；AppCompat 的控件替换、Context 包装和 tint 也在这条 Factory 路径中；
@@ -178,7 +182,7 @@ fun showError(root: View) {
 
 ### 布局预加载与异步 Inflate
 
-布局预加载会转移创建时间，却不会消除解析、构造和绑定成本。只有未来使用概率较高、可安全缓存，并且预加载不会挤占输入或当前帧时，这种转移才有收益。
+布局预加载转移的是创建时间，解析、构造和绑定成本本身仍然存在。这种转移要换来收益，前提是未来使用概率较高、可以安全缓存，并且预加载不挤占输入或当前帧。
 
 可选方案分三类：
 
@@ -186,7 +190,7 @@ fun showError(root: View) {
 - **受控复用**：RecyclerView 的 `RecycledViewPool` 具有清晰的回收协议。普通 View 不宜随意放入全局对象池；预创建 View 必须保持未 attach 状态，且 Context、主题、配置和旧数据都与使用点一致。
 - **`AsyncLayoutInflater`**：尝试把 XML 解析和 View 构造放到后台线程，完成后再 attach。适合复杂但不需要立刻展示的布局；不满足后台构造条件时会回退到 UI 线程。
 
-`AsyncLayoutInflater` 的使用边界要写清楚。后台 inflate 要求父容器的 `generateLayoutParams(AttributeSet)` 线程安全，被创建的 View 构造过程不能创建 `Handler` 或调用 `Looper.myLooper()`。它仍不支持直接设置 `LayoutInflater.Factory` / `Factory2`，也不支持包含 fragment 的布局；但 AndroidX 1.1.0 可以在构造时传入 `AsyncLayoutFactory`，AppCompat 场景可使用 `AsyncAppCompatFactory` 正确创建 AppCompat View。遇到无法在后台构建的布局，AndroidX 会回退到 UI 线程 inflate；功能可以继续，但本次解析和构造没有移出 UI 线程。
+用 `AsyncLayoutInflater` 之前，先把它的适用条件写清楚。后台 inflate 要求父容器的 `generateLayoutParams(AttributeSet)` 线程安全，被创建的 View 在构造过程里也要避开 `Handler` 创建和 `Looper.myLooper()` 调用。它仍不支持直接设置 `LayoutInflater.Factory` / `Factory2`，也不支持包含 fragment 的布局；好在 AndroidX 1.1.0 可以在构造时传入 `AsyncLayoutFactory`，AppCompat 场景用 `AsyncAppCompatFactory` 就能正确创建 AppCompat View。碰到只能在 UI 线程构建的布局，AndroidX 会回退到 UI 线程 inflate——功能可以继续，只是这一次的解析和构造仍留在 UI 线程。
 
 不传 callback executor（指定完成回调在哪个执行器运行） 的默认重载会在 UI 线程执行完成回调，而且返回的 View 尚未加入 `parent`。下面的接入在回调中完成 attach 和绑定：
 
@@ -200,13 +204,13 @@ AsyncLayoutInflater(context).inflate(
 }
 ```
 
-`bindFilterPanel()` 与 `addView()` 仍在主线程执行。异步 inflate 只迁移了布局解析和 View 构造的一部分成本；数据绑定、图片解码和网络请求需要按各自线程约束另行安排。AndroidX 1.1.0 还提供 callback executor 重载，可以指定完成回调在哪个执行器运行；回调落在后台线程时，调用 `addView()` 和修改 View 前要切回 UI 线程。
+`bindFilterPanel()` 与 `addView()` 仍在主线程执行。异步 inflate 只迁移了布局解析和 View 构造的一部分成本；数据绑定、图片解码和网络请求需要按各自线程约束另行安排。AndroidX 1.1.0 还提供 callback executor 重载；回调落在后台线程时，调用 `addView()` 和修改 View 前要切回 UI 线程。
 
 验收时我们对比使用前后的 trace：使用前，`Activity.onCreate()` 或点击事件后方有较长的 `inflate` 区间；使用后，这段区间应移到后台线程，主线程只保留较短的 `addView` / bind 区间。主线程仍出现完整 `inflate`，可能是布局触发了回退；主线程只剩 bind 却依然超时，说明瓶颈已经转到回调工作。还要记录预加载未命中率（已创建却从未使用的比例）和被取消数量，避免用更多 CPU、内存换来很少的命中。
 
 ### `ViewTreeObserver` 布局回调的观察范围
 
-`ViewRootImpl.performTraversals()` 会在本轮发生 layout，或全局属性需要重新计算时调用 `dispatchOnGlobalLayout()`。所以 `OnGlobalLayoutListener` 只说明 View 树的全局布局状态处理到了这一点；某个 `View.layout()` 是否刚执行完、buffer 有没有提交并被 SurfaceFlinger 选中显示，它都回答不了。
+`ViewRootImpl.performTraversals()` 会在本轮发生 layout，或全局属性需要重新计算时调用 `dispatchOnGlobalLayout()`。所以 `OnGlobalLayoutListener` 告诉我们的，只是 View 树的全局布局状态处理到了这一点；至于某个 `View.layout()` 是否刚执行完、buffer 有没有被 SurfaceFlinger 选中显示，要回到 trace 里核对。
 
 回调要按它实际观察的范围使用：
 
@@ -215,11 +219,13 @@ AsyncLayoutInflater(context).inflate(
 - `OnPreDrawListener.onPreDraw()` 返回 `false` 会取消当前 draw 并重新调度，条件长期不满足会形成连续取消；
 - 首帧显示应使用 FrameTimeline、`reportFullyDrawn()` 或与产品目标含义相符的信号，而不是 global layout 的结束时间。
 
-`getViewTreeObserver()` 返回的对象也要看生命周期：未 attach 的 View 使用 floating observer，attach 时 listener 会合并到窗口 observer，旧对象随后失效，谈不上跨整个 View 生命周期永久保存。长期持有引用时要检查 `isAlive()`，移除 listener 时重新取得当前 observer 更稳妥。
+`getViewTreeObserver()` 返回的对象也要看生命周期：未 attach 的 View 使用 floating observer，attach 时 listener 会合并到窗口 observer，旧对象随后失效，跨整个 View 生命周期保存同一个引用并不可靠。长期持有引用时要检查 `isAlive()`，移除 listener 时重新取得当前 observer 更稳妥。
 
 ### Compose 与 View 混合布局的性能陷阱
 
-View/Compose 混合场景要同时核对两套边界：`ComposeView` 放进 View 树后，它既要参与父 View 的 Measure / Layout，又有自己的 Composition、Layout、Drawing 阶段。Composition 根据状态构建或更新 Compose 节点，Layout 测量并放置节点，Drawing 记录绘制内容。普通 `ComposeView` 和不创建独立 Surface 的 `AndroidView` 仍可以沿宿主 `ViewRootImpl → RenderThread → App Window` 的标准路径出图；Compose 由 AndroidX 独立发布，其运行时和编译器行为要按项目实际依赖版本核对，不能由 Android 17 platform tag 推断。
+View/Compose 混合场景里，我们要同时盯着两套体系：`ComposeView` 放进 View 树后，既要参与父 View 的 Measure / Layout，又有自己的 Composition、Layout、Drawing 阶段——Composition 根据状态构建或更新 Compose 节点，Layout 测量并放置节点，Drawing 记录绘制内容。
+
+出图路径上，普通 `ComposeView` 和不创建独立 Surface 的 `AndroidView` 仍可以沿宿主 `ViewRootImpl → RenderThread → App Window` 的标准路径出图；但 Compose 由 AndroidX 独立发布，运行时和编译器行为跟着项目依赖的版本走，Android 17 platform tag 在这里给不出答案，要按项目实际依赖的版本来核对。
 
 常见风险有三类：
 
@@ -227,7 +233,7 @@ View/Compose 混合场景要同时核对两套边界：`ComposeView` 放进 View
 - **Compose 页面里嵌入复杂 Android View**：`AndroidView` 承载 WebView、地图或播放器时，View 自身的 measure/layout 和生命周期成本仍然存在。组件还可能拥有 Chromium 渲染线程、`SurfaceView` 或 `TextureView` 输入，届时只看宿主 App Window 不足以解释内容生产成本。
 - **状态跨边界传播过宽**：View 层一次数据刷新导致整个 `ComposeView` 重新组合，或者 Compose 状态变化触发外层 View `requestLayout()`，都会让本应局部处理的变化波及更大的页面范围。
 
-混合方案的边界要少，生命周期要清楚，trace 要分开看。Perfetto 里先确认慢帧落在 framework 的 `measure` / `layout`，Compose runtime / drawing，还是独立 Producer 与 Surface，再决定改 View 结构、Compose 状态读取或子组件管线。没有证据时，不要把问题直接归因给 Compose 或 View。
+混合方案要少留交界、理清生命周期，trace 也要分开看。Perfetto 里先确认慢帧落在 framework 的 `measure` / `layout`，Compose runtime / drawing，还是独立 Producer 与 Surface，再决定改 View 结构、Compose 状态读取或子组件管线。trace 还没指到谁身上时，先别急着归因给 Compose 或 View。
 
 ### 验收清单
 
@@ -241,7 +247,7 @@ View/Compose 混合场景要同时核对两套边界：`ComposeView` 放进 View
 - 若 App 侧按时完成，继续核对 RenderThread、`queueBuffer`、`BufferTX`、latch 与 present，避免把显示侧延迟记到布局。
 - 视觉一致性、无障碍层级、点击热区没有被改坏。
 
-布局优化的完成标准，是关键帧里的主线程测量与布局成本下降，同时完整帧指标和用户体验没有退化。布局切片只回答 App 主线程这一段；帧是否显示及时，还要沿标准 HWUI（Android 硬件加速 UI 渲染器） 路径检查到 present——这条边界前文已经划过，验收时它同样适用。
+布局优化的完成标准，是关键帧里的主线程测量与布局成本下降，同时完整帧指标和用户体验没有退化。布局切片只回答 App 主线程这一段；帧有没有及时上屏，还要沿标准 HWUI（Android 硬件加速 UI 渲染器） 路径检查到 present——这条界线前文已经划过，验收时同样适用。
 
 ### 源码与文档
 
@@ -279,7 +285,7 @@ View/Compose 混合场景要同时核对两套边界：`ComposeView` 放进 View
 
 #### `onMeasure()` 缓存的完整输入
 
-测量缓存只比较宽度是不够的。高度 `MeasureSpec`、内边距、数据版本、字体、语言与地区设置、布局方向、子 View 可见性和外边距都可能改变结果。缓存适合保存纯计算得到的几何结果，同时要照常走 `setMeasuredDimension()` 并尊重父容器约束。
+测量缓存的判断不止宽度一项：高度 `MeasureSpec`、内边距、数据版本、字体、语言与地区设置、布局方向、子 View 可见性和外边距都可能改变结果。缓存适合保存纯计算得到的几何结果，同时要照常走 `setMeasuredDimension()` 并尊重父容器约束。
 
 下面的示例用两个 `MeasureSpec` 和显式内容版本保护缓存。`computeGeometry()` 只做 CPU 计算，不修改 View 树。
 
@@ -322,7 +328,7 @@ protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 
 数据、字体、语言与地区设置或布局方向发生变化，并且会影响期望尺寸时，更新 `mContentVersion` 后调用 `requestLayout()`；只改颜色的场合保持测量版本不变。自定义 `ViewGroup` 还要为每个子 View 生成正确的 `MeasureSpec`、合并 measured state（子 View 报告的尺寸状态），并处理内边距、外边距和最小尺寸，这些契约都要照做，缓存跳不过去。
 
-#### `onLayout()` 不能只看 `changed`
+#### `onLayout()` 的输入与坐标缓存
 
 `changed` 表示当前 View 的 bounds（`left`、`top`、`right`、`bottom` 四条边界）相对上次是否变化。子 View 的测量尺寸、可见性、外边距、布局方向或业务排序变化时，即使父 View 的边界没变，子 View 位置也可能要更新。测量或几何计算阶段应产出一份与完整输入绑定的坐标缓存，`onLayout()` 只读取这份缓存。
 
@@ -388,7 +394,7 @@ public final class WaveformView extends View {
 
 Android 10—17 已支持 `clipPath()`、`drawPicture()` 和 `drawVertices()` 等过去受 API 版本限制的调用，其中 `drawVertices()` 从 API 29 起支持硬件 Canvas。兼容性仍要按当前官方表逐项核对，官方表就把 `Paint.setLinearText()` 和 `setMaskFilter()` 标为不支持。这类问题的表现可能是空白、异常或像素错误，系统也不会为所有不支持的调用统一切到软件绘制。
 
-#### `LAYER_TYPE_NONE` 仍然复用 DisplayList
+#### `LAYER_TYPE_NONE` 与默认 DisplayList 复用
 
 `setLayerType()` 控制单个 View 是否增加离屏图层，不控制整个窗口是否硬件加速。
 
@@ -419,7 +425,7 @@ view.animate()
 
 纯布局 `ViewGroup` 可以设置 `setWillNotDraw(true)`，让框架跳过它自己的 `onDraw()`。子 View 仍会通过 `dispatchDraw()` 绘制。容器需要画背景、分隔线、调试标记或其他自身内容时，应清除该标记。
 
-下面只截取容器设置绘制标记的构造函数。完整的非抽象 `ViewGroup` 还必须实现 `onMeasure()` 和 `onLayout()`，这段代码不能单独编译。
+下面只截取容器设置绘制标记的构造函数。完整的非抽象 `ViewGroup` 还必须实现 `onMeasure()` 和 `onLayout()`，把这两处补齐，这段节选才能编译。
 
 ```java
 public final class FlowLayout extends ViewGroup {
@@ -462,7 +468,7 @@ public void setLabelText(String text) {
 
 `requestLayout()` 不保证自动补齐所有业务绘制状态，因此尺寸与像素都变化时可以同时调用两者。若文字变化但固定边界与现有基线能容纳新内容，只需重建文字布局并调用 `invalidate()`；是否调用 `requestLayout()` 由尺寸契约决定。
 
-#### 连续动画要有生命周期
+#### 连续动画的运行状态与停止
 
 在 `onDraw()` 中无条件调用 `invalidate()` 会持续请求后续帧，即使 View 不可见或动画已经完成。自绘动画可以使用 `postInvalidateOnAnimation()`，但必须有明确的运行状态，并在 detach、不可见或终止条件到达时停止。
 

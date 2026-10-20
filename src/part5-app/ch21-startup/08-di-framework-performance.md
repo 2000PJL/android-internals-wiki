@@ -18,8 +18,10 @@ related_chapters:
 - '21.3'
 - '8.2'
 - '1.16'
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 ActivityThread; Dagger/Hilt 2.60.1 source and current docs; Koin 4.2/4.2.2 docs and source; Android Developers Hilt and KSP docs updated through 2026-08-13
+last_verified: '2026-10-20'
+last_source_verified_at: '2026-10-20'
+last_idle_audit_at: '2026-10-20T18:40:10+08:00'
+last_verified_against: AOSP android-17.0.0_r1 ActivityThread; Dagger/Hilt dagger-2.60.1 source and official docs; Koin 4.2.2 source and 4.2 docs; Android Developers Hilt, KSP, AGP 9 and Profile docs checked 2026-10-20
 confidence: high
 sources:
 - type: aosp
@@ -32,6 +34,14 @@ sources:
   path: https://developer.android.com/training/dependency-injection/hilt-android
 - type: official
   path: https://insert-koin.io/docs/reference/koin-core/starting-koin, definitions, lazy-modules
+- type: upstream
+  path: https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core-coroutines/src/commonMain/kotlin/org/koin/core/KoinApplicationLazyExt.kt
+- type: upstream
+  path: https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/KoinApplication.kt
+- type: upstream
+  path: https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/jvmMain/kotlin/org/koin/core/context/GlobalContext.kt
+- type: upstream
+  path: https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/registry/InstanceRegistry.kt
 - type: official
   path: https://developer.android.com/build/migrate-to-ksp
 ---
@@ -121,7 +131,7 @@ Hilt 在 Application 注入时只提供 `Lazy` wrapper（包装器）；`Analyti
 | 边界 | Hilt 可能发生的工作 | 常见问题 |
 |---|---|---|
 | Android `ContentProvider` 安装 | `ContentProvider` 通过 entry point 访问 `SingletonComponent` | component 被提前创建，重 binding 进入 `ContentProvider` 路径 |
-| `super.onCreate()` | 创建 SingletonComponent、注入 Application | Application 直接字段拉起整条依赖链 |
+| `super.onCreate()` | 按需创建 `SingletonComponent`、注入 Application | Application 直接字段拉起整条依赖链 |
 | Application 用户代码 | 调用已经注入的服务 | `Lazy.get()` 被过早调用，延迟形同虚设 |
 | 首个 Activity 创建 | ActivityComponent 与成员注入 | 首屏字段过多、构造函数做 I/O |
 | 首个 ViewModel 请求 | HiltViewModelFactory、ViewModelComponent、SavedStateHandle | 首屏 ViewModel 构造和 repository 初始化偏重 |
@@ -156,9 +166,11 @@ Koin 4.2 还提供 Compiler Plugin，可在编译期自动连接构造参数并�
 1. `startKoin { modules(...) }` 创建 `KoinApplication`，注册 `GlobalContext`（供全局 API 查找的 Koin 实例），再载入 module definitions 和配置。
 2. 第一次 `get()` 解析 definition 并执行构造 lambda；之后是否缓存由 `single`、`factory`（每次请求创建）、scope 和参数决定。
 
-`single` 默认在首次解析时创建。`createdAtStart = true` 只负责标记 eager singleton；标准 `startKoin` 会在配置注册完后自动调用 `createEagerInstances()`，一次性创建所有带该标记的实例。直接使用 `KoinApplication` 或后续加载 module 时也可以显式控制这一步。优化时应先删除没有业务必要的 `createdAtStart`。
+`single` 默认在首次解析时创建。`createdAtStart = true` 只负责标记 eager singleton；标准 `startKoin` 会在配置注册完后自动调用 `createEagerInstances()`，创建此时已注册的 eager 实例。直接使用 `KoinApplication` 或后续加载 module 时也可以显式控制这一步。优化时应先删除没有业务必要的 `createdAtStart`。
 
 Koin 4.2 的 `lazyModules()` 会用协程在后台载入 module；多个 lazy module 从 4.2.0 起各用一个协程并行加载，默认 dispatcher 是 `Dispatchers.Default`。`waitAllStartJobs()` 会阻塞等待，`awaitAllStartJobs()` 则挂起等待；在主线程调用前者可能把成本重新放回启动关键路径。
+
+`lazyModules()` 在启动时便开始后台注册，不会等到功能首次使用。它只把模块注册移到后台；未标记为 eager 的 `single` 仍在首次请求它的线程中构造。lazy module 中应避免使用 `createdAtStart`：`startKoin` 末尾的 eager 创建不会自动等待后台注册，尚未载入的依赖定义可能错过这一步，不能依赖这个组合完成后台预初始化。
 
 同步 module 若依赖尚未载入的 lazy module，解析可能失败，Koin 目前也不会自动校验这种跨边界依赖。适合延迟的是依赖边界清晰且首屏不会访问的 feature，不能机械地把所有 module 移进后台。详细限制见 [Lazy Modules and Background Loading](https://insert-koin.io/docs/reference/koin-core/lazy-modules/)。
 
@@ -237,7 +249,7 @@ override fun onCreate() {
 }
 ```
 
-第一段包含 Hilt component 创建和 Application 成员注入，第二段包含用户显式调用。还应给重 `@Provides`、Koin `startKoin`、首个 `get()`、首屏 ViewModel 构造分别加点，才能定位移动后的成本。
+第一段覆盖默认 Hilt Application 的成员注入；只有 `SingletonComponent` 尚未创建时，组件创建才计入这一段。若启动阶段的 `ContentProvider` 已通过 entry point 创建组件，这部分耗时发生在 `Application.onCreate()` 之前，需要在对应 `ContentProvider` 的访问处另加 trace section。第二段覆盖用户显式初始化。还应给重 `@Provides`、Koin `startKoin`、首个 `get()`、首屏 ViewModel 构造分别加点，才能定位移动后的成本。
 
 测量口径：
 
@@ -299,3 +311,7 @@ DI 框架本身只是对象图的承载方式，启动成本取决于哪个入�
 - [Koin modules](https://insert-koin.io/docs/reference/koin-core/modules/)
 - [Koin definitions](https://insert-koin.io/docs/reference/koin-core/definitions/)
 - [Koin lazy modules](https://insert-koin.io/docs/reference/koin-core/lazy-modules/)
+- [`KoinApplicationLazyExt`（4.2.2）：后台注册入口](https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core-coroutines/src/commonMain/kotlin/org/koin/core/KoinApplicationLazyExt.kt)
+- [`KoinApplication`（4.2.2）：模块注册与 eager 创建分离](https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/KoinApplication.kt)
+- [`GlobalContext`（4.2.2）：`startKoin` 的 eager 调用顺序](https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/jvmMain/kotlin/org/koin/core/context/GlobalContext.kt)
+- [`InstanceRegistry`（4.2.2）：已注册 eager 实例的创建](https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/registry/InstanceRegistry.kt)

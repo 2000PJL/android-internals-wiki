@@ -7137,6 +7137,48 @@
       "summary": "WebGPU 缺少发布文档警告与依赖迁移适用边界",
       "type": "lifecycle-boundary",
       "updated_at": "2026-10-20T12:40:05.904737+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "已恢复 POWER_MONITOR_TYPE_MEASUREMENT；Android 17 PowerMonitor.java:52–58 与官方 API35 文档一致，并在真实 android-35/android.jar 上通过 Kotlin 常量探针和原示例编译。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261020-140520-cef5f614",
+      "created_at": "2026-10-20T14:08:30.514451+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261020-140520-cef5f614",
+      "details": "§7.3 将 POWER_MONITOR_TYPE_MEASUREMENT 写成含中文释义的无效标识符。Android 17 PowerMonitor.java:52–58 与 API 35 官方文档均定义完整常量，measurement 不涉及 EAS。需恢复精确常量并验证 API 级别及设备相关边界。",
+      "id": "finding-79376c763394",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/os/PowerMonitor",
+        "frameworks/base/core/java/android/os/PowerMonitor.java"
+      ],
+      "status": "fixed",
+      "summary": "PowerMonitor measurement 常量被无关 EAS 释义拆断",
+      "type": "invalid-api-identifier",
+      "updated_at": "2026-10-20T14:13:14.912465+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md",
+      "close_note": "§6.2 直接使用 BatteryUsageStatsProvider 类名，§Battery Saver 明确为 location provider（位置提供方）；分别核对 Android17 BatteryUsageStatsProvider:286–287 与 PowerManager:1184–1199，避免将电量统计或定位对象错解为另一类提供方。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261020-140520-cef5f614",
+      "created_at": "2026-10-20T14:14:53.114752+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261020-140520-cef5f614",
+      "details": "§6.2 将 BatteryUsageStatsProvider 的 provider 错释为位置提供方，Battery Saver 定位模式又将 location provider 错释为策略提供方。已按 BatteryUsageStatsProvider 中 mPowerAttributor.estimatePowerConsumption() 的委托调用和 PowerManager.LOCATION_MODE_* 注释分别校正。",
+      "id": "finding-a5ee221faf19",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "frameworks/base/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java",
+        "frameworks/base/core/java/android/os/PowerManager.java"
+      ],
+      "status": "fixed",
+      "summary": "provider 释义混淆电量统计提供方与定位提供方",
+      "type": "terminology-context-error",
+      "updated_at": "2026-10-20T14:14:53.168471+08:00"
     }
   ],
   "schema_version": 1

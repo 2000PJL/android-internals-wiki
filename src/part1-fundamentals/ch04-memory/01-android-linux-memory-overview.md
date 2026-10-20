@@ -4,9 +4,9 @@ chapter: '4.1'
 section: '4.1'
 status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-10-19'
-verification_scope_note: '2026-10-19 定点复核 THP/mTHP 映射、按尺寸策略、defrag 与 MADV_COLLAPSE 边界、迁移类型及 onTrimMemory 的 API 34/35 生命周期说明；2026-10-18 定点复核 RSS/fault-around、Scudo/COW、ART 栈函数、保存状态、Perfetto 堆图及 MGLRU/SLUB；2026-10-17 的 ART 页释放、文件预取、MADV_COLD、匿名缺页/rmap 与 Debug.MemoryInfo 核验范围保留，其余来源沿用各段已有核验范围。'
-last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article / source-index material juejin-android 2026-10-09 Memory Limiter exemption article / Android common kernel android17-6.18-2026-06_r6 THP transhuge.rst+huge_memory.c+mmzone.h+compaction.c (retrieved 2026-10-19)
+last_verified: '2026-10-20'
+verification_scope_note: '2026-10-20 定点复核 ZRAM mm_stat 的同值页、难压缩页、回写与内存池成本边界，以及 bd_stat 的固定 4 KiB 单位；限定 DMA-BUF 跨进程重复计算的共享条件；2026-10-19 定点复核 THP/mTHP 映射、按尺寸策略、defrag 与 MADV_COLLAPSE 边界、迁移类型及 onTrimMemory 的 API 34/35 生命周期说明；2026-10-18 定点复核 RSS/fault-around、Scudo/COW、ART 栈函数、保存状态、Perfetto 堆图及 MGLRU/SLUB；2026-10-17 的 ART 页释放、文件预取、MADV_COLD、匿名缺页/rmap 与 Debug.MemoryInfo 核验范围保留，其余来源沿用各段已有核验范围。'
+last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article / source-index material juejin-android 2026-10-09 Memory Limiter exemption article / Android common kernel android17-6.18-2026-06_r6 THP transhuge.rst+huge_memory.c+mmzone.h+compaction.c (retrieved 2026-10-19) / Android common kernel android17-6.18-2026-06_r6 ZRAM zram.rst+zram_drv.c and DMA-BUF sharing docs (retrieved 2026-10-20)
 confidence: medium-high
 sources:
 - type: official
@@ -165,7 +165,11 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/transhuge.rst
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/huge_memory.c
-last_source_verified_at: '2026-10-19'
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/blockdev/zram.rst
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/block/zram/zram_drv.c
+last_source_verified_at: '2026-10-20'
 last_deep_review_at: '2026-10-19T08:37:07+08:00'
 tags:
   - android-memory
@@ -586,18 +590,29 @@ adb shell cat /proc/swaps
 adb shell cat /sys/block/zram0/mm_stat
 ```
 
-Linux 6.18 的 `mm_stat` 依次提供这些核心字段：
+Linux 6.18 的 `mm_stat` 按以下顺序输出字段；大小字段以字节计，页统计以基础页为单位：
 
-- `orig_data_size`：ZRAM 中数据的未压缩大小；
-- `compr_data_size`：压缩数据大小；
-- `mem_used_total`：ZRAM 分配器消耗的 RAM，包含碎片和元数据；
-- `mem_limit`、`mem_used_max`：内存限制与历史峰值；
-- `same_pages`、`pages_compacted`：相同页优化与内存压实结果；
-- `huge_pages`、`huge_pages_since`：难压缩页统计。
+- `orig_data_size`：已存数据按未压缩页大小计算的逻辑量，包含同值填充页和仍占用逻辑槽位的回写页；
+- `compr_data_size`：当前留在 ZRAM 对象内存池中的数据大小，包含以原大小存放的难压缩页；
+- `mem_used_total`：对象内存池占用的 RAM，包含池内碎片等开销；
+- `mem_limit`、`mem_used_max`：对象内存池的 RAM 限制与历史峰值；
+- `same_pages`、`pages_compacted`：同值填充页数量、内存池压实累计释放的页数；
+- `huge_pages`、`huge_pages_since`：当前与自设备初始化以来累计的难压缩页数，这里的 `huge` 与 THP 无关。 [已验证: android17-6.18-2026-06_r6 `Documentation/admin-guide/blockdev/zram.rst`；`drivers/block/zram/zram_drv.c` `mm_stat_show()`、`write_same_filled_page()`、`write_incompressible_page()`]
 
-数据压缩比看 `orig_data_size / compr_data_size` 这个比值；ZRAM 对物理 RAM 的成本看 `mem_used_total`。`compr_data_size` 小于 `mem_used_total` 很常见，因为后者包含分配器碎片和元数据。
+`orig_data_size / compr_data_size` 可以作为设备层面的容量比，计算前要确认分母非零。它同时受压缩算法、数据内容、同值页优化和回写影响：同值填充页只保存填充值，不分配数据对象；回写完成会释放池内对象、扣减 `compr_data_size`，但仍保留逻辑槽位。比值升高时，不能直接归因于压缩算法改善。 [已验证: android17-6.18-2026-06_r6 `zram_drv.c` `write_same_filled_page()`、`zram_writeback_complete()`]
 
-ZRAM 用量高只说明更多匿名页已经进入压缩交换空间。系统是否陷入内存抖动，还要观察 PSI、换入换出、回收扫描、CPU 压缩开销和前台延迟——这些结论单次 `SwapTotal - SwapFree` 给不出来。
+`mem_used_total` 适合观察对象内存池的 RAM 成本，与 `compr_data_size` 对照可看出池内分配开销；它未计入单独分配的槽位表，不能代表整个 ZRAM 驱动的 RAM 成本。r6 的 `mm_stat_show()` 从 `zs_get_total_pages()` 取值，而 `zram_meta_alloc()` 另用 `vzalloc()` 分配槽位表。 [已验证: android17-6.18-2026-06_r6 `zram_drv.c` `mm_stat_show()`、`zram_meta_alloc()`]
+
+核对回写时，可继续读取以下节点。它们依赖 `CONFIG_ZRAM_WRITEBACK`，访问还受设备权限限制；以下命令只读取配置与统计，不会启用回写：
+
+```bash
+adb shell cat /sys/block/zram0/backing_dev
+adb shell cat /sys/block/zram0/bd_stat
+```
+
+`backing_dev` 用于确认后备设备配置，`bd_stat` 依次给出后备设备占用量、累计读取量和累计写入量。三项均按 4 KiB 为单位计数，换算字节时乘以 4096；即使基础页为 16 KiB，也不能改乘运行时页大小。结合前后快照，才能区分对象内存池变化与后备存储 I/O。 [已验证: android17-6.18-2026-06_r6 `Documentation/admin-guide/blockdev/zram.rst` `bd_stat`；`zram_drv.c` `bd_stat_show()` 与 `FOUR_K()`]
+
+判断系统是否陷入内存抖动，还要观察 PSI、换入换出、回收扫描、CPU 压缩开销和前台延迟。单次 `SwapTotal - SwapFree` 或一个容量比都不足以支持这一结论。
 
 ### 用 Perfetto 把“数值”变成“时间线”
 
@@ -734,6 +749,7 @@ ZRAM 本身是匿名页回收策略的一部分，风险主要来自持续换入
 - [Arm MTE 开发指南](https://developer.android.com/ndk/guides/arm-mte)
 - [Linux 6.18 cgroup v2 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)
 - [Linux 6.18 ZRAM 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/blockdev/zram.rst)
+- [Android 17 kernel ZRAM 统计与回写实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/block/zram/zram_drv.c)
 - [Perfetto `ProcessStatsConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/process_stats/process_stats_config.proto)
 - [Perfetto `SysStatsConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/sys_stats/sys_stats_config.proto)
 - [Perfetto `JavaHprofConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/java_hprof_config.proto)
@@ -1168,7 +1184,7 @@ D 状态只是不可中断睡眠，来源很多，而且直接回收也可能正
 
 #### “应用持有 100 MiB DMA-BUF，就独占 100 MiB RAM”
 
-持有 fd 或 VMA 只是“引用”：共享者、导出方、驻留状态和设备映射仍要逐项核对，跨进程直接求和一定重复计算。
+持有 fd 或 VMA 只说明存在引用，共享者、导出方、驻留状态和设备映射仍要逐项核对。同一缓冲区被多个进程引用时，跨进程直接求和会重复计算。
 
 ### 页分配与回收的源码与文档锚点
 

@@ -7019,6 +7019,9 @@
     },
     {
       "chapter": "11.1",
+      "close_note": "依据 AOSP android-17.0.0_r1 源码修复 §2.3：power_profile.xml 第147–190行明确为 Cellular modem/<modem>/modem.controller.voltage，第124–137行为 Wi-Fi controller 参数；PowerProfile.java 第102–122行列出 Wi-Fi、Bluetooth、modem controller 键。证据：https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/xml/power_profile.xml#147 ；https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/PowerProfile.java#102 。标题改为「2.3 modem、Wi-Fi 与 Bluetooth 的 controller 数据」，仅删除错误注入的「授权模式」括注，其余正文及括注未改。已核对 XML 第21–29行 OEM 实测要求、Java 第136–160行 legacy Bluetooth 弃用标记；未增加公开 API 或设备能力保证。元数据、SUMMARY 链接、diff-check 与新增正文文风门均通过；状态退回 ready-for-review，不作全篇重新定稿。详见 logs/rework/2026-10-20-20261020-133520-rework-d4f62ead-rework.md。",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261020-133520-rework-d4f62ead",
       "created_at": "2026-10-20T10:45:39.523341+08:00",
       "created_by": "aiw-chinese-rewrite",
       "created_run_id": "20261020-103020-cn-rewrite-d4f62ead7a6eac52",
@@ -7029,10 +7032,10 @@
       "source_paths": [
         "src/part2-performance/ch11-power/01-android-power-model-system-optimization.md"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "标题 2.3 疑似历史括注注入损坏：modem 被写成 mode（授权模式）m，需人工确认后修复",
       "type": "content-quality",
-      "updated_at": "2026-10-20T10:45:39.523341+08:00"
+      "updated_at": "2026-10-20T13:38:55.392083+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md",

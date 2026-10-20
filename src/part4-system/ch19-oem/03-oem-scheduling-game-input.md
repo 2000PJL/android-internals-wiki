@@ -142,7 +142,9 @@ sched_ext、MUSCHED 和 Binder 的优先级传播，都会影响关键线程拿�
 
 ### 阅读前要分开的三件事
 
-拿到一台设备，我们要先分清三件事：内核有没有编译 sched_ext、当前有没有 BPF 调度器在运行、目标线程有没有被它接管。arm64 GKI（Generic Kernel Image，通用内核镜像） 配置里含有 `CONFIG_SCHED_CLASS_EXT=y`。sched_ext 是 Linux 的可扩展调度类，允许 eBPF（extended Berkeley Packet Filter） 程序提供普通任务的调度策略；eBPF 程序加载前要经过安全校验，再在内核中执行。这个配置只说明内核编译了 sched_ext，还说明不了设备当前加载了 BPF 调度器，也说明不了某个线程正由该调度器管理。
+拿到一台设备，我们要先分清三件事：内核有没有编译 sched_ext、当前有没有 BPF 调度器在运行、目标线程有没有被它接管。arm64 GKI（Generic Kernel Image，通用内核镜像）配置里含有 `CONFIG_SCHED_CLASS_EXT=y`。sched_ext 是 Linux 的可扩展调度类，允许 eBPF（extended Berkeley Packet Filter）程序提供普通任务的调度策略；eBPF 程序加载前要经过安全校验，再在内核中执行。
+
+这个配置只说明内核编译了 sched_ext。设备当前有没有加载 BPF 调度器、某个线程是否归它管，要靠后面两个层次来确认。
 
 具体排查时依次确认三个层次：
 
@@ -154,7 +156,7 @@ sched_ext、MUSCHED 和 Binder 的优先级传播，都会影响关键线程拿�
 
 ### sched_ext 在 Android CPU 调度栈中的位置
 
-应用创建的 Java 线程、native 线程（通常承载 C/C++ 代码）和 Binder 线程进入内核后，都以 `task_struct`（Linux 的任务数据结构） 表示。线程池、协程调度器和 WorkManager 决定工作怎样映射到线程；到了内核这一层，一个 runnable 的普通任务——工作已就绪，但可能仍在等 CPU——选哪颗 CPU、在队列里排第几、什么时候拿到运行时间，由 sched_ext 决定。两者处在不同层级。
+先看这些工作进了内核之后归谁管。应用创建的 Java 线程、native 线程（通常承载 C/C++ 代码）和 Binder 线程进入内核后，都以 `task_struct`（Linux 的任务数据结构）表示。线程池、协程调度器和 WorkManager 决定工作怎样映射到线程；到了内核这一层，一个 runnable 的普通任务——工作已就绪，但可能仍在等 CPU——选哪颗 CPU、在队列里排第几、什么时候拿到运行时间，由 sched_ext 决定。两者处在不同层级。
 
 Android 上还要同时观察以下机制：
 
@@ -183,15 +185,17 @@ flowchart TD
     Clamp["uclamp / thermal / policy limits"] --> Gov
 ```
 
-图中有两条相互关联的输出：任务何时在哪个 CPU 上运行，以及该 CPU 请求多高的性能。分析卡顿时，把调度 trace（时间线记录） 和频率、CPU 空闲状态、温控数据放到同一时间轴上看。
+图中有两条相互关联的输出：任务何时在哪个 CPU 上运行，以及该 CPU 请求多高的性能。我们分析卡顿时，要把调度 trace（时间线记录）和频率、CPU 空闲状态、温控数据放到同一时间轴上看。
 
 ### 从 GKI 编译能力到运行时启用
 
-`arch/arm64/configs/gki_defconfig` 明确设置 `CONFIG_SCHED_CLASS_EXT=y`。`init/Kconfig` 中的 `EXT_GROUP_SCHED` 依赖 `SCHED_CLASS_EXT && CGROUP_SCHED`，默认值为 `y`。因此 GKI 具备 sched_ext 及其 cgroup（control group，控制组） 相关接口。
+先看编译能力这一层：`arch/arm64/configs/gki_defconfig` 明确设置 `CONFIG_SCHED_CLASS_EXT=y`。`init/Kconfig` 中的 `EXT_GROUP_SCHED` 依赖 `SCHED_CLASS_EXT && CGROUP_SCHED`，默认值为 `y`。因此 GKI 具备 sched_ext 及其 cgroup（control group，控制组） 相关接口。
 
-编译能力要变成运行中的调度器，还差一步：用户空间 loader（负责加载 BPF 对象的程序） 负责加载 BPF 对象，并通过 BPF `struct_ops` 把调度器挂载进内核，`struct_ops` 允许 BPF 程序填充内核定义的操作表。启用成功后，内核保存 `ops.name`，切换符合条件的任务，并增加 `enable_seq`。调度器也会退出：loader 退出、触发内核调试按键序列 `SysRq-S`、检测到内部错误，或出现可运行任务长时间得不到调度（runnable task stall）时，sched_ext 会中止当前 BPF 调度器，把任务交还给 fair 调度类。
+编译能力要变成运行中的调度器，还差一步：用户空间 loader（负责加载 BPF 对象的程序）把 BPF 对象加载进来，再通过 `struct_ops` 把调度器挂载进内核——`struct_ops` 允许 BPF 程序填充内核定义的操作表。启用成功后，内核保存 `ops.name`，切换符合条件的任务，并增加 `enable_seq`。
 
-这个版本不支持原地更新正在运行的 `struct_ops`：`bpf_scx_update()` 返回表示“不支持该操作”的 `-EOPNOTSUPP`，升级策略需要解除挂载后重新加载。这个过程可能短暂经过 fair 调度类，性能实验应把切换窗口排除在稳定样本之外。
+调度器也会退出：loader 退出、触发内核调试按键序列 `SysRq-S`、检测到内部错误，或出现可运行任务长时间得不到调度（runnable task stall）时，sched_ext 会中止当前 BPF 调度器，把任务交还给 fair 调度类。
+
+这个版本不支持原地更新正在运行的 `struct_ops`：`bpf_scx_update()` 返回表示“不支持该操作”的 `-EOPNOTSUPP`，升级策略需要解除挂载后重新加载。这个过程可能短暂经过 fair 调度类，我们做性能实验时要把切换窗口排除在稳定样本之外。
 
 #### sysfs 的目录层级和字段含义
 
@@ -219,7 +223,7 @@ sched_ext 文档对接管范围给出了明确规则：
 
 full 模式下，普通应用线程的调度策略字段仍可能显示 `SCHED_NORMAL`。所以在 `/proc/<pid>/sched` 里搜字符串 `ext`，并不能可靠判断该线程是否正被 sched_ext 接管；我们要把 `state`、`switch_all`、调度器名称和目标线程策略放在一起看。
 
-partial 模式同样要看运行状态，节点名字本身说明不了问题：厂商节点 `partial_ctrl` 与 `SCX_OPS_SWITCH_PARTIAL` 是否一一对应，需要设备内核源码或运行时切换证据来回答。
+partial 模式同样要看运行状态：厂商节点 `partial_ctrl` 与 `SCX_OPS_SWITCH_PARTIAL` 是否一一对应，节点名字回答不了，需要设备内核源码或运行时切换证据。
 
 ### `struct sched_ext_ops`：回调有默认行为
 
@@ -279,17 +283,17 @@ CPU 只执行自己 local DSQ 中的任务。local DSQ 为空时，sched_ext 核
 - `SCX_DSQ_LOCAL`
 - `SCX_DSQ_LOCAL_ON | cpu`
 
-自定义 DSQ 可以采用 FIFO（first in, first out，先进先出），也可以用 `scx_bpf_dsq_insert_vtime()` 维护虚拟时间顺序，内置 DSQ 采用 FIFO。文档中的 `scx_bpf_dsq_insert()` 和 `scx_bpf_move_to_local()` 是该版本调度周期里的主要 BPF helper（内核提供给 BPF 程序调用的辅助函数），也就是内核开放给 BPF 程序调用的辅助函数。
+自定义 DSQ 可以采用 FIFO（first in, first out，先进先出），也可以用 `scx_bpf_dsq_insert_vtime()` 维护虚拟时间顺序；内置 DSQ 固定按 FIFO 处理。文档中的 `scx_bpf_dsq_insert()` 和 `scx_bpf_move_to_local()` 是该版本调度周期里的主要 BPF helper（内核提供给 BPF 程序调用的辅助函数）。
 
-`SCX_SLICE_DFL` 在该 tag 中为 20 ms，是调度器没有提供其他时间片（slice）时使用的默认值；它不是 Android 帧预算，也不保证任务连续运行 20 ms——更高优先级调度类、阻塞、抢占和策略自身的重新入队都可能提前结束本次运行。
+`SCX_SLICE_DFL` 在该 tag 中为 20 ms，是调度器没有提供其他时间片（slice）时使用的默认值。把它当 Android 帧预算，或者当作任务能连续运行 20 ms 的保证，都会出错——更高优先级调度类、阻塞、抢占和策略自身的重新入队都可能提前结束本次运行。
 
-`root/events` 里能看到 `BYPASS_DURATION`、`BYPASS_DISPATCH` 与 `BYPASS_ACTIVATE` 等内部事件计数，bypass 指内核暂时绕过 BPF 策略的处理过程。看到 bypass 字样也别顺势虚构出一个面向 BPF 程序公开的 `SCX_DSQ_BYPASS` 常量——公开内置 DSQ 列表里没有这个 ID。
+`root/events` 里能看到 `BYPASS_DURATION`、`BYPASS_DISPATCH` 与 `BYPASS_ACTIVATE` 等内部事件计数，bypass 指内核暂时绕过 BPF 策略的处理过程。看到 bypass 字样时，以公开内置 DSQ 列表为准——列表里并没有面向 BPF 程序的 `SCX_DSQ_BYPASS` 常量。
 
 sched_ext 还有进展保障与自动回退：可运行任务长时间得不到调度、BPF 程序触发错误或调度器异常退出时，内核会终止该策略并回到 fair 调度类。这能防止失效策略长期阻塞系统，但切换本身仍可能造成短时延迟波动。
 
 ### sched_ext 与 schedutil 的关系
 
-Android 17 6.18 把 sched_ext 的 CPU 性能目标值接入 schedutil。下面的精简源码用来说明 full 与 partial 模式的差别，来自该 tag 的 `kernel/sched/cpufreq_schedutil.c`。
+本基线内核已经把 sched_ext 的 CPU 性能目标值接入 schedutil。下面的精简源码用来说明 full 与 partial 模式的差别，来自该 tag 的 `kernel/sched/cpufreq_schedutil.c`。
 
 ```c
 static void sugov_get_util(struct sugov_cpu *sg_cpu, unsigned long boost)
@@ -322,9 +326,9 @@ Android common 内核在 sched_ext 核心实现中放置了一组 `android_vh_*`
 - 入队、迁移与时间片修正；
 - 调度 tick（周期性的调度时钟）处理与异常退出通知。
 
-这些 hook 允许厂商模块在指定触发点补充产品策略，而策略可以影响某些决定或状态流转，所以分析 Android 设备时不要假定同一个 BPF 程序在所有 OEM 内核上表现相同；hook 的数量和含义还会随 tag 变化，本文不把某个统计值当成稳定 ABI。
+这些 hook 允许厂商模块在指定触发点补充产品策略，而策略可以影响某些决定或状态流转，所以同一个 BPF 程序在不同 OEM 内核上的表现，要按设备分别验证；hook 的数量和含义还会随 tag 变化，某个统计值只在所属 tag 内有效。
 
-vendor hook 本身没有给出厂商策略。要确认 hook 上注册了什么实现，仍需厂商模块源码、符号信息、trace 或设备实验。
+vendor hook 只提供挂接点，厂商策略要另外找：确认 hook 上注册了什么实现，仍需厂商模块源码、符号信息、trace 或设备实验。
 
 #### 怎样看待 `hmbird_sched` 公开线索
 
@@ -344,7 +348,7 @@ GitHub 上的 `Wuzikh1/sched_ext` 仓库包含 `hmbird_sched_proc_main.c`，代�
 - 使用特定 SoC（系统级芯片）的设备都启用同一套调度算法；
 - 这些控制文件等同于完整 BPF `struct sched_ext_ops` 实现。
 
-高通、联发科或某个手机品牌的名称同样代替不了设备证据，量产状态要按内核 tag、固件版本和具体型号记录。
+量产状态要按内核 tag、固件版本和具体型号记录；高通、联发科或某个手机品牌的名称，只能当查找设备证据的起点。
 
 ### sched_ext 怎样影响前台交互
 
@@ -364,13 +368,13 @@ sched_ext 对体验的影响沿着四条路径传播。
 
 #### 调度类边界
 
-RT、DL 与 stop 调度类不属于 sched_ext 接管的普通任务范围。Android 的 RenderThread、音频线程或系统关键线程可能被系统框架或设备厂商设成不同策略，也可能带有 CPU 亲和性、uclamp 或 task profile。线程名相同并不保证调度属性相同。
+RT、DL 与 stop 调度类不属于 sched_ext 接管的普通任务范围。Android 的 RenderThread、音频线程或系统关键线程可能被系统框架或设备厂商设成不同策略，也可能带有 CPU 亲和性、uclamp 或 task profile。线程名相同，调度属性可能完全不同。
 
-迁移次数本身没有固定的好坏方向。减少跨 CPU cluster 的迁移可能降低 cache 失效与功耗，但把任务留在拥塞或降频的 CPU 上，会拉长 runnable latency（任务已就绪却等待 CPU 的时间）——任务已就绪却一直在等 CPU。所以要把等待时间、运行位置、频率和帧时间放在一起解释。
+迁移次数本身没有固定的好坏方向。减少跨 CPU cluster 的迁移可能降低 cache 失效与功耗，但把任务留在拥塞或降频的 CPU 上，会拉长 runnable latency（任务已就绪却等待 CPU 的时间）。所以要把等待时间、运行位置、频率和帧时间放在一起解释。
 
 ### 在设备上做只读核查
 
-下面的命令只读取内核能力、当前 sched_ext 状态和常见厂商节点，适合先建立设备事实表。
+我们先用一组只读命令建立设备事实表，覆盖内核能力、当前 sched_ext 状态和常见厂商节点。
 
 ```bash
 adb shell uname -r
@@ -386,7 +390,7 @@ done'
 adb shell 'ls -la /proc/hmbird_sched 2>/dev/null'
 ```
 
-解释输出时要保守：配置文件读不到可能是 `/proc/config.gz` 没开放，sysfs 读不到可能是调度器未运行、权限不足或路径未挂载，厂商目录存在也证明不了其中的主开关处于启用状态。若要读取节点内容，先确认操作为只读，并记录固件 build fingerprint（唯一标识系统构建版本的字符串），它唯一标识一次系统构建。
+解释输出时要保守：配置文件读不到，可能是 `/proc/config.gz` 没开放；sysfs 读不到，可能是调度器未运行、权限不足或路径未挂载；厂商目录存在，其中的主开关状态也要单独确认。若要读取节点内容，先确认操作为只读，并记录固件 build fingerprint（唯一标识系统构建版本的字符串）。
 
 建议为每台设备保存以下字段：
 
@@ -402,9 +406,9 @@ adb shell 'ls -la /proc/hmbird_sched 2>/dev/null'
 
 ### 用 Perfetto 验证影响
 
-一次有效的 trace 应覆盖 CPU 调度、CPU 频率、CPU 空闲状态、Binder、FrameTimeline 与温控相关数据。tracefs 是内核暴露跟踪事件的虚拟文件系统；若设备 tracefs 提供 `sched_ext/sched_ext_event` 或 `sched_ext/sched_ext_dump`，可以一并采集，是否可用取决于内核和权限。
+接下来用 trace 验证。一次有效的采集应覆盖 CPU 调度、CPU 频率、CPU 空闲状态、Binder、FrameTimeline 与温控相关数据。tracefs 是内核暴露跟踪事件的虚拟文件系统；若设备 tracefs 提供 `sched_ext/sched_ext_event` 或 `sched_ext/sched_ext_dump`，可以一并采集，是否可用取决于内核和权限。
 
-`sched_switch` 只记录线程切换，看不出“这次决策来自哪个 BPF 回调”，所以采集 trace 前后要同时保存 sched_ext sysfs 快照；设备若有厂商 tracepoint（预先定义的内核跟踪点）——内核预先定义的跟踪点——再用它补充策略原因。
+`sched_switch` 只记录线程切换，要回答“这次决策来自哪个 BPF 回调”，得靠采集 trace 前后同时保存的 sched_ext sysfs 快照；设备若有厂商 tracepoint（预先定义的内核跟踪点），再用它补充策略原因。
 
 下面的 SQL 用进程关系筛选主线程、RenderThread 和 Binder 线程，并统计相邻运行片落在不同 CPU 的次数。
 
@@ -442,7 +446,7 @@ GROUP BY t.tid, t.name
 ORDER BY adjacent_cpu_changes DESC;
 ```
 
-这条查询统计的是相邻 running slice 之间的 CPU 变化。running slice 指线程连续占用 CPU 的一段时间，所以这个统计不等同于内核迁移事件，也没有计算迁移成本，适合定位需要继续分析的线程。要下因果判断，还要补充 `thread_state` 中的 runnable 时长、从唤醒到运行的延迟、CPU 集群（cluster）分布、频率、空闲状态、Binder 等待和 FrameTimeline。
+这条查询统计的是相邻 running slice 之间的 CPU 变化。running slice 指线程连续占用 CPU 的一段时间，所以这个统计不等同于内核迁移事件，迁移成本也要另行测量，它适合定位需要继续分析的线程。要下因果判断，还要补充 `thread_state` 中的 runnable 时长、从唤醒到运行的延迟、CPU 集群（cluster）分布、频率、空闲状态、Binder 等待和 FrameTimeline。
 
 ### 对照实验怎样设计
 
@@ -455,7 +459,7 @@ ORDER BY adjacent_cpu_changes DESC;
 5. 同时评估帧时间、runnable latency、Binder 等待、CPU 时间、各频点停留时间、功耗和温度。
 6. 检查 `system_server`、SurfaceFlinger、后台任务与音频等同时运行的负载，避免局部收益掩盖系统退化。
 
-只能拿到只读设备时，可以比较同一场景下的不同固件，或同一 SoC 上不同的系统软件 ROM，但结论只能写成相关性——单次 trace、单个 proc 值或调度器名称，支撑不了性能因果。
+只能拿到只读设备时，可以比较同一场景下的不同固件，或同一 SoC 上不同的系统软件 ROM，但结论止于相关性——性能因果要回到上面的受控实验去证明，单次 trace、单个 proc 值或调度器名称都太单薄。
 
 ### 与 cpuset、affinity 和 uclamp 一起分析
 
@@ -474,22 +478,24 @@ task profile 可能同时改变 cpuset、uclamp 和其他 cgroup 属性。把上
 
 ### MUSCHED：从通用机制到量产 OEM 策略
 
-MUSCHED 是荣耀面向移动交互负载设计的语义感知调度框架，其中 VIP 是给交互关键任务添加的临时高优先级标签。项目从 2021 年开始研究，2024 年 1 月进入量产，2026 年以 OSDI 论文发表。它展示了 sched_ext 怎样从内核接口发展为产品策略，但论文没有公开实现源码。
+看完通用机制，再看厂商怎么把它做成产品。MUSCHED 是荣耀面向移动交互负载设计的语义感知调度框架，其中 VIP 是给交互关键任务添加的临时高优先级标签。项目从 2021 年开始研究，2024 年 1 月进入量产，2026 年以 OSDI 论文发表。它展示了 sched_ext 怎样从内核接口发展为产品策略，但论文没有公开实现源码。
 
-读这份材料时，依据要分三层：MUSCHED 架构、参数和实验结果以论文为准；通用 sched_ext 和 Binder 行为以 Android 17 内核为准；论文未说明的 `struct_ops` 选项位、私有 kfunc（开放给 BPF 程序调用的内核函数）、引用计数和固件配置，则留在未知一栏，不能从通用内核能力反推成产品事实。
+读这份材料时，依据要分三层：MUSCHED 架构、参数和实验结果以论文为准；通用 sched_ext 和 Binder 行为以 Android 17 内核为准；论文未说明的 `struct_ops` 选项位、私有 kfunc（开放给 BPF 程序调用的内核函数）、引用计数和固件配置，则留在未知一栏，等产品或设备证据来填——通用内核能力在这里反推不出产品事实。
 
 #### 语义标注与有界 VIP 服务
 
-先看问题本身：120 Hz 的显示周期约为 8.33 ms，一次触控可能依次唤醒主线程、RenderThread、窗口动画线程、Binder 服务线程和合成线程。单个线程只需运行很短时间，端到端路径却跨越多个进程和同步点。`nice` 值是 fair 调度类的权重输入；仅降低发起线程的 `nice` 值，不能让远端 Binder 线程或锁持有者一同加速。把大量线程改成实时策略 `SCHED_FIFO` / `SCHED_RR`，又会带来普通任务饥饿、功耗和温升风险。
+先看问题本身：120 Hz 的显示周期约为 8.33 ms，一次触控可能依次唤醒主线程、RenderThread、窗口动画线程、Binder 服务线程和合成线程。单个线程只需运行很短时间，端到端路径却跨越多个进程和同步点。
+
+`nice` 值是 fair 调度类的权重输入；仅降低发起线程的 `nice` 值，远端 Binder 线程或锁持有者不会跟着加速。把大量线程改成实时策略 `SCHED_FIFO` / `SCHED_RR`，又会带来普通任务饥饿、功耗和温升风险。
 
 MUSCHED 把工作分为两侧：
 
 - 用户空间识别启动、滑动、动画和窗口切换等场景，根据线程角色、离线 trace 和测试用户的卡顿 trace，更新 BPF Map 中的 VIP 候选、场景和生存时间。BPF Map 是 BPF 程序与用户空间或内核交换状态的数据结构。
 - 内核侧维护每 CPU VIP 队列，在没有可运行 RT 任务时先服务 VIP，再服务普通任务，并负责时间片、累计预算和跨 CPU 均衡。
 
-论文将有效顺序概括为 `RT > VIP > CFS`，其中 CFS 是论文所用 Linux 6.6 中的 Completely Fair Scheduler（完全公平调度器）。要记住 VIP 只是 MUSCHED 的产品策略：上游 Linux 并没有因此新增固定的 `sched_class`，也说明不了 Android 17 存在 `SCHED_VIP`。论文没有公开它采用 full 还是 partial 接管模式；前者可在 BPF 策略内把普通与 VIP 任务放入不同 DSQ，后者还需安全地将候选线程切换到 `SCHED_EXT`。
+论文将有效顺序概括为 `RT > VIP > CFS`，其中 CFS 是论文所用 Linux 6.6 中的 Completely Fair Scheduler（完全公平调度器）。要记住 VIP 只属于 MUSCHED 的产品策略：上游 Linux 没有因此新增固定的 `sched_class`，也说明不了 Android 17 存在 `SCHED_VIP`。论文没有公开它采用 full 还是 partial 接管模式；前者可在 BPF 策略内把普通与 VIP 任务放入不同 DSQ，后者还需安全地将候选线程切换到 `SCHED_EXT`。
 
-论文公开的队列策略是：每个 CPU 有一个 FIFO VIP 队列，单次时间片为 3 ms；时间片用完但累计预算仍有剩余时回到队尾，累计预算耗尽则临时撤销 VIP。Audio、Video、WebView 和 Display 的预算分别是 20 ms、10 ms、120 ms 和 20 ms。这些数值来自该实现对代表性负载的性能测量（profiling），不是 Android API，也不是可跨设备复制的默认值。
+论文公开的队列策略是：每个 CPU 有一个 FIFO VIP 队列，单次时间片为 3 ms；时间片用完但累计预算仍有剩余时回到队尾，累计预算耗尽则临时撤销 VIP。Audio、Video、WebView 和 Display 的预算分别是 20 ms、10 ms、120 ms 和 20 ms。这些数值来自该实现对代表性负载的性能测量（profiling），Android API 里没有对应项，跨设备复制前也要重新验证。
 
 #### 锁与 Binder 依赖传播
 
@@ -500,17 +506,19 @@ MUSCHED 把工作分为两侧：
 
 注意这些是 OEM 实现，并不能代表 Android 17 的普通锁已经具备相同语义。多级锁链、锁持有者退出、超时、信号中断、多个临时提升来源和环形依赖都需要实现级证据，而论文没有公开引用计数和环检测细节。
 
-Android 17 Binder 驱动已经会在同步事务中处理 Linux 调度策略与优先级（policy/prio），保存服务线程原值，并在回复、失败或线程重新等待进程工作时恢复。MUSCHED 的 VIP 是自有状态，Binder 默认路径不会自动复制它。论文说明了同步事务上的 VIP 传播，但没有公开它使用 vendor hook、tracepoint、kfunc，还是私有 Binder 改动。单向的 oneway（单向、无需回复） 事务、嵌套调用 `A → B → C`、线程池复用、事务失败和调用方死亡，都必须单独验证标签的添加与撤销时机。
+Android 17 Binder 驱动已经会在同步事务中处理 Linux 调度策略与优先级（policy/prio），保存服务线程原值，并在回复、失败或线程重新等待进程工作时恢复。MUSCHED 的 VIP 是自有状态，Binder 默认路径不会自动复制它。
+
+论文说明了同步事务上的 VIP 传播，但没有公开它使用 vendor hook、tracepoint、kfunc，还是私有 Binder 改动。单向的 oneway（单向、无需回复）事务、嵌套调用 `A → B → C`、线程池复用、事务失败和调用方死亡，都必须单独验证标签的添加与撤销时机。
 
 #### 选核、负载均衡与产品证据
 
-MUSCHED 先选空闲且允许运行的 CPU；找不到时，选择没有 RT/VIP 任务的 CPU；仍找不到时，选择没有 RT 且 VIP 较少的 CPU。论文的产品实现还会扫描 performance cores（性能核），但“大核优先”不能外推到其他 SoC——CPU 容量、亲和性、温控造成的容量折减和空闲状态都会改变结果。
+MUSCHED 先选空闲且允许运行的 CPU；找不到时，选择没有 RT/VIP 任务的 CPU；仍找不到时，选择没有 RT 且 VIP 较少的 CPU。论文的产品实现还会扫描 performance cores（性能核），但“大核优先”止步于论文条件——CPU 容量、亲和性、温控造成的容量折减和空闲状态都会改变结果。
 
-负载均衡同时包含两个方向：空闲 CPU 从其他 CPU 的 runqueue 拉取任务（pull），方向是 pull；周期性调度时钟（tick） tick 发现当前 CPU 正在运行 RT 任务、另有 VIP 已等待超过 4 ms 时，把 VIP 推向其他 CPU，方向是 push。4 ms 是论文样机与 120 Hz 场景下的调优点，不是 sched_ext 常量。
+负载均衡同时包含两个方向：空闲 CPU 从其他 CPU 的 runqueue 拉取任务（pull）；周期性调度时钟（tick）发现当前 CPU 正在运行 RT 任务、另有 VIP 已等待超过 4 ms 时，把 VIP 推向其他 CPU，方向是 push。4 ms 是论文样机与 120 Hz 场景下的调优点，不是 sched_ext 常量。
 
-论文的实验室环境是荣耀 Magic7、Snapdragon 8 Elite、MagicOS 9、Android 15 和 Linux 6.6。10 个应用各测试 100 次：冷启动平均时间降低 14.8%，标准差降低 24.25%；VIP 任务的睡眠时间和可运行等待时间分别降低 71.8% 与 52.6%；与画中画（PiP） PiP 视频通话并发时，前台场景响应延迟降低 9.8%～22.8%。这些数字只覆盖论文条件。
+论文的实验室环境是荣耀 Magic7、Snapdragon 8 Elite、MagicOS 9、Android 15 和 Linux 6.6。10 个应用各测试 100 次：冷启动平均时间降低 14.8%，标准差降低 24.25%；VIP 任务的睡眠时间和可运行等待时间分别降低 71.8% 与 52.6%；与画中画（PiP）视频通话并发时，前台场景响应延迟降低 9.8%～22.8%。这些数字只覆盖论文条件。
 
-论文还报告了自 2024 年 1 月起覆盖超过 2,000 万台设备的量产统计。按每千小时用户使用时间计算，动画、滑动和启动异常次数分别从 27.2、10.5、94.5 降到 20.4、6.8 和 65.5。论文未公开设备分层、实验分桶和置信区间，这些数据只能视为产品证据，不能当作通用基准。论文没有“触控到显示最高降低 31%”或“消除 92% 掉帧”的结论。
+论文还报告了自 2024 年 1 月起覆盖超过 2,000 万台设备的量产统计。按每千小时用户使用时间计算，动画、滑动和启动异常次数分别从 27.2、10.5、94.5 降到 20.4、6.8 和 65.5。论文未公开设备分层、实验分桶和置信区间，这些数据只能视为产品证据，通用基准要用别处的数据。论文里也找不到“触控到显示最高降低 31%”或“消除 92% 掉帧”的结论。
 
 #### 量产成本与 Android 17 迁移
 
@@ -525,7 +533,7 @@ MUSCHED 先选空闲且允许运行的 CPU；找不到时，选择没有 RT/VIP 
 - Binder 同步、嵌套、失败、单向事务与线程池复用时的标签生命周期；
 - futex、mutex、rwsem 的锁持有者追踪，以及 BPF loader、BTF（BPF Type Format，BPF 类型信息）、kfunc、SELinux 安全策略和 watchdog（检测调度器失去进展的看门狗）回退。
 
-MUSCHED、ADPF 和 Game Mode 分别位于不同控制层：MUSCHED 使用 OEM 场景信息与线程依赖，ADPF Hint Session（性能提示会话）报告应用的周期性工作，Game Mode 表达用户或游戏选择的模式。论文没有给普通应用提供可调用的 MUSCHED VIP SDK；应用团队可以使用公开 API、减少关键窗口的排队与持锁，并在目标设备上验证多种策略同时生效时的先后关系。
+MUSCHED、ADPF 和 Game Mode 分别位于不同控制层：MUSCHED 使用 OEM 场景信息与线程依赖，ADPF Hint Session（性能提示会话）报告应用的周期性工作，Game Mode 表达用户或游戏选择的模式。论文没有给普通应用提供可调用的 MUSCHED VIP SDK；应用团队能做的是使用公开 API、减少关键窗口的排队与持锁，并在目标设备上验证多种策略同时生效时的先后关系。
 
 ### sched_ext 与 MUSCHED 的工程结论
 
@@ -534,7 +542,7 @@ MUSCHED、ADPF 和 Game Mode 分别位于不同控制层：MUSCHED 使用 OEM �
 - `select_cpu()`、`enqueue()` 和 `dispatch()` 都有可以省略的场景。分析 BPF 程序时，应根据调度器使用的 DSQ 和 BPF helper 判断缺失回调是否合理。
 - 本基线的 schedutil 已使用 sched_ext 的 CPU 性能目标值，并在 full 与 partial 模式采用不同的 fair 利用率组合逻辑。
 - Android vendor hook 可能改变调度细节；同一套上游机制在不同设备上可能表现不同。
-- 第三方 `hmbird_sched` 文件只能证明一组公开控制节点的线索，不能替代 OEM 官方源码、量产固件状态或 BPF 策略实现。
+- 第三方 `hmbird_sched` 文件只能当一组公开控制节点的线索；OEM 官方源码、量产固件状态和 BPF 策略实现要另外取证。
 - MUSCHED 证明语义标注、有界 VIP 预算和依赖传播可在量产中组合，但它不是 Android 17 默认能力，论文也不足以还原私有实现。
 - 应用团队通常无法控制 sched_ext。可以做的是减少关键窗口的 runnable 竞争、记录完整线程属性，并用包含多类信号的 trace 识别设备侧差异。
 
@@ -545,14 +553,14 @@ MUSCHED、ADPF 和 Game Mode 分别位于不同控制层：MUSCHED 使用 OEM �
 
 “打开游戏模式后触控更跟手”只描述了体验；要判断 InputDispatcher 是不是给游戏设置了专属优先级，还得回到源码。AOSP 的 Game Mode、InputDispatcher 和窗口刷新率实现里，没有公开的“游戏事件优先队列”。
 
-体验改善可能来自触控控制器采样、驱动与固件、输入分发、线程调度、CPU/GPU 频率、渲染队列、刷新率或显示扫描——触控控制器也常写作 touch IC，指触摸屏中负责采样与上报触点的芯片。各阶段都可能缩短从触摸到画面更新的总时间，也可能因后续等待而抵消。排查时我们要回答两个问题：
+体验改善可能来自触控控制器采样、驱动与固件、输入分发、线程调度、CPU/GPU 频率、渲染队列、刷新率或显示扫描中的任何一段；触控控制器也常写作 touch IC，指触摸屏中负责采样与上报触点的芯片。各阶段都可能缩短从触摸到画面更新的总时间，也可能因后续等待而抵消。排查时我们要回答两个问题：
 
 1. 延迟减少发生在哪一段？
 2. 这一变化来自 AOSP 标准机制、OEM 私有实现，还是游戏自身策略？
 
 ### 先建立端到端输入路径
 
-一次触摸变成屏幕上的画面反馈，要经过多段处理：
+我们先把路径铺开。一次触摸变成屏幕上的画面反馈，要经过多段处理：
 
 - 触控控制器按固件策略采样、滤波并上报；
 - 内核驱动生成 evdev 事件；evdev 是 Linux 向用户空间提供输入事件的设备接口；
@@ -580,13 +588,13 @@ flowchart LR
     Rate["frame-rate vote / display policy"] --> SF
 ```
 
-“输入分发延迟”通常只覆盖 InputDispatcher 发出事件到应用接收或返回 ACK 确认回执的阶段；“触摸到显示延迟”还包括游戏逻辑、渲染、合成，直到关联画面完成 present。两种指标的终点不同，报告中不要混用。
+“输入分发延迟”通常只覆盖 InputDispatcher 发出事件到应用接收或返回 ACK 确认回执的阶段；“触摸到显示延迟”还包括游戏逻辑、渲染、合成，直到关联画面完成 present。两种指标的终点不同，报告中要分开写。
 
 ### AOSP Game Mode 提供了什么
 
 Game Mode API 和相关干预机制在部分 Android 12 设备上可用；从 Android 13 起，该能力面向运行 Android 13 及以上的设备提供。官方文档要求游戏每次从暂停状态恢复时重新调用 `GameManager#getGameMode()`，因为用户可能在暂停期间切换 Standard、Performance 或 Battery 模式。游戏可据此调整画质、目标帧率和资源使用。
 
-游戏模式干预（Game Mode interventions）是设备厂商为未自行适配的游戏设置的系统侧优化，可包含帧率上限（FPS throttling） FPS throttling 和分辨率缩放。游戏声明支持某个 Game Mode 后，需要自行完成对应优化；平台会清除此前针对该模式施加的厂商干预，避免两套策略冲突。这类干预没有定义输入事件的调度顺序。
+游戏模式干预（Game Mode interventions）是设备厂商为未自行适配的游戏设置的系统侧优化，可包含帧率上限（FPS throttling）和分辨率缩放。游戏声明支持某个 Game Mode 后，需要自行完成对应优化；平台会清除此前针对该模式施加的厂商干预，避免两套策略冲突。这类干预没有定义输入事件的调度顺序。
 
 #### `GAME` 与 `GAME_LOADING` 是 Power HAL 信号
 
@@ -607,11 +615,11 @@ if (boostEnabled) {
 }
 ```
 
-注意这段代码只向 PowerManager 传递电源模式，没有调用 InputDispatcher，也没有改触摸事件的队列顺序。设备厂商可以在 Power HAL 收到 `GAME` 或 `GAME_LOADING` 后提高 CPU 时钟频率或前台游戏任务的 CPU 调度优先级，这些都属于性能、温控与功耗策略。
+注意这段代码只向 PowerManager 传递电源模式，InputDispatcher 和触摸事件的队列顺序都保持原样。设备厂商可以在 Power HAL 收到 `GAME` 或 `GAME_LOADING` 后提高 CPU 时钟频率或前台游戏任务的 CPU 调度优先级，这些都属于性能、温控与功耗策略。
 
 AOSP 的 Power HAL 文档把“提高前台游戏应用的 CPU 优先级”列为设备厂商可选措施之一。它可能让游戏线程更快获得 CPU 时间，却不会让 InputDispatcher 中的游戏事件自动插到其他事件前面。
 
-### InputDispatcher 没有 Game Mode 分支
+### InputDispatcher 的事件目标选择
 
 `InputDispatcher.cpp` 不依赖 `GameManager`、`GAME_MODE_PERFORMANCE` 或游戏包名，它根据事件类型选择目标：
 
@@ -650,7 +658,7 @@ sp<WindowInfoHandle> DispatcherWindowInfo::findTouchedWindowAt(
 
 `InputTarget::Flags::FOREGROUND` 标识某个 `InputTarget` 是本次事件的主要前台目标。对于 `WAIT_FOR_FINISHED` 同步注入，InputDispatcher 会统计带该标志的待完成分发，并等待这些分发收到完成回执或被释放。`ACTION_OUTSIDE`、旁路观察窗口或壁纸窗口等附加目标可能不带该标志。
 
-这个标志来自窗口路由结果，描述的是输入目标角色；在跟踪记录或日志里看到 `FOREGROUND`，不要读成“前台游戏享有更高的 CPU 或队列优先级”，它也不对应 Game Mode Performance。
+这个标志来自窗口路由结果，描述的是输入目标角色；跟踪记录或日志里的 `FOREGROUND` 若被读成“前台游戏享有更高的 CPU 或队列优先级”就是误读，它与 Game Mode Performance 也对不上。
 
 #### 策略回调能做什么
 
@@ -658,13 +666,13 @@ sp<WindowInfoHandle> DispatcherWindowInfo::findTouchedWindowAt(
 
 这些接口不接收“游戏模式”参数，也没有通用的队列优先级字段。设备厂商可以维护自己的 framework 或 inputflinger 私有分支；若要判断某款设备是否在这里识别游戏并重排事件，需要厂商源码差异或跟踪数据支持。
 
-`notifyWindowUnresponsive()` 和 `notifyWindowResponsive()` 分别报告输入超时与恢复。前者通知系统窗口无响应，并启动 ANR 处理；后者只会在该窗口先被标记为无响应后调用，用于撤下可能存在的 ANR 对话框并允许以后重新检测。平台没有把 `notifyWindowResponsive()` 定义成游戏识别或输入重定向入口。
+`notifyWindowUnresponsive()` 和 `notifyWindowResponsive()` 分别报告输入超时与恢复。前者通知系统窗口无响应，并启动 ANR 处理；后者只会在该窗口先被标记为无响应后调用，用于撤下可能存在的 ANR 对话框并允许以后重新检测。平台把 `notifyWindowResponsive()` 定义为恢复通知，游戏识别或输入重定向都在它的职责之外。
 
-### 异步注入不等于零延迟
+### 异步注入的等待语义
 
 `InputManager.INJECT_INPUT_EVENT_MODE_ASYNC` 在 Android 17 对应 `InputEventInjectionSync.NONE`。调用需要系统级 `INJECT_EVENTS` 权限。InputDispatcher 仍会验证事件、执行策略回调、创建 `EventEntry`，再通过 `enqueueInboundEventLocked()` 放入入站队列 `mInboundQueue`。
 
-下面的片段按 Android 17 的控制流整理，省略了入队与判断之间的解锁、唤醒和重新加锁代码，用于说明异步模式改变的是调用方的等待行为。
+下面的片段按本基线的控制流整理，省略了入队与判断之间的解锁、唤醒和重新加锁代码，用于说明异步模式改变的是调用方的等待行为。
 
 ```cpp
 while (!injectedEntries.empty()) {
@@ -680,9 +688,9 @@ if (syncMode == InputEventInjectionSync::NONE) {
 
 `NONE` 让注入调用方在事件入队后直接拿到成功结果，不等待目标解析，也不等待应用处理完成。这个返回值只表示事件已被接受入队，证明不了它已经送达目标：事件随后仍要经过窗口选择、输入通道和应用消费，焦点、`targetUid` 所有权与安全条件都可能让事件交付失败。`INJECT_EVENTS` 权限则在进入这条路径前检查。
 
-所以异步注入当不了游戏触控提速方案，也谈不上“零排队”，它只是注入 API 的一种等待语义。肩键映射、连招宏或无障碍工具若合成新事件，还要测量从原始事件到合成事件之间新增的识别与转发时间。
+所以异步注入只是注入 API 的一种等待语义，游戏触控提速方案、“零排队”都谈不上。肩键映射、连招宏或无障碍工具若合成新事件，还要测量从原始事件到合成事件之间新增的识别与转发时间。
 
-### View 层拦截只作用于 App 内部
+### View 层拦截的作用范围
 
 传统 View 层中，父 `ViewGroup` 可以在 `onInterceptTouchEvent()` 中接管原本发给子 View 的手势。父容器开始拦截后，原目标子 View 会收到 `ACTION_CANCEL`，后续事件交给父容器。
 
@@ -702,7 +710,7 @@ if (!disallowIntercept) {
 
 它挡住的只有应用内部这一层：父 ViewGroup 接管当前序列的 `onInterceptTouchEvent()` 调用被跳过，而 InputDispatcher 的窗口目标选择、系统手势、窗口安全策略、受信任窗口的指针流接管和其他窗口的输入权限都不受影响。
 
-Unity、Unreal、GameActivity 或主要使用原生代码的游戏，常把输入交给引擎自己的队列。此时还要检查引擎读取输入的时机、事件合并，以及游戏逻辑更新周期（常称 tick） tick 与渲染帧怎样同步；ViewGroup 可能不在主要输入路径上。
+Unity、Unreal、GameActivity 或主要使用原生代码的游戏，常把输入交给引擎自己的队列。此时还要检查引擎读取输入的时机、事件合并，以及游戏逻辑更新周期（常称 tick）与渲染帧怎样同步；ViewGroup 可能不在主要输入路径上。
 
 ### 刷新率为什么会改变“跟手”感
 
@@ -739,7 +747,7 @@ Game Mode 还可能通过 FPS throttling 干预设置帧率上限；这种干预
 
 ### Android Game Service 的边界
 
-平台的 `GameService`、`GameSessionService` 和 `GameSession` 为设备厂商的游戏工具提供会话、受信任任务叠加层（overlay） overlay、截图和重启游戏等系统集成能力。这套控制接口要求 `MANAGE_GAME_ACTIVITY` 权限，由受信任的系统组件实现，普通应用没有这个入口。
+平台的 `GameService`、`GameSessionService` 和 `GameSession` 为设备厂商的游戏工具提供会话、受信任任务叠加层（overlay）、截图和重启游戏等系统集成能力。这套控制接口要求 `MANAGE_GAME_ACTIVITY` 权限，由受信任的系统组件实现，普通应用没有这个入口。
 
 Game Service 没有定义触摸优先级。游戏空间中的肩键映射、防误触、触控参数、插帧或网络功能，可能由预装系统应用、仅授予特权应用的权限、厂商后台守护进程、HAL 和内核接口共同完成。报告应按观察到的实现位置分别记录，整个游戏工具箱并不都归 `GameManager#getGameMode()` 管。
 
@@ -775,9 +783,11 @@ WHERE process_name = 'com.example.game'
 ORDER BY event_time;
 ```
 
-这张表能区分“系统交付慢”“应用处理慢”和“输入已经处理、关联画面却呈现较晚”。`end_to_end_latency_dur` 为空时不能填成零，它表示这份跟踪没有把输入事件关联到某个呈现帧。`is_speculative_frame` 为真时，帧关联还是推测结果，也应在报告中标注。
+这张表能区分“系统交付慢”“应用处理慢”和“输入已经处理、关联画面却呈现较晚”。`end_to_end_latency_dur` 为空时要原样保留，它表示这份跟踪没有把输入事件关联到某个呈现帧。`is_speculative_frame` 为真时，帧关联还是推测结果，也应在报告中标注。
 
-量产 user 构建开不了这套详细输入数据，此时可结合 FrameTimeline、CPU 调度与频率、空闲状态、电源模式、SurfaceFlinger、游戏自定义跟踪标记和 `dumpsys input` 辅助判断，只是拿不到同等精细的输入分段。`getevent -lt` 会持续读取输入设备，可能影响系统行为，它打印的原始 evdev 事件时间戳也不同于终端输出时刻；这条命令适合在实验室短时检查报点间隔，拿来直接算触摸到显示延迟并不合适。
+量产 user 构建要走另一条路：结合 FrameTimeline、CPU 调度与频率、空闲状态、电源模式、SurfaceFlinger、游戏自定义跟踪标记和 `dumpsys input` 辅助判断，输入分段会粗一些。
+
+`getevent -lt` 会持续读取输入设备，可能影响系统行为，它打印的原始 evdev 事件时间戳也不同于终端输出时刻；这条命令适合在实验室短时检查报点间隔，直接拿来算触摸到显示延迟就超出了它的适用范围。
 
 ### A/B 实验怎样组织
 

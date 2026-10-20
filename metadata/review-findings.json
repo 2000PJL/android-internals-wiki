@@ -7200,6 +7200,49 @@
       "summary": "WindowCompat.enableEdgeToEdge 的图标与三键导航保护行为归因错误",
       "type": "api-behavior-mismatch",
       "updated_at": "2026-10-20T14:39:38.364148+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "close_note": "已将 eager 创建限定为当时已注册的实例，补充 lazyModules 立即后台注册、single 在首次请求线程构造及 createdAtStart 可能错过 eager 阶段的边界；4.2.2 固定源码与官方 warning 逐项核验，本地 metadata、summary-links、diff-check 和全文/新增行风格检查通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261020-183520-idle-audit-ec4484f9",
+      "created_at": "2026-10-20T18:38:51.803865+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261020-183520-idle-audit-ec4484f9",
+      "details": "正文把 startKoin 的 eager 创建描述为覆盖所有标记实例，却未限定已经注册；lazyModules 只把模块注册移到后台，首次 single 构造仍在请求线程。Koin 4.2 官方文档明确警告 lazy module 的 createdAtStart 可能错过 startKoin 末尾 eager 阶段；4.2.2 固定源码确认后台任务仅调用 modules(m.value)，内部 createEagerInstances=false。",
+      "id": "finding-be81d334a45e",
+      "log_path": "logs/audit/2026-10-20-20261020-183520-idle-audit-ec4484f9-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://insert-koin.io/docs/reference/koin-core/lazy-modules/",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core-coroutines/src/commonMain/kotlin/org/koin/core/KoinApplicationLazyExt.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/KoinApplication.kt"
+      ],
+      "status": "fixed",
+      "summary": "Koin lazyModules 缺少注册与实例构造线程、createdAtStart 时序边界",
+      "type": "missing-lifecycle-boundary",
+      "updated_at": "2026-10-20T18:41:57.049156+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "close_note": "已限定默认 Hilt 注入区间只有在组件未创建时才包括组件创建，同步修正关键路径表，并要求对 ContentProvider 提前创建处单独加 trace section；AOSP Android 17 顺序、Dagger 2.60.1 注入与组件缓存源码核验及全部本地 gate 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261020-183520-idle-audit-ec4484f9",
+      "created_at": "2026-10-20T18:38:51.863893+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261020-183520-idle-audit-ec4484f9",
+      "details": "正文前文已允许 ContentProvider 提前通过 entry point 创建 SingletonComponent，但测量说明无条件声称 super.onCreate 区间包含组件创建；ApplicationComponentManager 的缓存语义证明提前创建不会在此区间重复发生，容易造成 DI 启动成本漏算。",
+      "id": "finding-6d72a2322f0a",
+      "log_path": "logs/audit/2026-10-20-20261020-183520-idle-audit-ec4484f9-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-android/main/java/dagger/hilt/android/internal/managers/ApplicationComponentManager.java",
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-compiler/main/java/dagger/hilt/android/processor/internal/androidentrypoint/ApplicationGenerator.java"
+      ],
+      "status": "fixed",
+      "summary": "Hilt super.onCreate 计时区间被误写为必含组件创建",
+      "type": "misleading-measurement-boundary",
+      "updated_at": "2026-10-20T18:41:57.104344+08:00"
     }
   ],
   "schema_version": 1

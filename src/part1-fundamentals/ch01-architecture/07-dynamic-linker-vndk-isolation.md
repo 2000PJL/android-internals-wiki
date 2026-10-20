@@ -518,40 +518,34 @@ CI 应检查每个 release APK/AAB，只读 CMake 参数是不够的。至少验
 
 讲完进程内部的装载，我们再看分区之间：linker namespace 决定进程能看到哪些库，VNDK 和分区规则进一步限定 vendor、system 与应用之间可依赖的 ABI。
 
-### 一、Android 17 的 VNDK 边界
+### 一、VNDK 的弃用与现存机制
 
-先回答“VNDK 现在还管多大范围”。VNDK（Vendor Native Development Kit）曾规定 vendor 原生代码可以使用哪些 framework 原生库，以便系统框架与厂商实现分别升级；它从 Android 15 开始弃用。
+VNDK（Vendor Native Development Kit）曾规定 vendor 原生代码可以使用哪些 framework 原生库，让系统框架和厂商实现分别升级；这套机制从 Android 15 开始弃用。`vendor` 或 `product` 分区面向 Android 15 及以上版本构建时，原 VNDK 库与其他可用库一样安装到对应分区，当前版本的 VNDK APEX 不再生成，`ro.vndk.version` 与 `ro.product.vndk.version` 也随之移除。
 
-`vendor` 或 `product` 分区面向 Android 15 及以上版本构建时，原 VNDK 库与其他可用库一样安装到对应分区，且不再生成当前版本的 VNDK APEX。随之移除的还有 `ro.vndk.version` 与 `ro.product.vndk.version`。
+弃用之后，有两类兼容安排保留了下来：
 
-两类兼容边界仍要保留：
+- VNDK 版本 14 及以下的 APEX 继续支持旧 vendor image，也就是保留旧厂商分区镜像运行所需的对应版本库；
+- LL-NDK（底层原生接口库集合）不属于 VNDK，它的稳定 ABI（已经编译的二进制之间必须一致的函数调用、数据布局和符号约定）仍然约束 `system`/`vendor` 之间的接口。
 
-- VNDK 版本 14 及以下的 APEX 继续用于支持旧 vendor image，也就是保留旧厂商分区镜像运行所需的对应版本库；
-- LL-NDK（底层原生接口库集合）不属于 VNDK，其稳定 ABI（已经编译的二进制之间必须一致的函数调用、数据布局和符号约定）仍用于 `system`/`vendor` 边界。
+所以描述新设备的库隔离时，“当前 VNDK APEX 执行五级检查”这套说法已经失效；实际在起作用的是几个各自独立的机制——VNDK 历史版本兼容、Soong 生成 `vendor` 变体的规则、动态链接器 namespace 和 SELinux，它们的生命周期各不相同。
 
-所以描述 Android 17 新设备的库隔离时，“当前 VNDK APEX 执行五级检查”这套说法已经失效；实际在起作用的是几个彼此独立的机制——VNDK 历史版本兼容、Soong 生成 `vendor` 变体的规则、动态链接器 namespace 和 SELinux，它们的生命周期各不相同。
+APEX 改变的是库的来源、配置和激活方式；进程里已经映射好的 DSO，在进程存活期间保持原样。APEX 新版本生效后，新启动的进程按新挂载与 namespace 配置装载，老进程若仍持有旧映射，要由模块自身的重启策略处理。
 
-APEX 只改变库的来源、配置和激活边界，不会在进程运行期间替换已经映射的 DSO。APEX 新版本生效后，新启动进程会按新挂载与 namespace 配置装载；老进程若仍持有旧映射，必须由模块自身的重启策略处理。
+#### “Self-contained HAL”与 VNDK-SP 自包含约束
 
-#### “Self-contained HAL”不是新的 linker 模式
+旧 VNDK 文档要求 VNDK-SP 与 SP-HAL 的依赖集合满足自包含约束。VNDK-SP 指可安全加载进 framework 进程的一组 VNDK 库，SP-HAL 指同样由 framework 进程加载的 vendor HAL；这条约束要避免的情况是：加载 `vendor` HAL 时，还要依赖不允许进入该进程的厂商私有库。
 
-旧 VNDK 文档要求 VNDK-SP 与 SP-HAL 的依赖集合满足自包含约束。VNDK-SP 指可安全加载进 framework 进程的一组 VNDK 库，SP-HAL 指同样由 framework 进程加载的 vendor HAL；这条约束要避免的是：加载 `vendor` HAL 时，还要依赖不允许进入该进程的厂商私有库。
-
-Android 17 的 Bionic 中没有名为“Self-contained HAL”的新 namespace 类型、`dlopen()` 标志或预加载调度器。
-
-把 HAL 及依赖放在 `vendor`/`product` 侧，是构建与部署约束。静态链接多少库、是否采用 AIDL HAL、哪些库由 LL-NDK 提供，要由模块定义、稳定接口要求和升级边界决定。“自包含”不会自动减少动态库数量，平台也没有承诺由此获得固定的启动收益。
+把 HAL 及其依赖放在 `vendor`/`product` 侧，属于构建与部署层面的约束。我们在 Android 17 的 Bionic 里找不到名为“Self-contained HAL”的新 namespace 类型、`dlopen()` 标志或预加载调度器；静态链接多少库、是否采用 AIDL HAL、哪些库由 LL-NDK 提供，要由模块定义、稳定接口要求和分区升级方式决定。“自包含”不会自动减少动态库数量，固定的启动收益也谈不上平台承诺。
 
 ### 二、linker namespace 仍是运行时隔离基础
 
 Android 11 起，`linkerconfig` 根据分区、已安装 APEX、公开库和运行时环境生成 `/linkerconfig/ld.config.txt` 及相关配置。动态链接器读取配置后，为进程建立 default、APEX、`vendor`、SP-HAL 等所需 linker namespace。namespace 是一组库搜索和可见性规则；namespace link 则声明可以跨 namespace 访问哪些 soname（如 `libfoo.so`）。
 
-一个进程可以有多个 namespace。跨 namespace 的库查找只会沿配置好的 link 继续，且通常只允许指定的共享库 soname。
+一个进程可以有多个 namespace。跨 namespace 的库查找只沿配置好的 link 继续，且通常只放行指定的共享库 soname。应用还会由 `libnativeloader` 为各 ClassLoader 创建对应的 native namespace；系统原生进程、应用 JNI、APEX 进程和 `vendor` 守护进程的 namespace 关系图各不相同，所以查一台设备的库可见性要按进程类型分别看配置，单看一个进程的 `LD_LIBRARY_PATH` 得不到全貌。
 
-应用还会由 `libnativeloader` 为各 ClassLoader 创建对应的 native namespace。系统原生进程、应用 JNI、APEX 进程和 `vendor` 守护进程的 namespace 关系图各不相同；一个进程的 `LD_LIBRARY_PATH`，推不出整台设备的库可见性。
+### 三、`is_accessible()` 的判断顺序
 
-### 三、`is_accessible()` 的准确语义
-
-我们接着看 `is_accessible()` 的判断顺序。`android_namespace_t::is_accessible(path)` 是通用的 isolated namespace（启用路径隔离检查的命名空间）检查，VNDK 只是它的使用场景之一。下面的代码省略日志和局部变量，只保留 Android 17 的判断顺序：
+路径层的拦截发生在 `is_accessible()`：`android_namespace_t::is_accessible(path)` 是通用的 isolated namespace（启用路径隔离检查的命名空间）检查，VNDK 只是它的使用场景之一。下面的代码省略日志和局部变量，保留完整的判断顺序：
 
 ```cpp
 if (!is_isolated_) {
@@ -576,23 +570,23 @@ for (const auto& dir : permitted_paths_) {
 return false;
 ```
 
-这段摘录的重点是判断顺序：`is_isolated_` 为假时直接返回 true；`allowed_libs_` 非空时先查库名，不在集合里就直接返回 false；三组路径检查排在库名限制之后。
+这段摘录的重点在顺序：`is_isolated_` 为假时直接返回 true；`allowed_libs_` 非空时先查库名，不在集合里就直接返回 false；三组路径检查排在库名限制之后。
 
 两组路径函数的行为不同：`ld_library_paths_` 与 `default_library_paths_` 使用 `file_is_in_dir()`，只接受目录的直接子项；`permitted_paths_` 使用 `file_is_under_dir()`，允许更深层路径。
 
-`allowed_libs_` 的实现类型是 `std::vector<std::string>`，检查用的是线性查找的 `std::find()`——“哈希表平均 O(1)”与源码对不上。它同样算不上独立的动态允许列表服务，配置在 namespace 建立时就写进了对象。
+`allowed_libs_` 的实现类型是 `std::vector<std::string>`，检查用的是线性查找的 `std::find()`，所以“哈希表平均 O(1)”的印象与源码对不上；这份名单在 namespace 建立时就写进了对象，是一份静态配置，运行期没有单独的动态允许列表服务可查。
 
-正常按路径加载时，linker 先解析候选文件，得到消除符号链接等影响的规范路径（realpath），再执行 namespace 可访问性检查。文件的 DAC（传统 Unix 用户/组/其他权限）、挂载选项和 SELinux 仍由各自层次处理；`permitted_paths_` 不会递归验证每级父目录权限，也替代不了 SELinux。
+正常按路径加载时，linker 先解析候选文件，得到消除符号链接等影响的规范路径（realpath），再执行 namespace 可访问性检查。`permitted_paths_` 只做路径归属判断，文件的 DAC（传统 Unix 用户/组/其他权限）、挂载选项、每级父目录权限和 SELinux，仍由各自的层次负责。
 
-#### 搜索路径和许可路径回答不同问题
+#### 搜索路径与许可路径的分工
 
-`ld_library_paths_` 与 `default_library_paths_` 参与按 soname 搜索。`permitted_paths_` 允许 isolated namespace 通过绝对路径访问额外目录，但不会自动把目录加入 soname 搜索顺序。把路径加入 permitted 列表，只表示某个绝对路径可能通过可访问性检查；`dlopen("libfoo.so")` 能否从那里找到库，要看搜索路径列表里有没有它。
+`ld_library_paths_` 与 `default_library_paths_` 参与按 soname 搜索；`permitted_paths_` 允许 isolated namespace 通过绝对路径访问额外目录。一个路径进了 permitted 列表，只是有机会通过可访问性检查，soname 搜索顺序仍由搜索路径列表决定——`dlopen("libfoo.so")` 能否从那里找到库，要看搜索路径列表里有没有它。
 
-secure execution 指动态链接器因进程具有特殊权限等安全条件而忽略部分环境变量，`LD_LIBRARY_PATH` 只在非 secure execution 环境读取，而且只作用于 default namespace 的对应搜索路径。Android 17 Bionic 没有名为 `LOADER_PATH` 的同类环境变量。系统进程和应用还受启动环境、namespace 配置与公开库规则限制。
+secure execution 指动态链接器因进程具有特殊权限等安全条件而忽略部分环境变量，`LD_LIBRARY_PATH` 只在非 secure execution 环境读取，而且只作用于 default namespace 的对应搜索路径；Bionic 里同样没有名为 `LOADER_PATH` 的同类环境变量。系统进程和应用还受启动环境、namespace 配置与公开库规则限制。
 
 ### 四、符号可见性怎样限制
 
-库文件能装入某个 namespace，只说明它通过了路径层检查；重定位（把代码中的符号引用绑定到实际地址）与 `dlsym()` 查找还要经过下面几组范围的筛选：
+库文件能装入某个 namespace，只说明它过了路径这一关；重定位（把代码中的符号引用绑定到实际地址）与 `dlsym()` 查找还要经过下面几组范围的筛选：
 
 - 本 namespace 的 global group（全局可参与解析的库）与 local dependency group（从当前库出发可达的局部依赖）；
 - 共享或次级 namespace 的成员关系；
@@ -600,11 +594,11 @@ secure execution 指动态链接器因进程具有特殊权限等安全条件而
 - ELF 符号可见性、控制导出符号的 version script、`RTLD_LOCAL`、`RTLD_GLOBAL` 与 `DF_1_GLOBAL`；
 - 目标库的 `DT_NEEDED` 依赖能否继续解析。
 
-同名库可以分别存在于不同 namespace，减少 framework/vendor 或 APEX 之间意外解析到对方符号的情况。namespace 也允许显式导出少量稳定库。`dlopen()` 和 `dlsym()` 仍是 Bionic API，没有额外的“安全包装器”自动解决 ABI 不兼容或对象跨版本传递问题。
+同名库可以分别存在于不同 namespace，减少 framework/vendor 或 APEX 之间意外解析到对方符号的情况；namespace 也允许显式导出少量稳定库。`dlopen()` 和 `dlsym()` 仍是 Bionic API，ABI 不兼容或对象跨版本传递这类问题，没有额外的“安全包装器”代为解决。
 
 ### 五、`dlopen()` 时间花在哪里
 
-一次冷 `dlopen()` 的时间可以拆成这些段：
+隔离规则讲完，我们回到性能：一次冷 `dlopen()` 的时间可以拆成这些段：
 
 1. soname 与 namespace link 搜索；
 2. 路径解析、`open()`、ELF program header（描述各装载段的表）校验；
@@ -614,17 +608,17 @@ secure execution 指动态链接器因进程具有特殊权限等安全条件而
 6. RELRO、TLS、MTE 等装载属性处理；
 7. C/C++ 构造函数（constructors）。
 
-namespace 的允许列表和路径检查只是其中一段；库大小、依赖数量、重定位数量、文件页是否已在内存中、页大小、构造函数工作和设备 I/O 都会改变总耗时。AOSP 没有“VNDK 检查固定增加 15–25%”的结论——缺少工作负载与测量方法说明的百分比，进不了容量预算。
+namespace 的允许列表和路径检查只是其中一段；库大小、依赖数量、重定位数量、文件页是否已在内存中、页大小、构造函数工作和设备 I/O 都会改变总耗时。“VNDK 检查固定增加 15–25%”在 AOSP 里找不到出处，缺少工作负载与测量方法说明的百分比，写进容量预算只会误导。
 
-已经装入、可以复用的库，后续 `dlopen()` 可能复用 linker 里已有的 `soinfo` 记录；冷启动、首次缺页和构造函数成本不会按相同比例重复。跨 namespace 另装一份库时，映射、重定位和私有脏页（写脏后进程私有的页面）都可能增加。能否共享物理文件页，还取决于两次加载指向同一个 inode（文件系统中的同一个文件对象），还是不同分区中的不同副本。
+已经装入、可以复用的库，后续 `dlopen()` 可能直接复用 linker 里已有的 `soinfo` 记录，冷启动、首次缺页和构造函数成本不会按相同比例重复；跨 namespace 另装一份库时，映射、重定位和私有脏页（写脏后进程私有的页面）都可能增加。两次加载能否共享物理文件页，取决于它们指向同一个 inode（文件系统中的同一个文件对象），还是不同分区中的不同副本。
 
-Android 17 linker 是原生 C++ 实现，没有 JIT 编译访问检查，也没有基于 AI 的库访问预测。平台同样没有通用异步 `dlopen()` API；业务可以把允许后台执行的加载放到工作线程，但构造函数、JNI 注册和调用方线程约束仍要自行验证。
+Android 17 linker 是原生 C++ 实现，访问检查在原生代码路径里同步完成，linker 里没有 JIT 编译的访问检查，也没有基于 AI 的库访问预测；平台没有提供通用异步 `dlopen()` API。业务可以把允许后台执行的加载放到工作线程，构造函数、JNI 注册和调用方线程约束仍要自行验证。
 
 ### 六、如何测量加载性能
 
 测量时我们把 Bionic 为 `dlopen()`、loading/linking、constructors、`dlsym()` 和 `dlclose()` 建立的 trace 区间，与文件系统 I/O、缺页（page fault）、CPU 调度和应用启动阶段对齐，避免把整个加载窗口都归因于 namespace。
 
-linker logger 支持 `dlopen`、`dlsym` 和 `dlerror` 三类选项。下面的命令只适合可调试进程，并应在复现结束后清除属性：
+linker logger 支持 `dlopen`、`dlsym` 和 `dlerror` 三类选项。下面的命令只适合可调试进程，复现结束后应清除属性：
 
 ```bash
 adb shell setprop debug.ld.app.com.example.app dlopen,dlsym,dlerror
@@ -632,20 +626,20 @@ adb logcat -s linker:D
 adb shell setprop debug.ld.app.com.example.app ''
 ```
 
-第一条命令启用指定进程的 linker 日志，第二条只显示 linker 标签，第三条在复现后清除属性。属性名使用进程 basename（路径或进程名的最后一段），带冒号的 service 进程会截断冒号及其后缀。不可转储（non-dumpable）的进程不会启用这组日志；量产用的 user build、权限与产品策略也可能限制设置属性。
+第一条命令启用指定进程的 linker 日志，第二条只显示 linker 标签，第三条在复现后清除属性。属性名使用进程 basename（路径或进程名的最后一段），带冒号的 service 进程会截断冒号及其后缀；不可转储（non-dumpable）的进程拿不到这组日志，量产用的 user build、权限与产品策略也可能限制设置属性。
 
-设备上的 namespace 图应直接查看生成结果：
+设备上真实的 namespace 图，直接看生成结果最可靠：
 
 ```bash
 adb shell cat /linkerconfig/ld.config.txt
 adb shell find /linkerconfig -maxdepth 3 -name ld.config.txt -print
 ```
 
-这些文件反映设备当前分区与 APEX 组合，比套用历史 `ld.config.vndk_lite.txt` 模板可靠。读取权限和路径会随构建类型变化，脚本需要处理文件不可访问的情况。
+这些文件反映设备当前分区与 APEX 组合，比套用历史 `ld.config.vndk_lite.txt` 模板可靠；读取权限和路径会随构建类型变化，脚本要处理文件不可访问的情况。
 
-性能实验至少区分文件页尚未缓存/已经缓存、首次/重复加载、相同/不同 namespace，并记录库及依赖的 build ID。报告中给出 P50/P95（中位数和第 95 百分位）、CPU 时间、实际经过时间、需要/不需要存储 I/O 的 major/minor faults，以及重定位与构造函数区间；只报告一次 `dlopen()` 的实际经过时间，说明不了隔离开销。
+性能实验至少区分文件页尚未缓存/已经缓存、首次/重复加载、相同/不同 namespace，并记录库及依赖的 build ID。报告里给出 P50/P95（中位数和第 95 百分位）、CPU 时间、实际经过时间、需要/不需要存储 I/O 的 major/minor faults，以及重定位与构造函数区间；隔离开销有多大，要靠这些对照数据回答，一次 `dlopen()` 的实际经过时间给不出结论。
 
-### 七、Android 17 排障顺序
+### 七、排障顺序
 
 遇到 `dlopen failed`，我们按错误信息依次确认：
 
@@ -657,9 +651,9 @@ adb shell find /linkerconfig -maxdepth 3 -name ld.config.txt -print
 6. 文件权限、SELinux denial、分区挂载和 APEX 激活状态；
 7. 库是否带有耗时或有线程约束的 constructor。
 
-这三类报错各有含义：“not accessible for the namespace” 是 linker namespace 拦下了请求；“library not found” 可能是某个依赖库没有找到；“cannot locate symbol” 说明已经走到符号解析阶段。它们的修法各不相同，扩宽 `permitted_paths_` 修不了缺失符号或 ABI 不兼容。
+三类报错各有含义：“not accessible for the namespace” 是 linker namespace 拦下了请求；“library not found” 可能是某个依赖库没有找到；“cannot locate symbol” 说明已经走到符号解析阶段。它们的修法各不相同，扩宽 `permitted_paths_` 解决不了缺失符号或 ABI 不兼容。
 
-### 八、源码与官方边界
+### 八、源码与官方资料
 
 - [VNDK overview 与弃用说明](https://source.android.com/docs/core/architecture/vndk)：Android 15 起的弃用范围、旧 VNDK APEX 与 LL-NDK 例外。
 - [linker namespace 官方说明](https://source.android.com/docs/core/architecture/vndk/linker-namespace)：namespace 图、search/permitted path 与 linkerconfig 的历史边界。
@@ -670,4 +664,4 @@ adb shell find /linkerconfig -maxdepth 3 -name ld.config.txt -print
 
 ### 九、版本范围
 
-版本范围固定为 Android 17/API 37 与 `android-17.0.0_r1`；本章的 linker namespace、VNDK 弃用说明和 Perfetto/linker logger 行为，不能外推为后续平台的能力。
+版本范围固定为 Android 17/API 37 与 `android-17.0.0_r1`；本章描述的 linker namespace、VNDK 弃用过程和 Perfetto/linker logger 行为，只代表这一版本；后续平台的行为，要以对应分支为准。

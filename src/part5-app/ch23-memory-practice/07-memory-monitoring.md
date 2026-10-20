@@ -98,16 +98,16 @@ consolidated_from:
 
 ## 线上监控要回答什么
 
-本地 Memory Profiler（Android Studio 内存分析器） 适合解释一次可复现的问题；线上监控面对的是分散在版本、设备、进程和业务场景里的样本。我们至少要回答四个问题：
+本地 Memory Profiler（Android Studio 内存分析器）适合解释一次可复现的问题；线上监控面对的则是分散在版本、设备、进程和业务场景里的样本。要把这些样本变成能下结论的数据，我们至少要回答四个问题：
 
 - 哪一类内存在增长：Java Heap（ART 管理的 Java/Kotlin 对象堆）、native allocator（C/C++ 内存分配器）、图形、文件映射、线程栈，还是多个进程的合计。
 - 增长是短时峰值、可回落缓存，还是跨页面、跨会话持续积累。
 - 变化是否集中在某个版本、设备档位、ABI（应用二进制接口，规定指令集、调用约定和二进制布局）、进程或用户路径。
 - 需要保留轻量指标、退出记录、Java heap dump，还是 native heap profile（按采样记录原生内存分配调用栈的剖析产物）。
 
-只上报一个“内存占用”指标回答不了这些问题。PSS、RSS、Java Heap 和 Native Heap（原生堆） 统计的对象各不相同，单独任何一项都代表不了应用的全部内存。多进程应用还要为每个样本带上进程名：把所有进程混成一个分布，主进程回归或独立任务进程的峰值就被埋掉了。
+只上报一个“内存占用”指标回答不了这些问题。PSS、RSS、Java Heap 和 Native Heap（原生堆）统计的对象各不相同，单独任何一项都代表不了应用的全部内存。多进程应用还要为每个样本带上进程名：把所有进程混成一个分布，主进程回归或独立任务进程的峰值就被埋掉了。
 
-Java 泄漏引用链见 [23.2 内存泄漏检测与治理](02-memory-leak-governance.md)，原生分配诊断见 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)，Java Heap 预算见 [23.1 Java Heap、GC 与 Compose 内存分配](01-java-heap-gc-compose-allocation.md)，OOM（`OutOfMemoryError`，无法满足分配时抛出的内存不足异常） 分类见 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](../ch20-stability/05-oom-webview-renderer-recovery.md)。本文聚焦生产环境中的指标、判断、降级和证据采集。
+Java 泄漏引用链见 [23.2 内存泄漏检测与治理](02-memory-leak-governance.md)，原生分配诊断见 [23.3 Native 与虚拟内存管理优化](03-native-virtual-memory-optimization.md)，Java Heap 预算见 [23.1 Java Heap、GC 与 Compose 内存分配](01-java-heap-gc-compose-allocation.md)，OOM（`OutOfMemoryError`，无法满足分配时抛出的内存不足异常）分类见 [20.5 OOM、进程资源治理与 WebView Renderer 恢复](../ch20-stability/05-oom-webview-renderer-recovery.md)。本文聚焦生产环境中的指标、判断、降级和证据采集。
 
 ## 内存指标采集：先统一统计定义
 
@@ -124,11 +124,11 @@ Java 泄漏引用链见 [23.2 内存泄漏检测与治理](02-memory-leak-govern
 
 这张表用来确定每项数据能回答什么：判断全局趋势看 PSS 或 RSS；定位 Java 或原生分配，要再结合各自的堆指标与诊断产物。
 
-单位也要先定死。`Debug.MemoryInfo` 的 PSS 字段以 kB 表示；`Runtime` 和 `Debug.getNativeHeapAllocatedSize()` 返回字节，入库前必须保留单位。`Debug.getMemoryInfo()` 直接读取当前进程，源码注释说明它可能取不到 graphics（图形） 等受保护分配；要更完整的进程分类，就用 `ActivityManager.getProcessMemoryInfo()`。
+单位也要先定死。`Debug.MemoryInfo` 的 PSS 字段以 kB 表示；`Runtime` 和 `Debug.getNativeHeapAllocatedSize()` 返回字节，入库前必须保留单位。`Debug.getMemoryInfo()` 直接读取当前进程，源码注释说明它可能取不到 graphics（图形）等受保护分配；要更完整的进程分类，就用 `ActivityManager.getProcessMemoryInfo()`。
 
-Android 10（API 29）起，普通应用通过 `getProcessMemoryInfo()` 只能取得调用方 UID（应用在系统中的用户标识） 下的进程信息，其他 PID（进程编号） 的条目只剩零值；平台还会限制采样频率，调用过密时拿到的可能是上一次的结果。所以采样请求时间未必是底层数据的更新时间，高频调用只会制造虚假的高分辨率曲线。
+Android 10（API 29）起，普通应用通过 `getProcessMemoryInfo()` 只能取得调用方 UID（应用在系统中的用户标识）下的进程信息，其他 PID（进程编号）的条目只剩零值；平台还会限制采样频率，调用过密时拿到的可能是上一次的结果。所以采样请求时间未必是底层数据的更新时间，高频调用只会制造虚假的高分辨率曲线。
 
-`Debug.getRss()` 同样只读当前进程。`android-17.0.0_r1` 的 JNI 实现读取 `StatusVmRSS()`，并在 memtrack（Android 图形内存统计接口） 可用时加入 graphics、GL 和 other 三类未计入 `/proc` 映射的图形内存；直接读 `/proc/self/status` 只能得到原始 `VmRSS`。这一实现细节超出了公开 API 注释承诺的“返回 RSS”，所以 API 35 前后的 RSS 来源要单独标记，拼进同一条比较基线前必须先说明。
+`Debug.getRss()` 同样只读当前进程。`android-17.0.0_r1` 的 JNI 实现读取 `StatusVmRSS()`，并在 memtrack（Android 图形内存统计接口）可用时加入 graphics、GL 和 other 三类未计入 `/proc` 映射的图形内存；直接读 `/proc/self/status` 只能得到原始 `VmRSS`。这一实现细节超出了公开 API 注释承诺的“返回 RSS”，所以 API 35 前后的 RSS 来源要单独标记，拼进同一条比较基线前必须先说明。
 
 [源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/os/Debug.java`, `frameworks/base/core/jni/android_os_Debug.cpp`, `frameworks/base/core/java/android/app/ActivityManager.java`]
 
@@ -212,9 +212,9 @@ fun collectProcessMemorySample(context: Context): ProcessMemorySample {
 }
 ```
 
-`pssKb == null` 或 `rssKb == null` 表示本次未取得有效值，按零内存上报是错的。`DEBUG_API_WITH_MEMTRACK` 只表示样本来自 `Debug.getRss()`：Android 17 r1 会尝试加入 memtrack 数据，但这个枚举值证明不了本次 memtrack 查询成功。`elapsedRealtimeMs` 来自设备启动后的单调时钟，适合计算同一次开机期间的时间差，重启后会重新计时；跨设备、跨重启聚合时还要带服务端接收时间。
+字段拿到手，我们先分清“没采到”和“值是零”：`pssKb == null` 或 `rssKb == null` 表示本次未取得有效值，按零内存上报是错的。`DEBUG_API_WITH_MEMTRACK` 只表示样本来自 `Debug.getRss()`：Android 17 r1 会尝试加入 memtrack 数据，但这个枚举值证明不了本次 memtrack 查询成功。`elapsedRealtimeMs` 来自设备启动后的单调时钟，适合计算同一次开机期间的时间差，重启后会重新计时；跨设备、跨重启聚合时还要带服务端接收时间。
 
-事件包还应包含应用版本、Android 版本、ABI、设备 RAM（物理内存） 档位、前后台状态、页面类别、采样原因、采样策略版本和每个指标的来源。
+事件包还应包含应用版本、Android 版本、ABI、设备 RAM（物理内存）档位、前后台状态、页面类别、采样原因、采样策略版本和每个指标的来源。
 
 ### 采样频率由成本和问题决定
 
@@ -222,13 +222,13 @@ fun collectProcessMemorySample(context: Context): ProcessMemorySample {
 
 - 本进程计数：Java Heap 和 native allocator 读取较直接，可以在应用启动完成、页面退出或任务结束时采集。
 - 映射统计：PSS 需要读取进程映射并可能经过系统服务，适合低频、场景结束或异常触发。
-- 诊断产物：heap dump、heap profile 和 Perfetto system trace（记录系统调度、内存计数与业务事件时间关系的跟踪文件） 开销与敏感度高，只能由严格条件触发。
+- 诊断产物：heap dump、heap profile 和 Perfetto system trace（记录系统调度、内存计数与业务事件时间关系的跟踪文件）开销与敏感度高，只能由严格条件触发。
 
 采样任务自身也要测量执行时间、分配量、I/O 和上报量。若采样逻辑在启动、列表滚动或渲染关键路径执行，采集行为可能改变被观察对象。官方也不建议持续轮询 `ActivityManager.getMemoryInfo()`。每轮发布要保留“未采到、被限流、权限不足、文件失败”等状态，只统计成功样本会高估覆盖率。
 
 ## 内存阈值与告警策略
 
-### 不使用跨设备固定百分比
+### 阈值的同类样本分组
 
 Java Heap 上限、设备 RAM、页面资源、ABI、WebView 版本和厂商内存策略都会改变正常分布。一个跨设备固定比例容易同时产生漏报与误报。我们构造线上阈值时应只用同类样本：
 
@@ -238,9 +238,9 @@ Java Heap 上限、设备 RAM、页面资源、ABI、WebView 版本和厂商内�
 - 场景：冷启动稳定点、页面停留、任务峰值、页面退出后的回落、后台驻留分别统计。
 - 状态：前台可见、前台服务、后台和缓存进程（cached）各用各的阈值。
 
-比较基线至少要保留完整分布、样本数和缺失率。缺失率是应采样但没有得到有效数据的样本占比；只比较成功样本，可能把限流或采集失败造成的偏差误判成改善。均值会掩盖少数高值形成的长尾；P95、P99 等分位数分别表示 95%、99% 的样本不超过该值。而样本不足、设备构成变化或场景定义变化时，分位数也要先校验再用于发布判断。
+比较基线至少要保留完整分布、样本数和缺失率。缺失率是应采样但没有得到有效数据的样本占比；只比较成功样本，可能把限流或采集失败造成的偏差误判成改善。均值会掩盖少数高值形成的长尾；P95、P99 等分位数分别表示 95%、99% 的样本不超过该值。反过来，样本不足、设备构成变化或场景定义变化时，要先校验分位数，再用于发布判断。
 
-### 一条告警需要趋势、恢复能力和上下文
+### 告警的信号组合与方向判断
 
 FD 是 file descriptor（文件描述符），表示进程打开的文件、套接字或管道句柄；`mmap` 是把文件或匿名内存映射进进程地址空间的系统调用。
 
@@ -297,9 +297,9 @@ fun classifyHeapPressure(
 }
 ```
 
-分类结果只是候选信号。进入 `CAPTURE_CANDIDATE`（允许进一步评估是否采集诊断产物） 状态、评估是否采集诊断产物之前，还要检查前后台状态、用户交互、磁盘、电量、近期采集配额和隐私策略。执行资源收缩后，我们还要再采一次轻量指标，记录释放动作有没有生效。
+分类结果只是候选信号。进入 `CAPTURE_CANDIDATE`（允许进一步评估是否采集诊断产物）状态之前，还要检查前后台状态、用户交互、磁盘、电量、近期采集配额和隐私策略。执行资源收缩后，我们还要再采一次轻量指标，记录释放动作有没有生效。
 
-### 告警事件要能指导排查
+### 告警事件的拆分与字段
 
 事件建议按用途拆分，避免统一命名为“OOM warning（内存不足预警）”：
 
@@ -319,17 +319,17 @@ fun classifyHeapPressure(
 
 ## 内存压力预警、资源降级与退出归因
 
-### 能安全释放的只有业务可控资源
+### 预警阶段的可释放资源与所有权
 
-预警阶段可以缩小图片缓存、停止预取、取消尚未开始的批处理、减少播放器预缓冲、关闭闲置 WebView、释放页面级对象并降低后续输入规格。流、游标、文件描述符、`ParcelFileDescriptor`、`SharedMemory` 映射和 native handle（原生资源句柄） 都要有明确的所有者负责关闭；所有权约定缺失时，重复关闭和遗漏释放都可能发生。
+预警阶段，我们能安全释放的只有业务可控资源：缩小图片缓存、停止预取、取消尚未开始的批处理、减少播放器预缓冲、关闭闲置 WebView、释放页面级对象并降低后续输入规格。流、游标、文件描述符、`ParcelFileDescriptor`、`SharedMemory` 映射和 native handle（原生资源句柄）都要有明确的所有者负责关闭；所有权约定缺失时，重复关闭和遗漏释放都可能发生。
 
-`System.gc()` 不是常规回收接口。GC 只处理不可达对象，仍被缓存、单例、JNI global reference（JNI 全局引用，会让原生代码长期持有 Java 对象） 或活跃组件持有的数据它碰不到，显式 GC 还可能增加停顿。同样要避免在全局捕获 `OutOfMemoryError` 后继续运行：OOM 发生时，错误处理路径本身可能分配不了对象，进程状态也可能已经偏离业务依赖的状态约束。范围清楚的单次分配可以设计局部降级，例如图片解码失败后改用更小规格。
+`System.gc()` 不是常规回收接口。GC 只处理不可达对象，仍被缓存、单例、JNI global reference（JNI 全局引用，会让原生代码长期持有 Java 对象）或活跃组件持有的数据，它碰不到；显式 GC 还可能增加停顿。同样要避免在全局捕获 `OutOfMemoryError` 后继续运行：OOM 发生时，错误处理路径本身可能分配不了对象，进程状态也可能已经偏离业务依赖的状态约束。范围清楚的单次分配可以设计局部降级，例如图片解码失败后改用更小规格。
 
 `onTrimMemory()` 应聚焦 `TRIM_MEMORY_UI_HIDDEN` 和 `TRIM_MEMORY_BACKGROUND`：这两个等级表示界面隐藏或进程进入后台 LRU（按最近使用时间维护的进程列表）。从 Android 14（API 34）起，其余旧内存压力等级不再投递，并在 Android 15（API 35）废弃。设备压力用 `ActivityManager.MemoryInfo` 观察；应用内存限制的事前取证用 `TRIGGER_TYPE_ANOMALY`，退出后再读 `ApplicationExitInfo`。
 
 ### 重启后核对退出原因
 
-Android 11（API 30）起，`getHistoricalProcessExitReasons()` 可以读取调用方 UID 最近的退出记录。这段代码只挑出两类记录：LMK，以及 `android-17.0.0_r1` 定义的 Memory Limiter。
+Android 11（API 30）起，`getHistoricalProcessExitReasons()` 可以读取调用方 UID 最近的退出记录。我们只挑出两类记录：LMK，以及 `android-17.0.0_r1` 定义的 Memory Limiter。
 
 ```kotlin
 import android.app.ActivityManager
@@ -388,19 +388,21 @@ fun readRecentMemoryExits(
 
 [源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/app/ApplicationExitInfo.java`]
 
-### Memory Advice 只作为已接入项目的过渡信号
+### Memory Advice 的过渡角色
 
 Memory Advice API 已结束 Beta 测试，官方文档在 2026 年 2 月将该库标记为 deprecated（已弃用）。新项目不要再引入这项依赖；已接入的游戏或引擎可以在迁移期间把它保留为一项压力信号。
 
-Memory Advice 以 Android Game Development Kit（AGDK） 的独立 native 库形式提供，不由 Android framework 服务管理。公开 C API `MemoryAdvice_getAvailableMemory()` 返回“可安全分配字节数”的估算。Memory Advice 2.1.0 的 AOSP 实现用预测可用百分比乘以初始化时记录的设备总内存；这个值与 `/proc/meminfo` 的 `MemAvailable` 是两回事，系统当前也未必有同样多的空闲页。`OK`、`APPROACHING_LIMIT`、`CRITICAL` 是模型和规则给出的建议状态，预测不了下一次分配、`lmkd` 或 Android 17 Memory Limiter 的结果。
+Memory Advice 以 Android Game Development Kit（AGDK）的独立 native 库形式提供，不由 Android framework 服务管理。公开 C API `MemoryAdvice_getAvailableMemory()` 返回“可安全分配字节数”的估算。Memory Advice 2.1.0 的 AOSP 实现用预测可用百分比乘以初始化时记录的设备总内存；这个值与 `/proc/meminfo` 的 `MemAvailable` 是两回事，系统当前也未必有同样多的空闲页。`OK`、`APPROACHING_LIMIT`、`CRITICAL` 是模型和规则给出的建议状态，预测不了下一次分配、`lmkd` 或 Android 17 Memory Limiter 的结果。
 
-库内的监视器（watcher） watcher 会在自己创建的线程上按注册间隔检查状态；只有状态不为 `OK` 时才调用 callback 回调。回调应把压力请求交给线程安全的策略入口，纹理、网格（mesh）数据、音频、场景资源和 GPU 缓冲区仍要回到引擎规定的线程分批释放。注销与正在执行的回调可能交错，`user_data` 指向的调用方数据必须存活到所有回调结束。
+库内的监视器（watcher）会在自己创建的线程上按注册间隔检查状态；只有状态不为 `OK` 时才调用 callback（回调）。回调应把压力请求交给线程安全的策略入口，纹理、网格（mesh）数据、音频、场景资源和 GPU 缓冲区仍要回到引擎规定的线程分批释放。注销与正在执行的回调可能交错，`user_data` 指向的调用方数据必须存活到所有回调结束。
 
 迁移时可以保持四层结构：信号层汇总资源数量、PSS/RSS、生命周期与历史退出；策略层按设备和场景输出低、中、高等资源规格；执行层在指定线程降低规格或释放可重建资源；验证层比较峰值、回落、帧时间与 LMK/Memory Limiter。这样旧库移除后，资源模块仍可沿用同一套策略接口。
 
 ## 线上诊断产物采集
 
-### 先按问题选择产物
+指标和退出记录能把问题指到方向，要确认根因，还需要诊断产物。
+
+### 按问题选择诊断产物
 
 | 产物 | 适用问题 | 主要限制 |
 | --- | --- | --- |
@@ -414,9 +416,9 @@ Memory Advice 以 Android Game Development Kit（AGDK） 的独立 native 库形
 
 `Debug.dumpHprof（记录 Java 堆对象与引用关系的快照文件）Data()` 可以把当前进程 Java Heap 写成 Hprof 快照文件，其中记录了堆对象与引用关系。`Debug.java` 的注释指出该操作可能触发 GC，并可能抛出 `UnsupportedOperationException` 或 `IOException`。它适合本地、内部构建或受控诊断，内存已经很紧张时不要由普通线上规则直接调用。
 
-`ActivityManager.setWatchHeapLimit()` 也不是生产监控接口。Android 17 源码和 API 注释明确要求应用为 debuggable（允许调试），或设备使用 userdebug/eng（带调试能力的系统构建） 构建带调试能力；它适合开发阶段验证 PSS 阈值与 heap dump 流程。
+`ActivityManager.setWatchHeapLimit()` 也不是生产监控接口。源码和 API 注释明确要求应用为 debuggable（允许调试），或设备使用 userdebug/eng（带调试能力的系统构建）；它适合开发阶段验证 PSS 阈值与 heap dump 流程。
 
-Android 15（API 35）起，`ProfilingManager` 支持应用主动请求 Java heap dump、heap profile、stack sampling（调用栈采样） 和 system trace，并有系统限流。官方 Jetpack wrapper（封装接口） 提供 `JavaHeapDumpRequestBuilder` 与 `HeapProfileRequestBuilder`；请求不保证执行，结果和错误都通过 `ProfilingResult` 返回。
+Android 15（API 35）起，`ProfilingManager` 支持应用主动请求 Java heap dump、heap profile、stack sampling（调用栈采样）和 system trace，并有系统限流。官方 Jetpack wrapper（封装接口）提供 `JavaHeapDumpRequestBuilder` 与 `HeapProfileRequestBuilder`；请求不保证执行，结果和错误都通过 `ProfilingResult` 返回。
 
 ### Android 17 的 OOM 与异常触发器（trigger）
 
@@ -475,9 +477,9 @@ fun registerMemoryProfilingTriggers(
 
 [源码锚点: AOSP `android-17.0.0_r1`, `packages/modules/Profiling/framework/java/android/os/ProfilingManager.java`, `ProfilingTrigger.java`]
 
-### 产物治理比触发代码更重要
+### 诊断产物的治理要求
 
-Java heap dump 可能包含对象字符串、用户输入、请求响应、缓存键、文件路径和业务标识。文件放在应用私有目录，并不意味着内容已经脱敏。上线前需要完成：
+Java heap dump 可能包含对象字符串、用户输入、请求响应、缓存键、文件路径和业务标识。文件放在应用私有目录，并不意味着内容已经脱敏。上线前我们要完成：
 
 - 采集资格：版本、进程、场景、设备状态、磁盘和配额均满足策略。
 - 最小化：能用指标或摘要定位时不采完整 dump；原生内存问题不采 Java dump。
@@ -491,11 +493,11 @@ Java heap dump 可能包含对象字符串、用户输入、请求响应、缓�
 
 ## 把案例与预算写成可复用证据
 
-一条完整的内存案例应记录：用户场景 → 可重复动作 → 按同一统计定义采集的前后快照 → 引用链或分配栈 → 资源所有权缺陷 → 最小修改 → 同场景复测 → 线上结果。只拿到快照相关性时，结论仍是待验证假设。
+我们把一条完整的内存案例记录成一条链：用户场景 → 可重复动作 → 按同一统计定义采集的前后快照 → 引用链或分配栈 → 资源所有权缺陷 → 最小修改 → 同场景复测 → 线上结果。只拿到快照相关性时，结论仍是待验证假设。
 
 预算同样要写完整，只给应用一个 MB 数是不够的。每条记录至少包含平台与构建、设备档位、进程、场景与采样时点、Java Heap、native allocator、Graphics 与总 PSS、样本量与分位数、负责人、处置和回滚。`memoryClass` 是系统为当前应用提供的 Java Heap 近似上限，不是进程 PSS 预算。
 
-货拉拉公开复盘可拆成三类不同记录，不能笼统合并成“图片模块增长”：
+货拉拉公开复盘可拆成三类不同记录，笼统合并成“图片模块增长”会掩盖差别：
 
 | 场景 | 主要证据 | 根因方向 | 验收重点 |
 | --- | --- | --- | --- |

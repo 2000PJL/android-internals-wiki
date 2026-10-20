@@ -4,8 +4,11 @@ chapter: '17.3'
 section: '17.3'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: KOOM df3b8c33 source/build config + v2.2.2 release and Maven metadata + Android ApplicationExitInfo/memory/16 KB docs updated through 2026-08-06 + AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r39
+last_verified: '2026-10-20'
+last_source_verified_at: '2026-10-20'
+last_idle_audit_at: '2026-10-20T22:35:20+08:00'
+last_verified_against: LeakCanary 2.14 source and official workflows/release/UI-test docs + KOOM df3b8c33 source and Maven 2.2.2 metadata + AOSP android-17.0.0_r1 ActivityThread/Build/ComponentCallbacks2 + Android ApplicationExitInfo and 16 KB docs checked 2026-10-20
+verification_scope_note: 来源与源码核验；未执行 Android 17 真机、16 KB 或性能回归。
 confidence: medium
 tags:
 - apm
@@ -44,6 +47,18 @@ sources:
   path: https://square.github.io/leakcanary/recipes/
 - type: official
   path: https://square.github.io/leakcanary/ui-tests/
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Build.java
+- type: source
+  path: https://github.com/KwaiAppTeam/KOOM/blob/df3b8c33f63ab1f23e814c19792314efb653deaf/koom-thread-leak/src/main/java/com/kwai/performance/overhead/thread/monitor/ThreadMonitor.kt
+- type: source
+  path: https://github.com/KwaiAppTeam/KOOM/blob/df3b8c33f63ab1f23e814c19792314efb653deaf/koom-native-leak/src/main/java/com/kwai/koom/nativeoom/leakmonitor/LeakMonitor.kt
+- type: source
+  path: https://github.com/KwaiAppTeam/KOOM/blob/df3b8c33f63ab1f23e814c19792314efb653deaf/koom-native-leak/src/main/java/com/kwai/koom/nativeoom/leakmonitor/LeakMonitorConfig.kt
+- type: official
+  path: https://developer.android.com/reference/android/content/ComponentCallbacks2
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part3-tools/ch17-apm/03-koom.md
@@ -88,7 +103,7 @@ dependencies {
 }
 ```
 
-依赖通过 manifest 中的私有 `ContentProvider` 在主进程自动安装 watcher（生命周期观察器）：系统会在创建 `Application` 前初始化这个 provider，所以不需要在 `Application` 中重复调用安装。2.14 另有基于 AndroidX Startup 的替代 artifact（发布组件），两条安装路径只能选择其一。若工程有 QA、internal 等自定义变体，应把依赖放到对应的 Gradle configuration（例如 `qaImplementation`），防止完整分析组件被合进生产包。
+依赖通过 manifest 中的私有 `ContentProvider` 在主进程自动安装 watcher（生命周期观察器）。系统先创建 `Application` 实例，再初始化 provider，随后调用 `Application.onCreate()`；provider 安装 watcher 时已经能取得 `Application`，无需在 `onCreate()` 中重复安装。2.14 另有基于 AndroidX Startup 的替代 artifact（发布组件），两条安装路径只能选择其一。若工程有 QA、internal 等自定义变体，应把依赖放到对应的 Gradle configuration（例如 `qaImplementation`），防止完整分析组件被合进生产包。
 
 ### 从 watch 到 leak trace（泄漏引用链）
 
@@ -441,7 +456,7 @@ CI 可以按执行成本分三层；这里的“失败条件”是发现符合�
 
 - PR 检查只跑高流量页面、复杂容器和历史高风险路径，减少设备时间与偶发异步噪声。
 - nightly（每天夜间定时执行的测试任务） 扩展页面集合和循环次数，并保存完整 heap analysis 文本。
-- 3.0 alpha 的 repeating heap growth（重复执行场景并比较 heap 增长） 能发现“没有明确 lifecycle watch 点、但对象持续增加”的问题；它仍是预览 API，替换不了基于 2.12 的稳定检查。
+- 3.0 alpha 的 repeating heap growth（重复执行场景并比较 heap 增长） 能发现“没有明确 lifecycle watch 点、但对象持续增加”的问题；它仍是预览 API，替换不了基于 2.14 的稳定检查。
 
 每条失败至少保存 App commit、依赖锁文件、设备、API、ABI（应用二进制接口/CPU 架构，如 arm64-v8a）、场景 tag（测试场景标签）、leak signature、完整 trace、retained size 和测试次数。只凭 `retainedObjectCount` 没有路径，可靠地去重和定位原因都做不到。
 
@@ -482,7 +497,7 @@ KOOM 是快手开源的内存专项工具，沿三条路径诊断：Java heap �
 更关键的限制写在源码里：
 
 - `DefaultInitTask` 只允许 API 21～36，`ForkJvmHeapDumper.dump()` 会再次检查这个条件；Android 17 / API 37 会被拒绝。
-- `ThreadMonitor` 只允许 API 28～34，而且只接受 64 位 arm64 进程；模块 README 写的“Android N+”已经落后于实现。
+- `ThreadMonitor` 的版本门放行 API 27～34，而且只接受 64 位 arm64 进程：实际条件拒绝 `SDK_INT <= O`（API 26）或高于 API 34，错误提示中的“P 以下”与这个下界不符。模块 README 写的“Android N+”也不能替代实现；版本门放行仍需运行验证。
 - `LeakMonitor` 只检查 API 24+ 和 arm64，没有 API 上限；这只说明它没有主动拒绝 API 37，API 37 验证仍要自己补。
 - Maven `2.2.2` 的发布时间早于上游 2025 年的 Android 15 fast dump 修改和 2026 年合入的 16 KB page-size 修改，这两批改动算不进正式产物。
 
@@ -496,7 +511,7 @@ KOOM 是快手开源的内存专项工具，沿三条路径诊断：Java heap �
 |---|---|---|---|
 | `koom-java-leak` | Java heap，以及线程数、FD 数等 OOM 前兆 | 主进程在前台时轮询；命中条件后用 `fork()` 派生子进程，生成原始 Hprof，再由 Shark 生成引用链 JSON | 公共版本门是 API 21～36；自动路径不会裁剪 Hprof；dump 和分析仍有内存、I/O 与磁盘成本 |
 | `koom-native-leak` | 被 Hook 的 app `.so` 中尚未释放的 native 分配块 | Hook 分配/释放函数，将活跃分配与 `libmemunreachable` 结果求交集，产出大小、线程、相对地址和 so 名 | API 24+、arm64；依赖私有系统库与文本格式；API 37 未获上游保证 |
-| `koom-thread-leak` | 已退出、却没有 `detach` 或 `join` 的 joinable pthread | Hook `pthread_create`、`pthread_detach`、`pthread_join`、`pthread_exit`，延迟上报创建栈和生命周期时间 | 源码限定 API 28～34、arm64；不能识别仍然活着的 `WAITING` 线程或无界线程池 |
+| `koom-thread-leak` | 已退出、却没有 `detach` 或 `join` 的 joinable pthread | Hook `pthread_create`、`pthread_detach`、`pthread_join`、`pthread_exit`，延迟上报创建栈和生命周期时间 | 源码版本门放行 API 27～34、arm64；不能识别仍然活着的 `WAITING` 线程或无界线程池 |
 
 joinable pthread 是 POSIX 线程，必须由另一个线程调用 `pthread_join` 才能回收资源；调用 `pthread_detach` 后，系统会在它退出时自动回收。回到工具分工：普通内存指标回答“进程用了多少”，KOOM 尝试回答“什么对象、分配或线程生命周期值得怀疑”，Android Studio Profiler 和 Perfetto 适合观察时间线、内存分区与复现过程，LeakCanary 则专注可复现的 Java/Kotlin 对象保留。四类工具各自证明各自的范围，互相替换不了。
 
@@ -554,7 +569,7 @@ Native 模块先用 xhook 改写目标 `.so` 的 PLT（Procedure Linkage Table�
 
 举个排查路径：某播放器版本每播放一次视频，RSS 就上升 20 MB。我们先把播放器业务 `.so` 加入目标库列表，排除 KOOM 自身与已知基础库，再按调用栈聚合持续出现的大分配；若候选落在第三方解码器的帧缓存创建路径，就停止播放、销毁实例并等待回收，再比较 RSS 与候选数量。单条 native stack 定不了责任代码。
 
-`LeakMonitorConfig` 还提供分配大小门槛、目标/忽略 `.so`、默认 300 秒扫描周期和本地符号化开关。要注意当前 `LeakMonitor.call()` 对 `nativeHeapAllocatedThreshold` 的判断方向与注释相反：已分配 native heap 大于阈值时反倒提前返回。在为所用提交写好回归测试之前，先别指望这个字段负责触发保护。
+`LeakMonitorConfig` 还提供分配大小门槛、目标/忽略 `.so`、默认 300 秒扫描周期和本地符号化开关；上游配置注释要求生产环境的扫描间隔不低于 300 秒。周期检测走 `LeakMonitor.call()`；这个方法已弃用，源码推荐业务使用 `checkLeaks()`。阈值大于 0 且已分配 native heap 大于 `nativeHeapAllocatedThreshold` 时，`call()` 提前返回，判断方向与配置注释相反；手动 `checkLeaks()` 则直接采集，不检查该阈值。接入方需要在调用前自行检查采集条件，并分别测试周期与手动路径，不能依赖这个字段统一限制采集。
 
 ### Thread leak 的识别范围
 
@@ -602,7 +617,7 @@ Android 11 / API 30 起，可以在下次启动后通过 `ActivityManager.getHis
 
 - 先用 `ActivityManager.isLowMemoryKillReportSupported()` 判断设备是否支持 `REASON_LOW_MEMORY`；不支持时，内存压力导致的杀进程可能只显示 `REASON_SIGNALED` 和 `SIGKILL`（不能被应用捕获的强制终止信号）。
 - `getPss()`、`getRss()` 是系统最近一次采样值，可能为 0，也不保证贴近退出瞬间。
-- `getTraceInputStream()` 主要服务于有 trace 的退出类型，例如 ANR（Application Not Responding，应用无响应） 或部分 native crash；OOM/LMK（low memory kill，低内存终止） 未必带可读 trace。
+- `getTraceInputStream()` 通常在 ANR（Application Not Responding，应用无响应） 时有 trace；API 31 起，`REASON_CRASH_NATIVE` 还可返回 protobuf 格式的 tombstone（原生崩溃转储）。trace 存在系统全局循环缓冲区中，可能被本应用或其他应用的后续崩溃记录覆盖而返回 `null`。进程从 ANR 恢复后以其他原因退出，也可能保留此前的 ANR trace，不能据此直接判定退出原因；OOM/LMK（low memory kill，低内存终止） 未必带可读 trace。
 
 Android 8～10 没有 `ApplicationExitInfo`，这部分设备要结合 Android Vitals、本地复现、版本级 PSS/RSS 趋势和受控日志判断。现代 Android 的内存回收决策由用户空间的 `lmkd`（low memory killer daemon，低内存终止守护进程） 按内存压力与进程优先级执行，Android 17 对应的平台源码是 [`system/memory/lmkd@android-17.0.0_r1`](https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1)；相关判断并不直接依赖 `android17-6.18-2026-06_r39` 标签下的某段内核代码，API 37 的机制也别再用旧式“内核 lowmemorykiller 日志”来概括。
 
@@ -698,7 +713,8 @@ zipalign -c -P 16 -v 4 app-release.apk
 - [2.14 `HeapDumpTrigger.kt`](https://github.com/square/leakcanary/blob/8d29638ccf25e15d84b0119b6617f0069bc0b2d8/leakcanary-android-core/src/main/java/leakcanary/internal/HeapDumpTrigger.kt)
 - [2.14 `ServiceWatcher.kt`](https://github.com/square/leakcanary/blob/8d29638ccf25e15d84b0119b6617f0069bc0b2d8/leakcanary-object-watcher-android-core/src/main/java/leakcanary/ServiceWatcher.kt)
 - [Android 17 `Debug.dumpHprofData()`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Debug.java)
-- [Android 17 `ActivityThread` Service 停止流程](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [Android 17 `ActivityThread` 初始化顺序与 Service 停止流程](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
+- [Android 17 `Build.VERSION_CODES` 常量](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Build.java)
 - [Android 17 `ActivityManager.IActivityManagerSingleton`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java)
 - [Android 17 `Handler.mCallback`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Handler.java)
 
@@ -711,13 +727,15 @@ zipalign -c -P 16 -v 4 app-release.apk
 - [`ForkJvmHeapDumper` 的二次版本检查](https://github.com/KwaiAppTeam/KOOM/blob/df3b8c33f63ab1f23e814c19792314efb653deaf/koom-fast-dump/src/main/java/com/kwai/koom/fastdump/ForkJvmHeapDumper.java)
 - [`OOMMonitor` 的自动 dump/分析路径](https://github.com/KwaiAppTeam/KOOM/blob/df3b8c33f63ab1f23e814c19792314efb653deaf/koom-java-leak/src/main/java/com/kwai/koom/javaoom/monitor/OOMMonitor.kt)
 - [`LeakMonitor` 的 API/ABI 门与阈值判断](https://github.com/KwaiAppTeam/KOOM/blob/df3b8c33f63ab1f23e814c19792314efb653deaf/koom-native-leak/src/main/java/com/kwai/koom/nativeoom/leakmonitor/LeakMonitor.kt)
-- [KOOM `ThreadMonitor` 的 API 28～34 与 arm64 限制](https://github.com/KwaiAppTeam/KOOM/blob/df3b8c33f63ab1f23e814c19792314efb653deaf/koom-thread-leak/src/main/java/com/kwai/performance/overhead/thread/monitor/ThreadMonitor.kt)
+- [`LeakMonitorConfig` 的阈值注释与生产扫描间隔](https://github.com/KwaiAppTeam/KOOM/blob/df3b8c33f63ab1f23e814c19792314efb653deaf/koom-native-leak/src/main/java/com/kwai/koom/nativeoom/leakmonitor/LeakMonitorConfig.kt)
+- [KOOM `ThreadMonitor` 的 API 27～34 版本门与 arm64 限制](https://github.com/KwaiAppTeam/KOOM/blob/df3b8c33f63ab1f23e814c19792314efb653deaf/koom-thread-leak/src/main/java/com/kwai/performance/overhead/thread/monitor/ThreadMonitor.kt)
 - [KOOM thread Hook 与空 `Stop()` 实现](https://github.com/KwaiAppTeam/KOOM/blob/df3b8c33f63ab1f23e814c19792314efb653deaf/koom-thread-leak/src/main/cpp/src/thread/thread_hook.cpp)
 - [Android 15 fast dump 合入提交](https://github.com/KwaiAppTeam/KOOM/commit/f653d7c986debb242b1d8b96761351f63d9f04bf)
 - [16 KB page-size 修改提交](https://github.com/KwaiAppTeam/KOOM/commit/aae5a7c9212bd70c52d6b36ef631d6f5e6fb0fa1)
 - [Android 17 ART 源码 `android-17.0.0_r1`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1)
 - [Android 17 `libmemunreachable` 源码 `android-17.0.0_r1`](https://android.googlesource.com/platform/system/memory/libmemunreachable/+/refs/tags/android-17.0.0_r1)
 - [ApplicationExitInfo API 文档](https://developer.android.com/reference/android/app/ApplicationExitInfo)
-- [Android 应用内存管理与 `onTrimMemory` 版本说明](https://developer.android.com/topic/performance/memory)
+- [Android 应用内存管理](https://developer.android.com/topic/performance/memory)
+- [`ComponentCallbacks2` 的 trim 级别与废弃说明](https://developer.android.com/reference/android/content/ComponentCallbacks2)
 - [Android 16 KB page-size 兼容指南](https://developer.android.com/guide/practices/page-sizes)
 - [Android 17 common kernel `r39` 标签](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39)

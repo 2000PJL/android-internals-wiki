@@ -4,8 +4,10 @@ chapter: '2.15'
 section: '2.15'
 status: finalized
 applicable_versions: Android 15 (API 35) - Android 17 (API 37)
-last_verified: '2026-08-22'
-last_verified_against: 'Android 17 / API 37 / android-17.0.0_r1: PhoneWindow.java, DecorView.java, ViewRootImpl.java, InsetsController.java, ViewRootInsetsControllerHost.java, View.java, ViewGroup.java, Choreographer.java, ActivityInfo.java, WindowState.java, WindowRelayoutResult.java, WindowManagerService.java; Android Developers 15/16/17 behavior changes; Android edge-to-edge / software keyboard / WindowInsets docs; Perfetto FrameTimeline'
+last_verified: '2026-10-20'
+last_source_verified_at: '2026-10-20'
+last_idle_audit_at: '2026-10-20T14:37:40+08:00'
+last_verified_against: 'Android 17 / API 37 / android-17.0.0_r1: PhoneWindow.java, DecorView.java, ViewRootImpl.java, InsetsController.java, ViewRootInsetsControllerHost.java, View.java, ViewGroup.java, Choreographer.java, ActivityInfo.java, WindowState.java, WindowRelayoutResult.java, WindowManagerService.java; Android Developers 15/16/17 behavior changes; Android edge-to-edge / software keyboard / WindowInsets docs; Perfetto FrameTimeline; AndroidX Core 1.17.0 WindowCompat.java and API reference'
 confidence: high
 sources:
 - type: official
@@ -30,6 +32,10 @@ sources:
   path: https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture
 - type: official
   path: https://perfetto.dev/docs/data-sources/frametimeline
+- type: official
+  path: https://developer.android.com/reference/androidx/core/view/WindowCompat
+- type: source
+  path: https://dl.google.com/dl/android/maven2/androidx/core/core/1.17.0/core-1.17.0-sources.jar
 - type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/policy/PhoneWindow.java
 - type: source
@@ -111,7 +117,9 @@ Android 15 还把 target 35 及以上应用的 `Configuration` 尺寸与系统�
 
 ### 1.3 `enableEdgeToEdge()` 不是固定的一组 legacy flag
 
-`WindowCompat.enableEdgeToEdge()` 属于 AndroidX。它会按运行平台选择合适实现，并配置透明系统栏、图标明暗和三键导航保护。不同系统版本采用不同的兼容路径，因此不能把它等同于设置一组固定的 legacy flag（旧版窗口标志）；在 Android 15 及以上的强制场景中，平台自身的 `PhoneWindow` 已经决定 `decorFitsSystemWindows = false`。
+`WindowCompat.enableEdgeToEdge(window)` 从 AndroidX Core 1.17.0 开始提供。按 [Core 1.17.0 源码包](https://dl.google.com/dl/android/maven2/androidx/core/core/1.17.0/core-1.17.0-sources.jar) 中的 `androidx/core/view/WindowCompat.java`，它会让内容延伸到窗口边缘、请求透明系统栏颜色，并按运行平台设置 cutout 模式；API 29 及以上还会关闭状态栏与导航栏对比度保护。它没有设置系统栏图标明暗，也不会自动添加三键导航保护背景。应用需根据栏后内容通过 `WindowInsetsControllerCompat` 配置图标明暗，并按需处理三键导航背景。
+
+不同系统版本采用不同的兼容路径，因此不能把它等同于设置一组固定的 legacy flag（旧版窗口标志）；在 Android 15 及以上的强制场景中，平台自身的 `PhoneWindow` 已经决定 `decorFitsSystemWindows = false`。状态栏颜色和手势导航栏颜色的设置 API 在该强制场景中已弃用且不再生效，三键导航的颜色设置仍需与手势导航分开判断。
 
 ## 2. Edge-to-Edge 没有改变标准 App Window 出图拓扑
 

@@ -7113,6 +7113,27 @@
       "summary": "Display.getSuggestedFrameRate 被写成无参方法",
       "type": "api-signature",
       "updated_at": "2026-10-20T12:13:28.762424+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md",
+      "close_note": "已在 WebGPU 节补回官方 Gemini 文档可能有误警告，按 alpha06 明确 minSdk 26 和 Java Builder 迁移。Google Maven 实际 AAR AndroidManifest.xml 与 sources.jar 的 Builder、GPUSurface 签名和警告已核对；元数据、SUMMARY 链接、diff-check、中文新增行硬门均通过。保持 ready-for-review / medium，未作整篇发布晋级。",
+      "closed_by": "aiw-polish-deep-review",
+      "closed_run_id": "20261020-123520-deep-review-440b6bfb",
+      "created_at": "2026-10-20T12:37:34.442356+08:00",
+      "created_by": "aiw-polish-deep-review",
+      "created_run_id": "20261020-123520-deep-review-440b6bfb",
+      "details": "claim: 正文仅以 1.0.0-alpha05 和 alpha 接口可能变化概括 WebGPU 生命周期，未保留其所引用发布说明中 Gemini 生成文档可能有误的 Important Note。target_range: Android 17 > WebGPU，原行 1149-1153；sources 原行 103。evidence: 官方 release 页 alpha05/alpha06 均含文档可能有误警告；2026-10-07 的 alpha06 将 minSdk 从 24 提升至 26，并迁移 Java descriptor/configuration 调用至 Builder。recommended_action: 按独立库版本明确 alpha06 的发布日、最低 SDK 与 Java Builder 迁移要求，保留 alpha 状态和官方文档可靠性提示；以 Google Maven 实际 AAR 与 sources.jar 核对后补入正文。",
+      "id": "finding-4ac98f82da72",
+      "log_path": "logs/deep-review/2026-10-20-20261020-123520-deep-review-440b6bfb-deep-review.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/jetpack/androidx/releases/webgpu#1.0.0-alpha05",
+        "https://developer.android.com/jetpack/androidx/releases/webgpu#1.0.0-alpha06"
+      ],
+      "status": "fixed",
+      "summary": "WebGPU 缺少发布文档警告与依赖迁移适用边界",
+      "type": "lifecycle-boundary",
+      "updated_at": "2026-10-20T12:40:05.904737+08:00"
     }
   ],
   "schema_version": 1

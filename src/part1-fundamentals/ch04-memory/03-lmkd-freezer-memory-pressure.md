@@ -126,17 +126,19 @@ consolidated_from:
 
 # lmkd、Cached App Freezer 与内存压力治理
 
-系统内存压力会触发回收、压缩、冻结、内存控制组（memory cgroup，简称 memcg）限制和进程终止。lmkd 负责挑选要终止的进程，Freezer 降低缓存进程的活动，MemoryLimiter（单进程配额机制）与产品预取则改变局部压力和工作集。
+系统内存压力会触发回收、压缩、冻结、内存控制组（memory cgroup，简称 memcg）限制和进程终止。这几套手段由不同角色分工：lmkd 负责挑选要终止的进程，Freezer 降低缓存进程的活动，MemoryLimiter（单进程配额机制）与产品预取则改变局部压力和工作集。
+
+> 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
 ## 压力信号、回收与 lmkd 决策
 
 ### 先把低内存终止机制放回 Android 内存体系
 
-Android 会尽量保留离开前台的应用进程。用户再次打开应用时，系统可以复用进程、Java 堆、已加载的类和部分页面缓存，省去一次从 Zygote 通过 `fork()` 复制进程开始的启动。代价是物理内存、压缩交换空间和文件页缓存会逐渐承压。
+Android 会尽量保留离开前台的应用进程：用户再次打开应用时，系统可以复用进程、Java 堆、已加载的类和部分页面缓存，省去一次从 Zygote 通过 `fork()` 复制进程开始的启动。代价随之而来——物理内存、压缩交换空间和文件页缓存会逐渐承压。
 
 Linux 内核自带的 OOM Killer 通常要等内存分配已经难以继续时才介入，对 Android 来说这一层来得太晚，也太不了解各个应用的重要性。所以我们在内核之外再加一层更早的策略：系统根据 Activity、Service、ContentProvider、绑定关系和近期交互计算进程优先级，低内存终止守护进程（low memory killer daemon，lmkd）结合这个优先级和内核压力数据，优先终止对用户影响较小的进程。这套策略常简称低内存终止（LMK）机制。
 
-Android 17 的 LMK 主路径包含三类输入、两段决策和一条回收链。下图用于区分进程重要性计算、压力判断、候选选择和终止后的内存回收：
+LMK 的主路径包含三类输入、两段决策和一条回收链。下图用于区分进程重要性计算、压力判断、候选选择和终止后的内存回收：
 
 ```mermaid
 flowchart LR
@@ -158,9 +160,7 @@ flowchart LR
 图中有两处分工容易看错：
 
 - `OomAdjuster` 负责回答“这个进程对用户有多重要”，`lmkd` 负责回答“当前压力是否需要终止进程，以及在什么优先级范围内选谁”。
-- `lmkd` 会写 `/proc/<pid>/oom_score_adj`，同时在自己的进程表中登记候选；它与活动管理服务（ActivityManagerService（AMS），AMS）之间另有一条专用控制套接字，通信并不止“通过 `/proc` 共享信息”这一条路。
-
-> 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
+- `lmkd` 会写 `/proc/<pid>/oom_score_adj`，同时在自己的进程表中登记候选；它与活动管理服务（ActivityManagerService（AMS），AMS）之间还有一条专用控制套接字，两边的通信路径也不止 `/proc` 共享信息这一条。
 
 ### 从内核 LMK 到用户空间 lmkd
 
@@ -232,15 +232,15 @@ Android 17 把核心常量集中在 `services/core/java/com/android/server/am/ps
 - 前台服务的类型、近期顶层状态宽限、可见 Activity 层次和系统绑定都会影响结果；
 - 缓存进程和前一个应用在特性开关启用后可以使用更细的阶梯值。
 
-我们排查时要读目标时刻的 adj，单凭“它有一个 Service”推不出结果。
+我们排查时要读目标时刻的 adj——绑定关系、前台状态都参与了计算，单凭“它有一个 Service”是定不了结果的。
 
-原生守护进程也不是天然安全：`NATIVE_ADJ` 在 Framework 中描述的是 AMS 未管理的原生进程；某个守护进程的实际保护还取决于 init 服务配置、它的 `/proc/<pid>/oom_score_adj`，以及它是否登记到 `lmkd`。
+原生守护进程的实际保护要另查三处：`NATIVE_ADJ` 在 Framework 中描述的是 AMS 未管理的原生进程；落到某个守护进程身上，还要看 init 服务配置、它的 `/proc/<pid>/oom_score_adj`，以及它是否登记到 `lmkd`。
 
 ### AMS 如何把优先级交给 lmkd
 
 #### 控制协议
 
-Android 17 的命令号在 Framework `ProcessList.java` 与 `system/memory/lmkd/include/lmkd.h` 中保持一致：
+命令号在 Framework `ProcessList.java` 与 `system/memory/lmkd/include/lmkd.h` 中保持一致：
 
 | 命令 | 值 | 作用 |
 |---|---:|---|
@@ -259,11 +259,11 @@ Android 17 的命令号在 Framework `ProcessList.java` 与 `system/memory/lmkd/
 
 单进程 `LMK_PROCPRIO` 包含 6 个 32 位整数：命令、PID、UID、adj、进程类型（process type）、`for_lmkd_only`。默认进程类型是 `PROC_TYPE_APP`。`for_lmkd_only=false` 时，`lmkd::apply_proc_prio()` 先把 adj 写到 `/proc/<pid>/oom_score_adj`，再把进程放进对应 adj 链表。
 
-批量命令每个包最多放 3 个进程，每个记录有 PID、UID、adj、进程类型和 `for_lmkd_only` 五个字段。Android 17 的 `ProcessList.batchSetOomAdj()` 固定把末尾一个字段写成 0，因此批量路径不支持只更新 `lmkd` 内部值。
+批量命令每个包最多放 3 个进程，每个记录有 PID、UID、adj、进程类型和 `for_lmkd_only` 五个字段。`ProcessList.batchSetOomAdj()` 固定把末尾一个字段写成 0，因此批量路径没法只更新 `lmkd` 内部值。
 
-每包最多 3 条记录，这个上限来自控制包最多只放 16 个 `int`：一个命令字，加三组、每组五个字段。批量路径减少了套接字写入和守护进程收包次数，却算不上一次不可分割的原子事务：`lmkd` 会逐条校验 PID、UID、adj 和字段范围，某条记录失败，并不表示其他记录会自动回滚。
+每包最多 3 条记录，这个上限来自控制包最多只放 16 个 `int`：一个命令字，加三组、每组五个字段。批量路径减少了套接字写入和守护进程收包次数，却算不上原子事务：`lmkd` 会逐条校验 PID、UID、adj 和字段范围，某条记录失败，其他记录并不会随之自动回滚。
 
-`for_lmkd_only` 这个字段容易被误读：它只决定是否同时写 `/proc/<pid>/oom_score_adj`，并不存在“只在压力时生效”的延迟更新语义。
+`for_lmkd_only` 这个字段容易被误读。它只决定一件事：是否同时写 `/proc/<pid>/oom_score_adj`；“只在压力时生效”这样的延迟更新语义，源码里并没有。
 
 连接建立后，`ProcessList.onLmkdConnect()` 会：
 
@@ -275,7 +275,7 @@ Android 17 的命令号在 Framework `ProcessList.java` 与 `system/memory/lmkd/
 
 #### 6 档 `LMK_TARGET` 的基线与用途
 
-`ProcessList` 仍保留 6 档 minfree。Android 17 的 adj 数组是：
+`ProcessList` 仍保留 6 档 minfree，adj 数组是：
 
 | 档位 | adj | 低内存设备基线（KB） | 高内存设备基线（KB） |
 |---|---:|---:|---:|
@@ -293,7 +293,7 @@ Android 17 的命令号在 Framework `ProcessList.java` 与 `system/memory/lmkd/
 - `ro.lmk.use_minfree_levels=true` 时，`lmkd` 使用传统的空闲页和文件缓存阈值；
 - Framework 的 `getMemLevel()` 等逻辑仍会读取计算后的内存档位。
 
-`LMK_TARGET` 仍在源码中，这件事本身说明不了默认 PSI 新策略也只看固定的 minfree 阈值。
+`LMK_TARGET` 还在源码里；它的存在本身，推不出默认 PSI 新策略也只看固定的 minfree 阈值。
 
 ### Android 17 的 PSI 新策略
 
@@ -302,9 +302,9 @@ Android 17 的命令号在 Framework `ProcessList.java` 与 `system/memory/lmkd/
 内核通过 `/proc/pressure/memory` 导出 PSI：
 
 - `some` 表示至少有一部分任务因该资源而停顿；
-- `full` 表示所有非空闲任务同时停顿，此时 CPU 无法继续做有效工作。
+- `full` 表示所有非空闲任务同时停顿，此时 CPU 已经做不了有效工作。
 
-这里的对象是调度器管理的任务（task），不是笼统的“设备上所有进程”。`full` 也不统计内核用于填补空转时间的空闲任务（idle task）。
+这里的对象是调度器管理的任务（task），范围比“设备上所有进程”窄；内核用于填补空转时间的空闲任务（idle task）也不计入 `full`。
 
 PSI 触发器使用“某个时间窗口内累计停顿多久”的形式。例如 `some 70000 1000000` 表示在 1 秒窗口内，部分任务累计停顿 70 ms 后唤醒监听者。触发器只负责唤醒 `lmkd` 做检查，本轮是否终止进程由后续判断决定。
 
@@ -329,7 +329,7 @@ low_ram_device || !use_minfree_levels
 
 旧资料里的 `LowMemDetector` 和 “LMKD v2” 都不是 `android-17.0.0_r1` 中的正式类名或版本对象：前者至多泛指低内存检测，后者用来区分用户空间 `lmkd` 与早期的内核模块。分析当前源码时，我们以 `use_new_strategy`、PSI 触发器、内存事件（memevents）和具体函数为准。
 
-Android 17 的 `libpsi` 只为 `lmkd` 打开全局 `/proc/pressure/memory`，并不会遍历每个应用的 `memory.pressure`。这里有三件彼此独立的事：`ro.config.per_app_memcg`、Reaper 使用 `cgroup.kill`、cgroup v2 支持控制组级 PSI；至于终止目标，从这些事实推不出“按哪个应用控制组的 PSI 最高选择”。
+`libpsi` 只为 `lmkd` 打开全局 `/proc/pressure/memory`，每个应用各自的 `memory.pressure` 不在遍历范围内。这里有三件彼此独立的事：`ro.config.per_app_memcg`、Reaper 使用 `cgroup.kill`、cgroup v2 支持控制组级 PSI；至于终止目标怎么选，还要回到候选选择逻辑，这些事实里并没有“按控制组 PSI 最高选择”的依据。
 
 #### PSI 唤醒之后还要检查什么
 
@@ -368,13 +368,13 @@ Android 17 新策略的主要终止原因包括：
 
 普通低水位分支使用 `ro.lmk.lowmem_min_oom_score`。Android 17 默认是 `PREVIOUS_APP_ADJ + 1`，即 701，并且源码把它限制为不低于 `PERCEPTIBLE_APP_ADJ + 1`，即 201。
 
-“701 等于从缓存进程开始终止”这个说法并不准确：启用上一应用优先级阶梯（previous ladder）时，701～799 可能包含上一个应用的进程，800 是 B 类服务，900 以上才是缓存进程；关闭该阶梯时，701～799 可能没有对应进程，但门槛仍是 701。发生严重停顿时，门槛可以降到 0，连前台层的进程也会进入候选范围。
+701 这个门槛的含义，要看上一应用优先级阶梯（previous ladder）的状态：启用时，701～799 可能包含上一个应用的进程，800 是 B 类服务，900 以上才是缓存进程；关闭时，701～799 可能没有对应进程，但门槛仍是 701。发生严重停顿时，门槛可以降到 0，连前台层的进程也会进入候选范围。
 
 `__mp_event_psi()` 按固定顺序判断原因，依次是设备厂商事件、终止后仍处于低水位、严重 PSI、交换空间不足、缓存抖动、直接回收，最后才是普通低水位。前面的分支命中后会确定本轮原因，后续条件不会覆盖它。诊断日志中的原因既说明触发了哪类条件，也反映源码的判断顺序。
 
 缓存抖动比例来自 `workingset_refault_file` 相对于窗口起点活跃、非活跃文件页总量的增长率，衡量的是文件页工作集被回收后又反复读回的程度，与匿名页换入率、ZRAM 压缩率、PSI `full` 是三回事。成功终止进程后，部分原因会按 `thrashing_limit_decay` 降低下一轮动态阈值；没有合适目标时，历史 refault 计数会经过衰减并保留到下一个窗口。
 
-还要区分三个名称相近的配置：`thrashing_limit_critical` 可取消对用户可感知进程的额外保护；`stall_limit_critical` 比较内存 PSI 的 `full avg10`；`direct_reclaim_threshold_ms` 只在内存事件能够提供直接回收起止时间时判断回收是否卡住。这三个配置并不构成一个“严重缓存抖动”条件。
+还有三个名称相近的配置要分开记：`thrashing_limit_critical` 可取消对用户可感知进程的额外保护；`stall_limit_critical` 比较内存 PSI 的 `full avg10`；`direct_reclaim_threshold_ms` 只在内存事件能够提供直接回收起止时间时判断回收是否卡住。三者各管一段，源码里并没有一个把它们合并成的“严重缓存抖动”条件。
 
 #### 候选选择
 
@@ -406,7 +406,7 @@ Reaper 是 `lmkd` 中负责异步终止进程、并催促内核尽快回收内�
 2. 没有合适的控制组时，改用 `pidfd_send_signal(SIGKILL)` 发送不可捕获的强制终止信号；
 3. Reaper 线程调用 `process_mrelease(pidfd, 0)`，在进程退出清理完全结束前，促使内核提前回收其匿名页和页表。
 
-Reaper 线程会进入前台 CPU 集合（`cpuset`）并提高自身优先级；它还会为目标进程组设置专用的回收任务配置（reap task profile）。这些行为来自 AOSP 的 `reaper.cpp`，不依赖某个芯片厂商的私有补丁。
+Reaper 线程会进入前台 CPU 集合（`cpuset`）并提高自身优先级；它还会为目标进程组设置专用的回收任务配置（reap task profile）。这些行为都写在 AOSP 的 `reaper.cpp` 里，与芯片厂商的私有补丁无关。
 
 终止信号发出后，内存不会立刻全部回到可用池；目标包含大量匿名页、交换页或 DMA-BUF 时，我们要重点观察这段回收延迟。
 
@@ -418,7 +418,7 @@ Reaper 线程会进入前台 CPU 集合（`cpuset`）并提高自身优先级；
 ATRACE_INSTANT_FOR_TRACK(LOG_TAG, desc);
 ```
 
-这行代码用于说明事件类型。`LOG_TAG` 是 `lowmemorykiller`，`desc` 依次编码 PID、终止原因、目标 adj、最低候选 adj 和最大缓存抖动比例。它是瞬时事件（instant event），只有一个时间点；带开始、结束时间的持续区间（duration slice）是另一种记录形态。旧文章常提到的 `LMKD_TRACE_KILLS` 编译开关，在这个源码里并不存在。
+这行代码用于说明事件类型。`LOG_TAG` 是 `lowmemorykiller`，`desc` 依次编码 PID、终止原因、目标 adj、最低候选 adj 和最大缓存抖动比例。它是瞬时事件（instant event），只有一个时间点；带开始、结束时间的持续区间（duration slice）是另一种记录形态。旧文章常提到的 `LMKD_TRACE_KILLS` 编译开关，在这个源码里已经找不到了。
 
 同一条路径还会：
 
@@ -457,7 +457,7 @@ LMK 的目标是缩短内存压力持续时间。用户体验问题通常出现�
 
 第 3 步没有发生时，终止进程不会自动产生一次冷启动——只有用户或系统再次需要该进程，才会付出重建成本。另外，界面状态可以恢复，承载它的却可能已经是新进程。
 
-排查时建议同时看四组指标：
+我们排查时建议同时看四组指标：
 
 - 单位时间内的 LMK 次数，以及目标进程的 adj 分布；
 - 目标进程的 RSS、匿名页 RSS、交换空间和 DMA-BUF；
@@ -520,7 +520,7 @@ FROM android_lmk_events
 ORDER BY ts;
 ```
 
-查询结果给出事件时刻、被终止的进程、adj 和终止原因。Trace Processor 内部也会生成兼容旧查询的 `mem.lmk` 瞬时事件，但新分析脚本宜优先使用标准库表，直接取得 Android 17 事件携带的原因和 adj。拿到结果后，我们再回到同一时间窗口检查内存计数、回收活动，以及稍后是否出现该包的新进程。
+查询结果给出事件时刻、被终止的进程、adj 和终止原因。Trace Processor 内部也会生成兼容旧查询的 `mem.lmk` 瞬时事件，但新分析脚本宜优先使用标准库表，直接取得当前事件携带的原因和 adj。拿到结果后，我们再回到同一时间窗口检查内存计数、回收活动，以及稍后是否出现该包的新进程。
 
 #### 设备侧命令
 
@@ -543,7 +543,7 @@ adb logcat -b all -s lowmemorykiller ActivityManager MemoryLimiter
 3. 核对目标进程当时的 adj 和内存构成；
 4. 最终确认用户返回后是否产生新进程与启动代价。
 
-单凭 `lmkd` 出现在 trace 里，证明不了它导致了卡顿；同样，一次 `dumpsys meminfo` 快照也解释不了数十秒前发生的进程终止。
+这四步走完，因果才立得住：trace 里出现 `lmkd`，只说明发生过终止，卡顿是否由它导致，要看前三步的证据；一次 `dumpsys meminfo` 快照，同样还原不了数十秒前发生的进程终止。
 
 ### `onTrimMemory()` 与缓存应用冻结器的边界
 
@@ -576,7 +576,7 @@ class App : Application() {
 
 使用 `>=` 可以兼容未来插入的中间值。具体缓存库还要遵循线程约束；回调中释放仍在绘制或播放的对象可能引入崩溃和抖动。
 
-Android 17 的 `ActivityThread.scheduleTrimMemory()` 把回调投递到主线程的 `Choreographer.CALLBACK_COMMIT` 阶段，也就是一帧绘制提交之后，以降低画面卡顿风险；拿不到 `Choreographer` 时，改由主线程 `Handler` 投递。
+`ActivityThread.scheduleTrimMemory()` 把回调投递到主线程的 `Choreographer.CALLBACK_COMMIT` 阶段，也就是一帧绘制提交之后，以降低画面卡顿风险；拿不到 `Choreographer` 时，改由主线程 `Handler` 投递。
 
 特性开关 `skipBgMemTrimOnFgApp` 启用后，重要前台进程会跳过 `BACKGROUND` 或更高等级的内存整理回调。
 
@@ -584,11 +584,11 @@ Android 17 的 `ActivityThread.scheduleTrimMemory()` 把回调投递到主线程
 
 缓存应用冻结器（Cached App Freezer）由 `OomAdjuster`/`CachedAppOptimizer` 根据缓存状态安排。`CachedAppOptimizer.freezeAppAsyncInternalLSP()` 在目标 adj 至少为 900 时，先通过 Binder 请求 `TRIM_MEMORY_BACKGROUND`，再向负责冻结的 `Handler` 投递消息。
 
-Binder 请求先发出，并不表示应用这边已经完成清理：回调在应用主线程异步执行，冻结又由另一条 `Handler` 路径安排，所以把这次通知当作保证清理完成的“截止期限”是靠不住的。
+Binder 请求先发出，应用这边的清理却是异步进行的：回调在应用主线程异步执行，冻结又由另一条 `Handler` 路径安排。把这次通知当作保证清理完成的“截止期限”，与真实时序对不上。
 
 冻结后的进程仍然存在，其内存并不会全部释放。回到前台时，系统会解冻（thaw）原进程，常见代价包括内存页重新进入活跃状态、缓存重建和待处理任务恢复——这与 LMK 后由 Zygote 创建新进程的冷启动不同。Freezer 本身也不产生 `ApplicationExitInfo` 进程退出记录。
 
-两条路径到这里完全分开：`lmkd` 从不通过 AMS 发出“请冻结这个终止目标”的命令；把路径画成 `lmkd → CachedAppOptimizer → freeze`，就把两个彼此独立的子系统混在了一起。
+两条路径到这里完全分开：`lmkd` 从不通过 AMS 发出“请冻结这个终止目标”的命令；把路径画成 `lmkd → CachedAppOptimizer → freeze`，就等于把两个独立子系统混成了一个。
 
 ### Android 17 MemoryLimiter：单进程配额
 
@@ -669,11 +669,11 @@ AOSP 公开了多种设备调校入口，例如：
 
 #### Android 15：16 KB 页大小
 
-16 KB 页大小会改变页表、内部碎片和进程内存构成，也会改变 KB 与页数之间的换算。它不会直接改变 `lmkd` 的优先级原则。`ProcessList` 发送 `LMK_TARGET` 时，会按运行时的 `PAGE_SIZE` 把 KB 换算成页；分析脚本也应读取设备的实际页大小。
+16 KB 页大小改变的是页表、内部碎片、进程内存构成，以及 KB 与页数之间的换算；它对 `lmkd` 的优先级原则没有直接影响。`ProcessList` 发送 `LMK_TARGET` 时，会按运行时的 `PAGE_SIZE` 把 KB 换算成页；分析脚本也应读取设备的实际页大小。
 
 #### Android 16：用户空间 `lmkd` 与 Reaper
 
-Android 16 已经具备 PSI 与缓存抖动决策、pidfd、Reaper 和 `process_mrelease()` 主路径。`sys.lmk.minfree_levels`、`sys.lmk.reportkills` 等属性出现得更早，不能算作 Android 16 独有特性。
+Android 16 已经具备 PSI 与缓存抖动决策、pidfd、Reaper 和 `process_mrelease()` 主路径。`sys.lmk.minfree_levels`、`sys.lmk.reportkills` 等属性出现得更早，算不上 Android 16 的独有特性。
 
 #### Android 17 源码边界
 
@@ -715,7 +715,7 @@ Android 17 源码中的边界包括：
 
 ### lmkd 诊断的四条主线
 
-理解 Android 17 LMK，可以抓住四条线：
+理解 LMK，可以抓住四条线：
 
 1. AMS/Process State Controller 把组件状态和依赖关系计算成动态 `oom_score_adj`；
 2. `ProcessList` 经控制套接字把进程信息交给 `lmkd`，`lmkd` 更新 `/proc` 并维护候选表；
@@ -726,7 +726,7 @@ Android 17 源码中的边界包括：
 
 ## 缓存进程冻结与外部页回收
 
-lmkd 决定何时终止进程，Freezer 尝试先降低缓存进程的 CPU 和后台活动。冻结期间的 GC、Binder 和文件页仍需单独分析。
+lmkd 决定何时终止进程，Freezer 则尝试把缓存进程的 CPU 和后台活动先停下来；冻结期间的 GC、Binder 和文件页发生了什么，要单独分析。
 
 ### 先分清四种机制
 
@@ -741,9 +741,9 @@ lmkd 决定何时终止进程，Freezer 尝试先降低缓存进程的 CPU 和�
 | 页面回收 / ZRAM | 内核或系统内存服务 | 回收文件页、换出匿名页、对进程执行内存优化 | 可以减少驻留物理页 |
 | LMKD | `lmkd` 与内核压力信号 | 终止低优先级进程 | 可以释放整个进程的资源 |
 
-官方文档也明确说明：冻结进程的所有线程都会暂停，既执行不了 GC，也处理不了内存整理回调。Android 17 源码还允许系统在冻结成功后，从进程外部执行应用页面回收和 ZRAM 写回。这些动作会改变 RSS 或匿名页所在位置，把它读成“ART 在冻结区间内执行了 GC”是一种常见误读。
+官方文档也明确说明：冻结进程的所有线程都会暂停，GC 和内存整理回调都执行不了。Android 17 源码还允许系统在冻结成功后，从进程外部执行应用页面回收和 ZRAM 写回，这些动作同样会改变 RSS 或匿名页所在位置。看到这种变化就归给“ART 在冻结区间内执行了 GC”，是一种常见误读。
 
-看到以下现象时，不要只凭时间相邻建立因果关系：
+看到以下现象时，我们先别急着按时间相邻定因果：
 
 - 退到后台后出现 GC：可能是应用进入后台后的运行时请求，也可能由 ART 原有的堆水位触发。
 - `dumpsys meminfo` 中 RSS 下降：可能来自应用页面回收、内核页回收或 ZRAM 写回。
@@ -753,7 +753,7 @@ lmkd 决定何时终止进程，Freezer 尝试先降低缓存进程的 CPU 和�
 
 ### 冻结资格的判断
 
-#### OOM adj 仍是输入，但不再由 `getFreezePolicy()` 直接比较
+#### OOM adj、CPU 时间能力与冻结资格
 
 Android 17 将 ActivityManager 的进程状态计算代码移到了 `com.android.server.am.psc` 包。相关常量也位于：
 
@@ -761,7 +761,7 @@ Android 17 将 ActivityManager 的进程状态计算代码移到了 `com.android
 frameworks/base/services/core/java/com/android/server/am/psc/Constants.java
 ```
 
-这条路径用于定位 Android 17 的进程优先级常量。几个关键值如下：
+进程优先级常量就落在这个文件里。几个关键值如下：
 
 | 常量 | Android 17 的值 | 含义 |
 | --- | ---: | --- |
@@ -792,13 +792,13 @@ boolean canFreeze =
 
 阅读源码时要把这段伪代码映射回 `psc/OomAdjuster.java`，不要把它复制成产品代码。它说明 adj 阈值在 Android 17 中会先转换为隐式 CPU 时间能力，再由 `getFreezePolicy()` 使用；“`getFreezePolicy()` 直接比较 `curAdj`”已经不符合这个版本的实现。
 
-这也解释了为什么单看 `oom_score_adj >= 900` 推不出进程会被冻结：进程可能因当前组件、绑定关系或系统策略仍持有 CPU 时间能力。反过来，冻结也说明不了 lmkd 即将终止它——冻结器与 lmkd 共用一部分进程重要性输入，执行动作和触发条件却彼此独立。
+这一段解释了两件事：单看 `oom_score_adj >= 900` 推不出进程会被冻结，因为进程可能因当前组件、绑定关系或系统策略仍持有 CPU 时间能力；一个进程已经冻结，同样推不出 lmkd 即将终止它——冻结器与 lmkd 共用一部分进程重要性输入，执行动作和触发条件却彼此独立。
 
 #### 文件锁与绑定豁免是附加约束
 
-官方文档把若干豁免称为实现细节。例如，冻结进程若持有文件锁并阻塞不可冻结进程，系统会解除其冻结；带有 `BIND_WAIVE_PRIORITY` 的绑定关系也可能影响冻结处理。Android 17 的 `CachedAppOptimizer` 使用 `ProcLocksReader` 检查这类阻塞关系。
+官方文档把若干豁免统称为实现细节。例如，冻结进程若持有文件锁并阻塞不可冻结进程，系统会解除其冻结；带有 `BIND_WAIVE_PRIORITY` 的绑定关系也可能影响冻结处理。`CachedAppOptimizer` 使用 `ProcLocksReader` 检查这类阻塞关系。
 
-这些规则属于实现细节，应用侧拿不到稳定契约，仍应按“进入缓存状态后随时可能失去 CPU 时间”设计，不要通过文件锁、持续绑定或高频 IPC 规避冻结器。
+这些豁免属于实现细节，应用侧拿不到稳定契约；设计时应按“进入缓存状态后随时可能失去 CPU 时间”来考虑，别指望靠文件锁、持续绑定或高频 IPC 规避冻结器。
 
 ### 从候选到冻结
 
@@ -829,7 +829,7 @@ flowchart TD
     R --> S["移除 frozen 记录并恢复执行"]
 ```
 
-图中 `scheduleTrimMemory()` 是一次跨 Binder 的异步请求。正常的防抖窗口通常给应用主线程留出了处理机会，但源码没有保证主线程严重阻塞时一定能在冻结前完成回调。因此，工程文档里把时序写成“先完整执行内存整理，再冻结”是没有依据的。
+图中 `scheduleTrimMemory()` 是一次跨 Binder 的异步请求。正常的防抖窗口通常给应用主线程留出了处理机会，但源码并没有保证主线程严重阻塞时一定能在冻结前完成回调；工程文档里把时序写成“先完整执行内存整理，再冻结”，与源码行为对不上。
 
 #### 冻结动作的准确顺序
 
@@ -843,7 +843,7 @@ thread.scheduleTrimMemory(ComponentCallbacks2.TRIM_MEMORY_BACKGROUND);
 
 1. 再次确认进程仍处于待处理状态，没有覆盖冻结策略，PID 有效，而且尚未冻结。
 2. 调用 `freezeBinder(pid, true, 0)` 冻结 Binder 接口。
-3. 处理尚未完成的事务或 Binder 冻结失败。Android 17 包含重试和退避处理，“遇到任意失败立即终止进程”的概括不成立。
+3. 处理尚未完成的事务或 Binder 冻结失败。Android 17 包含重试和退避处理，“遇到任意失败立即终止进程”的概括与这里的实现不符。
 4. 调用 `setProcessFrozen(pid, uid, true)` 将进程放入冻结控制组。
 5. 更新进程优化状态，并把 PID 记入 `mFrozenProcesses`。
 6. 再查询 Binder 冻结信息；若发现冻结期间出现待处理的同步事务，进入 Binder 失败处理。
@@ -858,7 +858,7 @@ Binder 先冻结，cgroup 随后冻结。这个顺序让 system_server 能在停
 1. 取消尚未执行的 freeze 消息。
 2. 查询 Binder freeze info。
 3. 若冻结期间收到同步 Binder 事务，以 `ApplicationExitInfo.REASON_FREEZER` 及对应子原因终止服务端进程。
-4. 查询失败也会进入保护性终止分支，避免留下无法确认 IPC 状态的进程。
+4. 查询失败也会进入保护性终止分支，避免留下 IPC 状态不明的进程。
 5. 正常情况下先解冻 Binder，再解冻进程控制组。
 6. 清除冻结标志并从 `mFrozenProcesses` 移除 PID。
 7. 如果该进程的页面已写回 ZRAM，且解冻原因是 Activity 激活，可以请求预取这些页面。
@@ -874,18 +874,18 @@ Binder 先冻结，cgroup 随后冻结。这个顺序让 system_server 能在停
 - `CachedAppOptimizer` 尝试发送 `TRIM_MEMORY_BACKGROUND`。
 - `AppProfiler` 把进程加入后台 GC 队列，随后调用应用线程的 `processInBackground()`。`ActivityThread` 在主线程空闲时处理 `GC_WHEN_IDLE`，最终可以经 `BinderInternal.forceGc(reason)` 请求运行时 GC。
 
-两者都发生在应用仍能获得 CPU 时间的阶段。请求已经发出不等于处理已经完成；主线程繁忙、进程状态再次变化或防抖配置都会改变最终时序。
+两者都发生在应用仍能获得 CPU 时间的阶段。请求发出去了，处理却未必跟上：主线程繁忙、进程状态再次变化或防抖配置都会改变最终时序。
 
 官方文档使用“系统可能在缓存后不久请求一次 GC”这样留有余地的表述，就是为了这些条件。排障时我们检查 GC 持续区间的起止时间；仅凭“进程刚退后台”就认定这次 GC 属于冻结流程，会把两件事混在一起。
 
 #### 冻结中：ART 的 GC 线程无法运行
 
-进入冻结控制组后，应用进程中修改对象图的线程（mutator）、主线程、Binder 线程和 ART GC 守护线程都无法获得 CPU 时间。此时：
+进入冻结控制组后，应用进程中修改对象图的线程（mutator）、主线程、Binder 线程和 ART GC 守护线程一概拿不到 CPU 时间。此时：
 
-- 应用不能分配新对象；
-- ART 不能推进并发 GC；
-- 应用不能执行 `onTrimMemory()`；
-- 应用自己的定时器、线程池和协程都不能继续运行。
+- 应用分配不了新对象；
+- ART 推进不了并发 GC；
+- 应用执行不了 `onTrimMemory()`；
+- 应用自己的定时器、线程池和协程也都停了下来。
 
 “冻结区间内发生 GC”多半来自观测方式：GC 持续区间在冻结前已经开始、trace 时间戳对齐不准、进程解冻后补做工作，或者看到的正是 `system_server` 对该进程执行的外部内存优化。
 
@@ -893,11 +893,11 @@ Binder 先冻结，cgroup 随后冻结。这个顺序让 system_server 能在停
 
 解冻后，已经到期的定时任务、排队的回调和新的前台分配可能集中出现。ART 会按当时的堆状态继续执行或重新请求 GC，所以 GC 持续区间紧跟 `Unfreeze` 并不罕见。
 
-固定频率调度尤其危险。若应用假定后台每隔固定时间都能运行，冻结期间错过的多个周期可能在恢复时密集执行。官方冻结器文档建议不要依赖缓存进程的周期性执行；需要可靠后台工作的场景应使用合适的系统调度 API。
+受影响最明显的是固定频率调度。若应用假定后台每隔固定时间都能运行，冻结期间错过的多个周期可能在恢复时密集执行；官方冻结器文档因此建议不要依赖缓存进程的周期性执行，需要可靠后台工作的场景应使用合适的系统调度 API。
 
 ### ART 仍按堆状态决定 GC
 
-Android 17 的 ART 基线是 `art/runtime/gc/heap.cc`。冻结器没有向 `Heap` 传入“当前已冻结”的开关，也没有改写 GC 水位公式。ART 仍围绕以下状态工作：
+ART 这边的基线是 `art/runtime/gc/heap.cc`：冻结器没有向 `Heap` 传入“当前已冻结”的开关，也没有改写 GC 水位公式，ART 仍围绕以下状态工作：
 
 - `target_footprint_`：当前希望控制的堆占用目标；
 - `concurrent_start_bytes_`：并发 GC 的启动水位；
@@ -908,13 +908,13 @@ Android 17 的 ART 基线是 `art/runtime/gc/heap.cc`。冻结器没有向 `Heap
 
 `UpdateProcessState()` 反映的是进程状态对运行时策略的影响：进程进入后台时，ART 可以切换收集器；对 CMC/CC 等收集器，满足分配量和内存状态条件时，`DoPendingCollectorTransition()` 可能执行全堆 GC 或受管理堆压缩整理。这些动作仍然发生在应用能够运行的时段。
 
-三个要点分别是：
+这一小节可以收成三点：
 
 1. 进入后台会影响 ART 的策略选择。
 2. Framework 可能在冻结前请求运行时 GC。
 3. cgroup 冻结动作不会在应用进程内执行 GC。
 
-### 冻结后的应用页面回收也不是 ART GC
+### 冻结后的应用页面回收
 
 Android 17 的 `CachedAppOptimizer.onProcessFrozen()` 可以在进程冻结后触发 FULL 级应用页面回收。这里的 FULL 表示 `CachedAppOptimizer` 的进程内存优化级别，和 ART 全堆 GC、Linux 伙伴系统为高阶页执行的物理页规整是三个不同的概念。
 
@@ -944,7 +944,7 @@ Android 17 有两类执行后端：
 
 `memory.reclaim` 是主动回收接口，内核实际回收量可以少于或多于请求量，少于请求量时可返回 `EAGAIN`。该开关只改变执行后端，不会把触发条件改成按进程 PSI，也不会跳过 OOM adj、冻结完成、RSS 和时间节流条件。
 
-Android 17 的 `ENABLE_SHARED_AND_CODE_COMPACT` 在该源码标签下为 `false`。档位解析可能把 `FULL` 收窄为 `ANON`，把 `SOME` 变成 `NONE`；剩余交换空间较少时，`FULL` 还可能先降级。因此解释结果要以解析后的档位和实际动作为准，最初的请求名说明不了最终行为。
+`ENABLE_SHARED_AND_CODE_COMPACT` 在该源码标签下为 `false`。档位解析可能把 `FULL` 收窄为 `ANON`，把 `SOME` 变成 `NONE`；剩余交换空间较少时，`FULL` 还可能先降级。因此解释结果要以解析后的档位和实际动作为准，最初的请求名说明不了最终行为。
 
 #### 监控端如何解释冻结区间
 
@@ -989,11 +989,11 @@ Android 14 及以上的公开规则同样适用于 Android 17：
 - 应用的所有进程都被冻结后，活动 TCP 套接字会被终止；
 - 可见 Activity 退后台时可以收到 `TRIM_MEMORY_UI_HIDDEN`；
 - 某些非 UI 生命周期变化可以收到 `TRIM_MEMORY_BACKGROUND`；
-- 冻结期间无法继续响应其他内存整理事件。
+- 冻结期间也响应不了其他内存整理事件。
 
 这些规则要求应用把缓存进程视为随时可能暂停、也随时可能被终止；靠内存中的单例、尚未持久化的状态和长连接做持久化，是靠不住的。
 
-### 16 KB 页不会改变冻结资格
+### 16 KB 页与冻结资格
 
 16 KB 页大小从 Android 15 起进入设备兼容范围。它影响 ELF 段对齐、原生库兼容、页表开销、TLB 覆盖、缺页和 RSS/PSS 的计量粒度。页更大时，同样的映射和碎片模式可能呈现不同的驻留内存数值。
 
@@ -1017,7 +1017,7 @@ adb shell getprop ro.product.cpu.abilist
 
 #### 第一步：确认进程是否仍然存在
 
-先取得 PID，并检查历史退出原因。`ActivityManager.getHistoricalProcessExitReasons()` 返回的 `ApplicationExitInfo` 可以区分多类退出：
+我们先取得 PID，并检查历史退出原因。`ActivityManager.getHistoricalProcessExitReasons()` 返回的 `ApplicationExitInfo` 可以区分多类退出：
 
 - `REASON_FREEZER` 从 API 33 提供，表示冻结器相关终止，例如已冻结的服务端收到同步 Binder 事务；
 - `REASON_LOW_MEMORY` 表示低内存终止；
@@ -1117,12 +1117,12 @@ ORDER BY ts;
 
 ### 冻结与内存回收的判断边界
 
-Android 17 的缓存应用冻结器可以概括为一条清晰的状态转换：
+缓存应用冻结器的行为，可以概括成一条清晰的状态转换：
 
 1. OOM 调整阶段根据进程当前职责和 adj 计算显式、隐式 CPU 时间能力。
 2. 没有 CPU 时间需求的进程进入延迟冻结候选。
 3. `CachedAppOptimizer` 尝试发送后台内存整理回调，随后先冻结 Binder，再冻结控制组。
-4. 冻结区间内应用所有线程停止，ART 无法执行 GC。
+4. 冻结区间内应用所有线程停止，ART 也执行不了 GC。
 5. `system_server`、MMD 和内核仍可从进程外部执行应用页面回收、内核页回收或 ZRAM 操作。
 6. 激活时先检查 Binder 状态，再恢复 Binder 和进程调度；不安全的同步事务可能以 `REASON_FREEZER` 结束进程。
 
@@ -1140,7 +1140,7 @@ MemoryLimiter 位于 `system_server`，按进程配置并监控所属的 memcg�
 
 这套实现有四个容易看错的点：
 
-1. Android 17 的 JNI 写入 `memory.high` 和 `memory.swap.max`。Java 层仍使用 `swapHigh`、`LIMIT_TYPE_SWAP`，部分注释甚至写着 `memory.swap.high`；这些名称不能替代 JNI 中的实际文件路径。
+1. Android 17 的 JNI 写入 `memory.high` 和 `memory.swap.max`。Java 层仍使用 `swapHigh`、`LIMIT_TYPE_SWAP`，部分注释甚至写着 `memory.swap.high`；这些名称代替不了 JNI 中的实际文件路径。
 2. `memory.high` 是会施加回收压力并产生节流效果的软边界；`memory.swap.max` 是交换空间用量的硬上限。两者的内核语义不同。
 3. 原生层只监听 `memory.events` 中的 `high` 计数变化，并未监听 `memory.swap.events`。联合超限由轮询得到的 `anon + shmem + swap.current` 计算，不依赖第二个交换空间事件。
 4. 联合超限后的 30 秒留给可选的系统性能剖析（profiling）；MemoryLimiter 从不向目标应用发送 `onTrimMemory()`，这段时间也不是供应用主动释放内存的“自救窗口”。
@@ -1149,7 +1149,7 @@ MemoryLimiter 位于 `system_server`，按进程配置并监控所属的 memcg�
 
 #### Java 层负责策略，原生层负责文件与事件
 
-这里的进程状态（proc state）是 ActivityManager 对进程重要程度的分类。Android 17 的主要职责分布如下：
+这里的进程状态（proc state）是 ActivityManager 对进程重要程度的分类，主要职责分布如下：
 
 | 位置 | 职责 |
 |---|---|
@@ -1234,7 +1234,7 @@ Android 17 的 JNI 使用普通的 `android::base::WriteStringToFile()` 写入�
 
 #### `memory.swap.max`
 
-`memory.swap.max` 是该 cgroup 的交换空间使用硬上限：达到上限后，该 cgroup 的匿名页就不能继续换出；它没有 `memory.high` 那样的软边界语义，文件名也不是 `memory.swap.high`。
+`memory.swap.max` 是该 cgroup 的交换空间使用硬上限：达到上限后，该 cgroup 的匿名页就换不出去了；它没有 `memory.high` 那样的软边界语义，文件名也不是 `memory.swap.high`。
 
 JNI 中的关键映射是：
 
@@ -1355,9 +1355,9 @@ MemoryLimiter、lmkd 和 CachedAppOptimizer 使用不同信号：
 这三套机制可能作用于同一个进程生命周期，但源码中没有统一的状态机保证它们按固定顺序执行。尤其要避免两种过度简化：
 
 - 缓存状态下的 `memory.high` 使用“忽略”语义，可能保留旧值；
-- MemoryLimiter 延迟 30 秒终止进程，不代表 lmkd 也会等待。
+- MemoryLimiter 延迟 30 秒终止进程，推不出 lmkd 也会等待。
 
-做性能归因时，应同时查看进程状态变化、cgroup 文件、MemoryLimiter 日志、lmkd 日志和进程退出记录。一次 PSS（按比例分摊共享页后的内存占用）下降，不足以判断是哪套机制生效。
+做性能归因时，我们应同时查看进程状态变化、cgroup 文件、MemoryLimiter 日志、lmkd 日志和进程退出记录；一次 PSS（按比例分摊共享页后的内存占用）下降，还判断不了是哪套机制生效。
 
 ### 现场检查清单
 
@@ -1432,17 +1432,17 @@ Android 17 中还有若干命名与实现不一致之处，例如 Java 的 `swap
 
 ## 预取收益、工作集与回收代价
 
-预取用更多当前内存换取后续启动命中，收益取决于工作集稳定性。它同时可能提高回收和 lmkd 压力，需要做整机对照。
+预取用更多当前内存换取后续启动命中，收益取决于工作集稳定性；它同时可能推高回收和 lmkd 压力，所以我们要做整机对照。
 
 ### 先确认源码边界
 
 `android-17.0.0_r1` 中没有 `AppFlowManager`、`AppFlowState`、`AppFlowMemoryAllocator`、`MemoryLimiterCompat` 或 `lmkd_appflow_compat.xml`。AOSP 的 lmkd 也没有 AppFlow 会话、冷启动内存预分配协议、两阶段提交或状态回滚接口。
 
-本章中的 **AppFlow** 指厂商或产品侧可能存在的冷启动优化模块。此类外部模块接入 Android 17 时必须遵守 AOSP 边界；下文的设计建议也不代表 AOSP 已有同名类或平台 API。
+本章中的 **AppFlow** 指厂商或产品侧可能存在的冷启动优化模块。此类外部模块接入 Android 17 时必须遵守 AOSP 边界；下文的设计建议只针对产品侧实现，AOSP 里并没有同名类或平台 API。
 
 ### 1. 进程重要性的数据流
 
-Android 17 中，与冷启动进程保护直接相关的是 Android Framework 层维护的进程状态，以及内存紧张时的终止优先级分值 `oom_score_adj`：
+与冷启动进程保护直接相关的，是 Android Framework 层维护的进程状态，以及内存紧张时的终止优先级分值 `oom_score_adj`：
 
 ```text
 Activity / Service / Provider 等状态变化
@@ -1581,7 +1581,7 @@ thrashing =
 
 发送方不会等待这个回调处理完成，所以 AppFlow 要避免把缓存或已冻结进程当作异步预取的执行容器：
 
-- 冻结后线程不能运行；
+- 冻结后线程停止运行；
 - Binder 同步事务可能触发临时解冻或进入异常路径；
 - 进程持有的文件页和匿名内存仍会占用系统资源；
 - lmkd 仍然可以终止该进程。
@@ -1622,7 +1622,7 @@ AppFlow 不需要与 lmkd 执行分布式回滚。lmkd 会继续根据最新的 
 
 ### 9. 怎样证明方案有效
 
-只有 38%、73%、52% 这样的收益数字，而没有同时说明设备、构建版本、样本量、测试命令和原始数据，是立不住结论的。兼容性测试至少要包含以下分组。
+要证明方案有效，光有 38%、73%、52% 这样的收益数字还不够，还要同时给出设备、构建版本、样本量、测试命令和原始数据。兼容性测试至少要包含以下分组。
 
 #### 9.1 实验控制
 

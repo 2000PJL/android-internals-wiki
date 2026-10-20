@@ -133,9 +133,9 @@ consolidated_from:
 
 - HTTP/2 用逻辑流（stream）复用和 HPACK 首部压缩，减少并发请求对连接数量与重复首部字节的需求。
 - HTTP/3 在 QUIC 传输协议上提供 HTTP 语义。QUIC 的每条逻辑流独立排序，可避免 TCP 丢包让同一连接所有流一起等待的传输层队头阻塞，并支持连接迁移。
-- gRPC 是远程过程调用（Remote Procedure Call，RPC）框架和接口契约；Android 常用实现仍通过 HTTP/2 传输，选了 gRPC 并不等于选了 HTTP/3。
+- gRPC 是远程过程调用（Remote Procedure Call，RPC）框架和接口契约；Android 常用实现仍通过 HTTP/2 传输，选了 gRPC 之后，传输层落在哪个协议还要看所用实现。
 
-平台与协议依据是 Android 17 / API 37、OkHttp 5.4.0、RFC 9113、RFC 9000、RFC 9001、RFC 9114 和当前 gRPC 官方文档。连接池、DNS、超时和重试见 [24.5 移动网络架构、连接与容灾](05-mobile-network-connection-resilience.md)，分段性能与 TLS 见 [12.1 Android 网络与 TLS 性能优化](../../part2-performance/ch12-apk-network/01-android-network-tls-performance.md)。
+连接池、DNS、超时和重试见 [24.5 移动网络架构、连接与容灾](05-mobile-network-connection-resilience.md)，分段性能与 TLS 见 [12.1 Android 网络与 TLS 性能优化](../../part2-performance/ch12-apk-network/01-android-network-tls-performance.md)；协议与规范的出处集中在文末“源码与规范依据”一节。
 
 ### 协议能力来自不同组件
 
@@ -148,7 +148,7 @@ Android 项目里的协议能力来自不同组件：
 | Cronet 库 | Chromium 网络栈，支持 HTTP/1.1、HTTP/2 和基于 QUIC 的 HTTP/3 | 能力取决于项目采用的 Cronet 实现与版本 |
 | gRPC Java / Kotlin | RPC 语义、生成的客户端代理（stub）、流式调用、调用截止时间（deadline）与状态码 | Android 常用传输基于 HTTP/2，也可评估 Cronet 传输实现 |
 
-配置允许 HTTP/3，只说明客户端可以选择它。这次请求最终走什么协议，还要看服务端能力、代理、UDP 可达性、证书和客户端状态——服务端常通过 Alt-Svc（服务器声明同一资源可由另一地址或协议提供的响应首部） 声明能力，这个响应首部表示同一资源可以由另一个地址或协议提供。所以线上数据要记录实际协商结果，客户端库名称说明不了最终协议。
+配置里允许 HTTP/3，客户端拿到的只是选择资格；这次请求最终走哪个协议，还要看服务端能力、代理、UDP 可达性、证书和客户端状态——服务端常通过 Alt-Svc（服务器声明同一资源可由另一地址或协议提供的响应首部）声明自己支持的其他协议。所以线上数据以实际协商结果为准，客户端库名称只能当参考。
 
 ### HTTP/2 多路复用与服务端推送
 
@@ -164,21 +164,21 @@ Android 项目里的协议能力来自不同组件：
 | 传输层队头等待 | TCP 丢包阻塞连接后续字节 | 仍运行在 TCP 上，因此影响同一连接的所有逻辑流 |
 | 流量控制 | 主要依靠 TCP 与应用读取 | 同时存在连接级和逻辑流级 HTTP/2 流量控制 |
 
-并发数也不是只由协议决定：服务端 `SETTINGS_MAX_CONCURRENT_STREAMS`（同时活跃的逻辑流上限）、客户端 `Dispatcher`、连接级与逻辑流级的流量窗口、服务端容量和设备资源都会约束它。所有请求共用一条连接并无保证，业务请求也拿不到优先级承诺。
+并发数由好几层一起决定：服务端 `SETTINGS_MAX_CONCURRENT_STREAMS`（同时活跃的逻辑流上限）、客户端 `Dispatcher`、连接级与逻辑流级的流量窗口、服务端容量和设备资源都在约束它。请求最终是否共用一条连接没有保证，业务请求也拿不到优先级承诺。
 
-OkHttp 5.4.0 还给单个 HTTP/2 响应的首部总量设了上限：256 KiB（262,144 字节）。服务端要发送超大首部时，客户端不会无限接收。
+OkHttp 5.4.0 还给单个 HTTP/2 响应的首部总量设了上限：256 KiB（262,144 字节）；服务端真要发超大首部，超出部分会被客户端按这个上限拦下。
 
 大响应体会争用同一连接的带宽和拥塞窗口。消费方长时间不读取响应体，还会产生逻辑流级背压，也就是接收方处理不及时后逐步限制发送方，并可能影响连接级流量窗口。
 
-大文件与短 API 要不要共用同一个客户端或 `Dispatcher`？我们按排队情况和 P95、P99 等尾部耗时来定——P95、P99 分别表示 95%、99% 的样本不超过该耗时。只凭“HTTP/2 支持多路复用”这一句，得不出这个结论。
+大文件与短 API 要不要共用同一个客户端或 `Dispatcher`？我们按排队情况和 P95、P99 等尾部耗时来定——P95、P99 分别表示 95%、99% 的样本不超过该耗时。“HTTP/2 支持多路复用”这句话本身回答不了这个问题，答案要从数据里来。
 
-连接能不能复用，还取决于 OkHttp 的 `Address`（连接地址配置）、`Route`（具体连接路径）、证书和连接健康状态。把资源分散到多个域名的“域名分片”，可能增加 DNS、TCP 与 TLS 成本，也可能拦住符合条件的 HTTP/2 连接合并。资格检查见 [24.5 移动网络架构、连接与容灾](05-mobile-network-connection-resilience.md)。
+连接能否复用，还要看 OkHttp 的 `Address`（连接地址配置）、`Route`（具体连接路径）、证书和连接健康状态。把资源分散到多个域名的“域名分片”，可能增加 DNS、TCP 与 TLS 成本，也可能拦住符合条件的 HTTP/2 连接合并。资格检查见 [24.5 移动网络架构、连接与容灾](05-mobile-network-connection-resilience.md)。
 
 #### 服务器推送（Server Push）在 OkHttp 上的现状
 
-RFC 9113 定义了 `PUSH_PROMISE`（服务器在客户端请求前声明将主动发送某项资源的帧），让服务器在客户端请求前声明将主动发送某项资源，不过客户端可以限制或拒绝推送。落到 OkHttp 5.4.0 上：`Http2Connection.Builder` 默认使用内部的 `PushObserver.CANCEL`，该观察器收到推送事件后请求取消；`OkHttpClient.Builder` 也没有向应用开放 `PushObserver` 配置。
+RFC 9113 定义了 `PUSH_PROMISE`（服务器在客户端请求前声明将主动发送某项资源的帧），客户端则可以限制或拒绝推送。落到 OkHttp 5.4.0 上：`Http2Connection.Builder` 默认使用内部的 `PushObserver.CANCEL`，该观察器收到推送事件后请求取消；`OkHttpClient.Builder` 也没有向应用开放 `PushObserver` 配置。
 
-所以在使用 OkHttp 的 Android 应用里，HTTP/2 服务器推送写不进可执行的性能方案。更容易观测和控制的替代方式包括：
+所以在使用 OkHttp 的 Android 应用里，服务器推送停留在“协议定义、客户端取消”的状态，性能方案里能用的是下面这些替代方式：
 
 - 首屏聚合接口，减少明确存在的依赖链。
 - 客户端在用户意图足够明确时发起可取消的预取。
@@ -187,7 +187,7 @@ RFC 9113 定义了 `PUSH_PROMISE`（服务器在客户端请求前声明将主�
 
 即使换到支持推送的客户端，我们也要先测量推送资源被使用、已缓存、重复传输和取消的比例。协议有这个能力，和它对移动 API 有净收益，是两回事。
 
-### HTTP/3 与 QUIC 的收益边界
+### HTTP/3 与 QUIC 能改变什么
 
 #### 传输层发生了什么变化
 
@@ -197,7 +197,7 @@ HTTP/3 把 HTTP 消息映射到 QUIC 逻辑流，首部压缩换成了 QPACK。Q
 - TLS 与 QUIC 握手集成，之前建立的状态满足条件时可以使用恢复；0-RTT 仍是可选能力。
 - 连接用连接 ID 标识，IP 地址或端口变化后可以验证新路径是否可用，再迁移连接。
 
-这些机制也有共享的部分。QUIC 的拥塞控制通常作用于整条连接路径，丢包把拥塞窗口压小时，多条逻辑流的吞吐一起受影响；HTTP/3 同样缩短不了 DNS、服务端处理或应用读取的时间。
+这些机制也有共享的部分。QUIC 的拥塞控制通常作用于整条连接路径，丢包把拥塞窗口压小时，多条逻辑流的吞吐一起受影响；DNS、服务端处理和应用读取的耗时，HTTP/3 一段也省不掉。
 
 再往下追一层：QUIC 的协议状态机在 Cronet/Chromium 的进程代码里，Android 通用内核（common kernel）负责 UDP 套接字、IP、路由、队列和设备驱动，没有 HTTP/3 状态机。要追踪 UDP 收发，可以从 `android17-6.18-2026-06_r6` 标签的 [`net/ipv4/udp.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/ipv4/udp.c) 读起。
 
@@ -210,19 +210,19 @@ RFC 9000 定义了连接迁移和路径验证机制。`ConnectionMigrationOption
 - 迁移期间的请求可能超时或被取消，业务仍要有恢复策略。
 - 允许使用非默认网络可能产生流量费用；`setAllowNonDefaultNetworkUsage()` 在 AOSP `android-17.0.0_r1` 中标注为实验 API。
 
-`HttpEngine.Builder.setConnectionMigrationOptions()` 在同一份源码里也带着 `ConnectionMigrationOptions.Experimental` 注解。要试默认网络迁移，先在受控实验里启用；上线前把设备实现、服务端、代理、计费网络和远程关闭开关都验证一遍。
+`HttpEngine.Builder.setConnectionMigrationOptions()` 在同一份源码里也带着 `ConnectionMigrationOptions.Experimental` 注解。要试默认网络迁移，我们先在受控实验里启用；上线前把设备实现、服务端、代理、计费网络和远程关闭开关都验证一遍。
 
 #### 0-RTT 的重放风险与适用范围
 
-QUIC 的 0-RTT（零往返恢复）允许恢复中的连接在握手完成前发送早期数据（early data），代价是这类数据缺少跨连接的防重放保证——攻击者可以把捕获的数据重新发送一遍。所以登录、支付、下单和产生一次性副作用的写请求，仅凭“使用 HTTPS”进不了 0-RTT。
+QUIC 的 0-RTT（零往返恢复）允许恢复中的连接在握手完成前发送早期数据（early data），代价是这类数据缺少跨连接的防重放保证——攻击者可以把捕获的数据重新发送一遍。所以登录、支付、下单和产生一次性副作用的写请求，我们默认让它们走完整握手。
 
-`HttpEngine.Builder.addQuicHint()` 用主机与备用端口提示服务器支持 QUIC；官方文档同时说明，跨引擎会话要用 0-RTT，先得启用磁盘缓存。配置都满足之后，服务端仍然可以拒绝早期数据，客户端要允许按正常握手继续。指标上，最终协议和业务总耗时分开记，“启用 QUIC”也不能直接记成“命中 0-RTT”。
+`HttpEngine.Builder.addQuicHint()` 用主机与备用端口提示服务器支持 QUIC；官方文档同时说明，跨引擎会话要用 0-RTT，先得启用磁盘缓存。配置都满足之后，服务端仍然可以拒绝早期数据，客户端要允许按正常握手继续。指标上，最终协议和业务总耗时分开记，“启用 QUIC”和“命中 0-RTT”也要分开记。
 
 #### UDP、代理与 HTTP/3 发现机制
 
 HTTP/3 依赖 UDP，而部分企业网络、代理、VPN 或热点会阻断或限制 QUIC，所以客户端要保留基于 TCP 的 HTTP/2 或 HTTP/1.1；RFC 9114 也允许在 QUIC 连接出现问题时改用基于 TCP 的 HTTP。
 
-服务端还要用客户端支持的方式声明 HTTP/3 能力，比如发送 Alt-Svc，或者由应用提供可信的 QUIC 能力提示（hint）。`setEnableQuic(true)` 打开后，引擎只是获得了选择 QUIC 的资格，缺少服务端配置的域名仍走不上 HTTP/3。
+服务端还要用客户端支持的方式声明 HTTP/3 能力，比如发送 Alt-Svc，或者由应用提供可信的 QUIC 能力提示（hint）。`setEnableQuic(true)` 打开后，引擎只是拿到了选择 QUIC 的资格；缺少服务端配置的域名，最终仍落在 HTTP/2 或 HTTP/1.1 上。
 
 Android 17 / API 37（同时属于 S Extensions 22）为 `HttpEngine.Builder` 增加了 `setProxyOptions()`。注意应用代理配置会覆盖系统代理配置：企业环境依赖系统代理时，一个错误的应用代理、或者代理列表末尾漏掉 `null` 回退，都可能让网络完全不可达。分批启用协议的实验，也要把企业代理和 VPN 场景包含进来。
 
@@ -232,7 +232,7 @@ Android 17 / API 37（同时属于 S Extensions 22）为 `HttpEngine.Builder` �
 
 如果项目已经有 Retrofit、拦截器、Cookie、缓存和 `EventListener` 这套体系，OkHttp 是最顺的 HTTP/1.1、HTTP/2 选择。它用 `Response.protocol` 报告最终协议，用 `EventListener` 记录 DNS、连接、TLS 和交换阶段；到 OkHttp 5.4.0 为止，还没有稳定的公开 HTTP/3 配置入口。
 
-想保留 OkHttp API、又想用 Cronet 传输的项目，可以看 Android 官方集成文档列出的 `Cronet Transport for OkHttp`。接入时逐项核对传输库版本、支持的 OkHttp API、拦截器语义、缓存、证书、代理和事件指标——更换依赖不会自动保留全部行为。
+想保留 OkHttp API、又想用 Cronet 传输的项目，可以看 Android 官方集成文档列出的 `Cronet Transport for OkHttp`。接入时我们要逐项核对传输库版本、支持的 OkHttp API、拦截器语义、缓存、证书、代理和事件指标——换了依赖，这些行为要重新确认一遍。
 
 #### HttpEngine
 
@@ -242,19 +242,19 @@ Android 17 / API 37（同时属于 S Extensions 22）为 `HttpEngine.Builder` �
 - 启用 QUIC。
 - 关闭 HTTP 缓存。
 
-默认启用只代表引擎可以选择相应协议，最终请求仍可能落在 HTTP/1.1 或 HTTP/2 上。要 HTTP 缓存就显式配置缓存模式与容量，磁盘缓存还要配一个独占的存储目录——同一目录被多个 `HttpEngine` 同时使用是不允许的。
+默认启用只代表引擎可以选择相应协议，最终请求仍可能落在 HTTP/1.1 或 HTTP/2 上。要 HTTP 缓存就显式配置缓存模式与容量，磁盘缓存还要配一个独占的存储目录——同一目录被多个 `HttpEngine` 同时使用属于禁止用法。
 
 `HttpEngine` 要作为长生命周期对象复用，不再使用时调用 `shutdown()`。按请求创建引擎，会丢掉连接、QUIC 状态、线程和缓存复用，也可能违反存储目录的单实例约束。
 
 #### Cronet 库
 
-Cronet 是 Android 应用可以直接使用的 Chromium 网络栈。当前 Android 官方概览确认它原生支持 HTTP/1.1、HTTP/2 与基于 QUIC 的 HTTP/3，但没有承诺每种集成方式都有相同能力——提供方、版本、原生库加载结果和协议支持，要按项目实际依赖与运行时实现来确认。
+Cronet 是 Android 应用可以直接使用的 Chromium 网络栈。当前 Android 官方概览确认它原生支持 HTTP/1.1、HTTP/2 与基于 QUIC 的 HTTP/3；至于每种集成方式是否都有相同能力，要按提供方、版本、原生库加载结果和协议支持，结合项目实际依赖与运行时实现来确认。
 
 版本上，Android 10—13 要用 HTTP/3 通常得带外部 Cronet，Android 14 及以上可以评估平台 `HttpEngine`。走哪条路径，再按安装包（APK）体积、设备覆盖、更新渠道、现有网络层适配和诊断指标能力来定。
 
 #### 基础 API 37 能观测什么
 
-`UrlResponseInfo` 在基础 API 37 上能给出最终协商协议、缓存使用情况和接收字节下界；字节下界表示至少接收了这么多网络字节，统计上可以忽略部分协议开销。下面的代码在请求的终止回调里生成一条结果记录：
+在基础 API 37 上，我们能从 `UrlResponseInfo` 拿到最终协商协议、缓存使用情况和接收字节下界；字节下界表示至少接收了这么多网络字节，统计上可以忽略部分协议开销。下面的代码在请求的终止回调里生成一条结果记录：
 
 ```kotlin
 data class HttpEngineResult(
@@ -276,7 +276,7 @@ fun UrlResponseInfo.toTerminalResult(): HttpEngineResult {
 
 `getReceivedByteCount()` 是处理请求所需网络字节的最小计数：包含所有重定向的首部与数据，在解压前统计，IP、TCP/UDP、TLS 和代理开销可以忽略。空协议字符串表示未协商、未知或普通 HTTP/HTTPS，不要自行改写成 HTTP/1.1。
 
-`FinishedRequestTimings` 和 `UrlRequest.getFinishedRequestTimings()` 是 37.1 / S Extensions 23 新增的能力，只能在成功、失败或取消的终止回调到达后读取，并不属于 API 37 / `android-17.0.0_r1` 这条基线。所以不能认为基础 API 37 可以直接获得 DNS、连接和 TLS/QUIC 的完整公开时序。
+`FinishedRequestTimings` 和 `UrlRequest.getFinishedRequestTimings()` 是 37.1 / S Extensions 23 新增的能力，只能在成功、失败或取消的终止回调到达后读取，并不属于 API 37 / `android-17.0.0_r1` 这条基线。基础 API 37 上，DNS、连接和 TLS/QUIC 的完整公开时序要等这套新接口才有。
 
 ### gRPC 在移动端的实践
 
@@ -293,13 +293,13 @@ gRPC 用 `.proto` 接口定义文件描述服务与消息，Android 上通常用
 
 四种形态的差别在于是哪一侧可以持续发送消息；选了流式调用，流量控制和断线恢复就要另行设计。生成代码给的是字段类型与方法签名，协议演进仍要遵守 Protocol Buffers 兼容规则：字段号不复用，删除的字段保留编号，客户端与服务端支持新旧版本交错发布。序列化边界见 [24.2 数据库与序列化性能](02-database-serialization-performance.md)。
 
-标准 gRPC 在 HTTP/2 上承载键值元数据（metadata）、带长度前缀的消息和响应体结束后发送的尾部字段（trailers）。HTTP 状态码装不下 RPC 的结果语义，监控要记录的是 gRPC 状态码、服务名、方法名、调用截止时间、取消、消息字节和每次尝试，只记一个 HTTP 200 是不够的。
+标准 gRPC 在 HTTP/2 上承载键值元数据（metadata）、带长度前缀的消息和响应体结束后发送的尾部字段（trailers）。HTTP 状态码装不下 RPC 的结果语义，监控要以 gRPC 状态码为主，连同服务名、方法名、调用截止时间、取消、消息字节和每次尝试一起记录；一个 HTTP 200 在这里说明的东西很有限。
 
 #### `Channel` 是逻辑通信通道
 
 gRPC `Channel` 表示到一个逻辑目标的通信通道，可以在内部持有零条、一条或多条实际连接，并参与名称解析与客户端负载均衡。它不等同于一条套接字连接。
 
-官方性能建议的第一条就是复用：`Channel` 和生成的客户端代理（stub）都尽量复用，复用范围按逻辑目标、TLS、代理、名称解析和服务配置来划。用户令牌更适合放在每次调用的调用凭据（credentials）或元数据里；仅因账号切换就重建 `Channel`，会丢掉可以安全共享的传输资源。认证实现里，旧令牌固化在长生命周期拦截器中是要避免的。
+官方性能建议的第一条就是复用：`Channel` 和生成的客户端代理（stub）都尽量复用，复用范围按逻辑目标、TLS、代理、名称解析和服务配置来划。用户令牌更适合放在每次调用的调用凭据（credentials）或元数据里；仅因账号切换就重建 `Channel`，会丢掉可以安全共享的传输资源。认证实现里，我们要避免把旧令牌固化在长生命周期拦截器中。
 
 #### 调用截止时间、取消和 Wait-for-Ready
 
@@ -313,12 +313,12 @@ gRPC 默认不设置调用截止时间（deadline），客户端可能因此一�
 
 #### 透明重试与 Service Config 重试
 
-gRPC 有透明重试：没有显式重试策略时，也可能恢复少量底层故障，前提是确认调用还没进入服务端应用逻辑——这类故障来自并发事件顺序的不确定。更大范围的重试靠 Service Config（服务配置），按方法设置尝试次数上限、逐次延长的等待间隔、可重试状态码和重试总量限制。
+重试在 gRPC 里分两层。没有显式重试策略时，框架的透明重试也可能恢复少量底层故障，前提是确认调用还没进入服务端应用逻辑——这类故障来自并发事件顺序的不确定。更大范围的重试靠 Service Config（服务配置），按方法设置尝试次数上限、逐次延长的等待间隔、可重试状态码和重试总量限制。
 
-状态码 `UNAVAILABLE` 不自动等于业务操作可重复；重试之前，客户端与服务端要先确认方法语义：
+看到状态码 `UNAVAILABLE`，重试之前先与服务端确认方法语义：
 
 - 查询或幂等操作可以在总截止时间内受控重试。
-- 写操作需要幂等键、版本条件或查询确认，不能只按 gRPC 状态码重发。
+- 写操作需要幂等键、版本条件或查询确认兜底，才谈得上按状态码重发。
 - 一旦收到响应首部，gRPC 重试机制会把 RPC 视为已提交，不再按同一策略重试。
 - 应同时记录逻辑 RPC 与每次尝试，避免把内部重试时间全部归为一次服务端延迟。
 
@@ -328,11 +328,13 @@ gRPC 保活探测用 HTTP/2 `PING` 检查空闲连接。频率多高、没有活
 
 移动端还要把蜂窝无线电唤醒、Doze（Android 设备空闲省电模式）、应用进程回收和后台执行限制算进去。低频通知通常更适合系统共享推送通道；长流留给前台持续交互、或业务确有连续传输需求的场景，并且要具备取消、恢复与断点状态。
 
-长生命周期逻辑流启动后，通常就不再重新参与客户端负载均衡；服务端滚动发布、连接年龄和节点故障都会中断它。指望一条永久逻辑流撑起高可用，是靠不住的。
+长生命周期逻辑流启动后，通常就不再重新参与客户端负载均衡；服务端滚动发布、连接年龄和节点故障都会中断它。高可用要靠重连与恢复逻辑来保障，一条永久逻辑流撑不起来。
 
 ### 协议选型与兼容策略
 
 #### 从请求形态与系统约束选择
+
+把前文的协议能力和系统约束合在一起，常见请求形态可以这样对号入座：
 
 | 请求形态 | 候选方案 | 需要验证的边界 |
 | --- | --- | --- |
@@ -343,7 +345,7 @@ gRPC 保活探测用 HTTP/2 `PING` 检查空闲连接。频率多高、没有活
 | 浏览器和第三方共同使用的公开接口 | REST / JSON，必要时另建 gRPC-Web 网关 | 调试、兼容、缓存和跨语言契约 |
 | 可延迟后台上报 | 批量 REST 或批量 RPC | WorkManager 约束、幂等、与交互流量隔离 |
 
-这张表只给出候选方向，替代不了设备与服务端的实验。协议选择还要计算安装包体积、适配成本、发布渠道和排障工具；一个小型低频接口即使能用 gRPC 或 HTTP/3，也可能抵消不了新增依赖与运维成本。
+这张表给出的是候选方向，最终选择要靠设备与服务端的实验来定。协议选择还要计算安装包体积、适配成本、发布渠道和排障工具；一个小型低频接口即使能用 gRPC 或 HTTP/3，新增依赖与运维成本也未必划算。
 
 #### 协议回退与业务回退
 
@@ -383,7 +385,7 @@ gRPC 到 REST 则是两套接口契约，协议层不会自动回退，只有业
 | Cronet 库 | 实现提供方给出的请求完成信息、NetLog（Chromium 网络诊断日志）与回调 | 能力随 Cronet 版本和集成方式变化 |
 | gRPC | 方法、状态码、截止时间、元数据、逻辑调用和每次尝试 | 还需与所用传输实现的连接指标关联 |
 
-最终协商是 HTTP/2，证明不了客户端尝试过 HTTP/3。要区分“未发现 HTTP/3”“UDP 不通”“QUIC 握手失败”和“策略未启用”，只有底层日志或可靠的连接尝试指标能做到。缺少证据时，数据标记为最终协议即可，命名成“HTTP/3 回退”反而误导。
+最终协商是 HTTP/2，客户端可能压根没尝试过 HTTP/3。要区分“未发现 HTTP/3”“UDP 不通”“QUIC 握手失败”和“策略未启用”，要靠底层日志或可靠的连接尝试指标；拿不到这些数据时，把记录标成最终协议就好，写成“HTTP/3 回退”反而误导。
 
 #### 实验单位与分层
 
@@ -396,9 +398,9 @@ gRPC 到 REST 则是两套接口契约，协议层不会自动回退，只有业
 - HTTP 或 gRPC 错误、取消、重试尝试与最终成功率。
 - 前台交互、后台任务、媒体传输和切网场景。
 
-比较中位数和高分位延迟，同时观察错误率、取消率、字节量与电量。连接状态、CDN 节点、服务端版本和缓存命中没有分层时，平均值的变化归因不到协议上。
+比较中位数和高分位延迟，同时观察错误率、取消率、字节量与电量。把连接状态、CDN 节点、服务端版本和缓存命中分好层，平均值的变化才能归到协议上。
 
-分批实验的开关要支持按主机、接口、网络类型、客户端版本和应用版本关闭。关闭实验、恢复原传输实现时，只改变传输选择，正在执行写操作的幂等状态不能丢。
+分批实验的开关要支持按主机、接口、网络类型、客户端版本和应用版本关闭。关闭实验、恢复原传输实现时，只改变传输选择，正在执行写操作的幂等状态要原样保住。
 
 ### 工程检查清单
 
@@ -420,7 +422,7 @@ gRPC 到 REST 则是两套接口契约，协议层不会自动回退，只有业
 
 ### 协议与 RPC 小结
 
-HTTP/2、HTTP/3 和 gRPC 分别改变连接复用、传输恢复和调用契约，收益要按上面这些维度验证，协议名称本身给不了答案。选型时固定客户端实现、最终协商协议、缓存与连接状态，再同时验证流量控制、截止时间、幂等重试、切网和后台生命周期。
+HTTP/2、HTTP/3 和 gRPC 分别改变连接复用、传输恢复和调用契约，收益要按上面这些维度验证，光看协议名称定不下来。选型时固定客户端实现、最终协商协议、缓存与连接状态，再同时验证流量控制、截止时间、幂等重试、切网和后台生命周期。
 
 ### 源码与规范依据
 
@@ -482,11 +484,11 @@ Android 17 / API 37 为网络库提供了加密客户端问候（Encrypted Clien
 
 源码层面，ECH 的 Android 实现在用户空间的 DNS 与 TLS 组件里，没有供应用调用的内核接口。TLS 1.3、证书链、连接池和 HTTP/2、HTTP/3 的原理见 12.1、24.5 与本章前文。
 
-### ECH 的 Android 17 适配边界
+### ECH 的 Android 17 适配路径
 
 先看握手本身。ClientHello 是客户端发出的第一条 TLS 握手消息，里面带着支持的算法、SNI 等信息；ECH 把它拆成外层 `ClientHelloOuter` 和加密的 `ClientHelloInner`——真实 SNI 这些敏感扩展放进内层，外层保留供服务端路由的公开名称。RFC 9849 还定义了配置失配后的重试信息和 ECH GREASE；GREASE 是内容随机的兼容性测试扩展，用来检查网络中间设备能否容忍 ECH 格式，它本身并不加密真实 SNI。
 
-ECH 的保护范围是有限的，评估时这几点要先说清楚：
+ECH 保护的是握手中的特定字段，下面这几处它管不到，评估前我们先把范围摆清楚：
 
 - 目标 IP 地址仍对网络路径可见。
 - 公开名称仍会出现在外层 ClientHello。
@@ -555,11 +557,11 @@ fun domainEncryptionMode(hostname: String): String {
 }
 ```
 
-这个返回值只证明平台解析出的策略；DNS 有没有返回 ECH 配置、某次 TLS 握手用没用 ECH，它都证明不了。诊断日志里也不要记录完整 URL、查询参数或用户标识。
+这个返回值只证明平台解析出的策略；DNS 有没有返回 ECH 配置、某次 TLS 握手用没用 ECH，还要分别从 DNS 和 TLS 两侧确认。诊断日志里也不要记录完整 URL、查询参数或用户标识。
 
 模式与默认值以 [Network Security Configuration](https://developer.android.com/privacy-and-security/security-config#domain-encryption) 为准，API 常量见 [`NetworkSecurityPolicy`](https://developer.android.com/reference/android/security/NetworkSecurityPolicy)。
 
-### Android 17 API 与源码边界
+### Android 17 API 与源码位置
 
 `DnsResolver` 在 API 37 增加了返回 `HttpsEndpoint` 的查询重载：并发发出 A、AAAA 和 HTTPS 查询，调用方可以用 `httpsTimeoutMillis` 指定地址记录完成后还要等多久 HTTPS 记录。同在 API 37，`DnsResolver.getInstance()` 已废弃，新代码改用接收 `Context` 与 `Looper` 的构造函数。
 
@@ -574,11 +576,11 @@ fun domainEncryptionMode(hostname: String): String {
 - [`DomainEncryptionMode.java`](https://android.googlesource.com/platform/external/conscrypt/+/refs/tags/android-17.0.0_r1/common/src/main/java/org/conscrypt/DomainEncryptionMode.java) 给出平台 TLS 实现 Conscrypt 内部使用的模式枚举。
 - [`Platform.java`](https://android.googlesource.com/platform/external/conscrypt/+/refs/tags/android-17.0.0_r1/platform/src/main/java/org/conscrypt/Platform.java) 把 ECH 配置失配转换为 Android 公共异常。
 
-对应用来说，通常没必要重写这套解析与重试逻辑。自定义网络库确要接入时，要完整处理 `HttpsEndpoint` 选择、平台 TLS 对象检查、握手前配置、取消、超时和配置失配；只把一段 ECH 字节交给套接字，安全的协商与重试是完成不了的。
+对应用来说，通常没必要重写这套解析与重试逻辑。自定义网络库确要接入时，要完整处理 `HttpsEndpoint` 选择、平台 TLS 对象检查、握手前配置、取消、超时和配置失配；只把一段 ECH 字节交给套接字，换不来安全的协商与重试。
 
 ### 网络库支持状态要按版本核对
 
-Android 17 [行为变更页面](https://developer.android.com/about/versions/17/behavior-changes-17#ech) 把 HttpEngine、WebView 与 OkHttp 列为网络库示例，同时明确 ECH 只在网络库已集成支持时生效。页面上出现库名，证明不了应用当前安装或依赖的版本已经支持 ECH。
+Android 17 [行为变更页面](https://developer.android.com/about/versions/17/behavior-changes-17#ech) 把 HttpEngine、WebView 与 OkHttp 列为网络库示例，同时明确 ECH 只在网络库已集成支持时生效。页面列的是库名，应用当前安装或依赖的版本支持到什么程度，要按版本核对。
 
 截至 2026-08-15，我们能把上游状态核实到这个程度：
 
@@ -590,7 +592,7 @@ Android 17 [行为变更页面](https://developer.android.com/about/versions/17/
 | 自定义 `SSLSocket` / `SSLEngine` | 公共 API 已可用 | 应由网络库维护完整 DNS、策略与重试流程 |
 | 自带原生 TLS 的 SDK | 是否读取 Android XML 取决于 SDK | 要求供应方给出版本、源码或测试证据 |
 
-主分支的状态代表不了已发布制品或设备组件。所以上线记录要写 Maven 依赖坐标与版本、WebView 实现版本、Android 构建号、TLS 实现、是否使用自定义 DNS，以及服务端 ECH 发布状态——Maven 坐标唯一标识依赖库，WebView 实现是设备上可独立更新的系统网页组件，只记库名是还原不出实际能力的。
+从主分支到已发布制品、设备组件，中间还隔着发布流程。所以上线记录要写 Maven 依赖坐标与版本、WebView 实现版本、Android 构建号、TLS 实现、是否使用自定义 DNS，以及服务端 ECH 发布状态——Maven 坐标唯一标识依赖库，WebView 实现是设备上可独立更新的系统网页组件，只记库名还原不出实际能力。
 
 HTTPDNS 这类通过 HTTP 请求调用第三方 DNS 服务、绕开系统解析器的方案，和只返回 IP 地址的自定义 `Dns` 接口，都要单独审查：ECH 配置在 HTTPS 资源记录里，解析实现只交付 A、AAAA 结果时，网络库可能拿不到 `EchConfigList`。HTTPDNS 的适配细节见 24.7。
 
@@ -610,15 +612,15 @@ ECH 失败要按发生阶段分类。表中用到的缓存生存时间（time to
 
 再说 GREASE：ECH GREASE 用随机内容模拟 ECH 扩展，帮我们找出会阻断未知扩展的网络中间设备；它手上没有可用的服务端 ECH 配置，真实 SNI 是加密不了的。诊断事件至少要区分 ECH 被接受、GREASE、策略禁用、没有配置、配置失配与其他 TLS 错误这几种状态。
 
-配置失配后的重试有一套硬性顺序：`EchConfigMismatchException` 要求客户端先取得 `getPublicHostname()`，用主机名验证器确认证书对该公开名称有效；公开名称为 `null` 时，重试配置必须忽略。验证成功、`getRetryConfigList()` 非空，网络库才可以新建连接重试。跳过校验直接重试是不可行的。公共 API 的约束见 [`EchConfigMismatchException`](https://developer.android.com/reference/android/net/ssl/EchConfigMismatchException)。
+配置失配后的重试有一套硬性顺序：`EchConfigMismatchException` 要求客户端先取得 `getPublicHostname()`，用主机名验证器确认证书对该公开名称有效；公开名称为 `null` 时，重试配置必须忽略。验证成功、`getRetryConfigList()` 非空，网络库才可以新建连接重试；校验这一步省不掉。公共 API 的约束见 [`EchConfigMismatchException`](https://developer.android.com/reference/android/net/ssl/EchConfigMismatchException)。
 
 还要把 CT 和 ECH 分开：Android 17 对 `targetSdkVersion 37` 及以上的应用默认启用证书透明度（Certificate Transparency，CT），证书颁发机构（CA）签发证书后，签名证书时间戳（SCT）可以证明该证书已提交到 CT 日志。CT 与 ECH 都可能表现为 TLS 失败，但校验阶段不同——用系统 CA 时核对 SCT 与 CT 策略；用用户 CA 或应用内嵌 CA 时，网络安全配置可能因信任锚不是系统 CA 而关闭 CT，除非域名规则显式启用。禁用 ECH 不会改变证书链或 CT 的结果。
 
-`domainEncryption` 位于 APK 的资源 XML 里，普通远程配置改不动它：要把某个域名改成 `disabled`，通常得发布新版本。网络库自带的策略开关属于另一套配置，它和平台策略谁优先，必须先确认清楚；XML 域名覆盖规则当不了远程即时修复开关。
+`domainEncryption` 位于 APK 的资源 XML 里，普通远程配置改不动它：要把某个域名改成 `disabled`，通常得发布新版本。网络库自带的策略开关属于另一套配置，它和平台策略谁优先，必须先确认清楚；要即时生效的远程开关，得在 XML 之外另找。
 
 ### 性能观测方法
 
-ECH 的耗时影响可能来自几处：HTTPS DNS 查询等待、配置失配后的新连接、TLS 计算和连接复用变化。不同设备与网络的结果差异很大，一个固定毫秒数概括不了。
+ECH 的耗时影响可能来自几处：HTTPS DNS 查询等待、配置失配后的新连接、TLS 计算和连接复用变化。不同设备与网络的结果差异很大，耗时要看实测分布，固定毫秒数只能当参考。
 
 | 阶段 | 建议记录 | 解释限制 |
 | --- | --- | --- |
@@ -638,7 +640,7 @@ dig HTTPS api.example.com +short
 
 命令结果验证的是发布格式，代表不了 Android 设备在蜂窝网络、专用 DNS、VPN 或 HTTPDNS 下拿到的答案——专用 DNS 是 Android 的系统级加密 DNS 设置，VPN 还可能接管解析路径。所以客户端解析日志、服务端 DNS 日志和 TLS 服务端的 ECH 接受状态要放在一起核对。
 
-抓包能看到有没有形似 ECH 的扩展、连接重试和协议选择，但光凭扩展存在，区分不了有效 ECH 与 GREASE，也不要尝试从 ECH 中恢复内层 SNI。业务性能数据还是要来自网络库事件、应用 trace 与服务端日志。
+抓包能看到有没有形似 ECH 的扩展、连接重试和协议选择，有效 ECH 与 GREASE 的区分要靠网络库或服务端的状态，从 ECH 中恢复内层 SNI 这条路也别走。业务性能数据还是要来自网络库事件、应用 trace 与服务端日志。
 
 ### 分阶段发布策略
 
@@ -651,7 +653,7 @@ dig HTTPS api.example.com +short
 - 选择低风险域名测试，再处理登录、支付、消息与配置获取等关键接口。
 - 分开观察普通网络、企业代理、VPN、校园网、蜂窝网络和不同地域。
 
-对照实验有个陷阱：`targetSdkVersion 36` 与 37 的差异里混着 CT 等其他行为变化，直接对比归因不到 ECH 头上。实验室可以在相同网络库和代码下构建两份网络安全配置，一份保持 `enabled`，另一份把候选域名设为 `disabled`，这样就只改变了 ECH 策略；生产发布还要把应用版本更新需要的时间算进去。
+对照实验有个陷阱：`targetSdkVersion 36` 与 37 的差异里混着 CT 等其他行为变化，直接对比会把 CT 的效果算进 ECH。实验室可以在相同网络库和代码下构建两份网络安全配置，一份保持 `enabled`，另一份把候选域名设为 `disabled`，这样就只改变了 ECH 策略；生产发布还要把应用版本更新需要的时间算进去。
 
 回退手段有三类：
 
@@ -659,11 +661,11 @@ dig HTTPS api.example.com +short
 - DNS 撤下或修正 `ech` 参数；客户端缓存会按 TTL 延迟生效。
 - 发布应用更新，将确认不兼容的域名设为 `disabled`。
 
-降低 `targetSdkVersion` 这条路要慎重：它会同时改变其他 Android 17 安全行为，也可能不符合应用商店要求，当不了 ECH 的常规回退方案。远程开关只有在网络库明确支持、并且定义了它与平台策略的优先级时才可用。
+降低 `targetSdkVersion` 这条路要慎重：它会同时改变其他 Android 17 安全行为，也可能不符合应用商店要求，常规回退还是靠前面三类手段。远程开关只有在网络库明确支持、并且定义了它与平台策略的优先级时才可用。
 
 隐私日志记到域名分类、错误类型、网络库版本、粗粒度网络环境和协议就够了；完整 URL、令牌、用户输入、证书私钥材料或 ECH 配置原始字节都不要进日志。
 
-### 与 12.1 TLS 性能章节的边界
+### 与 12.1 TLS 性能章节的分工
 
 分工上，12.1 解释 TLS 1.3、证书、CT、SNI、混合公钥加密（HPKE）、会话恢复和安全连接成本；ECH 使用 HPKE 加密 ClientHello 内层。本节管的是 Android 17 的按域名策略、配置获取和接入验证，握手耗时、证书链和 0-RTT 等问题仍按 12.1 的方法分析——0-RTT 指恢复会话时在完整握手结束前发送早期数据。
 
@@ -675,7 +677,7 @@ dig HTTPS api.example.com +short
 
 ### ECH 小结
 
-回到整体：Android 17 提供了 ECH 所需的平台接口，并为 `targetSdkVersion 37` 的应用把 `domainEncryption` 默认设为 `enabled`；能不能生效，仍取决于网络库接入和服务端支持。正式 XML 只接受 `enabled` 与 `disabled`，公开 API 里的 `opportunistic` 常量写进 XML 是无效的。
+回到整体：Android 17 提供了 ECH 所需的平台接口，并为 `targetSdkVersion 37` 的应用把 `domainEncryption` 默认设为 `enabled`；能否生效，仍取决于网络库接入和服务端支持。正式 XML 只接受 `enabled` 与 `disabled`，公开 API 里的 `opportunistic` 常量写进 XML 是无效的。
 
 验收沿着策略、HTTPS DNS、TLS 配置、服务端协商和重试逐段取证。没有 ECH 配置时发送的是 GREASE，计不进 ECH 成功；配置失配时，先验证公开名称，再用重试配置。CT、HTTP/3 和本地网络权限各有独立的触发条件，同样表现为连接失败时，归因要分开做。
 

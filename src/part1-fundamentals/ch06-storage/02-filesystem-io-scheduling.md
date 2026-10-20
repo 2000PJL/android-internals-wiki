@@ -94,7 +94,7 @@ consolidated_from:
 
 # 文件系统与 I/O 调度
 
-应用 I/O 从系统调用进入 VFS、页缓存和具体文件系统，再由块层和设备队列提交存储。文件系统解释数据怎样组织和持久化，I/O 调度解释多个请求如何排序、合并与限流。
+应用 I/O 从系统调用进入 VFS、页缓存和具体文件系统，最后由块层和设备队列提交给存储。这一篇我们讲两件事：文件系统解释数据怎样组织和持久化，I/O 调度解释多个请求如何排序、合并与限流。
 
 > 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`；Android Common Kernel `android17-6.18-2026-06_r6`。
 
@@ -123,9 +123,9 @@ Page Cache 命中会掩盖很多读取差异。分析随机读时，我们先区
 4. 块层处理请求合并、调度、加密与 device-mapper（设备映射层） 映射。
 5. UFS 控制器和设备内部 FTL 完成写入与缓存刷新。
 
-`fsync()` 的返回语义还受挂载参数和写屏障影响；存储设备怎样实现 flush（刷写）/FUA（刷新设备缓存/要求本次写入到达非易失介质）——刷新设备缓存，或要求这次写入到达非易失介质——同样会改变它。文件系统能改变这条路径上的一部分成本；器件尾延迟、温度降频、磨损控制和队列拥塞，它消除不了。
+`fsync()` 的返回语义还受挂载参数和写屏障影响；存储设备怎样实现 flush（刷写）/FUA（刷新设备缓存/要求本次写入到达非易失介质），同样会改变它。文件系统能改变这条路径上的一部分成本；器件尾延迟、温度降频、磨损控制和队列拥塞，它消除不了。
 
-SQLite 也没有“每执行一条 SQL 就调用一次 `fsync()`”的固定对应：同步次数取决于事务边界、journal 模式、`PRAGMA synchronous`、是否发生 cache spill（缓存页提前写出），以及文件系统是否提供 SQLite 能识别的原子批写能力。
+SQLite 的同步次数同样要看条件：事务边界、journal 模式、`PRAGMA synchronous`、是否发生 cache spill（缓存页提前写出），以及文件系统是否提供 SQLite 能识别的原子批写能力，一起决定一次修改要同步几次；“每执行一条 SQL 就调用一次 `fsync()`”这样的固定对应，在这里套不上。
 
 SharedPreferences 的 `apply()` 会先更新内存并把磁盘写入排到后台；它减少了调用线程的直接等待，但排队写入仍可能在组件生命周期切换时参与 ANR（应用无响应）。
 
@@ -143,7 +143,7 @@ ext4 在 arm64 GKI（Generic Kernel Image，通用内核镜像）中仍为内建
 - **jbd2 journal**：记录维持一致性所需的文件系统修改。常见 `data=ordered` 模式主要记录元数据，并要求相关数据先于元数据提交完成。
 - **fast commit（快速提交）**：条件允许时只记录较小的增量；遇到不支持的操作会回退到完整 journal commit。
 
-“就地更新”描述的是 ext4 的逻辑块分配倾向。NAND 的物理擦除、搬移和磨损均衡由 UFS/eMMC 内部的 FTL（闪存转换层）处理，文件系统看不到固定的 NAND erase block（擦除块）。把每次 ext4 小写入都描述成一次固定大小的“读—改—擦—写”并不准确。
+“就地更新”说的是 ext4 在逻辑块分配上的倾向。NAND 的物理擦除、搬移和磨损均衡由 UFS/eMMC 内部的 FTL（闪存转换层）处理，固定的 NAND erase block（擦除块）只出现在 FTL 内部，ext4 面对的是逻辑块。把每次 ext4 小写入都描述成一次固定大小的“读—改—擦—写”，就把逻辑写入和 NAND 物理操作绑得太死了。
 
 ext4 今天仍是 Android 设备的候选之一：分区职责、升级方案、故障恢复经验和性能目标，都会影响一台设备是否选择它。
 
@@ -184,7 +184,7 @@ F2FS 的空间分配单位是 segment，默认含 512 个 block；一个 section
 - **Checkpoint**：保存一组可恢复的一致状态。双 checkpoint pack 让挂载恢复可以选择有效版本。
 - **多路 active logs（活跃日志）**：按 node/data、冷热等类别分配写入，尽量降低 GC 搬移有效块的成本。
 
-这里有一个容易搞错的点：NAT 只负责 `nid → node block address`，文件数据块地址位于 inode 或其他 node 的地址数组中。把 NAT 说成“文件逻辑块到数据块的直接映射”，会漏掉 F2FS 解决 wandering tree 的关键层。
+容易搞错的是 NAT 的分工：NAT 只负责 `nid → node block address`，文件数据块地址放在 inode 或其他 node 的地址数组里。要是把 NAT 说成“文件逻辑块到数据块的直接映射”，就漏掉了 F2FS 解决 wandering tree 的关键一层。
 
 #### SSR 与 IPU：追加式写入的例外
 
@@ -198,7 +198,7 @@ F2FS 还存在 IPU（in-place update，就地更新）路径。内核的 `f2fs_d
 - `GC_URGENT_HIGH` 或 checkpoint disabled 状态需要 SSR；
 - 常规模式比较 free sections 与 dirty node/dentry/inode metadata、`min_ssr_sections`、reserved sections 的需求。
 
-这些阈值来自运行时状态和格式化参数，并不存在适用于所有设备的固定百分比。
+这些阈值来自运行时状态和格式化参数，没有一份适用于所有设备的固定百分比；排查时直接读现场状态，比背一个百分比可靠。
 
 #### `fsync`、roll-forward 与 checkpoint
 
@@ -245,7 +245,7 @@ Android 15 开始支持 16 KB page size（页大小），Android 17 继续支持
 - `android17-6.18-2026-06_r6` 的 `include/linux/f2fs_fs.h` 明确规定 `F2FS_BLKSIZE == PAGE_SIZE`。
 - 同一源码中的默认 segment 仍含 512 个 block，因此 4 KB 页时默认 segment 为 2 MB，16 KB 页时为 8 MB。
 
-16 KB kernel 使用的 F2FS 格式参数需要按 16 KB block 生成。设备升级后能否保留 `/data`，取决于 OEM 的分区、迁移和升级方案；从 App 的 ELF 兼容结论推导不出“旧 4 KB `/data` 可原样挂载”。App 工程师要做的是修复 native library 对页大小的硬编码；格式化与用户数据迁移则由设备实现负责。
+16 KB kernel 使用的 F2FS 格式参数需要按 16 KB block 生成。设备升级后能否保留 `/data`，取决于 OEM 的分区、迁移和升级方案；App 的 ELF 兼容结论回答的是另一件事，“旧 4 KB `/data` 可原样挂载”这样的推断要从设备实现里找答案。App 工程师要做的是修复 native library 对页大小的硬编码；格式化与用户数据迁移则由设备实现负责。
 
 #### quota、casefold 与 fscrypt
 
@@ -256,7 +256,7 @@ F2FS 和 ext4 都可以承载 Android 所需的配额、大小写无关目录与
 - fscrypt 提供文件级加密策略，Android 的 FBE 在其上组织 DE/CE 密钥域。
 - inline encryption（内联加密） 可以把数据加解密交给存储控制器，但文件系统仍负责密钥上下文与 `bio`（块 I/O 描述结构） 标记。
 
-检查设备行为时，我们读取实际的 superblock feature（超级块特性）、mount options（挂载选项） 和内核配置；文件系统类型本身，说明不了这些细节。
+检查设备行为时，我们要读的是实际的 superblock feature（超级块特性）、mount options（挂载选项） 和内核配置；这些细节都藏在里面，文件系统类型只给出一个起点。
 
 ### EROFS：面向不可变镜像的只读文件系统
 
@@ -288,7 +288,7 @@ EROFS 负责解释只读文件和压缩数据；dm-verity 负责校验块完整�
 4. EROFS 或只读 ext4；
 5. `/system` 等挂载点。
 
-dm-verity 会按需读取哈希树并验证数据，不会在每次挂载时重新计算整棵树。哈希算法、数据块大小和错误策略来自 AVB descriptor（描述符） 与设备配置，把它们固定写成“所有设备每块都用 4 KB SHA-256”是行不通的。
+dm-verity 会按需读取哈希树并验证数据，挂载时并不会重新计算整棵树。哈希算法、数据块大小和错误策略来自 AVB descriptor（描述符） 与设备配置，把它们固定写成“所有设备每块都用 4 KB SHA-256”是行不通的。
 
 Virtual A/B OTA 合并期间还可能插入 `dm-user`/`snapuserd` snapshot（快照） 层。AOSP 从 Android 13 起完整支持 EROFS 与 Virtual A/B，并能在生成增量 OTA 时处理 LZ4 数据流。这里容易混淆的是两个“压缩”：EROFS 镜像压缩缩小只读文件系统镜像，Virtual A/B snapshot 压缩缩小更新期间暂存的 COW 数据，属于不同层次。
 
@@ -313,14 +313,14 @@ POSIX（可移植操作系统接口）语义可以简化为：
 - `fsync(fd)`：同步文件数据，以及恢复该文件状态所需的元数据。
 - `fdatasync(fd)`：可以跳过不影响后续数据读取的元数据，例如仅修改时间戳；文件大小变化仍需持久化。
 
-“`fdatasync()` 固定少一次元数据写”这样的保证并不存在；两者最终走到哪些写回和 flush，取决于文件修改类型与文件系统实现。F2FS 甚至会在 `fdatasync()` 路径设置 `FI_NEED_IPU`——前面我们已经见过这个标志——所以 syscall（系统调用） 名称不足以估算成本。
+“`fdatasync()` 固定少一次元数据写”是常见的预期，实际两者最终走到哪些写回和 flush，取决于文件修改类型与文件系统实现。F2FS 甚至会在 `fdatasync()` 路径设置 `FI_NEED_IPU`——前面我们已经见过这个标志——单看 syscall（系统调用） 名称，估不出一次调用的成本。
 
 SQLite 在 rollback journal、WAL 和不同 `synchronous` 配置下会安排不同的同步操作。要求断电恢复的安全配置需要保留相应同步保证；修改 PRAGMA 来换取性能前，必须先定义允许丢失多少数据，以及是否允许数据库损坏。业务层更稳妥的优化通常是减少事务数量和主线程等待，而非关闭同步保证。
 
 #### App 侧能做的事
 
 1. **批量提交数据库修改**：把同一业务动作的多条写入放在一个明确事务中，避免在循环内反复提交。Room 可以用 `@Transaction` 或批量 DAO（数据访问对象）方法表达边界。
-2. **谨慎选择 WAL**：WAL 通常可以改善读写并发，但仍有 WAL sync、checkpoint 和文件增长成本。要用目标 workload（真实工作负载） 验证，不能把它当作免同步开关。
+2. **谨慎选择 WAL**：WAL 通常可以改善读写并发，但仍有 WAL sync、checkpoint 和文件增长成本。收益要用目标 workload（真实工作负载） 验证；同步保证该留的还得留，WAL 换不来“免同步”。
 3. **避免主线程等待持久化**：文件写、数据库事务和 `SharedPreferences.commit()` 要避开 UI 关键路径。
 4. **理解 `SharedPreferences.apply()` 的限制**：它会立即更新进程内视图并异步写磁盘；连续 `apply()` 仍产生磁盘工作，生命周期切换可能等待排队任务。
 5. **合并小文件更新**：频繁创建、rename（重命名） 和删除小文件，会增加目录与 inode 元数据修改。可以在保持崩溃一致性的前提下降低更新频率。
@@ -335,7 +335,7 @@ adb shell stat -f -c '%T %s' /data
 adb shell getconf PAGE_SIZE
 ```
 
-第一条显示实际 mount options，第二条显示 `/data` 的文件系统类型和基本块大小，第三条确认运行内核的页大小。`stat` 输出的基本块大小，替代不了对 F2FS on-disk feature（磁盘格式特性） 的完整检查。
+第一条显示实际 mount options，第二条显示 `/data` 的文件系统类型和基本块大小，第三条确认运行内核的页大小。`stat` 的输出只能当第一条线索，完整的判断要落到 F2FS on-disk feature（磁盘格式特性） 上。
 
 Perfetto/ftrace（内核跟踪） 可以按设备开放情况观察：
 
@@ -349,7 +349,7 @@ Perfetto/ftrace（内核跟踪） 可以按设备开放情况观察：
 
 ### 厂商选型：以设备事实为准
 
-Android 没有规定所有厂商的 `/data` 必须使用 F2FS，也没有规定所有只读动态分区必须使用 EROFS。AOSP 和 GKI 提供能力，产品还要结合：
+AOSP 和 GKI 在两边都提供了能力：`/data` 可以落在 ext4 或 F2FS 上，只读动态分区也是 EROFS 与只读 ext4 并存；最终用哪一种，是产品结合以下因素做的决定：
 
 - launch/upgrade（首发/升级） 路径与 Virtual A/B 方案；
 - UFS 特性、容量与 FTL 行为；
@@ -364,11 +364,11 @@ Android 没有规定所有厂商的 `/data` 必须使用 F2FS，也没有规定�
 
 ext4 和 F2FS 都会出现布局不连续，只是形成方式和维护机制不同。
 
-ext4 的空闲空间可能随着文件创建、扩展、截断和删除而逐渐分散。extent 与 delayed allocation 能缓解碎片，但保证不了长期使用后所有文件仍连续。闪存没有机械寻道，碎片仍可能增加 `bio` 数量、削弱 readahead（预读）和请求合并效果。
+ext4 的空闲空间可能随着文件创建、扩展、截断和删除而逐渐分散。extent 与 delayed allocation 能缓解碎片，长期使用后文件还连不连续，就要看设备的写入历史了。闪存没有机械寻道，碎片仍可能增加 `bio` 数量、削弱 readahead（预读）和请求合并效果。
 
 F2FS 的更新会产生旧的无效块，GC 随后搬移 victim 中仍然有效的块。冷热数据混放、空闲 section 少或后台 GC 缺少运行窗口时，需要搬移的有效数据会增多，前台分配也更容易等待。F2FS 同样可能把一个文件的逻辑块映射到分散的物理地址，因此“F2FS 没有文件碎片”并不成立。
 
-保留一定空闲空间通常有利于文件系统和 FTL 回收，但跨设备统一适用的“至少 10%”安全线并不存在。系统开发者应结合 `/sys/fs/f2fs/<dev>/` 统计、GC trace、块层延迟和产品容量策略建立阈值；普通 App 要避免用 root 工具对用户设备定期强制 defrag（碎片整理）。
+保留一定空闲空间通常有利于文件系统和 FTL 回收；具体保留多少，系统开发者应结合 `/sys/fs/f2fs/<dev>/` 统计、GC trace、块层延迟和产品容量策略建立阈值，“至少 10%”这类跨设备的统一数字只适合当参考。普通 App 要避免用 root 工具对用户设备定期强制 defrag（碎片整理）。
 
 恢复出厂设置会重建或清空用户数据，短期内改变空间与布局状态。对持续制造高频小写、无边界缓存或过多事务提交的业务模式，恢复出厂设置不起作用。
 
@@ -422,13 +422,13 @@ F2FS 的更新会产生旧的无效块，GC 随后搬移 victim 中仍然有效�
 3. 时间消耗在数据回写、journal/fast commit、F2FS node/checkpoint/GC，还是块设备 flush？
 4. 问题属于 App 调用方式、系统服务、文件系统策略，还是 UFS/FTL 尾延迟？
 
-ext4 是成熟的通用读写文件系统；F2FS 使用 segment、NAT/SIT、冷热日志和 GC 适配闪存更新负载；EROFS 服务于构建期生成的只读镜像。三者的职责与代价不同。对应的内核能力在当前基线里都保留着，具体分析哪一条路径，由产品配置和现场证据决定。
+ext4 是成熟的通用读写文件系统；F2FS 使用 segment、NAT/SIT、冷热日志和 GC 适配闪存更新负载；EROFS 服务于构建期生成的只读镜像。三者的职责与代价不同。对应的内核能力在当前基线里都保留着，具体分析哪一条路径，由产品配置和现场读数决定。
 
 文件系统生成的 `bio` 如何变成设备请求，见后文「块层队列、调度与延迟分析」一节。
 
 ## 块层队列、调度与延迟分析
 
-文件系统把读写请求交给块层之后，剩下的是合并、优先级和设备队列的问题。吞吐和尾延迟要结合请求大小、同步方式和存储介质来判断。
+上一节结束时，文件系统已经把读写请求交给了块层；这一节要解决的是合并、优先级和设备队列。我们在这段路上关心的两个量——吞吐和尾延迟——都要结合请求大小、同步方式和存储介质来判断。
 
 ### D 状态：I/O 排查的起点
 
@@ -442,11 +442,11 @@ ext4 是成熟的通用读写文件系统；F2FS 使用 segment、NAT/SIT、冷�
 4. device-mapper、inline crypto（内联加密）、UFS host 与设备内部队列。
 5. UFS 固件的 cache flush、FTL GC、磨损控制和温度策略。
 
-I/O scheduler（I/O 调度器） 管的只是块层请求进入设备前的一段路径：请求顺序、带宽份额和队列深度它都能影响；已经发给设备的命令它抢不回来，主线程上设计不当的同步写它也治不了。
+I/O scheduler（I/O 调度器） 管的是块层请求进入设备前的一段路径：请求顺序、带宽份额和队列深度它都能影响；已经发给设备的命令它抢不回来，主线程上设计不当的同步写，也还是要回到 App 侧去改。
 
 ### blk-mq 与 I/O scheduler 的位置
 
-现代 Linux 块层使用 blk-mq（多队列块层）：软件提交队列把请求分发到一个或多个硬件队列，驱动再把命令交给控制器。可选的 elevator（块 I/O 调度器） 挂在 request queue（请求队列） 上，负责合并、排序或限流尚未 dispatch 的请求。
+先看清块层自己的形状：现代 Linux 块层使用 blk-mq（多队列块层），软件提交队列把请求分发到一个或多个硬件队列，驱动再把命令交给控制器。可选的 elevator（块 I/O 调度器） 挂在 request queue（请求队列） 上，负责合并、排序或限流尚未 dispatch 的请求——后面讨论的每一种调度器，都工作在这个位置上。
 
 UFS 没有机械磁头，但 scheduler 仍可能有价值：
 
@@ -459,13 +459,13 @@ UFS 没有机械磁头，但 scheduler 仍可能有价值：
 
 ### CFQ、BFQ、mq-deadline、Kyber 与 `none`
 
-这串调度器名称不是一张固定的 Android 版本替换表：CFQ 属于旧 single-queue（单队列） 块层，BFQ、mq-deadline 和 Kyber 都可以工作在 blk-mq 上，`none` 表示目标 request queue 没有挂载可选 elevator。Android 版本、GKI 能力、vendor kernel 配置与块设备的最终选择，要分开判断。
+先把这串调度器名称放回各自的位置：CFQ 属于旧 single-queue（单队列） 块层，BFQ、mq-deadline 和 Kyber 都可以工作在 blk-mq 上，`none` 表示目标 request queue 没有挂载可选 elevator。把它们拼成一张固定的 Android 版本替换表，是排查时最容易踩的坑；Android 版本、GKI 能力、vendor kernel 配置与块设备的最终选择，要分开判断。
 
 #### CFQ：历史背景
 
 CFQ（Completely Fair Queuing，完全公平排队）为每个 I/O context（I/O 上下文） 管理队列，并通过时间片和优先级分配设备服务。它曾是通用 Linux 配置中的重要调度器，但没有进入当前 6.18 的 blk-mq scheduler 集合。
 
-把 CFQ 简化成“所有进程完全相同”并不准确：CFQ 支持 I/O class（优先级类别） 与 priority。它退出当前内核，主要背景是块层迁移到 blk-mq；单个 Android 前后台场景解释不了这件事。
+CFQ 本身支持 I/O class（优先级类别） 与 priority，“所有进程完全相同”的简化说法丢掉了这些调节手段。它退出当前内核，主要背景是块层迁移到 blk-mq；单个 Android 前后台场景解释不了这件事。
 
 #### BFQ：按 budget 分配服务
 
@@ -477,7 +477,7 @@ BFQ 的 per-request（逐请求） 处理和队列管理比 mq-deadline 更复�
 
 #### mq-deadline：位置队列、FIFO（先进先出队列） 与 I/O class
 
-mq-deadline 为 RT、BE、IDLE 三种 I/O class 分别维护读写队列。每个请求会同时进入按 sector（扇区位置） 排序的红黑树和按到期时间排列的 FIFO；调度器通常沿 sector 顺序批量 dispatch，并在批次边界处理超期请求。
+mq-deadline 为 RT、BE、IDLE 三种 I/O class 分别维护读写队列。每个请求会同时进入按 sector（扇区位置） 排序的红黑树和按到期时间排列的 FIFO；调度器通常沿 sector 顺序批量 dispatch，并在两批之间处理超期请求。
 
 下面的源码常量给出了内核的默认软期限，摘自 `block/mq-deadline.c`：
 
@@ -489,15 +489,15 @@ static const int writes_starved = 2;
 static const int fifo_batch = 16;
 ```
 
-`read_expire=500ms` 和 `write_expire=5s` 是 scheduler 开始考虑 dispatch 的软期限，别把它当作设备完成延迟上限。`writes_starved=2` 表示连续优先处理一定次数的读批次后要照顾写队列；把它读成固定的“读写 2:1”带宽比例，也是误读。
+`read_expire=500ms` 和 `write_expire=5s` 是 scheduler 开始考虑 dispatch 的软期限，设备完成延迟要用另一条时间线衡量。`writes_starved=2` 表示连续优先处理一定次数的读批次后要照顾写队列，讲的是批次的交替节奏；“读写 2:1”带宽比例是另一个概念，从这里读不出来。
 
-6.18 实现会把 `IOPRIO_CLASS_NONE` 映射到 BE，并识别 RT/BE/IDLE class。优先级 class 可以影响 dispatch；class 内的 0–7 level（等级） 是否生效则依赖 scheduler，`ionice` 命令返回成功还说明不了问题。
+6.18 实现会把 `IOPRIO_CLASS_NONE` 映射到 BE，并识别 RT/BE/IDLE class。优先级 class 可以影响 dispatch；class 内的 0–7 level（等级） 是否生效要看 scheduler 消费与否，`ionice` 命令返回成功与最终效果之间还隔着这一层。
 
 #### Kyber：用 token（令牌） 控制队列深度
 
 Kyber 把请求分成 READ、WRITE、DISCARD 和 OTHER 域，用 token 限制各域同时在途的请求数，并根据延迟直方图动态调整。6.18 源码中的默认 target 是读 2 ms、写 10 ms、discard 5 s；这些值用于内部控制，并不承诺每个请求都在目标时间内完成。
 
-Linux 的通用 I/O priority 文档把 BFQ 和 mq-deadline 列为支持者；需要 `ionice` 或 cgroup I/O class 时，先别假设 Kyber 会提供相同效果。
+Linux 的通用 I/O priority 文档把 BFQ 和 mq-deadline 列为支持者；需要 `ionice` 或 cgroup I/O class 时，Kyber 能否提供相同效果要单独确认。
 
 #### `none`：不挂 elevator
 
@@ -516,7 +516,7 @@ adb shell 'for q in /sys/block/*/queue/scheduler; do
 done'
 ```
 
-方括号包围的名称是当前选择。某个设备只显示 `[none]`，可能源于驱动能力、queue 类型或内核配置；从这里推出“Android 17 的统一默认值”，证据是不够的。
+方括号包围的名称是当前选择。某个设备只显示 `[none]`，可能源于驱动能力、queue 类型或内核配置；要谈“Android 17 的统一默认值”，得先把多台设备的读数摆在一起。
 
 ### I/O priority：先问谁消费它
 
@@ -551,7 +551,7 @@ Android init service 还支持 `ioprio <rt|be|idle> <0-7>`，最终通过 `SYS_i
 - `SCHED_SP_FOREGROUND`：包含 `HighIoPriority`。
 - `SCHED_SP_TOP_APP`：包含 `MaxIoPriority`。
 
-这些名称容易引起误解。AOSP 的 `HighIoPriority` 和 `MaxIoPriority` 本身没有设置 RT class，它们都只是把任务移回 blkio 根组；前台收益主要来自避开 background 组的降权和 class 限制。
+这些名称容易让人望文生义：AOSP 的 `HighIoPriority` 和 `MaxIoPriority` 都只是把任务移回 blkio 根组，本身没有设置 RT class；前台收益主要来自避开 background 组的降权和 class 限制。
 
 下面的 init 配置摘录固定了 AOSP 对后台 blkio 组的初始设置，来自 `system/core/rootdir/init.rc`：
 
@@ -581,7 +581,7 @@ Android 允许 API-level 和 vendor 文件覆盖默认 `cgroups.json` / `task_pr
 
 #### 读路径
 
-普通 `read()` 会先查询 Page Cache：命中时不访问存储；未命中时，文件系统读取 folio（由内核管理的一组连续内存页），并可能触发 readahead。App 冷启动中的 DEX、资源和数据库读取是否命中缓存，会显著改变耗时，所以“同一文件第二次读更快”衡量不了 UFS 性能。
+普通 `read()` 会先查询 Page Cache：命中时不访问存储；未命中时，文件系统读取 folio（由内核管理的一组连续内存页），并可能触发 readahead。App 冷启动中的 DEX、资源和数据库读取是否命中缓存，会显著改变耗时；“同一文件第二次读更快”这样的观察，衡量的是缓存行为，而非 UFS 性能。
 
 Page Cache 属于可回收的 file-backed memory（有文件作为后备的数据页）。内存压力出现时，内核会在活跃/非活跃 file LRU（文件页最近最少使用链表）、匿名页与 swap（交换空间） 之间选择回收对象；后台大范围扫描可能挤出前台仍需使用的数据，增加 refault（回收后很快再次缺页）。回收决策还受 memcg（内存控制组） 保护、访问频率、working set（工作集） 检测和 swap 成本影响。
 
@@ -636,7 +636,7 @@ Page Cache 可以合并小写、提供 readahead，并让热点数据复用，�
 - 同一文件混用 buffered 与 direct I/O 会增加一致性和失效处理难度；
 - inline encryption、device-mapper 或驱动可能增加 bounce buffer（中转缓冲）、请求拆分等成本。
 
-AOSP SQLite 的 Unix VFS 以普通缓冲文件 I/O 为基线，F2FS batch atomic write（批量原子写） 则属于另一套 ioctl 能力。没有源码证据时，“Android SQLite 的 WAL（Write-Ahead Logging，预写式日志）默认使用 Direct I/O”这样的说法站不住。
+AOSP SQLite 的 Unix VFS 以普通缓冲文件 I/O 为基线，F2FS batch atomic write（批量原子写） 则属于另一套 ioctl 能力。“Android SQLite 的 WAL（Write-Ahead Logging，预写式日志）默认使用 Direct I/O”这个说法，目前在源码里还找不到对应实现。
 
 ### Perfetto：从线程等待走到块设备
 
@@ -650,7 +650,7 @@ AOSP SQLite 的 Unix VFS 以普通缓冲文件 I/O 为基线，F2FS batch atomic
 - `ext4:*` 或 `f2fs:*` 中的 sync、writeback、checkpoint、GC 事件；
 - UFS、device-mapper 与 PSI 数据。
 
-`sched_blocked_reason` 在不同 build type（系统构建类型） 和内核配置上的可用性不同。缺了它，`thread_state.io_wait` 可能为 NULL，把所有 `D` 状态都标记成 I/O 等待就过头了。
+`sched_blocked_reason` 在不同 build type（系统构建类型） 和内核配置上的可用性不同。缺了它，`thread_state.io_wait` 可能为 NULL，把所有 `D` 状态都记成 I/O 等待，排查范围就会偏大。
 
 #### 第一问：哪些线程在 I/O sleep（睡眠等待）
 
@@ -672,7 +672,7 @@ ORDER BY iowait_ms DESC
 LIMIT 20;
 ```
 
-查询结果给出线程等待总量和单次最大值，但不会说明线程正在等待哪个文件或块设备。下一步仍要回到对应时间窗，检查调用栈、文件系统 slice（事件区间） 和 block 请求。
+查询结果给出线程等待总量和单次最大值；至于线程正在等哪个文件、哪块设备，要回到对应时间窗，检查调用栈、文件系统 slice（事件区间） 和 block 请求。
 
 #### 第二问：块设备队列是否积压
 
@@ -694,7 +694,7 @@ ORDER BY max_ops DESC;
 
 #### 第三问：等待发生在哪一层
 
-然后把同一时间窗的证据对齐：
+然后把同一时间窗内的线索对齐：
 
 - `sync_file_enter/exit` 区间很长，但 block queue 不深：关注 journal/checkpoint、锁、writeback 或 flush。
 - 从 issue 到 complete 的时间很长：关注设备排队、UFS、加密、dm 层和器件状态。
@@ -706,7 +706,7 @@ ORDER BY max_ops DESC;
 
 #### CPU iowait 的含义
 
-CPU iowait 是 CPU idle 记账中的一个状态：它无法精确归属到某个 App，也不是所有线程 I/O 等待时间之和。异步 writeback 可能让设备很忙而 CPU iowait 很低；一个线程等 I/O 时，其他 runnable（可运行） 线程也可能让 CPU 保持忙碌。
+CPU iowait 是 CPU idle 记账中的一个状态，记的是 CPU 的时间，叠加不出各线程的 I/O 等待，也切分不到单个 App 头上。异步 writeback 可能让设备很忙而 CPU iowait 很低；一个线程等 I/O 时，其他 runnable（可运行） 线程也可能让 CPU 保持忙碌。
 
 CPU iowait 因此适合作为系统级线索；定位时还要结合线程 `io_wait`、I/O PSI、block queue、文件系统事件和应用调用栈。
 
@@ -720,11 +720,11 @@ CPU iowait 因此适合作为系统级线索；定位时还要结合线程 `io_w
 4. **SharedPreferences**：`apply()` 把磁盘写排到后台，连续调用仍制造 I/O，生命周期切换也可能等待排队任务。
 5. **开发期检查**：StrictMode 可以发现主线程磁盘访问；release（发布版本） 的性能仍需通过 Perfetto、数据库统计和现场分位数验证。
 
-AOSP SQLite 编译了 F2FS batch atomic write 支持，运行时还要由 Unix VFS 探测文件系统 ioctl，并满足 pager 的条件。它可以减少部分 journal 工作，但每个事务都绕开同步或块层竞争，是保证不了的。
+AOSP SQLite 编译了 F2FS batch atomic write 支持，运行时还要由 Unix VFS 探测文件系统 ioctl，并满足 pager 的条件。它可以减少部分 journal 工作；剩下的同步与块层竞争，还要靠事务本身的安排来压低。
 
 ### `io_uring`（Linux 异步 I/O 接口） 与 FUSE：能力与实际使用
 
-6.18 Kconfig 默认提供 `IO_URING`，GKI 也启用了 FUSE（Filesystem in Userspace，用户空间文件系统）和 FUSE BPF（借助内核可编程机制处理部分 FUSE 操作）——后者借助内核可编程机制处理部分 FUSE 操作。由此只能确认内核具备相关能力。若要声称 Android 17 的某条 MediaProvider、外部存储或 OTA 路径使用了 io_uring 这个 Linux 异步 I/O 接口，需要找到对应的 AOSP 调用点、进程权限、设备配置与 trace 事件。
+6.18 Kconfig 默认提供 `IO_URING`，GKI 也启用了 FUSE（Filesystem in Userspace，用户空间文件系统）和 FUSE BPF（借助内核可编程机制处理部分 FUSE 操作）。由此只能确认内核具备相关能力；若要声称 Android 17 的某条 MediaProvider、外部存储或 OTA 路径用上了 io_uring，需要找到对应的 AOSP 调用点、进程权限、设备配置与 trace 事件。
 
 “io_uring 让 FUSE 快 40%”“dm-verity 并行哈希让冷读快 35%”这类数字都缺少可迁移到所有 Android 17 设备的前提，当不了平台结论。
 
@@ -797,4 +797,4 @@ EROFS 提供只读文件系统语义和压缩访问；dm-verity 是独立的 dev
 
 ### “`fsync()` 慢就换文件系统”
 
-App 无法在运行时把 `/data` 从 ext4 切换成 F2FS；这种变化需要设备级格式化、升级和数据迁移设计。发现同步操作缓慢后，我们先确认调用者、事务边界、文件系统内部等待和设备 I/O，再判断应该修改 App、framework、kernel 还是产品分区配置。
+把 `/data` 从 ext4 换成 F2FS，属于设备级的格式化、升级和数据迁移设计，运行时的 App 改写不了它。发现同步操作缓慢后，我们先确认调用者、事务边界、文件系统内部等待和设备 I/O，再判断应该修改 App、framework、kernel 还是产品分区配置。

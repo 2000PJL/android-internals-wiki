@@ -137,11 +137,11 @@ consolidated_from:
 
 # Crash 与 ANR（Application Not Responding，应用无响应） 监控体系
 
-线上应用崩溃（Crash）时，进程马上就要退出，定位证据要尽量抢在退出前保存下来；归集、符号化和告警，都放到之后还有可用执行窗口的时候再做。Java Crash 指未处理的 Java/Kotlin 异常，Native Crash 指 C/C++ 等原生代码触发的致命信号，捕获机制见 20.2、20.3 和 17.9。符号化是把混淆名或二进制地址还原成可读的函数名、文件名和行号的过程；这一节要讲的是，本地留存、多进程归集、符号化、告警和发布门禁这一整套体系怎么搭。
+线上应用崩溃（Crash）时，进程马上就要退出，定位证据要尽量抢在退出前保存下来；归集、符号化和告警，都放到之后还有可用执行窗口的时候再做。Java Crash 指未处理的 Java/Kotlin 异常，Native Crash 指 C/C++ 等原生代码触发的致命信号，捕获机制见 20.2、20.3 和 17.9。符号化是把混淆名或二进制地址还原成可读的函数名、文件名和行号的过程；这一节我们要讲的是，本地留存、多进程归集、符号化、告警和发布门禁这一整套体系怎么搭。
 
 > 源码基线：AOSP（Android Open Source Project，Android 开源项目） `android-17.0.0_r1`，平台上界 Android 17 / API 37。Crash 与 ANR 的主路径都位于 Android 框架、ART（Android Runtime，Android 运行时）、bionic C 库与 debuggerd（系统崩溃和线程转储服务） 等用户空间组件，不依赖内核专有实现，因此不附加内核标签。
 
-Crash 监控依赖异常或信号处置路径，ANR 监控依赖主线程、系统超时或退出记录。两者可以共享事件模型、设备信息和上传通道，现场采集的时机和可靠性却不一样，所以后面把这两条线分开讲。
+Crash 监控依赖异常或信号处置路径，ANR 监控依赖主线程、系统超时或退出记录。两者可以共享事件模型、设备信息和上传通道，现场采集的时机和可靠性却不一样，所以后面我们把这两条线分开讲。
 
 ## Java、Native Crash 现场与上报
 
@@ -174,14 +174,14 @@ Java 未捕获异常的公开入口是 `Thread.UncaughtExceptionHandler`。在 A
 
 Android 平台的 Native Crash 路径约束更多。debuggerd 是 Android 的原生崩溃诊断机制；它的 [`debuggerd_handler.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp) 会预先准备备用栈，并以 `SA_RESTART | SA_SIGINFO | SA_ONSTACK | SA_EXPOSE_TAGBITS` 标志注册信号处理。
 
-收到致命信号后，它在专门准备的环境中启动辅助进程 `crash_dump`，读取崩溃进程的状态。[`crash_dump.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 Linux 进程追踪接口 `ptrace`（诊断追踪数据） 读取线程状态，把结果交给 tombstoned（系统转储存储服务） 服务写出 tombstone；tombstone 是包含信号、寄存器、线程栈和内存映射等信息的原生崩溃诊断记录，由 tombstoned 集中保存。
+收到致命信号后，它在专门准备的环境中启动辅助进程 `crash_dump`，读取崩溃进程的状态。[`crash_dump.cpp`](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp) 通过 Linux 进程追踪接口 `ptrace`（诊断追踪数据） 读取线程状态，把结果交给 tombstoned（系统转储存储服务）写出 tombstone；tombstone 是包含信号、寄存器、线程栈和内存映射等信息的原生崩溃诊断记录，由 tombstoned 集中保存。
 
 这条路径有两个容易踩错的地方：
 
 - 信号处理代码在目标进程一侧初始化；debuggerd 守护进程不会替应用注册 `sigaction`，`crash_dump` 与 tombstoned 只参与后续抓取和保存。
 - 平台处理器依赖预分配栈、管道、专用辅助进程和平台权限，普通 Crash SDK 照搬不来。自定义信号处理函数只能使用经过审计的异步信号安全（async-signal-safe）操作和预分配内存；构造 JSON、申请堆内存、获取普通互斥锁、发起网络请求，这些都要避开。
 
-第三方应用通常无权读取 `/data/tombstones`。应用侧一般通过经过验证的 Native Crash SDK 生成 minidump（只保存诊断所需线程、寄存器和选定内存信息的小型转储）——一种只保存诊断所需线程、寄存器和选定内存信息的小型转储——或在后续启动时查询系统 API `ApplicationExitInfo`，由它返回近期进程退出原因。tombstone、bugreport（系统诊断包）、logcat（Android 日志工具） 与 `ndk-stack` 主要用于开发和平台诊断；`ndk-stack` 是 NDK（Native Development Kit，Android 原生开发工具包） 自带的地址符号化工具。
+第三方应用通常无权读取 `/data/tombstones`。应用侧一般通过经过验证的 Native Crash SDK 生成 minidump（只保存诊断所需线程、寄存器和选定内存信息的小型转储），或在后续启动时查询系统 API `ApplicationExitInfo`，由它返回近期进程退出原因。tombstone、bugreport（系统诊断包）、logcat（Android 日志工具） 与 `ndk-stack` 主要用于开发和平台诊断；`ndk-stack` 是 NDK（Native Development Kit，Android 原生开发工具包） 自带的地址符号化工具。
 
 #### 最小记录的字段设计
 
@@ -265,9 +265,9 @@ WebView 渲染进程由系统和 WebView 实现管理，应用没有在里面安
 
 #### 隔离服务进程的采集与上传
 
-清单里设置 [`android:isolatedProcess="true"`](https://developer.android.com/guide/topics/manifest/service-element#isolated) 的 Service（Android 服务组件） 会在特殊隔离进程中运行。该进程没有自己的应用权限，只能通过 Service 的启动或绑定接口与应用交互。它虽然来自同一个 APK，我们也不能把它当成一个能直接访问应用私有状态、发起网络上传的进程。
+清单里设置 [`android:isolatedProcess="true"`](https://developer.android.com/guide/topics/manifest/service-element#isolated) 的 Service（Android 服务组件） 会在特殊隔离进程中运行。该进程没有自己的应用权限，只能通过 Service 的启动或绑定接口与应用交互。它虽然来自同一个 APK，我们设计采集与上传时仍要把它当成一个能力受限的独立进程，默认它做不了直接访问应用私有状态、发起网络上传这类事。
 
-可行的设计是：应用的管理进程通过受控 IPC（Inter-Process Communication，进程间通信） 接收隔离服务平时产生的有限诊断数据；进程退出后，再用 `ApplicationExitInfo` 对照进程名、Linux 用户标识（UID）、时间和退出原因补齐记录。隔离进程崩溃后，Binder（Android 跨进程调用机制） 调用还执不执行得下去是没有保证的，收尾保存也就不能依赖崩溃发生后的跨进程调用。
+可行的设计是：应用的管理进程通过受控 IPC（Inter-Process Communication，进程间通信） 接收隔离服务平时产生的有限诊断数据；进程退出后，再用 `ApplicationExitInfo` 对照进程名、Linux 用户标识（UID）、时间和退出原因补齐记录。隔离进程崩溃后，Binder（Android 跨进程调用机制） 调用还能不能执行下去并无保证，收尾保存也别指望崩溃后的跨进程调用。
 
 #### 动态特性模块的版本记录
 
@@ -277,9 +277,9 @@ WebView 渲染进程由系统和 WebView 实现管理，应用没有在里面安
 
 API 30 起，应用可以通过 [`ActivityManager.getHistoricalProcessExitReasons()`](https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int)) 查询近期进程退出信息。它适合发现 SDK 没有保存到的低内存终止、ANR、Java Crash 和 Native Crash，也能帮助核对多进程退出。
 
-低内存终止能否明确报告为 `REASON_LOW_MEMORY`，要先用同为 API 30 引入的 `ActivityManager.isLowMemoryKillReportSupported()` 检查设备支持情况。不支持时，低内存终止会记录为 `REASON_SIGNALED`，`getStatus()` 返回 `SIGKILL`；但仅凭 `SIGKILL` 无法确认低内存原因。
+低内存终止能否明确报告为 `REASON_LOW_MEMORY`，要先用同为 API 30 引入的 `ActivityManager.isLowMemoryKillReportSupported()` 检查设备支持情况。不支持时，低内存终止会记录为 `REASON_SIGNALED`，`getStatus()` 返回 `SIGKILL`；但仅凭 `SIGKILL` 还不足以确认低内存原因。
 
-这项 API 不是无限期、无损的崩溃档案库，用的时候要记住四点：
+这项 API 是一份有界、会过期也会被覆盖的退出历史，用的时候要记住四点：
 
 - 返回值来自有界历史记录，按时间从新到旧排列；调用方应保存上次处理到的时间戳，以及由进程名和退出原因等字段组成的记录指纹，并容忍旧记录被淘汰。
 - `ApplicationExitInfo` 的 trace（线程转储） 存放在单独的全局循环存储中，可能被包括其他应用在内的后续记录覆盖；`getTraceInputStream()` 允许返回 `null`。
@@ -290,7 +290,7 @@ API 30 起，应用可以通过 [`ActivityManager.getHistoricalProcessExitReason
 
 ### 符号化与反混淆服务
 
-原始混淆名和 Native 地址，没办法稳定对应回源码。每个可发布构建（release build）都要把应用包、R8 映射文件和原生符号文件归档成同一组不可变产物。
+符号化要把混淆名和 Native 地址还原回源码，而这条对应关系要靠每次发布留下的符号产物。所以，每个可发布构建（release build）都要把应用包、R8 映射文件和原生符号文件归档成同一组不可变产物。
 
 #### Java / Kotlin 的 R8 映射文件
 
@@ -333,7 +333,7 @@ Native 样本和符号产物至少要通过以下信息匹配：
 
 ### Crash 实时告警与分级响应
 
-“出现新问题组”只是一个信号。告警还要结合受影响用户、版本暴露量（实际使用该版本的用户数或会话数）——即实际使用该版本的用户数或会话数——发生场景、相对稳定版本的变化和统计不确定性；否则低暴露版本容易因偶发样本触发误报，高暴露版本又可能因绝对数量大而长期告警。
+“出现新问题组”只是一个信号。我们看到这个信号时，告警判断还要结合受影响用户、版本暴露量（实际使用该版本的用户数或会话数）、发生场景、相对稳定版本的变化和统计不确定性；否则低暴露版本容易因偶发样本触发误报，高暴露版本又可能因绝对数量大而长期告警。
 
 #### 崩溃率指标的分母
 
@@ -381,7 +381,7 @@ Crash 附件可能包含 URL、请求参数、用户输入、文件路径、设�
 - 大附件设定单独的字节配额、保留期和下载审计，过期后只保留统计摘要。
 - 服务端实施项目隔离和最小权限，原始附件访问需要可审计的诊断理由。
 
-成本控制别只做统一抽样。新问题组、稀有设备、Native Crash 与核心场景需要分层保留代表样本；已知重复问题组可以降低附件采集率，但用于估算总体事件数的纳入概率仍要记录。看板还要呈现被丢弃事件数、配额占用、重试次数、附件大小分位数和符号化失败率——采集一旦有缺口，无崩溃率指标就会偏高。
+成本控制要在统一抽样之外再做分层保留。新问题组、稀有设备、Native Crash 与核心场景要保住代表样本；已知重复问题组可以降低附件采集率，但用于估算总体事件数的纳入概率仍要记录。看板还要呈现被丢弃事件数、配额占用、重试次数、附件大小分位数和符号化失败率——采集一旦有缺口，无崩溃率指标就会偏高。
 
 ### Android 10–17 的能力边界
 
@@ -414,7 +414,7 @@ Crash 的采集发生在进程终止路径上；ANR 往往相反，它发生时�
 
 ### ANR 监控解决什么问题
 
-ANR 监控要回答两个问题：用户遇到无响应时，我们能不能统计到；研发拿到记录后，能不能还原现场。只看系统弹窗或 Play Console，通常只能知道“发生过 ANR”；只做主线程卡顿监控，又容易把长卡顿误判成系统 ANR。
+ANR 监控要回答两个问题：用户遇到无响应时，我们是否统计到了；研发拿到记录后，是否还原得出现场。只看系统弹窗或 Play Console，通常只能知道“发生过 ANR”；只做主线程卡顿监控，又容易把长卡顿误判成系统 ANR。
 
 我们把 ANR 监控分成四层：系统 ANR 记录、Google Play Android vitals 指标、端侧卡顿预警、现场快照。系统记录确认事件，端侧快照补足现场信息，Android vitals 提供发布质量阈值。根因分析流程详见 9.2 节，治理策略详见 20.4 节，Crash / ANR 捕获实现详见 17.9 节。
 
@@ -429,7 +429,7 @@ ANR 监控要回答两个问题：用户遇到无响应时，我们能不能统�
 | 普通 App，Android 17 | 前述能力 + `AnrWarningResult` 预警、`ApplicationExitInfo.AnrInfo` | 接近超时时的尽力预警，以及系统确认后的类型、ID 和超时信息 | API 37；预警可能不投递，也可能来不及执行 |
 | 系统 / 设备厂商（OEM）、root 或 userdebug | DropBox、`/data/anr`、完整日志、statsd、bugreport、Perfetto | 跨 UID 与系统依赖的完整现场 | 需要平台权限、SELinux 策略或调试环境 |
 
-表中几个词先交代一下：UID 是用户标识，root 表示最高系统权限，userdebug 是保留调试能力的系统构建类型。DropBox 用于保存系统诊断条目，statsd 是系统统计守护进程，bugreport 是系统诊断包，Perfetto 是系统追踪工具，SELinux 是 Android 的强制访问控制机制。这些平台级权限，普通 App 一项都拿不到。
+表中几个平台级的词，我们先交代清楚：UID 是用户标识，root 表示最高系统权限，userdebug 是保留调试能力的系统构建类型。DropBox 用于保存系统诊断条目，statsd 是系统统计守护进程，bugreport 是系统诊断包，Perfetto 是系统追踪工具，SELinux 是 Android 的强制访问控制机制。这些平台级权限，普通 App 一项都拿不到。
 
 `getProcessesInErrorState()` 返回调用那一刻仍处于错误状态的瞬时快照，正常时可以为 `null`；Android 13 起，普通应用在没有 `DUMP` 权限时只能看到本 UID，轮询还可能重复读取或错过快速恢复事件。我们把它当补充信号用，事件账本还是要靠 `ApplicationExitInfo`——Android 11+ 的历史退出入口。还要留意：非空 trace 未必代表这次退出的原因，进程可能从 ANR 恢复，稍后因其他原因退出，而记录仍附带先前的 ANR trace。
 
@@ -469,7 +469,7 @@ sequenceDiagram
 
 `Debug.dumpJavaBacktraceToFileTimeout()` 经 JNI（Java Native Interface，Java 原生接口） 调用 debuggerd 的 Java backtrace 路径。ART 的 `SignalCatcher` 线程通过 `sigwait()` 等待 `SIGQUIT` 信号，随后执行 `Runtime::DumpForSigQuit()` 并把结果交给 tombstoned。主线程上并没有安装普通的信号处理函数，App SDK 也拿不到“ANR 已确认”回调。
 
-第三方 SDK 对平台的 `SIGQUIT` 处理要保持克制：不替换它、不阻断信号传递，也不自行把该信号解释成“ANR 已确认”。新系统会把 ANR trace 写入 `/data/anr/anr_*`，这个目录普通应用读不到；具备 root 或调试条件的设备可以用 ADB（Android Debug Bridge，Android 调试桥）获取。生产环境 App 应把系统确认与端侧预警分开处理：API 30 及以上查询 `ApplicationExitInfo`，运行期靠低成本主线程监控保存自己的现场信息。
+第三方 SDK 对平台的 `SIGQUIT` 处理要保持克制：保留平台自己的处理器，让信号照常传递，也不要自行把该信号解释成“ANR 已确认”。新系统会把 ANR trace 写入 `/data/anr/anr_*`，这个目录普通应用读不到；具备 root 或调试条件的设备可以用 ADB（Android Debug Bridge，Android 调试桥）获取。生产环境 App 应把系统确认与端侧预警分开处理：API 30 及以上查询 `ApplicationExitInfo`，运行期靠低成本主线程监控保存自己的现场信息。
 
 ### Android 11+：用 ApplicationExitInfo 补系统确认
 
@@ -478,13 +478,13 @@ Android 11 引入 `ApplicationExitInfo` 后，App 可以在后续进程启动时
 这条路径有四件事要记住：
 
 - 它是历史查询接口，拿不到实时 ANR 回调；用户遇到卡顿后进程若恢复，现场还得靠运行期快照保存。
-- trace 使用独立的系统级环形缓冲区，新的崩溃或 ANR（包括其他应用产生的记录）可能覆盖旧内容，`getTraceInputStream()` 允许返回 `null`。发现可读流后，应立即在字节上限内复制到应用私有目录，关闭输入流，并记录文件大小与摘要；系统侧的流当不了长期归档。
+- trace 使用独立的系统级环形缓冲区，新的崩溃或 ANR（包括其他应用产生的记录）可能覆盖旧内容，`getTraceInputStream()` 允许返回 `null`。发现可读流后，应立即在字节上限内复制到应用私有目录，关闭输入流，并记录文件大小与摘要；系统侧的流只作临时存放，长期归档靠的是应用复制出来的这份。
 - trace 主要提供线程和进程现场，业务语义要靠自己补：页面、经过脱敏的用户动作、请求阶段和实验分组，仍需端侧采集器保存。
-- API 31 及以上的 Native crash 记录也可能通过该接口返回采用 Protocol Buffers 编码的 tombstone（原生崩溃转储）。消费端要连同 `reason` 识别数据类型，非空 trace 不能一律标成 ANR。
+- API 31 及以上的 Native crash 记录也可能通过该接口返回采用 Protocol Buffers 编码的 tombstone（原生崩溃转储）。消费端要连同 `reason` 识别数据类型，非空 trace 先对照 `reason` 定性，再决定标成什么。
 
 ### ANR 率统计与 Android vitals 比对
 
-ANR 指标要分两套：内部治理一套，Google Play Android vitals 一套。内部指标面向排查，关注版本、场景、页面、设备和线程状态；vitals 面向分发质量，关注 user-perceived ANR rate（用户感知 ANR 率）。
+ANR 指标我们分两套用：内部治理一套，Google Play Android vitals 一套。内部指标面向排查，关注版本、场景、页面、设备和线程状态；vitals 面向分发质量，关注 user-perceived ANR rate（用户感知 ANR 率）。
 
 Play 当前把用户感知 ANR 率列为 core vital（会影响应用可发现性的核心质量指标）。官方口径中，只有 `Input dispatching timed out` 计入用户感知 ANR，而它只覆盖应用全部 ANR 的一部分。公开的不良行为阈值为：全设备维度至少 0.47% 的日活用户遇到用户感知 ANR，单机型维度至少 8%。Android vitals 每日更新；Google Play 通常依据最近 28 天的数据评估应用质量，指标突增时可能提前采取措施。超过阈值可能降低应用在 Google Play 的可发现性，也可能在商品详情中显示警告。
 

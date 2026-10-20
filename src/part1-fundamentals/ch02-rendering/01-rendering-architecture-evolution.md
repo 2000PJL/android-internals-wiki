@@ -3,7 +3,7 @@ title: Android 渲染架构与版本演进
 chapter: '2.1'
 section: '2.1'
 applicable_versions: Android 3.0 (API 11) - Android 17 (API 37)
-last_verified: '2026-07-25'
+last_verified: '2026-10-20'
 last_verified_against: 'AOSP android-17.0.0_r1: View/ViewRootImpl/Choreographer/ThreadedRenderer/HardwareRenderer/BaseRecordingCanvas, HWUI RenderNode/DrawFrameTask/CanvasContext/Properties/Skia pipelines, BufferQueue/BLASTBufferQueue, SurfaceFlinger FrontEnd/Scheduler/HWComposer/HWC2/ComposerHal/RenderEngine; kernel android17-6.18-2026-06_r6 boundary; Writer rendering_pipelines S01/S02'
 confidence: medium
 sources:
@@ -101,6 +101,12 @@ sources:
   path: developer.android.com/develop/ui/views/graphics/webgpu
 - type: official
   path: developer.android.com/jetpack/androidx/releases/webgpu#1.0.0-alpha05
+- type: official
+  path: https://developer.android.com/jetpack/androidx/releases/webgpu#1.0.0-alpha06
+- type: official
+  path: https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06.aar
+- type: official
+  path: https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06-sources.jar
 - type: official
   path: developer.android.com/reference/androidx/webgpu/GPUSurface
 - type: official
@@ -210,8 +216,9 @@ related_chapters:
 - '2.7'
 status: ready-for-review
 last_rework_at: '2026-10-20T09:39:58+08:00'
+last_deep_review_at: '2026-10-20T12:38:26+08:00'
 last_source_verified_at: '2026-10-20'
-verification_scope_note: '2026-10-20 核验了 Android 17 的 traversal 调度、HWUI 后端属性、BLAST buffer transaction、BufferTX、AutoSingleLayer 条件、FrameTimeline 对象与 Display 帧率查询签名；历史核验覆盖 Android 5.0 的 OpenGLRenderer/RenderThread 分工及 Android 11 的 BLAST 接入分支。官方文档核对了旧 Always 模式风险和 FrameTimeline 的 SurfaceView 覆盖提示。其余版本里程碑、WebGPU、Vulkan 设备要求及 kernel 结论未逐项重新核验。'
+verification_scope_note: '2026-10-20 核验了 Android 17 的 traversal 调度、HWUI 后端属性、BLAST buffer transaction、BufferTX、AutoSingleLayer 条件、FrameTimeline 对象与 Display 帧率查询签名；历史核验覆盖 Android 5.0 的 OpenGLRenderer/RenderThread 分工及 Android 11 的 BLAST 接入分支。官方文档核对了旧 Always 模式风险和 FrameTimeline 的 SurfaceView 覆盖提示。另核对了 Android 17 FrameMetrics 指标端点与 VSyncId、ANGLE 的可选性及 prefer_angle 回退契约、Implement Vulkan 的 launch-device 条件，并用 WebGPU alpha06 发布说明及 Google Maven 实际 AAR/源码核对最低 SDK、Java Builder 迁移与文档警告。其余版本里程碑、CDD 全部兼容条款及 kernel 结论未逐项重新核验。'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/01-rendering-overview.md
@@ -1146,7 +1153,11 @@ GLES 应用、原生 Vulkan 应用和 HWUI 页面是三类对象，要分开对�
 
 #### WebGPU
 
-Android 17 的发布说明把 WebGPU 列为图形新能力。公开接口来自独立发布的 Jetpack `androidx.webgpu:webgpu`，当前核验版本为 `1.0.0-alpha05`，不属于 `android.*` framework API；alpha 表示仍在早期预览阶段，接口可能变化。
+Android 17 的发布说明把 WebGPU 列为图形新能力。公开接口来自独立发布的 Jetpack `androidx.webgpu:webgpu`，不属于 `android.*` framework API。截至 2026-10-20，发布页列出的版本为 2026-10-07 发布的 `1.0.0-alpha06`；alpha 表示仍在早期预览阶段，接口可能变化。
+
+独立库的适用范围要按依赖版本确认。`alpha06` 将最低 SDK 从 API 24 提高到 API 26（Android 8.0），不能把 Android 17 的发布归类当作该库的最低系统要求。该版本还移除了描述符和配置结构构造函数上的 `@JvmOverloads`；依赖旧构造函数重载的 Java 代码需按迁移说明改用嵌套 `Builder`。升级前应先检查应用的 `minSdk` 与这些调用点。
+
+[`alpha05` 与 `alpha06` 的发布说明](https://developer.android.com/jetpack/androidx/releases/webgpu#1.0.0-alpha06) 均提示：库文档由 Google Gemini 生成，可能有误。涉及具体 API 时，应同时核对所用版本的源码与官方 WebGPU 规范；`alpha06` 的 `GPUSurface` 源文件也保留了这条提示。
 
 该库提供 Kotlin/Java 绑定，并以比 Vulkan 更高层的对象组织工作：adapter 表示可选 GPU 实现，device 是应用取得的逻辑 GPU 设备，queue 接收提交，command buffer（批量记录并提交 GPU 命令的对象） 保存待执行命令，WGSL 是 WebGPU Shading Language。
 

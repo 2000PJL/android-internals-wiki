@@ -73,9 +73,9 @@ last_review_finalize_at: '2026-07-31T12:07:10+08:00'
 
 # ProfilingManager
 
-> 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）。ProfilingManager 是 Mainline（可脱离完整系统升级包单独更新的模块） 模块，可经 Google Play system update（Google Play 系统更新） 独立更新，设备上的实际行为可能与这个 AOSP tag 的源码有差异。
+做性能排查的人大概都遇到过这个空档：线上反馈堆里只有一句“卡了”，问题发生的那一刻没有任何分析工具开着。ProfilingManager 就是为补这个空档来的。Android 15 起，应用可以主动请求四种采集：system trace（系统时间线）、heap dump（堆快照）、heap profile（堆分配采样） 和 stack sampling（周期性调用栈采样）；Android 16 又加了 system-triggered profiling（由系统事件触发采集），让系统在 ANR、进程被杀这类事件发生时自动留下一份现场。我们接入时要分清三件事：显式请求怎么发、哪些 trigger 要哪个版本、结果从哪里收。
 
-做性能排查的人大概都遇到过这个空档：线上反馈堆里只有一句“卡了”，问题发生的那一刻没有任何分析工具开着。ProfilingManager 就是为补这个空档来的。Android 15 起，应用可以主动请求四种采集：system trace（系统时间线）、heap dump（堆快照）、heap profile（堆分配采样） 和 stack sampling（周期性调用栈采样）；Android 16 又加了 system-triggered profiling（由系统事件触发采集），让系统在 ANR、进程被杀这类事件发生时自动留下一份现场。我们接入时要分清三件事：显式请求怎么发、trigger 的版本边界在哪、结果从哪里收。
+> 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）。ProfilingManager 是 Mainline（可脱离完整系统升级包单独更新的模块） 模块，可经 Google Play system update（Google Play 系统更新） 独立更新，设备上的实际行为可能与这个 AOSP tag 的源码有差异。
 
 ## 从待回答的问题选择采集类型
 
@@ -96,7 +96,7 @@ heap profile 默认采的是 native allocation（C/C++ 等原生堆分配）。�
 
 ## API 层与版本判断
 
-接入这个 API，第一步是把版本边界搞清楚。平台类 `android.os.ProfilingManager` 是 Android 15（API 35）加入的；AndroidX Core 1.15.0 首次提供了 `androidx.core.os.Profiling` 和四个 request builder，免去了直接拼装平台参数的工作，截至本轮核验，稳定版 1.19.0 仍提供这些封装。注意 AndroidX 回调里的结果类型仍是 `android.os.ProfilingResult`。
+接入这个 API，我们第一步把版本范围搞清楚。平台类 `android.os.ProfilingManager` 是 Android 15（API 35）加入的；AndroidX Core 1.15.0 首次提供了 `androidx.core.os.Profiling` 和四个 request builder，免去了直接拼装平台参数的工作，截至本轮核验，稳定版 1.19.0 仍提供这些封装。注意 AndroidX 回调里的结果类型仍是 `android.os.ProfilingResult`。
 
 显式请求只要求 API 35。系统触发能力分成 API 36、Android 16 minor release 1（36.1）、API 37 三档。36.1 属于 minor SDK release（主 API 级别内的次要 SDK 版本），不属于通过扩展版本号发布能力的 `SdkExtensions` B Extension；下面的守卫用 `SDK_INT_FULL` 把 API 37 基线和 Android 16 minor release 1 分开处理。
 
@@ -107,11 +107,11 @@ boolean hasProfiling36_1 =
             && Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1);
 ```
 
-这段守卫怎么读：API 37 的设备已经包含这组接口，直接走第一个分支；Android 16 设备则要用 `SDK_INT_FULL` 查询带 minor release 序号的完整 SDK 版本。能力探测别走捷径——通过版本字符串、机型名单或系统更新日期推测都靠不住，编译期也应用包含相应 minor release API 的 SDK。详细的 36.1 判断见下文“System-triggered profiling 的运行方式”。
+这段守卫这样读：API 37 的设备已经包含这组接口，直接走第一个分支；Android 16 设备则要用 `SDK_INT_FULL` 查询带 minor release 序号的完整 SDK 版本。能力探测就认这套判断——版本字符串、机型名单、系统更新日期这几条捷径都到不了 minor release 这一层，编译期也要用包含相应 minor release API 的 SDK。详细的 36.1 判断见下文“System-triggered profiling 的运行方式”。
 
 ## 发起一次显式请求
 
-动手发一次请求。下面的 Java 示例采集 5 秒 system trace，并允许业务场景结束时提前取消；`enqueueProfileForUpload()` 和 `recordProfilingFailure()` 代表应用自己的持久化与日志函数。
+我们动手发一次请求。下面的 Java 示例采集 5 秒 system trace，并允许业务场景结束时提前取消；`enqueueProfileForUpload()` 和 `recordProfilingFailure()` 代表应用自己的持久化与日志函数。
 
 ```java
 CancellationSignal stopSignal = new CancellationSignal();
@@ -139,9 +139,9 @@ Profiling.requestProfiling(context, request, executor, result -> {
 });
 ```
 
-类名归属先分清：`Profiling`、`ProfilingRequest`、`SystemTraceRequestBuilder` 和 `BufferFillPolicy` 来自 `androidx.core.os`，`CancellationSignal` 与 `ProfilingResult` 来自 `android.os`。还要注意平台是异步执行请求的，调用成功并不等于立刻开始采集；如果目标是某段业务代码，启动要留出余量，并用 `androidx.tracing.Trace` 打上可搜索的 slice（带开始、结束时间的时间线区段），业务段结束后再调 `stopSignal.cancel()` 请求停止。
+类名归属先分清：`Profiling`、`ProfilingRequest`、`SystemTraceRequestBuilder` 和 `BufferFillPolicy` 来自 `androidx.core.os`，`CancellationSignal` 与 `ProfilingResult` 来自 `android.os`。平台是异步执行请求的，调用成功只代表请求被受理，采集在那之后才开始；如果目标是某段业务代码，启动要留出余量，并用 `androidx.tracing.Trace` 打上可搜索的 slice（带开始、结束时间的时间线区段），业务段结束后再调 `stopSignal.cancel()` 请求停止。
 
-`executor`（调度回调的执行器） 和 request-specific listener（只接收本次请求结果的监听器）必须成对传入；两者都传 `null` 只在已注册全局 listener 时才有意义，一个 listener 都没有的请求会被直接丢弃。回调线程里也别做文件压缩或网络上传，把路径交给受约束的后台任务就好。
+`executor`（调度回调的执行器） 和 request-specific listener（只接收本次请求结果的监听器）必须成对传入；两者都传 `null` 的写法只适合已注册全局 listener 的应用，一个 listener 都没有的请求会被直接丢弃。回调线程里只做轻量处理，文件压缩、网络上传这类活交给受约束的后台任务。
 
 ## `BufferFillPolicy` 只有两个公开值
 
@@ -152,7 +152,7 @@ Profiling.requestProfiling(context, request, executor, result -> {
 | `RING_BUFFER` | 环形缓冲区写满后，新事件覆盖最旧事件 | 关注停止点前的滑动卡顿、输入延迟或手动结束场景 |
 | `DISCARD` | 新事件被丢弃，已有事件继续保留 | 关注采集开始处的冷启动早期事件 |
 
-选哪个策略，改变的只是保留哪一段时间线，数据源不会因此变多。`ProfilingManager` 暴露的是受控配置，我们传不进任意 Perfetto config；缓冲区大小、时长和采样频率到了系统服务侧，还会按 `DeviceConfig`（系统可动态调整的配置项） 给出的范围裁剪。`android-17.0.0_r1` 的默认值与上限适合读源码时参考，别照抄成跨设备的产品常量。
+选哪个策略，改动的只是保留哪一段时间线，数据源集合保持原样。`ProfilingManager` 暴露的是受控配置，builder 里有哪些参数，应用就能传哪些；缓冲区大小、时长和采样频率到了系统服务侧，还会按 `DeviceConfig`（系统可动态调整的配置项） 给出的范围裁剪。`android-17.0.0_r1` 的默认值与上限适合读源码时参考，跨设备的产品常量要另外标定。
 
 ## 两类 listener 与结果再次投递
 
@@ -169,17 +169,17 @@ Profiling.requestProfiling(context, request, executor, result -> {
 
 ## 结果文件、字段与隐私
 
-结果拿到手了，我们看文件本身。成功时文件位置只有 `ProfilingResult.getResultFilePath()` 这一个来源，别硬编码 `files/profiling` 之类的目录，也不需要申请外部存储权限。读取、上传完成后删除、重试和留存超时，都围绕这个返回路径实现。
+结果拿到手了，我们先看文件本身。成功时，文件位置只认 `ProfilingResult.getResultFilePath()` 返回的这一条路径，读取、上传完成后删除、重试和留存超时都围绕它实现；外部存储权限也一并省掉，`files/profiling` 之类的目录无需写进代码。
 
-字段方面，`ProfilingResult` 提供 `errorCode`、`errorMessage`、`resultFilePath`、`tag` 和 `triggerType`，没有 `profilingType` getter。也就是说，显式请求的采集类型要在提交请求时就写进应用自己的记录，trigger 结果则按 trigger 与产物的对应规则映射；从文件扩展名是反推不出全部类型的，多个 profile 都可能用 Perfetto trace 容器。
+字段方面，`ProfilingResult` 提供 `errorCode`、`errorMessage`、`resultFilePath`、`tag` 和 `triggerType`，没有 `profilingType` getter。所以显式请求的采集类型，要在提交请求时就写进应用自己的记录，trigger 结果则按 trigger 与产物的对应规则映射；文件扩展名只能区分一部分类型，剩下的靠记录补齐——多个 profile 都可能装在 Perfetto trace 容器里。
 
-上传之前，隐私这关必须过。system trace 会移除其他应用和进程的信息，所以 PerfettoSQL（Perfetto 的 SQL 查询接口） 能查到的数据范围比本地完整 trace 小；脱敏不覆盖应用自己的线程名、trace slice、Surface 名和业务 `tag`。heap dump 还可能装着对象字段与字符串，heap profile 和 stack sampling 会暴露类名、方法名及调用路径。上传前按数据类型把授权、加密、访问控制、保留期限和删除策略都过一遍。
+上传之前，隐私这关必须过。system trace 会移除其他应用和进程的信息，所以 PerfettoSQL（Perfetto 的 SQL 查询接口） 能查到的数据范围比本地完整 trace 小；应用自己的线程名、trace slice、Surface 名和业务 `tag` 则原样保留。heap dump 还可能装着对象字段与字符串，heap profile 和 stack sampling 会暴露类名、方法名及调用路径。上传前按数据类型把授权、加密、访问控制、保留期限和删除策略都过一遍。
 
-同理，`tag` 里不要出现手机号、订单号、账号、Token、URL 查询参数、地理位置或明文会话标识，用不含用户含义的场景码，由服务端受控映射到内部工单。
+同理，`tag` 里只放不含用户含义的场景码，由服务端受控映射到内部工单；手机号、订单号、账号、Token、URL 查询参数、地理位置、明文会话标识，一个都别放进去。
 
 ### 结果文件生命周期
 
-文件是怎么写进去的？系统先让应用进程在 `files/profiling/` 中创建目标文件，再通过文件描述符（跨进程传递已打开文件的句柄）把结果写进去。所以 `ProfilingResult.resultFilePath` 返回完整路径时，文件已经在那里了，callback 不需要再“保存”一份；应用要做的是在一次数据库事务（相关字段要么全部写入，要么全部回滚）里登记路径与业务 metadata（描述文件来源和状态的附加字段），然后交给后台任务。
+文件是怎么写进去的？系统先让应用进程在 `files/profiling/` 中创建目标文件，再通过文件描述符（跨进程传递已打开文件的句柄）把结果写进去。所以 `ProfilingResult.resultFilePath` 返回完整路径时，文件已经在那里了，callback 拿到路径直接用就好；应用要做的是在一次数据库事务（相关字段要么全部写入，要么全部回滚）里登记路径与业务 metadata（描述文件来源和状态的附加字段），然后交给后台任务。
 
 整条处理链我们建议按下面的时序走：
 
@@ -223,19 +223,19 @@ metadata（描述这份文件来源和状态的附加字段） 至少包含：
 - 支付信息、订单号、地址
 - 缓存在内存中的密钥材料或证书
 
-system trace 那层脱敏在这里帮不上忙，heap dump 里的业务数据要应用自己负责。方案按分析方式选：
+system trace 那层脱敏管到 trace 为止，heap dump 里的业务数据要应用自己负责。方案按分析方式选：
 
 1. **优先在设备上提取**：若问题能由对象计数、Retained Size（对象及其支配对象占用的内存）、类分布或少量调用栈回答，可在设备上提取诊断摘要，只上传摘要。
-2. **受控后端分析**：必须上传原始 heap dump 时，使用 TLS 加密传输、服务端加密存储、独立 KMS（密钥管理系统）、最小权限、访问审计和短保留期。后端要分析文件，就必然存在受控的解密路径；“端到端加密且服务端无法读取”与服务端分析不能同时成立。
+2. **受控后端分析**：必须上传原始 heap dump 时，使用 TLS 加密传输、服务端加密存储、独立 KMS（密钥管理系统）、最小权限、访问审计和短保留期。后端要分析文件，就必然存在受控的解密路径；“端到端加密、服务端读不到原文”和服务端直接分析，两者只能取其一。
 3. **明确授权与采样范围**：隐私告知应说明性能诊断可能包含内存快照，远程开关要能关闭 heap dump，并把采样限定到必要版本和必要用户范围。
 4. **备份排除**：`files/` 默认可能进入 Auto Backup。把 `files/profiling/` 同时排除在云备份和设备迁移规则之外，并兼顾旧版 `fullBackupContent` 配置。
 5. **删除可验证**：上传成功、超过保留期、用户撤回同意或诊断任务关闭时，都要有可观测的删除记录。
 
-最后，通用 trace 上传接口别直接拿来传 heap dump：两者的数据敏感度、访问人群、保留期和审计要求都不是一回事。
+最后，通用 trace 上传接口别直接拿来传 heap dump：两者的数据敏感度、访问人群、保留期和审计要求各不相同。
 
 ## System-triggered profiling 的运行方式
 
-再看系统触发这一侧。系统会周期性、带随机性地启动后台 trace，用 ring buffer 保存最近数据；事件发生时，只有后台 trace 正在运行且配额（系统允许的采样预算）充足，才会生成 running trace snapshot（当前后台 trace 的快照）。所以我们注册 trigger，含义是允许系统在条件满足时采样，而非每次 ANR、进程被杀或 fully drawn 都必然换来一份文件。
+我们再看系统触发这一侧。系统会周期性、带随机性地启动后台 trace，用 ring buffer 保存最近数据；事件发生时，只有后台 trace 正在运行且配额（系统允许的采样预算）充足，才会生成 running trace snapshot（当前后台 trace 的快照）。所以注册 trigger 的含义，是允许系统在条件满足时采样；一次 ANR、进程被杀或 fully drawn 是否留下文件，取决于当时的后台 trace 和配额状态。
 
 trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 
@@ -261,7 +261,7 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 
 `COLD_START` 正相反，它是 API 37 为这次冷启动新开的一份 system trace，同时做 stack sampling：应用调用 `reportFullyDrawn()` 时停止，没调用就默认约 5 秒停止；它的 system trace 用 `DISCARD`，为的是留下采集开头。还要记得启动 trace 自身可能给启动带来延迟，做性能阈值判断时把这部分开销算进去。
 
-两个 trigger 的采集来源、起点、停止点和产物都不同，所以分析启动问题时，样本记录里要保留 trigger type，别把两类时间窗口混进同一个分位数（如 P50、P95）统计。
+两个 trigger 的采集来源、起点、停止点和产物都不同，所以分析启动问题时，样本记录里要保留 trigger type，两类时间窗口各算各的分位数（如 P50、P95）。
 
 ## 三类排障场景
 
@@ -271,15 +271,15 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 
 ### 冷启动与 ANR
 
-冷启动回归可以把 `COLD_START`、`APP_FULLY_DRAWN` 与手动 system trace 结合起来，样本必须按 trigger type 分组。ANR trigger 用于补充现场，但它受后台 trace 和限流约束，替代不了 Play Console、`ApplicationExitInfo`、ANR trace 与业务日志；延迟到达和进程重启后再次投递的文件，由全局 listener 接住。
+冷启动回归可以把 `COLD_START`、`APP_FULLY_DRAWN` 与手动 system trace 结合起来，样本必须按 trigger type 分组。ANR trigger 用于补充现场，完整的事件记录仍要靠 Play Console、`ApplicationExitInfo`、ANR trace 与业务日志，它自己则受后台 trace 和限流约束；延迟到达和进程重启后再次投递的文件，由全局 listener 接住。
 
 ### 内存持续增长
 
-内存持续增长的排查分两步：分配来源未知时先用 heap profile 找高频分配栈，再用 Java heap dump 检查存活对象和 GC Root。API 37 的 `TRIGGER_TYPE_OOM` 只覆盖 Java OOM，`LMKD`（low memory killer daemon，系统低内存杀进程机制） 或 native OOM（C/C++ 等原生堆耗尽） 都不在它的射程内。另外，应用装了自定义 `UncaughtExceptionHandler`（未捕获异常处理器） 的话必须继续调用默认 handler，否则 OOM trigger 没法按平台预期完成处理。
+内存持续增长的排查分两步：分配来源未知时先用 heap profile 找高频分配栈，再用 Java heap dump 检查存活对象和 GC Root。API 37 的 `TRIGGER_TYPE_OOM` 只覆盖 Java OOM，`LMKD`（low memory killer daemon，系统低内存杀进程机制） 和 native OOM（C/C++ 等原生堆耗尽） 要另走排查路径。另外，应用装了自定义 `UncaughtExceptionHandler`（未捕获异常处理器） 的话必须继续调用默认 handler，否则 OOM trigger 没法按平台预期完成处理。
 
 ## 覆盖全部失败结果
 
-失败也要全部接住。`android-17.0.0_r1` 的 `ProfilingResult` 定义了八种失败码，成功码是 `ERROR_NONE`：
+失败结果我们也要全部接住。`android-17.0.0_r1` 的 `ProfilingResult` 定义了八种失败码，成功码是 `ERROR_NONE`：
 
 | 错误码 | 表示的阶段 | 应用侧处理 |
 |---|---|---|
@@ -294,11 +294,13 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 
 失败日志至少保存应用自己的 request ID、profile 类型、`triggerType`、`tag`、`errorCode`、`errorMessage` 和平台版本。文件语义只在成功结果的 `getResultFilePath()` 上成立，失败时就按 `null` 处理。
 
-关于限流，再多说两句。次数、时长上限和缓冲区上限来自可更新模块与 `DeviceConfig`，产品代码里不要写死。实验设备用 `adb shell device_config list profiling` 看当前配置；本地复现要临时关限流，运行 `adb shell device_config put profiling_testing rate_limiter.disabled true`，调试系统 trigger 则设置 `adb shell device_config put profiling_testing system_triggered_profiling.testing_package_name <package>`。这些开关只用于受控测试设备，测完记得恢复。
+关于限流，再多说两句。次数、时长上限和缓冲区上限来自可更新模块与 `DeviceConfig`，产品代码里把它们当会变的配置来读。实验设备用 `adb shell device_config list profiling` 看当前配置；本地复现要临时关限流，运行 `adb shell device_config put profiling_testing rate_limiter.disabled true`，调试系统 trigger 则设置 `adb shell device_config put profiling_testing system_triggered_profiling.testing_package_name <package>`。这些开关只用于受控测试设备，测完记得恢复。
 
-限流也别想成固定的“每小时几次”：系统会按 profiling 类型计算不同资源成本，分别检查小时、天、周窗口以及应用 UID 与整机预算，任一预算不足都可能拒绝请求。应用侧的对策是设更保守的本地冷却时间、保证同类采集串行——额度靠循环重试是刷不回来的。
+限流比“每小时几次”这个印象细得多：系统会按 profiling 类型计算不同资源成本，分别检查小时、天、周窗口以及应用 UID 与整机预算，任何一项预算见底都可能拒绝请求。应用侧的对策是设更保守的本地冷却时间、保证同类采集串行——额度花完只能等窗口重置，循环重试刷不回来。
 
 ## 与其他工具的边界
+
+选型之外还要看分工：`ProfilingManager` 和几件常用工具各在哪一环，我们对着下表过一遍：
 
 | 工具 | 使用位置 | 能力边界 |
 |---|---|---|
@@ -307,13 +309,13 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 | adb / Perfetto CLI | 实验室压测、定制数据源、自动采集 | 普通应用无法在量产用户设备上任意执行 |
 | APM（Application Performance Monitoring，应用性能监控）SDK | 业务指标、崩溃信息、长期统计 | 是否包含 system trace、heap 数据取决于 SDK，数据责任由接入方评估 |
 
-这张表想说明的是分工：ProfilingManager 生成诊断证据，触发策略、样本元数据、传输、访问权限、留存和删除仍由监控系统负责。线上指标异常用来定位样本，profile 用来解释某次现场，两者别混成同一种数据。
+`ProfilingManager` 生成诊断材料，触发策略、样本元数据、传输、访问权限、留存和删除仍由监控系统负责；线上指标异常用来定位样本，profile 用来解释某次现场，这是两种数据，别混在一起。
 
 ## 设备验证与旧版本降级
 
-最后是上线后的验证。Mainline 模块、厂商 Perfetto data source（数据源）、系统负载、存储与后台 trace 抽样都会影响成功率，所以设备覆盖表至少要记录 build fingerprint（精确标识系统构建的字符串）、完整 SDK 版本、Profiling 模块版本、请求或 trigger 类型、错误码、文件大小和可查询 schema（表与字段结构）。某一品牌成功率偏低时，先按这些字段聚合，再判断是不是 OEM 差异；单次没产出文件，说明不了 trigger 没执行。
+最后我们看上线后的验证。Mainline 模块、厂商 Perfetto data source（数据源）、系统负载、存储与后台 trace 抽样都会影响成功率，所以设备覆盖表至少要记录 build fingerprint（精确标识系统构建的字符串）、完整 SDK 版本、Profiling 模块版本、请求或 trigger 类型、错误码、文件大小和可查询 schema（表与字段结构）。某一品牌成功率偏低时，先按这些字段聚合，再判断是不是 OEM 差异；单次没产出文件，先把当时的后台 trace、配额和限流查一遍，再怀疑 trigger 本身。
 
-测试设备上，官方 `profiling_testing` DeviceConfig 开关可以维持目标包的后台 trace、关闭 rate limiter（限流器） 或保留临时未裁剪结果——它们只服务隔离测试，实验结束必须恢复，生产代码不能依赖。分析量产环境的 redacted（已脱敏） system trace 时记得标记来源：跨进程表或 SQL 为空，可能是采集窗口没覆盖到，也可能是 redactor（脱敏器） 删掉了无关进程。
+测试设备上，官方 `profiling_testing` DeviceConfig 开关可以维持目标包的后台 trace、关闭 rate limiter（限流器） 或保留临时未裁剪结果——它们只服务隔离测试，实验结束必须恢复，生产代码对这些开关零依赖。分析量产环境的 redacted（已脱敏） system trace 时记得标记来源：跨进程表或 SQL 为空，可能是采集窗口没覆盖到，也可能是 redactor（脱敏器） 删掉了无关进程。
 
 低版本怎么办？Android 8—14 没有等价的线上 profile API，降级的目标是保住可比较指标和复现线索：启动/帧耗时用应用计时、FrameMetrics/JankStats 与 Android vitals，业务慢操作用名称稳定、低基数的 Trace slice，崩溃/ANR 用 `ApplicationExitInfo` 和诊断平台，本地重现再上 Perfetto、Profiler、heap dump 或 Macrobenchmark。注意 `Trace.beginSection()` 只写事件，本身不会启动或保存 system trace。
 
@@ -340,7 +342,7 @@ trigger 按版本分层，下表同时列出逐项的产物与触发语义：
 - profile 类型在提交请求时记录，不从 `ProfilingResult` 或扩展名猜测。
 - `tag` 使用短场景码，不含用户标识和业务明文。
 - 上传、删除、磁盘水位、退避和保留期限都有可测试策略。
-- system trace 的脱敏边界、heap 数据风险和用户授权已经过隐私评审。
+- system trace 的脱敏范围、heap 数据风险和用户授权已经过隐私评审。
 - trigger 命中率按采样能力解释，不把“无文件”直接当作“事件未发生”。
 
 ## 参考资料

@@ -131,7 +131,7 @@ last_consolidated_at: '2026-08-24'
 
 Java Heap 优化先控制对象生命周期和存活集，再处理高频分配造成的 GC 抖动。Compose 会在重组、布局和绘制阶段创建临时对象，需要结合状态稳定性和分配调用栈定位。
 
-> 源码基线：Android 17 / API 37 / AOSP `android-17.0.0_r1`；涉及旧版本的内容只说明 API 或行为变化，不高于 Android 17。
+> 源码基线：Android 17 / API 37 / AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`；涉及旧版本的内容只说明 API 或行为变化，不高于 Android 17。
 
 ## 对象生命周期、存活集与缓存边界
 
@@ -139,9 +139,9 @@ Java Heap 优化先控制对象生命周期和存活集，再处理高频分配�
 
 Java 堆优化处理的是应用侧对象分配、生命周期和缓存预算之间的关系。[23.2 内存泄漏检测与治理](02-memory-leak-governance.md)处理“该释放的对象没有释放”，[23.4 Bitmap 与图片内存优化](04-bitmap-optimization.md)处理像素内存；我们在这里关注另一类堆压力：对象仍有业务价值，但分配时机、集合规模、缓存策略或临时对象频率让占用或回收成本升高。
 
-Android 会为每个应用进程设置 Java 堆上限，超限的分配会抛出 `OutOfMemoryError`。Android Studio 的 Memory Profiler（内存分析器） 可以观察堆曲线、对象数量和 GC 事件。我们判断堆压力时，会把同一场景的分配速度、峰值、退出后的存活对象和 GC 行为放在一起看，单次 `Runtime.maxMemory()` 只是其中一个输入。堆曲线回落，只说明对象具备了被回收的条件，页面有没有达标从这里看不出来；曲线没有立刻回落，也可能是 ART 在保留可复用的堆空间，未必是对象仍被引用。
+Android 会为每个应用进程设置 Java 堆上限，超限的分配会抛出 `OutOfMemoryError`。Android Studio 的 Memory Profiler（内存分析器） 可以观察堆曲线、对象数量和 GC 事件。我们判断堆压力时，会把同一场景的分配速度、峰值、退出后的存活对象和 GC 行为放在一起看，单次 `Runtime.maxMemory()` 只是其中一个输入。堆曲线回落，只说明对象具备了被回收的条件，页面是否达标还要从场景指标另行确认；曲线迟迟不回落时，也可能是 ART 在保留可复用的堆空间，未必是对象仍被引用。
 
-[4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)解释堆空间、分配器和 GC；[4.6 ART FinalizerDaemon、Cleaner 与 ReferenceQueue](../../part1-fundamentals/ch04-memory/06-finalizer-referencequeue.md)解释延迟清理与引用队列；本文下一部分讨论高频分配和暂停证据。应用侧的基本动作是减少或推迟分配、按预算缓存，并在生命周期边界释放不再需要的引用。
+[4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)解释堆空间、分配器和 GC；[4.6 ART FinalizerDaemon、Cleaner 与 ReferenceQueue](../../part1-fundamentals/ch04-memory/06-finalizer-referencequeue.md)解释延迟清理与引用队列；本文下一部分讨论高频分配和它带来的暂停。应用侧的基本动作是减少或推迟分配、按预算缓存，并在生命周期边界释放不再需要的引用。
 
 文中术语含义如下：
 
@@ -163,9 +163,9 @@ Android 会为每个应用进程设置 Java 堆上限，超限的分配会抛出
 
 ### Java 堆空间组成与分配策略
 
-应用代码创建的对象并不都会进入同一种 ART 堆空间。普通对象走哪条分配路径，取决于当前收集器和分配器配置，可能是 Region Space、Bump Pointer Space 或其他连续空间，分析时按实际配置走，把它简化成固定的“Main Space”容易误判。达到内部阈值的特定对象，ART 还会尝试从 Large Object Space 分配。
+应用代码创建的对象并不都会进入同一种 ART 堆空间。我们先看普通对象：它走哪条分配路径，取决于当前收集器和分配器配置，可能是 Region Space、Bump Pointer Space 或其他连续空间；分析时按实际配置走，把它简化成固定的“Main Space”容易误判。达到内部阈值的特定对象，ART 还会尝试从 Large Object Space 分配。
 
-Android 17 的 `Heap::ShouldAllocLargeObject()` 同时检查两个条件：分配字节数达到 `large_object_threshold_`，并且对象类型是基本类型数组或 `String`。满足条件时，分配器会尝试 `AllocLargeObject()`；如果 Large Object Space 分配失败，源码会清除本次 OOM 异常，再尝试主空间或非移动空间。这个阈值属于 ART 内部配置，没有对应的应用 API，业务代码里写死一个固定数值做分支条件，等于依赖了这份内部配置。
+`Heap::ShouldAllocLargeObject()` 同时检查两个条件：分配字节数达到 `large_object_threshold_`，并且对象类型是基本类型数组或 `String`。满足条件时，分配器会尝试 `AllocLargeObject()`；如果 Large Object Space 分配失败，源码会清除本次 OOM 异常，再尝试主空间或非移动空间。这个阈值属于 ART 内部配置，没有对应的应用 API，业务代码里写死一个固定数值做分支条件，等于依赖了这份内部配置。
 
 体积较大的 `ByteArray`、`IntArray` 或字符串构造结果，除了增加存活字节数，还可能进入不同的分配与回收路径。优化动作仍应从数据形态入手：能否分块读取、缩短生命周期或避免复制，而不是依据 Large Object Space 名称写特殊业务分支。
 
@@ -181,7 +181,7 @@ Android 17 的 `Heap::ShouldAllocLargeObject()` 同时检查两个条件：分�
 - `Runtime.totalMemory() - Runtime.freeMemory()`：ART 当前已使用 Java 堆的近似值，适合在同一构建、同一设备上观察趋势。
 - heap dump（堆转储）/ allocation recording（分配记录）：前者观察快照时仍然存活的对象与引用链，后者观察目标窗口内的分配次数、大小和调用栈。采集本身有成本，应放在可控诊断流程中。
 
-下面的工具函数把堆使用量转换为轻量信号。阈值由调用方传入，要求来自目标设备与业务场景的测量；代码不提供一个看似通用的默认比例。
+下面的工具函数把堆使用量转换为轻量信号。阈值由调用方传入，来自目标设备与业务场景的测量；看似通用的默认比例，这里刻意回避。
 
 ```kotlin
 object JavaHeapPressure {
@@ -209,13 +209,13 @@ object JavaHeapPressure {
 }
 ```
 
-这段代码提供的只是趋势信号：它看不出对象是否可回收，也覆盖不到 Native（原生内存）、Graphics（图形内存） 等进程分区，单次超过阈值还远不足以定位泄漏。生产监控若采用该信号，还要限制采样频率、合并连续事件，并同时记录场景与缓存命中变化。
+这段代码提供的是趋势信号：对象能否回收，从比值里看不出来；Native（原生内存）、Graphics（图形内存）等进程分区也在它的覆盖之外；单次超过阈值，离定位泄漏还远。生产监控若采用该信号，还要限制采样频率、合并连续事件，并同时记录场景与缓存命中变化。
 
 ### ART 分配失败与 OOM 触发路径
 
-普通对象快速分配失败后，`Heap::AllocateInternalWithGc()` 并不会立即抛出 OOME。它会先等待正在运行的 GC；等待期间完成过回收时重试分配；随后按 `next_gc_type_` 执行阻塞式 GC，也就是由分配线程发起并等待完成的回收。仍未取得足够空间时，ART 会执行覆盖整个堆的回收，并清除 SoftReference（内存不足时允许 GC 清除的软引用），即内存不足时允许 GC 回收的软引用。部分分配器在配置启用且达到时间间隔后，还会尝试 homogeneous space compaction（同构空间压缩），在两个同类堆空间之间复制对象整理碎片。以上尝试都失败后，才抛出 OOME。
+普通对象快速分配失败后，`Heap::AllocateInternalWithGc()` 并不会立即抛出 OOME，而是逐级尝试：先等待正在运行的 GC，等待期间完成过回收就重试分配；随后按 `next_gc_type_` 执行阻塞式 GC，也就是由分配线程发起并等待完成的回收；仍未取得足够空间时，执行覆盖整个堆的回收，并清除 SoftReference（内存不足时允许 GC 清除的软引用）；部分分配器在配置启用且达到时间间隔后，还会尝试 homogeneous space compaction（同构空间压缩），在两个同类堆空间之间复制对象整理碎片。这些尝试都失败后，才抛出 OOME。
 
-这条路径上没有设备无关的“Young GC（年轻代回收） → Full GC（全堆回收）”固定两步顺序；`next_gc_type_` 取决于收集器、代际状态、上次 GC 和目标堆大小。分配线程也可能主要耗时在等待另一线程执行 GC，因此 Perfetto 中看到的业务停顿可能长于单次 GC 暂停。
+把这条路径读成固定的“Young GC（年轻代回收） → Full GC（全堆回收）”两步，容易读错现场：`next_gc_type_` 取决于收集器、代际状态、上次 GC 和目标堆大小，设备之间没有统一剧本。分配线程也可能把主要时间花在等待另一线程执行 GC 上，所以 Perfetto 中看到的业务停顿可能长于单次 GC 暂停。
 
 #### 读懂 OOME 文本
 
@@ -231,9 +231,9 @@ giving up on allocation because <1% of heap free after GC.
 - `until OOM` 是距离 `growth limit` 的估算增长空间；
 - `target footprint` 是当前调节目标，会随 GC 和分配变化，不是硬上限；
 - `growth limit` 是普通应用 Java 堆的增长限制；
-- `<1% ... after GC` 表示完成本次分配后无法保留运行时要求的最小空闲比例。
+- `<1% ... after GC` 表示完成本次分配后，空闲比例已经低于运行时要求的最小值。
 
-小对象也可能在堆接近限制时失败；大数组失败还要检查输入尺寸、乘法溢出和连续空间。ART 构造 OOME 时若再次分配失败，会使用启动阶段预分配的异常对象，因此生产日志不一定每次都有完整错误文本。OOM 异常处理器中也不要再创建大集合或同步抓取完整堆转储。
+小对象也可能在堆接近限制时失败；大数组失败还要检查输入尺寸、乘法溢出和连续空间。ART 构造 OOME 时若再次分配失败，会改用启动阶段预分配的异常对象，所以生产日志里未必每次都有完整错误文本。进了 OOM 异常处理器，也别再创建大集合或同步抓取完整堆转储。
 
 #### 四种“内存不足”的区分
 
@@ -248,20 +248,20 @@ giving up on allocation because <1% of heap free after GC.
 
 #### 修改 ART 内部计数“扩堆”的风险
 
-`largeHeap` 只把 Java 堆的 `growth limit` 往上扩展；设备物理内存、原生内存、Graphics、线程栈和无界缓存，它都管不到。修改 `num_bytes_allocated_`、`large_object_threshold_`，伪造已释放字节数，拦截分配器以绕过 GC，或解除 ART 堆空间映射，破坏的是几套数据之间的一致性：分配计数、对象存活位图、记录跨区域引用的 card table（记录跨区域引用的卡表）、对象所属空间，以及 GC 根集合。这类做法不能用于生产环境。LOS 也没有为应用提供固定保留 512 MiB 空间的接口。
+`largeHeap` 只把 Java 堆的 `growth limit` 往上扩展；设备物理内存、原生内存、Graphics、线程栈和无界缓存，它都管不到。修改 `num_bytes_allocated_`、`large_object_threshold_`，伪造已释放字节数，拦截分配器以绕过 GC，或解除 ART 堆空间映射，破坏的是几套数据之间的一致性：分配计数、对象存活位图、记录跨区域引用的 card table（记录跨区域引用的卡表）、对象所属空间，以及 GC 根集合。这类做法只属于受控实验，生产构建里没有它们的位置。LOS 侧应用也没有固定保留 512 MiB 空间的接口可用。
 
 ### 大对象与集合优化
 
-大对象优化先要减少一次性装入。服务端返回几 MB JSON、一次性读取完整文件、把长日志拼成一个 `String`、把列表全量转换成界面状态模型，都会让 Java 堆压力集中在一个短窗口内。GC 能回收不可达对象；至于哪些数据根本不该一次性加载，只能由业务层自己判断。
+大对象优化，我们先从减少一次性装入做起。服务端返回几 MB JSON、一次性读取完整文件、把长日志拼成一个 `String`、把列表全量转换成界面状态模型，都会让 Java 堆压力集中在一个短窗口内。GC 能回收不可达对象；至于哪些数据根本不该一次性加载，只能由业务层自己判断。
 
 处理大对象时按这个顺序排查：
 
 - **输入是否可以分页或流式处理**：列表接口、文件读取、日志解析优先改为分页、分块或流式处理，不把完整数据一次性放进内存。
 - **中间态是否可以消除**：JSON 字符串、DTO（数据传输对象）、领域模型、UI 模型发生多层复制时，检查是否能在边界处直接转换，少保留一份大集合。
 - **字符串构造是否有上限**：日志、埋点、调试面板不要无限拼接；给字符串构建器设置长度上限，超过后截断或写入文件。
-- **数组容量是否按需增长**：已知数量时可以传入合理的初始容量；未知数量时不应凭空预留大数组。只有剖析表明扩容复制或长期空余容量形成主要成本时，才值得更换容器或重建紧凑副本。
+- **数组容量是否按需增长**：已知数量时可以传入合理的初始容量；未知数量时让它按需增长就好，凭空预留大数组没有意义。只有剖析表明扩容复制或长期空余容量形成主要成本时，才值得更换容器或重建紧凑副本。
 
-换哪个集合类，依据是元素数量、键类型、访问模式、写入频率和生命周期，`ArrayList`、`HashMap`、`SparseArray`、`ArrayMap` 都要按这几条来选。整数键可以避开 `HashMap<Int, ...>` 把 `Int` 包装成对象的装箱成本；是否换 `SparseArray`，仍要结合 CPU 与内存测量。固定的元素数量分界线写不出来，设备、访问模式和实现版本都会改变结果。
+换哪个集合类，依据是元素数量、键类型、访问模式、写入频率和生命周期，`ArrayList`、`HashMap`、`SparseArray`、`ArrayMap` 都要按这几条来选。整数键可以避开 `HashMap<Int, ...>` 把 `Int` 包装成对象的装箱成本；是否换 `SparseArray`，仍要结合 CPU 与内存测量。至于“多少个元素以下换容器”的分界线，设备、访问模式和实现版本都会改变答案，写死一条并不可靠。
 
 下面的示例适用于数据能够以 Kotlin `Sequence`（惰性序列）提供、且只需要前 `limit` 个结果的场景。它避免由 `filter()` 和 `map()` 各自产生一份完整中间列表。
 
@@ -288,9 +288,11 @@ fun buildVisibleItems(
 
 对象池和缓存都在用空间换时间，目标并不相同。对象池减少重复分配，缓存减少重复计算或重复 I/O（输入输出）。两者都要有上限、失效条件和生命周期归属，否则原本的优化会变成常驻内存。
 
-缓存预算要看一组测量值：对象大小、峰值并发、重建成本、命中收益和设备内存档位，“最大堆的固定比例”给不出答案。首屏与高频路径可以保留有界缓存；低频内容更适合缩小容量，或在离开场景时移除。弱引用的回收时机由 GC 决定，容量上限和淘汰策略还要自己定。
+缓存预算来自一组测量值：对象大小、峰值并发、重建成本、命中收益和设备内存档位，“最大堆的固定比例”替代不了这组输入。首屏与高频路径可以保留有界缓存；低频内容更适合缩小容量，或在离开场景时移除。弱引用的回收时机由 GC 决定，容量上限和淘汰策略还得我们自己定。
 
-`onTrimMemory()` 需要区分进程状态提示与内存压力提示。`TRIM_MEMORY_UI_HIDDEN` 表示界面已不可见，`TRIM_MEMORY_BACKGROUND` 表示进程进入后台 LRU 队列，它们适合触发与相应状态相关的缓存收缩。从 API 34 开始，`TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE` 和 `TRIM_MEMORY_COMPLETE` 不再投递给应用，`onLowMemory()` 也不再调用；这些常量和方法从 API 35 起标记为弃用。因此旧的前台运行级别回调或 `onLowMemory()` 已经等不到了，处理内存压力要靠仍会投递的状态提示和自身的监控信号。
+`onTrimMemory()` 里要先分清两类提示：进程状态提示与内存压力提示。`TRIM_MEMORY_UI_HIDDEN` 表示界面已不可见，`TRIM_MEMORY_BACKGROUND` 表示进程进入后台 LRU 队列，它们适合触发与相应状态相关的缓存收缩。
+
+版本变化值得单独记住：从 API 34 开始，`TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE` 和 `TRIM_MEMORY_COMPLETE` 停止投递，`onLowMemory()` 同步停调，这些常量和方法从 API 35 起标记为弃用。所以旧的前台运行级别回调已经等不到了，处理内存压力要靠仍会投递的状态提示和自身的监控信号。
 
 下面的 `LruCache` 示例缓存原始字节内容，使 `sizeOf()` 至少能精确计算值的字节数；收到界面隐藏或进入后台的提示后，再按业务策略把当前缓存收缩到目标字节数。`trimToSize()` 不会永久修改构造时传入的最大容量，后续写入仍可能让缓存重新增长。
 
@@ -318,13 +320,13 @@ class BytePayloadCache(
 }
 ```
 
-这里的计量仍未包含键字符串、`LruCache` 缓存条目和对象头（ART 为对象保存的类型、锁状态等元数据）开销，也就是 ART 为对象保存的类型、锁状态等元数据，所以 `maxBytes` 只表示 `ByteArray` 内容的字节预算，不是整个缓存的 shallow size（对象自身占用）。字符串、图片引用和解析对象需要各自的计量方式。两个收缩预算由调用方根据业务测量传入，示例没有设置通用比例。兼容 API 33 及以下时可以处理旧的运行级别；在 17 上这些回调不会到达，主路径要以仍会投递的提示为准。
+这里的计量仍未包含键字符串、`LruCache` 缓存条目和对象头（ART 为对象保存的类型、锁状态等元数据）开销，所以 `maxBytes` 只表示 `ByteArray` 内容的字节预算，不是整个缓存的 shallow size（对象自身占用）。字符串、图片引用和解析对象需要各自的计量方式。两个收缩预算由调用方根据业务测量传入，示例没有设置通用比例。兼容 API 33 及以下时可以处理旧的运行级别；在 17 上这些回调不会到达，主路径要以仍会投递的提示为准。
 
 [源码锚点: AOSP `android-17.0.0_r1`, `frameworks/base/core/java/android/content/ComponentCallbacks2.java`, `frameworks/base/core/java/android/util/LruCache.java`]
 
 对象池只适合满足三个条件的对象：创建频繁、初始化成本高、可安全重置。普通 Kotlin `data class`（数据类）、生命周期复杂的对象、持有 `Context`、View 或回调的对象，不建议放进池。池化后的对象一旦忘记清除字段，可能引入泄漏和残留数据。
 
-对象池还要与 ART 分代 GC 分开评估：ART 对短命小对象的分配路径通常开销较低，强行池化会把短命对象变成长命对象，增加老年代压力。只有分配热点造成了可观测的 GC 或 CPU 压力，池化才有继续评估的价值。分代和分配路径见 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)，卡顿证据见本文下一部分。
+对象池还要与 ART 分代 GC 分开评估：ART 对短命小对象的分配路径通常开销较低，强行池化会把短命对象变成长命对象，增加老年代压力。只有分配热点造成了可观测的 GC 或 CPU 压力，池化才有继续评估的价值。分代和分配路径见 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)，卡顿的内容见本文下一部分。
 
 ### 更适合 GC 的编码实践
 
@@ -338,7 +340,7 @@ class BytePayloadCache(
 - **生命周期边界清理长生命周期引用**：例如 Fragment 在 `onDestroyView()` 清理 ViewBinding，以及与 View 生命周期绑定的适配器和回调。不要机械地清除仍由下一状态使用的数据；引用归属应与生命周期一致。
 - **监控对象数量和 GC 事件**：Memory Profiler 能显示 Java 对象数量与 GC 事件；生产环境的轻量监控只保留趋势指标，定位问题时再在可控环境采集堆转储和分配记录。
 
-下面的写法把 `NumberFormat` 的构造移出重复绑定路径。它仍然会为展示结果创建 `String`；优化范围是避免反复创建格式器，不是让绑定过程零分配。
+下面的写法把 `NumberFormat` 的构造移出重复绑定路径。它仍然会为展示结果创建 `String`；这次优化管的是“别反复创建格式器”，绑定过程的零分配属于另一个话题。
 
 ```kotlin
 data class GoodsItem(
@@ -370,13 +372,13 @@ class GoodsRowBinder(
 
 ### ART GC 调优参数
 
-`growth_limit_`、`target_footprint_`、`concurrent_start_bytes_`、`large_object_threshold_` 等变量解释了 ART 何时扩展堆、何时触发并发 GC、哪些对象走大对象路径；但它们属于 ART 内部实现，普通应用拿不到对应的配置入口，也就谈不上作为常规调优手段。
+`growth_limit_`、`target_footprint_`、`concurrent_start_bytes_`、`large_object_threshold_` 等变量解释了 ART 何时扩展堆、何时触发并发 GC、哪些对象走大对象路径。但它们属于 ART 内部实现，普通应用拿不到对应的配置入口，自然也当不成常规调优手段。
 
-`android:largeHeap="true"` 会让 ART 把应用的 `growth limit` 扩展到堆的 `capacity`，但容量仍由设备配置决定。泄漏、无上限缓存或大对象峰值都不在它的解决范围内，额外容量也没有固定数值。只有图片编辑、大文档处理、地图或创作工具等经过测量后仍有合理大内存需求的业务，才值得单独评估；同时要观察进程 PSS、后台存活和低内存终止情况。
+`android:largeHeap="true"` 会让 ART 把应用的 `growth limit` 扩展到堆的 `capacity`，但容量仍由设备配置决定。泄漏、无上限缓存或大对象峰值都在它的解决范围之外，额外容量也因设备而异。只有图片编辑、大文档处理、地图或创作工具等经过测量后仍有合理大内存需求的业务，才值得单独评估；同时要观察进程 PSS、后台存活和低内存终止情况。
 
-GC 抑制和 ART 接口拦截（Hook）依赖非公开实现，会受 ART 更新、线程协作和 GC 时序影响，不适合作为通用应用方案。应用侧应修正启动、滑动与批处理期间的分配热点，不要阻塞执行 GC 与堆维护任务的 `HeapTaskDaemon`，也不要修改 ART 内部状态。
+GC 抑制和 ART 接口拦截（Hook）依赖非公开实现，会受 ART 更新、线程协作和 GC 时序影响，作为通用应用方案并不可靠。应用侧的着力点始终是启动、滑动与批处理期间的分配热点；至于执行 GC 与堆维护任务的 `HeapTaskDaemon` 和 ART 内部状态，留给系统自己。
 
-评审时可以用下面的表格判断方案边界：
+评审时可以用下面的表格判断各方案的适用范围：
 
 | 方案 | 适用场景 | 风险 |
 | --- | --- | --- |
@@ -398,7 +400,9 @@ Java 堆优化可以按四步推进：
 3. 如果曲线有尖峰但能回落，检查大对象、集合复制、缓存预算和批处理峰值。
 4. 如果 GC 频率高且伴随卡顿，继续按本文下一部分的分配证据减少热点。
 
-Android 17 / API 37 为 `ProfilingTrigger` 增加 `TRIGGER_TYPE_OOM` 和 `TRIGGER_TYPE_ANOMALY`。OOM 触发器会在未捕获的 `OutOfMemoryError` 现场采集 Java 堆转储；应用下次启动并注册结果回调后，可以取得这份诊断结果。自定义 `Thread.UncaughtExceptionHandler` 必须继续调用默认异常处理器，系统才能观察到该事件。anomaly（系统异常行为）触发器覆盖内存用量超限等情况，但诊断产物由异常类型决定：超过 Android 17 内存限制时可返回堆转储，其他异常可能返回不同类型的跟踪或采样数据。触发式采集用于取得难以在本地复现的证据；堆预算和代码修正，还是要回到本文前面的方法。生产监控见 [23.7 内存监控与线上治理](07-memory-monitoring.md)，Android 17 内存限制见 [23.5 大内存与多进程策略](05-large-heap-multiprocess.md)。
+Android 17 / API 37 为 `ProfilingTrigger` 增加 `TRIGGER_TYPE_OOM` 和 `TRIGGER_TYPE_ANOMALY`，线上取证从此多了两条现成路径。OOM 触发器会在未捕获的 `OutOfMemoryError` 现场采集 Java 堆转储；应用下次启动并注册结果回调后，可以取得这份诊断结果。有个前提要记住：自定义 `Thread.UncaughtExceptionHandler` 必须继续调用默认异常处理器，系统才能观察到该事件。
+
+anomaly（系统异常行为）触发器覆盖内存用量超限等情况，诊断产物由异常类型决定：超过 Android 17 内存限制时可返回堆转储，其他异常可能返回不同类型的跟踪或采样数据。触发式采集的价值在于拿到难以在本地复现的现场；堆预算和代码修正，还是要回到本文前面的方法。生产监控见 [23.7 内存监控与线上治理](07-memory-monitoring.md)，Android 17 内存限制见 [23.5 大内存与多进程策略](05-large-heap-multiprocess.md)。
 
 一次有效改动至少要回答三件事：分配对象数或字节数是否下降，峰值或稳定占用是否改善，CPU、I/O、网络请求与用户场景指标是否变差。只降低 Java 堆峰值、却把成本转嫁到其他资源上，这样的改动算不上完成优化。
 
@@ -416,7 +420,7 @@ Java 堆优化先判断对象是否仍有业务价值，再处理大对象、集
 
 ART 的并发收集器缩短了许多暂停，但分配、标记、复制或压缩仍要消耗 CPU 和内存带宽，部分阶段仍需暂停应用线程。应用分配速度超过回收与堆扩展能力时，分配线程还可能等待 GC 完成。GC 时间片与慢帧同时出现只能建立相关性；主线程暂停、分配等待或与 GC 线程竞争 CPU 才能解释具体影响。
 
-拦截 `libart.so` 或阻塞 `HeapTaskDaemon` 会破坏 ART 的回收时序，并依赖非公开 ABI。应用侧应从系统跟踪和分配调用栈找到高频分配位置，缩短无用中间对象的生命周期，控制单次处理范围，再验证 GC 与慢帧是否同步改善。
+至于拦截 `libart.so` 或阻塞 `HeapTaskDaemon`，前文已经给过结论：破坏回收时序、依赖非公开 ABI，留给受控实验。抖动治理的主场在应用侧——从系统跟踪和分配调用栈找到高频分配位置，缩短无用中间对象的生命周期，控制单次处理范围，再验证 GC 与慢帧是否同步改善。
 
 文中术语含义如下：
 
@@ -445,7 +449,7 @@ ART 的并发收集器缩短了许多暂停，但分配、标记、复制或压�
 
 内存抖动同时受分配大小、分配频率和对象存活时间影响。大量小对象会迅速增加累计分配字节数，大对象则可能直接形成峰值；只按对象大小排序会漏掉高频调用栈。
 
-`Heap::AllocObjectWithAllocator()` 在分配记账后调用 `ShouldConcurrentGCForJava(new_num_bytes_allocated)`。启用按时间触发 GC 的功能开关且 `time_based_gc_threshold_` 非零时，该函数结合上次 GC 后新增的字节数与经过时间，决定立即请求 GC，还是安排一次阈值复查；`concurrent_start_bytes_` 仍是接近堆限制时的兜底阈值。未启用这条路径时，判断只比较已分配字节数与 `concurrent_start_bytes_`。对象完成初始化并可交给应用代码后，`RequestConcurrentGCAndSaveObject()` 才把 `ConcurrentGCTask` 加入队列。
+从源码看这条判定链的入口：`Heap::AllocObjectWithAllocator()` 在分配记账后调用 `ShouldConcurrentGCForJava(new_num_bytes_allocated)`。启用按时间触发 GC 的功能开关且 `time_based_gc_threshold_` 非零时，该函数结合上次 GC 后新增的字节数与经过时间，决定立即请求 GC，还是安排一次阈值复查；`concurrent_start_bytes_` 仍是接近堆限制时的兜底阈值。未启用这条路径时，判断只比较已分配字节数与 `concurrent_start_bytes_`。对象完成初始化并可交给应用代码后，`RequestConcurrentGCAndSaveObject()` 才把 `ConcurrentGCTask` 加入队列。
 
 [源码锚点: AOSP `android-17.0.0_r1`, `art/runtime/gc/heap-inl.h::Heap::AllocObjectWithAllocator()`, `Heap::ShouldConcurrentGCForJava()`, `art/runtime/gc/heap.cc::Heap::RequestConcurrentGC()`]
 
@@ -456,7 +460,9 @@ ART 的并发收集器缩短了许多暂停，但分配、标记、复制或压�
 - **帧耗时波动**：Frame Timeline 里的慢帧可能间隔出现，并集中在滑动、动画或连续输入期间。
 - **分配慢路径或等待**：线程在分配时等待 GC 完成，或进入需要扩展、回收的慢路径。业务函数自身的 CPU 执行时间可能不高，但包含等待的经过时间会变长。
 
-Android 8 起，ART 默认使用 Concurrent Copying；官方 GC 文档说明 Android 10 及以上的 CC 默认采用分代模式。Android 16 QPR2（第二次季度平台更新）对外发布分代 CMC，Android 17 源码继续保留相应的年轻代收集器和运行时开关。具体进程使用哪种收集器、是否启用分代，仍取决于运行时和设备配置；Android 17 的 `PostForkChildAction()` 会在日志中输出 `generational` 或 `non-generational` 以及收集器名称，可与系统跟踪一起确认。
+Android 8 起，ART 默认使用 Concurrent Copying；官方 GC 文档说明 Android 10 及以上的 CC 默认采用分代模式。Android 16 QPR2（第二次季度平台更新）对外发布分代 CMC，Android 17 源码继续保留相应的年轻代收集器和运行时开关。
+
+具体进程使用哪种收集器、是否启用分代，仍取决于运行时和设备配置；想确认的话，`PostForkChildAction()` 会在日志中输出 `generational` 或 `non-generational` 以及收集器名称，与系统跟踪对照即可。
 
 ### 频繁 GC 对帧率的影响
 
@@ -474,7 +480,7 @@ GC 对帧率的影响主要来自两类成本：部分阶段短暂停顿应用�
 
 #### 应用进程创建后安排的后台 GC
 
-`Heap::PostForkChildAction()` 在 `initial_heap_size_ < growth_limit_` 时安排目标堆大小调整，并为 Zygote 复制出的应用进程加入 `TriggerPostForkCCGcTask`。该任务只有在计划时间到达、且进程创建后尚未发生其他 GC 时，才请求一次后台 GC；期间已经发生 GC 时不再执行回收。调度时间包含一个以 UID 为种子的确定性偏移：同一 UID 得到相同偏移，不同 UID 通常不同。根据源码注释，这个偏移用于降低多个进程同时发起此类 GC 的概率。
+`Heap::PostForkChildAction()` 在 `initial_heap_size_ < growth_limit_` 时安排目标堆大小调整，并为 Zygote 复制出的应用进程加入 `TriggerPostForkCCGcTask`。这个任务的执行有两道前提：计划时间到达，且进程创建后尚未发生其他 GC；期间已经发生过 GC，它就不再执行回收。调度时间还包含一个以 UID 为种子的确定性偏移：同一 UID 得到相同偏移，不同 UID 通常不同。按源码注释的说法，这个偏移用于降低多个进程同时发起此类 GC 的概率。
 
 因此，启动后看到一次后台 GC，我们先同时查看 GC cause（触发原因）、进程启动时间和前后的分配轨道；仅凭“启动附近出现 GC”就把账算到某个页面的临时对象头上，依据并不充分。
 
@@ -482,7 +488,7 @@ GC 对帧率的影响主要来自两类成本：部分阶段短暂停顿应用�
 
 #### HeapTaskDaemon 串行执行整条堆任务队列
 
-`HeapTaskDaemon` 进入 `VMRuntime.runHeapTasks()` 后，由 ART 原生层的 `TaskProcessor::RunAllTasks()` 按 `target_run_time_`（计划运行时间）取任务。一次循环只执行一个 `HeapTask`：依次调用 `GetTask()`、`Run()` 和 `Finalize()`，再取下一项。`ConcurrentGCTask` 中的 Concurrent 说的是收集器的部分阶段可与应用线程并发；堆任务本身在守护线程上，还是一个接一个执行。
+`HeapTaskDaemon` 进入 `VMRuntime.runHeapTasks()` 后，由 ART 原生层的 `TaskProcessor::RunAllTasks()` 按 `target_run_time_`（计划运行时间）取任务。一次循环只执行一个 `HeapTask`：`GetTask()`、`Run()`、`Finalize()` 依次走完，再取下一项。`ConcurrentGCTask` 里的 Concurrent 说的是收集器的部分阶段可与应用线程并发；堆任务本身仍在守护线程上一个接一个执行。
 
 这条队列还承载 HeapTrim（向系统归还可释放堆页）、收集器切换、按时间触发 GC 的阈值复查和部分启动维护。向它注入阻塞任务或暂停守护线程，会一起延迟这些工作。`TaskProcessor::Stop()` 只把处理器标记为停止；`GetTask()` 随后不再等待任务的计划时间，而是继续取出剩余任务，直到队列排空。错误干预可能让未到期任务集中执行。
 
@@ -490,9 +496,9 @@ GC 对帧率的影响主要来自两类成本：部分阶段短暂停顿应用�
 
 `ShouldConcurrentGCForJava()` 有字节阈值和“分配增量 × 经过时间”两类判断。它可能返回“不需要 GC”“请求 `ConcurrentGCTask`”或“安排 `TimeBasedGcThresholdCheckTask`”。`num_bytes_allocated_` 会把仍在使用的整块 TLAB 计入，因此是近似已分配字节数，不是逐对象精确值，也不是 PSS。
 
-多个线程同时满足条件时，`RequestConcurrentGC()` 使用原子 compare-and-set（仅当旧值未变化时更新） 增加 `max_gc_requested_`，也就是仅当旧值未被其他线程改过时才更新；只有更新成功的线程把任务加入队列。任务执行时还会检查目标序号，若其他路径已经完成更新的 GC，本次任务不会重复收集。去重依赖这个序号协议，而不是扫描（检查线程栈和全局引用等根对象）队列里是否已有同名任务。
+多个线程同时满足条件时，`RequestConcurrentGC()` 用原子 compare-and-set（仅当旧值未变化时更新）增加 `max_gc_requested_`，只有更新成功的线程把任务加入队列。任务执行时还会核对目标序号：其他路径已经完成更新的 GC，本次任务就跳过收集。去重依赖这个序号协议，而不是扫描（检查线程栈和全局引用等根对象）队列里是否已有同名任务。
 
-新对象在请求入队期间由 Handle 临时保护，因为 `TaskProcessor::AddTask()` 可能让线程挂起，移动式 GC 也可能在此时更新对象地址。Handle 只用于保证 ART 内部引用安全，应用代码不能取得或复用这套机制。
+新对象在请求入队期间由 Handle 临时保护，因为 `TaskProcessor::AddTask()` 可能让线程挂起，移动式 GC 也可能在此时更新对象地址。这套 Handle 只保证 ART 内部引用的安全，应用代码接触不到，也无从复用。
 
 ### 典型内存抖动场景
 
@@ -593,7 +599,7 @@ class FrameBucketCounter(
 
 ### 内存抖动检测与治理
 
-检测内存抖动按“现象确认 → 分配归因 → 代码修复 → 回归防护”推进。堆转储适合分析某一时刻仍然存活的对象；抖动更需要时间序列上的分配记录：哪条调用栈在什么时段分配、每秒分配多少、是否与慢帧或启动阶段重叠。
+检测内存抖动，我们按“现象确认 → 分配归因 → 代码修复 → 回归防护”推进。堆转储适合分析某一时刻仍然存活的对象；抖动更需要时间序列上的分配记录：哪条调用栈在什么时段分配、每秒分配多少、是否与慢帧或启动阶段重叠。
 
 #### 现象确认：先把 GC 和帧放到同一张图里
 
@@ -603,11 +609,13 @@ class FrameBucketCounter(
 - **GC 信号**：Logcat、Profiler 或系统跟踪里的 GC 是否密集，`HeapTaskDaemon` 是否在同一窗口活跃。
 - **分配信号**：Java/Kotlin 分配记录或 ART 分配画像是否显示对象数量快速上升。
 
-Android Studio 的 Java/Kotlin 分配记录要求 debuggable（可调试）构建。Full 模式记录每次分配，高分配应用可能出现明显的分析器开销；必要时改用定期抽样的 Sampled 模式，并把采集模式写进对比记录。Perfetto 从 Android 12 起支持 ART allocation profiling，在 `HeapprofdConfig` 中配置 `heaps: "com.android.art"` 后采集分配调用栈样本。它记录对象创建时的调用栈与累计分配，对象何时被删除或回收则不在其中；要看对象的保留关系，还是得靠堆转储。在量产 user 系统上，目标应用还必须声明 `debuggable` 或 `profileable`（允许系统分析）。
+Android Studio 的 Java/Kotlin 分配记录要求 debuggable（可调试）构建。Full 模式记录每次分配，高分配应用可能出现明显的分析器开销；必要时改用定期抽样的 Sampled 模式，并把采集模式写进对比记录。
 
-#### 分配归因：按调用频率排序，不按代码体量排序
+Perfetto 从 Android 12 起支持 ART allocation profiling，在 `HeapprofdConfig` 中配置 `heaps: "com.android.art"` 后即可采集分配调用栈样本。它记录对象创建时的调用栈与累计分配，对象何时被删除或回收则不在其中；要看对象的保留关系，还是得靠堆转储。在量产 user 系统上，目标应用还必须声明 `debuggable` 或 `profileable`（允许系统分析）。
 
-找到分配栈后，按调用频率、单次字节数和存活时间共同分层：每帧调用、每个列表项调用、每次页面打开调用、后台批处理调用。高频小对象可能比低频大对象产生更多累计分配，但优先级必须由目标时间窗内的总字节、次数和慢帧重叠关系决定。
+#### 按调用频率做分配归因
+
+找到分配栈后，我们按调用频率、单次字节数和存活时间共同分层：每帧调用、每个列表项调用、每次页面打开调用、后台批处理调用。高频小对象可能比低频大对象产生更多累计分配，但优先级必须由目标时间窗内的总字节、次数和慢帧重叠关系决定。
 
 常用修复动作有四类：
 
@@ -663,7 +671,7 @@ suspend fun <T> processInChunks(
 
 ### 范围与版本
 
-讨论范围是 Android 上的 Compose Runtime、应用 Java Heap（ART 管理的 Java/Kotlin 对象堆）与 ART GC（垃圾回收）。平台源码以 Android 17 / API 37 / `android-17.0.0_r1` 为准，内核基线为 `android17-6.18-2026-06_r6`。Compose 是独立发布的 Jetpack 库；本文使用 2026 年 8 月 12 日发布的稳定版 Compose Runtime 1.12.0，并以 AndroidX 提交 `963bf914f78b389bdddef0da7f36bee19d897274` 为源码锚点。
+讨论范围是 Android 上的 Compose Runtime、应用 Java Heap（ART 管理的 Java/Kotlin 对象堆）与 ART GC（垃圾回收）；平台与内核基线见文首引言。Compose 是独立发布的 Jetpack 库，版本节奏与平台分开走。本文使用 2026 年 8 月 12 日发布的稳定版 Compose Runtime 1.12.0，并以 AndroidX 提交 `963bf914f78b389bdddef0da7f36bee19d897274` 为源码锚点。
 
 Compose Runtime 1.13.0-alpha01 已发布，但仍是预览版。版本比较会标出预览变化，正文结论以 1.12.0 稳定版为准。
 
@@ -680,7 +688,7 @@ allocation 表示创建对象并占用 Java Heap 空间，短命对象被频繁�
 
 #### Slot storage 有两种实现
 
-slot storage 是 Compose Runtime 保存组合层级、节点位置和 `remember` 值的内部存储。1.12.0 同时包含两种实现：gap-buffer（在连续数组中保留可移动空隙） 在连续数组中保留可移动空隙；LinkTable（用链接结构减少内容移动时的数组复制） 用链接结构减少内容移动时的数组复制。历史稳定提交中的 [`Composition.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composition.kt) 和 [1.12.0 `Composition.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composition.kt) 都显示，`CompositionImpl.createSlotStorage()` 根据 `ComposeRuntimeFlags.isLinkBufferComposerEnabled` 选择实现。
+slot storage 是 Compose Runtime 保存组合层级、节点位置和 `remember` 值的内部存储。1.12.0 同时包含两种实现：gap-buffer（在连续数组中保留可移动空隙）与 LinkTable（用链接结构减少内容移动时的数组复制）。历史稳定提交中的 [`Composition.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composition.kt) 和 [1.12.0 `Composition.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composition.kt) 都显示，`CompositionImpl.createSlotStorage()` 根据 `ComposeRuntimeFlags.isLinkBufferComposerEnabled` 选择实现。
 
 历史 [`ComposeRuntimeFlags.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/ComposeRuntimeFlags.kt) 与 [1.12.0 `ComposeRuntimeFlags.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/ComposeRuntimeFlags.kt) 都把该开关的默认值设为 `false`。AndroidX 的 [Compose Runtime 1.11 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-runtime)首次说明了 LinkTable 的目标；1.12.0 发布说明仍将它列为实验实现，并要求团队主动启用和验证。
 
@@ -691,7 +699,7 @@ slot storage 是 Compose Runtime 保存组合层级、节点位置和 `remember`
 - heap dump（Java 堆转储） 中的内部类名和引用形态可能不同；
 - 固定的 SlotTable 字节数或扩容次数，套不到所有 Compose 版本上。
 
-slot storage（槽位存储）持有 `remember` 值和组合结构。Composition 被宿主继续引用时，其中的值也会继续存活。找主要持有者时，我们看 heap dump 里的 dominator（支配对象，释放它才可能释放其支配的对象集合），也就是支配对象：释放它，才可能释放它所支配的对象集合。看到 SlotTable 或 LinkTable 出现在引用链中，要继续检查 Activity、Fragment View、`ComposeView`、Navigation destination（导航目的地）、Recomposer（调度重组的运行时对象）或长期协程；内部表结构通常只是引用路径中的一环。
+slot storage（槽位存储）持有 `remember` 值和组合结构。Composition 被宿主继续引用时，其中的值也会继续存活。找主要持有者时，我们看 heap dump 里的 dominator（支配对象，释放它才可能释放其支配的对象集合）。看到 SlotTable 或 LinkTable 出现在引用链中，要继续检查 Activity、Fragment View、`ComposeView`、Navigation destination（导航目的地）、Recomposer（调度重组的运行时对象）或长期协程；内部表结构通常只是引用路径中的一环。
 
 #### `RecomposeScopeImpl` 会复用
 
@@ -704,13 +712,13 @@ slot storage（槽位存储）持有 `remember` 值和组合结构。Composition
 - Kotlin 2.0.20 起默认启用 Strong Skipping；
 - restartable composable（可由运行时重新执行的可组合函数）即使带不稳定参数也可以被跳过；可组合函数内部的 Lambda 会自动缓存（memoize），也就是根据捕获对象缓存并复用。
 
-不稳定参数使用引用相等比较，稳定参数使用对象相等比较。调用方每次构造新 `List`、新 UI 数据模型或捕获值不同的新 Lambda，仍可能让比较失败。优化时应检查输入对象是否稳定复用、状态是否在合适的所有者中更新，以及运行时是否出现高频分配；源码中的 Lambda 表达式数量不能直接代表运行时分配量。
+不稳定参数使用引用相等比较，稳定参数使用对象相等比较。调用方每次构造新 `List`、新 UI 数据模型或捕获值不同的新 Lambda，仍可能让比较失败。优化时应检查输入对象是否稳定复用、状态是否在合适的所有者中更新，以及运行时是否出现高频分配；源码中的 Lambda 表达式数量与运行时分配量是两回事，后者要靠分配记录确认。
 
 #### Snapshot 状态记录随写入演进
 
 Snapshot 是 Compose 为状态读取和写入提供一致视图的机制；状态记录（`state record`）是同一状态对象在不同 Snapshot 中可见的数据版本。`MutableState` 与 `derivedStateOf` 都使用记录链。写入需要取得可写记录，读取会选择当前 Snapshot 可见的记录；切换 Snapshot 不会为所有状态统一新建记录。并发 Snapshot、写入频率与记录复用共同决定对象数量。
 
-Compose Runtime 1.11.4 的 [`DerivedState.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt) 与 [1.12.0 `DerivedState.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt) 都显示，`ResultRecord` 保存依赖集合、计算结果和用于判断有效性的哈希值。mutation policy（变更策略）判定新旧结果等价时，实现会更新当前记录的依赖信息；结果变化时才申请可写记录。每一帧或每次 Snapshot 应用都不能直接换算成一个新 `ResultRecord`。
+Compose Runtime 1.11.4 的 [`DerivedState.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt) 与 [1.12.0 `DerivedState.kt`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt) 都显示，`ResultRecord` 保存依赖集合、计算结果和用于判断有效性的哈希值。mutation policy（变更策略）判定新旧结果等价时，实现会更新当前记录的依赖信息；结果变化时才申请可写记录。每一帧或每次 Snapshot 应用，都换算不出固定的新 `ResultRecord` 数量。
 
 ### 哪些分配值得优先处理
 
@@ -799,7 +807,7 @@ fun ScrollToTopButton(listState: LazyListState) {
 
 只要 `showButton` 的结果没有变化，读取它的可组合函数就不需要因每次滚动更新而重组。`derivedStateOf` 自身要维护依赖和缓存；普通字符串拼接、两个低频状态的简单组合，以及每次输入变化都会产生新输出的计算，直接计算通常更清楚。
 
-Compose Runtime 1.12.0 稳定版已经包含一项潜在内存泄漏修复：未正确 `remember` 的 `derivedStateOf()` 在 forward write（同一轮组合先读取依赖状态，随后又写入该状态） 场景中，也就是同一轮组合先读取依赖状态、随后又写入该状态，可能被 Composition 持有到该 Composition 销毁。该问题影响 1.11.4，修复最早记录于 1.12.0-beta01，随后进入 1.12.0 稳定版。处理要点如下：
+Compose Runtime 1.12.0 稳定版已经包含一项潜在内存泄漏修复：未正确 `remember` 的 `derivedStateOf()` 在 forward write（同一轮组合先读取依赖状态，随后又写入该状态）场景中，可能被 Composition 持有到该 Composition 销毁。该问题影响 1.11.4，修复最早记录于 1.12.0-beta01，随后进入 1.12.0 稳定版。处理要点如下：
 
 - 在可组合函数内创建 `derivedStateOf` 时使用 `remember`；
 - 使用 1.11.4 或更早版本并怀疑该问题时，在 heap dump 中检查 `DerivedSnapshotState` 到 Composition 的引用链，并用 1.12.0 复测；
@@ -810,7 +818,7 @@ Compose Runtime 1.12.0 稳定版已经包含一项潜在内存泄漏修复：未
 
 `snapshotFlow` 记录 `block` 中读取的 Snapshot 状态；相关状态的写入被应用后，它会重新执行 `block`，只有新结果与旧结果不相等时才向 Flow 发送。历史稳定版 [`SnapshotFlow.kt`](https://android.googlesource.com/platform/frameworks/support/+/854220f44ea8ea80fee824a6c5a045f39bede289/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotFlow.kt) 与 [1.12.0 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotFlow.kt) 都会注册 Snapshot apply observer（状态应用观察者）、维护订阅集合，并在 Flow 结束收集时取消本次订阅。
 
-1.12.0 默认重载会创建内部 `SnapshotFlowManager`，并在 Flow 结束时释放；实验性重载允许同一线程上的多个 `snapshotFlow` 共用管理器，此时由调用方在不再使用时调用 `dispose()`，且不能让同一个管理器被不同线程并行收集。这段代码使用默认重载，把列表位置变化交给分析回调上报；任务会在 `LaunchedEffect` 离开 Composition 或 key 变化时取消。
+1.12.0 默认重载会创建内部 `SnapshotFlowManager`，并在 Flow 结束时释放；实验性重载允许同一线程上的多个 `snapshotFlow` 共用管理器，此时由调用方在不再使用时调用 `dispose()`，并要避免同一个管理器被不同线程并行收集。这段代码使用默认重载，把列表位置变化交给分析回调上报；任务会在 `LaunchedEffect` 离开 Composition 或 key 变化时取消。
 
 ```kotlin
 @Composable
@@ -837,7 +845,7 @@ key 的主要价值包括：
 - 减少无关列表项的重组；
 - 让 `rememberSaveable` 状态在符合条件时恢复。
 
-滚出屏幕的节点，key 不会让它们全部永久保留；列表项内部的对象分配，key 也消除不了。用于 `rememberSaveable` 时，key 类型还要能由 `Bundle` 保存，例如原始类型、枚举或 `Parcelable`。业务稳定 ID 通常适合作为 key；位置只适用于内容和顺序都固定的列表。
+滚出屏幕的节点照常参与回收，key 管的是身份；列表项内部的对象分配，key 消除不了，要靠分配记录定位。用于 `rememberSaveable` 时，key 类型还要能由 `Bundle` 保存，例如原始类型、枚举或 `Parcelable`。业务稳定 ID 通常适合作为 key；位置只适用于内容和顺序都固定的列表。
 
 ### View 与 Compose 混合时的生命周期
 
@@ -868,7 +876,7 @@ override fun onCreateView(
 
 [Compose in Views 官方文档](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)把 `DisposeOnViewTreeLifecycleDestroyed` 列为 Fragment View 的适用策略。普通 View 场景默认使用 `DisposeOnDetachedFromWindowOrReleasedFromPool`：View 脱离窗口时释放；若位于 `RecyclerView` 等复用容器中，则在容器脱离或该项被移出对象池时释放。释放策略要按宿主类型选择。
 
-#### `AndroidView.factory` 不需要额外 `remember`
+#### `AndroidView.factory`、`update` 与 View 复用
 
 `AndroidView` 的 `factory` 用于创建 View；`update` 在创建后执行，并在其中读取的 Snapshot 状态变化时再次执行。把 View 另存进 `remember` 会让 Composition 与 `AndroidView` 同时保存它的引用，增加生命周期不一致的风险。
 
@@ -889,15 +897,15 @@ AndroidView(
 )
 ```
 
-[Views in Compose 官方文档](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose)说明，`onReset` 必须非空才会启用 Lazy 容器中的 View 复用；`onRelease` 在 View 离开 Composition 且不再复用时调用。`update` 应具备幂等性，也就是用相同输入重复执行不会累积副作用；监听器若在每次 `update` 中注册，要先替换或移除旧监听器。
+[Views in Compose 官方文档](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose)说明，`onReset` 必须非空才会启用 Lazy 容器中的 View 复用；`onRelease` 在 View 离开 Composition 且不再复用时调用。`update` 应具备幂等性——用相同输入重复执行不会累积副作用；监听器若在每次 `update` 中注册，要先替换或移除旧监听器。
 
 混合页面的 heap dump 应同时检查 View tree（传统 View 层级）与 Composition。常见 dominator 包括 Fragment view binding（生成的视图绑定对象）、adapter（列表适配器）、listener（监听器）、`AndroidView` 内的 WebView/播放器/地图、Navigation back stack（导航返回栈）和长生命周期 ViewModel。
 
 ### 分配如何触发 ART GC
 
-Compose Runtime 对象位于应用 Java Heap。[`heap-inl.h`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap-inl.h)显示，Java 对象分配会更新已分配字节数；使用并发垃圾回收器时，`ShouldConcurrentGCForJava()` 根据当前配置检查字节阈值，以及启用后的 time-based GC（同时考虑分配量和距上次 GC 时间的触发方式），即同时考虑分配量和距上次 GC 时间的触发方式。需要 GC 时，分配路径会在允许线程挂起后调用 `RequestConcurrentGCAndSaveObject()` 请求并发回收。
+Compose Runtime 对象位于应用 Java Heap。[`heap-inl.h`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap-inl.h)显示，Java 对象分配会更新已分配字节数；使用并发垃圾回收器时，`ShouldConcurrentGCForJava()` 根据当前配置检查字节阈值，以及启用后的 time-based GC（同时考虑分配量和距上次 GC 时间的触发方式）。需要 GC 时，分配路径会在允许线程挂起后调用 `RequestConcurrentGCAndSaveObject()` 请求并发回收。
 
-[`heap.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc)中的 `ConcurrentGCTask` 由 task processor（ART 的后台任务调度器）调度。GC 名称中的 concurrent 表示部分工作可与应用线程并行执行，但 root 扫描要检查线程栈和全局引用等根对象，checkpoint（让线程在安全位置配合运行时操作） 要让线程在安全位置配合运行时操作，对象移动与系统调度也会参与，这些仍可能让应用线程等待并影响帧时间。
+[`heap.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc)中的 `ConcurrentGCTask` 由 task processor（ART 的后台任务调度器）调度。GC 名称中的 concurrent 表示部分工作可与应用线程并行执行，但 root 扫描要检查线程栈和全局引用等根对象，checkpoint（让线程在安全位置配合运行时操作）同样要线程到位，对象移动与系统调度也会参与；这些环节仍可能让应用线程等待并影响帧时间。
 
 ART 源码支持 generational CC（分代并发复制）与 generational CMC（分代并发标记压缩）。分代表示优先回收新生代对象，并按条件执行完整回收。设备选择哪种模式，还取决于垃圾回收器、read barrier（读取引用时执行的屏障逻辑）或 `userfaultfd` 内核能力、`-Xgc` 选项、ART 功能标志和 DeviceConfig 属性。源码里支持某种模式，还不足以说明所有 Android 17 设备都默认启用，要以目标设备日志和 Perfetto 跟踪结果为准。
 
@@ -909,7 +917,7 @@ Compose 分配与卡顿之间需要建立证据链：
 4. ART GC slice（跟踪中的一段 GC 事件）、线程状态和暂停区间与长帧重叠；
 5. 修正分配后，同一设备与场景的长帧和 GC 数据同步改善。
 
-GC 与长帧出现在相近时间只能说明相关性。重组中的业务计算、measure/layout（测量与布局）、图片解码和主线程 I/O 都可能同时发生；需要用分配证据和修改后的对照数据确认 GC 是否为主要原因。
+GC 与长帧出现在相近时间只能说明相关性。重组中的业务计算、measure/layout（测量与布局）、图片解码和主线程 I/O 都可能同时发生；需要用分配数据和修改后的对照数据确认 GC 是否为主要原因。
 
 ### 诊断与回归流程
 
@@ -937,7 +945,7 @@ composeCompiler {
 | Perfetto + Compose tracing | 重组、布局、绘制、线程与 GC 的时间关系 | 需要固定场景和接近发布配置的构建 |
 | Allocation recording / heap dump | 哪些类型在分配、哪些对象被谁持有 | 分配记录成本高；heap dump 只反映采集时刻 |
 
-[Composition tracing 文档](https://developer.android.com/develop/ui/compose/tooling/tracing)说明，Macrobenchmark（在应用外驱动完整场景的基准测试）可以产出带 Compose tracing 的系统跟踪。滚动、页面切换和启动应写成可重复的 Macrobenchmark；Memory Profiler 用于定位具体分配或持有关系，不能单独作为回归判断依据。四类工具提供的是不同证据，需要按同一时间段、设备和操作关联起来。
+[Composition tracing 文档](https://developer.android.com/develop/ui/compose/tooling/tracing)说明，Macrobenchmark（在应用外驱动完整场景的基准测试）可以产出带 Compose tracing 的系统跟踪。滚动、页面切换和启动应写成可重复的 Macrobenchmark；Memory Profiler 用于定位具体分配或持有关系，回归判断还是要靠前面固定场景的重复测量。四类工具提供的是不同侧面，需要按同一时间段、设备和操作关联起来。
 
 #### 先判断分配抖动，再判断泄漏
 
@@ -967,7 +975,7 @@ Compose Multiplatform 在不同目标上使用不同运行时与内存管理器�
 
 Compose 内存问题要把“对象被长期持有”和“短命对象分配过快”分开。slot storage、RecomposeScope 和 Snapshot 状态记录是正常运行时结构，类名本身证明不了泄漏。泄漏要沿 dominator 查找生命周期更长的持有者，分配抖动要用 allocation stack（对象分配调用栈）确认创建位置。
 
-应用代码应优先处理组合阶段的重复计算、每次创建的新输入对象、生命周期过长的状态所有者、未管理的协程和 View 资源。`remember`、`derivedStateOf`、原始类型状态 API、Lazy 列表 key 与 Strong Skipping 各自解决不同问题。ART GC 的触发与垃圾回收器配置以 Android 17 源码和设备跟踪结果为准；固定的堆大小、每帧分配量或 GC 次数，都当不了跨设备的通用阈值。
+应用代码应优先处理组合阶段的重复计算、每次创建的新输入对象、生命周期过长的状态所有者、未管理的协程和 View 资源。`remember`、`derivedStateOf`、原始类型状态 API、Lazy 列表 key 与 Strong Skipping 各自解决不同问题。ART GC 的触发与垃圾回收器配置，以平台源码和设备跟踪结果为准；固定的堆大小、每帧分配量或 GC 次数，换一台设备就要重新测量。
 
 ## 常见误区
 
@@ -977,11 +985,11 @@ GC 请求反映堆状态和分配行为。AOSP 中，`ShouldConcurrentGCForJava(
 
 修改 `ConcurrentGCTask::Run()` 的 vtable（虚函数表）依赖非公开 C++ ABI，也只能拦截一类后台请求；分配失败路径仍会等待或触发 GC。伪造 `num_bytes_allocated_` 不会增加分配器空间或物理内存，还会让 GC 起点、分配限制、系统跟踪和回收记账互相矛盾。向 `TaskProcessor` 注入阻塞任务还会影响整条堆维护队列。这些方案都不能进入第三方应用的生产构建。
 
-`onTrimMemory()` 也不是 HeapTrim 或 GC 请求。它经 `ActivityThread` 分发给 `ComponentCallbacks2`；应用释放缓存只是让对象变得可回收，运行时仍自行决定何时 GC。从 API 34 起，`TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 不再发送，`onLowMemory()` 也不再调用；应用可利用 `UI_HIDDEN` 和 `BACKGROUND` 释放对应状态下可重建的资源，但不要在回调中调用 `System.gc()`。
+`onTrimMemory()` 也不是 HeapTrim 或 GC 请求。它经 `ActivityThread` 分发给 `ComponentCallbacks2`；应用释放缓存只是让对象变得可回收，运行时仍自行决定何时 GC。从 API 34 起，`TRIM_MEMORY_RUNNING_*`、`TRIM_MEMORY_MODERATE`、`TRIM_MEMORY_COMPLETE` 不再发送，`onLowMemory()` 也不再调用；应用可利用 `UI_HIDDEN` 和 `BACKGROUND` 释放对应状态下可重建的资源；至于 `System.gc()`，时机留给运行时决定。
 
 ### “对象池一定能减少卡顿”
 
-对象池只减少重复创建，不能自动降低状态管理复杂度。池中对象的生命周期变长后，可能增加保留内存，也可能让短命对象进入更老的代。用于生产环境前，要同时比较分配、GC、稳定占用和帧表现，并验证对象能够完整重置。
+对象池只减少重复创建，状态管理复杂度还在原地。池中对象的生命周期变长后，可能增加保留内存，也可能让短命对象进入更老的代。用于生产环境前，要同时比较分配、GC、稳定占用和帧表现，并验证对象能够完整重置。
 
 ### “一次堆转储就能定位抖动”
 

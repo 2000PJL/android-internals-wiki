@@ -2,7 +2,7 @@
 title: Android 功耗模型与系统级优化
 chapter: '11.1'
 section: '11.1'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
 - power
@@ -23,9 +23,9 @@ tags:
 - foreground-service
 confidence: medium
 last_verified: '2026-10-20'
-last_source_verified_at: '2026-10-20T13:37:09+08:00'
-last_deep_review_at: '2026-10-17T12:39:20+08:00'
-verification_scope_note: 2026-10-20 仅补核 §2.3 的 modem 术语与 controller 参数名；以下核验及测试记录来自 2026-10-17：核验 CPU time-in-state 与 x86 RAPL/cycle 归因、profile 单位及音视频输入、BatteryStats 重置条件、屏幕归因、BatteryManager 契约、PowerStats/PowerMonitor、Doze 联动、分桶与 FGS 例外、位置权限、休眠与归档、Routine Battery Saver 和工具维护状态；示例通过编译、语法与设置恢复单元测试，未进行真机功耗测试，内核仅核对入口与职责。
+last_source_verified_at: '2026-10-20T14:13:15+08:00'
+last_deep_review_at: '2026-10-20T14:13:15+08:00'
+verification_scope_note: 2026-10-20 通读整篇正文，重新核对 Android 17 固定 tag 缓存中的归因、监测 API、后台策略与内核职责，并补取官方 API 文档、配额说明及 Android 17 源码；修正 PowerMonitor 常量和 provider 释义。Kotlin 示例与常量探针通过真实 API 35 SDK 编译，XML 字段、Protobuf 子配置、Shell 语法及模拟 adb 的设置恢复测试通过；未进行真机功耗或后台行为测试，内核仅核对入口与职责。
 last_verified_against: AOSP android-17.0.0_r1 / Android common kernel android17-6.18-2026-06_r6 / PowerAttributor and PowerStatsProcessor pipeline
 note: Android 17 功耗归因与后台电源策略；设备能力、targetSdk 和厂商实现边界分别说明
 sources:
@@ -79,6 +79,16 @@ sources:
   path: https://developer.android.com/studio/profile/power-profiler
 - type: official
   path: https://developer.android.com/reference/android/os/health/SystemHealthManager
+- type: official
+  path: https://developer.android.com/reference/android/os/PowerMonitor
+- type: aosp
+  path: frameworks/base/core/java/android/os/PowerMonitor.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/PowerMonitorReadings.java
+- type: aosp
+  path: frameworks/base/core/java/android/os/health/SystemHealthManager.java
+- type: aosp
+  path: frameworks/base/core/java/android/content/IntentSender.java
 - type: official
   path: https://perfetto.dev/docs/reference/traced_probes
 - type: official
@@ -161,7 +171,7 @@ related_chapters:
 - '14.1'
 - '1.1'
 - '4.3'
-last_rework_at: '2026-10-20T13:37:09+08:00'
+last_rework_at: '2026-10-20T14:13:15+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch11-power/01-power-model.md
@@ -410,7 +420,7 @@ Framework 不会简单地把 Coulomb Counter 总差值按应用比例切分。Ba
 
 #### 6.2 Android 16 到 17 的变化
 
-Android 16 是迁移阶段：`BatteryUsageStatsProvider` 对已支持的组件调用 `PowerAttributor`，其余组件保留 `*PowerCalculator`。`android-17.0.0_r1` 的 provider（位置提供方） 已移除这组顶层 calculator 回退，委托 `PowerAttributor` 生成组件结果。
+Android 16 是迁移阶段：`BatteryUsageStatsProvider` 对已支持的组件调用 `PowerAttributor`，其余组件保留 `*PowerCalculator`。在 `android-17.0.0_r1` 中，`BatteryUsageStatsProvider` 已移除这组顶层 calculator 回退，委托 `PowerAttributor` 生成组件结果。
 
 阅读 Android 17 源码时，应从 `PowerAttributor`、`MultiStatePowerAttributor` 和 `processor/` 目录进入；使用 Android 16 或更早 tag 讨论历史行为时，仍需查看 `CpuPowerCalculator`、`ScreenPowerCalculator` 等旧实现。
 
@@ -458,7 +468,7 @@ ODPM 测的是设备级 rail。测试期间其他应用、系统服务、亮度�
 
 Android 15 / API 35 增加 `PowerMonitor`、`PowerMonitorReadings` 和 `SystemHealthManager` 的异步读取 API。monitor 分为：
 
-- `POWER_MONITOR_TYPE_MEAS（Energy Aware Scheduling，能量感知调度）UREMENT`：直接测量的 device-specific rail（设备专用电源轨）；
+- `POWER_MONITOR_TYPE_MEASUREMENT`：直接测量的 device-specific rail（设备专用电源轨）；
 - `POWER_MONITOR_TYPE_CONSUMER`：子系统 consumer，可能直接对应 rail，也可能经过模型计算或组合。
 
 下面的读取函数保留 monitor 名称、类型、累计能量和各自时间戳，并处理设备不支持与能量不可用。
@@ -853,7 +863,7 @@ Battery Saver 是系统级省电模式。`PowerManagerService` 发布 low-power�
 
 - `PowerManager.isPowerSaveMode()` 判断 Battery Saver 是否开启。
 - `ACTION_POWER_SAVE_MODE_CHANGED` 监听状态变化。
-- `getLocationPowerSaveMode()` 返回当前定位节电策略，可能是屏幕关闭后停用 GNSS、停用全部 provider（策略提供方）、只给前台 App、降低请求频率或不改变。
+- `getLocationPowerSaveMode()` 返回当前定位节电策略，可能是屏幕关闭后停用 GNSS、停用全部 location provider（位置提供方）、只给前台 App、降低请求频率或不改变。
 
 Battery Saver 并不会把所有 App 一律改成 Rare bucket。Job、Alarm、位置、网络、显示与性能策略会分别根据 low-power 状态调整，OEM 还能加入刷新率、性能上限或传感器策略。某项功能是否改变，应在目标 build（系统构建版本）上读取状态并测量。
 

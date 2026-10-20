@@ -44,7 +44,7 @@ last_idle_audit_at: '2026-08-08T18:35:19+08:00'
 
 # ADPF 自适应性能框架
 
-Android 动态性能框架（Android Dynamic Performance Framework，ADPF）提供的是应用与系统之间的反馈接口，而不是固定升频开关：应用上报周期性工作的目标和实际耗时，读出设备的热状态和容量余量，据此驱动降级策略，再通过帧时间、能耗与温升复测系统是否做出了更合适的调度。
+Android 动态性能框架（Android Dynamic Performance Framework，ADPF）是一套应用与系统之间的反馈接口：应用上报周期性工作的目标和实际耗时，读出设备的热状态和容量余量，据此驱动降级策略，再用帧时间、能耗与温升复测系统是否做出了更合适的调度。对应用来说，它是一条表达需求的通道，而非固定升频开关。
 
 ## 为什么需要 ADPF
 
@@ -59,7 +59,7 @@ ADPF 在应用与系统之间增加了两类信号：
 
 应用持续报告结果，系统调整后续周期，新的结果再继续修正策略，这就是 ADPF 的反馈回路。Game Mode 和 Game State 在这之上补充用户偏好与当前游戏阶段。
 
-这些信号表达的是应用侧需求：系统不承诺给出某个运行频率、某颗 CPU 核，也不承诺在固定时间内提频——Android 17 的 Power AID（Thread ID，TID）L 就明确允许平台按自身策略实现，框架通过 Power HAL 这个硬件抽象层访问的，是设备自己的电源策略实现。
+这些信号表达的是应用侧需求：系统并不承诺给出某个运行频率、某颗 CPU 核，也不承诺在固定时间内提频——Android 17 的电源 AIDL 契约就明确允许平台按自身策略实现，框架通过 Power HAL 这个硬件抽象层访问到的，是设备自己的电源策略实现。
 
 所以接入时我们要留好退路：设备可能不支持 ADPF、只支持其中部分能力，热约束也可能优先于性能请求。
 
@@ -69,11 +69,11 @@ ADPF 在应用与系统之间增加了两类信号：
 
 ### HintSession、target duration 与 actual duration
 
-Java 入口是 `PerformanceHintManager.Session`。一个 session（会话）绑定一组线程，保存它们的周期性性能目标。创建时要传入这组线程的 Linux 线程 ID（TID）和初始目标工作时长（target work duration）；返回 `null` 表示设备不支持 HintSession，或某个 TID 不属于本应用。放进去的线程应该关系紧密、生命周期较长、周期性执行。
+Java 入口是 `PerformanceHintManager.Session`：一个 session（会话）绑定一组线程，替它们保存周期性的性能目标。创建 session 时要传入这组线程的 Linux 线程 ID（TID）和初始目标工作时长（target work duration）；返回值是 `null`，说明设备不支持 HintSession，或者某个 TID 不属于本应用。放进 session 的线程应当关系紧密、生命周期较长、周期性执行。
 
 target work duration 表示这组线程希望在每个周期内完成工作的时长，通常小于完整显示周期。我们拿 60 Hz 渲染算一下：显示周期约 16.67 ms，如果 session 里的线程只负责其中 6 ms 的 CPU 工作，target 就应接近 6 ms；直接填 16.67 ms，系统会高估这组线程的时间余量。Android 17 的 `IPower.createHintSession*()` 注释用的也是“60 Hz 渲染、目标工作时长 6 ms”这个例子。
 
-下面的代码走一个基本反馈周期：创建 HintSession，渲染一帧，再上报实际工作时长（actual duration）。`renderTid` 要在实际执行工作的线程里取得，或由应用自己的线程管理器提供；Java `Thread.getId()` 与 Linux TID 是两套编号，不能混用。
+下面的代码走一个基本反馈周期：创建 HintSession，渲染一帧，再上报实际工作时长（actual duration）。`renderTid` 要在实际执行工作的线程里取得，或由应用自己的线程管理器提供；Java `Thread.getId()` 与 Linux TID 是两套编号，这里要的是后者。
 
 ```java
 // Java API；源码锚点：android-17.0.0_r1
@@ -102,7 +102,7 @@ if (session != null) {
 
 ### TID、协程与 `setThreads()`
 
-HintSession 绑定的是 Linux TID，协程 ID、Java `Thread.getId()` 和任务 ID 都替代不了它。Kotlin 协程可能在 `Dispatchers.Default` 或 `Dispatchers.IO` 的不同工作线程之间迁移，原 session 保存的线程集合却不会自动跟着更新。
+HintSession 绑定的是 Linux TID（Thread ID，线程 ID），协程 ID、Java `Thread.getId()` 和任务 ID 都替代不了它。Kotlin 协程可能在 `Dispatchers.Default` 或 `Dispatchers.IO` 的不同工作线程之间迁移，而原 session 保存的线程集合不会自动跟着更新——session 里留的还是创建时的旧线程。
 
 实践中可以这样做：
 
@@ -110,11 +110,11 @@ HintSession 绑定的是 Linux TID，协程 ID、Java `Thread.getId()` 和任务
 - Android 14（API 34）以后用 `Session#setThreads(int[])` 替换线程集合。
 - API 31—33 上线程集合已经失真时，关闭旧 session，再用当前 TID 创建新 session。
 
-`setThreads()` 不是 `oneway` 调用：Android 17 会同步执行 `IHintManager.setHintSessionThreads()`，并校验 TID 是否属于当前应用；session 不在前台时还可能抛出 `IllegalStateException`。所以更新时机放在线程池线程组成变化或场景切换时就好，不要在每次协程调度时都调用。
+`setThreads()` 走的是同步调用：框架会同步执行 `IHintManager.setHintSessionThreads()`，并校验 TID 是否属于当前应用；session 不在前台时还可能抛出 `IllegalStateException`。所以更新时机放在线程池线程组成变化或场景切换时就好，没必要在每次协程调度时都调用。
 
 ### 从 Java API 到 Power HAL 的调用链
 
-以 `android-17.0.0_r1` 为准，下面的调用链展示 Java API 如何经过本地代码、系统服务和 Power HAL 到达设备实现：
+以 `android-17.0.0_r1` 为准，Java API 要经过本地代码、系统服务和 Power HAL，才到达设备实现：
 
 ```text
 PerformanceHintManager.Session
@@ -138,9 +138,9 @@ PerformanceHintManager.Session
 
 ### `WorkDuration`：拆分 CPU 与 GPU 工作
 
-Android 15（API 35）公开了 `reportActualWorkDuration(WorkDuration)`。`WorkDuration` 把一个工作周期拆成工作周期开始时间、总墙钟时长（wall time）、CPU wall time 和 GPU wall time，系统据此区分 CPU-bound、GPU-bound，以及 CPU/GPU 阶段重叠的流水线。它是公开的 API 35 能力；设备能否据此产生明显收益，仍取决于系统和 Power HAL 支持。
+要把一个周期里 CPU 和 GPU 各占多少分开看，就要用 Android 15（API 35）公开的 `reportActualWorkDuration(WorkDuration)`。`WorkDuration` 把一个工作周期拆成工作周期开始时间、总墙钟时长（wall time）、CPU wall time 和 GPU wall time，系统据此区分 CPU-bound、GPU-bound，以及 CPU/GPU 阶段重叠的流水线。上报接口本身是公开能力；设备能否据此产生明显收益，仍取决于系统和 Power HAL 支持。
 
-这组字段的时间基准与 `SystemClock.uptimeNanos()` 一致。开始时间和总时长必须大于 0，CPU / GPU 时长取非负值，且两者不能同时为 0。下面的代码分别填写这四项数据并完成一次上报：
+这组字段的时间基准与 `SystemClock.uptimeNanos()` 一致。开始时间和总时长必须大于 0，CPU / GPU 时长取非负值，且两者至少有一个大于 0。下面的代码分别填写这四项数据并完成一次上报：
 
 ```java
 // API 35+
@@ -156,25 +156,25 @@ session.reportActualWorkDuration(duration);
 
 ### 能效模式：`Session#setPreferPowerEfficiency()`
 
-`Session#setPreferPowerEfficiency(boolean)` 从 API 35 起公开。开启后表示这组线程可以优先采用节能调度，工作完成得稍慢也能接受。它适合周期明确、允许延长完成时间的任务；视频处理、同步或推理是否适用，要按产品的延迟目标判断，业务名称本身说明不了问题。
+除了上报时长，session 还能声明节能偏好：`Session#setPreferPowerEfficiency(boolean)` 从 API 35 起公开。开启后表示这组线程可以优先采用节能调度，工作完成得稍慢也能接受。它适合周期明确、允许延长完成时间的任务；视频处理、同步或推理是否适用，要按产品的延迟目标判断，业务名称本身说明不了问题。
 
 ### Android 16 workload hint
 
-NDK `performance_hint.h` 在 API 36 增加三组公开函数：
+周期性的 target / actual 之外，突发负载也有专门的信号：NDK `performance_hint.h` 在 API 36 增加三组公开函数：
 
 - `APerformanceHint_notifyWorkloadIncrease()`：预计下一周期 CPU、GPU 或两者负载显著增加时提前发送。
 - `APerformanceHint_notifyWorkloadReset()`：工作即将开始或负载特征完全改变时，通知系统不再沿用此前的负载判断。
 - `APerformanceHint_notifyWorkloadSpike()`：标记一次性的高开销周期，告诉系统别把它当成长期负载。
 
-系统会限制（GPU-bound）每个应用发送这些 hint 的频率；设备不支持的 hint 可能被忽略且不返回错误。它们适合报告次数较少、原因明确的负载变化，持续高负载仍应通过 target / actual 反馈表达。
+系统对这些 hint 的发送频率有按应用计的限制（GPU-bound）；设备不支持的 hint 可能被忽略且不返回错误。它们适合报告次数较少、原因明确的负载变化，持续高负载仍应通过 target / actual 反馈表达。
 
 Java `sendHint()` 及 `CPU_LOAD_*`、`GPU_LOAD_*` 常量属于测试 API（`@TestApi`）或隐藏接口，普通应用不要依赖它们。
 
 ## Headroom API：CPU/GPU 容量余量
 
-Android 16（API 36）的 `SystemHealthManager#getCpuHeadroom()` 与 `getGpuHeadroom()` 返回 0—100 的容量余量（headroom）：0 表示系统当前拿不出更多对应资源，暂时算不出来时返回 `Float.NaN`。这两项接口回答“当前计算资源还有多少余量”，和 Thermal Headroom 回答的是两个问题。
+报完了需求，接下来看怎么读约束。Android 16（API 36）的 `SystemHealthManager#getCpuHeadroom()` 与 `getGpuHeadroom()` 返回 0—100 的容量余量（headroom）：0 表示系统当前拿不出更多对应资源，暂时算不出来时返回 `Float.NaN`。这两项接口回答“当前计算资源还有多少余量”，和 Thermal Headroom 回答的是两个问题。
 
-传入 `null` 表示使用默认参数。每次有效调用至少包含一次同步 Binder 往返，应用要停下来等系统服务返回结果；官方文档提示这一趟可能超过 1 ms，第一次调用或使用非默认参数时还可能更慢。所以查询放在工作线程里做，并遵守 `getCpuHeadroomMinIntervalMillis()` 与 `getGpuHeadroomMinIntervalMillis()` 给出的最小间隔。
+传入 `null` 表示使用默认参数。每次有效调用至少包含一次同步 Binder 往返，应用要停下来等系统服务返回结果；官方文档提示这一趟可能超过 1 ms，第一次调用或使用非默认参数时还可能更慢。所以我们要把查询放在工作线程里做，并遵守 `getCpuHeadroomMinIntervalMillis()` 与 `getGpuHeadroomMinIntervalMillis()` 给出的最小间隔。
 
 调用间隔过短时可能拿到缓存值。要指定计算窗口或 CPU TID，先查询设备支持的窗口范围，再处理参数、TID 归属和 CPU 亲和性（affinity，即线程允许运行在哪些 CPU 上）校验的异常。CPU / GPU Headroom 适合在场景切换时或以较低频率调整质量，不适合放进渲染关键路径。
 
@@ -182,7 +182,7 @@ Android 16（API 36）的 `SystemHealthManager#getCpuHeadroom()` 与 `getGpuHead
 
 ### Thermal Status 的语义
 
-应用侧 Java 入口位于 `PowerManager`。`getCurrentThermalStatus()` 直接返回当前等级，`addThermalStatusListener()` 在等级变化时回调；等级反映的是系统为了控制温度而限制性能的程度（thermal throttling），也就是 thermal throttling。源码里这些等级的定义如下：
+Headroom 读的是余量，Thermal API 给的是系统当前的热状态。应用侧 Java 入口位于 `PowerManager`：`getCurrentThermalStatus()` 直接返回当前等级，`addThermalStatusListener()` 在等级变化时回调。等级反映的是系统为了控制温度而限制性能的程度（thermal throttling），源码里这些等级的定义如下：
 
 | 状态 | 平台语义 | 应用侧常见处理 |
 |---|---|---|
@@ -194,7 +194,7 @@ Android 16（API 36）的 `SystemHealthManager#getCpuHeadroom()` 与 `getGpuHead
 | `EMERGENCY` | 关键组件因热状态开始关闭，设备能力受限 | 尽快保存状态，停止非必要工作 |
 | `SHUTDOWN` | 设备需要立即关机 | 不再假设后续工作能够完成 |
 
-表中最后一列的常见处理只是工程起点。画质、帧率、相机能力或推理负载具体降多少，要经过设备实测，并配上滞回（hysteresis，升档和降档用不同阈值）与最短冷却时间，免得状态在阈值附近波动时频繁切换。
+表中最后一列的常见处理只是工程起点。画质、帧率、相机能力或推理负载具体降多少，我们要经过设备实测，并配上滞回（hysteresis，升档和降档用不同阈值）与最短冷却时间，免得状态在阈值附近波动时频繁切换。
 
 ### Thermal Headroom 的数值与采样
 
@@ -299,7 +299,7 @@ gameManager.setGameState(state);
 
 ## 一套可验证的接入流程
 
-把前面的能力串起来，一套可复用的接入流程如下：
+把前面的能力串起来，我们可以按下面这套流程接入：
 
 1. **建立基线**：在固定设备、环境温度、电量区间和运行时长下，记录未启用 ADPF 时的帧时间、功耗和热状态。
 2. **选择工作单元**：找出周期稳定、线程生命周期较长的渲染、音视频或计算任务，并确认 Linux TID。
@@ -350,7 +350,7 @@ ADPF 没有向所有设备承诺提供固定名为 `power.hint_session` 或 `pow
 | Android 16（API 36） | CPU / GPU Headroom；Java / NDK Thermal Headroom listener；NDK workload hint、会话配置（session config）与图形流水线关联能力 |
 | Android 17（API 37） | `android-17.0.0_r1` 公开的 Java Session API 仍包括 `reportActualWorkDuration`、`setPreferPowerEfficiency`、`setThreads`、`updateTargetWorkDuration` 和生命周期接口；公开 Java / NDK API 中没有 `setPreferIdle(boolean)` |
 
-API 37 的 `core/api/current.txt` 以及 NDK `performance_hint.h` 都没有 `setPreferIdle(boolean)`。预览版 SDK（preview SDK）、厂商 SDK 或内部接口都不能当作 Android 17 的公共能力；Java `sendHint()` 也仍属于测试或隐藏接口。
+API 37 的 `core/api/current.txt` 以及 NDK `performance_hint.h` 都没有 `setPreferIdle(boolean)`。预览版 SDK（preview SDK）、厂商 SDK 或内部接口都不算 Android 17 的公共能力；Java `sendHint()` 也仍属于测试或隐藏接口。
 
 ## 常见误区
 
@@ -382,13 +382,13 @@ Unity 官方 Android provider（平台适配组件） 支持 Unity 2021.3 及以
 
 Android Developers 提供 Unreal ADPF 插件（plugin）；当前引擎支持表列出 Unreal Engine 4.25 及以上。插件分别为游戏线程（game thread）与渲染 / RHI 线程建立 hint session，并结合 thermal 信号调整 Unreal 的可扩展画质系统（Scalability）。默认设置只适合作为起点，项目应保留同机基线和自定义质量档位。
 
-引擎自动接入不免除 TID、target、热策略和 trace 验证。引擎升级、渲染线程模型变化后，应重新核对 session 覆盖范围。
+引擎自动接入之后，TID、target、热策略和 trace 验证仍要自己做。引擎升级、渲染线程模型变化后，应重新核对 session 覆盖范围。
 
 ## OEM 差异应怎样验证
 
-Android 17 的稳定公共约定止于 framework 的 `IHintManager` 与 `android.hardware.power` AIDL。`IPowerHintSession` 提供 target、actual、线程集合、会话模式（session mode）等接口，但这些信号如何映射到调度器、CPU / GPU 策略或厂商控制器，公共 API 不作保证。
+到 Android 17 为止，稳定的公共约定止于 framework 的 `IHintManager` 与 `android.hardware.power` AIDL。`IPowerHintSession` 提供 target、actual、线程集合、会话模式（session mode）等接口，但这些信号如何映射到调度器、CPU / GPU 策略或厂商控制器，公共 API 不作保证。
 
-只凭 SoC 品牌推断设备用 PerfLock（部分厂商的私有性能锁机制）、某个私有服务还是固定响应时间，是推断不出来的。我们跨设备测试时至少记录：
+单看 SoC 品牌，推断不出设备会用 PerfLock（部分厂商的私有性能锁机制）、某个私有服务还是固定的响应时间。我们跨设备测试时至少记录：
 
 - `createHintSession()` 是否返回有效 session。
 - 同一 target/actual 序列下的帧时间和关键线程调度。
@@ -420,5 +420,5 @@ Android 17 的稳定公共约定止于 framework 的 `IHintManager` 与 `android
 - [AOSP `performance_hint.cpp`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/native/android/performance_hint.cpp)
 - [AOSP `HintManagerService.java`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java)
 - [AOSP NDK `performance_hint.h`（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/performance_hint.h)
-- [AOSP Power AIDL `IPower.aidl`（android-17.0.0_r1）](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/aidl/android/hardware/power/IPower.aidl)
-- [AOSP Power AIDL `IPowerHintSession.aidl`（android-17.0.0_r1）](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/aidl/android/hardware/power/IPowerHintSession.aidl)
+- [AOSP 电源 AIDL `IPower.aidl`（android-17.0.0_r1）](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/aidl/android/hardware/power/IPower.aidl)
+- [AOSP 电源 AIDL `IPowerHintSession.aidl`（android-17.0.0_r1）](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/aidl/android/hardware/power/IPowerHintSession.aidl)

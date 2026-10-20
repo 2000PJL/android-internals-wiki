@@ -6898,6 +6898,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md",
+      "close_note": "已将 §6.2 的损坏行内路径恢复为 frameworks/native/services/surfaceflinger/Layer.h。2026-10-20 直接获取 AOSP android-17.0.0_r1：Layer.h:556–566 定义 BufferTX - 名称并解释计数；Layer.cpp:1410–1416 递减并通过 SFTRACE_INT 输出。正文仅这一处路径替换，元数据/目录链接/diff/新增行中文门禁通过；章节置为 ready-for-review，未直接 finalized。来源：https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Layer.h#556；日志：logs/rework/2026-10-20-20261020-093520-rework-440b6bfb-rework.md",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261020-093520-rework-440b6bfb",
       "created_at": "2026-10-20T02:14:00.200438+08:00",
       "created_by": "aiw-chinese-rewrite",
       "created_run_id": "20261020-020020-cn-rewrite-440b6bfb51d86d43",
@@ -6908,10 +6911,10 @@
       "source_paths": [
         "run 20261020-020020-cn-rewrite-440b6bfb51d86d43 全文通读发现"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "§6.2 源码路径行内代码被历史括注拼接损坏：frameworks/native/services/surfacefling（手指离开后继续惯性滚动）er/Layer.h，应为 frameworks/native/services/surfaceflinger/Layer.h",
       "type": "technical",
-      "updated_at": "2026-10-20T02:14:00.200438+08:00"
+      "updated_at": "2026-10-20T09:41:22.611387+08:00"
     }
   ],
   "schema_version": 1

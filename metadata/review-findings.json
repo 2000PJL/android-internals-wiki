@@ -7033,6 +7033,86 @@
       "summary": "标题 2.3 疑似历史括注注入损坏：modem 被写成 mode（授权模式）m，需人工确认后修复",
       "type": "content-quality",
       "updated_at": "2026-10-20T10:45:39.523341+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md",
+      "close_note": "已依 android-5.0.0_r1 DrawFrameTask.cpp:92–141、CanvasContext.cpp:93–111/189–233 重写历史列表，采用当时 OpenGLRenderer/EGL 路径，并明确现代 Perfetto 观测语境。 已通过元数据、SUMMARY 链接、diff 与新增中文规则扫描；章节保留 ready-for-review，未宣称全文已完成来源核验。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261020-120520-85c316b8",
+      "created_at": "2026-10-20T12:09:24.020048+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261020-120520-85c316b8",
+      "details": "android-5.0.0_r1 CanvasContext.cpp:106–111 创建 OpenGLRenderer，189–233 经 EGL 绘制与交换；原文第 973–974 行把 Skia 和现代事务路径放进 Android 5.0 列表。需以对应历史源码重写，避免与 Android 17 主路径混淆。",
+      "id": "finding-c21d330e73b6",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-5.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp#106"
+      ],
+      "status": "fixed",
+      "summary": "Android 5.0 的 RenderThread 分工说明混入后来的 Skia 管线和 buffer transaction 路径",
+      "type": "version-boundary",
+      "updated_at": "2026-10-20T12:13:28.601596+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md",
+      "close_note": "已纠正 unsignaled 为尚未完成，列出 Android 17 AutoSingleLayer 的属性、单 Layer/简单 buffer 更新、首事务、非 early 配置条件，保留官方旧 Always 模式的冻结/可能弃用警告并提供 trace 搜索入口。 已通过元数据、SUMMARY 链接、diff 与新增中文规则扫描；章节保留 ready-for-review，未宣称全文已完成来源核验。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261020-120520-85c316b8",
+      "created_at": "2026-10-20T12:09:24.074468+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261020-120520-85c316b8",
+      "details": "原文 §8.1 将 unsignal 括注为变为完成状态；android-17.0.0_r1 SurfaceFlinger.cpp:598–604、5442–5449、5543–5576 限制自动 latch，官方文档对旧 Always 模式提示显示冻结及可能弃用。",
+      "id": "finding-fa08346e8160",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp#5543"
+      ],
+      "status": "fixed",
+      "summary": "unsignaled 被误释为完成状态，AutoSingleLayer 缺少具体条件与旧配置警告",
+      "type": "synchronization-boundary",
+      "updated_at": "2026-10-20T12:13:28.654958+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md",
+      "close_note": "已将 BLAST 不一致展开名改为可回溯职责定义；澄清 HWUI 产品/调试属性和实际驱动的区别；SurfaceFrame 不再被定义为仅卡顿帧，expected/actual 改为工作区间；补入 Perfetto 文档 SurfaceView 覆盖提示。 已通过元数据、SUMMARY 链接、diff 与新增中文规则扫描；章节保留 ready-for-review，未宣称全文已完成来源核验。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261020-120520-85c316b8",
+      "created_at": "2026-10-20T12:09:24.127869+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261020-120520-85c316b8",
+      "details": "SurfaceFrame 标题将其限定为卡顿应用帧，但 FrameTimeline.h:358 默认为 JankType::None；debug.hwui.renderer 被解释成实际驱动名，Properties.cpp:216–226 实为后端选择；BLAST 在前后出现两种不一致英文展开名，改用源码可证实的组件职责。Perfetto 文档的 SurfaceView 覆盖警告也需保留。",
+      "id": "finding-0b2e6702b11b",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.h#193"
+      ],
+      "status": "fixed",
+      "summary": "SurfaceFrame、HWUI 后端属性及 BLAST 的解释存在概念混淆",
+      "type": "object-definition",
+      "updated_at": "2026-10-20T12:13:28.708646+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md",
+      "close_note": "已把两处 getSuggestedFrameRate() 改为 getSuggestedFrameRate(category)，补充 NORMAL/HIGH 常量、返回建议值以及查询不提交帧率请求的边界；依据 Android 17 Display.java:1417–1448。 已通过元数据、SUMMARY 链接、diff 与新增中文规则扫描；章节保留 ready-for-review，未宣称全文已完成来源核验。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261020-120520-85c316b8",
+      "created_at": "2026-10-20T12:09:24.182345+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261020-120520-85c316b8",
+      "details": "android-17.0.0_r1 Display.java:1417–1448 要求 category 参数，仅允许 FRAME_RATE_CATEGORY_NORMAL 或 FRAME_RATE_CATEGORY_HIGH；章节时间线及 ARR 正文写成 getSuggestedFrameRate()，易误导调用。",
+      "id": "finding-2552d649e2a7",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java#1417"
+      ],
+      "status": "fixed",
+      "summary": "Display.getSuggestedFrameRate 被写成无参方法",
+      "type": "api-signature",
+      "updated_at": "2026-10-20T12:13:28.762424+08:00"
     }
   ],
   "schema_version": 1

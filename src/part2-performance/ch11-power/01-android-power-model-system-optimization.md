@@ -2,7 +2,7 @@
 title: Android 功耗模型与系统级优化
 chapter: '11.1'
 section: '11.1'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 5.0 (API 21) - Android 17 (API 37)
 tags:
 - power
@@ -22,10 +22,10 @@ tags:
 - adaptive-battery
 - foreground-service
 confidence: medium
-last_verified: '2026-10-17'
-last_source_verified_at: '2026-10-17T14:14:40+08:00'
+last_verified: '2026-10-20'
+last_source_verified_at: '2026-10-20T13:37:09+08:00'
 last_deep_review_at: '2026-10-17T12:39:20+08:00'
-verification_scope_note: 核验 CPU time-in-state 与 x86 RAPL/cycle 归因、profile 单位及音视频输入、BatteryStats 重置条件、屏幕归因、BatteryManager 契约、PowerStats/PowerMonitor、Doze 联动、分桶与 FGS 例外、位置权限、休眠与归档、Routine Battery Saver 和工具维护状态；示例通过编译、语法与设置恢复单元测试，未进行真机功耗测试，内核仅核对入口与职责。
+verification_scope_note: 2026-10-20 仅补核 §2.3 的 modem 术语与 controller 参数名；以下核验及测试记录来自 2026-10-17：核验 CPU time-in-state 与 x86 RAPL/cycle 归因、profile 单位及音视频输入、BatteryStats 重置条件、屏幕归因、BatteryManager 契约、PowerStats/PowerMonitor、Doze 联动、分桶与 FGS 例外、位置权限、休眠与归档、Routine Battery Saver 和工具维护状态；示例通过编译、语法与设置恢复单元测试，未进行真机功耗测试，内核仅核对入口与职责。
 last_verified_against: AOSP android-17.0.0_r1 / Android common kernel android17-6.18-2026-06_r6 / PowerAttributor and PowerStatsProcessor pipeline
 note: Android 17 功耗归因与后台电源策略；设备能力、targetSdk 和厂商实现边界分别说明
 sources:
@@ -39,6 +39,8 @@ sources:
   path: https://developer.android.com/develop/background-work/services/fgs/handle-user-stopping
 - type: aosp
   path: frameworks/base/core/res/res/xml/power_profile.xml
+- type: aosp
+  path: frameworks/base/core/java/com/android/internal/os/PowerProfile.java
 - type: aosp
   path: frameworks/base/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java
 - type: aosp
@@ -159,7 +161,7 @@ related_chapters:
 - '14.1'
 - '1.1'
 - '4.3'
-last_rework_at: '2026-10-17T09:35:56+08:00'
+last_rework_at: '2026-10-20T13:37:09+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part2-performance/ch11-power/01-power-model.md
@@ -249,7 +251,7 @@ AOSP 默认文件明确声明数值是故意设置的错误值，OEM 出货前�
 
 因此，相同 CPU time 不保证相同耗电。任务运行在哪个 policy、哪些频点，以及设备是否提供 measured energy，都会改变结果。
 
-#### 2.3 mode（授权模式）m、Wi-Fi 与 Bluetooth 还有 controller 数据
+#### 2.3 modem、Wi-Fi 与 Bluetooth 的 controller 数据
 
 现代 profile 同时保留 legacy（兼容旧实现） 项和 controller 项。Wi-Fi 可提供 idle（空闲）、rx、不同 tx level（发射功率档位）及工作电压；modem 配置可区分 RAT（无线接入技术）、NR（5G New Radio） 频段和发射等级；Bluetooth controller 也可提供 idle、rx、tx 统计。
 

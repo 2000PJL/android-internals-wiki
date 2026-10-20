@@ -109,9 +109,9 @@ APA 的 System Profiler 依赖 Perfetto 采集 system trace。我们先分清设
 | Perfetto | tracing service、producer、data source、`TraceConfig`（录制配置）、trace packet | 统一配置、时间轴和二进制 trace |
 | APA System Profiler | Project、Record Trace、Trace View、PerfettoSQL | 交互录制、项目化管理和人工分析 |
 
-自定义录制配置的协议定义在 `external/perfetto/protos/perfetto/config/trace_config.proto`，tracing service 的源码位于 `external/perfetto/src/traced/service/`。内核 `android17-6.18-2026-06_r6/include/trace/events/sched.h` 定义 `sched_switch`、`sched_wakeup`（线程唤醒事件） 等调度 tracepoint（内核事件记录点）。这些数据在设备侧是什么语义，APA 就显示什么，桌面工具改变不了它。
+自定义录制配置的协议定义在 `external/perfetto/protos/perfetto/config/trace_config.proto`，tracing service 的源码位于 `external/perfetto/src/traced/service/`；调度 tracepoint（内核事件记录点）如 `sched_switch`、`sched_wakeup`（线程唤醒事件） 则由内核 `android17-6.18-2026-06_r6/include/trace/events/sched.h` 定义。这些数据在设备侧是什么语义，APA 就显示什么——语义由设备侧决定，桌面工具只负责呈现。
 
-这也划定了 APA 能证明什么：时间上相邻的两个事件，只是相关线索。要写成因果结论，还要核对线程状态、flow（跨时间轨道的事件关联）、fence（GPU 或 buffer 的异步完成信号）、调用栈、源码或可重复实验。
+这也划定了 APA 能证明什么：时间上相邻的两个事件，我们先当相关线索看；要写成因果结论，还要核对线程状态、flow（跨时间轨道的事件关联）、fence（GPU 或 buffer 的异步完成信号）、调用栈、源码或可重复实验。
 
 ### 2. 安装与设备要求
 
@@ -124,11 +124,11 @@ APA 首页提供 Windows、macOS 和 Linux 安装包。Quickstart 给出的主�
 
 设备侧的要求是“受支持的 Android 设备 + Android 12 或更高版本 + USB + 可用 adb debugging（通过 Android Debug Bridge 调试）”。Android 版本达标只是入场条件，过不过支持检查要看具体机型。首次连接新设备时，APA 会跑一次 device validation（设备兼容性检查），期间先把设备放在一边；通过后，Configure a Recording 的设备项旁会出现绿色标记。
 
-不同设备、GPU 与驱动暴露的数据各不相同。GPU counter（周期采样的硬件指标）、GPU queue（GPU 硬件执行队列） 或 Vulkan 信息缺失时，先检查设备支持、驱动、App 构建和录制配置；轨道空着只说明这条数据没采到，“GPU 没有工作”是推不出来的。
+不同设备、GPU 与驱动暴露的数据各不相同。GPU counter（周期采样的硬件指标）、GPU queue（GPU 硬件执行队列） 或 Vulkan 信息缺失时，先检查设备支持、驱动、App 构建和录制配置；轨道空着只说明这条数据没采到，要下“GPU 没有工作”的结论，光靠一条空轨道还不够。
 
 ### 3. 被测 App 应该用哪种构建
 
-官方 Quickstart 对 managed-code App（以 Java/Kotlin 为主的应用）与 Vulkan App 给了不同的构建建议，目的是让测量更准，启动 APA 本身并不作强制：
+官方 Quickstart 对 managed-code App（以 Java/Kotlin 为主的应用）与 Vulkan App 给了不同的构建建议；这些建议服务于测量准确性，APA 启动时并不强制：
 
 - Java/Kotlin 性能测量建议使用 release 版本或开启编译、打包优化的性能构建，并设置 `debuggable=false`，让 ART 运行在接近发布环境的优化状态；
 - Vulkan App 或游戏若要采集 Vulkan-specific data（Vulkan 专属数据），建议设置 `debuggable=true`，以便 APA 注入或启用对应的 Vulkan 调试能力；
@@ -139,7 +139,7 @@ APA 首页提供 Windows、macOS 和 Linux 安装包。Quickstart 给出的主�
 1. 接近发布配置（release-like）、不可调试（non-debuggable）的构建，用来测启动、UI、调度和整体帧表现；
 2. 原生代码优化保持一致、但 `debuggable=true` 的 Vulkan 诊断构建，用来采集 API timing（CPU 侧 API 调用耗时）、render pass（渲染阶段及其附件处理范围） name 或 screenshot（捕获画面）。
 
-这两种构建各测各的目标，绝对时间上的结论别直接互换；构建类型变过之后，把 APK（Android 安装包）、代码提交、编译选项和 manifest（应用清单） 状态一并记录下来。
+这两种构建各测各的目标，绝对时间上的结论别直接互换；构建类型一旦变过，我们就要把 APK（Android 安装包）、代码提交、编译选项和 manifest（应用清单） 状态一并记录下来。
 
 ### 4. 从 Project 到一份可分析的 trace
 
@@ -153,7 +153,7 @@ APA 的基本工作流是：
 6. 手工 Stop，或等待 Duration 到期；
 7. APA 拉取 trace 并自动打开 Trace View。
 
-Project 适合保存同一问题的多份 trace，不过文件进了同一个 Project，采集条件也未必一致；每次录制还是要记下设备、build fingerprint（系统构建的唯一标识）、GPU driver、App 版本、刷新率、温度、亮度、电量和测试脚本。
+Project 适合保存同一问题的多份 trace，不过文件进了同一个 Project，采集条件也未必一致；所以每次录制，我们都要记下设备、build fingerprint（系统构建的唯一标识）、GPU driver、App 版本、刷新率、温度、亮度、电量和测试脚本。
 
 #### 4.1 Launch mode 与 trigger
 
@@ -194,7 +194,7 @@ Render Pass Debug Names 目前标为 Experimental。它把代码里设置的 Vul
 
 Screenshots 也处于 Experimental。它依赖拦截标准 `VK_KHR_swapchain`（管理待显示图像的 Vulkan 扩展）；走其他 present（把图像提交到显示路径） 机制时拿不到截图。截图可以帮我们辨认捕获时对应的应用画面；画面有没有交给显示端，要以 present fence 或 FrameTimeline（帧预期与实际时间线） 为准，图片时间戳说明不了这一点。
 
-启用 Vulkan layer 会改变运行环境。需要对外报告性能数字时，应另录一份未启用 layer 的基线 trace；诊断 trace 用来查找可疑阶段，基线 trace 用来确认修改后的真实收益。
+启用 Vulkan layer 会改变运行环境。需要对外报告性能数字时，我们要另录一份未启用 layer 的基线 trace：诊断 trace 用来查找可疑阶段，基线 trace 用来确认修改后的真实收益。
 
 ### 6. Trace View 中能看到什么
 
@@ -251,7 +251,7 @@ ORDER BY ts.dur DESC;
 
 #### 8.1 帧耗时
 
-分析一帧时，先区分 CPU total time（两次帧提交之间包含等待的总时长）、CPU active time（CPU 实际运行该 App 代码的时长）、GPU time 与最终 present 结果；其中 CPU active time 只算 CPU 实际运行该 App 代码的时长。
+分析一帧时，我们先区分 CPU total time（两次帧提交之间包含等待的总时长）、CPU active time（CPU 实际运行该 App 代码的时长）、GPU time 与最终 present 结果。
 
 - Vulkan 场景可用相邻 `vkQueuePresentKHR` 之间的区间估算 CPU total frame time；其中包含等待 GPU 或 buffer 的时间；
 - CPU active time 要统计该帧窗口内主线程、render thread 和 worker（工作线程） 的 Running slice，只量一条线程会把工作量看漏；
@@ -260,11 +260,11 @@ ORDER BY ts.dur DESC;
 - 一帧可能包含多次 Vulkan submission，应使用 Vulkan Events 与 `submission_id` 关联同一帧的 GPU 工作；
 - Actual Timeline 的 jank（卡顿帧） slice（卡顿帧区间）、SurfaceFlinger On Display 和 expected/actual present（预期/实际显示时间）用来确认用户是否晚看到这一帧。
 
-CPU submit 返回、GPU producer completion fence、SurfaceFlinger latch、display present fence 和 layer release fence 是五个不同的时序边界，我们逐个对齐：completion fence 表示 producer 已完成 buffer 写入，consumer 可以安全读取；latch 表示 SurfaceFlinger 选中该 buffer 参与本轮合成；present fence 是本轮 display present 的系统时间基准；release fence 则通知 producer 何时可以复用旧 buffer。所以在 APA 里，`vkQueuePresentKHR` 调用完成、GPU queue slice 结束，都还证明不了一帧已经显示；要沿 submission ID、buffer/layer、fence 与 FrameTimeline 继续对齐。队列中存在多帧 in flight（已提交、尚未显示）时，FPS 稳定也可能伴随较高的输入到显示延迟。
+CPU submit 返回、GPU producer completion fence、SurfaceFlinger latch、display present fence 和 layer release fence 是五个不同的时序边界，我们逐个对齐：completion fence 表示 producer 已完成 buffer 写入，consumer 可以安全读取；latch 表示 SurfaceFlinger 选中该 buffer 参与本轮合成；present fence 是本轮 display present 的系统时间基准；release fence 则通知 producer 何时可以复用旧 buffer。把这五个边界对齐之后再回到 APA：`vkQueuePresentKHR` 调用完成、GPU queue slice 结束，都还证明不了一帧已经显示；接下来要沿 submission ID、buffer/layer、fence 与 FrameTimeline 继续对齐。队列中存在多帧 in flight（已提交、尚未显示）时，FPS 稳定也可能伴随较高的输入到显示延迟。
 
 #### 8.2 GPU 内存效率与带宽
 
-APA 官方的 Memory Efficiency 分析主要讨论 GPU counter 与 memory bandwidth（单位时间通过内存总线的数据量）；Java heap allocation（堆对象分配） 指堆对象分配，泄漏分析又是另一套方法，都不在这条主线上。建议按以下顺序读取：
+APA 官方的 Memory Efficiency 分析主要讨论 GPU counter 与 memory bandwidth（单位时间通过内存总线的数据量）；Java heap allocation（堆对象分配） 与泄漏分析属于另一套方法，都不在这条主线上。我们按以下顺序读取：
 
 1. 用 counter 周期确定单帧窗口，避免把独立采集的 GPU slice 边界直接套到 counter；
 2. 查看总 read/write bandwidth；
@@ -274,7 +274,7 @@ APA 官方的 Memory Efficiency 分析主要讨论 GPU counter 与 memory bandwi
 
 Adreno 与 Mali 的 counter 名称和计算方法不同，阈值还依赖 GPU、总线、分辨率与工作负载。团队看板要把 GPU 型号、driver、counter 名称和单位绑定在一起；一台设备的数值，换到其他 SoC（System on Chip，片上系统） 上就没有直接可比性。
 
-Java/Kotlin 对象增长、GC（垃圾回收） 与调用栈，交给 Android Studio Memory Profiler、heap dump（堆转储）或 LeakCanary；native heap 可以结合 `heapprofd`（Perfetto 原生堆采样器），它是 Perfetto 的原生堆采样器。APA 提供的是系统时间线上下文。
+Java/Kotlin 对象增长、GC（垃圾回收） 与调用栈，交给 Android Studio Memory Profiler、heap dump（堆转储）或 LeakCanary；native heap 则可以结合 `heapprofd`（Perfetto 原生堆采样器）来分析。APA 提供的是系统时间线上下文。
 
 #### 8.3 线程调度
 
@@ -286,7 +286,7 @@ Java/Kotlin 对象增长、GC（垃圾回收） 与调用栈，交给 Android St
 
 长 Running 指向工作量，长 Runnable 指向调度延迟，长 Blocked 指向依赖等待，我们靠这三类先把排查方向定下来。若线程频繁迁核或落在不合适的 CPU 上，先检查线程优先级、任务划分、负载和 ADPF（Android Dynamic Performance Framework）的 Performance Hint。官方 APA 调度指南建议用 Performance Hint API 向系统表达性能需求；手工 affinity（把线程绑定到指定 CPU）留作个案处理，别当成通用修复。
 
-调度 tracepoint 来自固定的内核基线 `android17-6.18-2026-06_r6`，APA 展示的 `sched_switch`、`sched_wakeup` 反映的是内核调度事实；再往下的 CPU topology（核心层级与大小核布局）、uclamp（调度利用率上下限）、cpuset（任务可使用的 CPU 集合）、thermal（温控限制） 和厂商 scheduler 策略，要结合设备源码与 Perfetto 轨道解释。
+调度 tracepoint 的语义由内核决定，APA 展示的 `sched_switch`、`sched_wakeup` 反映的是内核调度事实；再往下的 CPU topology（核心层级与大小核布局）、uclamp（调度利用率上下限）、cpuset（任务可使用的 CPU 集合）、thermal（温控限制） 和厂商 scheduler 策略，要结合设备源码与 Perfetto 轨道解释。
 
 ### 9. APA 与其它工具如何分工
 
@@ -302,7 +302,7 @@ Java/Kotlin 对象增长、GC（垃圾回收） 与调用栈，交给 Android St
 | 线上真实用户 trace | `ProfilingManager` + Perfetto UI | APA 不提供线上采集 API；导出的脱敏 trace 能否完整显示，要按 APA 版本验证 |
 | 长时间耗电与后台行为 | Batterystats、Battery Historian、statsd | 在短时 trace 中关联 CPU/GPU/电流变化 |
 
-表中几个工具先认一下：Winscope 用来看 WindowManager 与 SurfaceFlinger 状态；Macrobenchmark（Jetpack 的可重复性能测试框架） 是 Jetpack 的可重复性能基准框架；CI（Continuous Integration） 是持续集成流水线；`ProfilingManager` 是面向真实用户设备采集脱敏 profile 的 Android API；statsd 是 Android 系统统计守护进程。它们各管一段，APA 主要承担本地 system trace 的交互分析。
+表中几个工具先认一下：Winscope 用来看 WindowManager 与 SurfaceFlinger 状态；Macrobenchmark（Jetpack 的可重复性能测试框架）负责可重复的基准测试；CI（Continuous Integration） 是持续集成流水线；`ProfilingManager` 是面向真实用户设备采集脱敏 profile 的 Android API；statsd 是 Android 系统统计守护进程。它们各管一段，APA 主要承担本地 system trace 的交互分析。
 
 官方仍推荐 APA 做 system profiling；AGI Frame Profiler、Android Studio Profiler、Perfetto CLI、Trace Processor 也都还没有停用的说法。
 
@@ -314,7 +314,7 @@ Java/Kotlin 对象增长、GC（垃圾回收） 与调用栈，交给 Android St
 - Android build fingerprint（系统构建指纹） / `android-17.0.0_r1`：决定 framework trace event、Perfetto producer、FrameTimeline 和系统服务行为；
 - kernel `android17-6.18-2026-06_r6` 与 vendor driver：决定 scheduler/ftrace 语义、GPU counter、render stage 和设备能力。
 
-APA 安装包不属于 `android-17.0.0_r1` framework 源码，在平台 tag 里翻不到它的可执行文件是正常现象，这一点动摇不了这个桌面产品。反过来说，APA 文档里出现某项 UI 能力，也推不出每台 Android 17 设备都配有对应的 data source。
+APA 安装包不属于 `android-17.0.0_r1` framework 源码，在平台 tag 里翻不到它的可执行文件属于正常现象，也不影响这个桌面产品本身的定位。反过来说，APA 文档里出现某项 UI 能力，只代表桌面工具有这个界面；具体某台 Android 17 设备配有哪些 data source，要回到 build fingerprint 与 vendor driver 那两层确认。
 
 ### 11. 一轮可复查的 APA 实验
 
@@ -340,7 +340,7 @@ APA 安装包不属于 `android-17.0.0_r1` framework 源码，在平台 tag 里�
 
 ### 方法可达性有两个判定阶段
 
-“静态找到路径”和“设备上执行到目标方法”是两个不同事件。这里的 Android 入口指外部可启动的组件或框架回调，和 Java `main()` 是两回事：
+“静态找到路径”和“设备上执行到目标方法”是两个不同的事件，我们把它们分开判断。这里的 Android 入口指外部可启动的组件或框架回调，和 Java `main()` 是两回事：
 
 | 阶段 | 成功条件 | 不能推出的结论 |
 | --- | --- | --- |
@@ -359,7 +359,7 @@ v3 报告的结果如下：
 | FlowDroid | 58.81% | 35.06 秒 |
 | GAPS | 88.24% | 12.67 秒 |
 
-这里的 88.24% 只统计“至少生成一条路径”的目标，既没碰路径精确率，也还没走到设备上执行那一步。
+这里的 88.24% 只统计“至少生成一条路径”的目标；路径本身的精确率、设备上的真实执行，都还在它的统计范围之外。
 
 #### 动态目标触达
 
@@ -397,11 +397,11 @@ GAPS 从目标方法向调用者反向扩展，按需构建 CHA（Class Hierarch
 
 v3 的 Algorithm 2 把路径提取写成深度优先遍历 `dfs_visit`；同一论文的实现说明与公开快照 `path_generation.py` 则使用自定义 `all_shortest_paths()`，在 `path_limit` 上限内枚举入口与目标之间的最短路径。复现实验应固定快照文件，只凭伪代码名称去推枚举策略，是靠不住的。
 
-论文将整体分析描述为 target-oriented（围绕目标）、demand-driven（按需扩展）、inter-procedural（跨方法）、context-sensitive（区分调用上下文），也就是围绕目标、按需扩展、跨方法，并区分调用上下文。EdgeMiner 与 Soot virtual edges（框架隐式回调边）提供回调映射；不过，未被跟踪的 implicit flow（由框架隐式触发、源码中没有直接调用语句的执行流程）——由框架隐式触发、源码中没有直接调用语句的执行流程——仍会让调用图漏边。
+论文将整体分析描述为 target-oriented（围绕目标）、demand-driven（按需扩展）、inter-procedural（跨方法）、context-sensitive（区分调用上下文）。EdgeMiner 与 Soot virtual edges（框架隐式回调边）提供回调映射；不过，未被跟踪的 implicit flow（由框架隐式触发、源码中没有直接调用语句的执行流程）仍会让调用图漏边。
 
 #### 4. 补足条件路径
 
-候选路径中的条件会进入两类分析：points-to analysis（指向分析，追踪引用可能指向哪些对象） 追踪引用可能指向哪些对象，constant propagation（常量传播，推导变量可能取到的常量） 推导变量可能取到的常量。v3 明确覆盖三类操作数：
+候选路径中的条件会进入两类分析：points-to analysis（指向分析，追踪引用可能指向哪些对象） 与 constant propagation（常量传播，推导变量可能取到的常量）。v3 明确覆盖三类操作数：
 
 - `int`、`String`、`float` 等变量和基本类型；
 - 与 `null` 比较的对象；
@@ -463,7 +463,7 @@ uv run gaps run \
 - AndroTest 应用可重新打包，使用 AndroLog 在方法中插入日志；
 - 真实应用无法稳定通过 AndroLog 重新打包时，使用 GAPS 的 Frida integration（Frida 集成模块） 动态 Hook 目标方法。
 
-这两种证据都比“页面已经打开”严格——页面完成未必意味着特定方法执行。它们回答的只是“到没到”：一次 hook 命中既没有说明方法耗时，也没有说明其调用落在 missed frame、ANR 前兆或功耗尖峰内。
+这两种证据都比“页面已经打开”严格——页面完成未必意味着特定方法执行。它们回答的只是“到没到”：一次 hook 命中说明方法执行过；至于耗时多少、调用是否落在 missed frame、ANR 前兆或功耗尖峰内，还在它们的回答范围之外。
 
 Frida Hook 本身会改变执行时间，短方法、锁竞争、JIT（运行时即时编译）/AOT（预先编译） 边界和高频调用尤其容易受探针开销干扰。所以做性能实验时，我们把“无 Hook 的基线 trace”和“带 Hook 的定位 trace”分开录，必要时改用应用源码中的 `Trace.beginSection()` 或 Perfetto SDK 埋点做低扰动复测。
 
@@ -523,7 +523,7 @@ Java.perform(() => {
 
 ### v3 的真实应用实验
 
-论文还在 2026 年 6 月收集的 Google Play 下载量前 50 应用上做了实验，目标是 SPECK（按 Google 安全与隐私规则识别潜在违规的静态分析器） 报告的方法；SPECK 是按 Google 安全与隐私规则识别潜在违规的静态分析器。只有 5.55% 的目标位于 `Activity` 中，场景比 AndroTest 更偏向深层代码。
+论文还在 2026 年 6 月收集的 Google Play 下载量前 50 应用上做了实验，目标是 SPECK（按 Google 安全与隐私规则识别潜在违规的静态分析器） 报告的方法。只有 5.55% 的目标位于 `Activity` 中，场景比 AndroTest 更偏向深层代码。
 
 | 指标 | v3 结果 |
 | --- | ---: |
@@ -534,7 +534,7 @@ Java.perform(() => {
 | 三轮动态触达率均值 | 54.80% |
 | 动态执行平均时间 | 4 分 48 秒 |
 
-真实应用实验用 Frida 作为触达证据。62.03% 与 54.80% 之间的差值另有解释，先别急着叫“静态误报率”：有些静态路径成立，但运行期需要登录、支付、特定文本、动态内容、权限或 Intent 参数，执行器没有构造出对应状态。
+真实应用实验用 Frida 作为触达证据。62.03% 与 54.80% 之间的差值另有解释，我们先别急着叫“静态误报率”：有些静态路径成立，但运行期需要登录、支付、特定文本、动态内容、权限或 Intent 参数，执行器没能构造出对应状态。
 
 把这些数字直接外推成 Android 17 应用的成功率是要冒险的：样本、目标选择、应用版本、设备、模型和时间预算都会改变结果；Compose 在现代应用中的占比还会进一步影响 GUI ID 提取。
 
@@ -549,7 +549,7 @@ Java.perform(() => {
 | GoalExplorer | screen/activity 导向探索 | Screen Transition Graph（页面转换图）+ 动态探索 | 引导单位偏页面和 Activity，不以方法级 backward slice（从目标反推相关语句的切片）为起点 |
 | PHIL | GAPS 内部受限 agent | 只在确定性步骤失败时处理 UI 障碍 | 它是 GAPS v3 的 fallback，不是 Guardian 的别名 |
 
-比较百分比时还要核对预算和分母。FlowDroid/DroidReach 的百分比属于静态路径生成，APE/Guardian/GoalExplorer/GAPS Dynamic 的属于动态方法触达；两列统计的根本是两件事，按高低排在一起比不出统计意义。
+比较百分比时还要核对预算和分母。FlowDroid/DroidReach 的百分比属于静态路径生成，APE/Guardian/GoalExplorer/GAPS Dynamic 的属于动态方法触达；这两列统计的是两件不同的事，直接按高低排在一起，得不出统计意义。
 
 ### 已验证的限制与工程外推
 
@@ -567,7 +567,7 @@ Java.perform(() => {
 
 反射、动态代理、Dagger/Hilt 依赖注入和 JNI 是 Android 程序分析中常见的额外风险，但论文没有提供这些类别的 GAPS 分项命中率。工程报告可以把它们列为待验证条件；这些场景的专项能力要单独实验，88.24% 或 56.93% 覆盖不到。
 
-Android 17 上还要额外核对：
+把流程落到 Android 17 的工程扩展上，还要额外核对：
 
 - 目标应用是否主要采用 Compose；
 - entry component（入口组件） 是否可从测试环境启动，权限和导出属性是否允许；

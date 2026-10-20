@@ -193,7 +193,7 @@ Android 12 进一步加严后台限制：
 - 后台启动前台服务时，如果不满足豁免条件，会抛 `ForegroundServiceStartNotAllowedException`
 - 精确闹钟（exact alarm）被归入特殊应用权限体系，`targetSdkVersion >= 31` 的应用要先确认自己是否获准使用
 
-Android 13 继续调整 Restricted bucket 与后台资源策略。分桶条件和阈值属于系统实现，厂商也能采用自己的非 Active 分桶标准，应用不能把某个天数当成稳定规则；Doze 允许名单（allowlist）等豁免还会改变待机桶限制是否生效（screen off + doze active）。
+Android 13 继续调整 Restricted bucket 与后台资源策略。分桶条件和阈值属于系统实现，厂商也能采用自己的非 Active 分桶标准，某个天数当不成稳定规则；Doze 允许名单（allowlist）等豁免还会改变待机桶限制是否生效（screen off + doze active）。
 
 Android 14 要求 FGS **显式声明类型**，系统会严格校验类型、专属权限和运行时前提。Android 15 又加入 `mediaProcessing` 类型，并为 `dataSync` / `mediaProcessing` 设置 6 小时预算和 `Service.onTimeout(...)` 超时回调。
 
@@ -307,7 +307,7 @@ FGS 能否运行取决于五项检查：调用时应用是否具备从后台启�
 | `systemExempted` | `FOREGROUND_SERVICE_SYSTEM_EXEMPTED` | Android 14 | 设备拥有者、紧急角色等系统级集成 |
 | `mediaProcessing` | `FOREGROUND_SERVICE_MEDIA_PROCESSING` | Android 15 | 转码、导出、媒体加工 |
 
-`camera`、`microphone`、`location` 等类型还会叠加 while-in-use 权限限制。即使应用满足“允许从后台启动 FGS”的豁免条件，只要相应的运行时权限仅在应用处于前台时有效，仍无法从后台启动这类 FGS。
+`camera`、`microphone`、`location` 等类型还会叠加 while-in-use 权限限制。即使应用满足“允许从后台启动 FGS”的豁免条件，只要相应的运行时权限仅在应用处于前台时有效，从后台启动这类 FGS 的路径仍然走不通。
 
 下面以 `dataSync` 服务为例，展示 manifest 中至少需要声明的权限与服务类型：
 
@@ -333,7 +333,7 @@ FGS 能否运行取决于五项检查：调用时应用是否具备从后台启�
 
 #### Android 17 的后台音频硬化
 
-API 37 对后台音频操作加了一层约束。在 Android 17 上运行的所有应用，从后台开始播放、请求音频焦点（audio focus，即协调多个应用音频输出优先级的机制）或调节音量时，都要有可见 Activity，或正在运行一个类型不是 `shortService` 的 FGS；`targetSdkVersion` 为 37 时，该 FGS 还要具备 WIU 资格。音频焦点用来协调多个应用的音频输出优先级。由 `BOOT_COMPLETED`（设备启动完成广播） 等后台触发器启动的 `mediaPlayback` FGS，如果没有用户操作形成的 WIU 资格，调用 `AudioManager.requestAudioFocus()` 会返回 `AUDIOFOCUS_REQUEST_FAILED`，播放和音量 API 也可能不抛异常地失败。
+API 37 对后台音频操作加了一层约束。在 Android 17 上运行的所有应用，从后台开始播放、请求音频焦点（audio focus，即协调多个应用音频输出优先级的机制）或调节音量时，都要有可见 Activity，或正在运行一个类型不是 `shortService` 的 FGS；`targetSdkVersion` 为 37 时，该 FGS 还要具备 WIU 资格。由 `BOOT_COMPLETED`（设备启动完成广播） 等后台触发器启动的 `mediaPlayback` FGS，如果没有用户操作形成的 WIU 资格，调用 `AudioManager.requestAudioFocus()` 会返回 `AUDIOFOCUS_REQUEST_FAILED`，播放和音量 API 也可能不抛异常地失败。
 
 有一项例外需要单独判断：`targetSdkVersion` 为 37 的应用如果已获得 exact alarm 权限，并且操作的是闹钟用途音频流 `USAGE_ALARM`，官方文档明确豁免 WIU 要求。普通媒体、播客和直播的后台播放，仍应在用户发起播放时启动 `mediaPlayback` FGS，并在播放结束或永久失去音频焦点时停止 FGS。
 
@@ -412,7 +412,7 @@ API 37 新增接收 `OnAlarmListener` 与 `Executor` 的 `setExactAndAllowWhileI
 
 ### CachedAppOptimizer 与 Binder：独立的缓存进程冻结机制
 
-Doze、待机桶和 Job 配额决定后台工作何时拿到执行机会；缓存应用冻结器（cached apps freezer）决定已经 cached 的进程还能不能继续占用 CPU。两类机制可能同时作用于同一个应用，但触发条件和判断依据不同。
+Doze、待机桶和 Job 配额决定后台工作何时拿到执行机会；缓存应用冻结器（cached apps freezer）决定已经 cached 的进程是否还能继续占用 CPU。两类机制可能同时作用于同一个应用，但触发条件和判断依据不同。
 
 Android 11 起支持 cached apps freezer。Android 14 及以上的官方行为是：在支持并启用该功能的设备上，应用进程进入 cached 状态 10 秒后被冻结；收到 Intent、启动 `JobService`、恢复 Activity 等生命周期事件时，系统立即解冻。设备可以通过配置关闭 freezer，文件锁或特定绑定关系也可能让 cached 进程暂不冻结。所以只凭“进入 cached 状态已满 10 秒”，还证明不了进程已经 frozen（已冻结）。
 
@@ -423,7 +423,7 @@ Android 11 起支持 cached apps freezer。Android 14 及以上的官方行为�
 - 运行时注册的广播可以排队到进程解冻后再交付；manifest 接收器收到广播时，系统会把进程提升出 cached 状态；
 - 如果某个应用的所有进程都被冻结，系统会终止它仍保持的 TCP socket（网络连接端点），避免 keepalive 继续唤醒 modem。
 
-这些动作都受设备支持情况或运行时条件影响：一次 freeze 证明不了 GC、compaction、ZRAM 写入必然发生，也无法按 4 KB / 16 KB 页大小推算出固定的内存回收收益。
+这些动作都受设备支持情况或运行时条件影响：一次 freeze 证明不了 GC、compaction、ZRAM 写入必然发生，按 4 KB / 16 KB 页大小也推算不出固定的内存回收收益。
 
 #### framework 的两阶段冻结
 
@@ -437,7 +437,7 @@ Freezer.setProcessFrozen(pid, uid, true)
 记录 frozen 状态，并执行冻结后的可选处理
 ```
 
-这段流程先挡住新的同步（sync） Binder 事务，再暂停全部线程，降低调用方等到一个已无法处理事务的进程而死锁的风险。两步并非原子操作，所以 framework 在 cgroup freeze 之后还会读取 Binder freezer 状态；冻结间隙里一旦出现新的待处理事务（pending transaction），系统会取消本次冻结或执行失败处理。
+这段流程先挡住新的同步（sync） Binder 事务，再暂停全部线程，降低调用方等到一个已经处理不了事务的进程而死锁的风险。两步之间没有原子性保证，所以 framework 在 cgroup freeze 之后还会读取 Binder freezer 状态；冻结间隙里一旦出现新的待处理事务（pending transaction），系统会取消本次冻结或执行失败处理。
 
 相关源码入口如下：
 
@@ -520,7 +520,7 @@ Perfetto 里后台线程与 RenderThread 同时活跃，只说明两者在并发
 
 **与 Android 功耗管理（5.2）的关系**：5.2 节侧重 WakeLock、`PowerManagerService`、device idle 等系统机制；本节侧重 framework 规则和 API 选择，说明哪些条件会延后或拒绝应用层后台任务。
 
-**与响应速度（8.4）的关系**：BAL 限制从 Android 10 开始加严，后续版本仍在增加约束。后台能否启动 Activity，取决于用户可见性、通知、`PendingIntent`、`IntentSender` 路径和系统豁免条件，旧版本经验不能直接照搬。
+**与响应速度（8.4）的关系**：BAL 限制从 Android 10 开始加严，后续版本仍在增加约束。后台能否启动 Activity，取决于用户可见性、通知、`PendingIntent`、`IntentSender` 路径和系统豁免条件，旧版本经验照搬不过来。
 
 ### 版本与实现边界
 
@@ -561,7 +561,7 @@ Doze 的触发条件是灭屏 + 静止 + 未充电，与时间无关。白天如
 后台规则直接控制后台任务的执行机会，但后台工作造成的 CPU 争用、内存压力和热节流也会拖慢前台应用。减少无效后台工作同样有助于改善前台性能。
 ## 任务约束、批处理与执行窗口
 
-平台允许应用在后台执行之后，任务调度器还要综合网络、充电、空闲和配额来挑时机；WorkManager 的可靠语义最终就落在这些系统调度能力上。
+上一节的进程状态和待机桶先决定应用能不能在后台执行；过了这一关，任务调度器还要综合网络、充电、空闲和配额来挑时机，WorkManager 的可靠语义最终就落在这些系统调度能力上。我们把这套机制拆开看。
 
 ### 为什么后台任务需要系统调度
 
@@ -579,7 +579,7 @@ Doze 的系统功耗背景见 5.2 节；App Standby 与后台执行限制的策�
 
 ### JobScheduler 的调度模型
 
-#### 声明执行条件，而非预订一个时刻
+#### 声明执行条件，把时机交给系统
 
 AlarmManager 面向时间点或时间窗口；JobScheduler 面向带条件的工作。下面的代码声明“联网且电量不低后再同步”，没有承诺在某个固定时刻开始：
 
@@ -595,7 +595,7 @@ val job = JobInfo.Builder(
 val result = context.getSystemService(JobScheduler::class.java).schedule(job)
 ```
 
-这段代码只负责构建并提交任务。生产代码还要检查 `schedule()` 的返回值：`RESULT_SUCCESS` 只说明系统接受了任务，不表示任务已经启动；参数无效、达到调度限制或 Expedited Job 没有可用配额时，都可能返回 `RESULT_FAILURE`，也可能在构建阶段就抛异常。
+这段代码只负责构建并提交任务。我们在生产代码里还要检查 `schedule()` 的返回值：`RESULT_SUCCESS` 只说明系统接受了任务，不表示任务已经启动；参数无效、达到调度限制或 Expedited Job 没有可用配额时，都可能返回 `RESULT_FAILURE`，也可能在构建阶段就抛异常。
 
 AlarmManager 仍适用于闹钟、日历提醒等面向用户的精确时间事件，其精确闹钟访问权限、Doze 行为和各重载的生命周期差异前文已经讲过。普通同步和维护任务应优先交给 JobScheduler 或 WorkManager，为系统保留合并任务和唤醒的空间。
 
@@ -636,19 +636,19 @@ App: JobScheduler.schedule(JobInfo)
 | `JobConcurrencyManager` | 根据并发容量、工作类型（work type）和优先级给 job 分配执行上下文 |
 | `JobServiceContext` | 绑定应用的 `JobService`，管理回调、超时、停止原因和 WakeLock |
 
-Controller 家族包括 `ConnectivityController`、`BatteryController`、`IdleController`、`StorageController`、`TimeController`、`ContentObserverController`、`QuotaController`、`BackgroundJobsController`、`DeviceIdleJobsController`、`PrefetchController`、`FlexibilityController` 等。它们并不是依次执行的过滤器：每个 `JobStatus` 都记录当前约束是否满足，状态一变，服务就重新挑选可运行的任务。
+Controller 家族包括 `ConnectivityController`、`BatteryController`、`IdleController`、`StorageController`、`TimeController`、`ContentObserverController`、`QuotaController`、`BackgroundJobsController`、`DeviceIdleJobsController`、`PrefetchController`、`FlexibilityController` 等。这些 controller 各自独立维护自己负责的那类状态：每个 `JobStatus` 都记录当前约束是否满足，任何一个 controller 的状态一变，服务就重新挑选可运行的任务。
 
 #### JobStore、重启与持久化边界
 
 调用 `setPersisted(true)` 的 job 会由 `JobStore` 写入 `/data/system/job/jobs.xml`，设备重启后可以恢复。使用该能力需要 `RECEIVE_BOOT_COMPLETED` 权限。未持久化的 job 不会在系统重启后自动恢复。
 
-持久化只覆盖 JobScheduler 自己的登记信息。业务数据的事务完整性和幂等性——同一操作重复执行时不产生重复记录或其他副作用——仍要应用自己保证。卸载应用、清除数据或取消 job 都会改变这份状态；`JobInfo` 里的临时对象也受限，例如持久化 job 不能依赖写不进持久存储的 `ClipData`。
+持久化只覆盖 JobScheduler 自己的登记信息。业务数据的事务完整性和幂等性——同一操作重复执行时不产生重复记录或其他副作用——仍要应用自己保证。卸载应用、清除数据或取消 job 都会改变这份状态；`JobInfo` 里的临时对象也受限，例如持久化 job 依赖不了写不进持久存储的 `ClipData`。
 
 AlarmManager 的 alarm 默认不会跨重启保留，应用通常在收到设备启动完成广播 `BOOT_COMPLETED` 后重新登记。两种 API 的差异在于调度记录能否由系统恢复，与某个应用组件在重启后是否存在无关。
 
 #### JobService 生命周期与系统 WakeLock
 
-`JobService.onStartJob()` 和 `onStopJob()` 都在应用主线程回调，因此不能直接在回调中执行耗时工作。下面的示例把同步任务交给 I/O 协程，并处理正常完成与系统停止两种情况：
+`JobService.onStartJob()` 和 `onStopJob()` 都在应用主线程回调，耗时工作要放到回调之外执行。下面的示例把同步任务交给 I/O 协程，并处理正常完成与系统停止两种情况：
 
 ```kotlin
 class SyncJobService : JobService() {
@@ -713,7 +713,7 @@ class SyncJobService : JobService() {
 
 #### 优先级、Standby Bucket 与配额
 
-JobScheduler 不会按照 `schedule()` 的调用顺序逐个运行任务。候选任务同时受约束、优先级、应用状态、待机桶（Standby Bucket）、配额、系统负载和并发容量影响。
+JobScheduler 挑任务的依据是约束、优先级、应用状态、待机桶（Standby Bucket）、配额、系统负载和并发容量，`schedule()` 的调用顺序决定不了执行顺序。
 
 `JobInfo.Builder.setPriority()` 在 API 33 公开，用来比较调用应用自己的 job；Android 14 起，文档进一步把排序范围限定在同一个 job 命名空间（namespace）内，跨应用争抢 CPU 时它说了不算。重试 job 的有效优先级还可能逐步降低，所以把所有任务都设成 `PRIORITY_HIGH`，也换不来稳定的低延迟。
 
@@ -724,11 +724,11 @@ App Standby Buckets 的版本边界需要分开看：
 - 档位越靠后，后台 job、alarm 和网络活动通常受到更严格限制；
 - Bucket 是系统策略的输入，应用拿不到一个可靠的开关：用户活跃使用可能改善状态，但某次交互能换来多少额度，应用最好别做假定。
 
-`QuotaController` 按一组随版本演进的策略和执行历史管理配额，没有固定的“每天 N 分钟”公式可套；设备厂商、系统版本、应用状态和 bucket 都会影响结果。Android 16 又扩大了运行时配额的适用范围：前台启动、随后进入后台的 job，以及与 Foreground Service 并行的 job，都不能再假定始终不计入后台 job 运行额度。
+`QuotaController` 按一组随版本演进的策略和执行历史管理配额，没有固定的“每天 N 分钟”公式可套；设备厂商、系统版本、应用状态和 bucket 都会影响结果。Android 16 又扩大了运行时配额的适用范围：前台启动、随后进入后台的 job，以及与 Foreground Service 并行的 job，先前“始终不计入后台 job 运行额度”的假定不再成立。
 
 这里的 quota 记录 job 执行会话经过的实际时长（elapsed time），不读取线程真正占用 CPU 的时间（CPU time）。`JobService` 里阻塞在网络、等 Binder 或主动休眠（sleep），仍可能占用执行窗口；反过来，多线程并行也不会把各线程的 CPU 时间加总成一项公开的“CPU 配额”。资料里出现“CPU 时间配额”这个词时，先核对它指系统执行时长、厂商私有策略，还是应用自己的 CPU 预算。
 
-一次 job 能否开始，可以按五项检查定位：调度请求已被接受；显式与隐式约束已满足；quota 与待机策略允许执行；任务拿到并发槽位并通过优先级选择；`JobServiceContext` 成功绑定并执行服务。任务开始后还可能因超时、约束失效、thermal、Doze 或其他系统原因停止。`schedule()` 成功、`isReady()` 为真、`onStartJob()` 已回调，是三个不同的状态。
+一次 job 能否开始，我们可以按五项检查定位：调度请求已被接受；显式与隐式约束已满足；quota 与待机策略允许执行；任务拿到并发槽位并通过优先级选择；`JobServiceContext` 成功绑定并执行服务。任务开始后还可能因超时、约束失效、thermal、Doze 或其他系统原因停止。`schedule()` 成功、`isReady()` 为真、`onStartJob()` 已回调，是三个不同的状态。
 
 排查任务积压时，显式约束和配额要一起看：网络、电量都已满足，而 `PENDING_JOB_REASON_QUOTA` 长时间存在，继续放宽网络条件是没有用的；这时该做的是降低触发频率、合并请求、缩短执行时间，或重新判断任务是否属于用户发起的传输。
 
@@ -739,8 +739,8 @@ Android 12（API 31）加入 `setExpedited(true)`。Expedited Job 适合重要�
 `JobInfo` 对它的校验规则很明确：
 
 - 只能设置网络、存储不低和持久化相关条件；
-- 不能设置最小延迟、deadline、周期或 Content URI 触发；
-- 不能同时标记为用户发起（user-initiated）；
+- 最小延迟、deadline、周期、Content URI 触发一概不支持；
+- 与用户发起（user-initiated）标记互斥；
 - 优先级只能是 high 或 max。
 
 直接使用 JobScheduler 时，如果调用时没有 Expedited 配额，`schedule()` 会立即返回 `RESULT_FAILURE`，job 不会进入系统队列。已经处于等待状态（pending）的 Expedited Job 后来缺少配额时，可以按普通 job 运行。应用应记录 `schedule()` 结果，并通过 `JobParameters.isExpeditedJob()` 判断本次执行是否仍具备 expedited 属性。
@@ -753,7 +753,7 @@ val request = OneTimeWorkRequestBuilder<SyncWorker>()
     .build()
 ```
 
-在这段代码中，`RUN_AS_NON_EXPEDITED_WORK_REQUEST` 会在配额不足时将任务改为普通 work；另一选项 `DROP_WORK_REQUEST` 会取消该 work。选择前者时，业务必须接受延后；选择后者时，业务必须接受任务被丢弃。Expedited 仍可能因约束或系统负载而推迟，不能用于精确定时。
+在这段代码中，`RUN_AS_NON_EXPEDITED_WORK_REQUEST` 会在配额不足时将任务改为普通 work；另一选项 `DROP_WORK_REQUEST` 会取消该 work。选择前者时，业务必须接受延后；选择后者时，业务必须接受任务被丢弃。Expedited 仍可能因约束或系统负载而推迟，当不了精确定时的工具。
 
 #### User-Initiated Data Transfer
 
@@ -767,13 +767,13 @@ Android 14（API 34）加入 `setUserInitiated(true)`，简称 UIDT。它适用�
 - 运行期间通过 `JobService.setNotification()` 提供通知；
 - 不设置延迟、deadline、周期、device-idle 或 Content URI 触发。
 
-UIDT 不使用普通 job 配额，在约束满足且系统状态允许时会尽快开始。用户从系统提供的入口停止任务后，应用不能在没有提示的情况下重新提交同一项传输。自动同步、遥测上传等缺少明确用户动作的任务不属于 UIDT。
+UIDT 不使用普通 job 配额，在约束满足且系统状态允许时会尽快开始。用户从系统提供的入口停止任务后，应用重新提交同一项传输前必须先提示用户。自动同步、遥测上传等缺少明确用户动作的任务不属于 UIDT。
 
 ### WorkManager 的架构与性能边界
 
 #### “可靠执行”具体涵盖什么
 
-WorkManager 适合可延期、异步，而且需要在应用进程或设备重启后继续安排的工作。它将 `WorkSpec`、依赖关系、输入输出、重试次数和状态写入 Room 数据库（AndroidX 提供的 SQLite 数据库访问层）；初始化时恢复未完成记录，再交给可用的调度器。
+顺着上一节的调度模型，WorkManager 在系统调度之上补的是持久化、依赖与重试这层可靠性，适合可延期、异步，而且需要在应用进程或设备重启后继续安排的工作。它将 `WorkSpec`、依赖关系、输入输出、重试次数和状态写入 Room 数据库（AndroidX 提供的 SQLite 数据库访问层）；初始化时恢复未完成记录，再交给可用的调度器。
 
 这项可靠性有清楚的边界：
 
@@ -833,7 +833,7 @@ Android 16 起，long-running worker 会消耗应用的 JobScheduler 运行时�
 
 ### 后台任务选型
 
-选择 API 时，先判断工作是否必须跨进程生命周期保留，再判断它是否由用户刚刚明确发起，以及允许延后的时间和预计持续时长。
+我们选择 API 时，先判断工作是否必须跨进程生命周期保留，再判断它是否由用户刚刚明确发起，以及允许延后的时间和预计持续时长。
 
 | 场景 | 推荐入口 | 需要接受的限制 |
 |---|---|---|
@@ -879,7 +879,7 @@ if (Build.VERSION.SDK_INT >= 37) {
 }
 ```
 
-这段代码返回的各项时长不能直接加成“总等待时间”：多个原因可以在同一时间段重叠，各项之和可能大于 job 从开始等待到查询时经过的墙钟时间（wall-clock time）。统计不跨设备重启保留，job 成功完成或被取消后也会清除；查询无效的 pending job 还可能抛异常，调试代码要检查系统版本和任务状态。
+这段代码返回的各项时长直接加起来当不成“总等待时间”：多个原因可以在同一时间段重叠，各项之和可能大于 job 从开始等待到查询时经过的墙钟时间（wall-clock time）。统计不跨设备重启保留，job 成功完成或被取消后也会清除；查询无效的 pending job 还可能抛异常，调试代码要检查系统版本和任务状态。
 
 `PENDING_JOB_REASON_DEVICE_STATE` 在 API 34 已存在，用来概括 Doze、省电模式、内存压力、热状态（thermal status）等系统条件。API 37 新增累计统计接口，但没有将该原因细分为一组固定的 thermal 或 battery-saver 子原因。
 
@@ -984,7 +984,7 @@ Android Vitals 当前将“24 小时内累计持有至少 2 小时的非豁免 p
 
 ### 一套可复现的排查顺序
 
-遇到“WorkManager 一直处于 `ENQUEUED`”或“`JobService` 没有回调”时，可以按下面的顺序缩小问题范围：
+我们排查“WorkManager 一直处于 `ENQUEUED`”或“`JobService` 没有回调”这类问题时，可以按下面的顺序缩小范围：
 
 1. **确认应用是否成功提交。** 记录 `schedule()` 结果或 WorkManager UUID，检查是否被 unique-work 策略替换、保留或取消。
 2. **确认底层登记。** 用 `dumpsys jobscheduler <package>` 找业务 JobService 或 WorkManager `SystemJobService`。
@@ -992,7 +992,7 @@ Android Vitals 当前将“24 小时内累计持有至少 2 小时的非豁免 p
 4. **检查隐式策略。** 查看 standby bucket、quota、Doze、省电、热状态（thermal）和后台限制；API 36 及以上同时读取 pending reasons。
 5. **确认是否曾启动又被停止。** 查看 stop reason、重试次数、退避和 Worker 日志；`onStopJob()` 后仍继续运行属于应用缺陷。
 6. **采集时序证据。** 用 Perfetto 对齐调度（schedule）、状态、WakeLock、CPU 和网络活动；必要时再用 bugreport / `batterystats` 查看长时间汇总。
-7. **重新检查 API 选择。** 如果任务要求与 API 用途冲突，例如使用 periodic work 做整点提醒，调整约束也无法解决设计问题。
+7. **重新检查 API 选择。** 如果任务要求与 API 用途冲突，例如使用 periodic work 做整点提醒，调整约束救不了设计问题。
 
 建议为每次业务任务生成稳定的关联 ID，并在同一组诊断记录中写入 WorkRequest UUID、job ID、服务端请求 ID 和完成状态，这样可以通过一个标识追踪跨组件的同一任务。日志还应区分“尚未开始、开始后失败、系统停止、业务取消、服务端已成功”。
 
@@ -1002,7 +1002,7 @@ Android Vitals 当前将“24 小时内累计持有至少 2 小时的非豁免 p
 
 TARE（The Android Resource Economy）曾尝试用应用资源信用（ARC）账户，加上动作账单、价格（price）和奖励（reward），协调 JobScheduler 与 AlarmManager 的后台资源。它只出现在 Android 13—14 的 AOSP 源码里；Android 14 的 `EconomyManager` 仍标记为隐藏 API `@hide` / 测试 API `@TestApi`，默认模式为关闭，第三方应用从未拿到可依赖的公开配额规则。
 
-历史实现也不是按每个 UID 的 mAh 直接扣 ARC：`Analyst` 读取整机灭屏后的经过时间、灭屏放电量（screen-off discharge）与电量变化，用来校准全局消耗上限；具体应用的账目来自调度动作（action）和策略（policy）。BatteryStats 的耗电归因和 TARE 的应用账本衡量对象不同，两者不能互相替代。
+历史实现也不是按每个 UID 的 mAh 直接扣 ARC：`Analyst` 读取整机灭屏后的经过时间、灭屏放电量（screen-off discharge）与电量变化，用来校准全局消耗上限；具体应用的账目来自调度动作（action）和策略（policy）。BatteryStats 的耗电归因和 TARE 的应用账本衡量对象不同，两者互相替代不了。
 
 AOSP 提交 [`4a98dd235a708115db41e722776eff3ef9ed09fe`](https://android.googlesource.com/platform/frameworks/base/+/4a98dd235a708115db41e722776eff3ef9ed09fe) 于 2024 年 3 月删除了 `EconomyManager`、`InternalResourceService`、`TareController`、`CONSTRAINT_TARE_WEALTH`、`resource_economy` 服务和相关 dump 路径，并恢复 `QuotaController` 的持续生效。Android 15—17 均不包含 TARE；在这些版本中，`PENDING_JOB_REASON_QUOTA` 表示 JobScheduler 的时间或次数配额，与 ARC 余额无关，`dumpsys tare` 在这些版本上也不再适用。OEM 若保留同名私有实现，取证时要针对相应系统构建单独进行。
 
@@ -1036,7 +1036,7 @@ Expedited 使用专用配额，允许的约束种类也更少。直接 JobSchedu
 
 #### “Foreground Worker 不消耗 JobScheduler 配额”
 
-Android 16 起，WorkManager long-running worker 仍会占用 JobScheduler 运行时配额。把普通 Worker 提升为前台不能修复频率过高或单次工作过重的问题。
+Android 16 起，WorkManager long-running worker 仍会占用 JobScheduler 运行时配额。把普通 Worker 提升为前台，修不好频率过高或单次工作过重的问题。
 
 #### “force-stop 后 WorkManager 会自行唤醒应用”
 
@@ -1047,7 +1047,7 @@ force-stop 会取消该包的系统 job 和 alarm，并阻止后台入口恢复�
 过多约束会缩小执行窗口并制造积压。任务在用户打开应用后集中恢复，可能带来明显 CPU 和网络峰值。只保留成功所需的硬条件，其余策略通过批量、限速和业务降级处理。
 ## Hibernation 状态与恢复成本
 
-普通后台限制决定任务什么时候能跑；Hibernation 面向长期未使用的应用，改变的是权限、缓存和包状态。应用恢复使用时，启动和数据准备都要重新测量。
+普通后台限制决定任务什么时候能跑；Hibernation 面向长期未使用的应用，改变的是权限、缓存和包状态。应用恢复使用时的启动和数据准备，我们要重新测量。
 
 App Hibernation 面向“安装后长期没有被使用”的应用：把包置于类似用户手动 Force stop（强行停止） 的状态，回收缓存和可选的 dexopt（DEX 代码优化） 产物，并配合 unused-app policy（未使用应用策略） 重置一部分运行时权限。对应用团队来说，后果集中在三点：原有后台入口失效；权限不会在退出休眠时自动恢复；再次首次启动时，冷进程启动、缓存重建和代码重新优化可能一起来。
 
@@ -1104,11 +1104,11 @@ flowchart TD
 | 检查周期 | 15 天 | `permissions/auto_revoke_check_frequency_millis` |
 | Hibernation 总开关 | 开启 | `app_hibernation/app_hibernation_enabled` |
 
-周期任务属于 PermissionController，AOSP 包名为 `com.android.permissioncontroller`，Job ID 为 `2`；Google 系统镜像和官方测试文档里的包名可能是 `com.google.android.permissioncontroller`。它是 persisted periodic Job（重启后仍保留的周期任务），重启后仍保留，刚创建新调度时会跳过第一次过早执行——`AppHibernationService` 并不会每 24 小时扫描一次。
+周期任务属于 PermissionController，AOSP 包名为 `com.android.permissioncontroller`，Job ID 为 `2`；Google 系统镜像和官方测试文档里的包名可能是 `com.google.android.permissioncontroller`。它是 persisted periodic Job（重启后仍保留的周期任务），刚创建新调度时会跳过第一次过早执行——`AppHibernationService` 并不会每 24 小时扫描一次。
 
-这些值可以被 DeviceConfig 或产品配置修改，90 天只是 AOSP 默认值，不是所有 OEM、所有时刻都不变的规则。
+这些值可以被 DeviceConfig 或产品配置修改，90 天只是 AOSP 默认值，具体设备以自己的 DeviceConfig 和产品配置为准。
 
-默认配置还把 `app_hibernation/app_hibernation_targets_pre_s_apps` 设为关闭。`HibernationController` 会跳过 `targetSdkVersion < 31` 应用的用户级 Force stop 和 cache 回收，但同一批 unused apps 仍可能进入运行时权限自动重置流程；旧 target 应用会不会被重置权限，还取决于系统记录应用操作授权状态的 app-op（系统记录应用操作授权状态的机制）、设备形态和其他豁免条件。所以单看“设备运行 Android 12+”，判断不了全部动作是否都已发生。
+默认配置还把 `app_hibernation/app_hibernation_targets_pre_s_apps` 设为关闭。`HibernationController` 会跳过 `targetSdkVersion < 31` 应用的用户级 Force stop 和 cache 回收，但同一批 unused apps 仍可能进入运行时权限自动重置流程；旧 target 应用会不会被重置权限，还取决于 app-op（系统记录应用操作授权状态的机制）、设备形态和其他豁免条件。所以单看“设备运行 Android 12+”，判断不了全部动作是否都已发生。
 
 #### “未使用”如何判定
 
@@ -1138,11 +1138,11 @@ PermissionController 会排除多类包，其中包括：
 - system UID、设备策略管理、运营商特权等系统角色；
 - 某些通话、安装器、系统健康类应用；
 - 通过 `OP_SYSTEM_EXEMPT_FROM_HIBERNATION` 获得系统豁免的包；
-- 用户在设置中关闭 unused-app restriction（限制状态，受 feature flag 功能开关控制）s 的包。
+- 用户在设置中关闭 unused-app restriction（限制状态，受 feature flag 功能开关控制）的包。
 
 筛选发生时，进程重要性不低于 `IMPORTANCE_CANT_SAVE_STATE` 的应用本轮会被跳过。前台服务的运行本身不会刷新最近使用时间，但活跃且重要的进程可以让应用暂时避开本轮休眠；服务结束后，原有的最近使用时间不更新，应用仍可能在后续扫描中再次成为候选。
 
-设置界面里的用户开关通常叫“Pause app activity if unused”。`AppHibernationManager` 是 `@SystemApi`，还要求 `MANAGE_APP_HIBERNATION` 特权，普通应用不应调用；应用侧应通过 AndroidX Core 的 unused-app restrictions API 查询功能状态，只在确有必要维持后台能力时才引导用户进系统设置。
+设置界面里的用户开关通常叫“Pause app activity if unused”。`AppHibernationManager` 是 `@SystemApi`，还要求 `MANAGE_APP_HIBERNATION` 特权，普通应用要避开这个调用入口；应用侧应通过 AndroidX Core 的 unused-app restrictions API 查询功能状态，只在确有必要维持后台能力时才引导用户进系统设置。
 
 ### 状态模型：用户级与全局级是两层
 
@@ -1166,7 +1166,7 @@ PermissionController 会排除多类包，其中包括：
 
 #### 状态持久化位置
 
-状态用 protobuf（Protocol Buffers） 列表文件持久化，并非每个应用一个 XML：
+状态用 protobuf（Protocol Buffers） 列表文件持久化，所有应用共用列表文件，没有每个应用一个 XML 的拆分：
 
 | 层级 | 路径 | 主要持久字段 |
 |---|---|---|
@@ -1181,7 +1181,7 @@ PermissionController 会排除多类包，其中包括：
 
 #### Force stop 与后台入口
 
-按照官方定义，休眠应用既不能从后台运行 Job 或 Alarm，也收不到推送通知，包括高优先级 FCM 消息；用户再次与应用交互之前，后台入口唤不醒这个进程。
+按照官方定义，休眠应用从后台运行 Job 或 Alarm 的通道全部关闭，推送通知也一并收不到，包括高优先级 FCM 消息；用户再次与应用交互之前，后台入口唤不醒这个进程。
 
 Android 15 起，package stopped state（包的已停止状态） 的规则进一步明确：
 
@@ -1269,7 +1269,7 @@ Hibernation 后没有原进程可以复用，所以再次打开至少会经历�
 - 权限集合（cpuset）、后台任务重建时刻和网络缓存命中率；
 - build、设备、温度、编译模式、Baseline Profile 与迭代次数。
 
-`wasForceStopped()` 只能证明此次启动前包处于 force-stopped 状态，无法单独区分用户手动 Force stop、Hibernation，或其他让包进入 stopped 状态的路径。
+`wasForceStopped()` 只能证明此次启动前包处于 force-stopped 状态；用户手动 Force stop、Hibernation，还是其他让包进入 stopped 状态的路径，要靠别的证据区分。
 
 ### 观测与复现实验
 
@@ -1285,7 +1285,7 @@ adb shell cmd app_hibernation set-state --user 0 PACKAGE_NAME true
 adb shell cmd app_hibernation set-state --global PACKAGE_NAME true
 ```
 
-第一组命令返回布尔值；第二组命令直接改变 `system_server` 中的状态，并异步执行相应动作。为了减少前一轮状态对结果的干扰，应在专用测试设备和测试账号上执行，并在每轮开始前确认两个层级的初始状态。
+第一组命令返回布尔值；第二组命令直接改变 `system_server` 中的状态，并异步执行相应动作。为了减少前一轮状态对结果的干扰，我们在专用测试设备和测试账号上执行，并在每轮开始前确认两个层级的初始状态。
 
 #### 运行完整的 PermissionController 策略
 
@@ -1369,7 +1369,7 @@ WorkManager 可以简化重启后的持久工作恢复，但仍应验证具体�
 
 #### 查询 unused-app restrictions 功能状态
 
-下面的 Kotlin 示例用于查询“该应用是否受 unused-app restrictions 管理”，不能用来判断应用当前是否已经 hibernated：
+下面的 Kotlin 示例用于查询“该应用是否受 unused-app restrictions 管理”，它回答不了“应用当前是否已经 hibernated”：
 
 ```kotlin
 val future = PackageManagerCompat.getUnusedAppRestrictionsStatus(context)

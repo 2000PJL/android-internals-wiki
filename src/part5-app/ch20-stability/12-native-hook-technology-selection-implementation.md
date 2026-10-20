@@ -36,13 +36,13 @@ Native Hook 指在进程内修改本地代码（C/C++）的函数解析结果或
 
 > 源码基线：AOSP `android-17.0.0_r1`。本文讨论普通应用进程中的 arm64（AArch64）Native Hook。
 
-Android 17 没有公开的 Hook API，Hook 框架也拿不到额外权限。业务代码优先走公开 NDK（Native Development Kit） API、编译期插桩、显式代理或系统诊断工具；只有无法改造调用方、诊断收益又足以覆盖稳定性成本时，我们再评估运行时 Hook。
+Android 17 没有公开的 Hook API，Hook 框架也拿不到额外权限。业务代码优先走公开 NDK（Native Development Kit） API、编译期插桩、显式代理或系统诊断工具；只有调用方改造不了、诊断收益又足以覆盖稳定性成本时，我们再评估运行时 Hook。
 
 文中沿用源码和业内常用名称：proxy 指 Hook 命中后先进入的代理函数；linker 指 bionic 动态链接器；debuggerd 指 Android 的 Native 崩溃转储组件；ART 指 Android Runtime。
 
 ## 1. 先确定要改写哪一层
 
-Native Hook 的常见方案分别改写三个不同对象，我们先把它们分清楚。ELF（Executable and Linkable Format）是 Android Native 可执行文件和 `.so` 的二进制格式。PLT（Procedure Linkage Table）负责把外部函数调用引向动态链接结果。GOT（Global Offset Table）保存这类运行时地址，实践中所说的 PLT/GOT Hook，改写的通常就是 GOT 中与动态重定位对应的槽位。
+Native Hook 的常见方案分别改写三个不同对象，我们先把它们分清楚。Android Native 的可执行文件和 `.so` 都采用 ELF（Executable and Linkable Format）格式；一个 ELF 调用外部函数时，PLT（Procedure Linkage Table）负责把调用引向动态链接结果，解析出的运行时地址则由 GOT（Global Offset Table）保存。实践中所说的 PLT/GOT Hook，改写的通常就是 GOT 中与动态重定位对应的槽位。
 
 | 方案 | 改写对象 | 能观察到什么 | 主要盲区 |
 |---|---|---|---|
@@ -52,7 +52,7 @@ Native Hook 的常见方案分别改写三个不同对象，我们先把它们�
 
 PLT/GOT Hook 按调用方修改重定位槽，Inline Hook 按目标指令地址修改执行流。同样是拦 `malloc`，两者覆盖面也不同：修改 `libfoo.so` 中 `malloc` 的导入槽，只影响 `libfoo.so` 经该槽发出的调用；修改 `libc.so` 中 `malloc` 的入口，可能影响进程内更多调用者，也会放大递归和并发风险。
 
-Trap Hook 接近用户态软件断点：用断点指令触发 `SIGTRAP`，再由信号处理函数改写执行现场。它与 debuggerd 之间没有扩展接口，也不同于调试器用 `ptrace` 控制目标线程。框架要管理或正确串接 `SIGTRAP` 的 signal disposition（信号处置），识别自有断点，并通过 `ucontext_t` 读取或修改信号发生时的寄存器和 PC（Program Counter，程序计数器）。
+Trap Hook 接近用户态软件断点：用断点指令触发 `SIGTRAP`，再由信号处理函数改写执行现场。它与 debuggerd 之间没有扩展接口；调试器用 `ptrace` 控制目标线程，走的是另一套机制。框架要管理或正确串接 `SIGTRAP` 的 signal disposition（信号处置），识别自有断点，并通过 `ucontext_t` 读取或修改信号发生时的寄存器和 PC（Program Counter，程序计数器）。
 
 ## 2. 选型从“能否命中”开始
 
@@ -81,6 +81,8 @@ heapprofd 是采样式 Native 堆分析器，GWP-ASan 通过抽样加 guard page
 这些问题全部有了答案，Hook 才能进入面向全部用户的路径。
 
 ## 3. Android 17 linker 的约束
+
+linker 的行为决定 Hook 能做什么、难在哪里。这一节按绑定时机、写权限、`DT_TEXTREL` 声明、库的可见范围和页大小五条线来看。
 
 ### 3.1 立即绑定：装载时完成函数地址解析
 
@@ -170,11 +172,11 @@ case DT_TEXTREL:
 
 64 位 `.so` 一旦声明 `DT_TEXTREL`，`dlopen()` 就会失败。这项检查针对 ELF 自己声明的装载期代码重定位。
 
-Inline Hook 发生在库装载完成后，由进程自己调 `mprotect()` 改内存里的指令，和装载检查走的是两条路径；`DT_TEXTREL` 既预测不了 Inline Hook 的成败，也谈不上为它的安全性背书，两者要分别评估。
+Inline Hook 发生在库装载完成后，由进程自己调 `mprotect()` 改内存里的指令，和装载检查走的是两条路径；`DT_TEXTREL` 只约束装载期的代码重定位，Inline Hook 的成败和安全性要单独评估。
 
 ### 3.4 私有库和 linker namespace
 
-linker namespace（动态链接器命名空间）决定一组 ELF 可访问哪些库。从 Android 7.0 起，应用动态链接非 NDK 平台库就受到限制，namespace 在此之上进一步收窄可见范围。内存里能看到某个符号，只说明这个构建里有它；平台是否允许应用链接、ABI 是否稳定，都要另行确认。
+还有一层约束来自 linker namespace（动态链接器命名空间）：它决定一组 ELF 可访问哪些库。从 Android 7.0 起，应用动态链接非 NDK 平台库就受到限制，namespace 在此之上进一步收窄可见范围。内存里能看到某个符号，只说明这个构建里有它；平台是否允许应用链接、ABI 是否稳定，都要另行确认。
 
 如果诊断方案必须依赖私有符号，至少要把设备 API、ABI、Build ID（二进制构建标识）、符号名和函数开头的指令摘要纳入允许列表；任何一项不匹配就停用，猜测的偏移一律不上线。
 
@@ -193,7 +195,7 @@ ShadowHook 和 ByteHook 的当前源码都通过 `getpagesize()` 初始化页大
 
 ### 4.1 从 ELF 到目标槽
 
-一条调用能否被 PLT/GOT Hook 命中，要看调用方 ELF 的动态段里能不能找到对应重定位。`PT_DYNAMIC` 是 ELF 的动态链接信息段；Android packed relocations 是压缩保存重定位表的格式。
+PLT/GOT Hook 的第一步，是在调用方 ELF 的动态段里找到对应重定位——一条调用找得到，才谈得上命中。`PT_DYNAMIC` 是 ELF 的动态链接信息段；Android packed relocations 是压缩保存重定位表的格式。
 
 ```text
 dl_iterate_phdr()
@@ -261,7 +263,7 @@ ByteHook 会在动态装载后刷新 ELF 管理器；ShadowHook 也能为尚未�
 
 ### 5.1 基本过程
 
-Inline Hook 会覆盖目标位置的一组指令，再把这些指令搬到 trampoline——一段保存原指令、执行完跳回原函数的跳板代码。搬迁之后，我们要把所有依赖原 PC 的指令重新编码。AArch64 没有 Thumb 状态，指令重写的风险一点没少。
+Inline Hook 的做法是覆盖目标位置的一组指令，再把这些指令搬到 trampoline——一段保存原指令、执行完跳回原函数的跳板代码。搬完之后，我们要把所有依赖原 PC 的指令重新编码。AArch64 没有 Thumb 状态，省掉了指令集状态切换，指令重写要处理的问题却一个都省不掉。
 
 | 维度 | ARM32 (AArch32/Thumb) | ARM64 (AArch64) |
 |------|----------------------|------------------|
@@ -292,24 +294,24 @@ AArch64 Inline Hook 一般需要完成：
 
 示例中的“典型 4K 偏差”只用于展示错误现象；`ADRP` 按 4 KB 地址页计算，搬迁错误造成的最终偏差却取决于新旧 PC，要按实际重算，照搬 4 KB 会出错。
 
-步骤 7 同样省不得。代码经数据写入路径更新后，其他核心取指前必须看到新指令；Android NDK 代码中通常使用 `__builtin___clear_cache(begin, end)`。bionic 只在 32 位 `__arm__` 下声明 `cacheflush()`，头文件也建议新代码改用跨架构的 builtin。
+步骤 7 同样必做。代码经数据写入路径更新后，其他核心取指前必须看到新指令；Android NDK 代码中通常使用 `__builtin___clear_cache(begin, end)`。bionic 只在 32 位 `__arm__` 下声明 `cacheflush()`，头文件也建议新代码改用跨架构的 builtin。
 
 ShadowHook 的 arm64 重写器显式识别 `B`、`BL`、`B.cond`、`ADR`、`ADRP`、literal load、`CBZ/CBNZ`、`TBZ/TBNZ` 等类型，每类指令都有独立的长度计算和 rewrite 分支；“复制几条指令后跳回去”这样的做法，离可靠实现还很远。
 
 ### 5.2 branch island 与并发改写
 
-AArch64 的直接 `B` 使用 26 位有符号立即数并按 4 字节缩放，目标范围约为当前 PC 的前后 128 MiB。若能在范围内分配 branch island，原入口只需改写一条对齐的 4 字节指令；若无法分配，通常要写入多条指令组成的绝对跳转序列。
+AArch64 的直接 `B` 使用 26 位有符号立即数并按 4 字节缩放，目标范围约为当前 PC 的前后 128 MiB。若能在范围内分配 branch island，原入口只需改写一条对齐的 4 字节指令；分配不到时，通常要写入多条指令组成的绝对跳转序列。
 
-单条对齐的 32 位写入比多指令覆盖容易控制，但“数据写入不可撕裂”仍不等于“其他核心立即按新指令执行”，发布协议还要包含线程协调和指令缓存同步。多指令 patch 的窗口更大，其他核心可能取到新旧混合的指令序列，一次 `memcpy()` 提供不了所需的并发保证。
+单条对齐的 32 位写入比多指令覆盖容易控制，但它只保证了“数据写入不撕裂”；要让其他核心立即按新指令执行，发布协议还要包含线程协调和指令缓存同步。多指令 patch 的窗口更大，其他核心可能取到新旧混合的指令序列，一次 `memcpy()` 提供不了所需的并发保证。
 
 在可证明安全的前提下，近地址 branch island 还能把原入口的发布动作缩小到一条指令；节省 trampoline 空间只是附带收益。
 
 ### 5.3 PAC、BTI 与 CFI
 
-Android 17 的 arm64 代码可能同时使用几类控制流保护：
+arm64 代码可能同时使用几类控制流保护：
 
 - **PAC（Pointer Authentication Code，指针认证码）**：函数序言或返回路径可能对 LR 签名、认证。搬迁序言时，这些指令和它们依赖的栈状态都要原样保留，遗漏、重复或改动都会引入风险。
-- **BTI（Branch Target Identification，分支目标识别）**：bionic linker 会读取 ELF note 里的 GNU property（处理器特性声明）；ELF 声明兼容且硬件支持时，为可执行段加入 `PROT_BTI`。若 proxy 或 trampoline 所在映射受 BTI 保护，间接 `BR/BLR` 到达的入口必须落在匹配的 landing pad（允许间接分支落入的入口指令） 上，也就是允许间接分支落入的入口指令。
+- **BTI（Branch Target Identification，分支目标识别）**：bionic linker 会读取 ELF note 里的 GNU property（处理器特性声明）；ELF 声明兼容且硬件支持时，为可执行段加入 `PROT_BTI`。若 proxy 或 trampoline 所在映射受 BTI 保护，间接 `BR/BLR` 到达的入口必须落在匹配的 landing pad（允许间接分支落入的入口指令） 上。
 - **CFI（Control-Flow Integrity，控制流完整性）**：函数指针等间接调用到达签名不兼容的代理地址时，可能触发类型检查并终止进程。Hook 私有 CFI helper 以绕过检查，又会新增一组没有兼容性承诺的依赖。
 
 Hook 框架要把这些能力纳入测试组合，CPU 架构只能当第一层筛选；至少覆盖启用 `-mbranch-protection`、LTO/CFI、不同链接可见性和不同系统库 Build ID 的产物。
@@ -331,7 +333,7 @@ arm64 软件断点通常用 `BRK` 指令触发 `SIGTRAP`。信号可能来自软
 - 对非本框架事件调用前序 handler 或恢复默认处置；
 - 与 ptrace 调试器、采样器、崩溃 SDK 和 native bridge（跨架构 Native 转换层）一起测试。
 
-Android 17 的 debuggerd 在 `debuggerd_init()` 中为 `SIGTRAP` 等致命信号注册处理函数，并设置 `SA_SIGINFO | SA_ONSTACK | SA_RESTART | SA_EXPOSE_TAGBITS`：
+debuggerd 在 `debuggerd_init()` 中为 `SIGTRAP` 等致命信号注册处理函数，并设置 `SA_SIGINFO | SA_ONSTACK | SA_RESTART | SA_EXPOSE_TAGBITS`：
 
 ```cpp
 struct sigaction action = {.sa_sigaction = debuggerd_signal_handler,
@@ -350,7 +352,7 @@ debuggerd_register_handlers(&action);
 
 这条链路给我们两条硬约束：
 
-1. Trap Hook 不能调用 debuggerd 私有 handler 来协助恢复；debuggerd 的接口目标是生成崩溃转储。
+1. debuggerd 的接口目标是生成崩溃转储，Trap Hook 想借它的私有 handler 协助恢复，这条路走不通。
 2. 自定义 handler 只能消费能够证明属于本框架的事件。硬件断点、调试器事件和其他组件的断点必须继续按原语义处理。
 
 对高频函数，逐次进出信号处理路径的成本和兼容风险通常难以接受。Trap 的合理位置是短期诊断或低频探针，通用线上拦截器这个角色它担不起来。
@@ -366,7 +368,7 @@ debuggerd_register_handlers(&action);
 - PAC/BTI/CFI 编译选项；
 - `errno`（线程局部错误码）是否属于接口语义。
 
-下面的骨架只说明重入保护与保存 `errno` 的基本顺序，不能直接作为完整 Hook 使用：
+下面的骨架只说明重入保护与保存 `errno` 的基本顺序，直接拿来当完整 Hook 是不够的：
 
 ```cpp
 using ReadFn = ssize_t (*)(int, void*, size_t);
@@ -395,6 +397,8 @@ ssize_t proxy_read(int fd, void* buffer, size_t count) {
 
 ## 8. 生命周期设计
 
+Hook 装上去只是开始。这一节把生命周期拆成三件事：状态怎么记、怎么安全停用、崩溃后靠什么还原现场。
+
 ### 8.1 状态机
 
 每个 Hook 至少应有以下状态：
@@ -408,9 +412,9 @@ DECLARED -> RESOLVING -> INSTALLING -> ACTIVE
 
 状态机让重复初始化、动态装载、并发关闭和失败重试都有明确结果。`ACTIVE` 必须意味着目标集合、原地址和 proxy 都已发布；`FAILED` 要保留错误阶段与证据，一个布尔值装不下。
 
-### 8.2 优先逻辑停用，谨慎物理卸载
+### 8.2 逻辑停用与物理卸载
 
-恢复 GOT 指针，不代表旧 proxy 已无人执行；恢复函数入口，也不代表 trampoline 可以立刻释放：线程可能仍走在 proxy、原函数 trampoline 或被覆盖区间里。
+恢复 GOT 指针之后，旧 proxy 可能仍有人在执行；恢复函数入口之后，线程也可能仍走在 proxy、原函数 trampoline 或被覆盖区间里，trampoline 要等这些调用都退出才能释放。
 
 风险较低的关闭方式是保留稳定入口，只用原子开关让 proxy 直接调用原函数。若必须物理 unhook，我们就配上活动调用计数、grace period（等旧调用退出的宽限期）或暂停线程的协议，并确认目标 ELF 尚未卸载、槽或指令仍属于本框架。
 
@@ -426,9 +430,11 @@ DECLARED -> RESOLVING -> INSTALLING -> ACTIVE
 - 框架版本、配置版本和错误码；
 - 是否存在其他 Hook，以及发现时的槽值或指令摘要。
 
-崩溃发生后，这些信息应随稳定性事件上传。否则很难判断崩溃位于业务代码、proxy、trampoline、指令搬迁还是多框架冲突。
+崩溃发生后，这些信息应随稳定性事件上传；没有它们，判断崩溃位于业务代码、proxy、trampoline、指令搬迁还是多框架冲突会很困难。
 
 ## 9. 典型场景
+
+有了前面的选型和约束，我们看几个典型需求怎么落到具体方案上。
 
 ### 9.1 文件描述符监控
 
@@ -442,7 +448,7 @@ FD 即 file descriptor（文件描述符）。这类方案适合辅助定位 FD 
 
 ### 9.3 私有运行时函数
 
-对 `libart.so` 私有函数做 Inline Hook，即使在某台 Android 17 设备上成功，也不能推导出相同 API level 的其他设备可复用。ART 等 Mainline 模块可以通过系统组件更新机制独立升级，厂商构建选项也会改变符号、函数序言、CFI 和调用时机。
+对 `libart.so` 私有函数做 Inline Hook，即使在某台 Android 17 设备上成功，也推导不出相同 API level 的其他设备可复用。ART 等 Mainline 模块可以通过系统组件更新机制独立升级，厂商构建选项也会改变符号、函数序言、CFI 和调用时机。
 
 这类 Hook 应按具体 Build ID 管理，并保留“一律不安装”的默认分支。用于研究的偏移和线上允许列表也应分开维护。
 
@@ -452,7 +458,7 @@ FD 即 file descriptor（文件描述符）。这类方案适合辅助定位 FD 
 
 自行 Hook linker 私有 `soinfo` 字段会把回调机制绑定到内部结构。ShadowHook 手册也说明，相关偏移需要按 Android 版本扫描和适配；采用这条路径时，适配表、失败停用和回滚策略都要随框架发布。
 
-### 9.5 API level 不能替代二进制身份
+### 9.5 API level 与二进制身份校验
 
 对照 `android-16.0.0_r1` 与 `android-17.0.0_r1` 可以确认：两者都不支持 `RTLD_LAZY` 的延迟解析，debuggerd 都会设置 `SA_EXPOSE_TAGBITS`，也都包含 permissive MTE（记录 MTE 故障后允许继续执行的宽松模式） 和 MTE globals 相关路径。所以这些机制区分不了 Android 16 与 17，更当不成某个 Hook 可安装的充分条件。
 

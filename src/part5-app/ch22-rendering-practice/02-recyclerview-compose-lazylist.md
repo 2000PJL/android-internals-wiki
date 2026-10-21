@@ -93,11 +93,11 @@ last_consolidated_at: '2026-08-24'
 
 # RecyclerView 与 Compose LazyList 性能
 
-RecyclerView 的滑动成本分散在几处：布局状态机、`ViewHolder` 获取与绑定、列表差异、预取下一屏，以及嵌套滑动。优化的起点是把这些成本逐一定位出来，再谈调参。本文统一维护 RecyclerView 1.4.0 的布局、缓存、GapWorker 源码行为与应用写法，再与 Compose LazyList 的组合（Composition）和预取模型对照；机制结论和改动收益，最后都要落到同一条慢帧数据上。
+RecyclerView 的滑动成本分散在几处：布局状态机、`ViewHolder` 获取与绑定、列表差异、预取下一屏，以及嵌套滑动。优化的起点是把这些成本逐一定位出来，再谈调参。这一篇先把 RecyclerView 1.4.0 的布局、缓存、GapWorker 源码行为和应用写法讲清楚，再与 Compose LazyList 的组合（Composition）和预取模型对照；机制结论和改动收益，最后都要落到同一条慢帧数据上。
 
-> 源码基线：平台行为以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为准；RecyclerView 是独立发布的 AndroidX 库，本文固定使用 `androidx.recyclerview:recyclerview:1.4.0` 的 `sources.jar`（源码包），平台源码标签替代不了它——截至 2026 年 8 月 14 日，[AndroidX 版本总表](https://developer.android.com/jetpack/androidx/versions)仍将 1.4.0 列为稳定版。
+> 源码基线：平台行为以 Android 17 / API 37 / AOSP `android-17.0.0_r1` 为准；RecyclerView 是独立发布的 AndroidX 库，本文固定使用 `androidx.recyclerview:recyclerview:1.4.0` 的 `sources.jar`（源码包），平台源码标签里查不到它——截至 2026 年 8 月 14 日，[AndroidX 版本总表](https://developer.android.com/jetpack/androidx/versions)仍将 1.4.0 列为稳定版。
 
-RecyclerView 的 trace 主要呈现主线程侧的输入、滚动、绑定与 Traversal（View 树的测量（measure）、布局和绘制遍历）；之后还有 RenderThread、图形缓冲区、SurfaceFlinger 与 HWC（硬件合成器） 的工作，完整链路见 [2.4 MainThread、RenderThread 与 Hardware Layer](../../part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer（图层）.md)。
+RecyclerView 的 trace 主要呈现主线程侧的输入、滚动、绑定与 Traversal（View 树的测量（measure）、布局和绘制遍历）；之后还有 RenderThread、图形缓冲区、SurfaceFlinger 与 HWC（硬件合成器）的工作，完整链路见 [2.4 MainThread、RenderThread 与 Hardware Layer](../../part1-fundamentals/ch02-rendering/04-main-render-thread-hardware-layer（图层）.md)。
 
 RecyclerView 通过 ViewHolder 复用和预取控制滚动成本，Compose LazyList 通过组合、测量和槽位复用管理可见项。两者都要稳定 item 身份、减少绑定工作并限制预取压力，我们先从 RecyclerView 的布局与缓存状态机看起。
 
@@ -105,7 +105,7 @@ RecyclerView 通过 ViewHolder 复用和预取控制滚动成本，Compose LazyL
 
 ### `dispatchLayout()` 三步与 AutoMeasure
 
-在 Perfetto 里排查列表卡顿时，`RV OnLayout`（测量/布局）、`RV FullInvalidate` 这些切片只是外层入口；RecyclerView 1.4.0 在内部把一次完整布局组织成三个步骤。这三个步骤是状态机里的方法，Perfetto 不承诺出现同名 slice：
+在 Perfetto 里排查列表卡顿时，`RV OnLayout`（测量/布局）、`RV FullInvalidate` 这些切片只是外层入口；RecyclerView 1.4.0 在内部把一次完整布局组织成三个步骤。它们是状态机里的方法，trace 里未必有同名 slice 与之一一对应：
 
 | 内部步骤 | 主要职责 | Trace 解读 |
 | --- | --- | --- |
@@ -113,15 +113,15 @@ RecyclerView 通过 ViewHolder 复用和预取控制滚动成本，Compose LazyL
 | `dispatchLayoutStep2()` | 消费更新，进入最终状态的 `LayoutManager.onLayoutChildren()`；非 `EXACT` 测量时可能执行多次 | 在 `RV OnLayout`、`RV FullInvalidate`、`RV PartialInvalidate` 的调用栈里找 layout、create、bind 和子 View measure |
 | `dispatchLayoutStep3()` | 匹配 pre/post-layout 信息，启动 item animation，回收 scrap，恢复焦点并清理状态 | 仍属于外层布局 slice，不能用一条动画 slice 代替整个 step3 |
 
-`RV FullInvalidate` 常覆盖首次布局、数据集整体失效或 add/remove/move 等结构更新；只有 `UPDATE` 的局部变化会先走 `RV PartialInvalidate`，可见 holder 受影响时才进入完整布局。这些切片名称与 step1/2/3 之间没有固定映射。
+`RV FullInvalidate` 常覆盖首次布局、数据集整体失效或 add/remove/move 等结构更新；只有 `UPDATE` 的局部变化会先走 `RV PartialInvalidate`，可见 holder 受影响时才进入完整布局。切片名和 step1/2/3 之间没有固定的对应关系，读 trace 时以调用栈为准。
 
-AutoMeasure 还会把成本移到 `onMeasure()`：宽高不都是 `EXACT` 时，测量阶段可以先执行 step1/step2，`onLayout()` 随后只补 step3，或因尺寸变化再次执行 step2；`shouldMeasureTwice()` 为真时还会多一轮。所以 `RV OnLayout` 很短时，我们仍要检查同一帧 framework 的 `measure` 和调用栈——列表布局轻不轻，这里还看不出来。
+AutoMeasure 还会把成本移到 `onMeasure()`：宽高不都是 `EXACT` 时，测量阶段可以先执行 step1/step2，`onLayout()` 随后只补 step3，或因尺寸变化再次执行 step2；`shouldMeasureTwice()` 为真时还会多一轮。所以 `RV OnLayout` 很短时，布局工作可能被移进了测量阶段，我们仍要检查同一帧 framework 的 `measure` 和调用栈，再判断列表布局的实际轻重。
 
 ## ViewHolder 复用、绑定与 GapWorker 预取
 
 ### ViewHolder 复用与 `viewType` 设计
 
-ViewHolder 设计的目标是让滑动尽量命中缓存，少做反复 `inflate`（解析 XML 并创建 View 树） 和完整绑定。`RecycledViewPool` 可以在多个 RecyclerView 之间共享 ViewHolder，并按 `viewType`（可复用的视图类型）分桶；1.4.0 中每种类型默认最多保留 5 个，应用可用 `setMaxRecycledViews()` 调整。RecyclerView 自身的 `mCachedViews` 会保留仍带绑定状态的 holder：请求大小默认是 2；启用 item prefetch（条目预取） 时，实际最大值 `mViewCacheMax` 还会加上 LayoutManager 观察到的预取数量，所以“2”只是请求值，别当成固定总数。
+ViewHolder 设计的目标是让滑动尽量命中缓存，少做反复 `inflate`（解析 XML 并创建 View 树） 和完整绑定。`RecycledViewPool` 可以在多个 RecyclerView 之间共享 ViewHolder，并按 `viewType`（可复用的视图类型）分桶；1.4.0 中每种类型默认最多保留 5 个，应用可用 `setMaxRecycledViews()` 调整。RecyclerView 自身的 `mCachedViews` 会保留仍带绑定状态的 holder：请求大小默认是 2；启用 item prefetch（条目预取）时，实际最大值 `mViewCacheMax` 还会加上 LayoutManager 观察到的预取数量。“2”是请求值，实际总数以 `mViewCacheMax` 为准。
 
 #### 实际的 holder 查找顺序
 
@@ -136,7 +136,7 @@ ViewHolder 设计的目标是让滑动尽量命中缓存，少做反复 `inflate
 | `RecycledViewPool` | 前面都没有兼容 holder | 重置内部状态后通常要 bind |
 | 新建 holder | Pool 也未命中且 deadline 允许 | create 后继续 bind |
 
-Attached scrap 只是布局期间暂时分离的 holder，并不保证“只复用、不 bind”。所以在 trace 里看到 bind，只说明当前 holder 需要绑定，还说明不了它一定来自 Pool。
+Attached scrap 只是布局期间暂时分离的 holder，复用它也可能重新 bind。trace 里出现 bind，说明的是当前 holder 需要绑定；它来自哪个缓存层，我们要回到上面的查找顺序确认。
 
 `viewType` 应按“ViewHolder 是否能安全交叉复用”来划分：两个 item 的 View 结构和绑定规则相同，只是文案、图片或按钮状态不同，通常应共用同一个类型。若按颜色、角标等业务状态拆出过多类型，回收池会被切成许多小桶——一种类型刚回收的 ViewHolder 服务不了另一种类型，滑动时更容易重新创建。
 
@@ -167,13 +167,13 @@ fun bindHorizontalList(holder: SectionHolder, items: List<Card>) {
 }
 ```
 
-这段代码把多个子列表的回收池合并到一个对象里。Pool 只认识整数 `viewType`，不知道 ViewHolder 来自哪个 Adapter；两个 Adapter 恰好用同一个整数却创建不同布局时，交叉复用会导致类型转换异常、错误绑定或残留状态。`TYPE_CARD` 的容量可按“屏幕上可能同时出现的子列表数 × 每个子列表可见卡片数”估算，再用 Perfetto 验证稳定滑动阶段的 `RV onCreateViewHolder` 是否减少。`setMaxRecycledViews()` 只修改上限，不会预先创建 holder；容量过大会增加 View、图片和其他绑定资源的内存占用。
+这段代码把多个子列表的回收池合并到一个对象里。Pool 按整数 `viewType` 分桶，与 Adapter 无关；两个 Adapter 恰好用同一个整数却创建不同布局时，交叉复用会导致类型转换异常、错误绑定或残留状态。`TYPE_CARD` 的容量可按“屏幕上可能同时出现的子列表数 × 每个子列表可见卡片数”估算，再用 Perfetto 验证稳定滑动阶段的 `RV onCreateViewHolder` 是否减少。`setMaxRecycledViews()` 只修改上限，holder 仍然按需创建；容量过大会增加 View、图片和其他绑定资源的内存占用。
 
-`setHasStableIds(true)` 只适合每个 item 都有唯一且稳定业务 ID 的列表：即使条目移动到新位置，`getItemId(position)` 返回的 `long` 也必须保持不变，当前列表中的不同条目之间也不共用 ID。stable ID 帮的是 RecyclerView 在更新和动画期间识别同一个 item，代替不了 DiffUtil，也修不好错误的 `viewType` 设计；ID 重复或随位置变化，换来的是动画异常、状态串扰和错误复用。
+`setHasStableIds(true)` 只适合每个 item 都有唯一且稳定业务 ID 的列表：即使条目移动到新位置，`getItemId(position)` 返回的 `long` 也必须保持不变，当前列表中的不同条目之间也不共用 ID。stable ID 帮的是 RecyclerView 在更新和动画期间识别同一个 item；增量更新交给 DiffUtil 做，错误的 `viewType` 设计要单独修。ID 重复或随位置变化，换来的是动画异常、状态串扰和错误复用。
 
 ### DiffUtil 与增量更新
 
-整表刷新是列表卡顿的高发来源。`notifyDataSetChanged()` 没有说明哪些条目发生了插入、删除或内容变化，因此 LayoutManager 必须重新绑定并布局全部可见 View；启用 stable ID 时，RecyclerView 可以为可见项推导部分结构变化以维持动画，但不会省掉这次完整的重新绑定和重新布局。`DiffUtil` 则比较两份列表，把插入、删除、移动和内容变化分发成细粒度的 Adapter 更新。
+整表刷新是列表卡顿的高发来源。`notifyDataSetChanged()` 不区分哪些条目发生了插入、删除或内容变化，LayoutManager 只好重新绑定并布局全部可见 View；启用 stable ID 时，RecyclerView 可以为可见项推导部分结构变化以维持动画，这次完整的重新绑定和重新布局仍然省不掉。`DiffUtil` 则比较两份列表，把插入、删除、移动和内容变化分发成细粒度的 Adapter 更新。
 
 `DiffUtil` 使用 Eugene W. Myers 差分算法寻找把旧列表变成新列表所需的最短插入/删除序列；移动不属于该算法的直接输出，需要再做一次检测。它的预期时间复杂度是 O(N + D²)，其中 N 是列表长度之和，D 是最短编辑序列长度；开启 move detection 后还会增加与新增项、删除项数量相关的扫描成本。`calculateDiff(callback, detectMoves)` 的第二个参数用于控制这轮移动检测。
 
@@ -229,7 +229,7 @@ class CardAdapter : ListAdapter<Card, CardHolder>(CardDiff()) {
 
 payload 优化的是局部绑定，状态正确性要靠完整绑定兜底：目标 ViewHolder 未 attach（未挂接到当前 RecyclerView） 时，payload 可能被丢弃，所以无 payload 的完整 bind 必须能仅凭当前 item 恢复全部 UI 状态，包括清理旧图片、选中态、监听器和无障碍描述。
 
-大列表还有三个边界：
+大列表还有三件事要单独注意：
 
 - 数据源按同一规则排序且 item 不会交换位置时，自行调用 `DiffUtil.calculateDiff(callback, false)` 可以省去 move detection。`ListAdapter` / `AsyncListDiffer` 的标准路径调用单参数重载，默认开启移动检测，`AsyncDifferConfig` 没有关闭开关；若改为自管 diff，还要自行处理提交批次、不可变快照和主线程更新分发。
 - `areContentsTheSame()` 不要直接带入与 UI 无关的字段。埋点时间戳、临时曝光状态或调试字段如果参与比较，会让 DiffUtil 把无关变化判成需要更新。
@@ -237,13 +237,13 @@ payload 优化的是局部绑定，状态正确性要靠完整绑定兜底：目
 
 ### 预取机制与配置
 
-GapWorker 是 RecyclerView 的预取任务：它根据滚动方向收集即将需要的 adapter position（Adapter 位置），并尝试在条目进入视口前取得、创建或绑定 ViewHolder。AndroidX 1.4.0 的滚动路径会调用 `mGapWorker.postFromTraversal()` 记录方向和距离，再通过 `recyclerView.post(this)` 把这个 Runnable 投递到主线程消息队列。要注意 GapWorker 不是后台线程，预取的 create / bind 同样占主线程时间。
+GapWorker 是 RecyclerView 的预取任务：它根据滚动方向收集即将需要的 adapter position（Adapter 位置），并尝试在条目进入视口前取得、创建或绑定 ViewHolder。AndroidX 1.4.0 的滚动路径会调用 `mGapWorker.postFromTraversal()` 记录方向和距离，再通过 `recyclerView.post(this)` 把这个 Runnable 投递到主线程消息队列。GapWorker 跑在主线程上，预取的 create / bind 占的也是主线程时间。
 
 `GapWorker.run()` 用最近一次 drawing time（绘制时间） 加刷新周期估算下一帧 deadline（截止时间），再按滚动速度、条目距离和下一帧是否需要来排列任务。普通任务在创建和绑定前分别要过 `willCreateInTime()`、`willBindInTime()` 两道检查：它们根据 Pool 中按 `viewType` 记录的历史耗时，判断预计能否在截止时间前完成。预计下一帧就需要的任务会传入 `FOREVER_NS`，跳过这两道检查，并显示为 `RV Prefetch forced - needed next frame`；“forced”只是绕过了这两个估算分支，工作仍在主线程执行。
 
-`LinearLayoutManager#setInitialPrefetchItemCount()` 只影响嵌套 RecyclerView 首次进入视口前的 initial prefetch（初始预取） 数量，非嵌套列表调用它没有效果。该值应接近内层列表首次显示的 item 数。设得更大不会自动提高流畅度，反而会增加不必要的 bind、View 创建和活跃对象。
+`LinearLayoutManager#setInitialPrefetchItemCount()` 只影响嵌套 RecyclerView 首次进入视口前的 initial prefetch（初始预取）数量，非嵌套列表调用它没有效果。该值应接近内层列表首次显示的 item 数；设得更大不会自动提高流畅度，反而会增加不必要的 bind、View 创建和活跃对象。
 
-GapWorker 只提前取得 holder，并按需执行 create 和 bind，不会替下一帧完成 item 的 Measure / Layout。所以若 trace 中 prefetch 和 bind 都正常，下一帧 `RV OnLayout` 或 framework `measure` / `layout` 仍然很长，我们就要转向 item 尺寸、布局结构和图片结果触发的 `requestLayout()` 去找原因。
+GapWorker 提前取得 holder，按需执行 create 和 bind；下一帧的 item Measure / Layout 仍由布局阶段自己完成。所以若 trace 中 prefetch 和 bind 都正常，下一帧 `RV OnLayout` 或 framework `measure` / `layout` 仍然很长，我们就要转向 item 尺寸、布局结构和图片结果触发的 `requestLayout()` 去找原因。
 
 共享 Pool 也共享按 `viewType` 统计的 create / bind 运行均值。多个 Adapter 共享同一 Pool 时，除了 ViewHolder 结构要兼容，构造和绑定成本也不宜差异悬殊，否则一个 Adapter 的历史均值会影响另一个 Adapter 的 deadline 判断。
 
@@ -256,11 +256,11 @@ GapWorker 只提前取得 holder，并按需执行 create 和 bind，不会替�
 
 `setItemViewCacheSize()` 会增大 `mCachedViews` 的请求值，让刚滑出屏幕的 ViewHolder 保持绑定状态，从而减少短距离回滑时的 bind；代价是持有更多 View、图片引用和 item 状态。Feed 流、瀑布流和长列表别先凭经验调大，应先根据 create、bind、内存与 GC（垃圾回收） 数据判断，并检查 `viewType`、payload 和共享 Pool。
 
-Android 17 对 `targetSdkVersion >= 37` 的应用启用新的 MessageQueue 实现。它可以消除旧队列中的一类入队锁竞争，却没有改变 GapWorker 的 position 收集、排序、create / bind 预算或主线程执行属性；具体差异见后文 DeliQueue 小节。
+Android 17 对 `targetSdkVersion >= 37` 的应用启用新的 MessageQueue 实现。它可以消除旧队列中的一类入队锁竞争，GapWorker 的 position 收集、排序、create / bind 预算和主线程执行属性都维持原样；具体差异见后文 DeliQueue 小节。
 
 ### 嵌套滚动与多 RecyclerView 场景优化
 
-多 RecyclerView 场景常见于首页 Feed、频道页、卡片流和 ViewPager2。性能问题通常来自多层列表在同一帧里同时触发布局、绑定和预取，“嵌套”本身不是足够具体的原因。
+多 RecyclerView 场景常见于首页 Feed、频道页、卡片流和 ViewPager2。性能问题通常来自多层列表在同一帧里同时触发布局、绑定和预取，排查时要落到具体是哪一层触发的。
 
 处理顺序可以固定下来：
 
@@ -300,14 +300,14 @@ fun RecyclerView.configureHorizontalCards(
 扩展组件容易把线性列表的局部工作重新放大成整表工作：
 
 - 自定义 `SnapHelper` 只检查可见或邻近候选项，几何计算要覆盖 `reverseLayout`、RTL、padding、ItemDecoration 和可变尺寸 item；不要在 fling 目标计算中遍历完整数据集或触发新布局。
-- 自定义 `LayoutManager` 必须正确处理 Adapter 更新、pre-layout、焦点、无障碍、滚动范围和回收规则。`onLayoutChildren()` 与 fill 路径不应从头扫描全部数据，prefetch position 和 distance 要从布局几何推导。
+- 自定义 `LayoutManager` 必须正确处理 Adapter 更新、pre-layout、焦点、无障碍、滚动范围和回收规则。`onLayoutChildren()` 与 fill 路径要避免从头扫描全部数据，prefetch position 和 distance 要从布局几何推导。
 - `ItemDecoration.getItemOffsets()` 位于布局计算，`onDraw()` / `onDrawOver()` 位于绘制阶段。这里应避免对象分配、复杂 Path 和整表扫描；缓存要使用稳定输入作为 key，防止 position 移动后复用旧结果。
 
 这三类扩展组件的改动同样要放进同设备的 A/B trace 里验收；动画相关的收益判断见上一节。
 
 ### Android 17 的 DeliQueue
 
-Android 17 在 `targetSdkVersion >= 37` 时默认启用无锁 MessageQueue 实现 DeliQueue。旧实现用一个 monitor（Java 对象锁）保护按时间排序的消息链表；DeliQueue 改成让生产者通过 Treiber stack 提交消息——一种用 CAS（Compare-And-Swap，比较并交换）更新栈顶的无锁栈——消费顺序仍由 Looper 独占、按执行时间排序的 min-heap（按执行时间排序的最小堆） 维护。它消除的是旧 MessageQueue 的这类锁竞争；`onCreateViewHolder()`、`onBindViewHolder()`、item 测量/布局、图片解码、RenderThread 或 SurfaceFlinger 的耗时都不在它的缩减范围内。
+Android 17 在 `targetSdkVersion >= 37` 时默认启用无锁 MessageQueue 实现 DeliQueue。旧实现用一个 monitor（Java 对象锁）保护按时间排序的消息链表；DeliQueue 改成让生产者通过 Treiber stack 提交消息——一种用 CAS（Compare-And-Swap，比较并交换）更新栈顶的无锁栈——消费顺序仍由 Looper 独占、按执行时间排序的 min-heap（按执行时间排序的最小堆）维护。它削减的是旧 MessageQueue 的这类锁竞争；`onCreateViewHolder()`、`onBindViewHolder()`、item 测量/布局、图片解码、RenderThread 或 SurfaceFlinger 的耗时，仍要回到各自的路径去优化。
 
 RecyclerView 1.4.0 的 `GapWorker.postFromTraversal()` 仍通过 `RecyclerView.post()` 把预取任务送入主线程队列。从 post 到 `GapWorker.run()` 之间仍可能排着更早到期的消息，也可能遇到长回调或 CPU 调度延迟——无锁入队之后，任务照样要等自己的执行时机。预取自身也只覆盖 holder 获取、create 和 bind，下一帧的测量/布局仍需单独分析。
 
@@ -337,7 +337,7 @@ RecyclerView 1.4.0 的 `GapWorker.postFromTraversal()` 仍通过 `RecyclerView.p
 
 ### RecyclerView 1.4 与自适应刷新率协作
 
-RecyclerView 1.4.0 要求 `compileSdk >= 35`；运行在 API 35 及以上时，它会在 `OverScroller` 驱动的 fling（手指离开后的惯性滑动）和 smooth scroll（程序控制的平滑滚动）路径中调用 `View.setFrameContentVelocity()`，把滚动速度作为平台刷新率策略的输入。RecyclerView 不查询面板能力，也不直接决定切换到哪个 Hz。Android 17 上若要判断效果，应同时核对 RecyclerView 版本、速度上报、Display 支持范围、系统刷新率决策和帧数据，别把面板切换结果归因给单个 Adapter 参数。
+RecyclerView 1.4.0 要求 `compileSdk >= 35`；运行在 API 35 及以上时，它会在 `OverScroller` 驱动的 fling（手指离开后的惯性滑动）和 smooth scroll（程序控制的平滑滚动）路径中调用 `View.setFrameContentVelocity()`，把滚动速度作为平台刷新率策略的输入。面板能力和 Hz 的选择都在系统侧，RecyclerView 起的是上报速度的作用。要判断实际效果，应同时核对 RecyclerView 版本、速度上报、Display 支持范围、系统刷新率决策和帧数据，别把面板切换结果归因给单个 Adapter 参数。
 
 ### 验收清单
 
@@ -370,15 +370,15 @@ RecyclerView 优化完成后，我们至少要跑一次本地 trace 和一次线
 
 ## LazyList 组合、测量与预取
 
-RecyclerView 的复用单位是 ViewHolder，LazyList 的复用单位跟组合和 key 相关，迁移时别照搬缓存数量或预取参数。
+RecyclerView 的复用单位是 ViewHolder，LazyList 的复用单位跟组合和 key 相关；我们把两边的机制对照着看，迁移时缓存数量和预取参数都要按这边的模型重新评估。
 
-惰性布局（Lazy layout）把数据集总量与同时参与组合的列表项数量分开，但不会自动消除单项耗时过长、身份错误、重复测量、同步输入输出或 GPU 过载。Compose 部分的库基线是 BOM 2026.08.00 对应的 Foundation 1.12.0；Compose Foundation 独立发布，`targetSdk=37` 不会改变 LazyList 的键、复用或预取语义。
+惰性布局（Lazy layout）把数据集总量与同时参与组合的列表项数量分开；单项耗时过长、身份错误、重复测量、同步输入输出或 GPU 过载这些老问题，仍要我们逐项排查。Compose 部分的库基线是 BOM 2026.08.00 对应的 Foundation 1.12.0；Compose Foundation 独立发布，LazyList 的键、复用和预取语义由库版本决定，`targetSdk=37` 改变的只是平台侧行为。
 
 普通 `LazyColumn` 和惰性网格仍通过宿主应用窗口的标准 HWUI 路径生成画面。主线程上的组合、测量、放置（placement）和 `DisplayList` 更新只是前半程，后续还有 `RenderThread`、GPU、图形缓冲区提交、`SurfaceFlinger`、HWC 与送显。完整显示链路见 [13.8 Jetpack Compose 渲染管线：Composition、Layout 与 RenderNode](../../part2-performance/ch13-rendering-pipelines/08-compose-rendering-pipeline.md)，重组基础见 [22.3 Compose 性能、Compiler 与 Modifier.Node 诊断](03-compose-compiler-modifier-diagnostics.md)，列表动画的阶段判断见 [22.7 View、Compose 动画与共享元素性能](07-view-compose-animation-shared-transition.md)。
 
 ### 1. LazyLayout 每次滚动会做什么
 
-`LazyColumn`、`LazyRow`、普通网格和交错网格都建立在 `LazyLayout`/`SubcomposeLayout` 一类机制上。DSL（声明列表用的配置语法）描述整个数据集，测量策略只为当前需要的索引请求界面内容。这里的“需要”通常包括可见列表项，也可能包括预取项、复用缓存、焦点或无障碍功能要求的 beyond-bounds 项目、粘性项目和动画暂时保留的项目。
+`LazyColumn`、`LazyRow`、普通网格和交错网格都建立在 `LazyLayout`/`SubcomposeLayout` 一类机制上。DSL（声明列表用的配置语法）描述整个数据集，测量策略只为当前需要的索引请求界面内容。“需要”的范围比可见列表项大：预取项、复用缓存、焦点或无障碍功能要求的 beyond-bounds 项目、粘性项目和动画暂时保留的项目，都可能参与进来。
 
 滚动增量不一定触发一次完整重测。Compose 1.12.0 的 `LazyListState.onScroll()` 会先尝试 `copyWithScrollDeltaWithoutRemeasure()`：
 
@@ -386,7 +386,7 @@ RecyclerView 的复用单位是 ViewHolder，LazyList 的复用单位跟组合�
 - 新项目进入、旧项目离开、首项变化、约束变化或特殊布局条件出现时，会重新测量。
 - 重新测量时，`LazyListMeasuredItemProvider` 按索引取得键、`contentType` 和已测量的可放置对象；已有的兼容组合可以复用，缺失或失效的内容才需要执行相应组合。
 
-所以跟踪数据里出现布局区间，还推导不出“所有可见项目都重新组合”；排查时我们要分清组合、测量和放置，并核对本帧是否跨过项目边界。
+所以跟踪数据里出现布局区间，离“所有可见项目都重新组合”的结论还差一步确认：我们要分清组合、测量和放置，并核对本帧有没有跨过项目边界。
 
 ### 2. key 管业务身份
 
@@ -395,11 +395,11 @@ RecyclerView 的复用单位是 ViewHolder，LazyList 的复用单位跟组合�
 - `remember` 状态可能跟着位置留给另一条数据。
 - 内层 LazyRow 的滚动位置、输入状态或动画身份可能错配。
 - 原本只需移动位置的项目需要按新参数更新。
-- `animateItem()` 无法按业务实体识别新增、删除和移动。
+- `animateItem()` 拿位置键只能做位置级别的判断，业务实体的新增、删除和移动要靠稳定键才能识别。
 
-准确的说法是“位置键仍然存在，但它对应的业务对象变了”。插入数据不会让索引键全部失效，因此“所有索引键都变了，所以所有项目一律销毁”并不成立。
+准确的说法是“位置键仍然存在，但它对应的业务对象变了”：插入数据后索引键照旧有效，只是指向换了内容，据此推不出“所有项目一律销毁”。
 
-自定义键必须稳定、唯一，并且在 Android 上可由 `Bundle` 保存，才能支持项目内 `rememberSaveable` 的恢复。数据库主键、稳定的 `Long`/`String` ID 或可保存的复合 ID 都可以。`hashCode()` 可能碰撞，也可能随对象实现变化，代替不了唯一身份。
+自定义键必须稳定、唯一，并且在 Android 上可由 `Bundle` 保存，才能支持项目内 `rememberSaveable` 的恢复。数据库主键、稳定的 `Long`/`String` ID 或可保存的复合 ID 都是合适的选择；`hashCode()` 可能碰撞，也可能随对象实现变化，做唯一身份并不保险。
 
 下面的列表同时声明业务身份和结构类型。
 
@@ -423,22 +423,22 @@ LazyColumn {
 
 ### 3. contentType 管复用兼容性
 
-`contentType` 不负责业务身份。它告诉 `LazyLayout` 哪些项目的组合结构兼容，可以把滚出后的旧槽位（slot，即可复用的组合位置）交给新项目。默认值 `null` 也是有效类型；未提供时，所有项目都被视为同一兼容类型。
+业务身份由键负责，`contentType` 管的是另一件事：它告诉 `LazyLayout` 哪些项目的组合结构兼容，可以把滚出后的旧槽位（slot，即可复用的组合位置）交给新项目。默认值 `null` 也是有效类型；未提供时，所有项目都被视为同一兼容类型。
 
-Compose Foundation 1.12.0 的 `LazyLayoutItemReusePolicy` 用 `contentType` 相等判断槽位是否兼容，并为每种类型最多保留 7 个可复用槽位。这个数量属于当前内部实现，不是开发者可依赖的 API 合同。
+Compose Foundation 1.12.0 的 `LazyLayoutItemReusePolicy` 用 `contentType` 相等判断槽位是否兼容，并为每种类型最多保留 7 个可复用槽位。这个数量属于当前内部实现，会随版本调整，设计时按“结构相近才复用”划分即可。
 
 类型划分应遵循两条约束：
 
 - 文章卡、广告、分隔线、加载行等结构差异明显的项目使用不同类型。
 - 同一结构、只有文本或数据不同的项目共用一个类型。
 
-把每个业务 ID 当作 `contentType` 会阻断跨项目复用；把差异很大的结构都留为 `null`，会让 Compose 运行时尝试在不相似的内容之间复用。复用仍可能执行重组来写入新数据，不等于复制旧画面。
+把每个业务 ID 当作 `contentType` 会阻断跨项目复用；把差异很大的结构都留为 `null`，会让 Compose 运行时尝试在不相似的内容之间复用。复用提供的是兼容的槽位，写入新数据时仍可能执行重组。
 
-RecyclerView 的 `viewType` 与 Compose 的 `contentType` 都表达兼容分组，但容器、状态和复用实现不同；从这个对应关系推不出两者的内存或帧率相同。
+RecyclerView 的 `viewType` 与 Compose 的 `contentType` 都表达兼容分组，但容器、状态和复用实现不同；两者的内存或帧率表现，要各自测过再下结论。
 
 ### 4. 项目状态：remember、rememberSaveable 与数据状态
 
-普通 `remember` 只在对应组合存活时保留。项目滚出后可能暂时处在复用区或缓存区，也可能从组合中移除；一旦移除，普通 `remember` 值就结束生命周期。稳定键不会让普通 `remember` 永久留在内存。
+普通 `remember` 只在对应组合存活时保留。项目滚出后可能暂时处在复用区或缓存区，也可能从组合中移除；一旦移除，普通 `remember` 值就结束生命周期。稳定键保住的是身份，普通 `remember` 的生命周期仍跟着组合走。
 
 `LazyLayout` 用 `SaveableStateHolder` 包装项目。键可保存时，`rememberSaveable` 可以在项目滚出又回来时恢复，也能参与 `Activity` 重建后的恢复。需要跨滚动长期保存的少量界面状态可使用它；业务数据和大对象应放在 `ViewModel`、数据仓库或专用缓存中。
 
@@ -456,11 +456,11 @@ RecyclerView 的 `viewType` 与 Compose 的 `contentType` 都表达兼容分组�
 - 排序、分组、日期格式化等工作放在数据层，或按输入用 `remember` 缓存。
 - 项目内容中不要同步执行数据库查询、文件读取和图片解码。
 
-`remember(item.createdAt) { formatter.format(item.createdAt) }` 能避免同一次组合生命周期内重复计算，但项目离开组合后仍会重算。线程安全也取决于格式化器实现，光看 `remember` 判断不了。
+`remember(item.createdAt) { formatter.format(item.createdAt) }` 能避免同一次组合生命周期内重复计算，但项目离开组合后仍会重算。线程安全要看格式化器的实现，`remember` 本身给不了这层保证。
 
 ### 5. 高频滚动状态放在合适的观察位置
 
-`LazyListState.layoutInfo` 会在每次滚动或重新测量后更新。`firstVisibleItemScrollOffset` 可随滚动频繁变化，`firstVisibleItemIndex` 只在首个可见项目跨界时变化。我们把这些值直接读在大范围可组合函数中，会扩大重组作用域。
+`LazyListState.layoutInfo` 会在每次滚动或重新测量后更新。`firstVisibleItemScrollOffset` 可随滚动频繁变化，`firstVisibleItemIndex` 只在首个可见项目跨界时变化。我们把这些值直接读在大范围可组合函数里，重组作用域就会跟着扩大。
 
 `derivedStateOf` 适合把高频输入转换成低频布尔值或离散结果；`snapshotFlow` 适合把滚动变化发送给埋点等副作用逻辑。前者控制状态通知频率，后者把 Compose 状态转换成可收集的数据流。
 
@@ -504,17 +504,17 @@ fun ScrollSignals(
 - 项目内的 `SubcomposeLayout`、自定义固有尺寸（intrinsic）测量或多次测量是否出现在慢帧。
 - 同一帧新进入的复杂项目是否过多。
 
-列表长度达到十万条也不一定增加同屏组合成本。数据容器、Paging 内存、键到索引的查找、图片缓存和单次更新的差异规模仍需单独测量。
+列表长度达到十万条，同屏组合的部分通常照旧；数据容器、Paging 内存、键到索引的查找、图片缓存和单次更新的差异规模，仍要单独测量。
 
 ### 7. 预取运行在主线程的剩余时间里
 
 Compose 1.12.0 默认的 `LazyListPrefetchStrategy` 会根据滚动方向请求相邻的下一个项目，执行预组合和预测量；方向改变或目标失效时会取消旧请求。项目接近可见区域时，请求可标为紧急：只要本帧仍有剩余时间就可以执行，不再要求剩余时间超过该步骤的历史平均耗时。
 
-嵌套场景中，父 `LazyLayout` 预取到包含子 LazyList 的项目后，会解析子列表的预取状态。默认内层策略从当前首项开始预组合 2 个子项目，并可依据历史结果调整数量。嵌套预取是尽力而为的：数据或子树在解析后发生变化时，并不保证重新覆盖所有情况。
+嵌套场景中，父 `LazyLayout` 预取到包含子 LazyList 的项目后，会解析子列表的预取状态。默认内层策略从当前首项开始预组合 2 个子项目，并可依据历史结果调整数量。嵌套预取是尽力而为的：数据或子树在解析后再变化，这轮预取就可能白做。
 
-Android 的 `AndroidPrefetchScheduler` 通过 `View.post` 和 `Choreographer.FrameCallback` 调度请求。它用 `View.drawingTime`、最近一次帧起点和显示刷新周期估算当前帧的剩余时间，把未完成工作留到后续帧。组合与测量仍在界面线程执行；“预取”不表示后台线程会构建界面。
+Android 的 `AndroidPrefetchScheduler` 通过 `View.post` 和 `Choreographer.FrameCallback` 调度请求。它用 `View.drawingTime`、最近一次帧起点和显示刷新周期估算当前帧的剩余时间，把未完成工作留到后续帧。组合与测量都在界面线程执行，“预取”指的是时机，后台线程并不构建界面。
 
-Compose Foundation 1.12.0 中，实验性回退标志 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` 默认是 `true`。启用后，复杂项目的预组合可以多次恢复和暂停，后续有预算时再继续；组合完成后才应用结果并预测量。这样可以缩短单次占用主线程的时间，但不会消除主线程和内存成本。`ComposeFoundationFlags` 允许应用在遇到回归时临时关闭新路径，但官方把这些标志定义为临时入口，别长期依赖。
+Compose Foundation 1.12.0 中，实验性回退标志 `ComposeFoundationFlags.isPausableCompositionInPrefetchEnabled` 默认是 `true`。启用后，复杂项目的预组合可以多次恢复和暂停，后续有预算时再继续；组合完成后才应用结果并预测量。这样可以缩短单次占用主线程的时间，主线程和内存的总成本还在原地。`ComposeFoundationFlags` 允许应用在遇到回归时临时关闭新路径，官方也把这些标志定义为临时入口，别当成长期依赖。
 
 #### LazyLayoutCacheWindow 的前向与后向窗口
 
@@ -523,7 +523,7 @@ Compose Foundation 1.12.0 中，实验性回退标志 `ComposeFoundationFlags.is
 - 前向窗口（ahead window）预先准备滚动方向前方的项目。
 - 后向窗口（behind window）保留反方向上已经离开可见区域的项目，减少快速回滚时的重建。
 
-窗口既可用 `Dp` 指定，也可按可见区域比例指定。两种形式表达的是缓存范围，不是项目数量。
+窗口既可用 `Dp` 指定，也可按可见区域比例指定。两种形式表达的都是缓存范围，计量单位是距离或比例，与项目个数无关。
 
 下面的示例展示 Dp 窗口的接入方式。
 
@@ -587,7 +587,7 @@ LazyColumn {
 
 `itemKey` 让已加载实体保持身份，`itemContentType` 也为占位内容提供 Paging 定义的兼容处理。`72.dp` 必须换成接近产品项目的尺寸；占位内容过小，`RemoteMediator`（负责远端与本地数据的协调）可能连续加载多页，直到可见区域被填满。
 
-`refresh()` 会启动新一代 `PagingData` 数据流，不会让十万条尚未进入组合的项目全部重组。界面成本取决于新的数据快照、当前需要的项目、键/`contentType` 兼容性和加载状态结构。
+`refresh()` 启动的是新一代 `PagingData` 数据流，十万条尚未进入组合的项目不会因此全部重组；界面成本取决于新的数据快照、当前需要的项目、键/`contentType` 兼容性和加载状态结构。
 
 Paging 路径还要检查：
 
@@ -598,9 +598,9 @@ Paging 路径还要检查：
 
 ### 10. 网格与交错网格
 
-Compose Foundation 1.12.0 包含 `LazyVerticalStaggeredGrid` 和 `LazyHorizontalStaggeredGrid`。普通网格按行（line）组织项目，交错网格按轨道（lane）安排主轴尺寸不同的项目；交错布局不需要依赖第三方库。
+Compose Foundation 1.12.0 包含 `LazyVerticalStaggeredGrid` 和 `LazyHorizontalStaggeredGrid`。普通网格按行（line）组织项目，交错网格按轨道（lane）安排主轴尺寸不同的项目；交错布局由 Foundation 直接提供。
 
-普通网格的跨列数（span）会影响行划分和每个项目的尺寸约束。列数、可用宽度或跨列数变化后，相关可见行需要重新测量。复用兼容性仍由 `contentType` 判断，公开 API 没有承诺按 `(contentType, spanSize)` 组合分组复用。
+普通网格的跨列数（span）会影响行划分和每个项目的尺寸约束。列数、可用宽度或跨列数变化后，相关可见行需要重新测量。复用兼容性仍由 `contentType` 判断；`(contentType, spanSize)` 组合分组的复用属于未承诺行为，设计时别建立在它之上。
 
 网格页面重点检查：
 
@@ -623,15 +623,15 @@ Compose Foundation 1.12.0 包含 `LazyVerticalStaggeredGrid` 和 `LazyHorizontal
 - 当前被粘性定位、焦点、无障碍、动画或可见区域外操作固定的项目。
 - `SaveableStateHolder` 保存的少量项目界面状态。
 
-粘性标题只在候选项成为当前固定标题等需要时参与布局，不会让历史上的每个标题永久留在组合中。项目离开组合后，普通 `remember` 持有的大对象可以释放；图片加载库、业务缓存或 `ViewModel` 中的引用可能继续持有对象，需要分别检查这些缓存。
+粘性标题只在候选项成为当前固定标题等需要时参与布局，历史上滚过的标题并不会都留在组合里。项目离开组合后，普通 `remember` 持有的大对象可以释放；图片加载库、业务缓存或 `ViewModel` 中的引用可能继续持有对象，需要分别检查这些缓存。
 
-内存评估应记录稳定的用户流程：冷启动进入列表、连续滚动、反向滚动、刷新和离开页面。比较 Java/Kotlin 堆、原生图形内存、图片缓存和 GC 停顿；单次 `Debug.getMemoryInfo()` 快照说不出对象由谁持有。
+内存评估应记录稳定的用户流程：冷启动进入列表、连续滚动、反向滚动、刷新和离开页面。比较 Java/Kotlin 堆、原生图形内存、图片缓存和 GC 停顿；对象由谁持有，要靠这些流程前后的对比回答，单次 `Debug.getMemoryInfo()` 快照回答不了。
 
 ### 12. 用 Perfetto 和 Macrobenchmark 归因
 
 我们测量时要用 release 构建，开 R8 优化，并标记 profileable、non-debuggable。Debug 版本的解释执行、调试检查和工具连接会放大惰性布局成本。
 
-推荐按下面的顺序收集数据：
+我们按下面的顺序收集数据：
 
 1. Macrobenchmark 用 UI Automator 重复同一次惯性滚动或拖动，采集 `FrameTimingMetric`。
 2. API 31 及以上查看 `frameOverrunMs`、`frameDurationCpuMs` 和 `frameCount`。
@@ -640,7 +640,7 @@ Compose Foundation 1.12.0 包含 `LazyVerticalStaggeredGrid` 和 `LazyHorizontal
 5. 查看 `RenderThread`、GPU、图形缓冲区入队与 SurfaceFlinger，排查图片、阴影、透明度、模糊或缓冲区反压。
 6. 用组合跟踪（Composition tracing）或 Layout Inspector 验证具体项目的组合/跳过范围。
 
-`Choreographer#doFrame` 只覆盖应用主线程帧回调，代表不了 GPU 完成和送显。组合跟踪需要 Compose Runtime 的跟踪支持与 Perfetto `track_event` 数据源；系统没有通用的 `compose-recomposition` atrace 开关。Perfetto 的 `slice` 表只记录带起止时间的区间事件，也没有可直接求和的通用 `skipped` 列。写查询前要确认当前版本产生的区间名称和字段。
+`Choreographer#doFrame` 覆盖的是应用主线程帧回调，GPU 完成和送显要看后面的链路。组合跟踪需要 Compose Runtime 的跟踪支持与 Perfetto `track_event` 数据源，系统侧并没有通用的 `compose-recomposition` atrace 开关；Perfetto 的 `slice` 表记录带起止时间的区间事件，可直接求和的通用 `skipped` 列也不存在。写查询前先确认当前版本产生的区间名称和字段。
 
 下面的 PerfettoSQL 用于列出指定交互时间段中的应用卡顿帧。
 
@@ -686,25 +686,25 @@ LIMIT 100;
 
 ### 13. PausableComposition 的适用范围
 
-`PausableComposition` 是 Compose Runtime 提供的可暂停子组合状态机，Foundation 的惰性预取决定是否使用它。它不会把所有组合自动改成可暂停，也切分不了测量、图片解码、Binder、GPU 或任意 Kotlin 代码。Foundation 1.12.0 把一次预取分成组合、应用、嵌套预取和测量；只有组合阶段能在编译器生成的合法可重启作用域边界暂停。
+`PausableComposition` 是 Compose Runtime 提供的可暂停子组合状态机，Foundation 的惰性预取决定是否使用它。它能暂停的只有组合阶段，测量、图片解码、Binder、GPU 或任意 Kotlin 代码都切分不了。Foundation 1.12.0 把一次预取分成组合、应用、嵌套预取和测量四段；其中只有组合阶段能在编译器生成的合法可重启作用域边界暂停。
 
-公开控制流是 `setPausableContent()` → 多次 `resume(shouldPause)` → `apply()`。`shouldPause=true` 只是暂停请求，当前调用可能继续到下一个合法边界；组合完成后，如果已读取的 `State` 在 `apply()` 前发生变化，`isComplete` 也可能恢复为 `false`。`cancel()` 后创建该暂停句柄的组合处于不确定状态，必须丢弃；异常也会让暂停组合失效。所以普通业务代码通常用不着直接构造和管理它。
+公开控制流是 `setPausableContent()` → 多次 `resume(shouldPause)` → `apply()`。`shouldPause=true` 只是暂停请求，当前调用可能继续到下一个合法边界；组合完成后，如果已读取的 `State` 在 `apply()` 前发生变化，`isComplete` 也可能恢复为 `false`。`cancel()` 后创建该暂停句柄的组合处于不确定状态，必须丢弃；异常也会让暂停组合失效。普通业务代码直接构造和管理它的场景很少。
 
 Android 端预取调度器在主线程消息队列的帧间空隙运行。Foundation 1.12.0 使用 `View.drawingTime`、最近一次帧起点、静态缓存的显示刷新周期，以及历史组合/测量成本判断是否还有预算；它不直接读取 Android 17 `FrameData` 的截止时间。平台首选 `FrameTimeline` 与 Compose 预取预算来自不同数据源，跟踪分析时要分别记录。
 
 `LazyLayoutCacheWindow` 决定前方准备和后方保留的范围，`PausableComposition` 只改变候选项目的组合调度。扩大前向窗口会增加 CPU 预取，扩大后向窗口会延长节点、状态和图片资源的生命周期。判断回归时，应分别查看 `compose:lazy:prefetch:*` 中的 `compose`、`apply`、`measure` 区间、下一帧启动时间、`FrameTimeline` 超期时间与内存峰值。组合区间变短而应用或测量区间仍然很长，预取仍可能造成卡顿。
 
-业务优化顺序仍是提供稳定键和合适的 `contentType`、移出同步输入输出与复杂转换、稳定项目尺寸，再调整缓存窗口与预取。A/B 实验要记录版本标志、显示刷新率、数据集、构建类型和设备热状态；“升级到某版 Compose”替代不了实验数据。
+业务优化顺序仍是提供稳定键和合适的 `contentType`、移出同步输入输出与复杂转换、稳定项目尺寸，再调整缓存窗口与预取。A/B 实验要记录版本标志、显示刷新率、数据集、构建类型和设备热状态；结论以实验数据为准，“升级到某版 Compose”本身说明不了问题。
 
 ### 14. Android 17 与内核边界
 
-Android 17 平台基线是 `android-17.0.0_r1`。它提供 `Choreographer`、`FrameTimeline`、HWUI、窗口和系统合成路径。Compose 1.12.0 的 `LazyLayout` 算法打包在应用内；升级 `targetSdk` 单独开启不了可暂停组合、缓存窗口或新的项目复用策略。
+平台侧提供的是 `Choreographer`、`FrameTimeline`、HWUI、窗口和系统合成路径。Compose 1.12.0 的 `LazyLayout` 算法打包在应用内；可暂停组合、缓存窗口或新的项目复用策略，都随所用 Compose 版本走，升级 `targetSdk` 单独开启不了它们。
 
-内核基线是 `android17-6.18-2026-06_r6`。内核调度器、CPU 调频（cpufreq）、热限制（thermal）、内存回收和同步 fence 等待会改变主线程、`RenderThread` 或 GPU 驱动任务何时运行，但不决定键/`contentType`、项目移除和 `PagingData` 代际。只有跟踪数据出现线程可运行但迟迟未获调度、频率或热限制、内存回收或 fence 等待时，才需要看内核侧的数据。
+内核侧基线是 `android17-6.18-2026-06_r6`：调度器、CPU 调频（cpufreq）、热限制（thermal）、内存回收和同步 fence 等待影响主线程、`RenderThread` 或 GPU 驱动任务何时运行；键/`contentType`、项目移除和 `PagingData` 代际则由应用侧代码决定。跟踪数据出现线程可运行但迟迟未获调度、频率或热限制、内存回收或 fence 等待时，再看内核侧数据即可。
 
 ### 15. LazyList 与 RecyclerView 的选型
 
-不存在脱离页面场景的固定胜者。Compose `LazyLayout` 与 `RecyclerView` 都支持按需创建和复用，但状态模型、布局、预取、动画和工具链不同。公开资料替代不了当前应用的发布版基准测试。
+选型没有脱离页面场景的固定胜者。Compose `LazyLayout` 与 `RecyclerView` 都支持按需创建和复用，状态模型、布局、预取、动画和工具链各有差异；下结论要看当前应用自己的发布版基准测试，公开资料只作参考。
 
 - 新 Compose 页面可优先使用 `LazyLayout`，并建立键/`contentType`、Paging 和 Macrobenchmark 基线。
 - 已稳定运行的 `RecyclerView` 页面无需只为统一技术栈而迁移；迁移收益要覆盖互操作、功能回归和性能验证成本。

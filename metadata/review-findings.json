@@ -7862,6 +7862,69 @@
       "summary": "超大 DEX 内部降级没有说明 OAT 文件头仍保留原编译过滤器",
       "type": "compiler-filter-observability",
       "updated_at": "2026-10-21T18:47:10.229619+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "close_note": "已补 API 30 运行时保护、低内存报告能力检查及 SIGKILL 回退、近期环形缓冲区边界；补 benchmark-macro 1.3.0 能力函数前提和 WAKE_LOCK manifest 声明。依据官方 ApplicationExitInfo 与 PowerMetric API 页、Android 17 ActivityManager.java L4787-4815、ApplicationExitInfo.java L78-100、AndroidManifest.xml L3010-3018；源码审查与本地文档 gate 通过，未声称实机运行。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261021-220520-2fdac144",
+      "created_at": "2026-10-21T22:12:28.833891+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261021-220520-2fdac144",
+      "details": "ApplicationExitInfo 示例未声明 API 30 起可用，与章节 Android 10 起的适用范围冲突；未保留不支持低内存报告时 REASON_SIGNALED + SIGKILL 的官方说明。PowerMetric 两个能力检查函数要求 benchmark-macro 1.3.0 起，WakeLock 封装要求 manifest WAKE_LOCK 声明，正文均未交代。",
+      "id": "finding-ch25-1-api-prerequisites",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-10-21-220520-20261021-220520-2fdac144-aiw-review-finalize-apply.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/PowerMetric",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/AndroidManifest.xml"
+      ],
+      "status": "fixed",
+      "summary": "应用侧诊断示例缺少 API、依赖版本与权限前提，退出原因遗漏低内存回退边界",
+      "type": "api-availability",
+      "updated_at": "2026-10-21T22:20:10.773442+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "close_note": "已区分传感器归因支持与其他组件采集器启用，并保留 MEMORY 的 Currently unimplemented 上游边界。依据 android-17.0.0_r1 BatteryStatsService.java L479-531；正文不再把 true 开关等同于组件已实现或硬件测量能力。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261021-220520-2fdac144",
+      "created_at": "2026-10-21T22:12:52.309371+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261021-220520-2fdac144",
+      "details": "android-17.0.0_r1 BatteryStatsService.systemServicesReady() 对传感器仅调用 setPowerComponentSupported，未对应调用 setPowerStatsCollectorEnabled；MEMORY 两个 true 调用上方仍明确标注 Currently unimplemented。原文统一表述为允许采集和归因，容易将开关开启误读为组件已完成或具备硬件测量能力。",
+      "id": "finding-ch25-1-component-lifecycle",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-10-21-220520-20261021-220520-2fdac144-aiw-review-finalize-apply.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java#479"
+      ],
+      "status": "fixed",
+      "summary": "组件统一启用的概括遗漏 MEMORY 未实现及传感器启用方式的源码边界",
+      "type": "implementation-boundary",
+      "updated_at": "2026-10-21T22:20:10.837892+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "close_note": "已要求做差前排除两次快照中的 PowerMonitorReadings.ENERGY_UNAVAILABLE，保留时间戳前进、同监测项、累计值未回退及缓存噪声边界。依据 Android 17 PowerMonitorReadings.java L33-36、L92-116 和 PowerStatsService.java L746-785；并补 IPowerStats 每次读取可能缺项的可用性说明。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261021-220520-2fdac144",
+      "created_at": "2026-10-21T22:15:48.445397+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261021-220520-2fdac144",
+      "details": "android-17.0.0_r1 PowerMonitorReadings.getConsumedEnergy() 可能返回 ENERGY_UNAVAILABLE=-1，PowerStatsService 也保留并回传该值。仅要求同项、时间戳前进和累计值未回退，不足以排除首次不可用、下一次有效造成的伪增量；两次读数均须先确认不是不可用标记。",
+      "id": "finding-ch25-1-power-monitor-unavailable",
+      "log_path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/OpenClaw定时任务/AIW自动化流水线/2026-10-21-220520-20261021-220520-2fdac144-aiw-review-finalize-apply.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerMonitorReadings.java#92",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java#754"
+      ],
+      "status": "fixed",
+      "summary": "PowerMonitor 快照做差前未排除 ENERGY_UNAVAILABLE 哨兵值",
+      "type": "measurement-validity",
+      "updated_at": "2026-10-21T22:20:10.899240+08:00"
     }
   ],
   "schema_version": 1

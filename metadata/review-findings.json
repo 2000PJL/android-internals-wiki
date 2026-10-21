@@ -7675,6 +7675,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md",
+      "close_note": "已修复导语与 §1 的 AIDL 拆词、§9 的 GKI 嵌套括注，保留独立 ACK（Android Common Kernel，Android 通用内核）释义。证据：官方 AIDL 提取文本 L1-L8/L17-L21/L59-L68；Stable AIDL L1-L14；GKI L1-L6/L48-L61；DMA-BUF 旧迁移页 L1-L8（弃用/2026-05 移除提示）、HTML L75（仅 5.4）；ACK android17-6.18-2026-06_r6 dma-heap.c L404-L406/L422。证据与 gate 见 logs/rework/2026-10-21-20261021-173520-rework-f1627a0e-rework.md；章节为 ready-for-review，未直接 finalized。",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261021-173520-rework-f1627a0e",
       "created_at": "2026-10-21T14:50:49.961602+08:00",
       "created_by": "aiw-chinese-rewrite",
       "created_run_id": "20261021-143020-cn-rewrite-f1627a0e30d44ed7",
@@ -7685,10 +7688,10 @@
       "source_paths": [
         "run 20261021-143020-cn-rewrite-f1627a0e30d44ed7"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "三处历史改写污染的括注 token：导语 AID（PID）L（Android Interface Definition Language）、§1 AID（UID）L（Stable AIDL）、§9 GKI（Generic Kernel Image，通用内核（Android Common Kernel，ACK）镜像（Generic Kernel Image，GKI））。style_lint compare 的括注子串契约使本车道无法修复，交技术车道处理。",
       "type": "style-pollution",
-      "updated_at": "2026-10-21T14:50:49.961602+08:00"
+      "updated_at": "2026-10-21T17:39:34.637059+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",

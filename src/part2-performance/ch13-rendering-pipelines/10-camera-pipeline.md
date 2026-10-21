@@ -216,7 +216,7 @@ Camera 预览中的像素通常不经过宿主 View 的绘制逻辑。sensor 完
 
 同一组 capture request 可以持续产生 preview、record、analysis 和 still capture 输出，每一路都有自己的格式、尺寸、buffer pool（可循环复用的一组 buffer）、consumer（读取并最终归还 buffer 的一方）和归还节奏。所以预览正常，还说明不了分析或录像也正常：某个 consumer 长时间占用 buffer，可能通过共享的 ISP stage、HAL pipeline 或内存预算影响其他输出。这种下游消费变慢、阻塞上游继续生产的现象就是 backpressure（反压）。
 
-本文的结论来自平台源码、kernel 与设备实现的对照：AOSP 能说明 framework、cameraserver、HAL 接口和显示系统的公共部分；设备实现这一侧涵盖 Camera provider / AIDL 或 HIDL HAL、ISP firmware、sensor driver、vendor tag 和 CameraX 版本，曝光策略、ISP 算法、buffer 缓存和 vendor tracepoint（厂商自定义跟踪点）取决于设备，需要在目标设备上验证。
+本文的结论来自平台源码、kernel 与设备实现的对照。AOSP 能说明的是 framework、cameraserver、HAL 接口和显示系统的公共部分；再往设备侧走，Camera provider / AIDL 或 HIDL HAL、ISP firmware、sensor driver、vendor tag 和 CameraX 版本都属于设备实现，曝光策略、ISP 算法、buffer 缓存和 vendor tracepoint（厂商自定义跟踪点）同样取决于设备，要在目标设备上验证。
 
 ## HAL3 的 request-result 与多消费者
 
@@ -278,7 +278,7 @@ CameraService 会把宽高、格式、dataspace、旋转和消费方 usage（用
 
 #### 队列容量与 `maxBuffers` 的构成
 
-Android 17 的 `Camera3OutputStream::configureConsumerQueueLocked()` 会先通过 `NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS` 查询消费方要求保留、生产方不可取用的最小缓冲区数（源码变量 `maxConsumerBuffers`），再计算基础队列容量：
+`Camera3OutputStream::configureConsumerQueueLocked()` 会先通过 `NATIVE_WINDOW_MIN_UNDEQUEUED_BUFFERS` 查询消费方要求保留、生产方不可取用的最小缓冲区数（源码变量 `maxConsumerBuffers`），再计算基础队列容量：
 
 ```text
 mTotalBufferCount =
@@ -286,7 +286,7 @@ mTotalBufferCount =
     + camera_stream::max_buffers
 ```
 
-这两项的来历不同：消费方要留下自己仍在读取或显示的缓冲区（对应 `maxConsumerBuffers`），HAL 也要有缓冲空间推进它的处理流水线（pipeline，对应 `camera_stream::max_buffers`），这部分对应 `camera_stream::max_buffers`。算出的值描述该输出 `Surface` 的基础队列容量；预览显示同步或 `PreviewFrameSpacer` 路径还可能在此基础上追加额外缓冲或 framework 缓存。`Camera3Stream::getBuffer()` 还会检查 HAL 已取走的缓冲区数量，达到 `max_buffers` 时就等缓冲区返回，并把等待时间记进 `wait on max_buffers` 延迟直方图。
+这两项的来历不同：消费方要留下自己仍在读取或显示的缓冲区（对应 `maxConsumerBuffers`），HAL 也要有缓冲空间推进它的处理流水线（pipeline，对应 `camera_stream::max_buffers`）。算出的值描述该输出 `Surface` 的基础队列容量；预览显示同步或 `PreviewFrameSpacer` 路径还可能在此基础上追加额外缓冲或 framework 缓存。`Camera3Stream::getBuffer()` 还会检查 HAL 已取走的缓冲区数量，达到 `max_buffers` 时就等缓冲区返回，并把等待时间记进 `wait on max_buffers` 延迟直方图。
 
 想靠增大 `maxBuffers` 掩盖消费方处理缓慢是行不通的：增加它可能让处理流水线暂时不阻塞，也会增加该流中可同时驻留的图像内存；而且这个字段由 HAL 根据流水线需求声明，错误的数值还可能破坏系统框架与 HAL 的流量控制约定。
 
@@ -294,14 +294,14 @@ mTotalBufferCount =
 
 源码中还有一个 `Camera3BufferManager`。它属于 CameraService 内部，可以让兼容的流复用系统框架管理的 `GraphicBuffer`，再通过 `attachBuffer()` 接入具体的 BufferQueue。启用后，`Camera3OutputStream` 会禁止相应的 BufferQueue 自行分配缓冲区。
 
-HAL 缓冲区管理 API 则由 HAL 通过 `requestStreamBuffers()` 向 CameraService 取得缓冲区。两套机制可以出现在同一条调用路径中，但调用方、接口边界和目标都不同：
+HAL 缓冲区管理 API 则由 HAL 通过 `requestStreamBuffers()` 向 CameraService 取得缓冲区。两套机制可以出现在同一条调用路径中，但调用方、接口和目标都不同：
 
 | 名称 | 所在侧 | 主要作用 |
 |---|---|---|
 | `Camera3BufferManager` | CameraService 内部 | 在系统框架管理的兼容流之间调度 `GraphicBuffer` |
 | HAL 缓冲区管理 | Camera HAL 与 CameraService 之间 | 把捕获请求提交与输出缓冲区获取分开 |
 
-排查日志或源码时，要先确认上下文所指的是哪一个 BufferManager。
+我们排查日志或源码时，先确认上下文所指的是哪一个 BufferManager。
 
 ### API 37 的运行中 Surface 替换
 
@@ -317,7 +317,7 @@ Android 17 / API 37 新增 `CameraCaptureSession.updateOutputConfigurations(List
 
 ### Stream Use Case 与 capture intent
 
-Android 13 / API 33 引入 `OutputConfiguration.setStreamUseCase()`，让 App 为单个 output 声明 preview、still capture、video record、preview-video-still、video call 或 cropped RAW 等长期用途，HAL 可以据此选择 sensor mode、厂商 tuning 配置和 image-processing pipeline。它是一项配置提示，不是帧率或延迟保证。
+Android 13 / API 33 引入 `OutputConfiguration.setStreamUseCase()`，让 App 为单个 output 声明 preview、still capture、video record、preview-video-still、video call 或 cropped RAW 等长期用途，HAL 可以据此选择 sensor mode、厂商 tuning 配置和 image-processing pipeline。它是一项配置提示，帧率和延迟不在它的承诺范围里。
 
 它与 `CONTROL_CAPTURE_INTENT` 的分工不同：
 
@@ -328,7 +328,7 @@ Android 13 / API 33 引入 `OutputConfiguration.setStreamUseCase()`，让 App �
 
 所以别为 Stream Use Case 预先假定固定的延迟收益或切换帧数：流配置是否触发 sensor mode 切换、切换需要多久，取决于具体 HAL 与拍摄场景。
 
-## Android 17 的 Request-Buffer 生命周期
+## Request 与 buffer 的生命周期
 
 我们理解 Camera 掉帧时，要先把 request 的执行进度和 buffer 的占用状态分开看。Camera pipeline 需要多笔 request 同时在途，但不必从 request 入队开始就为每笔请求持有全部 output buffer——Android 10 引入 HAL3 buffer management 之后，“请求进入 pipeline”和“HAL 取得输出 buffer”可以发生在不同时间。
 
@@ -397,7 +397,7 @@ consumer acquire/wait/read
 
 Android 10 引入了可选的 HAL3 缓冲区管理 API：HAL 处理流水线可以同时排队 N 个捕获请求，但可能只在接近输出的阶段需要少量缓冲区；如果系统框架在请求进入 HAL 前就为所有输出取齐缓冲区，暂时用不到的图像内存也会长时间驻留。
 
-Android 17 同时保留两类行为：
+两类行为同时存在：
 
 - 未启用的流：系统框架仍随捕获请求提供真实的输出缓冲区；
 - 已启用的流：捕获请求中只有流的占位信息，`buffer` 为空，HAL 稍后再调用 `requestStreamBuffers()`。
@@ -425,7 +425,7 @@ CameraService 会逐条流检查：
 
 #### `bufferId`、handle 与 cache 生命周期
 
-每帧都跨 Binder 重复传递 native handle 会增加开销，Android 17 的 `StreamBuffer` 因此采用 `streamId + bufferId` 建立缓存约定：
+每帧都跨 Binder 重复传递 native handle 会增加开销，`StreamBuffer` 因此采用 `streamId + bufferId` 建立缓存约定：
 
 - 某个缓冲区第一次交给 HAL 时，同时携带 `bufferId` 和原生句柄；
 - HAL 记住两者的映射；
@@ -492,6 +492,8 @@ AIDL `flush()` 约定返回时，HAL 中已经没有尚未完成的请求或尚�
 
 ## 三种主要消费路径
 
+buffer 交给谁、按什么节奏归还，决定了一条流的内存驻留和吞吐。这一节我们先按 stream 估算内存驻留，再依次看预览、录像、分析三种消费路径：每一路的 consumer 不同，卡住时的现象和检查点也不同。
+
 ### 按 stream 估算驻留量与跨流反压
 
 我们粗估相机图像内存时按流求和；下面的公式只用来估计缓冲区驻留量的数量级：
@@ -513,7 +515,7 @@ session GraphicBuffer 驻留量
 | RAW12 | `width × height × 1.5` | 同上 |
 | RAW14 | `width × height × 1.75` | Android 17 能力仍要查询设备特性 |
 
-`IMPLEMENTATION_DEFINED` 没有固定的每像素字节数可套用；BLOB 流还要遵守配置中的 `bufferSize` 限制，JPEG 文件大小也当不了 `GraphicBuffer` 的分配大小。
+`IMPLEMENTATION_DEFINED` 没有固定的每像素字节数可套用；BLOB 流则要遵守配置中的 `bufferSize` 限制——估 `GraphicBuffer` 的分配大小时按这个值来，JPEG 文件大小在这里帮不上忙。
 
 各路输出虽然有独立队列，一次 capture request 仍可能同时要求多路结果。分析流积压、预览也跟着掉帧时，我们先把分析 consumer 列为候选，再用 frame number、各 stream result 返回时间和 buffer 归还记录，验证它是不是通过共享 ISP stage、缩放器、带宽或内部池拖慢了其他流。
 
@@ -527,11 +529,11 @@ session GraphicBuffer 驻留量
 | `TextureView` | `SurfaceTexture` → 宿主 HWUI RenderThread | 通常只有 host App Window | 易做 matrix、clip、alpha；增加一次宿主纹理获取、采样与窗口提交 |
 | 自研 GL / Vulkan | OES texture、AHardwareBuffer 或 ImageReader → App GPU | 取决于 renderer 的 output Surface | HAL 是第一生产者，App renderer 同时是中间 consumer 与第二生产者 |
 
-`SurfaceView` 预览在现代 Android 上通过 SurfaceControl / BLAST 与宿主窗口协调位置和裁剪，但相机像素仍由独立 BufferQueue 提交。BLAST 是 Surface buffer 与 transaction 协调机制。preview layer 能否采用 HWC DEVICE composition，取决于整组 layer 的格式、缩放、alpha、crop、色彩空间和硬件 plane 资源；使用 SurfaceView 并不等于必然获得硬件 overlay。
+`SurfaceView` 预览在现代 Android 上通过 SurfaceControl / BLAST 与宿主窗口协调位置和裁剪，但相机像素仍由独立 BufferQueue 提交。BLAST 是 Surface buffer 与 transaction 协调机制。preview layer 能否采用 HWC DEVICE composition，取决于整组 layer 的格式、缩放、alpha、crop、色彩空间和硬件 plane 资源；SurfaceView 本身只决定承载方式，硬件 overlay 要看这组条件是否凑齐。
 
 `TextureView` 涉及两条 BufferQueue：camera → SurfaceTexture 负责交付相机纹理，HWUI → App Window 负责提交合成后的应用窗口。所以 camera buffer 到达只说明纹理可供宿主获取，画面还要经过宿主 `Choreographer`、traversal（View 树遍历）、RenderThread 和 host window queue。
 
-Android 17 的 `TextureView` 收到 `SurfaceTexture.OnFrameAvailableListener` 回调后执行 `updateLayer()` 与 `invalidate()`；RenderThread 侧的 `DeferredLayerUpdater::apply()` 再通过 `ASurfaceTexture_dequeueBuffer()` 取得最新 `AHardwareBuffer`，并更新 HWUI layer。这条调用链可以解释一种常见现象：camera release fence 已完成，宿主窗口却因未及时 draw 或提交而继续显示上一帧。
+`TextureView` 收到 `SurfaceTexture.OnFrameAvailableListener` 回调后执行 `updateLayer()` 与 `invalidate()`；RenderThread 侧的 `DeferredLayerUpdater::apply()` 再通过 `ASurfaceTexture_dequeueBuffer()` 取得最新 `AHardwareBuffer`，并更新 HWUI layer。这条调用链可以解释一种常见现象：camera release fence 已完成，宿主窗口却因未及时 draw 或提交而继续显示上一帧。
 
 自研滤镜、畸变矫正、分割或 AR 管线还会增加一个 App GPU pass，也就是由应用执行的额外渲染阶段。排查时我们分别测量 camera release fence、App GPU completion 与 output Surface present，免得把应用渲染阶段的延迟误判成 ISP 延迟。
 
@@ -560,9 +562,9 @@ imageReader.setOnImageAvailableListener({ reader ->
 
 示例中的 `analyzer.consume()` 必须是耗时有界的同步调用。若把 Image 交给异步任务，该任务就成为 owner，必须在任务结束时 `close()`：提前关闭会让 `Image.Plane` 失效，无界排队则会把压力转移到线程池。`acquireLatestImage()` 适合扫码、姿态或预览辅助分析；要求逐帧不丢且保持顺序时，改用 `acquireNextImage()`，并保证 consumer 的持续处理速度不低于输入速度。增大 `maxImages` 换来的只是缓冲余量和内存占用，长期吞吐不足要回到 consumer 的处理速度上解决。CameraX 的 `ImageProxy` 同样必须 `close()`，这个调用会把底层 buffer 归还给相机管线。
 
-## ZSL：把两种机制分开
+## ZSL 的两种机制
 
-“Zero Shutter Lag”（ZSL，零快门延迟）的做法，是尽量拿按下快门前后已经采集的候选帧缩短等待，名字本身并没有承诺端到端耗时为零。Camera2 与 CameraX 至少涉及两种控制边界，把它们看成一条固定处理链，很容易误判设备能力。
+“Zero Shutter Lag”（ZSL，零快门延迟）的做法，是尽量拿按下快门前后已经采集的候选帧缩短等待，名字本身并没有承诺端到端耗时为零。Camera2 与 CameraX 至少涉及两种控制机制，把它们看成一条固定处理链，很容易误判设备能力。
 
 ### ZSL 省掉了哪一段延迟
 
@@ -665,7 +667,7 @@ CameraX InputRequest
 
 内核的 `dma-fence` 和 `sync_file` 只提供同步原语，CameraX 的三帧策略、AF、AE、AWB 过滤、降级条件和重处理元数据都在用户空间。所以我们分析 ZSL 失败时，先在用户空间找原因，别急着归因于内核。
 
-Android 17 的 `CameraDevice` 文档明确规定，重处理请求不会捕获新的图像数据。它从会话输入 `Surface` 取得下一块缓冲区，再为本次请求的输出 `Surface` 生成结果。
+`CameraDevice` 文档明确规定，重处理请求不会捕获新的图像数据。它从会话输入 `Surface` 取得下一块缓冲区，再为本次请求的输出 `Surface` 生成结果。
 
 这也解释了两个常见现象：
 
@@ -682,11 +684,11 @@ Android 17 的 `CameraDevice` 文档明确规定，重处理请求不会捕获�
 | 开启 ZSL 后内存与 buffer wait 上升 | input stream、ring buffer、in-flight request、output stream 与 Image close |
 | ZSL still callback 看似“乱序” | 按 frame number 与 source sensor timestamp 重排，不按 callback 到达时刻猜测 |
 
-## 时间戳：不要把每一路都当作 sensor time
+## 时间戳：先确认每一路的 time base
 
 timestamp base 表示时间戳采用哪一套参考时钟；参考时钟不同，两个数值直接相减没有意义。Android 13 起 `OutputConfiguration` 可以选择 timestamp base，Android 17 的默认值按输出目标调整：
 
-- `SurfaceView` 在固定帧率下默认使用 `TIMESTAMP_BASE_CHOREOGRAPHER_SYNCED`，让时间戳贴近显示调度节奏；这个时间不能直接与 sensor timestamp 对齐；
+- `SurfaceView` 在固定帧率下默认使用 `TIMESTAMP_BASE_CHOREOGRAPHER_SYNCED`，让时间戳贴近显示调度节奏；它和 sensor timestamp 分属两套时钟，比较前要先换算；
 - `SurfaceTexture` 的交付节奏可按 readout interval（传感器读出间隔）调整，但 image timestamp 仍保留 sensor time base；
 - MediaRecorder、MediaCodec 或带 video-encode usage 的 ImageReader 默认使用 MONOTONIC，即系统启动后的单调时钟，便于音视频同步；
 - 其他输出通常使用 SENSOR time base。
@@ -702,13 +704,15 @@ timestamp base 表示时间戳采用哪一套参考时钟；参考时钟不同�
 设备可以通过 `SCALER_DEFAULT_SECURE_IMAGE_SIZE` 公布 secure camera mode 保证支持的 PRIVATE / YUV 尺寸；其他格式或尺寸应调用 `isSessionConfigurationSupported()` 验证。进入 secure path 后，像素访问范围会受到额外限制：
 
 - 标准 CPU `ImageReader` / `Image.Plane` 读取通常不属于允许的 consumer 路径；
-- buffer 内容不应出现在截图、dump 或普通内存分析里；
+- buffer 内容不得进入截图、dump 或普通内存分析；
 - Perfetto 仍可观察 request、HAL callback、调度、fence 和显示 transaction，但看不到受保护像素；
 - 具体 permission、TEE consumer、protected usage 与显示限制由产品和 vendor 实现决定。
 
 排障文档应明确标记 secure session，避免把“mmap（映射到进程地址空间）失败、截图不可用”误记成普通 buffer 损坏。
 
 ## Perfetto：从 request 追到 present
+
+拿到一份相机卡顿的 trace，我们沿 request → HAL → consumer → display 这条链路读它：先固定采集环境，再按阶段找异常，最后拼出单帧的完整时间线。
 
 ### 采集前固定现场
 
@@ -723,7 +727,7 @@ timestamp base 表示时间戳采用哪一套参考时钟；参考时钟不同�
 
 `dumpsys media.camera` 可以查看客户端、stream 与 in-flight 概况，SurfaceFlinger layer tree 用来确认实际预览 carrier。厂商 HAL dump、camera event log 和 vendor trace 要与 Perfetto 对齐到同一时间基准，事件先后才关联得起来。
 
-### 按五段证据定位
+### 分五个阶段定位
 
 | 阶段 | 观察点 | 典型异常 |
 | --- | --- | --- |
@@ -775,7 +779,7 @@ Android 17 CameraService 源码包含以下可核对点：
 
 设备系统跟踪中是否包含完整的相机、ISP、V4L2、IOMMU 或带宽轨道，由厂商实现决定。看不到厂商事件时，我们把问题定位到系统框架与 HAL 的接口边界为止；要断言某个 ISP 硬件模块的耗时，得先看到厂商事件。
 
-#### buffer 现象的下一步证据
+#### buffer 现象的下一步排查
 
 | 现象 | 优先检查 | 不能直接下的结论 |
 |---|---|---|
@@ -786,11 +790,13 @@ Android 17 CameraService 源码包含以下可核对点：
 | `TextureView` 输入已到但屏幕显示晚 | `SurfaceTexture` 取得时间、应用主线程、`RenderThread`、GPU、宿主输出队列 | SurfaceFlinger 丢帧 |
 | dma-buf 总量增长 | 各流数量、分配大小、HAL、ISP、编解码器内部缓冲区 | Java 堆内存泄漏 |
 
-#### buffer wait 不自动等于 ANR
+#### buffer wait 与 ANR 的关系
 
 缓冲区不足可能让 CameraService 的 `RequestThread`、HAL 专用线程或应用的同步调用进入等待。Android ANR 仍要求应用主线程、广播、服务或输入事件等路径超过相应的超时阈值。要证明两者存在因果关系，必须找到主线程或关键 Binder 调用等待相机操作的调用栈，再对齐缓冲区与栅栏的阻塞时间。
 
 ## 常见掉帧场景与修复方向
+
+下面把前面的追踪方法落到几类常见场景，每一类先认症状，再看修复方向。
 
 ### Session 反复重配
 
@@ -810,7 +816,7 @@ API 37 上，如果切换只涉及属性可对应的 `OutputConfiguration` Surfa
 
 ### Sensor / ISP pipeline stall
 
-长曝光、HDR、多帧降噪、night extension、把 Quad Bayer 等排列重建为高分辨率 Bayer 数据的 remosaic（把 Quad Bayer 等排列重建为高分辨率 Bayer 数据），或多路高负载输出，都会增加 sensor / ISP 时间。我们结合 exposure、frame duration、SOF（Start of Frame，帧开始）/ readout、HAL result 和 vendor job，区分拍摄场景所需的处理时间与实现异常造成的 stall。
+长曝光、HDR、多帧降噪、night extension、remosaic（把 Quad Bayer 等排列重建为高分辨率 Bayer 数据）或多路高负载输出，都会增加 sensor / ISP 时间。我们结合 exposure、frame duration、SOF（Start of Frame，帧开始）/ readout、HAL result 和 vendor job，区分拍摄场景所需的处理时间与实现异常造成的 stall。
 
 ### Preview carrier 晚
 
@@ -830,13 +836,13 @@ SurfaceView preview buffer 已 ready 但迟迟没有 present 时，继续检查 
 - **Android 14 / API 34**：Ultra HDR still image 与记录亮度增益信息的 gainmap 进入公开链路，cropped RAW stream use case 可用于 in-sensor zoom。它们不会让普通 preview 自动切换到 HDR 或 RAW。
 - **Android 15 / API 35**：Low Light Boost 为支持设备提供连续 preview / video 的低光 AE mode，它与合成多帧的 Night still capture 是两种能力。曝光时间和算法负载变化都会影响可达帧率。
 - **Android 16 / API 36**：color temperature / tint、hybrid auto-exposure、night mode indicator、motion photo capture intent 等能力扩展了 request 与 metadata，但 Surface、HAL buffer 和 consumer 归还仍是数据流主线。
-- **Android 17 / API 37**：`CameraCaptureSession.updateOutputConfigurations()` 支持在不关闭整个 session 的情况下替换既有、属性可对应的 output Surface；`ImageFormat.RAW14` 支持紧凑的 14-bit RAW，vendor-defined camera extensions 与 `INFO_DEVICE_TYPE` 扩展了能力发现。动态更新不能增删 output，RAW14 也只影响设备支持并由 App 显式配置的 RAW stream。
+- **Android 17 / API 37**：`CameraCaptureSession.updateOutputConfigurations()` 支持在不关闭整个 session 的情况下替换既有、属性可对应的 output Surface；`ImageFormat.RAW14` 支持紧凑的 14-bit RAW，vendor-defined camera extensions 与 `INFO_DEVICE_TYPE` 扩展了能力发现。动态更新只替换属性可对应的配置、output 数量保持不变，RAW14 也只影响设备支持并由 App 显式配置的 RAW stream。
 
 Android 17 平台继续使用 HAL3 request-result 与多 output Surface 模型。新增 metadata 或 extension 会改变配置和处理负载，但每路输出仍须遵守 buffer ownership、fence 与 consumer backpressure 约束。
 
 ### 16 KB page size、DMA-BUF heaps 与 ION
 
-#### 16 KB page size 不规定 Camera buffer 几何对齐
+#### 16 KB page size 与 Camera buffer 对齐
 
 AOSP 从 Android 15 起支持 16 KB 页大小（page size），主要影响内核页粒度、`mmap()` 映射取整、ELF 文件对齐，以及依赖固定 `PAGE_SIZE` 的原生代码；Android 17 延续了这项兼容能力。
 
@@ -846,20 +852,20 @@ Camera AIDL、`GraphicBuffer` 和 BufferQueue 没有规定：
 - 图像有效载荷大小必须是 16 KB 的整数倍；
 - 应用或 Camera HAL 应手工把 gralloc 分配结果补齐到 16 KB。
 
-物理页、IOMMU 映射、平面步幅、内存堆粒度和硬件块对齐属于不同层次。内存分配器与驱动可能因为 16 KB 内核产生不同的物理占用，统一的 Camera HAL 缓冲区对齐公式却由此推不出来。排查时读取 mapper 返回的布局、dma-buf 大小和设备内存堆配置。
+物理页、IOMMU 映射、平面步幅、内存堆粒度和硬件块对齐属于不同层次。内存分配器与驱动可能因为 16 KB 内核产生不同的物理占用，统一的 Camera HAL 缓冲区对齐公式却由此推不出来。排查时我们读取 mapper 返回的布局、dma-buf 大小和设备内存堆配置。
 
-#### Android 17 的共享内存边界不再包含 ION
+#### Android 17 的共享内存构成
 
 Android 17 AOSP 发布说明要求删除厂商代码中的 ION 调用。Android 12 的 GKI 2.0（通用内核映像）已经用 DMA-BUF heaps（共享缓冲区堆）取代 ION；到 Android 17，所有支持 ION 的内核都已结束维护。
 
-因此 Android 17 camera 路径应按以下对象理解：
+因此 camera 路径应按以下对象理解：
 
 - gralloc 图形内存分配器决定 `GraphicBuffer` 的实现与布局；
 - DMA-BUF heaps 或厂商分配器提供可共享的内存分配；
 - dma-buf 文件描述符让 HAL、GPU、编解码器、HWC 等组件共享同一块分配；
 - dma-fence 与 sync_file 文件描述符传递访问完成关系。
 
-`ashmem` 也不是 Android 17 相机 `GraphicBuffer` 的可选“内存类型”。它用于普通共享内存，不提供 Camera HAL 图形流所需的 gralloc 元数据、用途标志协商和设备导入语义。
+`ashmem` 也不是相机 `GraphicBuffer` 的可选“内存类型”。它用于普通共享内存，不提供 Camera HAL 图形流所需的 gralloc 元数据、用途标志协商和设备导入语义。
 
 ## Android 17 / kernel 6.18 源码入口
 

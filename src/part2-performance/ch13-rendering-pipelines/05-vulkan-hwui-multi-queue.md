@@ -165,7 +165,7 @@ Vulkan 把资源、命令和同步的管理责任交给应用，但 Android 的�
 
 > 源码基线：AOSP `android-17.0.0_r1` 的 Android WSI（窗口系统集成层）与 SurfaceFlinger/RenderEngine；内核 `android17-6.18-2026-06_r6` 的 dma-buf/dma-fence。Vulkan 驱动和 GPU job scheduler 由设备厂商实现，AOSP 只能说明接口与所有权；GPU 工作何时完成，要在目标设备上确认。
 
-Vulkan 应用自行管理实例、设备、交换链、命令缓冲区和同步；HWUI 的 Vulkan 后端则由 framework 组织这些对象。Android 17 的多队列优化改变的是提交并行度，最终 buffer 和 fence 的交接方式没有变。我们先看原生 Vulkan 这条路径，再看 HWUI 内部的多队列，两条线最后都收束到 BufferQueue、SurfaceFlinger 与 present。
+Vulkan 应用自行管理实例、设备、交换链、命令缓冲区和同步；HWUI 的 Vulkan 后端则由 framework 组织这些对象。多队列优化改变的是提交并行度，最终 buffer 和 fence 的交接方式没有变。我们先看原生 Vulkan 这条路径，再看 HWUI 内部的多队列，两条线最后都收束到 BufferQueue、SurfaceFlinger 与 present。
 
 ## 交换链、命令提交与呈现
 
@@ -183,7 +183,7 @@ OpenGL ES 把较多状态验证、资源转换和同步决策放在驱动中；V
 - 精确表达执行依赖、内存可见性和 image layout（图像当前用途对应的状态）；
 - 让帧内 GPU 工作和错误更容易通过 Validation Layer/AGI（Android GPU Inspector）定位。
 
-这些能力不会自动转化为性能收益。引擎如果频繁创建 pipeline、把提交切得过碎、设置过度保守的 barrier，或者积压太多 in-flight frame（已提交但尚未完成显示的帧），Vulkan 同样会产生较高 CPU 开销、GPU bubble（依赖导致的硬件空闲间隙）和输入延迟。我们比较 GLES 与 Vulkan 时，要保持内容、分辨率、pacing 和设备温度一致。
+这些能力要兑换成性能收益，前提是引擎把它们用好。引擎如果频繁创建 pipeline、把提交切得过碎、设置过度保守的 barrier，或者积压太多 in-flight frame（已提交但尚未完成显示的帧），Vulkan 同样会产生较高 CPU 开销、GPU bubble（依赖导致的硬件空闲间隙）和输入延迟。我们比较 GLES 与 Vulkan 时，要保持内容、分辨率、pacing 和设备温度一致。
 
 #### 应用侧的责任
 
@@ -201,13 +201,13 @@ Validation Layer 能发现许多 API、同步和对象生命周期误用；性�
 
 #### Vulkan 与承载结构是两个维度
 
-Vulkan 描述 Producer（buffer 生产方） 如何生成内容。它可以绘制到 SurfaceView/GameActivity/NativeActivity 提供的独立 Surface，也可以写入 TextureView 的输入 Surface 或离屏 `AHardwareBuffer`（可跨系统组件共享的图形缓冲区）。SurfaceFlinger 能否看到独立 layer，取决于目标 `ANativeWindow` 连接到哪个 Consumer（buffer 消费方），仅凭 API 名判断不出来。
+Vulkan 描述 Producer（buffer 生产方） 如何生成内容。它可以绘制到 SurfaceView/GameActivity/NativeActivity 提供的独立 Surface，也可以写入 TextureView 的输入 Surface 或离屏 `AHardwareBuffer`（可跨系统组件共享的图形缓冲区）。SurfaceFlinger 能否看到独立 layer，取决于目标 `ANativeWindow` 连接到哪个 Consumer（buffer 消费方）；API 名本身给不出这个答案。
 
-常见游戏页面会同时包含 Vulkan 主体 Surface、宿主 HWUI、系统栏和弹窗。如果引擎 HUD（抬头显示界面） 已经画入同一个 swapchain image，SurfaceFlinger 看到的仍只有一个主体 buffer layer；画面里有按钮，也说明不了存在额外的 SF layer。
+常见游戏页面会同时包含 Vulkan 主体 Surface、宿主 HWUI、系统栏和弹窗。如果引擎 HUD（抬头显示界面） 已经画入同一个 swapchain image，SurfaceFlinger 看到的仍只有一个主体 buffer layer；画面里出现按钮，同样推不出额外的 SF layer。
 
 ### Android Vulkan Profile (AVP)
 
-Vulkan Profile 是一组可以由工具检查的 extension、feature、property、format 和 limit，工程可以用它表达所需的能力集合。不过运行时查询仍不可省略：安装同一 Android 版本的设备，GPU 能力也未必相同。
+Vulkan Profile 是一组可以由工具检查的 extension、feature、property、format 和 limit，工程可以用它表达所需的能力集合。至于具体设备的 GPU 能力，仍要在运行时查询里确认：安装同一 Android 版本的设备，GPU 能力也未必相同。
 
 #### 兼容性 profile 与要求 profile
 
@@ -230,7 +230,7 @@ Profile 检查通过，说明的只是能力集合这一层；具体某个 surfa
 
 #### Dynamic Rendering（无须预先创建 RenderPass/Framebuffer 的渲染方式） 例子
 
-某项功能进入 Vulkan core version，创建设备后并不会自动启用。以 Dynamic Rendering 为例，它免去预先创建 RenderPass/Framebuffer 的步骤，但应用仍要通过 `VkPhysicalDeviceVulkan13Features` 或对应 extension feature 查询 `dynamicRendering`，并在 device creation feature chain 中显式启用。Profile JSON 是否要求该 bit，应以实际文件为准，单看 API version 判断不出来。
+某项功能进入 Vulkan core version 后，还要应用在创建设备时显式启用。以 Dynamic Rendering 为例，它免去预先创建 RenderPass/Framebuffer 的步骤，但应用仍要通过 `VkPhysicalDeviceVulkan13Features` 或对应 extension feature 查询 `dynamicRendering`，并在 device creation feature chain 中显式打开。Profile JSON 是否要求该 bit，以实际文件为准；API version 单独给不出这个答案。
 
 ### 渲染流程详解
 
@@ -245,7 +245,7 @@ Profile 检查通过，说明的只是能力集合这一层；具体某个 surfa
 5. 创建 swapchain 并取得 images；
 6. 为每个 in-flight frame 准备 command buffer、acquire semaphore、render-finished semaphore 和供 CPU 查询完成状态的 fence。
 
-`minImageCount` 只能在 `minImageCount..maxImageCount` 范围内选择；`maxImageCount == 0` 表示规范未给出显式上限，数量并不因此无限。Android WSI（Window System Integration，Vulkan 与窗口系统的连接层） 还受 native window 的 min-undequeued/max-buffer-count 约束，swapchain 具体几个 buffer 要按设备和 surface 的实际约束来定，不宜固定描述成双缓冲或三缓冲。
+`minImageCount` 只能在 `minImageCount..maxImageCount` 范围内选择；`maxImageCount == 0` 表示规范未给出显式上限，实际数量仍由实现决定。Android WSI（Window System Integration，Vulkan 与窗口系统的连接层） 还受 native window 的 min-undequeued/max-buffer-count 约束，swapchain 具体几个 buffer，要按设备和 surface 的实际约束来定，双缓冲、三缓冲这类固定说法套不上。
 
 #### 第一阶段：Acquire
 
@@ -272,7 +272,7 @@ VkResult result = vkAcquireNextImageKHR(
 4. 把 fence fd 的副本交给驱动私有入口 `AcquireImageANDROID()`；
 5. 由驱动把该依赖连接到应用提供的 semaphore/fence。
 
-`AcquireImageANDROID()` 是 Android loader 与驱动之间的集成钩子，应用不会直接调用它；这条 fd 也由 loader 负责导入，应用手工再 import 一遍，只会与 loader 已建立的同步关系重复。
+`AcquireImageANDROID()` 是 Android loader 与驱动之间的集成钩子，调用发生在 loader 与驱动之间；这条 fd 也由 loader 负责导入，应用手工再 import 一遍，得到的只是一份重复的同步关系。
 
 Acquire 耗时较长，可能因为没有可用 image、native window release 较慢、FIFO 节拍限制、surface 正在重新配置，或者驱动内部处理。dequeue fence 来自该 buffer 的前序 Consumer 完成依赖，但 `vkAcquireNextImageKHR()` 的 wall time 里还叠着其他因素。我们观察时把两件事分开：dequeue 调用本身是否阻塞，以及返回后 fence/GPU 依赖何时满足。
 
@@ -381,11 +381,11 @@ sequenceDiagram
 - Fence：把某次 queue 工作的完成状态暴露给 host（CPU）；
 - Pipeline barrier/event：在 command stream 内定义执行顺序、内存可见性、image layout 和 queue-family ownership。
 
-Semaphore signal 只能表达执行依赖，代替不了 image layout transition；barrier 也代替不了 present 对 render-finished semaphore 的等待。分析同步时要同时看三件事：execution dependency（谁先执行） 决定谁先执行，memory dependency（写入何时对读取可见） 决定写入何时对读取可见，resource state（资源处于哪种 layout/ownership） 说明资源处于哪种 layout/ownership。
+Semaphore signal 只能表达执行依赖，代替不了 image layout transition；barrier 也代替不了 present 对 render-finished semaphore 的等待。分析同步时我们要同时看三件事：execution dependency（谁先执行）、memory dependency（写入何时对读取可见）、resource state（资源处于哪种 layout/ownership）。
 
 #### acquired image 的 layout
 
-swapchain image 会被循环复用。第一次使用且应用明确丢弃旧内容时，可以从 `VK_IMAGE_LAYOUT_UNDEFINED` 转换到颜色附件 layout；后续 acquire 到的 image 通常要从 `VK_IMAGE_LAYOUT_PRESENT_SRC_KHR` 转回渲染所需 layout。把 `oldLayout` 设为 `UNDEFINED` 的前提，是旧内容允许完全丢弃且符合规范与渲染设计；离开这个前提，每帧照写就不在规范允许的用法之内。
+swapchain image 会被循环复用。第一次使用且应用明确丢弃旧内容时，可以从 `VK_IMAGE_LAYOUT_UNDEFINED` 转换到颜色附件 layout；后续 acquire 到的 image 通常要从 `VK_IMAGE_LAYOUT_PRESENT_SRC_KHR` 转回渲染所需 layout。把 `oldLayout` 设为 `UNDEFINED` 的前提，是旧内容允许完全丢弃且符合规范与渲染设计；满足这个前提，每帧照写才是规范允许的用法。
 
 一次常见的 layout 序列是：
 
@@ -397,7 +397,7 @@ PRESENT_SRC_KHR（或首次 UNDEFINED）
 present
 ```
 
-这条序列只说明最简状态变化，不包含 MSAA resolve、transfer、compute post-process 或多 queue ownership。涉及这些阶段时，还要增加对应的 layout transition 与 queue-family transfer。
+这条序列只覆盖最简状态变化；MSAA resolve、transfer、compute post-process 或多 queue ownership 涉及进来时，还要增加对应的 layout transition 与 queue-family transfer。
 
 #### synchronization2 barrier
 
@@ -454,7 +454,7 @@ AOSP native WSI 的普通 surface 路径如下：
 | `FIFO_LATEST_READY_EXT` | `present_mode_fifo_latest_ready_ext2` flag 开启 | 从 FIFO 中选择已经 ready 的较新 image；必须通过枚举确认支持 |
 | `SHARED_DEMAND_REFRESH_KHR` / `SHARED_CONTINUOUS_REFRESH_KHR` | physical-device presentation properties 报告 `sharedImage` | 使用共享 image 的专用模式，生命周期不同于普通 swapchain |
 
-普通 Android Surface 路径不会把 `IMMEDIATE_KHR` 或 `FIFO_RELAXED_KHR` 加入返回集合，桌面 Vulkan 的常见选型建议也就不能直接移植到 Android。
+普通 Android Surface 路径返回的集合里没有 `IMMEDIATE_KHR` 和 `FIFO_RELAXED_KHR`，桌面 Vulkan 的常见选型建议要经枚举确认后才能搬到 Android。
 
 #### 运行时选择
 
@@ -467,7 +467,7 @@ AOSP native WSI 的普通 surface 路径如下：
 5. 在目标设备测量 input-to-present、帧间隔、功耗和丢帧；
 6. surface 重建后重新查询，不要一直沿用上一窗口的能力结果。
 
-MAILBOX 不一定带来最低时延，更多可用 image 也不一定更流畅。如果应用过早采样输入并持续积压工作，即使 presentation engine 丢弃旧帧，CPU/GPU 仍然会为这些帧付出成本。
+MAILBOX 未必带来最低时延，更多可用 image 也未必更流畅：应用过早采样输入并持续积压工作时，即使 presentation engine 丢弃旧帧，CPU/GPU 仍然会为这些帧付出成本。
 
 #### Android 17 present timing
 
@@ -480,7 +480,7 @@ MAILBOX 不一定带来最低时延，更多可用 image 也不一定更流畅�
 - 创建 swapchain 时设置 `VK_SWAPCHAIN_CREATE_PRESENT_TIMING_BIT_EXT`；
 - 处理 timing queue full 和查询结果延迟到达。
 
-该扩展提供 Android 显示链路中的阶段反馈，不是外部仪器测得的光学显示时间。旧设备可以继续评估 `VK_GOOGLE_display_timing`；两套 API 支持的阶段和时间域不同，应分开使用。
+该扩展提供的是 Android 显示链路中的阶段反馈；用户实际看到的光学显示时间，仍要靠外部仪器测量。旧设备可以继续评估 `VK_GOOGLE_display_timing`；两套 API 支持的阶段和时间域不同，应分开使用。
 
 ### Swappy Frame Pacing
 
@@ -516,11 +516,11 @@ swapchain recreate
   → destroy/reinitialize Swappy state
 ```
 
-这份骨架说明 Swappy 只控制 present 附近的节奏，不会替应用管理 resource barrier、command buffer fence 或业务线程同步。
+这份骨架说明 Swappy 只控制 present 附近的节奏；resource barrier、command buffer fence 和业务线程同步，仍由应用自己管理。
 
 #### 自研 pacing 与 Swappy
 
-Vulkan 应用可以使用 `VK_EXT_present_timing`、`VK_GOOGLE_display_timing`、present id/wait、frame-rate hint 和引擎时钟自行实现 pacing。同一个 swapchain 不应同时由多套 pacing 控制器调度；接入 Swappy 后，要明确由谁决定目标时间、由谁等待，以及由谁统计历史 present。
+Vulkan 应用可以使用 `VK_EXT_present_timing`、`VK_GOOGLE_display_timing`、present id/wait、frame-rate hint 和引擎时钟自行实现 pacing。同一个 swapchain 最好只交给一套 pacing 控制器调度；接入 Swappy 后，要明确由谁决定目标时间、由谁等待，以及由谁统计历史 present。
 
 ### Trace 视角
 
@@ -542,7 +542,7 @@ input sample
 → per-layer release
 ```
 
-这条时间线把 CPU API、GPU execution 和显示阶段分开。带有调用名的 slice 可能来自应用 marker、Vulkan layer、AGI 或驱动数据源；没有标准 slice 时，可以用 present id、buffer/frame number、fence 和 FrameTimeline token 补齐关联。
+我们用这条时间线把 CPU API、GPU execution 和显示阶段分开。带有调用名的 slice 可能来自应用 marker、Vulkan layer、AGI 或驱动数据源；没有标准 slice 时，可以用 present id、buffer/frame number、fence 和 FrameTimeline token 补齐关联。
 
 #### 等待归因
 
@@ -556,11 +556,11 @@ input sample
 | buffer 已 queue 但 SF 使用旧帧 | Producer fence 未 ready、目标显示时刻未到、visibility/transaction 条件 | layer trace、fence 和 present timing |
 | SF 已选新帧但 present 仍晚 | CLIENT composition、HWC/Display 资源竞争 | RenderEngine、composition type 和 HWC/present fence |
 
-`vkAcquireNextImageKHR()` 和 `vkQueuePresentKHR()` 只管理 swapchain image 的取得与交付，不适合充当业务线程或通用 GPU 同步器。其阻塞行为会随驱动、present mode 和 presentation engine 状态变化。
+`vkAcquireNextImageKHR()` 和 `vkQueuePresentKHR()` 管理的是 swapchain image 的取得与交付；业务线程同步和通用 GPU 同步要另选原语。它们的阻塞行为会随驱动、present mode 和 presentation engine 状态变化。
 
 #### queue-stuffing
 
-典型证据是 pending/in-flight 数量长期处于高位，应用仍按最大速度 acquire/submit/present，随后周期性等待 available image；帧率接近目标，input-to-present 时延却持续上升。修复方向包括：
+在 trace 里看到 pending/in-flight 数量长期高位、应用仍按最大速度 acquire/submit/present、随后周期性等待 available image，而帧率接近目标、input-to-present 时延持续上升，就是 queue-stuffing 的典型形态。修复方向包括：
 
 - 用 Swappy 或自研 timing 控制 submit；
 - 降低 in-flight frame 数；
@@ -570,13 +570,13 @@ input sample
 
 #### FrameTimeline、present timing 与光学时间
 
-FrameTimeline 可以帮助对齐 App SurfaceFrame 与 SurfaceFlinger DisplayFrame，但独立 native Surface 是否提供完整的 expected/actual 信息，取决于 Producer 传入的 timeline/desired-present 数据和 trace 配置。`VK_EXT_present_timing` 提供 WSI/Display 各阶段的反馈，present fence 提供显示栈同步完成的时点；这三者都不是用户实际看到光线变化的光学时间。
+FrameTimeline 可以帮助对齐 App SurfaceFrame 与 SurfaceFlinger DisplayFrame，但独立 native Surface 是否提供完整的 expected/actual 信息，取决于 Producer 传入的 timeline/desired-present 数据和 trace 配置。`VK_EXT_present_timing` 提供 WSI/Display 各阶段的反馈，present fence 提供显示栈同步完成的时点；用户实际看到光线变化的光学时间，这三者都提供不了，要靠外部仪器测量。
 
 #### SurfaceFlinger Graphite 不属于 App WSI
 
-Android 17 的 SurfaceFlinger RenderEngine 包含可选的 Graphite Vulkan backend；`RenderEngine::SkiaBackend` 仍以 Ganesh 为默认值，是否启用 Graphite 取决于 flag、property 和 OEM 配置。`RenderEngineThreaded` 会尝试使用 `SFRenderEnginePolicy` 和实时调度策略 `SCHED_FIFO` priority 2，在 `primeCache`（预热渲染缓存）期间暂时切回普通策略 `SCHED_OTHER`。
+SurfaceFlinger RenderEngine 包含可选的 Graphite Vulkan backend；`RenderEngine::SkiaBackend` 仍以 Ganesh 为默认值，是否启用 Graphite 取决于 flag、property 和 OEM 配置。`RenderEngineThreaded` 会尝试使用 `SFRenderEnginePolicy` 和实时调度策略 `SCHED_FIFO` priority 2，在 `primeCache`（预热渲染缓存）期间暂时切回普通策略 `SCHED_OTHER`。
 
-这条 Vulkan 工作只在 SurfaceFlinger 需要 RenderEngine 生成 client target、blur、tone-map 等内容时出现。它与 App 的 `vkQueueSubmit()`/swapchain 使用不同的 device、context、queue 和线程。如果主体 layer 使用 HWC DEVICE composition，SF 未必会通过 RenderEngine 重绘它。trace 分组时把 App queue、`REThreaded::drawLayers`、Graphite/Ganesh submit 和 HWC present 分开看，SF Graphite 的时间要留在 App command recording 之外。
+这条 Vulkan 工作只在 SurfaceFlinger 需要 RenderEngine 生成 client target、blur、tone-map 等内容时出现。它与 App 的 `vkQueueSubmit()`/swapchain 使用不同的 device、context、queue 和线程。如果主体 layer 使用 HWC DEVICE composition，SF 未必会通过 RenderEngine 重绘它。我们 trace 分组时把 App queue、`REThreaded::drawLayers`、Graphite/Ganesh submit 和 HWC present 分开看，SF Graphite 的时间要留在 App command recording 之外。
 
 Graphite 的 `flushAndSubmit()` 使用 Recording、wait/signal backend semaphores 和导出的 sync fd 表达 RenderEngine GPU 何时完成。这是 SF CLIENT composition 生成 client target 时的输出 fence，与 App swapchain 的 `VkFence` 无关。
 
@@ -624,7 +624,7 @@ Graphite 的 `flushAndSubmit()` 使用 Recording、wait/signal backend semaphore
 
 HWUI 的 Vulkan 后端会从同一个 graphics queue family 取得两条 `VkQueue`。queue 0 服务 RenderThread 的窗口绘制，queue 1 服务 `HardwareBitmapUploader` 的 AHardwareBuffer 上传。二者共享同一个逻辑设备 `VkDevice`，并分别绑定一个 Skia `GrDirectContext`；后者是 Skia 管理 GPU 资源与提交工作的上下文。
 
-源码能证明 HWUI 创建了两条 queue，也能证明 CPU 线程可以分别向它们执行 host submission（主机侧命令提交）；GPU 是否并行执行这些命令，由驱动与硬件决定，GPU 引擎、依赖、内存带宽、频率和调度策略都可能让工作交错或串行。分析时分清三层：接口保证、由源码推导的结论，以及仍需 trace 验证的硬件行为。
+源码能证明 HWUI 创建了两条 queue，也能证明 CPU 线程可以分别向它们执行 host submission（主机侧命令提交）；GPU 是否并行执行这些命令，由驱动与硬件决定，GPU 引擎、依赖、内存带宽、频率和调度策略都可能让工作交错或串行。我们分析时把结论分成三层：接口保证、由源码推导的结论，以及仍需 trace 验证的硬件行为。
 
 对 `android-14.0.0_r1` 至 `android-17.0.0_r1` 的 `VulkanManager.cpp` 做标签对比后，可以确认双 queue 在 Android 14 基线中已经存在。本文源码取 Android 17，只是跟随当前平台版本；双 queue 的来历要写到 Android 14，不该记到 Android 17 头上。
 
@@ -700,7 +700,7 @@ RenderThread、`VkUploader` 以及各 `GrDirectContext` 会持有强引用，确
 - device-lost（Vulkan 设备不可继续使用）回调中的上下文标签；
 - queue 0 与 queue 1 各自的提交顺序。
 
-`SkiaVMA::Options{.fThreadSafe = false}` 只表示每个 context 的 allocator 不负责协调多线程并发访问，据此推不出整个 `VkDevice` 无需跨线程同步。共享 Vulkan 对象、queue 和跨 queue 资源依赖仍要遵守 external synchronization（由调用方避免并发访问同一对象） 规则，也就是由调用方避免并发访问同一对象，并使用 semaphore 或 fence 表达执行依赖。
+`SkiaVMA::Options{.fThreadSafe = false}` 只表示每个 context 的 allocator 各自独立、不负责协调多线程并发访问；整个 `VkDevice` 的跨线程同步责任仍在调用方。共享 Vulkan 对象、queue 和跨 queue 资源依赖仍要遵守 external synchronization（由调用方避免并发访问同一对象） 规则，并使用 semaphore 或 fence 表达执行依赖。
 
 ### 两条 graphics queue 如何创建
 
@@ -730,7 +730,7 @@ mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 0, &mGraphicsQueue);
 mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 1, &mAHBUploadQueue);
 ```
 
-两条 queue 具有相同 capability 和同一个 family index，因此跨 queue 使用资源时不涉及 queue-family ownership 转移。`setupDevice()` 没有在 queue 数量不足时复用 queue 0 的分支；HWUI 一旦进入这段 Vulkan device 初始化，能力不满足会触发 fatal 并中止进程。是否选择 Vulkan 后端由更上层的设备配置与进程策略决定，这段代码能回答的只有初始化要求，某台 Android 17 设备是否运行 Vulkan HWUI，从这里推不出来。
+两条 queue 具有相同 capability 和同一个 family index，因此跨 queue 使用资源时不涉及 queue-family ownership 转移。`setupDevice()` 里也没有 queue 数量不足时复用 queue 0 的分支；HWUI 一旦进入这段 Vulkan device 初始化，能力不满足就会触发 fatal 并中止进程。至于某台设备是否运行 Vulkan HWUI，由更上层的设备配置与进程策略决定，这段代码能回答的只有初始化要求。
 
 #### 两个 Skia context 绑定不同 queue
 
@@ -746,7 +746,7 @@ mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 1, &mAHBUploadQueue);
 - AHardwareBuffer 上传涉及的分配、页映射和 cache 维护也可能拖慢窗口渲染；
 - 两条 queue 使用同一个 global priority 请求，queue 1 没有天然的低优先级。
 
-双 queue 提供的是独立提交能力，并减少同一 queue 内的顺序约束。它不保证硬件并行，也隔离不了上传引起的全部资源争用。
+双 queue 提供的是独立提交能力，减少的是同一 queue 内的顺序约束；它不保证硬件并行，也隔离不了上传引起的全部资源争用。
 
 ### HardwareBitmapUploader 的上传路径与等待
 
@@ -754,7 +754,7 @@ mGetDeviceQueue(mDevice, mGraphicsQueueIndex, 1, &mAHBUploadQueue);
 
 `Bitmap.Config.HARDWARE` 的这条创建路径先分配带 `AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE` 的 AHardwareBuffer，再调用 `SkImages::TextureFromAHardwareBufferWithData()` 把 `SkPixmap` 数据写入。`Bitmap.cpp` 也明确把 `allocateHardwareBitmap()` 描述为复制 bitmap contents。
 
-因此，已有像素在这条路径上并没有直接变成 GPU 纹理：首次创建仍要把 CPU 源像素传输到 gralloc 分配的图形 buffer，AHardwareBuffer 能避免的，是后续再创建一份应用可见的像素存储。
+因此，已有像素要经过这条路径的一次搬运才成为 GPU 纹理：首次创建仍要把 CPU 源像素传输到 gralloc 分配的图形 buffer；AHardwareBuffer 能避免的，是后续再创建一份应用可见的像素存储。
 
 #### GrallocUploadThread 与调用方等待
 
@@ -768,13 +768,13 @@ Vulkan 上传在 `GrallocUploadThread` 上执行：
 
 `GrSyncCpu::kYes` 表示上传线程会等待 GPU 完成。这样可以保证返回的 hardware bitmap 已经写完，但调用仍是同步的。主线程若同步创建大图，仍可能依次等待解码、AHB（AHardwareBuffer）分配、上传和 GPU 完成。
 
-queue 1 与 queue 0 在这段时间可以分别提交工作。GPU 资源争用是否拉长 RenderThread 的 queue 0 工作，仍要通过 trace 验证。
+queue 1 与 queue 0 在这段时间可以分别提交工作；GPU 资源争用有没有拉长 RenderThread 的 queue 0 工作，我们仍要通过 trace 验证。
 
 #### 60 秒闲置回收
 
 `HardwareBitmapUploader.cpp` 把 `kThreadTimeout` 设为 60000 ms。没有 pending upload（待处理上传）且空闲时间超过该值后，`VkUploader::onIdle()` 会释放上传 `GrDirectContext` 与 manager 强引用；下一次上传再按需重建。
 
-源码只能证明上传 context 及其持有资源被释放；具体回收多少 GPU 内存，还取决于驱动、Skia cache、AHardwareBuffer 的其他持有者和设备内存策略，这里给不出固定容量。
+源码能证明的是上传 context 及其持有资源被释放；具体回收多少 GPU 内存，还取决于驱动、Skia cache、AHardwareBuffer 的其他持有者和设备内存策略，这里没有固定数值可给。
 
 ### Global priority 的请求语义
 
@@ -788,7 +788,7 @@ queue 1 与 queue 0 在这段时间可以分别提交工作。GPU 资源争用�
 
 还要注意三点：
 
-- `mAPIVersion` 固定为 Vulkan 1.1；源码检查 `VK_API_VERSION_1_4`，据此推不出 Android 17 的 HWUI 在用 Vulkan 1.4 core priority；
+- `mAPIVersion` 固定为 Vulkan 1.1；源码检查 `VK_API_VERSION_1_4`，从这一点推不出 HWUI 在用 Vulkan 1.4 core priority；
 - 两条 queue 来自同一个 `VkDeviceQueueCreateInfo`，global priority 请求对这次创建的两条 queue 一起生效；
 - global priority 是提交给驱动的队列调度请求，还受系统权限控制。它与 Linux 线程实时优先级无关，也不承诺具体的 GPU 抢占时延。
 
@@ -801,7 +801,7 @@ queue 1 与 queue 0 在这段时间可以分别提交工作。GPU 资源争用�
 1. AGI capture layer 提供私有 `VK_ANDROID_frame_boundary` 时，HWUI 把本帧的 signal semaphore（GPU 完成后置位的同步对象）和 render-target image 传给 `vkFrameBoundaryANDROID()`；
 2. 该私有入口不存在时，HWUI 设置 `GrSubmitInfo.fMarkBoundary = Yes` 与进程内递增的 `fFrameID`，由 Skia 和可用的 `VK_EXT_frame_boundary` 支持向工具描述 frame boundary。
 
-Khronos `VK_EXT_frame_boundary` 给 queue submission 附加应用定义的 frame ID、结果 image/buffer 和工具 tag。它只是给分析工具的标注，既不会创建新的执行依赖，也替代不了 present semaphore。
+Khronos `VK_EXT_frame_boundary` 给 queue submission 附加应用定义的 frame ID、结果 image/buffer 和工具 tag。它是给分析工具看的标注：新的执行依赖不会因它产生，present semaphore 的等待也仍由 present 流程承担。
 
 `VK_ANDROID_frame_boundary` 在 AOSP 头文件中被明确描述为 AGI 专用扩展，由 AGI Vulkan capture layer 在抓帧时提供。普通运行时查不到该 proc pointer（Vulkan 函数入口指针）属于预期情况。
 
@@ -831,7 +831,7 @@ Vulkan frame-boundary 标记发生在 queue submission 附近，离屏幕显示�
 - HWC DEVICE 或 RenderEngine CLIENT 合成；
 - display present。
 
-GPU 工具把 draw call 归到某帧，只能回答这些 GPU 命令属于哪组提交工作。用户何时看到结果，仍要结合 FrameTimeline 与 present fence 判断。
+GPU 工具把 draw call 归到某帧，回答的只是这些 GPU 命令属于哪组提交工作；用户何时看到结果，我们仍要结合 FrameTimeline 与 present fence 判断。
 
 ### dequeue fence 与 producer completion fence
 
@@ -853,9 +853,9 @@ GPU 工具把 draw call 归到某帧，只能回答这些 GPU 命令属于哪组
 
 queue 0 的窗口绘制工作准备提交时，`finishFrame()` 创建可导出为 sync-fd 的 semaphore，并把它放入 `GrFlushInfo.fSignalSemaphores`。flush/submit 后，代码通过 `vkGetSemaphoreFdKHR()` 取得 fd。sync-fd 是用户空间传递内核 `dma_fence` 的文件描述符封装。`VulkanSurface::presentCurrentBuffer()` 再把这个 fd 传给 `ANativeWindow::queueBuffer()`。
 
-这个 fd 在 BufferQueue 消费侧成为当前 buffer 的 acquire fence。SurfaceFlinger 可以先接收 buffer 元数据，但读取像素前必须等待 fence signal，确认 GPU 已经写完。`presentCurrentBuffer()` 的函数名容易误导；这里执行的是 queue buffer，还没有完成屏幕 present。
+这个 fd 在 BufferQueue 消费侧成为当前 buffer 的 acquire fence。SurfaceFlinger 可以先接收 buffer 元数据，但读取像素前必须等待 fence signal，确认 GPU 已经写完。`presentCurrentBuffer()` 的函数名容易误导；这里执行的是 queue buffer，屏幕 present 还在后面的链路里。
 
-创建可导出 semaphore 失败、导致 `sharedSemaphore` 为空时，`finishFrame()` 会调用 `mQueueWaitIdle(mGraphicsQueue)`，保守地等待 queue 0 空闲。若 GPU 已成功提交，但后续 `vkGetSemaphoreFdKHR()` 导出 fd 失败，源码只记录错误并返回无效 fd。这两类失败各有各的处理，没有共用的一条 fallback。正常路径无需 RenderThread 在 CPU 上等待整帧 GPU 完成。
+创建可导出 semaphore 失败、导致 `sharedSemaphore` 为空时，`finishFrame()` 会调用 `mQueueWaitIdle(mGraphicsQueue)`，保守地等待 queue 0 空闲；若 GPU 已成功提交、但后续 `vkGetSemaphoreFdKHR()` 导出 fd 失败，源码只记录错误并返回无效 fd。这两类失败各有各的处理，没有共用的 fallback。正常路径下，RenderThread 无需在 CPU 上等待整帧 GPU 完成。
 
 下面的时序图按 buffer 所有权变化标出 fence 方向：
 
@@ -895,7 +895,7 @@ HWUI 会结合 buffer age 与 swap history，计算本次需要恢复的 damage�
 
 `getVkFunctorInitParams()` 会向 HWUI 的 WebView Vulkan functor 回调提供 `VkInstance`、`VkPhysicalDevice`、`VkDevice`、queue 0、queue family index 和已启用的 feature/extension。这里的 functor 是 WebView 与 HWUI 之间的私有绘制回调对象；`VkFunctorDrawable` 明确持有 `WebViewFunctor::Handle`，并在 RenderThread 上调用它。
 
-它只服务于 WebView 与 HWUI 之间的私有互操作，SurfaceView 的自定义渲染也借它复用不了 HWUI device。普通 native renderer 拿不到这套私有 device；应用应通过公开 Vulkan/ANativeWindow API 管理自己的 instance、device、queue 与同步对象。
+它只服务于 WebView 与 HWUI 之间的私有互操作；SurfaceView 的自定义渲染复用不到这套 device，普通 native renderer 也拿不到。应用自己的 instance、device、queue 与同步对象，应通过公开 Vulkan/ANativeWindow API 管理。
 
 ### 与 SkiaGL 的对比
 
@@ -963,7 +963,7 @@ AGI 适合解释单帧 GPU 命令做了什么；系统层面的 FrameTimeline、
 
 ## 版本与实现边界
 
-下表只陈述固定 release tag 对照能够证明的结果：
+双 queue 与 frame-boundary、global priority 代码从哪个版本开始存在，固定 release tag 的对照能给出一部分答案；下表陈述的就是这种对照能够证明的结果：
 
 | 平台标签 | 双 graphics queue | frame-boundary 相关代码 | global-priority 相关代码 |
 | --- | --- | --- | --- |
@@ -986,4 +986,4 @@ HWUI Vulkan 的双 queue 架构可以概括为四点：
 3. Vulkan frame-boundary 是 GPU 工具标记，FrameTimeline `vsyncId` 才关联窗口的 expected/actual present；
 4. dequeue fence 保护旧 buffer 的安全复用，`queueBuffer()` 携带的 producer completion fence 保护 SurfaceFlinger 的安全读取，二者方向相反。
 
-分析问题时，应把 RenderThread、GrallocUploadThread、两条 queue、GPU completion fence、BufferQueue、FrameTimeline 与 present 放进同一时间区间。queue 数量说明的只是可独立提交的接口结构；硬件并行度、卡顿原因或用户看到帧的时刻，要靠这些证据一起回答。
+分析问题时，我们把 RenderThread、GrallocUploadThread、两条 queue、GPU completion fence、BufferQueue、FrameTimeline 与 present 放进同一时间区间。queue 数量说明的只是可独立提交的接口结构；硬件并行度、卡顿原因或用户看到帧的时刻，要靠这些证据一起回答。

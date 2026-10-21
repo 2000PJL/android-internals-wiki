@@ -109,7 +109,7 @@ consolidated_from:
 
 # 系统手势导航与 Predictive Back
 
-系统手势先经过边缘区域和导航策略识别，再转成窗口或应用回调。Predictive Back 把返回提交拆成开始、进度、取消和完成，使系统动画能与应用状态变化同步。
+一个返回手势从边缘滑入开始，要经过边缘区域识别、导航策略判断，才转成窗口或应用回调；Predictive Back 再把返回提交拆成开始、进度、取消和完成四个阶段，让系统动画与应用状态变化同步。
 
 > 源码基线：AOSP `android-17.0.0_r1`。
 
@@ -129,7 +129,7 @@ Android 13 / API 33 开始提供预测性返回（Predictive Back） API，返�
 
 #### 组件分工
 
-入口仍然是 SystemUI 中的 `EdgeBackGestureHandler`，但职责已经拆开：
+入口仍然是 SystemUI 中的 `EdgeBackGestureHandler`，只是职责拆到了几个协作组件上：
 
 - `EdgeBackGestureHandler` 维护导航模式、主屏排除区域、边缘宽度、方向与阈值状态，并把事件送往反馈插件和 WM Shell。WM Shell 是窗口管理组件中承载系统级任务动画和窗口转场（Transition）的部分。
 - `DisplayBackGestureHandlerImpl` 为每块显示屏持有输入监视器、`InputEventReceiver`、排除区域监听器和一个 `BackPanelController`。
@@ -137,13 +137,13 @@ Android 13 / API 33 开始提供预测性返回（Predictive Back） API，返�
 - `BackPanelController` 和 `BackPanel.kt` 负责边缘箭头和面板动画；它们使用不可触摸的 `TYPE_NAVIGATION_BAR_PANEL` 受信任叠加层（trusted overlay），不靠这个窗口接收触摸。
 - `BackAnimationController` 位于 WM Shell，负责 `startBackNavigation()`、目标解析、指针抢占、进度回调以及提交后的系统动画。
 
-`updateIsEnabledInner()` 会注册主屏的 `ISystemGestureExclusionListener`，然后遍历当前显示屏创建 `DisplayBackGestureHandlerImpl`。Android 17 仍把边缘返回识别限定在主显示屏：`isWithinTouchRegion()` 对 `ev.getDisplayId() != mMainDisplayId` 返回 `false`，源码旁保留了 `TODO(b/382130680)`。因此，外接显示屏上监视器的生命周期，判断不了返回手势是否可用。
+`updateIsEnabledInner()` 会注册主屏的 `ISystemGestureExclusionListener`，然后遍历当前显示屏创建 `DisplayBackGestureHandlerImpl`。Android 17 仍把边缘返回识别限定在主显示屏：`isWithinTouchRegion()` 对 `ev.getDisplayId() != mMainDisplayId` 返回 `false`，源码旁保留了 `TODO(b/382130680)`。所以排查外接显示屏时，别拿监视器的生命周期判断返回手势是否可用，要看上面这条判定条件。
 
-旧版的 `InputMonitorResource`、`resetEdgeBackPlugin()` 和 `NavigationBarEdgePanel` 不属于 Android 17 的主路径。
+旧版的 `InputMonitorResource`、`resetEdgeBackPlugin()` 和 `NavigationBarEdgePanel` 都已退出主路径。
 
 #### 从并行观察到指针抢占
 
-`InputMonitorCompat` 建立监视通道，`DisplayBackGestureHandlerImpl` 再用指定的 `Looper` 和 `Choreographer` 创建 `InputEventReceiver`。它们只提供事件入口；是否允许返回、何时接管，由上层状态机决定。
+`InputMonitorCompat` 负责建立监视通道，`DisplayBackGestureHandlerImpl` 再用指定的 `Looper` 和 `Choreographer` 创建 `InputEventReceiver`。这两个组件只把事件接进来；返回手势能否成立、何时接管，由上层状态机决定。
 
 我们按事件到达的顺序过一遍触摸判定：
 
@@ -153,7 +153,7 @@ Android 13 / API 33 开始提供预测性返回（Predictive Back） API，返�
 4. 横向位移大于纵向位移并超过 `mTouchSlop` 后，`mThresholdCrossed` 变为 `true`。
 5. 旧式分支此时由 `EdgeBackGestureHandler` 直接调用 `pilferPointers()`；提前分发分支调用 `BackAnimation.onThresholdCrossed()`，由 `BackAnimationController` 决定何时抢占指针，判断依据包括描述返回目标和动画能力的 `BackNavigationInfo`、系统动画是否可用以及应用如何生成进度。
 
-`pilferPointers()` 最终进入 `InputDispatcher`（输入分发器）。原目标窗口会收到由分发器合成的 `ACTION_CANCEL`，手势监视器则继续接收后续事件。“监视器收到事件副本”也就说明不了“应用始终能收到完整手势”。
+`pilferPointers()` 最终进入 `InputDispatcher`（输入分发器）。原目标窗口收到的是分发器合成的 `ACTION_CANCEL`，手势监视器则继续接收后续事件。所以“监视器收到事件副本”推不出“应用始终能收到完整手势”，两者中间隔着一次抢占。
 
 #### 旧式与提前分发两条提交路径
 
@@ -176,15 +176,15 @@ flowchart TD
     L -->|取消| N["onBackCancelled 与预览回撤"]
 ```
 
-左侧旧式（legacy）分支在 Android 17 源码中仍是明确的回退路径，并不是只存在于 Android 10–12 的老代码。当 `mBackAnimation == null` 时，越过阈值后由 SystemUI 抢占指针，`BackPanelController` 判断提交后，`triggerBack()` 注入 `KEYCODE_BACK` 的按下和抬起事件。
+左侧旧式（legacy）分支到 Android 17 源码里仍是明确的回退路径，别把它当成只存在于 Android 10–12 的老代码。当 `mBackAnimation == null` 时，越过阈值后由 SystemUI 抢占指针，`BackPanelController` 判断提交后，`triggerBack()` 注入 `KEYCODE_BACK` 的按下和抬起事件。
 
-右侧提前分发分支中，`ACTION_DOWN` 和 `MOVE` 经 `dispatchToBackAnimation()` 切到 Shell 执行器。`BackAnimationController` 调用 `IActivityTaskManager.startBackNavigation()` 获取 `BackNavigationInfo`，再决定使用系统动画控制器还是应用回调。`setTriggerBack(true)` 只是记录“松手后提交”的状态；收到 `ACTION_UP` 后，Shell 才执行 `onBackInvoked()` 或启动提交后动画。取消路径则执行 `onBackCancelled()`。如果没有取得 `BackNavigationInfo`，源码仍保留注入返回键的兜底。
+右侧走的是提前分发：`ACTION_DOWN` 和 `MOVE` 经 `dispatchToBackAnimation()` 切到 Shell 执行器，`BackAnimationController` 调用 `IActivityTaskManager.startBackNavigation()` 获取 `BackNavigationInfo`，再决定使用系统动画控制器还是应用回调。`setTriggerBack(true)` 只是记录“松手后提交”的状态；收到 `ACTION_UP` 后，Shell 才执行 `onBackInvoked()` 或启动提交后动画。取消路径则执行 `onBackCancelled()`。如果没有取得 `BackNavigationInfo`，源码仍保留注入返回键的兜底。
 
-预测性返回（Predictive Back）也可能抢占指针。接管时机交给 `BackAnimationController.tryPilferPointers()`：使用系统动画控制器、应用侧生成不了进度、焦点变化或导航信息为空，都可能触发抢占。排查性能跟踪时，单凭 `ACTION_CANCEL` 区分不出旧式返回与预测性返回，还要结合 Shell 返回动画和回调轨道。
+预测性返回（Predictive Back）也可能抢占指针。接管时机交给 `BackAnimationController.tryPilferPointers()`：使用系统动画控制器、应用侧生成不了进度、焦点变化或导航信息为空，都可能触发抢占。所以排查性能跟踪时，想分清旧式返回与预测性返回，光有 `ACTION_CANCEL` 还不够，还要结合 Shell 返回动画和回调轨道。
 
 ### 手势冲突处理：系统手势优先区域与应用的 WindowInsets
 
-系统手势和应用手势的冲突主要集中在左右返回边缘，以及底部主屏和快速切换区域。应用可以用 `View.setSystemGestureExclusionRects()` 声明需要优先处理的区域，但可排除的范围有限，强制系统手势区域（mandatory system gesture）始终保留给系统。
+应用一旦把交互放到屏幕边缘，就要和系统手势争这块触摸区域。冲突主要集中在左右返回边缘，以及底部主屏和快速切换区域。应用可以用 `View.setSystemGestureExclusionRects()` 声明需要优先处理的区域，但可排除的范围有限，强制系统手势区域（mandatory system gesture）始终保留给系统。
 
 #### 系统手势排除区域
 
@@ -200,24 +200,24 @@ override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
 }
 ```
 
-`ViewRootImpl` 的 `ViewRootRectTracker` 收集各 `View` 的矩形，转换到窗口坐标后通过 `WindowSession.reportSystemGestureExclusionChanged()` 上报。WindowManagerService（WMS，窗口管理服务） 的 `DisplayContent.calculateSystemGestureExclusion()` 按窗口 Z 序、可触摸区域和显示坐标汇总，再通过 `ISystemGestureExclusionListener` 把限制后的 `Region` 通知 SystemUI。上报成功只说明 WMS 收到了请求，生效范围还要经过可触摸区域相交和配额计算。
+这些矩形随后进入系统侧的裁剪链：`ViewRootImpl` 的 `ViewRootRectTracker` 收集各 `View` 的矩形，转换到窗口坐标后通过 `WindowSession.reportSystemGestureExclusionChanged()` 上报。WindowManagerService（WMS，窗口管理服务） 的 `DisplayContent.calculateSystemGestureExclusion()` 按窗口 Z 序、可触摸区域和显示坐标汇总，再通过 `ISystemGestureExclusionListener` 把限制后的 `Region` 通知 SystemUI。上报成功只说明 WMS 收到了请求，生效范围还要经过可触摸区域相交和配额计算。
 
 #### 系统手势区域限制
 
-`mSystemGestureExclusionLimit` 限制左右边缘各自可排除的**纵向总高度**，矩形的横向宽度不在限制之内。`WindowManagerConstants` 保证该值至少为 200 dp，设备可以通过 `system_gesture_exclusion_limit_dp` 配置更大的值。`addToGlobalAndConsumeLimit()` 对边缘相交区域逐个消耗高度预算，超出部分会被裁掉。
+配额的大小由 `mSystemGestureExclusionLimit` 决定：它限制左右边缘各自可排除的**纵向总高度**，矩形的横向宽度不受影响。`WindowManagerConstants` 保证该值至少为 200 dp，设备可以通过 `system_gesture_exclusion_limit_dp` 配置更大的值。`addToGlobalAndConsumeLimit()` 对边缘相交区域逐个消耗高度预算，超出部分会被裁掉。
 
 WMS 同时保留受限区域（restricted `Region`）与原始未受限区域（unrestricted `Region`）。SystemUI 用受限区域决定系统是否让开；触点只命中未受限区域时，表示应用申请过排除，但该片段没有获得配额，系统仍可识别返回，并把它记为被拒绝的排除请求（rejected exclusion）。我们遇到“同一条边有些位置有效、有些位置仍触发返回”时，要检查纵向预算、窗口遮挡与最终获批区域。
 
-部分系统窗口和特定的粘性沉浸模式（sticky immersive）场景可以绕过普通限制。粘性沉浸指系统栏短暂出现后会自动再次隐藏。这属于平台权限和窗口策略，第三方应用仍然只能按前面的限制申请排除。
+部分系统窗口和特定的粘性沉浸模式（sticky immersive）场景可以绕过普通限制。粘性沉浸指系统栏短暂出现后会自动再次隐藏，这属于平台权限和窗口策略；第三方应用仍然只能按前面的限制申请排除。
 
 #### WindowInsets 与手势区域
 
 Android 把常规系统手势区域和强制系统手势区域分成两层：
 
 - `WindowInsets.Type.systemGestures()` 描述系统手势具有优先级的区域，通常包含左右返回边缘和底部手势区。应用可以在非强制部分申请有限排除。
-- `WindowInsets.Type.mandatorySystemGestures()` 是其中不能由 `setSystemGestureExclusionRects()` 覆盖的子集。旧方法 `getMandatorySystemGestureInsets()` 自 API 30 起由 `getInsets(Type.mandatorySystemGestures())` 取代。
+- `WindowInsets.Type.mandatorySystemGestures()` 标出的是其中系统必须保留的子集，`setSystemGestureExclusionRects()` 覆盖不到。旧方法 `getMandatorySystemGestureInsets()` 自 API 30 起由 `getInsets(Type.mandatorySystemGestures())` 取代。
 
-底部主屏和快速切换手势没有申请退出这一说，处理方式和侧边返回不同。游戏确有全屏交互需求时，可以在交互期间进入沉浸模式（immersive mode），用户仍能通过系统规定的边缘操作重新显示系统栏。普通页面更适合把滑动控件挪出 `systemGestures()`，排除区域留给挪不走的关键交互。
+底部主屏和快速切换手势没有申请退出这一说，处理方式和侧边返回不同。游戏确有全屏交互需求时，可以在交互期间进入沉浸模式（immersive mode），用户仍能通过系统规定的边缘操作重新显示系统栏。普通页面则更适合把滑动控件挪出 `systemGestures()`，把排除区域留给挪不走的关键交互。
 
 ### 从返回手势到预测性返回动画
 
@@ -225,7 +225,7 @@ Android 把常规系统手势区域和强制系统手势区域分成两层：
 
 我们先看旧模型缺什么：早期返回手势在松手前主要显示边缘箭头，用户看不到返回目标；系统通常到提交点才触发返回，应用也就容易把返回处理集中在 `onBackPressed()` 或 `KEYCODE_BACK`。
 
-预测性返回增加了预提交阶段。WM Shell 在手势中调用 `startBackNavigation()` 获得目标类型与回调，根据进度驱动当前窗口、目标窗口或应用自定义动画。应用必须把“跟随手势的视觉更新”和“提交后改变导航状态”分开。
+预测性返回补上的正是这个预提交阶段：WM Shell 在手势进行中就调用 `startBackNavigation()` 拿到目标类型与回调，按进度驱动当前窗口、目标窗口或应用自定义动画。对应用来说，这要求把“跟随手势的视觉更新”和“提交后改变导航状态”分成两件事。
 
 #### 预测性返回的回调模型
 
@@ -239,7 +239,7 @@ Android 把常规系统手势区域和强制系统手势区域分成两层：
 
 平台回调通过 `OnBackInvokedDispatcher` 注册，AndroidX 回调通过 `OnBackPressedDispatcher` 管理。`OnBackInvokedCallback` 只有提交通知；需要开始、进度和取消事件时，应使用 `OnBackAnimationCallback`，或交给 AndroidX、Navigation、Compose 的对应 API。
 
-`android:enableOnBackInvokedCallback` 的语义还受目标 SDK 版本影响。Android 15 及更早版本用它选择是否加入提前分发模型；Android 16 起，运行在 Android 16+ 且目标版本为 36+ 的应用默认启用，仍可暂时设为 `false` 退出。它和 AndroidX `OnBackPressedCallback.enabled` 是两回事，也代替不了回调生命周期管理。
+`android:enableOnBackInvokedCallback` 的语义还受目标 SDK 版本影响。Android 15 及更早版本用它选择是否加入提前分发模型；Android 16 起，运行在 Android 16+ 且目标版本为 36+ 的应用默认启用，仍可暂时设为 `false` 退出。它和 AndroidX `OnBackPressedCallback.enabled` 是两回事，回调生命周期管理也要单独安排。
 
 #### 版本演进的时间线
 
@@ -251,7 +251,7 @@ Android 把常规系统手势区域和强制系统手势区域分成两层：
 | Android 16 | 36 | 在 Android 16+ 设备上，目标版本为 36+ 的应用默认启用三类系统动画。 | 可暂时用 `android:enableOnBackInvokedCallback="false"` 退出。 | 目标版本为 36+ 时，旧 `onBackPressed()` 不再调用，`KEYCODE_BACK` 不再分发给应用；三键导航也可接入预测性返回。 | 新增 `PRIORITY_SYSTEM_NAVIGATION_OBSERVER`；API 36 只允许注册一个观察者回调。 |
 | Android 17 | 37 | 延续目标版本为 36+ 时的默认模型与三类系统动画。 | 退出开关仍应只作迁移缓冲，业务返回使用 AndroidX 或平台返回 API。 | `PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 已是没有 `@FlaggedApi` 标记的公共常量。 | 观察者回调数量不再受 API 36 的单实例限制，多个回调的调用顺序未定义。 |
 
-API 37 的观察者优先级值为 `-2`。普通注册参数声明了非负范围，`WindowOnBackInvokedDispatcher.Checker` 对这个常量有专门放行。观察者只在系统将执行默认导航时收到通知，不消费返回事件，适合记录日志和统计；多个观察者之间的调用顺序未定义，业务侧不要依赖。
+API 37 的观察者优先级值为 `-2`。普通注册参数声明了非负范围，`WindowOnBackInvokedDispatcher.Checker` 对这个常量有专门放行。观察者只在系统将执行默认导航时收到通知，不消费返回事件，适合记录日志和统计；多个观察者之间的调用顺序未定义，业务代码要避开对顺序的依赖。
 
 #### 预测性返回对性能的影响
 
@@ -264,15 +264,15 @@ API 37 的观察者优先级值为 `-2`。普通注册参数声明了非负范�
 
 #### 先找对 SystemUI 线程
 
-`DisplayBackGestureHandlerImpl` 和 `EdgeBackGestureHandler` 使用带 `@BackPanelUiThread`（采用 `THREAD_PRIORITY_DISPLAY` 对应的显示相关线程优先级） 的 `UiThreadContext`。`SysUIConcurrencyModule` 会根据 `Flags.edgeBackGestureHandlerThread()` 把它映射到独立的 `BackPanelUiThread` 或 SystemUI 主线程，前者采用 `THREAD_PRIORITY_DISPLAY` 对应的显示相关线程优先级。所以下结论前，先确认手势判定落在 `BackPanelUiThread` 还是 SystemUI 主线程，笼统的“所有判定都在 SystemUI 主线程”在这套配置下站不住。
+分析边缘手势的耗时，第一步是找对手势判定所在的线程。`DisplayBackGestureHandlerImpl` 和 `EdgeBackGestureHandler` 使用带 `@BackPanelUiThread`（采用 `THREAD_PRIORITY_DISPLAY` 对应的显示相关线程优先级） 的 `UiThreadContext`，`SysUIConcurrencyModule` 再根据 `Flags.edgeBackGestureHandlerThread()` 把它映射到独立的 `BackPanelUiThread` 或 SystemUI 主线程。所以下结论前，先确认手势判定落在 `BackPanelUiThread` 还是 SystemUI 主线程，笼统的“所有判定都在 SystemUI 主线程”在这套配置下站不住。
 
 性能跟踪中，我们先根据线程名和 `InputConsumer processing on...` 等接收器轨迹区段确认事件落在哪条线程，再检查该线程在 `ACTION_DOWN` 到阈值越过之间是否被长任务、锁等待或 Binder 调用占用。`EdgeBackGestureHandler` 没有为每个事件提供稳定的同名区段，必要时应在可控构建中增加自定义跟踪点。
 
-阈值前还有排除区、SystemUI 状态标志、PiP、桌面模式角区、手势阻塞 Activity 和可选的机器学习（ML）分类等判断；这些路径都不适合加入同步 I/O。
+阈值前还要过排除区、SystemUI 状态标志、PiP、桌面模式角区、手势阻塞 Activity 和可选的机器学习（ML）分类等判断，这些判断都要求保持轻量，别把同步 I/O 放进这条路径。
 
 #### 长按超时的影响
 
-`mLongPressTimeout` 是 `min(gestures.back_timeout, ViewConfiguration long-press timeout)`。只有在阈值尚未越过时，某个 `ACTION_MOVE` 的 `eventTime - downTime` 超过该值，候选返回才会取消。`gestures.back_timeout` 的 AOSP 默认值为 250 ms，“通常 400–500 ms”的说法在这里对不上号。设备厂商可以通过系统属性改变上限，现场以 `dumpsys` 与设备配置为准。
+手势判定里还有一个长按超时：`mLongPressTimeout` 取 `min(gestures.back_timeout, ViewConfiguration long-press timeout)`。只有在阈值尚未越过时，某个 `ACTION_MOVE` 的 `eventTime - downTime` 超过该值，候选返回才会取消。`gestures.back_timeout` 的 AOSP 默认值为 250 ms，“通常 400–500 ms”的说法在这里对不上号；设备厂商可以通过系统属性改变上限，现场以 `dumpsys` 与设备配置为准。
 
 #### 多指触控的取消
 
@@ -282,7 +282,7 @@ API 37 的观察者优先级值为 `-2`。普通注册参数声明了非负范�
 
 方向识别阈值是 `scaledTouchSlop * back_gesture_slop_multiplier`，`back_gesture_slop_multiplier` 的 AOSP 默认值为 `0.75f`。阈值前若 `dy > dx` 且 `dy > mTouchSlop`，手势按纵向移动取消；若 `dx > dy` 且 `dx > mTouchSlop`，才进入返回阶段。
 
-边缘命中还可以启用 `BackGestureTfClassifierProvider`。模型只在配置和 DeviceConfig 共同允许时加载，推理特征包括屏宽、距边缘距离、左右侧、前台包词表索引和 y 坐标。分析边缘“同一点偶发不响应”时，要同时记录灵敏度、内边距、排除区、前台包与 ML 开关，光比较手指位移是不够的。
+边缘命中还可以启用 `BackGestureTfClassifierProvider`。模型只在配置和 DeviceConfig 共同允许时加载，推理特征包括屏宽、距边缘距离、左右侧、前台包词表索引和 y 坐标。分析边缘“同一点偶发不响应”时，我们要同时记录灵敏度、内边距、排除区、前台包与 ML 开关，光比较手指位移是不够的。
 
 #### 动画渲染的开销
 
@@ -290,7 +290,7 @@ API 37 的观察者优先级值为 `-2`。普通注册参数声明了非负范�
 
 ### 在 Perfetto 中的表现
 
-Perfetto 能回答事件何时被读入、发给哪些窗口、由哪条线程处理，以及哪些帧错过了截止时间。手势排除矩形最终覆盖的几何范围，单靠一类通用 atrace 轨迹看不出来，这部分还要结合 `dumpsys window` 或 Winscope 状态。
+我们先明确 Perfetto 在这条链路上能回答什么：事件何时被读入、发给哪些窗口、由哪条线程处理，以及哪些帧错过了截止时间。至于手势排除矩形最终覆盖的几何范围，单靠一类通用 atrace 轨迹看不出来，这部分还要结合 `dumpsys window` 或 Winscope 状态。
 
 #### 最小抓取配置
 
@@ -364,13 +364,13 @@ Perfetto 的查询引擎 Trace Processor 在 `android.input` 模块中提供 `an
 
 #### 3. 排除区冲突的三组对照
 
-排除区问题要把三组信息放进同一次复现里：
+排除区问题，我们要把下面三组信息放进同一次复现里：
 
 - 应用记录的矩形与 `WindowInsets.Type.systemGestures()`、`mandatorySystemGestures()`；
 - 应用日志中的请求矩形、`dumpsys window` 的 `mSystemGestureExclusion` 最终显示区域，以及 SystemUI 转储中的受限与未受限区域；
 - Perfetto 中该指针事件流是否被抢占，以及 SystemUI 判定线程是否及时运行。
 
-应用传给 `setSystemGestureExclusionRects()` 的列表说明的是申请，说明不了 WMS 批准了同样大小的区域；Perfetto 这边也还原不出所有矩形的布局坐标。两组信息要互相校验。
+应用传给 `setSystemGestureExclusionRects()` 的列表只是申请，WMS 批准的区域大小要另行确认；Perfetto 这边也还原不出所有矩形的布局坐标。所以这两组信息要放在一起互相校验。
 
 ### 与其他章节的关系
 
@@ -382,7 +382,7 @@ Perfetto 的查询引擎 Trace Processor 在 `android.input` 模块中提供 `an
 
 ## Predictive Back 生命周期与动画同步
 
-预测性返回把返回操作分成“手势预览”和“提交导航”两个阶段。手指移动时，系统或应用只更新可撤销的视觉状态；手势提交后，返回回调才执行 `finish()`、弹出返回栈（pop back stack）、隐藏 IME 这些动作。普通手势识别只给出最终动作，预测性返回还要连续传递进度并允许取消，所以应用导航栈和系统窗口动画必须共用同一个提交边界。
+预测性返回把返回操作分成“手势预览”和“提交导航”两个阶段，后面所有生命周期与动画问题都从这个拆分出发。手指移动时，系统或应用只更新可撤销的视觉状态；手势提交后，返回回调才执行 `finish()`、弹出返回栈（pop back stack）、隐藏 IME 这些动作。普通手势识别只给出最终动作，预测性返回还要连续传递进度并允许取消，所以应用导航栈和系统窗口动画必须共用同一个提交时点。
 
 这个模型让系统可以提前知道返回目的地，但也引入了三条容易混淆的路径：
 
@@ -405,7 +405,7 @@ Perfetto 的查询引擎 Trace Processor 在 `android.input` 模块中提供 `an
 | `onBackCancelled()` | 取消 | 把视觉状态恢复到起点 |
 | `onBackInvoked()` | 已提交 | 执行导航、关闭容器或提交业务状态 |
 
-我们把界线划在这里：在 `onBackProgressed()` 中结束 Activity、弹出 Fragment 或写数据库，会破坏取消语义。系统动画同样遵守这一边界：手势阶段只变换 SurfaceControl 动画控制柄（leash），提交后才调用真实回调，并把预览接入正式的窗口转场。leash 让动画执行者变换窗口图层，但不会把窗口 Surface 本身的所有权交出去。
+我们把界线划在这里：在 `onBackProgressed()` 中结束 Activity、弹出 Fragment 或写数据库，会破坏取消语义。系统动画同样遵守这条线：手势阶段只变换 SurfaceControl 动画控制柄（leash），提交后才调用真实回调，并把预览接入正式的窗口转场。leash 让动画执行者变换窗口图层，但不会把窗口 Surface 本身的所有权交出去。
 
 #### 1.2 返回目的地与动画执行者
 
@@ -421,7 +421,7 @@ Perfetto 的查询引擎 Trace Processor 在 `android.input` 模块中提供 `an
 | `TYPE_IN_TRANSITION` | 当前已有窗口转场，暂不能准备 | 等转场空闲后重试 |
 | `TYPE_TASK_ROOT_INTERCEPTION` | 根任务（Root Task）拦截返回 | 按系统覆盖规则处理 |
 
-“谁处理进度”由这个类型和 `isPrepareRemoteAnimation()` 共同决定。应用回调获胜时，系统不会同时运行跨 Activity 系统动画；系统转场获胜时，逐帧 Surface 变换主要发生在 WM Shell。
+“谁处理进度”由这个类型和 `isPrepareRemoteAnimation()` 共同决定。应用回调获胜时，系统不会同时再跑跨 Activity 系统动画；系统转场获胜时，逐帧 Surface 变换主要发生在 WM Shell。
 
 ### 2. 端到端架构
 
@@ -449,13 +449,13 @@ flowchart TD
 - `BackNavigationController` 位于 `system_server`，负责确定焦点窗口、最高优先级回调、返回目标和可动画性，并准备 WindowContainer 与 Transition 侧资源；
 - `BackAnimationController` 位于 WM Shell，负责手势状态、指针抢占、远程动画就绪状态、进度分发以及提交后的收尾。
 
-Android 17 的 WMS 中没有 `TaskAnimationCoordinator` 这个类，解释跨 Activity、跨任务或任务快照路径时也用不上它。
+Android 17 的 WMS 里查不到 `TaskAnimationCoordinator` 这个类，解释跨 Activity、跨任务或任务快照路径时也用不上它。
 
 ### 3. 输入事件怎样到达返回动画
 
 #### 3.1 InputDispatcher 与分流决策
 
-`EdgeBackGestureHandler` 通过系统输入监视通道观察边缘指针事件流，判断手势是否满足起点、方向、排除区域和阈值条件。InputDispatcher 提供事件路由与输入监视能力，但它不负责决定“这是旧式返回还是预测性返回进度”。
+`EdgeBackGestureHandler` 通过系统输入监视通道观察边缘指针事件流，判断手势是否满足起点、方向、排除区域和阈值条件。InputDispatcher 在这里提供的是事件路由与输入监视能力，“这是旧式返回还是预测性返回进度”要由下游的返回处理逻辑来回答。
 
 当 SystemUI 已连接 WM Shell 的 `BackAnimation`：
 
@@ -464,11 +464,11 @@ Android 17 的 WMS 中没有 `TaskAnimationCoordinator` 这个类，解释跨 Ac
 3. 手势越过阈值后，Shell 按配置调用 `pilferPointers()`，从原接收者接管后续指针；
 4. 松手时根据 `triggerBack` 进入提交或取消。
 
-`EdgeBackGestureHandler.mBackAnimation` 是否为空反映 SystemUI 与 WM Shell 的功能连接状态，不等同于当前应用是否在清单中显式加入。应用是否启用新返回模型，主要体现在窗口有没有注册可供 WMS 使用的回调。
+顺带澄清一个容易混淆的信号：`EdgeBackGestureHandler.mBackAnimation` 是否为空，反映的是 SystemUI 与 WM Shell 的功能连接状态，和当前应用是否在清单中显式加入是两回事；应用是否启用新返回模型，主要看窗口有没有注册可供 WMS 使用的回调。
 
 #### 3.2 仍然存在 KEYCODE_BACK 回退
 
-提前返回分发（ahead-of-time）路径也保留了异常回退。例如，`startBackNavigation()` 因找不到有效焦点窗口、当前状态无法建立 `BackNavigationInfo`，或系统正在处理不兼容状态而返回 `null`，Shell 可在手势提交后异步注入 `KEYCODE_BACK`。
+提前返回分发（ahead-of-time）路径也保留了异常回退。例如，`startBackNavigation()` 因找不到有效焦点窗口、当前状态建立不了 `BackNavigationInfo`，或系统正在处理不兼容状态而返回 `null`，Shell 可在手势提交后异步注入 `KEYCODE_BACK`。
 
 这是兜底分支。对目标 SDK 36 及以上且未显式退出新模型的应用，常规路径通过回调分发；官方文档明确指出，`Activity.onBackPressed()` 与返回 `KEYCODE_BACK` 不再作为正常分发入口。
 
@@ -487,7 +487,7 @@ WMS 无需遍历应用的全部回调，只读取当前窗口已经选出的最�
 
 #### 4.2 优先级与同级顺序
 
-Android 17 的关键优先级是：
+关键优先级常量有四个：
 
 | 常量 | 值 | 用途 |
 |---|---:|---|
@@ -511,7 +511,7 @@ Android 17 的关键优先级是：
 
 此时应用 `ViewRootImpl` 根据本地 `MotionEvent` 更新 `BackTouchTracker` 与 `BackProgressAnimator`，Shell 跳过对应的 Binder 进度分发。条件不满足时，Shell 仍通过 `IOnBackInvokedCallback.onBackProgressed()` 发送进度。
 
-所以看到应用回调每帧都在运行，先别急着推出每帧都走了一遍 SystemUI → `system_server` → 应用的完整 IPC。
+所以当我们看到应用回调每帧都在运行，先别急着断定每帧都走了一遍 SystemUI → `system_server` → 应用的完整 IPC。
 
 ### 5. system_server 如何预测返回目标
 
@@ -530,19 +530,19 @@ Android 17 的关键优先级是：
 以下情况会让系统放弃某类预览，改走回调：
 
 - 前一个 Activity 没有进程或窗口；
-- Activity 尚未创建，无法安全作为跨 Activity 目标；
+- Activity 尚未创建，作为跨 Activity 目标还不够安全；
 - 参与者包含不适合该路径的透明 Activity；
 - 锁屏（keyguard）、应用锁定、任务锁定或浮动任务条件不满足；
 - 当前 Activity 使用场景转场（scene transition）；
 - 多窗口模式下前后 Task 不在兼容的父层级。
 
-这也解释了一条重要的性能边界：跨 Activity 和跨任务预测动画通常要求目标已经有进程和窗口，系统不会为了预览去强行冷启动一个已死亡的目标进程。这时用户看到的是普通回调或窗口转场，属于安全回退；先归因到“任务快照丢失”就找错了方向。
+这也解释了一条对性能排查很重要的规律：跨 Activity 和跨任务预测动画通常要求目标已经有进程和窗口，系统不会为了预览去强行冷启动一个已死亡的目标进程。这时用户看到的是普通回调或窗口转场，属于安全回退；先归因到“任务快照丢失”就找错了方向。
 
 #### 5.2 预览阶段的生命周期顺序
 
 对于可动画目标，WMS 核心可以创建 `TRANSIT_PREPARE_BACK_NAVIGATION`，收集打开与关闭两侧的 WindowContainer，并把前一 Activity 设置为后置启动（launch-behind）——先在当前页面后方把目标窗口准备好——或准备启动占位图层（starting surface）。手势取消时这些临时状态需要恢复；手势提交后才由真实回调和正式窗口转场完成导航。
 
-不要假设 `onPause()` 一定发生在首个进度回调前，也不要把输入焦点切换固定在 `onPause()` 与目标 `onResume()` 之间。实际顺序受返回类型、目标可见状态、窗口转场合并和窗口绘制情况影响。应用只能依赖公开生命周期契约。
+生命周期顺序上要留有余地：`onPause()` 未必发生在首个进度回调前，输入焦点切换也未必落在 `onPause()` 与目标 `onResume()` 之间，实际顺序受返回类型、目标可见状态、窗口转场合并和窗口绘制情况影响。应用能依赖的只有公开生命周期契约。
 
 ### 6. WM Shell 如何执行系统动画
 
@@ -550,7 +550,7 @@ Android 17 的关键优先级是：
 
 `ShellBackAnimationRegistry` 按 `BackNavigationInfo` 类型保存动画执行器。AOSP Android 17 的默认依赖注入（Dagger）模块装配跨 Activity、跨任务和定制跨 Activity 动画执行器；返回主屏动画可由 Launcher 在运行时注册，关闭对话框的槽位默认为 `null`。
 
-`BackNavigationInfo` 有某个类型，只说明 WMS 核心能表达该目的地；`BackAnimationAdapter.isAnimatable(type)` 还要确认当前产品已经提供动画执行器。
+`BackNavigationInfo` 有某个类型，只说明 WMS 核心能表达该目的地；产品侧到底有没有动画执行器，还要 `BackAnimationAdapter.isAnimatable(type)` 来确认。
 
 WMS 核心准备完成后，会把描述打开和关闭窗口图层的 `RemoteAnimationTarget` 及其 leash 交给 Shell。手势阶段的典型每帧工作是：
 
@@ -572,7 +572,7 @@ WMS 核心准备完成后，会把描述打开和关闭窗口图层的 `RemoteAn
 
 `BackAnimationController` 会在触发真实回调前同步通知 WMS 核心当前动画结果，避免关闭转场再播放一套重复动画。看门狗（watchdog）是防止动画执行器一直不回调的超时保护；动画执行器完成或看门狗超时后，Shell 释放动画目标、结束本次导航，并由 `BackTransitionHandler` 完成后续转场协调。
 
-源码中的 2 秒 `MAX_ANIMATION_DURATION` 是等待远程动画完成的看门狗阈值。它兜住的是动画执行器未回调、动画迟到这类异常，产品动画时长和性能目标都不以它为准。
+源码里的 2 秒 `MAX_ANIMATION_DURATION` 是等待远程动画完成的看门狗阈值，兜住的是动画执行器未回调、动画迟到这类异常；产品动画时长和性能目标另有尺度，别拿它当参考。
 
 ### 7. 任务快照在预测返回中的角色
 
@@ -583,9 +583,9 @@ WMS 核心准备完成后，会把描述打开和关闭窗口图层的 `RemoteAn
 - 当前策略没有直接采用 `launch-behind`；
 - 存在与目标屏幕方向、夜间模式和组件兼容的 Task 或 Activity 快照。
 
-任务快照用于在打开侧窗口尚未绘制时提供临时内容。Android 17 没有“实时窗口图层掉帧后动态切换快照”的通用降级，也不通过 `TaskAnimationCoordinator` 每帧选择预览层。系统会在动画开始前决定目标与预览策略。
+任务快照用于在打开侧窗口尚未绘制时提供临时内容。“实时窗口图层掉帧后动态切换快照”的通用降级，Android 17 并没有实现，按帧选择预览层的 `TaskAnimationCoordinator` 也不存在；目标与预览策略在动画开始前就已经定好。
 
-任务快照的尺寸、格式、是否包含输入法 Surface、是否采用降采样以及缓存寿命都受实现和设备配置影响。仅用屏幕分辨率乘四估算全部快照内存，会忽略实际缓冲区、缓存策略和安全窗口限制。需要内存结论时，应在目标设备读取图形内存和 TaskSnapshot 现场数据。
+任务快照的尺寸、格式、是否包含输入法 Surface、是否采用降采样以及缓存寿命都受实现和设备配置影响。仅用屏幕分辨率乘四估算全部快照内存，会忽略实际缓冲区、缓存策略和安全窗口限制；要下内存结论，我们应在目标设备读取图形内存和 TaskSnapshot 现场数据。
 
 ### 8. 应用回调路径的性能
 
@@ -660,7 +660,7 @@ flowchart LR
 
 60 Hz 一帧约 16.7 ms，120 Hz 一帧约 8.3 ms，但 SystemUI、Shell、应用、RenderThread 和 SurfaceFlinger 的工作是流水执行的，并不共享一张可以简单相加的“2 + 4 + 4 ms”表。评估时，我们要把每一帧 FrameTimeline 的预期与实际时间、CPU 可运行态等待时间和 Surface 事务对齐看。
 
-这条源码路径没有实现“持续掉帧就自动缩短 AppTransition”或“实时窗口图层跟不上就改用任务快照”的通用策略。跳帧、动态刷新率和 HWC 或 GPU 合成都可能出现，判断要回到 SurfaceFlinger 与调度侧的记录上，从卡顿现象反推不出某个固定降级算法。
+这条源码路径没有实现“持续掉帧就自动缩短 AppTransition”或“实时窗口图层跟不上就改用任务快照”的通用策略。跳帧、动态刷新率和 HWC 或 GPU 合成都可能出现，判断时要回到 SurfaceFlinger 与调度侧的记录上；从卡顿现象反推不出某个固定降级算法。
 
 ### 11. Perfetto 与系统状态观测
 
@@ -692,7 +692,7 @@ WMS 的协议缓冲转储（proto dump）与窗口跟踪中还包含 `BackNaviga
 5. 对齐每帧事务、应用缓冲区与 SurfaceFlinger 呈现时间；
 6. 松手后继续观察，直至真实回调和窗口转场完成。
 
-FrameTimeline 的帧异常类型只描述帧结果。判断开销来自布局、回调、Binder、GPU 还是合成，需要展开同一时间范围的线程轨迹区段。
+FrameTimeline 的帧异常类型只描述帧结果。开销到底来自布局、回调、Binder、GPU 还是合成，要展开同一时间范围的线程轨迹区段才能定位。
 
 #### 11.3 建议的覆盖组合
 
@@ -705,7 +705,7 @@ FrameTimeline 的帧异常类型只描述帧结果。判断开销来自布局、
 - 60 Hz 与高刷新率；
 - 分屏、自由窗口（freeform）和折叠状态变化；
 - AndroidX 回调启用与禁用；
-- 目标 SDK 35 与 36+ 的兼容边界。
+- 目标 SDK 35 与 36+ 的行为差异。
 
 ### 12. 源码索引
 
@@ -753,7 +753,7 @@ Android 17 后续小版本或 AndroidX 新版本的行为，解释不了 `androi
 
 ### `systemGestures()` 能代表所有可排除区域吗
 
-不能。`mandatorySystemGestures()` 是系统必须保留的子集，`setSystemGestureExclusionRects()` 无法覆盖。底部主屏和快速切换冲突与左右返回边缘的有限排除要分开处理。
+代表不了。`mandatorySystemGestures()` 标出的是系统必须保留的子集，`setSystemGestureExclusionRects()` 覆盖不到；底部主屏和快速切换冲突与左右返回边缘的有限排除要分开处理。
 
 ### Android 13 到 Android 17 的开关行为相同吗
 

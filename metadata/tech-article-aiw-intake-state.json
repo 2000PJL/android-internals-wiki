@@ -5992,6 +5992,114 @@
       "status": "appended",
       "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
     },
+    "source/juejin-android/2026-10-22-76573848-自己动手写了一个Android虚拟定位.md": {
+      "chapter": "待分类",
+      "entry_id": "22b9088737224e92",
+      "last_appended": "2026-10-22T05:25:20.307884+08:00",
+      "last_seen": "2026-10-22T05:25:20.307884+08:00",
+      "mtime": 1792613827.1957977,
+      "score": 14,
+      "sha256": "609e91582976b4598054e12aaec27b9f6c8c1d8cd348f859f4b2cda842d5e586",
+      "size": 14942,
+      "status": "appended",
+      "title": "自己动手写了一个 Android 虚拟定位 App：GPSSimulate 技术实自己动手写了一个 Android 虚拟"
+    },
+    "source/juejin-android/2026-10-22-76574953-腾讯XLog日志框架Android端接入.md": {
+      "chapter": "待分类",
+      "entry_id": "4d77670755fd0ff7",
+      "last_appended": "2026-10-22T05:25:20.307884+08:00",
+      "last_seen": "2026-10-22T05:25:20.307884+08:00",
+      "mtime": 1792613827.1965652,
+      "score": 9,
+      "sha256": "c7728b9ee62f9bbb1ae17e99785a54e136222833b887a6862b08eb40509ada9e",
+      "size": 11471,
+      "status": "appended",
+      "title": "腾讯 XLog 日志框架 Android 端接入mars 是微信官方的终端基础组件，是一个使用 C++ 编写的业务性无关"
+    },
+    "source/juejin-android/2026-10-22-76604358-Android架构这些年消灭碎片化异步.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "1bc7f38595421e7c",
+      "last_appended": "2026-10-22T05:25:20.307884+08:00",
+      "last_seen": "2026-10-22T05:25:20.307884+08:00",
+      "mtime": 1792613827.1946213,
+      "score": 12,
+      "sha256": "6bdbafd68e4768a50ff9fe6a2ac568737eab37ab3e1c0373cc1a5b3a64b82dee",
+      "size": 10248,
+      "status": "appended",
+      "title": "Android 架构这些年，其实一直在消灭碎片化异步很多 Android 开发者刚入行的时候都会觉得： 后来工作几年才"
+    },
+    "source/juejin-android/2026-10-22-76610856-AndroidStudio新版Logcat.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "ff901cc26fdcd2d1",
+      "last_appended": "2026-10-22T05:25:20.307884+08:00",
+      "last_seen": "2026-10-22T05:25:20.307884+08:00",
+      "mtime": 1792613827.195205,
+      "score": 8,
+      "sha256": "64c543319a2bd880ffc5a01e0fc096a3f6001990c3daa54dc675f52beaa3ae94",
+      "size": 7229,
+      "status": "appended",
+      "title": "Android Studio 新版 Logcat 一、新版核心变化（和旧版区别） 采用 字段:值 键值对语法，支持精确匹"
+    },
+    "source/juejin-android/2026-10-22-76623252-玩AndroidxAICoding完整工作流.md": {
+      "chapter": "待分类",
+      "entry_id": "6fd77aa7e706f2cd",
+      "last_appended": "2026-10-22T05:25:20.307884+08:00",
+      "last_seen": "2026-10-22T05:25:20.307884+08:00",
+      "mtime": 1792613827.1968017,
+      "score": 9,
+      "sha256": "c740acd1872d51c542f435eaf555074c19fd79ab4539cd091b519fba641ceed3",
+      "size": 36285,
+      "status": "appended",
+      "title": "玩Android×AI Coding：从产品到代码，完整跑通一套 AI 软件研发工作流从产品、UX、视觉设计到工程搭建与"
+    },
+    "source/juejin-android/2026-10-22-76696126-KMP跟RN差这么多.md": {
+      "chapter": "待分类",
+      "entry_id": "aa4cb97e02fde9a4",
+      "last_appended": "2026-10-22T05:25:20.307884+08:00",
+      "last_seen": "2026-10-22T05:25:20.307884+08:00",
+      "mtime": 1792613827.1971948,
+      "score": 8,
+      "sha256": "448d3c72d738c8bffc5f64ed7844325fcb0aaca5667a2fe2b6ad4a4f6d49aeb0",
+      "size": 7609,
+      "status": "appended",
+      "title": "你敢信吗？同样是跨端，KMP 跟 RN 居然差这么多！不知道你们在做跨平台混合开发即原生Android+原生iOS+跨平"
+    },
+    "source/juejin-android/2026-10-22-76756264-三星安卓系统BUG排查记录云闪付.md": {
+      "chapter": "待分类",
+      "entry_id": "95deef1de6e64850",
+      "last_appended": "2026-10-22T05:25:20.307884+08:00",
+      "last_seen": "2026-10-22T05:25:20.307884+08:00",
+      "mtime": 1792613827.1928842,
+      "score": 24,
+      "sha256": "3572fbd7f89f034b27f1f38724beba11897da36e4fa7f37f66b74292202bfccb",
+      "size": 38279,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-10-22-76800243-曾经安卓开发人手一个EventBus.md": {
+      "chapter": "待分类",
+      "entry_id": "2213844b246b8fce",
+      "last_appended": "2026-10-22T05:25:20.307884+08:00",
+      "last_seen": "2026-10-22T05:25:20.307884+08:00",
+      "mtime": 1792613827.1941783,
+      "score": 9,
+      "sha256": "c1f5a0cc02177f852fda4bfc577bae4f3ba0770efa887025d5e80ace5c8c86c0",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-10-22-76940645-Android以后可能不会再有横竖屏适配.md": {
+      "chapter": "待分类",
+      "entry_id": "878bd7ae33e03bb1",
+      "last_appended": "2026-10-22T05:25:20.307884+08:00",
+      "last_seen": "2026-10-22T05:25:20.307884+08:00",
+      "mtime": 1792613827.1935365,
+      "score": 15,
+      "sha256": "4347b6243cfb429b5b41bc743e11152b1e0b5a39d84622537b9fb1d12d95ea17",
+      "size": 15508,
+      "status": "appended",
+      "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -8377,13 +8485,13 @@
     }
   },
   "last_report": {
-    "appended": 0,
-    "considered": 0,
-    "cutoff": "2026-10-20T05:20:20.294753+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-21.md",
+    "appended": 9,
+    "considered": 9,
+    "cutoff": "2026-10-21T05:20:20.314411+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-22.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2211,
+    "scanned": 2220,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
@@ -8394,7 +8502,7 @@
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-21T05:25:20.314411+08:00",
+  "last_run_at": "2026-10-22T05:25:20.307884+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

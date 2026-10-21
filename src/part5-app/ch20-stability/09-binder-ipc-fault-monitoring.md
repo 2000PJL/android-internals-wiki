@@ -18,8 +18,10 @@ related_chapters:
 - '26.14'
 consolidated_from:
 - src/part5-app/ch20-stability/22-binder-communication-monitoring.md
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 framework/native; Android common kernel android17-6.18-2026-06_r6; current Android and Perfetto documentation
+last_verified: '2026-10-21'
+last_source_verified_at: '2026-10-21'
+last_idle_audit_at: '2026-10-21T10:40:18+08:00'
+last_verified_against: AOSP android-17.0.0_r1 frameworks/base and frameworks/native; Android common kernel android17-6.18-2026-06_r6; Android API and Perfetto documentation checked for the Android 17 scope
 confidence: medium-high
 sources:
 - type: aosp
@@ -36,6 +38,10 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/RemoteCallbackList.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/ServiceSpecificException.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/BinderCallsStatsService.java
+- type: official
+  path: https://developer.android.com/reference/android/os/RemoteCallbackList.Builder
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/android/binder.c
 - type: kernel
@@ -230,12 +236,12 @@ inline fun <T> callRemote(block: () -> T): IpcCallResult<T> {
 Binder Freezer 冻结的是缓存状态的应用进程：它们暂时不参与用户交互，其中的线程也随之停止运行。被冻结进程收到调用时的处理如下：
 
 - 向被冻结应用发送同步 Binder transaction 时，驱动返回 `BR_FROZEN_REPLY`；系统会终止被冻结的目标应用，避免调用线程一直等待。目标进程的退出记录可能显示 `ApplicationExitInfo.REASON_FREEZER`。
-- 向被冻结应用发送 `oneway` transaction 时，驱动把它放入目标 Binder 节点的 `async_todo` 待处理队列，并向发送方报告 `BR_TRANSACTION_PENDING_FROZEN`。目标解冻后才会处理；积压过多可能让接收进程崩溃，解冻时事件也可能已经过期。
-- 只有新旧 transaction 都带 `TF_UPDATE_TXN`，且事务编号、完整标志位、发送进程 ID 和目标 Binder 节点等条件一致，新项才可替换冻结队列中的旧项；普通 AIDL 指望不上这种自动合并。
+- 向被冻结应用发送 `oneway` transaction 时，驱动暂存调用，并向发送方报告 `BR_TRANSACTION_PENDING_FROZEN`。同一 Binder 节点的首笔异步调用可分派到接收线程的待办队列或进程的 `todo`；前一笔异步调用尚未完成时，后续调用才进入该节点的 `async_todo` 待处理队列。目标解冻后才会处理；积压过多可能让接收进程崩溃，解冻时事件也可能已经过期。
+- 只有新旧 transaction 都带 `TF_UPDATE_TXN`，且事务编号、完整标志位、发送进程 ID 和目标 Binder 节点等条件一致，新项才可替换冻结队列中的旧项。替换只扫描该节点的 `async_todo`，已分派到线程或进程待办队列的调用不在其中；普通 AIDL 指望不上这种自动合并。
 
 API 36 起，`IBinder.addFrozenStateChangeCallback()` 是公开 API。服务端持有客户端的远程回调 Binder 时，可以用它观察对方当前是冻结还是解冻。注册后会收到初始状态，但连续变化可能被合并，因此它适合维护当前状态，统计冻结发生了多少次就靠不住了。它只支持远程 Binder；内核驱动不支持冻结通知时还可能抛出 `UnsupportedOperationException`。
 
-管理一组远程回调时，我们可以用 `RemoteCallbackList` 的 frozen callee policy 指定接收方被冻结时的回调处理方式：
+管理一组远程回调时，可以通过 API 36 起提供的 `RemoteCallbackList.Builder` 配置 frozen callee policy，指定接收方被冻结时的回调处理方式：
 
 - `FROZEN_CALLEE_POLICY_DROP`：直接丢弃，适合过期后没有价值的实时事件。
 - `FROZEN_CALLEE_POLICY_ENQUEUE_MOST_RECENT`：只保留最新一条，适合状态同步。
@@ -243,6 +249,8 @@ API 36 起，`IBinder.addFrozenStateChangeCallback()` 是公开 API。服务端�
 - `FROZEN_CALLEE_POLICY_UNSET`：兼容旧行为，不建议作为新代码默认值。
 
 设置冻结策略后应通过 `broadcast(Consumer)` 广播回调；`beginBroadcast()` 只支持 `FROZEN_CALLEE_POLICY_UNSET`，其他策略下会抛 `UnsupportedOperationException`。
+
+API 35 及以下不能依赖这组冻结策略接口。驱动不支持冻结通知时，Android 17 的 `RemoteCallbackList` 会捕获 `UnsupportedOperationException`，继续按未冻结状态即时发送回调，配置的丢弃或排队策略就不会生效。使用这些策略前，需要在目标设备上验证冻结通知支持和实际回调行为。
 
 通过 `bindService()` 连接的 bound service（通过 `bindService()` 连接的服务），通常会因绑定关系提高进程重要性；能否进入缓存或冻结状态，还取决于绑定标志和当前进程状态。冻结状态从包名是猜不出来的，要判断就观察具体的远程 Binder，或在回调管理器中选择明确策略。
 
@@ -299,7 +307,9 @@ Perfetto 是 Android 的系统级追踪工具，它的时间轴由若干 track �
 
 分析 ANR 时，先看主线程是否停在 `BinderProxy.transactNative`，再沿 Perfetto flow（连接跨线程事件的箭头）找到服务端线程，确认它正在运行、等待锁、执行 I/O，还是等待下游 Binder。只有客户端堆栈时，最多能证明“客户端正在等待某次 IPC”。
 
-`/sys/kernel/debug/binder` 或 binderfs（Binder 文件系统） 的统计节点受系统构建类型、SELinux 权限策略、root（最高系统权限） 权限和设备配置限制，适合带调试能力的 userdebug、eng 构建或实验室设备。`dumpsys binder <pid>` 在量产设备上不一定可用，使用前先通过 `dumpsys -l` 和设备构建信息确认；线上应用更不要指望内核调试节点。
+`/sys/kernel/debug/binder` 或 binderfs（Binder 文件系统） 的统计节点受系统构建类型、SELinux 权限策略、root（最高系统权限） 权限和设备配置限制，适合带调试能力的 userdebug、eng 构建或实验室设备；线上应用不能依赖内核调试节点。
+
+使用 `dumpsys` 前先通过 `dumpsys -l` 确认设备提供的服务。AOSP 的 `BinderCallsStatsService` 注册名为 `binder_calls_stats`，可用 `dumpsys binder_calls_stats -h` 查看选项；它提供系统进程中 Java Binder 调用的统计，数据受采集配置和权限限制，不能按 PID 导出任意进程的驱动队列。排查具体调用仍需结合 Perfetto、两端日志和可访问的驱动节点。
 
 日志中可以搜索 `FAILED BINDER TRANSACTION`、`oneway spamming`、`Sending oneway calls to frozen process`，但日志标签、级别和可见性会随构建变化，只能作为辅助证据。
 
@@ -430,6 +440,9 @@ APM（Application Performance Monitoring，应用性能监控）的拦截代码�
 - [`TransactionTooLargeException`](https://developer.android.com/reference/android/os/TransactionTooLargeException)
 - [`IBinder`](https://developer.android.com/reference/android/os/IBinder)
 - [`RemoteCallbackList`](https://developer.android.com/reference/android/os/RemoteCallbackList)
+- [`RemoteCallbackList.Builder`（API 36 起）](https://developer.android.com/reference/android/os/RemoteCallbackList.Builder)
+- [AOSP `android-17.0.0_r1`：`RemoteCallbackList.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/RemoteCallbackList.java)
+- [AOSP `android-17.0.0_r1`：`BinderCallsStatsService.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/BinderCallsStatsService.java)
 - [Handle cached and frozen apps](https://source.android.com/docs/core/architecture/ipc/binder-freezer)
 - [Cached apps freezer](https://source.android.com/docs/core/perf/cached-apps-freezer)
 - [AIDL backends - Error handling](https://source.android.com/docs/core/architecture/aidl/aidl-backends#error-handling)

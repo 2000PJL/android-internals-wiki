@@ -60,11 +60,11 @@ last_idle_audit_at: '2026-08-06T18:35:19+08:00'
 ---
 # 性能测试最佳实践
 
-性能测试测量的是一个分布：设备、温度、后台负载和数据状态都在影响结果，任何一次读数都只代表当时的状态。先把场景、环境、采样和测试合同写清楚，回归门禁才能把真实劣化和测量噪声分开。
+性能测试测量的是一个分布：设备、温度、后台负载和数据状态都在影响结果，任何一次读数都只代表当时的状态。我们先把场景、环境、采样和测试合同写清楚，回归门禁才能把真实劣化和测量噪声分开。
 
 ## 性能测试测量的是分布
 
-功能测试通常一个断言就能判定一次执行；性能测试面对的却是调频、缓存、GC（Garbage Collection，垃圾回收）、调度、I/O（输入输出）、温度和网络带来的随机波动，任何单次结果都只说明那一次执行。要得到可比较的性能结论，我们需要同时固定三件事：
+功能测试通常一个断言就能判定一次执行。性能测试不一样：调频、缓存、GC（Garbage Collection，垃圾回收）、调度、I/O（输入输出）、温度和网络都在制造随机波动，任何单次结果都只说明那一次执行。要得到可比较的性能结论，我们需要同时固定三件事：
 
 - 工作负载：入口、数据、手势、终止条件和正确性断言；
 - 设备状态：硬件、系统镜像、电量、温度、显示、网络和后台活动；
@@ -92,7 +92,7 @@ last_idle_audit_at: '2026-08-06T18:35:19+08:00'
 
 ## 测试环境标准化
 
-环境标准化要解决的问题是：让每一轮测量发生在可复现的设备状态上。下面从设备、存储、温度、供电、显示到网络逐项过一遍。
+环境标准化要解决的问题是：让每一轮测量发生在可复现的设备状态上。我们从设备、存储、温度、供电、显示到网络逐项过一遍，说清每一项要固定什么。
 
 ### 设备：固定参考机与用户分层
 
@@ -108,13 +108,13 @@ CI（Continuous Integration，持续集成） 回归闸门要跑在专用物理�
 
 用户设备分层按线上机型、SoC（System on Chip，系统级芯片）、RAM 和 Android 版本的分布取样，用于周期性兼容验证。PR（Pull Request，代码合并请求） 级的细微回归，我们尽量在同一台参考设备上比较基线与候选版本；跨设备的结果，不直接做百分比差值。
 
-系统镜像用量产配置的 user 构建，或经过验证、保留了调试能力的 userdebug 构建。面向平台开发的 eng 构建、debuggable 目标包、代码覆盖率和 method tracing（逐方法记录调用轨迹） 都会改变执行路径，不要让它们混进被测目标。
+系统镜像选量产配置的 user 构建，或经过验证、保留了调试能力的 userdebug 构建。面向平台开发的 eng 构建、debuggable 目标包、代码覆盖率和 method tracing（逐方法记录调用轨迹） 都会改变执行路径，被测目标里要把它们排除在外。
 
-Macrobenchmark 的目标应用要尽量接近 release：`debuggable=false`；启用 `profile（热点代码记录）able`，让 shell 工具在不打开调试模式时也能采集性能数据；R8 代码优化和资源压缩配置与发布保持一致；带上 ProfileInstaller，用来安装 Baseline Profile（随安装包提供的热点方法和类规则清单）——随安装包提供的热点方法和类规则清单。
+Macrobenchmark 的目标应用要尽量接近 release：`debuggable=false`；启用 `profile（热点代码记录）able`，让 shell 工具在不打开调试模式时也能采集性能数据；R8 代码优化和资源压缩配置与发布保持一致；再带上 ProfileInstaller，负责安装 Baseline Profile（随安装包提供的热点方法和类规则清单）。
 
 ### 存储与数据状态
 
-存储剩余空间会影响文件系统回收、数据库、安装和 dexopt（ART 对 DEX 字节码的验证与编译优化）——ART 对 DEX 字节码的验证与优化。Android 没有适用于所有设备的统一“至少空闲百分比”，测试池要通过试运行确定自己的拒测线；报告里同时保存可用字节、总容量，以及当时有没有明显的后台 I/O。
+存储剩余空间会影响文件系统回收、数据库、安装和 dexopt（ART 对 DEX 字节码的验证与编译优化）。Android 没有适用于所有设备的统一“至少空闲百分比”，测试池要通过试运行确定自己的拒测线；报告里同时保存可用字节、总容量，以及当时有没有明显的后台 I/O。
 
 以下状态要分别定义，一句“清缓存”覆盖不了：
 
@@ -125,7 +125,7 @@ Macrobenchmark 的目标应用要尽量接近 release：`debuggable=false`；启
 - 进程、Activity 与 task 是否存在；
 - 测试数据是否固定并完成准备。
 
-`StartupMode.COLD` 会为冷启动终止应用进程，但不会自动清除 app data、业务缓存，也不会替我们模拟全新安装。`CompilationMode.None()` 只重置编译状态，同样离 fresh install（全新安装） 很远。
+`StartupMode.COLD` 只为冷启动终止应用进程；app data、业务缓存的清除和全新安装的模拟，都由测试用例自己准备。`CompilationMode.None()` 同样只重置编译状态，离 fresh install（全新安装） 还很远。
 
 ### 温度状态门控
 
@@ -150,7 +150,7 @@ Macrobenchmark 的目标应用要尽量接近 release：`debuggable=false`；启
 | 短路径回归 | 冷却到参考状态，缓存与编译状态固定 | 环境门控通过后 | 每轮时长、分布、起止热状态 |
 | 持续负载 | 运行目标工作负载，直到温度与性能进入稳定区间 | 预热区间结束后 | 稳态时长、帧/功耗分布、频率与热状态曲线 |
 
-持续负载的“稳定”要由预先定义的滑动窗口条件来判定：在连续的固定窗口里检查温度与性能波动是否收敛。曲线跑完再临时挑一段看起来平的区间，这样的“稳态”说服力存疑。预热数据要保留，但单独存放，别混进稳态统计。
+持续负载的“稳定”要由预先定义的滑动窗口条件来判定：在连续的固定窗口里检查温度与性能波动是否收敛。曲线跑完再临时挑一段看起来平的区间，这样的“稳态”说服力存疑。预热数据要保留，单独存放，与稳态统计分开。
 
 ### 电量与供电
 
@@ -167,7 +167,7 @@ AndroidX Benchmark 会把低电量设备标成 `LOW-BATTERY` 错误，CI 闸门�
 
 ### 显示模式、亮度与主题
 
-60 Hz、90 Hz、120 Hz 和动态刷新率对应不同的 deadline（帧完成时限），也就是一帧必须完成的时限。比较性能回归时要固定同一显示策略，至少也要记录每帧的实际 deadline。`DisplayModeDirector` 会综合系统 setting（设置项）、应用声明的期望帧率、功耗和 thermal 条件来选 mode；写入了 `peak_refresh_rate` 和 `min_refresh_rate`，厂商也未必采用我们指定的模式。
+60 Hz、90 Hz、120 Hz 和动态刷新率对应不同的 deadline（帧完成时限）。比较性能回归时要固定同一显示策略，至少也要记录每帧的实际 deadline。`DisplayModeDirector` 会综合系统 setting（设置项）、应用声明的期望帧率、功耗和 thermal 条件来选 mode；写入了 `peak_refresh_rate` 和 `min_refresh_rate`，厂商也未必采用我们指定的模式。
 
 改 setting 前先保存原值，改完用 `dumpsys display` 和 Perfetto 的 expected FrameTimeline（系统期望帧时间线） 验证是否生效。报告里同时记下 requested mode（请求模式） 和 observed mode（实测模式），两者对不上就拒绝比较。
 
@@ -186,11 +186,11 @@ AndroidX Benchmark 会把低电量设备标成 `LOW-BATTERY` 错误，CI 闸门�
 
 ## 消除测试干扰
 
-环境固定之后，剩下的干扰来自设备上的无关活动：后台任务、全局设置、系统自己的维护工作。我们逐个隔离。
+环境固定之后，剩下的干扰来自设备上的无关活动：后台任务、全局设置、系统自己的维护工作。我们把它们逐个隔离。
 
 ### 专用设备与全局设置
 
-一揽子关闭定位、同步、动画和所有后台应用的通用脚本并不稳妥：这些设置可能改变待测路径，也容易污染后续测试。更稳妥的隔离方式包括：
+一揽子关闭定位、同步、动画和所有后台应用的通用脚本，问题在于这些设置可能改变待测路径，也容易污染后续测试。更稳妥的隔离方式包括：
 
 - 使用无个人账号、无消息推送的专用用户或专用设备；
 - 固定安装清单和系统更新窗口；
@@ -199,7 +199,7 @@ AndroidX Benchmark 会把低电量设备标成 `LOW-BATTERY` 错误，CI 闸门�
 - 记录 `top`、I/O、thermal 和异常系统任务作为数据质量证据；
 - 所有变更都有 tear-down（测试后的恢复动作），设备重启后重新验收状态。
 
-`adb shell am kill-all` 只处理符合条件的后台进程，系统服务、前台服务和维护任务它一概动不了，所以它证明不了“设备已经干净”。
+`adb shell am kill-all` 只处理符合条件的后台进程；系统服务、前台服务和维护任务它一概不动，“设备已经干净”要靠上面的隔离清单和数据质量记录来证明。
 
 ### AndroidX SideEffectRunListener
 
@@ -224,13 +224,13 @@ CI 里通过 instrumentation（插桩测试运行） argument（插桩测试参�
 | 暂停 JobScheduler 启动 | `adb shell pm bg-dexopt-job --disable` | 取消已由 JobScheduler（系统任务调度器）启动的任务，并停止后续调度 |
 | 恢复调度 | `adb shell pm bg-dexopt-job --enable` | 重新调度后台 dexopt |
 
-`cancel-bg-dexopt-job` 在 Android 17 里只是 `bg-dexopt-job --cancel` 的废弃别名。`--disable` 的状态在 `system_server`（承载多数系统服务的进程） 退出后会丢失，也拦不住所有系统内部启动路径。测试脚本必须检查输出，并在 tear-down 里执行 `--enable` 把调度恢复回来。
+`cancel-bg-dexopt-job` 只是 `bg-dexopt-job --cancel` 的废弃别名。`--disable` 的状态在 `system_server`（承载多数系统服务的进程） 退出后会丢失，也拦不住所有系统内部启动路径。测试脚本必须检查输出，并在 tear-down 里执行 `--enable` 把调度恢复回来。
 
-Android 17 中，`PackageManagerShellCommand` 只保留 ART Service 命令的兼容分发列表，处理代码在 `art/libartservice/.../ArtShellCommand.java`，调度与执行由 `BackgroundDexoptJob*` 和 `ArtManagerLocal` 完成。旧版 `BackgroundDexOptService` 路径不必再依赖，`setprop`（修改系统属性的命令） 这类权限和恢复行为都确认不了的写法，也不要拿来代替这些命令。
+Android 17 中，`PackageManagerShellCommand` 只保留 ART Service 命令的兼容分发列表，处理代码在 `art/libartservice/.../ArtShellCommand.java`，调度与执行由 `BackgroundDexoptJob*` 和 `ArtManagerLocal` 完成。旧版 `BackgroundDexOptService` 路径不必再依赖；`setprop`（修改系统属性的命令） 这类权限和恢复行为都确认不了的写法，也换成上面这些命令更稳妥。
 
 ### 锁频的适用范围
 
-Android 官方 CI 文档为 Microbenchmark（在目标进程内测量小段代码的 Jetpack 基准测试库） Gradle plugin 提供了 `lockClocks`/`unlockClocks`，要求 rooted（已取得 root 权限） 设备，并且明确说明锁频只在 Microbenchmark 场景需要——Microbenchmark 测的是目标进程内的小段代码。
+Android 官方 CI 文档为 Microbenchmark（在目标进程内测量小段代码的 Jetpack 基准测试库） Gradle plugin 提供了 `lockClocks`/`unlockClocks`，要求 rooted（已取得 root 权限） 设备，并且明确说明锁频只在 Microbenchmark 场景需要。
 
 Macrobenchmark 测的是完整应用路径，DVFS（动态电压频率调节）、调度和 thermal 响应本来就是用户设备行为的一部分。直接写死 CPU0 的 sysfs governor（内核频率策略） 或频率，跨 SoC 复用不了，还可能改变线程迁移、GPU、内存和功耗行为。真要分析硬件上限，就用设备专用、可恢复的实验配置，并把结果标成实验室上限，与用户代表性基线分开存放。
 
@@ -238,15 +238,15 @@ Macrobenchmark 测的是完整应用路径，DVFS（动态电压频率调节）�
 
 Microbenchmark 用 `AndroidBenchmarkRunner`，这个 run（单次运行）ner（插桩测试运行器） 连同它的 `IsolationActivity`、亮度控制和设备能力相关逻辑，只服务于 Microbenchmark 自己的稳定化；Macrobenchmark 由独立测试进程驱动目标应用，官方 CI 文档要求用常规 `AndroidJUnitRunner`。
 
-所以建了 `MacrobenchmarkRule`，离温度、网络、目标数据和后台任务的标准化还差一步：SideEffectRunListener、专用设备、状态准备和数据质量检查，仍要我们显式配置。
+所以才有了 `MacrobenchmarkRule`。但离温度、网络、目标数据和后台任务的标准化还差一步：SideEffectRunListener、专用设备、状态准备和数据质量检查，仍要我们显式配置。
 
 ## 数据采样策略
 
-采样要回答两个问题：一轮测试跑多少次，以及结果怎么聚合、怎么解释。
+采样要回答两个问题：一轮测试跑多少次，以及结果怎么聚合、怎么解释。我们先看次数从哪来。
 
 ### 迭代次数由噪声与最小可检测回归决定
 
-官方 API 要求设置 `iterations`，示例里也给了具体次数，但适用于所有工作负载的固定下限并不存在：短启动、长滚动、数据库迁移和持续视频，单轮成本与方差差异很大。
+官方 API 要求设置 `iterations`，示例里也给了具体次数；固定下限要按工作负载自己找——短启动、长滚动、数据库迁移和持续视频，单轮成本与方差差异很大。
 
 确定次数时，我们可以按这个流程来：
 
@@ -267,9 +267,9 @@ Microbenchmark 用 `AndroidBenchmarkRunner`，这个 run（单次运行）ner（
 | `StartupTimingMetric` | 每次启动一个值 | min、median、max，并在 JSON 的 `runs` 保存逐轮原始值 |
 | `FrameTimingMetric` | 多轮中的帧样本池 | P50、P90、P95、P99 |
 
-`StartupTimingMetric` 的 JSON 不会自动给出 P90 字段，需要启动尾部分位时，从 `runs` 按版本化算法自己算，并保证足够的独立启动样本。`FrameTimingMetric` 的 P90/P95/P99 来自帧样本池，写成“10 次滑动的 P90”时，务必说明这 10 轮的帧是怎么合并的。
+`StartupTimingMetric` 的 JSON 里没有现成的 P90 字段，需要启动尾部分位时，从 `runs` 按版本化算法自己算，并保证足够的独立启动样本。`FrameTimingMetric` 的 P90/P95/P99 来自帧样本池，写成“10 次滑动的 P90”时，务必说明这 10 轮的帧是怎么合并的。
 
-API 31+ 优先看 `frameOverrunMs`：正值说明错过 deadline，负值说明还有预算富余。`frameDurationCpuMs` 只统计 UI 线程和 RenderThread（承担部分渲染工作的线程） 的 CPU 生产时长，GPU 与 SurfaceFlinger（负责图层合成与呈现的系统服务） 的完整路径它覆盖不了。
+API 31+ 优先看 `frameOverrunMs`：正值说明错过 deadline，负值说明还有预算富余。`frameDurationCpuMs` 只统计 UI 线程和 RenderThread（承担部分渲染工作的线程） 的 CPU 生产时长，GPU 与 SurfaceFlinger（负责图层合成与呈现的系统服务） 的完整路径不在它的统计范围内。
 
 ### 中位数、尾部与指标方向
 
@@ -293,7 +293,7 @@ Warm-up 在不同工具里改变的状态并不相同。JIT（Just-In-Time） �
 | `CompilationMode.Partial.warmupIterations` | 运行工作负载、收集 ART profile，再以 `speed-profile` 编译 | 发生在测量前 |
 | 持续负载预热 | 让温度、频率和工作负载进入定义好的稳态 | 单独保存，不并入稳态统计 |
 
-这三种 warm-up 各管各的状态，互相替代不了。尤其 `warmupIterations` 改变的是目标应用的编译状态，本身就是测试条件的一部分。
+这三种 warm-up 各管各的状态，要分开对待。尤其 `warmupIterations` 改变的是目标应用的编译状态，本身就是测试条件的一部分。
 
 ### AndroidX Benchmark 1.4.1 的 CompilationMode
 
@@ -336,7 +336,7 @@ fun coldStartupWithRequiredBaselineProfile() {
 
 `home_ready` 是这个示例的业务完成断言。项目里要换成稳定的 resource ID（控件资源标识） 或可访问性条件，并把超时当作用例失败处理，把错误页和空页面挡在启动统计之外。
 
-`Partial(Require, warmupIterations > 0)` 会先安装 Baseline Profile，再跑 warmup，然后按新收集的 profile 再做一次 profile-guided（由运行热点 profile 引导） 编译。想单独量化 Baseline Profile 与运行时 profile 各自的作用，就用不同测试分别配置，别把两种 profile 混进同一个结果。
+`Partial(Require, warmupIterations > 0)` 会先安装 Baseline Profile，再跑 warmup，然后按新收集的 profile 再做一次 profile-guided（由运行热点 profile 引导） 编译。想单独量化 Baseline Profile 与运行时 profile 各自的作用，就用不同测试分别配置，让两种 profile 分开出结果。
 
 ### 启动模式控制的状态范围
 
@@ -346,7 +346,7 @@ Macrobenchmark 的 `StartupMode` 控制启动前的进程/Activity 状态：
 - `WARM`：保留进程，重新创建或启动 Activity；
 - `HOT`：保留进程和 Activity，恢复到前台。
 
-数据、账号、缓存和入口 Intent（启动请求） 仍要测试自己控制。`setupBlock` 在每轮测量前运行，而冷启动模式会在 setup 与 measure 之间终止进程——凡是必须留在目标进程内存里的准备，都要赶在进程被终止前完成，别指望 setup 之后还能依赖它。
+数据、账号、缓存和入口 Intent（启动请求） 仍要测试自己控制。`setupBlock` 在每轮测量前运行，而冷启动模式会在 setup 与 measure 之间终止进程。凡是必须留在目标进程内存里的准备，都要赶在进程被终止前完成——进程一终止，这部分状态就没了。
 
 ## 排除规则与异常值
 
@@ -358,7 +358,7 @@ Macrobenchmark 的 `StartupMode` 控制启动前的进程/Activity 状态：
 - trace 缺失、metric 无样本或脚本未完成目标动作；
 - 已识别的设备池故障。
 
-看到一个慢值，再补一句“可能遇到 GC”就把它删掉，这会系统性地美化结果。有效但很慢的样本应该保留，用 trace 判断它是否属于用户路径；每一次排除都要留下原因、原始记录和排除前后的样本量。
+看到一个慢值，再补一句“可能遇到 GC”就把它删掉，这会系统性地美化结果。有效但很慢的样本我们先保留，用 trace 判断它是否属于用户路径；每一次排除都要留下原因、原始记录和排除前后的样本量。
 
 ## 性能基线与回归检测
 
@@ -375,13 +375,13 @@ Macrobenchmark 的 `StartupMode` 控制启动前的进程/Activity 状态：
 - 环境状态与排除规则；
 - 原始 JSON、trace 和统计脚本版本。
 
-只存一个 median 数字，后续变化来自应用、设备、Benchmark 升级还是统计脚本，就无从分辨了。
+只存一个 median 数字，后续变化就说不清来自应用、设备、Benchmark 升级还是统计脚本。
 
 ### 同机配对与交错运行
 
 候选版本和基线版本放在同一台设备上跑，能减少设备间的差异。温度或后台活动随时间漂移时，我们按 A/B/B/A（基线、候选、候选、基线）或随机顺序交错运行，免得先跑完全部基线再跑全部候选，把时间偏差引进来。
 
-配对比较要保留每个 block（成组执行批次）的顺序、环境状态和两侧结果；多台设备各自算变化，再按设备层次汇总，不同机型的原始毫秒不要直接倒进同一个总体样本池。
+配对比较要保留每个 block（成组执行批次）的顺序、环境状态和两侧结果；多台设备各自算变化，再按设备层次汇总，不同机型的原始毫秒留在各自的设备层里。
 
 ### 阈值来自 SLO 与噪声下限
 
@@ -460,7 +460,7 @@ CI 至少归档：
 - 设备与环境 manifest（清单）；
 - 统计与报告程序版本。
 
-Gradle 会把额外测试输出复制到 `build/outputs/connected_android_test_additional_output/...`。目录层次随 module、构建变体和工具版本变化，CI 应从任务输出或 artifact glob（产物路径通配模式）定位，别写死旧路径。
+Gradle 会把额外测试输出复制到 `build/outputs/connected_android_test_additional_output/...`。目录层次随 module、构建变体和工具版本变化，CI 应从任务输出或 artifact glob（产物路径通配模式）定位当前目录。
 
 ### 真机负责数值，模拟器负责流程
 
@@ -493,25 +493,25 @@ CI 自己计算 P90 或置信区间时，插值方法和 bootstrap（有放回�
 
 ## 扩展：Firebase Performance Monitoring 的边界
 
-Firebase Performance Monitoring（FPM）提供线上启动、网络和 custom code trace（自定义代码区间）数据。它适合观察真实用户的版本趋势，替代不了受控设备上的合入前 benchmark。
+Firebase Performance Monitoring（FPM）提供线上启动、网络和 custom code trace（自定义代码区间）数据。它适合观察真实用户的版本趋势，与受控设备上的合入前 benchmark 各管一段。
 
 ### 当前 custom code trace 限制
 
 当前官方文档给出的约束包括：
 
-- trace name 最长 100 个字符，不能以下划线开头；
+- trace name 最长 100 个字符，且不以下划线开头；
 - metric name 最长 100 个字符；
 - 每条 custom code trace 最多 32 个 metrics，包含默认 Duration；
 - attribute name 最长 32 个字符，只允许规定字符；
 - 每条 trace 最多 5 个 custom attributes；
 - attribute 不得包含可识别个人的信息；
-- 高频创建 trace 会增加资源开销，不应逐帧创建。
+- 高频创建 trace 会增加资源开销，应避免逐帧创建。
 
 FPM 的服务端采样和聚合由服务端决定，客户端没法按 benchmark 实验协议精确控制。它能按版本、设备、国家等维度做分析，也提供 session（一次应用使用会话）时间线，但 session 数据和 Perfetto system trace 不是一回事。
 
 ### 延迟与报警
 
-当前 FPM 文档把兼容 SDK 的处理描述为 near real-time（近实时），数据通常在采集后数分钟内显示。SDK 首次检测、批量上传、离线设备和平台故障还会带来额外延迟；发布报警要监控数据新鲜度与覆盖率，别把“每条事件同步到达”当前提。
+当前 FPM 文档把兼容 SDK 的处理描述为 near real-time（近实时），数据通常在采集后数分钟内显示。SDK 首次检测、批量上传、离线设备和平台故障还会带来额外延迟；发布报警要监控数据新鲜度与覆盖率，把数据延迟到达当作设计前提。
 
 ### 与其他数据源的分工
 
@@ -537,7 +537,7 @@ Macrobenchmark 为每个 measured iteration 生成独立 Perfetto trace，我们
 
 TTID 与 TTFD 要分开看。`StartupTimingMetric.timeToFullDisplayMs` 依赖应用调用 `reportFullyDrawn()`，Android 10 / API 29 及以下还可能拿不到。
 
-帧回归别拿 `DrawFrame > 16 ms` 做统一判定：动态刷新率和流水线 deadline 都在变，API 31+ 用 `frameOverrunMs` 和 FrameTimeline 判断 miss，再定位到 App、GPU 或合成阶段；`DrawFrame` 只是流水线里的一个切片。
+帧回归的统一判定交给 `frameOverrunMs` 和 FrameTimeline：API 31+ 用它们判断 miss，再定位到 App、GPU 或合成阶段。动态刷新率和流水线 deadline 都在变，`DrawFrame > 16 ms` 这样的统一阈值用不了，`DrawFrame` 也只是流水线里的一个切片。
 
 trace 和结果对不上时，按顺序检查 metric 语义、测量范围、应用断言、编译/启动模式和环境。后台 I/O 只是可能原因之一，把它写进结论之前，先在 trace 里找到依据。
 

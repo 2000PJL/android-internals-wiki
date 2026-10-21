@@ -120,7 +120,7 @@ consolidated_from:
 
 #### Doze 与前台服务
 
-Doze 会延后普通网络访问、Job 和 Alarm，攒到 maintenance window（维护窗口）里批量执行。前台服务开着，网络和 Job 并不会因此一直畅通——FGS 免不了同进程 Job 的配额，也拿不到设备级的 Doze 豁免。抱着这种假设的应用，在熄屏静置测试里很容易暴露问题。
+Doze 会延后普通网络访问、Job 和 Alarm，攒到 maintenance window（维护窗口）里批量执行。有些实现以为前台服务一开，网络和 Job 就能一直畅通，但 FGS 免不了同进程 Job 的配额，也拿不到设备级的 Doze 豁免；抱着这种假设的应用，在熄屏静置测试里很容易暴露问题。
 
 ### WakeLock 的适用窗口
 
@@ -371,7 +371,7 @@ Perfetto 轨道依赖 trace（性能跟踪） config（采集配置）、系统 
 
 功耗问题很少由一行代码单独造成。常见过程是：应用发起工作，系统为它安排 CPU、网络、定位或存储资源，硬件进入高功耗状态，工作结束后资源又未及时释放。
 
-以下六个案例说明怎样从业务现象找到系统证据，再选择合适的 Android API 修复问题：用前台服务轮询消息、后台持续请求高精度定位、零散网络请求反复激活蜂窝链路、组件泄漏伴随周期回调、用 WakeLock 和 Alarm 对抗 Doze、多个模块各自注册后台任务。
+以下六个案例说明怎样从业务现象追到系统侧的记录，再选择合适的 Android API 修复问题：用前台服务轮询消息、后台持续请求高精度定位、零散网络请求反复激活蜂窝链路、组件泄漏伴随周期回调、用 WakeLock 和 Alarm 对抗 Doze、多个模块各自注册后台任务。
 
 这六个案例都不给通用的“节电百分比”：芯片、基带、信号、屏幕、温度、账号数据和 OEM（设备厂商） 策略都会改变结果。脱离 bugreport、trace、测试脚本与环境记录的数字，撑不起工程决策。
 
@@ -380,7 +380,7 @@ Perfetto 轨道依赖 trace（性能跟踪） config（采集配置）、系统 
 每个案例我们都按同一组问题过一遍：
 
 1. **功能契约是什么**：用户能接受多大延迟？工作是否由用户发起？错过一次是否可恢复？
-2. **谁发起了资源请求**：记录 UID（Linux 用户标识，Android 通常用它区分应用及资源归属）、线程、Job ID、WakeLock tag（唤醒锁标签）、定位请求、网络调用和时间戳。UID 是 Linux 用户标识，Android 通常用它区分应用与资源归属。
+2. **谁发起了资源请求**：记录 UID（Linux 用户标识，Android 通常用它区分应用及资源归属）、线程、Job ID、WakeLock tag（唤醒锁标签）、定位请求、网络调用和时间戳。
 3. **系统为何准许或推迟**：检查 Doze、App Standby bucket（应用待机分组）、Battery Saver（省电模式）、后台限制、热状态和 Job quota。
 4. **硬件是否被激活**：CPU 在跑，蜂窝基带未必在发射；收到了定位回调，也说明不了 GNSS 只服务当前 UID。判断要把应用、系统服务和硬件三个层级分开。
 5. **修复是否破坏业务**：同时比较成功率、端到端延迟、重试量和能耗指标。
@@ -402,7 +402,7 @@ Perfetto 轨道依赖 trace（性能跟踪） config（采集配置）、系统 
 
 #### 故障代码
 
-下面的示例展示一种常见错误：为了让进程长期存活（常称“保活”）——也就是常说的“保活”——每五秒在前台服务中查询一次服务端。
+下面的示例展示一种常见错误：为了“保活”（让进程长期存活），每五秒在前台服务中查询一次服务端。
 
 ```java
 public final class MessagePollingService extends Service {
@@ -427,7 +427,7 @@ public final class MessagePollingService extends Service {
 }
 ```
 
-这段代码把“消息送达”做成了应用侧定时查询：没有新消息，定时器唤醒、网络握手和维持进程的成本也照付；`START_STICKY` 还可能在进程被终止后把服务拉起来。通知只说明服务对用户可见，降不了轮询的开销。
+我们看到，这段代码把“消息送达”做成了应用侧定时查询：就算没有新消息，定时器唤醒、网络握手和维持进程的成本也照付；`START_STICKY` 还可能在进程被终止后把服务拉起来。通知只说明服务对用户可见，降不了轮询的开销。
 
 #### 按业务时效选择机制
 
@@ -490,7 +490,7 @@ if (Build.VERSION.SDK_INT >= 37) {
 }
 ```
 
-注意多个约束可以同时阻止一个 Job，各项时长之和可能超过按现实时间计算的总等待时长；采集代码要在 Job 完成或取消前运行，并把 Job ID 与业务请求 ID 一起记录。
+还有一个统计细节：多个约束可以同时阻止一个 Job，各项时长之和可能超过按现实时间计算的总等待时长；我们的采集代码要在 Job 完成或取消前运行，并把 Job ID 与业务请求 ID 一起记录。
 
 #### 超时与调度机制的分工
 
@@ -500,7 +500,7 @@ if (Build.VERSION.SDK_INT >= 37) {
 
 #### 验证
 
-修复前后比较：
+修复前后，我们比较：
 
 - 单位时间内进程唤醒次数、CPU running（CPU 保持运行） 时间和网络请求次数；
 - Job 的 pending reason、stop reason（停止原因）、重试次数和端到端消息延迟；
@@ -586,7 +586,7 @@ public final class CurrentLocationRequest {
 4. Battery Saver 对 location service（位置服务） 的模式；
 5. 后台请求的最小间隔与其他豁免条件。
 
-未通过检查的 registration（已注册的定位请求） 不会参与 provider request（提供方请求） 的合并，当前 UID 的请求也就驱动不了底层 provider。反过来，设备上若还有导航、系统服务或其他应用在请求定位，GNSS 或融合定位仍可能工作——“当前应用无回调”推不出“整机定位功耗为零”。
+未通过检查的 registration（已注册的定位请求） 不会参与 provider request（提供方请求） 的合并，当前 UID 的请求也就驱动不了底层 provider。反过来，我们还要看整机：设备上若还有导航、系统服务或其他应用在请求定位，GNSS 或融合定位仍可能工作——“当前应用无回调”推不出“整机定位功耗为零”。
 
 Battery Saver 的位置模式定义在 `PowerManager`，包括不改变、熄屏禁 GPS、熄屏禁全部位置、只允许前台请求、熄屏时降低请求频率等策略。`SystemLocationPowerSaveModeHelper` 接收 `PowerManagerInternal` 的状态，`LocationProviderManager` 再据此更新 registration。OEM 可以选择不同策略，应用侧要把“当前是哪种模式”当成运行时状态来查询，而不是写死假设。
 
@@ -611,11 +611,11 @@ Battery Saver 把位置策略传给 location service；Thermal service（热管�
 
 #### Android 与 modem 的分工
 
-Android Radio HAL（无线硬件抽象层） 的 `RadioState` 描述 modem 控制面处于 `OFF`、`UNAVAILABLE` 还是 `ON`。Android 17 的新实现使用稳定 AIDL（Android 接口定义语言） 接口 `IRadioModem`；`RadioModemProxy` 仍保留旧的 HIDL（HAL 接口定义语言） 分支以兼容旧设备。`setRadioPower()` 属于系统 telephony（电话与蜂窝网络） 的控制路径，普通应用做网络节能用不上它。
+要看清蜂窝链路为什么被反复激活，先分清 Android 框架和 modem 各管什么。Android Radio HAL（无线硬件抽象层） 的 `RadioState` 描述 modem 控制面处于 `OFF`、`UNAVAILABLE` 还是 `ON`。Android 17 的新实现使用稳定 AIDL（Android 接口定义语言） 接口 `IRadioModem`；`RadioModemProxy` 仍保留旧的 HIDL（HAL 接口定义语言） 分支以兼容旧设备。`setRadioPower()` 属于系统 telephony（电话与蜂窝网络） 的控制路径，普通应用做网络节能用不上它。
 
 LTE/5G 的 RRC（Radio Resource Control，无线资源控制）连接态、DRX（Discontinuous Reception，非连续接收）周期、inactivity timer（空闲计时器） 和发射功率，由 modem、网络制式、运营商参数及信号共同决定。公开 Android API 里找不到一套跨设备可靠的 RRC 状态。把 3G 的 DCH/PCH（专用信道/寻呼信道）、LTE 的 RRC Connected/Idle 和 5G 状态塞进同一张固定电流表，只会得出错误结论。
 
-回到应用层能确认的事实：大量间隔很短的请求会增加 DNS、连接建立、TLS、CPU 与网络活动，蜂窝环境下还可能延长 modem 活跃时间。请求结束后基带还会保持活跃一段 tail time（尾时长）——它有多长、耗多少能量，必须在目标设备和网络上测量。
+回到应用层，我们能确认的事实是：大量间隔很短的请求会增加 DNS、连接建立、TLS、CPU 与网络活动，蜂窝环境下还可能延长 modem 活跃时间。请求结束后基带还会保持活跃一段 tail time（尾时长）——它有多长、耗多少能量，必须在目标设备和网络上测量。
 
 #### 使用持久化 outbox 合并可延迟上传
 
@@ -661,7 +661,7 @@ Worker 在一次运行中循环读取大小受限的批次，收到服务端确�
 | modem 是否长时间活跃 | 设备支持的 modem/ODPM（设备端功耗测量）电源轨、厂商 trace、外接仪表 |
 | 是否由弱信号放大 | 相同业务在 Wi-Fi、强信号蜂窝、弱信号蜂窝下分组测试 |
 
-把 `TrafficStats` 的字节数换算成毫安时要先看网络环境：同样字节在 Wi-Fi、5G 弱信号和漫游网络下的能量消耗可能相差很大。
+把 `TrafficStats` 的字节数换算成毫安之前，我们先看网络环境：同样字节在 Wi-Fi、5G 弱信号和漫游网络下的能量消耗可能相差很大。
 
 ### 案例四：组件泄漏伴随周期回调
 
@@ -688,7 +688,7 @@ public final class NetworkScreen extends Activity {
 }
 ```
 
-泄漏的直接后果是对象的生命周期结束了却收不回。若回调还会刷新 UI、查询数据库或发起网络请求，已销毁的页面就会继续触发 CPU、Binder 和 I/O 工作。堆占用高只是线索，要坐实耗电，还要找到对象被保留后继续干活的完整链条。
+泄漏的直接后果是对象的生命周期结束了却收不回。若回调还会刷新 UI、查询数据库或发起网络请求，已销毁的页面就会继续触发 CPU、Binder 和 I/O 工作。堆占用高只是线索，我们要坐实耗电，就要找到对象被保留后继续干活的完整链条。
 
 #### 对称释放
 
@@ -868,7 +868,7 @@ Android 17 可使用 `getPendingJobReasonStats()` 区分等待主要来自网络
 
 #### 验证
 
-比较合并前后的：
+合并有没有生效，我们比较合并前后的：
 
 - 待调度 Job 数与每小时调度 API 调用数；
 - 进程启动、Job session（任务执行批次）、网络连接和失败重试数量；

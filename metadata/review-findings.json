@@ -7689,6 +7689,23 @@
       "summary": "三处历史改写污染的括注 token：导语 AID（PID）L（Android Interface Definition Language）、§1 AID（UID）L（Stable AIDL）、§9 GKI（Generic Kernel Image，通用内核（Android Common Kernel，ACK）镜像（Generic Kernel Image，GKI））。style_lint compare 的括注子串契约使本车道无法修复，交技术车道处理。",
       "type": "style-pollution",
       "updated_at": "2026-10-21T14:50:49.961602+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "created_at": "2026-10-21T15:46:49.576796+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261021-153020-cn-rewrite-f805dc056a83060c",
+      "details": "§7 源码阅读入口第一条：[`Choreographer.java`](https://android.googlesource.com/platform/frame（窗口边界）works/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java) — URL 中 frameworks 一词被插入全角括注（窗口边界）截断。同类残留：§5.3 行内代码 `vsync（显示刷新同步信号）-app`（原应为 vsync-app）。本轮车道契约冻结链接集合与行内代码集合（style_lint compare 要求逐字节一致），无法在改写车道内修复；需人工把 URL 恢复为 platform/frameworks/base/...、把行内代码恢复为 vsync-app。",
+      "id": "finding-a87ab2f4ce7d",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "aiw-chinese-rewrite run 20261021-153020-cn-rewrite-f805dc056a83060c"
+      ],
+      "status": "open",
+      "summary": "源码阅读入口的 Choreographer.java 链接 URL 被历史机械括注插入破坏：platform/frameworks 变成 platform/frame（窗口边界）works，链接不可达",
+      "type": "text-corruption",
+      "updated_at": "2026-10-21T15:46:49.576796+08:00"
     }
   ],
   "schema_version": 1

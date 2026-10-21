@@ -2,9 +2,11 @@
 title: AOSP 代码阅读
 chapter: '16.7'
 section: '16.7'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-14'
+last_verified: '2026-10-21'
+last_source_verified_at: '2026-10-21T13:36:37+08:00'
+verification_scope_note: '2026-10-21 仅复核 android-17.0.0_r1 的 ActivityThread.main() 调用顺序与 Looper.prepareMainLooper() 弃用说明；其余来源沿用 2026-08-14 的核验记录。'
 last_verified_against: AOSP android-17.0.0_r1（frameworks/base Choreographer.java/ViewRootImpl.java/ActivityThread.java、frameworks/native SurfaceFlinger.cpp/CompositionEngine.cpp/Output.cpp/Display.cpp/HWComposer.cpp/common/include/common/trace.h、system/core libutils/include/utils/Trace.h/libcutils/include/cutils/trace.h、packages/modules、build/soong、tools/asuite）及 2026-08-14 官方 Code Search、源码下载与构建环境文档
 confidence: high
 sources:
@@ -18,6 +20,8 @@ sources:
   path: https://source.android.com/docs/setup/start/requirements
 - type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Looper.java
 - type: source
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java
 - type: source
@@ -39,6 +43,7 @@ related_chapters:
 - '2.4'
 - '14.1'
 last_review_finalize_at: '2026-07-31T08:12:00+08:00'
+last_rework_at: '2026-10-21T13:37:20+08:00'
 ---
 
 # AOSP（Android Open Source Project，Android 开源项目） 代码阅读
@@ -327,7 +332,9 @@ SFTRACE_NAME(
 
 路径：`frameworks/base/core/java/android/app/ActivityThread.java`
 
-应用进程由 zygote fork（派生） 后，经 RuntimeInit（Java 运行时初始化入口） 进入 `ActivityThread.main()`。`main()` 调用 `Looper.prepare（并行开展 HWC 协商与可能的 GPU 合成准备）MainLooper()`，创建 `ActivityThread`，执行 `attach(false, startSeq)`，随后进入 `Looper.loop()`。它是应用进程的 Java 主入口——进程创建在它之前已经经过 zygote、native runtime 和 RuntimeInit。
+应用进程由 zygote fork（派生） 后，经 RuntimeInit（Java 运行时初始化入口） 进入 `ActivityThread.main()`。`main()` 调用 `Looper.prepareMainLooper()`，创建 `ActivityThread`，执行 `attach(false, startSeq)`，随后进入 `Looper.loop()`。它是应用进程的 Java 主入口——进程创建在它之前已经经过 zygote、native runtime 和 RuntimeInit。
+
+上述调用发生在 Framework 内部；[`Looper.prepareMainLooper()` 已标记为弃用](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Looper.java#158)，应用的主 Looper 由 Android 环境创建，应用代码无需自行调用。
 
 阅读应用启动时，我们常看这几个方法：
 

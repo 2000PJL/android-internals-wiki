@@ -109,8 +109,23 @@ sources:
   path: art/openjdkjvmti/ti_redefine.cc (android-17.0.0_r1)
 - type: aosp
   path: art/runtime/jit/jit_code_cache.cc (android-17.0.0_r1)
-last_verified: '2026-08-19'
-last_verified_against: AOSP android-17.0.0_r1; Android Developers; source.android.com; 2026-08-07 body-apply freshness pass
+- type: aosp
+  path: art/libartservice/service/java/com/android/server/art/DumpHelper.java @ android-17.0.0_r1
+- type: aosp
+  path: art/runtime/signal_catcher.cc @ android-17.0.0_r1
+- type: aosp
+  path: system/libartpalette/palette_android.cc @ android-17.0.0_r1
+- type: aosp
+  path: system/core/debuggerd/tombstoned/tombstoned.cpp @ android-17.0.0_r1
+- type: official
+  path: https://github.com/google/perfetto/blob/v52.0/src/trace_processor/perfetto_sql/stdlib/slices/with_context.sql
+- type: official
+  path: https://source.android.com/docs/core/runtime/art-ti
+last_verified: '2026-10-21'
+last_source_verified_at: '2026-10-21T18:44:35+08:00'
+last_idle_audit_at: '2026-10-21T18:44:35+08:00'
+last_verified_against: AOSP android-17.0.0_r1; ART Service; Android Developers; Perfetto slices.with_context
+verification_scope_note: 核验编译过滤器、ART Service 场景与命令、超大 DEX 降级、画像版本边界、JIT 热度与缓存、去优化作用域、ART TI 权限和 SIGQUIT 输出路径；Perfetto SQL 已做空轨迹语法与模块依赖检查，未做设备性能实测。
 related_chapters:
 - '1.2'
 - '4.2'
@@ -260,7 +275,7 @@ Android 14 起，应用在设备上的 DEX 优化由 ART Service 负责。`pm.de
 
 ### JIT：用运行时热度换取机器码
 
-当方法没有可用 AOT 代码时，ART 可以先解释执行并记录执行热度。方法调用（去虚化）、循环跳回起点的次数和线程权重等信息会增加热度计数；达到相应阈值后，ART 把编译任务交给 JIT。
+当方法没有可用 AOT 代码时，ART 可以先解释执行并记录执行热度。方法进入（method entry）、循环跳回起点的次数和线程权重等信息会影响热度计数；达到相应阈值后，ART 把编译任务交给 JIT。
 
 JIT 源码里有快速（`fast`）、基线（`baseline`）、优化（`optimized`）与栈上替换（On-Stack Replacement，OSR）等编译路径，具体启用哪些层级、阈值是多少，受运行时选项和产品属性影响。`dalvik.vm.jitthreshold` 等属性由 `AndroidRuntime.cpp` 转换为 ART 参数，属于系统侧配置，第三方应用不要依赖它，更不要去改它。
 
@@ -395,10 +410,12 @@ adb shell pm art dump com.example.app
 `android-17.0.0_r1` 的 `ArtShellCommand` 会把这个子命令转到 `ArtManagerLocal.dumpPackage()`。输出中关注五类信息：
 
 - DEX 容器与拆分包：包里的 DEX 是不是按容器和 split 分别生成产物；
-- 编译过滤器：ART 最终采用的过滤器，而不是命令行请求的那个；
+- 编译过滤器：状态查询返回的过滤器，应与命令行请求对照；该字段不能证明方法级机器码覆盖范围；
 - 编译原因：这一轮 `dexopt` 为什么发生，例如 `install`、`bg-dexopt`、`ab-ota`；
 - 主/次 DEX（primary/secondary dex）的产物状态：主 DEX 与次级 DEX 是否各自都有可用的编译产物；
-- 代码使用画像与编译产物是否匹配：profile（例如 Cloud Profile 或应用内置 profile） 是否已经参与过编译，还是只停留在收集阶段。
+- 产物位置：结合 `[location is ...]` 判断状态对应的产物来自哪里。
+
+这些字段不能单独证明某份 profile（例如 Cloud Profile 或应用内置 profile）已经参与编译，也不提供方法级覆盖信息。要确认画像来源与覆盖范围，还需对照安装输入、`pm dump-profiles --dump-classes-and-methods` 导出的文本画像和 `dexopt` 日志。输出字段以同一标签的 `DumpHelper.dumpFileStatuses()` 为准。
 
 较老版本常用 `dumpsys package dexopt`，字段与新 ART Service 不同。诊断脚本需要按平台分支解析。
 
@@ -661,7 +678,7 @@ adb logcat -b all -d |
 
 ### 大体积 DEX 的特殊降级
 
-`dex2oat.cc` 会累加输入 DEX 文件头中的 `file_size_`，再与调用方传入的超大 DEX 阈值（very-large threshold）比较。对命中阈值、且本次目标不是启动镜像的任务，系统会：
+`dex2oat.cc` 会累加输入 DEX 文件头中的 `file_size_`，再与调用方传入的超大 DEX 阈值（very-large threshold）比较。对命中阈值、且目标既非启动镜像也非启动镜像扩展的任务，系统会：
 
 - 禁用应用镜像；
 - 如果当前 filter 高于 `verify`，把本轮编译降为 `verify`；
@@ -669,7 +686,9 @@ adb logcat -b all -d |
 
 阈值并不是这段代码里固定的“某个 APK 大小”：`dex2oat` 的字段默认是最大值，实际阈值由调用方参数和产品配置决定；比较对象是 DEX 累计大小，而非 APK 下载体积。文档或排障脚本里写死一个通用 MB 数，是靠不住的。
 
-因此，上层即使请求了 `speed-profile` 或 `speed`，最终也可能只有 `verify`。遇到超大、多 DEX 应用时，要同时检查请求参数、`dex2oat` 日志和 `pm art dump` 显示的最终状态。
+即使上层请求了 `speed-profile` 或 `speed`，实际工作也可能降为 `verify` 级别。源码在降级前已将编译过滤器写入 OAT 文件头，内部降级不会回写该字段，以便后续判断产物是否需要更新。
+
+`pm art dump` 仍可能显示原过滤器，不能据此断言存在对应范围的 AOT 机器码。遇到超大、多 DEX 应用时，应结合请求参数、`Very large app, downgrading to verify.` 日志，以及匹配构建的 `oatdump` 方法级代码检查来判断。
 
 ### 推荐的排查命令
 
@@ -1069,9 +1088,11 @@ data_sources {
 
 `dalvik` 提供 ART 的作用域轨迹（scoped trace），`sched` 用于判断 deopt 前后线程是否被抢占，或长时间处于 runnable（已就绪但没有获得 CPU）状态。生产型 APK 还需要满足设备与 `profileable` / `debuggable` 的跟踪权限条件。
 
-下面的查询按时间排列 deopt、JIT 编译和 code cache 回收：
+下面的查询先加载提供 `thread_slice` 视图的 `slices.with_context` 模块，再按时间排列 deopt、JIT 编译和 code cache 回收：
 
 ```sql
+INCLUDE PERFETTO MODULE slices.with_context;
+
 SELECT
   ts,
   dur / 1e6 AS dur_ms,
@@ -1089,14 +1110,25 @@ ORDER BY ts;
 
 #### 8.2 SIGQUIT 提供累计原因计数
 
-`Runtime::DumpForSigQuit()` 会调用 `DumpDeoptimizations()`，按 `DeoptimizationKind` 输出本进程累计次数。下面的命令先向目标进程发送 SIGQUIT，再从日志中筛选计数：
+`Runtime::DumpForSigQuit()` 会调用 `DumpDeoptimizations()`，按 `DeoptimizationKind` 输出本进程累计次数。在 `android-17.0.0_r1` 中，`SignalCatcher` 把完整转储交给 `PaletteWriteCrashThreadStacks()`；正常路径由 `tombstoned` 保存 Java 线程转储，默认写入 `/data/anr/trace_*`，日志只提示写入结果。连接 `tombstoned` 失败时，才会把转储内容回退到日志。
+
+在允许 `adb root` 的 userdebug/eng 测试机上，可先向已启动的目标进程发送 SIGQUIT：
 
 ```bash
-adb shell kill -3 "$(adb shell pidof com.example.app | tr -d '\r')"
-adb logcat -d | grep -E 'Number of .* deoptimizations'
+adb root
+adb shell 'pid=$(pidof -s com.example.app); [ -n "$pid" ] && kill -3 "$pid"'
 ```
 
-SIGQUIT 同时会输出线程栈和 ART 状态，日志量较大。计数从进程启动累计，缺少方法名和时间戳，适合比较同一实验前后的增量；Perfetto 时间线的作用它替代不了。
+确认命令成功，并在 logcat 中看到 `Wrote stack traces to tombstoned` 后，再导出线程转储并筛选计数：
+
+```bash
+adb pull /data/anr ./art-anr
+grep -R -n -E 'Number of .* deoptimizations' ./art-anr
+```
+
+读取结果时，核对转储头中的 PID、进程名和时间，排除旧文件及其他进程。量产设备通常不能直接读取该目录，可从 `adb bugreport` 获取可用的线程转储；文件是否被收录、是否截断仍需检查。只运行 `adb logcat` 并搜索计数，可能漏掉正常写入文件的结果。
+
+SIGQUIT 同时会输出线程栈和 ART 状态，转储较大。计数从进程启动累计，源码只输出非零项；计数行缺少方法名和时间戳，适合比较同一实验前后的增量，不能替代 Perfetto 时间线。没有取到完整转储时，搜索无结果不能证明零 deopt。
 
 #### 8.3 编译状态和调试条件要一并保存
 
@@ -1114,11 +1146,13 @@ adb shell pidof com.example.app
 
 ### 九、一次可复现的实验
 
+无调试的性能测量与调试事件实验要分组。ART TI 从 Android 8.0 起提供；普通应用通过系统接口附加 JVMTI 代理时，ActivityManager 与 ART 都会检查应用是否可调试。`debuggable=false` 的发布 APK 只用于无调试基线，不能直接在该进程上附加代理完成后续步骤。手动启动 `dalvikvm` 的 ART 测试环境有不同限制，不能套用到普通应用。
+
 1. 使用 `debuggable=false` 的基准 APK，记录 `pm art dump` 和包标志；
 2. 预热固定次数，保存 SIGQUIT deopt 原因计数基线；
 3. 在不连接调试器的条件下采集一次业务轨迹；
-4. 分别增加动态类加载、单方法断点、线程级单步执行和全局 JVMTI 事件；
-5. 每次只改变一个变量，比较 deopt 原因增量、目标方法、suspend-all 邻近调度和 JIT 活动；
+4. 另用同一份 `debuggable=true` 测试 APK，先采集未连接调试器、未附加代理的组内基线，再分别增加动态类加载、单方法断点、线程级单步执行和全局 JVMTI 事件；
+5. 每次只改变一个变量，在同一构建的测试组内比较 deopt 原因增量、目标方法、suspend-all 邻近调度和 JIT 活动；不要把发布构建与可调试构建的全部性能差异归给某个事件；
 6. 对重复 deopt 的方法检查守卫失败原因、接收者类型、CHA 依赖，或仍在生效的 Instrumentation 客户端；
 7. 去掉调试或代理后重新运行同一工作负载，确认 interpreter stubs 和方法 deopt 是否已经撤销。
 
@@ -1205,3 +1239,9 @@ ART 性能优化需要可重复验证：确认当前编译过滤器与代码使�
 - [AOSP android-17.0.0_r1：`ArtShellCommand.java`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtShellCommand.java)
 - [AOSP android-17.0.0_r1：`ReasonMapping.java`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ReasonMapping.java)
 - [AOSP android-17.0.0_r1：`dex2oat.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/dex2oat/dex2oat.cc)
+- [AOSP android-17.0.0_r1：`DumpHelper.java`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/libartservice/service/java/com/android/server/art/DumpHelper.java)
+- [AOSP android-17.0.0_r1：`signal_catcher.cc`](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/signal_catcher.cc)
+- [AOSP android-17.0.0_r1：`palette_android.cc`](https://android.googlesource.com/platform/system/libartpalette/+/android-17.0.0_r1/palette_android.cc)
+- [AOSP android-17.0.0_r1：`tombstoned.cpp`](https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/tombstoned/tombstoned.cpp)
+- [Perfetto v52.0：`slices.with_context` 模块](https://github.com/google/perfetto/blob/v52.0/src/trace_processor/perfetto_sql/stdlib/slices/with_context.sql)
+- [Android 官方文档：ART TI 的可用版本与代理附加限制](https://source.android.com/docs/core/runtime/art-ti)

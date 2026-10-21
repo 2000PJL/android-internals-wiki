@@ -55,7 +55,7 @@ consolidated_from:
 
 ## 排障范围
 
-看到 `/storage/emulated/0/DCIM/Camera/a.jpg` 这样一条普通路径时，我们要意识到它背后叠着一整串环节：挂载会话、调用方身份、媒体归属、权限、元数据脱敏、兼容转码，最后才轮到底层文件系统访问。把所有耗时归结成一句“FUSE 慢”或“UFS（Universal Flash Storage） 慢”，结论很难复现。FUSE（Filesystem in Userspace，用户空间文件系统）是用户态的文件系统机制。UFS（Universal Flash Storage，通用闪存存储）是 Android 设备常用的闪存接口标准，两者位于不同的层。
+看到 `/storage/emulated/0/DCIM/Camera/a.jpg` 这样一条普通路径时，我们要意识到它背后叠着一整串环节：挂载会话、调用方身份、媒体归属、权限、元数据脱敏、兼容转码，最后才轮到底层文件系统访问。把所有耗时归结成一句“FUSE 慢”或“UFS（Universal Flash Storage） 慢”，结论很难复现——FUSE（Filesystem in Userspace，用户空间文件系统）是用户态的文件系统机制，UFS（Universal Flash Storage，通用闪存存储）是 Android 设备常用的闪存接口标准，两者本来就位于不同的层。
 
 这篇文章回答三个排障问题：
 
@@ -69,7 +69,7 @@ consolidated_from:
 
 ### `vold` 管卷和挂载会话
 
-`vold` 负责发现存储卷、准备挂载点、处理用户切换、挂载/卸载卷和响应设备插拔。它不在每个 `open()`、`read()`、`write()` 请求中判断媒体权限。
+`vold` 负责发现存储卷、准备挂载点、处理用户切换、挂载/卸载卷和响应设备插拔；卷挂好之后，单个 `open()`、`read()`、`write()` 请求里的媒体权限判断，就落到了会话另一端的 MediaProvider 身上。
 
 我们用下面这段源码定位 `vold` 把 FUSE 会话交给上层的位置：
 
@@ -125,13 +125,13 @@ MediaStore 查询先经 Binder 进入 MediaProvider 数据库。打开某个媒�
 
 官方文档因此建议大批量操作走 ContentProvider 的批处理，减少逐条路径进入 FUSE 的元数据操作。这类做法优化的是访问入口和批处理方式；媒体内容本身仍在底层文件系统和块设备上。
 
-SAF URI 走 `DocumentsProvider`，提供者可能是本地文件系统、USB 盘或云端服务，低延迟和“可转换成普通路径”都不保证。App 按 `ContentResolver` 接口约定使用流或 fd，并处理好 Provider 进程被终止、授权撤销和远端读取失败这几种情况。
+SAF URI 走 `DocumentsProvider`，提供者可能是本地文件系统、USB 盘或云端服务，延迟高低、能否换成普通路径，都取决于背后接的是哪一个 Provider。App 按 `ContentResolver` 接口约定使用流或 fd，并处理好 Provider 进程被终止、授权撤销和远端读取失败这几种情况。
 
-App 内部目录 `/data/user/<userId>/<package>/` 不走共享存储的 FUSE 挂载。App-specific external（App 专属外部存储）目录位于外部存储命名空间，但 AOSP 为 `Android/data` 与 `Android/obb` 准备了专门的绕过或加速路径，具体实现随 FUSE BPF 和 bind mount 配置变化。所以这两类目录的安全与性能模型并不完全相同，排障时要分别确认。
+App 内部目录 `/data/user/<userId>/<package>/` 位于共享存储的 FUSE 挂载之外。App-specific external（App 专属外部存储）目录位于外部存储命名空间，但 AOSP 为 `Android/data` 与 `Android/obb` 准备了专门的绕过或加速路径，具体实现随 FUSE BPF 和 bind mount 配置变化。所以这两类目录的安全与性能模型是两套，排障时要分别确认。
 
 ## FUSE 的成本出现在哪些操作
 
-Android 11 的那次 FUSE 调优包括 read-ahead、writeback cache（回写缓存）、权限缓存、App 专属目录绕过和 all-files（所有文件访问）批量操作优化。官方曾在调优后的 Pixel 2 上对比直接路径与 MediaStore：顺序读取接近，FUSE 顺序写略差，随机读写在该测试中最高慢了约两倍。这个数字说明的是随机小 I/O 更容易暴露用户态转发的成本；要把它外推成 Android 17 或任意设备的固定倍率，还需要在目标设备上重新测。
+要看 FUSE 的成本落在哪些操作上，我们不妨回到 Android 11 的那次 FUSE 调优：调优涵盖 read-ahead、writeback cache（回写缓存）、权限缓存、App 专属目录绕过和 all-files（所有文件访问）批量操作优化；官方曾在调优后的 Pixel 2 上对比直接路径与 MediaStore，结果顺序读取接近，FUSE 顺序写略差，随机读写在该测试中最高慢了约两倍。这个数字说明的是随机小 I/O 更容易暴露用户态转发的成本；要把它外推成 Android 17 或任意设备的固定倍率，还需要在目标设备上重新测。
 
 | 访问模式 | 可能放大的环节 | 优先检查 |
 | --- | --- | --- |
@@ -146,7 +146,7 @@ Android 11 的那次 FUSE 调优包括 read-ahead、writeback cache（回写缓�
 
 ## passthrough 与 FUSE BPF 的边界
 
-“直通”经常被笼统使用。下表把普通缓存 FUSE 和三种常被称作“直通”的能力放在一起对照，表中的 daemon 指 MediaProvider 里的 `FuseDaemon`：
+“直通”这个词在排障讨论里经常被笼统使用：direct I/O、passthrough、BPF backing 都可能被叫作“直通”，但它们各自改动的环节差别很大。下表把普通缓存 FUSE 和三种常被称作“直通”的能力放在一起对照，表中的 daemon 指 MediaProvider 里的 `FuseDaemon`：
 
 | 路径 | FUSE 页缓存 | `read`/`write` 是否到 daemon | lower filesystem 怎样参与 |
 |---|---|---|---|
@@ -155,7 +155,7 @@ Android 11 的那次 FUSE 调优包括 read-ahead、writeback cache（回写缓�
 | FUSE passthrough | 数据路径不使用 FUSE 页缓存 | `open` 需要；获准后的数据 I/O 通常不需要 | 内核通过本次 open 绑定的 backing file（底层文件对象）转发 |
 | FUSE BPF + backing | 取决于操作 | BPF/backing 已处理的操作可以不交给 daemon | inode/dentry（索引节点/目录项）关联 backing path，BPF 决定保留、移除或替换 |
 
-`direct_io` 改变的只是 FUSE 页缓存语义：没有 passthrough 或 BPF backing 时，请求仍要经 `/dev/fuse` 到 MediaProvider。passthrough 也不会绕过 Scoped Storage（分区存储），归属、权限、redaction 和转码的判断都发生在 `open` 阶段。
+`direct_io` 改变的只是 FUSE 页缓存语义：没有 passthrough 或 BPF backing 时，请求仍要经 `/dev/fuse` 到 MediaProvider。而 passthrough 缩短的是数据搬运那一段，Scoped Storage（分区存储）的规则原样生效——归属、权限、redaction 和转码的判断都发生在 `open` 阶段。
 
 ### passthrough 的逐文件打开决策
 
@@ -181,7 +181,7 @@ bool passthrough = !redaction_needed && transforms_complete;
 bool direct_io = open_info_direct_io && !passthrough;
 ```
 
-文件需要做位置元数据脱敏，或者转码还没完成时，MediaProvider 会让后续读取继续走 daemon。passthrough 省的是已获准文件在 `read`/`write` 数据搬运阶段的往返，对目录枚举、MediaStore 查询和首次 `open` 起不到同等作用。
+这两行的含义是：文件需要做位置元数据脱敏，或者转码还没完成时，MediaProvider 会让后续读取继续走 daemon。passthrough 省的是已获准文件在 `read`/`write` 数据搬运阶段的往返，对目录枚举、MediaStore 查询和首次 `open` 起不到同等作用。
 
 MediaProvider 源码同时兼容 Android 早期 passthrough 接口与 upstream FUSE passthrough。上游协议的建立顺序是：daemon 先打开 lower-fs 文件，向 FUSE connection（连接会话） 注册并取得 `backing_id`，再在 open 回复中携带 `FOPEN_PASSTHROUGH` 与该 ID；内核随后为这次 FUSE open 创建独立的 backing file，文件关闭后绑定关系结束。
 
@@ -195,13 +195,13 @@ MediaProvider 源码同时兼容 Android 早期 passthrough 接口与 upstream F
 
 Android common kernel 为 MediaProvider 的 mixed-mode（混合模式）用例放宽了一条上游 `-ETXTBSY` 拒绝分支，但 backing file 冲突检查、direct-write 锁和 passthrough write 的 inode lock 都还在。
 
-这类 Android 补丁解决的是合法组合的兼容性，不意味着任意多个进程和缓存模式都能无额外成本地并发访问同一文件。
+这类 Android 补丁解决的是合法组合的兼容性；多个进程、多种缓存模式并发访问同一个文件时，额外成本是否仍然存在，还要看具体情况。
 
 ### FUSE BPF 当前主要服务 App 专属目录
 
 `android17-6.18-2026-06_r6` 的 GKI（Generic Kernel Image，通用内核镜像）配置同时包含 `CONFIG_FUSE_FS=y` 与 `CONFIG_FUSE_BPF=y`；MediaProvider 源码则注明，FUSE BPF 当前限制在 `Android/data` 与 `Android/obb`，通过 backing fd 把符合规则的请求交给底层文件系统。
 
-这仍然是条件性能力：
+而且这些能力从源码配置到实机生效，中间还隔着几层条件：
 
 - 内核里有编译开关，离产品运行时已经启用还差着好几步；
 - 别把当前源码注明的路径范围扩大到整个共享媒体目录；
@@ -220,7 +220,7 @@ Android common kernel 为 MediaProvider 的 mixed-mode（混合模式）用例�
 
 ### 图片编辑、视频处理与断点续传
 
-随机改写、临时分片和中间产物适合放在内部私有目录，处理完成后，再把成品作为一次受控写入提交到 MediaStore。这样高频随机 I/O 留在私有目录、不经过共享存储策略，半成品也不会被其他 App 扫到。
+随机改写、临时分片和中间产物适合放在内部私有目录，处理完成后，再把成品作为一次受控写入提交到 MediaStore。这样高频随机 I/O 留在私有目录，绕开了共享存储的策略层，半成品也避开了其他 App 的扫描。
 
 Android 10 及更高版本写媒体可以用 `IS_PENDING`：条目先保持待发布状态，写完并完成必要的同步处理后再发布。崩溃恢复时除了进程内状态，还要把未完成的 URI 记下来。
 
@@ -285,9 +285,9 @@ grep "^fuse:" "$TRACE/available_events"
 '
 ```
 
-受控 I/O 窗口里出现 `FUSE_READ` 或 `FUSE_WRITE` 的 send 事件，说明相应请求进了 daemon。
+受控 I/O 窗口里出现 `FUSE_READ` 或 `FUSE_WRITE` 的 send 事件，我们就能确认相应请求进了 daemon。
 
-反过来只看到 `FUSE_OPEN`、没有 read/write，可能是 passthrough/BPF backing 在起作用，也可能是页缓存命中、测试没打出预期的 syscall（系统调用）、读取失败或采集窗口不完整。我们要按时间对齐文件来源、冷暖缓存、MediaProvider 日志、应用 syscall，以及底层文件系统和块层事件，再下结论。
+反过来，如果只看到 `FUSE_OPEN`、read/write 缺席，可能是 passthrough/BPF backing 在起作用，也可能是页缓存命中、测试没打出预期的 syscall（系统调用）、读取失败或采集窗口不完整。我们要按时间对齐文件来源、冷暖缓存、MediaProvider 日志、应用 syscall，以及底层文件系统和块层事件，再下结论。
 
 ### `strace` 的适用环境
 
@@ -317,7 +317,7 @@ adb shell su 0 strace -f -ttT \
 
 再往下一层是 FBE（File-Based Encryption，文件级加密）：它作用在 `/data` 文件系统的数据与文件名加密路径，而 FUSE 作用在共享存储的命名空间和策略层，同一次访问可能把两份成本叠在一起。`android17-6.18-2026-06_r6` 的 GKI 配置包含 `CONFIG_FS_ENCRYPTION=y` 与 inline encryption（内联加密） 支持，但产品是否用这项能力、用哪种密钥策略、有没有硬件加速，都由设备实现决定。
 
-要拆开这两层成本，可以设计对照实验：同一设备上，用相同的文件大小和访问模式分别测内部私有文件、App-specific external 与共享媒体，并控制好缓存冷热和加密策略。不同目录的文件系统、配额和挂载选项可能都不同，所以实验结论只对已记录的设备配置负责。
+要拆开这两层成本，我们可以设计一个对照实验：同一设备上，用相同的文件大小和访问模式分别测内部私有文件、App-specific external 与共享媒体，并控制好缓存冷热和加密策略。不同目录的文件系统、配额和挂载选项可能都不同，所以实验结论只对已记录的设备配置负责。
 
 `FuseDaemon.cpp` 用下面的上限计算：
 

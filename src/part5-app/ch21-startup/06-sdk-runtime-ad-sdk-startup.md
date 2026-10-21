@@ -81,11 +81,11 @@ Android 上的 Privacy Sandbox 曾是一组用于隐私广告与第三方 SDK �
 - `sandbox_app_flags.aconfig` 定义 `sdk_sandbox_no_op_impl` 和 `sdk_sandbox_api_deprecation`；
 - `loadSdk()` 走到 no-op（不执行实际加载）分支时，会在调用方传入的 Executor（回调执行线程）上返回 `LoadSdkException(LOAD_SDK_SDK_SANDBOX_DISABLED, ...)`。
 
-API 符号仍然存在，只说明代码可以编译；它证明不了设备上的能力可用，`SDK_INT >= 34` 也当不了接入判断。Android 17 新项目的广告架构要避开 `SdkSandboxManager`、runtime-enabled SDK（为 SDK Runtime 改造的 SDK）交付包和旧 sandbox 生命周期。
+API 符号仍然存在，只说明代码可以编译；设备上的能力是否可用，`SDK_INT >= 34` 判断不了，要以 API 37 的废弃说明和运行期行为为准。Android 17 新项目的广告架构要避开 `SdkSandboxManager`、runtime-enabled SDK（为 SDK Runtime 改造的 SDK）交付包和旧 sandbox 生命周期。
 
 ### 1.2 其他 AdServices API 也不能作为新依赖
 
-Google 在 2025 年 10 月 17 日公告退役相关技术，官方状态页把 Android 上的 Topics、Protected Audience、Attribution Reporting、SDK Runtime 等能力列为“Deprecate and remove”，但没有给出一个对所有这些能力都适用的 Android 移除版本。对新业务来说，源码存在、manager 对象可以取得、旧接入文档仍在线，这三件事都不构成能力可用的证明。
+Google 在 2025 年 10 月 17 日公告退役相关技术，官方状态页把 Android 上的 Topics、Protected Audience、Attribution Reporting、SDK Runtime 等能力列为“Deprecate and remove”，但没有给出一个对所有这些能力都适用的 Android 移除版本。对新业务来说，源码存在、manager 对象可以取得、旧接入文档仍在线，这些都只是退场过程中的中间状态，说明不了能力可用。
 
 Android 17 Framework 源码里的行为更具体：
 
@@ -98,7 +98,7 @@ Android 17 Framework 源码里的行为更具体：
 
 旧 Topics epoch（主题更新周期）、竞价 JavaScript、registration（注册） URI（注册端点地址）的网络获取与延迟报告，如今只用来解释遗留流量，算不上还要继续优化的高频启动路径。
 
-标识符这边没有自动的变化：Privacy Sandbox 退场没有自动扩大 GAID（Google Advertising ID，广告标识符）、App Set ID（同一开发者应用集合标识）或第一方标识的用途，替代方案仍要重新通过隐私、政策、安全和性能评审。
+标识符这边要单独对待：Privacy Sandbox 退场并不会自动扩大 GAID（Google Advertising ID，广告标识符）、App Set ID（同一开发者应用集合标识）或第一方标识的用途，替代方案仍要重新通过隐私、政策、安全和性能评审。
 
 ### 1.3 版本表
 
@@ -114,7 +114,7 @@ Privacy Sandbox 的 SDK Runtime architecture 与 developer guide 仍可用于理
 
 ## 2. Android 14–16 的历史行为
 
-这一节只服务于维护旧设备和迁移遗留代码的场景；Android 17 的新路径从第 3 节讲起。
+我们只有维护 Android 14–16 旧设备、迁移遗留代码时才会用到这一节；Android 17 的新路径从第 3 节讲起。
 
 ### 2.1 `loadSdk()` 做了什么
 
@@ -130,9 +130,9 @@ App process
   -> App 通过 Binder 调用 SDK 接口
 ```
 
-链路上有三个对象：`system_server` 是承载 Android 核心系统服务的进程，SDK sandbox process 是为当前 App 创建的隔离进程，`IBinder`（Android 进程间通信机制） 是跨进程接口句柄。整条链路包含进程创建、SDK 代码加载、Provider 准备和 Binder 回调。`loadSdk()` 是异步 API，结果稍后经 receiver（结果接收回调）返回，但这份工作本身有成本：调用方如果在首帧前等 receiver，页面仍然要等 sandbox 冷启动。
+对照上面的调用链，三个对象各司其职：`system_server` 承载 Android 核心系统服务，SDK sandbox process 是为当前 App 创建的隔离进程，`IBinder`（Android 进程间通信机制） 是跨进程接口句柄。整条链路包含进程创建、SDK 代码加载、Provider 准备和 Binder 回调。`loadSdk()` 是异步 API，结果稍后经 receiver（结果接收回调）返回，但这份工作本身有成本：调用方如果在首帧前等 receiver，页面仍然要等 sandbox 冷启动。
 
-历史 API 还有这些约束：
+这套历史 API 还带着几条约束：
 
 - 第一个 SDK 触发该 App 的 sandbox 进程创建，后续 SDK 可以复用同一 sandbox；
 - `loadSdk()` 只允许前台调用，后台调用通过 receiver 返回失败；
@@ -142,7 +142,7 @@ App process
 
 ### 2.2 SharedPreferences 同步的用途
 
-历史 `addSyncedSharedPreferencesKeys()` 只同步 App 默认 `SharedPreferences`（持久化少量键值配置的 API）中显式登记的 key。官方 API 文档注明：
+隔离在 sandbox 进程里的 SDK 要读宿主配置时，靠的是这条同步通道：`addSyncedSharedPreferencesKeys()` 只同步 App 默认 `SharedPreferences`（持久化少量键值配置的 API）中显式登记的 key。官方 API 文档注明：
 
 - App 重启后需要重新登记同步 key；
 - 同一应用只能在单个进程里使用这套同步管理；
@@ -168,7 +168,7 @@ fun canUseLegacyPlatformSdkSandbox(): Boolean {
 }
 ```
 
-API 37 上这段判断直接返回 `false`，不再尝试 deprecated 的 `loadSdk()`。拿到 `false`，我们知道的也只是“平台 sandbox 路径不可用”；主线程上能不能同步加载旧广告 SDK、要不要改用嵌入式版本、功能是否关闭、能否延后加载，都由广告网关的明确策略决定。这个网关，就是业务页面和各家广告 SDK 之间的统一接口。
+API 37 上这段判断直接返回 `false`，不再尝试 deprecated 的 `loadSdk()`。拿到 `false`，我们知道的也只是“平台 sandbox 路径不可用”；主线程上是否同步加载旧广告 SDK、要不要改用嵌入式版本、功能是否关闭、能否延后加载，都由广告网关的明确策略决定。这个网关，就是业务页面和各家广告 SDK 之间的统一接口。
 
 ### 2.4 AndroidX compat 的历史语义
 
@@ -224,7 +224,7 @@ SDK Runtime 退场后，广告 SDK 的常见形态回到宿主进程：AAR、dyn
 
 ### 3.3 用状态机管理一次会话的初始化
 
-SDK init（初始化）不该由每个页面各自触发。广告网关持有 App 级状态，把同时到达的多次请求合并成同一个任务，失败则保存为调用方可以读取的结果。
+SDK init（初始化）收口到一处：广告网关持有 App 级状态，把同时到达的多次请求合并成同一个任务，失败则保存为调用方可以读取的结果，页面不再各自发起。
 
 下面的状态机把初始化收敛为四个状态：`Idle`（未开始）、`Initializing`（进行中）、`Ready`（可用）、`Failed`（会话失败）。所有调用方共享同一个 `Deferred`，也就是稍后产生结果、可以被多个协程等待的对象。示例没有假设 SDK 能在后台线程初始化，具体 `initializer` 要按供应方要求切到正确线程：
 
@@ -297,7 +297,7 @@ class AdSdkGateway(
 
 ### 5.1 自动初始化发生在 `Application` 之前
 
-广告 SDK 通过 Provider 自动初始化时，`Application.onCreate()` 里的进程分支和延迟开关已经来不及阻止 Provider `onCreate()`。因此要检查最终 merged manifest（App 与所有依赖合并后的最终清单）：
+广告 SDK 通过 Provider 自动初始化时，`Application.onCreate()` 里的进程分支和延迟开关已经来不及阻止 Provider `onCreate()`。我们要检查的是最终 merged manifest（App 与所有依赖合并后的最终清单）：
 
 - SDK 是否支持移除 Provider metadata 或切换手动初始化；
 - Provider 属于主进程还是指定远程进程；

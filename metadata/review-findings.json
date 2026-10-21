@@ -7925,6 +7925,150 @@
       "summary": "PowerMonitor 快照做差前未排除 ENERGY_UNAVAILABLE 哨兵值",
       "type": "measurement-validity",
       "updated_at": "2026-10-21T22:20:10.899240+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md",
+      "close_note": "把错误括注改为 GC 的正确中文解释；在 GC 范围分类中说明 blocking GC 关注等待，年轻代与全堆都可有暂停。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261021-223520-idle-audit-6487bb09",
+      "created_at": "2026-10-21T22:48:16.212320+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261021-223520-idle-audit-6487bb09",
+      "details": "标题将 GC 括注为 blocking GC，首段又将 GC 暂停括注为 Major GC，与后文的年轻代/全堆分类冲突。android-17.0.0_r1 的分配慢路径可按 next_gc_type_ 发起回收，暂停统计与整轮回收另行记录。",
+      "id": "finding-0e86ceda9df0",
+      "log_path": "logs/audit/2026-10-21-20261021-223520-idle-audit-6487bb09-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc#2002",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/garbage_collector.cc#198",
+        "https://source.android.com/docs/core/runtime/gc-debug"
+      ],
+      "status": "fixed",
+      "summary": "GC 标题与开头把通用 GC、blocking GC 和 Major GC 混为一谈",
+      "type": "gc-classification",
+      "updated_at": "2026-10-21T22:48:16.261045+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md",
+      "close_note": "重写该小节，列出三个真实 EvacMode，分开解释选择策略与 FromSpace/UnevacFromSpace 状态，限定 75% 的生效分支。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261021-223520-idle-audit-6487bb09",
+      "created_at": "2026-10-21T22:48:16.310202+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261021-223520-idle-audit-6487bb09",
+      "details": "旧文将 ForceEvac、LivePercentNewlyAllocated、UnevacFromSpace 并列成三档结果，并引用不存在的 RegionSpace::ShouldBeEvacuated。源码实际有三个 EvacMode，Region::ShouldBeEvacuated 返回布尔值；大型 Region 不疏散，强制/新分配普通 Region 不受 75% 限制。",
+      "id": "finding-242db6aa58b1",
+      "log_path": "logs/audit/2026-10-21-20261021-223520-idle-audit-6487bb09-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/space/region_space.h#51",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/space/region_space.cc#221"
+      ],
+      "status": "fixed",
+      "summary": "Region 疏散小节混淆 EvacMode 与 RegionType，并把 75% 写成统一搬迁条件",
+      "type": "region-evacuation-policy",
+      "updated_at": "2026-10-21T22:48:16.359159+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md",
+      "close_note": "补充 Heap size (KB)、最外层 concurrent GC 筛选与空表边界；说明 gc_type 的匹配优先级并要求回查原始时间片。原始 CASE 的四个显式合成单元测试通过，未冒充设备 trace。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261021-223520-idle-audit-6487bb09",
+      "created_at": "2026-10-21T22:48:16.408049+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261021-223520-idle-audit-6487bb09",
+      "details": "模块先筛选 depth=0 且匹配 *concurrent*GC 的时间片，再通过 Heap size (KB) 计数器与 SPAN_JOIN 构建事件；gc_type 的 CASE 优先匹配 NativeAlloc/Alloc，随后才匹配 young，并不等同 ART GcType。旧文未交代这些限制，可能误读空结果与分组数据。",
+      "id": "finding-73dc7ddc0eaa",
+      "log_path": "logs/audit/2026-10-21-20261021-223520-idle-audit-6487bb09-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://github.com/google/perfetto/blob/dd5842ac533cc727cbbd2682f4e85b714385ecfa/src/trace_processor/perfetto_sql/stdlib/android/garbage_collection.sql#L21-L143"
+      ],
+      "status": "fixed",
+      "summary": "Perfetto GC 模块说明遗漏堆计数器前提和 gc_type 的混合分类语义",
+      "type": "perfetto-gc-observability",
+      "updated_at": "2026-10-21T22:48:16.456994+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md",
+      "close_note": "改为 mark_compact.cc 中的 TraceFaults() 自由函数，保留主/次缺页与不覆盖 userfaults 的现有解释。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261021-223520-idle-audit-6487bb09",
+      "created_at": "2026-10-21T22:48:16.505870+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261021-223520-idle-audit-6487bb09",
+      "details": "android-17.0.0_r1 的 mark_compact.cc:894 定义的是无类限定的 TraceFaults() 自由函数，内部调用 getrusage(RUSAGE_THREAD)。",
+      "id": "finding-fce4b5b98b9c",
+      "log_path": "logs/audit/2026-10-21-20261021-223520-idle-audit-6487bb09-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc#889"
+      ],
+      "status": "fixed",
+      "summary": "CMC 缺页观测引用了不存在的 MarkCompact::TraceFaults 成员方法",
+      "type": "source-symbol",
+      "updated_at": "2026-10-21T22:48:16.554938+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md",
+      "close_note": "示例增加 --no-block-client；同时解释默认阻塞、非阻塞模式满缓冲区时提前结束以及检查场景覆盖范围的代价。保留 Android 12 可用性限制。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261021-223520-idle-audit-6487bb09",
+      "created_at": "2026-10-21T22:48:16.603720+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261021-223520-idle-audit-6487bb09",
+      "details": "官方 CLI 文档说明 --block-client 默认启用，缓冲区满时会阻塞被测进程，可能显著拖慢应用。旧文只泛称采样扰动，未保留该具体副作用。",
+      "id": "finding-637a6651b173",
+      "log_path": "logs/audit/2026-10-21-20261021-223520-idle-audit-6487bb09-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/reference/heap_profile-cli"
+      ],
+      "status": "fixed",
+      "summary": "ART 分配采样命令遗漏 heap_profile 默认缓冲区阻塞警告",
+      "type": "profiling-side-effect-warning",
+      "updated_at": "2026-10-21T22:48:16.653288+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md",
+      "close_note": "在已有类体中补充 var progress: Float = 0f，未引入新 API 或宣称完成编译验证。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261021-223520-idle-audit-6487bb09",
+      "created_at": "2026-10-21T22:48:16.704956+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261021-223520-idle-audit-6487bb09",
+      "details": "基线章节的 MeterView 类在 onDraw() 中读取 progress，但类体没有声明该属性，示例不自洽。仅静态核对，未运行 Android/Kotlin 编译或设备实验。",
+      "id": "finding-d22f1559615f",
+      "log_path": "logs/audit/2026-10-21-20261021-223520-idle-audit-6487bb09-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "git:24f6ff4bb9810e7314d15b08c0edc7dce1817ae4:src/part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md#L984-L990"
+      ],
+      "status": "fixed",
+      "summary": "MeterView 示例使用未声明的 progress 属性",
+      "type": "code-example-undefined-symbol",
+      "updated_at": "2026-10-21T22:48:16.755322+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md",
+      "close_note": "保留 handleLowMemory 分发与 forceGc 的实现事实，明确弃用、替代与 API 34 停止系统调用的边界，禁止应用依赖该通知。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261021-223520-idle-audit-6487bb09",
+      "created_at": "2026-10-21T22:48:16.807989+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261021-223520-idle-audit-6487bb09",
+      "details": "旧文把保留的 handleLowMemory() 描述为另一个严重低内存入口，未交代 ComponentCallbacks.onLowMemory() 已弃用、API 14 起由 onTrimMemory 取代、API 34 起不再调用。保留处理函数不证明 Android 17 仍常规派发该通知。",
+      "id": "finding-a6feac54cdd0",
+      "log_path": "logs/audit/2026-10-21-20261021-223520-idle-audit-6487bb09-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ComponentCallbacks.java#50",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java#7845"
+      ],
+      "status": "fixed",
+      "summary": "handleLowMemory 说明遗漏 onLowMemory 自 API 34 起不再调用的生命周期边界",
+      "type": "api-lifecycle",
+      "updated_at": "2026-10-21T22:48:16.858171+08:00"
     }
   ],
   "schema_version": 1

@@ -74,7 +74,7 @@ related_chapters:
 1. 本帧为什么需要重新排版或重录文字？
 2. 最早超时的是主线程、RenderThread 与 GPU，还是后续窗口显示链路？
 
-列表滚动时，可见 `TextView` 未必每个都在每帧重新 measure；RenderThread 上出现文字相关开销，也推不出主线程必然重新执行了文字整形（shaping）。两个方向要分别取证。
+列表滚动时，可见 `TextView` 未必每个都在每帧重新 measure；反过来，RenderThread 上出现文字相关开销，也说明不了主线程必然重新执行了文字整形（shaping）。这两个方向要分别取证，下面我们按层次把工作拆开来看。
 
 ## 文字工作的五个层次
 
@@ -134,11 +134,11 @@ flowchart LR
 - 按 text-direction heuristic（文本方向判断规则）判定为 RTL（从右向左） 的整段文本；
 - 任意 `ParagraphStyle`。
 
-这份清单比“单行无 Span”的直觉细得多：`CharacterStyle` 就未必让 `isBoring()` 失败，“有任何 Span 就不能用 BoringLayout”的说法并不成立。通过资格检查后还有宽度一关——文字宽度和 ellipsize（超宽时截断并显示省略号）条件要适合当前可用宽度，`TextView` 才会构造或复用 `BoringLayout`。
+这份清单比“单行无 Span”的直觉细得多：判据落在字符和段落结构上，`CharacterStyle` 就未必让 `isBoring()` 失败。通过资格检查后还有宽度一关——文字宽度和 ellipsize（超宽时截断并显示省略号）条件要适合当前可用宽度，`TextView` 才会构造或复用 `BoringLayout`。
 
-`setSingleLine(true)` 或 `maxLines = 1` 都强制不了这条路径。文本包含换行、RTL、用 UTF-16 代理对表示的 emoji 或段落级样式时，单行显示仍可能落到 `StaticLayout`；反过来，部分 BMP（Unicode 基本多文种平面） 文字即使不是拉丁字母，只要满足上述条件，也可能被判定为 boring。
+单行设置换不来这条路径：`setSingleLine(true)` 或 `maxLines = 1` 之后，文本包含换行、RTL、用 UTF-16 代理对表示的 emoji 或段落级样式时，单行显示仍可能落到 `StaticLayout`；反过来，部分 BMP（Unicode 基本多文种平面）文字即使不是拉丁字母，只要满足上述条件，也可能被判定为 boring。
 
-`BoringLayout` 的“简单”指单行、LTR（从左向右） 和较少的段落结构，整形这一步并没有省掉：`isBoring()` 仍要通过 `TextLine.metrics()` 计算宽度和字体指标，ellipsize 后还可能再次测量。它的工作量少于完整的多行换行，但单次 `Paint.measureText()` 估算不了它。
+`BoringLayout` 的“简单”指单行、LTR（从左向右）和较少的段落结构，整形这一步照常执行：`isBoring()` 仍要通过 `TextLine.metrics()` 计算宽度和字体指标，ellipsize 后还可能再次测量。它的工作量少于完整的多行换行，但单次 `Paint.measureText()` 估算不了它。
 
 ### `StaticLayout`：不可变多行文本的主路径
 
@@ -151,13 +151,13 @@ flowchart LR
 
 ## Minikin：字体选择、整形和断行
 
-排版准备落到 Minikin 这一层，要做的是字体选择、整形和断行三件事，它们的开销要分开算。`LayoutPiece` 先调用 `FontCollection.itemize()`，按字体覆盖范围把输入拆成若干 font run（采用同一字体匹配结果的连续文本段），再对每个 script run（采用同一文字体系规则的连续文本段） 调用 HarfBuzz 的 `hb_shape()`。所谓 font run，是采用同一字体匹配结果的连续文本段；script run 则采用同一文字体系的排版规则。`android-17.0.0_r1` 中的 `external/harfbuzz_ng` 对应 HarfBuzz 11.4.1。
+Layout 选定之后，排版准备进入 Minikin。这一层做三件事：字体选择、整形和断行，三者的开销要分开算。`LayoutPiece` 先调用 `FontCollection.itemize()`，按字体覆盖范围把输入拆成若干 font run（采用同一字体匹配结果的连续文本段），再对每个 script run（采用同一文字体系规则的连续文本段）调用 HarfBuzz 的 `hb_shape()`。`android-17.0.0_r1` 中的 `external/harfbuzz_ng` 对应 HarfBuzz 11.4.1。
 
-整形（shaping）做的是把 Unicode 输入映射成 glyph、cluster（共同参与排版的一组字符）、advance（排版推进距离） 和 offset（字形偏移）：cluster 是共同参与排版的一组字符，advance 是排版推进距离，offset 是字形偏移。判断一段文字的整形复杂度，“一个 Unicode 对应一个 glyph”这个假设是靠不住的——连字、组合附加符号、emoji ZWJ（Zero Width Joiner，零宽连接符）序列、variation selector（变体选择符） 和字体 fallback（当前字体缺字时换用其他字体） 都会改变码点与 glyph 的关系。不同语言文字体系的开销也没有固定倍数，应以目标字体、真实语料和设备测量为准。
+整形（shaping）把 Unicode 输入映射成 glyph、cluster（共同参与排版的一组字符）、advance（排版推进距离）和 offset（字形偏移）。按“一个 Unicode 对应一个 glyph”来估整形复杂度会走样：连字、组合附加符号、emoji ZWJ（Zero Width Joiner，零宽连接符）序列、variation selector（变体选择符）和字体 fallback（当前字体缺字时换用其他字体）都会改变码点与 glyph 的关系，不同语言文字体系的开销也没有固定倍数。我们以目标字体、真实语料和设备上的实测为准。
 
 ### 断行包含两个阶段
 
-Minikin 的 `WordBreaker` 先用 ICU break iterator（Unicode 文本边界迭代器）给出候选断点，`LineBreaker` 再按当前宽度和 break strategy（断行策略）选出实际行断点。CJK（中日韩文字）、泰文、URL、emoji 序列适用的规则各不相同，“CJK 都靠字典查找”并不是通用描述。
+Minikin 的 `WordBreaker` 先用 ICU break iterator（Unicode 文本边界迭代器）给出候选断点，`LineBreaker` 再按当前宽度和 break strategy（断行策略）从候选里选出实际行断点。CJK（中日韩文字）、泰文、URL、emoji 序列适用的规则各不相同，“CJK 都靠字典查找”的说法只覆盖其中一部分。
 
 自动连字符要进入对应的测量路径，前提是断行策略不是 `BREAK_STRATEGY_SIMPLE`，且 hyphenation frequency（自动连字符频率） 不是 `NONE`。`TextView` 的注释里还留着一段版本历史：
 
@@ -195,7 +195,7 @@ Span 和 emoji 是文字内容里最常见的两个变量，它们把成本加�
 | `CharacterStyle` | 通常改变颜色、背景或绘制效果；不一定改变测量 |
 | `ClickableSpan` | 主要增加点击命中和 movement method（键盘、触摸移动处理）开销，本身不是文字测量参数 |
 
-所以评估富文本时，要数的是会改变 metrics（测量指标）的 Span 切分点、`ReplacementSpan` 数量和段落级 Span；把 Span 总数直接换算成排版耗时，会把只影响绘制和交互的 Span 也算进去。
+所以评估富文本时，我们要数的是会改变 metrics（测量指标）的 Span 切分点、`ReplacementSpan` 数量和段落级 Span；Span 总数里混着只影响绘制和交互的条目，直接换算成排版耗时会把它们也带上。
 
 ### 系统 emoji 与 EmojiCompat 是两条路径
 
@@ -218,7 +218,7 @@ AndroidX 默认的 initializer（初始化器） 会把字体加载推迟到首�
 
 API 28 的 `PrecomputedText.create()` 提前算好每个段落的 `MeasuredParagraph` 与 native 层 `MeasuredText`，覆盖文字测量和 glyph positioning（字形位置计算）；`StaticLayout` 收到兼容的 `PrecomputedText` 后，可以直接复用这些 `ParagraphInfo`。
 
-预计算的内容由 `PrecomputedText.Params` 决定：`TextPaint`、text direction（文字方向）、断行策略、hyphenation frequency 和 `LineBreakConfig` 都在其中，View 的最终可用宽度留到了后面。最终的 line breaking（断行）、maxLines、ellipsize、行距和高度计算，仍在创建 `Layout` 时完成。
+预计算的内容由 `PrecomputedText.Params` 决定：`TextPaint`、text direction（文字方向）、断行策略、hyphenation frequency 和 `LineBreakConfig` 都在其中；View 的最终可用宽度留到了后面，line breaking（断行）、maxLines、ellipsize、行距和高度计算也仍在创建 `Layout` 时完成。
 
 下面的示例演示两个工程要点：参数从目标 `TextView` 取得；异步结果写回时，要防止 RecyclerView holder（列表项持有者） 复用后写入旧内容。
 
@@ -280,7 +280,7 @@ Minikin 的 `Font.cpp` 会缓存调整过的 HarfBuzz font 和 typeface；variat
 
 ## 用 Perfetto 定位文字卡顿
 
-`ViewRootImpl` 在 `TRACE_TAG_VIEW`（View 子系统的 trace 标签）下稳定记录的是窗口级 `measure`、`layout` 和 `draw`；逐个 View 的 `onMeasure TextView ...`、`onLayout ...` 要启用 framework 的 traversal tracing（逐 View 遍历跟踪）才会出现。所以在普通应用 trace 里，我们先按窗口级 slice（时间片） 分析，不假定能看到 `TextView.onMeasure()` slice。
+机制讲完，回到 trace 上。`ViewRootImpl` 在 `TRACE_TAG_VIEW`（View 子系统的 trace 标签）下稳定记录的是窗口级 `measure`、`layout` 和 `draw`；逐个 View 的 `onMeasure TextView ...`、`onLayout ...` 要启用 framework 的 traversal tracing（逐 View 遍历跟踪）才会出现。所以普通应用 trace 里，我们先按窗口级 slice（时间片）分析，不假定能看到 `TextView.onMeasure()` slice。
 
 采集时至少启用：
 

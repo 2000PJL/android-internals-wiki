@@ -177,15 +177,15 @@ last_consolidated_at: '2026-08-24'
 
 可选能力要看设备实现：`IPower.aidl` 明确允许平台忽略某个 `Mode` 或 `Boost`，调用前先用 `isModeSupported()`、`isBoostSupported()` 查询支持情况。看到 AIDL（Android Interface Definition Language，Android 接口定义语言） 枚举，我们知道的只是接口契约存在；往下每一层都要重新确认。
 
-### Android 17 的 Power AIDL（Android Interface Definition Language） 契约
+### 冻结的 Power AIDL 契约
 
 系统与厂商实现之间的跨进程接口契约由 AIDL 描述。`android-17.0.0_r1` 冻结的 `android.hardware.power` AIDL 是 v7：`Mode.aidl` 定义 19 个持续状态，包括 `LOW_POWER`、`SUSTAINED_PERFORMANCE`、`LAUNCH`、`GAME` 与多档相机流模式；`Boost.aidl` 定义 6 个短时提示，包括 `INTERACTION`、`DISPLAY_UPDATE_IMMINENT`、`ML_ACC`、音频和相机提示。
 
-Hint Session 让一组线程持续报告目标时长和实际用时，`IPower` 还定义 FMQ（Fast Message Queue，快速消息队列）Session Channel、CPU/GPU headroom 和显示合成反馈等接口；headroom 表示当前还能分配多少 CPU 或 GPU 资源的估计值。FMQ（Fast Message Queue） 基于共享内存，可减少高频 Binder 调用。
+Hint Session 让一组线程持续报告目标时长和实际用时，`IPower` 还定义 FMQ（Fast Message Queue，快速消息队列）Session Channel、CPU/GPU headroom 和显示合成反馈等接口；headroom 是当前还能分配多少 CPU 或 GPU 资源的估计值。FMQ（Fast Message Queue） 基于共享内存，可减少高频 Binder 调用。
 
 版本沿革要分清：CPU/GPU headroom、`SupportInfo`、`sendCompositionData()` 和 `sendCompositionUpdate()` 在冻结的 v6 接口里就有了，v7 契约继续保留这些能力。
 
-`IPower.setMode()` 与 `setBoost()` 是 Framework 到厂商 HAL 的接口，普通应用 SDK 里没有这两个入口。应用侧能用的是 `PowerManager.isPowerSaveMode()` 读取省电模式，或动态注册 `ACTION_POWER_SAVE_MODE_CHANGED` 后调整自己的同步、动画和预取策略。`setPowerSaveModeEnabled()` 是隐藏的 `@SystemApi`，还要求 `DEVICE_POWER` 或 `POWER_SAVER` 权限，普通应用不应把它当作控制入口。
+`IPower.setMode()` 与 `setBoost()` 是 Framework 到厂商 HAL 的接口，普通应用 SDK 里没有这两个入口。应用侧能用的是 `PowerManager.isPowerSaveMode()` 读取省电模式，或动态注册 `ACTION_POWER_SAVE_MODE_CHANGED` 后调整自己的同步、动画和预取策略。`setPowerSaveModeEnabled()` 则是隐藏的 `@SystemApi`，还要求 `DEVICE_POWER` 或 `POWER_SAVER` 权限，留给系统组件使用。
 
 厂商 Power HAL 收到提示后可以调整 CPU、GPU、内存总线或空闲策略，也可以按本机策略忽略它。要判断某次提示落在哪条硬件路径上，需要目标设备的 HAL 源码、厂商 trace marker 或寄存器级证据；“`LAUNCH` 一定调用 Qualcomm 的 RPMh 硬件资源请求通道”“`GAME` 一定锁定某档 GPU 频率”这类固定映射，要拿到证据才写得出来。
 
@@ -239,7 +239,7 @@ if (!scx_switched_all())
     util += cpu_util_cfs_boost(sg_cpu->cpu);
 ```
 
-SCX BPF 调度器通过 `scx_bpf_cpuperf_set(cpu, perf)` 写入相对于该 CPU 最大性能的线性目标，范围为 `[0, SCX_CPUPERF_ONE]`，并触发 `cpufreq_update_util()`。SCX 启用时先把每个 CPU 的 target 初始化为 `SCX_CPUPERF_ONE`，运行后再由 BPF 策略更新。这个目标是归一化性能值，单位既非 kHz 也非 OPP（Operating Performance Point，运行性能点）序号——OPP 是一组可用的频率与电压配置。再往下一层，CPU 怎么分组、每个 cpufreq policy（共用一次调频决策的 CPU 组）覆盖哪些核、驱动、频率上下限和温控约束，都会改变最终结果。
+SCX BPF 调度器通过 `scx_bpf_cpuperf_set(cpu, perf)` 写入相对于该 CPU 最大性能的线性目标，范围为 `[0, SCX_CPUPERF_ONE]`，并触发 `cpufreq_update_util()`。SCX 启用时先把每个 CPU 的 target 初始化为 `SCX_CPUPERF_ONE`，运行后再由 BPF 策略更新。这个目标是归一化性能值，单位既非 kHz，也非 OPP（Operating Performance Point，运行性能点）序号；OPP 指一组可用的频率与电压配置。再往下一层，CPU 怎么分组、每个 cpufreq policy（共用一次调频决策的 CPU 组）覆盖哪些核、驱动、频率上下限和温控约束，都会改变最终结果。
 
 三种运行状态应分开解释：
 
@@ -284,7 +284,7 @@ SCX 遇到 BPF 错误、可运行任务长时间得不到执行（runnable task 
 - OPP 与 interconnect（片上互连）带宽路径可以协同更新；
 - 驱动是否具备这些能力取决于设备匹配信息、设备树和硬件版本。
 
-读厂商代码时要分清 `RPMh`、`DCVS` 和 `Perflock` 三个词：DCVS（Dynamic Clock and Voltage Scaling）指动态调整时钟与电压，RPMh 是资源请求基础设施，cpufreq-hw 是 CPU 频率驱动路径，Perflock 通常指厂商的性能锁服务及私有资源表，三者各有含义。某次频率上升可能来自调度负载、温控或 QoS（服务质量） 约束变化、HAL 提示或厂商服务；trace 里没有对应标记时，把“多个核心同时升频”标成 Perflock 只是猜测。
+读厂商代码时要分清 `RPMh`、`DCVS` 和 `Perflock` 三个词：DCVS（Dynamic Clock and Voltage Scaling）指动态调整时钟与电压，RPMh 是资源请求基础设施，cpufreq-hw 是 CPU 频率驱动路径，Perflock 通常指厂商的性能锁服务及私有资源表，三者各有含义。某次频率上升可能来自调度负载、温控或 QoS（服务质量）约束变化、HAL 提示或厂商服务；trace 里没有对应标记时，把“多个核心同时升频”标成 Perflock 只是猜测。
 
 #### MediaTek：软件调压与硬件 LUT 两条路径
 
@@ -292,11 +292,11 @@ SCX 遇到 BPF 错误、可运行任务长时间得不到执行（runnable task 
 
 `mediatek-cpufreq.c` 会协调 CPU 核心电压 Vproc、可选的 SRAM 电压 Vsram、CPU 时钟与 PLL（Phase-Locked Loop，锁相环）。regulator 是内核中的稳压器接口；升频和降频阶段要按电压约束安排顺序，切换 PLL 时还会使用稳定的中间时钟。另一条路径 `mediatek-cpufreq-hw.c` 从最多 32 项的硬件 LUT 建表，并包含 Energy Model（内核能耗模型）注册和软硬件混合 DVFS 变体支持。
 
-这些源码可以证明 MediaTek 平台存在多种 cpufreq 实现。再往前一步就要靠目标内核或跟踪证据：所有 Dimensity 产品是否使用同一个“硬件预测器”、Power HAL 是否固定经过 `mtlp`、`hw_flower` 这类用户空间或固件路径，都要逐台核实。CorePilot 是厂商品牌名，task packing（把可运行任务集中到较少 CPU 上）、核心选择和 Boost 策略同样如此——task packing 指把可运行任务集中到较少 CPU 上，具体实现从品牌名推不出来。
+这些源码可以证明 MediaTek 平台存在多种 cpufreq 实现。再往前一步就要靠目标内核或跟踪证据：所有 Dimensity 产品是否使用同一个“硬件预测器”、Power HAL 是否固定经过 `mtlp`、`hw_flower` 这类用户空间或固件路径，都要逐台核实。CorePilot 是厂商品牌名，task packing（把可运行任务集中到较少 CPU 上）、核心选择和 Boost 策略也一样，具体实现从品牌名推不出来。
 
 #### Samsung：ASV 和 TMU 的公开边界
 
-公开内核中的 `drivers/soc/samsung/exynos-asv.c` 会读取 ASV（Adaptive Supply Voltage，自适应供电电压）信息，根据芯片体质分档（chip binning）调整 CPU OPP 电压，并在 OPP 更新后刷新 Energy Model。不过要注意它当前公开实现明确落在 Exynos 5422 支持范围：读它我们能理解 ASV 的一类 Linux 实现，量化新款 Exynos 或 Xclipse GPU 设备之间的功耗差异，则要靠相应设备的资料。
+公开内核中的 `drivers/soc/samsung/exynos-asv.c` 会读取 ASV（Adaptive Supply Voltage，自适应供电电压）信息，根据芯片体质分档（chip binning）调整 CPU OPP 电压，并在 OPP 更新后刷新 Energy Model。它当前的公开实现明确落在 Exynos 5422 的支持范围内：读它我们能理解 ASV 的一类 Linux 实现；要量化新款 Exynos 或 Xclipse GPU 设备之间的功耗差异，就得靠相应设备的资料。
 
 `drivers/thermal/samsung/exynos_tmu.c` 是 Exynos TMU（Thermal Management Unit，热管理单元）驱动，负责温度读取、阈值、中断和校准等基础工作。量产设备采用哪套温控策略、ASV 是否会随温度持续修改 OPP 电压，还是要以目标机为准。
 
@@ -315,7 +315,7 @@ Xclipse GPU 的 DVFS、固件和产品策略要以相应设备的公开驱动、
 
 ### 应用侧可用的标准能力
 
-应用很少需要知道某个 Hint 在芯片内部怎样执行。可移植的做法是报告周期任务的目标用时与实际用时，读取系统压力，并在本进程内调整工作量。下面依次看这三个入口：Hint Session、温控状态与资源余量。
+应用很少需要知道某个 Hint 在芯片内部怎样执行。可移植的做法是报告周期任务的目标用时与实际用时，读取系统压力，并在本进程内调整工作量。这三个入口分别是 Hint Session、温控状态与资源余量。
 
 #### 用 `PerformanceHintManager` 描述周期工作
 
@@ -357,18 +357,18 @@ ADPF（Android Dynamic Performance Framework，Android 动态性能框架）提�
 
 API 36 起，`SystemHealthManager` 提供可选的 `getCpuHeadroom()` 与 `getGpuHeadroom()`，用于估计 CPU 或 GPU 还剩多少可用能力。有效结果范围为 `[0, 100]`，其中 `0` 表示没有更多对应资源可分配；暂不可用时会返回 `Float.NaN`，设备不支持时会抛出 `UnsupportedOperationException`。
 
-这两个调用至少包含一次同步 Binder 事务，可能超过 1 ms，初次或自定义参数调用还可能更慢。所以渲染、音频或其他时限敏感线程不要停下来等结果。轮询间隔和计算窗口由设备报告，应用应查询：
+这两个调用至少包含一次同步 Binder 事务，可能超过 1 ms，初次或自定义参数调用还可能更慢。所以渲染、音频这类时限敏感线程应把查询放到关键路径之外。轮询间隔和计算窗口由设备报告，应用应查询：
 
 - `getCpuHeadroomMinIntervalMillis()` / `getGpuHeadroomMinIntervalMillis()`；
 - `getCpuHeadroomCalculationWindowRange()` / `getGpuHeadroomCalculationWindowRange()`。
 
-CPU 参数可指定属于本进程的 TID，这些线程还必须具有相同的 CPU affinity（允许线程运行的 CPU 集合）。接口契约没有固定的 100 ms 轮询间隔，也没有承诺某家 SoC 的计算耗时，具体数值以查询结果为准。
+CPU 参数可指定属于本进程的 TID，这些线程还必须具有相同的 CPU affinity（允许线程运行的 CPU 集合）。接口契约里没有固定的 100 ms 轮询间隔，具体数值以查询结果为准。
 
 #### 应用与调度策略的分工
 
-sysfs 是 Linux 通过虚拟文件暴露内核设备和状态的接口。应用侧可移植的做法只有一条：走公开 SDK。手工绑核、限制 GPU 最高频率、写旧式 `schedtune` 调度参数节点，或依赖写 sysfs、厂商私有性能服务和隐藏 Power API，都换不来可移植性，还可能破坏调度器和温控系统的联合决策。
+sysfs 是 Linux 通过虚拟文件暴露内核设备和状态的接口。应用侧可移植的做法只有一条：走公开 SDK。手工绑核、限制 GPU 最高频率、写旧式 `schedtune` 调度参数节点，或依赖写 sysfs、厂商私有性能服务和隐藏 Power API，这些做法都绑死在特定设备上，还可能破坏调度器和温控系统的联合决策。
 
-若开发的是系统镜像、设备策略或游戏性能服务，绑核和 QoS 调整也应完成目标设备实验，明确撤销条件，并在 OTA（系统无线更新） 后重新验证。另外别把 `sched_ext` 与 `schedtune` 当成一对一替换：两者的对象、接口和部署方式不同。
+若开发的是系统镜像、设备策略或游戏性能服务，绑核和 QoS 调整也应完成目标设备实验，明确撤销条件，并在 OTA（系统无线更新） 后重新验证。另外，`sched_ext` 与 `schedtune` 面向的对象、接口和部署方式各不相同，是两套独立的机制。
 
 ### 功耗测量：先明确物理量
 
@@ -402,15 +402,15 @@ data_sources {
 
 `android.power` 的电池计数器受充电状态影响；USB 数据连接还可能让设备保持额外的唤醒状态，所以精密实验要记录供电和调试连接方式。`collect_power_rails` 依赖设备实现：ODPM（片上功耗测量）rail 是硬件能够单独计量的一条供电支路，没有相应硬件的设备不会凭配置生成数据。
 
-Linux/ChromeOS 文档中，通过 sysfs 读取功耗的 Perfetto 数据源名是 `linux.sysfs_power`，当前官方配置说明里查不到 `linux.power.sysfs` 这个名字；Android 功耗采集也用不着 `android.power.stats` 数据源名。
+在 Linux/ChromeOS 文档里，通过 sysfs 读取功耗的 Perfetto 数据源名是 `linux.sysfs_power`；`linux.power.sysfs` 这个名字在当前官方配置说明里查不到，Android 功耗采集也用不上 `android.power.stats` 这个数据源名。
 
 #### PowerStats HAL 与公开功耗监视器
 
-PowerStats AIDL 仍是冻结的 v2。它可以报告电源轨能量，以及 power entity（可独立统计电源状态的子系统或电源域） 的状态驻留时间——power entity 指可独立统计电源状态的子系统或电源域，residency 指组件在某个电源状态中累计停留的时间。组件支持是可选的，rail 名称、覆盖范围和采样属性也由设备决定。系统统计服务 Statsd、Perfetto 与 Batterystats 可以使用这些数据。
+PowerStats AIDL 仍是冻结的 v2。它可以报告电源轨能量，以及 power entity（可独立统计电源状态的子系统或电源域）的状态驻留时间——residency 指组件在某个电源状态中累计停留的时间。组件支持是可选的，rail 名称、覆盖范围和采样属性也由设备决定。系统统计服务 Statsd、Perfetto 与 Batterystats 可以使用这些数据。
 
-API 35 起，普通应用可通过 `SystemHealthManager.getSupportedPowerMonitors()` 查询设备公开的功耗监视器，再异步调用 `getPowerMonitorReadings()`；支持列表为空是合法结果。监视器可能来自原始 ODPM rail，也可能来自 energy consumer（按硬件读数或模型归集的耗能组件），即按硬件读数或模型归集的耗能组件，分析时要保留监视器类型与名称。
+API 35 起，普通应用可通过 `SystemHealthManager.getSupportedPowerMonitors()` 查询设备公开的功耗监视器，再异步调用 `getPowerMonitorReadings()`；支持列表为空是合法结果。监视器可能来自原始 ODPM rail，也可能来自 energy consumer（按硬件读数或模型归集的耗能组件），分析时要保留监视器类型与名称。
 
-ODPM rail 在电池输出的下游测量子系统能量，读数不直接取决于设备是否正在充电，但它不一定覆盖屏幕、射频或 PMIC 转换损耗。不同设备的 rail 名也没有统一可比含义。跨设备总功耗比较仍以校准过的外部功耗仪更稳妥，片上 rail 更适合分析同一台设备内各子系统的贡献。
+ODPM rail 在电池输出的下游测量子系统能量，充电状态对它的读数没有直接影响；覆盖范围由硬件决定，屏幕、射频或 PMIC 转换损耗可能都不在内。rail 名同样随设备各自定义，互比前要先核对覆盖说明。跨设备总功耗比较仍以校准过的外部功耗仪更稳妥，片上 rail 更适合分析同一台设备内各子系统的贡献。
 
 ### 按控制链路做运行态排查
 
@@ -502,11 +502,11 @@ Perfetto 至少同时观察：
 
 ## Power Stats 能量实体、驻留与归因
 
-控制环决定硬件状态，Power Stats 用来观察能量和驻留结果。我们拿到一台设备做功耗分析时，首先要弄清它的统计覆盖、单位和更新频率：这些都由 OEM 实现，设备之间差别可以很大。
+控制环决定硬件状态，Power Stats 用来观察能量和驻留结果。我们拿到一台设备做功耗分析时，首先要弄清它的统计覆盖、单位和更新频率：这些都由 OEM（设备厂商）实现，设备之间差别可以很大。
 
-PowerStats 链路用三类对象描述设备数据：`PowerEntity` 是子系统、外设或电源域，报告各状态的累计驻留时间；`EnergyConsumer` 报告组件累计能量，并可选择附带按 UID 分摊的结果；`Channel` 是能量计量通道，常对应一条电源 rail（供电支路）。OEM 指设备厂商。这一部分我们沿着这三个对象往下走。
+PowerStats 链路用三类对象描述设备数据：`PowerEntity` 是子系统、外设或电源域，报告各状态的累计驻留时间；`EnergyConsumer` 报告组件累计能量，并可选择附带按 UID 分摊的结果；`Channel` 是能量计量通道，常对应一条电源 rail（供电支路）。我们沿着这三个对象往下看。
 
-AOSP 定义稳定的 HAL 接口、Framework 系统服务和数据使用路径；设备能提供多少 rail、是否包含 UID 分摊、计数器是否可靠，仍取决于厂商实现。本部分按 `android-17.0.0_r1` 核对，Pixel、高通、MediaTek、三星等闭源或受限仓库的细节不作源码级断言。
+AOSP 定义稳定的 HAL 接口、Framework 系统服务和数据使用路径；设备能提供多少 rail、是否包含 UID 分摊、计数器是否可靠，仍取决于厂商实现。Pixel、高通、MediaTek、三星等闭源或受限仓库的细节，本文不作源码级断言。
 
 ### 标准架构与厂商差异
 
@@ -541,7 +541,7 @@ OEM 差异也从这里开始：
 - 厂商没有提供 `EnergyConsumerAttribution[]` 时，PowerStats 数据给不出该组件的 UID 分摊。
 - 计数器复位、时间戳错误或单位换算错误，会让上层工具读到格式正确但无法比较的数据。
 
-#### Framework 有三条数据使用路径
+#### Framework 的三条数据使用路径
 
 `PowerStatsHALWrapper` 优先连接稳定 AIDL v2；连接不到时会尝试旧版 HIDL（旧版 HAL 接口定义） 1.0，后者能提供 rail 与状态驻留，Framework 的兼容封装会把 EnergyConsumer 信息和结果返回为空数组。所以设备有 PowerStats 服务，只说明接口连上了，三组数据是否齐全要分别确认。
 
@@ -571,7 +571,7 @@ BatteryTrigger 在系统报告的电池百分比下降时记录状态驻留。Ti
 
 `PowerStatsLogger` 写文件前，会按本次开机的时钟偏移把 HAL 的开机时间戳转换为 Unix 时间。对象元数据在重启后发生变化时，Logger 会清理对应的旧日志。无参数的 `dumpsys powerstats` 列出当前对象与 Logger 状态；`--proto meter/model/residency` 导出各自的二进制 protobuf（Protocol Buffers，结构化序列化格式）日志。
 
-#### 用四个维度判断设备能力
+#### 设备能力的四个维度
 
 评估一台设备时，“服务存在”只说明接口可以连接，我们还要检查以下四项：
 
@@ -586,7 +586,7 @@ BatteryTrigger 在系统报告的电池百分比下降时记录状态驻留。Ti
 
 #### Power Monitor 的缓存、权限与随机扰动
 
-公开 Power Monitor API 从 API 35 开始提供。`getSupportedPowerMonitors()` 异步返回两类对象：直接测得的 `POWER_MONITOR_TYPE_MEASUREMENT` 与直接测量或模型计算的 `POWER_MONITOR_TYPE_CONSUMER`；空列表是合法结果。有一个坑要记住：PowerMonitor 的 index 在重启后不保证稳定，应用只能使用本次查询返回的对象，index 不要持久化。
+公开 Power Monitor API 从 API 35 开始提供。`getSupportedPowerMonitors()` 异步返回两类对象：直接测得的 `POWER_MONITOR_TYPE_MEASUREMENT` 与直接测量或模型计算的 `POWER_MONITOR_TYPE_CONSUMER`；空列表是合法结果。有一个坑：PowerMonitor 的 index 在重启后不保证稳定，应用只能使用本次查询返回的对象，index 不要持久化。
 
 `ACCESS_FINE_POWER_MONITORS` 是 `signature|privileged|development` 级别权限，普通第三方应用通常无法获得。服务为两类调用方维护独立缓存：
 
@@ -613,11 +613,11 @@ BatteryTrigger 在系统报告的电池百分比下降时记录状态驻留。Ti
 
 能力等级描述的是一台设备上的一版软件；换机型或 OTA 版本后，要重新分级。
 
-#### 跨厂商比较先统一口径
+#### 跨厂商比较的统一口径
 
 跨厂商比较前，我们先统一对象映射、计算方式和时间窗口：
 
-1. **保存对象清单**：记录 `getPowerEntityInfo()`、`getEnergyConsumerInfo()` 和 `getEnergyMeterInfo()` 的完整返回值。设备自定义名称对 Framework 是不透明字符串，同名对象也未必测量同一范围。
+1. **保存对象清单**：记录 `getPowerEntityInfo()`、`getEnergyConsumerInfo()` 和 `getEnergyMeterInfo()` 的完整返回值。设备自定义名称对 Framework 是不透明字符串，同名对象测量的范围要逐一核对。
 2. **使用累计值差分**：一次任务的能量取结束累计值减去开始累计值。若计数器下降，先排查重启、HAL 复位、回绕或对象映射变化，负差值要在排查清楚后才能使用。
 3. **区分两种时间戳**：原始 HAL 结果使用 `CLOCK_BOOTTIME`；Logger 的落盘数据转换为 Unix 时间。混合两条路径时要先转换到同一时间轴。
 4. **对齐实验窗口**：保持工作负载、屏幕状态、电量区间、温度和网络条件一致。平均功率可用能量差除以同一窗口的时长计算。
@@ -625,7 +625,7 @@ BatteryTrigger 在系统报告的电池百分比下降时记录状态驻留。Ti
 6. **用外部仪器校验**：片上 rail 可能漏掉屏幕、射频或 PMIC 转换损耗。跨设备总能量结论应同时给出外部功耗仪或电池侧测量的校验结果。
 7. **记录来源**：报告中写明机型、软件构建指纹、内核版本、HAL 路径、对象清单、采样时长、权限与 Power Monitor granularity。
 
-不同设备的对象无法一一对应时，我们比较各自覆盖范围内的趋势，而不是拼成一个统一的绝对总量。
+不同设备的对象对不上时，我们就比较各自覆盖范围内的趋势，暂不拼统一的绝对总量。
 
 #### 企业设备与实验室设备池
 
@@ -646,13 +646,13 @@ adb shell dumpsys powerstats --proto residency
 - 明确 Framework 连接的是 AIDL v2 还是 HIDL（HAL Interface Definition Language） 1.0，后者不会提供 EnergyConsumer；
 - 在亮屏、灭屏、视频、网络和定位等场景中，比较前后两次 meter/model 累计值是否合理增长；
 - `EnergyConsumerResult` 是否带 UID 分摊，分摊总和是否不超过组件总能量；
-- 重启或 OTA 后重新采集对象 ID、名称与类型，不能沿用旧映射；
+- 重启或 OTA 后重新采集对象 ID、名称与类型，旧映射作废；
 - 导出的 protobuf 是否能由与当前 schema（字段结构定义）匹配的内部工具解析；
 - 外部功耗仪与片上计数器的能量差是否在预先设定的误差范围内。
 
-监控平台应把设备能力等级、HAL 路径、对象清单版本和测量范围保存为元数据。混合 L1 与 L3 设备生成同一张应用耗电榜，会把“没有 UID 数据”误当成“应用耗电较低”，这正是在设备入池前把关的原因。
+监控平台应把设备能力等级、HAL 路径、对象清单版本和测量范围保存为元数据。混合 L1 与 L3 设备生成同一张应用耗电榜，会把“没有 UID 数据”误当成“应用耗电较低”，所以这层把关要放在设备入池前。
 
-### 实战排查：为什么不同手机的功耗榜差异很大？
+### 实战排查：不同手机功耗榜的差异来源
 
 同一个 APK 在两台设备上出现不同耗电归因时，我们按以下顺序排查：
 

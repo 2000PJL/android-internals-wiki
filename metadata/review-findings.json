@@ -7511,6 +7511,9 @@
     },
     {
       "chapter": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "close_note": "已修复三处技术 token。Perfetto 官方页 HTTP 200、HTML L16 确认规范 URL，官方文档源码 battery-counters.md L8-31、L115-131 确认设备与版本边界；Battery Historian js/metrics.js L149 确认 JobScheduler 轨道名称，android-17.0.0_r1 JobScheduler.java L45-60、L105-106 确认类名；同标签 AppOpsManager.java L1467-1477 确认 OP_SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS、Only to be used by the system 与 @hide，AppRestrictionController.java L2957-2961 确认功能开关及 MODE_ALLOWED。详见 logs/rework/2026-10-21-20261021-213520-rework-c5479295-rework.md。目标转 ready-for-review，不直接 finalized；本地 metadata、SUMMARY links、diff 与写作 gate 已通过。",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261021-213520-rework-c5479295",
       "created_at": "2026-10-21T14:19:47.848660+08:00",
       "created_by": "aiw-chinese-rewrite",
       "created_run_id": "20261021-140020-cn-rewrite-c54792953179d33f",
@@ -7521,10 +7524,10 @@
       "source_paths": [
         "run 20261021-140020-cn-rewrite-c54792953179d33f GPT 审查前的逐段核对"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "三处被历史改写污染的技术 token：Perfetto 链接 URL data-source（来源）s/battery-counters、行内代码 Job（由 JobScheduler 调度的后台任务）Scheduler、行内代码 OP_SYSTEM_EXEMPT_FROM（设备上的 Android 系统镜像）_POWER_RESTRICTIONS",
       "type": "corrupted-tokens",
-      "updated_at": "2026-10-21T14:19:47.848660+08:00"
+      "updated_at": "2026-10-21T21:41:05.958315+08:00"
     },
     {
       "chapter": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",

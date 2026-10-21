@@ -7425,6 +7425,106 @@
       "summary": "07-aosp-reading.md 行内代码 span 混入错位括注，Looper.prepareMainLooper() 被写成 `Looper.prepare（并行开展 HWC 协商与可能的 GPU 合成准备）MainLooper()`",
       "type": "text-corruption",
       "updated_at": "2026-10-21T13:38:31.789011+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch16-methodology/07-aosp-reading.md",
+      "close_note": "已按 Android 17 manifest 与项目树修正日志、ADB、ART Service 的入口；ArtManagerLocal.java 的 getArtd 调用已复核。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261021-140520-b3f4adad",
+      "created_at": "2026-10-21T14:09:53.187691+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261021-140520-b3f4adad",
+      "details": "system/core 在 android-17.0.0_r1 已无 logd、liblog、adb；manifest 对应 system/logging 与 packages/modules/adb。art 根目录无 service，Java ART Service 位于 libartservice/service，原生服务端位于 artd。需替换失效入口，保留 init 与 trace 头文件等有效路径。",
+      "id": "finding-84e928fabd86",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/default.xml",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 目录映射仍将日志、ADB 与 ART Service 指向已不存在的旧路径",
+      "type": "stale-source-path",
+      "updated_at": "2026-10-21T14:17:20.358355+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch16-methodology/07-aosp-reading.md",
+      "close_note": "已缩短 Code Search 日志查询到连续字面量，说明字符串拼接边界，并修复单引号内的 rg 正则转义。在真实 android-17.0.0_r1 Choreographer.java 上执行两条修改后的搜索均返回 0。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261021-140520-b3f4adad",
+      "created_at": "2026-10-21T14:09:53.242729+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261021-140520-b3f4adad",
+      "details": "真实 Choreographer.java 将 main 与 thread 分成两个字符串；原完整句 rg -F 返回 1。单引号内 scheduleFrameLocked 双反斜杠加左括号导致 rg 返回 2、unclosed group。缩短到连续字面量并只保留一次正则转义后，真实 Android 17 文件分别命中 1134 与 636/919/1280 行。",
+      "id": "finding-970dd77c931b",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java#1131"
+      ],
+      "status": "fixed",
+      "summary": "日志字面量跨源码拼接边界且 rg 示例双重转义导致搜索不可用",
+      "type": "nonworking-search-example",
+      "updated_at": "2026-10-21T14:17:20.412955+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch16-methodology/07-aosp-reading.md",
+      "close_note": "已区分平台内部 Trace 与公开 SDK，补 API18/API29、同线程嵌套、名称长度与异步精确配对约束。Android 17 Trace.java 和公开 API 文档均已读取；章节适用版本将收窄为 Android 17。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261021-140520-b3f4adad",
+      "created_at": "2026-10-21T14:09:53.296113+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261021-140520-b3f4adad",
+      "details": "Trace.instant(long,String)、traceBegin/traceEnd 在 Android 17 源码标记 @hide；beginSection/endSection 为公开 API18，beginAsyncSection/endAsyncSection/setCounter 为公开 API29。需明确公开 SDK 与平台内部使用范围，补同线程嵌套及异步 name/cookie 成对结束约束，并避免将 Android 17 目录与构建示例宣称覆盖 Android 8。",
+      "id": "finding-944e2d6402db",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java",
+        "https://developer.android.com/reference/android/os/Trace"
+      ],
+      "status": "fixed",
+      "summary": "Java Trace 列表混排隐藏接口与公开 API，缺少 API 级别和配对约束",
+      "type": "api-availability-boundary",
+      "updated_at": "2026-10-21T14:17:20.473593+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch16-methodology/07-aosp-reading.md",
+      "close_note": "已分开 fence 对象返回、提交调用返回、fence signal，解释物理屏/虚拟屏 present fence 和旧 buffer release fence，保留 Android 17 Composer AIDL 的 TV 逐层延迟与 SurfaceControl 契约例外。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261021-140520-b3f4adad",
+      "created_at": "2026-10-21T14:09:53.349911+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261021-140520-b3f4adad",
+      "details": "硬件合成契约说明物理屏 present fence 在 video-mode 开始显示或 command-mode 开始向面板内存传输对应的 VSync signal；不表示 CPU 提交调用返回或整个屏幕扫描结束。layer release fence 对应设备读完旧 buffer、可安全重写。需区分读取 fence 对象与 fence signal。",
+      "id": "finding-8127b30e7188",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/hardware/libhardware/+/refs/tags/android-17.0.0_r1/include_all/hardware/hwcomposer2.h#1805",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Display.cpp#416"
+      ],
+      "status": "fixed",
+      "summary": "物理显示 present fence 被描述为整帧提交完成时点",
+      "type": "fence-semantics",
+      "updated_at": "2026-10-21T14:17:20.530687+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "created_at": "2026-10-21T14:19:47.848660+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261021-140020-cn-rewrite-c54792953179d33f",
+      "details": "链接应为 https://perfetto.dev/docs/data-sources/battery-counters（URL 中混入中文括注「（来源）」）；两处行内代码 span 分别是 JobScheduler 和 AppOps 常量 OP_SYSTEM_EXTEMPT_FROM_DEVICE_POWER_RESTRICTIONS 被插入中文括注后断裂。本车道 inline-code/link 集合冻结无法在改写轮修复，需源码核查后由技术车道修复。",
+      "id": "finding-54cd34110fe3",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "run 20261021-140020-cn-rewrite-c54792953179d33f GPT 审查前的逐段核对"
+      ],
+      "status": "open",
+      "summary": "三处被历史改写污染的技术 token：Perfetto 链接 URL data-source（来源）s/battery-counters、行内代码 Job（由 JobScheduler 调度的后台任务）Scheduler、行内代码 OP_SYSTEM_EXEMPT_FROM（设备上的 Android 系统镜像）_POWER_RESTRICTIONS",
+      "type": "corrupted-tokens",
+      "updated_at": "2026-10-21T14:19:47.848660+08:00"
     }
   ],
   "schema_version": 1

@@ -4,8 +4,10 @@ chapter: '23.1'
 section: '23.1'
 status: finalized
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；ART Heap、ComponentCallbacks2、ProfilingTrigger 与 Android 内存管理官方文档
+last_verified: '2026-10-21'
+last_verified_against: Android 17 / API 37 / AOSP android-17.0.0_r1；ART Heap、ComponentCallbacks2、ProfilingTrigger、Compose Runtime 1.12.0 源码与官方状态及副作用文档
+last_source_verified_at: '2026-10-21'
+last_idle_audit_at: '2026-10-21T14:35:36+08:00'
 last_review_finalize_at: '2026-08-15T07:29:18+08:00'
 confidence: high
 sources:
@@ -71,6 +73,14 @@ sources:
   path: https://developer.android.com/jetpack/androidx/releases/compose-runtime
 - type: official
   path: https://developer.android.com/develop/ui/compose/performance/bestpractices
+- type: official
+  path: https://developer.android.com/develop/ui/compose/state
+- type: official
+  path: https://developer.android.com/develop/ui/compose/side-effects
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/SnapshotStateList.kt
 - type: official
   path: https://developer.android.com/develop/ui/compose/performance/stability/strongskipping
 - type: official
@@ -139,7 +149,7 @@ Java Heap 优化先控制对象生命周期和存活集，再处理高频分配�
 
 Java 堆优化处理的是应用侧对象分配、生命周期和缓存预算之间的关系。[23.2 内存泄漏检测与治理](02-memory-leak-governance.md)处理“该释放的对象没有释放”，[23.4 Bitmap 与图片内存优化](04-bitmap-optimization.md)处理像素内存；我们在这里关注另一类堆压力：对象仍有业务价值，但分配时机、集合规模、缓存策略或临时对象频率让占用或回收成本升高。
 
-Android 会为每个应用进程设置 Java 堆上限，超限的分配会抛出 `OutOfMemoryError`。Android Studio 的 Memory Profiler（内存分析器） 可以观察堆曲线、对象数量和 GC 事件。我们判断堆压力时，会把同一场景的分配速度、峰值、退出后的存活对象和 GC 行为放在一起看，单次 `Runtime.maxMemory()` 只是其中一个输入。堆曲线回落，只说明对象具备了被回收的条件，页面是否达标还要从场景指标另行确认；曲线迟迟不回落时，也可能是 ART 在保留可复用的堆空间，未必是对象仍被引用。
+Android 会为每个应用进程设置 Java 堆上限，超限的分配会抛出 `OutOfMemoryError`。Android Studio 的 Memory Profiler（内存分析器） 可以观察堆曲线、对象数量和 GC 事件。我们判断堆压力时，会把同一场景的分配速度、峰值、退出后的存活对象和 GC 行为放在一起看，单次 `Runtime.maxMemory()` 只是其中一个输入。已使用 Java 堆曲线在 GC 后回落，表示部分对象占用已被回收；页面是否达标还要从场景指标另行确认。若观察的是已提交堆容量或 PSS，数值没有同步下降也不能直接证明泄漏，ART 可能仍保留可复用的堆空间。
 
 [4.2 ART Heap、GC 与后台维护调度](../../part1-fundamentals/ch04-memory/02-art-heap-gc-maintenance.md)解释堆空间、分配器和 GC；[4.6 ART FinalizerDaemon、Cleaner 与 ReferenceQueue](../../part1-fundamentals/ch04-memory/06-finalizer-referencequeue.md)解释延迟清理与引用队列；本文下一部分讨论高频分配和它带来的暂停。应用侧的基本动作是减少或推迟分配、按预算缓存，并在生命周期边界释放不再需要的引用。
 
@@ -231,7 +241,7 @@ giving up on allocation because <1% of heap free after GC.
 - `until OOM` 是距离 `growth limit` 的估算增长空间；
 - `target footprint` 是当前调节目标，会随 GC 和分配变化，不是硬上限；
 - `growth limit` 是普通应用 Java 堆的增长限制；
-- `<1% ... after GC` 表示完成本次分配后，空闲比例已经低于运行时要求的最小值。
+- `<1% ... after GC` 对应回收后可用堆比例低于运行时最小要求的放弃分配路径，本次请求没有成功。
 
 小对象也可能在堆接近限制时失败；大数组失败还要检查输入尺寸、乘法溢出和连续空间。ART 构造 OOME 时若再次分配失败，会改用启动阶段预分配的异常对象，所以生产日志里未必每次都有完整错误文本。进了 OOM 异常处理器，也别再创建大集合或同步抓取完整堆转储。
 
@@ -402,7 +412,7 @@ Java 堆优化可以按四步推进：
 
 Android 17 / API 37 为 `ProfilingTrigger` 增加 `TRIGGER_TYPE_OOM` 和 `TRIGGER_TYPE_ANOMALY`，线上取证从此多了两条现成路径。OOM 触发器会在未捕获的 `OutOfMemoryError` 现场采集 Java 堆转储；应用下次启动并注册结果回调后，可以取得这份诊断结果。有个前提要记住：自定义 `Thread.UncaughtExceptionHandler` 必须继续调用默认异常处理器，系统才能观察到该事件。
 
-anomaly（系统异常行为）触发器覆盖内存用量超限等情况，诊断产物由异常类型决定：超过 Android 17 内存限制时可返回堆转储，其他异常可能返回不同类型的跟踪或采样数据。触发式采集的价值在于拿到难以在本地复现的现场；堆预算和代码修正，还是要回到本文前面的方法。生产监控见 [23.7 内存监控与线上治理](07-memory-monitoring.md)，Android 17 内存限制见 [23.5 大内存与多进程策略](05-large-heap-multiprocess.md)。
+anomaly（系统异常行为）触发器覆盖内存用量超限等情况，诊断产物由异常类型决定：超过 Android 17 内存限制时可返回堆转储，其他异常可能返回不同类型的跟踪或采样数据。官方 API 还注明，同一 UID 下多个包都注册该触发器时，部分异常可能不提供诊断产物。触发式采集同时受应用配置和系统的频率限制，注册成功不保证每次异常都有结果。触发式采集的价值在于拿到难以在本地复现的现场；堆预算和代码修正，还是要回到本文前面的方法。生产监控见 [23.7 内存监控与线上治理](07-memory-monitoring.md)，Android 17 内存限制见 [23.5 大内存与多进程策略](05-large-heap-multiprocess.md)。
 
 一次有效改动至少要回答三件事：分配对象数或字节数是否下降，峰值或稳定占用是否改善，CPU、I/O、网络请求与用户场景指标是否变差。只降低 Java 堆峰值、却把成本转嫁到其他资源上，这样的改动算不上完成优化。
 
@@ -673,7 +683,7 @@ suspend fun <T> processInChunks(
 
 讨论范围是 Android 上的 Compose Runtime、应用 Java Heap（ART 管理的 Java/Kotlin 对象堆）与 ART GC（垃圾回收）；平台与内核基线见文首引言。Compose 是独立发布的 Jetpack 库，版本节奏与平台分开走。本文使用 2026 年 8 月 12 日发布的稳定版 Compose Runtime 1.12.0，并以 AndroidX 提交 `963bf914f78b389bdddef0da7f36bee19d897274` 为源码锚点。
 
-Compose Runtime 1.13.0-alpha01 已发布，但仍是预览版。版本比较会标出预览变化，正文结论以 1.12.0 稳定版为准。
+截至 2026-10-21，官方发布页列出的稳定版为 1.12.1，预览版为 1.13.0-beta01；1.12.1 发布说明标注其相对 1.12.0 没有改动。本文保留 1.12.0 的固定源码锚点，预览版变化单独标明，不作为稳定行为依据。
 
 Composition 是可组合界面在运行时的实例树，保存界面结构、状态订阅和 `remember` 值；重组（recomposition）是状态变化后重新执行受影响的可组合函数。处理 Compose 内存问题时，先区分两种症状：
 
@@ -695,7 +705,7 @@ slot storage 是 Compose Runtime 保存组合层级、节点位置和 `remember`
 因此：
 
 - 未启用实验标志的 1.12.0 应按 gap-buffer 分析；
-- 开启标志的应用要按 LinkTable 分析，并同时检查 R8（Android 代码压缩与优化工具）规则；
+- 开启标志的应用按 LinkTable 分析，必须在首次 `setContent` 前确定取值，此后不能切换；R8（Android 代码压缩与优化工具）优化的发布构建还要配置对应 ProGuard 规则，单独修改运行时字段不会覆盖规则中的取值；
 - heap dump（Java 堆转储） 中的内部类名和引用形态可能不同；
 - 固定的 SlotTable 字节数或扩容次数，套不到所有 Compose 版本上。
 
@@ -748,7 +758,9 @@ fun ContactList(
 }
 ```
 
-`remember` 在 key（决定缓存何时失效的输入）的比较结果不变时返回已保存值，key 变化后重新计算。计算量较大的数据加工可以移到 ViewModel 或数据层。`contacts` 若在原对象上修改内容，Compose 和 `remember` 都可能观察不到变化；可以把界面状态暴露为新的不可变列表实例，或使用 `SnapshotStateList` 这类能通知写入的状态集合。每次重组创建 `contacts.toList()` 作为 key 会额外分配一份列表，也修正不了原地修改的数据模型。
+`remember` 在 key（决定缓存何时失效的输入）的比较结果不变时返回已保存值，key 变化后重新计算。计算量较大的数据加工可以移到 ViewModel 或数据层。这个示例要求列表内容通过新的不可变列表实例更新；原地修改普通 `List` 中的数据，Compose 和排序缓存都可能观察不到变化。
+
+换成 `SnapshotStateList` 后，内容写入可以被观察，但同一个列表对象作为 `remember` 的 key 仍会比较相等，上述排序缓存可能继续返回旧结果。可以把内容读取放进 `derivedStateOf`，或先在组合中调用具体类型的 `SnapshotStateList.toList()` 取得不可变内容快照，再以快照和比较器作为排序缓存的 key。[1.12.0 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/SnapshotStateList.kt)说明，这个成员函数为 O(1)，直接返回底层不可变列表，不复制全部元素；普通 `List.toList()` 通常会创建副本，不能混用这两条路径的分配结论。
 
 #### 原始类型状态 API
 
@@ -826,12 +838,16 @@ fun TrackListPosition(
     listState: LazyListState,
     reportIndex: (Int) -> Unit,
 ) {
+    val currentReportIndex by rememberUpdatedState(reportIndex)
+
     LaunchedEffect(listState) {
         snapshotFlow { listState.firstVisibleItemIndex }
-            .collect { index -> reportIndex(index) }
+            .collect { index -> currentReportIndex(index) }
     }
 }
 ```
+
+`reportIndex` 更新时，`rememberUpdatedState` 让现有收集任务使用最新回调；`listState` 不变就无需重启任务。直接捕获 `reportIndex` 会让未重启的协程继续调用旧回调。[副作用官方文档](https://developer.android.com/develop/ui/compose/side-effects#rememberupdatedstate)说明了这种长期任务与可更新输入的配合方式。
 
 把 `snapshotFlow` 放在 `LaunchedEffect` 中不会自动造成泄漏。风险来自外部协程作用域比界面所有者存活更久、`LaunchedEffect` 的 key 选择错误、回调捕获 Activity/View，或重复启动未受管理的收集任务。heap dump 中只看到 Snapshot 类不足以确认泄漏，还要继续检查协程 Job（可取消任务）、Flow collector（Flow 收集者） 和宿主生命周期。
 
@@ -880,24 +896,32 @@ override fun onCreateView(
 
 `AndroidView` 的 `factory` 用于创建 View；`update` 在创建后执行，并在其中读取的 Snapshot 状态变化时再次执行。把 View 另存进 `remember` 会让 Composition 与 `AndroidView` 同时保存它的引用，增加生命周期不一致的风险。
 
-Lazy list 中需要复用 View 时，应使用带 `onReset` 的重载 API。示例在复用前清理上一条列表项留下的临时状态，并在该 View 不再复用时释放资源。
+Lazy list 中需要复用 View 时，应使用带 `onReset` 的重载 API。下面的 `TextView` 示例在复用前清除上一项的文案和监听器，在不再复用时移除监听器；代码只调用平台 View API。
 
 ```kotlin
-AndroidView(
-    factory = { context -> PreviewView(context) },
-    update = { view ->
-        view.bind(model)
-    },
-    onReset = { view ->
-        view.clearTransientState()
-    },
-    onRelease = { view ->
-        view.release()
-    },
-)
+@Composable
+fun ReusableLabel(
+    label: String,
+    onClick: () -> Unit,
+) {
+    AndroidView(
+        factory = { context -> TextView(context) },
+        update = { view ->
+            view.text = label
+            view.setOnClickListener { onClick() }
+        },
+        onReset = { view ->
+            view.text = ""
+            view.setOnClickListener(null)
+        },
+        onRelease = { view ->
+            view.setOnClickListener(null)
+        },
+    )
+}
 ```
 
-[Views in Compose 官方文档](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose)说明，`onReset` 必须非空才会启用 Lazy 容器中的 View 复用；`onRelease` 在 View 离开 Composition 且不再复用时调用。`update` 应具备幂等性——用相同输入重复执行不会累积副作用；监听器若在每次 `update` 中注册，要先替换或移除旧监听器。
+[Views in Compose 官方文档](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose)说明，`onReset` 必须非空才会启用 Lazy 容器中的 View 复用；`onRelease` 在 View 离开 Composition 且不再复用时调用。`update` 应具备幂等性——用相同输入重复执行不会累积副作用；示例的 `setOnClickListener()` 会替换旧监听器。播放器、地图等 View 的资源释放还要调用各自组件提供的接口，普通 View 没有通用的 `release()` 方法。
 
 混合页面的 heap dump 应同时检查 View tree（传统 View 层级）与 Composition。常见 dominator 包括 Fragment view binding（生成的视图绑定对象）、adapter（列表适配器）、listener（监听器）、`AndroidView` 内的 WebView/播放器/地图、Navigation back stack（导航返回栈）和长生命周期 ViewModel。
 
@@ -964,9 +988,10 @@ composeCompiler {
 | 版本 | 相关变化 |
 | --- | --- |
 | Kotlin 2.0.20+ | Strong Skipping 默认启用；不稳定参数按引用相等判断，可组合函数内的 Lambda 自动缓存 |
-| Compose Runtime 1.11.4 及更早版本 | LinkTable 实现存在但默认关闭；尚未包含 `derivedStateOf` forward-write 保留问题修复 |
-| Compose Runtime 1.12.0 | 当前稳定锚点；包含上述 `derivedStateOf` 修复；LinkTable 仍为实验实现且默认关闭 |
-| Compose Runtime 1.13.0-alpha01 | 当前预览版；不作为本文稳定行为依据 |
+| Compose Runtime 1.11.4 | LinkTable 实现存在但默认关闭；尚未包含 `derivedStateOf` forward-write 保留问题修复 |
+| Compose Runtime 1.12.0 | 本文固定的稳定源码锚点；包含上述 `derivedStateOf` 修复；LinkTable 仍为实验实现且默认关闭 |
+| Compose Runtime 1.12.1 | 2026-09-09 发布；官方说明相对 1.12.0 没有改动 |
+| Compose Runtime 1.13.0-beta01 | 2026-10-07 发布的预览版；不作为本文稳定行为依据 |
 | Android 17 / API 37 | ART 源码锚点为 `android-17.0.0_r1`；垃圾回收器与分代模式仍受运行时和设备配置影响 |
 
 Compose Multiplatform 在不同目标上使用不同运行时与内存管理器。这里的 GC、heap dump 和 Android View 互操作结论只适用于 Android；Desktop/JVM、iOS 或 Wasm 的对象大小与 GC 行为需要按各自平台验证。
@@ -1030,6 +1055,9 @@ Java Heap、GC 与 Compose 内存问题，我们可以沿三层判断：存活�
 - [Strong Skipping](https://developer.android.com/develop/ui/compose/performance/stability/strongskipping)
 - [Diagnose Compose stability](https://developer.android.com/develop/ui/compose/performance/stability/diagnose)
 - [State and Jetpack Compose](https://developer.android.com/develop/ui/compose/state)
+- [Side-effects in Compose：`rememberUpdatedState`](https://developer.android.com/develop/ui/compose/side-effects#rememberupdatedstate)
+- [Compose Runtime 1.12.0：`remember` 与 key 比较](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt)
+- [Compose Runtime 1.12.0：`SnapshotStateList.toList()`](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/SnapshotStateList.kt)
 - [Lazy lists and grids](https://developer.android.com/develop/ui/compose/lists)
 - [Composition tracing](https://developer.android.com/develop/ui/compose/tooling/tracing)
 - [Using Compose in Views](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)

@@ -53,7 +53,7 @@ last_review_finalize_at: '2026-07-31T08:12:00+08:00'
 2. **Git 项目**：例如 `platform/frameworks/base` 或 `platform/frameworks/native`。
 3. **项目内路径**：例如 `core/java/android/view/Choreographer.java`。
 
-这里的“AOSP 源码”实际上是 Repo 协调管理的一组 Git 项目，manifest（清单） 记录每个项目的路径和 revision（分支、tag 或 commit），checkout 出来才是我们看到的目录树。顶层目录与 Git 项目并不总是一一对应，`frameworks/base` 与 `art` 就是两个并列的项目。只写“我看了 AOSP 最新代码”别人无法复核，因为 `main`、`android-latest-release`、发布 tag（日志标签） 和厂商分支可能早已分开。
+为什么要先记版本？因为“AOSP 源码”是 Repo 协调管理的一组 Git 项目：manifest（清单） 记录每个项目的路径和 revision（分支、tag 或 commit），checkout 出来才是我们看到的目录树。顶层目录与 Git 项目之间也没有严格的对应关系，`frameworks/base` 与 `art` 就是两个并列的项目。所以只写“我看了 AOSP 最新代码”，别人难以复核——`main`、`android-latest-release`、发布 tag（日志标签） 和厂商分支可能早已分开。
 
 阅读时再保留一份运行现场：
 
@@ -104,9 +104,11 @@ file:services/surfaceflinger symbol:composite
 
 ## AOSP 关键目录
 
+AOSP 目录树很大，我们常打交道的只是少数几个项目。下面按 Git 项目分组：先列常见入口，再说读哪类问题时会跨到哪里。
+
 ### `frameworks/base`：应用进程与 Java 系统服务
 
-常见入口如下：
+这个项目同时覆盖应用进程侧和 Java 系统服务侧，常见入口如下：
 
 - `core/java/android/app/`：`ActivityThread`、`Instrumentation`、`LoadedApk`；
 - `core/java/android/view/`：`ViewRootImpl`、`Choreographer`、`View`、输入接收端；
@@ -117,7 +119,7 @@ file:services/surfaceflinger symbol:composite
 - `packages/SystemUI/`：状态栏、通知、锁屏和系统界面；
 - `graphics/java/android/graphics/`：Canvas、Bitmap、Paint 和渲染接口。
 
-路径只是初始范围。以应用启动为例，应用进程侧会进入 `ActivityThread`，system_server（承载核心 Java 系统服务的进程） 侧会进入 `ActivityTaskManagerService`、`ActivityManagerService` 和进程启动代码，运行时还会涉及 ART（Android Runtime） 与 zygote（预加载运行环境并派生应用进程的进程）。
+这份清单只是初始范围：顺着一条链路追下去，同一个问题往往要跨好几个目录。以应用启动为例，应用进程侧会进入 `ActivityThread`，system_server（承载核心 Java 系统服务的进程） 侧会进入 `ActivityTaskManagerService`、`ActivityManagerService` 和进程启动代码，运行时还会涉及 ART（Android Runtime） 与 zygote（预加载运行环境并派生应用进程的进程）。
 
 ### `frameworks/native`：图形、Binder 与原生系统组件
 
@@ -130,7 +132,7 @@ file:services/surfaceflinger symbol:composite
 - `services/inputflinger/`：输入读取与分发；
 - `cmds/atrace/`：atrace 命令及类别配置。
 
-SurfaceFlinger 的实现分布在 `SurfaceFlinger.cpp`、`CompositionEngine/`、`DisplayHardware/`、`Scheduler/` 等多个子目录，只在单个文件里找整条合成流程，会漏掉输出策略，也看不清 HWC（Hardware Composer，硬件合成器） 与 RenderEngine（SurfaceFlinger 的 GPU 合成组件） 之间的分工。
+SurfaceFlinger 的实现分布在 `SurfaceFlinger.cpp`、`CompositionEngine/`、`DisplayHardware/`、`Scheduler/` 等多个子目录，我们读合成流程时要连着看；只盯单个文件，会漏掉输出策略，也看不清 HWC（Hardware Composer，硬件合成器） 与 RenderEngine（SurfaceFlinger 的 GPU 合成组件） 之间的分工。
 
 ### `system/core`：init、日志与系统基础组件
 
@@ -161,7 +163,7 @@ shell 命令还可能来自 `external/toybox` 或独立项目。看到设备命�
 
 ### `packages/modules` 与模块化源码
 
-现代 Android 把多项系统能力放进 Mainline（可独立更新的系统组件）模块，代码经常位于 `packages/modules/`，ART 本身也按独立项目和 APEX（系统组件的封装与交付格式）交付。因此网络、蓝牙、权限、设备锁、虚拟化这类问题，就不一定能在 `frameworks/base` 找到完整实现。
+现代 Android 把多项系统能力放进 Mainline（可独立更新的系统组件）模块，代码经常位于 `packages/modules/`，ART 本身也按独立项目和 APEX（系统组件的封装与交付格式）交付。所以遇到网络、蓝牙、权限、设备锁、虚拟化这类问题，就要想到完整实现未必在 `frameworks/base` 里。
 
 遇到公开 API 只保留转发逻辑、看不到实际实现时，可以按下列顺序继续：
 
@@ -180,7 +182,7 @@ shell 命令还可能来自 `external/toybox` 或独立项目。看到设备命�
 - 同名接口使用哪套实现与变体；
 - AIDL（Binder 接口定义）、proto（Protocol Buffers 数据定义）、aconfig（平台 flag 声明）、sysprop（类型化系统属性 API 声明）等生成代码从哪里来。
 
-当 Code Search 找到多个实现时，构建图（模块及其依赖关系）比文件路径更能说明 Android 17 选用了哪一个。Soong 语法与模块规则可从 [`build/soong`](https://android.googlesource.com/platform/build/soong/+/refs/tags/android-17.0.0_r1) 复核。
+当 Code Search 找到多个实现时，构建图（模块及其依赖关系）比文件路径更能说明平台选用了哪一个。Soong 语法与模块规则可从 [`build/soong`](https://android.googlesource.com/platform/build/soong/+/refs/tags/android-17.0.0_r1) 复核。
 
 ### 问题到目录的初始映射
 
@@ -195,7 +197,7 @@ shell 命令还可能来自 `external/toybox` 或独立项目。看到设备命�
 | 系统启动慢 | `system/core/init/` | zygote、system_server、模块与厂商服务 |
 | WakeLock 或休眠异常 | Framework power service | Power HAL、suspend、Android 17 内核锚点 |
 
-表格给出的只是搜索起点，后续往哪边查，由进程边界和运行证据决定。
+表格给出的只是搜索起点；后续往哪边查，要看问题落在哪个进程、运行证据指向哪里。
 
 ## 从 Logcat 反查源码
 
@@ -207,11 +209,11 @@ shell 命令还可能来自 `external/toybox` 或独立项目。看到设备命�
 I/Choreographer: Skipped 42 frames!  The application may be doing too much work on its main thread.
 ```
 
-`42` 是运行时变量，搜索整行不会命中。选择稳定且有区分度的文本：
+`42` 是运行时变量，搜索整行不会命中。我们选一段稳定且有区分度的文本：
 
 `"The application may be doing too much work on its main thread"`
 
-在 `android-17.0.0_r1` 中，它位于 `frameworks/base/core/java/android/view/Choreographer.java`。源码同时给出了触发条件：`skippedFrames >= SKIPPED_FRAME_WARNING_LIMIT`；默认阈值来自系统属性 `debug.choreographer.skipwarning`，源码默认值为 30。所以这条日志能说明的，是主线程进入 `doFrame()` 时已经比预期回调时间晚了若干帧间隔；耗时发生在哪个业务方法、这 42 帧是否都是已提交的坏帧，都还要另行确认。
+在 `android-17.0.0_r1` 中，它位于 `frameworks/base/core/java/android/view/Choreographer.java`。源码同时给出了触发条件：`skippedFrames >= SKIPPED_FRAME_WARNING_LIMIT`；默认阈值来自系统属性 `debug.choreographer.skipwarning`，源码默认值为 30。这条日志能告诉我们的是：主线程进入 `doFrame()` 时，已经比预期回调时间晚了若干帧间隔；至于耗时发生在哪个业务方法、这 42 帧是否都是已提交的坏帧，还要另行确认。
 
 ### 可复用的日志定位步骤
 
@@ -309,7 +311,7 @@ SFTRACE_NAME(
 | async begin/end | name + cookie/track | 同时找 begin 与 end |
 | counter | counter 名与数值 | 搜 counter API 和名称 |
 
-版本历史资料要按 tag 阅读：Android 12 到 Android 17 之间，SurfaceFlinger 的入口、宏封装和 slice 名都发生过变化。Android 17 的结论倒推不到旧 trace，旧文章里的函数名也不能直接套到 Android 17 上。
+版本历史资料要按 tag 阅读：Android 12 到 Android 17 之间，SurfaceFlinger 的入口、宏封装和 slice 名都发生过变化。Android 17 的结论倒推不到旧 trace，旧文章里的函数名也要先对照当前源码，再拿来用。
 
 ### atrace 类别只控制 atrace 事件
 
@@ -318,6 +320,8 @@ SFTRACE_NAME(
 另外，Perfetto 还能通过 `ftrace` 采集内核调度（sched）事件，以及 Binder 事件、堆分析数据源 `heapprofd`、应用或 native 埋点 `TrackEvent` 等。某条数据源没有使用 atrace tag 时，启用或关闭 atrace 类别都控制不了它；所以分析缺失事件时，我们要先识别数据源类型。
 
 ## 四个源码入口
+
+目录熟悉之后，反复读的就是少数几个入口类：应用进程的 `ActivityThread`、View 树与窗口的连接点 `ViewRootImpl`、帧回调调度 `Choreographer`，以及系统合成侧的 `SurfaceFlinger`。
 
 ### `ActivityThread`：应用进程 Java 主入口
 
@@ -350,7 +354,7 @@ SFTRACE_NAME(
 4. VSync 回调到达后执行 `doTraversal(frameTimeNanos)`；
 5. `performTraversals()` 根据状态执行 relayout、measure、layout、draw 等工作。
 
-这里的 `requestLayout()` 表示请求后续 traversal。它不会在调用点同步完成布局，也不能概括成“直接请求一个 VSync”；是否注册新回调，由 `mTraversalScheduled` 等状态决定。
+这里的 `requestLayout()` 表示请求后续 traversal：调用点不会同步完成布局，把它概括成“直接请求一个 VSync”也并不准确；是否注册新回调，由 `mTraversalScheduled` 等状态决定。
 
 分析时我们重点关注：
 
@@ -397,7 +401,7 @@ SFTRACE_NAME(
 
 Client composition 指 RenderEngine 使用 GPU 完成的客户端合成，device composition 则交给 HWC/HAL 与显示硬件。还要注意 `getDeviceCompositionChanges()` 不保证每帧都单独执行 `validate()`：没有 client composition 且满足提交时序条件时，它会先尝试 `presentOrValidate()`；如果该调用已经完成 present，后续 `presentAndGetReleaseFences()` 会刷新待执行命令并使用已保存的 fences。
 
-`Output::present()` 还可能走几条特殊路径：composition prediction（沿用上一帧策略，同时验证本帧 HWC 结果） 沿用上一帧策略、同时验证本帧 HWC 结果；异步 prepare 并行开展 HWC 协商与可能的 GPU 合成准备；present offload（把本帧提交临时交给 worker 线程） 把本帧提交临时交给 worker 线程。一次 trace 中采用哪条分支，要看 output state（输出状态）、composition type、HWC 结果、Fence 与相关 slice。
+`Output::present()` 还可能走几条特殊路径：composition prediction（沿用上一帧策略，同时验证本帧 HWC 结果）、异步 prepare（并行开展 HWC 协商与可能的 GPU 合成准备）和 present offload（把本帧提交临时交给 worker 线程）。一次 trace 中采用哪条分支，要看 output state（输出状态）、composition type、HWC 结果、Fence 与相关 slice。
 
 旧资料常出现 `onMessageRefresh()`、`composeSurfaces()`、`Layer::onDraw()` 或直接的 `validateDisplay()` / `presentDisplay()`，这些名字适合对应版本。读 Android 17 应从当前的封装层（wrapper）和 CompositionEngine 结构出发；HWC wrapper 内部仍会调用 Composer HAL，只是 Framework 侧入口已经有明确封装。
 
@@ -467,13 +471,13 @@ repo sync -c -j8
 
 参数含义：`-b` 接受 tag，`--partial-clone` 按需获取 Git 对象，`repo sync -c` 只从服务端获取 manifest 指定的当前分支。并发数要按网络、内存与服务端响应调整，`-j8` 是官方文档示例，不是固定最优值。
 
-只做文本阅读时，可以按项目路径同步：
+如果我们只做文本阅读，可以按项目路径同步：
 
 ```bash
 repo sync -c -j8 frameworks/base frameworks/native system/core art
 ```
 
-这组项目不能保证完成平台编译；调用链进入其他模块时还要同步相应项目。构建 Android 17 的官方环境基线是 64 位 x86 Linux 与 glibc 2.17+，并准备 400GB 可用磁盘空间，其中约 250GB 用于 checkout、150GB 用于构建输出。官方自 Android 11 起不再支持以 macOS 作为 Android OS 开发平台。
+只同步这组项目，平台编译未必能完成；调用链进入其他模块时还要同步相应项目。构建 Android 17 的官方环境基线是 64 位 x86 Linux 与 glibc 2.17+，并准备 400GB 可用磁盘空间，其中约 250GB 用于 checkout、150GB 用于构建输出。官方自 Android 11 起不再支持以 macOS 作为 Android OS 开发平台。
 
 同步完成后，可以用这些命令确认项目与 revision：
 
@@ -487,6 +491,8 @@ repo manifest -r
 `repo manifest -r` 会把 manifest 中各项目 revision 固定为 commit SHA（提交哈希），适合作为复现记录。tag 是否签名可信还可以按官方文档执行 `git tag -v android-17.0.0_r1`。
 
 ## IDE、AIDEGen 与 clangd
+
+想在 IDE 里用上跳转和引用，前提是工具拿到正确的工程结构：Java/Kotlin 靠 AIDEGen 生成工程，C/C++ 还有 compdb 一条路。
 
 ### Java / Kotlin：使用 AIDEGen 生成项目
 
@@ -502,7 +508,7 @@ aidegen frameworks/base
 
 ### C/C++：AIDEGen 或 Soong compdb
 
-SurfaceFlinger 使用 Soong，目录里没有一套可代表产品构建的手写 CMake 工程。可以让 AIDEGen 为 native 模块生成 IDE 配置：
+SurfaceFlinger 使用 Soong，目录里没有一套可代表产品构建的手写 CMake 工程。这时我们可以让 AIDEGen 为 native 模块生成 IDE 配置：
 
 ```bash
 source build/envsetup.sh
@@ -526,7 +532,7 @@ compdb 是 compilation database（编译数据库） 的简称，只包含本次
 
 ## 用 Git 与 Gerrit 追版本
 
-AOSP 工作区由多个 Git 项目组成。运行 `git log` 前，应进入文件所属项目；`repo list` 可以看清项目是怎么划分的。
+AOSP 工作区由多个 Git 项目组成，所以运行 `git log` 前，我们要先进入文件所属项目；`repo list` 可以看清项目是怎么划分的。
 
 ### `git log`、`-S` 与 `-G`
 
@@ -554,7 +560,7 @@ git -C frameworks/base blame -L 1074,1212 \
   core/java/android/view/Choreographer.java
 ```
 
-输出首列给出 commit SHA；复制 SHA，再用 `git show --format=fuller` 查看提交。`blame` 结果不能直接代表最初设计者。格式化、移动代码或重构会覆盖逐行归属；需要配合 `git log -S`、`git log -G`、父提交和关联 bug 阅读。
+输出首列给出 commit SHA；复制 SHA，再用 `git show --format=fuller` 查看提交。`blame` 显示的是最近一次逐行修改，未必出自最初设计者之手：格式化、移动代码或重构都会覆盖逐行归属，所以要配合 `git log -S`、`git log -G`、父提交和关联 bug 一起读。
 
 ### 从 Change-Id 进入 Gerrit
 
@@ -564,7 +570,7 @@ AOSP 提交消息通常包含 `Change-Id: I...`，它是一次 Gerrit 评审在�
 
 ## 一次源码阅读应产出什么
 
-仅保存一个源码链接，后续很难复用。建议为每个结论记录：
+仅保存一个源码链接，后续很难复用。我们建议为每个结论记录：
 
 - **问题**：要解释的日志、slice、调用栈或行为；
 - **运行证据**：版本、进程、线程、时间窗和复现条件；
@@ -593,7 +599,7 @@ AOSP 提交消息通常包含 `Change-Id: I...`，它是一次 Gerrit 评审在�
 
 ### 用旧函数名解释 Android 17
 
-SurfaceFlinger、WindowManager、ART 和模块边界会变化。旧资料提供概念与历史线索，当前结论要回到 `android-17.0.0_r1` 的文件和调用点。
+SurfaceFlinger、WindowManager、ART 和模块划分都会变化。旧资料提供概念与历史线索，当前结论要回到 `android-17.0.0_r1` 的文件和调用点。
 
 ### 忽略错误与退出分支
 
@@ -601,7 +607,7 @@ SurfaceFlinger、WindowManager、ART 和模块边界会变化。旧资料提供�
 
 ### 修改系统源码来验证，却不记录改动
 
-临时日志和 trace 很有用，但应记录 patch、构建 target、刷入产物与设备 fingerprint，否则观测结果无法与原始 AOSP 或其他设备比较。
+临时日志和 trace 很有用，但应记录 patch、构建 target、刷入产物与设备 fingerprint；这些记录齐了，观测结果才能和原始 AOSP 或其他设备互相对照。
 
 ## 参考资料
 

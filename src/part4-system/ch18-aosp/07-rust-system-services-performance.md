@@ -84,7 +84,7 @@ sources:
 
 ## 结论
 
-Rust 进入 Android 平台，主要目标是减少新增 native（编译为设备机器码） 代码里的内存安全缺陷，落到性能上并没有固定的快慢方向。同样是“跨语言”，同进程跨一次 C ABI（C 二进制调用约定），可能只多出一次普通函数调用；换成一笔跨进程 Binder 调用，就要经过 Parcel 序列化、内核事务和线程调度。字符串复制、所有权转换、锁竞争、分配器和代码体积，每一项又都可能把结果拉向另一边。
+Rust 进入 Android 平台，主要目标是减少新增 native（编译为设备机器码） 代码里的内存安全缺陷；性能上的快慢，要看具体路径。同样是“跨语言”，同进程跨一次 C ABI（C 二进制调用约定），可能只多出一次普通函数调用；换成一笔跨进程 Binder 调用，就要经过 Parcel 序列化、内核事务和线程调度。字符串复制、所有权转换、锁竞争、分配器和代码体积，每一项又都可能把结果拉向另一边。
 
 下面这些结论，都能在 AOSP `android-17.0.0_r1` 里直接核对：
 
@@ -119,7 +119,7 @@ Google 在 2021 年发布 Rust 支持时提到，内存不安全问题长期约�
 | UWB | `packages/modules/Uwb/libuwb-uci` 中的 Rust packet、core 与 HAL adapter | Rust AIDL、Binder、JNI（Java Native Interface）与厂商 UCI HAL |
 | Bluetooth | `packages/modules/Bluetooth/system/rust` 中的 `rust_ffi_static` | CXX bridge 连接 Rust LE Audio（低功耗蓝牙音频）/协议模块与既有 C++ stack |
 
-这张表描述的是源码形态。一项功能是否真的全部改成了 Rust，要看它在源码树里的实际路径：比如 DnsResolver 根目录仍有 `DnsResolverService.cpp`、`ResolverController.cpp`、`res_send.cpp` 等大量 C++，Bluetooth 的 Rust 库也是作为现有 stack 的静态 FFI 组件构建的。
+这张表描述的是源码形态。要判断一项功能是否真的全部改成了 Rust，我们直接看它在源码树里的实际路径：比如 DnsResolver 根目录仍有 `DnsResolverService.cpp`、`ResolverController.cpp`、`res_send.cpp` 等大量 C++，Bluetooth 的 Rust 库也是作为现有 stack 的静态 FFI 组件构建的。
 
 r1 的 UWB 仓库位于 `packages/modules/Uwb`，Bluetooth Rust 代码位于 `packages/modules/Bluetooth/system/rust`。
 `system/uwb`、`system/bt/gd/rust`、Rust 主体的 DnsResolver、Rust HTTP engine 与 Rust bpfloader，在 r1 源码树里找不到对应路径，“已完成重写”也就无从谈起。
@@ -136,7 +136,7 @@ binder::add_service(KS2_SERVICE_NAME, ks_service.as_binder())?;
 代码省略了源码中的错误包装，只保留服务创建和注册的结构。调用发生时，Java framework 侧的 AIDL proxy（客户端代理） 发出一笔 Binder transaction，服务端由 Rust AIDL stub（服务端分发代码） 接收；
 `libbinder_rs` 构建在 `libbinder_ndk` 上，内部虽然跨了 Rust/C ABI 边界，但那里没有第二笔 Binder IPC，业务层也无需先进入 C++ stub。
 
-生成密钥或签名请求的端到端时延，常见来源是 Binder 排队、数据库事务、SELinux 权限检查、KeyMint HAL、TEE（可信执行环境）/StrongBox 和远程密钥供应；只盯着一个空 FFI 函数的纳秒值，解释不了这笔时延。
+生成密钥或签名请求的端到端时延，常见来源是 Binder 排队、数据库事务、SELinux 权限检查、KeyMint HAL、TEE（可信执行环境）/StrongBox 和远程密钥供应；这笔时延要按这些环节逐项拆解，一个空 FFI 函数的纳秒值覆盖不了它。
 
 ## 2. 三类边界
 
@@ -157,18 +157,18 @@ Java 或 native client → 语言对应的 AIDL proxy → Binder driver → Rust
 - 服务端锁、数据库、文件系统或硬件调用；
 - 回包与调用方重新调度。
 
-在这条路径上，Rust backend 的价值是让服务端保留 Rust 类型和所有权模型，同时遵守 AIDL wire format（跨进程传输时的字段编码规则）；它没有给 Binder transaction 增加新的进程跳转。所以我们先测 transaction 的排队与执行，再看生成代码和对象转换有没有变成高占比路径。
+在这条路径上，Rust backend 让服务端保留 Rust 类型和所有权模型，同时遵守 AIDL wire format（跨进程传输时的字段编码规则）；Binder transaction 的进程跳转结构保持原样。所以我们先测 transaction 的排队与执行，再看生成代码和对象转换是否变成了高占比路径。
 
 ### 2.2 Rust 与 C/C++ 的同进程 FFI
 
-`extern "C"` 走 C ABI，标量参数和 ABI 兼容结构体可按普通 native call 传递；真正的成本风险在边界两侧的工作上：
+`extern "C"` 走 C ABI，标量参数和 ABI 兼容结构体可按普通 native call 传递；成本风险主要落在边界两侧的工作上：
 
 - 所有权、生命周期与异常约束要人工设计；
 - 字符串、容器、trait object（动态分派调用的对象）和 C++ 对象要做表示转换；
 - 生成的桥接代码可能做分支、长度校验、分配或析构；
 - 回调频率过高会放大每次固定成本。
 
-跨 Rust/C++ 编译单元的调用通常没法互相内联，这和 LTO 配置直接相关。Soong `compiler.go` 对 `lto` 属性的注释写得很清楚：它控制的是最终 Rust 链接的 LTO，管不到 cross-language LTO（跨语言链接期优化）。所以 r1 默认的 ThinLTO（链接期的轻量级全程序优化） 能优化 Rust crate（Rust 编译与依赖单元） 依赖图，但 Rust/C++ 边界会不会被跨语言内联，从 ThinLTO 默认值本身读不出来。
+跨 Rust/C++ 编译单元的调用通常没法互相内联，这和 LTO 配置直接相关。Soong `compiler.go` 对 `lto` 属性的注释写得很清楚：它控制的是最终 Rust 链接的 LTO，cross-language LTO（跨语言链接期优化）在它管辖之外。所以 r1 默认的 ThinLTO（链接期的轻量级全程序优化） 能优化 Rust crate（Rust 编译与依赖单元） 依赖图；至于 Rust/C++ 边界会不会被跨语言内联，从 ThinLTO 默认值本身读不出来。
 
 数据是否复制取决于接口形态。下面的 CXX bridge 例子用借用 slice 传递指针和长度：
 
@@ -182,7 +182,7 @@ mod ffi {
 ```
 
 这种接口可以避免为 payload（实际传入的数据） 建立第二份字节数组，代价是调用期间 Rust 借用的内存必须保持有效。
-若接口改成拥有所有权的 `String`、`Vec`、C++ `std::vector`，或要求以 NUL（值为 0 的终止字节） 结尾的 `CString`——NUL 是值为 0 的终止字节——分配与复制策略就会跟着变。
+若接口改成拥有所有权的 `String`、`Vec`、C++ `std::vector`，或要求以 NUL（值为 0 的终止字节） 结尾的 `CString`，分配与复制策略就会跟着变。
 
 | 参数形态 | 常见实现 | 主要风险 |
 |---|---|---|
@@ -193,7 +193,7 @@ mod ffi {
 | Rust/C++ 容器 | bridge wrapper、逐项转换或转移所有权 | 循环调用、重复分配和异常语义 |
 | opaque object（调用方看不到内部布局的对象） | `Box`、`UniquePtr` 或 handle | 析构方、线程安全与 use-after-free |
 
-“字符串一定执行一次 malloc + memcpy”同样说得太满：借用已有的 `CStr` 可以不复制，`CString::new` 处理拥有的数据时则要检查内部 NUL，还可能产生新的分配。
+“字符串一定执行一次 malloc + memcpy”同样说得太满：借用已有的 `CStr` 可以做到零复制，`CString::new` 处理拥有的数据时则要检查内部 NUL，还可能产生新的分配。
 
 ### 2.3 Rust 与 Java 的 JNI
 
@@ -211,9 +211,11 @@ JNI 适合把同进程的 Rust library 暴露给 Java/Kotlin：Soong 用 `rust_f
 大 payload 可以评估 direct `ByteBuffer`（Java 与 native 共享的直接缓冲区）、共享内存、文件描述符或批量接口。
 纯 JNI 接口要限制对象生存期、单次延迟和取消粒度；数据还要继续跨 Binder 传输时，才需要额外考虑 Binder transaction 的大小上限。
 
-顺带澄清一个常见归类：Keystore2 对外的系统服务入口是 Binder，说它是“Rust JNI 服务”并不合适；把所有 Java→Rust 交互都归为 JNI，等于把 IPC 成本和语言转换成本混成了一项。
+顺带澄清一个常见归类：Keystore2 对外的系统服务入口是 Binder，归入“Rust JNI 服务”并不合适；把所有 Java→Rust 交互都归为 JNI，会把 IPC 成本和语言转换成本混成一项。
 
 ## 3. panic、错误与资源所有权
+
+边界两侧的语言接上之后，错误处理和资源归属要一起设计。这一节依次看三件事：panic 怎么处理、内存由谁释放、`unsafe` 审核看什么。
 
 ### 3.1 设备端的 `panic=abort`
 
@@ -225,7 +227,7 @@ JNI 适合把同进程的 Rust library 暴露给 Java/Kotlin：Soong 用 `rust_f
 
 ### 3.2 谁分配，谁释放
 
-跨 FFI 传递拥有所有权的内存之前，先把几件事明确下来：
+跨 FFI 传递拥有所有权的内存之前，我们先把几件事明确下来：
 
 - 分配使用哪个 allocator；
 - 由哪一侧调用析构或 free；
@@ -247,7 +249,7 @@ Rust 编译器证明不了裸指针、C ABI、设备寄存器与外部库满足�
 - 回调重入条件；
 - 外部函数可能修改哪些内存。
 
-边界设计得好，少量 `unsafe` 会被封装在窄接口里，其余业务代码继续写 safe Rust；反过来，把大段逻辑放进 `unsafe`，既减少迁移带来的安全收益，也让性能回归更难定位。
+我们审查 `unsafe` 的封装质量，看的就是这一点：设计得好，少量 `unsafe` 会被封装在窄接口里，其余业务代码继续写 safe Rust；反过来，把大段逻辑放进 `unsafe`，既减少迁移带来的安全收益，也让性能回归更难定位。
 
 ## 4. 运行时成本
 
@@ -285,7 +287,7 @@ Rust slice 索引可能生成 bounds check（越界检查），Android device bu
 
 ### 4.3 锁、原子与 async
 
-锁这块同样给不出统一的纳秒值。`Arc<Mutex<T>>` 把跨线程引用计数和互斥锁组合在一起，而未竞争锁、跨核竞争、优先级反转和持锁 I/O 是不同的问题；`std::sync::Mutex`、Tokio async mutex 与 Binder thread pool（处理 Binder 请求的线程池） 的调度语义也各不相同。
+锁的成本同样取决于竞争形态。`Arc<Mutex<T>>` 把跨线程引用计数和互斥锁组合在一起，而未竞争锁、跨核竞争、优先级反转和持锁 I/O 是不同的问题；`std::sync::Mutex`、Tokio async mutex 与 Binder thread pool（处理 Binder 请求的线程池） 的调度语义也各不相同。
 
 分析系统服务时应关注：
 
@@ -368,7 +370,7 @@ sanitizer（运行时错误检测）、fuzz（模糊测试）、构建时间或�
 - Rust 服务的 CPU 时间花在 bridge、锁、allocator、Binder 或业务代码中的哪一项？
 - static Rust std 与 dynamic linkage 对文件体积、PSS（Proportional Set Size） 和启动 relocation 有什么影响？
 
-“Rust 服务快不快”这种问法落不到可测的对象上；我们先把业务语义、输入、线程数、CPU affinity（把线程限制到指定 CPU）、编译配置和设备温度固定下来，再决定用什么工具。
+“Rust 服务快不快”这种问法要先落到可测的对象上；我们把业务语义、输入、线程数、CPU affinity（把线程限制到指定 CPU）、编译配置和设备温度固定下来，再决定用什么工具。
 
 ### 6.2 同进程 FFI microbenchmark
 
@@ -398,7 +400,7 @@ Perfetto 中建议同时抓：
 - 文件系统或硬件调用。
 
 Binder 测试要记录五段时间：client 发起请求、driver 排队、server 进入 runnable（可运行但未必已上 CPU）、server 执行，以及 reply 返回。
-只盯着服务函数入口计时，会漏掉调用方阻塞和调度延迟。
+计时范围要覆盖全程：只取服务函数入口，调用方阻塞和调度延迟就留在视野外了。
 
 ### 6.4 CPU 采样
 
@@ -416,7 +418,7 @@ adb shell simpleperf record -p "$keystore_pid" \
 附加采样系统服务所需的权限受 build type、SELinux 和 simpleperf 策略限制；user build 上附加失败，说明的是权限或构建条件不满足。
 
 Soong 使用 Rust v0 symbol mangling（把函数签名编码进链接符号名），并保留 unwind table，但 Simpleperf/Perfetto 报告仍要核对是否成功加载了对应符号。
-看见大量十六进制地址，应先修正 symbol path 和 build ID（唯一标识该 ELF 构建的值）；把采样归到“unknown”之后继续比较语言，结论是靠不住的。
+看见大量十六进制地址，应先修正 symbol path 和 build ID（唯一标识该 ELF 构建的值）；采样还归在“unknown”里就继续比较语言，结论也就没了依据。
 
 ### 6.5 文件体积、链接与 PSS
 
@@ -498,8 +500,7 @@ heapprofd 能观察经过 malloc/free 的 Rust 分配。配置采样时要记录
 | Android 14～16 / API 34～36 | Rust 在 Mainline（可独立更新的系统模块）、虚拟化、连接与底层组件中继续扩展，混合语言边界仍然存在 |
 | Android 17 / API 37 | `android-17.0.0_r1` 中可核对 Rust Binder 服务、CXX 混合模块、默认 ThinLTO、panic/overflow/unwind 配置与新 Bluetooth Rust 组件 |
 
-这里不讨论内核 Rust 配置或驱动；平台用户态模块也说明不了 `android17-6.18-2026-06_r6` 的内核能力。
-要分析 Rust for Linux，需要另行核对该 kernel tag 的 Kconfig（内核配置）、toolchain、bindings 和具体驱动。
+这里不讨论内核 Rust 配置或驱动；平台用户态模块也说明不了 `android17-6.18-2026-06_r6` 的内核能力——要分析 Rust for Linux，需要另行核对该 kernel tag 的 Kconfig（内核配置）、toolchain、bindings 和具体驱动。
 
 ## 源码与官方资料
 

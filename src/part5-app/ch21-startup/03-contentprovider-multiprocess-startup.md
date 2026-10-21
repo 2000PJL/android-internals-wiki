@@ -68,7 +68,7 @@ consolidated_from:
 
 # ContentProvider 与多进程启动治理
 
-ContentProvider 会在 Application.onCreate 之前安装，多进程组件又可能在每个进程重复执行初始化。我们分两条线治理：Provider 一侧核对安装顺序、权限、依赖和最终 Manifest；多进程一侧为每个进程建立独立初始化清单，并把跨进程能力设计成可超时、可重连的异步接口。
+ContentProvider 会在 Application.onCreate 之前安装，多进程组件又可能在每个进程重复执行初始化——这两件事都会把成本悄悄塞进启动路径。我们分两条线治理：Provider 一侧核对安装顺序、权限、依赖和最终 Manifest；多进程一侧为每个进程建立独立初始化清单，并把跨进程能力设计成可超时、可重连的异步接口。
 
 > 源码基线：AOSP `android-17.0.0_r1`，Android 17 / API 37；App Startup 固定到 1.2.0，即 2026-08-14 查证时的最新稳定版。
 
@@ -94,21 +94,21 @@ Instrumentation.onCreate(...)
 Instrumentation.callApplicationOnCreate(app)
 ```
 
-图中的 attach，指把新建的 `Application` 绑定到进程 `Context` 等运行环境；`bindApplication` 则是系统把应用信息、组件和 `Application` 绑定到新进程的整个启动阶段。`data.providers` 是 `system_server`（运行 Android 核心系统服务的进程） 为当前进程准备的 Provider 列表，`system_server` 承载着 ActivityManager 等核心系统服务。Provider 属于哪个进程，由最终 Manifest 中的 `android:process` 决定，未声明时属于应用默认进程。
+图中的 attach，指把新建的 `Application` 绑定到进程 `Context` 等运行环境；`bindApplication` 则是系统把应用信息、组件和 `Application` 绑定到新进程的整个启动阶段。`data.providers` 是 `system_server`（运行 Android 核心系统服务的进程）为当前进程准备的 Provider 列表，ActivityManager 等核心服务就运行在这个进程里。至于 Provider 属于哪个进程，由最终 Manifest 中的 `android:process` 决定，未声明时属于应用默认进程。
 
 `installContentProviders()` 对列表逐个调用 `installProvider()`。本地 Provider 的关键路径是：
 
 1. 通过应用的 `AppComponentFactory` 实例化 Provider 类，这个工厂负责替系统创建应用组件；
 2. 调用 `ContentProvider.attachInfo(...)`；
-3. `attachInfo(...)` 内设置权限、authority 等信息，authority 是 `content://` URI 中定位 Provider 的唯一名称；
+3. `attachInfo(...)` 内设置权限、authority 等信息——authority 是 `content://` URI 中定位 Provider 的唯一名称；
 4. 在承载该 Provider 的进程主线程调用 `ContentProvider.onCreate()`；
 5. 把已安装的 `ContentProviderHolder` 汇总起来，一次调用 `publishContentProviders(...)` 发布给 `system_server`；holder 是框架传递 Provider 信息和 Binder 接口的记录对象。
 
-Provider 多时，类加载、实例化、`attachInfo()` 和各自 `onCreate()` 的成本确实会累加；发布环节却是批量的——系统把当前批次的 holder 放进列表，通过一次 `publishContentProviders()` 调用发布，写成“每个 Provider 都单独发起一次发布 Binder 调用”就与实现不符了。
+Provider 多时，类加载、实例化、`attachInfo()` 和各自 `onCreate()` 的成本确实会累加；发布环节却是批量的：系统把当前批次的 holder 放进列表，一次 `publishContentProviders()` 调用就全部发布。如果分析里写成“每个 Provider 都单独发起一次发布 Binder 调用”，那就与实现不符了。
 
 #### 1.2 初始化顺序
 
-同一进程中、未启用 `android:multiprocess` 的 Provider 可以用 `android:initOrder` 声明相对实例化顺序，数值高的先初始化。这个属性表达的只是静态先后关系，能力也到此为止：
+同一进程中、未启用 `android:multiprocess` 的 Provider 可以用 `android:initOrder` 声明相对实例化顺序，数值高的先初始化。这个属性能声明的只有静态先后关系，再多的它管不了：
 
 - `onCreate()` 依旧同步执行；
 - 初始化的完成、失败与降级，无从表达；
@@ -142,13 +142,13 @@ Provider 框架本身只占成本的一部分。我们把一次自动初始化�
 - 删除一个 Provider 后 TTID 下降，不足以证明固定组件成本很高——也可能是它的业务初始化一起被删掉了。
 - 远端 Provider 不会随主进程启动自动出现在主进程；主进程同步访问其 authority 时，才可能触发承载进程创建，并等待 Provider 发布。
 
-到这里，我们可以把 Provider 数量当作审计入口；换算成毫秒，还要靠后面的测量。
+到这里，Provider 数量只是我们排查的起点；要换算成毫秒，还得靠后面的测量。
 
 ### 3. 从 release Manifest 建立清单
 
 #### 3.1 检查最终合并结果
 
-源码里的 Manifest 不是安装包中的最终结果。debug/release 这样的 build type（如 debug/release）、free/paid 这样的 product flavor（如 free/paid 产品配置），组合起来就是 build variant（构建变体）；依赖库、渠道配置、build variant 和构建时替换的 Manifest placeholder，都可能改变最终组件。
+源码里的 Manifest 只是原料，安装包里的才是最终结果：build type（如 debug/release）与 product flavor（如 free/paid 产品配置）组合成 build variant（构建变体）；依赖库、渠道配置和构建时替换的 Manifest placeholder，都可能让最终组件与源码声明不同。
 
 Android Gradle Plugin（AGP）的合并决策报告位于模块的 `build/outputs/logs/manifest-merger-<variant>-report.txt`，Android Studio 的 Merged Manifest 视图也能定位某个 Provider 来自哪个依赖。准备发布的每个构建变体都要检查，只看 debug 是不够的。
 
@@ -238,7 +238,7 @@ class AppInitProvider : ContentProvider() {
 - 承载进程的进程绑定、Provider `onCreate()` 和发布；
 - 超时、死亡与重试。
 
-调用方线程若是 Main 线程，这段等待会直接进入 UI 关键路径。远端进程并不会让同步访问自动变快。
+调用方线程若是 Main 线程，这段等待会直接进入 UI 关键路径——把 Provider 挪进远端进程，并不会让这次同步访问自动变快。
 
 ### 5. 按用户可见时机分类
 
@@ -305,7 +305,7 @@ NotStarted → Initializing → Ready
                    └──────→ Failed
 ```
 
-`NotStarted` 表示尚未启动，`Initializing` 表示正在初始化，`Ready` 表示能力可用，`Degraded` 表示只能提供约定的备用能力，`Failed` 表示本次初始化失败。并发调用应共享同一个 `Initializing` 结果、避免重复启动；协程调用者可以挂起等待而不占住线程，其他调用者可以注册回调；Main 线程上则要避开锁和 `Future.get()` 这类阻塞等待。
+五个状态按字面理解即可：`NotStarted` 尚未启动，`Initializing` 正在初始化，`Ready` 能力可用，`Degraded` 只剩约定的备用能力，`Failed` 是本次初始化失败。并发调用要共享同一个 `Initializing` 结果，避免重复启动；协程调用者可以挂起等待而不占住线程，其他调用者注册回调即可；Main 线程上则要避开锁和 `Future.get()` 这类阻塞等待。
 
 状态机还要定义：
 
@@ -317,7 +317,7 @@ NotStarted → Initializing → Ready
 - 用户撤回同意后如何停止与清理；
 - 进程重建后如何恢复。
 
-至于执行线程，不能一刀切地把 SDK 初始化丢进 I/O 线程：有些 SDK 明确要求在 Main 线程调用，有些初始化同时包含 Main 注册和后台准备，应拆成有依赖的两个任务。
+至于执行线程，要按 SDK 的线程契约来定：有些 SDK 明确要求在 Main 线程调用，有些初始化同时包含 Main 注册和后台准备，遇到后一种情况，应拆成有依赖的两个任务再分别调度。
 
 ### 8. “首帧后”的观测点
 
@@ -343,11 +343,11 @@ root.doOnPreDraw {
 }
 ```
 
-`doOnPreDraw` 在本轮绘制前注册回调。硬件路径的回调表示帧已提交到 swap chain，像素是否已经显示，它说明不了；软件渲染的备用分支只保证工作排在当前 traversal 之后——traversal 是本轮测量、布局和绘制组成的界面遍历过程。生产代码还需处理 Activity 销毁、重复注册和取消。
+`doOnPreDraw` 在本轮绘制前注册回调。硬件路径的回调表示帧已提交到 swap chain，至于像素是否真的上了屏，它管不到；软件渲染的备用分支只保证工作排在当前 traversal 之后——traversal 是本轮测量、布局和绘制组成的界面遍历过程。生产代码还需处理 Activity 销毁、重复注册和取消。
 
 延后任务可能与下一帧交互争用 CPU/I/O。调度之后，我们仍要用 FrameTimeline 的逐帧期限与卡顿数据、TTID/TTFD 和真实交互场景验证。若任务是“主要内容可用”的必要条件，它属于 TTFD 图，别放进 `DEFERRED`。
 
-### 9. App Startup 1.2.0 的准确边界
+### 9. App Startup 1.2.0 的作用与限制
 
 #### 9.1 减少的入口与留下的成本
 
@@ -444,13 +444,13 @@ val shareClient = AppInitializer.getInstance(context)
 
 #### 10.3 `multiprocess` 与同 UID（Linux 用户 ID，Android 用它隔离应用身份） 多实例
 
-Manifest 的 `android:multiprocess="true"` 允许系统在同一 UID（Linux 用户 ID）的其他进程中本地创建 Provider 实例，通常对应应用自己的子进程；Android 用 UID（Linux 用户身份） 隔离应用身份。[`ContentProviderRecord.canRunHere()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderRecord.java) 同时检查 `multiprocess` 和 UID；不同 UID 的外部应用仍通过 Binder 访问承载进程中的实例。
+Manifest 的 `android:multiprocess="true"` 允许系统在同一 UID（Linux 用户 ID）的其他进程中本地创建 Provider 实例，通常对应应用自己的子进程；Android 就是用 UID (Linux 用户身份) 隔离应用身份的。[`ContentProviderRecord.canRunHere()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderRecord.java) 同时检查 `multiprocess` 和 UID；不同 UID 的外部应用仍通过 Binder 访问承载进程中的实例。
 
 本地实例可以省去应用自身进程间的部分 Binder 调用，代价是复制对象、缓存和连接，还要各实例自己解决状态一致性。它的适用面很窄，不该当作通用启动优化；迁移前要核对旧应用是否依赖这项少见行为，并在目标 API 37 设备上验证。
 
 ### 11. 性能改动下的 Provider 安全
 
-每个保留或迁移的 Provider 还要检查：
+性能改动收尾前，我们还要从安全角度把保留或迁移的 Provider 逐项过一遍：
 
 - authority 是否唯一且使用 applicationId 前缀；
 - `android:exported` 是否显式符合共享需求，也就是是否允许其他应用访问；
@@ -484,11 +484,11 @@ Manifest 的 `android:multiprocess="true"` 允许系统在同一 UID（Linux 用
 
 Provider 数量减少只是实现层面的变化；用户可见启动、功能正确性和安全性都要能重复验证，验收才算过关。
 
-## 进程拓扑、重复初始化与共享边界
+## 进程拓扑、重复初始化与共享状态
 
 主进程的 Provider 优化完成后，我们还要检查远程 Service、WebView 或独立业务进程有没有重复加载 SDK、线程池和缓存。
 
-多进程可以隔离崩溃、内存峰值和重型 native（C/C++ 等本地代码） 模块，也会新增一套进程运行时、初始化链路和 IPC（Inter-Process Communication，进程间通信） 通信。这是一项架构取舍，代替不了主进程自身的启动治理。
+多进程可以隔离崩溃、内存峰值和重型 native（C/C++ 等本地代码） 模块，代价是新增一整套进程运行时、初始化链路和 IPC（Inter-Process Communication，进程间通信）成本。这是一项架构取舍，代替不了主进程自身的启动治理。
 
 App 可以控制的部分包括：是否拆进程、何时启动、每个进程初始化什么、调用方怎样等待远程能力，以及如何验证收益。进程优先级与回收规则见 [进程模型](../../part1-fundamentals/ch01-architecture/01-android-architecture-process-threading.md)，冷启动分段与 TTID、TTFD 见 [启动分析](01-app-startup-path-monitoring.md)，后台任务约束见 [后台执行限制](../../part1-fundamentals/ch05-cpu-power/03-background-jobs-hibernation.md)。
 
@@ -524,7 +524,7 @@ WebView 在多进程模式下会把网页内容放进 renderer process（Chromiu
 
 ### 2. 应用进程的启动链路
 
-系统需要运行一个尚无进程可用的组件时，system_server 会请求 Zygote 创建应用进程——system_server 运行着 Android 核心系统服务；Zygote 预加载了通用框架代码，靠 fork（用写时复制派生子进程，修改内存页时才生成私有副本） 的写时复制快速派生 App 进程，子进程先共享页面，修改时才生成私有副本。`ZygoteProcess.startViaZygote()` 负责整理参数，并通过 Zygote socket（进程间通信端点） 发送创建请求。
+系统需要运行一个尚无进程可用的组件时，system_server 会请求 Zygote 创建应用进程——system_server 运行着 Android 核心系统服务；Zygote 预加载了通用框架代码，靠 fork（用写时复制派生子进程，修改内存页时才生成私有副本）快速派生 App 进程。`ZygoteProcess.startViaZygote()` 负责整理参数，并通过 Zygote socket（进程间通信端点）发送创建请求。
 
 新进程随后进入 `ActivityThread` 的应用绑定流程；`ActivityThread` 是 App 进程接收组件与生命周期调度的核心类，上一部分讲的 Provider 安装顺序就发生在这一步。
 
@@ -542,7 +542,7 @@ WebView 在多进程模式下会把网页内容放进 renderer process（Chromiu
   -> 创建目标 Activity / Service / Receiver / Provider 客户端能力
 ```
 
-这段链路里有两处容易混淆的地方。
+这段链路里有两处容易混淆的地方，我们分开说清。
 
 第一，Provider 按 Manifest 声明的进程归属安装。系统不会把应用里的所有 Provider 安装到每一个进程；默认进程 Provider 属于主进程，声明了 `android:process=":worker"` 的 Provider 属于对应远程进程。一个进程只要分配到了自动初始化 Provider，系统就会在该进程的 `Application.onCreate()` 之前创建并调用它们。
 
@@ -552,7 +552,7 @@ WebView 在多进程模式下会把网页内容放进 renderer process（Chromiu
 
 ### 3. 给每个进程定义最小初始化集
 
-`Application.getProcessName()` 从 Android 9（API 28）开始提供，本文覆盖的 Android 10～17 均可直接使用。它比读取 `/proc` 伪文件或枚举运行进程更简单，也避开了系统实现与权限条件差异带来的误判。
+给进程划分角色，我们直接用一个现成 API：`Application.getProcessName()` 从 Android 9（API 28）开始提供，本文覆盖的 Android 10～17 均可直接使用。它比读取 `/proc` 伪文件或枚举运行进程更简单，也避开了系统实现与权限条件差异带来的误判。
 
 下面的代码用于把进程名映射成稳定的角色，并让每个进程只初始化自己的能力：
 
@@ -618,11 +618,11 @@ Android 没有面向普通应用的通用“只创建进程、暂不运行组件
 2. 首帧后立即预热；
 3. 临近功能入口再预热。
 
-比较指标应包括主进程 TTID/TTFD、远程能力 ready（协议已经可以接受请求的时点）、用户进入功能后的等待、全应用 PSS（Proportional Set Size，按比例分摊共享页后的内存）、低内存回收次数和失败率。只有用户等待时间的下降盖得住资源与稳定性代价，这份预热才值得保留。
+比较指标应包括主进程 TTID/TTFD、远程能力 ready（协议已经可以接受请求的时点）、用户进入功能后的等待、全应用 PSS (Proportional Set Size，按比例分摊共享页后的内存)、低内存回收次数和失败率。只有用户等待时间的下降盖得住资源与稳定性代价，这份预热才值得保留。
 
 ### 5. 把 Binder ready 建模为异步能力
 
-同步 Binder 调用会阻塞客户端调用线程，直到服务端返回或调用失败。跨进程事务通常由服务端 Binder 线程池执行，多个客户端可能并发进入同一实现，所以服务端状态要满足线程安全。`oneway` 只让跨进程调用方立即返回；同一 Binder 对象的多次 oneway 调用仍按发送顺序逐个分发，而且“已返回”不表示业务已经完成。结果、超时和取消仍需由协议定义。
+设计跨进程调用时，我们把“远程能力 ready”建模成一个异步对象。同步 Binder 调用会阻塞客户端调用线程，直到服务端返回或调用失败；跨进程事务通常由服务端 Binder 线程池执行，多个客户端可能并发进入同一实现，所以服务端状态要满足线程安全。`oneway` 只让跨进程调用方立即返回，同一 Binder 对象的多次 oneway 调用仍按发送顺序逐个分发，而且“已返回”不表示业务已经完成——结果、超时和取消仍需由协议定义。
 
 远程服务随时可能消失，连接状态至少要区分连接中、可用、断开和失败，并处理 Binder 所在进程死亡。
 
@@ -696,9 +696,7 @@ class WorkerConnection :
 
 还有一个并发细节：`binderDied()` 可能在 Binder 线程执行，并与新连接回调并发。生产实现应给每次连接分配代次，忽略旧代次回调，避免旧死亡通知覆盖新的 `Ready` 状态。
 
-状态更新之外的重工作应切换到受控协程或执行器。
-
-远程事务可能包含磁盘、网络或重计算。AIDL（Android Interface Definition Language） 用于声明跨进程接口；客户端应把同步 AIDL 调用放到允许阻塞的调度器，并给业务请求单独设置超时：
+状态更新之外，重工作要切到受控协程或执行器上，因为远程事务可能包含磁盘、网络或重计算。AIDL（Android Interface Definition Language）用于声明跨进程接口；客户端应把同步 AIDL 调用放到允许阻塞的调度器，并给业务请求单独设置超时：
 
 ```kotlin
 suspend fun transcode(
@@ -712,7 +710,7 @@ suspend fun transcode(
 }
 ```
 
-内层超时约束连接等待，外层超时为调用方协程设置业务 deadline。但同步 Binder 一旦进入阻塞，`withTimeout` 拦不下正在执行的事务，这段代码也就给不出严格的墙钟时间上限，即从调用开始计算的实际耗时上限。需要硬超时的耗时协议，应改成异步请求加回调，并提供请求 ID、显式 `cancel(requestId)` 和服务端 deadline；服务端还要让重复请求可安全重试。
+内层超时约束连接等待，外层超时为调用方协程设置业务 deadline。但同步 Binder 一旦进入阻塞，`withTimeout` 拦不下正在执行的事务，这段代码也就给不出严格的墙钟时间上限（从调用开始计算的实际耗时）。需要硬超时的耗时协议，应改成异步请求加回调，并提供请求 ID、显式 `cancel(requestId)` 和服务端 deadline；服务端还要让重复请求可安全重试。
 
 如果首屏允许降级，超时后应返回本地占位、稍后重试或跳过非核心能力。不要在主线程用同步 Binder、文件锁或数据库锁把远程冷启动串到首帧之前。
 
@@ -732,7 +730,7 @@ suspend fun transcode(
 
 ### 7. 面向进程死亡的恢复设计
 
-远程进程可能因内存压力、组件生命周期结束、崩溃或系统策略而消失。生产环境的清理逻辑别指望 `Application.onTerminate()`：官方 API 文档明确说明，量产设备结束进程时不会调用这个方法，也不会执行其他应用清理代码。
+这一节我们按最坏情况设计：远程进程可能因内存压力、组件生命周期结束、崩溃或系统策略而消失。生产环境的清理逻辑别指望 `Application.onTerminate()`：官方 API 文档明确说明，量产设备结束进程时不会调用这个方法，也不会执行其他应用清理代码。
 
 绑定关系、正在运行的前台服务和用户可感知组件会影响系统对进程重要性的判断；进程寿命的最终裁决权仍在系统手里。前台服务只适合用户能够感知的持续任务，并要声明正确的服务类型、权限和通知；从后台启动时还要满足对应版本的豁免条件。空 Service、循环广播、主辅进程互相启动和没有业务意义的前台服务会增加功耗与内存，也可能触发系统限制。
 
@@ -748,7 +746,7 @@ suspend fun transcode(
 
 ### 8. 多进程的观测方法
 
-观测要先接受一个事实：没有 Activity 的远程服务进程不绘制应用界面，也就没有有意义的 TTID/TTFD。主进程继续观察 TTID、TTFD 和首帧前同步等待；远程进程应定义自己的 `binder_ready`、`provider_ready` 或首个业务结果时间，并写清每个时点代表的可用能力。
+观测多进程，要先接受一个事实：没有 Activity 的远程服务进程不绘制应用界面，也就没有有意义的 TTID/TTFD。所以主进程继续观察 TTID、TTFD 和首帧前同步等待；远程进程则定义自己的 `binder_ready`、`provider_ready` 或首个业务结果时间，并写清每个时点代表的可用能力。
 
 解释“为什么创建进程”，系统有现成数据。Android 15（API 35）加入 `ApplicationStartInfo`，可以读取进程名、启动原因和启动时间戳；Android 16（API 36）又加入 `getStartComponent()`，用于区分 Activity、Service、Broadcast 和 ContentProvider。`getReason()` 给出 launcher、Job、Push 等更细的触发原因，组件类型则要看 `getStartComponent()`。Android 17 上还可通过 `ActivityManager.getHistoricalProcessStartReasons()` 读取按时间倒序保存的近期记录，其中可能包含仍在启动的未完整记录。
 
@@ -765,7 +763,7 @@ suspend fun transcode(
 | 资源 | PSS、RSS、Java/native heap、线程、FD（文件描述符） | 衡量拆分和预热的常驻代价 |
 | 稳定性 | `binderDied`、重绑、崩溃、请求重放、失败率 | 验证进程死亡后的恢复质量 |
 
-PSS 会按共享进程数分摊共享内存页，适合估算多个进程合计对系统内存的压力；RSS（Resident Set Size）包含该进程映射的全部共享页，适合观察单进程分配趋势，但直接相加多个进程的 RSS（Resident Set Size，常驻内存大小） 会重复计算共享页。报告“多进程节省内存”时，要说明用的是哪一种统计口径。
+PSS 会按共享进程数分摊共享内存页，适合估算多个进程合计对系统内存的压力；RSS（Resident Set Size）包含该进程映射的全部共享页，适合观察单进程分配趋势，但直接相加多个进程的 RSS (Resident Set Size，常驻内存大小) 会重复计算共享页。报告“多进程节省内存”时，要说明用的是哪一种统计口径。
 
 本地排查可以先用下面的命令确认进程、内存和长期存活情况：
 

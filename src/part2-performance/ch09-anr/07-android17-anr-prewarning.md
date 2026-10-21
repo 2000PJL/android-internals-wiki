@@ -97,13 +97,13 @@ Android 17 / API 37 增加了公开的 ANR warning（预警） API。应用可�
 
 > 源码基线：本章平台实现以 AOSP `android-17.0.0_r1` 为核对版本。
 
-用这个信号之前，我们先记住它的三个边界：
+用这个信号之前，我们先记住三件事：
 
-- warning 只表示“某个计时条件已进入预警点”，系统尚未宣告 ANR；
-- 阻塞条件可能在 deadline 前恢复，warning 后未必有 ANR；
-- 回调按 best-effort（尽力而为）方式投递；系统可能来不及调用，也可能在 executor（执行器） 排队期间到达 deadline。
+- warning 只表示“某个计时条件已进入预警点”，此时系统还没有宣告 ANR；
+- warning 之后走不走得到 ANR，取决于阻塞条件是否在 deadline 前恢复；
+- 回调按 best-effort（尽力而为）方式投递，系统可能来不及调用，任务也可能还在 executor（执行器） 里排队，deadline 就先到了。
 
-warning 不会暂停或延长原计时器。它适合记录轻量状态，并关联 warning 与事后退出记录；全线程 dump、同步写盘或网络上传这类重活，不适合放进回调。
+原计时器照常走，warning 不会让它暂停或延长。所以这个信号适合记录轻量状态，并把 warning 与事后退出记录关联起来；全线程 dump、同步写盘或网络上传这类重活，留给别的时机做。
 
 ANR 的 timeout 与报告流程见 [9.1 ANR 机制、类型与触发条件](01-anr-mechanism-types-triggers.md)，线程转储和 Perfetto 联合分析见 [§9.2 ANR 与 Kernel Trace 联合诊断](02-anr-kernel-trace-diagnosis.md)。
 
@@ -113,7 +113,7 @@ ANR 的 timeout 与报告流程见 [9.1 ANR 机制、类型与触发条件](01-a
 
 ### 1. 公开 API 在 `android.app`
 
-相关类型都放在 `android.app` 里：
+我们先把应用直接接触的类型认一遍，它们都放在 `android.app` 里：
 
 | API | 作用 |
 |---|---|
@@ -124,11 +124,11 @@ ANR 的 timeout 与报告流程见 [9.1 ANR 机制、类型与触发条件](01-a
 
 `IAnrWarningCallback.aidl` 是 ActivityManager 与 AMS（ActivityManagerService）之间的 hidden（隐藏） Binder 接口，应用不需要直接实现它。`ActivityManager` 会在当前进程注册第一个 listener 时创建一个 Binder stub（接收系统跨进程调用的入口）；同一进程后续注册的 listener 会复用同一个 Binder callback（回调对象）。
 
-这些 API 都在 API 37 加入。公开文档没有要求 `targetSdkVersion >= 37`；应用需要使用 API 37 SDK 编译，并在运行时检查设备版本。`android-17.0.0_r1` 源码还保留 `@FlaggedApi` 注解：`AnrTypes` 与 `ApplicationExitInfo.AnrInfo` 对应 `Flags.FLAG_INCLUDE_ANR_INFO`，warning callback 相关类与注册方法对应 `Flags.FLAG_ENABLE_ANR_WARNING_CALLBACK`。在 AOSP 派生或厂商调试 build（系统构建版本） 上做兼容性验证时，要把源码 flag 状态和运行平台版本一起核对。
+这些 API 都在 API 37 加入，接入时要做的事情也清楚：使用 API 37 SDK 编译，并在运行时检查设备版本；`targetSdkVersion >= 37` 在公开文档里没有这条要求。`android-17.0.0_r1` 源码还保留 `@FlaggedApi` 注解：`AnrTypes` 与 `ApplicationExitInfo.AnrInfo` 对应 `Flags.FLAG_INCLUDE_ANR_INFO`，warning callback 相关类与注册方法对应 `Flags.FLAG_ENABLE_ANR_WARNING_CALLBACK`。所以在 AOSP 派生或厂商调试 build（系统构建版本） 上做兼容性验证时，要把源码 flag 状态和运行平台版本一起核对。
 
 ### 2. `AnrTypes` 的完整枚举
 
-`AnrTypes` 使用 `@IntDef`，也就是由注解约束取值范围的一组整数常量，并非 Java/Kotlin `enum`。Android 17 定义了 11 个常量：
+`AnrTypes` 使用 `@IntDef`，也就是由注解约束取值范围的一组整数常量，按 int 传值使用，Java/Kotlin `enum` 的写法在这里用不上。Android 17 定义了 11 个常量：
 
 | 值 | 常量 | 含义 |
 |---:|---|---|
@@ -144,11 +144,11 @@ ANR 的 timeout 与报告流程见 [9.1 ANR 机制、类型与触发条件](01-a
 | 9 | `ANR_TYPE_JOB_SERVICE_START` | JobService 启动响应超时 |
 | 10 | `ANR_TYPE_APPLICATION_START` | 应用启动超时 |
 
-这些常量还用于 `ApplicationExitInfo.AnrInfo`。类型集合覆盖 ANR 分类，但不表示每一种类型都已经接入 warning producer（产生预警的系统路径）。
+这些常量还用于 `ApplicationExitInfo.AnrInfo`。类型集合覆盖 ANR 分类；至于每一种类型是否都已经接入 warning producer（产生预警的系统路径），要看下一小节核对的实现清单。
 
 #### 2.1 枚举覆盖与预警覆盖要分开
 
-类型常量齐全，只是 API 层面的承诺。我们回到已核对的 `android-17.0.0_r1` 实现，明确发出 warning 的路径有：
+类型常量齐全，只是 API 层面的承诺。要判断哪些类型真的会发出 warning，我们得回到已核对的 `android-17.0.0_r1` 实现。明确发出 warning 的路径有：
 
 | warning producer | `AnrTypes` | 预警点 |
 |---|---|---|
@@ -158,13 +158,13 @@ ANR 的 timeout 与报告流程见 [9.1 ANR 机制、类型与触发条件](01-a
 | short FGS timer | `FOREGROUND_SHORT_SERVICE_TIMEOUT` | `AnrTimer` 运行到 50% split point |
 | start-foreground timer | `START_FOREGROUND_SERVICE` | `AnrTimer` 运行到 50% split point |
 
-InputDispatcher 的 `processPreAnrsLocked()` 在该 tag（源码版本） 中只调用 `processNoFocusedWindowPreAnrLocked()`。普通 input connection（输入连接） timeout（输入连接超时） 没有沿这段代码发送 warning；ContentProvider call detector、JobService、application start 和 app-triggered ANR 虽然有对应常量，但从常量推不出系统已经投递 warning。
+InputDispatcher 的 `processPreAnrsLocked()` 在该 tag（源码版本） 中只调用了 `processNoFocusedWindowPreAnrLocked()`，普通 input connection（输入连接） timeout（输入连接超时）也就没有沿这段代码发送 warning。ContentProvider call detector、JobService、application start 和 app-triggered ANR 都有对应常量，但常量只是 API 层面的名字，系统是否真的投递过 warning，要看 producer 实现。
 
-warning 覆盖还受 feature flag（功能开关）与计时器实现影响。所以生产统计里，“最终 ANR 无 warning”和“warning 后恢复”这两类记录都要单独保留，listener 收到的数量只代表投递量，要得到全量 ANR 分母还得另算。
+warning 覆盖还受 feature flag（功能开关）与计时器实现影响。所以做生产统计时，我们要把“最终 ANR 无 warning”和“warning 后恢复”这两类记录单独保留；listener 收到的数量只代表投递量，要得到全量 ANR 分母还得另算。
 
 ### 3. `AnrWarningResult` 只有五项数据
 
-载荷字段已经在源码和公开 API 中确定：
+载荷字段在源码和公开 API 中已经确定，我们按 getter 逐个过一遍：
 
 | getter | 语义 |
 |---|---|
@@ -174,9 +174,9 @@ warning 覆盖还受 feature flag（功能开关）与计时器实现影响。�
 | `getTimeoutMillis()` | 系统为该次计时使用的总期限 |
 | `getDescription()` | 短诊断描述，格式不稳定 |
 
-载荷没有 PID、UID、包名、进程名、组件对象、线程栈、锁状态或 Binder 队列深度。`description` 可能包含 Service component（组件名） 等提示，但 API 明确声明格式可变；它可以用于人工分析或辅助聚类，要解析成稳定协议就不行了。
+载荷里找不到 PID、UID、包名、进程名、组件对象、线程栈、锁状态或 Binder 队列深度。`description` 可能包含 Service component（组件名） 等提示，但 API 明确声明格式可变：拿它做人工分析或辅助聚类可以，要解析成稳定协议就靠不住了。
 
-`anrId` 只保证“在每个 `anrType` 内唯一”。所以持久化 key（记录键） 应至少使用 `(anrType, anrId)`，还应带上用户、应用版本、设备 boot/session（本次开机或应用会话）和本地进程名，避免跨重启或多进程数据混在一起。
+`anrId` 只保证“在每个 `anrType` 内唯一”。所以设计持久化 key（记录键）时，我们至少使用 `(anrType, anrId)`，再带上用户、应用版本、设备 boot/session（本次开机或应用会话）和本地进程名，免得跨重启或多进程的数据混在一起。
 
 ### 4. 注册与注销
 
@@ -259,7 +259,7 @@ executor 怎么选？官方文档要求避开应用主线程：主线程可能�
 
 AMS 的 callback 表按 UID 分组。一个包的主进程和 `:remote` 进程都注册 listener 后，同一 UID 的 warning 会投递到两个进程，而载荷中没有目标 PID。
 
-多进程应用要做的核对相应简单：
+所以多进程应用要做的核对相应简单：
 
 - 在记录中加入 `Application.getProcessName()`；
 - 以 `(type, id, boot/session)` 去重上传；
@@ -295,7 +295,7 @@ AMS 的 callback 表按 UID 分组。一个包的主进程和 `:remote` 进程�
 
 InputDispatcher 为 no-focused-window（没有焦点窗口）状态维护独立的 pre-ANR 标记，并从 deadline 反推 warning 时刻，预警窗口的取值见后文“pre-ANR 时间公式”。状态恢复、focused application（当前应获得焦点的应用）改变或已经出现 focused window 时，最终 ANR 可以取消。
 
-该实现路径使用 `ANR_TYPE_INPUT_DISPATCH_NO_FOCUSED_WINDOW`，不能据此推广到全部输入派发超时。
+该实现路径使用 `ANR_TYPE_INPUT_DISPATCH_NO_FOCUSED_WINDOW`，单凭这一条路径，推不出全部输入派发超时的覆盖情况。
 
 ### 7. warning 与最终 ANR 如何关联
 
@@ -332,9 +332,9 @@ if (Build.VERSION.SDK_INT >= 37) {
 }
 ```
 
-两组记录这样读：warning 后条件恢复，就不会出现匹配的 ANR exit；反过来有 ANR exit 却没有 warning，原因可能是该类型未接入 producer、功能开关关闭、回调投递失败、executor 未运行或应用当时没有注册，对号入座排查即可。
+我们拿两组记录对照着读：warning 后条件恢复，就不会出现匹配的 ANR exit；反过来有 ANR exit 却没有 warning，原因可能是该类型未接入 producer、功能开关关闭、回调投递失败、executor 未运行或应用当时没有注册，对号入座排查即可。
 
-`isUserPerceptible()` 表示系统记录的用户可感知性，据此认定进程一定展示了某种固定样式的对话框就过头了。后台 silent ANR 与设备 UI 策略仍由最终 ANR 处理流程决定。
+`isUserPerceptible()` 表示系统记录的用户可感知性。把它读成“进程一定展示了某种固定样式的对话框”就过了；后台 silent ANR 与设备 UI 策略，仍由最终 ANR 处理流程决定。
 
 ### 8. 回调里适合记录什么
 
@@ -390,7 +390,7 @@ warning listener 本身不会启动系统 trace，也补不回注册前的历史
 
 最终 ANR 处理中，`ProcessErrorStateRecord` 还可以发出 `ANR Detected` instant。抓取配置需要启用 `debug.anr` Track Event category，详细配置见 [§9.2](02-anr-kernel-trace-diagnosis.md#3-android-17-中可用的数据源)。
 
-分析时可按下面的时间关系核对：
+分析时，我们可按下面的时间关系核对：
 
 1. `AnrWarningDetected`；
 2. 应用自定义 warning breadcrumb（时间线标记）；
@@ -421,7 +421,7 @@ warning 对恢复样本也有价值。若同一业务阶段反复出现“warnin
 
 #### 收到 warning 就一定会 ANR
 
-计时对象可以在 deadline 前完成，producer 会取消 timer。记录中应把 warning 标为“可能发生 ANR 的事件”，不能标为已发生 ANR。
+计时对象可以在 deadline 前完成，producer 会取消 timer。记录中应把 warning 标为“可能发生 ANR 的事件”，已发生 ANR 要以最终判定为准。
 
 #### 所有 `AnrTypes` 都会触发 listener
 
@@ -458,7 +458,7 @@ AMS 按 UID 分发。同 UID 的多个已注册进程都可能收到同一 warni
 
 ### 公开预警 API 的版本与实现边界
 
-API 37 把 ANR 类型、预警载荷和 listener 注册放进了公开 API：它在 deadline 前提供 best-effort（尽力而为、不保证到达） 信号，也让 warning id 能与事后的 `ApplicationExitInfo.AnrInfo` 对齐。它没有取代系统 ANR trace，也没有覆盖 Android 17 中的每一种 ANR 类型。
+API 37 把 ANR 类型、预警载荷和 listener 注册放进了公开 API：它在 deadline 前提供 best-effort（尽力而为、不保证到达） 信号，也让 warning id 能与事后的 `ApplicationExitInfo.AnrInfo` 对齐。系统 ANR trace 仍是主线，类型覆盖也要按前文的 producer 清单来读：Android 17 的全部 ANR 类型并没有都在其中。
 
 这项能力适合补充已有监控：平时维护轻量 breadcrumbs，收到 warning 时复制一份小型状态快照，ANR 后再与 system trace 和退出记录合并。
 
@@ -484,7 +484,7 @@ InputDispatcher 处理的两类超时都表现为“输入没有按期完成”�
 
 #### 1.1 no focused window
 
-`findFocusedWindowTargetLocked()` 只有在事件需要焦点目标时才启动这次倒计时。源码注释以 KeyEvent 为例。若 focused application 和 focused window 都为空，事件直接失败；若窗口已存在，则走正常派发。
+先看 no focused window 这一路。`findFocusedWindowTargetLocked()` 只有在事件需要焦点目标时才启动这次倒计时，源码注释以 KeyEvent 为例：若 focused application 和 focused window 都为空，事件直接失败；若窗口已存在，则走正常派发。
 
 状态首次建立时保存：
 
@@ -504,7 +504,7 @@ InputDispatcher 处理的两类超时都表现为“输入没有按期完成”�
 
 ### 2. `dispatchOnce()` 里的两次检查
 
-每次 dispatcher loop 末尾都会计算下一次唤醒时刻。相关源码结构如下：
+再看 dispatcher loop 本身。每次循环末尾都会计算下一次唤醒时刻，相关源码结构如下：
 
 ```cpp
 nextWakeupTime = std::min({
@@ -592,7 +592,7 @@ flowchart TD
 - timeout：本次实际 timeout；
 - description：Android 17 该调用点传空字符串。
 
-`AnrWarningController` 再向该 UID 下已经注册 listener 的进程投递。warning payload（载荷）没有 PID 或 Activity token（系统识别 Activity 的句柄）；多进程应用应按 `(type, id, boot/session)` 去重，其中 boot/session 表示本次开机或应用会话。
+`AnrWarningController` 再向该 UID 下已经注册 listener 的进程投递。warning payload（载荷）里没有 PID 或 Activity token（系统识别 Activity 的句柄）；多进程应用按 `(type, id, boot/session)` 去重即可。
 
 公开 API、类型清单和载荷字段见本章前文“公开回调、类型与交付约束”。
 
@@ -607,7 +607,7 @@ WMS 的 `enableInputDispatcherLongMethodTracing` flag 开启时，pre-ANR 还会
 
 `LongMethodTracer` 通过基于信号的 native 机制请求固定时长的方法追踪。类注释写明，若目标进程在 tracing window（追踪窗口） 内或之后发生 ANR，采集信息会进入 ANR report。触发返回 `false`、进程退出或 flag 关闭，都可能导致产物缺失。
 
-warning callback 与 Long Method Trace 是相互独立的动作。应用收到 callback 不表示追踪已经成功，追踪成功也不保证应用注册了 listener。
+warning callback 与 Long Method Trace 是相互独立的动作：应用收到 callback 时，追踪可能尚未成功；追踪成功时，应用也可能还没注册 listener。
 
 ### 6. 到期路径仍有两条
 
@@ -665,7 +665,7 @@ timeoutRecord.setExpiredTimer(expiredTimer);
 
 输入 deadline 仍由 InputDispatcher 的 `mNoFocusedWindowAnrState` 或 `mAnrTracker` 驱动，Java `AnrTimer` 没有为它启动 native timer。
 
-两条路径的 duration 口径也不同：
+两条路径传入的 duration 也各有算法：
 
 - no focused window 传入配置的 timeout threshold（超时阈值）；
 - window unresponsive 传入 wait queue 最老 entry 截至 `onAnrLocked()` 的实际等待时长。
@@ -800,7 +800,7 @@ Perfetto 不会自动生成固定的 `/data/anr` 产物。需要预先配置持�
 | Android 14—16 | 不能从对应 release tag（发布版本标签）找到这套 `processPreAnrsLocked()` / no-focus warning 实现 |
 | Android 17 / API 37 | 增加 InputDispatcher no-focus pre-ANR、公开 warning 投递、可选 long method tracing 与 input `AnrInfo` 载荷 |
 
-输入 timeout、WMS 归因和 ANR 主路径在更早版本已经存在，但 Android 17 的 pre-warning 行为不能倒推到 Android 14—16。
+输入 timeout、WMS 归因和 ANR 主路径在更早版本已经存在；Android 17 的 pre-warning 行为，倒推回 Android 14—16 是套不上的。
 
 ## 结论
 
@@ -812,7 +812,7 @@ Android 17 为 no-focused-window 输入 ANR 增加了一次 deadline 前的观�
 4. deadline 到期后重新检查焦点状态，再决定正式 ANR；
 5. `TimeoutRecord` 携带 input event id，支持后续 `ApplicationExitInfo.AnrInfo` 关联。
 
-这套机制没有覆盖 window-unresponsive pre-warning，也不保证 callback 领先 deadline 固定时长。诊断系统应把 warning、可选 trace、正式责任判断和退出记录视为四份各自可能缺失的证据。
+window-unresponsive pre-warning 仍在这套机制之外，callback 领先 deadline 的时长也没有固定保证。诊断系统应把 warning、可选 trace、正式责任判断和退出记录当成四份各自可能缺席的材料。
 
 ## 相关章节
 

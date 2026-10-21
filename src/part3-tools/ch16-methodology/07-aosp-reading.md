@@ -2,12 +2,12 @@
 title: AOSP 代码阅读
 chapter: '16.7'
 section: '16.7'
-status: ready-for-review
-applicable_versions: Android 8 (API 26) - Android 17 (API 37)
+status: finalized
+applicable_versions: Android 17 (API 37)
 last_verified: '2026-10-21'
-last_source_verified_at: '2026-10-21T13:36:37+08:00'
-verification_scope_note: '2026-10-21 仅复核 android-17.0.0_r1 的 ActivityThread.main() 调用顺序与 Looper.prepareMainLooper() 弃用说明；其余来源沿用 2026-08-14 的核验记录。'
-last_verified_against: AOSP android-17.0.0_r1（frameworks/base Choreographer.java/ViewRootImpl.java/ActivityThread.java、frameworks/native SurfaceFlinger.cpp/CompositionEngine.cpp/Output.cpp/Display.cpp/HWComposer.cpp/common/include/common/trace.h、system/core libutils/include/utils/Trace.h/libcutils/include/cutils/trace.h、packages/modules、build/soong、tools/asuite）及 2026-08-14 官方 Code Search、源码下载与构建环境文档
+last_source_verified_at: '2026-10-21T14:17:20+08:00'
+verification_scope_note: '2026-10-21 按 android-17.0.0_r1 复核目录归属、日志与 trace 埋点、四个源码入口、HWC fence 及构建/IDE 配置；下载、环境要求、Code Search 和公开 Trace API 对照官方文档。未执行全量 Repo 同步、平台构建或真机 trace。'
+last_verified_against: AOSP android-17.0.0_r1（platform/manifest、frameworks/base、frameworks/native、system/core、system/logging、packages/modules/adb、art、hardware/libhardware、hardware/interfaces、build/envsetup.sh、build/release、build/soong、tools/asuite、device/google/cuttlefish）及 2026-10-21 获取的官方 Code Search、源码下载、构建环境和 Trace API 文档
 confidence: high
 sources:
 - type: official
@@ -32,6 +32,22 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp
 - type: source
   path: https://android.googlesource.com/platform/tools/asuite/+/refs/tags/android-17.0.0_r1/aidegen/README.md
+- type: source
+  path: https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/default.xml
+- type: source
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtManagerLocal.java
+- type: source
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java
+- type: official
+  path: https://developer.android.com/reference/android/os/Trace
+- type: source
+  path: https://android.googlesource.com/platform/hardware/libhardware/+/refs/tags/android-17.0.0_r1/include_all/hardware/hwcomposer2.h
+- type: source
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl
+- type: source
+  path: https://android.googlesource.com/platform/build/+/refs/tags/android-17.0.0_r1/envsetup.sh
+- type: source
+  path: https://android.googlesource.com/platform/build/soong/+/refs/tags/android-17.0.0_r1/docs/compdb.md
 tags:
 - aosp
 - code-reading
@@ -42,7 +58,7 @@ related_chapters:
 - '2.3'
 - '2.4'
 - '14.1'
-last_review_finalize_at: '2026-07-31T08:12:00+08:00'
+last_review_finalize_at: '2026-10-21T14:17:20+08:00'
 last_rework_at: '2026-10-21T13:37:20+08:00'
 ---
 
@@ -58,7 +74,7 @@ last_rework_at: '2026-10-21T13:37:20+08:00'
 2. **Git 项目**：例如 `platform/frameworks/base` 或 `platform/frameworks/native`。
 3. **项目内路径**：例如 `core/java/android/view/Choreographer.java`。
 
-为什么要先记版本？因为“AOSP 源码”是 Repo 协调管理的一组 Git 项目：manifest（清单） 记录每个项目的路径和 revision（分支、tag 或 commit），checkout 出来才是我们看到的目录树。顶层目录与 Git 项目之间也没有严格的对应关系，`frameworks/base` 与 `art` 就是两个并列的项目。所以只写“我看了 AOSP 最新代码”，别人难以复核——`main`、`android-latest-release`、发布 tag（日志标签） 和厂商分支可能早已分开。
+为什么要先记版本？因为“AOSP 源码”是 Repo 协调管理的一组 Git 项目：manifest（清单） 记录每个项目的路径和 revision（分支、tag 或 commit），checkout 出来才是我们看到的目录树。顶层目录与 Git 项目之间也没有严格的对应关系，`frameworks/base` 与 `art` 就是两个并列的项目。所以只写“我看了 AOSP 最新代码”，别人难以复核——`main`、`android-latest-release`、发布 tag（Git 标签）和厂商分支可能早已分开。
 
 阅读时再保留一份运行现场：
 
@@ -87,7 +103,7 @@ last_rework_at: '2026-10-21T13:37:20+08:00'
 Code Search 默认搜的是文件路径和内容，官方过滤器包括 `file:`、`content:`、`function:`、`symbol:`、`usage:`、`lang:`，双引号表示逐字匹配。下面几组查询分别用于搜索日志原文、方法和符号使用点：
 
 ```text
-content:"The application may be doing too much work on its main thread"
+content:"The application may be doing too much work"
 file:Choreographer.java function:doFrame
 lang:java usage:scheduleFrameLocked
 file:services/surfaceflinger symbol:composite
@@ -145,11 +161,11 @@ SurfaceFlinger 的实现分布在 `SurfaceFlinger.cpp`、`CompositionEngine/`、
 
 - `init/`：Android 的 init 进程、service 管理、属性触发器和 `.rc` 配置解析；
 - `rootdir/`：平台 `.rc` 文件与早期用户空间配置；
-- `logd/`、`liblog/`：日志守护进程和日志库；
-- `adb/`：ADB host、client 与 daemon；
 - `libutils/include/utils/Trace.h`：平台原生代码常用的 RAII trace 宏，可借助 C++ 对象生命周期自动结束 trace 区间；
 - `libcutils/include/cutils/trace.h`：atrace tag 常量和底层接口；
 - `toolbox/`：仍保留的少量系统命令实现。
+
+日志与 ADB 的实现要进入其他项目：Android 17 的 `logd/`、`liblog/` 位于 `system/logging/`，ADB 的 host、client 与 daemon 位于 `packages/modules/adb/`。这些项目与 checkout 路径的对应关系可在固定 tag 的 [`platform/manifest/default.xml`](https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/default.xml) 中核对。
 
 shell 命令还可能来自 `external/toybox` 或独立项目。看到设备命令名时，应通过模块名、安装路径和 `Android.bp` 确认提供者，不要只按旧目录印象判断。
 
@@ -161,7 +177,7 @@ shell 命令还可能来自 `external/toybox` 或独立项目。看到设备命�
 - `compiler/`：编译器基础设施；
 - `dex2oat/`：dex2oat 命令入口；
 - `libartbase/`：ART 公共基础库；
-- `service/`：ART Service 的服务端实现；
+- `libartservice/service/`：ART Service 的 Java 实现；`artd/`：它调用的原生守护进程实现；
 - `tools/`、`profman/`：诊断、profile 与编译辅助工具。
 
 应用启动或 GC 问题同时涉及 Framework 与 ART：Framework 决定何时请求 dexopt、创建组件或触发 GC 相关策略，ART 决定编译、分配和回收如何执行。
@@ -214,11 +230,11 @@ shell 命令还可能来自 `external/toybox` 或独立项目。看到设备命�
 I/Choreographer: Skipped 42 frames!  The application may be doing too much work on its main thread.
 ```
 
-`42` 是运行时变量，搜索整行不会命中。我们选一段稳定且有区分度的文本：
+`42` 是运行时变量；日志末尾的 `main thread` 在源码中又被拆成了两个字符串拼接，按整条日志逐字搜索也不会命中。搜索时选取源码中连续的一段：
 
-`"The application may be doing too much work on its main thread"`
+`"The application may be doing too much work"`
 
-在 `android-17.0.0_r1` 中，它位于 `frameworks/base/core/java/android/view/Choreographer.java`。源码同时给出了触发条件：`skippedFrames >= SKIPPED_FRAME_WARNING_LIMIT`；默认阈值来自系统属性 `debug.choreographer.skipwarning`，源码默认值为 30。这条日志能告诉我们的是：主线程进入 `doFrame()` 时，已经比预期回调时间晚了若干帧间隔；至于耗时发生在哪个业务方法、这 42 帧是否都是已提交的坏帧，还要另行确认。
+在 `android-17.0.0_r1` 中，它位于 `frameworks/base/core/java/android/view/Choreographer.java`。源码同时给出了触发条件：`skippedFrames >= SKIPPED_FRAME_WARNING_LIMIT`；默认阈值来自系统属性 `debug.choreographer.skipwarning`，源码默认值为 30。`skippedFrames` 按 `jitterNanos / frameIntervalNanos` 计算，反映该 Choreographer 所在线程开始处理 `doFrame()` 时，相对原始帧时间晚了多少个帧间隔。分析应用主线程时，仍需结合日志的 tid 确认线程，并用 trace 判断耗时位置；这条日志本身不能证明有 42 个已提交的坏帧。
 
 ### 可复用的日志定位步骤
 
@@ -244,7 +260,7 @@ tag 只能缩小范围：多个类可以共用 tag；厂商日志可能没有对
 
 ```bash
 rg -n -F 'The application may be doing too much work' frameworks/base
-rg -n 'scheduleFrameLocked\\(' frameworks/base/core/java/android/view
+rg -n 'scheduleFrameLocked\(' frameworks/base/core/java/android/view
 git -C frameworks/base grep -n 'SKIPPED_FRAME_WARNING_LIMIT' android-17.0.0_r1
 repo grep -n 'presentAndGetReleaseFences'
 ```
@@ -278,15 +294,15 @@ Trace.traceBegin(
 
 Perfetto 中我们搜前缀 `Choreographer#doFrame`，动态 VSync ID 不要写进源码查询。`ViewRootImpl.performMeasure()`、`performLayout()` 和 `performDraw()` 分别生成 `measure`、`layout` 与绘制相关 slice；这些事件都受 `TRACE_TAG_VIEW` 控制。
 
-Java 层常见 API 还包括：
+Java 层反查埋点时，要区分平台内部接口与公开 SDK：
 
-- `Trace.traceBegin()` / `traceEnd()`：Framework 内部可指定 tag；
-- `Trace.beginSection()` / `endSection()`：应用内同步区间；
-- `Trace.beginAsyncSection()` / `endAsyncSection()`：跨线程或跨时间段；
-- `Trace.instant()`：瞬时事件；
-- `Trace.setCounter()`：计数器。
+- `Trace.traceBegin()` / `traceEnd()`：Framework 内部可指定 tag，不是普通应用的公开 SDK 接口；
+- `Trace.beginSection()` / `endSection()`：API 18 起可用的公开同步区间接口，必须在同一线程正确嵌套并成对调用；区间名最多 127 个 Unicode 代码单元；
+- `Trace.beginAsyncSection()` / `endAsyncSection()`：API 29 起可用的公开异步区间接口，可跨线程，用相同 name 与 cookie 配对，每次 begin 对应一次 end；
+- `Trace.instant(long, String)`：平台内部瞬时事件接口，在 Android 17 源码中标为 `@hide`；
+- `Trace.setCounter(String, long)`：API 29 起可用的公开计数器接口。
 
-异步事件靠 name 与 cookie 配对，与事件在时间上相邻与否无关。
+应用公开接口使用 `TRACE_TAG_APP`；前面的 Framework 节选使用 `TRACE_TAG_VIEW`。异步事件的配对与时间上是否相邻无关。接口可用版本和调用约束见 [`Trace` API 文档](https://developer.android.com/reference/android/os/Trace)，内部接口以固定 tag 的 [`Trace.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java) 为准。
 
 ### Native trace：识别宏的命名规则
 
@@ -404,7 +420,11 @@ SFTRACE_NAME(
 3. `Output::present()` 更新输出状态、规划合成（composition）、准备帧并提交；
 4. 物理显示的 `Display::chooseCompositionStrategy()` 调用 `HWComposer::getDeviceCompositionChanges()`，通过 HWC validate（校验本帧层配置）或 `presentOrValidate()` 协商 composition type（合成方式）；
 5. `Output::presentFrameAndReleaseLayers()` 通过虚方法进入 `Display::presentFrame()`；
-6. `Display::presentFrame()` 调用 `HWComposer::presentAndGetReleaseFences()`，取得表示整帧提交完成时点的 present fence，以及表示各图层缓冲何时可复用的 layer release fences。
+6. `Display::presentFrame()` 调用 `HWComposer::presentAndGetReleaseFences()`，随后读取 display present fence 和各图层的 release fences。
+
+按 HWC 的 fence 契约，物理屏的 present fence 在该帧开始显示（video-mode）或开始向面板内存传输（command-mode）对应的 VSync 触发；虚拟显示则在输出缓冲写完、可安全读取时触发。release fence 表示设备已读完相应旧缓冲，可以重新写入。定义见固定 tag 的 [`hwcomposer2.h`](https://android.googlesource.com/platform/hardware/libhardware/+/refs/tags/android-17.0.0_r1/include_all/hardware/hwcomposer2.h#1767)。
+
+取得 fence 对象、CPU 提交调用返回与 fence 触发是不同的观察点，不能把 present fence 当作整屏扫描结束。Android 17 的 [`PresentFence.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl#31) 还允许特定 TV 图像处理场景返回晚于 display fence 的逐层 present fence；注释说明此行为偏离 `SurfaceControl.Transaction` 契约，仅允许用于需要这项能力的 TV 设备。
 
 Client composition 指 RenderEngine 使用 GPU 完成的客户端合成，device composition 则交给 HWC/HAL 与显示硬件。还要注意 `getDeviceCompositionChanges()` 不保证每帧都单独执行 `validate()`：没有 client composition 且满足提交时序条件时，它会先尝试 `presentOrValidate()`；如果该调用已经完成 present，后续 `presentAndGetReleaseFences()` 会刷新待执行命令并使用已保存的 fences。
 
@@ -484,7 +504,7 @@ repo sync -c -j8
 repo sync -c -j8 frameworks/base frameworks/native system/core art
 ```
 
-只同步这组项目，平台编译未必能完成；调用链进入其他模块时还要同步相应项目。构建 Android 17 的官方环境基线是 64 位 x86 Linux 与 glibc 2.17+，并准备 400GB 可用磁盘空间，其中约 250GB 用于 checkout、150GB 用于构建输出。官方自 Android 11 起不再支持以 macOS 作为 Android OS 开发平台。
+只同步这组项目，平台编译未必能完成；调用链进入其他模块时还要同步相应项目。[官方环境要求](https://source.android.com/docs/setup/start/requirements)列出 64 位 x86 Linux、glibc 2.17+、至少 64 GB 内存与 400 GB 可用磁盘空间，其中约 250 GB 用于 checkout、150 GB 用于构建输出；依赖安装按 Ubuntu 18.04 或更高版本的说明执行。官方自 Android 11 起不再支持以 macOS 作为 Android OS 开发平台。真机运行还需要与设备和版本匹配的专有二进制库，不能把 AOSP checkout 直接视为可刷入任意设备的系统。
 
 同步完成后，可以用这些命令确认项目与 revision：
 
@@ -511,7 +531,7 @@ lunch aosp_cf_x86_64_only_phone-aosp_current-userdebug
 aidegen frameworks/base
 ```
 
-`lunch` target 由 product（产品）、release config（发布配置） 和 build variant（构建变体） 三段组成，示例中的 `userdebug` 是保留调试能力的系统构建变体。target 应与研究对象一致，这个示例来自当前官方 AOSP 入门文档。AIDEGen 会解析模块依赖，优于把目录当作普通 Gradle 项目打开；完成 `repo sync` 后，依赖变化较大时应重新运行 AIDEGen。
+`lunch` 示例采用 product（产品）、release config（发布配置）和 build variant（构建变体）三段式兼容语法；Android 17 的 `envsetup.sh` 也支持把三项写成空格分隔的参数。`userdebug` 是保留调试能力的系统构建变体，target 应与研究对象一致。AIDEGen 会解析模块依赖，优于把目录当作普通 Gradle 项目打开；完成 `repo sync` 后应重新运行。重新生成会覆盖已有 IDEA 工程配置，先保存本地配置改动。
 
 ### C/C++：AIDEGen 或 Soong compdb
 
@@ -523,7 +543,7 @@ lunch aosp_cf_x86_64_only_phone-aosp_current-userdebug
 aidegen surfaceflinger -i c
 ```
 
-这里的 `-i c` 表示选择并启动 CLion。
+这里的 `-i c` 表示选择并启动 CLion。按 AIDEGen 文档，native 工程还需在 CLion 的 `Tools > CMake > Change Project Root` 中把项目根目录设为对应源码目录；工具生成的配置用于索引，不代表源码目录自带一套独立 CMake 构建。
 
 也可以让 Soong 生成 `compile_commands.json`，供 clangd 等工具读取：
 
@@ -634,3 +654,11 @@ SurfaceFlinger、WindowManager、ART 和模块划分都会变化。旧资料提�
 - [Android 17 SurfaceFlinger trace 宏](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/common/include/common/trace.h)
 - [Android 17 AIDEGen](https://android.googlesource.com/platform/tools/asuite/+/refs/tags/android-17.0.0_r1/aidegen/README.md)
 - [Android 17 Soong](https://android.googlesource.com/platform/build/soong/+/refs/tags/android-17.0.0_r1)
+- [Android 17 项目清单](https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/default.xml)
+- [Android 17 ART Service](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtManagerLocal.java)
+- [公开 `Trace` API 与可用版本](https://developer.android.com/reference/android/os/Trace)
+- [Android 17 `Trace.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java)
+- [Android 17 HWC fence 契约](https://android.googlesource.com/platform/hardware/libhardware/+/refs/tags/android-17.0.0_r1/include_all/hardware/hwcomposer2.h#1767)
+- [Android 17 Composer AIDL 的 TV 逐层 present fence 边界](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl#31)
+- [Android 17 `envsetup.sh`](https://android.googlesource.com/platform/build/+/refs/tags/android-17.0.0_r1/envsetup.sh)
+- [Android 17 Soong 编译数据库说明](https://android.googlesource.com/platform/build/soong/+/refs/tags/android-17.0.0_r1/docs/compdb.md)

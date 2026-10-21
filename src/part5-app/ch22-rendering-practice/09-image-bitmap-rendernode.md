@@ -82,7 +82,7 @@ consolidated_from:
 
 > 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
-软件 Bitmap 解码完成后，宿主 View 还要更新 DisplayList（记录待执行绘制命令的显示列表），把待执行的绘制命令记录成显示列表；随后专用渲染线程 RenderThread 通过 HWUI 采样 Bitmap，提交应用窗口缓冲区。
+软件 Bitmap 解码完成后，宿主 View 还要更新 DisplayList（记录待执行绘制命令的显示列表）；随后专用渲染线程 RenderThread 通过 HWUI 采样 Bitmap，提交应用窗口缓冲区。
 
 硬件 Bitmap 的像素存储位于图形内存，适合只在硬件加速 Canvas 上显示；它仍占用图形资源，图片是否按期上屏还要看显示管线后段。显示阶段可结合 [Android View 标准渲染路径](../../part2-performance/ch13-rendering-pipelines/01-android-view-pipeline-analysis.md) 阅读。
 
@@ -90,7 +90,7 @@ Hardware Bitmap 与 RenderNode 能减少这条链路上的一部分复制或录�
 
 ## 请求、缓存、尺寸与显示生命周期
 
-这一节按链路顺序展开：先定加载框架与请求配置，再看解码尺寸与像素内存，然后是大图分块、各级缓存与图片格式，最后给出诊断与上线检查。首图慢、列表掉帧、内存峰值这三类问题，会在每一小节反复出现。
+这一节我们按链路顺序走：先定加载框架与请求配置，再看解码尺寸与像素内存，然后是大图分块、各级缓存与图片格式，最后给出诊断与上线检查。首图慢、列表掉帧、内存峰值这三类问题，会在每一小节反复出现。
 
 ### Glide 与 Coil：按版本和约束选型
 
@@ -234,11 +234,11 @@ suspend fun decodeSized(
 | UI 按时，RenderThread 首次绘制变长 | `DrawFrame`、纹理与图形内存、GPU 工作区间 | 软件 Bitmap 上传、图形分配、复杂裁剪或混合 |
 | 应用帧已提交，上屏仍晚 | FrameTimeline、BLAST（应用窗口缓冲区交接）、SurfaceFlinger（系统合成服务）、HWC（硬件合成器） | 缓冲区积压、合成或显示阶段 |
 
-这四类现象要按帧关联到同一张图片、同一次请求和同一个 FrameTimeline（关联应用、系统合成与显示阶段的帧时间线）——它把应用、系统合成与显示阶段的帧时间线串在一起。单看图片库“加载成功”事件，看不出图片何时对用户可见。
+这四类现象要按帧关联到同一张图片、同一次请求和同一个 FrameTimeline（关联应用、系统合成与显示阶段的帧时间线）；单看图片库“加载成功”事件，看不出图片何时对用户可见。
 
 `getAllocationByteCount()` 适合记录单个 Bitmap 的分配空间，临时编解码缓冲区、硬件图形资源和缓存中的其他对象它都覆盖不到。内存分析的视野要放宽：原生堆、图形资源与 dma-buf（设备间共享缓冲区）、PSS（按比例归属进程的物理内存）、GC（垃圾回收）、缺页（page fault）、内存回收（reclaim）和进程 OOM（内存不足） 状态要一起看。
 
-Linux 6.18 内核基线下，还可以补看 PSI memory（内存压力停顿） 压力停顿、`kswapd` 后台回收、direct reclaim（当前线程同步回收） 同步回收、zram 压缩交换和 GPU 驱动等待，避免把内存回收停顿错写成解码器算法问题。
+Linux 6.18 内核基线下，还可以补看 PSI memory（内存压力停顿）、`kswapd` 后台回收、direct reclaim（当前线程同步回收）、zram 压缩交换和 GPU 驱动等待，避免把内存回收停顿错写成解码器算法问题。
 
 ### 大图与 BitmapRegionDecoder
 
@@ -275,7 +275,7 @@ fun decodeTile(
 }
 ```
 
-`BitmapRegionDecoder` 用内部锁保护原生解码器，同一个实例一次只能执行一个 `decodeRegion()`。给同一解码器配很多工作线程，并行解码拿不到，等待和过期任务反而更多。预取队列应支持取消、优先当前视口，并限制尚未消费的结果数量。
+`BitmapRegionDecoder` 用内部锁保护原生解码器，同一个实例一次只能执行一个 `decodeRegion()`。给同一解码器配很多工作线程，解码仍是一条一条排队，等待和过期任务反而更多。预取队列应支持取消、优先当前视口，并限制尚未消费的结果数量。
 
 平台支持的区域解码格式随版本演进：
 
@@ -379,18 +379,11 @@ Android 官方文档说明平台从 Android 12 / API 31 支持 AVIF；Android 10
 
 ## 解码、像素存储与绘制提交
 
-加载框架控制请求和缓存，解码与绘制阶段决定像素格式、内存位置和 GPU 上传。目标尺寸应在两层保持一致。
+请求和缓存由加载框架控制，像素格式、内存位置和 GPU 上传则由解码与绘制阶段决定；请求与解码两层的目标尺寸要保持一致。
 
-> **源码锚点**
->
-> - 平台：Android 17 / API 37 / `android-17.0.0_r1`
-> - 内核：`android17-6.18-2026-06_r6`
-> - Java API：`ImageDecoder.java`、`BitmapFactory.java`、`Bitmap.java`
-> - Native 实现：`frameworks/base/libs/hwui/jni/ImageDecoder.cpp`、`BitmapFactory.cpp`
->
-> 这里的“Android 17 行为”以这些源码为准。编解码器实现、图形内存分配和内存统计还会受 SoC（片上系统）、厂商图形缓冲分配器 `gralloc` 与驱动影响，因此设备实测仍是性能结论的一部分。
+> **本节源码**：Java 侧 `ImageDecoder.java`、`BitmapFactory.java`、`Bitmap.java`；Native 侧 `frameworks/base/libs/hwui/jni/ImageDecoder.cpp`、`BitmapFactory.cpp`。编解码器实现、图形内存分配和内存统计还会受 SoC（片上系统）、厂商图形缓冲分配器 `gralloc` 与驱动影响，设备实测仍是性能结论的一部分。
 
-这一节讨论压缩图片数据怎样变成可绘制像素，以及这些像素如何进入 HWUI 路径。请求、缓存与框架选型的范围上一节已经划清；我们在本节覆盖解码内部的格式与线程调度、像素存储的实际位置，以及 Hardware Bitmap 与 RenderNode 的绘制侧行为，Bitmap 内存治理见 [23.4 Bitmap 与图片内存优化](../ch23-memory-practice/04-bitmap-optimization.md)。
+这一节我们把链路的后半段摊开：压缩图片数据怎样变成可绘制像素、这些像素如何进入 HWUI 路径，具体覆盖解码内部的格式与线程调度、像素存储的实际位置，以及 Hardware Bitmap 与 RenderNode 的绘制侧行为；请求、缓存与框架选型上一节已经讲过，Bitmap 内存治理见 [23.4 Bitmap 与图片内存优化](../ch23-memory-practice/04-bitmap-optimization.md)。
 
 ### 1. 一次解码包含的工作
 
@@ -404,15 +397,15 @@ Android 官方文档说明平台从 Android 12 / API 31 支持 AVIF；Android 10
 6. 把结果放入普通原生堆（native heap）、共享内存或 Hardware Bitmap；
 7. UI 使用结果时，HWUI 记录绘制命令，其渲染线程 RenderThread 再把图片作为采样资源提交给 GPU。
 
-这几步不会因为调用了一个 Java 方法就变成同一类成本：文件读取受页缓存和存储影响，像素解码主要消耗 CPU 与内存带宽，Hardware Bitmap 的创建还包含图形缓冲分配和上传。诊断时要区分阶段，只记 `decodeBitmap()` 的总耗时就把问题归因到格式，证据是不够的。
+这几步的成本性质并不相同：文件读取受页缓存和存储影响，像素解码主要消耗 CPU 与内存带宽，Hardware Bitmap 的创建还包含图形缓冲分配和上传。所以诊断时我们要把阶段分开，只记 `decodeBitmap()` 的总耗时就把问题归因到格式，结论下得太早。
 
 压缩文件大小同样说明不了解码后内存。普通 `ARGB_8888` 图片的像素存储通常接近 `rowBytes × height`，`rowBytes` 是一行像素实际占用的字节数；行对齐、色彩格式、增益图和中间缓冲会让实际分配偏离简单的 `width × height × 4`。
 
 ### 2. ImageDecoder 与 BitmapFactory 的分工
 
-`BitmapFactory` 和 `ImageDecoder` 都是同步 API。它们适合在工作线程调用，但不会自行创建后台任务。
+`BitmapFactory` 和 `ImageDecoder` 都是同步 API，适合在工作线程调用，但它们自己不会创建后台任务。
 
-`ImageDecoder.decodeBitmap()` 与 `decodeDrawable()` 标注了 `@WorkerThread`。`OnHeaderDecodedListener` 是头信息回调，不是异步通知：它在调用解码方法的同一线程执行，并且发生在方法返回之前。调用方可以在已经读到头信息、尚未开始完整像素解码时配置本次请求。
+`ImageDecoder.decodeBitmap()` 与 `decodeDrawable()` 标注了 `@WorkerThread`。`OnHeaderDecodedListener` 是头信息回调，但别把它当成异步通知：它在调用解码方法的同一线程执行，并且发生在方法返回之前。这个时机正好给调用方一个窗口，在头信息已读到、完整像素解码尚未开始时配置本次请求。
 
 | 维度 | `BitmapFactory` | `ImageDecoder` |
 | --- | --- | --- |
@@ -462,7 +455,7 @@ suspend fun decodeForDisplay(
 }
 ```
 
-`withContext` 决定代码在哪个线程池执行，`ImageDecoder` 本身仍是同步调用。协程被取消时可以阻止排队任务开始或阻止结果交付，但已经进入原生编解码器的任务不一定会立即中断。列表快速滑动时，结果返回后还要核对请求身份。
+`withContext` 决定代码在哪个线程池执行，`ImageDecoder` 本身仍是同步调用。协程被取消时可以阻止排队任务开始或阻止结果交付，但已经进入原生编解码器的任务不一定会立即中断。列表快速滑动时，结果返回后我们还要核对请求身份。
 
 若输出需要 `getPixel()`、`copyPixelsToBuffer()`、软件 `Canvas` 或后续原地修改，应显式选择 `ALLOCATOR_SOFTWARE`。如果只是在解码后画圆角，`ImageDecoder.setPostProcessor()` 可以先在内部软件像素上绘制，再生成不可变结果；业务拿到结果后，像素就改不动了。
 
@@ -510,7 +503,7 @@ fun decodeSampledFile(
 
 - `File` 来源创建 `FileInputStream`。文件描述符可用时进入原生层的 `nCreate`；
 - 原生层代码复制文件描述符，调用 `fdopen()`，再构造 `SkFILEStream`；
-- `content://` 来源先尝试 `AssetFileDescriptor`，无法取得时回退到 `InputStream`；
+- `content://` 来源先尝试 `AssetFileDescriptor`，拿不到时回退到 `InputStream`；
 - Java `InputStream` 在原生层由输入流适配器包装，并增加满足编解码器探测需求的前置缓冲；
 - `ByteBuffer` 与 `byte[]` 使用各自的流适配器。
 
@@ -521,7 +514,7 @@ fun decodeSampledFile(
 - 多次随机访问同一个本地大文件时，映射可能减少应用层缓冲区管理；
 - 顺序读取一次的图片可能从普通文件流和页缓存获得相近效果；
 - `content://` 的真实来源可能是本地文件、Binder 代理、云端文档或动态生成数据；
-- 加密缓存、压缩容器和不能随机改变读取位置的流会改变 I/O 路径。
+- 加密缓存、压缩容器和只支持顺序读取的流会改变 I/O 路径。
 
 测量文件 I/O 时，应区分冷缓存与热缓存，并把网络下载、解密、磁盘读取和像素解码分别计时。想跨设备判断内存映射是否更优，靠固定文件大小阈值做不到。
 
@@ -555,7 +548,7 @@ fun decodeSampledFile(
 
 `setMutableRequired(true)` 只适用于 `decodeBitmap()`，并与 `ALLOCATOR_HARDWARE` 冲突。`decodeDrawable()` 请求可变结果会抛出 `IllegalStateException`。
 
-`setPostProcessor()` 在解码和缩放后获得一个 `Canvas`，适合一次性绘制遮罩、圆角或颜色效果。Android 17 原生实现先完成这一步，再尝试生成 Hardware Bitmap；使用 PostProcessor 不会把最终结果限制为软件 Bitmap。如果业务要在返回后继续修改，仍需可变的软件结果。
+`setPostProcessor()` 在解码和缩放后获得一个 `Canvas`，适合一次性绘制遮罩、圆角或颜色效果。原生实现先完成这一步，再尝试生成 Hardware Bitmap；使用 PostProcessor 不会把最终结果限制为软件 Bitmap。如果业务要在返回后继续修改，仍需可变的软件结果。
 
 当输入是动画且调用 `decodeDrawable()` 时，返回的是 `AnimatedImageDrawable`。allocator 对动画 Drawable 会被忽略，数据源还可能在返回后继续被动画对象读取。由 `byte[]` 或 `ByteBuffer` 创建动画 Source 时，不得在动画仍使用数据时修改底层内容。
 
@@ -579,7 +572,7 @@ Hardware Bitmap 是应用绘制命令使用的资源，它自己不会变成 Sur
 | HEIF | 容器可承载 HEVC 图像及附加信息 | 设备编解码器、位深、增益图、厂商实现 |
 | AVIF | 基于 AV1 图像编码，支持较丰富的色彩能力 | 编码配置、位深、设备实现、目标尺寸 |
 
-`BitmapRegionDecoder.java` 明确列出 JPEG、PNG、WebP、HEIF 和 AVIF。这个列表表示当前平台区域解码器接受这些格式，旧 API 版本未必具备相同能力，所有输入特性也未必能等价处理；版本兼容必须在应用最低 API 和目标设备上验证。
+`BitmapRegionDecoder.java` 明确列出 JPEG、PNG、WebP、HEIF 和 AVIF。这个列表表示当前平台区域解码器接受这些格式；旧 API 版本未必有相同能力，各格式的输入特性也未必能等价处理，版本兼容要在应用最低 API 和目标设备上验证。
 
 #### 5.1 Ultra HDR 与 Gainmap
 
@@ -622,7 +615,7 @@ Android 14 起，Ultra HDR 图片可以在 SDR 基础图之外携带增益图（
 - 视口请求命中率与被取消任务比例；
 - 不同设备组的吞吐和卡顿变化。
 
-并发数不应仅按 CPU 核数计算。两张大尺寸、广色域图片可能先受内存带宽和分配峰值限制；多张小缩略图则可能受调度与请求管理成本限制。
+两张大尺寸、广色域图片可能先受内存带宽和分配峰值限制，多张小缩略图则可能受调度与请求管理成本限制，所以并发数单看 CPU 核数是定不准的。
 
 #### 6.1 请求取消的时机与校验
 
@@ -636,7 +629,7 @@ Android 14 起，Ultra HDR 图片可以在 SDR 基础图之外携带增益图（
 
 ### 7. inBitmap 的复用规则
 
-`BitmapFactory.Options.inBitmap` 允许符合条件的解码复用一块可变 Bitmap 存储。Android 17 原生实现会检查现有 `allocationByteCount`，并在有密度缩放或其他中间步骤时选择不同分配器。
+`BitmapFactory.Options.inBitmap` 允许符合条件的解码复用一块可变 Bitmap 存储。原生实现会检查现有 `allocationByteCount`，并在有密度缩放或其他中间步骤时选择不同分配器。
 
 约束应按公开 API 理解：
 
@@ -661,7 +654,7 @@ Android 14 起，Ultra HDR 图片可以在 SDR 基础图之外携带增益图（
 | Android 3.0 / API 11 至 Android 7.1 / API 25 | 与 Bitmap 对象一起计入 Dalvik/ART 托管堆 |
 | Android 8.0 / API 26 及以上 | 原生堆 |
 
-普通 Bitmap Java 对象通过 `NativeAllocationRegistry` 关联原生分配。这个注册机制帮助运行时感知原生内存压力和释放动作，像素仍在原生堆，原生分配也未必在 Java 引用失效的瞬间释放。
+普通 Bitmap Java 对象通过 `NativeAllocationRegistry` 关联原生分配，运行时靠这个注册机制感知原生内存压力和释放动作；像素仍在原生堆，原生分配也未必在 Java 引用失效的瞬间释放。
 
 #### 8.1 ashmem 与共享像素
 
@@ -679,7 +672,7 @@ Hardware Bitmap 可以通过 `Bitmap.getHardwareBuffer()` 取得 `HardwareBuffer
 
 #### 8.3 怎样看内存统计
 
-这组命令同时观察进程级 PSS 分类和图形缓冲信息，避免只凭某一个字段定性。
+我们用这组命令同时观察进程级 PSS 分类和图形缓冲信息，避免只凭某一个字段定性。
 
 ```bash
 adb shell dumpsys meminfo your.package.name
@@ -757,7 +750,7 @@ inline fun <T> tracedImageStage(
 
 列表图片管线的目标，是让当前视口在内存可控的前提下及时得到正确尺寸的结果。
 
-设计时依次确定：
+设计时我们依次确定：
 
 1. **请求身份**：URL、目标尺寸、变换、色彩策略和业务版本共同决定缓存键（key）；
 2. **目标尺寸**：布局尺寸确定后再请求，避免按原图解码后立即缩小；
@@ -766,7 +759,7 @@ inline fun <T> tracedImageStage(
 5. **取消与交付校验**：离开视口时取消排队任务，完成后核对条目身份；
 6. **有界并发**：同时执行数由设备测量和图片尺寸决定；
 7. **内存预算**：同时存活的解码中间结果、内存缓存和待上传 Bitmap 都要计入；
-8. **预取验证**：记录预取命中和浪费，不能只看缓存命中率。
+8. **预取验证**：预取命中和浪费都要记录，单看缓存命中率会漏掉浪费。
 
 按 dp（密度无关像素）把图片固定分成“小、中、大”，内存是估不准的。解码目标最终是像素尺寸，还要受屏幕密度、输出配置、广色域和增益图影响。预算至少用预计 `rowBytes × height`，解码完成后再用实际 `allocationByteCount` 校准。
 
@@ -793,7 +786,7 @@ Android 17 / API 37 的公开 API 差异为 `ImageDecoder` 增加了四个默认
 - `setDefaultThreadListener()` / `getDefaultThreadListener()`
 - `setDefaultProcessListener()` / `getDefaultProcessListener()`
 
-Android 17 源码中的调用顺序是：
+源码中的调用顺序是：
 
 1. 当前线程设置了线程级监听器时，先调用它，并跳过进程级监听器；
 2. 当前线程没有线程级监听器时，调用进程级监听器；
@@ -816,7 +809,7 @@ Android 17 源码中的调用顺序是：
 
 HWUI 对非 Hardware Bitmap 可进入 `prepareToDraw()` / `PinAsTexture()` 的显式纹理准备分支；Hardware Bitmap 已在创建阶段完成主要图形缓冲上传，所以跳过这段路径。收益是移动工作发生的时间和存储形态，不是让上传消失：格式转换、AHardwareBuffer 分配、GL/Vulkan 提交和驱动延迟仍可能落在解码完成前或首次使用时。
 
-对照实验应固定同一图片字节、目标尺寸、色彩空间、缓存冷热和页面，分别采集软件 Bitmap 直接显示、软件 Bitmap 提前 `prepareToDraw()`、Hardware Bitmap 显示，以及三组内存缓存命中。比较从请求开始到目标帧呈现（present）的总等待，并记录解码、上传或准备切片、`DrawFrame`、GPU 完成时刻和 Graphics、dma-buf、PSS。若 Hardware 组首绘更稳定但解码完成更晚，只能说明成本前移；端到端是否改善仍要看总等待。
+做对照实验时，我们固定同一图片字节、目标尺寸、色彩空间、缓存冷热和页面，分别采集软件 Bitmap 直接显示、软件 Bitmap 提前 `prepareToDraw()`、Hardware Bitmap 显示，以及三组内存缓存命中。比较从请求开始到目标帧呈现（present）的总等待，并记录解码、上传或准备切片、`DrawFrame`、GPU 完成时刻和 Graphics、dma-buf、PSS。若 Hardware 组首绘更稳定但解码完成更晚，只能说明成本前移；端到端是否改善仍要看总等待。
 
 Hardware Bitmap 不会变成 SurfaceFlinger 独立图层，`computeApproximateMemoryUsage()` 也不包含子 RenderNode 和 Bitmap。页面退出后的评审要同时检查图片库仍在使用的资源（active resource）、View、Drawable 和 DisplayList 引用、Graphics/GL/PSS、dma-buf、GPU 内存与 FD 趋势；按“每张图固定一个 FD”或 `width × height × 4` 估算完整代价会漏项。
 
@@ -844,7 +837,7 @@ Android 17 源码中存在受特性开关（feature flag）保护的解码分配
 - 业务是否写了不存在的 `ImageDecoder.setTargetBitmap()`；
 - CPU 读写需求是否与分配器匹配；
 - Hardware Bitmap 是否被误写成专用硬件编解码器；
-- 文件 Source 是否被无证据地描述成固定内存映射；
+- 文件 Source 是否被想当然地描述成固定内存映射；
 - `setCrop()` 是否被误当成区域解码；
 - `inBitmap` 候选是否可变、容量足够且不再显示；
 - 动画 Drawable 是否仍依赖原始字节数组、`ByteBuffer` 或流；

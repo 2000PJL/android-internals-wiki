@@ -121,9 +121,9 @@ Camera provider（向 framework 枚举并打开相机设备的 HAL 服务）、s
 | 录像丢帧 | camera record stream → encoder input → 编码输出 → muxer（封装器）/storage | codec（编解码器）、码率、热限制和 I/O |
 | 内存压力 | stream buffer、HAL cache、中间图、metadata（捕获元数据）与业务队列 | dma-buf（Linux 设备间共享缓冲框架）、native heap、Java 可达对象和 vendor pool |
 
-不存在一条适用于所有设备的阈值，比如“帧间隔超过 40 ms 即 Camera 故障”或“标准差超过 5 ms 即用户可见”。目标 fps、显示刷新率、曝光时间、timestamp base（时间戳所在的时钟域） 和产品交互预算共同决定 deadline（最晚完成时间）。30 fps 只给出约 33.33 ms 的名义周期；看到某个间隔偏长，我们还要判断下一帧有没有补回、显示端有没有重复上一帧，以及问题发生在哪一路 output（输出）。
+这类问题的合格线要逐项来定：目标 fps、显示刷新率、曝光时间、timestamp base（时间戳所在的时钟域） 和产品交互预算共同决定 deadline（最晚完成时间），“帧间隔超过 40 ms 即 Camera 故障”或“标准差超过 5 ms 即用户可见”这样的固定判据，换一台设备、换一个场景就未必成立。30 fps 只给出约 33.33 ms 的名义周期；看到某个间隔偏长，我们还要判断下一帧有没有补回、显示端有没有重复上一帧，以及问题发生在哪一路 output（输出）。
 
-拍照也不能只记录一个总数。按下快门到 shutter、shutter 到图像可读、图像可读到编码或保存完成，分别对应控制、sensor/ISP、consumer 和 I/O。Night（夜景多帧）、HDR（High Dynamic Range，高动态范围）、Ultra HDR（带 gain map 的 HDR 静态图）、RAW14（14 bit 紧凑 RAW） 与 ZSL 各有自己的处理流程，固定的“普通拍照耗时范围”很快会失去意义。
+拍照延迟要分段记录，只记总数定位不到慢的那一段。按下快门到 shutter、shutter 到图像可读、图像可读到编码或保存完成，分别对应控制、sensor/ISP、consumer 和 I/O。Night（夜景多帧）、HDR（High Dynamic Range，高动态范围）、Ultra HDR（带 gain map 的 HDR 静态图）、RAW14（14 bit 紧凑 RAW） 与 ZSL 各有自己的处理流程，固定的“普通拍照耗时范围”很快会失去意义。
 
 ## 分析所需的最小 Camera Buffer 模型
 
@@ -162,15 +162,15 @@ flowchart TD
 
 ### `cameraserver` 与 Camera3 stream
 
-Camera2/CameraX 的调用经 Binder（Android 跨进程通信机制） 进入 `cameraserver`。`Camera3Device` 维护 request、in-flight（已提交但尚未完成） 状态与 stream；`RequestThread` 准备 buffer 和 metadata，再调用 HAL session 的 `processCaptureRequest` 路径。
+Camera2/CameraX 的调用经 Binder（Android 跨进程通信机制） 进入 `cameraserver`。在这里，`Camera3Device` 维护 request、in-flight（已提交但尚未完成） 状态与 stream，`RequestThread` 把 buffer 和 metadata 准备好，再走 HAL session 的 `processCaptureRequest` 路径。
 
 从 Android 13 起，Camera HAL 接口开发转向 AIDL（Android Interface Definition Language），framework 仍支持 HIDL（HAL Interface Definition Language） 实现。Android 13 及之后新增的 Camera HAL 特性只通过 AIDL 提供，升级设备要用这些特性就得迁移。线程名和 transport（AIDL/HIDL 传输路径） 要从目标设备确认。
 
-每个 output 会映射到 Camera3 stream。`Camera3OutputStream` 负责把 HAL 返回的有效 buffer 送回对应的 `ANativeWindow` consumer；`ANativeWindow` 就是 native 层向 BufferQueue 生产缓冲用的接口，路径上还保留 HAL release fence（同步栅栏）。preview、record、analysis 和 still stream 的消费速度可以不同，每一路的完成时间要分别确认，一路的 callback 顶替不了另一路的完成时间。
+每个 output 会映射到 Camera3 stream。`Camera3OutputStream` 负责把 HAL 返回的有效 buffer 送回对应的 `ANativeWindow` consumer；`ANativeWindow` 就是 native 层向 BufferQueue 生产缓冲用的接口，路径上还保留 HAL release fence（同步栅栏）。preview、record、analysis 和 still stream 的消费速度可以不同，每一路的完成时间都要分别确认，读数时认准对应那一路的 callback。
 
-### Buffer owner（当前持有者）ship 与三类 fence
+### Buffer ownership（当前持有者）与三类 fence
 
-Buffer ownership 表示某一时刻由谁持有、读写或归还缓冲区；fence 用来表示上一次异步读写何时完成。
+我们先明确两个词：Buffer ownership 回答某一时刻由谁持有、读写或归还缓冲区，fence 回答上一次异步读写何时完成。
 
 | 同步对象 | 表示的边界 | 常见等待方 |
 |---|---|---|
@@ -184,12 +184,12 @@ display present（提交给显示设备） fence 描述一轮显示帧何时完�
 
 Camera HAL3 buffer management（HAL 缓冲管理） 从 Android 10 起允许 request 先进入 HAL，HAL 在即将写入时才通过 `requestStreamBuffers()` 向 framework 申请 output buffer。正常完成的 buffer 仍随 `processCaptureResult()` 返回；HAL 额外预取、又没有绑定到已提交 request 的 buffer，才通过 `returnStreamBuffers()` 归还。
 
-`HalStream.maxBuffers` 由 HAL 在 stream 配置结果中逐流给出，表示 HAL 对该流同时持有且尚未归还的 buffer 上限；这个值随 stream 配置结果给出，不是 Camera 通用常量。`SESSION_CONFIGURABLE` 模式还允许按 session 决定是否使用 HAL buffer management，所以要查看本次 session 配置结果。诊断时区分：
+`HalStream.maxBuffers` 由 HAL 在 stream 配置结果中逐流给出，表示 HAL 对该流同时持有且尚未归还的 buffer 上限，要按本次配置逐流读取。`SESSION_CONFIGURABLE` 模式还允许按 session 决定是否使用 HAL buffer management，所以要查看本次 session 配置结果。诊断时区分：
 
 - framework-managed 模式下，RequestThread 可能在提交 HAL 前等待 stream buffer；
 - HAL-managed 模式下，HAL 的 `requestStreamBuffers()` 可能因首次分配、请求数量、consumer 持有或 buffer limit 变慢；
 - `ImageReader.maxImages` 是 App 同时 acquire 且尚未 close 的图像上限，和 HAL 的 `maxBuffers` 是两个量；
-- vendor HAL 和算法还可能维护额外的 pool；估算内存时要把它们算进去，单靠一个固定的 buffer 数相乘会漏。
+- vendor HAL 和算法还可能维护额外的 pool；估算内存时要把它们一并算进去，只拿固定的 buffer 数相乘会低估。
 
 ### SurfaceView、TextureView 与自研预览
 
@@ -207,11 +207,11 @@ Camera HAL3 buffer management（HAL 缓冲管理） 从 Android 10 起允许 req
 
 CameraX `ImageAnalysis` 的 `STRATEGY_KEEP_ONLY_LATEST` 使用 latest-only（只保留最新帧） 的非阻塞策略；`STRATEGY_BLOCK_PRODUCER` 会在队列满时阻塞 camera device 范围内的其他 use case。`ImageProxy.close()` 才是把底层图像归还 CameraX 的接口，不要直接关闭包装对象中的 `Media.Image`。
 
-扩大队列只能增加缓冲时间和内存。长期处理吞吐低于产帧速率时，应减少分析分辨率、降低分析频率、缩短持有时间或选择丢旧帧策略。
+扩大队列换来的是更多缓冲时间和内存，处理吞吐还是要跟上产帧速率；长期跟不上时，应减少分析分辨率、降低分析频率、缩短持有时间或选择丢旧帧策略。
 
 ### metadata 也会跟随 Java 引用生存
 
-`CameraMetadataNative` 仍持有 native 指针 `mMetadataPtr`，private `close()` 由 `finalize()` 调用；`updateNativeAllocation()` 会向 `VMRuntime` 登记这块 native allocation 的大小，让运行时在 GC 决策中考虑 Java heap 外的内存。这个 private `close()` 没有对外暴露，metadata 何时具备清理条件仍由 Java 对象可达性决定。`finalize()` 的执行时机不确定，把它当作及时释放的保证会出问题。
+`CameraMetadataNative` 仍持有 native 指针 `mMetadataPtr`，private `close()` 由 `finalize()` 调用；`updateNativeAllocation()` 会向 `VMRuntime` 登记这块 native allocation 的大小，让运行时在 GC 决策中考虑 Java heap 外的内存。这个 private `close()` 没有对外暴露，metadata 何时具备清理条件仍由 Java 对象可达性决定，native 内存的释放时机也就跟着 Java 引用走，`finalize()` 给不出确定的时间点。
 
 大量长期保留的 `TotalCaptureResult`、`CaptureResult` 或带 result 的业务消息，会让对应 native metadata 一起存活。处理时我们可以把实际需要的字段提取到轻量对象，避免把完整 result 无上限地放入缓存或跨线程队列。内存结论还要结合 Java heap、native heap、dma-buf 与 vendor pool 一起看，RSS（Resident Set Size，进程常驻物理内存） 增长有多少该记在 metadata 头上，要分开算。
 
@@ -265,13 +265,13 @@ data_sources {
 duration_ms: 30000
 ```
 
-该配置能覆盖 AOSP camera ATrace（用户空间追踪标记）、线程调度、Binder 与 SurfaceFlinger frame 数据。ISP、SOF/EOF（Start/End of Frame，帧起始/结束时刻）、IOMMU（设备 I/O 内存管理单元）、内存带宽和 vendor pipeline node（厂商处理节点） 都不会自动出现，要靠设备专用的 Perfetto producer（追踪数据源） 或厂商 tracepoint 补充。长时间高帧率场景还要按事件量调整 buffer，防止 ring buffer（环形缓冲区） 覆盖掉问题复现的时段。
+该配置覆盖 AOSP camera ATrace（用户空间追踪标记）、线程调度、Binder 与 SurfaceFlinger frame 数据；ISP、SOF/EOF（Start/End of Frame，帧起始/结束时刻）、IOMMU（设备 I/O 内存管理单元）、内存带宽和 vendor pipeline node（厂商处理节点） 要靠设备专用的 Perfetto producer（追踪数据源） 或厂商 tracepoint 补充。长时间高帧率场景还要按事件量调整 buffer，防止 ring buffer（环形缓冲区） 覆盖掉问题复现的时段。
 
 ### 关键 Track 和 Slice（时间区间）
 
-Perfetto 里，Track 容纳同一个对象或数据源的事件，Slice 表示一段工作，Counter（计数器） 表示随时间变化的数值。
+Perfetto 里，我们把同一个对象或数据源的事件归入同一个 Track，一段工作是一个 Slice，随时间变化的数值由 Counter（计数器） 来记。
 
-AOSP 侧值得搜索的线索包括：
+AOSP 侧常用的搜索线索包括：
 
 | 线索 | 源码语义 | 不能替代的边界 |
 |---|---|---|
@@ -283,11 +283,11 @@ AOSP 侧值得搜索的线索包括：
 | `Stream N: first full buffer` | 某 stream 配置后首次把有效 output buffer 送往 consumer 的时间点 | SF latch 与 display present |
 | `PreviewSpacer-<streamId>` | 固定帧率预览可能使用的显示节奏线程 | 所有设备的稳定 ABI |
 
-`frame capture` 从 `sendRequestsBatch()` 之前开始，直到 framework 确认该 request 的 result metadata、shutter 与全部 buffer 都已就绪才结束。它适合观察 request-to-result（请求提交到结果闭合） 分布；预览画面有没有显示，从这个区间本身看不出来。`Stream N: first full buffer` 由一个很短的 `ATRACE_NAME` 产生，时间戳有价值，slice 时长没有阶段耗时含义。
+`frame capture` 从 `sendRequestsBatch()` 之前开始，直到 framework 确认该 request 的 result metadata、shutter 与全部 buffer 都已就绪才结束。它适合观察 request-to-result（请求提交到结果闭合） 分布；预览画面有没有显示，要另外去看 preview 交付相关的 slice。`Stream N: first full buffer` 由一个很短的 `ATRACE_NAME` 产生，可用的是时间戳，slice 时长不含阶段耗时信息。
 
 CamX/CHI（高通 Camera 软件栈常见的实现名）、MtkCam 及 P1/P2（联发科管线常见的阶段名）、ISP、JPEG 等 vendor 名称只能当作目标设备线索，它们不在 Android 公共 ABI（Application Binary Interface，二进制接口） 里。要先把 frame number、sensor timestamp、request id、stream id、buffer id 与 AOSP slice 对齐，再去解释 vendor node。
 
-SurfaceFlinger 的 `BufferTX - <layer>` counter 表示 server 收到 pending buffer update（待处理缓冲更新） 的变化，单看它确认不了该 buffer 已 latch 或 present。SurfaceView preview 的 App FrameTimeline（应用帧时序数据） 通常比标准 App Window 简略；对独立 layer，我们要继续追 BufferQueue、fence、composition type 和 display present。
+SurfaceFlinger 的 `BufferTX - <layer>` counter 表示 server 收到 pending buffer update（待处理缓冲更新） 的变化，把它当作到达信号就好，latch 和 present 要另查。SurfaceView preview 的 App FrameTimeline（应用帧时序数据） 通常比标准 App Window 简略；对独立 layer，我们要继续追 BufferQueue、fence、composition type 和 display present。
 
 ### SQL：先发现 Track，再算指标
 
@@ -440,13 +440,13 @@ print(f"p95_gap_ms={ordered[p95_index]:.3f}")
 print(f"max_gap_ms={ordered[-1]:.3f}")
 ```
 
-脚本自己不会判断事件选得对不对。把它接入自动化回归前，先在 Perfetto UI 里抽查该 track，确认每个事件都对应同一路 preview buffer。输出的 p95 是帧间隔的第 95 百分位，用来观察长尾，本身当不了通用合格线。Trace Processor 版本也要随报告记录；升级 Python 包可能同时升级 SQL 引擎。
+事件选得对不对，脚本替我们判断不了；把它接入自动化回归前，先在 Perfetto UI 里抽查该 track，确认每个事件都对应同一路 preview buffer。输出的 p95 是帧间隔的第 95 百分位，用来观察长尾，合格线仍要按设备与产品预算另定。Trace Processor 版本也要随报告记录；升级 Python 包可能同时升级 SQL 引擎。
 
 ## Camera 预览卡顿分析
 
 ### 预览帧率不达标
 
-排查时我们把问题按五段过一遍：
+排查预览帧率时，我们先把一帧的来路按五段过一遍，找到变慢的那一段：
 
 1. App/CameraX 是否持续提交 repeating request（持续重复的预览/录像请求），session 是否反复重配；
 2. RequestThread 提交节奏是否稳定，`sendRequestsBatch` 是否长时间阻塞；
@@ -467,7 +467,7 @@ print(f"max_gap_ms={ordered[-1]:.3f}")
 
 ### Buffer 耗尽与 consumer 回压
 
-看到 `dequeueBuffer`、stream buffer request 或 fence wait 变长，先检查本次 configure 返回的 `maxBuffers`、HAL buffer management 模式、ImageReader `maxImages`、CameraX backpressure strategy 和 vendor cache，别先假定“Camera 只有三块 buffer”。
+看到 `dequeueBuffer`、stream buffer request 或 fence wait 变长，先检查本次 configure 返回的 `maxBuffers`、HAL buffer management 模式、ImageReader `maxImages`、CameraX backpressure strategy 和 vendor cache；buffer 有几块以这次配置为准，“Camera 只有三块 buffer”是常见误设。
 
 常见的组合有：
 
@@ -478,11 +478,11 @@ print(f"max_gap_ms={ordered[-1]:.3f}")
 - `requestStreamBuffers()` 在 HAL 侧变长：可用 buffer、首次分配、请求批量或 framework 调度；
 - 多路输出同时恶化：共享 ISP、内存带宽、thermal 或 session 级 pipeline stall（管线停顿）。
 
-修复要针对当前持有 buffer 的 owner。缩短 Image 持有、改用 latest-only 策略、稳定 session 配置、降低某一路分辨率或帧率、调整编码参数，都可能有效；单纯增大 queue depth（队列深度） 往往只是把卡顿推迟，还把内存抬上去。
+修复要从当前持有 buffer 的 owner 下手。缩短 Image 持有、改用 latest-only 策略、稳定 session 配置、降低某一路分辨率或帧率、调整编码参数，都可能有效；单纯增大 queue depth（队列深度） 往往只是把卡顿推迟，还把内存抬上去。
 
 ### Camera 启动性能的分段测量
 
-Camera 启动建议按以下时间边界分段：
+Camera 启动建议按下面的时间点分段：
 
 | 阶段 | 起点 | 终点 | 说明 |
 |---|---|---|---|
@@ -493,11 +493,11 @@ Camera 启动建议按以下时间边界分段：
 | first stream buffer | 首次 request | `Stream N: first full buffer` | sensor/ISP/HAL 与 output stream |
 | first visible preview | first buffer | SF latch → HWC/display present | preview carrier 与显示 |
 
-应用应主动写入点击、open、session configured、first capture result 和 preview streaming marker。只靠系统 slice 很难知道产品定义的“启动”起点。
+产品定义的“启动”起点很难从系统 slice 里看出来，应用要主动写入点击、open、session configured、first capture result 和 preview streaming marker。
 
-`CameraService::connectHelper()` 在入口记录 `systemTime()`，返回前计算 `openLatencyMs` 并交给 `CameraServiceProxyWrapper::logOpen()`。注意这个值只从 service 入口开始算，App 点击到 Binder 到达、session configure 和首帧都在它外面。
+`CameraService::connectHelper()` 在入口记录 `systemTime()`，返回前计算 `openLatencyMs` 并交给 `CameraServiceProxyWrapper::logOpen()`。这个值覆盖的是 service 入口到返回这一段，App 点击到 Binder 到达、session configure 和首帧都在它外面，对照分段表时要把这几段另外补上。
 
-`Camera3OutputStream` 的 `Stream N: first full buffer` 标记出现在首个有效 output buffer 进入 consumer 路径时；SurfaceFlinger 有没有 latch、display 有没有 present，这个标记说明不了。接下来 SurfaceView 继续追独立 layer，TextureView 继续追宿主 HWUI 和 App Window。
+`Camera3OutputStream` 的 `Stream N: first full buffer` 标记出现在首个有效 output buffer 进入 consumer 路径时；SurfaceFlinger 有没有 latch、display 有没有 present，要接着往下追：SurfaceView 追独立 layer，TextureView 追宿主 HWUI 和 App Window。
 
 ### AOSP 内部统计怎样解释
 
@@ -507,7 +507,7 @@ Camera 启动建议按以下时间边界分段：
 
 RequestThread 还用 `mRequestLatency` 记录 `sendRequestsBatch()` 调入 HAL 的耗时，并以 `ProcessCaptureRequest latency histogram` 标签 dump。它量的是同步提交调用范围，后续 sensor/ISP 运行都在这段之外。`dumpsys media.camera` 里的 histogram 可以辅助判断 HAL 入队调用有没有长尾；阈值应来自同设备正常基线与产品预算。
 
-### 拍照与 ZSL 的时间边界
+### 拍照与 ZSL 的耗时分段
 
 拍照报告至少分四段：
 
@@ -528,24 +528,24 @@ callback_latency = callback_time - shutter_event_time
 save_latency = file_complete_time - callback_time
 ```
 
-这三个量回答的问题不同，我们要分开看。`source_age > 0` 表示图像来自按键前，至于回调快不快，从这个量看不出来；`callback_latency` 包含重处理、JPEG 编码和调度时间；`save_latency` 主要属于应用收到结果后的文件 I/O 路径。
+这三个量回答的问题不同，我们要分开看。`source_age > 0` 表示图像来自按键前；回调快不快，要看 `callback_latency`，它包含重处理、JPEG 编码和调度时间；`save_latency` 主要属于应用收到结果后的文件 I/O 路径。
 
 只有 `SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME` 才能把 `SENSOR_TIMESTAMP` 直接与 `elapsedRealtimeNanos()` 比较。时间戳来源为 `UNKNOWN` 时，两者可能不在同一个时钟域，要先在设备上完成校准，才能计算 `source_age`。
 
 ## Camera 功耗优化
 
-Camera 功耗来自 sensor、ISP、内存带宽、CPU 控制与分析、GPU 预览、encoder、显示和存储。优化前要确认哪一部分随场景变化。
+Camera 功耗来自 sensor、ISP、内存带宽、CPU 控制与分析、GPU 预览、encoder、显示和存储，优化前我们先确认哪一部分随场景变化。
 
 - **帧率与分辨率**：按产品显示与分析需求配置每一路 output。降低 preview 分辨率可减少 ISP、buffer 和 TextureView/App GPU 工作，但设备可能选择不同 sensor mode，收益要实测。
-- **Sensor 与 stream use case**：`OutputConfiguration.setStreamUseCase()` 向 HAL 表达 preview、video、still 等长期用途。它是逐流提示，没有固定延迟收益。读取 characteristics（相机静态能力描述） 与 mandatory stream combination（设备必须支持的输出组合），再验证 session。
+- **Sensor 与 stream use case**：`OutputConfiguration.setStreamUseCase()` 向 HAL 表达 preview、video、still 等长期用途。它是逐流提示，延迟收益随设备而定。读取 characteristics（相机静态能力描述） 与 mandatory stream combination（设备必须支持的输出组合），再验证 session。
 - **输出数量**：不用的 analysis、RAW、high-resolution still 或并发 record stream 应从 session 移除。隐藏但仍绑定的 use case 可能继续占用 ISP、buffer 和带宽。
 - **Consumer 处理**：分析只保留需要的格式与频率，关闭 Image，避免重复 YUV→RGB 和逐帧大对象分配。CameraX 请求 RGBA 时会执行格式转换，也应计入 App 侧成本。
 - **预览 carrier**：CameraX `PreviewView` 的 `PERFORMANCE` 模式会尽量使用 SurfaceView，必要时回退 TextureView；`COMPATIBLE` 使用 TextureView。用 layer tree 和实际 View 类型确认路径。
-- **热稳定态**：同时记录 thermal status、CPU/GPU/内存频率、sensor mode、亮度、运行时间和供电。短冷机数据不能代表持续录像或视频通话。
+- **热稳定态**：同时记录 thermal status、CPU/GPU/内存频率、sensor mode、亮度、运行时间和供电。短冷机数据代表的是冷机时段，持续录像或视频通话要按热稳定后的数据评估。
 
 功耗度量优先使用设备 power rail（供电域的功率或能量读数）、Android Studio Power Profiler、Perfetto power/thermal 数据或实验室电源。CPU time 只反映处理器活动；sensor、ISP、DDR（系统内存）、GPU 和显示的总能量，我们要靠上面这些手段去量。
 
-dma-buf、sync_file（把 fence 封装为文件描述符的内核机制）、调度、reclaim（内存回收） 和 PSI（Pressure Stall Information，资源压力停顿指标）这些机制，查文章开头基线对应的内核源码就能解释；公共 kernel 不规定 vendor camera/ISP 的 job、频率与带宽 tracepoint，这部分要结合目标设备驱动和 HAL。
+dma-buf、sync_file（把 fence 封装为文件描述符的内核机制）、调度、reclaim（内存回收） 和 PSI（Pressure Stall Information，资源压力停顿指标）这些机制，查文章开头基线对应的内核源码就能解释；vendor camera/ISP 的 job、频率与带宽 tracepoint 由各厂商自定义，要结合目标设备驱动和 HAL。
 
 ## 与其他机制的关系
 
@@ -560,7 +560,7 @@ dma-buf、sync_file（把 fence 封装为文件描述符的内核机制）、调
 
 Camera2 是平台 API，App 直接管理 device、session、request、Surface 和 callback。CameraX 是独立发布的 Jetpack 库，在 Camera2 之上提供 lifecycle（按 Activity/Fragment 生命周期管理相机） 管理、use case binding（绑定 Preview、ImageAnalysis 等用例）、分辨率协商、quirk（针对特定设备的兼容规则）与 `PreviewView`。两者最终仍进入 Camera service 与 HAL3。
 
-CameraX 的开销写不成固定的“多 80–150 ms”。差异取决于库版本、首次初始化、`ProcessCameraProvider` 获取、use case 数量、分辨率协商、设备 quirk（针对特定设备问题的兼容规则）、Extensions 和 session 重配。比较时，我们要保持 camera id、output 组合、format、size、fps range、dynamic range、carrier、预热状态与启动定义一致。
+CameraX 的开销随配置浮动，写不成固定的“多 80–150 ms”：差异取决于库版本、首次初始化、`ProcessCameraProvider` 获取、use case 数量、分辨率协商、设备 quirk（针对特定设备问题的兼容规则）、Extensions 和 session 重配。比较时，我们要保持 camera id、output 组合、format、size、fps range、dynamic range、carrier、预热状态与启动定义一致。
 
 | 维度 | Camera2 | CameraX |
 |---|---|---|
@@ -611,7 +611,7 @@ Android 17 / API 37 与 Camera 性能相关的公开变化包括：
 
 GFXReconstruct 在 Android 上通过 `VK_LAYER_LUNARG_gfxreconstruct` 这个 Vulkan layer（夹在 App 与驱动之间的拦截层）捕获和回放 Vulkan API 调用。它适用于自研 Vulkan 预览，或 camera `AHardwareBuffer`（Android 跨组件共享的 native 图形缓冲）已进入 Vulkan 的阶段，可以检查 image import（外部图像导入）、format、layout（Vulkan image 布局）、barrier（GPU 同步屏障）、descriptor（shader 资源绑定） 和 draw/compute 调用。
 
-OpenGL ES 它捕获不了，sensor、ISP、Camera HAL 或 SurfaceView 直送 SF/HWC 的内部工作也在它的视野之外。外部 producer 写入的 `AHardwareBuffer` 内容、protected memory（不允许普通 CPU/工具读取的内存）和厂商 extension 还会限制回放。`gfxrecon-convert --include-binaries` 会导出 capture 内记录的 Vulkan binary 参数；这离通用的 YUV plane dump（亮度/色度平面转储）还有距离，Camera HAL 生产的像素未必拿得到。
+它的视野是 Vulkan API 调用，OpenGL ES、sensor、ISP、Camera HAL 或 SurfaceView 直送 SF/HWC 的内部工作都在视野之外。外部 producer 写入的 `AHardwareBuffer` 内容、protected memory（不允许普通 CPU/工具读取的内存）和厂商 extension 还会限制回放。`gfxrecon-convert --include-binaries` 会导出 capture 内记录的 Vulkan binary 参数，但通用的 YUV plane dump（亮度/色度平面转储）还做不了，Camera HAL 生产的像素未必拿得到。
 
 花屏排查按怀疑的位置选工具：
 

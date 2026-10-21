@@ -94,7 +94,7 @@ consolidated_from:
 
 ### FrameTimeline 如何判定一帧异常
 
-在 FrameTimeline（逐帧时间线）的语义里，一帧的实际呈现时间偏离 Scheduler（调度器） 预测的呈现时间，就会被判为异常帧。偏离有两种典型表现：帧间隔不稳定；或者画面节奏看起来均匀，输入到显示的延迟却在逐帧增加。所以我们做 jank 分析，要同时回答两个问题：这一帧何时完成、何时呈现。
+FrameTimeline（逐帧时间线）判定异常的方式很直接：一帧的实际呈现时间偏离了 Scheduler（调度器）预测的呈现时间，就是异常帧。偏离有两种典型表现：帧间隔不稳定；或者画面节奏看起来均匀，输入到显示的延迟却在逐帧增加。所以我们做 jank 分析，要同时回答两个问题：这一帧何时完成、何时呈现。
 
 刷新周期给出最直观的时间尺度：
 
@@ -106,13 +106,13 @@ consolidated_from:
 
 这些数字度量的是显示刷新周期；主线程、RenderThread 和 SurfaceFlinger 依次执行完毕的总耗时是另一回事，因为 Android 显示栈按流水线方式工作。
 
-一个标准 HWUI（Android 硬件加速 UI 渲染器） 窗口的一帧，通常要依次经过 `Choreographer（按显示节奏安排帧回调的组件）#doFrame（一帧 UI 工作的回调入口）`、RenderThread、BLASTBufferQueue（图形缓冲区队列）、SurfaceFlinger 和 HWC（Hardware Composer，硬件合成器），最后 display（显示末端） present（显示提交） 上屏。这些阶段重叠执行、各有调度窗口，所以 120 Hz 只缩短相邻刷新周期，并不要求 trace（跟踪记录） 里每个 slice（时间区间） 都短于 8.33 ms。这一帧我们该看的，是 expected timeline（预期时间线） 和 actual timeline、finish（工作完成） 状态以及 present（画面呈现） 结果。
+一个标准 HWUI（Android 硬件加速 UI 渲染器） 窗口的一帧，通常要依次经过 `Choreographer（按显示节奏安排帧回调的组件）#doFrame（一帧 UI 工作的回调入口）`、RenderThread、BLASTBufferQueue（图形缓冲区队列）、SurfaceFlinger 和 HWC（Hardware Composer，硬件合成器），最后一步是 display（显示末端）上的 present（显示提交），画面这才上屏。这些阶段重叠执行、各有调度窗口，所以 120 Hz 只缩短相邻刷新周期，并不要求 trace（跟踪记录） 里每个 slice（时间区间） 都短于 8.33 ms。这一帧我们该看的，是 expected timeline（预期时间线） 和 actual timeline、finish（工作完成） 状态以及 present（画面呈现） 结果。
 
 同一个应用还可能有多条出图路径。标准 App Window 的像素生产者通常在应用进程；SurfaceView、Camera、Video、Native Graphics、Flutter 或游戏则可能使用独立 Surface、独立 layer（图层） 或另外的生产线程。所以动手分析之前，我们先确认四件事：谁生产 buffer（图形缓冲区）、buffer 进入哪个 Surface、对应哪个 layer，以及相关合成由 HWC 还是 RenderEngine（GPU 合成引擎）完成。出图类型一旦判断错，只盯着主线程或 RenderThread 分析，就会漏掉画面里由其他路径生产的部分。
 
 ### FrameTimeline 如何描述一帧
 
-Surface 是应用向显示系统提交图形缓冲区的接口。Android 12 / API 31 起，SurfaceFlinger 的 FrameTimeline 会为每一帧记录预测与实测时间：应用提交的一帧记作 SurfaceFrame（某个 Surface 的一帧），最终显示侧的一次合成帧记作 Display（显示末端）Frame（一次显示合成帧）。对应实现在 `framework（Android 框架层）s/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp`，类型定义在 `frameworks/native/libs/gui/include/gui/JankInfo.h`。
+判定一帧异常之后，还要能把它描述清楚，FrameTimeline 的记录结构就是干这个的。Surface 是应用向显示系统提交图形缓冲区的接口；Android 12 / API 31 起，SurfaceFlinger 的 FrameTimeline 会为每一帧记录预测与实测时间：应用提交的一帧记作 SurfaceFrame（某个 Surface 的一帧），最终显示侧的一次合成帧记作 Display（显示末端）Frame（一次显示合成帧）。对应实现在 `framework（Android 框架层）s/native/services/surfaceflinger/Scheduler/FrameTimeline.cpp`，类型定义在 `frameworks/native/libs/gui/include/gui/JankInfo.h`。
 
 #### Expected Timeline 与 Actual Timeline
 
@@ -131,19 +131,19 @@ actual slice 很长，只说明这段工作慢，还说明不了是谁的责任�
 
 #### SurfaceFrame token（帧标识） 与 DisplayFrame token
 
-Perfetto SQL 同时提供 `surface_frame_token` 和 `display_frame_token`。token 用来关联同一帧的记录：前者标识应用或 layer 的 SurfaceFrame，后者标识 SurfaceFlinger 组织的 DisplayFrame。一个 DisplayFrame 可以合成多个 layer frame，所以两类 token 各管各的帧，不能互换。
+Perfetto SQL 同时提供 `surface_frame_token` 和 `display_frame_token`。token 用来关联同一帧的记录：前者标识应用或 layer 的 SurfaceFrame，后者标识 SurfaceFlinger 组织的 DisplayFrame。一个 DisplayFrame 可以合成多个 layer frame，所以两类 token 各管各的帧，查询时分别按各自的列取值。
 
 应用 token 会出现在应用 timeline，并作为调试信息写入 `doFrame` 与 RenderThread slice；SurfaceFlinger 的显示工作也有对应 token。Perfetto 的 flow（跨轨道关联线） 用跨轨道的箭头把应用 SurfaceFrame 指向参与合成的 DisplayFrame。可靠的做法是沿 flow 建立关系，或直接比对两个 token 列；凭时间接近猜两条记录属于同一帧，容易出错。
 
 #### FrameTimeline 的覆盖边界
 
-Perfetto 官方文档明确指出，FrameTimeline 对 SurfaceView 的支持仍然有限。独立 Surface、视频 overlay（硬件叠加层）、Camera、Native Graphics 等路径也可能缺少完整的应用 `doFrame` 关联。这时没有 App timeline，只说明 FrameTimeline 关联不到这条路径，渲染工作仍然可能正在发生。
+这套关联有明确的适用面。Perfetto 官方文档明确指出，FrameTimeline 对 SurfaceView 的支持仍然有限；独立 Surface、视频 overlay（硬件叠加层）、Camera、Native Graphics 等路径也可能缺少完整的应用 `doFrame` 关联。这时没有 App timeline，只说明 FrameTimeline 关联不到这条路径，渲染工作仍然可能正在发生。
 
 分析这类 trace 时，我们要回到实际的出图对象，检查目标 layer、buffer 更新、acquire fence（等待生产完成的同步栅栏）、SurfaceFlinger latch（锁定本帧 buffer）、composition type（合成类型）、display present fence（显示完成栅栏） 与 release fence（buffer 可再次使用的栅栏）。只有标准 HWUI 窗口适合把 App timeline、`doFrame` 和 RenderThread 当作一条完整主线。
 
 ### JankType 位标志
 
-`JankType` 是位标志：每一位代表一种原因，同一帧可以同时携带多个原因，UI 展示的字符串也可能是多个值的组合。以下表格以 `android-17.0.0_r1` 的 `JankInfo.h` 与 `FrameTimeline.cpp` 为准；表中的 SF（SurfaceFlinger） 指 SurfaceFlinger，deadline 指本阶段按调度计划完成工作的截止时间。
+知道一帧异常之后，下一步是读原因。`JankType` 是位标志：每一位代表一种原因，同一帧可以同时携带多个原因，UI 展示的字符串也可能是多个值的组合。以下表格以 `android-17.0.0_r1` 的 `JankInfo.h` 与 `FrameTimeline.cpp` 为准；表中的 SF（SurfaceFlinger） 指 SurfaceFlinger，deadline 指本阶段按调度计划完成工作的截止时间。
 
 | JankType | 值 | 表达的边界 | 诊断入口 |
 |----------|----|------------|----------|
@@ -187,13 +187,13 @@ Perfetto 当前 UI 用绿色、浅绿色、红色、黄色和蓝色区分正常�
 
 #### Janky Frame Rate
 
-`janky frames / observed frames` 是异常帧数占观测帧数的比例，分子、分母和场景定义一致时才可比。我们至少要记录刷新率、交互路径、统计窗口、是否包含启动过渡、帧来源与工具版本；把 60 Hz 与 120 Hz、持续滑动与页面首帧、标准 HWUI 与视频 overlay 混在一起，得到的数字就失去解释力。
+单帧归因做完了，版本回归和线上监控还要看聚合数字，最先碰到的就是 `janky frames / observed frames`：异常帧数占观测帧数的比例，分子、分母和场景定义一致时才可比。我们至少要记录刷新率、交互路径、统计窗口、是否包含启动过渡、帧来源与工具版本；把 60 Hz 与 120 Hz、持续滑动与页面首帧、标准 HWUI 与视频 overlay 混在一起，得到的数字就失去解释力。
 
 平均 FPS 只回答“单位时间呈现了多少帧”。两个会话都可能报 50 FPS：一个帧间隔均匀，另一个充满长停顿和密集补帧，体验差别很大。所以版本回归要同时保留帧间隔分布、jank 类型、最长连续异常区间和具体场景。
 
 #### Slow frame 与 Frozen frame
 
-Android vitals（Google Play 质量指标）对 View / Canvas UI 的传统渲染统计用两个阈值：slow frame（慢帧） 的渲染时间落在 16 ms 到 700 ms，frozen frame（冻结帧） 超过 700 ms。官方文档同时说明，这组数据无法覆盖 Vulkan、Unity、Unreal、OpenGL 等绕过 Android UI Toolkit（界面工具包） 的全部画面。
+Android vitals（Google Play 质量指标）对 View / Canvas UI 的传统渲染统计用两个阈值：slow frame（慢帧） 的渲染时间落在 16 ms 到 700 ms，frozen frame（冻结帧） 超过 700 ms。官方文档同时说明，Vulkan、Unity、Unreal、OpenGL 等绕过 Android UI Toolkit（界面工具包）的画面，这组数据覆盖不全。
 
 16 ms 是面向 60 FPS 的传统阈值；在 90 Hz、120 Hz 或动态刷新率设备上，FrameTimeline 的 expected/actual 结果更贴近该帧当时的调度条件。700 ms 的 frozen frame 阈值适合抓严重停顿，逐帧的 deadline 归因仍要单独做。
 
@@ -281,7 +281,7 @@ DeliQueue 的 producer（消息生产者） 通过 `MessageStack` 的 CAS（Comp
 
 ### RenderThread 与应用 GPU 原因
 
-MainThread 记录并同步显示状态之后，RenderThread 接手 HWUI 渲染提交和部分 buffer 生命周期工作。`DrawFrame` 变长，可能是 RenderThread 自己的 CPU 工作，也可能是在等 GPU、buffer slot（缓冲区槽位） 或 fence。GPU 命令是异步提交的，所以 RenderThread 的 slice 短，说明不了 GPU 已经按时完成。
+看完主线程，我们转到应用侧的第二条线程。MainThread 记录并同步显示状态之后，RenderThread 接手 HWUI 渲染提交和部分 buffer 生命周期工作。`DrawFrame` 变长，可能是 RenderThread 自己的 CPU 工作，也可能是在等 GPU、buffer slot（缓冲区槽位） 或 fence。GPU 命令是异步提交的，所以 RenderThread 的 slice 短，说明不了 GPU 已经按时完成。
 
 #### RenderThread CPU 工作
 
@@ -297,7 +297,7 @@ GPU busy 只说明设备整体在忙。要归因到目标帧，我们还要把 G
 
 ### BufferQueue 与背压
 
-BufferQueue 负责 Producer 与 Consumer（消费者） 之间的图形 buffer 传递。所谓 backpressure（背压），就是下游没有及时释放 buffer 或消费数据，上游拿不到可用槽位。
+帧生产出来之后，还要经过队列才能到达合成端，我们接着看这一段。BufferQueue 负责 Producer 与 Consumer（消费者）之间的图形 buffer 传递；所谓 backpressure（背压），就是下游没有及时释放 buffer 或消费数据，上游拿不到可用槽位。
 
 buffer 路径会把上游慢帧传播到后续帧，几类等待的含义并不相同：
 
@@ -323,7 +323,7 @@ buffer 路径会把上游慢帧传播到后续帧，几类等待的含义并不�
 
 #### DEVICE 与 CLIENT composition
 
-HWC 为每一帧的每个 layer 决定 DEVICE、CLIENT 等 composition type。DEVICE 由显示硬件处理；CLIENT layer 先由 SurfaceFlinger 的 RenderEngine 合成出 client target，再交给 HWC 与其余 layer 一起 present。CLIENT 会增加 GPU 合成工作，但它的成本并不总等于一次“显存到显示控制器的额外拷贝”。
+layer 最终由谁画出来，是每一帧重新协商的结果：HWC 为每一帧的每个 layer 决定 DEVICE、CLIENT 等 composition type。DEVICE 由显示硬件处理；CLIENT layer 先由 SurfaceFlinger 的 RenderEngine 合成出 client target，再交给 HWC 与其余 layer 一起 present。CLIENT 会增加 GPU 合成工作，但它的成本并不总等于一次“显存到显示控制器的额外拷贝”。
 
 plane（硬件叠加平面） 数量、缩放、旋转、混合、色彩空间、HDR（高动态范围）、受保护内容、带宽和 layer overlap（图层重叠） 都会影响 HWC 决策。AOSP 文档给出的是通用能力要求，具体可用 plane 及其约束由设备实现决定；某款 SoC（片上系统） 宣称有四个或六个 plane，这个数字换到不同固件版本就未必作数。
 

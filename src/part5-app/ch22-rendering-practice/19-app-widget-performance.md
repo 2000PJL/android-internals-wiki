@@ -79,17 +79,17 @@ App Widget 的界面绘制发生在宿主进程：提供方生成 `RemoteViews` 
 
 ### 1. `RemoteViews` 是布局说明和动作集合
 
-提供方交给宿主的是一份布局说明，宿主收到后才在自己的进程里创建 View 层级、加载布局并按顺序执行动作。`RemoteViews` 保存的正是这份说明：布局资源、可能的尺寸变体和内部动作列表 `mActions`。`setTextViewText()` 记录一项文本属性设置，`setImageViewBitmap()` 记录携带位图的 `BitmapReflectionAction`。
+提供方交给宿主的是一份布局说明；创建 View 层级、加载布局、按顺序执行动作，这些都要等宿主收到说明后在自己的进程里完成。`RemoteViews` 保存的正是这份说明——布局资源、可能的尺寸变体，以及内部动作列表 `mActions`。`setTextViewText()` 记录一项文本属性设置，`setImageViewBitmap()` 记录携带位图的 `BitmapReflectionAction`。
 
-这个区别决定了分析方法。我们先把一次更新拆成三段看：
+说明与执行分处两个进程，我们的分析方法也顺着这个结构来：先把一次更新拆成三段看。
 
 - 提供方进程的耗时主要来自取数、构造 `RemoteViews`、准备图像和发起 Binder 调用；
 - `system_server` 负责检查调用者、更新缓存、检查图像内存，再把有效快照通知给宿主，快照就是一份描述 Widget 某一时刻界面状态的 `RemoteViews`；
 - 宿主进程承担布局加载、动作应用、测量、布局、绘制等 UI 工作。
 
-还有一点要留意：提供方完成 `updateAppWidget()` 调用时，桌面像素往往还没刷新。旧式集合适配器兼容转换开启时，主线程调用还可能先把转换工作投递到后台执行器，再由后台提交更新，此时函数返回连“系统服务已收到新快照”也不能保证。
+还有一点要留意：提供方完成 `updateAppWidget()` 调用时，桌面像素往往还没刷新。旧式集合适配器的兼容转换开启时，主线程调用还可能先把转换工作投递到后台执行器，再由后台提交更新——这时函数返回，连“系统服务已收到新快照”都保证不了。
 
-下面的时序图用于定位不含旧式集合转换的一次完整更新；兼容转换开启时，提供方还会在提交前收集集合项。
+这张时序图定位的是不含旧式集合转换的一次完整更新；兼容转换开启时，提供方还会在提交前收集集合项。
 
 ```mermaid
 sequenceDiagram
@@ -115,11 +115,11 @@ sequenceDiagram
     end
 ```
 
-图中两个 Binder 方向分别覆盖“提供方到系统服务”和“系统服务到宿主”。服务端先把通知投递给 `mCallbackHandler`，由服务线程调用宿主；`AppWidgetHost.Callbacks` 收到 Binder 回调后，再向指定的 `Handler` 发送消息。两端各有一条消息队列，服务端通知队列和宿主消息队列都可能产生等待，测量时我们要分别定位。
+读这张图时，先抓住两个 Binder 方向：一个从提供方到系统服务，一个从系统服务到宿主。服务端先把通知投递给 `mCallbackHandler`，由服务线程调用宿主；`AppWidgetHost.Callbacks` 收到 Binder 回调后，再向指定的 `Handler` 发送消息。两端各有一条消息队列，服务端通知队列和宿主消息队列都可能产生等待，测量时我们要分别定位。
 
 ### 2. `apply()` 与 `reapply()` 由宿主选择
 
-`AppWidgetHostView.applyRemoteViews()` 先选择适合当前尺寸的 `RemoteViews`，再判断现有 View 能否复用。同步路径调用 `canRecycleView(mView)`：布局与现有 View 满足复用条件时执行 `reapply()`，否则由 `apply()` 创建新内容；宿主配置了异步 `Executor`（执行任务的线程调度接口） 时，代码进入 `inflateAsync()`，按同样的判断分别调用 `reapplyAsync()` 或 `applyAsync()`。复用与否由宿主决定，提供方没有强制宿主执行 `reapply()` 的公开接口。
+`AppWidgetHostView.applyRemoteViews()` 先选择适合当前尺寸的 `RemoteViews`，再判断现有 View 能否复用。同步路径调用 `canRecycleView(mView)`：布局与现有 View 满足复用条件时执行 `reapply()`，否则由 `apply()` 创建新内容。宿主配置了异步 `Executor`（执行任务的线程调度接口） 时，代码进入 `inflateAsync()`，按同样的判断分别调用 `reapplyAsync()` 或 `applyAsync()`。复用与否由宿主决定，提供方手里没有能强制宿主执行 `reapply()` 的公开接口。
 
 下面这些变化容易让复用条件失效，或增加宿主的工作量：
 
@@ -135,7 +135,7 @@ sequenceDiagram
 
 车机或定制桌面常把可插拔业务视图也叫“Widget”，但这类 Launcher 插件卡片走的通常不是 `AppWidgetManager`、`AppWidgetServiceImpl` 和 `RemoteViews` 缓存这条链路。以一篇移植 SystemUI Plugin Framework 的车机 Launcher 实践为例：插件 APK 在 manifest 中把实现类声明成带 action 的 `service`，宿主用 `PackageManager.queryIntentServices()` 发现候选组件，再通过自定义 `WidgetViewPlugin` 接口取得插件提供的普通 View；`PluginActionManager` 源码里也保留着“这并不是真的 service、不应启动，只是便于用 PackageManager 管理插件”的注释。[来源: https://juejin.cn/post/7678556373495971883][已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt@android-17.0.0_r1]
 
-这个插件模型的加载方式和隔离方式也不同。`PluginActionManager` 在加载前检查插件权限和是否可启用，`PluginInstance` 为插件创建 `PathClassLoader`，把宿主类加载器包在只放行指定包名前缀的 `ClassLoaderFilter` 之后，再通过 `createApplicationContext()` 加载插件资源。它提供的是类可见性与资源上下文隔离，插件实例仍进入宿主进程执行，与 AppWidget 跨进程 `RemoteViews` 的安全边界是两回事。[已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt@android-17.0.0_r1][已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt@android-17.0.0_r1]
+这个插件模型的加载与隔离方式也不同：`PluginActionManager` 在加载前检查插件权限和是否可启用，`PluginInstance` 为插件创建 `PathClassLoader`，把宿主类加载器包在只放行指定包名前缀的 `ClassLoaderFilter` 之后，再通过 `createApplicationContext()` 加载插件资源。它提供的是类可见性与资源上下文隔离；插件实例仍在宿主进程里执行，和 AppWidget 跨进程 `RemoteViews` 的进程级隔离是两回事。[已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt@android-17.0.0_r1][已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt@android-17.0.0_r1]
 
 所以，排查这类自定义 Launcher 卡片时，`adb shell dumpsys appwidget`、`partiallyUpdateAppWidget()` 和 `RemoteViews` 图像上限通常解释不了它的加载与刷新成本，应改看 Launcher 进程内的插件发现、类加载、资源加载、接口回调和 View 绘制。只有通过标准 `AppWidgetProvider` 或 Glance 发布到系统 AppWidget 服务的桌面组件，才适用本文后续的更新语义、缓存和 IPC 分析。[来源: https://juejin.cn/post/7678556373495971883][已验证: frameworks/base/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java@android-17.0.0_r1]
 
@@ -217,7 +217,7 @@ Android 12 / API 31 增加了 `RemoteViews.setRemoteAdapter(viewId, RemoteCollec
 维护集合 Widget 时，我们可以按数据规模判断：
 
 - 项目较少、每项结构简单、数据已经在内存中：`RemoteCollectionItems` 易于维护。
-- 项目较多、取数需要服务生命周期：维护 `RemoteViewsService` 旧实现时，核对兼容转换是否开启，并测量收集整份快照的耗时与容量，传统按需加载模型不能直接套用。
+- 项目较多、取数需要服务生命周期：维护 `RemoteViewsService` 旧实现时，核对兼容转换是否开启，并测量收集整份快照的耗时与容量，传统按需加载模型在这里套不上。
 - 无论使用哪条路径，都要限制单项动作和图像体积。集合会把一次更新的成本放大到多个项目。
 
 ### 4. 集合项的优化位置
@@ -236,7 +236,7 @@ Android 12 / API 31 增加了 `RemoteViews.setRemoteAdapter(viewId, RemoteCollec
 
 Widget 的更新频率应来自产品语义。天气摘要、日历倒计时、媒体进度和即时告警各有各的机制，套用同一个周期会出问题。
 
-### 1. `updatePeriodMillis` 的周期边界
+### 1. `updatePeriodMillis` 的周期规则
 
 提供方 XML 中的 `updatePeriodMillis` 只适合低频周期刷新。`AppWidgetServiceImpl` 按以下规则注册更新：
 
@@ -258,7 +258,7 @@ Widget 的更新频率应来自产品语义。天气摘要、日历倒计时、�
 
 关闭周期广播后，应用需要覆盖首次添加、配置变化、用户主动刷新、数据变化以及必要的后台任务；`0` 只是把系统周期广播关掉，新的调度来源还得应用自己建立。
 
-### 2. `AppWidgetProvider` 的广播入口要尽快返回
+### 2. `AppWidgetProvider` 广播入口的返回时限
 
 `AppWidgetProvider` 继承 `BroadcastReceiver`。系统文档要求接收器通常在约 10 秒内完成，网络访问、批量图片解码或大型数据库迁移都要放到 `onUpdate()` 之外。合适的处理顺序是：
 
@@ -277,11 +277,11 @@ Android 17 / API 37 为 `AlarmManager` 增加了带 `Executor` 的监听器重�
 
 这个入口可以把回调交给指定执行器，适合某个 `Activity`、`Service` 或 `ContentProvider` 仍在运行期间的一次性短期任务。源码和 API 文档都说明：监听器闹钟要求请求进程持续运行，进程没有运行中的组件或进入缓存状态后，系统可能取消或丢弃回调。
 
-监听器形式免去了 `SCHEDULE_EXACT_ALARM` 特殊访问权限，代价是受这条进程生命周期约束。调用方应在所属组件结束时调用 `cancel(OnAlarmListener)`；进程死亡后仍要触发更新的场景，改用 `PendingIntent` 形式——它由系统代应用保存、可在应用进程不存在时触发，其精确闹钟形式需要满足对应的访问规则。允许延迟时，优先使用 WorkManager 或系统的非精确周期机制。
+监听器形式免去了 `SCHEDULE_EXACT_ALARM` 特殊访问权限，代价是受这条进程生命周期约束。调用方应在所属组件结束时调用 `cancel(OnAlarmListener)`。进程死亡后仍要触发更新的场景，改用 `PendingIntent` 形式——它由系统代应用保存、可在应用进程不存在时触发，其精确闹钟形式需要满足对应的访问规则。允许延迟时，优先使用 WorkManager 或系统的非精确周期机制。
 
 ### 4. 可见状态与刷新节奏
 
-标准 AppWidget API 没有跨宿主统一的“当前是否可见”回调；`onEnabled()`、`onDisabled()` 和 `onAppWidgetOptionsChanged()` 描述的是实例集合生命周期或尺寸选项变化，别拿它们当可见性信号。刷新逻辑应具备以下性质：
+标准 AppWidget API 没有“当前是否可见”的跨宿主统一回调；`onEnabled()`、`onDisabled()` 和 `onAppWidgetOptionsChanged()` 描述的是实例集合生命周期或尺寸选项变化，别拿它们当可见性信号。所以刷新逻辑本身要具备这几条性质：
 
 - 相同数据版本重复到达时不再发送同一份更新；
 - 多个相同配置的实例可以合并取数和构造；
@@ -301,7 +301,9 @@ Android 17 / API 37 为 `AlarmManager` 增加了带 `Executor` 的监听器重�
 
 `mMaxWidgetBitmapMemory = 6 × displayWidth × displayHeight`
 
-源码注释给出的含义是 1.5 个屏幕、每像素 4 字节。对非系统 UID（Android 用来标识应用身份的 Linux 用户编号） 提交的非空快照，服务会在缓存合并或替换后检查 `RemoteViews` 的图像估算值。`targetSdkVersion` 不高于 37 时，强制上限只计普通位图缓存，超限会清空该 Widget 的缓存并抛出 `IllegalArgumentException`；`Icon` 对象内携带的位图会计入总量，总量超限时记录警告。所以应用仍应合并估算普通位图与 `Icon` 的内存，仅凭“没有抛异常”判断快照大小，会漏掉只告警的超限。
+源码注释给出的含义是 1.5 个屏幕、每像素 4 字节。对非系统 UID（Android 用来标识应用身份的 Linux 用户编号） 提交的非空快照，服务会在缓存合并或替换后检查 `RemoteViews` 的图像估算值。`targetSdkVersion` 不高于 37 时，强制上限只计普通位图缓存，超限会清空该 Widget 的缓存并抛出 `IllegalArgumentException`；`Icon` 对象内携带的位图会计入总量，总量超限时记录警告。
+
+所以我们要把普通位图与 `Icon` 合并起来估算内存，仅凭“没有抛异常”判断快照大小，会漏掉只告警的超限。
 
 这个上限随设备显示尺寸变化，写死成 1 MB、8 MB 或某个机型的实测值都套不上。设计时仍应让峰值显著低于系统上限——同一宿主还要同时处理桌面、其他 Widget 和自身图形资源。
 
@@ -332,7 +334,7 @@ Android 17 / API 37 为 `AlarmManager` 增加了带 `Executor` 的监听器重�
 
 ### 1. Glance 使用 Compose Runtime，输出仍是 `RemoteViews`
 
-Glance 1.2.0 建立在 Compose Runtime 上，用声明式 API 生成 App Widget 内容：Compose Runtime 根据状态执行可组合函数并形成界面描述，Glance 再把这份描述转换成 `RemoteViews`。这一步不经过 Compose UI 的 `LayoutNode`（Compose UI 内部的布局节点） 和绘制管线——`LayoutNode` 是 Compose UI 内部的布局节点——也不支持任意 Compose UI 可组合组件，应用页面中的 Compose UI 组件不能直接放到桌面。
+Glance 1.2.0 建立在 Compose Runtime 上，用声明式 API 生成 App Widget 内容：Compose Runtime 根据状态执行可组合函数并形成界面描述，Glance 再把这份描述转换成 `RemoteViews`。这一步不经过 Compose UI 的 `LayoutNode`（Compose UI 内部的布局节点） 和绘制管线，也不支持任意 Compose UI 可组合组件——应用页面里的 Compose UI 组件，也就没法直接搬到桌面。
 
 一次 Glance 更新大致包含：
 
@@ -348,7 +350,7 @@ Glance 1.2.0 的 `GlanceAppWidget` 会在 WorkManager 的协程工作单元 `Cor
 
 ### 2. 状态变化的交付粒度
 
-Glance 利用 Compose Runtime 计算声明式内容，最终交付单位仍受 `RemoteViews` 表达能力约束。我们不能假设 `LazyColumn` 只序列化变化的某一项，也不能拿 Compose UI 的重组跳过率直接推导桌面更新成本。使用 Glance 时，优化重点是：
+Glance 利用 Compose Runtime 计算声明式内容，最终交付单位仍受 `RemoteViews` 表达能力约束。`LazyColumn` 会不会只序列化变化的那一项，我们要按实际生成的动作集合核实；Compose UI 的重组跳过率，也推导不出桌面更新成本。使用 Glance 时，我们的优化重点是：
 
 - 业务主动触发更新时，先比较会影响界面的持久状态版本，跳过完全相同的数据；平台生命周期事件仍按对应回调处理；
 - 在 `provideContent()` 启动持续组合前完成初始网络和数据库读取，后续变化通过可观察状态提供；
@@ -356,11 +358,11 @@ Glance 利用 Compose Runtime 计算声明式内容，最终交付单位仍受 `
 - 限制列表项数量、层级和图像；
 - 用系统跟踪和宿主表现检验一次更新生成了多少工作。
 
-### 3. 响应式尺寸优先使用有限断点
+### 3. 响应式尺寸的模式选择
 
 Android 12 / API 31 通过 `OPTION_APPWIDGET_SIZES` 向提供方暴露宿主支持的尺寸集合。平台 `RemoteViews` 可以为不同尺寸保存变体；Glance 提供 `SizeMode.Responsive` 和 `SizeMode.Exact`。
 
-尺寸能归纳为几个明确阈值时，`SizeMode.Responsive` 可以预先生成有限布局，这里的阈值就是响应式设计常说的尺寸断点；Android 12 及以上版本会为传入的响应式尺寸分别生成内容，再由框架选择合适变体。`SizeMode.Exact` 会在每次尺寸变化时按精确尺寸重新创建内容，官方文档提示它可能增加开销，并造成调整大小时的界面跳变。布局连续依赖精确宽高、有限断点表达不了时，再选用 `SizeMode.Exact`。
+尺寸能归纳为几个明确阈值时，`SizeMode.Responsive` 可以预先生成有限布局，这里的阈值就是响应式设计常说的尺寸断点。Android 12 及以上版本会为传入的响应式尺寸分别生成内容，再由框架选择合适变体。`SizeMode.Exact` 会在每次尺寸变化时按精确尺寸重新创建内容，官方文档提示它可能增加开销，并造成调整大小时的界面跳变。布局连续依赖精确宽高、有限断点表达不了时，再选用 `SizeMode.Exact`。
 
 ### 4. 选择手写 `RemoteViews` 还是 Glance
 
@@ -394,7 +396,7 @@ Glance 更适合集中维护声明式状态，手写 `RemoteViews` 对更新类�
 
 把一个整数 ID 复制到另一份资料中，定位不到另一侧实例；工作资料暂停、锁定或移除后，提供方还要停止任务并清理对应缓存。
 
-### 3. 最近可用快照比空白更可靠
+### 3. 保留最近可用快照
 
 Widget 更新涉及多个进程，任何一段都可能暂时不可用。稳健的实现通常保留一份可快速构造的最近数据：
 
@@ -408,9 +410,9 @@ Widget 更新涉及多个进程，任何一段都可能暂时不可用。稳健�
 
 ## 七、测量与排查
 
-### 1. 先把三段耗时分开
+### 1. 三段耗时的拆分测量
 
-建议分别记录：
+第一节的三段模型在这里直接可用，耗时按这三段分别记录：
 
 1. 提供方：取数、图像准备、构造 `RemoteViews`、调用更新接口；
 2. `system_server`：AppWidget 更新与回调调度；
@@ -437,7 +439,7 @@ adb shell dumpsys appwidget
 - 报告多次样本的分布，不用单次最小值代表结果；
 - 检查省电模式、应用待机分桶（系统按活跃度限制后台资源的等级）和工作资料状态。
 
-若优化只减少了提供方构造时间，而宿主的布局或绘制没有变化，应如实限定收益范围。
+若优化只减少了提供方构造时间，宿主的布局或绘制没有变化，报告时就把收益写在这一段，别扩大到整条更新链路。
 
 ### 3. 常见现象与检查顺序
 

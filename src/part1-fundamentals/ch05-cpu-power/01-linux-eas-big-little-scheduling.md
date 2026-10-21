@@ -98,7 +98,7 @@ last_consolidated_at: '2026-08-24'
 
 异构 CPU（performance CPU） 先提供不同容量和能效的核心，Linux 调度器负责选择可运行任务与目标 CPU（prime CPU），能量感知调度（Energy Aware Scheduling，EAS）再把性能需求和能耗模型纳入放置决策。频率、温度和厂商策略会继续改变最终结果。
 
-> 源码基线：Android 17 / API 37 / `android-17.0.0_r1`，内核 `android17-6.18-2026-06_r6`。具体 SoC（System on Chip，片上系统） 的核心名称、编号、capacity（original capacity） 与 cpufreq policy 属于设备实现，未从目标设备内核或 sysfs 读取的数据不作为平台保证。
+> 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37），内核 `android17-6.18-2026-06_r6`。SoC（System on Chip，片上系统）的核心名称、编号、capacity（original capacity）与 cpufreq policy 属于设备实现，以目标设备内核或 sysfs 读到的数据为准。
 
 ## 异构 CPU（idle sibling） 的容量、拓扑与能效
 
@@ -131,7 +131,7 @@ Arm big.LITTLE 把侧重单线程性能的 CPU 与侧重能效的 CPU 放进同�
 
 这些模型用来理解历史演进就够了。当前的公共调度路径以 capacity 感知调度（按 CPU 相对算力选择和均衡任务）、EAS、cpuset（限制任务可用 CPU 集合） 和利用率钳制（Utilization Clamping，UClamp）为主，早期“一次切换整个簇”的运行图已经不再适用。
 
-历史资料常给迁移标注固定的微秒数。迁移成本实际会随互连、缓存层级（cache hierarchy）、工作集、源 CPU 与目标 CPU 是否共享末级缓存（Last-Level Cache，LLC）、频率状态和内核路径变化，某个平台测得的数值只属于那个平台。
+历史资料常给迁移标注固定的微秒数，我们读的时候要记住一点：某个平台测得的数值只属于那个平台。迁移成本实际会随互连、缓存层级（cache hierarchy）、工作集、源 CPU 与目标 CPU 是否共享末级缓存（Last-Level Cache，LLC）、频率状态和内核路径变化。
 
 #### DynamIQ 改变了 cluster 内组织方式
 
@@ -194,7 +194,7 @@ UClamp 会进一步影响 `util_fits_cpu()`。`uclamp.min` 可以表达较高的
 
 ### 如何理解不同 CPU 的性能
 
-#### 同频不等性能
+#### 同频下的性能差距
 
 capacity 文档把最大能力拆成每赫兹工作量与最高频率。高性能微架构往往有更宽的前端和后端、更大的乱序执行窗口，以及更多缓存和分支预测资源；相同频率下，它可能完成更多工作。
 
@@ -288,7 +288,7 @@ root domain 进入 overutilized 状态后，这次唤醒会跳过能量估算，
 任务开始运行后，周期负载均衡（load balance）、CPU 即将空闲时的 `newidle balance`、主动均衡（active balance）和 misfit migration 仍可继续迁移它。常见原因包括：
 
 - 原 CPU 的运行队列（runqueue）过载；
-- 低 capacity CPU 无法满足任务需求；
+- 任务需求超出了低 capacity CPU 的能力；
 - 其他 CPU 进入空闲状态（idle state），可以拉取任务；
 - 调度域（sched domain）的不均衡超过阈值；
 - thermal pressure 改变了 CPU 的可用 capacity。
@@ -312,13 +312,13 @@ adb shell 'cat /proc/<pid>/task/<tid>/cgroup'
 
 RTG（Related Thread Group，相关线程组）、同位增强（colocation boost）和首选 CPU 簇等机制常见于部分厂商内核。它们可以按相关线程组聚合需求、偏好某个簇或影响频率提示。
 
-这些符号不属于 Android 17 公共内核（Android common kernel）的通用接口，不同厂商、不同代际的 RTG 数据结构和策略也可能变化。若 trace 疑似受 RTG 影响，应在目标内核代码树、厂商钩子（vendor hook）和 Power HAL 里找证据；仅凭线程名，推断不出 RTG 的影响。
+这些符号不属于 Android 17 公共内核（Android common kernel）的通用接口，不同厂商、不同代际的 RTG 数据结构和策略也可能变化。若 trace 疑似受 RTG 影响，应到目标内核代码树、厂商钩子（vendor hook）和 Power HAL 里去核对；仅凭线程名，推断不出 RTG 的影响。
 
 ### 迁移成本怎样判断
 
 #### 缓存局部性
 
-迁移不会复制源 CPU 私有缓存中的 L1/L2 内容，目标 CPU 要从共享 LLC、系统缓存或内存重新取数据。实际成本取决于工作集、缓存共享边界、写共享、NUMA 等内存拓扑，以及迁移间隔。
+迁移不会复制源 CPU 私有缓存中的 L1/L2 内容，目标 CPU 要从共享 LLC、系统缓存或内存重新取数据。实际成本取决于工作集、缓存层级的共享方式、写共享、NUMA 等内存拓扑，以及迁移间隔。
 
 DynamIQ 的共享缓存能降低部分数据获取成本，但消不掉私有缓存的冷未命中。固定的“迁移需要 30 μs”或“新架构只需几微秒”都不适合作为跨设备结论。
 
@@ -397,7 +397,7 @@ util = max(util, I/O-wait boost)
 target_perf = sugov_effective_cpu_perf(util, min, max)
 ```
 
-其中，`perf target` 是 sched_ext 提供的性能目标，`boosted CFS util` 是调整后的 fair 类利用率。CFS（Completely Fair Scheduler，完全公平调度器（Completely Fair Scheduler，CFS））表示 fair 调度类任务，RT 表示实时调度类，DL 表示截止时间调度类（deadline），IRQ 表示硬件中断；sched_ext 是 Linux 的可扩展调度器框架。`sugov_effective_cpu_perf()` 先用 `map_util_perf()` 增加约 25% 的 DVFS 余量，再应用最低与最高性能约束。这种线性映射只是一种估算，和硬件的实际性能曲线还有距离。
+其中，`perf target` 是 sched_ext 提供的性能目标，`boosted CFS util` 是调整后的 fair 类利用率。完全公平调度器（Completely Fair Scheduler，CFS）表示 fair 调度类任务，RT 表示实时调度类，DL 表示截止时间调度类（deadline），IRQ 表示硬件中断；sched_ext 是 Linux 的可扩展调度器框架。`sugov_effective_cpu_perf()` 先用 `map_util_perf()` 增加约 25% 的 DVFS 余量，再应用最低与最高性能约束。这种线性映射只是一种估算，和硬件的实际性能曲线还有距离。
 
 如果一个 cpufreq policy 覆盖多个 CPU，`sugov_next_freq_shared()` 会遍历该 policy 中的 CPU，并采用其中最高的目标性能需求来选频。因此，Perfetto 中同一 policy 内 CPU 的频率联动符合源码预期。
 
@@ -413,7 +413,7 @@ Linux 6.18 针对带有 `SCHED_CPUFREQ_IOWAIT` 标志的唤醒维护 I/O-wait bo
 
 `effective_cpu_util()` 合并 CFS、RT、DL 与 IRQ 的影响，并向 schedutil 返回性能上下界。RT 或 DL 任务出现后频率怎么走，还要看截止时间带宽（deadline bandwidth）、默认 RT UClamp 和设备配置，“只要出现就永久锁定最高频率”是把机制简化了。
 
-Android 17 公共内核的 schedutil 还接受 `scx_cpuperf_target()`。只有 sched_ext 实际管理 CPU 或提供性能目标（perf target）时，这项输入才有意义；源码里有这个接口，和量产设备默认启用 sched_ext 调度器是两回事。
+Android 公共内核的 schedutil 还接受 `scx_cpuperf_target()`。只有 sched_ext 实际管理 CPU 或提供性能目标（perf target）时，这项输入才有意义；源码里有这个接口，和量产设备默认启用 sched_ext 调度器是两回事。
 
 #### Power HAL 和省电/温控是外部约束
 
@@ -434,7 +434,7 @@ Power HAL 可以应用任务配置、UClamp、cpuset、devfreq 或厂商节点�
 1. **建立设备拓扑**：记录 capacity、cpufreq policy、在线 CPU、CPU 亲和性与 cpuset。
 2. **对齐运行结果**：统计各 CPU 的运行时间、迁移、频率和空闲状态。
 3. **检查外部约束**：温控、省电模式、Power HAL、UClamp、ADPF 和 vendor hook。
-4. **提出单一假设**：例如“低 capacity CPU 无法在截止时间内完成 CPU-bound 段”。
+4. **提出单一假设**：例如“低 capacity CPU 赶不上 CPU-bound 段的截止时间”。
 5. **做 A/B 验证**：比较延迟分位数、功耗与热稳态，不只看一次 Trace。
 
 #### 正常现象
@@ -455,7 +455,7 @@ Power HAL 可以应用任务配置、UClamp、cpuset、devfreq 或厂商节点�
 
 这些现象是调查入口，单凭一条还定不了责。
 
-### GPU、NPU 与 CPU 调度的边界
+### GPU、NPU 与 CPU 调度的分工
 
 EAS、最早合格虚拟截止时间优先算法（Earliest Eligible Virtual Deadline First，EEVDF）和 schedutil 分别负责 CPU 任务放置、CPU 运行队列（per-CPU runqueue）调度与 CPU 频率选择。GPU 和 NPU 走的是各自的队列、驱动、devfreq 或固件调度与功耗域，CPU EAS 的决策范围到不了那里，谈不上“协同调度”。
 
@@ -468,9 +468,9 @@ CPU 准备与提交
     → CPU 后处理
 ```
 
-如果 CPU 长时间睡眠并等待 fence，调整 CPU 亲和性无法缩短加速器执行时间（CPU time）；如果提交线程长时间处于 Runnable 状态或受 CPU 计算限制，则需要回到 CPU 调度证据链。GPU/NPU 的频率、队列和利用率应使用各自的数据源分析。
+如果 CPU 长时间睡眠并等待 fence，加速器执行时间（CPU time）就不在 CPU 调度的控制范围里，调整 CPU 亲和性帮不上忙；如果提交线程长时间处于 Runnable 状态或受 CPU 计算限制，则要回到 CPU 调度这条线继续排查。GPU/NPU 的频率、队列和利用率应使用各自的数据源分析。
 
-### 版本演进与当前边界
+### 版本演进与适用范围
 
 | 时期 | 变化 | 分析用途 |
 | --- | --- | --- |
@@ -489,7 +489,7 @@ CPU 准备与提交
 
 #### “降低 nice 值会让线程自动去大核”
 
-nice 值主要改变 fair 类任务获得 CPU 时间的相对权重。选核还要看利用率、capacity、EAS、UClamp、cpuset 和当前负载；更高权重不等于强制选择高 capacity CPU。
+nice 值主要改变 fair 类任务获得 CPU 时间的相对权重。选核还要看利用率、capacity、EAS、UClamp、cpuset 和当前负载；权重更高换来的是更高份额，落到哪颗 CPU 仍由选核过程决定。
 
 #### “最高频率越高，CPU 就越快”
 
@@ -505,7 +505,7 @@ CPU 亲和性会缩小调度器的选择范围，也可能把线程留在拥塞�
 
 #### “全大核 SoC 不需要 EAS”
 
-产品名称无法替代内核拓扑。只要 CPU capacity 或 EM 成本存在差异，能量感知的任务放置仍有分析价值。
+内核拓扑才是判断依据：只要 CPU capacity 或 EM 成本存在差异，能量感知的任务放置仍有分析价值。
 
 ## 运行队列、优先级与任务选择
 
@@ -524,7 +524,7 @@ Perfetto 的 CPU 轨道只展示最终结果：某个线程在某个 CPU 上运�
 4. CPU 亲和性、cpuset 和 CPU 在线状态允许它去哪些核心？
 5. UClamp 利用率约束（Utilization Clamping，UClamp）、CPU capacity、当前负载和能耗模型，会让内核倾向于哪个核心与频点？
 
-这五层解决的问题各不相同。线程长期处于 Runnable，可能是同一 CPU 上有更高调度类的线程，也可能是公平调度竞争者太多；线程只在小核运行，也可能是 cpuset 限制所致，先别急着怀疑 EEVDF 选错了任务。分析时按跟踪证据逐层排除，别看到一段很长的等待就直接修改 nice 或绑定 CPU。
+这五层解决的问题各不相同。线程长期处于 Runnable，可能是同一 CPU 上有更高调度类的线程，也可能是公平调度竞争者太多；线程只在小核运行，也可能是 cpuset 限制所致，先别急着怀疑 EEVDF 选错了任务。分析时我们按 trace 里的线索逐层排除，别看到一段很长的等待就直接修改 nice 或绑定 CPU。
 
 线程从睡眠到获得 CPU 的简化路径如下：
 
@@ -598,13 +598,13 @@ virtual_deadline = vruntime + weighted(slice)
 adb shell cat /sys/kernel/debug/sched/base_slice_ns
 ```
 
-量产设备可能没有挂载 debugfs，也可能禁止 shell 读取。节点不可见只说明观测条件不足，判断调度器有没有用 EEVDF 还得靠别的证据。
+量产设备可能没有挂载 debugfs，也可能禁止 shell 读取。节点不可见只说明观测条件不足，判断调度器有没有用 EEVDF 还得靠其他观测手段。
 
 #### `sched_ext` 的入口与默认状态
 
 `android17-6.18-2026-06_r6` 已包含 `sched_ext` 和 BPF 调度类。BPF 允许在受控环境中把程序加载进内核；`sched_ext` 借此让具备系统权限的组件加载替代调度策略，并可通过 `scx_bpf_cpuperf_set()` 向 CPU 性能控制传递目标。内核包含这些接口是一回事，量产设备有没有启用某个 BPF 调度器，要另外验证。
 
-验证时，至少要同时检查内核配置、`/sys/kernel/sched_ext/state`（节点存在且可读时）、已加载的 BPF 程序/链接，以及跟踪中是否出现相应的 `sched_ext` 事件。状态为 `disabled` 时，普通任务仍由本文描述的公平调度/EEVDF 路径选择。即使 `sched_ext` 已启用，它也不会直接写入 CPUFreq 驱动；性能目标仍要经过 schedutil、调频策略、驱动、固件与温控上限，详见 5.2。
+验证时，我们至少要同时检查内核配置、`/sys/kernel/sched_ext/state`（节点存在且可读时）、已加载的 BPF 程序/链接，以及跟踪中是否出现相应的 `sched_ext` 事件。状态为 `disabled` 时，普通任务仍由本文描述的公平调度/EEVDF 路径选择。即使 `sched_ext` 已启用，它也不会直接写入 CPUFreq 驱动；性能目标仍要经过 schedutil、调频策略、驱动、固件与温控上限，详见 5.2。
 
 Linux 6.18 还包含时间片保护（slice protection）、`RUN_TO_PARITY`（运行到公平收支平衡）、`PREEMPT_SHORT`（短请求抢占）和延迟出队（deferred dequeue）等细节。它们会影响一次请求何时允许被抢占、短请求怎样参与竞争，以及睡眠任务的 lag 如何衰减。分析跟踪时，记住下面三点更有用：
 
@@ -616,7 +616,7 @@ Linux 6.18 还包含时间片保护（slice protection）、`RUN_TO_PARITY`（�
 
 #### 用户可见策略的顺序
 
-先排除内核内部的停止调度类 stop class 和配置相关的 `sched_ext`，常见用户态策略的优先关系如下（内核内部的停止调度类 stop class、配置相关的 `sched_ext` 不计入）：
+常见用户态策略的优先关系如下（内核内部的停止调度类 stop class、配置相关的 `sched_ext` 不计入）：
 
 ```text
 SCHED_DEADLINE
@@ -641,7 +641,7 @@ SCHED_DEADLINE
 
 对于公平调度线程，内核静态优先级通常可以按 `120 + nice` 理解：nice -20 对应 100，nice 0 对应 120，nice 19 对应 139。在 Perfetto 的 `sched_slice.priority` 中看到这些数字时，数值越小表示权重越高。不要把这套内核编号方向与 RT 用户态 `sched_priority` 的方向混在一起。
 
-#### nice 调整的是份额，不是执行速度
+#### nice 调整的是份额
 
 Linux 的 nice 范围是 -20 到 19。权重表近似按每一级 1.25 倍变化，几个常用点如下：
 
@@ -657,7 +657,7 @@ Linux 的 nice 范围是 -20 到 19。权重表近似按每一级 1.25 倍变化
 
 nice 不会让一段代码里的每条指令执行得更快，它改变的是 CPU 竞争结果。提高 nice 数值会降低权重；降低 nice 数值会提高权重，而且通常需要相应权限。如果线程大部分时间在等待 Binder、锁、I/O 或 GPU，修改 nice 很可能没有收益。
 
-Android framework 的 `android.os.Process` 在 Android 17 中仍定义了一组常用线程优先级，例如：
+Android framework 的 `android.os.Process` 定义了一组常用线程优先级，例如：
 
 | 常量 | nice 值 |
 | --- | ---: |
@@ -688,7 +688,7 @@ effective CPUs
 
 `sched_setaffinity()` 为线程设置 CPU 亲和性掩码。在 Linux 接口中传入线程 ID（TID），即可控制单个线程。Android Bionic 也提供 `sched_setaffinity()` / `sched_getaffinity()`；`pthread_setaffinity_np()` / `pthread_getaffinity_np()` 从 API 36 起公开。
 
-CPU 亲和性只能进一步缩小允许范围，改不了 cpuset 划定的边界。之后系统调整 cpuset、下线 CPU，或温控策略缩小可用范围时，线程仍可能被迁移。直接把 RenderThread 固定在某个“大核编号”上，会压缩调度器的迁移空间，可能带来排队、温升或能耗回归，所以它只适合作为受控实验，别当成默认优化。
+CPU 亲和性只能进一步缩小允许范围，改不了 cpuset 划定的范围。之后系统调整 cpuset、下线 CPU，或温控策略缩小可用范围时，线程仍可能被迁移。直接把 RenderThread 固定在某个“大核编号”上，会压缩调度器的迁移空间，可能带来排队、温升或能耗回归，所以它只适合作为受控实验，别当成默认优化。
 
 “`cpu >= 4` 就是大核”这类编号规则换一颗 SoC 未必还成立；判断 CPU 类型要结合 sysfs 拓扑、最高频率，或跟踪中的 CPU 频率/算力信息。
 
@@ -727,7 +727,7 @@ UClamp 为任务或 cgroup 提供利用率上下界：
 
 UClamp 与 EEVDF 处理的层面不同。EEVDF 在公平调度运行队列中处理运行资格和虚拟截止时间；UClamp 参与算力适配、能量感知选核和频率决策。提高 `uclamp.min` 不保证线程会立刻得到 CPU，也不会越过实时线程或截止时间调度线程。
 
-SchedTune 的 `schedtune.boost` 常见于旧版 Android 或厂商内核。阅读历史跟踪或旧设备配置时仍可能遇到它；对于 Android 17 / Linux 6.18 锚点，应先检查 cgroup v2 与 `cpu.uclamp.*`，再根据设备源码判断是否保留了厂商扩展。
+SchedTune 的 `schedtune.boost` 常见于旧版 Android 或厂商内核。阅读历史跟踪或旧设备配置时仍可能遇到它；对于 Android 17 / Linux 6.18 这套基线，应先检查 cgroup v2 与 `cpu.uclamp.*`，再根据设备源码判断是否保留了厂商扩展。
 
 ### 在 Perfetto 中读调度延迟
 
@@ -822,11 +822,11 @@ scheduling latency = first_running_ts - runnable_ts
 
 ### Android 中的实时线程
 
-音频、显示合成、相机等系统路径可能使用实时调度策略来降低调度抖动，但是否启用、使用哪个优先级以及由谁授权，取决于 AOSP 服务、设备配置和厂商实现。不能仅凭线程名断言它使用了 `SCHED_FIFO`。
+音频、显示合成、相机等系统路径可能使用实时调度策略来降低调度抖动，但是否启用、使用哪个优先级以及由谁授权，取决于 AOSP 服务、设备配置和厂商实现；单看线程名，断定不了它是否使用 `SCHED_FIFO`。
 
 普通应用直接设置实时策略，通常会受到 `CAP_SYS_NICE` 能力、rlimit、服务端授权与 SELinux 的限制。Android 音频路径存在由系统服务协调优先级的机制；这也不表示任意应用线程都能自由选择实时优先级。
 
-实时调度的风险来自无界运行：高优先级 FIFO 线程如果长时间不阻塞，会压制较低优先级的实时线程和全部公平调度线程。审查实时调度问题时，至少要确认：
+实时调度的风险来自无界运行：高优先级 FIFO 线程如果长时间不阻塞，会压制较低优先级的实时线程和全部公平调度线程。审查实时调度问题时，我们至少要确认：
 
 - 线程的调度策略和优先级；
 - 每次连续运行的最长时间；
@@ -855,7 +855,7 @@ SurfaceFlinger、AudioFlinger 或 HAL 线程的策略，应根据目标设备的
 
 #### 3. 解释竞争者
 
-在较长的可运行等待区间内，查看同一 CPU 正在运行的线程：
+在较长的可运行等待区间内，我们查看同一 CPU 上正在运行的线程：
 
 - 如果是截止时间/实时线程，先检查其运行是否有界；
 - 如果是权重更高的公平调度线程，核对 nice、cgroup 层级和业务必要性；
@@ -868,7 +868,7 @@ SurfaceFlinger、AudioFlinger 或 HAL 线程的策略，应根据目标设备的
 
 #### 5. 每次只验证一个改动
 
-可选措施包括减少关键路径工作、拆分后台任务、修正错误优先级、调整任务配置、修正过窄的 cpuset，或在拥有平台权限的系统组件中修改 UClamp/实时调度参数。只有证据表明 CPU 迁移或选核造成问题时，才应实验性调整 CPU 亲和性。
+可选措施包括减少关键路径工作、拆分后台任务、修正错误优先级、调整任务配置、修正过窄的 cpuset，或在拥有平台权限的系统组件中修改 UClamp/实时调度参数。先证明 CPU 迁移或选核确实造成了问题，再实验性调整 CPU 亲和性。
 
 验证至少覆盖：
 
@@ -880,7 +880,7 @@ SurfaceFlinger、AudioFlinger 或 HAL 线程的策略，应根据目标设备的
 
 调度优化常把延迟从一个线程转移到另一个线程。只看目标线程变快，还不足以证明系统收益。
 
-### 版本边界与源码索引
+### 版本基线与源码索引
 
 | 主题 | 当前锚点 | 历史内容的用途 |
 | --- | --- | --- |
@@ -931,7 +931,7 @@ SurfaceFlinger、AudioFlinger 或 HAL 线程的策略，应根据目标设备的
 
 上一节讲了公平调度器怎样用 vruntime、lag 和虚拟截止时间分配 CPU 时间。移动设备还有另一个目标：在不明显损害吞吐和响应的前提下降低能耗。在大小核混合的 SoC 上，这个目标就落到了选核问题上。
 
-一个四小核加四大核的八核处理器在安排任务时，要判断任务该放小核还是大核。小核更省电，但性能可能不足；大核性能更高，功耗也更高。调度器只看当前空闲程度时，轻任务（利用率较低）就可能被放到大核上，抬高频率和电压，并在前台交互阶段产生更多功耗与热量。
+我们以四小核加四大核的八核处理器为例：安排任务时要判断任务该放小核还是大核。小核更省电，但性能可能不足；大核性能更高，功耗也更高。调度器只看当前空闲程度时，轻任务（利用率较低）就可能被放到大核上，抬高频率和电压，并在前台交互阶段产生更多功耗与热量。
 
 EAS 在 Linux 5.0 合入主线：任务唤醒时，它先在每个性能域（performance domain）中找出有代表性的候选 CPU，再借助能量模型（Energy Model，EM）估算放置前后的活跃态能量差值；最终选择仍要满足 CPU 亲和性、cpuset、capacity 和 UClamp 等约束。
 
@@ -1057,7 +1057,7 @@ Linux 主线的 EAS 文档建立在 PELT 及其频率不变性和 CPU 不变性�
 
 **第三步：计算能量增量。** `compute_energy()` 先计算不含被唤醒任务的基准能量 `base_energy`，再模拟把任务放到 `prev_cpu` 或候选 CPU。计算会使用该性能域的繁忙时间（busy time）、最大有效利用率、UClamp 和实际 capacity，经 `em_cpu_energy()` 得到活跃态能量成本。
 
-**第四步：比较适配程度与能量增量。** 候选能满足性能提示时，优先选择能量增量更低者；若候选都无法满足 `uclamp.min`，代码还会比较可用 capacity。没有更优候选时保留 `prev_cpu`。Linux 6.18 的判断没有“能量差低于固定百分比就强制上大核”这类通用阈值。
+**第四步：比较适配程度与能量增量。** 候选能满足性能提示时，优先选择能量增量更低者；若所有候选都满足不了 `uclamp.min`，代码还会比较可用 capacity。没有更优候选时保留 `prev_cpu`。Linux 6.18 的判断没有“能量差低于固定百分比就强制上大核”这类通用阈值。
 
 #### 轻任务与重任务的策略差异
 
@@ -1067,7 +1067,7 @@ EAS 对轻任务和重任务有不同的处理方式：
 
 **重任务**：利用率接近或超过低 capacity CPU 的能力。低 capacity 候选可能过不了 `util_fits_cpu()`，capacity 更高的性能域因而成为候选。视频编解码、游戏渲染和应用启动主线程也可能包含等待阶段，整条线程生命周期未必都是重负载。
 
-#### 全大核架构的调度边界
+#### 全大核架构下的 EAS
 
 部分新 SoC 不再采用传统“四小核 + 四大核”命名，市场上常把这类设计称为“全大核”。这类设备的 capacity 差距往往更小，但功耗成本差距不一定同步缩小；只要调度拓扑仍存在不同 capacity，且注册了对应 EM，EAS 的判断框架就没有变化。分析时仍要读取调度器 capacity、cpufreq policy、EM 和 thermal pressure，某个 CPU 的 capacity 数字来自具体内核代码树、频率上限与架构缩放，产品名称推不出来，“全大核”标签也推导不出能效空间或迁移代价。
 
@@ -1091,7 +1091,7 @@ overutilized 对 EAS 的影响随内核版本有差异：
 
 EAS 以 PELT、`util_est`、capacity 和 EM 为基础。用户空间还可以用 UClamp 描述任务期望的最低或最高性能点。
 
-用户空间掌握业务截止时间（deadline）和进程状态，能够补充历史利用率暂时无法表达的信息。例如，突发帧任务的 PELT 尚未升高时，系统可能已经知道它需要较快响应。
+用户空间掌握业务截止时间（deadline）和进程状态，能够补充历史利用率暂时表达不了的信息。例如，突发帧任务的 PELT 尚未升高时，系统可能已经知道它需要较快响应。
 
 UClamp 允许用户空间为每个任务设置有效利用率的上下限：
 
@@ -1107,9 +1107,9 @@ Android 17 的 `android_util_Process.cpp` 中，线程分组路径调用 `SetTas
 
 #### UClamp 聚合方式的演进
 
-Linux 主线内核以及 Android 17 `android17-6.18-2026-06_r6` 的 UClamp 请求采用最大值与分桶（max/bucket）聚合策略。运行队列分别维护 `UCLAMP_MIN` 与 `UCLAMP_MAX` 的 bucket，并取已入队任务中最高的有效请求。这里聚合的是 UClamp 边界，不会取代 PELT 对运行队列实际利用率的求和。
+Linux 主线内核以及 Android 17 `android17-6.18-2026-06_r6` 的 UClamp 请求采用最大值与分桶（max/bucket）聚合策略。运行队列分别维护 `UCLAMP_MIN` 与 `UCLAMP_MAX` 的 bucket，并取已入队任务中最高的有效请求。这里聚合的是 UClamp 上下界，不会取代 PELT 对运行队列实际利用率的求和。
 
-例如，三个任务的 `uclamp.min` 都是 200，而 PELT 总利用率已达 300，调度器会结合实际利用率 300 与运行队列的 UClamp 边界 200 得出有效值，不会把 300 降到 200。最大值聚合的局限主要体现在多个 UClamp 请求怎样合并，尤其会影响 `UCLAMP_MAX` 的节能语义；聚合的对象是 UClamp 边界，与多任务真实负载的求和是两回事。厂商若改变聚合方式，应以对应内核代码树为准。
+例如，三个任务的 `uclamp.min` 都是 200，而 PELT 总利用率已达 300，调度器会结合实际利用率 300 与运行队列的 UClamp 上下界 200 得出有效值，不会把 300 降到 200。最大值聚合的局限主要体现在多个 UClamp 请求怎样合并，尤其会影响 `UCLAMP_MAX` 的节能语义；聚合的对象是 UClamp 上下界，与多任务真实负载的求和是两回事。厂商若改变聚合方式，应以对应内核代码树为准。
 
 在 Android 10、11、12 各版本中，排查路径应分层检查：
 
@@ -1149,17 +1149,17 @@ CPU 调度轨道显示每个时刻哪个线程在哪个 CPU 上运行，是观�
 
 - **目标 CPU 是否满足截止时间**：主线程和 RenderThread 无须默认常驻大核；能否满足帧预算，取决于运行时 capacity、频率和排队时间；
 - **迁移是否与性能下降相关**：迁移会影响缓存局部性，但负载均衡和温控迁移也属于正常行为。要把迁移点和 Runnable 等待、CPU 周期数（CPU cycles）、缓存未命中、wall time 对齐再下判断；
-- **唤醒关系是否完整**：采集 `sched_waking` 后，才能从唤醒关系解释目标 CPU；只看 `sched_switch` 无法还原全部唤醒选核过程。
+- **唤醒关系是否完整**：采集 `sched_waking` 后，才能从唤醒关系解释目标 CPU；只看 `sched_switch`，还原不出完整的唤醒选核过程。
 
 **3. CPU 空闲状态轨道（CPU Idle States Track）**
 
-这条轨道显示 CPU 的空闲状态变化。Linux 6.18 的 EAS 能量模型只描述活跃态功耗，不计算空闲状态成本；`find_energy_efficient_cpu()` 的注释也明确说明，它无法仅凭当前 EM 判断“把小任务集中到一个 CPU、让另一个 CPU 深度休眠”是否更省电。
+这条轨道显示 CPU 的空闲状态变化。Linux 6.18 的 EAS 能量模型只描述活跃态功耗，不计算空闲状态成本；`find_energy_efficient_cpu()` 的注释也明确说明，它仅凭当前 EM 判断不了“把小任务集中到一个 CPU、让另一个 CPU 深度休眠”是否更省电。
 
-空闲态驻留仍是分析整机功耗的重要证据，但它反映的是 EAS、CPUIdle governor、定时器、IRQ、后台唤醒和设备驱动的共同结果。大核频繁退出深度空闲态（deep idle），说明要继续找唤醒源，还证明不了 EAS 配置错误。
+空闲态驻留仍是分析整机功耗的重要线索，但它反映的是 EAS、CPUIdle governor、定时器、IRQ、后台唤醒和设备驱动的共同结果。大核频繁退出深度空闲态（deep idle），说明要继续找唤醒源，还证明不了 EAS 配置错误。
 
 #### 使用 SQL 分析 EAS 行为
 
-Perfetto 适合回答三个问题：线程在哪些 CPU 上运行、这些 CPU 当时运行在什么频率，以及连续的空闲态驻留是否被频繁唤醒打断。SQL 最好同时带上进程名和线程名，避免在多进程 Trace 中只按线程名查询而取得错误的 `utid`。
+用 Perfetto，我们主要回答三个问题：线程在哪些 CPU 上运行、这些 CPU 当时运行在什么频率，以及连续的空闲态驻留是否被频繁唤醒打断。SQL 最好同时带上进程名和线程名，避免在多进程 Trace 中只按线程名查询而取得错误的 `utid`。
 
 **统计目标线程在各 CPU 上的运行时间：**
 
@@ -1261,7 +1261,7 @@ EAS 的目标是降低完成单位工作所需的能量，并把吞吐影响控�
 
 厂商定制可能加入 WALT、游戏或启动性能提示（hint）、vendor hook 和额外迁移策略。效果必须通过目标设备的延迟、能耗与热稳态数据判断。分析 Perfetto 前，应先确认内核代码树、Power HAL 和任务配置，避免把公共内核行为直接套用到厂商分支。
 
-## 版本与实现边界
+## 版本与实现差异
 
 | 维度 | 时间节点 | 变化 | 排查要点 |
 |------|----------|------|----------|
@@ -1279,10 +1279,10 @@ EAS 的目标是降低完成单位工作所需的能量，并把吞吐影响控�
 
 ## 小结
 
-- CPU capacity、调度拓扑与能量模型比“大核/小核”产品名称更适合描述异构处理器；CPU 编号和最高频率都不能替代实机能力测量。
+- CPU capacity、调度拓扑与能量模型比“大核/小核”产品名称更适合描述异构处理器；CPU 编号和最高频率都替代不了实机能力测量。
 - 线程从唤醒到运行要同时经过调度类、优先级、EEVDF 资格、亲和性/cpuset、UClamp 与 CPU 放置。Runnable 等待和已经 Running 但执行慢是两类问题。
 - EAS 只在满足条件的候选 CPU 间比较任务放置的能量影响，DVFS 决定性能域频率，温控再改变频率上限和可用 capacity；三者必须在同一时间线上解释。
-- 调度优化应以目标线程的期限、系统吞吐、能耗和热稳态共同验收，不能用迁移次数、单次选核或绑核实验代替因果证据。
+- 调度优化应以目标线程的期限、系统吞吐、能耗和热稳态共同验收；迁移次数、单次选核或绑核实验，都代替不了因果证据。
 
 ## 参考资料
 

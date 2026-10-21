@@ -93,7 +93,7 @@ JNI 用于在 Java/Kotlin 与 C/C++ 之间调用代码，NDK 提供 Android 原�
 
 音视频、图像、游戏和设备端 AI 推理经常需要 C/C++，但“原生代码天生比 Java/Kotlin 快”不是可靠结论。一个原本能被 ART 的 JIT 或 AOT 优化好的短循环，一旦被拆成大量小粒度 JNI 调用，再叠加字符串转换、数组复制、引用管理和异常检查，整体可能更慢。
 
-分析 JNI 路径时，把成本拆成四段：
+我们分析 JNI 路径时，把成本拆成四段：
 
 ```text
 Managed caller
@@ -110,15 +110,17 @@ Native 性能问题通常跨过 Java/Native 调用边界、动态链接器和 li
 
 ## JNI 边界与 Native 调用成本
 
+一个 Java/Kotlin 调用跨进 C/C++ 世界，成本落在三处：边界切换、数据编组、原生函数内部。我们把这三处拆开看，再决定优化往哪里使劲。
+
 ### 1. JNI 成本来自哪里
 
 #### 1.1 边界切换
 
-普通 JNI 调用需要通知 ART：线程将从托管代码状态进入原生代码状态。随后，调用按 JNI 的二进制调用约定（ABI）传递 `JNIEnv*`、`jobject` / `jclass` 和业务参数；返回时再恢复运行时状态，处理引用和异常。
+一次普通 JNI 调用，第一步是通知 ART：线程将从托管代码状态进入原生代码状态。随后，调用按 JNI 的二进制调用约定（ABI）传递 `JNIEnv*`、`jobject` / `jclass` 和业务参数；返回时再恢复运行时状态，处理引用和异常。
 
 普通入口会经过 ART 的 JNI 跳板代码（trampoline），为本次调用建立本地引用区段（local-reference segment），并把线程从可运行的 `Runnable` 状态切换到执行原生代码的 `Native` 状态。
 
-返回时，线程再恢复 `Runnable`，检查运行时挂起请求和待处理的 Java 异常（pending exception）。对象参数还要放入引用表，并在原生侧解析为实际对象；纯基本类型（primitive）参数没有这层对象引用处理。
+等原生函数返回，线程再恢复 `Runnable`，检查运行时挂起请求和待处理的 Java 异常（pending exception）。对象参数还要放入引用表，并在原生侧解析为实际对象；纯基本类型（primitive）参数没有这层对象引用处理。
 
 所以一次 JNI 调用没有固定的执行路径，方法属性、参数类型、编译状态和运行时挂起请求都会让它走上不同分支。
 
@@ -138,7 +140,7 @@ Native 性能问题通常跨过 Java/Native 调用边界、动态链接器和 li
 
 #### 1.2 数据编组与复制
 
-基本类型标量的传递最直接；`String`、数组和普通 Java 对象都需要运行时参与。
+跨过边界之后，参数怎么搬运是另一层成本：基本类型标量的传递最直接；`String`、数组和普通 Java 对象都需要运行时参与。
 
 - `String` 可能发生 UTF-16 / Modified UTF-8 转换和复制。
 - 基本类型数组可能直接暴露指针，也可能复制到原生缓冲区。
@@ -159,11 +161,11 @@ JNI 只负责跨语言调用；进入原生函数后，我们面对的还是普�
 private static native void native_set(String key, String def);
 ```
 
-这个方法会执行 IPC，并且可能阻塞，所以没有使用 `@FastNative`。即使边界切换变快，调用方实际经历的阻塞时间也不会因此消失。
+这个方法会执行 IPC，并且可能阻塞，所以没有使用 `@FastNative`：边界切换再快，调用方实际经历的阻塞时间也省不掉。
 
 ### 2. 第一原则：减少小粒度 JNI 调用
 
-官方 JNI tips 把“减少跨 JNI 编组的数据量与频率”放在通用建议首位。我们按这条建议设计接口，先回答三个问题：一次调用搬多少数据、跨语言回调由哪一侧发起、每次都要重新查找的类和方法 ID 能不能提前缓存。
+官方 JNI tips 把“减少跨 JNI 编组的数据量与频率”放在通用建议首位。我们按这条建议设计接口，先回答三个问题：一次调用搬多少数据、跨语言回调由哪一侧发起、每次都要重新查找的类和方法 ID 是否可以提前缓存。
 
 #### 2.1 批量传输
 
@@ -174,7 +176,7 @@ private static native void native_set(String key, String def);
 好：1 次 JNI，传 short[] / DirectByteBuffer / native handle
 ```
 
-按批次传输，并不是无条件复制 100MB 数据；接口设计要看数据主要由哪一侧访问：
+我们按数据主要由哪一侧访问来定接口形态；按批次传输并不等于无条件复制 100MB 数据：
 
 - Java/Kotlin 侧读写更多：基本类型数组通常更自然；
 - C/C++ 侧长期处理：由原生代码拥有的缓冲区，或直接缓冲区（direct buffer）更合适；
@@ -248,7 +250,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void*) {
 - 由 Java 把 `Class` 实例传给原生代码；
 - 缓存应用的 `ClassLoader`，需要时调用其 `loadClass()`。
 
-不要在原生工作线程的高频路径中反复调用 `FindClass()`，这会同时带来性能和正确性风险。
+原生工作线程的高频路径要避开反复调用 `FindClass()`：这里既有性能代价，也有正确性风险。
 
 ### 4. `@FastNative` 与 `@CriticalNative`
 
@@ -273,9 +275,9 @@ private static native void nativeWriteString16(
         long nativePtr, String val);
 ```
 
-`@FastNative` 仍有 `JNIEnv*`，可以访问托管堆、调用 JNI API，甚至回调 Java；但执行时间必须短，而且最坏耗时有明确上限。
+`@FastNative` 仍有 `JNIEnv*`，可以访问托管堆、调用 JNI API，甚至回调 Java；但我们要把它留给执行时间短、最坏耗时有明确上限的函数。
 
-官方文档说明，线程执行 `@FastNative` 时，GC 不能为关键工作挂起它。不要在里面：
+官方文档说明，线程执行 `@FastNative` 期间，GC 拿不到为关键工作挂起它的机会，所以这些事情都要留在外面：
 
 - 做显著 I/O。
 - 等待可能被长期持有的原生锁。
@@ -311,7 +313,7 @@ static jint NativeWriteInt(jlong ptr, jint value) {
 }
 ```
 
-两段代码的参数按位置直接对应，不包含 `JNIEnv*` 或 `jclass`。没有 `JNIEnv*`，实现中也就没有入口去调用 JNI API。CriticalNative 同样会阻止 GC 为关键工作挂起当前线程，所以只适合短、可预测且不阻塞的代码。
+两段代码的参数按位置直接对应，其中没有 `JNIEnv*`，也没有 `jclass`；实现里也就没有入口去调用 JNI API。CriticalNative 同样会阻止 GC 为关键工作挂起当前线程，所以只适合短、可预测且不阻塞的代码。
 
 #### 4.3 注解之外还有兼容性要求
 
@@ -319,7 +321,7 @@ static jint NativeWriteInt(jlong ptr, jint value) {
 
 - Android 8 起用于系统内部。
 - Android 14 / API 34 起成为通过兼容性测试套件（CTS）验证的公共 API；
-- 追求最大兼容性的应用，就不要在 Android 13 及以下版本调用这些注解方法；
+- 追求最大兼容性的应用，在 Android 13 及以下版本应避开这些注解方法，把调用限定在 Android 14 及以上；
 - Android 8～10 没有内建动态原生方法查找，Android 11 还有已知问题；Android 8～11 必须显式调用 `RegisterNatives()`；
 - Android 7 及以下忽略注解；CriticalNative 因 ABI 不匹配可能错误编组参数并崩溃。
 
@@ -327,9 +329,9 @@ static jint NativeWriteInt(jlong ptr, jint value) {
 
 ### 5. 线程附着与 `JNIEnv*`
 
-#### 5.1 `JNIEnv*` 只能属于当前线程
+#### 5.1 `JNIEnv*` 的线程归属
 
-`JNIEnv*` 装的是当前线程在虚拟机中的本地状态，谁附着谁使用；把它存进全局变量给其他线程复用是典型错误。进程内可以跨线程共享的是 `JavaVM*`，各线程再通过它取得自己的 `JNIEnv*`。
+`JNIEnv*` 装的是当前线程在虚拟机中的本地状态，谁附着谁使用。排查 JNI 问题时，我们先确认 `JNIEnv*` 来自哪个线程；把它存进全局变量给其他线程复用，是要首先排除的典型错误。进程内可以跨线程共享的是 `JavaVM*`，各线程再通过它取得自己的 `JNIEnv*`。
 
 原生代码需要取得当前线程的 JNI 环境时：
 
@@ -341,9 +343,9 @@ static jint NativeWriteInt(jlong ptr, jint value) {
 
 如果线程本来就要频繁回调 Java，优先考虑通过 Java 的 `Thread.start()` 创建。这样能自然获得合适的栈大小、线程组（ThreadGroup）、类加载器和调试工具中的可见性。
 
-#### 5.2 原生线程的本地引用不会按“调用返回”清理
+#### 5.2 原生线程的本地引用生命周期
 
-普通原生方法返回 Java 时，本次调用创建的本地引用会失效并被清理；通过 `AttachCurrentThread()` 附着的纯原生线程可能长期停留在原生世界，它创建的本地引用要到线程分离时才会自动释放。
+我们在长生命周期的原生线程上要特别当心：普通原生方法返回 Java 时，本次调用创建的本地引用会失效并被清理；而通过 `AttachCurrentThread()` 附着的纯原生线程可能长期停留在原生世界，它创建的本地引用要到线程分离时才会自动释放。
 
 循环里创建 `jstring`、对象或数组元素时要：
 
@@ -371,13 +373,13 @@ JNI 规范只要求虚拟机保证至少 16 个本地引用槽位。Android 8 �
 - **全局引用**：跨调用、跨线程保持对象可达，直到调用 `DeleteGlobalRef()`；
 - **弱全局引用**：不阻止 GC 回收对象。使用时应先调用 `NewLocalRef(weak)`，尝试把它提升为强本地引用；返回 `nullptr` 说明对象已经被回收。后续操作都使用这个本地引用，完成后再调用 `DeleteLocalRef()`。
 
-两个 JNI 引用即使指向同一个 Java 对象，数值也可能不同，`==` 的比较结果并不可靠，要用 `IsSameObject()`；把原始 `jobject` 数值当作长期保存的映射表键同样靠不住。
+我们比较两个 JNI 引用时要留意：即使指向同一个 Java 对象，数值也可能不同，`==` 的比较结果并不可靠，要用 `IsSameObject()`；把原始 `jobject` 数值当作长期保存的映射表键同样靠不住。
 
-先 `IsSameObject(weak, nullptr)` 检查弱全局引用、再继续使用原弱引用，这个顺序是错的：检查结束后，GC 仍可能立即回收对象。`NewLocalRef()` 的“提升并判空”会为本次操作建立一个稳定的强引用。
+先 `IsSameObject(weak, nullptr)` 检查弱全局引用、再继续使用原弱引用，这个顺序留了竞态窗口：检查结束后，GC 仍可能立即回收对象。`NewLocalRef()` 的“提升并判空”会为本次操作建立一个稳定的强引用。
 
 全局引用泄漏会让 Java 对象一直存活。Android Studio 的 JNI 堆视图（JNI heap view）可以查看全局 JNI 引用的创建位置和引用链。
 
-#### 6.2 JNI 异常不会像 C++ 异常自动展开
+#### 6.2 JNI 异常的传播方式
 
 许多 JNI API 失败时会设置待处理的 Java 异常，并返回 `nullptr` 或其他表示失败的哨兵值（sentinel）。存在待处理异常后，只有少量 JNI 函数仍可安全调用。下面的代码在类或方法查找失败时立即返回，把异常留给 Java 调用方处理：
 
@@ -396,7 +398,7 @@ if (method == nullptr) {
 }
 ```
 
-两处分支都没有调用 `ExceptionClear()`。为了“继续运行”而随手清除异常是危险的；只有原生代码明确要把 Java 异常转换成另一种结果或异常时才清除，并且要确保 Java 侧仍能感知失败。
+两处分支都没有调用 `ExceptionClear()`。为了“继续运行”而随手清除异常是危险的；我们只在原生代码明确要把 Java 异常转换成另一种结果或异常时才清除，并且要确保 Java 侧仍能感知失败。
 
 #### 6.3 CheckJNI 的用途与开销
 
@@ -416,18 +418,18 @@ adb shell setprop debug.checkjni 1
 adb shell am force-stop com.example.app
 ```
 
-CheckJNI 的额外检查会改变性能，开启它时采集的轨迹代表的是带检查开销的行为。先用它消除 JNI 违规，再使用接近发布配置且保留符号的构建测量性能。
+CheckJNI 的额外检查会改变性能，开启它时采集的轨迹代表的是带检查开销的行为。我们先用它消除 JNI 违规，再使用接近发布配置且保留符号的构建测量性能。
 
 ### 7. 字符串：UTF-16 与 Modified UTF-8
 
-Java `String` 按 UTF-16 编码单元表示文本。JNI 中名称带 `UTF` 的 API 使用修改版 UTF-8（Modified UTF-8，MUTF-8），与网络、文件和大多数现代 C++ 库使用的标准 UTF-8 不完全相同。
+处理跨边界的字符串时，我们要先分清两套编码：Java `String` 按 UTF-16 编码单元表示文本；JNI 中名称带 `UTF` 的 API 使用修改版 UTF-8（Modified UTF-8，MUTF-8），与网络、文件和大多数现代 C++ 库使用的标准 UTF-8 不完全相同。
 
 - `GetStringChars()` / `GetStringRegion()` 面向 UTF-16。
 - `GetStringUTFChars()` / `NewStringUTF()` 面向 Modified UTF-8。
 - `GetStringLength()` 返回 UTF-16 编码单元（code unit）数量，不是 Unicode 码点（code point）数量；
 - `GetStringUTFLength()` 返回的也不是标准 UTF-8 字节数。
 
-不要把文件或网络收到的任意 UTF-8 直接交给 `NewStringUTF()`。无效 MUTF-8 会产生错误结果，CheckJNI 还会直接终止虚拟机进程。
+文件或网络收到的任意 UTF-8，要经过校验再交给 `NewStringUTF()`：无效 MUTF-8 会产生错误结果，CheckJNI 还会直接终止虚拟机进程。
 
 Android 8 以后，ART 使用紧凑字符串表示，并采用可能移动对象位置的垃圾回收器（moving GC）。即使调用 `GetStringCritical()`，运行时也可能复制数据；API 名称里的 Critical 并未承诺零拷贝。每个 `Get*Chars()` 都必须与对应的 `Release*Chars()` 配对，原生方法返回时不会自动释放取得的字符指针。
 
@@ -442,30 +444,23 @@ JNI 规范允许 `Get<PrimitiveType>ArrayElements()`：
 - 返回指向托管数组的直接指针，并在此期间固定数组位置；
 - 或分配原生缓冲区，把数组内容复制进去。
 
-这两种实现属于运行时选择，跨版本没有保证。对可能被 GC 移动的基本类型数组，ART 的普通 Elements 路径通常建立原生副本并执行 `memcpy`；`GetPrimitiveArrayCritical()` 则靠限制移动式 GC 和线程翻转（thread flip，ART 协调线程状态的一种机制）——ART 协调线程状态的一种机制——来提供直接地址。
+这两种实现属于运行时选择，跨版本没有保证。对可能被 GC 移动的基本类型数组，ART 的普通 Elements 路径通常建立原生副本并执行 `memcpy`；`GetPrimitiveArrayCritical()` 则靠限制移动式 GC 和线程翻转（thread flip，ART 协调线程状态的一种机制）来提供直接地址。
 
-这种实现差异说明，大数组既要测量复制成本，也要观察 GC 影响，只比较 API 名称会得出错误结论。所有 Elements 调用仍必须用对应的 `Release<PrimitiveType>ArrayElements()` 结束生命周期。
+大数组因此既要测量复制成本，也要观察 GC 影响，只比较 API 名称会得出错误结论。所有 Elements 调用仍必须用对应的 `Release<PrimitiveType>ArrayElements()` 结束生命周期。
 
-如果只读写一个明确区间，`Get/Set<PrimitiveType>ArrayRegion()` 用一次显式复制换取更简单的生命周期，通常比长期持有 Elements 指针更容易审查。大批量数据可以比较 Region、Elements、Critical 和 Direct Buffer，但要同时记录调用次数、字节量、临时分配、GC 暂停以及 P95/P99 耗时。
+如果只读写一个明确区间，我们用 `Get/Set<PrimitiveType>ArrayRegion()` 以一次显式复制换取更简单的生命周期，通常比长期持有 Elements 指针更容易审查。大批量数据可以比较 Region、Elements、Critical 和 Direct Buffer，但要同时记录调用次数、字节量、临时分配、GC 暂停以及 P95/P99 耗时。
 
 释放模式（release mode）的语义如下：
 
 - `0`：如果取得的是副本，就把修改复制回 Java；随后释放副本或解除数组位置固定（pin）；
-- `JNI_ABORT`：如果取得的是副本，就丢弃其中的修改；随后释放副本或解除固定。若虚拟机直接返回数组地址，已经发生的写入无法被“撤销”；
+- `JNI_ABORT`：如果取得的是副本，就丢弃其中的修改；随后释放副本或解除固定。若虚拟机直接返回数组地址，写入已经落在数组本身，谈不上“撤销”；
 - `JNI_COMMIT`：如果取得的是副本，就把修改复制回 Java，但不释放该副本；后续还要再次调用对应的 Release API 完成清理。
 
-只读输入在语义允许时使用 `JNI_ABORT`，可以避免虚拟机返回副本时执行无意义的回写（copy-back）。它不是通用的“回滚写入”选项。
+只读输入在语义允许时使用 `JNI_ABORT`，可以避免虚拟机返回副本时执行无意义的回写（copy-back）。要“回滚写入”时别指望它，这个选项没有那层语义。
 
 #### 8.2 `GetPrimitiveArrayCritical()` 的使用约束
 
-它也不保证一定返回原数组地址。进入 Critical 临界区后：
-
-- 不要调用任意 JNI API。
-- 不要做阻塞系统调用。
-- 不要等待锁。
-- 尽快完成并调用对应的 Release API。
-
-这种 API 会限制虚拟机执行 GC 和移动堆对象的选择。只有在目标设备上完成测量，并且能严格控制临界区耗时后，才应使用。
+它也不保证一定返回原数组地址。进入 Critical 临界区后，我们要遵守的规则很紧：任意 JNI API、阻塞系统调用和等锁都放在临界区外，并尽快完成、调用对应的 Release API。这种 API 会限制虚拟机执行 GC 和移动堆对象的选择，所以只有在目标设备上完成测量，并且能严格控制临界区耗时后，才应使用。
 
 #### 8.3 直接缓冲区
 
@@ -485,7 +480,7 @@ JNI 规范允许 `Get<PrimitiveType>ArrayElements()`：
 - `NewDirectByteBuffer()` 只是包装地址，不会自动负责释放 `malloc` 分配的内存；
 - 容量、偏移、对齐和线程同步仍由业务代码保证。
 
-“Direct”只说明可以取得原生地址；整条处理链要真正做到零拷贝，还得看下游 API 是否复制数据。
+“Direct”只说明可以取得原生地址；我们要让整条处理链做到零拷贝，还得看下游 API 是否复制数据。
 
 ### 9. 如何观察 JNI
 
@@ -493,7 +488,7 @@ Perfetto 的默认系统轨迹（system trace）不会自动为每次 JNI 跨界
 
 #### 9.1 主动插桩
 
-主动插桩指在关键路径显式加入轨迹记录。第三方 NDK 代码应使用稳定 API `<android/trace.h>`。下面的代码会记录 `DecodeBatch()` 的完整耗时：
+主动插桩是我们在关键路径显式加入轨迹记录的手段。第三方 NDK 代码应使用稳定 API `<android/trace.h>`。下面的代码会记录 `DecodeBatch()` 的完整耗时：
 
 ```cpp
 #include <android/trace.h>
@@ -547,7 +542,7 @@ simpleperf report-sample \
 
 #### 9.3 微基准
 
-测量一次 JNI 跨界的成本时，要避免混入其他变量：
+我们测量一次 JNI 跨界的成本时，要避免混入其他变量：
 
 - 调用方预热到稳定的 JIT/AOT 状态。
 - C/C++ 函数只做能够防止编译器消除的最小工作。
@@ -564,7 +559,7 @@ Baseline Profile 不会自动合并 JNI 调用，也不会把不符合条件的�
 
 AOSP 源码中的 `benchmark/jni-perf` 可作为实验设计参考：它比较空 JNI 入口和 ART 内部路径，但依赖平台构建与内部头文件，普通 APK 用不上，也没有跨设备通用常数。应用侧应使用 AndroidX Microbenchmark，分别测试普通入口、Fast、Critical、`Region`、`Elements` 和批处理接口。测试代码还要实际使用返回值，避免编译器删除没有可见效果的工作。
 
-### 10. 16KB 内存页：Android 17 上必须验证的原生代码边界
+### 10. 16KB 内存页的发布验收
 
 这一节站在 JNI/NDK 发布验收视角，只回答“最终 App 产物要检查什么”；运行时页大小、linker 兼容装载和 libc 内部实现的机制放在后文 Bionic 部分。同一个主题在两处的分工是：这里检查产物，那里解释机制。
 
@@ -616,11 +611,11 @@ adb shell setprop bionic.linker.16kb.app_compat.enabled fatal
 adb shell setprop pm.16kb.app_compat.disabled true
 ```
 
-这是设备级测试配置，完成验证后应恢复设置或重启设备。它适合持续集成（CI）设备或专用测试机，不要在日常使用的主力机上保留。
+这是设备级测试配置，完成验证后应恢复设置或重启设备。它适合持续集成（CI）设备或专用测试机，日常主力机上用完即还原。
 
 #### 10.4 Play 要求与性能数字
 
-Google Play 当前要求目标版本为 Android 15 / API 35 或更高的应用支持 64 位设备上的 16 KB 页；从 2027-02-01 起，不支持的应用更新将无法发布。纯 Java/Kotlin 且所有依赖都不含原生代码的应用天然兼容，但仍应在 16KB 环境中做回归测试。
+Google Play 当前要求目标版本为 Android 15 / API 35 或更高的应用支持 64 位设备上的 16 KB 页；从 2027-02-01 起，应用更新只有支持 16 KB 页才能发布。纯 Java/Kotlin 且所有依赖都不含原生代码的应用天然兼容，但仍应在 16KB 环境中做回归测试。
 
 官方初步测试报告：
 
@@ -633,9 +628,9 @@ Google Play 当前要求目标版本为 Android 15 / API 35 或更高的应用�
 
 16KB 页会平均增加一些内存使用。上述数字来自平台初步测试，对单个应用只作量级参考；JNI/NDK 项目应先保证原生库能够可靠加载并正确运行，再用自己的设备验证性能变化。
 
-### 11. JNI 不是 IPC 的替代品
+### 11. JNI 与 IPC 的分工
 
-JNI 解决同一进程内 Java/Kotlin 与 C/C++ 的互调。Binder/AIDL 解决跨进程通信，还承担调用方身份、权限、进程隔离和生命周期管理。
+我们选型时先分清进程内还是跨进程：JNI 解决同一进程内 Java/Kotlin 与 C/C++ 的互调；Binder/AIDL 解决跨进程通信，还承担调用方身份、权限、进程隔离和生命周期管理。
 
 为了少一次 Binder 就把本应隔离的组件塞进同一进程，再用 JNI 传裸指针，通常会失去：
 
@@ -650,7 +645,7 @@ JNI 解决同一进程内 Java/Kotlin 与 C/C++ 的互调。Binder/AIDL 解决�
 
 ## Bionic libc 的实现与系统影响
 
-跨过 JNI 后，代码进入 Bionic 和内核提供的运行环境。函数实现、FORTIFY、malloc、线程局部存储与系统调用封装会改变 Native 热路径的实际成本。
+跨过 JNI 之后，我们面对的是 Bionic 和内核提供的运行环境。函数实现、FORTIFY、malloc、线程局部存储与系统调用封装会改变 Native 热路径的实际成本。
 
 Bionic 位于 Android 原生运行时的公共路径上。系统调用封装、线程创建、同步原语、ELF 装载、字符串函数以及 Native Heap（C/C++ 代码通过 `malloc` 等接口使用的堆）的入口都经过它。我们分析 Bionic 性能时要先划清实现范围：某个 API 由 Bionic 对外提供，算法主体未必也在 Bionic 仓库里。
 
@@ -691,11 +686,11 @@ NDK / Framework JNI / native system service
 
 图中的 TLS 是线程局部存储，atomic 表示用户空间原子操作，IFUNC 负责按硬件能力选择函数实现；系统调用封装才会进入内核。`malloc dispatch` 则是一层函数指针分派，可把请求交给实际分配器或诊断工具。
 
-所以在 `malloc` 火焰图里看到 `libc.so`，还不足以认定问题出在 Bionic；在 `pthread_mutex_lock` 调用栈里看到 futex，同样说明不了每次加锁都进入内核。
+所以我们在 `malloc` 火焰图里看到 `libc.so`，还不足以认定问题出在 Bionic；在 `pthread_mutex_lock` 调用栈里看到 futex，同样说明不了每次加锁都进入内核。
 
 ### 2. malloc：Bionic 负责入口和分派，Scudo 负责分配
 
-#### 2.1 Android 17 的默认关系
+#### 2.1 malloc dispatch 与默认分配器
 
 `bionic/libc/bionic/malloc_common.cpp` 定义 `MallocDispatch`，其中包含 `malloc`、`free`、`realloc`、`mallopt`、`malloc_info` 等函数指针。正常路径使用默认 dispatch（分派表）；malloc debug、hooks 和堆采样工具 heapprofd 等功能可以安装另一张表，在调用前后插入诊断或采样逻辑。
 
@@ -730,9 +725,9 @@ malloc()
         -> Secondary：处理较大或特殊分配
 ```
 
-当 heapprofd 或 malloc debug 生效时，中间会多一层拦截。性能分析必须先确认当前 dispatch，再判断耗时来自采样、调用栈回溯、Scudo 元数据操作、锁竞争、缺页，还是内核映射与回收。
+当 heapprofd 或 malloc debug 生效时，中间会多一层拦截。我们做性能分析时先确认当前 dispatch，再判断耗时来自采样、调用栈回溯、Scudo 元数据操作、锁竞争、缺页，还是内核映射与回收。
 
-#### 2.2 分配器演进边界
+#### 2.2 分配器的演进
 
 | 阶段 | AOSP 主线选择 | 解决的问题 | 阅读时要保留的条件 |
 |---|---|---|---|
@@ -754,13 +749,13 @@ Android 的 `mallopt` 提供若干分配器控制项：
 - `M_DECAY_TIME` 控制未使用页立即、周期或停止回收；
 - `M_MEMTAG_TUNING` 只在 Scudo 且进程启用 MTE 时有意义。
 
-这些接口会改变 CPU 时间、锁持有时间、RSS 和后续缺页之间的平衡。不要把 purge 放到每帧路径，也不要只看调用结束后的 RSS。应同时记录 purge 时延、回收量、下一阶段 minor fault（无需从磁盘读取即可处理的次缺页）和用户可见延迟。
+这些接口会改变 CPU 时间、锁持有时间、RSS 和后续缺页之间的平衡。purge 要避开每帧路径；观察时除了调用结束后的 RSS，还要同时记录 purge 时延、回收量、下一阶段 minor fault（无需从磁盘读取即可处理的次缺页）和用户可见延迟。
 
 ### 3. pthread_create：默认栈只是线程成本的一部分
 
 #### 3.1 子线程与主线程的栈来源不同
 
-默认子线程栈定义在 `pthread_internal.h`：
+子线程的默认栈直接定义在 `pthread_internal.h`：
 
 ```cpp
 #if defined(__LP64__)
@@ -773,7 +768,7 @@ Android 的 `mallopt` 提供若干分配器控制项：
     ((1 * 1024 * 1024) - SIGNAL_STACK_SIZE_WITHOUT_GUARD)
 ```
 
-因此，Bionic 创建的子线程默认 `pthread_attr_t::stack_size` 在指针和 `long` 都是 64 位的 LP64（指针和 `long` 都为 64 位的 ABI） 上是 992 KiB，在 32 位进程上是 1008 KiB。源码随后会从栈顶划出 `pthread_internal_t`，所以这两个数字也不能直接当成业务代码可用的最大栈深。
+因此，Bionic 创建的子线程默认 `pthread_attr_t::stack_size` 在指针和 `long` 都是 64 位的 LP64（指针和 `long` 都为 64 位的 ABI） 上是 992 KiB，在 32 位进程上是 1008 KiB。源码随后会从栈顶划出 `pthread_internal_t`，所以这两个数字离业务代码可用的最大栈深还要再减一块。
 
 主线程走另一条路径。`pthread_attr_getstack` 根据 `RLIMIT_STACK`（进程栈资源限制）和进程映射计算主栈；只有当限制为 `RLIM_INFINITY` 时，Bionic 才把报告值收敛为 8 MiB，避免调用者把无限值当成可用映射。“Android 主线程固定 8 MiB”并不成立。
 
@@ -795,7 +790,7 @@ Android 的 `mallopt` 提供若干分配器控制项：
 
 这里有三个性能含义：
 
-1. 线程成本不能只用 `stack_size` 估算。TLS、guard（不可访问的保护区）、signal stack、Shadow Call Stack、内核线程对象和调度数据都要计入。
+1. 线程成本单看 `stack_size` 估不全：TLS、guard（不可访问的保护区）、signal stack、Shadow Call Stack、内核线程对象和调度数据都要计入。
 2. `MAP_NORESERVE` 以及按需缺页使虚拟地址空间增长与 RSS 增长不同步。只看 VSS（分配给进程的虚拟地址空间总量）容易高估物理内存，实际触碰大量栈页后 RSS 才会上升。
 3. 缩小栈能减少地址空间和最坏物理占用，但 `PTHREAD_STACK_MIN` 只是 ABI 下限。Android 17 中 LP64 为 16 KiB、32 位为 8 KiB；该下限不保证业务调用深度、信号处理、JNI 或第三方库安全。
 
@@ -805,13 +800,13 @@ Android 的 `mallopt` 提供若干分配器控制项：
 
 `pthread_attr_setschedpolicy` 接受的是 Linux 调度策略，例如 `SCHED_OTHER`/`SCHED_NORMAL`、`SCHED_BATCH`、`SCHED_IDLE`、`SCHED_FIFO` 和 `SCHED_RR`。实时策略还受权限、优先级范围与系统策略约束。
 
-Android 的 `top-app` 属于 task profile（系统为一组线程应用的资源策略）、cgroup 控制组和系统调度配置，`SCHED_TOP_APP` 不是 Bionic 或 Linux 的 `SCHED_*` 常量。前台进程获得怎样的 CPU 集合、uclamp 调度利用率限制或其他参数，由 framework、libprocessgroup、设备配置和内核共同决定。应用不能通过 `pthread_attr_setschedpolicy(..., 5)` 把线程变成 `top-app`；数值碰巧相同也没有这层语义。
+Android 的 `top-app` 属于 task profile（系统为一组线程应用的资源策略）、cgroup 控制组和系统调度配置，`SCHED_TOP_APP` 不是 Bionic 或 Linux 的 `SCHED_*` 常量。前台进程获得怎样的 CPU 集合、uclamp 调度利用率限制或其他参数，由 framework、libprocessgroup、设备配置和内核共同决定。`pthread_attr_setschedpolicy(..., 5)` 设置的只是 Linux 调度策略数值，变不出 `top-app`；数值碰巧相同也没有这层语义。
 
 ### 4. mutex 与 condition variable：用户态快路径和内核等待
 
 #### 4.1 普通 mutex
 
-Android 17 的普通非 PI mutex 使用一个原子状态：
+锁的快慢，先看状态机：Android 17 的普通非 PI mutex 使用一个原子状态：
 
 - `0`：未锁；
 - `1`：已锁、尚未发现竞争；
@@ -819,7 +814,7 @@ Android 17 的普通非 PI mutex 使用一个原子状态：
 
 无竞争的 `pthread_mutex_lock` 通过原子比较并交换（compare-and-exchange）把状态从 `0` 改为 `1`，不进入内核。竞争路径把状态改为 `2`，然后通过 futex（Linux 用户空间锁的内核等待/唤醒机制）等待；解锁发现旧状态为 `2` 时，再用 futex 唤醒一个等待者。源码中没有能够证明“Android 17 新增乐观自旋（optimistic spinning）”的分支。
 
-进程间共享的 mutex 会选择共享 futex 操作，进程内私有 mutex 可以使用开销更低的 private futex。recursive 和 errorcheck 类型还要记录持有者（owner）与递归计数。分析高频锁路径时，应确认锁类型、是否跨进程、竞争比例和临界区长度，再讨论是否替换同步原语。
+进程间共享的 mutex 会选择共享 futex 操作，进程内私有 mutex 可以使用开销更低的 private futex。recursive 和 errorcheck 类型还要记录持有者（owner）与递归计数。我们分析高频锁路径时，先确认锁类型、是否跨进程、竞争比例和临界区长度，再讨论是否替换同步原语。
 
 #### 4.2 Priority Inheritance mutex
 
@@ -885,7 +880,7 @@ Android 17 在 arm/arm64 上保留的 Bionic TCB slot 包括：
 
 ### 6. MTE：诊断精度、运行成本和适用环境要一起看
 
-Arm MTE 把内存划成 16 字节标记粒度（granule），为每个粒度保存 4 位 allocation tag；指针的 logical tag 位于地址高位。CPU 访问内存时比较指针标签与内存标签。两者不匹配时，Android 可按进程配置不同的故障报告模式（fault mode）：
+给内存加标签，先要看清粒度和故障模式。Arm MTE 把内存划成 16 字节标记粒度（granule），为每个粒度保存 4 位 allocation tag；指针的 logical tag 位于地址高位。CPU 访问内存时比较指针标签与内存标签。两者不匹配时，Android 可按进程配置不同的故障报告模式（fault mode）：
 
 | 模式 | 报告行为 | 适用方向 |
 |---|---|---|
@@ -903,7 +898,7 @@ Android 17 的 Bionic 包含 `note_memtag_heap_async.S` 和 `note_memtag_heap_sy
 - `MEMTAG_OPTIONS` 可覆盖原生进程设置；
 - 实际模式还受硬件、内核和设备策略影响。
 
-MTE 的成本与 CPU 实现、访问模式、Scudo 写入内存标签的工作、是否采集分配/释放调用栈以及系统首选模式有关。标签比较由硬件完成，也不表示分配、改标签和报告整条链路都没有成本。应在同一设备、同一温控和同一工作负载下对比 off/async/sync，并同时查看 CPU、功耗、帧延迟和 Native Heap 指标。
+MTE 的成本与 CPU 实现、访问模式、Scudo 写入内存标签的工作、是否采集分配/释放调用栈以及系统首选模式有关。标签比较由硬件完成，也不表示分配、改标签和报告整条链路都没有成本。我们应在同一设备、同一温控和同一工作负载下对比 off/async/sync，并同时查看 CPU、功耗、帧延迟和 Native Heap 指标。
 
 更多配置和报告解析见 [AOSP MTE 文档](https://source.android.com/docs/security/test/memory-safety/arm-mte) 以及 **20.11 MTE 与 GWP-ASan Native 内存安全检测**。
 
@@ -911,7 +906,7 @@ MTE 的成本与 CPU 实现、访问模式、Scudo 写入内存标签的工作�
 
 #### 7.1 Bionic 获取页大小的方式
 
-Android 17 的内部 helper 如下：
+Bionic 内部的 helper 如下：
 
 ```cpp
 inline size_t page_size() {
@@ -924,13 +919,13 @@ inline size_t page_size() {
 }
 ```
 
-可变页大小构建会从内核在进程启动时提供的辅助向量（auxiliary vector）中读取 `AT_PAGESZ`。`page_start`、`page_offset`、`page_end` 以及 pthread 映射随后都使用该值。NDK 代码应使用 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)`，不要假设 `PAGE_SIZE == 4096`。
+可变页大小构建会从内核在进程启动时提供的辅助向量（auxiliary vector）中读取 `AT_PAGESZ`。`page_start`、`page_offset`、`page_end` 以及 pthread 映射随后都使用该值。我们写 NDK 代码时用 `getpagesize()` 或 `sysconf(_SC_PAGESIZE)`，把 `PAGE_SIZE == 4096` 这类假设从代码里清掉。
 
 Android 15 起，AOSP 支持配置为 16 KB 页的设备；4 KB 设备仍受支持。TLB 缓存虚拟地址到物理地址的转换，16 KB 页能让单个 TLB entry 覆盖更多内存，但也会增大映射、保护、文件尾页和部分分配器回收的粒度。
 
 小对象通常共享 Scudo slab（为同类小对象集中提供空间的内存页组），一个 1 字节 `malloc` 不会单独占用一个 16 KB 物理页。RSS 是增加还是下降，取决于 TLB miss、页表、文件映射、工作集局部性和页内浪费共同产生的结果。
 
-#### 7.2 linker 的兼容路径不能替代重新构建
+#### 7.2 linker 兼容路径的适用条件
 
 `linker_phdr.h` 对 Android 17 兼容开关的注释很直接：
 
@@ -966,7 +961,7 @@ Android 17 将部分 arm64 字符串/内存例程链接自 `external/arm-optimiz
 
 “所有大于 64 字节的拷贝都走 NEON”不符合源码。具体汇编内部可能使用成对加载/存储、SIMD 向量指令、预取（prefetch）或尽量减少缓存污染的 non-temporal store，但阈值和收益取决于最终选中的实现及 CPU 微架构，从 Bionic API 层推导不出来。
 
-排查 `memcpy` 热点时，还要先判断：
+我们排查 `memcpy` 热点时，要先判断：
 
 - 拷贝是否可以通过所有权转移、分散/聚集 I/O（scatter/gather）或批处理减少；
 - 地址是否对齐、是否跨 NUMA 内存节点或共享内存、是否触发缺页；
@@ -991,9 +986,9 @@ Android 17 将部分 arm64 字符串/内存例程链接自 `external/arm-optimiz
 
 “头文件能编译”与“最低支持版本能运行”属于两个阶段。NDK 会根据 `minSdkVersion` 提供 API stub（只声明接口的链接占位符）和 availability guard（版本可用性检查）；库的最低 API 低于符号引入版本时，就要条件编译、运行时查询或兼容实现。直接在低版本进程中装载一个强引用新符号的 `.so`，可能在业务代码执行前就失败。
 
-`pthread_cancel` 缺失时，应采用协作式取消，让任务在安全检查点自行退出，例如使用原子标志、`eventfd`/pipe 唤醒、可中断队列或上层任务状态。不要用信号模拟任意点取消，因为库代码、锁状态和资源释放都可能停在不可恢复的位置。
+`pthread_cancel` 缺失时，应采用协作式取消，让任务在安全检查点自行退出，例如使用原子标志、`eventfd`/pipe 唤醒、可中断队列或上层任务状态。用信号模拟任意点取消则可能让库代码、锁状态和资源释放停在不可恢复的位置，属于要避开的做法。
 
-glibc 的 benchmark 也不能直接预测 Android。Android 设备的分配器、动态链接器、内核配置、SoC 缓存、温控和进程策略都不同，需要在 Android 目标设备上使用相同编译器选项和数据集测试。
+glibc 的 benchmark 拿来直接预测 Android 行不通。Android 设备的分配器、动态链接器、内核配置、SoC 缓存、温控和进程策略都不同，需要在 Android 目标设备上使用相同编译器选项和数据集测试。
 
 ### 10. 诊断工具如何选择
 
@@ -1021,7 +1016,7 @@ malloc debug 通过 `libc.debug.malloc.options` 或对应环境配置安装 shim
 8. **批量 I/O 时处理系统调用语义。** 直接调用 `write` 仍可能只写入部分数据（short write），或被信号以 `EINTR` 中断；用它替换 stdio 之前，应补齐正确的重试逻辑，并测量缓冲对性能的影响。
 9. **遵守 `minSdkVersion`。** 对 API 28、33、37 新增符号分别检查编译期版本保护和运行时装载路径。
 
-### 12. Android 17 的职责分层
+### 12. Bionic 的性能角色分层
 
 Bionic 的性能角色可以归纳为四层：
 
@@ -1070,7 +1065,7 @@ Native Heap 与 Scudo 的进一步分析见 **23.3 Native 内存管理与优化*
 
 ### “DirectByteBuffer 会自动管理 C/C++ 内存”
 
-不成立。`NewDirectByteBuffer()` 不负责释放外部地址指向的内存；缓冲区对象或底层内存失效后，C/C++ 代码也不能继续使用该地址。
+不成立。`NewDirectByteBuffer()` 不负责释放外部地址指向的内存；缓冲区对象或底层内存失效后，这个地址对 C/C++ 代码也就作废了。
 
 ### “App 在 16KB 兼容模式能启动就算完成迁移”
 
@@ -1090,7 +1085,7 @@ JNI 优化按这个顺序做：
 5. 只有短、可预测、不阻塞且调用频率极高的方法，才考虑 `@FastNative` / `@CriticalNative`。
 6. C/C++ 产物必须在 16KB 设备上验证 ELF 对齐、APK 打包布局和运行时行为。
 
-完成这些基础工作后，再讨论单次 JNI 跨界的纳秒级优化才有意义。Bionic 侧则应以目标设备的分配热点、锁等待、线程数量、MTE 模式和实际页大小为证据，不从 libc 名称或 16 KB 兼容模式直接推断性能收益。
+完成这些基础工作后，再讨论单次 JNI 跨界的纳秒级优化才有意义。Bionic 侧则应以目标设备的分配热点、锁等待、线程数量、MTE 模式和实际页大小为依据，不从 libc 名称或 16 KB 兼容模式直接推断性能收益。
 
 
 ## 参考资料

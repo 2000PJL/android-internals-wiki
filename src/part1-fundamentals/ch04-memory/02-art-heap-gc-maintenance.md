@@ -65,6 +65,14 @@ sources:
   path: https://perfetto.dev/docs/reference/heap_profile-cli
 - type: official
   path: https://perfetto.dev/docs/data-sources/java-heap-profiler
+- type: official
+  path: https://github.com/google/perfetto/blob/dd5842ac533cc727cbbd2682f4e85b714385ecfa/src/trace_processor/perfetto_sql/stdlib/android/garbage_collection.sql
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/space/region_space.h
+- type: aosp
+  path: https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/garbage_collector.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ComponentCallbacks.java
 - type: aosp
   path: art/runtime/gc/task_processor.cc (android-17.0.0_r1)
 - type: aosp
@@ -103,7 +111,10 @@ sources:
   path: DeepResearch/2026-06-25-fair-memory-trim-android17-source.md
 - type: research
   path: DeepResearch/2026-06-28-android17-memorylimiter-procstate-polling-statsd.md
-last_verified: '2026-08-21'
+last_verified: '2026-10-21'
+last_source_verified_at: '2026-10-21'
+last_idle_audit_at: '2026-10-21'
+verification_scope_note: GC 分类、Region 疏散、Perfetto GC/堆分析与内存回调生命周期；源码抽检，未执行设备实验
 last_verified_against: AOSP android-17.0.0_r1 (主线) / android-14.0.0_r1 / android-15.0.0_r1 / android-16.0.0_r1 (版本演进对比) + Android Developers Blog (Android 16 QPR2)
 last_consolidated_at: '2026-08-24'
 consolidated_from:
@@ -124,9 +135,9 @@ related_chapters:
 - '23.3'
 ---
 
-# ART Heap、GC（blocking GC） 与后台维护调度
+# ART Heap、GC（垃圾回收）与后台维护调度
 
-我们讨论 ART 的内存问题时，通常会碰到四类现象：一次掉帧，可能是 GC（Major GC） 暂停，也可能是应用线程在等待一个正在运行的 GC；Java 堆明明还有空闲，分配却因为连续空间不足而失败；原生内存持续增长，也会通过 ART 的登记机制把一次 Java GC 顶出来。要把这些现象读明白，我们得能同时回答四个问题：对象分配到了哪个空间？进程当前运行的是哪种收集器？这次 GC 的类型和原因是什么？应用线程在 GC 期间是被暂停、被抢占，还是在等分配？
+我们讨论 ART 的内存问题时，通常会碰到四类现象：一次掉帧，可能是 GC（垃圾回收）的暂停阶段，也可能是应用线程在等待一个正在运行的 GC；Java 堆明明还有空闲，分配却因为连续空间不足而失败；原生内存持续增长，也会通过 ART 的登记机制把一次 Java GC 顶出来。要把这些现象读明白，我们得能同时回答四个问题：对象分配到了哪个空间？进程当前运行的是哪种收集器？这次 GC 的类型和原因是什么？应用线程在 GC 期间是被暂停、被抢占，还是在等分配？
 
 > 源码基线：AOSP `android-17.0.0_r1`（API 37）；内核 `android17-6.18-2026-06_r6`。旧版本只用于解释演进；设备厂商可以调整 GC 类型、堆参数和运行时开关，具体设备仍以它自己的跟踪数据、日志与属性为准。
 
@@ -348,6 +359,8 @@ flowchart TD
 `GcType` 定义了 `Sticky`、`Partial`、`Full`。在启用分代的 CC/CMC 中，`Sticky` 会选择年轻代收集器；非 Sticky 路径会选择覆盖更大范围的收集器。
 
 “年轻代 GC”描述的是分代收集器的工作范围；`Full` 则是一种 `GcType`。日志与跟踪数据里还会出现收集器名称，我们得结合两者判断，只按字符串里的 `GC` 猜范围会猜错。
+
+阻塞式 GC（blocking GC）关注分配等操作是否需要等待回收完成，回收范围还要另看 `GcType`。年轻代和全堆回收都可能包含暂停阶段；看到暂停，不能据此判定发生了全堆回收。
 
 #### GC 原因：为什么触发
 
@@ -819,15 +832,17 @@ Android 8.0 起，`Bitmap` 像素数据放在原生堆。Android 14～17 中，�
 
 ART 堆碎片、原生内存分配器碎片与 Linux 物理页碎片属于不同地址层级。ART 的压缩整理移动的是受管理对象，整理的是对象空间；Linux `mm/compaction.c` 迁移的是物理页，为的是形成连续的伙伴系统空闲块。两者可能出现在同一时间窗口，我们却没法用同一套“碎片率”去衡量。
 
-#### CC 的三种对象疏散结果
+#### CC 的三种对象疏散策略
 
-并发复制以 RegionSpace 为主要的可移动对象空间。Region 是这块空间的分区单位；对象疏散（evacuation）指把存活对象复制到其他区域，以便整体回收原区域。运行时会结合回收范围、Region 年龄、分配状态和存活率，为每个 Region 选择不同结果：
+并发复制以 RegionSpace 为主要的可移动对象空间。Region 是这块空间的分区单位；对象疏散（evacuation）指把存活对象复制到其他区域，以便整体回收原区域。`EvacMode` 决定本轮按哪些条件选择 Region：
 
-- `ForceEvac`：本轮必须搬迁；
-- `LivePercentNewlyAllocated`：新分配或低存活率的 Region 可按存活比例决定是否搬迁；
-- `UnevacFromSpace`：暂时保留高存活率的 Region，避免为了少量空洞复制大量对象。
+- `kEvacModeForceAll`：选择所有普通 Region；大型 Region 仍不疏散。
+- `kEvacModeLivePercentNewlyAllocated`：选择新分配的普通 Region，以及存活率有效且低于 75% 的普通 Region。
+- `kEvacModeNewlyAllocated`：只选择新分配的普通 Region，用于分代 CC 的 sticky 回收。
 
-`RegionSpace::ShouldBeEvacuated()` 把这三档结果落到具体条件上：普通 Region 的存活率按对齐后的已分配字节计算，严格低于 75% 才搬迁。75% 只在这条实现路径里做局部选择，换算不成整个 Java 堆的碎片告警线。另外，RegionSpace 中跨越多个 Region 的大型 Region 仍属于可移动空间布局，和独立的非移动大对象空间 LOS 是两种东西。
+`RegionSpace::Region::ShouldBeEvacuated()` 返回是否疏散的布尔值；随后 `SetFromSpace()` 把选中的 Region 标记为 `FromSpace`，其余标记为 `UnevacFromSpace`。后两者是 Region 状态，和前面的疏散策略属于不同分类。
+
+75% 的比较使用按 Region 大小向上对齐后的已分配字节数，只在存活率策略中决定是否疏散，换算不成整个 Java 堆的碎片告警线。RegionSpace 中跨越多个 Region 的大型 Region 不做疏散，但仍属于主移动空间的布局；它和独立的非移动大对象空间 LOS 是两种东西。
 
 #### CMC 与 UFFD 处理页级搬迁
 
@@ -843,7 +858,9 @@ CMC 会先标记存活对象、计算压缩整理后的目标地址并修正引�
 
 #### 9.1 先保证性能轨迹包含所需数据
 
-抓取交互 trace 时，至少需要应用调度、ART/GC 事件和 Frame Timeline。不同 Android 构建与采集配置能看到的轨道不同。若 SQL 表为空，我们先检查数据源和目标进程是否被采集到了，直接下“应用没有发生 GC”的结论为时过早。
+抓取交互 trace 时，至少需要应用调度、ART/GC 事件和 Frame Timeline。使用 `android.garbage_collection` 模块时，还需要目标进程的 `Heap size (KB)` 计数器：模块通过时间区间连接，把 GC 时间片与堆大小采样配对；缺少计数器时，即使原始 GC 时间片存在，事件表也可能为空。
+
+该模块当前只选取最外层、名称匹配 `*concurrent*GC` 的线程时间片，查询结果不覆盖所有 ART 回收与等待事件。不同 Android 构建与采集配置能看到的轨道不同。若 SQL 表为空，应先检查目标进程、原始 GC 时间片和堆计数器是否都被采集到了。
 
 推荐按这个顺序阅读：
 
@@ -874,6 +891,8 @@ ORDER BY gc_count DESC;
 ```
 
 `gc_dur` 是事件的墙钟时间。`reclaimed_mb` 由 Perfetto 堆计数器在区间内的变化推导，适合在同一份 trace 里比较趋势；要精确的释放量账本，得回到各堆空间的计数本身。
+
+`gc_type` 是模块按时间片名称推导的分类，混合了触发原因与回收范围：它先匹配 `NativeAlloc`、`Alloc`，再匹配 `young`，随后匹配 `CollectorTransition`、`Explicit`，其余归入 `full`。例如，名称同时包含 `Alloc` 和 `young` 的事件会归入 `alloc`。判断年轻代或全堆回收时，应回查 `gc_id` 对应的原始时间片名称，并结合收集器实现确认范围。
 
 #### 9.3 查 GC 与卡顿帧的时间交集
 
@@ -926,7 +945,7 @@ ORDER BY avg_running_ms DESC;
 
 #### 9.5 CMC 缺页计数器只覆盖 GC 线程
 
-`MarkCompact::TraceFaults()` 记录 `Majflt-GC` 与 `Minflt-GC` 两个 ATrace 计数器。前者是 GC 线程的主缺页，可能涉及文件回读或 ZRAM 解压；后者是 GC 线程的次缺页，例如写时复制（COW）或匿名页分配。源码明确说明这两个计数器不覆盖由 `userfaultfd` 处理的缺页，因此它们只能证明 GC 线程自身发生了缺页。若 `Majflt-GC` 上升，我们还要对齐交换空间、ZRAM、文件回读和系统内存压力，直接归因到某个 CMC 目标页是靠不住的。
+`mark_compact.cc` 中的 `TraceFaults()` 自由函数记录 `Majflt-GC` 与 `Minflt-GC` 两个 ATrace 计数器。前者是 GC 线程的主缺页，可能涉及文件回读或 ZRAM 解压；后者是 GC 线程的次缺页，例如写时复制（COW）或匿名页分配。源码明确说明这两个计数器不覆盖由 `userfaultfd` 处理的缺页，因此它们只能证明 GC 线程自身发生了缺页。若 `Majflt-GC` 上升，我们还要对齐交换空间、ZRAM、文件回读和系统内存压力，直接归因到某个 CMC 目标页是靠不住的。
 
 ### 10. 用 GC 计时、分配剖析和堆转储补充证据
 
@@ -944,13 +963,13 @@ ART 会把线程栈、锁和累计 GC 计时写入 ANR 诊断轨迹；搜索 `Du
 
 #### 10.2 ART 分配剖析定位分配来源
 
-Perfetto 的 `heap_profile` 工具在 Android 12 及以后可以选择已注册的堆。下面命令使用 ART 堆的名称 `com.android.art`：
+Perfetto 的 `heap_profile` 工具在 Android 12 及以后可以选择已注册的堆。下面命令使用 ART 堆的名称 `com.android.art`，并在采样缓冲区满时提前结束采集：
 
 ```bash
-tools/heap_profile -p <PID> --heaps com.android.art
+tools/heap_profile -p <PID> --heaps com.android.art --no-block-client
 ```
 
-它以采样方式记录 ART 分配及调用栈，适合定位滚动、解析或动画期间的分配热点。采样间隔会影响精度与开销，采集本身也会扰动被测进程，因此我们要用相同场景做前后对照。
+它以采样方式记录 ART 分配及调用栈，适合定位滚动、解析或动画期间的分配热点。工具默认启用 `--block-client`，缓冲区满时会阻塞目标进程等待可用空间，可能明显拖慢应用。这里使用 `--no-block-client` 避免这类缓冲区等待，但采集可能提前结束，分析前应确认记录是否覆盖目标场景。采样间隔仍会影响精度与开销，前后对照应保持相同的场景和采集配置。
 
 #### 10.3 Java 堆转储定位保留关系
 
@@ -984,6 +1003,8 @@ Android 13 及以后，某些通过 `NativeAllocationRegistry` 关联的原生�
 class MeterView(context: Context) : View(context) {
     private val barPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val barBounds = RectF()
+
+    var progress: Float = 0f
 
     override fun onDraw(canvas: Canvas) {
         barBounds.set(0f, 0f, width * progress, height.toFloat())
@@ -1545,7 +1566,7 @@ Heap::CollectGarbageInternal()
 
 进程前后台变化还会沿 `ActivityThread.updateProcessState()` → `VMRuntime.updateProcessState()` 影响 ART 垃圾收集器（collector）切换与堆目标大小。它可能与 `onTrimMemory(20/40)` 在相近时间发生，却是两条独立的调用链。
 
-另一个严重低内存入口 `handleLowMemory()` 会处理 `onLowMemory()` 并请求 GC，它的行为要和 `handleTrimMemory()` 分开记。
+`ActivityThread` 仍保留 `handleLowMemory()`，执行时会分发 `onLowMemory()` 并通过 `BinderInternal.forceGc("mem")` 请求 GC。但 [`ComponentCallbacks.onLowMemory()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ComponentCallbacks.java) 的接口注释明确写明：该回调自 API 14 起由 `onTrimMemory()` 取代，自 API 34 起不再由系统调用，且已标记为弃用。Android 17 应用不能依赖它接收低内存通知；判断常规通知行为时，还要核对系统发送路径。
 
 ### 7. lmkd、进程冻结器与 MemoryLimiter 要分开看
 
@@ -1738,5 +1759,6 @@ DirectByteBuffer 的原生后备内存位于 Java 堆外，Java 包装对象可�
 - [AOSP android-17.0.0_r1：card_table.h](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/accounting/card_table.h)
 - [Android 17 GKI 6.18：arm64 gki_defconfig](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig)
 - [Perfetto stdlib：android.garbage_collection](https://perfetto.dev/docs/analysis/stdlib-docs)
+- [Perfetto GC 模块实现（固定提交）](https://github.com/google/perfetto/blob/dd5842ac533cc727cbbd2682f4e85b714385ecfa/src/trace_processor/perfetto_sql/stdlib/android/garbage_collection.sql)
 - [Perfetto heap_profile 命令行](https://perfetto.dev/docs/reference/heap_profile-cli)
 - [Perfetto ART Heap Dumps](https://perfetto.dev/docs/data-sources/java-heap-profiler)

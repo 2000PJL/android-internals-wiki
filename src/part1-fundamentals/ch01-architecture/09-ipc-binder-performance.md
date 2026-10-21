@@ -2,7 +2,7 @@
 title: Android IPC 全景与 Binder 性能
 chapter: '1.9'
 section: '1.9'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
 - binder
@@ -43,6 +43,8 @@ sources:
   path: frameworks/native/libs/binder/ProcessState.cpp @ android-12.0.0_r1 (oneway spam detection introduction boundary)
 - type: aosp
   path: frameworks/native/libs/binder/IPCThreadState.cpp @ android-17.0.0_r1
+- type: aosp
+  path: system/tools/aidl/tests/golden_output/aidl-test-interface-java-source/gen/android/aidl/tests/ITestService.java @ android-17.0.0_r1
 - type: aosp
   path: frameworks/native/libs/binder/BpBinder.cpp @ android-17.0.0_r1
 - type: aosp
@@ -111,7 +113,7 @@ sources:
   path: https://source.android.com/docs/core/architecture/kernel/generic-kernel-image
 last_verified: '2026-10-21'
 last_source_verified_at: '2026-10-21'
-verification_scope_note: '2026-10-21 仅复核 AIDL、Stable AIDL、GKI 与 ACK 术语及 DMA-BUF 迁移边界；其余机制结论沿用 2026-10-18 核验记录。'
+verification_scope_note: '2026-10-21 通读全文，并按 Android 17 固定源码与官方文档复核 Binder 事务布局、调用方身份、缓冲区、线程池、oneway、冻结与优先级、共享内存、InputChannel、Looper、FMQ、HAL 和 AVF 边界；Perfetto SQL 使用 Android 17 固定模块及公开轨迹执行，未做设备性能测量。'
 last_verified_against: AOSP android-17.0.0_r1; ACK android17-6.18-2026-06_r6; Android Developers; source.android.com
 related_chapters:
 - '1.1'
@@ -191,7 +193,7 @@ IPC 选型先看数据形态、方向、频率、生命周期和权限范围。B
 
 #### 2.2 传输内容是控制信息还是大数据
 
-控制信息适合放进 Parcel，例如方法号、少量参数、令牌、文件描述符和状态码。图像、音频帧、模型权重或大型结果集不适合反复直接写入 Parcel，常见做法是只传句柄、文件描述符或描述对象，让接收方据此访问实际数据。
+控制信息适合放进 Parcel，例如少量参数、令牌、文件描述符和状态码。方法事务码由 `transact()` 的独立参数传递，不属于 Parcel 数据区。图像、音频帧、模型权重或大型结果集不适合反复直接写入 Parcel，常见做法是只传句柄、文件描述符或描述对象，让接收方据此访问实际数据。
 
 #### 2.3 谁拥有内存，谁负责回收
 
@@ -238,7 +240,7 @@ client 编组
 
 ```text
 client method
-  └─ Proxy 将方法号与参数写入 Parcel
+  └─ Proxy 把接口标识与参数写入 Parcel，将方法事务码单独传给 transact()
        └─ ioctl 到 Binder driver
             └─ driver 把 transaction 复制到 server receive mapping
                  └─ server Binder thread
@@ -871,12 +873,14 @@ Client
 
 具体过程是：
 
-1. 客户端 Proxy 把接口标识（token）、方法事务码（transaction code）和参数写入 `Parcel`。
-2. libbinder 通过 `BINDER_WRITE_READ` 这个 ioctl 命令把事务交给 Binder 驱动。
+1. 客户端 Proxy 把接口标识（token）和参数写入 `Parcel`，方法事务码（transaction code）作为 `transact(code, data, reply, flags)` 的独立参数传入。
+2. libbinder 将事务码写入 `binder_transaction_data.code`，由 `data.ptr.buffer` 指向 Parcel 数据，再通过 `BINDER_WRITE_READ` 这个 ioctl 命令把事务交给 Binder 驱动。
 3. 驱动解析目标句柄（handle），找到目标 Binder 节点和宿主进程，为目标进程分配事务缓冲区（transaction buffer）。
 4. 驱动选择目标线程，或把工作放入目标进程的待处理队列并请求补充工作线程（worker）。
 5. 服务端线程收到 `BR_TRANSACTION`，进入服务端 Stub 的 `onTransact()`，反序列化参数并调用实现。
 6. 同步调用把结果与异常状态写入回复事务；驱动再把回复投递给原调用线程。
+
+排查方法分发时，可将 `binder_transaction` 跟踪点中的 `code` 字段与生成的 Stub 中的 `TRANSACTION_*` 常量对照。事务码位于事务头，接口标识和业务参数位于 Parcel 数据区，读取源码或轨迹时要分别检查。
 
 Binder 还能在传输时转换 Binder 对象、句柄和文件描述符。内核提供调用方 UID，服务端据此结合权限规则鉴权；PID 可能为 0 或被复用，只能作为调试线索。SELinux 安全上下文 SID 也不会默认随每次事务附带，目标节点需显式请求 `FLAT_BINDER_FLAG_TXN_SECURITY_CTX`；原生 `BBinder::setRequestingSid(true)` 必须在对象首次被编组、传给其他进程之前设置。
 
@@ -1191,6 +1195,9 @@ Binder 缓冲区是进程级共享资源。大列表、`Bitmap` 和完整对象�
 - [AOSP：Binder.java（android-17.0.0_r1，调用方身份警告）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Binder.java)
 - [AOSP：Binder.cpp（android-17.0.0_r1，SID 请求与调度设置）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/Binder.cpp)
 - [AOSP：IPCThreadState.cpp（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/IPCThreadState.cpp)
+- [AOSP：AIDL 生成的 ITestService.java（android-17.0.0_r1，事务码与 Parcel 分开传递）](https://android.googlesource.com/platform/system/tools/aidl/+/refs/tags/android-17.0.0_r1/tests/golden_output/aidl-test-interface-java-source/gen/android/aidl/tests/ITestService.java)
+- [ACK：binder.h（android17-6.18-2026-06_r6，事务头字段）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/uapi/linux/android/binder.h)
+- [ACK：binder_trace.h（android17-6.18-2026-06_r6，事务码跟踪字段）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder_trace.h)
 - [AOSP：SharedMemory.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SharedMemory.java)
 - [AOSP：MemoryFile.java（android-17.0.0_r1）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/MemoryFile.java)
 - [ACK：binder.c（android17-6.18-2026-06_r6）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)

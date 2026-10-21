@@ -2,7 +2,7 @@
 title: Android IPC 全景与 Binder 性能
 chapter: '1.9'
 section: '1.9'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
 - binder
@@ -107,8 +107,11 @@ sources:
   path: https://source.android.com/docs/core/architecture/aidl/stable-aidl
 - type: official
   path: https://source.android.com/docs/core/architecture/hidl/binder-ipc
-last_verified: '2026-10-18'
-last_source_verified_at: '2026-10-18'
+- type: official
+  path: https://source.android.com/docs/core/architecture/kernel/generic-kernel-image
+last_verified: '2026-10-21'
+last_source_verified_at: '2026-10-21'
+verification_scope_note: '2026-10-21 仅复核 AIDL、Stable AIDL、GKI 与 ACK 术语及 DMA-BUF 迁移边界；其余机制结论沿用 2026-10-18 核验记录。'
 last_verified_against: AOSP android-17.0.0_r1; ACK android17-6.18-2026-06_r6; Android Developers; source.android.com
 related_chapters:
 - '1.1'
@@ -120,7 +123,7 @@ related_chapters:
 - '1.8'
 - '2.8'
 - '4.1'
-last_rework_at: '2026-10-18T13:35:41+08:00'
+last_rework_at: '2026-10-21T17:38:54+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch01-architecture/04-binder.md
@@ -129,7 +132,7 @@ consolidated_from:
 
 # Android IPC 全景与 Binder 性能
 
-把 Android 的进程间通信（Inter-Process Communication，IPC）想象成「Binder、Intent、共享内存三选一」，是选型出错的常见起点。一条真实链路经常同时用到两到三层机制：Intent 和 AID（PID）L（Android Interface Definition Language） 描述上层接口与行为；Binder、Unix 域套接字和 vsock 负责传输；共享内存、DMA-BUF 与 FMQ（Fast Message Queue，快速消息队列）常用于持续传送数据。
+把 Android 的进程间通信（Inter-Process Communication，IPC）想象成「Binder、Intent、共享内存三选一」，是选型出错的常见起点。一条真实链路经常同时用到两到三层机制：Intent 和 AIDL（Android Interface Definition Language）描述上层接口与行为；Binder、Unix 域套接字和 vsock 负责传输；共享内存、DMA-BUF 与 FMQ（Fast Message Queue，快速消息队列）常用于持续传送数据。
 
 > 源码基线：Android 17 / API 37；AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
@@ -169,7 +172,7 @@ IPC 选型先看数据形态、方向、频率、生命周期和权限范围。B
 
 分层里的控制信息包括建连、权限、状态和命令，持续数据则可能是图像、音频或传感器样本。这四层在真实链路里经常组合使用：
 
-- AID（UID）L（Stable AIDL） 定义接口，普通跨进程调用由 Binder 承载。
+- AIDL（Stable AIDL）定义接口，普通跨进程调用由 Binder 承载。
 - Binder 先传递 `SharedMemory` 的文件描述符，之后双方直接读写各自映射出的同一块内存。
 - InputManager 通过 Binder 把 `InputChannel` 的文件描述符交给应用，后续输入事件走 Unix `SOCK_SEQPACKET` 套接字。
 - HAL 用 AIDL/HIDL 建立 FMQ，持续数据走共享内存队列。
@@ -551,7 +554,7 @@ DMA-BUF 用于让 CPU、GPU、显示、相机、编解码器等硬件模块共�
 - Binder 传递句柄与生命周期控制信息。
 - 同步栅栏表达生产方写完、消费方可以开始读取的时序。
 
-Android 12 的 GKI（Generic Kernel Image，通用内核（Android Common Kernel，ACK）镜像（Generic Kernel Image，GKI））2.0 路线用 DMA-BUF 堆替代 ION 内存分配器。官方旧迁移页限定为「5.4 kernel only」，已标记弃用，并注明原计划于 2026 年 5 月移除，其中的迁移步骤只作历史背景；Android 17 下要看节点（node）创建，可对照 ACK `android17-6.18-2026-06_r6` 的 `drivers/dma-buf/dma-heap.c`，堆设备表现为 `/dev/dma_heap/<name>`。这项迁移也只发生在硬件缓冲区分配器一侧，SharedMemory 仍走在自己的 ashmem/memfd 路线上。
+Android 12 的 GKI（Generic Kernel Image，通用内核镜像）2.0 路线用 DMA-BUF 堆替代 ION 内存分配器。官方旧迁移页限定为「5.4 kernel only」，已标记弃用，并注明原计划于 2026 年 5 月移除，其中的迁移步骤只作历史背景；Android 17 下要看节点（node）创建，可对照 ACK `android17-6.18-2026-06_r6` 的 `drivers/dma-buf/dma-heap.c`，堆设备表现为 `/dev/dma_heap/<name>`。这项迁移也只发生在硬件缓冲区分配器一侧，SharedMemory 仍走在自己的 ashmem/memfd 路线上。
 
 | 对象 | 主要用途 | 同步 |
 | --- | --- | --- |

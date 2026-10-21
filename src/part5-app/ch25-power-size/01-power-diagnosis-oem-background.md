@@ -2,11 +2,12 @@
 title: 功耗诊断与 OEM 后台限制
 chapter: '25.1'
 section: '25.1'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 10 (API 29) - Android 17 (API 37)
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Android Developers power, Macrobenchmark, SystemHealthManager and Android vitals docs retrieved 2026-08-15 + Perfetto power data source docs + AOSP android-15.0.0_r1 through android-17.0.0_r1
+last_verified: '2026-10-21'
+last_source_verified_at: '2026-10-21'
+last_verified_against: Android Developers power, Macrobenchmark, SystemHealthManager and Android vitals docs retrieved 2026-08-15 + Perfetto power data source docs + AOSP android-15.0.0_r1 through android-17.0.0_r1; technical tokens rechecked against Perfetto docs, Battery Historian metrics and AOSP android-17.0.0_r1 on 2026-10-21
+verification_scope_note: 2026-10-21 仅核验 Perfetto 功耗文档链接、Battery Historian 的 JobScheduler 轨道名称及 AppOps 豁免常量与访问条件；其余技术结论沿用 2026-08-15 的核验记录。
 confidence: medium-high
 consolidated_from:
 - src/part2-performance/ch07-smoothness/16-power-thermal-jank-playbook.md
@@ -76,6 +77,12 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java
 - type: aosp
   path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/SystemConfig.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/AppOpsManager.java
+- type: official
+  path: https://github.com/google/battery-historian/blob/master/js/metrics.js
 tags:
   - power-diagnosis
   - battery-historian
@@ -94,6 +101,7 @@ related_chapters:
 last_draft_polish_at: '2026-08-15T13:59:11+08:00'
 last_review_finalize_at: '2026-08-15T13:59:11+08:00'
 last_consolidated_at: '2026-08-24'
+last_rework_at: '2026-10-21T21:38:57+08:00'
 ---
 
 # 功耗诊断与 OEM（设备厂商） 后台限制
@@ -183,7 +191,7 @@ adb shell dumpsys batterystats --disable full-wake-history
 
 #### Battery Historian 应该怎么看
 
-Battery Historian 的系统视图我们先用来检查实验条件：屏幕、充电、信号、温度、Doze（低功耗待机）和其他 UID 是否在目标区间内发生变化。确认环境没有明显干扰后，再看目标应用的 `Userspace Wakelock`（用户空间唤醒锁）、`Job（由 JobScheduler 调度的后台任务）Scheduler`、`SyncManager`、网络和进程状态。
+Battery Historian 的系统视图我们先用来检查实验条件：屏幕、充电、信号、温度、Doze（低功耗待机）和其他 UID 是否在目标区间内发生变化。确认环境没有明显干扰后，再看目标应用的 `Userspace Wakelock`（用户空间唤醒锁）、`JobScheduler`（由 JobScheduler 调度的后台任务）、`SyncManager`、网络和进程状态。
 
 图上的一段 `cpu_running`、`gps` 或网络活动，只说明该资源在这段时间活跃；组件消耗了多少电，时间线里的彩色区间是看不出来的，官方文档也专门说明过这一点。所以我们从异常区间出发，查看同一时间是否有目标 UID 的 WakeLock、Job、网络或前台状态，再回到文本统计和 Perfetto 追踪查责任来源。
 
@@ -211,7 +219,7 @@ data_sources: {
 }
 ```
 
-配置能采到哪些计数器和电源轨，取决于设备支持什么。[Perfetto 功耗数据源文档](https://perfetto.dev/docs/data-source（来源）s/battery-counters)说明：电池计数器来自 IHealth HAL（Hardware Abstraction Layer，硬件抽象层），反映整机流入或流出电池的电荷，HAL 是 Android 框架访问设备实现的统一接口。ODPM 由 IPowerStats HAL 提供，测量点在电池下游，不受充放电方向直接影响。二者的存在与分辨率都由设备实现决定。
+配置能采到哪些计数器和电源轨，取决于设备支持什么。[Perfetto 功耗数据源文档](https://perfetto.dev/docs/data-sources/battery-counters)说明：电池计数器来自 IHealth HAL（Hardware Abstraction Layer，硬件抽象层），反映整机流入或流出电池的电荷，HAL 是 Android 框架访问设备实现的统一接口。ODPM 由 IPowerStats HAL 提供，测量点在电池下游，不受充放电方向直接影响。二者的存在与分辨率都由设备实现决定。
 
 #### Macrobenchmark 回归测试与精度
 
@@ -632,7 +640,7 @@ DeviceConfig 是系统服务读取运行时配置的机制；其 `activity_manag
 - core UID（系统核心身份）、系统 Device Idle allowlist（设备空闲模式允许名单） 和演示模式；
 - 系统模块、运营商特权应用；
 - DPC（Device Policy Controller，设备策略控制器）保护应用、活动设备管理员；
-- `OP_SYSTEM_EXEMPT_FROM（设备上的 Android 系统镜像）_POWER_RESTRICTIONS` 这一 AppOp（应用操作授权）；
+- `OP_SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS`（仅供系统使用的隐藏常量）这一 AppOp（应用操作授权），在对应功能开关开启且操作获准时提供豁免；
 - VPN（虚拟专用网络） 相关 AppOp（按应用身份记录的操作授权）、拨号和紧急角色；
 - 用户 Device Idle allowlist、关联的 Companion Device（配套设备）应用。
 

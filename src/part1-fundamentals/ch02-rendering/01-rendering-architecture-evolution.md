@@ -4,7 +4,7 @@ chapter: '2.1'
 section: '2.1'
 applicable_versions: Android 3.0 (API 11) - Android 17 (API 37)
 last_verified: '2026-10-22'
-last_verified_against: 'AOSP android-17.0.0_r1: View/ViewRootImpl/Choreographer/ThreadedRenderer/HardwareRenderer/BaseRecordingCanvas, HWUI RenderNode/DrawFrameTask/CanvasContext/Properties/Skia pipelines, BufferQueue/IGraphicBufferProducer/BLASTBufferQueue, SurfaceFlinger FrontEnd/Scheduler/HWComposer/HWC2/ComposerHal/RenderEngine; kernel android17-6.18-2026-06_r6 boundary; Writer rendering_pipelines S01/S02'
+last_verified_against: 'AOSP android-17.0.0_r1: View/ViewRootImpl/Choreographer/ThreadedRenderer/HardwareRenderer/BaseRecordingCanvas, HWUI RenderNode/DrawFrameTask/CanvasContext/Properties/Skia pipelines, BufferQueue/IGraphicBufferProducer/BLASTBufferQueue, SurfaceFlinger FrontEnd/Scheduler/HWComposer/HWC2/ComposerHal/CompositionEngine Output/RenderEngine, hwcomposer2 and Composer3 DisplayCommand/PresentFence contracts; Android 16/17 CDD Vulkan clauses and Implement Vulkan discrepancy; kernel android17-6.18-2026-06_r6 boundary; Writer rendering_pipelines S01/S02'
 confidence: medium
 sources:
 - type: official
@@ -84,6 +84,14 @@ sources:
 - type: aosp
   path: frameworks/native/services/surfaceflinger/DisplayHardware/ComposerHal.h
 - type: aosp
+  path: frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp (android-17.0.0_r1)
+- type: aosp
+  path: hardware/libhardware/include_all/hardware/hwcomposer2.h (android-17.0.0_r1)
+- type: aosp
+  path: hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayCommand.aidl (android-17.0.0_r1)
+- type: aosp
+  path: hardware/interfaces/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl (android-17.0.0_r1)
+- type: aosp
   path: frameworks/native/libs/renderengine/
 - type: research
   path: Writer/rendering_pipelines/S01_rendering_types_overview.md
@@ -127,6 +135,8 @@ sources:
   path: source.android.com
 - type: official
   path: source.android.com/docs/compatibility/16/android-16-cdd
+- type: official
+  path: https://source.android.com/docs/compatibility/17/android-17-cdd
 - type: official
   path: source.android.com/docs/core/graphics/implement-vulkan
 - type: official
@@ -220,7 +230,7 @@ status: ready-for-review
 last_rework_at: '2026-10-20T09:39:58+08:00'
 last_deep_review_at: '2026-10-22T08:38:41+08:00'
 last_source_verified_at: '2026-10-22'
-verification_scope_note: '2026-10-22 依据 Android 17 BufferQueueProducer/Consumer 与 IGraphicBufferProducer 契约修正 dequeue/acquire 上限的持有方，并补明 Producer 再次写入与 Consumer 读取所需的 fence 依赖；复核 FrameMetrics 指标端点、Display 帧率映射、DrawFrameTask 同步与 AutoSingleLayer 条件，并保留官方文档对旧 Always 模式风险及 FrameTimeline 的 Android 12 起始版本和 SurfaceView 覆盖限制。2026-10-20 核验了 Android 17 的 traversal 调度、HWUI 后端属性、BLAST buffer transaction、BufferTX、AutoSingleLayer 条件、FrameTimeline 对象与 Display 帧率查询签名；历史核验覆盖 Android 5.0 的 OpenGLRenderer/RenderThread 分工及 Android 11 的 BLAST 接入分支。官方文档核对了旧 Always 模式风险和 FrameTimeline 的 SurfaceView 覆盖提示。另核对了 Android 17 FrameMetrics 指标端点与 VSyncId、ANGLE 的可选性及 prefer_angle 回退契约、Implement Vulkan 的 launch-device 条件，并用 WebGPU alpha06 发布说明及 Google Maven 实际 AAR/源码核对最低 SDK、Java Builder 迁移与文档警告。其余版本里程碑、CDD 全部兼容条款及 kernel 结论未逐项重新核验。'
+verification_scope_note: '2026-10-22 核对 Android 17 的 HWC/CompositionEngine、hwcomposer2 与 Composer3 契约，区分物理/虚拟显示的 present fence、上一帧 buffer 的 release fence 和 TV 特定图像处理延迟，并修正客户端合成与 present 顺序及 presentOrValidate 适用条件。对照 Android 16/17 CDD 的 Vulkan 1.1 强制条款与 1.3 强烈推荐，移除仅据 Implement Vulkan 推导的统一 Vulkan 1.4 launch-device 保证，保留两类官方材料尚未对齐的边界。2026-10-22 依据 Android 17 BufferQueueProducer/Consumer 与 IGraphicBufferProducer 契约修正 dequeue/acquire 上限的持有方，并补明 Producer 再次写入与 Consumer 读取所需的 fence 依赖；复核 FrameMetrics 指标端点、Display 帧率映射、DrawFrameTask 同步与 AutoSingleLayer 条件，并保留官方文档对旧 Always 模式风险及 FrameTimeline 的 Android 12 起始版本和 SurfaceView 覆盖限制。2026-10-20 核验了 Android 17 的 traversal 调度、HWUI 后端属性、BLAST buffer transaction、BufferTX、AutoSingleLayer 条件、FrameTimeline 对象与 Display 帧率查询签名；历史核验覆盖 Android 5.0 的 OpenGLRenderer/RenderThread 分工及 Android 11 的 BLAST 接入分支。官方文档核对了旧 Always 模式风险和 FrameTimeline 的 SurfaceView 覆盖提示。另核对了 Android 17 FrameMetrics 指标端点与 VSyncId、ANGLE 的可选性及 prefer_angle 回退契约、Implement Vulkan 的 launch-device 条件，并用 WebGPU alpha06 发布说明及 Google Maven 实际 AAR/源码核对最低 SDK、Java Builder 迁移与文档警告。其余版本里程碑、CDD 全部兼容条款及 kernel 结论未逐项重新核验。'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/01-rendering-overview.md
@@ -292,14 +302,14 @@ BLASTBufferQueue 将缓冲区放入 SurfaceControl Transaction
     ↓
 SurfaceFlinger 接收事务、生成前端快照、latch 可用缓冲区
     ↓
-HWC validate：设备合成或客户端合成
+HWC 协商合成方式（常规 validate；满足条件时可跳过）
     ↓
 必要时由 RenderEngine 生成 client target
     ↓
-HWC present → present fence → release fence
+HWC present：返回 present fence 与各 Layer 的 release fence
 ```
 
-其中，client target 是 SurfaceFlinger 执行客户端合成时生成的中间输出缓冲区。present（向显示设备提交本帧） fence 表示这次显示提交在 Android 能观察到的范围内何时完成，release fence 则表示相关 buffer 何时可以安全复用。
+其中，client target 是 SurfaceFlinger 执行客户端合成时生成的中间输出缓冲区。present（向显示设备提交本帧）fence 标记显示端的呈现边界，release fence 则保护相应 buffer 的再次写入；两者对应的对象和帧号可能不同，不构成固定的 signal 先后顺序，具体契约见下文 Fence 一节。
 
 这些阶段大多是并行推进的：主线程、RenderThread、GPU、SurfaceFlinger 和显示硬件常常重叠处理不同的帧。所以分析时我们要保留帧号、VSync 周期和 fence 依赖，各段耗时直接相加，得不出整帧的结论。
 
@@ -602,15 +612,19 @@ SurfaceFlinger 的 Layer 追踪中可看到形如 `BufferTX - <layerName>` 的�
 | --- | --- | --- |
 | acquire fence | Consumer | Producer 对该缓冲区的写入何时完成，Consumer 何时可以安全读取 |
 | release fence | 后续复用该缓冲区的一方 | 当前 Consumer 何时不再使用该缓冲区，何时可以安全重写 |
-| present fence | SurfaceFlinger / 显示时序追踪 | 当前显示提交何时在显示管线的 present 边界完成 |
+| present fence | SurfaceFlinger / 显示时序追踪 | 物理显示开始呈现或传输本帧的边界；虚拟显示则表示输出 buffer 写入完成 |
 
 从应用进程到 SurfaceFlinger 这条队列上，应用是 producer，BLAST/系统侧消费逻辑接收带有 acquire fence（保护 buffer 读取时机的同步对象） 的缓冲区。到了 HWC 和显示设备一侧，SurfaceFlinger 又要处理 client target、各 Layer 和 display present 相关的 fence。
 
 #### 7.1 Present fence 的边界
 
-Present fence 标记的是 Android 显示栈里可观测的呈现完成时刻；面板像素的光学响应要另算——面板扫描方式、像素响应时间、显示后处理和外部显示设备都可能落在 Android 软件看得见的范围之外。
+[`hwcomposer2.h` 的 `presentDisplay` 契约](https://android.googlesource.com/platform/hardware/libhardware/+/android-17.0.0_r1/include_all/hardware/hwcomposer2.h#1805) 区分了三种情况：物理显示的视频模式面板在本帧开始出现的 VSync 发出信号；命令模式面板在开始向面板内存传输时发出信号；虚拟显示在输出 buffer 写入完成、可以安全读取时发出信号。物理显示的 present fence 不表示整屏扫描或所有像素的光学响应已经完成。
 
-对于“输入到用户看到变化的总延迟”，应用 trace、FrameTimeline 和 present fence 只能覆盖其中一部分，还需结合触摸采样、显示扫描和面板特性。
+HWC 返回的某个 Layer release fence 则约束该 Layer 上一帧 buffer 的读取结束时机。SurfaceFlinger 还可能合并客户端合成的 GPU 读取依赖，见 [`Output::presentFrameAndReleaseLayers()`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp#1726)。排查复用阻塞时，要核对 release fence 对应的 Layer、buffer 和帧号，不能把本帧 present fence 当成本帧 buffer 已可覆写的依据。
+
+Android 17 的 Composer3 还允许特定 TV 图像处理路径返回 `LayerPresentFence`，记录某层相对 Display present 的额外延迟；[`PresentFence.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl#31) 明确注明，这种行为偏离 `SurfaceControl.Transaction` 的通常契约，仅允许用于需要该功能的 TV 设备。分析这类设备时，还需区分 Display 与 Layer 的呈现时刻。
+
+对于“输入到用户看到变化的总延迟”，应用 trace、FrameTimeline 和 present fence 只能覆盖其中一部分，还需结合触摸采样、显示扫描、像素响应、显示后处理和外部显示设备特性。
 
 #### 7.2 fence 等待的上游原因
 
@@ -635,9 +649,9 @@ SurfaceFlinger 管理系统可见 Layer 的状态，接收来自 WindowManager�
 3. 为当前组合生成快照，也就是供本轮合成决策使用的不可变状态视图；
 4. 判断缓冲区是否满足 latch 条件；
 5. 结合 damage（本帧相对上一帧变化的区域）、几何、色彩、protected content（受保护内容）等信息准备合成；
-6. 调用 HWC validate/ present；
-7. 对需要客户端合成的部分调用 RenderEngine；
-8. 传播 present 与 release 同步信息。
+6. 与 HWC 协商合成方式，常规路径调用 validate；
+7. 对需要客户端合成的部分调用 RenderEngine，准备 client target 及其 acquire fence；
+8. 向 HWC 提交 present，并传播 present 与 release 同步信息。
 
 具体执行路径受 Scheduler、显示设备、Layer 状态、预测结果和 HWC 返回值影响。我们在 trace 里分析 SurfaceFlinger 时，围绕当前帧的事务、Layer、FrameTimeline 与 HWC 事件建立对应关系。
 
@@ -671,6 +685,8 @@ Android 13 引入 `AutoSingleLayer`，允许在受限条件下 latch acquire fen
 #### 9.1 HWC validate
 
 Hardware Composer HAL 连接 SurfaceFlinger 与设备显示合成能力。SurfaceFlinger 为 Layer 提供候选 composition type（合成方式），HWC 在 validate 阶段可以接受或要求调整。
+
+独立的 validate 调用并非每帧都有。Android 17 的 [`HWComposer::getDeviceCompositionChanges()`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp#537) 在没有客户端合成、且满足最早呈现时间约束时，会尝试 `presentOrValidate()`；HWC 若接受跳过 validate，便直接完成 present 提交，否则返回需要验证的结果。常规客户端合成路径则要先准备 client target，再提交 present；GPU 写入是否完成由传给 HWC 的 acquire fence 约束。分析 trace 时，应结合这两条路径判断，缺少单独的 validate slice 不能直接判为少执行了合成步骤。
 
 合成决策可能受以下因素影响：
 
@@ -932,7 +948,7 @@ HAL 指 framework 与厂商硬件实现之间的接口，QPR 是 Android 的季�
 | Android 12 / API 31 | FrameTimeline；`FrameMetrics` 增加 GPU duration 与 deadline | 可关联 App SurfaceFrame 和 DisplayFrame，并区分 CPU/GPU/显示责任 |
 | Android 13 / API 33 | `Choreographer.FrameData` / `FrameTimeline` 公共 API；AGSL `RuntimeShader` | App 可获取候选帧时间线；Canvas 增加运行时 shader |
 | Android 15 / API 35 | ARR 在支持 Android 15 QPR1 与相应 HAL 的设备上可用；ANGLE 成为可选的 GLES-on-Vulkan（把 OpenGL ES 调用映射到 Vulkan）层 | VSync 间隔和内容提交帧率不能再假设固定；GLES 后端需看设备选择 |
-| Android 16 / API 36 | `Display.hasArrSupport()`、`getSuggestedFrameRate(category)`；`RuntimeColorFilter` / `RuntimeXfermode`；Vulkan 1.4 launch-device 要求 | App 能查询 ARR；AGSL 可用于滤镜与混合；设备能力仍需运行时查询 |
+| Android 16 / API 36 | `Display.hasArrSupport()`、`getSuggestedFrameRate(category)`；`RuntimeColorFilter` / `RuntimeXfermode`；实现文档列出 Vulkan 1.4 | App 能查询 ARR；AGSL 可用于滤镜与混合；Vulkan 兼容要求需另核对 CDD，不能由版本号推定 1.4 |
 | Android 17 / API 37 | Jetpack WebGPU；GLES `prefer_angle` manifest 请求；`Display.getFrameRateVelocityMapping()` | WebGPU 增加现代 GPU 接口但仍需独立依赖；ANGLE 仍是偏好请求；滚动帧率可结合速度映射 |
 
 表中“引入”标记的是平台或 API 的版本分界；升级到该版本的设备是否拥有同样的 GPU、显示 HAL、驱动能力和默认后端，还要逐台确认。
@@ -1073,7 +1089,9 @@ Skia 项目中的 Graphite 是新一代 GPU 后端研发方向。`android-17.0.0
 - Android 13：Vulkan 1.3；
 - Android 16：Vulkan 1.4。
 
-对设备要求的严谨说法是：64 位、非 low-memory（低内存设备）且以相应版本 launch 的设备，需要支持该版本要求的 Vulkan feature set（功能与限制的能力集）。OTA 升级后的旧硬件不会因系统版本号自动获得新 GPU 能力。应用仍应查询 `FEATURE_VULKAN_HARDWARE_VERSION`、extension（扩展能力）、profile（成组定义的一套 Vulkan 能力） 与 dEQP level（图形兼容性测试覆盖级别）。
+上面列的是实现文档的 API 版本对应关系，不能逐行当作同期设备的最低兼容要求。该文档的 `Choose Vulkan support` 又要求 64 位、非 low-memory（低内存设备）的 Android 16 launch device 支持 Vulkan 1.4，但这一表述与 Android 16/17 CDD 没有对齐，具体条款差异见下文。不能据此认定所有新机或 OTA 升级设备具备 Vulkan 1.4。
+
+应用应查询 `FEATURE_VULKAN_HARDWARE_VERSION`、extension（扩展能力）、profile（成组定义的一套 Vulkan 能力）与 dEQP level（图形兼容性测试覆盖级别）。实现文档还注明：Android 14 及以上支持 Vulkan 的设备需要 Vulkan 1.1 驱动，并满足 Android Baseline 2021 profile；不能把较新版本的 launch-device 条件误读成升级设备完全没有兼容要求。
 
 `VP_ANDROID_16_minimums`、Android Vulkan Baseline Profile 和 Compatibility Definition 解决的问题不同：前两者描述成组的 Vulkan 能力，CDD（兼容性定义文档）规定设备兼容要求，应用的最低 Vulkan version/extension 则由自己的渲染器决定。这里的 Vulkan Baseline Profile 与用于优化应用启动的 ART Baseline Profile 不是同一个概念。
 
@@ -1151,7 +1169,9 @@ GLES 应用、原生 Vulkan 应用和 HWUI 页面是三类对象，要分开对�
 
 #### Android 16 launch device 的 Vulkan 1.4
 
-设备以 Android 16 及更高版本 launch，并满足 64 位、非 low-memory（没有被标记为低内存设备） 等条件时，需要支持 Vulkan 1.4。GPU 驱动由 SoC 厂商或 IHV（独立硬件供应商）提供；设备实际 capability（设备实际能力） 要靠运行时查询，framework 版本给不了答案。
+[`Implement Vulkan`](https://source.android.com/docs/core/graphics/implement-vulkan#choose-vulkan-support) 写有 Android 16 及以上 launch device 的 Vulkan 1.4 要求，但截至 2026-10-22，[Android 16 CDD §7.1.4.2](https://source.android.com/docs/compatibility/16/android-16-cdd#7142_vulkan) 和 [Android 17 CDD 的同一节](https://source.android.com/docs/compatibility/17/android-17-cdd#7142_vulkan) 都要求支持 Vulkan 的设备为每个枚举出的 `VkPhysicalDevice` 完整实现 Vulkan 1.1（`C-1-3`）；对支持 GLES 3.1 或带屏幕/视频输出的设备，Vulkan 1.3 是 STRONGLY RECOMMENDED（强烈推荐，`C-SR-1` / `C-SR-2`）。这两节没有把 Vulkan 1.4 写成 MUST（强制要求）。
+
+两版 CDD 的 §2.2.1 还对支持任一 64 位 ABI、且 `ActivityManager.isLowRamDevice()` 返回 false 的手持设备规定 Vulkan 1.1 要求（`7.1.4.2/H-2-1`），Android 17 的措辞为“1.1 或更高”。因此不能把实现文档的 1.4 表述直接视为 CDD 已确认的统一最低版本。GPU 驱动由 SoC 厂商或 IHV（独立硬件供应商）提供，OTA 也不会自动改变硬件能力；应用要根据设备上报的 Vulkan 版本、扩展和所需 Vulkan feature set（功能与限制的能力集）决定能否启用渲染器。
 
 ### Android 17：WebGPU、ANGLE 偏好与滚动帧率映射
 
@@ -1317,7 +1337,7 @@ Android 17 AOSP 提供 SkiaOpenGL 与 SkiaVulkan pipeline，产品选择与设�
 
 ### “Vulkan 1.4 要求适用于所有升级设备”
 
-launch-device 条件、64 位与 low-memory 条件决定兼容要求。旧设备 OTA 后仍以硬件和驱动上报为准。
+实现文档的 launch-device 表述不能直接替代 CDD 条款。Android 16/17 CDD 的 Vulkan 1.1 强制要求和 Vulkan 1.3 强烈推荐，与实现文档中的 1.4 要求没有对齐；新机和 OTA 升级设备都应按自身上报的版本与扩展判断，不能由系统版本号推定 Vulkan 1.4。
 
 ### “ARR 让 VSync 随意变化”
 

@@ -5,10 +5,10 @@ section: '17.7'
 status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 last_verified: '2026-10-22'
-last_verified_against: PerfDog current official site plus client, Service, metric and network docs; SoloPi v1.0.2 release and pinned source; Emmagee V2.5.1 release and pinned source; Android performance docs; AOSP android-17.0.0_r1 PowerStats, Thermal and SurfaceFlinger anchors; scoped 2026-10-22 verification of ML gloss and XML inflate against Geekbench 6 Benchmark Internals and AOSP android-17.0.0_r1 LayoutInflater
-last_source_verified_at: '2026-10-22T21:36:58+08:00'
-verification_scope_note: 2026-10-22 仅核验 Geekbench 段 ML 括注与 XML inflate 术语；其余工具版本与指标沿用 2026-08-21 核验记录。
-last_rework_at: '2026-10-22T21:36:58+08:00'
+last_verified_against: PerfDog official client and Service docs; SoloPi v1.0.2 release and pinned build, memory, CPU, network, FPS and accessibility sources; Emmagee pinned README; Geekbench 6 Benchmark Internals (May 2024), Geekbench 7 release and download requirements; 3DMark and PCMark Android release notes and workload requirements; AnTuTu current Android download page; Android Performance Class guide; AOSP android-17.0.0_r1 Build, ThermalManagerService, IThermal, SurfaceFlinger, Layer and PowerStats anchors; earlier scoped LayoutInflater terminology verification retained
+last_source_verified_at: '2026-10-22T22:23:38+08:00'
+verification_scope_note: 2026-10-22 全文审阅并核验 PerfDog 指标与采集限制、SoloPi 的 SDK 分支及采集路径、Geekbench 工作负载、3DMark/PCMark/安兔兔版本边界、MPC 与 Android 17 帧统计及温控源码；AndroBench 历史参数和 A1 SD Bench 模式仍缺原始证据，保持待复核；源码与文档核验不代表工具已通过 Android 17 真机验收。
+last_rework_at: '2026-10-22T22:23:38+08:00'
 confidence: medium
 tags:
   - apm
@@ -169,6 +169,8 @@ GPU 是最容易出现“设备已连接但字段缺失”的一组数据。Perf
 - 同一设备、同一驱动上的版本对比价值较高。
 - 跨 SoC（System on Chip，系统级芯片） 的 GPU 利用率绝对值通常缺乏可比性——即使 Counter 名称相同，硬件含义也未必一致。
 
+采集本身也可能改变结果。客户端手册注明，截图仅支持 USB 模式，部分机型的截图操作会影响性能；极高帧率测试中，少数低端机采集 `Memory Usage` 和 `Memory Detail` 也会增加开销。正式回归前先比较启用和停用这些采集项的结果，同一比较组保持采集项一致；功耗测试需要拔线时，不把 USB 截图当作必备附件。
+
 ### PerfDog 的帧指标定义
 
 读 PerfDog 的 Jank 系列指标前，我们先记住它和 Android Vitals（Play Console 的质量指标）、JankStats（应用内帧性能库）、Perfetto FrameTimeline（系统帧时间线） 的分类各是各的，别互相套用。PerfDog 官方客户端手册把固定的 24 FPS 电影帧时长用作第二个门槛，这个门槛不随手机的 60 Hz、90 Hz 或 120 Hz 刷新率变化：
@@ -221,14 +223,14 @@ PerfDog Service 提供 `getAppWindowsMap` 一类接口，可以列出 Android �
 
 ### 平均 FPS 之外的保留指标
 
-平均值会同时掩盖“长期偏低”和“偶发长帧”。P50 是中位数，P95/P99 表示 95%/99% 的样本不超过该值。我们看两个 60 秒场景，它们的平均 FPS 可能很接近：
+平均值会同时掩盖“长期偏低”和“偶发长帧”。P50 是中位数，P95/P99 表示 95%/99% 的样本不超过该值。下面用两种分布说明区别，不代表设备实测：
 
-| 场景 | 平均 FPS | FTime P50 | FTime P95 | FTime P99 | 体感线索 |
-|---|---:|---:|---:|---:|---|
-| A：稳定受限 | 45 | 22 ms | 24 ms | 27 ms | 持续不够顺滑，但节奏稳定 |
-| B：多数时间流畅、偶发尖峰 | 56 | 16 ms | 31 ms | 180 ms | 平时顺滑，间歇出现明显停顿 |
+| 场景 | FTime 分布 | 平均 FPS 容易遗漏的信息 |
+|---|---|---|
+| A：稳定受限 | 帧间隔持续偏长，但波动小 | 持续不够顺滑，帧节奏却可能稳定 |
+| B：多数时间流畅、偶发尖峰 | 多数帧较短，少数帧明显变长 | 平均 FPS 较高也可能伴随间歇停顿 |
 
-场景 B 的平均 FPS 更高，用户却可能更容易注意到卡顿。所以一次回归至少保留：
+判断场景 B 是否更容易被用户察觉，还要看长帧的位置和连续性。一次回归至少保留：
 
 - FPS 的平均值、中位数、1% Low 和稳定区间。
 - FTime 的 P50、P90、P95、P99 和最大值。
@@ -240,9 +242,9 @@ P95/P99 若由导出数据离线计算，应在报告中写明脚本版本和空
 
 ### 功耗、温度与频率的联合阅读
 
-PerfDog 的 Android Battery Power 是整机口径，屏幕、基带（蜂窝通信模块）、Wi-Fi、后台进程和系统服务都包含在内，目标 App 只占其中一部分。对比时我们固定亮度、音量、网络、账号数据和后台状态，并使用 Wi-Fi 连接后拔掉 USB。
+PerfDog 的 Android Battery Power 是整机口径，屏幕、基带（蜂窝通信模块）、Wi-Fi、后台进程和系统服务都包含在内，目标 App 只占其中一部分。对比时我们固定亮度、音量、网络、账号数据和后台状态，并使用 Wi-Fi 连接后拔掉 USB。双电池设备还要核对官方兼容列表与当前客户端的换算方式；未核对前，不把电流和功率直接并入单电池设备基线，也不自行套用统一倍数。
 
-`FPower` 在 PerfDog 数据处理中的口径是 `Power / FPS`，界面单位仍为 mW。它用于在相近场景和帧率下按同一尺度比较功耗；要把它当物理单位为焦耳的“单帧能量”就错了。FPS 接近 0、场景静止或两组帧率差距很大时，这个比值也会失去解释力。
+官方客户端把 `FPower` 列为帧能耗字段。报告应同时保存工具版本、原字段和导出单位；仅凭字段名称，不能把读数解释为目标 App 独占的单帧能量。需要跨工具比较每帧能量时，另行记录同一时间区间的整机能量与呈现帧数，并说明计算方法和采样对齐方式。FPS 接近 0、场景静止或两组帧率差距很大时，按帧比较功耗的解释力也会减弱。
 
 判断热降频时，我们推荐寻找同一时间轴上的证据组合：
 
@@ -271,7 +273,7 @@ PerfDog 的 Android Battery Power 是整机口径，屏幕、基带（蜂窝通�
 3. 能修改源码时，增加低开销 trace，或使用 Profiler、simpleperf、heap dump（堆内存快照）定位代码。
 4. 对已定位且可自动重放的启动、滑动或列表场景，补 Macrobenchmark 防回归用例。
 
-PerfDog 的 StartupTiming 可观察 TTID/TTFD，但精确启动基准仍要写清冷、温、热启动，并优先由 Macrobenchmark 控制启动模式。两种工具的启动数据可以互证，放进同一列比较时须保证启动条件一致。
+PerfDog 的 StartupTiming 会重新拉起 App；不希望工具改变当前运行状态时，不启用该指标。TTFD 还依赖被测 App 在完整画面可用时调用 `reportFullyDrawn()`，第三方 App 未上报时，不能把工具读数当作已经测得的完整启动时间。精确启动基准仍要写清冷、温、热启动，并优先由 Macrobenchmark 控制启动模式。两种工具的启动数据可以互证，放进同一列比较时须保证启动条件和完成标记一致。
 
 ### 三类使用流程
 
@@ -462,8 +464,8 @@ SoloPi 会通过反射调用 `AccessibilityNodeInfo.getSourceNodeId()` 这个非
 | 字段 | 公开源码路径 | 使用边界 |
 |---|---|---|
 | CPU | 高权限 shell 读取 `/proc/stat` 与 `/proc/<pid>/stat` | 依赖 ADB、PID（进程号）和 procfs（`/proc` 虚拟文件系统）；多进程要核对归属 |
-| PSS | `getProcessMemoryInfo(pids)` | Android 10+ 普通 App 跨 UID（Linux 用户标识，通常对应 App 身份）结果受限 |
-| Private Dirty（进程独占且已修改的物理页） | shell 解析 `dumpsys meminfo` | 依赖权限和文本格式 |
+| PSS | API 29 以下调用 `getProcessMemoryInfo(pids)`；API 29 起通过高权限 shell 解析 `dumpsys meminfo` 的 `TOTAL` 行 | Android 10+ 普通 App 的跨 UID（Linux 用户标识，通常对应 App 身份）查询受限；该源码已切换到 shell 路径，需核对授权、PID 和文本列含义 |
+| Private Dirty（进程独占且已修改的物理页） | 与 PSS 使用同一 SDK 分支；旧系统取 `getTotalPrivateDirty()`，API 29 起解析同一 `TOTAL` 行 | 依赖权限和文本格式；命令成功不代表固定列仍对应原指标 |
 | 网络 | `/proc/<pid>/net/dev` 或全局 TrafficStats | 前者是 network namespace（网络命名空间）的接口计数，后者含全机流量，均不是目标进程精确字节 |
 | FPS | 解析 `dumpsys gfxinfo ... framestats` | 适合现场趋势，不替代 FrameTimeline |
 | 视觉响应 | MediaProjection 录屏 + 图像差异 | 点击到画面稳定，不是系统 TTID/TTFD |
@@ -521,16 +523,16 @@ Benchmark 用统一任务测量设备在特定条件下的表现；本文所说�
 
 分数是否可比，先看版本号。测试报告至少要记录三个版本：Benchmark 应用版本、应用内测试项目版本、被测系统与驱动版本；只写“3DMark 最新版”或“Geekbench 6”是复现不了结果的。
 
-截至 2026 年 8 月 14 日，各工具的公开版本与比较规则如下。表中的 workload 指工具内一组固定的测试任务：
+下表列出本章采用的版本与比较规则，下载版本的核对日期另行注明。表中的 workload 指工具内一组固定的测试任务：
 
 | 工具 | 当前状态 | 可比性规则 | Android 17 项目的建议 |
 |---|---|---|---|
-| Geekbench 7 | 2026-07-23 发布；官方下载页要求 Android 12+、4 GB RAM | CPU、GPU 工作负载和多核规则相对 Geekbench 6 均有改动，不能把两个大版本的分数放进同一时间序列 | 新建 Geekbench 7 基线；已有 Geekbench 6 数据冻结在独立字段 |
+| Geekbench 7 | 2026-07-23 发布；2026-10-22 核对官方下载页，要求 Android 12+、4 GB RAM | CPU、GPU 工作负载和多核规则相对 Geekbench 6 均有改动，不能把两个大版本的分数放进同一时间序列 | 新建 Geekbench 7 基线；已有 Geekbench 6 数据冻结在独立字段 |
 | Geekbench 6 | 保留其公开 Benchmark Internals 作为可审计的工作负载样本 | 同一大版本也要保存精确应用版本；没有官方兼容声明时，按精确版本比较 | 用于维护既有 GB6 设备库，不再向 GB7 字段写入 |
-| 3DMark Android | 当前应用版本 2.6.5056，发布于 2026-04-07 | 应用版本和 Wild Life、Steel Nomad Light 等测试版本是两套编号；比较时以同一测试及其版本为准 | 从设置页同时抄录应用版本、测试名、测试版本和模式 |
-| PCMark Android | 当前应用版本 3.1.4113，发布于 2026-06-15 | 3.1 与 3.0 的总分大致可比，但官方仍建议使用同一 workload 版本；Work 3.0、Storage 2.0 不可与旧测试混比 | 新报告固定 Work 3.0 或 Storage 2.0，并保存 System WebView 版本 |
-| 安兔兔 | 官方下载区当前为 V11.1.4，发布于 2026-06-30 | V11 和 V10 因测试项变化不可比；跨 OS 的分数也不用于工程回归（检查版本变更是否引起性能退化） | 总分仅作沟通标签，定位原因时查看 CPU、GPU、MEM、UX 子项及 App 实测 |
-| Speedometer | 当前稳定版本为 3.1 | 3.1 修正了测量框架；不要把 3.0 和 3.1 混在一组 | 固定 Speedometer、浏览器或 WebView、系统和电源状态 |
+| 3DMark Android | 2026-10-22 核对应用发布说明：2.7.5093，发布于 2026-09-08 | 应用版本和 Wild Life、Steel Nomad Light 等测试版本是两套编号；比较时以同一测试及其版本为准 | 从设置页同时抄录应用版本、测试名、测试版本和模式；2.7.5086 已将 target API 更新为 36 |
+| PCMark Android | 2026-10-22 核对应用发布说明：3.1.4113，发布于 2026-06-15 | 3.1 与 3.0 的总分大致可比，但官方仍建议使用同一 workload 版本；Work 3.0、Storage 2.0 不可与旧测试混比 | 新报告固定 Work 3.0 或 Storage 2.0，并保存 System WebView 版本 |
+| 安兔兔 | 2026-10-22 核对官方下载区：Android 版 V12.0.2，发布于 2026-10-10；旧设备库可保留 V11 字段 | V11 和 V10 因测试项变化不可比；V12 另建字段，未取得官方兼容声明前不跨大版本合并；跨 OS 分数不用于工程回归（检查版本变更是否引起性能退化） | 保存应用和 3D 资源包版本、模式与分项；标准包和精简包的结果分开 |
+| Speedometer | 本章固定使用 3.1 | 3.1 修正了测量框架；不要把 3.0 和 3.1 混在一组 | 固定 Speedometer、浏览器或 WebView、系统和电源状态 |
 | Vellamo | Qualcomm 的可核验官方资料停留在 2012 年的套件介绍，没有当前版本依据 | 历史报告只能在原工具、原版本和相近环境内阅读 | 冻结旧数据，不再补录 Android 17 新设备 |
 
 Geekbench 7 于 2026 年 7 月 23 日发布。当前设备库若已积累大量 Geekbench 6 数据，别为追新覆盖旧列；增加 `geekbench_major=7` 和新分数字段，等样本覆盖率足够后再迁移设备分档规则。
@@ -547,7 +549,7 @@ Geekbench 7 于 2026 年 7 月 23 日发布。当前设备库若已积累大量 
 | WebView、视频、文档、图片、数据处理的组合表现怎样 | PCMark Work 3.0 子项 | 单个业务页面的启动或交互时延 |
 | 内部存储、外部存储和 SQLite 组合表现怎样 | PCMark Storage 2.0 子项 | 某个文件系统调用、Room 查询或数据库事务的根因 |
 | 浏览器前端交互执行路径怎样 | Speedometer 3.1 | 网络速度、服务端耗时、App 内 WebView 的完整链路 |
-| 面向大众的设备综合档位怎样 | 安兔兔 V11 总分与子项 | 单项资源瓶颈和 App 性能因果 |
+| 面向大众的设备综合档位怎样 | 安兔兔固定大版本的总分与子项 | 单项资源瓶颈和 App 性能因果 |
 
 分数命名也要带上工具语义。`gpu_score` 这样的字段会把 Geekbench Compute 和 3DMark Graphics 混在一起，建议写成 `gb7_vulkan_compute`、`3dmark_wild_life_v1_score` 和 `3dmark_wild_life_stability`。字段名中的工具、大版本、测试和 API 共同说明分数来自哪套规则。
 
@@ -565,9 +567,9 @@ Geekbench 6 的公开内部文档说明，CPU 总分由整数和浮点两部分�
 |---|---|---|---|
 | File Compression（LZ4、ZSTD、AES、SHA1） | 整数、内存访问、压缩与加密指令 | 安装包解压、离线资源解压或同步加密可能受 CPU 限制 | 对 App 使用的压缩库、数据规模和线程模式做 Microbenchmark（Jetpack 微基准测试） |
 | Navigation（Dijkstra、OpenStreetMap 数据） | 图算法、分支和内存访问 | 离线路径规划或大型关系图计算可能受单线程容量影响 | 对业务图规模采样，并在目标机型上测端到端耗时 |
-| HTML5 Browser | 受控的 HTML/JavaScript 负载 | 轻线程网页计算可能随单核档位变化 | 用目标 WebView 版本跑页面 trace；不能把该子项当作 Chrome 或 WebView 分数 |
+| HTML5 Browser | 无界面浏览器中的 HTML 解析、CSS 布局和二维绘制，使用 Gumbo、litehtml 等库 | 网页解析、布局或绘制可能受单线程容量影响；该子项不直接衡量 JavaScript 引擎性能 | 用目标 WebView 版本跑页面 trace；不能把该子项当作 Chrome 或 WebView 分数 |
 | PDF Renderer（PDFium） | 文档解析与栅格化 | PDF 首屏或翻页可能受 CPU 和内存共同影响 | 固定 PDF 文件，在 App 使用的 PDF 组件中测首屏和逐页时间 |
-| Photo Library / Photo Editor | 图片编解码、SQLite、图像处理及部分 ML（Machine Learning，机器学习） | 相册扫描、缩略图生成或编辑可能受 CPU、内存和指令集影响 | 复用业务图片格式、分辨率和模型做 Macrobenchmark 或业务基准 |
+| Photo Library / Image Editing | 相册工作负载包含图片编解码、SQLite 和部分 ML（Machine Learning，机器学习）；图像编辑类工作负载覆盖滤镜等处理 | 相册扫描、缩略图生成或编辑可能受 CPU、内存和指令集影响 | 复用业务图片格式、分辨率和模型做 Macrobenchmark 或业务基准 |
 | Clang、Text Processing、Asset Compression | 编译、正则、SQLite、纹理及几何资产压缩 | 文本处理、开发工具或图形资源处理流程可能有相近计算特征 | 对业务库直接基准；不要把 Text Processing 等同于 JSON 解析 |
 
 “单核分数影响 JSON 解析”这个判断过于确定。Geekbench 6 跑的是通用工作负载，并未搭载业务自己的 JSON 库、序列化模型和数据规模，只能给出通用单线程容量线索；JSON、protobuf（二进制序列化格式）、XML inflate（从布局 XML 创建 View）、Compose measure/layout（测量与布局） 和 `RecyclerView` bind（把数据绑定到列表项） 仍要分别测量。I/O 等待、锁竞争或 Binder 往返占比高时，单核分数的解释力会更弱。
@@ -615,7 +617,7 @@ Wild Life 的普通 Benchmark 用于观察短时间高性能；Stress Test 连�
 
 #### 热数据的记录方式
 
-平台的 `ThermalManagerService` 聚合 Thermal HAL 上报并维护当前 thermal status（温控等级），`PowerManager.getCurrentThermalStatus()` 向应用提供从 `NONE` 到 `SHUTDOWN` 的状态。`THERMAL_STATUS_NONE` 只说明当前没有进入节流状态，设备是否回到相同初始温度还要另行确认。
+平台的 `ThermalManagerService` 接收 Thermal HAL 的温度与节流状态，`PowerManager.getCurrentThermalStatus()` 向应用提供从 `NONE` 到 `SHUTDOWN` 的状态。在 `android-17.0.0_r1` 中，未通过 shell 覆写状态时，`onTemperatureMapChangedLocked()` 取 `TYPE_SKIN` 传感器上报的最大节流等级作为当前 thermal status（温控等级）。`THERMAL_STATUS_NONE` 不能证明 CPU/GPU 没有局部限频，也不能证明设备已回到相同初始温度；限频判断仍需结合各传感器状态与频率曲线。
 
 内核侧以 `android17-6.18-2026-06_r6` 为源码锚点。`/sys` 下的内核设备接口 thermal sysfs 文档说明，`thermal_zone` 暴露当前温度与 trip point（触发温控动作的阈值），cooling device（降频、限流或风扇等冷却执行项） 参与温控。量产设备对传感器名称、可见性和温度标定的实现不同，两个厂商的 `thermal_zone0` 数值直接横向比较没有意义。
 
@@ -625,6 +627,8 @@ Wild Life 的普通 Benchmark 用于观察短时间高性能；Stress Test 连�
 
 PCMark Android 3.1.4113 是当前应用版本，Work 3.0 包含 Web Browsing、Video Editing、Writing、Photo Editing 和 Data Manipulation；Storage 2.0 覆盖内部存储、外部存储和 SQLite 数据库操作。
 
+3.1.4113 的发布说明还明确了几个兼容与读数边界：应用以 SDK 35 为目标，更新了支持 16 KB 页面大小的库，并修复 Storage 测试不返回最终分数的问题。部分旧调试输出曾把吞吐量 `KB/s` 误标为时延 `ms`；阅读旧日志时要核对输出项与工具版本，不能仅按标签解释为单次 I/O 时延。库已支持 16 KB 也不等于所有 Android 17 设备和测试路径都已验收。
+
 这些子项比总分更接近 Android 业务，但仍需注意实现差异：
 
 - Web Browsing 3.0 使用系统 Android WebView。系统更新后，即使 PCMark 应用版本不变，执行引擎也可能变化，因此要记录 `com.google.android.webview` 或设备实际 WebView provider（提供 WebView 实现的应用包） 的版本。
@@ -632,7 +636,7 @@ PCMark Android 3.1.4113 是当前应用版本，Work 3.0 包含 Web Browsing、V
 - Writing 3.0 使用 Android `EditText` 与 `PdfDocument`，适合作为文档工作负载背景；业务编辑器仍要单独测量。
 - Storage 2.0 的 Database 子项使用 SQLite，但 App 的 schema（表、列和约束的结构）、index（索引）、transaction（事务）、WAL（Write-Ahead Logging，预写式日志）、文件系统和缓存状态都会改变结果。
 
-PCMark 3.1 发布说明指出，3.1 与 3.0 总体分数大致可比，同时明确建议在相同 workload 版本间比较。工程回归应遵守更严格的后一句：版本或 workload 变化就切分时间序列。Work 3.0、Storage 2.0 与 Work 2.0、Storage 1.0 同样分开，不放在同一序列里。
+PCMark 3.1 发布说明指出，3.1 与 3.0 总体分数大致可比，同时明确建议在相同 workload 版本间比较。工程回归应遵守更严格的后一句：版本或 workload 变化就切分时间序列。Work 3.0、Storage 2.0 与 Work 2.0、Storage 1.0 同样分开，不放在同一序列里。自 3.0 起，Work 2.0、Work 1.0、Storage 1.0 和 Computer Vision 已停止支持并从应用移除；旧报告只能按原版本解释，不为延续旧序列而安装旧版补测 Android 17 设备。
 
 ### 存储专项 Benchmark 的协议
 
@@ -684,7 +688,9 @@ SQLite 分数也使用工具自己的表、索引、journal（事务日志） �
 
 ### 安兔兔总分的沟通定位
 
-安兔兔 V11 包含 CPU、GPU、MEM（内存） 和 UX（用户交互体验） 等组合测试。官方 V11 公测说明明确写出，V11 因测试项调整与 V10 不可比，并给出 27℃±1℃、电量 80% 以上、亮度 300 nit 的示例测试条件；nit 是屏幕亮度常用单位，1 nit 等于 1 cd/m²。这些条件说明跑分对环境敏感；各团队采用什么电量，按自己的测试规范定即可。
+既有安兔兔 V11 基线包含 CPU、GPU、MEM（内存） 和 UX（用户交互体验） 等组合测试。官方 V11 公测说明明确写出，V11 因测试项调整与 V10 不可比，并给出 27℃±1℃、电量 80% 以上、亮度 300 nit 的示例测试条件；nit 是屏幕亮度常用单位，1 nit 等于 1 cd/m²。这些条件说明跑分对环境敏感；各团队采用什么电量，按自己的测试规范定即可。
+
+2026 年 10 月 22 日核对的 Android 下载版本已为 V12.0.2。完整测试需要配套的 3D 资源包：官方下载页把标准包标为基于 UE5、适用于 Android 10 及以上且内存至少 8 GB 的设备，精简包标为面向 Android 10 以下设备，并另列 x86 包。Android 17 设备不能仅凭系统版本选择资源包，还要核对内存、架构和对应包的实际可用性；标准、精简和 x86 模式不合并评分。旧 V11 字段继续保留，V12 使用新字段，不把 V11 的分档边界直接搬过去。
 
 若产品、测试和市场已经习惯用安兔兔总分描述设备档位，可以保留总分，但设备字典还要保存大版本和子项。工程排查时，我们从相关子项入手：
 
@@ -713,7 +719,7 @@ Qualcomm 2012 年官方资料把 Vellamo 描述为包含 HTML5 与 Metal 等章�
 
 Android 的 Media Performance Class（MPC，媒体性能等级）自 Android 12 引入，用 CDD（Compatibility Definition Document，Android 兼容性定义文档） 规定能力要求，并由 CTS（Compatibility Test Suite，兼容性测试套件） 验证。API 37 的 `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 从设备属性读取声明值，未声明时返回 0。Jetpack Core Performance 是读取设备性能等级的 Jetpack 库，可以从系统 build 信息或 Google Play services（Google Play 服务组件） 查询兼容等级。
 
-截至 2026 年 8 月 14 日，Android 官方公开定义的等级是 30、31、33、34、35，其中没有 MPC 32；0 表示未定义。Performance Class 可向前兼容：设备升级到 Android 17 后，仍可能报告它原先满足的 33、34 或 35。“MPC 37”是自造的等级，实际档位以设备报告为准，也别把 Android 版本号当成设备必然报告的等级。
+截至 2026 年 10 月 22 日，Android 官方 Performance Class 指南列出的等级为 30、31、33、34、35，并明确没有 MPC 32；0 表示未定义。Performance Class 可向前兼容：设备升级到 Android 17 后，仍可能报告它原先满足的 33、34 或 35。指南中的等级列表不等于 API 37 的固定返回值集合；实际分档应读取设备声明并核对对应 CDD，不从 Android 版本号自行推导出“MPC 37”。
 
 | 信号 | 可以表达什么 | 不能表达什么 |
 |---|---|---|

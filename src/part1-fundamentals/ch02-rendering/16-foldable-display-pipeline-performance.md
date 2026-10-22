@@ -120,9 +120,11 @@ last_deep_review_at: '2026-10-18T12:42:42+08:00'
 
 ## 1. 先建立对象模型
 
+后面所有排查都落在这份对象模型上：物理面板、系统包装的显示设备、对外的逻辑显示与合成输出各是一层对象，我们先把它们分清楚。
+
 ### 1.1 Physical Display、DisplayDevice 与 LogicalDisplay
 
-我们先建立对象模型。Android 显示框架把物理设备和系统对外使用的逻辑 Display 分开：
+Android 显示框架把物理设备和系统对外使用的逻辑 Display 分开：
 
 - **物理 Display**：面板与 HWC display，由物理地址标识；
 - **`DisplayDevice`**：DisplayManager 对物理或虚拟显示设备的包装；
@@ -241,6 +243,8 @@ layout 应用这一侧，`applyLayoutLocked()` 会：
 
 ## 3. WMS、Shell 与应用窗口
 
+显示 layout 重映射之后，轮到窗口这一层：WMS 更新窗口树，Shell 播转场动画，应用窗口拿到新的尺寸与配置。这一节把三条线分开看。
+
 ### 3.1 Display 树与 Surface 树
 
 进入 WMS 一侧，我们先分清两棵树。WMS 按以下对象组织窗口：
@@ -256,7 +260,7 @@ RootWindowContainer
 
 这棵树表达的是应用窗口在 WMS 中的管理关系：`ActivityRecord` 本身就是 `WindowToken` 的子类，所以树里没有单独的 `WindowToken` 层。它与 SurfaceFlinger 的 layer tree 也不一一对应，排查时应分别核对。[源码：`ActivityRecord.java` L372]
 
-Shell transition 可以创建 leash（转场期间使用的临时父 Surface）——转场期间使用的临时父 Surface——把 Task 或窗口 Surface reparent（更换父节点） 到 leash 上，再对 leash 设置 matrix（变换矩阵）、crop（裁剪）、corner radius（圆角） 和 position。
+Shell transition 可以创建 leash（转场期间使用的临时父 Surface），把 Task 或窗口 Surface reparent（更换父节点）到 leash 上，再对 leash 设置 matrix（变换矩阵）、crop（裁剪）、corner radius（圆角）和 position。
 
 所以折叠动画期间看到 task leash 在缩放，还说明不了 App 在每次 progress（进度回调） 回调时都重新提交了完整 buffer，两件事要分别确认。
 
@@ -279,7 +283,7 @@ WM Shell 的 `UnfoldTransitionHandler` 在进度回调中创建 `SurfaceControl.
 
 ### 3.3 Configuration 与 WindowLayoutInfo 的到达顺序
 
-物理 Display 切换、窗口 bounds（边界） 更新和 WindowManager Extensions posture 更新来自不同组件。下面这条顺序常被当成前提，但并不可靠：
+物理 Display 切换、窗口 bounds（边界） 更新和 WindowManager Extensions posture 更新来自不同组件。很多人把下面这条顺序当成前提：
 
 ```text
 WindowLayoutInfo → Configuration → onConfigurationChanged
@@ -287,7 +291,7 @@ WindowLayoutInfo → Configuration → onConfigurationChanged
 
 这些事件可能按不同顺序到达，我们写代码时应假设次序会变。一次折叠或展开可能改变 `screenSize`、`smallestScreenSize`、`screenLayout`、`orientation`、`density` 或其他配置；具体集合取决于物理面板、windowing mode（窗口模式）、rotation（旋转） 与厂商实现。
 
-默认情况下，Activity 未声明自行处理的 configuration change（配置变化） 会触发重建。若使用 `android:configChanges`，应用就要重新读取受影响的资源并更新 UI；只在回调里记录一下就原样返回，起不到自行处理的作用。
+默认情况下，Activity 未声明自行处理的 configuration change（配置变化） 会触发重建。若使用 `android:configChanges`，应用就要重新读取受影响的资源并更新 UI；只在回调里记录一下就原样返回，算不上自行处理。
 
 ### 3.5 Shell Transition 状态机与 BLAST（应用窗口缓冲队列适配层） 同步
 
@@ -379,14 +383,14 @@ Logcat 可辅助查看 `TransitionController`、`Transition`、`BLASTSyncEngine`
 
 这个字段的名字容易读反：`FoldingFeature.Orientation.HORIZONTAL` 表示 feature 的宽大于高、铰链线沿水平方向；`VERTICAL` 表示铰链线沿垂直方向。
 
-判断 tabletop posture（桌面半开姿态）——桌面半开姿态——时通常检查：
+判断 tabletop posture（桌面半开姿态）时通常检查：
 
 ```kotlin
 foldingFeature.state == FoldingFeature.State.HALF_OPENED &&
     foldingFeature.orientation == FoldingFeature.Orientation.HORIZONTAL
 ```
 
-这段条件把“半开”和“水平铰链”合并为桌面姿态；判断 book posture（书本姿态）——书本姿态——时把方向换成 `VERTICAL`。双屏设备即使报告 `FLAT`，hinge 仍可能保持 separating（分隔窗口）。
+这段条件把“半开”和“水平铰链”合并为桌面姿态；判断 book posture（书本姿态）时把方向换成 `VERTICAL`。双屏设备即使报告 `FLAT`，hinge 仍可能保持 separating（分隔窗口）。
 
 ### 4.3 occlusion 与 separating 的分工
 
@@ -425,17 +429,19 @@ lifecycleScope.launch(Dispatchers.Main) {
 
 ## 5. 原始 hinge angle sensor 的特性与用法
 
+`FoldingFeature` 给出的是离散姿态；要连续的角度变化，就得回到原始 sensor。我们先看它的上报特性，再看三条消费链路。
+
 ### 5.1 TYPE_HINGE_ANGLE 是 on-change sensor
 
 `Sensor.TYPE_HINGE_ANGLE` 的类型值是 36，string type 为 `android.sensor.hinge_angle`。AOSP 传感器规范将它定义为：
 
-- on-change reporting mode（值变化时才报告）：值变化时才报告；
+- on-change reporting mode（值变化时才报告）；
 - 角度单位为 degree；
-- 默认传感器是 wake-up sensor（可唤醒系统处理事件的传感器），可唤醒系统处理事件。
+- 默认传感器是 wake-up sensor（可唤醒系统处理事件的传感器）。
 
 这台传感器属于可选硬件，应用要先检查 `getDefaultSensor(TYPE_HINGE_ANGLE)` 是否返回 null。
 
-on-change 的节奏跟着角度变化走，我们拿它当不了固定 60 Hz 或 120 Hz 的周期源；`SENSOR_DELAY_FASTEST` 只是请求尽快交付，实际节奏仍受 sensor 的 min delay（最小报告间隔）、HAL 去抖和事件变化规律限制。
+on-change 的节奏跟着角度变化走，我们指望不上它提供固定的 60 Hz 或 120 Hz 周期；`SENSOR_DELAY_FASTEST` 只是请求尽快交付，实际节奏仍受 sensor 的 min delay（最小报告间隔）、HAL 去抖和事件变化规律限制。
 
 ### 5.2 精确角度动画与设备校准
 
@@ -449,7 +455,7 @@ Android 官方提醒：不同设备的上报范围和精度可能不同，基于
 - 按 UI frame（界面帧） 节奏采样最新值，避免每个 sensor event 都触发全树 `requestLayout()`；
 - 页面停止或不需要动画时及时注销。
 
-“角度回调到屏幕超过两帧即可感知”这类说法没有统一依据；门槛应按目标刷新率、设备、动画速度和输入到显示的测量结果来定。
+“角度回调到屏幕超过两帧即可感知”这类说法没有统一依据；我们按目标刷新率、设备、动画速度和输入到显示的测量结果来定门槛。
 
 ### 5.3 三条角度消费链路
 
@@ -459,7 +465,7 @@ Perfetto 中出现 `DeviceStateChanged`，只证明 DeviceState 已提交；原�
 
 ## 6. 应用连续性与布局成本
 
-系统侧的链路走完了，这一节看应用自己：一次折叠会让 Activity 面临重建、重排和状态保留的取舍。
+系统侧的链路走完了，我们回到应用自己：一次折叠会让 Activity 面临重建、重排和状态保留的取舍。
 
 ### 6.1 Activity 重建与 ViewModel
 
@@ -478,7 +484,7 @@ Perfetto 中出现 `DeviceStateChanged`，只证明 DeviceState 已提交；原�
 
 保存状态时只记录恢复所需的 ID、滚动位置或少量输入。大型草稿、图片和其他业务数据应持久化到数据库或文件，保存状态中保留读取它们所需的标识；复杂对象的序列化发生在主线程，可能增加配置变化时的卡顿。`SavedStateHandle` 和 `rememberSaveable` 只管恢复这少量数据，长期存储要交给数据库或文件。
 
-保存状态也不是每次赋值都会立即持久化。官方 [Save UI state（界面状态）s](https://developer.android.com/topic/libraries/architecture/saving-states#savedstateregistry) 明确说明：Activity 已停止期间的写入，需再次经历 `onStart()`、`onStop()` 才会保存。用户划掉任务、强行停止应用或结束 Activity 后，原有保存记录未必还能恢复出编辑内容。这些 AndroidX/Compose 机制使用 `Bundle`，用 `PersistableBundle` 替代它来实现长期保存同样行不通。
+保存状态的持久化有自己的节奏。官方 [Save UI state（界面状态）s](https://developer.android.com/topic/libraries/architecture/saving-states#savedstateregistry) 明确说明：Activity 已停止期间的写入，需再次经历 `onStart()`、`onStop()` 才会保存。用户划掉任务、强行停止应用或结束 Activity 后，原有保存记录未必还能恢复出编辑内容。这些 AndroidX/Compose 机制使用 `Bundle`，用 `PersistableBundle` 替代它来实现长期保存同样行不通。
 
 ### 6.2 自行处理 configChanges 的代价
 
@@ -558,7 +564,7 @@ present 调用返回与 fence signal 是不同时间点。HWC 契约中，video-
 - buffer 内存占用；
 - HWC scaler（缩放器） 和 overlay 约束。
 
-最终成本还取决于 damage（需要更新的区域）、遮挡、`DEVICE` composition、动态分辨率、buffer format（像素格式）、刷新率和内容复杂度。不同设备的内外屏尺寸差异很大，套用“内屏固定是外屏 2～3 倍像素”这类经验值是靠不住的。
+最终成本还取决于 damage（需要更新的区域）、遮挡、`DEVICE` composition、动态分辨率、buffer format（像素格式）、刷新率和内容复杂度。不同设备的内外屏尺寸差异很大，“内屏固定是外屏 2～3 倍像素”这类经验值只能当参考，我们以实测为准。
 
 ### 7.3 几何、buffer 与 present 三条线索
 
@@ -575,7 +581,7 @@ present 调用返回与 fence signal 是不同时间点。HWC 契约中，video-
 3. SF latch 了该 buffer；
 4. 目标 Display 对应帧的 present fence 已 signal。
 
-buffer 尺寸变了，内容未必完成适配；尺寸没变，也否定不了适配。`SurfaceHolder.setFixedSize()` 可以让 Surface 保持固定尺寸，对 SurfaceView 该设置须在其窗口所属线程调用。排查时我们还要核对内容布局和缩放关系，“新尺寸 buffer”只是其中一条线索。[源码：`SurfaceHolder.java` L185–202]
+buffer 尺寸变了，内容未必完成适配；尺寸没变，内容也可能已经适配。`SurfaceHolder.setFixedSize()` 可以让 Surface 保持固定尺寸，对 SurfaceView 该设置须在其窗口所属线程调用。排查时我们还要核对内容布局和缩放关系，“新尺寸 buffer”只是其中一条线索。[源码：`SurfaceHolder.java` L185–202]
 
 ## 8. 性能测量的起点与终点
 
@@ -592,7 +598,7 @@ buffer 尺寸变了，内容未必完成适配；尺寸没变，也否定不了�
 | T4 | App 适配后内容的 buffer 被 SF 采纳 | App frame、`BufferTX`、latch |
 | T5 | 目标 Display 对应帧的 present fence signal | DisplayFrame、HWC、present fence |
 
-测量前应声明范围是 T1→T5、T3→T5 还是 T0→光学显示：前两者以目标帧的 fence signal 为软件终点，分别观察系统状态提交后和应用收到窗口信息后的响应；完整物理动作到光学显示的延迟需要外部测量，present 调用返回和 fence signal 都顶替不了这个终点。
+测量前我们先声明范围：是 T1→T5、T3→T5，还是 T0→光学显示。前两者以目标帧的 fence signal 为软件终点，分别观察系统状态提交后和应用收到窗口信息后的响应；完整物理动作到光学显示的延迟需要外部测量，present 调用返回和 fence signal 都顶替不了这个终点。
 
 ### 8.2 Perfetto 采集
 
@@ -714,7 +720,7 @@ SF 的 `--display-id` 输出物理 Display ID、HWC display ID 与标识信息�
 - WMS 的 DisplayContent、Task 和窗口边界；
 - SF 侧物理 Display 与 HWC 标识的对应关系、显示设备与合成 Output 配置。
 
-快照没有时间信息，代替不了 Perfetto。最好在切换前、异常时、稳定后各保存一份，并用 display ID、physical address（物理地址） 和 layer stack 对齐。
+快照没有时间信息，代替不了 Perfetto。我们最好在切换前、异常时、稳定后各保存一份，并用 display ID、physical address（物理地址） 和 layer stack 对齐。
 
 ## 9. 常见故障模式
 

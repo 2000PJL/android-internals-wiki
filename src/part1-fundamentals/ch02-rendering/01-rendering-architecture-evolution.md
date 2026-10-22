@@ -3,8 +3,8 @@ title: Android 渲染架构与版本演进
 chapter: '2.1'
 section: '2.1'
 applicable_versions: Android 3.0 (API 11) - Android 17 (API 37)
-last_verified: '2026-10-20'
-last_verified_against: 'AOSP android-17.0.0_r1: View/ViewRootImpl/Choreographer/ThreadedRenderer/HardwareRenderer/BaseRecordingCanvas, HWUI RenderNode/DrawFrameTask/CanvasContext/Properties/Skia pipelines, BufferQueue/BLASTBufferQueue, SurfaceFlinger FrontEnd/Scheduler/HWComposer/HWC2/ComposerHal/RenderEngine; kernel android17-6.18-2026-06_r6 boundary; Writer rendering_pipelines S01/S02'
+last_verified: '2026-10-22'
+last_verified_against: 'AOSP android-17.0.0_r1: View/ViewRootImpl/Choreographer/ThreadedRenderer/HardwareRenderer/BaseRecordingCanvas, HWUI RenderNode/DrawFrameTask/CanvasContext/Properties/Skia pipelines, BufferQueue/IGraphicBufferProducer/BLASTBufferQueue, SurfaceFlinger FrontEnd/Scheduler/HWComposer/HWC2/ComposerHal/RenderEngine; kernel android17-6.18-2026-06_r6 boundary; Writer rendering_pipelines S01/S02'
 confidence: medium
 sources:
 - type: official
@@ -63,6 +63,8 @@ sources:
   path: frameworks/native/libs/gui/BufferQueueProducer.cpp
 - type: aosp
   path: frameworks/native/libs/gui/BufferQueueConsumer.cpp
+- type: aosp
+  path: frameworks/native/libs/gui/include/gui/IGraphicBufferProducer.h (android-17.0.0_r1)
 - type: aosp
   path: frameworks/native/libs/gui/BLASTBufferQueue.cpp
 - type: aosp
@@ -216,9 +218,9 @@ related_chapters:
 - '2.7'
 status: ready-for-review
 last_rework_at: '2026-10-20T09:39:58+08:00'
-last_deep_review_at: '2026-10-20T12:38:26+08:00'
-last_source_verified_at: '2026-10-20'
-verification_scope_note: '2026-10-20 核验了 Android 17 的 traversal 调度、HWUI 后端属性、BLAST buffer transaction、BufferTX、AutoSingleLayer 条件、FrameTimeline 对象与 Display 帧率查询签名；历史核验覆盖 Android 5.0 的 OpenGLRenderer/RenderThread 分工及 Android 11 的 BLAST 接入分支。官方文档核对了旧 Always 模式风险和 FrameTimeline 的 SurfaceView 覆盖提示。另核对了 Android 17 FrameMetrics 指标端点与 VSyncId、ANGLE 的可选性及 prefer_angle 回退契约、Implement Vulkan 的 launch-device 条件，并用 WebGPU alpha06 发布说明及 Google Maven 实际 AAR/源码核对最低 SDK、Java Builder 迁移与文档警告。其余版本里程碑、CDD 全部兼容条款及 kernel 结论未逐项重新核验。'
+last_deep_review_at: '2026-10-22T08:38:41+08:00'
+last_source_verified_at: '2026-10-22'
+verification_scope_note: '2026-10-22 依据 Android 17 BufferQueueProducer/Consumer 与 IGraphicBufferProducer 契约修正 dequeue/acquire 上限的持有方，并补明 Producer 再次写入与 Consumer 读取所需的 fence 依赖；复核 FrameMetrics 指标端点、Display 帧率映射、DrawFrameTask 同步与 AutoSingleLayer 条件，并保留官方文档对旧 Always 模式风险及 FrameTimeline 的 Android 12 起始版本和 SurfaceView 覆盖限制。2026-10-20 核验了 Android 17 的 traversal 调度、HWUI 后端属性、BLAST buffer transaction、BufferTX、AutoSingleLayer 条件、FrameTimeline 对象与 Display 帧率查询签名；历史核验覆盖 Android 5.0 的 OpenGLRenderer/RenderThread 分工及 Android 11 的 BLAST 接入分支。官方文档核对了旧 Always 模式风险和 FrameTimeline 的 SurfaceView 覆盖提示。另核对了 Android 17 FrameMetrics 指标端点与 VSyncId、ANGLE 的可选性及 prefer_angle 回退契约、Implement Vulkan 的 launch-device 条件，并用 WebGPU alpha06 发布说明及 Google Maven 实际 AAR/源码核对最低 SDK、Java Builder 迁移与文档警告。其余版本里程碑、CDD 全部兼容条款及 kernel 结论未逐项重新核验。'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch02-rendering/01-rendering-overview.md
@@ -494,7 +496,7 @@ Vulkan 与 OpenGL ES 的 CPU 开销、驱动行为、着色器编译、内存压
 Producer                         Consumer
 dequeueBuffer()
     ↓
-等待 acquire/release 条件
+满足 dequeue 返回的 fence 依赖（如有）
     ↓
 写入或渲染 GraphicBuffer
     ↓
@@ -507,6 +509,8 @@ queueBuffer(fence)
 ```
 
 `queueBuffer()` 主要提交缓冲区槽位、元数据和同步信息。GraphicBuffer 背后的内存通过句柄共享，正常路径不需要在 `queueBuffer()` 时复制整张图片。
+
+`dequeueBuffer()` 返回的 fence 约束 Producer 再次写入的时机，未 signal 时不能覆写 buffer；`queueBuffer(fence)` 携带的 fence 则交给 Consumer，约束读取本帧内容的时机。槽位已经交还，不代表上一轮异步使用已经完成；前一项契约见 [`IGraphicBufferProducer.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/IGraphicBufferProducer.h#233)。
 
 `queueBuffer()` 成功只说明生产者把缓冲区置为可消费状态；SurfaceFlinger 有没有 latch、显示设备有没有呈现，要沿下游的 transaction 和 fence 继续看。
 
@@ -532,7 +536,7 @@ BufferQueue 中常见的槽位状态为：
 - Surface 尺寸、格式或 usage（缓冲区用途属性）改变会触发重新分配；
 - 最小未释放数量与 consumer 配置有关；
 - async（异步入队） / shared buffer（共享同一缓冲区） 等模式会改变规则；
-- dequeue/acquire 上限（Producer 可同时取走的 buffer 数）会限制可并行持有的缓冲区；
+- dequeue/acquire 上限（分别对应 Producer 的 DEQUEUED buffer 和 Consumer 的 ACQUIRED buffer）会限制可并行持有的缓冲区；
 - fence 未完成时，槽位即使逻辑上可流转，也未必能安全复用。
 
 多一个可用缓冲区有时能减少生产者因暂时无槽位而停顿，但队列持续堆积也可能增加输入到显示的延迟。“三缓冲”对卡顿和延迟的净效果，我们要按队列状态逐帧看。

@@ -1,10 +1,13 @@
 ---
-status: finalized
+status: ready-for-review
 section: '2.7'
 title: GPU 渲染与图形 API 选型
 chapter: '2.7'
 applicable_versions: Android 5.0 - Android 17 (API 21-37)
 last_verified: '2026-09-20'
+last_source_verified_at: '2026-10-22T17:38:46+08:00'
+last_rework_at: '2026-10-22T17:38:46+08:00'
+verification_scope_note: '2026-10-22 复核 DMA-BUF 源码路径、mmap() 标识符与 Vulkan/Perfetto descriptor 括注；其余技术结论未在该日期重新核验。'
 last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + official Android/Perfetto/APA/AGI GPU documentation + AndroidX WebGPU 1.0.0-alpha05 + Writer rendering_pipelines S01/S02/S05/S08/S13
 confidence: medium-high
 last_idle_audit_at: '2026-09-20T22:39:38+08:00'
@@ -95,6 +98,14 @@ sources:
   path: rendering_pipelines/S08_native_graphics_type.md
 - type: material
   path: rendering_pipelines/S13_game_type.md
+- type: aosp
+  path: https://android.googlesource.com/platform/bionic/+/android-17.0.0_r1/libc/include/sys/mman.h
+- type: aosp
+  path: https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/src/gpu/ganesh/vk/GrVkDescriptorSetManager.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/common/gpu_counter_descriptor.proto
+- type: official
+  path: https://developer.android.com/guide/practices/page-sizes
 tags:
   - gpu
   - rendering
@@ -243,7 +254,7 @@ App Window buffer 可以作为 GPU color attachment，完成后连同 producer�
 2. 生成中间表示，例如 Vulkan 使用的 SPIR-V 字节码；
 3. link program（把多个 shader 阶段链接成可用程序） 或组合 pipeline state；
 4. 驱动针对具体 GPU 生成机器码；
-5. 创建 pipeline、descriptor（数据源对计数器字段的描述） layout（描述 shader 如何访问 buffer、纹理等资源的布局） 或其他关联对象；
+5. 创建 pipeline、descriptor layout（描述 shader 如何访问 buffer、纹理等资源的布局）或其他关联对象；
 6. 把结果放入进程内或磁盘缓存。
 
 这些步骤落在哪一层，各 API 不一样。GLES 的 `glCompileShader()` / `glLinkProgram()` 可以触发编译与链接；Vulkan 使用 SPIR-V，仍可能在 `vkCreateGraphicsPipelines()`、首次使用 pipeline 或驱动内部阶段完成面向具体硬件的编译。SPIR-V 能把一部分工作提前完成，pipeline compilation jank（创建或编译 pipeline 导致的卡顿） 仍在。
@@ -358,7 +369,7 @@ bound 的意思是帧时间主要受某类资源限制：vertex/geometry 看几�
 | SF client composition | App buffer ready，SF GPU 工作增加 | 比较 DEVICE/CLIENT composition | layer composition type、RenderEngine、HWC |
 | Thermal / power bound | 运行一段时间后频率下降 | 固定温度/电源条件做短长对照 | GPU frequency、thermal、power rail（芯片供电轨的功耗数据） |
 
-另外，跨 GPU 通用的“Fragment Shader 超过 60% 就是 fill bound”阈值并不存在；counter 名称、单位与统计范围由 GPU producer/driver 在 descriptor 中声明。
+另外，跨 GPU 通用的“Fragment Shader 超过 60% 就是 fill bound”阈值并不存在；counter 名称、单位与统计范围由 GPU producer/driver 在 descriptor（数据源对计数器字段的描述）中声明。
 
 #### Fillrate bound
 
@@ -480,8 +491,8 @@ release fence 表示 Consumer 何时不再使用旧 buffer，Producer 必须在�
 
 kernel 源码锚点 `android17-6.18-2026-06_r6` 包含以下相关文件：
 
-- `drivers/dma-buf（Linux 共享 buffer 机制）/dma-buf.c`；
-- `drivers/dma-buf/dma-heap（内核共享 buffer 分配池）.c`；
+- `drivers/dma-buf/dma-buf.c`（Linux 共享 buffer 机制）；
+- `drivers/dma-buf/dma-heap.c`（内核共享 buffer 分配池）；
 - `drivers/dma-buf/dma-fence.c`；
 - `drivers/dma-buf/sync_file.c`。
 
@@ -489,7 +500,7 @@ kernel 源码锚点 `android17-6.18-2026-06_r6` 包含以下相关文件：
 
 #### 16 KB page 与 GPU buffer
 
-16 KB page 兼容性约束的是 native ELF 的 segment（可加载代码或数据段） 对齐、APK 中未压缩 `.so` 的 ZIP 对齐，以及 `mmap()（把文件或设备内存映射进进程地址空间）` 等代码对 page size 的假设；它并不会把 gralloc buffer 自动改成线性 16 KB 分块，也不表示每张纹理固定浪费 16 KB。`GraphicBuffer` 仍应以 allocator 返回的 allocation size、stride、plane layout、heap 与映射数据为准。
+16 KB page 兼容性约束的是 native ELF 的 segment（可加载代码或数据段） 对齐、APK 中未压缩 `.so` 的 ZIP 对齐，以及 `mmap()`（把文件或设备内存映射进进程地址空间）等代码对 page size 的假设；它并不会把 gralloc buffer 自动改成线性 16 KB 分块，也不表示每张纹理固定浪费 16 KB。`GraphicBuffer` 仍应以 allocator 返回的 allocation size、stride、plane layout、heap 与映射数据为准。
 
 ### GPU 内存怎样追踪
 

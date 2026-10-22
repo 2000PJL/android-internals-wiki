@@ -607,6 +607,58 @@
       "status": "appended",
       "title": "可视化性能关键依赖链"
     },
+    "source/ak-rss/2026-10-22-alderson-aiend.md": {
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792671000.2848058,
+      "sha256": "15287e88b0891208dd14a348668e07475eefb7c0fd84ff2892792d3b14332c24",
+      "size": 13320,
+      "status": "skipped-low-score"
+    },
+    "source/ak-rss/2026-10-22-goedecke-modest.md": {
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792671000.2845929,
+      "sha256": "6eda9ca6aaa1658a5c0356227b06eaf72de122e8f59256d17dce59d7c7f334ac",
+      "size": 8963,
+      "status": "skipped-low-score"
+    },
+    "source/ak-rss/2026-10-22-nesbitt-trust.md": {
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792671000.2839642,
+      "sha256": "162809de27410cbdee4f44396b40cf3493854a632709834da3f009d3a8de6246",
+      "size": 10526,
+      "status": "skipped-low-score"
+    },
+    "source/ak-rss/2026-10-22-php-krebs.md": {
+      "chapter": "待分类",
+      "entry_id": "91938050fdd6017f",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792671000.2837498,
+      "score": 7,
+      "sha256": "97457fe53b72d7d035cc4ec42312feb9078883d6ec3b07a03665e654a0cb7946",
+      "size": 5345,
+      "status": "appended",
+      "title": "Widespread PHP Flaw May Cause Many Site Outages Today"
+    },
+    "source/ak-rss/2026-10-22-pluralistic-interop.md": {
+      "chapter": "待分类",
+      "entry_id": "0b1da7616f5acba1",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792671000.2843974,
+      "score": 8,
+      "sha256": "d12627d220592cc4552590e789bb316e8ebce59c30fd978eaeee6af82d595f84",
+      "size": 28731,
+      "status": "appended",
+      "title": "2026-10-22-pluralistic-interop"
+    },
+    "source/ak-rss/2026-10-22-zitron-ai.md": {
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792671000.284215,
+      "sha256": "252e63e26f76a7a245c326d21ad4f31dbeac29badd719901e416f693c0e93b87",
+      "size": 59274,
+      "status": "skipped-low-score"
+    },
     "source/gracker-rss/2026-08-20-marcus-openai-unraveling-BREAKING- OpenAI's u.md": {
       "last_seen": "2026-08-20T05:25:24.229229+08:00",
       "mtime": 1787166224.3864007,
@@ -6100,6 +6152,162 @@
       "status": "appended",
       "title": "Android 以后可能不会再有横竖屏适配了各位 Android 爱好者们，大家好。 多年来，几乎所有的 Android"
     },
+    "source/juejin-android/2026-10-23-76573848-自己动手写Android虚拟定位AppGPSSimulate.md": {
+      "chapter": "待分类",
+      "entry_id": "106da153f8e0ab92",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792700412.9063528,
+      "score": 14,
+      "sha256": "60d01d0c7d4102d85a48172f338eb6af4031fc8a97876b9a0f92ca34bfb28559",
+      "size": 14917,
+      "status": "appended",
+      "title": "自己动手写了一个 Android 虚拟定位 App：GPSSimulate 技术实自己动手写了一个 Android 虚拟"
+    },
+    "source/juejin-android/2026-10-23-76574953-腾讯XLog日志框架Android端接入.md": {
+      "chapter": "待分类",
+      "entry_id": "2dc76d55968e3173",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792700412.9054055,
+      "score": 9,
+      "sha256": "ea7eb736c507a704b3084d0c911f2fe3c257021a745ed37a1df79e8c356b9582",
+      "size": 11425,
+      "status": "appended",
+      "title": "腾讯 XLog 日志框架 Android 端接入mars 是微信官方的终端基础组件，是一个使用 C++ 编写的业务性无关"
+    },
+    "source/juejin-android/2026-10-23-76604358-Android架构消灭碎片化异步.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "df35bef952ae2d3a",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792700412.9112356,
+      "score": 12,
+      "sha256": "0b668cdce8e008ef59c5ad86610f2810d5a3f6eecbdf40663bd1558201599265",
+      "size": 10229,
+      "status": "appended",
+      "title": "Android 架构这些年，其实一直在消灭碎片化异步很多 Android 开发者刚入行的时候都会觉得： 后来工作几年才"
+    },
+    "source/juejin-android/2026-10-23-76610856-AndroidStudio新版Logcat.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "85e45d98bf296c56",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792700412.9091501,
+      "score": 8,
+      "sha256": "5e4caf669ba018226d7cc82501ec25df1042a330513922d4ff427ed733b97ec1",
+      "size": 7229,
+      "status": "appended",
+      "title": "Android Studio 新版 Logcat 一、新版核心变化（和旧版区别） 采用 字段:值 键值对语法，支持精确匹"
+    },
+    "source/juejin-android/2026-10-23-76648798-实战Kotlinselect.md": {
+      "chapter": "待分类",
+      "entry_id": "2aca3be59d7ac182",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792700412.9031513,
+      "score": 9,
+      "sha256": "37d56960ace8dd45ac994e9df84c77145fdf5543fc923f77338b5e9022b7c1f2",
+      "size": 18533,
+      "status": "appended",
+      "title": "你是不是还没用过 select？实战 Kotlin select 在 Kotlin 协程中，select 算是一个有点尴"
+    },
+    "source/juejin-android/2026-10-23-76655745-LiveData的缺陷为什么越来越少用.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "3866b930d8e120f1",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792700412.9117124,
+      "score": 11,
+      "sha256": "0ad9b10ce84fa64000ad121f239802960918ea13bee6ba7165f4ea370ea6339f",
+      "size": 10257,
+      "status": "appended",
+      "title": "LiveData 的缺陷：为什么我现在越来越少使用 LiveData？ > 我第一次接触 LiveData 的时候，觉得"
+    },
+    "source/juejin-android/2026-10-23-76678955-别再只用LoadingSuccessError表示页面状态.md": {
+      "chapter": "待分类",
+      "entry_id": "bc6af188087e4e35",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792700412.8951163,
+      "score": 9,
+      "sha256": "9264a52c22886048c60f3c3bee632a1d1e5efd4c89b824a039cafb343776247a",
+      "size": 33698,
+      "status": "appended",
+      "title": "别再只用 Loading、Success、Error 表示所有页面状态了各位 Compose 开发者，周五好。趁着这个愉"
+    },
+    "source/juejin-android/2026-10-23-76696126-KMP跟RN差这么多.md": {
+      "chapter": "待分类",
+      "entry_id": "7bc5ab581803d940",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792700412.9120078,
+      "score": 8,
+      "sha256": "b91f12931bcb66a9e5af4e7c4bb27085221322fb665f444913d82afbe7fc43b4",
+      "size": 7606,
+      "status": "appended",
+      "title": "你敢信吗？同样是跨端，KMP 跟 RN 居然差这么多！不知道你们在做跨平台混合开发即原生Android+原生iOS+跨平"
+    },
+    "source/juejin-android/2026-10-23-76756264-三星安卓系统BUG排查记录.md": {
+      "chapter": "待分类",
+      "entry_id": "33368f0c8bb62626",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792700412.9067223,
+      "score": 24,
+      "sha256": "f27c50a928ff14ee0c91a417d1189734e60b332bb27611fa70daf7f5efe2a7af",
+      "size": 38279,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
+    "source/juejin-android/2026-10-23-76782605-我常用的5个Kotlin优化小技巧.md": {
+      "chapter": "待分类",
+      "entry_id": "f0837a4e6a4f5937",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792700412.903846,
+      "score": 13,
+      "sha256": "9584a51d904bbcb55e95cddc967a63625215e63d76539217f2c020793b23d6ad",
+      "size": 11101,
+      "status": "appended",
+      "title": "我常用的 5 个 Kotlin 优化小技巧今天我先来分享一下最近几年常用的一些 Kotlin 代码优化小技巧，与君共享。"
+    },
+    "source/juejin-android/2026-10-23-76800243-曾经安卓开发人手一个EventBus.md": {
+      "chapter": "待分类",
+      "entry_id": "7399fd09a08c37e8",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792700412.907638,
+      "score": 9,
+      "sha256": "071069a7b4462faf8a0d06bc35caeeeb495d2f9f4b5d900200f8252f1a1a8078",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-10-23-76859369-CoroutineKit协程Flow工具库.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "21b2103d11041350",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792700412.912293,
+      "score": 7,
+      "sha256": "6af820856122aa3dc844cc68532097b77717c3893d2a7afc16a2b1a98e480676",
+      "size": 6016,
+      "status": "appended",
+      "title": "拒绝重复造轮子：我写了一个生产级的 Kotlin 协程与 Flow 工具库（CoroutineKit）拒绝重复造轮子：我"
+    },
+    "source/juejin-android/2026-10-23-76957327-记账App本地语音识别R8踩坑复盘.md": {
+      "chapter": "待分类",
+      "entry_id": "702834a7aced9aaf",
+      "last_appended": "2026-10-23T05:25:20.466807+08:00",
+      "last_seen": "2026-10-23T05:25:20.466807+08:00",
+      "mtime": 1792700412.894373,
+      "score": 17,
+      "sha256": "c88b1b69c24bd9e5da9de3dba9484459d97ec5860cd7ebfe5073b2a51068b1e5",
+      "size": 13870,
+      "status": "appended",
+      "title": "记账 App 我装了删、删了装，最后自己写了一个：本地语音识别 + R8 踩坑复盘记账 App 我装了删、删了装，最后自"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -8485,24 +8693,24 @@
     }
   },
   "last_report": {
-    "appended": 9,
-    "considered": 9,
-    "cutoff": "2026-10-21T05:20:20.314411+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-22.md",
+    "appended": 15,
+    "considered": 19,
+    "cutoff": "2026-10-22T05:20:20.307884+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-23.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2220,
+    "scanned": 2239,
     "skipped": {
       "existing_link": 0,
-      "low_score": 0,
+      "low_score": 4,
       "max_files": 0,
       "old_unseen": 1414,
       "path": 31,
-      "unchanged": 766
+      "unchanged": 775
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-22T05:25:20.307884+08:00",
+  "last_run_at": "2026-10-23T05:25:20.466807+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

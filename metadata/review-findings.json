@@ -9039,6 +9039,23 @@
       "summary": "beginSection 超长名称抛异常缺少追踪启用条件",
       "type": "missing-condition",
       "updated_at": "2026-10-22T22:44:14.210382+08:00"
+    },
+    {
+      "chapter": "22.3",
+      "created_at": "2026-10-23T01:45:40.548282+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261023-013020-cn-rewrite-b99eea76e9b44213",
+      "details": "2026-10-23 01:39 起未跟踪目录 src/assets/diagrams/<chNN> 由逐章配图任务（work_dir /tmp/gracker-android-wiki-diagrams-20261023，进度 metadata/gracker-diagrams-progress.json）持续写入；scripts/check-metadata.py check_layout 对 src 顶层目录做白名单扫描（CANONICAL_PARTS | AUXILIARY_SRC_DIRS={'preface','appendix'}），--files 模式下也无条件执行，故 check-metadata.py rc=1（目标章节本身 ✅，仅目录结构报错），aiw-run-complete.py run_local_gates 因此拒绝所有 changed 结果。修复需人工二选一：(a) 在 scripts/check-metadata.py AUXILIARY_SRC_DIRS 加入 'assets'（配图输出定位为正式资源目录）；(b) 让配图任务输出改到白名单内或仓库外。修复后关闭本 finding。本 run 已完成并保留完整校验通过的改写稿：~/.hermes/state/aiw-chinese-rewrite/20261023-013020-cn-rewrite-b99eea76e9b44213.after.md（sha16 396465d5d58c7d11，style_lint compare pass=true，GPT 审查 1 处已修），恢复时直接 cp 该稿覆盖 src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md，重跑 compare（git show HEAD:<rel> 生成 before）与 check-metadata 后按第七节格式提交。",
+      "id": "finding-0345c31ced8e",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "run 20261023-013020-cn-rewrite-b99eea76e9b44213 evidence: /Users/gracker/.hermes/state/aiw-chinese-rewrite/20261023-013020-cn-rewrite-b99eea76e9b44213.evidence.json"
+      ],
+      "status": "open",
+      "summary": "check-metadata 全线 rc=1：并行逐章配图任务把输出写进 src/assets/diagrams，该顶层目录不在 AUXILIARY_SRC_DIRS，check_layout 无条件扫描导致所有 AIW 车道 completer 元数据门禁失败",
+      "type": "metadata-gate-blocked",
+      "updated_at": "2026-10-23T01:45:40.548282+08:00"
     }
   ],
   "schema_version": 1

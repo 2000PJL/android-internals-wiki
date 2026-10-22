@@ -2,7 +2,7 @@
 title: 应用层 CPU 优化实战指南
 chapter: '25.7'
 section: '25.7'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
   - CPU优化
@@ -11,10 +11,10 @@ tags:
 related_chapters:
 - '5.1'
 - '5.4'
-last_verified: '2026-10-12'
-last_source_verified_at: '2026-10-12'
-last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6; Android Developers Android 16 fixed-rate behavior / Android 17 Profiling APIs / SystemClock / PerformanceHintManager and current kotlinx.coroutines Dispatchers.IO docs retrieved 2026-10-12
-verification_scope_note: 源码与官方文档抽检；线程池边界另经 OpenJDK 21 主机复现，未执行 Android 设备测试。
+last_verified: '2026-10-22'
+last_source_verified_at: '2026-10-22'
+last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6; Android Developers Android 16 fixed-rate behavior / Android 17 Profiling APIs / SystemClock / PerformanceHintManager and current kotlinx.coroutines Dispatchers.IO docs retrieved 2026-10-12; ThreadPoolExecutor.java and bionic libc/include/time.h + libc/kernel/uapi/linux/time.h token repairs verified against android-17.0.0_r1 on 2026-10-22
+verification_scope_note: 2026-10-22 仅核验 ThreadPoolExecutor 源码链接与 CLOCK_PROCESS_CPUTIME_ID 标识符修复；其余结论沿用 2026-10-12 的源码与官方文档抽检。线程池边界另经 OpenJDK 21 主机复现，未执行 Android 设备测试。
 confidence: medium-high
 last_idle_audit_at: '2026-10-12T22:39:42+08:00'
 consolidated_from:
@@ -22,8 +22,14 @@ consolidated_from:
 - src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md
 last_draft_polish_at: '2026-08-15T16:16:05+08:00'
 last_review_finalize_at: '2026-08-15T16:16:05+08:00'
-last_rework_at: '2026-08-15T16:16:05+08:00'
+last_rework_at: '2026-10-22T13:37:49+08:00'
 sources:
+- type: aosp
+  title: Android 17 bionic clock_gettime declaration and process CPU clock guidance
+  path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/include/time.h
+- type: aosp
+  title: Android 17 bionic UAPI CLOCK_PROCESS_CPUTIME_ID definition
+  path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/kernel/uapi/linux/time.h
 - type: aosp
   title: Android 17 ThreadPoolExecutor timeout and rejection lifecycle contracts
   path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java
@@ -103,7 +109,7 @@ sources:
 
 这解释了一个常见疑问：使用容量很大的队列时，任务会长时间停在第 2 步，`maximumPoolSize` 很少参与调度；换成 `SynchronousQueue` 这种没有存储槽位的队列，提交方就更容易触发创建非核心 worker。两种队列没有固定优劣，差别在于系统选择“排队”还是“增加并发”。
 
-默认配置下，核心线程不会因 `keepAliveTime` 到期而退出，`keepAliveTime` 只约束超出核心数量的 worker。要让核心线程也超时退出，先把 `keepAliveTime` 设为正值，再调用 `allowCoreThreadTimeOut(true)`；存活时间为零时这样调用会抛 `IllegalArgumentException`。本文的示例工厂把该值设为 `0L`，所以启用核心线程超时前要先给出正的存活时间。对应实现可在 [`ThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tag（调用方自定义标识）s/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java) 中核对。
+默认配置下，核心线程不会因 `keepAliveTime` 到期而退出，`keepAliveTime` 只约束超出核心数量的 worker。要让核心线程也超时退出，先把 `keepAliveTime` 设为正值，再调用 `allowCoreThreadTimeOut(true)`；存活时间为零时这样调用会抛 `IllegalArgumentException`。本文的示例工厂把该值设为 `0L`，所以启用核心线程超时前要先给出正的存活时间。对应实现可在 [`ThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java) 中核对。
 
 ### 线程数从任务模型来
 
@@ -310,7 +316,7 @@ std::optional<double> EquivalentCores(
 
 `sysconf(_SC_CLK_TCK)` 返回用户空间 ABI（应用与系统库之间的二进制接口） 使用的每秒 clock tick 数，正是这里需要的 USER_HZ 计算基准。它来自用户空间接口约定，和内核 `CONFIG_HZ` 是两回事：`CONFIG_HZ` 影响内核自身的定时 tick 配置，拿它推算每秒 tick 数会出错。
 
-精度上，`times()` 较粗，适合低频累计采样；需要更细的进程 CPU 时间时，NDK 可评估 `clock_gettime(CLOCK_PROCESS_CPUTIM（即时通信）E_ID, ...)`。只在 Kotlin/Java 层做应用监控时，前面的 `Process.getElapsedCpuTime()` 更直接。
+精度上，`times()` 较粗，适合低频累计采样；需要更细的进程 CPU 时间时，NDK 可评估 `clock_gettime(CLOCK_PROCESS_CPUTIME_ID, ...)`。只在 Kotlin/Java 层做应用监控时，前面的 `Process.getElapsedCpuTime()` 更直接。
 
 ## 预加载：由收益与生命周期决定，不由“空闲百分比”决定
 

@@ -4,9 +4,9 @@ chapter: '26.8'
 section: '26.8'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37); Google Play Android vitals 2026 口径
-last_verified: '2026-08-15'
-last_source_verified_at: '2026-08-15'
-last_verified_against: Current Android Vitals docs including app startup updated 2026-07-28 and excessive partial wake locks updated 2026-06-10, plus Play Developer Reporting API metric set docs updated 2026-06-26 and v1beta1 query references retrieved 2026-08-15
+last_verified: '2026-10-22'
+last_source_verified_at: '2026-10-22'
+last_verified_against: Android Vitals overview and memory docs updated 2026-10-19; DEX optimization applicability and February 2027 visibility notice; migrated Play metric definitions and v1beta1 query availability verified 2026-10-22; platform ceiling android-17.0.0_r1 / android17-6.18
 confidence: high
 tags:
 - observability
@@ -66,41 +66,65 @@ sources:
   path: https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.slowstartrate/query
 - type: official
   path: https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.slowrenderingrate/query
+- type: official
+  path: https://developer.android.com/google/play/vitals/memory-usage
+- type: official
+  path: https://developer.android.com/google/play/vitals/bitmap-memory-usage
+- type: official
+  path: https://developer.android.com/google/play/vitals/code-optimization
+- type: official
+  path: https://developer.android.com/google/play/vitals/crash
+- type: official
+  path: https://developer.android.com/google/play/vitals/anr
+- type: official
+  path: https://developer.android.com/google/play/vitals/excessive-battery-usage
+- type: official
+  path: https://developer.android.com/google/play/vitals/launch-time
+- type: official
+  path: https://developer.android.com/google/play/vitals/slow-session
 last_draft_polish_at: '2026-08-15T20:52:07+08:00'
 last_review_finalize_at: '2026-08-15T20:52:07+08:00'
 last_rework_at: '2026-08-15T20:52:07+08:00'
+last_idle_audit_at: '2026-10-22T14:42:11+08:00'
 ---
 
 # Android Vitals 与 Play Console 质量指标归因
 
 Android Vitals 是 Google Play 对线上技术质量的外部观测。它统计的用户都从 Google Play 安装应用、并允许共享使用情况与诊断数据，衡量的是这些用户经历的稳定性、性能和功耗问题。内部应用性能监控（application performance monitoring，APM）负责定位问题所在的版本、场景和调用路径，帮助团队在只向部分用户逐步发布的灰度阶段暂停异常版本。两套数据的采集范围、分母和时效不同，应分别判断趋势，再按版本、设备和错误类型相互校验，不能直接比较两个百分比的大小。
 
-指标口径以 2026 年 8 月 15 日可见的公开文档为准，平台版本上界为 Android 17 / API 37。Vitals 的指标定义、阈值和 Play 可见性策略由 Google Play 服务端制定，不在 `android-17.0.0_r1` 的 Android 开源项目（Android Open Source Project，AOSP）API 契约内。Android 17 源码可用于解释应用无响应（ANR）、低内存终止守护进程（low memory killer daemon，LMKD）、帧时间或唤醒机制，无法据此证明 Play 的服务端阈值。升级平台源码锚点不应连带改写这些阈值；Play 文档变更也不表示 Android 框架同时发生了对应改动。
+指标口径以 2026 年 10 月 22 日可见的公开文档为准，平台版本上界为 Android 17 / API 37。Vitals 的指标定义、阈值和 Play 可见性策略由 Google Play 服务端制定，不在 `android-17.0.0_r1` 的 Android 开源项目（Android Open Source Project，AOSP）API 契约内。Android 17 源码可用于解释应用无响应（ANR）、低内存终止守护进程（low memory killer daemon，LMKD）、帧时间或唤醒机制，无法据此证明 Play 的服务端阈值。升级平台源码锚点不应连带改写这些阈值；Play 文档变更也不表示 Android 框架同时发生了对应改动。
 
 ## Android Vitals 的指标层级
 
-发布评审要区分核心指标（core vitals）、其他 Vitals 和内部 APM。Play 为 core vitals 规定不良行为阈值（bad behavior threshold）；指标越过阈值后，应用在 Google Play 的可见性可能受影响。其他 Vitals 仍有诊断价值，但不适用同一套商店政策。
+发布评审要区分核心指标（core vitals）、其他 Vitals 和内部 APM。Play 为 core vitals 规定不良行为阈值（bad behavior threshold）；指标达到相应条件后，应用在 Google Play 的可见性可能受影响。指标是否属于 core vital、可见性约束何时生效，需要分别确认；其他 Vitals 中的 DEX code optimization（DEX 代码优化）也有已公布的可见性规则。
 
 | 层级 | 2026 年代表指标 | 它能回答什么 | 仍需内部补充什么 |
 |---|---|---|---|
-| Core vitals | user-perceived（用户可感知）crash rate、user-perceived ANR rate、excessive partial wake locks；表盘应用另有 excessive battery usage | Play 用户是否达到官方不良行为阈值 | 版本变更、调用栈、系统跟踪文件（trace）、业务场景和发布动作 |
-| 其他 Android Vitals | crash / ANR rate、multiple crash / ANR rate、user-perceived LMK、slow startup、slow/frozen frames、excessive wakeups、stuck background wakelocks、权限拒绝等 | 某类线上体验是否恶化，问题集中在哪些版本、设备或地区 | 实时告警、细粒度场景和可复现证据 |
+| Core vitals：稳定性与电量 | user-perceived（用户可感知）crash rate、user-perceived ANR rate、excessive partial wake locks；表盘应用另有 excessive battery usage | Play 用户是否达到官方不良行为阈值 | 版本变更、调用栈、系统跟踪文件（trace）、业务场景和发布动作 |
+| Core vitals：内存 | 移动应用的 memory usage（anonymous RSS + swap，匿名驻留内存与交换空间占用之和）、bitmap memory usage（位图内存占用） | 内存占用是否达到对应进程状态、设备内存档和应用/游戏类别的阈值 | 进程名、内存分位数、堆转储、图片资源和前后台切换时的释放行为 |
+| 其他 Android Vitals | crash / ANR rate、multiple crash / ANR rate、user-perceived LMK、slow startup、slow/frozen frames、excessive wakeups、stuck background wakelocks、DEX code optimization、权限拒绝等 | 某类线上体验是否恶化，问题集中在哪些版本、设备或地区 | 实时告警、细粒度场景和可复现证据 |
 | 游戏专项 | Slow Sessions 的 20 FPS、30 FPS 观察口径；FPS 表示 frames per second（每秒帧数） | 游戏会话是否长期处于低帧率 | 场景、画质档、SoC（片上系统）/GPU（图形处理器）、温控、Swappy 帧节奏库、ADPF（Android 动态性能框架）会话 |
 | 表盘专项 | watch face excessive battery usage 及 CPU、partial wakelock 贡献因素 | 表盘在非充电、没有其他应用使用设备时的耗电情况 | AoD（常亮显示）配置、刷新频率、Complication（表盘信息组件）更新、资源与动画成本 |
 | 内部 APM | crash-free users（无崩溃用户率）、启动分位数、页面卡顿、内存水位、业务错误率 | 当前版本是否回归，问题发生在什么路径 | 与 Play 维度一致的版本、设备、系统和渠道标识 |
 
-“表盘应用”这个限定不能省略。`excessive battery usage` 目前只为具备足够数据的表盘应用提供，并不覆盖所有 Wear OS 应用。Slow Sessions 也只适用于游戏，普通应用应使用 UI 渲染指标和端侧帧证据。
+[Android Vitals 总览](https://developer.android.com/google/play/vitals)已把匿名 RSS + swap 和位图内存列为移动应用的 core vitals，并注明：内存、位图内存和代码优化超出相应阈值，可能从 2027 年 2 月起影响商店可见性。截至 2026 年 10 月 22 日，这一日期尚未到来，不能把这些可见性约束写成已经生效。该日期属于 Play 政策，与 Android 平台版本升级分开判断。
+
+[匿名 RSS + swap](https://developer.android.com/google/play/vitals/memory-usage)按进程状态和 RAM 桶展示；内存阈值还区分应用与游戏，不能套用单一全局数值。前台、用户可感知服务、后台和缓存状态也需要分别分析。进程名拆分可能包含应用使用的 SDK 或系统服务，应先核对责任进程，再定位资源占用。[位图内存](https://developer.android.com/google/play/vitals/bitmap-memory-usage)除堆分配外还可能包含共享内存或图形缓冲区支持的位图，不能与匿名 RSS + swap 直接等同。
+
+[DEX code optimization](https://developer.android.com/google/play/vitals/code-optimization)检查代码压缩、优化和混淆，与启动表中的运行时 dexopt 分开计量。使用 AGP 8.10 或更高版本的最新补丁构建时，Vitals 从随包提供的 `r8.json` 读取这些比例；较低版本或缺少该文件时，会使用可用的 `mapping.txt`，否则依赖 DEX 启发式分析。本地 R8 Configuration Analyzer 的优化前得分不保证与 Vitals 一致。指标本身可为所有应用和游戏计算，但告警和阈值约束受未压缩 DEX 总大小条件限制；应用与游戏的适用条件不同，应按官方页面核对。
+
+“表盘应用”这个限定不能省略。`excessive battery usage` 目前只为具备足够数据的表盘应用提供，并不覆盖所有 Wear OS 应用。Slow Sessions 也只适用于游戏，普通应用应使用 UI 渲染指标和端侧帧证据。其[官方页面](https://developer.android.com/google/play/vitals/slow-session)提到未来将引导用户避开无法达到 20 FPS 的游戏，但没有在该页给出具体生效日期或可直接套用的整体不良行为阈值，不能据此宣称已经按固定比例降权。
 
 Play 阈值只是发版暂停规则之一。一个版本可能尚未达到该阈值，却已经相对上个版本明显恶化；这时内部灰度指标应先阻止继续放量。反过来，Play 上的存量问题也可能在 28 天窗口中继续出现，不能仅凭当天内部指标恢复就宣布问题结束。
 
 ## 28 天窗口、整体阈值与机型阈值
 
-Google Play 每天检查 core vitals，通常依据最近 28 天的用户加权结果评估质量；遇到突增时可能更早采取措施。整体阈值与机型阈值约束的范围不同：整体越线可能影响所有设备上的可见性，机型越线主要影响对应设备。Android Developers 的 2026 年口径如下。
+Google Play 每天检查 core vitals，通常依据最近 28 天的数据评估质量；Crash 和 ANR 的滚动比例按每日用户数加权。整体阈值与机型阈值约束的范围不同：整体越线可能影响所有设备上的可见性，机型越线主要影响对应设备。下表列出已生效的稳定性与电量阈值；内存指标按设备内存档、进程状态和应用/游戏类别另设阈值，其可见性生效时间见前述政策边界。
 
 | Core vital | 整体不良行为阈值 | 机型阈值 | 统计对象 |
 |---|---:|---:|---|
-| User-perceived crash rate | ≥ 1.09% | 手机机型 ≥ 8%；手表机型 ≥ 4% | 28 天窗口内经历至少一次用户可感知崩溃的 DAU |
-| User-perceived ANR rate | ≥ 0.47% | 手机机型 ≥ 8%；手表机型 ≥ 5% | 28 天窗口内经历至少一次用户可感知 ANR 的 DAU |
+| User-perceived crash rate | ≥ 1.09% | 手机机型 ≥ 8%；手表机型 ≥ 4% | 每日经历至少一次用户可感知崩溃的 DAU 比例，按每日用户数加权形成 28 天值 |
+| User-perceived ANR rate | ≥ 0.47% | 手机机型 ≥ 8%；手表机型 ≥ 5% | 每日经历至少一次用户可感知 ANR 的 DAU 比例，按每日用户数加权形成 28 天值 |
 | Excessive partial wake locks | > 5% | 无机型阈值 | 发生 excessive partial wake lock 的 app sessions |
 | Excessive battery usage（表盘） | > 1% | 手表机型 > 1% | 电量消耗超过 4.44%/hour 的 watch face sessions |
 
@@ -114,7 +138,7 @@ Vitals 的 user session（用户会话）按日聚合，与一次 launch（启�
 
 Partial wake lock（局部唤醒锁）在设备屏幕关闭后仍让 CPU 继续运行，因此持有过久会阻止设备进入低功耗状态。Android Vitals 将所有符合统计条件的 partial wake lock 时长相加：若它们在 24 小时内累计达到 2 小时或以上，这个会话被判为 excessive。统计时只计算应用处于后台、或正在运行前台服务期间持有锁的时间；现行文档列出的豁免包括音频、定位和由用户发起的 JobScheduler API 等具有明确用户收益的场景。28 天内 excessive 会话超过 5%，可能影响 Play 可见性。
 
-这一政策从 2026 年 3 月 1 日起已进入可见性约束阶段。旧资料中的“3 小时”或“仍处于不影响可见性的 beta”已不适合作为当前结论；诊断时应以 2026-06-10 更新的 [Excessive partial wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock) 页面和 [Android Vitals 总览](https://developer.android.com/topic/performance/vitals) 为准。
+这一政策从 2026 年 3 月 1 日起逐步实施可见性约束。旧资料中的“3 小时”或“仍处于不影响可见性的 beta”已不适合作为当前结论；诊断时应以 2026-09-21 更新的 [Excessive partial wake locks](https://developer.android.com/topic/performance/vitals/excessive-wakelock) 页面和 [Android Vitals 总览](https://developer.android.com/topic/performance/vitals) 为准。
 
 ### 表盘耗电的当前规则
 
@@ -162,7 +186,7 @@ ANR 不能只看一张堆栈。`Input dispatching timed out` 说明用户输入�
 
 Slow Sessions 的 present-to-present 指相邻两帧送达屏幕合成端的时间间隔；thermal status 是设备因温度变化进入的性能限制状态。因此 Slow Sessions 统计的是用户看到的出帧节奏，无法直接代替 CPU 或 GPU 单阶段耗时。
 
-Slow startup 的固定秒数适合识别严重慢开，却无法识别从 1.8 秒退化到 2.4 秒这类未达到 Play 门槛的回归。灰度暂停规则仍需比较相同启动类型、相同设备档和相同安装状态下的分布；第 21.1 节给出了启动数据的详细边界。
+Slow startup 的固定秒数适合识别严重慢开，却无法识别冷启动从 1.8 秒退化到 2.4 秒这类未达到 Play 门槛的回归；同样的耗时若出现在温启动中，2.4 秒已经超过其 2 秒门槛。灰度暂停规则仍需比较相同启动类型、相同设备档和相同安装状态下的分布；第 21.1 节给出了启动数据的详细边界。
 
 Frozen frame 与 ANR 使用不同判定条件。超过 700ms 的一帧会产生明显停顿，只有满足相应系统超时条件才形成 ANR。渲染归因应以 FrameTimeline 和线程调度证据为准，不能由“超过 700ms”直接推导出 ANR。
 
@@ -223,14 +247,14 @@ Vitals 未越线也不足以判定性能合格。Play 的固定启动或 frozen 
 
 ## Play Developer Reporting API 与内部数据仓库对接
 
-Play Developer Reporting API 用 metric set（指标集）组织指标，同一个 metric set 内的指标共享数据新鲜度、聚合粒度和可用维度。2026 年稳定性和性能 rate（比例指标）的主要入口为 `v1beta1`，包括 `vitals.anrrate`、`vitals.crashrate`、`vitals.lmkrate`、`vitals.excessivewakeuprate`、`vitals.stuckbackgroundwakelockrate`、`vitals.slowstartrate` 和 `vitals.slowrenderingrate`；错误报告计数仍有 `v1alpha1` 资源。API 版本、metric set 名称和指标名应按官方 schema（字段、类型和约束定义）保存，不能从 Console 文案自行拼接。
+Play Developer Reporting API 用 metric set（指标集）组织指标，同一个 metric set 内的指标共享数据新鲜度、聚合粒度和可用维度。2026 年稳定性和性能 rate（比例指标）的主要入口为 `v1beta1`，包括 `vitals.anrrate`、`vitals.crashrate`、`vitals.lmkrate`、`vitals.excessivewakeuprate`、`vitals.stuckbackgroundwakelockrate`、`vitals.slowstartrate` 和 `vitals.slowrenderingrate`；内存另有 `vitals.anonrssandswapmemoryusage` 和 `vitals.bitmapmemoryusage`，提供内存占用分位数与 `distinctUsers`，不能当作受影响用户率。错误报告计数仍有 `v1alpha1` 资源。API 版本、metric set 名称和指标名应按官方 schema（字段、类型和约束定义）保存，不能从 Console 文案自行拼接。
 
 一次 `query` 请求包含四类核心信息：
 
-- `timelineSpec`：聚合粒度和时间范围。DAILY 只支持 `America/Los_Angeles`，HOURLY 只支持 UTC；部分 rolling metric（滚动窗口指标）只提供 DAILY 数据。
+- `timelineSpec`：聚合粒度和时间范围。Crash/ANR 支持 DAILY 与 HOURLY，分别固定使用 `America/Los_Angeles` 和 UTC；`slowstartrate`、`slowrenderingrate` 只支持 DAILY。部分 rolling metric（滚动窗口指标）也只提供 DAILY 数据，不能向所有 metric set 复用小时级请求。
 - `metrics`：例如 `userPerceivedCrashRate`、`userPerceivedCrashRate28dUserWeighted`、`distinctUsers`。
 - `dimensions`：用于切片的维度，例如版本、机型和地区。每个 metric set 支持的集合可能不同，提交请求前应读取对应 endpoint（具体 API 接口资源）文档。
-- `filter`、分页和 `userCohort`：过滤分组、读取完整结果，并用 user cohort（用户群组）区分公开系统版本、应用测试用户或系统 beta 用户。
+- `filter`、分页和 `userCohort`：过滤分组、读取完整结果，并用 user cohort（用户群组）选择数据范围。Crash/ANR 支持公开系统版本、应用测试用户和系统 beta 用户；其中 `OS_BETA` 仅支持 `versionCode` 与 `osBuild` 维度。`slowstartrate`、`slowrenderingrate` 的 `userCohort` 只支持 `OS_PUBLIC`，不能照搬 Crash/ANR 的测试群组查询。
 
 API 使用 `https://www.googleapis.com/auth/playdeveloperreporting` OAuth scope（OAuth 授权范围，用来声明访问权限）。每个 metric set 资源还提供 freshness 查询，可得到各粒度最新可用数据点。定时任务应先读 freshness，只在数据推进后拉取新增区间，并记录服务端 freshness、抓取时间、API 版本和请求维度。
 
@@ -258,7 +282,7 @@ Play 与内部系统没有共享的事件标识，因此数据仓库应把 Play 
 
 ## 技术质量政策与商店可见性风险
 
-越过 core vital 阈值后，Google Play 可能降低应用或游戏的可见性；机型维度存在 bad behavior 时，Play 可能让对应设备用户更少看到该应用，并可能在商店详情页显示警告。文档使用的是 “may” 或 “likely”，不应改写成每次越线都会立即降权的确定承诺。
+越过已生效的稳定性或电量 core vital 阈值后，Google Play 可能降低应用或游戏的可见性；机型维度存在 bad behavior 时，Play 可能让对应设备用户更少看到该应用，并可能在商店详情页显示警告。文档使用的是 “may” 或 “likely”，不应改写成每次越线都会立即降权的确定承诺。内存和代码优化则应按已公布的未来生效时间安排整改，不能与当前已生效规则混算。
 
 Crash 和 ANR 的新出现问题（emerging issues）还有一条独立时效：问题在设备上持续超过 7 天，Android Vitals 会将其标记出来，并给开发者最长 21 天处理。这个机制不会改变 28 天 core vital 统计定义，也不能当作继续放量的宽限承诺。
 
@@ -278,17 +302,21 @@ Android Vitals 适合判断 Play 覆盖用户的影响面和商店政策风险�
 
 ## 参考资料
 
-- [Android Vitals 总览与 2026 core vital 阈值](https://developer.android.com/topic/performance/vitals)
-- [Crash rate 的 DAU 与 user-perceived 定义](https://developer.android.com/topic/performance/vitals/crash)
-- [ANR rate 与当前 user-perceived ANR 定义](https://developer.android.com/topic/performance/vitals/anr)
+- [Android Vitals 总览、core vital 阈值与生效时间](https://developer.android.com/topic/performance/vitals)
+- [Crash rate 的 DAU 与 user-perceived 定义](https://developer.android.com/google/play/vitals/crash)
+- [ANR rate 与当前 user-perceived ANR 定义](https://developer.android.com/google/play/vitals/anr)
 - [Excessive partial wake locks 当前规则](https://developer.android.com/topic/performance/vitals/excessive-wakelock)
-- [表盘 Excessive battery usage](https://developer.android.com/topic/performance/vitals/excessive-battery-usage)
-- [启动时间与 excessive startup 边界](https://developer.android.com/topic/performance/vitals/launch-time)
+- [表盘 Excessive battery usage](https://developer.android.com/google/play/vitals/excessive-battery-usage)
+- [启动时间与 excessive startup 边界](https://developer.android.com/google/play/vitals/launch-time)
 - [Slow rendering 与 frozen frame](https://developer.android.com/topic/performance/vitals/render)
-- [游戏 Slow Sessions](https://developer.android.com/topic/performance/vitals/slow-session)
+- [游戏 Slow Sessions](https://developer.android.com/google/play/vitals/slow-session)
 - [User-perceived LMK](https://developer.android.com/topic/performance/vitals/lmk)
+- [匿名 RSS + swap 内存指标与进程状态](https://developer.android.com/google/play/vitals/memory-usage)
+- [位图内存指标与统计范围](https://developer.android.com/google/play/vitals/bitmap-memory-usage)
+- [DEX code optimization 适用条件与元数据来源](https://developer.android.com/google/play/vitals/code-optimization)
 - [Play Developer Reporting API metric sets](https://developers.google.com/play/developer/reporting/metricset-intro)
 - [Crash rate `v1beta1` query schema](https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate/query)
 - [ANR rate `v1beta1` query schema](https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.anrrate/query)
+- [Slow startup rate `v1beta1` query schema](https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.slowstartrate/query)
 - [Slow rendering rate `v1beta1` query schema](https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.slowrenderingrate/query)
 - [2026 电池技术质量执行说明](https://developer.android.com/blog/posts/battery-technical-quality-enforcement-is-here-how-to-optimize-common-wake-lock-use-cases)

@@ -2,7 +2,7 @@
 title: 应用层 CPU 优化实战指南
 chapter: '25.7'
 section: '25.7'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
 tags:
   - CPU优化
@@ -13,17 +13,41 @@ related_chapters:
 - '5.4'
 last_verified: '2026-10-22'
 last_source_verified_at: '2026-10-22'
-last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6; Android Developers Android 16 fixed-rate behavior / Android 17 Profiling APIs / SystemClock / PerformanceHintManager and current kotlinx.coroutines Dispatchers.IO docs retrieved 2026-10-12; ThreadPoolExecutor.java and bionic libc/include/time.h + libc/kernel/uapi/linux/time.h token repairs verified against android-17.0.0_r1 on 2026-10-22
-verification_scope_note: 2026-10-22 仅核验 ThreadPoolExecutor 源码链接与 CLOCK_PROCESS_CPUTIME_ID 标识符修复；其余结论沿用 2026-10-12 的源码与官方文档抽检。线程池边界另经 OpenJDK 21 主机复现，未执行 Android 设备测试。
+last_verified_against: AOSP android-17.0.0_r1 / android17-6.18-2026-06_r6; ThreadPoolExecutor, ScheduledThreadPoolExecutor, Runtime, bionic sysconf/sysinfo/time, Process/SystemClock, ART monitor, ActivityManager and Profiling sources; Android Developers Android 16 fixed-rate behavior / Android 17 Profiling APIs / PerformanceHintManager / WorkManager and kotlinx.coroutines IO/limitedParallelism docs retrieved 2026-10-22
+verification_scope_note: 2026-10-22 已通读全文并核验关键机制与官方 API 级别、异常及限频边界；线程池与协程边界经 JDK 21 / kotlinx.coroutines 1.8.0 主机复现，原样 C++17 示例经主机编译与 UBSan 检查。Android API 使用显式故障注入或编译适配器，未执行 Android SDK/NDK 构建或设备测试；Profiling 产物类型的官方说明差异保留于正文。
 confidence: medium-high
 last_idle_audit_at: '2026-10-12T22:39:42+08:00'
 consolidated_from:
 - src/part5-app/ch25-power-size/12-android17-excessive-cpu-kill.md
 - src/part5-app/ch25-power-size/15-scheduledexecutor-fixedrate-android16.md
 last_draft_polish_at: '2026-08-15T16:16:05+08:00'
-last_review_finalize_at: '2026-08-15T16:16:05+08:00'
+last_review_finalize_at: '2026-10-22T16:16:49+08:00'
 last_rework_at: '2026-10-22T13:37:49+08:00'
 sources:
+- type: aosp
+  title: Android 17 Process priority range and exception contract
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java
+- type: aosp
+  title: Android 17 Runtime availableProcessors implementation
+  path: https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Runtime.java
+- type: aosp
+  title: Android 17 bionic configured processor and USER_HZ queries
+  path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/sysconf.cpp
+- type: aosp
+  title: Android 17 bionic possible and online CPU counts
+  path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/sysinfo.cpp
+- type: aosp
+  title: Android 17 nanoTime and deep-sleep clock boundary
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java
+- type: aosp
+  title: Android 17 kernel nice and guest CPU accounting
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cputime.c
+- type: official
+  title: kotlinx.coroutines limitedParallelism suspension and concurrency boundary
+  path: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html
+- type: official
+  title: WorkManager persistent scheduling and work constraints
+  path: https://developer.android.com/arch/work
 - type: aosp
   title: Android 17 bionic clock_gettime declaration and process CPU clock guidance
   path: https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/include/time.h
@@ -113,7 +137,7 @@ sources:
 
 ### 线程数从任务模型来
 
-`Runtime.availableProcessors()` 返回 JVM 当前可用的逻辑处理器数量。至于性能核有几个、应用能长期占满几个核、合适的 worker 数量是多少，我们从这个数字里都读不出来；任务内部还可能调用并行库，设备也会受前台状态、温度、功耗策略和其他进程影响。
+`Runtime.availableProcessors()` 的 API 契约描述 JVM 可用的处理器数，但在此 Android 17 基线上，[`Runtime.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Runtime.java#728) 实际读取 `_SC_NPROCESSORS_CONF`；bionic 的 [`get_nprocs_conf()`](https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/sysinfo.cpp#62) 又从 `/sys/devices/system/cpu/possible` 取得数量。它不反映应用线程当前的亲和性或在线 CPU 数，也不能说明性能核有几个、应用能长期占满几个核、合适的 worker 数量是多少。任务内部还可能调用并行库，设备也会受前台状态、温度、功耗策略和其他进程影响。
 
 线程数需要从任务模型出发：
 
@@ -138,6 +162,7 @@ sources:
 
 ```kotlin
 import android.os.Process
+import android.util.Log
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.ThreadPoolExecutor
@@ -156,11 +181,16 @@ fun newBoundedCpuExecutor(
 ): ThreadPoolExecutor {
     require(config.workers > 0)
     require(config.queueCapacity > 0)
+    require(config.threadPriority in -20..19)
 
     val sequence = AtomicInteger()
     val factory = ThreadFactory { command ->
         Thread({
-            Process.setThreadPriority(config.threadPriority)
+            try {
+                Process.setThreadPriority(config.threadPriority)
+            } catch (error: SecurityException) {
+                Log.w("CpuExecutor", "Cannot set priority; keeping current priority", error)
+            }
             command.run()
         }, "$name-${sequence.incrementAndGet()}")
     }
@@ -181,7 +211,7 @@ fun newBoundedCpuExecutor(
 
 `CallerRunsPolicy` 在执行器尚未关闭时，会在提交任务的线程里直接调用 `Runnable.run()`；执行器已经关闭时，它会静默丢弃任务。如果提交方恰好是主线程、Binder（Android 跨进程调用机制） 线程或持有锁的回调线程，计算或阻塞工作就会转移到那里。用它实现反压——让提交速度随执行能力自动放慢——前提是提交线程允许执行该任务，并且接受关闭后的丢弃行为。
 
-线程工厂把 `Process.setThreadPriority()` 放在新线程内部调用，因为该 API 修改的是调用它的线程；这样每条新建的 worker 线程都会带上配置中的优先级。
+线程工厂在新线程内部调用 `Process.setThreadPriority()`，修改当前 worker 的优先级。参数先限制在 `-20..19`，权限不足时记录警告并保留当前优先级，继续执行 `command.run()`。这里把优先级视为可失败的调度提示：传给工厂的 `command` 是线程池的 Worker 入口，若包装代码在进入它之前抛异常，Worker 的退出清理就不会执行，可能留下未运行的任务和错误的存活计数。参数与异常契约见 [`Process.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java#1392)，Worker 登记与退出逻辑见 [`ThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java#857)。
 
 ### 线程池至少记录哪些数据
 
@@ -243,7 +273,7 @@ fun calculateCpuWindow(
 }
 ```
 
-`equivalentCores` 就是这个“等效占用核数”：1.0 表示窗口内累计使用了约一个核的 CPU 时间，多线程并行时可以大于 1.0。除以逻辑处理器数量得到的值，只能作为当前逻辑容量占比的粗略提示，因为各核性能差异、频率、温控和调度限制都没有计入。
+`equivalentCores` 就是这个“等效占用核数”：1.0 表示窗口内累计使用了约一个核的 CPU 时间，多线程并行时可以大于 1.0。再除以 `availableProcessors()`，得到的值只能作为按配置处理器数归一化的粗略提示；它不反映线程当前可用的 CPU 集合，各核性能差异、频率、温控和调度限制也没有计入。
 
 采样窗口太短会受毫秒精度影响，太长又会掩盖尖峰，所以窗口长度跟着要观察的用户路径走。告警线同理：来自场景基线、用户影响和设备分层；适用于所有设备的“高 CPU 阈值”，别写死在监控代码里。
 
@@ -255,7 +285,7 @@ Linux 6.18 的 `/proc/stat` 首行按 `USER_HZ` 输出累计时间；`USER_HZ` �
 cpu  user nice system idle iowait irq softirq steal guest guest_nice
 ```
 
-`user` 与 `nice` 是用户态时间，区别在于后者使用调整过的 nice 优先级；`system` 是内核态时间，`idle` 是空闲时间，`irq` / `softirq` 是硬中断与软中断处理时间，`steal` 是虚拟化环境中被宿主机占用的时间，`guest` / `guest_nice` 是运行虚拟 CPU 的时间。
+`user` 与 `nice` 是用户态时间；在此内核基线上，`nice` 只统计 `task_nice(p) > 0` 的任务，负 nice 值的任务仍计入 `user`，见 [`account_user_time()` 与 `account_guest_time()`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cputime.c#132)。`system` 是内核态时间，`idle` 是空闲时间，`irq` / `softirq` 是硬中断与软中断处理时间，`steal` 是虚拟化环境中被宿主机占用的时间，`guest` / `guest_nice` 是运行虚拟 CPU 的时间。
 
 其中 `guest` 已包含在 `user` 中，`guest_nice` 已包含在 `nice` 中，所以计算总时间时把十个字段全部相加，会重复计算虚拟 CPU 时间；常见做法是只累计 `user` 到 `steal` 的前八项，并明确忙碌时间里要不要排除 `iowait`（CPU 空闲且系统有未完成 I/O 的累计时间）。
 
@@ -271,12 +301,13 @@ NDK 侧对应的是 `times()`：Android 的 C 标准库 bionic 会把这个调�
 
 四个输出字段里，`tms_utime` 与 `tms_stime` 是当前进程线程组的累计 CPU tick，我们要用的就是这两个；`tms_cutime` 与 `tms_cstime` 反映子进程时间，这些时间已纳入 `times()` 的子进程统计语义，普通 Android 应用通常用不上。`times()` 的返回值是从系统定义起点累计的 elapsed tick，绝对值没有业务含义，应只比较短时间窗口内的差值。
 
-下面的 NDK 示例保留单位换算，并拒绝无效样本：
+下面的 C++17 示例先校验计数范围，再计算窗口增量；遇到计数回绕或倒退时丢弃窗口：
 
 ```cpp
 #include <sys/times.h>
 #include <unistd.h>
 
+#include <limits>
 #include <optional>
 
 struct TimesSample {
@@ -291,23 +322,29 @@ std::optional<TimesSample> TakeTimesSample() {
 
     tms value{};
     const clock_t elapsed = times(&value);
-    if (elapsed == static_cast<clock_t>(-1)) return std::nullopt;
+    if (elapsed == static_cast<clock_t>(-1) || elapsed < 0 ||
+        value.tms_utime < 0 || value.tms_stime < 0) return std::nullopt;
+    if (value.tms_utime >
+        std::numeric_limits<clock_t>::max() - value.tms_stime) return std::nullopt;
 
     return TimesSample{
-        .elapsed_ticks = elapsed,
-        .process_ticks = value.tms_utime + value.tms_stime,
-        .ticks_per_second = ticks_per_second,
+        elapsed,
+        value.tms_utime + value.tms_stime,
+        ticks_per_second,
     };
 }
 
 std::optional<double> EquivalentCores(
         const TimesSample& before,
         const TimesSample& after) {
-    if (before.ticks_per_second != after.ticks_per_second) return std::nullopt;
+    if (before.ticks_per_second <= 0 ||
+        before.ticks_per_second != after.ticks_per_second) return std::nullopt;
+    if (before.elapsed_ticks < 0 || before.process_ticks < 0 ||
+        after.elapsed_ticks <= before.elapsed_ticks ||
+        after.process_ticks < before.process_ticks) return std::nullopt;
 
     const clock_t wall_ticks = after.elapsed_ticks - before.elapsed_ticks;
     const clock_t cpu_ticks = after.process_ticks - before.process_ticks;
-    if (wall_ticks <= 0 || cpu_ticks < 0) return std::nullopt;
 
     return static_cast<double>(cpu_ticks) /
            static_cast<double>(wall_ticks);
@@ -337,7 +374,9 @@ std::optional<double> EquivalentCores(
 
 ## 周期任务：避免固定频率补跑制造恢复尖峰
 
-`scheduleAtFixedRate()` 按预定起点维持固定节拍，而 `scheduleWithFixedDelay()` 从上一次执行结束后再等待指定间隔。任务因进程冻结、CPU 挂起或单次执行过长而错过周期后，旧实现可能连续补跑；面向 Android 16、API 36 及以上版本的应用默认启用 `STPE_SKIP_MULTIPLE_MISSED_PERIODIC_TASKS`，回到可执行的进程生命周期后最多立即补一次，详见官方[行为变更说明](https://developer.android.com/about/versions/16/behavior-changes-16)。`android-17.0.0_r1` 的 [`ScheduledThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ScheduledThreadPoolExecutor.java) 已直接采用这套时间校正逻辑，不再保留按 target SDK 分支选择旧行为的代码。
+`scheduleAtFixedRate()` 按预定起点维持固定节拍，而 `scheduleWithFixedDelay()` 从上一次执行结束后再等待指定间隔。任务因进程冻结、长时间未获调度或单次执行过长而错过周期后，旧实现可能连续补跑；面向 Android 16、API 36 及以上版本的应用默认启用 `STPE_SKIP_MULTIPLE_MISSED_PERIODIC_TASKS`，回到可执行的进程生命周期后最多立即补一次，详见官方[行为变更说明](https://developer.android.com/about/versions/16/behavior-changes-16)。`android-17.0.0_r1` 的 [`ScheduledThreadPoolExecutor.java`](https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ScheduledThreadPoolExecutor.java) 已直接采用这套时间校正逻辑，不再保留按 target SDK 分支选择旧行为的代码。
+
+进程冻结和整机深度睡眠要分开判断：此执行器用 `System.nanoTime()` 维护到期时间，Android 上这个时间基准不计深度睡眠，见 [`SystemClock.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java#58)。不能把设备睡眠的墙钟时长直接算成漏掉的周期数。
 
 平台变化只限制 `ScheduledThreadPoolExecutor` 自己的追赶，业务手写补发循环、多个独立定时器或三方 SDK 队列都不在其管辖内。所以我们先把周期任务按语义分类：
 
@@ -362,7 +401,9 @@ AOSP r1 用 `setProcState >= PROCESS_STATE_HOME` 筛选受检进程，Home（桌
 
 后台任务的常见问题发生在 Worker 已结束或被停止之后：协程、独立线程、JNI（Java/Kotlin 与 C/C++ 互调接口）、子进程或 Binder 循环仍在工作，进程随后转为缓存状态。处理时避免重复任务，根据失败类型逐步延长重试间隔，让取消信号传到所有子任务，并用有界并发、可分批执行的工作单元和进度检查点控制成本；围着某个 AOSP 默认阈值持续轮询，没有意义。
 
-API 37 应用可以预注册触发器，并通过全局结果监听器接收系统触发的产物；系统会限频，每次事件都有结果也得不到保证，详见 [`ProfilingManager`](https://developer.android.com/reference/android/os/ProfilingManager)。`ProfilingResult` 公开的只有触发类型、文件路径、应用 tag、错误码和错误信息，进程 ID、WorkManager 的 Work ID 都不在其中。所以保存结果时，我们把它与时间邻近的 `ApplicationExitInfo`、`processStateSummary`（退出前保存的自定义状态摘要）、任务起止时间、停止原因和线程名放在一起，标记为“可能关联”；要给出精确映射，手头的字段还不够。字段定义见 [`ProfilingResult`](https://developer.android.com/reference/android/os/ProfilingResult)。
+在 Android 17（API 37）上，应用可预注册此触发器，并通过全局结果监听器接收系统触发的产物；系统会限频，不能保证每次事件都有结果。若进程死亡导致回调失败，后续进程启动时应重新注册监听器，系统可能重投结果，详见 [`ProfilingManager`](https://developer.android.com/reference/android/os/ProfilingManager)。先检查错误码；`getResultFilePath()` 在错误码不是 `ERROR_NONE` 时为 `null`，不能直接当作可读文件路径。
+
+`ProfilingResult` 公开的业务信息只有触发类型、文件路径、应用 tag、错误码和错误信息，进程 ID、WorkManager 的 Work ID 都不在其中。保存结果时，把它与时间邻近的 `ApplicationExitInfo`、`processStateSummary`（退出前保存的自定义状态摘要）、任务起止时间、停止原因和线程名放在一起，标记为“可能关联”；这些字段不足以给出精确映射。字段定义见 [`ProfilingResult`](https://developer.android.com/reference/android/os/ProfilingResult)。
 
 产物类型上，官方文档自己也不一致：`android-17.0.0_r1` 的 [`ProfilingTrigger.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java) 和 API reference 写的是正在运行的 system trace（系统跟踪） 快照，Android 17 [功能页](https://developer.android.com/about/versions/17/features) 写的是调用栈采样。接入端应保存系统返回的原始文件，并根据实际文件类型和错误码选择解析器；只凭 trigger 名称写死产物格式，恰好会踩中这种不一致。
 
@@ -417,7 +458,9 @@ class WorkDispatchers(
 }
 ```
 
-`limitedParallelism()` 限制的是该视图同时执行的协程数量，并不承诺对应固定数量的物理线程。阻塞并发上限应与数据库连接池、服务端限流、文件描述符和内存预算匹配。CPU 任务即使写成 `suspend`（可挂起而不阻塞当前线程） 函数，所需指令和 CPU 时间也省不下来；仍要分批、取消过期任务并控制并发。
+`limitedParallelism()` 限制该视图同时执行代码的并行度，不承诺固定数量的物理线程，也不限制排队的协程数。协程挂起后，其他协程仍可进入该视图，所以 `limitedParallelism(1)` 也可能同时保留多个未完成的请求。跨挂起点限制在途请求时，可用 `Semaphore` 在请求开始前取得许可、结束时释放；生产端还要限制积压、合并重复工作或拒绝过期任务。这个边界见官方 [`limitedParallelism()` 文档的 “It is not a mutex!”](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html)。
+
+阻塞并行度和在途请求额度都应与数据库连接池、服务端限流、文件描述符和内存预算匹配。CPU 任务即使写成 `suspend`（可挂起而不阻塞当前线程）函数，所需指令和 CPU 时间也省不下来；仍要分批、取消过期任务并控制并发。
 
 主线程上用 `runBlocking` 阻塞等待后台结果，是要避开的做法。结构化并发让父任务统一管理子任务的生命周期、取消与错误传播，但它补偿不了不受控的工作量。
 

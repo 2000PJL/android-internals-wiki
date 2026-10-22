@@ -125,13 +125,13 @@ Perfetto 里看到一帧超时，我们先回答三个问题，再去看各段 t
 
 生产之外，系统侧还有三个角色：SurfaceFlinger（SF）组织各个 layer，HWC（Hardware Composer，硬件合成器）选择硬件合成路径，FrameTimeline 记录预期帧与实际帧的时间。不同出图类型在线程、layer 数量、合成位置与 FrameTimeline 覆盖程度上的差别，就是我们分类的起点。
 
-`queueBuffer` 表示 Producer 把 buffer 交回队列，`latch`（采纳） 表示 SurfaceFlinger 在本轮采纳该 buffer，`present fence` 是显示管线完成本轮 present 后给出的同步信号。这三个事件各自只说明显示路径走到了对应位置；要还原整帧，我们还得把其他阶段的记录串起来。本节先明确公共主线，后续章节再解释各出图类型从哪里分开。涉及 dma-buf（跨设备共享 buffer 的内核机制）、sync_file（把同步 fence 暴露为文件描述符的接口）、DRM/KMS（内核显示与模式设置子系统） 或调度器实现时，统一核对 `android17-6.18-2026-06_r6`；Framework 结论不依靠某个单独的 kernel 函数推导。
+`queueBuffer` 表示 Producer 把 buffer 交回队列，`latch`（采纳） 表示 SurfaceFlinger 在本轮采纳该 buffer，`present fence` 是显示管线完成本轮 present 后给出的同步信号。这三个事件各自只说明显示路径走到了对应位置；要还原整帧，我们还得把其他阶段的记录串起来。本节先明确公共主线，后续章节再解释各出图类型从哪里分开。分析走到 dma-buf（跨设备共享 buffer 的内核机制）、sync_file（把同步 fence 暴露为文件描述符的接口）、DRM/KMS（内核显示与模式设置子系统） 或调度器实现时，我们统一回到导语里的内核基线核对；Framework 结论不依靠某个单独的 kernel 函数推导。
 
 ### 用四个坐标识别出图类型
 
-`SurfaceView`、`TextureView`、WebView、Flutter 和 Compose 都是 API 或框架名称，单凭名称还确定不了 trace 里的图形路径。同一个 Flutter 页面可能用 `SurfaceView` 或 `TextureView` 作宿主，嵌入的 Platform View（嵌入 Flutter 的原生平台视图） 还会改变 layer 拓扑；同一个播放器也可能在普通 BufferQueue、SurfaceView 独立 layer 与 tunneled/sideband（绕开普通 buffer 队列的专用媒体路径） 专用媒体路径之间切换。
+框架名称在这里帮不上忙：`SurfaceView`、`TextureView`、WebView、Flutter 和 Compose 都是 API 或框架名称，单凭名称还确定不了 trace 里的图形路径。同一个 Flutter 页面可能用 `SurfaceView` 或 `TextureView` 作宿主，嵌入的 Platform View（嵌入 Flutter 的原生平台视图） 还会改变 layer 拓扑；同一个播放器也可能在普通 BufferQueue、SurfaceView 独立 layer 与 tunneled/sideband（绕开普通 buffer 队列的专用媒体路径） 之间切换。
 
-每次分析先固定四个坐标：
+所以每次分析，我们先固定四个坐标：
 
 | 坐标 | 要确认的对象 | Trace 或源码证据 |
 |---|---|---|
@@ -162,7 +162,7 @@ Android 9 到 Android 17 的图形栈，用“Legacy”与“BLAST”二分来�
 
 ### 典型模式对比
 
-先按 Producer、输出目标、layer 拓扑与合成位置区分主干模式：
+把四个坐标套到常见页面上，就得到下面的主干模式；每一行还标注了这类模式容易误判的点：
 
 | 模式 | 主要 Producer | Surface/layer 形态 | 主要合成位置 | 容易误判的点 | 章节 |
 |---|---|---|---|---|---|
@@ -268,9 +268,9 @@ Framework 工程师可先读前面的公共主线，再看 [13.6 SurfaceControl 
 | WebView | Chromium 与宿主 HWUI | functor（把 Chromium 绘制接入 HWUI 的桥接对象）或 child Surface | 以现场拓扑为准 |
 | HardwareBufferRenderer | HWUI RenderThread / GPU | 调用方 `HardwareBuffer` | 调用方提交后才送显 |
 
-三类 fence 各回答一个问题：acquire fence 说明“buffer 何时可读”，release fence 说明“buffer 何时可复用”，present fence 说明“本轮 Display 何时到达显示边界”。顺着这组关系，我们把两类常见现象分开查：`dequeueBuffer` 长时间等待时，检查同一队列的可用 slot、Consumer 持有量和上一轮 release；`BufferTX` 积压时，检查 transaction readiness（事务是否满足处理条件）是否满足、acquire 的状态，以及 buffer 最终被 latch 还是 drop（丢弃）。增加队列深度会同时增加内存和延迟，算不上默认修复手段。
+三类 fence 各回答一个问题：acquire fence 说明“buffer 何时可读”，release fence 说明“buffer 何时可复用”，present fence 说明“本轮 Display 何时到达显示边界”。顺着这组关系，我们把两类常见现象分开查：`dequeueBuffer` 长时间等待时，检查同一队列的可用 slot、Consumer 持有量和上一轮 release；`BufferTX` 积压时，检查 transaction readiness（事务是否满足处理条件）、acquire 的状态，以及 buffer 最终被 latch 还是 drop（丢弃）。增加队列深度会同时增加内存和延迟，算不上默认修复手段。
 
-API 37 的 `Surface.isProducerThrottlingEnabled()` 可帮助识别 EGL/Vulkan queue/present 边界的 CPU backpressure（下游来不及消费时，Producer 被迫等待）。关掉它之后，向显示系统提交的帧率投票不会变，dequeue 或 swapchain acquire 产生的正常等待也仍在。
+API 37 的 `Surface.isProducerThrottlingEnabled()` 可帮助识别 EGL/Vulkan queue/present 环节的 CPU backpressure（下游来不及消费时，Producer 被迫等待）。关掉它之后，向显示系统提交的帧率投票不会变，dequeue 或 swapchain acquire 产生的正常等待也仍在。
 
 #### Step 3：对齐同一帧
 
@@ -378,7 +378,7 @@ SurfaceView 提供独立 layer 条件，不保证 DEVICE、低功耗或低延迟
 
 看到任何 App 出图问题，我们先确定 Producer、Surface/layer、合成位置和 present 边界，再进入线程耗时。标准窗口从 `vsync-app → doFrame → RenderThread → BLAST → SurfaceFlinger → HWC` 建立基线；特殊框架与硬件 Producer 只是在某些节点替换角色或增加分支。
 
-`queueBuffer` 说明内容已提交，`BufferTX` 说明 SurfaceFlinger 侧仍有待处理的 buffer 更新，latch 说明本轮已经采纳，present fence 提供显示管线完成呈现的时间反馈。按顺序对齐这四类证据，才能区分帧开始晚、Producer 完成晚、Consumer 等待、退回 GPU 合成和显示后段延迟。
+`queueBuffer` 说明内容已提交，`BufferTX` 说明 SurfaceFlinger 侧仍有待处理的 buffer 更新，latch 说明本轮已经采纳，present fence 提供显示管线完成呈现的时间反馈。按顺序对齐这四类记录，才能区分帧开始晚、Producer 完成晚、Consumer 等待、退回 GPU 合成和显示后段延迟。
 
 
 ## View、HWUI 与 BLAST 标准路径
@@ -391,7 +391,7 @@ Compose 独立于 Android platform 发布，我们在这里只说明它在标准
 
 ### 如何确认这是标准 HWUI 页面
 
-分类依据是主体内容的生产与提交路径。普通 View、纯 Compose 或 `ComposeView` 页面通常属于标准类型；单看页面里出现的某个框架控件名，还定不了类。
+要确认页面属于标准类型，我们依据的是主体内容由谁生产、经哪里提交。普通 View、纯 Compose 或 `ComposeView` 页面通常属于标准类型；单看页面里出现的某个框架控件名，还定不了类。
 
 | 条件 | 标准类型的证据 | 需要切换章节的信号 |
 |---|---|---|
@@ -400,7 +400,7 @@ Compose 独立于 Android platform 发布，我们在这里只说明它在标准
 | layer 拓扑 | 主体像素落在 App Window layer | 出现承载主体内容的 child layer 或多个独立 Producer layer |
 | 帧节奏 | `Choreographer#doFrame` 与窗口 SurfaceFrame 能解释主体更新 | 引擎、解码器或硬件模块维护独立 cadence（输出间隔） |
 
-常规列表页、详情页和设置页是典型标准页面。它们可能包含复杂布局、耗时较高的 shader 或大量 Compose 重组；“标准”只描述路径，不评价负载大小。页面嵌入视频、地图、相机预览或大型 WebView 后，应按实际占主体内容的 Producer 和 layer 重新分类。
+常规列表页、详情页和设置页是典型标准页面。它们可能包含复杂布局、耗时较高的 shader 或大量 Compose 重组；“标准”只描述路径，不评价负载大小。页面嵌入视频、地图、相机预览或大型 WebView 后，我们就要按实际占主体内容的 Producer 和 layer 重新分类。
 
 ### 一帧的完整旅程
 
@@ -499,7 +499,7 @@ SurfaceFlinger::setTransactionState(...)
 
 #### ⑦～⑧ SF FrontEnd 与 latch
 
-SurfaceFlinger 在 `vsync-sf` 节奏下集中 flush transaction。FrontEnd 把请求合入 `RequestedLayerState`，再由 `LayerLifecycleManager` / `LayerSnapshotBuilder` 生成本轮 `LayerSnapshot`。
+transaction 到达后，接下来的工作都在 SurfaceFlinger 进程里：它在 `vsync-sf` 节奏下集中 flush transaction，FrontEnd 把请求合入 `RequestedLayerState`，再由 `LayerLifecycleManager` / `LayerSnapshotBuilder` 生成本轮 `LayerSnapshot`。
 
 `latch` 表示本轮采纳了目标 layer 的新 buffer。一般路径会检查 acquire fence；符合 `shouldLatchUnsignaled()`、简单单 layer update、队列顺序等条件时，可以先 latch 尚未 signal 的 buffer，也就是先采纳 transaction，不等待 Producer 完成信号。RenderEngine 或 HWC 真正读取内容时仍要遵守 fence。
 
@@ -519,7 +519,7 @@ SurfaceFlinger 把所有可见 layer 交给 HWC 协商 composition type（CLIENT
 
 HWC 返回每个 display 的 present fence 和每个 layer 的 release fence。SurfaceFlinger 还会根据 CLIENT/DEVICE composition 合并或替换 release 信息，再通过 callback/release channel（释放通知通道） 回传 Producer。
 
-Present fence 是 Android 显示栈的 display-present 时间锚点；panel 扫描、像素响应，以及从触摸输入到屏幕发光的完整延迟，还需要 driver trace（驱动追踪） 或外部测量。Release fence 约束旧 buffer 何时能安全复用，present fence 替代不了它。
+Present fence 是 Android 显示栈里 display-present 的时间基准；panel 扫描、像素响应，以及从触摸输入到屏幕发光的完整延迟，还需要 driver trace（驱动追踪） 或外部测量。Release fence 约束旧 buffer 何时能安全复用，present fence 替代不了它。
 
 ### BLAST Buffer 生命周期
 
@@ -651,7 +651,7 @@ sequenceDiagram
 
 #### 用 RecyclerView 滑动校准观察顺序
 
-跟手滑动适合把上述关口连成一帧：
+拿一次跟手滑动当例子，可以把上述关口连成一帧：
 
 1. `ACTION_MOVE` 经输入通道到达应用，同一 VSync 周期积累的 batched motion event 在 INPUT callback 中消费；滚动容器据此更新偏移并请求 redraw（重绘）。
 2. ANIMATION、INSETS_ANIMATION 与 TRAVERSAL 继续执行。RecyclerView 是复用 DisplayList，还是重新 bind（绑定数据）、measure、layout item，要以本帧 slice 和 layout request 为准。
@@ -680,9 +680,9 @@ FrameTimeline 从 Android 12 起为标准 App Window 提供 `SurfaceFrame` 和 `
 - actual end = `actual.ts + actual.dur`；
 - overrun = actual end - expected end，表示超出预期截止时间的时长。
 
-`SurfaceFrame::setAcquireFenceTime()` 把 App actual end 设置为 `max(acquire fence signal time, queue time)`；fence 尚未 signal 时，暂用 queue time。对标准 HWUI 窗口，actual end 因而反映 Producer 完成可读与 buffer post（提交入队） 两个边界中较晚的一项，UI thread 返回时刻替代不了它。
+`SurfaceFrame::setAcquireFenceTime()` 把 App actual end 设置为 `max(acquire fence signal time, queue time)`；fence 尚未 signal 时，暂用 queue time。对标准 HWUI 窗口，actual end 因而反映 Producer 完成可读与 buffer post（提交入队） 两个时间点中较晚的一项，UI thread 返回时刻替代不了它。
 
-`jank_type` 给出的是卡顿分类线索，根因还要靠对应阶段的记录来确定。`Buffer Stuffing` 要结合 dequeue wait、queued backlog、`BufferTX`、latch、release fence 和 recovery trace 来看；`SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`DisplayHAL`、`PredictionError` 分别指向 SF CPU、SF GPU、显示 HAL 或预测误差，也要与对应的线程或硬件证据对齐。
+`jank_type` 给出的是卡顿分类线索，根因还要靠对应阶段的记录来确定。`Buffer Stuffing` 要结合 dequeue wait、queued backlog、`BufferTX`、latch、release fence 和 recovery trace 来看；`SurfaceFlingerCpuDeadlineMissed`、`SurfaceFlingerGpuDeadlineMissed`、`DisplayHAL`、`PredictionError` 分别指向 SF CPU、SF GPU、显示 HAL 或预测误差，也要与对应的线程或硬件记录对齐。
 
 下面的 Perfetto SQL 用于按 SurfaceFrame token 对齐目标应用的 expected/actual 记录：
 

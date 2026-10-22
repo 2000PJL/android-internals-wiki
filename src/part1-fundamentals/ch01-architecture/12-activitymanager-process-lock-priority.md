@@ -182,7 +182,7 @@ AMS 负责在系统侧协调应用组件与进程生命周期。它不渲染界�
 
 ---
 
-分析 system_server 延迟时，要把业务状态变化、锁等待和 OomAdjuster 计算放在同一条因果线上。我们按这条线组织全文：「进程管理的主路径」看组件与调度入口（AMS、ATMS、WMS 的分工，进程重要性，冷启动，各类 ANR，广播与 ContentProvider），也就是 AMS、ATMS、WMS 的分工、进程重要性、冷启动、各类 ANR、广播与 ContentProvider；「system_server 锁模型与竞争」看双锁契约、锁顺序与竞争观测；「进程状态、OomAdjuster 与优先级」看 adj、procState、schedGroup 的计算与应用。版本差异、常见误区与参考资料放在末尾。
+分析 system_server 延迟时，要把业务状态变化、锁等待和 OomAdjuster 计算放在同一条因果线上。我们按这条线组织全文：「进程管理的主路径」看组件与调度入口（AMS、ATMS、WMS 的分工，进程重要性，冷启动，各类 ANR，广播与 ContentProvider）；「system_server 锁模型与竞争」看双锁契约、锁顺序与竞争观测；「进程状态、OomAdjuster 与优先级」看 adj、procState、schedGroup 的计算与应用。版本差异、常见误区与参考资料放在末尾。
 
 ## 进程管理的主路径
 
@@ -202,7 +202,7 @@ AMS 通过 `IActivityManager` Binder 接口接受跨进程请求。请求通常�
 
 #### Perfetto 中先看什么
 
-我们用 Perfetto 分析 AMS 时，证据主要来自三类数据：
+我们用 Perfetto 分析 AMS 时，主要看三类数据：
 
 - `system_server` 与目标应用的线程时间片段；
 - Binder 事务、线程状态和 Java 监视器锁竞争（monitor contention）；
@@ -692,17 +692,15 @@ Android 14 起，应用处于缓存态（cached state）时，系统可以暂存
 
 ## system_server 锁模型与竞争
 
-AMS 的状态变化会触发多组共享结构更新。调用落到 system_server 后，我们应先确认持锁范围、锁顺序，以及 Binder 回调有没有把局部操作放大成全局等待。
+AMS 的状态变化会触发多组共享结构更新。一次调用落到 system_server 之后，我们要先确认三件事：这段代码的持锁范围有多大、按什么顺序取锁、Binder 回调有没有把局部操作放大成全局等待。
 
-`ActivityManagerService` 处在 Android 进程管理的中心。进程启动和退出、组件状态、LRU（最近最少使用）次序、OOM adj（进程回收优先级分值）、应用冻结等操作，都可能在 `system_server` 内并发发生。
+`ActivityManagerService` 处在 Android 进程管理的中心，进程启动和退出、组件状态、LRU（最近最少使用）次序、OOM adj（进程回收优先级分值）、应用冻结等操作，都可能在 `system_server` 内并发发生。用一把大锁保护这些状态，代码容易保持一致，代价是互不修改同一组数据的线程也要排进同一个等待队列。
 
-只用一把大锁保护这些状态，代码容易保持一致，却会让互不修改同一组数据的线程排在同一个等待队列中。
-
-Android 12 引入 `mProcLock`，并保留原有的 `mGlobalLock`。Android 17 仍采用这套双锁设计。双锁扩大了部分进程状态读取和独立操作的并发空间，但没有把 AMS 的所有进程管理操作改成只持 `mProcLock`。OOM adj 全量计算、LRU 写入等关键路径仍会同时持有两把锁。
+Android 12 引入 `mProcLock`，并保留原有的 `mGlobalLock`，Android 17 沿用这套双锁设计。双锁扩大了部分进程状态读取和独立操作的并发空间，但 AMS 的进程管理操作并没有全部改成只持 `mProcLock`：OOM adj 全量计算、LRU 写入等关键路径仍会同时持有两把锁。
 
 ### 1. 从单锁到双锁
 
-Android 11 的 AMS 尚未定义 `ENABLE_PROC_LOCK`、`mProcLock` 和 `ActivityManagerProcLock`。当时进程管理代码广泛依赖 AMS 对象自身的 Java monitor，也就是 `synchronized` 使用的对象锁；这把锁后来称为 `mGlobalLock`。
+我们先回到 Android 11。那时的 AMS 尚未定义 `ENABLE_PROC_LOCK`、`mProcLock` 和 `ActivityManagerProcLock`，进程管理代码广泛依赖 AMS 对象自身的 Java monitor，也就是 `synchronized` 使用的对象锁；这把锁后来称为 `mGlobalLock`。
 
 Android 12 的 `ActivityManagerService` 首次给出完整的双锁骨架：
 
@@ -724,7 +722,7 @@ final ActivityManagerGlobalLock mProcLock = ENABLE_PROC_LOCK
 
 ### 2. 两把锁分别保护什么
 
-`ActivityManagerService` 的注释给出了两把锁的分工：Service、Provider、Broadcast 等核心组件状态仍主要由 `mGlobalLock` 保护；进程管理状态逐步迁移到 `mProcLock`。源码中的锁要求如下。
+看具体路径之前，我们先记住 `ActivityManagerService` 注释给出的分工：Service、Provider、Broadcast 等核心组件状态仍主要由 `mGlobalLock` 保护；进程管理状态逐步迁移到 `mProcLock`。源码中的锁要求归纳如下。
 
 | 锁要求 | 典型数据或操作 | 说明 |
 |---|---|---|
@@ -733,11 +731,11 @@ final ActivityManagerGlobalLock mProcLock = ENABLE_PROC_LOCK
 | 两把锁都持有 | LRU 列表写入、OOM adj 计算及提交、跨组件关系更新进程状态 | 获取顺序固定为 `mGlobalLock` → `mProcLock` |
 | 任一把锁均可读取 | 使用 `@CompositeRWLock` 保护的数据，例如 `mLruProcesses` | “任一把锁可读”不表示任一把锁都可写 |
 
-这里的“进程状态”也不能简单理解成 `ProcessRecord` 的全部字段：`ProcessRecord` 聚合了 Activity、Service、Provider、错误状态、优化状态等多个子记录，各字段的锁注解并不相同。判断某段代码能否只持 `mProcLock`，应查看字段与方法上的 `@GuardedBy`、`@CompositeRWLock` 注解，只看对象类型会得出错误结论。
+这里的“进程状态”比字面要窄：`ProcessRecord` 聚合了 Activity、Service、Provider、错误状态、优化状态等多个子记录，各字段的锁注解并不相同。我们判断某段代码能否只持 `mProcLock`，要查看字段与方法上的 `@GuardedBy`、`@CompositeRWLock` 注解；只看对象类型，会得出错误结论。
 
 #### 具体入口：`startService()` 的持锁范围与竞争观测
 
-`ActivityManagerService.startService()` 在 Android 17 中没有给整个 Java 方法加 `synchronized`。它完成调用者检查后才进入以下同步代码块：
+`ActivityManagerService.startService()` 并没有给整个 Java 方法加 `synchronized`，它完成调用者检查后才进入以下同步代码块：
 
 ```java
 synchronized (mGlobalLock) {
@@ -749,7 +747,7 @@ synchronized (mGlobalLock) {
 
 `realStartServiceLocked()` 还会在这段受锁保护的代码中向应用发送 `IApplicationThread.scheduleCreateService()`；这是 oneway Binder 调用，但 Binder 驱动排队、系统负载和较长的临界区仍可能增加其他线程的锁等待时间。
 
-采集 Java 监视器锁竞争数据后，可以用 Perfetto 标准库定位：
+采集到 Java 监视器锁竞争数据后，我们可以用 Perfetto 标准库定位：
 
 ```sql
 INCLUDE PERFETTO MODULE android.monitor_contention;
@@ -818,7 +816,7 @@ void forEachLruProcessesLOSP(boolean iterateForward,
 
 这段方法只遍历列表，没有改变元素和分区索引。调用方仍要持有两把锁中的一把，传入的回调不得修改受组合写锁保护的数据。
 
-LRU 写路径的要求更严格。Android 17 的 `updateLruProcessLocked()` 已由 `@GuardedBy("mService")` 约束，随后在内部获取 `mProcLock`，再调用 `updateLruProcessLSP()`：
+LRU 写路径的要求更严格。`updateLruProcessLocked()` 已由 `@GuardedBy("mService")` 约束，随后在内部获取 `mProcLock`，再调用 `updateLruProcessLSP()`：
 
 ```java
 @GuardedBy("mService")
@@ -840,7 +838,7 @@ private void updateLruProcessLSP(...) {
 
 ### 4. 方法后缀是锁契约的速记
 
-AMS 进程管理代码用方法名后缀提示调用方需要持有什么锁。
+读 AMS 进程管理代码时，我们会不断碰到 `LOSP`、`LSP`、`Locked` 这类方法名后缀。它们提示调用方：进入方法前需要持有什么锁。
 
 | 后缀 | 源码中的含义 | 调用要求 |
 |---|---|---|
@@ -884,6 +882,8 @@ synchronized (mProcLock) {
 
 ### 6. 三条代表性路径
 
+我们用三条真实路径检验前面的契约：OOM adj 更新要同时拿两把锁，时区更新只拿进程锁，CachedAppOptimizer 则示范了锁内做最小变更、锁外做慢工作的写法。
+
 #### 6.1 OOM adj 更新的锁路径
 
 OOM 调整实现已移到 `com.android.server.am.psc.OomAdjuster`。全量更新入口的锁关系如下：
@@ -904,7 +904,7 @@ private void updateOomAdjLSP(@OomAdjReason int oomAdjReason) {
 
 `performUpdateOomAdjLSP()`、`updateAndTrimProcessLSP()` 等后续方法也标注为同时受两把锁保护。双锁没有让一次完整的 OOM adj 更新与所有 AMS 全局操作并行。它提供的收益之一，是让只需读取或修改独立进程状态的其他路径可以绕开全局锁等待。
 
-分析性能时要记住这一点：若系统轨迹显示 OOM adj 期间 `mGlobalLock` 长时间被持有，即使双锁已经启用，也要查看持锁线程在计算、Binder 调用、内核调度和 I/O 上分别花了多少时间。
+我们分析性能时要记住这一点：若系统轨迹显示 OOM adj 期间 `mGlobalLock` 长时间被持有，即使双锁已经启用，也要接着查看持锁线程在计算、Binder 调用、内核调度和 I/O 上分别花了多少时间。
 
 #### 6.2 时区更新：只用进程锁遍历 LRU
 
@@ -926,7 +926,7 @@ case UPDATE_TIME_ZONE: {
 } break;
 ```
 
-该路径展示了 `LOSP` 的作用：读取 LRU 不必占用 `mGlobalLock`。风险在于，代码会在 `mProcLock` 内向多个应用进程发起 Binder 调用。即使这些调用通常只发送请求、不等待应用返回结果，也要通过系统轨迹判断临界区是否因调度、Binder 驱动拥塞或目标进程状态而延长。
+这条路径展示了 `LOSP` 的作用：读取 LRU 不必占用 `mGlobalLock`。我们同时要看清它的风险：代码会在 `mProcLock` 内向多个应用进程发起 Binder 调用。这些调用通常只发送请求、不等待应用返回结果，但临界区有没有因调度、Binder 驱动拥塞或目标进程状态而延长，仍要通过系统轨迹判断。
 
 #### 6.3 CachedAppOptimizer：进程锁保护冻结与压缩队列
 
@@ -947,7 +947,7 @@ final class ActivityManagerProcLock implements ActivityManagerGlobalLock {
 
 `ThreadPriorityBooster.boost()` 会读取当前线程的 Linux nice 值；nice 是普通调度策略下的线程优先级参数。若当前优先级低于目标值，它会通过 `setThreadPriority()` 提升当前线程。嵌套临界区由线程局部计数器记录，退出最外层临界区时恢复原优先级。
 
-这段源码支持的结论有三点：
+从这段源码出发，我们能确认三点：
 
 - 提升对象是当前持锁线程，不是整个 `system_server` 进程中的所有线程。
 - 调整的是 Linux nice 优先级，目标为前台线程优先级。
@@ -959,7 +959,7 @@ final class ActivityManagerProcLock implements ActivityManagerGlobalLock {
 
 ### 8. 用 Perfetto 区分等待时间与持锁时间
 
-锁问题至少涉及等待线程和持锁线程两方。`futex` 是 Linux 用户态同步原语在内核中的等待机制；Binder 线程处于 `futex` 等待只说明它在等锁，至于是哪把锁、持锁线程为何还没释放，要靠下面的证据区分。
+锁问题至少涉及等待线程和持锁线程两方。`futex` 是 Linux 用户态同步原语在内核中的等待机制；Binder 线程处于 `futex` 等待只说明它在等锁，至于是哪把锁、持锁线程为何还没释放，要靠下面的观测手段来区分。
 
 `ActivityManagerService` 定义了 `big_locks` 类别下的四组事件：
 
@@ -989,7 +989,7 @@ WHERE p.name = 'system_server'
 ORDER BY s.dur DESC;
 ```
 
-`*_lock_acquire` 是尝试获取锁时发出的瞬时事件，`*_lock_held` 是成功获取后开始的持锁区间。二者位于同一线程轨道时，可以在界面中直接观察等待与持锁的先后关系。查询结果为空时，再使用 ART 的 Java monitor 竞争数据作为通用证据。
+`*_lock_acquire` 是尝试获取锁时发出的瞬时事件，`*_lock_held` 是成功获取后开始的持锁区间。二者位于同一线程轨道时，可以在界面中直接观察等待与持锁的先后关系。查询结果为空时，再使用 ART 的 Java monitor 竞争数据这类通用观测。
 
 Perfetto 当前标准库的模块名为 `android.monitor_contention`，表名为 `android_monitor_contention`。monitor contention 指多个线程争用同一个 Java 对象锁。下面的查询使用现有列名列出 `system_server` 中的这类竞争：
 
@@ -1039,12 +1039,12 @@ LIMIT 50;
 
 ### 10. 应用侧能做什么
 
-AMS 用哪把锁、服务端当时怎么持锁，普通应用既选择不了，也从一次系统 API 调用里推断不出来。应用侧能控制的是调用时机、频率和结果时效要求。
+AMS 用哪把锁、服务端当时怎么持锁，普通应用既选择不了，也从一次系统 API 调用里推断不出来。我们在应用侧能控制的，是调用时机、频率和结果时效要求。
 
 - 避免在每帧、滚动回调或高频定时器中同步查询系统进程与内存状态。一次调用可能很快，密集的 IPC 仍会增加客户端和 `system_server` 的调度负担。
 - 缓存前要确认数据允许短时间过期。进程列表、内存压力和组件状态的时效要求不同，缓存时长要分别定。
 - 将与绘制无关的系统查询移出主线程或关键交互时段。异步执行只能减少应用主线程阻塞，服务端成本仍然存在，因此还要控制调用次数。
-- `ActivityManager.getRunningAppProcesses()` 是进程可见性查询，不会因为“读取列表”就刷新 LRU。`UsageStatsManager` 提供应用使用记录，语义不同，不能当作进程列表的通用替代品。
+- `ActivityManager.getRunningAppProcesses()` 是进程可见性查询，不会因为“读取列表”就刷新 LRU。`UsageStatsManager` 提供应用使用记录，语义不同，当不了进程列表的通用替代品。
 - `ServiceConnection.onServiceConnected()` 等回调在应用进程中按 `ServiceDispatcher` 配置的执行器或 `Handler` 分发。回调里发起新的系统调用可能形成新的同步 IPC；至于 `system_server` 当时是否还持有 AMS 锁，从应用侧判断不出来。
 
 平台代码的优化需要遵守更严格的条件：缩短锁内工作、避免持锁时发起不可控的跨进程调用（IPC）、在安全时复制所需状态后释放锁，并用相同负载的系统轨迹验证等待时间和持锁时间。任何把代码移到锁外的修改，都要先证明对象生命周期与组合写锁规则仍然成立。
@@ -1145,7 +1145,7 @@ API 37 用注解给出锁要求：`computeOomAdjLSP()`、`applyResultsLSP()` 等
 
 #### 4.1 计算进程自身承载的组件
 
-全量更新会遍历 LRU 进程，并调用下面这个 API 37 方法：
+我们跟着一轮全量更新走：它会遍历 LRU 进程，并对每个进程调用下面这个 API 37 方法：
 
 ```java
 private void computeOomAdjLSP(
@@ -1335,7 +1335,7 @@ API 37 没有“每 1 秒无条件全量重算”的 `OOM_ADJ_UPDATE_INTERVAL`�
 - LMKD adj 更新可按 3 条记录一包发送；
 - 进程组更新回调放到独立处理器线程，避免在线程很多时长期占用锁。
 
-源码没有“超过 20 ms 就算 OomAdjuster 瓶颈”的平台阈值。应对照一帧预算、输入 / 启动关键路径、同一时段 AMS Binder 阻塞和设备进程规模评估。
+源码没有“超过 20 ms 就算 OomAdjuster 瓶颈”的平台阈值。我们应对照一帧预算、输入 / 启动关键路径、同一时段 AMS Binder 阻塞和设备进程规模来评估。
 
 ### 九、诊断与验证方法
 
@@ -1444,7 +1444,7 @@ ORDER BY s.ts, a.key;
 
 ### “看到 `am_kill` 就说明进程由 `lmkd` 终止”
 
-`am_kill` 是 AMS 主动终止进程时写入的 EventLog。判断是否由 `lmkd` 回收，需要结合 `lmkd` 证据、进程死亡事件与退出信息。
+`am_kill` 是 AMS 主动终止进程时写入的 EventLog。判断是否由 `lmkd` 回收，要回到 `lmkd` 自己的记录、进程死亡事件与退出信息。
 
 ### “前台 Service 不会被终止”
 

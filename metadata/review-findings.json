@@ -8776,6 +8776,9 @@
     },
     {
       "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "close_note": "已将（Machine Learning，机器学习）从 XML 移至正文首次 ML（现行第 570 行）；第 573 行保留 XML inflate（从布局 XML 创建 View）。证据：Geekbench 6 Benchmark Internals（May 2024）p16，pdftotext -layout 第 406–430 行；p21，第 524–526 行；AOSP android-17.0.0_r1 core/java/android/view/LayoutInflater.java 第 52–71、402–413、453–464 行。括注内容多重集、标题、代码、链接保持不变；元数据、SUMMARY、diff 检查通过。章节设为 ready-for-review，待独立复核。日志 logs/rework/2026-10-22-20261022-213520-rework-f2e8fcf3-rework.md",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261022-213520-rework-f2e8fcf3",
       "created_at": "2026-10-22T18:44:39.775083+08:00",
       "created_by": "aiw-chinese-rewrite",
       "created_run_id": "20261022-183020-cn-rewrite-f2e8fcf33846f36c",
@@ -8786,10 +8789,10 @@
       "source_paths": [
         "run 20261022-183020-cn-rewrite-f2e8fcf33846f36c GPT 审查前的自检"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "错位括注：XML（Machine Learning，机器学习）挂错术语，应为 ML 的解释",
       "type": "wrong-gloss-anchor",
-      "updated_at": "2026-10-22T18:44:39.775083+08:00"
+      "updated_at": "2026-10-22T21:39:04.696898+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",

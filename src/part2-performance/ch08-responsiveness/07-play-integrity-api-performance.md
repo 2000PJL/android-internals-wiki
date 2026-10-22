@@ -44,28 +44,28 @@ last_idle_audit_at: '2026-08-25T22:35:51+08:00'
 
 # Play Integrity API 性能与集成延迟
 
-Play Integrity API 帮业务服务端把关登录、支付提交、兑换、排行榜上报这类需要服务端处理的动作：它向服务端提供应用完整性、Play 账号授权、设备环境和可选风险信号。API 返回的是一组 verdict（风险判定字段），“允许或拒绝”仍由服务端结合账号、交易和行为信息来决定。
+登录、支付提交、兑换、排行榜上报这类动作需要服务端处理，Play Integrity API 帮我们把好这一关：它向服务端提供应用完整性、Play 账号授权、设备环境和可选风险信号。API 返回的是一组 verdict（风险判定字段），“允许或拒绝”仍由服务端结合账号、交易和行为信息来决定。
 
 这套校验也会拉长交互路径：客户端先向 Google Play 申请加密 token（完整性令牌），业务服务端再把 token 交给 Google 解密和验证。其中 Standard 请求的 token provider 可以在受保护动作发生前先准备好，把这一段移出交互路径；其余阶段只能各自记录耗时。如果全程只记一个“Play Integrity 总耗时”，慢请求发生时，我们分不清问题出在客户端、接入网络、Google 解密接口还是业务服务端。
 
 > 源码基线：AOSP `android-17.0.0_r1`，覆盖 Android 17 / API 37。
 
-Play Integrity 的判定实现在闭源 Google Play 组件和 Google 服务端中；后文引用的 AOSP 与 kernel 锚点只用来解释 IPC、调度和网络承载，闭源组件的内部步骤超出了这些锚点能说明的范围。
+还有一个前提要先交代：Play Integrity 的判定实现在闭源的 Google Play 组件和 Google 服务端里，后文引用的 AOSP 与 kernel 源码位置，只用来解释这条路径上的 IPC、调度和网络承载；闭源组件的内部步骤，从这些源码里读不出来。
 
 ## 1. 接口定位
 
-迁移是很多团队接入 Play Integrity 的起点：SafetyNet Attestation API 已弃用，官方替代接口是 Play Integrity API。两者的客户端类型、token 格式、服务端验证接口和响应字段都不同，迁移时 SafetyNet 的 JWS（JSON Web Signature，带签名的 JSON 结构）解析器要一并换掉，新 token 对应的是另一套格式。
+很多团队接触到 Play Integrity，是从 SafetyNet Attestation API 的弃用开始的：官方指定的替代接口就是 Play Integrity API。两者的客户端类型、token 格式、服务端验证接口和响应字段都不同，所以迁移时 SafetyNet 的 JWS（JSON Web Signature，带签名的 JSON 结构）解析器要一并换掉——新 token 对应的是另一套格式。
 
-Play Integrity 与 Key Attestation（密钥证明）解决的问题也不同：
+它和 Key Attestation（密钥证明）解决的问题也不同，我们按各自负责的事情分开看：
 
 - Play Integrity 返回 Google Play 对应用版本、Play 授权状态、设备环境和可选风险项的判定。
 - Key Attestation 证明某把密钥及其生成环境的属性，常用于设备绑定密钥、签名或密钥交换；`PLAY_RECOGNIZED`、`LICENSED` 这类 Play 分发信号出自 Play Integrity，在缺 Play Store 的环境里，Key Attestation 也当不了它的替身。
 
-是否同时使用两类信号，取决于威胁模型，也就是业务需要防范哪些攻击。组合使用会增加客户端集成与服务端校验成本，是否叠加，按场景评估即可。
+两类信号是否叠加，取决于威胁模型，也就是业务需要防范哪些攻击；组合使用会增加客户端集成与服务端校验成本，按场景评估即可。
 
 ### 1.1 服务端会看到哪些主要判定
 
-拿到解密后的 payload，我们至少要分开读两个独立字段：应用授权 `appLicensingVerdict` 与应用完整性 `appRecognitionVerdict`。两者独立取值，同一个请求可能一个字段已有明确结果，另一个仍是 `UNEVALUATED`（未评估）。
+拿到解密后的 payload，我们先分开读两个独立字段：应用授权 `appLicensingVerdict` 与应用完整性 `appRecognitionVerdict`。两者独立取值，同一个请求可能一个字段已有明确结果，另一个仍是 `UNEVALUATED`（未评估）。
 
 先看 `appLicensingVerdict`，它有下面三个值。这里的“授权”问的是当前 Play 账号是否拥有这款应用，与业务账号登录状态是两回事：
 
@@ -87,7 +87,7 @@ Play Integrity 与 Key Attestation（密钥证明）解决的问题也不同：
 
 ### 1.2 设备标签的分级与读取
 
-`deviceRecognitionVerdict` 是标签数组，设备同时满足多级条件时可以返回多个标签。默认配置返回 `MEETS_DEVICE_INTEGRITY`；业务还需要 `MEETS_BASIC_INTEGRITY` 或 `MEETS_STRONG_INTEGRITY` 时，要先在 Play Console 中选择接收。
+设备完整性这一层读的是 `deviceRecognitionVerdict`：它是一个标签数组，设备同时满足多级条件时可以返回多个标签。默认配置返回 `MEETS_DEVICE_INTEGRITY`；业务还需要 `MEETS_BASIC_INTEGRITY` 或 `MEETS_STRONG_INTEGRITY` 时，要先在 Play Console 中选择接收。
 
 | 标签 | Android 17 范围内的官方语义 |
 |---|---|
@@ -95,13 +95,13 @@ Play Integrity 与 Key Attestation（密钥证明）解决的问题也不同：
 | `MEETS_DEVICE_INTEGRITY` | 运行于真实、通过认证的 Android 设备；Android 13 及以上还要求硬件支持的证据表明 bootloader 已锁定，并加载认证厂商镜像 |
 | `MEETS_STRONG_INTEGRITY` | Android 13 及以上要求满足 `MEETS_DEVICE_INTEGRITY`，且 Android OS、vendor 等设备分区的安全更新都在最近一年内 |
 
-“近一年安全更新”这条要求是 Android 13 起才有的：Android 12 及以下的 `MEETS_STRONG_INTEGRITY` 只要求硬件支持的启动完整性证据。策略若覆盖旧系统，应同时读取可选的 `deviceAttributes.sdkVersion`，按设备 Android 版本解释这个标签的含义；把 Android 13 及以上的更新要求套到旧系统上，会得出错误结论。
+这张表里有一条版本分界要注意：“近一年安全更新”是 Android 13 起才有的要求，Android 12 及以下的 `MEETS_STRONG_INTEGRITY` 只要求硬件支持的启动完整性证据。所以策略若覆盖旧系统，我们应同时读取可选的 `deviceAttributes.sdkVersion`，按设备 Android 版本解释这个标签的含义——把 Android 13 及以上的更新要求直接套到旧系统上，会得出错误结论。
 
 标签数组为空时，诊断要留余地：API hooking（运行时拦截或替换 API）、系统受损、未通过检查的模拟环境或技术故障都可能是原因，“设备已 root”只是其中一种解释。面向用户时应提供修复路径或较宽泛的环境提示；内部风险信号在对外文案里应停留在风险提示，避免写成已确认的入侵结论。
 
 ## 2. Standard 与 Classic 是两套调用方式
 
-官方文档目前建议大多数应用使用 Standard 请求：先准备好一个可复用的 token provider，再为每个业务动作申请新 token。Classic 走的是另一条路，没有预先准备这一步，每次请求都现场重新计算判定，成本因此更高，适合少量、高价值、且强调本次计算新鲜度的动作。
+两条路线怎么选，先看官方的当前建议：大多数应用使用 Standard 请求——先准备好一个可复用的 token provider，再为每个业务动作申请新 token。Classic 走的是另一条路，没有预先准备这一步，每次请求都现场重新计算判定，成本因此更高，适合少量、高价值、且强调本次计算新鲜度的动作。
 
 | 维度 | Standard API | Classic API |
 |---|---|---|
@@ -114,7 +114,7 @@ Play Integrity 与 Key Attestation（密钥证明）解决的问题也不同：
 | 适用请求 | 可按需保护频繁的服务端动作 | 偶发的高价值或高敏感动作 |
 | verdict 计算 | Google Play 在设备上缓存部分证明材料并加以保护 | 每次重新计算；应用不应缓存结果 |
 
-表中的时间只是官方给出的量级，直接拿来当业务 SLA（服务等级目标）并不稳妥：设备负载、Play 组件版本、网络、Google 服务状态和业务服务部署位置都会影响尾延迟。“Standard 50–150 ms”“Classic 慢 3–5 倍”这类固定说法，都缺乏跨设备、跨地区成立的证据。
+表中的时间只是官方给出的量级，我们直接拿来当业务 SLA（服务等级目标）并不稳妥：设备负载、Play 组件版本、网络、Google 服务状态和业务服务部署位置都会影响尾延迟。“Standard 50–150 ms”“Classic 慢 3–5 倍”这类固定说法，也缺乏跨设备、跨地区成立的依据。
 
 我们先把 Standard 请求拆成可单独测量的阶段，时序图里同时标出 provider 准备所在的非交互路径：
 
@@ -144,18 +144,18 @@ sequenceDiagram
     end
 ```
 
-prepare 要访问服务端，通常需要数秒，多数请求在 10 秒内完成，因此适合在应用打开后异步启动。这里的“异步”只表示当前线程照常执行；首页或登录流程继续往下走就好，若等 prepare 完成再放行，这段等待就又回到了交互路径上。
+prepare 因为要访问服务端，通常需要数秒，多数请求在 10 秒内完成，所以适合在应用打开后异步启动。这里的“异步”只表示当前线程照常执行，首页或登录流程继续往下走就好；若等 prepare 完成再放行，这段等待就又回到了交互路径上。
 
-## 3. Standard API 的正确集成
+## 3. Standard API 的集成
 
 ### 3.1 prepare 与 provider 的生命周期
 
-Standard 请求由两个生命周期不同的动作组成：
+集成 Standard API 时，我们要先安排好两个生命周期不同的动作：
 
 1. 用 Cloud project number（Google Cloud 项目编号）调用 `prepareIntegrityToken()`，得到保存在进程内存中的 `StandardIntegrityTokenProvider`。
 2. 用户执行受保护动作时，计算该动作的 `requestHash`，再通过 provider 为这次动作申请一个新 token。
 
-下面这段 Kotlin 代码展示两阶段 API 的类型边界：`prepare()` 更新 provider，`requestToken()` 只从已经准备好的 provider 申请 token。生产代码还要在应用数据层补充错误处理、并发保护和生命周期管理。
+下面这段 Kotlin 代码展示两个阶段各自的类型分工：`prepare()` 更新 provider，`requestToken()` 只从已经准备好的 provider 申请 token。生产代码还要在应用数据层补充错误处理、并发保护和生命周期管理。
 
 ```kotlin
 class IntegrityTokenSource(
@@ -202,7 +202,7 @@ class IntegrityTokenSource(
 }
 ```
 
-`IntegrityTokenSource` 长期保存的只有 provider，token 每次动作都要重新申请。若请求返回 `INTEGRITY_TOKEN_PROVIDER_INVALID`，说明 provider 可能已经过期，或 Play Store 数据已被清除，此时应丢弃旧引用并重新 prepare。每个业务动作前都调一次 prepare，既增加延迟，也可能触及单个应用实例每分钟 5 次的 prepare 上限。
+从这段代码的结构也能看出使用约束：`IntegrityTokenSource` 长期保存的只有 provider，token 每次动作都要重新申请。若请求返回 `INTEGRITY_TOKEN_PROVIDER_INVALID`，说明 provider 可能已经过期，或 Play Store 数据已被清除，此时应丢弃旧引用并重新 prepare。反过来，每个业务动作前都调一次 prepare，既增加延迟，也可能触及单个应用实例每分钟 5 次的 prepare 上限。
 
 ### 3.2 `requestHash` 与当前动作的绑定
 
@@ -213,7 +213,7 @@ class IntegrityTokenSource(
 3. 对规范化后的字节计算 SHA-256，再用约定的编码生成 `requestHash`。
 4. 业务服务端按相同规则重新计算摘要，并与解密 payload 中的 `requestDetails.requestHash` 比较。比较要用常量时间实现，避免根据第一个不同字节的位置提前返回，减少时序侧信道。
 
-下面的示例只演示如何先得到无歧义的固定格式，再计算哈希：字符串长度也写入输入，用来区分字段边界，避免简单拼接让不同字段组合产生相同文本。
+下面的示例只演示如何先得到无歧义的固定格式，再计算哈希：字符串长度也写入输入，用来标记每个字段的起止，避免简单拼接让不同字段组合产生相同文本。
 
 ```kotlin
 fun integrityRequestHash(
@@ -238,11 +238,11 @@ fun integrityRequestHash(
 }
 ```
 
-服务端必须实现同一份 `v1` 规范，并把版本号纳入哈希输入。示例没有放入姓名、手机号或原始 token 等敏感数据，官方要求不要把敏感信息以明文写进 `requestHash`。即使两个动作得到相同摘要，每次受保护动作也都要申请并提交自己的 token。
+服务端必须实现同一份 `v1` 规范，并把版本号纳入哈希输入。示例里没有放姓名、手机号或原始 token 这类敏感数据，官方要求不要把敏感信息以明文写进 `requestHash`。还有一点容易漏掉：即使两个动作得到相同摘要，每次受保护动作也都要申请并提交自己的 token。
 
 ### 3.3 服务端校验顺序
 
-客户端拿到的是加密 token，verdict 要等 Google 解密后才可见。常规做法是让业务服务端用绑定了 Cloud project 的 service account（服务账号）访问以下端点：
+客户端拿到的是加密 token，verdict 要等 Google 解密后才可见，所以这一层的校验发生在业务服务端。常规做法是让业务服务端用绑定了 Cloud project 的 service account（服务账号）访问以下端点：
 
 ```text
 POST https://playintegrity.googleapis.com/v1/{packageName}:decodeIntegrityToken
@@ -263,7 +263,7 @@ Standard token 自带 Google Play 的重放缓解：同一个 token 被反复解
 
 ## 4. Classic 请求与 nonce
 
-Classic 的入口是 `IntegrityManagerFactory.create()`、`IntegrityTokenRequest` 和 `nonce`。nonce 是每次动作唯一、不可预测的值，负责把 token 绑定到这次请求并防止重放。Classic 没有 prepare 阶段，每次请求都重新计算 verdict，因此官方建议只用于偶发的高价值动作。
+看完 Standard，再看 Classic 的入口：`IntegrityManagerFactory.create()`、`IntegrityTokenRequest` 和 `nonce`。nonce 是每次动作唯一、不可预测的值，负责把 token 绑定到这次请求并防止重放。Classic 没有 prepare 阶段，每次请求都重新计算 verdict，因此官方建议只用于偶发的高价值动作。
 
 对照 Classic 的入口和返回类型，我们更容易把它与 Standard 的 prepare + request 两阶段调用区分开：
 
@@ -301,7 +301,7 @@ Classic 的 nonce 身兼两职：防止业务字段被篡改，也防止旧请�
 
 ### 5.1 官方量级与容量估算
 
-官方当前给出的量级是：
+做容量规划时，我们手里最先有的一批数字是官方当前给出的量级：
 
 - Standard prepare 通常为数秒，多数在 10 秒内；因为包含服务端请求，示例超时预算为 1 分钟。
 - provider 准备完成后，Standard token 请求通常为数百毫秒。
@@ -322,7 +322,7 @@ Classic 的 nonce 身兼两职：防止业务字段被篡改，也防止旧请�
 | `google_decode` | 服务端调用 decode 到收到 payload | 服务端出口网络、连接复用、Google 服务 |
 | `policy_and_business` | payload 到达到业务响应 | JSON 处理、账号或交易查询、策略服务 |
 
-客户端看到的总时间混着多个阶段，想定位 `google_decode`，得靠服务端自己的记录：分别记下 DNS 查询、建立连接、是否复用连接、请求等待和 HTTP 状态，并把一次请求的 trace ID（链路关联 ID）回传给客户端。
+客户端看到的总时间混着多个阶段，想定位 `google_decode` 这一段，我们要靠服务端自己的记录：分别记下 DNS 查询、建立连接、是否复用连接、请求等待和 HTTP 状态，并把一次请求的 trace ID（链路关联 ID）回传给客户端。
 
 ### 5.3 关键路径优化
 
@@ -374,7 +374,7 @@ Classic 的 nonce 身兼两职：防止业务字段被篡改，也防止旧请�
 
 对用户侧可修复的问题，Play Integrity 提供 `GET_INTEGRITY`、`GET_STRONG_INTEGRITY`、`GET_LICENSED` 等 remediation dialog（修复对话框），可处理 Play 服务缺失或过旧、网络连接、应用未授权等部分问题。版本上有门槛：`GET_INTEGRITY` 和 `GET_STRONG_INTEGRITY` 需要 Play Integrity Android 库 1.5.0 或更高版本，`GET_LICENSED` 等 integrity dialogs 需要 1.3.0 或更高版本。流程是服务端先解析 verdict，再指示客户端展示对应类型的对话框；修复流程完成后，客户端重新申请 token。
 
-没有官方 Play Store 或 Play 服务的设备走不了这套 Google Play 判定。产品要明确各分发渠道支持哪些能力，并为相应用户设计独立的账号和风险策略；Key Attestation 可以提供密钥属性证据，Play 授权或应用识别字段则超出它的能力范围。
+没有官方 Play Store 或 Play 服务的设备走不了这套 Google Play 判定。产品要明确各分发渠道支持哪些能力，并为相应用户设计独立的账号和风险策略；Key Attestation 能给出的只有密钥属性层面的证明，Play 授权或应用识别字段则超出它的能力范围。
 
 ## 7. 配额与流量模型
 
@@ -432,7 +432,7 @@ async slice 可以跨线程覆盖 `Task` 的整个等待区间，显示从应用
 
 截至 `android-17.0.0_r1`，AOSP 里找不到 `StandardIntegrityManager`、verdict 计算或 Google decode 服务的实现——这部分在闭源的 Google Play 组件和 Google 服务端里。系统在这条路径上提供的是进程、包身份、Binder、网络和调度等通用能力；Google Play 组件怎样组织调用属于可更新的闭源实现，其缓存窗口、线程数或 IPC 次数，从 AOSP 源码行数里得不到答案。
 
-可用于排查通用机制的锚点包括：
+排查通用机制时，我们可用的源码锚点是这三个：
 
 - AOSP `android-17.0.0_r1` [`android.os.Binder`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Binder.java)：应用侧 Binder API、调用身份与阻塞调用语义。
 - AOSP `android-17.0.0_r1` [`IPCThreadState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/IPCThreadState.cpp)：native Binder 命令写入、等待和响应处理。
@@ -455,7 +455,7 @@ async slice 可以跨线程覆盖 `Task` 的整个等待区间，显示从应用
 
 ## 交叉引用
 
-- [8.5 Keystore、Biometric 与 Credential 登录性能](05-keystore-biometric-credential-login.md)：设备密钥、Key Attestation、登录 UI 与服务端认证的责任边界。
+- [8.5 Keystore、Biometric 与 Credential 登录性能](05-keystore-biometric-credential-login.md)：设备密钥、Key Attestation、登录 UI 与服务端认证的职责划分。
 - [8.6 推送通知管线性能](06-push-notification-pipeline-performance.md)：跨进程与服务端路径的分段观测方法。
 - [12.1 Android 网络与 TLS 性能优化](../ch12-apk-network/01-android-network-tls-performance.md)：移动网络、连接复用、业务上行与 TLS 尾延迟。
 

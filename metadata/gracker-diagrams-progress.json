@@ -1332,8 +1332,53 @@
     {
       "path": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
       "sha256_before": "ab9c3280620743fd732b036268b27c72b01bf1599db431d83238705daa00f21d",
-      "status": "pending",
-      "diagrams": []
+      "status": "illustrated",
+      "diagrams": [
+        "ch06-02-vfs-objects",
+        "ch06-02-buffered-persistence",
+        "ch06-02-ext4-allocation",
+        "ch06-02-ext4-sync-transaction",
+        "ch06-02-f2fs-nat-mapping",
+        "ch06-02-f2fs-metadata-roles",
+        "ch06-02-f2fs-opu-ipu-ssr",
+        "ch06-02-f2fs-ssr-gates",
+        "ch06-02-f2fs-fsync-recovery",
+        "ch06-02-f2fs-atomic-cow",
+        "ch06-02-sqlite-batch-decision",
+        "ch06-02-f2fs-gc-pressure",
+        "ch06-02-pages-elf-f2fs-format",
+        "ch06-02-filesystem-feature-gates",
+        "ch06-02-erofs-compressed-read",
+        "ch06-02-erofs-verity-layers",
+        "ch06-02-fsync-fdatasync-scope",
+        "ch06-02-fragmentation-gc-cost",
+        "ch06-02-blk-mq-elevator",
+        "ch06-02-bfq-budget",
+        "ch06-02-mq-deadline-dispatch",
+        "ch06-02-kyber-feedback",
+        "ch06-02-scheduler-device-evidence",
+        "ch06-02-ioprio-consumer",
+        "ch06-02-aosp-blkio-profiles",
+        "ch06-02-cgroup-runtime-check",
+        "ch06-02-pagecache-reclaim-refault",
+        "ch06-02-cgroup-writeback-owner",
+        "ch06-02-dirty-swap-psi",
+        "ch06-02-direct-io-gates",
+        "ch06-02-perfetto-d-iowait",
+        "ch06-02-perfetto-time-weighted-depth",
+        "ch06-02-perfetto-latency-windows",
+        "ch06-02-cpu-thread-psi-scopes",
+        "ch06-02-app-sync-work",
+        "ch06-02-io-uring-usage-evidence"
+      ],
+      "source_audit": "passed-2026-10-23:全文逐节复核，24项修正（含上一轮12项），38个固定tag源码链接均可读取；36张图逐图与正文位置验收；SQL仅合成数据执行验证，不声称真机trace导入。",
+      "sha256_current": "b56fa2f494c673cfb245f5fe91f02208392c8bf125d0c565778dfd9edc95149f",
+      "sha256_after": "b56fa2f494c673cfb245f5fe91f02208392c8bf125d0c565778dfd9edc95149f",
+      "validation_artifacts": [
+        "/tmp/gracker-android-wiki-diagrams-20261023/fs2-source-links-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261023/fs2-time-average-validation.json",
+        "/tmp/gracker-android-wiki-diagrams-20261023/fs2-thread-query-validation.json"
+      ]
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
@@ -12570,6 +12615,596 @@
         "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/fscrypt.rst"
       ],
       "visual_review": "passed"
+    },
+    {
+      "id": "ch06-02-vfs-objects",
+      "title": "VFS 对象与操作分发",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-vfs-objects.svg",
+        "src/assets/diagrams/ch06/ch06-02-vfs-objects.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-vfs-objects",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/vfs.rst"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-buffered-persistence",
+      "title": "缓存返回与持久化完成",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-buffered-persistence.svg",
+        "src/assets/diagrams/ch06/ch06-02-buffered-persistence.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-buffered-persistence",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/vfs.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/writeback_cache_control.rst"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-f2fs-nat-mapping",
+      "title": "F2FS 的 NAT、node 与数据地址",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-f2fs-nat-mapping.svg",
+        "src/assets/diagrams/ch06/ch06-02-f2fs-nat-mapping.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-f2fs-nat-mapping",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/f2fs_fs.h",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/f2fs.rst"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-f2fs-ssr-gates",
+      "title": "f2fs_need_SSR 的判断次序",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-f2fs-ssr-gates.svg",
+        "src/assets/diagrams/ch06/ch06-02-f2fs-ssr-gates.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-f2fs-ssr-gates",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/segment.c"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-f2fs-fsync-recovery",
+      "title": "F2FS fsync 的恢复分支",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-f2fs-fsync-recovery.svg",
+        "src/assets/diagrams/ch06/ch06-02-f2fs-fsync-recovery.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-f2fs-fsync-recovery",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/file.c"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-f2fs-atomic-cow",
+      "title": "F2FS 原子文件写的 COW 生命周期",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-f2fs-atomic-cow.svg",
+        "src/assets/diagrams/ch06/ch06-02-f2fs-atomic-cow.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-f2fs-atomic-cow",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/file.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/segment.c"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-f2fs-gc-pressure",
+      "title": "F2FS GC 与前台空间等待",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-f2fs-gc-pressure.svg",
+        "src/assets/diagrams/ch06/ch06-02-f2fs-gc-pressure.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-f2fs-gc-pressure",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/segment.h",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/segment.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/gc.c"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-pages-elf-f2fs-format",
+      "title": "16 KB：ELF 对齐与 F2FS 格式分别检查",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-pages-elf-f2fs-format.svg",
+        "src/assets/diagrams/ch06/ch06-02-pages-elf-f2fs-format.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-pages-elf-f2fs-format",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/f2fs_fs.h",
+        "https://source.android.com/docs/core/architecture/16kb-page-size/16kb"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-filesystem-feature-gates",
+      "title": "quota、casefold、fscrypt 的启用门槛",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-filesystem-feature-gates.svg",
+        "src/assets/diagrams/ch06/ch06-02-filesystem-feature-gates.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-filesystem-feature-gates",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/file.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/fscrypt.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/f2fs.rst"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-erofs-compressed-read",
+      "title": "EROFS 压缩文件的按需读取",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-erofs-compressed-read.svg",
+        "src/assets/diagrams/ch06/ch06-02-erofs-compressed-read.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-erofs-compressed-read",
+      "sources": [
+        "https://source.android.com/docs/core/architecture/kernel/erofs",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/erofs.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/erofs/Kconfig"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-erofs-verity-layers",
+      "title": "EROFS、AVB 与 dm-verity 的职责",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-erofs-verity-layers.svg",
+        "src/assets/diagrams/ch06/ch06-02-erofs-verity-layers.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-erofs-verity-layers",
+      "sources": [
+        "https://source.android.com/docs/core/architecture/kernel/erofs",
+        "https://source.android.com/docs/security/features/verifiedboot/avb",
+        "https://source.android.com/docs/core/ota/virtual_ab"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-fsync-fdatasync-scope",
+      "title": "fsync 与 fdatasync 的持久化范围",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-fsync-fdatasync-scope.svg",
+        "src/assets/diagrams/ch06/ch06-02-fsync-fdatasync-scope.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-fsync-fdatasync-scope",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/file.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/ext4/fsync.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/vfs.rst"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-fragmentation-gc-cost",
+      "title": "长期布局变化与两类额外成本",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-fragmentation-gc-cost.svg",
+        "src/assets/diagrams/ch06/ch06-02-fragmentation-gc-cost.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-fragmentation-gc-cost",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/ext4/allocators.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/f2fs.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/gc.c"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-blk-mq-elevator",
+      "title": "blk-mq 中 elevator 的位置",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-blk-mq-elevator.svg",
+        "src/assets/diagrams/ch06/ch06-02-blk-mq-elevator.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-blk-mq-elevator",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/blk-mq.rst"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-bfq-budget",
+      "title": "BFQ：权重、budget 与服务机会",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-bfq-budget.svg",
+        "src/assets/diagrams/ch06/ch06-02-bfq-budget.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-bfq-budget",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/bfq-iosched.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/block/Kconfig.iosched",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-mq-deadline-dispatch",
+      "title": "mq-deadline 的索引与派发选择",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-mq-deadline-dispatch.svg",
+        "src/assets/diagrams/ch06/ch06-02-mq-deadline-dispatch.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-mq-deadline-dispatch",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/block/mq-deadline.c"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-kyber-feedback",
+      "title": "Kyber 的 token 与延迟反馈",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-kyber-feedback.svg",
+        "src/assets/diagrams/ch06/ch06-02-kyber-feedback.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-kyber-feedback",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/block/kyber-iosched.c"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-scheduler-device-evidence",
+      "title": "从 GKI 能力找到实机 scheduler",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-scheduler-device-evidence.svg",
+        "src/assets/diagrams/ch06/ch06-02-scheduler-device-evidence.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-scheduler-device-evidence",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/block/Kconfig.iosched",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/blk-mq.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-ioprio-consumer",
+      "title": "ioprio 的产生、限制与消费",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-ioprio-consumer.svg",
+        "src/assets/diagrams/ch06/ch06-02-ioprio-consumer.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-ioprio-consumer",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/ioprio.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/block/blk-ioprio.c",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/init/service_parser.cpp",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/init/service_utils.cpp"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-aosp-blkio-profiles",
+      "title": "AOSP task profile 的 blkio 分组",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-aosp-blkio-profiles.svg",
+        "src/assets/diagrams/ch06/ch06-02-aosp-blkio-profiles.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-aosp-blkio-profiles",
+      "sources": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/rootdir/init.rc",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/block/blk-ioprio.c"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-cgroup-runtime-check",
+      "title": "I/O cgroup：先确认层级，再读参数",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-cgroup-runtime-check.svg",
+        "src/assets/diagrams/ch06/ch06-02-cgroup-runtime-check.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-cgroup-runtime-check",
+      "sources": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/cgroups.json",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json",
+        "https://source.android.com/docs/core/perf/cgroups",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-cgroup-writeback-owner",
+      "title": "缓冲回写的 memory 与 blkcg 归属",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-cgroup-writeback-owner.svg",
+        "src/assets/diagrams/ch06/ch06-02-cgroup-writeback-owner.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-cgroup-writeback-owner",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-dirty-swap-psi",
+      "title": "dirty 控制、swappiness 与 PSI 的分工",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-dirty-swap-psi.svg",
+        "src/assets/diagrams/ch06/ch06-02-dirty-swap-psi.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-dirty-swap-psi",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/sysctl/vm.rst",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/rootdir/init.rc",
+        "https://docs.kernel.org/accounting/psi.html"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-direct-io-gates",
+      "title": "O_DIRECT 的缓存、对齐与持久化边界",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-direct-io-gates.svg",
+        "src/assets/diagrams/ch06/ch06-02-direct-io-gates.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-direct-io-gates",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/uapi/linux/stat.h",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/file.c",
+        "https://android.googlesource.com/platform/external/sqlite/+/refs/tags/android-17.0.0_r1/dist/sqlite-autoconf-3500600/sqlite3.c"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-ext4-allocation",
+      "title": "ext4 缓冲写分配与有序日志",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-ext4-allocation.svg",
+        "src/assets/diagrams/ch06/ch06-02-ext4-allocation.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-ext4-allocation",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/ext4/allocators.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/ext4/journal.rst"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-ext4-sync-transaction",
+      "title": "ext4 fsync 与 journal 等待范围",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-ext4-sync-transaction.svg",
+        "src/assets/diagrams/ch06/ch06-02-ext4-sync-transaction.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-ext4-sync-transaction",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/ext4/fsync.c"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-f2fs-metadata-roles",
+      "title": "F2FS 的日志、有效性与恢复结构",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-f2fs-metadata-roles.svg",
+        "src/assets/diagrams/ch06/ch06-02-f2fs-metadata-roles.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-f2fs-metadata-roles",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/f2fs.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/f2fs_fs.h"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-f2fs-opu-ipu-ssr",
+      "title": "OPU / IPU 与 LFS / SSR 的两个维度",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-f2fs-opu-ipu-ssr.svg",
+        "src/assets/diagrams/ch06/ch06-02-f2fs-opu-ipu-ssr.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-f2fs-opu-ipu-ssr",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/data.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/segment.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/file.c"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-sqlite-batch-decision",
+      "title": "SQLite F2FS batch atomic 的实际门槛",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-sqlite-batch-decision.svg",
+        "src/assets/diagrams/ch06/ch06-02-sqlite-batch-decision.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-sqlite-batch-decision",
+      "sources": [
+        "https://android.googlesource.com/platform/external/sqlite/+/refs/tags/android-17.0.0_r1/dist/Android.bp",
+        "https://android.googlesource.com/platform/external/sqlite/+/refs/tags/android-17.0.0_r1/dist/sqlite-autoconf-3500600/sqlite3.c"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-perfetto-d-iowait",
+      "title": "从 D 状态确认 I/O 等待线索",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-perfetto-d-iowait.svg",
+        "src/assets/diagrams/ch06/ch06-02-perfetto-d-iowait.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-perfetto-d-iowait",
+      "sources": [
+        "https://perfetto.dev/docs/analysis/sql-tables#thread_state",
+        "https://perfetto.dev/docs/data-sources/cpu-scheduling"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-perfetto-time-weighted-depth",
+      "title": "变化点队列计数要按时间加权",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-perfetto-time-weighted-depth.svg",
+        "src/assets/diagrams/ch06/ch06-02-perfetto-time-weighted-depth.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-perfetto-time-weighted-depth",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/block_io.sql"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-perfetto-latency-windows",
+      "title": "调用、文件系统与块请求的不同区间",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-perfetto-latency-windows.svg",
+        "src/assets/diagrams/ch06/ch06-02-perfetto-latency-windows.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-perfetto-latency-windows",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/block.h",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/ext4/fsync.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/file.c",
+        "https://perfetto.dev/docs/data-sources/cpu-scheduling"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-cpu-thread-psi-scopes",
+      "title": "CPU iowait、线程等待与 I/O PSI",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-cpu-thread-psi-scopes.svg",
+        "src/assets/diagrams/ch06/ch06-02-cpu-thread-psi-scopes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-cpu-thread-psi-scopes",
+      "sources": [
+        "https://docs.kernel.org/accounting/psi.html",
+        "https://perfetto.dev/docs/data-sources/cpu-scheduling",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-io-uring-usage-evidence",
+      "title": "从 io_uring 能力到实际收益的证据",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-io-uring-usage-evidence.svg",
+        "src/assets/diagrams/ch06/ch06-02-io-uring-usage-evidence.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-io-uring-usage-evidence",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/init/Kconfig",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig",
+        "https://perfetto.dev/docs/data-sources/cpu-scheduling"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-app-sync-work",
+      "title": "减少事务与移出 UI 等待",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-app-sync-work.svg",
+        "src/assets/diagrams/ch06/ch06-02-app-sync-work.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-app-sync-work",
+      "sources": [
+        "https://developer.android.com/training/data-storage/room/async-queries",
+        "https://developer.android.com/reference/android/content/SharedPreferences.Editor",
+        "https://android.googlesource.com/platform/external/sqlite/+/refs/tags/android-17.0.0_r1/dist/sqlite-autoconf-3500600/sqlite3.c"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-pagecache-reclaim-refault",
+      "title": "Page Cache、MGLRU 与 refault",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-pagecache-reclaim-refault.svg",
+        "src/assets/diagrams/ch06/ch06-02-pagecache-reclaim-refault.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-pagecache-reclaim-refault",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/mm/multigen_lru.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
     }
   ],
   "corrections": [
@@ -15066,29 +15701,197 @@
       "after": "这些配置说明内核具备相应接口与软件 fallback（回退实现），实际能否使用还取决于密钥类型、算法、设备驱动和 fstab（文件系统挂载配置）。`blk-crypto-fallback` 不支持 hardware-wrapped keys；选择这类密钥而硬件不匹配时，不能假定会自动改用 CPU 加密。",
       "reason": "硬件封装密钥不能走blk-crypto-fallback，配置开启不保证任何密钥都有软件回退。",
       "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/inline-encryption.rst"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "应用 I/O 从系统调用进入 VFS、页缓存和具体文件系统，最后由块层和设备队列提交给存储。",
+      "after": "应用 I/O 从系统调用进入 VFS、页缓存和具体文件系统；缓存未满足或需要回写、同步时，才可能继续由块层和设备队列提交给存储。",
+      "reason": "读取命中PageCache等路径不必提交器件请求。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/vfs.rst"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "这只说明线程在等持久化路径走完。",
+      "after": "这是持久化相关等待的一条线索，仍需调用栈和事件确认；文件关闭本身不等同于一次 fsync，不可中断等待也可能来自其他内核资源。",
+      "reason": "不能从D状态或close附近的栈位置直接确定等待的是持久化。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/vfs.rst"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "flush（刷写）/FUA（刷新设备缓存/要求本次写入到达非易失介质）",
+      "after": "flush（刷新设备写缓存）与 FUA（Force Unit Access，要求本次写入到达非易失介质）",
+      "reason": "分开设备flush与单次写入FUA的不同语义。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/writeback_cache_control.rst"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "LFS（log-structured file system（LFS，日志结构文件系统），日志结构文件系统）",
+      "after": "LFS（Log-Structured File System，日志结构文件系统）",
+      "reason": "修复术语重复嵌套，保留正确英文展开。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/f2fs.rst"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "`f2fs_ioc_start_atomic（原子）_write()`",
+      "after": "`f2fs_ioc_start_atomic_write()`",
+      "reason": "函数标识符中不能插入中文释义。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/file.c"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "`CONFIG_QUOTA（在线系统更新）=y`",
+      "after": "`CONFIG_QUOTA=y`（配额支持）",
+      "reason": "QUOTA指配额，不是OTA在线更新。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "Virtual A/B OTA 合并期间还可能插入 `dm-user`/`snapuserd` snapshot（快照） 层。",
+      "after": "Virtual A/B OTA 的 snapshot（快照）读取与合并阶段还可能插入 `snapuserd` 服务的用户态后端；Android 17 r1 支持按条件选择 `dm-user` 或 `ublk`，实际以本次更新状态为准，后端选择见 6.1。",
+      "reason": "与r1源码及6.1的dm-user/ublk边界一致；快照读视图不只存在于merge阶段。",
+      "source": "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/snapshot.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "是 scheduler 开始考虑 dispatch 的软期限，设备完成延迟要用另一条时间线衡量。",
+      "after": "是 FIFO 防饥饿检查所用的软到期时间，请求可以在到期之前正常 dispatch；它们既不是最短等待时间，也不是设备完成期限。设备完成延迟要用另一条时间线衡量。",
+      "reason": "mq-deadline不需要等到expire后才考虑下发，正常排序/批次可提前dispatch。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/block/mq-deadline.c"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "它会把后台请求限制在 BE class",
+      "after": "它把 NONE/RT 请求降到 BE，保留原本更低的 IDLE 等优先级",
+      "reason": "restrict-to-be不把所有请求强制变为BE，也不提升IDLE请求。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/block/blk-ioprio.c"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "内核会在活跃/非活跃 file LRU（文件页最近最少使用链表）、匿名页与 swap（交换空间） 之间选择回收对象；",
+      "after": "内核会在文件页与匿名页之间选择回收对象，并考虑 swap（交换空间）成本；该 6.18 GKI 基线还启用了 MGLRU（多代 LRU），不能只按经典活跃/非活跃两条 file LRU 链表解释所有设备；",
+      "reason": "r6启用LRU_GEN及LRU_GEN_ENABLED，区分MGLRU与经典active/inactive模型。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "SELECT\n  dev,\n  MAX(ops_in_queue_or_device) AS max_ops,\n  ROUND(AVG(ops_in_queue_or_device), 2) AS avg_ops\nFROM linux_active_block_io_operations_by_device\nGROUP BY dev\nORDER BY max_ops DESC;",
+      "after": "WITH io_intervals AS (\n  SELECT\n    dev,\n    ops_in_queue_or_device,\n    LEAD(ts, 1, (SELECT end_ts FROM trace_bounds)) OVER (\n      PARTITION BY dev ORDER BY ts\n    ) - ts AS dur\n  FROM linux_active_block_io_operations_by_device\n)\nSELECT\n  dev,\n  MAX(ops_in_queue_or_device) AS max_ops,\n  ROUND(\n    SUM(1.0 * ops_in_queue_or_device * dur) /\n    NULLIF((SELECT end_ts - start_ts FROM trace_bounds), 0),\n    2\n  ) AS time_avg_ops\nFROM io_intervals\nWHERE dur > 0\nGROUP BY dev\nORDER BY max_ops DESC;",
+      "reason": "stdlib输出ts处的变化后计数，事件间隔不等长；需按持续时间加权，不能对变化点直接AVG。",
+      "source": "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/block_io.sql"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "这个 stdlib view（Perfetto 标准库视图） 基于 `track.type='block_io'` 的 slice。",
+      "after": "这个 stdlib view（Perfetto 标准库视图） 输出计数变化的时间点，而不是等间隔采样，因此查询先用 LEAD 得到每个计数持续多久，再计算整个 trace 时间窗的加权均值；未出现 I/O 的时间按零贡献处理，不能直接 AVG 这些变化点。它基于 `track.type='block_io'` 的 slice，事件缺失或不完整时，队列深度统计也可能不完整。",
+      "reason": "说明time_avg_ops的全trace窗口与变化点统计边界，避免将不完整事件变成实机结论。",
+      "source": "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/linux/block_io.sql"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "但 Unix VFS（Unix 平台的虚拟文件系统适配层） 只有在 `F2FS_IOC_START_ATOMIC_WRITE` 探测成功后才报告 `SQLITE_IOCAP_BATCH_ATOMIC`，SQLite pager（页面缓存与事务管理模块） 还会检查数据库状态和事务条件——要断言一个事务真的走了 F2FS 原子写，这几层都要确认。",
+      "after": "但 Unix VFS（Unix 平台的虚拟文件系统适配层）先用 `F2FS_IOC_GET_FEATURES` 查询 `F2FS_FEATURE_ATOMIC_WRITE`，成功且包含该位时才报告 `SQLITE_IOCAP_BATCH_ATOMIC`；实际开始批写时才发出 `F2FS_IOC_START_ATOMIC_WRITE`。SQLite pager（页面缓存与事务管理模块）还会检查数据库状态和事务条件——要断言一个事务真的走了 F2FS 原子写，这几层都要确认。",
+      "reason": "r1 setDeviceCharacteristics 使用 GET_FEATURES 探测，START 是 BEGIN_ATOMIC_WRITE 的执行阶段，不能混淆。",
+      "source": "https://android.googlesource.com/platform/external/sqlite/+/refs/tags/android-17.0.0_r1/dist/sqlite-autoconf-3500600/sqlite3.c"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "#### GC：空间紧张时为什么会抬高尾延迟",
+      "after": "在这个 r1 pager 中，WAL 走独立分支；batch atomic 的候选提交要求没有 super-journal、VFS 报告能力、未关闭同步，而且 journal 仍在内存中。条件满足后才尝试 BEGIN / 写页 / COMMIT；执行出错还可能回退到普通 journal 或向上报告错误。编译宏、文件系统类型和事务实际路径不能画等号。\n\n#### GC：空间紧张时为什么会抬高尾延迟",
+      "reason": "补充原子写 pager 明确门槛及失败边界，避免宏开关代表全部事务。",
+      "source": "https://android.googlesource.com/platform/external/sqlite/+/refs/tags/android-17.0.0_r1/dist/sqlite-autoconf-3500600/sqlite3.c"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "普通后台 GC 可以使用 cost-benefit（成本收益） 或 age-threshold（年龄阈值） 选择 victim，前台 GC 则使用 greedy（贪心） 选择逻辑。",
+      "after": "默认策略下，后台 GC 使用 cost-benefit（成本收益）或启用 ATGC 时的 age-threshold（年龄阈值），前台 GC 使用 greedy（贪心）；`gc_mode` 的 idle/urgent 模式还可以覆盖这个选择。",
+      "reason": "select_gc_type 在BG/FG默认选择后还有gc_mode覆盖分支。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/gc.c"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "较短的 roll-forward 路径可以减少恢复信息和等待范围，",
+      "after": "以上描述针对正常启用 checkpoint 的可写文件系统；checkpoint disabled 时，`f2fs_do_sync_file()` 在范围写回后会提前返回，不能沿用普通 checkpoint/roll-forward 的持久化推断。没有新增修改等情况也可能跳过恢复信息写入。较短的 roll-forward 路径可以减少恢复信息和等待范围，",
+      "reason": "源码CP_DISABLED及无新增修改存在提前返回，图示需限定正常路径。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/f2fs/file.c"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "4 KB 页时默认 segment 为 2 MB，16 KB 页时为 8 MB",
+      "after": "4 KB 页时默认 segment 为 2 MiB，16 KB 页时为 8 MiB",
+      "reason": "512乘4096/16384为二进制MiB，避免MB单位歧义。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/linux/f2fs_fs.h"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "adb shell stat -f -c '%T %s' /data",
+      "after": "adb shell stat -f -c '%T %S' /data",
+      "reason": "Toybox stat -f 的%s是最佳传输大小，%S才是实际/基本块大小。",
+      "source": "https://android.googlesource.com/platform/external/toybox/+/refs/tags/android-17.0.0_r1/toys/other/stat.c"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "第二条显示 `/data` 的文件系统类型和基本块大小",
+      "after": "第二条用 Toybox 的 `%T %S` 显示 `/data` 的文件系统类型和基本块大小（`%s` 是最佳传输大小）",
+      "reason": "同时明确命令格式符，防止用传输大小反推磁盘格式。",
+      "source": "https://android.googlesource.com/platform/external/toybox/+/refs/tags/android-17.0.0_r1/toys/other/stat.c"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "Linux 6.18 可以通过 `statx(..., STATX_DIOALIGN)` 查询文件系统报告的 direct-I/O 对齐要求。",
+      "after": "Linux 6.18 可以通过 `statx(..., STATX_DIOALIGN)` 请求文件系统报告 direct-I/O 对齐要求；还要检查返回的 `stx_mask` 是否包含该位，再解释 `stx_dio_mem_align` 和 `stx_dio_offset_align`。接口存在不保证每种文件系统都返回这组信息。",
+      "reason": "statx请求位和返回支持位要区分。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/uapi/linux/stat.h"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "  AND thread_state.io_wait = 1\nGROUP BY",
+      "after": "  AND thread_state.io_wait = 1\n  AND thread_state.dur > 0\nGROUP BY",
+      "reason": "过滤未结束的dur=-1区间，防止负时长进入SUM/MAX。",
+      "source": "https://perfetto.dev/docs/analysis/sql-tables#thread_state"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "查询结果给出线程等待总量和单次最大值；",
+      "after": "查询只汇总已结束的正时长区间，排除了 `dur=-1` 等不完整状态；结果给出录制范围内可确认的线程等待总量和单次最大值；",
+      "reason": "明确不完整状态过滤后的统计范围，避免声称覆盖完整现场。",
+      "source": "https://perfetto.dev/docs/analysis/sql-tables#thread_state"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "`io.pressure` 的 `full` 持续上升：系统曾有一段时间所有非 idle 任务都因 I/O 受阻，需要结合 CPU、内存和块层判断原因。",
+      "after": "I/O PSI 的 `full` 持续上升：在对应统计范围内，曾有所有非 idle 任务同时因 I/O 停顿的时间；`/proc/pressure/io` 统计系统，cgroup 的 `io.pressure` 只统计该组。还需结合 CPU、内存和块层判断原因。",
+      "reason": "cgroup full不能外推全系统；full是同时stall比例，不是单任务时长之和。",
+      "source": "https://docs.kernel.org/accounting/psi.html"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "before": "对持续制造高频小写、无边界缓存或过多事务提交的业务模式，恢复出厂设置不起作用。",
+      "after": "持续制造高频小写、无边界缓存或过多事务提交的业务模式如果继续存在，重置后的空间与布局收益仍可能逐渐消失；恢复出厂设置不能根治这种负载来源。",
+      "reason": "原说法绝对化；重置能短期改变空间/布局，不能从根本改变业务负载。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/f2fs.rst"
     }
   ],
   "validation": {
-    "content_links": "passed:1970 relative Markdown links + 8 local/aiw sources",
-    "mdbook": "passed: whole-book preview through chapter5; pre-existing large search-index warning",
+    "content_links": "passed:2034 relative Markdown links + 8 local/aiw sources",
+    "mdbook": "passed: latest whole-book preview including all36 figures and corrections in6.2; pre-existing large search-index warning",
     "temporary_files": "outside repository in /tmp/gracker-android-wiki-diagrams-20261023",
     "checked_at": "2026-10-23",
-    "svg_canvas_bounds": "563 SVG checked, no text overflow; all PNG decode; 22 group bounds audited",
-    "embed_integrity": "563 records, 593 images across 76 mdbook pages + 1 standalone existing alternate; all loaded",
+    "svg_canvas_bounds": "627 SVG text bounds checked, no overflow; all PNG decode",
+    "embed_integrity": "591 records, 621 images across 77 mdbook pages + 1 standalone existing alternate; all loaded",
     "through_chapter": "ch05-cpu-power",
-    "illustrated_articles": 77,
-    "diagram_count": 563,
-    "relative_markdown_links": 1970,
+    "illustrated_articles": 79,
+    "diagram_count": 627,
+    "relative_markdown_links": 2034,
     "local_frontmatter_sources": 8,
     "mdbook_build": "passed; pre-existing large search-index warning",
     "asset_report": {
-      "checked": 563,
+      "checked": 627,
       "errors": [],
       "kind": "SVG text canvas bounds + PNG decode"
     },
     "embed_report": {
-      "checked_records": 563,
-      "checked_articles": 77,
+      "checked_records": 591,
+      "checked_articles": 78,
       "errors": [],
       "built_pages": [
         {
@@ -15552,17 +16355,24 @@
           "images": 2,
           "all_loaded": true,
           "preview_mode": "mdbook"
+        },
+        {
+          "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+          "images": 28,
+          "all_loaded": true,
+          "preview_mode": "mdbook"
         }
       ]
     },
-    "through_article": "src/part1-fundamentals/ch05-cpu-power/README.md",
-    "diagram_placements": 593,
-    "skill_prompt_packs": "563/563 required source, analysis, structured-content and prompt packs exist; all visual reviews passed",
-    "in_page_visual_review": "5.8 mitigation, 5.9 ASE stop + delay boundaries, and chapter5 reading map passed; earlier checks retained"
+    "through_article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+    "diagram_placements": 657,
+    "skill_prompt_packs": "627/627 required four-file skill packs exist; all visual reviews passed",
+    "in_page_visual_review": "6.2 NAT mapping, AOSP blkio profiles, time-weighted depth and App sync workflow passed; earlier checks retained",
+    "working_article": "6.3 next; not yet audited or illustrated"
   },
   "last_checkpoint": {
-    "illustrated_articles": 78,
-    "diagrams": 591,
+    "illustrated_articles": 79,
+    "diagrams": 627,
     "completed_chapters": [
       "ch01-architecture",
       "ch02-rendering",
@@ -15570,9 +16380,9 @@
       "ch04-memory",
       "ch05-cpu-power"
     ],
-    "next_article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
-    "note": "逐篇核对与配图进行中；仅通过视觉验收的条目标记 illustrated。全书任务尚未完成，goal active。",
-    "diagram_placements": 593
+    "next_article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+    "note": "第1–5章及6.1–6.2完成：79/301篇、627张图、657处嵌入。6.2新增36图，合计24项修正；goal active，全书尚未完成。",
+    "diagram_placements": 657
   },
   "replaced_inline_diagrams": [
     {

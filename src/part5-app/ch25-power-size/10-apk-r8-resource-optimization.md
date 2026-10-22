@@ -163,7 +163,7 @@ consolidated_from:
 
 ## 先统一制品与体积口径
 
-体积治理要先固定四件事：用户拿到哪组 APK（如基础 APK 和 configuration APK，即配置 APK）、下载多少字节、安装后占用多少空间、运行时映射了哪些页；删哪个目录是之后的事。这四个结果可能沿不同方向变化。
+体积治理的第一步是固定四件事：用户拿到哪组 APK（如基础 APK 和 configuration APK，即配置 APK）、下载多少字节、安装后占用多少空间、运行时映射了哪些页。这四个结果可能沿不同方向变化，先记录、再谈删哪个目录。
 
 ### APK（包括 universal APK）是带平台约束的 ZIP
 
@@ -174,7 +174,7 @@ APK（包括按 ABI 单独构建的 per-ABI APK）使用 ZIP 组织文件，但�
 - `lib/<abi>/` 保存各 ABI（应用二进制接口） 的 ELF 库。条目是否压缩会同时影响下载字节、安装期提取和直接映射条件；
 - V1/JAR 签名会在 `META-INF/` 生成清单与签名文件，V2/V3 签名位于 APK Signing Block（APK 签名块），V4 还使用独立的 `.idsig` 文件。看到 `META-INF/`，也推断不出制品只采用 V1。
 
-未压缩条目会让 APK 文件变大，换来的可能是免于安装期提取，或支持直接映射。所以单看 ZIP 中某个文件的字节数，判定不了下载、安装或内存是否一起改善。
+未压缩条目会让 APK 文件变大，换来的可能是免于安装期提取，或支持直接映射。所以 ZIP 里某个文件的字节数只是一个侧面，下载、安装和内存各自怎么变，我们要分开量。
 
 ### 四种体积数字的口径
 
@@ -202,11 +202,13 @@ APK（包括按 ABI 单独构建的 per-ABI APK）使用 ZIP 组织文件，但�
 
 ## 字节码、依赖与 Profile 交付
 
+发布包变大时，DEX 往往是第一嫌疑。这一节我们按“确定对象、看清 DEX 内部、走一遍构建路径、用 R8 与依赖治理收口、建立测量流程”的顺序展开：先把优化对象和口径定住，再进入具体手段。
+
 ### 先确定 DEX 的优化对象
 
 先把优化对象定清楚。DEX 是 Android 保存类定义、字节码和相关数据的文件。
 
-ART（Android Runtime，Android 运行时） 还会在安装和运行过程中围绕它生成一批验证或编译辅助产物：`.vdex` 保存验证及相关 DEX 数据，`.odex`/`.oat` 保存设备侧编译结果，`.art` 是 App Image（把预初始化类和对象状态映射进内存的镜像），把预初始化的类和对象状态映射进内存。这些文件占设备存储，不计入商店下载的 DEX 字节。
+ART（Android Runtime，Android 运行时） 还会在安装和运行过程中围绕它生成一批验证或编译辅助产物：`.vdex` 保存验证及相关 DEX 数据，`.odex`/`.oat` 保存设备侧编译结果，`.art` 是 App Image（把预初始化类和对象状态映射进内存的镜像）。这些文件占设备存储，不计入商店下载的 DEX 字节。
 
 DEX 优化容易被“方法数”“DEX 个数”带偏：用户感知到的是下载、安装、启动和运行时内存，我们手里操作的却是另一组产物指标：
 
@@ -218,7 +220,7 @@ DEX 优化容易被“方法数”“DEX 个数”带偏：用户感知到的是
 | `classes.dex` 的启动代码覆盖 | 启动路径是否集中在首个 DEX | 整体 DEX 是否足够小 |
 | 设备上的 `.vdex`、`.odex`、`.art` | 安装后验证、编译和 App Image 成本 | 商店下载大小 |
 
-平台版本和 AGP 版本是两条独立的轴：升级 `targetSdk` 不会顺带缩小 DEX，工具链升级之后，发布产物的回归测试仍要照跑。
+平台版本和 AGP 版本是两条独立的轴：升级 `targetSdk` 与缩小 DEX 之间没有必然联系；工具链升级之后，发布产物的回归测试仍要照跑。
 
 一个可执行的目标通常写成三组预算：
 
@@ -230,7 +232,7 @@ DEX 优化容易被“方法数”“DEX 个数”带偏：用户感知到的是
 
 ### DEX 文件里哪些内容占空间
 
-标准 DEX 由 header 文件头、若干 ID 标识符表、类定义和 data section 数据区组成。平台的 [`StandardDexFile`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/standard_dex_file.h) 与官方 [DEX format](https://source.android.com/docs/core/runtime/dex-format) 给出了字段布局。
+优化对象定住之后，我们再往下看一层：标准 DEX 由 header 文件头、若干 ID 标识符表、类定义和 data section 数据区组成。平台的 [`StandardDexFile`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/standard_dex_file.h) 与官方 [DEX format](https://source.android.com/docs/core/runtime/dex-format) 给出了字段布局。
 
 #### 固定宽度的索引区
 
@@ -270,7 +272,7 @@ APK Analyzer 同时显示 Defined Methods（定义的方法） 与 Referenced Me
 - Referenced Methods 统计该 DEX 的方法 ID 表，决定是否触发方法引用上限；
 - 一个定义在其他 DEX 或平台中的方法，仍可能占当前 DEX 的引用条目。
 
-这个上限解释了 multidex（为 Dalvik 运行时安装和加载次级 DEX 的兼容方案） 的由来，但它只是正确性约束，当不了体积预算：两个版本的引用数相同，方法体、字符串和调试信息差异仍可让字节数相差很大。
+这个上限解释了 multidex（为 Dalvik 运行时安装和加载次级 DEX 的兼容方案） 的由来。它约束的是正确性；体积要看另一组数字——两个版本的引用数相同，方法体、字符串和调试信息的差异仍可让字节数相差很大。
 
 ### 从源码到发布 DEX 的构建路径
 
@@ -299,7 +301,7 @@ flowchart LR
 
 启用代码裁剪的 `release` 构建由 R8 完成整程序分析、代码改写、重命名和 DEX 生成；未启用裁剪的构建、增量中间产物和部分 DEX 合并路径使用 D8。R8 可以直接生成 DEX，当前发布流程已经不走“R8 输出 `.class`，再由 D8 固定转换一次”这条老路。
 
-AGP 负责编排 desugaring（把较新的 Java/Kotlin 字节码特性转换为目标 Android 版本可执行的形式）、依赖输入、默认规则、资源处理、性能配置文件（profile）改写和打包；desugaring 把较新的 Java/Kotlin 字节码特性转换为目标 Android 版本可执行的形式。应用项目通常交给 AGP 编排即可，独立调用 D8/R8 更适合复现实验和工具开发。
+AGP 负责编排 desugaring（把较新的 Java/Kotlin 字节码特性转换为目标 Android 版本可执行的形式）、依赖输入、默认规则、资源处理、性能配置文件（profile）改写和打包。应用项目通常交给 AGP 编排即可，独立调用 D8/R8 更适合复现实验和工具开发。
 
 ### R8：主要体积收益来自可删除、可改写、可重命名
 
@@ -334,13 +336,13 @@ android {
 
 `proguard-android-optimize.txt` 启用适合应用发布的优化默认值。AGP 9.3 及以上还提供 `optimization { enable = true }` 和 `keepRules` source set（源码集目录）；旧版 DSL 仍受支持。团队应按当前 AGP 版本选择一种配置，不要在同一份说明中混用两套目录约定。
 
-优化开关只决定 R8 是否有机会工作。若应用规则或消费端规则保留了大部分代码——consumer rules 指库随 AAR（Android 库包） 交给应用合并的规则——开关打开了也拿不到预期结果。
+优化开关只决定 R8 是否有机会工作。若应用规则或消费端规则保留了大部分代码——consumer rules 指库随 AAR（Android 库包） 交给应用合并的规则——开关打开了，R8 能动的范围也有限，预期收益会大打折扣。
 
 #### Keep 规则的四个维度
 
 一条裸 `-keep` 同时阻止 shrinking、obfuscation 和 optimization。`allowshrinking`、`allowobfuscation`、`allowoptimization` 用于放开对应能力。规则设计应回答四个问题：
 
-1. 哪个类或成员通过反射、JNI（Java Native Interface，Java 与原生代码的调用接口）、序列化、WebView bridge（JavaScript 与应用代码之间的桥接对象） 或框架回调访问？WebView bridge 指 JavaScript 与应用代码之间的桥接对象。
+1. 哪个类或成员通过反射、JNI（Java Native Interface，Java 与原生代码的调用接口）、序列化、WebView bridge（JavaScript 与应用代码之间的桥接对象） 或框架回调访问？
 2. 运行时依赖的是存在性、名称、签名、注解，还是可见性？
 3. 类自身是否已有静态引用，只需保护动态访问的成员？
 4. 这项约束应放在应用规则中，还是由库的消费端规则随 AAR 提供？
@@ -353,15 +355,15 @@ WebView bridge 已由静态代码创建，这条规则只保留其中带注解�
 }
 ```
 
-这条规则不会保留整个业务包，也没有禁止 AppBridge 之外的代码重命名。若 JavaScript 还通过字符串查找 bridge 类名，类名本身也需要单独保护；规则范围应由调用协议决定。
+这条规则既不保留整个业务包，也不禁止 AppBridge 之外的代码重命名。若 JavaScript 还通过字符串查找 bridge 类名，类名本身也需要单独保护；规则范围应由调用协议决定。
 
-这类包级规则适合作为短期止崩手段，不适合长期留在发布配置中：
+这类包级规则适合作为短期止崩手段，长期留在发布配置里就要付出体积代价：
 
 ```proguard
 -keep class com.example.** { *; }
 ```
 
-它会阻止匹配代码被删除、改名和优化。缩小范围前需要补齐反射、序列化、JNI（Java Native Interface，Java/Kotlin 与 Native 代码的调用边界）、动态加载与关键业务测试；删掉规则后“能启动”，离充分验证还差得远。
+它会阻止匹配代码被删除、改名和优化。缩小范围前需要补齐反射、序列化、JNI（Java Native Interface，Java/Kotlin 与 Native 代码的调用边界）、动态加载与关键业务测试；“删掉规则后能启动”只算过了第一关，离充分验证还差得远。
 
 #### `@Keep` 的使用边界
 
@@ -372,7 +374,7 @@ WebView bridge 已由静态代码创建，这条规则只保留其中带注解�
 - 注解落在类上还是成员上，会改变保留范围；
 - 清理 `@Keep` 前要找到运行时入口并写出更精确的规则。
 
-第三方库中的消费端规则与应用规则会汇总进同一个 R8 配置。一个依赖携带的包级 `-keep` 可能保留其传递依赖，所以 keep 配置是否健康要看合并后的完整配置，“应用自己的规则很少”说明不了问题。
+第三方库中的消费端规则与应用规则会汇总进同一个 R8 配置。一个依赖携带的包级 `-keep` 可能保留其传递依赖，所以 keep 配置是否健康，要看合并后的完整配置；“应用自己的规则很少”可能只是规则转移到了依赖里。
 
 #### 找出是谁保留了代码
 
@@ -411,7 +413,7 @@ Blast Radius 明细比单纯搜索 `-keep` 更适合排优先级。导出的 `ke
 
 报告还可以暴露 subsumed rules（被更宽规则覆盖的规则）：例如包级 `-keep class com.example.package.** { *; }` 已覆盖整个包时，单独保留 `com.example.package.User` 的窄规则可能没有额外效果。排查时先确认反射、JNI、序列化或注解扫描需要保护哪些类、字段、方法、名称或注解，再把宽规则改成更窄的协议规则。改完重新生成 Analyzer 报告、合并配置、`seeds.txt`/`usage.txt` 和发布 APK 对比。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md]
 
-删除或放宽 keep 规则之前，要把 Analyzer 的“影响范围”与运行时语义分开：它能说明哪些类、字段或方法因为某条规则失去裁剪、优化或混淆机会。至于这些对象在生产环境是否会被字符串反射、`Class.forName()`、`getDeclaredField()`、JNI 注册、序列化框架、WebView bridge、服务端协议或动态加载路径访问，要靠运行时验证说话，Analyzer 的分数管不到这一层。规则改动后至少覆盖对应动态入口测试、分批发布和线上崩溃监控。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md]
+删除或放宽 keep 规则之前，要把 Analyzer 的“影响范围”与运行时语义分开：它能说明哪些类、字段或方法因为某条规则失去裁剪、优化或混淆机会。至于这些对象在生产环境是否被字符串反射、`Class.forName()`、`getDeclaredField()`、JNI 注册、序列化框架、WebView bridge、服务端协议或动态加载路径访问，答案是运行时验证给出的；Analyzer 的分数停留在静态配置这一层。规则改动后至少覆盖对应动态入口测试、分批发布和线上崩溃监控。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md]
 
 工具链还不支持该分析器时，`configuration.txt`、`seeds.txt`、`usage.txt`、APK Analyzer 和 `-whyareyoukeeping` 仍能完成保留原因与发布贡献排查；Analyzer 的三项分数、Blast Radius 表和 subsumed rules 关系，仍要靠支持该功能的工具链生成。[已验证: Android Developers Troubleshoot R8 rules；来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md]
 
@@ -440,9 +442,9 @@ R8 能删除不可达代码，但有几处例外：
 
 #### `--release`
 
-独立 D8 的 `--release` 会减少调试信息，并在存在主 DEX 类清单（main dex list）时尝试把更多类填入主 DEX。它不会执行 R8 的整程序代码裁剪、重命名和高级优化。
+独立 D8 的 `--release` 会减少调试信息，并在存在主 DEX 类清单（main dex list）时尝试把更多类填入主 DEX；整程序代码裁剪、重命名和高级优化属于 R8 的职责范围。
 
-AGP 已按构建变体选择 D8/R8 模式。应用发布构建无需额外执行一次 `d8 --release`；对 R8 输出再做第三方 DEX 重写还可能破坏性能配置文件、布局和 Retrace（混淆堆栈还原）映射。
+AGP 已按构建变体选择 D8/R8 模式。应用发布构建无需额外执行一次 `d8 --release`；对 R8 输出再做第三方 DEX 重写，还可能破坏性能配置文件、布局和 Retrace（混淆堆栈还原）映射。
 
 #### `--min-api`
 
@@ -459,7 +461,7 @@ DEX 版本同样写不成“037 比 038 小”这种固定关系：
 
 #### DexArchive 与逐类 DEX
 
-DexArchive 是增量构建中保存中间 DEX 结果的形式。`--intermediate`、`--file-per-class` 和 AGP 的增量 DEX 编译服务于构建缓存与增量速度。中间目录里大量逐类小 DEX 会在完整构建中合并，它们的总大小或文件数当不了发布指标。
+DexArchive 是增量构建中保存中间 DEX 结果的形式。`--intermediate`、`--file-per-class` 和 AGP 的增量 DEX 编译服务于构建缓存与增量速度。中间目录里大量逐类小 DEX 会在完整构建中合并，它们的总大小或文件数属于构建中间态，发布指标要看合并后的最终产物。
 
 若 CI 只想提高构建速度，应分析 Gradle 任务、缓存命中和 D8 合并；若目标是用户下载大小，应只检查签名、优化后的 APK/AAB 或设备专用 APK 集。
 
@@ -493,7 +495,7 @@ D8 `--release` 会移除调试所需的大部分信息，但保留生成异常�
 
 Kotlin 编译器把可空性、扩展函数、协程签名等语言信息写进 `@kotlin.Metadata`。它对普通 Kotlin 调用不是运行时必需项；`kotlin.reflect`、按 Kotlin 声明结构扫描的框架和部分序列化工具会在运行时读取。
 
-R8 Full Mode 会依据存活代码与 keep 约束处理注解和元数据。产品只有在运行时使用 Kotlin 反射等元数据读取路径时，才应按当前官方指导保留所需的 `RuntimeVisibleAnnotations` 与 `kotlin.Metadata`，并为被反射的类或成员添加精确规则和测试。没有运行时读取时，不要仅凭“项目使用 Kotlin”就给所有类添加强 keep。
+R8 Full Mode 会依据存活代码与 keep 约束处理注解和元数据。产品只有在运行时使用 Kotlin 反射等元数据读取路径时，才应按当前官方指导保留所需的 `RuntimeVisibleAnnotations` 与 `kotlin.Metadata`，并为被反射的类或成员添加精确规则和测试。没有运行时读取时，仅凭“项目使用 Kotlin”给所有类加强 keep，属于无依据的体积让步。
 
 Kotlin 元数据大小只是 Kotlin 代码体积的一部分。数据类生成成员、默认参数桥接、协程状态机、lambda（匿名函数）、Compose 和代码生成都可能贡献 DEX；R8 后的发布结果才是比较对象。
 
@@ -507,7 +509,7 @@ K2 是新版 Kotlin 编译器前端。K2 或其他 Kotlin 编译器版本可能�
 
 DEX 的 `string_ids` 会引用类/方法/字段名称、类型描述符、源码字符串、注解值及其他常量。同一逻辑 DEX 内的相同字符串可以复用，跨传统 DEX 文件仍可能重复。
 
-R8 缩短和重打包符号后，类名、包名、字段名与方法名字符串会变短。AGP 9.1 起应用构建默认启用 class repackaging（类重打包，把类移动到更短的包路径），把类移动到更短的包路径；旧工具链可由 R8 配置控制。反射、序列化和 JNI 若依赖原始名称，必须提供精确规则。
+R8 缩短和重打包符号后，类名、包名、字段名与方法名字符串会变短。AGP 9.1 起应用构建默认启用 class repackaging（类重打包，把类移动到更短的包路径）；旧工具链可由 R8 配置控制。反射、序列化和 JNI 若依赖原始名称，必须提供精确规则。
 
 `R.string.title` 在 DEX 中主要表现为资源 ID 的字段/整数引用；字符串内容保存在 `resources.arsc` 或资源拆分 APK 中。把 UI 文案从代码字面量迁到资源，可改善本地化与复用，但 DEX 与资源表的总变化需要用 APK/AAB 测量。
 
@@ -524,9 +526,9 @@ R8 缩短和重打包符号后，类名、包名、字段名与方法名字符�
 
 #### Android 5.0/API 21 以后已原生支持 multidex
 
-Android 5.0 / API 21 起，ART 原生加载 APK 中的 `classes.dex`、`classes2.dex` 等文件。因此，本文覆盖的 Android 10—17 设备不需要 `androidx.multidex` 安装器，也不需要为了类可见性维护旧版主 DEX 类清单（legacy main dex list）。
+Android 5.0 / API 21 起，ART 原生加载 APK 中的 `classes.dex`、`classes2.dex` 等文件；本文覆盖的 Android 10—17 设备因此省掉了 `androidx.multidex` 安装器，也省掉了为类可见性维护的旧版主 DEX 类清单（legacy main dex list）。
 
-`minSdk <= 20` 的应用仍要处理旧版 multidex——为 Dalvik 运行时安装并加载次级 DEX 的兼容方案：
+`minSdk <= 20` 的应用仍要处理旧版 multidex：
 
 - `MultiDex.install()` 完成前只能可靠访问主 DEX 中的类；
 - 应用清单组件、Application、启动依赖及其直接依赖需要进入主 DEX；
@@ -546,7 +548,7 @@ Android 5.0 / API 21 起，ART 原生加载 APK 中的 `classes.dex`、`classes2
 - 存储速度、缺页、类验证和类初始化工作；
 - R8 是否把无用代码从启动路径和安装包中删除。
 
-把 `classes3.dex` 合回 `classes2.dex` 不保证启动变快。为了减少文件数而添加 keep、禁用优化或打乱 Startup Profile 布局，结果可能更差。
+把 `classes3.dex` 合回 `classes2.dex` 之后启动是否变快，要看测量结果；为了减少文件数而添加 keep、禁用优化或打乱 Startup Profile 布局，结果可能更差。
 
 平台源码支持多 DEX 和 DEX 容器读取，但没有向应用承诺“多 DEX 按某种并行度加载”。调优要落在可验证的目标上：启动关键类位置、Perfetto 跟踪和基准测试；内部线程模型只当实现细节看。
 
@@ -567,9 +569,9 @@ Startup Profile 可能改变各 DEX 的字节分布，只比较 `classes.dex` �
 
 ### Baseline Profile、`.art` 与 `.oat` 的体积边界
 
-Baseline Profile 会作为发布材料随应用分发，ART 或安装基础设施用它选择验证、AOT 编译和 App Image 内容。安装后可能产生 `.vdex`、`.odex`/`.oat` 与 `.art`，它们占设备存储，不属于 APK 内的 DEX 字节。
+Baseline Profile 会作为发布材料随应用分发，ART 或安装基础设施用它选择验证、AOT 编译和 App Image 内容。安装后可能产生 `.vdex`、`.odex`/`.oat` 与 `.art`，它们占设备存储，是 APK 内 DEX 字节之外的另一笔开销。
 
-因此需要两份报告：
+因此我们要准备两份报告：
 
 - 分发报告：APK/AAB、设备专用 APK 集、配置文件元数据和 DEX 大小；
 - 安装报告：`pm path` 对应 APK、`/data/app` 产物、ART 编译状态和应用数据占用。
@@ -580,7 +582,7 @@ Baseline Profile 会作为发布材料随应用分发，ART 或安装基础设�
 
 ### 动态特性模块与交付边界
 
-Dynamic Feature Module（动态特性模块）可以把非安装时功能的代码与资源放入功能拆分 APK——feature split——从而减少基础模块的初次下载和主安装 DEX。它不会自动减少用户获取全部功能后的总代码量。
+Dynamic Feature Module（动态特性模块）可以把非安装时功能的代码与资源放入功能拆分 APK——feature split——从而减少基础模块的初次下载和主安装 DEX；用户获取全部功能后，总代码量只是分次到达。
 
 拆分前需要确认：
 
@@ -605,7 +607,7 @@ Dynamic Feature Module（动态特性模块）可以把非安装时功能的代�
 5. 对比产物来自执行 `clean` 后可重复的 CI 构建；
 6. Android 17 设备配置或 `device-spec.json`。这个 JSON 描述设备的 SDK 版本、ABI、屏幕密度和语言等交付条件。
 
-调试 APK、包含多种设备配置的未签名 universal APK（包含多种设备配置的通用 APK） 与 Play 设备专用 APK，三者的大小口径不同，应分别画趋势线。
+调试 APK、未签名 universal APK（包含多种设备配置的通用 APK） 与 Play 设备专用 APK，三者的大小口径不同，应分别画趋势线。
 
 #### 用 APK Analyzer 检查 DEX
 
@@ -651,7 +653,7 @@ bundletool get-size total \
   --device-spec=pixel-android17.json
 ```
 
-`get-size total` 估算的是压缩传输大小，并会根据设备规格（device spec）选择基础模块、动态特性模块和配置 APK。评估按需模块时再使用 `--modules` 指定模块集合，整个 `.aab` 文件大小代表不了用户下载量。
+`get-size total` 估算的是压缩传输大小，并会根据设备规格（device spec）选择基础模块、动态特性模块和配置 APK。评估按需模块时再使用 `--modules` 指定模块集合；整个 `.aab` 文件大小只是上传制品的数字，用户下载量要按设备 APK Set 计算。
 
 #### CI 门禁应该保存什么
 
@@ -687,7 +689,7 @@ bundletool get-size total \
 8. 用同一设备规格比较下载量，并用同一设备集执行启动基准测试；
 9. 归档二进制、报告与符号映射文件。
 
-如果增长来自合法功能，不必为了回到旧数字而使用脆弱的手工 DEX 改写。可以接受 300 KB 的必要代码，同时删除 500 KB 的宽泛 keep 规则或不再使用的 SDK。
+如果增长来自合法功能，我们不必为了回到旧数字而使用脆弱的手工 DEX 改写。可以接受 300 KB 的必要代码，同时删除 500 KB 的宽泛 keep 规则或不再使用的 SDK。
 
 ### Android 17 源码边界
 
@@ -836,7 +838,7 @@ ELF 有两套描述同一文件的视图：
 | `.eh_frame*` | C++ 异常、栈展开（unwind）与回溯元数据 | 删除前要核对异常和回溯需求 |
 | `.debug_*` | DWARF 调试信息格式保存的文件、行号、类型和变量信息 | 应进入独立符号制品，不应留在发布 APK |
 
-`.bss` 是最容易读错的一项：`llvm-size` 报出的 BSS 数值可能很大，但 APK 并不会因此多出同样多的字节，它提示的是零初始化内存的规模。反过来，`.rodata` 里的大模型常量、查表数据或内嵌证书会直接扩大 ELF 和交付产物。
+`.bss` 是我们最容易读错的一项：`llvm-size` 报出的 BSS 数值可能很大，但 APK 并不会因此多出同样多的字节，它提示的是零初始化内存的规模。反过来，`.rodata` 里的大模型常量、查表数据或内嵌证书会直接扩大 ELF 和交付产物。
 
 #### 用 NDK 工具检查结构
 
@@ -861,7 +863,7 @@ SO_PATH="app/build/intermediates/stripped_native_libs/release/out/lib/arm64-v8a/
 "$NDK_TOOLCHAIN/llvm-size" -A -d "$SO_PATH"
 ```
 
-`llvm-size` 适合做版本对比，但模板实例、内联函数或某个静态归档库（archive，`.a` 文件） `.a` 为什么进入最终库，它解释不了。需要函数级归因时，应同时保存 linker map——记录输入目标文件与最终地址、尺寸对应关系的链接映射文件；需要源码级 DWARF 归因时，应分析 `strip` 前制品。
+`llvm-size` 适合做版本对比；至于模板实例、内联函数或某个静态归档库（archive，`.a` 文件）为什么进入最终库，要到 linker map——记录输入目标文件与最终地址、尺寸对应关系的链接映射文件——里找答案。需要源码级 DWARF 归因时，应分析 `strip` 前制品。
 
 ### Strip：发布库与符号制品分开管理
 
@@ -932,7 +934,7 @@ android {
 完整 DWARF 不需要进入 APK，运行时 unwind（栈展开）元数据却可能影响：
 
 - C++ 异常传播；
-- tombstone（Android 系统生成的 Native 崩溃记录）、`libunwindstack` 与采样分析器（profiler）的回溯——tombstone 是 Android 系统生成的 Native 崩溃记录；
+- tombstone（Android 系统生成的 Native 崩溃记录）、`libunwindstack` 与采样分析器（profiler）的回溯；
 - 崩溃时从 PC（program counter，程序计数器）逐帧恢复调用链；
 - 手写汇编和省略帧指针（frame pointer）的函数。
 
@@ -967,7 +969,7 @@ AAB 把模块内的 `lib/<abi>/` 交给 Play 生成配置 APK。交付时，设�
 - arm64、ARMv7 与 x86_64 代表设备的 APK Set 下载体积；
 - 每个 ABI 中同名库的 `strip` 后大小。
 
-普通 APK 渠道不具备 Play 的服务端 ABI 拆分能力时，可以为每个 ABI 分别构建 APK。多个 APK 的 `versionCode`、签名、升级兼容和渠道选择必须由发布系统管理，`abiFilters` 承担不了分发方案的职责。
+普通 APK 渠道不具备 Play 的服务端 ABI 拆分能力时，可以为每个 ABI 分别构建 APK。多个 APK 的 `versionCode`、签名、升级兼容和渠道选择必须由发布系统管理；`abiFilters` 的职责止步于构建侧打包。
 
 #### 安装期如何选择 ABI
 
@@ -1031,7 +1033,7 @@ target_link_options(app_native PRIVATE
 )
 ```
 
-LTO（Link Time Optimization，链接时优化）参数必须同时到达编译与链接阶段。ThinLTO 是更利于并行和增量构建的 LTO 模式，可跨编译单元（translation unit，即一个源文件经过预处理后的编译输入）做内联、去虚化和删除——translation unit 指一个源文件经过预处理后的编译输入——也会增加链接时间、缓存和调试复杂度。不同代码库的结果方向不固定；启用前后要保存 linker map、`.text/.rodata`、构建时长、峰值内存和性能数据。
+LTO（Link Time Optimization，链接时优化）参数必须同时到达编译与链接阶段。ThinLTO 是更利于并行和增量构建的 LTO 模式，可跨编译单元（translation unit，即一个源文件经过预处理后的编译输入）做内联、去虚化和删除，也会增加链接时间、缓存和调试复杂度。不同代码库的结果方向不固定；启用前后要保存 linker map、`.text/.rodata`、构建时长、峰值内存和性能数据。
 
 #### 导出符号会成为保留边界
 
@@ -1069,7 +1071,7 @@ set_target_properties(app_native PROPERTIES
 
 #### ICF、模板和内联的边界
 
-ICF（Identical Code Folding，相同代码折叠）可以合并机器码完全相同的函数。激进模式可能让两个函数地址变成相同值，影响依赖函数地址唯一性的注册表、调试器或业务逻辑。它属于需要专项测试的链接器优化，`--icf=all` 当不成通用配置照搬。
+ICF（Identical Code Folding，相同代码折叠）可以合并机器码完全相同的函数。激进模式可能让两个函数地址变成相同值，影响依赖函数地址唯一性的注册表、调试器或业务逻辑。它属于需要专项测试的链接器优化，把 `--icf=all` 照搬到通用配置，要冒函数地址唯一性方面的风险。
 
 C++ 模板、仅由头文件提供实现的库（header-only）、虚函数、异常、RTTI 和大量内联常让 `.text`、`.rodata`、`.eh_frame` 增长。处理顺序建议是：
 
@@ -1097,14 +1099,14 @@ C++ 模板、仅由头文件提供实现的库（header-only）、虚函数、�
 
 ### 16 KB page size：兼容要求与体积代价
 
-Android 15 开始支持采用 16 KB 内存页的设备。Google Play 要求面向 Android 15/API 35 及更高版本的应用在 64 位设备上支持 16 KB 页面大小；自 2027 年 2 月 1 日起，应用更新要先满足这一条才谈得上发布。只要应用直接包含 Native 代码，或通过 SDK 带入 `arm64-v8a`、`x86_64` 库，就要把这些预编译库一起纳入检查；32 位 ABI 的产品支持范围仍应单独验证，Play 的 64 位要求替代不了它。
+Android 15 开始支持采用 16 KB 内存页的设备。Google Play 要求面向 Android 15/API 35 及更高版本的应用在 64 位设备上支持 16 KB 页面大小；自 2027 年 2 月 1 日起，应用更新要先满足这一条才谈得上发布。只要应用直接包含 Native 代码，或通过 SDK 带入 `arm64-v8a`、`x86_64` 库，就要把这些预编译库一起纳入检查；32 位 ABI 的产品支持范围仍应单独验证；Play 的 64 位要求管的是另一件事。
 
 发布库有两层独立对齐：
 
 1. ELF 内每个 `PT_LOAD` 的 `p_align` 要支持 16 KB；
 2. 未压缩 `.so` 在 APK ZIP 中的起始偏移要按 16 KB 对齐，系统才能直接从 APK 映射。
 
-NDK r28+ 默认生成 16 KB 对齐 ELF。NDK r27 及更低版本需要显式传递 `-Wl,-z,max-page-size=16384` 与 `-Wl,-z,common-page-size=16384`，并且每个预编译 `.so` 也要来自兼容构建。AGP 8.5.1+ 处理未压缩 Native 库的 16 KB ZIP 对齐；旧 AGP 的临时压缩方案会改变下载与安装空间，只是过渡手段，代替不了工具链升级。
+NDK r28+ 默认生成 16 KB 对齐 ELF。NDK r27 及更低版本需要显式传递 `-Wl,-z,max-page-size=16384` 与 `-Wl,-z,common-page-size=16384`，并且每个预编译 `.so` 也要来自兼容构建。AGP 8.5.1+ 处理未压缩 Native 库的 16 KB ZIP 对齐；旧 AGP 的临时压缩方案会改变下载与安装空间，只是过渡手段，最终仍要走到工具链升级。
 
 #### 对齐为什么可能增大文件
 
@@ -1126,11 +1128,11 @@ zipalign -v -c -P 16 4 app-release.apk
 bundletool dump config --bundle=app-release.aab | grep alignment
 ```
 
-`llvm-objdump` 的 LOAD 信息应显示兼容的对齐；`zipalign` 检查发布 APK 中未压缩 ELF 的位置；AAB 配置出现 `PAGE_ALIGNMENT_16K`，才表示该 AAB 声明使用 16 KB ZIP 对齐。这三项各查一层，替代不了彼此。
+`llvm-objdump` 的 LOAD 信息应显示兼容的对齐；`zipalign` 检查发布 APK 中未压缩 ELF 的位置；AAB 配置出现 `PAGE_ALIGNMENT_16K`，才表示该 AAB 声明使用 16 KB ZIP 对齐。这三项各查一层，要一起跑。
 
 #### 兼容模式与失败路径
 
-`android-17.0.0_r1` 的 bionic `ElfReader::LoadSegments()` 按运行时页面大小检查 `PT_LOAD`。平台仍包含 `linker_phdr_16kib_compat.cpp`，可以为部分 4 KB 对齐旧库走兼容映射；该路径用于迁移，替代不了 Play 发布要求，也修不了业务代码中的 `4096`、`>> 12` 或错误 `mmap()` 对齐。
+`android-17.0.0_r1` 的 bionic `ElfReader::LoadSegments()` 按运行时页面大小检查 `PT_LOAD`。平台仍包含 `linker_phdr_16kib_compat.cpp`，可以为部分 4 KB 对齐旧库走兼容映射；该路径用于迁移；Play 发布要求仍要单独满足，业务代码中的 `4096`、`>> 12` 或错误 `mmap()` 对齐也要单独修。
 
 下面的属性用于在专用 Android 17 测试设备上关闭 16 KB 兼容并让遗漏立即中止：
 
@@ -1141,7 +1143,7 @@ adb shell setprop pm.16kb.app_compat.disabled true
 
 两项必须配合。测试需要覆盖所有延迟加载和动态特性模块路径，完成后恢复设备属性。兼容模式、原生 16 KB ELF 和 4 KB 设备都要分别回归。
 
-内核 [`android17-6.18-2026-06_r6/mm/mmap.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/mmap.c) 提供 VMA（Virtual Memory Area，进程中一段连续虚拟地址区域）与 `mmap()` 等基础机制；缺页和文件页缓存由内核内存子系统继续处理。应用 `.so` 的段权限、重定位与链接器命名空间（namespace，用于限制库和符号的可见范围）——限制库和符号可见范围的机制——仍由 Android bionic 动态链接器管理。某个 AGP/NDK 的对齐是否合格，从内核源码标签推导不出来。
+内核 [`android17-6.18-2026-06_r6/mm/mmap.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/mm/mmap.c) 提供 VMA（Virtual Memory Area，进程中一段连续虚拟地址区域）与 `mmap()` 等基础机制；缺页和文件页缓存由内核内存子系统继续处理。应用 `.so` 的段权限、重定位与链接器命名空间（namespace，用于限制库和符号的可见范围）仍由 Android bionic 动态链接器管理。某个 AGP/NDK 的对齐是否合格，答案在构建产物里，内核源码标签给不出这个结论。
 
 ### 重复 SO 的识别与去重
 
@@ -1411,7 +1413,7 @@ flowchart LR
     APKSET --> AM
 ```
 
-`compile` 的逐文件中间产物有利于增量构建，`.flat` 目录总量当不了发布体积。`link` 处理资源覆盖（overlay）与 ID；资源缩减处理可达性；App Bundle 决定某个设备获取哪些配置。四个阶段的问题要分别定位。
+`compile` 的逐文件中间产物有利于增量构建，`.flat` 目录总量属于中间产物，发布体积要看最终 APK/AAB。`link` 处理资源覆盖（overlay）与 ID；资源缩减处理可达性；App Bundle 决定某个设备获取哪些配置。四个阶段的问题要分别定位。
 
 #### AOSP Soong 与应用 AGP 的配置边界
 
@@ -1585,7 +1587,7 @@ android {
     tools:keep="@drawable/skin_*,@layout/server_page_*" />
 ```
 
-严格模式适合已经登记所有动态调用点、并有发布路径测试的项目。它当不成“缩减率太低”的快速开关。迁移时应先记录安全模式额外保留的原因，再逐个消除字符串协议或补充精确的保留规则。
+严格模式适合已经登记所有动态调用点、并有发布路径测试的项目；“缩减率太低”时把它当快速开关，反而容易删掉仍在使用的资源。迁移时应先记录安全模式额外保留的原因，再逐个消除字符串协议或补充精确的保留规则。
 
 ### 图片：格式、像素和解码成本一起评估
 
@@ -1616,7 +1618,7 @@ src/main/res/drawable-v31/hero.avif
 
 两份文件对应同一个 `R.drawable.hero`，`Resources` 按 API 级别限定符选择。这样会增加 AAB 上传总量，并让同一个 universal APK 同时携带两份；Google Play 的屏幕密度/语言拆分不会按 API 级别自动删除所有带版本限定符的回退资源，是否值得要用设备 APK Set 测量。
 
-AVIF 的编码收益与解码代价依图片、编码器和设备实现变化。启动页、大图列表与动画要跑冷解码、滚动和内存测试；桌面编码器的单张文件比值，替代不了 Android 设备结果。
+AVIF 的编码收益与解码代价依图片、编码器和设备实现变化。启动页、大图列表与动画要跑冷解码、滚动和内存测试；桌面编码器的单张文件比值，最终要以 Android 设备结果为准。
 
 #### VectorDrawable
 
@@ -1737,7 +1739,7 @@ JPEG、WebP、AVIF、MP3/AAC、部分视频、ZIP 等格式内部已经压缩，
 
 字体子集需要保存字符清单、OpenType 排版特性、输入字体哈希值、工具版本和输出哈希值。只扫描现有文案会漏掉服务端文本、用户输入、日期数字、货币符号、emoji 回退字体与无障碍内容。
 
-可变字体用一个文件承载字重、字宽和倾斜度等变化轴（axis），可能小于多份静态字体的总量，也可能因保留大量字形（glyph）和变化表而仍然较大。要比较产品实际使用的字形与变化轴，文件数量说明不了大小。
+可变字体用一个文件承载字重、字宽和倾斜度等变化轴（axis），可能小于多份静态字体的总量，也可能因保留大量字形（glyph）和变化表而仍然较大。要比较产品实际使用的字形与变化轴；文件数量和大小是两回事。
 
 Downloadable Fonts 把字体从 APK 转由字体提供方交付，成本并没有消失：首次请求、提供方可用性、证书、缓存、离线与隐私或渠道限制都要测试。
 

@@ -8612,6 +8612,112 @@
       "summary": "availableProcessors 被写成当前可用核数，遗漏 Android 17 实现读取 possible CPU 的边界",
       "type": "cpu-capacity-contract",
       "updated_at": "2026-10-22T16:16:49.636562+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
+      "close_note": "已将 Vulkan 1.3/1.4 表及历史条目统一限定为首发、支持64位ABI且非低内存设备；Android17结论不外推后续平台。依据 Implement Vulkan 的 Choose Vulkan support 与 Android17 CDD/profile。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-180519-59dcec18",
+      "created_at": "2026-10-22T18:11:49.565480+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-180519-59dcec18",
+      "details": "前半表格已有限定，后半 Vulkan 1.3/1.4 表及历史条目却泛化为所有首发设备，可能误导设备覆盖判断。Implement Vulkan 的 Choose Vulkan support 明确先限定支持 64 位 ABI 且非低内存；需统一全文。",
+      "id": "finding-d54444977e19",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "https://source.android.com/docs/core/graphics/implement-vulkan"
+      ],
+      "status": "fixed",
+      "summary": "Vulkan 版本表与历史条目遗漏首发设备的 64 位 ABI、非低内存适用条件",
+      "type": "version-scope",
+      "updated_at": "2026-10-22T18:21:20.199608+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
+      "close_note": "已修正颜色附件/深度模板、clip volume、Producer完成fence及异步queue、Vulkan acquire与SF acquire、stride像素/字节单位、编译缓存load/store、NDK/Java对象边界和BufferQueue acquire/dequeue职责。源码锚点均为Android17或Vulkan1.4.335。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-180519-59dcec18",
+      "created_at": "2026-10-22T18:11:49.621969+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-180519-59dcec18",
+      "details": "color attachment 被泛释为颜色/深度/模板附件；BufferQueue Producer 被解释成 Perfetto 数据提供方；stride 一概标作字节跨度，而 AHardwareBuffer_Desc.stride 明确以像素计；编译缓存 load/store 混用渲染附件内存读写解释。需局部更正，保留各对象边界。",
+      "id": "finding-5d966181783f",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativewindow/include/android/hardware_buffer.h",
+        "https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/src/gpu/ganesh/vk/GrVkOpsRenderPass.cpp",
+        "https://source.android.com/docs/core/graphics/arch-bq-gralloc"
+      ],
+      "status": "fixed",
+      "summary": "颜色附件、Producer fence、stride 与着色器缓存的括注混淆不同对象或计量单位",
+      "type": "terminology-accuracy",
+      "updated_at": "2026-10-22T18:21:20.253796+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
+      "close_note": "已更新alpha06/API26，区分AndroidX独立版本；下载官方AAR确认minSdkVersion=26，源码包核对Builder和单线程辅助类，保留developer preview与生成文档可能出错的警告，并指出入门页API24滞后。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-180519-59dcec18",
+      "created_at": "2026-10-22T18:11:49.676222+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-180519-59dcec18",
+      "details": "2026-10-07 已发布 alpha06，AAR Manifest 的 minSdkVersion=26；入门页仍写 API24，旧正文只陈述 alpha05/API24，版本表却将库版本混入 Android17 平台节点。需区分独立库版本，交代 API 下限迁移、Java Builder 迁移及随库文档可能出错的官方警告。",
+      "id": "finding-dc7204deb433",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/jetpack/androidx/releases/webgpu",
+        "https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06.aar"
+      ],
+      "status": "fixed",
+      "summary": "WebGPU 预览库兼容性说明未覆盖 alpha06 的 API 26 迁移与官方文档警告",
+      "type": "lifecycle-boundary",
+      "updated_at": "2026-10-22T18:21:20.308968+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
+      "close_note": "已补充FrameTimeline Android12+/SurfaceView覆盖限制与独立Surface缺失时的替代关联方式；分开GpuCounterEvent向前回填与ftrace频率向后保持语义；Headroom示例补API36入口检查。两段SQL已由真实Perfetto v58.2在空Trace上执行通过，仅证明语法、模块和表结构。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-180519-59dcec18",
+      "created_at": "2026-10-22T18:16:50.769529+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-180519-59dcec18",
+      "details": "FrameTimeline 官方页标明 Android12+ 且仍列 SurfaceView 限制，原流程没有缺失帧事件时的替代关联方式；GpuCounterEvent 的向前回填只适用于硬件计数器，不能泛化到 power/gpu_frequency。另需在 Headroom 示例入口说明 API36 检查。",
+      "id": "finding-e5e19c2a30e2",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/proto/gpu_event_parser.cc",
+        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/gpu/frequency.sql"
+      ],
+      "status": "fixed",
+      "summary": "GPU 观测流程遗漏 FrameTimeline 覆盖限制，并混用计数器区间语义",
+      "type": "observability-boundary",
+      "updated_at": "2026-10-22T18:21:20.363233+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
+      "close_note": "已在ION迁移段和资料标签明确5.4 kernel only、文档已弃用；只用作Android12历史，当前dma-heap/dma-buf/dma-fence/sync_file实现依据android17-6.18-2026-06_r6源码。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-180519-59dcec18",
+      "created_at": "2026-10-22T18:18:44.237105+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-180519-59dcec18",
+      "details": "官方 Transition from ION to DMA-BUF heaps 页面标题限定 5.4 kernel only，并声明 deprecated、原计划2026年5月移除。章节可保留 Android12 GKI2.0 迁移历史，但不得把该页旧内核 API 用作 Android17/6.18 当前实现依据；应明示文档生命周期并引用固定内核标签。",
+      "id": "finding-2fabcf9e809b",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-heap.c"
+      ],
+      "status": "fixed",
+      "summary": "ION 迁移参考资料遗漏官方 deprecated 和 5.4 kernel only 限定",
+      "type": "deprecated-source-boundary",
+      "updated_at": "2026-10-22T18:21:20.416765+08:00"
     }
   ],
   "schema_version": 1

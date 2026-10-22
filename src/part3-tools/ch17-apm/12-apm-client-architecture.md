@@ -63,7 +63,7 @@ Android 8—17 的应用都能采用以下队列、分片和上传模型；`Appl
 
 ## 1. 端侧引擎的职责与不可破坏约束
 
-先划清端和云的分工：端侧负责采集、准入、短期存储、受控上传和远程配置执行，聚合、长期检索、因果分析和告警留给服务端。设备上可以承担低成本过滤与摘要，复杂分析要放到业务线程之外。
+我们先划清端和云的分工：端侧负责采集、准入、短期存储、受控上传和远程配置执行，聚合、长期检索、因果分析和告警留给服务端。设备上可以承担低成本过滤与摘要，复杂分析要放到业务线程之外。
 
 一个可维护的 SDK 至少包含以下层：
 
@@ -83,7 +83,7 @@ Android 8—17 的应用都能采用以下队列、分片和上传模型；`Appl
 
 1. 业务线程不等待编码、文件、压缩、加密和网络。
 2. 所有内存、文件、重试和重样本都有上限。
-3. 高优先级故障证据有独立容量，不能被普通指标淹没。
+3. 高优先级故障证据有独立容量，普通指标再多也挤不进去。
 
 “业务线程不等待”指的是不在编码、文件这类慢操作上阻塞；至于每次调用的耗时，对象分配、CAS（Compare-And-Set，并发代码常用的原子比较后更新） 竞争、缺页（访问尚未驻留内存的页面）和线程调度都可能带来少量高延迟调用。所以我们要在目标低端机上实测入口 P50/P95/P99.9——分别对应 50%、95% 和 99.9% 的样本不高于该耗时——并给主线程路径配上自动降级。
 
@@ -93,9 +93,9 @@ Android 8—17 的应用都能采用以下队列、分片和上传模型；`Appl
 
 ### 2.1 `trySend()` 的非挂起契约
 
-`kotlinx.coroutines` 的 `Channel.trySend()` 是非挂起发送：它立刻尝试把元素放进 Channel，不等待可用容量，也不抛“队列已满”异常。作为对照，默认 `BufferOverflow.SUSPEND` 策略下普通 `send()` 遇到有界 buffer 满会挂起等待；`trySend()` 在相同场景或 Channel 已关闭时直接返回失败。事件入口要满足的第一条硬约束就是业务线程不等待，这个契约放在普通 APM 事件入口上是合适的。
+`kotlinx.coroutines` 的 `Channel.trySend()` 是非挂起发送：它立刻尝试把元素放进 Channel，不等待可用容量，也不抛“队列已满”异常。作为对照，默认 `BufferOverflow.SUSPEND` 策略下普通 `send()` 遇到有界 buffer 满会挂起等待；`trySend()` 在相同场景或 Channel 已关闭时直接返回失败。第 1 节的第一条硬约束就是业务线程不等待，这个契约放在普通 APM 事件入口上正合适。
 
-“立即返回”和“lock-free”是两回事：lock-free 指系统整体总有线程能前进，wait-free 进一步要求每个操作在有限步骤内完成。这两条进度保证，连同固定纳秒上限，Channel 文档都没有承诺；我们拿到的契约只有“非挂起、失败可观测”。
+拿到“立即返回”这个性质，还要把它和 lock-free 分开：lock-free 指系统整体总有线程能前进，wait-free 更进一步，要求每个操作在有限步骤内完成。这两条进度保证，连同固定的纳秒上限，Channel 文档都没有承诺；我们手里拿到的契约，只有“非挂起、失败可观测”一条。
 
 如果项目选择自研 MPSC（Multi-Producer, Single-Consumer，多生产者单消费者）RingBuffer（首尾相接、循环复用槽位的缓冲区），就要用每个 slot（队列槽位） 的 sequence（代次序号） 证明发布顺序，并处理槽位值循环后被误认成旧状态的 ABA 问题。这样的实现要通过并发测试、长时间 soak test（持续压力测试） 和线性化检查才算数；直接把一个循环数组叫作无锁队列，是过不了这几关的。
 
@@ -184,7 +184,7 @@ IN_MEMORY -> ACTIVE -> SEALED -> UPLOADING -> ACKED -> DELETED
 
 ## 3. 多进程与进程退出
 
-Android App 可以声明多个进程，WebView、远程 service 或业务组件都可能运行在不同进程。每个进程启动时都应生成新的 `process_instance_id`，并记录 process name、PID（操作系统分配的进程号）、进程启动的 elapsed time 与 App 版本；PID 在重启后会复用，持久标识要交给 `process_instance_id`。
+进程一多，“谁来写、谁来传”就成了要单独回答的问题。Android App 可以声明多个进程，WebView、远程 service 或业务组件都可能运行在不同进程。每个进程启动时都应生成新的 `process_instance_id`，并记录 process name、PID（操作系统分配的进程号）、进程启动的 elapsed time 与 App 版本；PID 在重启后会复用，持久标识要交给 `process_instance_id`。
 
 我们推荐每个进程使用自己的 active queue、worker 和 spool 目录：
 
@@ -201,7 +201,7 @@ files/apm/spool/<process-name-hash>/<process-instance-id>/
 Java 未捕获异常、native signal、OOM（Out of Memory，内存耗尽） 和系统结束进程，这几种场景下能安全执行的操作各不相同：
 
 - Java uncaught handler 仍在故障进程内，锁、堆和线程状态可能已损坏；
-- native fatal signal handler 里只能调用 async-signal-safe（POSIX 明确允许在信号处理器中调用） 函数，即 POSIX 明确允许在信号处理器中调用的那个极小集合；Java、malloc、常规日志和复杂文件 API 都不安全；
+- native fatal signal handler 里只能调用 async-signal-safe（POSIX 明确允许在信号处理器中调用） 函数，也就是那个极小的函数集合；Java、malloc、常规日志和复杂文件 API 都不安全；
 - OOM 后再创建大 event、压缩或 dump heap 很容易触发二次失败；
 - LMK（Low Memory Killer，系统因内存压力终止进程）、force-stop、设备掉电与 `SIGKILL` 没有应用清理回调。
 
@@ -209,7 +209,7 @@ Java 未捕获异常、native signal、OOM（Out of Memory，内存耗尽） 和
 
 ### 3.2 下次启动补系统退出原因
 
-API 30 起可以通过 `ActivityManager.getHistoricalProcessExitReasons()` 读取 `ApplicationExitInfo`。它能补充 reason、status、importance、timestamp，以及某些 ANR/native crash 的 trace stream（系统保存的诊断数据流），即系统保存的诊断数据流。
+API 30 起可以通过 `ActivityManager.getHistoricalProcessExitReasons()` 读取 `ApplicationExitInfo`。它能补充 reason、status、importance、timestamp，以及某些 ANR/native crash 的 trace stream（系统保存的诊断数据流）。
 
 RSS 是进程当时驻留在物理内存中的页面总量，PSS 会按共享比例分摊共享页面；两者都取自系统最近一次采样，不是死亡瞬间的精确值。trace 也可能因系统循环缓冲被后续记录覆盖而返回 `null`。
 
@@ -221,7 +221,7 @@ SDK 要把系统退出记录与本地 `process_instance_id`、wall clock（可�
 
 事件落盘这一层，Mars、Logan 这些日志库共同的选择是 `mmap`：它把文件页面映射到进程虚拟地址空间，代码可以像访问内存一样读写它。
 
-已经驻留内存的热页可以省掉逐条 `write()` syscall（进入内核执行系统调用），但首次访问仍可能触发 page fault（缺页处理），修改过的 dirty page（脏页） 也要由内核写回存储。Android 17 对应的 Linux 6.18，仍然通过 file cache（文件页缓存） 和 writeback（异步回写） 路径管理这些页面；存储拥塞、内存回收和显式同步都可能产生延迟。
+已经驻留内存的热页可以省掉逐条 `write()` syscall（进入内核执行系统调用），但首次访问仍可能触发 page fault（缺页处理），修改过的 dirty page（脏页） 也要由内核写回存储。Android 17 对应的内核是 Linux 6.18，这些页面仍走 file cache（文件页缓存）和 writeback（异步回写）路径；存储拥塞、内存回收和显式同步都可能产生延迟。
 
 Java `MappedByteBuffer.force()` 会把 read/write mapping 的修改强制写到本地存储设备：调用成功，即代表数据已提交到本地设备，我们由此拿到一条明确的持久化边界。它也可能执行同步 I/O，所以要放在 spool worker 上按批调用；`FileChannel.force()` 不保证替代 mapped buffer 自己的 `force()`。
 
@@ -247,19 +247,19 @@ record:
   length, type, flags, sequence, elapsed_ns, payload, checksum
 ```
 
-`magic` 是识别文件格式的固定值，`generation` 是 superblock 的更新代次，`committed_offset` 指向最后一个确认提交的位置，checksum 用于检查内容是否损坏。
+先看字段含义：`magic` 是识别文件格式的固定值，`generation` 是 superblock 的更新代次，`committed_offset` 指向最后一个确认提交的位置，checksum 用于检查内容是否损坏。
 
 单写者先写完整 record 与 checksum，再更新下一代 superblock；A/B 两份 superblock 通过 generation 和 checksum 选择较新的有效副本。启动扫描只接受长度合法、类型已知、payload（事件载荷） 未越界且 checksum 正确的 record，遇到尾部半条记录就停在前一个有效 offset。CRC（Cyclic Redundancy Check，循环冗余校验）能发现随机损坏；至于数据是否来自可信写入方，要交给 AEAD 这类带认证的机制。
 
-跨 crash 的 4 字节游标更新并不是一个 transaction（要么全部成功、要么全部撤销的事务）——要么全部成功、要么全部撤销——文件系统、设备写入粒度和回写顺序都可能影响结果，恢复器必须能接受“数据写了但游标没写”“游标较新但尾部校验失败”等组合。
+跨 crash 的 4 字节游标更新并不是一个 transaction（要么全部成功、要么全部撤销的事务）：文件系统、设备写入粒度和回写顺序都可能影响结果，所以恢复器必须能接受“数据写了但游标没写”“游标较新但尾部校验失败”这类组合。
 
 ### 4.3 预分配、磁盘满与 `SIGBUS`
 
-`ftruncate()` 可以把文件的逻辑长度扩到指定值，但文件系统可能只创建 sparse region（尚未分配所有物理块的稀疏区），也就是尚未分配物理块的稀疏区，每个映射页未必都有 backing block。后续写 `MAP_SHARED`（修改会回到文件的共享映射） 页面时——这类共享映射的改动会写回文件——若空间耗尽，native 进程就可能收到 `SIGBUS`，即访问映射对象失败时触发的总线错误信号。
+`ftruncate()` 可以把文件的逻辑长度扩到指定值，但文件系统可能只创建 sparse region（尚未分配所有物理块的稀疏区），每个映射页未必都有 backing block。后续写 `MAP_SHARED`（修改会回到文件的共享映射）页面时，若空间耗尽，native 进程就可能收到 `SIGBUS`，即访问映射对象失败时触发的总线错误信号。
 
 Mars 的 `mmap_util.cc` 会把新映射文件写零以实际分配 backing store，Mars README 也警告错误的 cache path 或文件准备可能导致 `SIGBUS`；Logan 的 C 实现同样先检查并填充固定长度文件，映射失败则退回普通内存 buffer。
 
-生产实现需要：
+生产实现上，我们要做这几件事：
 
 - 在 worker 上检查可用空间并完整预分配小而固定的 active file；
 - active mapping 存续期间禁止另一个线程/进程 truncate（截短）、替换或删除底层文件；
@@ -272,11 +272,11 @@ Mars 的 `mmap_util.cc` 会把新映射文件写零以实际分配 backing store
 
 可控的做法是长期复用一块很小的 active journal（按提交顺序追加的日志区），在 worker 上把已提交 block 复制成普通 sealed 文件后再复用 journal；若采用每分片 mapping，就限制同时存在的 mapping 数量，所有引用释放前不复用、不截断底层文件。
 
-`mmap` 本身只是缓冲与访问方式。crash-safe（进程异常终止后仍可判定并恢复有效记录） 指进程异常终止后仍能判定并恢复有效记录——这个性质要靠文件格式和恢复逻辑自己实现。Mars、Logan 的源码适合学习预分配、fallback（主路径失败后的受限备用方案） 和恢复思路；只复制一个 `mmap()` 调用，是学不到这些的。
+`mmap` 本身只是缓冲与访问方式。crash-safe（进程异常终止后仍可判定并恢复有效记录）这个性质，要靠文件格式和恢复逻辑自己实现。Mars、Logan 的源码适合学习预分配、fallback（主路径失败后的受限备用方案） 和恢复思路；只复制一个 `mmap()` 调用，是学不到这些的。
 
 ## 5. 编码与文件 envelope 的选型
 
-选编码格式之前，我们先看数据形状：APM event 通常字段稳定、数值多、批量频繁，payload（实际事件或附件字节） 指事件本身携带的数据。二进制协议常能减少字段名重复和临时字符串，但“二进制一定更快”这句话，要放到真实 payload 上验证过才成立。
+选编码格式之前，我们先看数据形状：APM event 通常字段稳定、数值多、批量频繁，事件内容集中在 payload（实际事件或附件字节）上。二进制协议常能减少字段名重复和临时字符串，但“二进制一定更快”这句话，要放到真实 payload 上验证过才成立。
 
 | 方案 | 适用位置 | 优点 | 需要付出的成本 |
 | --- | --- | --- | --- |
@@ -306,7 +306,7 @@ block envelope:
   authenticated_ciphertext
 ```
 
-内部可以是多个 length-delimited Protobuf event，也就是每条消息先写长度，再写对应字节。流程是先压缩，再用 AEAD（Authenticated Encryption with Associated Data，带关联数据认证的加密）加密；`key_id` 指明使用哪把密钥，便于轮换。nonce 是同一密钥下每次加密必须唯一的输入。文件恢复要用的非敏感长度和版本字段，也一并纳入 authenticated data（参与认证但不加密的关联数据）——参与认证但不加密的关联数据——防止这些字段被悄悄修改。
+内部可以是多个 length-delimited Protobuf event，也就是每条消息先写长度，再写对应字节。流程是先压缩，再用 AEAD（Authenticated Encryption with Associated Data，带关联数据认证的加密）加密；`key_id` 指明使用哪把密钥，便于轮换。nonce 是同一密钥下每次加密必须唯一的输入。文件恢复要用的非敏感长度和版本字段，也一并纳入 authenticated data（参与认证但不加密的关联数据），防止这些字段被悄悄修改。
 
 选型 benchmark 使用 App 的真实字段分布，在低端 32/64 位设备和当前主力设备分别跑 1000、10000 条事件，记录：
 
@@ -334,11 +334,11 @@ block envelope:
 | 自有日志回捞 | 只能回捞 SDK 自己持久化且获准采集的日志 | 普通 App 无权读取全设备 logcat |
 | system Perfetto / 其他进程 Hprof | 普通 App 不具备 | 需要 adb、测试环境或系统/特权能力 |
 
-表里有几个词值得先展开。Trace marker 是写进 trace 时间线的区间或计数标记，只有采集会话开启时才会进入结果。Perfetto 的 data source 是向 trace 提供某类事件的数据生产者；in-process mode 下服务和 App 自定义 data source 都在当前进程内，所以看不到 sched/ftrace（内核调度等系统事件）。Hprof 是 Java heap dump 的文件格式，包含进程内对象及引用关系；至于全设备 logcat，普通发布 App 拿不到 `READ_LOGS` 特权。
+我们先把表里的几个词展开。Trace marker 是写进 trace 时间线的区间或计数标记，只有采集会话开启时才会进入结果。Perfetto 的 data source 是向 trace 提供某类事件的数据生产者；in-process mode 下服务和 App 自定义 data source 都在当前进程内，所以看不到 sched/ftrace（内核调度等系统事件）。Hprof 是 Java heap dump 的文件格式，包含进程内对象及引用关系；至于全设备 logcat，普通发布 App 拿不到 `READ_LOGS` 特权。
 
-重取证优先复用 [15.7 ProfilingManager](../ch15-other-tools/07-profiling-manager.md) 已定义的两类流程：app-driven（App 主动请求） 由 App 主动请求，system-triggered（App 登记条件、系统决定是否采集） 由 App 登记条件、系统决定是否采集。系统会限流，请求也未必被满足，所以客户端要另设更低的本地预算。Perfetto SDK 的 system mode 适合 adb/lab 场景；in-process mode 无需特权，覆盖范围就是上面说的进程内事件。
+重取证优先复用 [15.7 ProfilingManager](../ch15-other-tools/07-profiling-manager.md) 已定义的两类流程：app-driven（App 主动请求）和 system-triggered（App 登记条件、系统决定是否采集）。系统会限流，请求也未必被满足，所以客户端要另设更低的本地预算。Perfetto SDK 的 system mode 适合 adb/lab 场景；in-process mode 无需特权，覆盖范围就是上面说的进程内事件。
 
-Android 17 的 OOM system trigger 还有一个容易遗漏的前提：如果 App 安装了自定义 uncaught exception handler，处理结束后必须继续调用系统默认 handler，否则平台无法完成这类 OOM 触发采集。远程指令在执行前应把该接入条件也算入 capability（平台能力） 检查。
+Android 17 的 OOM system trigger 还有一个容易遗漏的前提：App 安装了自定义 uncaught exception handler 时，处理结束后必须继续调用系统默认 handler，这类 OOM 触发采集才能由平台完成。远程指令在执行前应把该接入条件也算入 capability（平台能力） 检查。
 
 Java heap dump 可能包含 token（访问凭据）、会话、地址、订单和密钥材料。普通用户设备上，只放行有明确数据用途、可审计授权和严格人群范围的方案；端侧类计数或摘要能回答的问题，就让原始 heap 留在端侧。内部 build 与用户支持场景也要设置文件上限、加密、访问审计和短保留期。
 
@@ -354,21 +354,21 @@ Java heap dump 可能包含 token（访问凭据）、会话、地址、订单�
 - `key_id`、规范化 payload 的数字签名；
 - server kill switch 与客户端不可放宽的 hard limit。
 
-先约定字段里几个词：cohort 是符合某组版本、设备或实验条件的目标设备集合；规范化 payload 要求字段顺序和字节编码都有唯一结果，验签才稳定。`key_id` 指明验证签名所用的公钥版本；server kill switch 是服务端紧急停用开关，hard limit 则是写在客户端、远端配置无权放宽的成本上限。
+我们先约定字段里的几个词。cohort 是符合某组版本、设备或实验条件的目标设备集合；规范化 payload 要求字段顺序和字节编码都有唯一结果，验签才稳定。`key_id` 指明验证签名所用的公钥版本；server kill switch 是服务端紧急停用开关，hard limit 则是写在客户端、远端配置无权放宽的成本上限。
 
-TLS 保护网络传输，应用层数字签名继续保护配置经过 CDN、代理或存储后的完整性。端侧内置公钥并支持 key rotation（逐步切换到新公钥），也就是轮换到新公钥；generation 倒退造成的 rollback（回滚攻击）要直接拒绝。
+TLS 保护网络传输，应用层数字签名继续保护配置经过 CDN、代理或存储后的完整性。端侧内置公钥并支持 key rotation（逐步切换到新公钥）；generation 倒退造成的 rollback（回滚攻击）要直接拒绝。
 
 验签、schema、generation、TTL、cohort、consent、capability 和预算全部通过后，指令才能持久化为 `VERIFIED`。未知字段可能改变安全含义时采用 fail-closed，也就是拒绝执行，等客户端理解该字段后再放行。
 
-wall clock 可能被用户修改。客户端在获取配置时同时记录 server time、wall time 和 `elapsedRealtime`（设备开机后单调递增的时间），后者开机后单调递增，本次进程内就用它算剩余 TTL；跨重启仍以签名的 `expires_at` 和保守的最大存活期双重限制。
+wall clock 可能被用户修改。客户端在获取配置时同时记录 server time、wall time 和 `elapsedRealtime`（设备开机后单调递增的时间），本次进程内就用它算剩余 TTL；跨重启仍以签名的 `expires_at` 和保守的最大存活期双重限制。
 
-服务端 kill switch 依赖网络，不能替代端侧 hard limit。
+服务端 kill switch 依赖网络，端侧 hard limit 仍然要自己兜底。
 
-“特定 UserID”类指令要把原始账号挡在配置和 APM 文件之外。服务端应生成短期、仅限当前 App 使用的 App scoped（只能在当前 App 范围使用） opaque cohort token（不携带可读账号信息的目标令牌），这类目标令牌不含可读账号信息；也可在获得相应授权的支持流程中使用一次性 case ID。指令回执只带 command/case ID、结果码和预算消耗。
+“特定 UserID”类指令要把原始账号挡在配置和 APM 文件之外。服务端应生成短期、仅限当前 App 使用的 App scoped（只能在当前 App 范围使用） opaque cohort token（不携带可读账号信息的目标令牌）；也可在获得相应授权的支持流程中使用一次性 case ID。指令回执只带 command/case ID、结果码和预算消耗。
 
 ### 6.3 指令的执行状态机
 
-指令按以下状态运行：
+落到执行侧，指令按以下状态运行：
 
 ```text
 RECEIVED -> VERIFIED -> ARMED -> RUNNING -> SEALED -> UPLOAD_PENDING
@@ -381,14 +381,14 @@ crash loop 是 App 启动后很快再次崩溃并反复重启的循环；重取�
 
 ## 7. 网络投递的两条路径
 
-APM 上传分两层：
+采集侧写好 sealed 分片之后，剩下的是怎么把它们送出去。APM 上传分两层：
 
 1. App 仍在前台且已有合适网络时，上传器直接发送 sealed 小批次。这条 opportunistic fast path 只在现有进程和网络条件都合适时使用，是进程内快路径；
 2. 需要跨进程退出、重启或系统调度继续的任务交给 WorkManager。
 
 WorkManager 是持久、可延迟后台任务的推荐 API：工作状态会被持久化，进程退出或设备重启后仍可由系统重新调度。它支持网络、电量、充电和存储约束，执行时刻则听系统调度。普通 worker 通常有约 10 分钟执行窗口；大 trace/Hprof 应切块和续传，每次都在窗口内收尾。
 
-long-running worker 是借助 foreground service（带用户可见通知的前台服务）继续运行的长任务。Android 16 起这类 worker 也消耗 JobScheduler quota（系统分配给 App 后台 job 的运行额度），也就是系统分配给 App 后台 job 的运行额度；在 Android 17 上，把 APM 上传伪装成用户可见前台工作来绕过限制，这条路已经走不通。
+long-running worker 是借助 foreground service（带用户可见通知的前台服务）继续运行的长任务。Android 16 起这类 worker 也消耗 JobScheduler quota（系统分配给 App 后台 job 的运行额度）；在 Android 17 上，把 APM 上传伪装成用户可见前台工作来绕过限制，这条路已经走不通。
 
 我们推荐为上传使用 unique work：同一个唯一名称只保留一条受策略控制的工作链，避免多个 worker 重复上传同一批数据。输入只放 batch ID（批次唯一标识）；实际事件和附件字节留在 spool 文件里，容量有限的 WorkManager Data 不承载大 payload。worker 从 spool 索引取得文件，执行以下幂等流程：
 
@@ -445,7 +445,7 @@ Runtime heap headroom 指 Java heap 当前占用距离运行时上限还剩多�
 - 探测成功且成本恢复后才回到 `CLOSED`；
 - 连续失败增加冷却，但设置最大值，避免永久失去诊断能力。
 
-自保规则由 SDK 内置上限与已验签配置共同计算，远端只能收紧、不能放宽硬上限。服务端失联、DNS（域名解析） 故障或 App 离线时，本地规则照常工作。
+自保规则由 SDK 内置上限与已验签配置共同计算：远端最多把规则继续收紧，硬上限永远以客户端内置值为准。服务端失联、DNS（域名解析） 故障或 App 离线时，本地规则照常工作。
 
 ## 9. APM 监控 APM 的指标口径
 
@@ -468,7 +468,7 @@ Runtime heap headroom 指 Java heap 当前占用距离运行时上限还剩多�
 
 profileable build 是清单允许性能分析工具附加、但区别于 debuggable 的构建。进程级 ART 统计把宿主 App 和其他库都算在内，直接当作 APM 自身开销会高估。
 
-自监控计数器走独立的固定结构，不能把每次 drop 再投递成一条普通 event，否则 queue 满会递归放大。每个窗口只生成一份摘要；摘要也发送失败时覆盖旧摘要并保留累计计数。
+自监控计数器走独立的固定结构；每次 drop 若再投递成一条普通 event，queue 一满就会递归放大。每个窗口只生成一份摘要；摘要也发送失败时覆盖旧摘要并保留累计计数。
 
 发布策略从 0.01%/内部设备开始，按 Android 版本、RAM 档位（设备物理内存分组）、ABI（如 `arm64-v8a`）、厂商和 App 进程分别统计成本分布。
 

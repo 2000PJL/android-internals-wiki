@@ -116,17 +116,17 @@ consolidated_from:
 
 排查性能问题时，我们手上先有的往往是官方工具：Trace 按时间记录系统与应用事件，Perfetto 适合分析跨进程时间线，Simpleperf 是 Android 的 CPU 采样分析器，Android Studio Profiler 提供 CPU、内存和网络等交互式分析。它们都适合在可控设备上还原现场。
 
-线上问题的要求要多几项：只对部分运行采集，并按版本和设备分组；异常发生前就要保留线索、控制采集开销，并把同一次会话中的崩溃、卡顿、内存和网络事件关联起来——这里的会话指 App 一段连续的使用期。这些工程能力主要靠三方库补齐。
+到了线上，问题的要求多出几项：只对部分运行采集，并按版本和设备分组；异常发生前就要保留线索、控制采集开销，并把同一次会话中的崩溃、卡顿、内存和网络事件关联起来——这里的会话指 App 一段连续的使用期。这些工程能力主要靠三方库补齐。
 
 接入监控 SDK（Software Development Kit，供应用集成的软件包）之后，官方工具我们仍然要留着：客户端监控负责发现异常、保存线索，Perfetto、系统 dump（进程或系统状态快照）、基准测试与源码负责复现和判断原因。两者是分工，所以选型时要同时核对采集位置、适用系统、构建工具兼容性、运行开销、隐私范围和维护状态。
 
 > 源码基线：AOSP [`android-17.0.0_r1`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/)，涉及 ART（Android Runtime，Android 运行时）内部结构时对照同标签 [platform/art](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/)；内核参考 [`android17-6.18-2026-06_r6`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/)，设备可能使用其他内核分支。
 
-三方项目宣称“支持 Android 17”时，我们仍要在目标 ROM（设备系统构建）、ABI（Native 代码面向的 CPU 架构与二进制接口）、4 KB / 16 KB 内存页和构建链上实际回归——README 的一行兼容表只适合当线索，当依据还不够。
+三方项目宣称“支持 Android 17”时，README 的一行兼容表可以当线索；真正作数的，是我们自己在目标 ROM（设备系统构建）、ABI（Native 代码面向的 CPU 架构与二进制接口）、4 KB / 16 KB 内存页和构建链上的回归结果。
 
 ### 按采集位置理解工具
 
-库名会变，采集位置决定了它能看到什么、风险落在哪里。我们先按采集位置给工具分个类。
+库名会变，采集位置决定了它能看到什么、风险落在哪里，所以我们先按采集位置把工具分个类。
 
 | 位置 | 代表方案 | 能解决的问题 | 不能替代的能力 |
 |---|---|---|
@@ -136,7 +136,7 @@ consolidated_from:
 | 研发侧工具箱 | DoKit、Rabbit、BlockCanary | 开发和测试设备上的快速反馈 | 生产采样、后端聚合和告警 |
 | 可观测性平台 | Firebase Performance、Measure | 上传、聚合、筛选、会话关联 | 本地源码级定位 |
 
-截至 2026 年 8 月 13 日，几个项目的版本基线如下。AGP 是 Android Gradle Plugin；R8（Android 构建中的代码压缩、优化与混淆工具）是构建链里的压缩与优化器。发布版本只说明上游交付了什么；是否适配当前项目的 AGP、R8、ROM 和安全策略，要我们自己验证。
+截至 2026 年 8 月 13 日，几个项目的版本基线如下。AGP 是 Android Gradle Plugin；R8（Android 构建中的代码压缩、优化与混淆工具）是构建链里的压缩与优化器。发布版本只说明上游交付了什么；它与当前项目的 AGP、R8、ROM 和安全策略是否相容，要靠我们自己的验证来回答。
 
 | 项目 | 可核对的上游版本 | 接入前应关注的状态 |
 |---|---|---|
@@ -150,11 +150,11 @@ consolidated_from:
 
 ### Matrix：接近客户端 APM 的插件框架
 
-Matrix 是腾讯微信团队开源的插件式性能监控框架，APM（Application Performance Monitoring）在这里指应用性能监控。Android 端把多个采集器挂在统一的插件生命周期和 `PluginListener` 回调下，数据存储、脱敏、上传、聚合和告警仍要由接入方补齐——把它叫作“完整 APM 平台”，会高估开源仓库给出的范围。
+Matrix 是腾讯微信团队开源的插件式性能监控框架，APM（Application Performance Monitoring）在这里指应用性能监控。Android 端把多个采集器挂在统一的插件生命周期和 `PluginListener` 回调下；仓库给出的是采集这一段，数据存储、脱敏、上传、聚合和告警要由接入方补齐，把它叫作“完整 APM 平台”会高估它的范围。
 
 #### 整体架构
 
-先看它的形态：各模块的观测手段并不相同。Trace Canary 依赖编译期字节码改写和运行时主线程观测；Resource Canary 使用弱引用、GC（垃圾回收）检查和 HPROF（Android Java 堆快照的文件格式）；IO Canary 进入 Native I/O 路径并改写 `CloseGuard` 的报告回调。Hook 指在运行时拦截函数调用或系统行为，而 Matrix 各模块走的路子不同，用“全部通过 Hook”一句话概括会看错它的形态。上游 README 列出的主要 Android 能力包括：
+先看它的形态：各模块的观测手段并不相同。Trace Canary 依赖编译期字节码改写和运行时主线程观测；Resource Canary 使用弱引用、GC（垃圾回收）检查和 HPROF（Android Java 堆快照的文件格式）；IO Canary 进入 Native I/O 路径并改写 `CloseGuard` 的报告回调。Hook 指在运行时拦截函数调用或系统行为。Matrix 各模块走的路子并不一致，逐个模块看它的观测手段，比用“全部通过 Hook”一句话概括更准确。上游 README 列出的主要 Android 能力包括：
 
 - **APK Checker**：检查包体、资源、Native 库和构建产物
 - **Trace Canary**：卡顿、ANR（Application Not Responding，应用无响应）、启动耗时、帧率监控
@@ -168,13 +168,13 @@ Matrix 是腾讯微信团队开源的插件式性能监控框架，APM（Applica
 
 #### Trace Canary：卡顿与 ANR 的观测边界
 
-Trace Canary 关注卡顿、慢方法、启动、帧率和 ANR 线索。我们理解它时要分开看“方法记录”“主线程消息观测”和“ANR 检测”三块，它们的触发条件和可信程度各不相同。
+Trace Canary 关注卡顿、慢方法、启动、帧率和 ANR 线索。我们把它拆成“方法记录”“主线程消息观测”和“ANR 检测”三块来看——三块的触发条件不同，可信程度也不同。
 
-**方法记录**由 Gradle 插件改写编译后的 class：在方法入口和出口调用 `AppMethodBeat`，再以 method id（方法编号）、时间和线程内执行顺序还原调用片段。`Constants.DEFAULT_EVIL_METHOD_THRESHOLD_MS` 在当前主分支（功能开发分支）为 700 ms——这只是上游的默认配置，Android 卡顿或 ANR 另有系统判定线。包过滤、排除名单、插桩规模和内存 buffer（缓冲区）策略都会改变开销与可见范围。
+**方法记录**由 Gradle 插件改写编译后的 class：在方法入口和出口调用 `AppMethodBeat`，再以 method id（方法编号）、时间和线程内执行顺序还原调用片段。`Constants.DEFAULT_EVIL_METHOD_THRESHOLD_MS` 在当前主分支（功能开发分支）为 700 ms。这个值是上游的默认配置，Android 卡顿或 ANR 的判定线由系统另行给出。包过滤、排除名单、插桩规模和内存 buffer（缓冲区）策略都会改变开销与可见范围。
 
 **主线程观测**通过 Looper 的消息分发与 `UIThreadMonitor` / `FrameTracer` 组织采样。“单帧超过 16.6 ms”要放在刷新率背景下读：设备可能运行在 60、90、120 Hz 或动态刷新率下，帧预算取决于该帧所在的 VSync（垂直同步）时间线。应用侧采到的慢消息或掉帧，仍要拿到 Perfetto 里和 `Choreographer#doFrame`、RenderThread、SurfaceFlinger 与调度事件对齐。
 
-**ANR 线索**有两条路径。`LooperAnrTracer` 在一次主线程 dispatch（消息分发）开始后安排 5 秒延迟任务，dispatch（分发）正常结束便取消；所以超时日志只说明“主线程消息已持续 5 秒”，系统是否确认了 ANR 还要看后续信号路径。`SignalAnrTracer` 处理 SIGQUIT（系统请求进程输出线程栈的信号）与线程栈 dump 回调，并继续检查主线程阻塞和进程错误状态。这条路径会碰 ART（Android Runtime）、signal 与系统 ANR 的实现细节，权限、符号、回调时序和误报率都要在目标 ROM 上验证。
+**ANR 线索**有两条路径。`LooperAnrTracer` 在一次主线程 dispatch（消息分发）开始后安排 5 秒延迟任务，dispatch（分发）正常结束便取消。所以超时日志的含义止步于“主线程消息已持续 5 秒”；系统最终是否确认 ANR，要沿后续的信号路径继续看。`SignalAnrTracer` 处理 SIGQUIT（系统请求进程输出线程栈的信号）与线程栈 dump 回调，并继续检查主线程阻塞和进程错误状态。这条路径会碰 ART（Android Runtime）、signal 与系统 ANR 的实现细节，权限、符号、回调时序和误报率都要在目标 ROM 上验证。
 
 构建兼容性是 Matrix 当前最醒目的门槛。官方 README 仍写明 Gradle 插件支持 AGP 3.5/4.0/4.1，源码也保留 `MatrixTraceLegacyTransform` 对 `com.android.build.api.transform` 的依赖；而 [AGP API 更新记录](https://developer.android.com/build/releases/gradle-plugin-api-updates)写得很清楚：旧 Transform API 从 AGP 8.0 起移除。两条信息放在一起看，差距就是接入前要处理的问题。
 
@@ -184,11 +184,11 @@ Trace Canary 关注卡顿、慢方法、启动、帧率和 ANR 线索。我们�
 
 #### Resource Canary：内存泄漏与冗余 Bitmap
 
-Resource Canary 的公开主路径从 `Application.ActivityLifecycleCallbacks.onActivityDestroyed()` 接收已销毁的 Activity：先为对象建立 `WeakReference`（不阻止对象被回收的弱引用）弱引用、放入待检查队列，再在后台线程按配置重试 GC（Garbage Collection，垃圾回收）与存活检查。对象跨过多轮检查仍可达时，模块按 `DumpMode` 交给对应处理器，例如“不 dump”“自动 dump”“手动 dump”“fork（复制进程） dump / analyze”——fork 表示创建子进程，dump 表示导出堆快照。
+Resource Canary 的公开主路径从 `Application.ActivityLifecycleCallbacks.onActivityDestroyed()` 接收已销毁的 Activity：先为对象建立 `WeakReference`（不阻止对象被回收的弱引用）、放入待检查队列，再在后台线程按配置重试 GC（Garbage Collection，垃圾回收）与存活检查。对象跨过多轮检查仍可达时，模块按 `DumpMode` 交给对应处理器，例如“不 dump”“自动 dump”“手动 dump”“fork（复制进程） dump / analyze”——fork 表示创建子进程，dump 表示导出堆快照。
 
 弱引用仍存活，只说明对象尚未回收；低内存压力、调试器、GC 未执行和生命周期时序都会影响这个判断，所以模块需要重试与去重。
 
-接下来是 HPROF（Java heap dump 文件格式）怎么处理，这取决于配置：上游同时包含 `HprofBufferShrinker`、客户端分析、fork dump / analyze 和仅报告对象信息等路径，固定的“客户端裁剪、服务端解析”描述对不上源码。接入方要自己明确：选哪个处理器、原始或裁剪 HPROF 保存多久、是否允许上传、如何加密，以及分析进程允许用多少 CPU、磁盘和 PSS（按共享页比例计算的物理内存占用）。
+接下来看 HPROF（Java heap dump 文件格式）怎么处理，走哪条路径由配置决定：上游同时包含 `HprofBufferShrinker`、客户端分析、fork dump / analyze 和仅报告对象信息等路径，一句固定的“客户端裁剪、服务端解析”概括不了这些分支。接入方要自己明确：选哪个处理器、原始或裁剪 HPROF 保存多久、是否允许上传、如何加密，以及分析进程允许用多少 CPU、磁盘和 PSS（按共享页比例计算的物理内存占用）。
 
 上游 README 还列出重复 Bitmap 检测：分析 heap 中存活 Bitmap 的像素缓冲区，找出内容重复的对象。它能提示同一图片被重复 decode（解码）或分散保存在多份缓存中；从像素相同走到可以合并还差几步——密度、色彩空间、可变性、硬件 Bitmap 和生命周期要逐项确认。
 
@@ -198,15 +198,15 @@ Resource Canary 的公开主路径从 `Application.ActivityLifecycleCallbacks.on
 
 IO Canary 在 Native 层拦截 `open`、`read`、`write`、`close` 等调用，把文件路径、Java 调用上下文、线程、次数、字节数和耗时汇总给 detector（判定规则）做判定。它依赖上游 Matrix 公共组件内置的 xHook 风格 PLT Hook：PLT 是动态链接函数的跳转表，ELF（Executable and Linkable Format，可执行与链接文件格式）是 Android Native 库使用的二进制格式。
 
-PLT Hook 的覆盖有一条清楚的线：只拦经过目标 ELF 重定位槽的调用。静态链接、同一 ELF 内部直接调用、内联、不同符号变体和未列入 Hook 集合的系统调用都可能绕过它，所以“全量监控”的说法在这里立不住。
+PLT Hook 的覆盖有一条清楚的线：它拦住的是经过目标 ELF 重定位槽的调用。静态链接、同一 ELF 内部直接调用、内联、不同符号变体和未列入 Hook 集合的系统调用都可能走在这条线之外，所以“全量监控”的说法在这里立不住。
 
-三个公开 detector 的判定条件，值得按源码逐个理解：
+三个公开 detector 的判定条件，我们按源码逐个过一遍：
 
 - **主线程 I/O**：检查文件操作是否来自主线程，并结合连续读写耗时等条件分类。文件 I/O 在 Perfetto 里可能表现为 Running、Runnable、Sleeping 或 Uninterruptible Sleep，要按实际 trace 看，别预设是 D 状态。
 - **小缓冲区**：默认阈值为 4096 B，但源码还要求操作次数大于 20、平均每次读写小于阈值，并且连续读写耗时达到 13 ms——它找的是“频繁小 I/O 已形成可观测成本”，单次 2 KB `read()` 不会触发报警。
 - **短时重复读取**：同一路径、相同调用信息在短窗口内达到默认重复次数 5 后报告；写操作会清掉对应观察记录。报告是缓存缺失的候选线索，也可能来自格式探测或刻意的分段读取。
 
-Java 侧 `CloseGuardHooker` 通过反射替换 `dalvik.system.CloseGuard.Reporter`，用于发现未关闭资源。它依赖非 SDK 实现细节，所以要覆盖 user（量产）与 userdebug（可调试系统）构建、代码混淆、隐藏 API 策略和 OEM（设备厂商）ROM 各组合。反射失败时就降级并记录能力缺失——监控组件不该拖累业务启动。
+Java 侧 `CloseGuardHooker` 通过反射替换 `dalvik.system.CloseGuard.Reporter`，用于发现未关闭资源。它依赖非 SDK 实现细节，所以要覆盖 user（量产）与 userdebug（可调试系统）构建、代码混淆、隐藏 API 策略和 OEM（设备厂商）ROM 各组合。反射失败时就降级并记录能力缺失，让业务启动照常进行——这是监控组件要守住的底线。
 
 默认条件可在 [`io_canary_env.h`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-io-canary/src/main/cpp/core/io_canary_env.h)、[`small_buffer_detector.cc`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-io-canary/src/main/cpp/detector/small_buffer_detector.cc) 和 [`CloseGuardHooker`](https://github.com/Tencent/matrix/blob/master/matrix/matrix-android/matrix-io-canary/src/main/java/com/tencent/matrix/iocanary/detect/CloseGuardHooker.java) 中核对。
 
@@ -218,7 +218,7 @@ KOOM（Kwai OOM）是快手团队开源的内存监控方案，名字里的 OOM 
 
 KOOM 的 Java 模块周期性观察 Java heap（Java 对象堆）、线程数、文件描述符数和 VSS（进程保留的虚拟地址空间）；文件描述符是进程访问文件、Socket 等内核对象时用的数字句柄。一个或多个指标连续越过配置阈值后，`OOMMonitor` 才进入 dump 与分析流程。示例中的 `setHeapThreshold(0.9f)`、`setThreadThreshold(50)` 等值明确标注为测试配置；生产阈值应来自目标设备分层和线上分布，示例值只当参考。
 
-为缩短主进程冻结时间，上游路径会暂停 ART VM（运行 Java/Kotlin 代码的虚拟机）、`fork()` 出子进程、恢复父进程，再由子进程 dump heap。`fork()` 后父子进程先共享内存页，任一方写入时才复制，这就是 Copy-on-write（写时复制）。KOOM README 把传统 dump 的长冻结缩短到“20 ms 内”，这是该项目的自测结果；堆规模、内存压力、ROM 修改和调度波动都会影响数字，把它写成设备保证就过了。
+为缩短主进程冻结时间，上游路径会暂停 ART VM（运行 Java/Kotlin 代码的虚拟机）、`fork()` 出子进程、恢复父进程，再由子进程 dump heap。`fork()` 后父子进程先共享内存页，任一方写入时才复制，这就是 Copy-on-write（写时复制）。KOOM README 把传统 dump 的长冻结缩短到“20 ms 内”，这是该项目的自测结果；堆规模、内存压力、ROM 修改和调度波动都会影响这个数字，落到我们自己的设备上要重新量。
 
 子进程可以生成 strip HPROF（去掉部分冗余内容的堆快照），交给基于 Shark 的分析器在设备侧算出泄漏对象和引用链；Shark 就是 LeakCanary 用的那个堆分析库。要把文件交给 Android Studio 或 MAT（Memory Analyzer Tool）时，上游还提供 refill 工具恢复所需记录。
 
@@ -228,7 +228,7 @@ Java 模块的触发、兼容范围和资源提示见 [`koom-java-leak/README.md
 
 #### Native 堆泄漏检测
 
-`koom-native（本地机器码）-leak` 采用“分配元数据 + 保守可达性扫描”的方案，其中保守扫描会把任何形似指针的值都暂时当作引用。工作过程可分成三步：
+`koom-native（本地机器码）-leak` 采用“分配元数据 + 保守可达性扫描”的方案，其中保守扫描会把任何形似指针的值都暂时当作引用。我们把工作过程分成三步：
 
 1. 通过 PLT Hook 记录 `malloc` / `free` 等分配路径的地址、大小和分配栈。
 
@@ -244,7 +244,7 @@ Java 模块的触发、兼容范围和资源提示见 [`koom-java-leak/README.md
 
 #### 线程泄漏检测
 
-KOOM 的 ThreadLeakMonitor 通过 Hook `pthread_create`、`pthread_exit` 等生命周期函数，跟踪创建栈、线程名和回收状态；pthread 是 POSIX 标准的 Native 线程接口。公开 README 聚焦一种明确的资源泄漏：joinable（需要 join 或 detach 回收）线程已经退出，却没执行 `pthread_join()` 或 `pthread_detach()`，退出状态及相关资源就一直保留到被回收。至于业务线程长期运行，那是另一类问题，只凭存活时间归为 pthread 泄漏站不住。
+KOOM 的 ThreadLeakMonitor 通过 Hook `pthread_create`、`pthread_exit` 等生命周期函数，跟踪创建栈、线程名和回收状态；pthread 是 POSIX 标准的 Native 线程接口。公开 README 聚焦一种明确的资源泄漏：joinable（需要 join 或 detach 回收）线程已经退出，却没执行 `pthread_join()` 或 `pthread_detach()`，退出状态及相关资源就一直保留到被回收。至于业务线程长期运行，那属于另一类问题：判定 pthread 泄漏，看的是线程退出之后有没有被回收。
 
 该模块同样只声明 Android 7.0 / API 24 及以上和 `arm64-v8a`。报告应保留创建栈、退出时刻、join/detach 状态和线程名，避免把 Binder 线程池、线程池 worker、监控线程的长期存活混进同一种告警。
 
@@ -256,7 +256,7 @@ Booster 把工作放在构建期：检查或改写编译后的 class 与安装�
 
 #### 两种 Transform 的区别
 
-这里有两个容易混淆的“Transform”。早期 Booster 建立在 AGP 的 `com.android.build.api.transform.Transform` 接口上，该接口从 AGP 8.0 起已经删除；而 Booster 文档里的 “Transform based modules” 是它自己对字节码转换模块的分类，名称延续到了 5.x。据后者推断 5.x 仍调用旧 AGP Transform API，是读串了两个概念。
+这里有两个容易混淆的“Transform”。早期 Booster 建立在 AGP 的 `com.android.build.api.transform.Transform` 接口上，该接口从 AGP 8.0 起已经删除；而 Booster 文档里的 “Transform based modules” 是它自己对字节码转换模块的分类，名称延续到了 5.x。据此推断 5.x 仍调用旧 AGP Transform API，是把分类名读成了接口名。
 
 当前主分支的 `BoosterPlugin.registerTransform()` 在 `androidComponents.onVariants` 中注册任务，再通过 `variant.artifact（可下载依赖）s.forScope(ScopedArtifacts.Scope.ALL).toTransform(ScopedArtifact.CLASSES, ...)` 接入 class 产物——这属于 Android Components / Scoped Artifacts 路径，可读写指定构建变体的一组 class 产物。
 
@@ -356,13 +356,13 @@ Measure 同时提供客户端 SDK、后端与 Web UI，可托管也可自托管�
 
 DoKit 把 App 信息、沙盒浏览、网络、UI 检查、启动耗时、FPS 等能力放进设备端入口，适合开发和测试现场，还包含 AOP（面向切面编程）/字节码与平台服务相关功能。接入前要区分三类东西：仅 debug 生效的 kit、会修改构建产物的插件、依赖远端服务的功能；上游 README 也明确建议只用于 Debug 环境。
 
-GitHub release 页面、README badge 与 AGP 8.6 相关 feature 分支显示的 Android 版本线并不一致。新项目应从所需 kit 反推最小依赖，按选定 artifact 逐项验证 AGP/Kotlin/R8 兼容性，避免因为一个调试入口引入整套运行时代码。至于大规模生产采样、后端聚合和告警，DoKit 不承担。
+GitHub release 页面、README badge 与 AGP 8.6 相关 feature 分支显示的 Android 版本线并不一致。新项目应从所需 kit 反推最小依赖，按选定 artifact 逐项验证 AGP/Kotlin/R8 兼容性，避免因为一个调试入口引入整套运行时代码。至于大规模生产采样、后端聚合和告警，要交给平台型方案去做。
 
 项目能力与数据收集说明见 [didi/DoKit](https://github.com/didi/DoKit)。
 
 #### BlockCanary：理解 Looper 监控的历史样本
 
-BlockCanary 的仓库没有正式 release，代码更新长期停滞，不适合当新项目的生产依赖；但它仍是理解 Looper `Printer` 卡顿监控的历史样本。`Printer` 接收主线程 Message 分发前后的日志回调，BlockCanary 在超时期间采集主线程栈。这套方法看不到 RenderThread、GPU、SurfaceFlinger 和系统调度全貌，还会和其他 `setMessageLogging()` 使用者争用同一个回调入口。
+BlockCanary 的仓库没有正式 release，代码更新长期停滞，不适合当新项目的生产依赖；但它仍是理解 Looper `Printer` 卡顿监控的历史样本。`Printer` 接收主线程 Message 分发前后的日志回调，BlockCanary 在超时期间采集主线程栈。这套方法覆盖的是主线程消息分发这一段，RenderThread、GPU、SurfaceFlinger 和系统调度要交给其他工具去看；它还会和其他 `setMessageLogging()` 使用者争用同一个回调入口。
 
 源码见 [markzhai/AndroidPerformanceMonitor](https://github.com/markzhai/AndroidPerformanceMonitor)。
 
@@ -461,7 +461,7 @@ Matrix、KOOM、btrace 这些工具会用到 PLT Hook、Inline Hook、ART/JVMTI 
 
 Hook 适合补上现有观测手段看不到的调用处。例如 Perfetto 已经指出主线程在一次 JNI（Java Native Interface，Java 与 C/C++ 的调用边界） 调用内停留了 40 ms，但 trace 里没有这段 native 代码的阶段信息；这时我们可以在自有进程内拦截少量目标函数，记录耗时、参数分类或调用栈。
 
-先把能力范围说清楚。普通应用进不了另一个应用的进程。用于线上 SDK 的 Hook 代码仍要随 APK 或 AAB 打包，并由目标进程加载；Frida、Xposed 一类外部注入方案依赖调试、root、定制系统或专用运行环境。两类方案的权限模型、风险和发布方式不同，结论要分开下。
+先把能力范围说清楚：普通应用进不了另一个应用的进程，用于线上 SDK 的 Hook 代码仍要随 APK 或 AAB 打包、由目标进程加载；Frida、Xposed 一类外部注入方案则依赖调试、root、定制系统或专用运行环境。两类方案的权限模型、风险和发布方式不同，结论要分开下。
 
 这一节的讨论范围是自有应用进程中的性能观测；ELF 重定位、ART 和应用域 SELinux 规则对应的源码版本，以本章开头的基线为准。需要更深入的三类 native 方案对比时，可继续阅读 [20.12 Native Hook 技术选型与实现](../../part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md)。
 
@@ -478,7 +478,7 @@ Hook 适合补上现有观测手段看不到的调用处。例如 Perfetto 已�
 
 这些入口都有文档化契约，升级成本通常低于运行时修改 ELF 或 ART 内部状态。Hook 适合的场景因此比较具体：目标范围有限、现有工具缺少所需字段、团队能维护兼容组合，三者齐备再考虑。
 
-还要注意 ATrace、heapprofd 和 `simpleperf` 也不属于同一种“Hook”：ATrace 记录显式写入的 trace 事件，heapprofd 默认采样 `malloc/free`、也可切换到 ART 分配采样，`simpleperf` 主要依赖 Linux perf 事件做统计采样。先确认数据在哪里产生，再判断 Hook 是否真补上了证据缺口。
+还要注意 ATrace、heapprofd 和 `simpleperf` 也不属于同一种“Hook”：ATrace 记录显式写入的 trace 事件，heapprofd 默认采样 `malloc/free`、也可切换到 ART 分配采样，`simpleperf` 主要依赖 Linux perf 事件做统计采样。我们先确认数据在哪里产生，再判断 Hook 是否真补上了证据缺口。
 
 ### 四种介入方式
 
@@ -710,7 +710,7 @@ ShadowHook `v2.0.1` 的构建脚本为 arm64 设置 `-Wl,-z,max-page-size=16384`
 
 Hook 状态属于当前进程的地址空间：主进程安装成功，并不会自动作用到 `android:process=":remote"` 进程、isolated process（隔离进程）、WebView renderer（渲染进程）或独立 native 进程。每个目标进程都要单独决定是否加载 SDK、何时安装、如何上报。
 
-也别想着在 zygote（应用进程的孵化进程）里预装应用 Hook：普通应用拿不到这个控制点，把系统库修改状态跨 fork 传播还会扩大影响范围。进程级初始化放在目标进程自己的早期组件里就好，同时别让 Hook 安装阻塞首帧。
+也别想着在 zygote（应用进程的孵化进程）里预装应用 Hook：普通应用拿不到这个控制点，把系统库修改状态跨 fork 传播还会扩大影响范围。进程级初始化放在目标进程自己的早期组件里就好，Hook 安装也要避开首帧路径。
 
 ### 回调代码比安装代码更容易出错
 

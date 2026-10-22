@@ -127,7 +127,7 @@ consolidated_from:
 
 先约定贯穿全文的对象：Producer 生成并提交 buffer，Consumer 取得并使用它，fence（异步工作完成凭证） 表示异步读写何时完成。
 
-HWUI 是 View/Compose 的硬件加速管线，RenderEngine 是 SurfaceFlinger 用 GPU 合成 CLIENT Layer 的组件，HWC（Hardware Composer，硬件合成器） 通过 display plane（显示控制器可独立处理的图层通道） 处理 DEVICE Layer，或接收 RenderEngine 生成的 client target。本文会分别标明“App GPU 工作”“SurfaceFlinger GPU 工作”和“不一定经过通用 GPU 的显示硬件工作”。
+接着是三个渲染组件：HWUI 是 View/Compose 的硬件加速管线，RenderEngine 是 SurfaceFlinger 用 GPU 合成 CLIENT Layer 的组件，HWC（Hardware Composer，硬件合成器） 通过 display plane（显示控制器可独立处理的图层通道） 处理 DEVICE Layer，或接收 RenderEngine 生成的 client target。本文会分别标明“App GPU 工作”“SurfaceFlinger GPU 工作”和“不一定经过通用 GPU 的显示硬件工作”。
 
 > 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`。
 
@@ -176,9 +176,9 @@ CPU record / submit
 
 这个模型适合建立概念。落到具体帧上，每个 Canvas 操作生成多少顶点、走哪种 shader（运行在 GPU 上的着色程序），主动权在 Skia 手里：它会按图形、抗锯齿、clip、transform（显示变换）、backend 和 GPU capability（设备实际能力），在 analytic shader、实例化几何、tessellation、纹理 quad、离屏 pass 等策略之间挑选。
 
-我们先把流程里各段的工作分清楚：vertex processing 变换顶点；primitive assembly 把顶点组成三角形等图元，clipping 去掉视口外部分；rasterization 把图元转换成片元候选，fragment（等待着色与测试的片元候选） shading 计算颜色或采样纹理；depth/stencil tests 决定哪些结果可写入，blending 再与目标中已有颜色混合；最后写入的 color attachment（颜色、深度或模板等渲染附件），就是接收颜色结果的图像。
+我们顺着这条链路把各段的工作分清楚：vertex processing 先变换顶点；primitive assembly 把顶点组成三角形等图元，clipping 去掉视口外的部分。接下来 rasterization 把图元转换成片元候选，fragment（等待着色与测试的片元候选） shading 计算颜色或采样纹理。判定与混合在最后：depth/stencil tests 决定哪些结果可写入，blending 把它们与目标中已有颜色混合；最终接收颜色结果的图像，就是 color attachment（颜色、深度或模板等渲染附件）。
 
-后文会反复用到几个 Skia 侧名词：analytic shader 用数学表达式直接计算覆盖率；实例化几何复用同一份几何描述绘制多个对象；tessellation 把曲线等复杂形状细分为 GPU 可处理的图元；纹理 quad 是采样一张纹理所用的矩形；离屏 pass 先把结果画到中间目标。backend 指 Skia 连接 OpenGL/Vulkan 与驱动的后端实现，GPU capability 则是设备实际支持的功能与限制。
+这些策略名词后文会反复出现，我们先把 Skia 侧的几个解释放在这里：analytic shader 用数学表达式直接计算覆盖率；实例化几何复用同一份几何描述绘制多个对象；tessellation 把曲线等复杂形状细分为 GPU 可处理的图元；纹理 quad 是采样一张纹理所用的矩形；离屏 pass 先把结果画到中间目标。backend 指 Skia 连接 OpenGL/Vulkan 与驱动的后端实现，GPU capability 则是设备实际支持的功能与限制。
 
 还要拆掉一个常见误会：`View.invalidate()` 并不会立即启动 GPU。它只是标记内容需要更新，并安排一次 traversal（测量、布局、绘制等 View 树遍历工作）；UI 线程在帧回调中记录或更新 RenderNode，随后由 RenderThread 同步状态、准备 GPU 工作并提交窗口 buffer。RenderNode 是 HWUI 保存绘制指令与合成属性的节点。
 
@@ -346,7 +346,7 @@ Android 15 起 ANGLE 是可选 GLES-on-Vulkan 层；Android 17 的 `com.android.
 
 GPU 慢帧常被分为 vertex/geometry bound、fragment/fill bound 和 bandwidth bound 三类；做工程分析时，我们还要把 CPU submission、同步/back-pressure（下游释放不及时造成的反压）、频率/温控和 SurfaceFlinger composition 一并纳入。
 
-bound 的意思是帧时间主要受某类资源限制：vertex/geometry 看几何处理，fragment/fill 看像素覆盖与片元着色，bandwidth 看内存传输，CPU/driver 看命令准备与提交。验证方向用 A/B 实验——保持其他条件一致、只改变一个变量；直接证据再由硬件 counter 与 Trace 提供。
+bound 的意思是帧时间主要受某类资源限制：vertex/geometry 看几何处理，fragment/fill 看像素覆盖与片元着色，bandwidth 看内存传输，CPU/driver 看命令准备与提交。要验证一帧 bound 在哪一类，我们用 A/B 实验——保持其他条件一致、只改变一个变量；直接依据再由硬件 counter 与 Trace 提供。
 
 | 类别 | 常见现象 | 有区分力的 A/B 实验 | 需要的直接证据 |
 | --- | --- | --- | --- |
@@ -358,7 +358,7 @@ bound 的意思是帧时间主要受某类资源限制：vertex/geometry 看几�
 | SF client composition | App buffer ready，SF GPU 工作增加 | 比较 DEVICE/CLIENT composition | layer composition type、RenderEngine、HWC |
 | Thermal / power bound | 运行一段时间后频率下降 | 固定温度/电源条件做短长对照 | GPU frequency、thermal、power rail（芯片供电轨的功耗数据） |
 
-另外，跨 GPU 通用的“Fragment Shader 超过 60% 就是 fill bound”阈值并不存在；counter 名称、单位与统计范围由 GPU producer/driver 在 descriptor（shader 访问资源的绑定描述） 中声明。
+另外，跨 GPU 通用的“Fragment Shader 超过 60% 就是 fill bound”阈值并不存在；counter 名称、单位与统计范围由 GPU producer/driver 在 descriptor 中声明。
 
 #### Fillrate bound
 
@@ -398,7 +398,7 @@ Debug GPU Overdraw（开发者选项中的“调试 GPU 过度绘制”） 只�
 - GPU、CPU、ISP（图像信号处理器）、codec 与 display 共享内存带宽；
 - SurfaceFlinger client composition。
 
-GPU busy 高而 shader stag（固定版本标签）e 利用率不高，只能作为线索；下一步应使用厂商定义的 external-memory、cache、texture、tile 或 stall（流水线等待） counter，并做受控 A/B。
+GPU busy 高而 shader 阶段利用率不高，只能作为线索；下一步应使用厂商定义的 external-memory、cache、texture、tile 或 stall（流水线等待） counter，并做受控 A/B。
 
 ### ASTC、ETC2 与普通 Android Bitmap 的边界
 
@@ -515,7 +515,7 @@ kernel 源码锚点 `android17-6.18-2026-06_r6` 包含以下相关文件：
 - `dumpsys SurfaceFlinger`、layer/buffer dump；
 - dma-buf heap/bufinfo；
 - Vulkan allocation callbacks 或引擎 allocator telemetry（分配器自身记录的统计数据）；
-- Adreno/Mali/PowerVR 的厂商 profile（能力配置集合）r；
+- Adreno/Mali/PowerVR 的厂商 profiler；
 - AGI memory pane 与 Vulkan memory tracker。
 
 这些来源各自覆盖的范围不同，写报告时应说明是否包含 driver private allocation（驱动私有分配）、共享 buffer、SurfaceFlinger、纹理、render target 和缓存。
@@ -877,10 +877,10 @@ Vulkan 把大量隐式工作变成应用可见对象：
 - command buffer（命令缓冲区） 明确记录命令，queue submission（队列提交） 明确提交批次；
 - image layout（图像当前用途布局）、pipeline stage（管线阶段） 和访问掩码共同管理资源 hazard，即前后读写互相冲突的风险；
 - memory allocation、binding（把内存绑定给资源）、预算和回收策略由应用或 allocator 管理；
-- pipeline、descriptor 和 render state 的组合更早确定；
+- pipeline、descriptor（shader 访问资源的绑定描述） 和 render state 的组合更早确定；
 - semaphore 处理 GPU 工作之间的依赖，fence 让 CPU 等待 GPU，barrier 表达命令之间的内存可见性与执行顺序。
 
-但这不等于 `vkCmdDraw()`“完全没有校验”，Vulkan 也不会因此自动更快。Release 构建通常不启用 validation layer（验证 API 使用是否合规的可插入层），但 loader、ICD（Installable Client Driver，可安装的厂商驱动实现）和应用自身封装仍有工作，录制成本还会受 descriptor 更新、pipeline 查找、内存分配和锁竞争影响。Vulkan 的优势在于应用能看到并控制更多成本，把昂贵工作移出帧关键路径；若资源生命周期、同步或缓存设计不稳，结果可能比成熟的 GLES 驱动更差。
+但 `vkCmdDraw()` 仍保留一部分校验，Vulkan 也不会因此自动更快。Release 构建通常不启用 validation layer（验证 API 使用是否合规的可插入层），但 loader、ICD（Installable Client Driver，可安装的厂商驱动实现）和应用自身封装仍有工作，录制成本还会受 descriptor 更新、pipeline 查找、内存分配和锁竞争影响。Vulkan 的优势在于应用能看到并控制更多成本，把昂贵工作移出帧关键路径；若资源生命周期、同步或缓存设计不稳，结果可能比成熟的 GLES 驱动更差。
 
 #### 2.3 ANGLE
 
@@ -901,7 +901,7 @@ WebGPU 适合新工具、跨平台可视化、计算任务和能够承受预览 
 
 ### 3. Android 17 Vulkan 要求的三个层次
 
-Android 17 同时存在 CDD、平台源码内的设备要求 profile，以及面向活跃设备生态的 Android Vulkan Profile（AVP），三者服务的对象不同。
+Android 17 同时存在 CDD、平台源码内的设备要求 profile（能力配置集合），以及面向活跃设备生态的 Android Vulkan Profile（AVP），三者服务的对象不同。
 
 | 层次 | 主要对象 | Android 17 下应怎样理解 |
 |---|---|---|
@@ -1142,7 +1142,7 @@ producer 持续尽快提交会逐渐占满可用 buffer；随后 render thread �
 | Android 17 Vulkan 芯片组要求 | `frameworks/native/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json` |
 | kernel fence 文件桥接 | `drivers/dma-buf/sync_file.c` |
 
-阅读源码时应确认 tag：平台文件均以 `android-17.0.0_r1` 为准，kernel 文件以 `android17-6.18-2026-06_r6` 为准。厂商 ICD 不在 AOSP 中，涉及 shader compiler（着色器编译器）、GPU scheduler（调度器）、内存压缩和硬件 counter 的结论还要结合具体 SoC 文档与设备 trace。
+阅读源码时应确认 tag（固定版本标签）：平台文件均以 `android-17.0.0_r1` 为准，kernel 文件以 `android17-6.18-2026-06_r6` 为准。厂商 ICD 不在 AOSP 中，涉及 shader compiler（着色器编译器）、GPU scheduler（调度器）、内存压缩和硬件 counter 的结论还要结合具体 SoC 文档与设备 trace。
 
 ### 常见误区
 

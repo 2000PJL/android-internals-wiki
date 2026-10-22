@@ -325,7 +325,7 @@ StatsD 是 Android 平台的统计框架，服务对象是 Android 系统、设�
 
 ### 日志、Trace、诊断命令的分工
 
-先分清三类材料各自回答什么问题：业务日志保存连续的业务状态；性能 Trace 是按时间记录线程与系统事件的跟踪数据，profile 通过采样或快照保存调用栈、内存等性能信息；诊断命令在限定对象和时间窗内补采状态。三者成本、权限和保留周期不同，文件格式与审批策略也不宜混用。
+动手之前先分清三类材料各自回答什么问题。业务日志保存连续的业务状态；性能 Trace 按时间记录线程与系统事件，profile 通过采样或快照保存调用栈、内存等性能信息；诊断命令则在限定对象和时间窗内补采状态。三者成本、权限和保留周期不同，我们给它们分别设计文件格式与审批策略，避免混用。
 
 | 能力 | 适合回答的问题 | 端侧成本 | 典型触发 | 主要风险 |
 |---|---|---:|---|---|
@@ -439,7 +439,7 @@ Android 不保证某个应用进程长期存活。各进程可以写自己的文
 
 服务端和端侧应分别记录 `issued`、`delivered`、`validated`、`started`、`result_created`、`uploaded`、`expired`、`blocked_by_policy` 与失败阶段。命令没送达端侧，不计入执行失败；结果文件已生成但未上传，也不计入 profiling 失败。
 
-线上协议只暴露经过代码评审的命令类型。任意 Java、Lua、shell、反射、文件读取或网络请求能力会把诊断服务变成远程代码执行入口，不应出现在普通用户路径。熔断开关用于紧急停用某类命令，应能按命令类型、版本、区域和签名密钥缩小范围，并在客户端离线时依靠命令过期自行生效。
+线上协议只暴露经过代码评审的命令类型。任意 Java、Lua、shell、反射、文件读取或网络请求能力会把诊断服务变成远程代码执行入口，因此被排除在普通用户路径之外。熔断开关用于紧急停用某类命令，应能按命令类型、版本、区域和签名密钥缩小范围，并在客户端离线时依靠命令过期自行生效。
 
 ### 与 ProfilingManager / Perfetto 的边界
 
@@ -451,7 +451,7 @@ Android 15 / API 35 引入 `ProfilingManager`，Android 17 的实现见 [`Profil
 
 版本差异还要细分：API 36 加入系统触发器注册；Android 17 / API 37 又加入 `requestRunningSystemTrace()`。App 必须先通过 `addProfilingTriggers()` 或 `addAllProfilingTriggers()` 注册 `TRIGGER_TYPE_APP_REQUEST_RUNNING_TRACE`，该方法才会请求系统当前后台 trace 的快照。
 
-系统当时没有运行后台 trace、配额不足或请求未被执行时，调用方都拿不到结果；结果只通过全局监听器投递。这项 API 给不了普通 App 任意启动全设备追踪的能力。
+调用方能否拿到结果，取决于系统当时是否在运行后台 trace、配额是否充足、请求是否被执行；结果只通过全局监听器投递。这项 API 给不了普通 App 任意启动全设备追踪的能力。
 
 [官方采集指南](https://developer.android.com/topic/performance/tracing/profiling-manager/how-to-capture)给出的几个边界需要进入命令协议：
 
@@ -476,11 +476,11 @@ Android 15 / API 35 引入 `ProfilingManager`，Android 17 的实现见 [`Profil
 
 只有 `error_code == ERROR_NONE` 时才使用 `getResultFilePath()`；错误结果的路径可为空。文件位于请求 App 的数据目录，App 负责读取、上传、保留和删除，路径必须来自回调，别按固定目录拼接。
 
-系统 trace 会按平台规则脱敏，其他进程的 CPU 活动只合并显示在 `OtherProcesses` 中，以隐藏进程身份和具体行为；这种脱敏不等于文件可以公开。Java heap dump 仍可能包含对象内容、token 和用户数据，应采用最高敏感级别。
+系统 trace 会按平台规则脱敏，其他进程的 CPU 活动只合并显示在 `OtherProcesses` 中，以隐藏进程身份和具体行为；脱敏之后的文件仍要按敏感材料保管。Java heap dump 仍可能包含对象内容、token 和用户数据，应采用最高敏感级别。
 
 [结果获取说明](https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze)还规定了进程死亡后的行为：若 App 在结果投递前退出，系统会在 App 下次启动并注册全局监听器后尝试投递。端侧必须尽早注册该监听器，同时接受结果因配额、进程生命周期或文件问题而缺失的可能性。
 
-触发式采集也不等于后台持续录制。[trigger-based capture 文档](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)说明，触发器只有在系统当时正在采集被抽样的后台 trace 且配额允许时，才可能得到结果；触发结果依赖全局监听器，App 未运行时会在以后启动并注册监听器后尝试投递。服务端应把"触发已登记""系统产生结果""结果已上传"分开统计。
+触发式采集与后台持续录制是两回事。[trigger-based capture 文档](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)说明，触发器只有在系统当时正在采集被抽样的后台 trace 且配额允许时，才可能得到结果；触发结果依赖全局监听器，App 未运行时会在以后启动并注册监听器后尝试投递。服务端应把"触发已登记""系统产生结果""结果已上传"分开统计。
 
 命令回执保存请求参数、平台版本、结果码、错误消息、结果文件 ID 和上传状态。`rate_limited` 这类根据结果码归纳出的字段替代不了原始 `error_code`；请求时长或缓冲设置也应标为 `requested_*`，表示这是请求值，除非系统 API 明确返回实际采用值。
 
@@ -502,7 +502,7 @@ Perfetto 解释线程、调度、Binder、锁、I/O、渲染与 CPU 时间，App
 
 ### 动态部署与远程调试的风险边界
 
-诊断命令不应分发可执行代码。Android 的[动态代码加载安全指南](https://developer.android.com/privacy-and-security/risks/dynamic-code-loading)指出，从远程来源加载代码会增加代码注入与篡改风险，许多远程动态加载形式还可能违反 Google Play 政策。补日志可以通过预埋观察点、结构化配置和签名命令调整采集级别，无需下载新的 Java、DEX、native 或脚本代码。
+诊断命令不得分发可执行代码。Android 的[动态代码加载安全指南](https://developer.android.com/privacy-and-security/risks/dynamic-code-loading)指出，从远程来源加载代码会增加代码注入与篡改风险，许多远程动态加载形式还可能违反 Google Play 政策。补日志可以通过预埋观察点、结构化配置和签名命令调整采集级别，无需下载新的 Java、DEX、native 或脚本代码。
 
 如果产品另有经过授权的更新或补丁系统，它应作为独立安全系统设计：代码签名、版本约束、回滚保护、兼容性测试、发布审批和分发政策都不得借用诊断命令的较低权限。App 商店与设备管理政策也需要单独核对。
 
@@ -576,15 +576,15 @@ Android 的[日志安全建议](https://developer.android.com/privacy-and-securi
 
 APK 是 Android 应用安装包。同一个 APK 即使同时发布到 Play 与其他市场，非 Play 安装产生的问题也不会自动进入同一份 Vitals 数据。
 
-这里的 ROM 指设备厂商基于 Android 定制的系统构建，沿用的是行业叫法，与"只读存储器"的硬件含义不同。渠道指应用的分发来源或构建变体，例如 Google Play、厂商市场或企业分发；渠道字段适合分组，单独使用时说明不了性能原因。
+这里的 ROM 指设备厂商基于 Android 定制的系统构建，沿用的是行业叫法，与"只读存储器"的硬件含义不同；渠道则指应用的分发来源或构建变体，例如 Google Play、厂商市场或企业分发；渠道字段适合分组，单独使用时说明不了性能原因。
 
-国内 ROM 仍可能提供诊断能力，应用市场也可能有自己的质量报表，但二者的覆盖条件不能直接视为 Vitals 等价物。可靠的做法是把平台公共 API、应用自身事件与服务端统计组成可审计的数据路径，再把厂商和渠道作为分析维度。
+国内 ROM 仍可能提供诊断能力，应用市场也可能有自己的质量报表，但二者的覆盖条件与 Vitals 各有前提，直接视为等价物行不通。可靠的做法是把平台公共 API、应用自身事件与服务端统计组成可审计的数据路径，再把厂商和渠道作为分析维度。
 
-APM 是 Application Performance Monitoring 的缩写，指持续采集应用性能与稳定性信号的一类系统。厂商控制台、应用市场报表和第三方 APM 可以补充自建数据，应用侧记录仍是确认具体版本、场景和采集质量的基础。
+APM 是 Application Performance Monitoring 的缩写，指持续采集应用性能与稳定性信号的一类系统；厂商控制台、应用市场报表和第三方 APM 都可以补充自建数据，而确认具体版本、场景和采集质量，靠的还是应用侧自己的记录。
 
 ### 端云数据路径
 
-数据路径上，非 Play 场景仍要把指标、崩溃事件和 trace 分开处理。指标是可聚合的数值，崩溃事件描述一次离散故障，trace 则保存一段时间内的细粒度事件与时间戳。三者的体积、采样方式、隐私风险和服务端查询方式不同，塞进同一种日志容易造成容量与上传限额失控。
+数据路径上，非 Play 场景仍要把指标、崩溃事件和 trace 分开处理：指标是可聚合的数值，崩溃事件描述一次离散故障，trace 保存一段时间内的细粒度事件与时间戳。三者体积、采样方式、隐私风险和服务端查询方式各不相同，塞进同一种日志，容量与上传限额很容易失控。
 
 ```text
 应用进程
@@ -621,21 +621,19 @@ APM 是 Application Performance Monitoring 的缩写，指持续采集应用性�
 | 运行状态 | 前后台、进程 importance、省电、热状态、刷新率、后台限制、standby bucket | 状态必须和被测事件尽量同时记录 |
 | 采集质量 | collector 版本、采样原因、丢弃计数、队列年龄、上传重试状态 | 用于判断缺数和采集器自身回归 |
 
-wall clock 是可能被用户或网络校时调整的日历时间，便于服务端按日期对齐。elapsed realtime 是从设备启动起单调递增的时间，适合计算同一设备上的耗时；跨设备比较前仍要转换到共同时间基准。
+时间字段的分工是：wall clock 是可能被用户或网络校时调整的日历时间，便于服务端按日期对齐；elapsed realtime 从设备启动起单调递增，适合计算同一设备上的耗时。跨设备比较前，仍要先转换到共同时间基准。
 
-进程 importance 是 `ActivityManager` 对进程当前重要程度的分类，例如是否承载前台界面或用户可感知工作。它会随组件生命周期变化，记录时应保留原始常量和 API 版本。
+进程 importance 由 `ActivityManager` 分类，例如是否承载前台界面或用户可感知工作；它会随组件生命周期变化，所以记录时要保留原始常量和 API 版本。
 
-构建 ID 与证书、APK 摘要用于确认事件对应哪份产物。摘要是原数据经过散列函数得到的固定长度值，可用于一致性比较，但散列本身不会自动消除隐私风险。
+构建 ID 与证书、APK 摘要用来回答“事件对应哪份产物”。摘要是原数据经过散列函数得到的固定长度值，可用于一致性比较，但散列本身不会自动消除隐私风险。
 
-fingerprint 是系统构建指纹，通常包含产品、版本和构建标识。高基数表示字段可能出现大量不同取值；原样 fingerprint 或仅做散列都可能形成很小的设备群组，服务端应归一化字段并设置最小样本门槛。
+fingerprint 是系统构建指纹，通常包含产品、版本和构建标识，属于高基数字段——可能出现大量不同取值。原样 fingerprint 或仅做散列都可能形成很小的设备群组，所以服务端要归一化字段并设置最小样本门槛。
 
-collector 是执行采集的客户端模块。记录它的版本、丢弃计数和队列年龄，才能区分业务指标变化与采集器自身回归。
+collector 是执行采集的客户端模块；把它的版本、丢弃计数和队列年龄记下来，我们才能区分业务指标的变化与采集器自身的回归。
 
 ANR 是 Application Not Responding（应用无响应（ANR）），表示主线程等关键响应路径在系统规定时间内没有完成。Native 崩溃指 C/C++ 等本地代码触发的进程故障。
 
-[`PackageManager.getInstallSourceInfo()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/PackageManager.java) 从 API 30 开始提供安装来源信息。
-
-逐字段语义见 [`InstallSourceInfo`](https://developer.android.com/reference/android/content/pm/InstallSourceInfo)。
+[`PackageManager.getInstallSourceInfo()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/PackageManager.java) 从 API 30 开始提供安装来源信息。逐字段语义见 [`InstallSourceInfo`](https://developer.android.com/reference/android/content/pm/InstallSourceInfo)。
 
 `installingPackageName` 是当前登记的安装器名称，可以被更改；`initiatingPackageName` 指请求安装或更新的包，来源不可用或该包已经卸载时可能为空。`originatingPackageName` 由发起安装的一方提供且未经框架验证，调用方缺少 `INSTALL_PACKAGES` 权限时拿不到。
 
@@ -703,19 +701,15 @@ fun readRuntimeCapabilitySnapshot(context: Context): RuntimeCapabilitySnapshot {
 }
 ```
 
-能力快照是带采集时间的观测记录，读它时要记住设备能力会变：省电模式、热状态、standby bucket 与后台限制都可能变化，首次启动时的值解释不了几天后的任务延迟。
+能力快照是带采集时间的观测记录，读它时我们要记住，设备能力会变：省电模式、热状态、standby bucket 与后台限制都可能变化，首次启动时的值解释不了几天后的任务延迟。
 
-standby bucket（应用待机分组）是系统根据近期使用情况给应用划分的活跃程度类别，并据此调整后台资源。热状态是 `PowerManager` 报告的设备热压力等级。存储这些整数值时还要记录 API 与采集器版本，服务端按对应版本的常量解释；读取失败或值不可用时写"未知"，别用零代替。
+standby bucket（应用待机分组）是系统按近期使用情况给应用划分的活跃程度类别，并据此调整后台资源；热状态则是 `PowerManager` 报告的设备热压力等级。存储这些整数值时还要记录 API 与采集器版本，服务端按对应版本的常量解释；读取失败或值不可用时写"未知"，别用零代替。
 
 示例只查询当前包，因此 `getAppStandbyBucket()` 不需要 `PACKAGE_USAGE_STATS`。服务端还需归并 `Build.MANUFACTURER` 与 `Build.MODEL` 的别名，并按隐私策略限制原始值的保存期限和访问范围。
 
-[`ActivityManager.isBackgroundRestricted()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java) 的文档给出了明确语义。
+[`ActivityManager.isBackgroundRestricted()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java) 的文档给出了明确语义。返回 `true` 时，系统至少会阻止作业和闹钟执行，并在应用不处于前台时阻止其启动前台服务；这项用户施加的限制在充电时仍然有效。该值只能证明系统报告了限制状态，具体设置页面、策略模块或厂商组件，要另外排查。
 
-返回 `true` 时，系统至少会阻止作业和闹钟执行，并在应用不处于前台时阻止其启动前台服务；这项用户施加的限制在充电时仍然有效。该值只能证明系统报告了限制状态，具体设置页面、策略模块或厂商组件，要另外排查。
-
-[`UsageStatsManager.getAppStandbyBucket()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/usage/UsageStatsManager.java) 查询的是调用应用当前所在的待机分组。
-
-系统可随时调整分组，越受限的分组通常获得越少后台运行机会。它适合解释采集时刻附近的任务等待，别当作稳定的用户属性。
+[`UsageStatsManager.getAppStandbyBucket()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/usage/UsageStatsManager.java) 查询的是调用应用当前所在的待机分组。系统可随时调整分组，越受限的分组通常获得越少后台运行机会。它适合解释采集时刻附近的任务等待，别当作稳定的用户属性。
 
 `isIgnoringBatteryOptimizations()` 只说明应用当前是否在电池优化豁免名单中。普通应用要改善统计完整度，也别去诱导用户豁免；豁免之后，也换不来后台常驻承诺。
 
@@ -826,7 +820,7 @@ APM 事件中断只说明服务端没有继续收到数据。以下情况都可�
 | C：群组相关 | 某机型、版本或渠道的比率显著不同 | “该群组异常率较高，待对照实验” |
 | D：用户描述 | 截图、客服反馈或复现叙述 | “用户报告开启某设置后恢复” |
 
-A 级证据可以按字段原义陈述平台报告的事实，仍不能扩写公共 API 未提供的细节。B、C、D 级证据用于提出和筛选假设，改写成"该厂商会执行某策略"就越界了。
+A 级证据可以按字段原义陈述平台报告的事实，扩写则以公共 API 提供的细节为限。B、C、D 级证据用于提出和筛选假设，改写成"该厂商会执行某策略"就越界了。
 
 ### 后台任务与前台服务怎么记录
 
@@ -855,7 +849,7 @@ ADPF 是 Android Dynamic Performance Framework，中文可理解为 Android 动�
 
 hint session（性能提示会话）把一组应用线程、目标工作时长和后续实际工作时长关联起来。SoC 是 system-on-chip（片上系统），即集成 CPU、GPU 等部件的主芯片。
 
-Android 17 源码中，`createHintSession()` 在设备不支持 hint session 或线程不属于调用应用等情况下可以返回 `null`；空线程列表、非正目标时长等错误参数会抛出 `IllegalArgumentException`。应用应按服务和 session 的实际结果协商能力，别维护"某品牌或某 SoC 必然支持"的静态表。
+`createHintSession()` 在设备不支持 hint session 或线程不属于调用应用等情况下可以返回 `null`；空线程列表、非正目标时长等错误参数会抛出 `IllegalArgumentException`。应用应按服务和 session 的实际结果协商能力，别维护"某品牌或某 SoC 必然支持"的静态表。
 
 一次可分析的 hint session 应记录：
 
@@ -896,7 +890,7 @@ API 35 以下没有 ProfilingManager，可使用适合该版本的公共指标�
 
 `FrameMetrics` 提供窗口帧各阶段的耗时字段，AndroidX JankStats 在兼容不同 Android 版本的同时标记卡顿帧，`Choreographer` 则按显示垂直同步节奏安排应用回调。三者和应用内 trace 都只能观察各自覆盖的事件，厂商策略的原因要另行取证。
 
-进入省电、热限制或刷新率切换后，帧节奏和预算可能变化，所以事件旁边要记录显示模式、刷新率、热状态和省电状态。没有公开证据表明某品牌会系统性修改 `FrameMetrics` 的"精度"，采样差异不能直接写成厂商结论。
+进入省电、热限制或刷新率切换后，帧节奏和预算可能变化，所以事件旁边要记录显示模式、刷新率、热状态和省电状态。没有公开证据表明某品牌会系统性修改 `FrameMetrics` 的"精度"；采样差异要写成厂商结论，还需要更多证据支持。
 
 CPU time 表示进程或线程实际占用处理器运行的累计时间。`ProcessCpuTracker` 属于 framework 内部实现，第三方应用没有受支持的公共 API 契约。线上应用可使用：
 

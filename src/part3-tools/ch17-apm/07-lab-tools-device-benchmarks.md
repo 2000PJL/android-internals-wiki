@@ -2,11 +2,13 @@
 title: 实验室测试工具与设备 Benchmark
 chapter: '17.7'
 section: '17.7'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-21'
-last_verified_against: PerfDog current official site plus client, Service, metric and network docs; SoloPi v1.0.2 release and pinned source; Emmagee V2.5.1 release and pinned source; Android performance docs; AOSP android-17.0.0_r1 PowerStats, Thermal and SurfaceFlinger anchors
-last_rework_at: '2026-08-05T13:35:16+08:00'
+last_verified: '2026-10-22'
+last_verified_against: PerfDog current official site plus client, Service, metric and network docs; SoloPi v1.0.2 release and pinned source; Emmagee V2.5.1 release and pinned source; Android performance docs; AOSP android-17.0.0_r1 PowerStats, Thermal and SurfaceFlinger anchors; scoped 2026-10-22 verification of ML gloss and XML inflate against Geekbench 6 Benchmark Internals and AOSP android-17.0.0_r1 LayoutInflater
+last_source_verified_at: '2026-10-22T21:36:58+08:00'
+verification_scope_note: 2026-10-22 仅核验 Geekbench 段 ML 括注与 XML inflate 术语；其余工具版本与指标沿用 2026-08-21 核验记录。
+last_rework_at: '2026-10-22T21:36:58+08:00'
 confidence: medium
 tags:
   - apm
@@ -73,6 +75,8 @@ sources:
   path: https://www.geekbench.com/download/
 - type: official
   path: https://www.geekbench.com/doc/geekbench6-benchmark-internals.pdf
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/LayoutInflater.java
 - type: official
   path: https://www.geekbench.com/blog/2026/07/geekbench-7/
 - type: official
@@ -563,10 +567,10 @@ Geekbench 6 的公开内部文档说明，CPU 总分由整数和浮点两部分�
 | Navigation（Dijkstra、OpenStreetMap 数据） | 图算法、分支和内存访问 | 离线路径规划或大型关系图计算可能受单线程容量影响 | 对业务图规模采样，并在目标机型上测端到端耗时 |
 | HTML5 Browser | 受控的 HTML/JavaScript 负载 | 轻线程网页计算可能随单核档位变化 | 用目标 WebView 版本跑页面 trace；不能把该子项当作 Chrome 或 WebView 分数 |
 | PDF Renderer（PDFium） | 文档解析与栅格化 | PDF 首屏或翻页可能受 CPU 和内存共同影响 | 固定 PDF 文件，在 App 使用的 PDF 组件中测首屏和逐页时间 |
-| Photo Library / Photo Editor | 图片编解码、SQLite、图像处理及部分 ML | 相册扫描、缩略图生成或编辑可能受 CPU、内存和指令集影响 | 复用业务图片格式、分辨率和模型做 Macrobenchmark 或业务基准 |
+| Photo Library / Photo Editor | 图片编解码、SQLite、图像处理及部分 ML（Machine Learning，机器学习） | 相册扫描、缩略图生成或编辑可能受 CPU、内存和指令集影响 | 复用业务图片格式、分辨率和模型做 Macrobenchmark 或业务基准 |
 | Clang、Text Processing、Asset Compression | 编译、正则、SQLite、纹理及几何资产压缩 | 文本处理、开发工具或图形资源处理流程可能有相近计算特征 | 对业务库直接基准；不要把 Text Processing 等同于 JSON 解析 |
 
-“单核分数影响 JSON 解析”这个判断过于确定。Geekbench 6 跑的是通用工作负载，并未搭载业务自己的 JSON 库、序列化模型和数据规模，只能给出通用单线程容量线索；JSON、protobuf（二进制序列化格式）、XML（Machine Learning，机器学习） inflate（从布局 XML 创建 View）、Compose measure/layout（测量与布局） 和 `RecyclerView` bind（把数据绑定到列表项） 仍要分别测量。I/O 等待、锁竞争或 Binder 往返占比高时，单核分数的解释力会更弱。
+“单核分数影响 JSON 解析”这个判断过于确定。Geekbench 6 跑的是通用工作负载，并未搭载业务自己的 JSON 库、序列化模型和数据规模，只能给出通用单线程容量线索；JSON、protobuf（二进制序列化格式）、XML inflate（从布局 XML 创建 View）、Compose measure/layout（测量与布局） 和 `RecyclerView` bind（把数据绑定到列表项） 仍要分别测量。I/O 等待、锁竞争或 Binder 往返占比高时，单核分数的解释力会更弱。
 
 ARM 设备还可能按运行时能力使用 AES、SHA、FP16、Dot Product、I8MM 等加密、半精度浮点、点积或整数矩阵指令。两个设备的分差有时来自特定指令路径，而业务实现未必走同一条路径。跨 SoC 解释子项时，我们要核对 App 使用的库、`arm64-v8a` 这类目标 ABI（Application Binary Interface，应用二进制接口，例如 `arm64-v8a`）、编译选项和硬件加速路径。
 

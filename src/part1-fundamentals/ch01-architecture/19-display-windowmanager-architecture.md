@@ -16,7 +16,8 @@ tags:
 last_verified: '2026-10-22'
 last_source_verified_at: '2026-10-22'
 last_rework_at: '2026-10-22T09:37:56+08:00'
-verification_scope_note: 已核对 Android 17 的 Choreographer、ViewRootImpl traversal/relayout 与 trace 点、SurfaceAnimationRunner 提交线程、StartingData 创建、SurfaceSyncGroup 公开接口、placement/同步超时、输入传输、queueBuffer 和 Composer3 present fence 边界；版本首引、桌面能力 GA 状态及第三方框架拓扑尚未逐项核验。
+last_deep_review_at: '2026-10-22T12:39:04+08:00'
+verification_scope_note: 已核对 Android 17 的 Choreographer、ViewRootImpl traversal/relayout 与 trace 点、SurfaceAnimationRunner 提交线程、StartingData 创建、SurfaceSyncGroup 公开接口、placement/同步超时、输入传输、queueBuffer 和 Composer3 present fence 边界；另核对 SurfaceView alpha 作用范围、重叠混合警告、四项 API 的 API 34—37 首引及当前 flag 注解，并以官方发布说明确认 Connected Display Desktop 的 Android 16 QPR3 GA 与受支持设备边界。Android 12—13 演进、其余历史 flag 与第三方框架拓扑尚未逐项核验。
 last_verified_against: AOSP android-17.0.0_r1 Choreographer / ViewRootImpl / HWUI RenderThread / BufferQueue / BLASTBufferQueue / SurfaceFlinger FrontEnd / HWComposer / FrameTimeline；Composer3 AIDL；kernel android17-6.18-2026-06_r6 dma-buf / sync_file / dma-fence + AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 17 official windowing/configuration documentation + rendering_pipelines S06
 confidence: medium-high
 sources:
@@ -174,6 +175,12 @@ sources:
   path: https://developer.android.com/reference/kotlin/androidx/core/splashscreen/SplashScreen
 - type: official
   path: https://developer.android.com/develop/ui/views/launch/splash-screen/migrate
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java
+- type: official
+  path: https://developer.android.com/reference/android/view/SurfaceView
+- type: official
+  path: https://android-developers.googleblog.com/2026/03/android-devices-extend-seamlessly-to.html
 - type: material
   path: rendering_pipelines/S06_multi_window_type.md
 related_chapters:
@@ -349,10 +356,14 @@ Camera、视频、游戏描述生产者或业务类型，SurfaceView、TextureVi
 |---|---|---|
 | Android 12 / API 31 | BLAST 与 FrameTimeline 已进入现代应用窗口主线 | 标准窗口可用应用 / SF 的预期与实际时间线；独立 Surface 仍需 layer、BufferQueue 和 fence 证据 |
 | Android 13 / API 33 | `AutoSingleLayer` 下的 latch-unsignaled 策略成为重要边界；Composer HAL 进入 AIDL 时代 | acquire fence 未发出完成信号，不代表事务一定无法先被采纳；内容读取仍受 fence 约束 |
-| Android 14 / API 34 | 标准公共主线延续；SurfaceView 增加任意 alpha 与公开 lifecycle 策略 | SurfaceView 的透明度和 Surface 保留行为要按版本确认 |
-| Android 15 / API 35 | Window / SurfaceView 可以表达期望的 HDR 亮度余量（headroom），支持的设备可使用自适应刷新率（ARR）；Android 15/16 API 文本中的 headroom 方法仍带 `limited_hdr` 功能开关 | 亮度余量和帧率请求都是期望值，不能证明实际亮度、刷新率或合成类型；功能开关与设备能力都要核对 |
-| Android 16 / API 36 | SurfaceView API 文本中出现带 `surface_view_set_composition_order` flag 的整数 `compositionOrder` | 多 Surface 页面要记录 parent、relative layer 和 Z-order；flag-gated API 不能当成所有设备无条件可用 |
-| Android 17 / API 37 | 现行 FrontEnd 帧快照、预测显示调度与 HWC 流程；SurfaceView API 文本中出现受 `surface_view_set_blur_regions` 开关控制的模糊区域 | 当前对象名按 `android-17.0.0_r1` 解释；厂商合成能力和功能开关状态仍需设备证据 |
+| Android 14 / API 34 | SurfaceView 开始支持 0 与 1 之间的 alpha，并公开 [`setSurfaceLifecycle()`](https://developer.android.com/reference/android/view/SurfaceView#setSurfaceLifecycle(int)) | alpha 的作用目标取决于 SurfaceView 与宿主窗口的合成顺序；Surface 保留行为还取决于生命周期策略 |
+| Android 15 / API 35 | Window / SurfaceView 可以表达期望的 HDR 亮度余量（headroom），其中 [`SurfaceView.setDesiredHdrHeadroom()`](https://developer.android.com/reference/android/view/SurfaceView#setDesiredHdrHeadroom(float)) 标为 API 35；支持的设备可使用自适应刷新率（ARR）；Android 15/16 API 文本中的 headroom 方法仍带 `limited_hdr` 功能开关 | 亮度余量和帧率请求都是期望值，不能证明实际亮度、刷新率或合成类型；功能开关与设备能力都要核对 |
+| Android 16 / API 36 | [`SurfaceView.setCompositionOrder()`](https://developer.android.com/reference/android/view/SurfaceView#setCompositionOrder(int)) 标为 API 36；API 文本中带 `surface_view_set_composition_order` flag | 多 Surface 页面要记录 parent、relative layer 和 Z-order；flag-gated API 不能当成所有设备无条件可用 |
+| Android 17 / API 37 | 现行 FrontEnd 帧快照、预测显示调度与 HWC 流程；[`SurfaceView.setBlurRegions()`](https://developer.android.com/reference/android/view/SurfaceView#setBlurRegions(java.util.Collection%3Candroid.view.BlurRegion%3E)) 标为 API 37，源码仍带 `surface_view_set_blur_regions` 开关 | 当前对象名按 `android-17.0.0_r1` 解释；厂商合成能力和功能开关状态仍需设备证据 |
+
+SurfaceView 的 alpha 有具体的作用范围：合成顺序非负时，alpha 直接作用于 Surface 内容，也作用于嵌入的 `SurfacePackage`；合成顺序为负、SurfaceView 位于宿主窗口下方时，alpha 作用于宿主的挖洞区域，不直接修改 Surface 或 `SurfacePackage` 内容。官方明确提示，窗口下方的多个 SurfaceView 重叠时可能无法正确混合。排查半透明视频或叠层预览时，应同时记录合成顺序与重叠关系，不能只检查 View 的 alpha 值。依据见 [`setAlpha()` 官方说明](https://developer.android.com/reference/android/view/SurfaceView#setAlpha(float))和固定标签的 [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java#683)。
+
+`setCompositionOrder()` 的非负值表示在宿主窗口上方合成，负值表示在下方；同级 SurfaceView 中数值更大的排在上方，相同值之间的相对顺序未定义。复现遮挡错误时，应记录各 SurfaceView 的具体值；相同值不能作为稳定排序依据。
 
 这些版本差异没有建立“版本越新，所有页面越快”的因果关系。做渲染评审时，我们把版本能力、应用用法、设备实现和运行时证据分别记录，四者不互相代表。
 
@@ -1119,7 +1130,7 @@ Android 17 还减少了部分配置变化的 Activity 重建：`CONFIG_KEYBOARD`
 
 #### Connected Display Desktop 的可用条件
 
-QPR 是 Android 的季度平台更新；Connected Display Desktop 是把桌面式自由窗口扩展到外接显示器的能力。它在 Android 16 QPR3 对受支持设备正式可用（GA），但仍受设备能力、OEM 配置、外接显示器与用户入口约束；某台设备有没有启用，光看 `Build.VERSION` 判断不出来。
+QPR 是 Android 的季度平台更新；Connected Display Desktop 是把桌面式自由窗口扩展到外接显示器的能力。Google 的 [2026-03-03 发布说明](https://android-developers.googleblog.com/2026/03/android-devices-extend-seamlessly-to.html)确认，它在 Android 16 QPR3 对受支持设备正式可用（GA）。这项发布仍受设备能力、OEM 配置、外接显示器与用户入口约束；某台设备有没有启用，光看 `Build.VERSION` 判断不出来。
 
 对 WMS 来说，自由窗口、caption bar 的 Insets、多实例和跨 Display 移动会增加 WindowContainer、WCT、transition 与 resize 工作。App 还要处理不同 Display 的密度、刷新率、color mode（颜色模式）、输入与资源。
 

@@ -4,9 +4,9 @@ chapter: '4.1'
 section: '4.1'
 status: ready-for-review
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-10-20'
-verification_scope_note: '2026-10-20 定点复核 ZRAM mm_stat 的同值页、难压缩页、回写与内存池成本边界，以及 bd_stat 的固定 4 KiB 单位；限定 DMA-BUF 跨进程重复计算的共享条件；2026-10-19 定点复核 THP/mTHP 映射、按尺寸策略、defrag 与 MADV_COLLAPSE 边界、迁移类型及 onTrimMemory 的 API 34/35 生命周期说明；2026-10-18 定点复核 RSS/fault-around、Scudo/COW、ART 栈函数、保存状态、Perfetto 堆图及 MGLRU/SLUB；2026-10-17 的 ART 页释放、文件预取、MADV_COLD、匿名缺页/rmap 与 Debug.MemoryInfo 核验范围保留，其余来源沿用各段已有核验范围。'
-last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article / source-index material juejin-android 2026-10-09 Memory Limiter exemption article / Android common kernel android17-6.18-2026-06_r6 THP transhuge.rst+huge_memory.c+mmzone.h+compaction.c (retrieved 2026-10-19) / Android common kernel android17-6.18-2026-06_r6 ZRAM zram.rst+zram_drv.c and DMA-BUF sharing docs (retrieved 2026-10-20)
+last_verified: '2026-10-22'
+verification_scope_note: '2026-10-22 定点核对 tmpfs/shmem 的 Cached/file 重叠、VmSwap 与 smaps Swap/SwapPss 覆盖范围、cgroup 层级及共享页记账、Swap/noswap 回收条件；抽查 Android 17 r1 MemoryLimiter、Debug.MemoryInfo 与 Perfetto 统计配置，未扩大其余段落的来源核验范围；2026-10-20 定点复核 ZRAM mm_stat 的同值页、难压缩页、回写与内存池成本边界，以及 bd_stat 的固定 4 KiB 单位；限定 DMA-BUF 跨进程重复计算的共享条件；2026-10-19 定点复核 THP/mTHP 映射、按尺寸策略、defrag 与 MADV_COLLAPSE 边界、迁移类型及 onTrimMemory 的 API 34/35 生命周期说明；2026-10-18 定点复核 RSS/fault-around、Scudo/COW、ART 栈函数、保存状态、Perfetto 堆图及 MGLRU/SLUB；2026-10-17 的 ART 页释放、文件预取、MADV_COLD、匿名缺页/rmap 与 Debug.MemoryInfo 核验范围保留，其余来源沿用各段已有核验范围。'
+last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article / source-index material juejin-android 2026-10-09 Memory Limiter exemption article / Android common kernel android17-6.18-2026-06_r6 THP transhuge.rst+huge_memory.c+mmzone.h+compaction.c (retrieved 2026-10-19) / Android common kernel android17-6.18-2026-06_r6 ZRAM zram.rst+zram_drv.c and DMA-BUF sharing docs (retrieved 2026-10-20) / Android common kernel android17-6.18-2026-06_r6 proc.rst+tmpfs.rst+cgroup-v2.rst+fs/proc/meminfo.c (retrieved 2026-10-22)
 confidence: medium-high
 sources:
 - type: official
@@ -169,7 +169,15 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/blockdev/zram.rst
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/block/zram/zram_drv.c
-last_source_verified_at: '2026-10-20'
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/tmpfs.rst
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst
+- type: kernel
+  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/meminfo.c
+last_source_verified_at: '2026-10-22'
 last_deep_review_at: '2026-10-19T08:37:07+08:00'
 tags:
   - android-memory
@@ -311,7 +319,9 @@ flowchart TB
 adb shell 'cat /proc/meminfo | grep -E "^(MemTotal|MemFree|MemAvailable|Buffers|Cached|SReclaimable|Shmem|AnonPages|SwapTotal|SwapFree|SwapCached):"'
 ```
 
-这些字段要结合起来读。`Cached` 较大通常说明 RAM 被文件页利用；`SwapFree` 下降说明逻辑交换空间在消耗；`SwapCached` 表示已经换入（swap-in）、同时仍在交换空间保留副本的页面，代替不了 ZRAM 设备占用。
+`Cached` 包含普通文件页缓存，也包含 tmpfs 与共享内存（shmem）；`Shmem` 与它有重叠，不能把两项直接相加。`Cached` 较大也不代表这些页都能丢弃后从磁盘重读，tmpfs/shmem 的回收还要看 Swap 是否可用。 [已验证: android17-6.18-2026-06_r6 `Documentation/filesystems/proc.rst` 的 `Cached`、`Shmem`；`Documentation/filesystems/tmpfs.rst`]
+
+`SwapFree` 下降说明逻辑交换空间在消耗；`SwapCached` 表示已经换入（swap-in）、同时仍在交换空间保留副本的页面，代替不了 ZRAM 设备占用。
 
 #### `/proc/<pid>/status`：低成本进程概览
 
@@ -322,6 +332,8 @@ adb shell 'pid=$(pidof com.example.app); grep -E "^(VmSize|VmRSS|RssAnon|RssFile
 ```
 
 `VmRSS` 对应驻留集概览，通常可拆分为 `RssAnon`、`RssFile` 和 `RssShmem`。Linux 内核文档提醒，`status` 中部分 RSS 统计通过异步记账获得，精确度低于 `smaps` 汇总。`VmStk` 描述主栈映射大小，主线程实际用掉的栈字节数要看别的量。
+
+`VmSwap` 只统计私有匿名数据的换出量，不含 shmem 的换出页。它较低甚至为零，也不能据此排除共享内存的 Swap 占用；应继续核对 shmem 映射和对应 cgroup 的统计。 [已验证: android17-6.18-2026-06_r6 `Documentation/filesystems/proc.rst` 的 `VmSwap` 定义]
 
 Android 的 SELinux 强制访问控制、procfs 挂载选项和 ptrace 权限会限制跨进程读取。开发机上可以根据构建类型和应用属性使用 `run-as`、应用自身采集或具备权限的系统工具；量产设备上，我们先默认 `adb shell` 读不到任意 PID（UID） 的 `smaps`，再逐台确认。
 
@@ -336,6 +348,8 @@ adb shell 'pid=$(pidof com.example.app); cat /proc/$pid/smaps_rollup'
 ```
 
 `smaps_rollup` 适合快速比较进程汇总值，增长来自哪一个映射要看完整的 `smaps`。
+
+shmem 映射中的 `Swap` 还包含底层 shmem 对象在映射范围内、未被写时复制替换的换出部分，`SwapPss` 不包含这部分。两者对 shmem 换出页的覆盖范围不同。排查共享内存换出时，应保留具体 VMA 的 `Swap`，并与系统及 cgroup 的 Swap 统计对照，不能只看 `VmSwap` 或 `SwapPss`。 [已验证: android17-6.18-2026-06_r6 `Documentation/filesystems/proc.rst` 的 `smaps` `Swap`、`SwapPss` 定义]
 
 下面的命令用于定位 PSS 较大的具体映射：
 
@@ -478,12 +492,15 @@ adb shell cat /proc/pressure/memory
 | `memory.low` | 尽力保护边界；低于有效边界的内存受到较少回收 |
 | `memory.high` | 节流边界；越界任务进入直接回收并可能被节流，本身不调用内核的 OOM 进程终止机制（OOM killer） |
 | `memory.max` | 硬上限；回收无法满足时可能触发该 cgroup 内的 OOM 处理 |
-| `memory.current` | 当前内存用量 |
+| `memory.current` | 当前 cgroup 及其所有后代的内存用量 |
 | `memory.stat` | 匿名页、文件页、共享内存（shmem）、回收等分类统计 |
-| `memory.events` | `low`、`high`、`max`、`oom`、`oom_kill` 等事件计数 |
-| `memory.swap.current` | 当前交换空间使用量 |
+| `memory.events` | `low`、`high`、`max`、`oom`、`oom_kill` 等事件计数，默认包含后代事件；`memory_localevents` 挂载选项可改为仅本地 |
+| `memory.events.local` | 仅当前 cgroup 的事件计数，不汇总后代 |
+| `memory.swap.current` | 当前 cgroup 及其所有后代的交换空间使用量 |
 | `memory.swap.max` | 交换空间硬上限；达到后不再允许该 cgroup 继续换出匿名页 |
 | `memory.pressure` | 该 cgroup 的内存 PSI |
+
+`memory.stat` 的 `file` 已经包含 `shmem`，把 `anon + file + shmem` 相加会重复计算；内核内存等其他占用还需另看，不能把这一求和结果当成 `memory.current`。共享页按 cgroup 所有权记账，不按各进程的 PSS 比例分摊。读取父级用量时，也不要再加上其子组用量；只想定位当前层级的事件，应读 `memory.events.local`。 [已验证: android17-6.18-2026-06_r6 `Documentation/admin-guide/cgroup-v2.rst` 的 `Memory Interface Files` 与 `Memory Ownership`]
 
 Android 通过 `libprocessgroup` 与 task profile 管理进程所在的 cgroup。设备可以采用不同控制器和层级配置；定位时读取该构建的 `cgroups.json`、`task_profiles.json` 以及运行设备的 cgroup 文件系统，比凭版本号推断路径可靠。
 
@@ -748,6 +765,9 @@ ZRAM 本身是匿名页回收策略的一部分，风险主要来自持续换入
 - [支持 16 KiB 页大小](https://developer.android.com/guide/practices/page-sizes)
 - [Arm MTE 开发指南](https://developer.android.com/ndk/guides/arm-mte)
 - [Linux 6.18 cgroup v2 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst)
+- [Linux 6.18 procfs 统计口径](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)
+- [Linux 6.18 tmpfs 与 Swap 条件](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/tmpfs.rst)
+- [Android 17 kernel `/proc/meminfo` 实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/meminfo.c)
 - [Linux 6.18 ZRAM 文档](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/blockdev/zram.rst)
 - [Android 17 kernel ZRAM 统计与回写实现](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/block/zram/zram_drv.c)
 - [Perfetto `ProcessStatsConfig`](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/process_stats/process_stats_config.proto)
@@ -905,9 +925,11 @@ adb shell cat /proc/slabinfo
 
 #### 两类页的回收成本不同
 
-分配在快速路径拿不到页时走慢路径，回收是慢路径上的工作之一；文件页和匿名页的回收成本完全不同：文件页有文件作为后备存储，干净文件页可以直接从页缓存丢弃，下次访问再读文件；脏页则要先写回，或交给相应文件系统处理。
+分配在快速路径拿不到页时走慢路径，回收是慢路径上的工作之一。普通磁盘文件的干净页可以从页缓存丢弃，下次访问再读文件；仍需保留的脏文件页则要先写回，或交给相应文件系统处理。
 
 匿名页装的是堆、栈和匿名映射的数据，背后没有可重新读取的普通文件；内核只有在存在可用交换空间或内存分层目标时，才能在保留内容的前提下回收它的物理页。Android 常用 ZRAM 充当这个交换空间，厂商也可以配置 ZRAM 回写；没有可用交换空间时，匿名页能腾挪的余地就小得多。
+
+tmpfs/shmem 虽然计入 `Cached` 和 cgroup `memory.stat` 的 `file`，保留内容时却不能像磁盘文件的干净页那样丢弃后重读。它们可以使用 Swap 释放驻留页，但要有可用交换空间且相关配置允许；tmpfs 挂载为 `noswap` 时不能走这条路径。判断缓存能否回收，应先核对页面后备类型，再看 `Shmem`、对应映射和 cgroup 的 Swap 用量。 [已验证: android17-6.18-2026-06_r6 `Documentation/filesystems/tmpfs.rst` 的 Swap 与 `noswap` 说明；`Documentation/filesystems/proc.rst`；`Documentation/admin-guide/cgroup-v2.rst`]
 
 回收的目标是腾出可分配页，同时尽量保留近期工作集。代价可能来自：
 

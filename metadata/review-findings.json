@@ -8422,6 +8422,88 @@
       "summary": "SurfaceView 任意 alpha 说明遗漏窗口下方挖洞与重叠混合限制",
       "type": "missing-applicability-warning",
       "updated_at": "2026-10-22T12:41:16.193902+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "close_note": "已在工厂入口校验 nice 范围，并在 Worker 入口之前捕获权限失败、记录日志后继续。提取正文原样 Kotlin 示例，在 JDK 21 上注入 SecurityException：修复前 executed=0/poolSize=1/terminated=false；修复后 executed=2/warnings=1/terminated=true。Android API 使用显式故障注入适配器，非设备实验。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-140520-76f7e954",
+      "created_at": "2026-10-22T14:12:40.880403+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-140520-76f7e954",
+      "details": "Process.setThreadPriority 的公开契约允许 IllegalArgumentException/SecurityException；原示例在 command.run() 之前调用且没有校验或失败处理。android-17.0.0_r1 ThreadPoolExecutor.addWorker 已登记 worker，而退出清理只在 runWorker 的 finally 中。需要在提交前校验范围，并让优先级设置失败有明确处理且不中断 Worker 生命周期。",
+      "id": "finding-920acce508ed",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java#1392",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java#857"
+      ],
+      "status": "fixed",
+      "summary": "线程工厂在 Worker.run 之前设置优先级，未处理异常可丢失任务并破坏线程池退出记账",
+      "type": "worker-startup-exception",
+      "updated_at": "2026-10-22T14:20:36.315872+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "close_note": "已补充挂起会让其他协程进入视图、视图不限制排队和跨挂起在途请求的边界，并给出 Semaphore 与生产端有界积压要求。官方 1.11.0 文档核验；本机 kotlinx.coroutines 1.8.0 实测 limitedParallelism(1) 可有 3 个挂起中的在途操作，Semaphore(1) 限制为 1。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-140520-76f7e954",
+      "created_at": "2026-10-22T14:12:40.941636+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-140520-76f7e954",
+      "details": "正文把视图执行并行度紧接到下游容量约束，未说明协程挂起后其他协程仍可进入，也不限制排队数量。官方 limitedParallelism 的 It is not a mutex! 明确要求跨挂起并发用 Mutex/Semaphore；应补充请求限额与有界生产入口，避免把视图当作完整限流器。",
+      "id": "finding-dad2d8913946",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html"
+      ],
+      "status": "fixed",
+      "summary": "limitedParallelism 缺少挂起期间在途请求不受限的边界说明",
+      "type": "coroutine-concurrency-boundary",
+      "updated_at": "2026-10-22T14:20:36.371730+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "close_note": "已移除 CPU 深睡眠直接造成漏期的表述，改为进程冻结/未获调度/任务过长，并明确 System.nanoTime 在 Android 上不计深睡眠。依据 Android 17 ScheduledThreadPoolExecutor.setNextRunTime 与 SystemClock 的时钟说明。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-140520-76f7e954",
+      "created_at": "2026-10-22T14:15:35.655015+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-140520-76f7e954",
+      "details": "android-17.0.0_r1 ScheduledThreadPoolExecutor 用 System.nanoTime 维护到期时间；SystemClock 文档说明 Android 的 nanoTime 时间基准不计深度睡眠。应区分进程冻结/调度延迟导致的漏期与整机深睡眠，不能从包含深睡眠的墙钟时长推算漏期。",
+      "id": "finding-a7ab6481bebc",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ScheduledThreadPoolExecutor.java#289",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java#58"
+      ],
+      "status": "fixed",
+      "summary": "周期任务把 CPU 深度睡眠与进程冻结并列为固定频率漏期来源，遗漏 nanoTime 时钟边界",
+      "type": "fixed-rate-clock-boundary",
+      "updated_at": "2026-10-22T14:20:36.426844+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "close_note": "已按固定内核标签 account_user_time/account_guest_time 将 nice 字段限定为 task_nice>0，保留 guest 已包含在 user/nice 中的结论，并添加源码链接。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-140520-76f7e954",
+      "created_at": "2026-10-22T14:18:41.374634+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-140520-76f7e954",
+      "details": "android17-6.18-2026-06_r6 kernel/sched/cputime.c 的 account_user_time/account_guest_time 仅在 task_nice(p)>0 时计入 NICE/GUEST_NICE；负 nice 仍计入 USER/GUEST。已将正文限定到 nice>0，并添加固定内核标签源码引用。",
+      "id": "finding-8711fb11ed15",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cputime.c#132"
+      ],
+      "status": "fixed",
+      "summary": "/proc/stat 的 nice 字段误写为任何调整过 nice 值的用户态时间",
+      "type": "proc-stat-nice-accounting",
+      "updated_at": "2026-10-22T14:20:36.483345+08:00"
     }
   ],
   "schema_version": 1

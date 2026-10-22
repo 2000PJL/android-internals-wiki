@@ -4,14 +4,20 @@ chapter: '15.3'
 section: '15.3'
 status: finalized
 applicable_versions: Android 8 (API 26) – Android 17 (API 37)
-last_verified: '2026-08-13'
-last_verified_against: Android Studio Quail 3 + LeakCanary 2.14 stable API + AOSP android-17.0.0_r1 (system/memory/libmeminfo + bionic libc/memory malloc_debug/malloc_hooks) + Perfetto native-heap-profiler docs
+last_verified: '2026-10-22'
+last_source_verified_at: '2026-10-22'
+last_idle_audit_at: '2026-10-22'
+last_verified_against: Android Studio Quail 2 release announcement (2026-07-16) + LeakCanary 2.14 UI-tests docs and tagged rule source + AOSP android-17.0.0_r1 (ART HPROF/Perfetto plugin, frameworks/base dumpheap, bionic malloc_debug/malloc_hooks, Perfetto producer/config/SQL) + Android NDK/AOSP MTE docs
 confidence: high
 sources:
 - type: aosp
   path: bionic/libc/memory/malloc_debug
 - type: official
-  path: https://developer.android.com/studio/preview/features
+  path: https://developer.android.com/blog/posts/android-studio-quail-2-is-stable-multi-task-with-the-android-studio-ai-agent
+- type: official
+  path: https://developer.android.com/ndk/guides/arm-mte
+- type: official
+  path: https://source.android.com/docs/security/test/memory-safety/arm-mte
 - type: official
   path: https://square.github.io/leakcanary/ui-tests/
 - type: official
@@ -194,7 +200,7 @@ LeakCanary 的默认观察范围有限，单例、缓存和业务容器要显式
 
 CI（Continuous Integration，持续集成）里的泄漏检查要靠可重复的操作和明确的断言，只保存一次人工截图说明不了问题。
 
-Android Studio 从 Panda 3 起提供专用的 LeakCanary Profiler task：设备仍负责运行应用和生成堆现场，Shark 转到开发机分析，报告可以从可疑引用跳回工程源码。截至 2026-08-13，Quail 3 稳定版继续提供这项能力；它跟着 IDE（Integrated Development Environment，集成开发环境） 发布线走，与 Android API 版本没有绑定关系。
+Android Studio 从 Quail 2 起提供专用的 LeakCanary Profiler task，官方发布公告日期为 2026-07-16：设备仍负责运行应用和生成堆现场，Shark 转到开发机分析，报告可以从可疑引用跳回工程源码。这项能力跟着 IDE（Integrated Development Environment，集成开发环境）发布线走，与 Android API 版本没有绑定关系。
 
 几种入口的职责不同：
 
@@ -205,10 +211,11 @@ Android Studio 从 Panda 3 起提供专用的 LeakCanary Profiler task：设备�
 | Memory Profiler Heap Dump | 对象数量、支配关系和通用 HPROF 检查 | 实例、retained size、引用关系 | 需要开发者判断生命周期是否合法 |
 | 系统或线上触发 | 难以本地复现的内存限制现场 | 退出信息、受控 HPROF 或 profile | 受配额、隐私、磁盘和上传成本限制 |
 
-LeakCanary 2.14 还提供 instrumentation 集成，即在设备上运行的 Android 仪器化测试中检查泄漏。依赖只加入测试 APK，并在测试成功后执行泄漏断言：
+LeakCanary 2.14 还提供 instrumentation 集成，即在设备上运行的 Android 仪器化测试中检查泄漏。主 APK 仍需保留基础 LeakCanary 的 debug 依赖，instrumentation 依赖只加入测试 APK。下面的配置在测试成功后执行泄漏断言：
 
 ```kotlin
 dependencies {
+    debugImplementation("com.squareup.leakcanary:leakcanary-android:2.14")
     androidTestImplementation(
         "com.squareup.leakcanary:leakcanary-android-instrumentation:2.14"
     )
@@ -217,6 +224,12 @@ dependencies {
 @get:Rule
 val detectLeaksAfterTestSuccess = DetectLeaksAfterTestSuccess()
 ```
+
+JUnit 出现在运行时类路径时，LeakCanary 会禁用常规自动检测，测试应通过该规则或 `LeakAssertions.assertNoLeaks()` 触发检查。
+
+使用 `ActivityScenarioRule` 时，规则顺序决定断言时点：把 `DetectLeaksAfterTestSuccess` 放在其外层，才能在 Activity 销毁后检查 Activity 泄漏；放在内层则在销毁前检查，可能发现随 Activity 销毁而消失的 Fragment 泄漏。需要覆盖两个时点时，应分别设置断言。
+
+对混淆 release 构建运行 instrumentation 测试，还要注意官方文档记录的 AGP 跨主 APK 与测试 APK 重写不一致问题；遇到相关运行时崩溃时，可按文档评估 Keeper 插件。
 
 这类断言适合生命周期明确、操作可重复的端到端场景。测试应固定页面操作、空闲等待和后台任务清理；异步任务尚未结束时看到的保留对象，还够不上稳定泄漏。团队还可以维护少量确定性样例，例如单例保存 Activity、Fragment View binding 未清理、延迟消息、全局协程、Listener 未注销和 WebView/播放器未释放，用同一脚本同时验证“能发现”和“修复后消失”。
 
@@ -533,7 +546,9 @@ export LIBC_DEBUG_MALLOC_OPTIONS="backtrace_enable_on_signal verbose"
 exec "$@"
 ```
 
-脚本应按 ABI（Application Binary Interface，应用二进制接口）放入 Android Studio 工程的 `src/main/resources/lib/<abi>/wrap.sh`，同时把 JNI 库的 `useLegacyPackaging` 设为 `true`，并保证 APK 是 debuggable。`wrap.sh` 是 API 27 加入的应用入口；malloc debug 自身从 API 24 提供。直接写 `wrap.<package>` 属性更适合具有 root 权限的平台调试。Android 12 还存在 bionic README 记录的 Zygote（应用进程孵化器） fork-loop 兼容问题：作为应用进程模板的 Zygote 可能反复派生并重启子进程。
+脚本应按 ABI（Application Binary Interface，应用二进制接口）放入 Android Studio 工程的 `src/main/resources/lib/<abi>/wrap.sh`，同时把 JNI 库的 `useLegacyPackaging` 设为 `true`，并保证 APK 是 debuggable。`wrap.sh` 是 API 27 加入的应用入口；malloc debug 自身从 API 24 提供。直接写 `wrap.<package>` 属性更适合具有 root 权限的平台调试。
+
+Android 12 的 bionic README 还记录了 `wrap.<APP>` 属性可能失效的兼容问题：在有 root 权限的测试设备上，规避方式是把 `dalvik.vm.force-java-zygote-fork-loop` 设为 `true`，再停止并启动 Android framework。Zygote（应用进程孵化器）负责派生应用进程，该属性让它使用 Java fork loop。重启会中断正在运行的应用，执行前应保存采集现场。
 
 #### 选择选项
 
@@ -656,7 +671,9 @@ LD_HWASAN=1 exec "$@"
 </manifest>
 ```
 
-SYNC 在出错指令处触发 `SIGSEGV/SEGV_MTESERR`，诊断精度高。ASYNC 延迟到后续内核入口触发 `SIGSEGV/SEGV_MTEAERR`，故障地址和访问类型都只是近似。
+SYNC 在出错指令处触发 `SIGSEGV/SEGV_MTESERR`，诊断精度高。ASYNC 在标记不匹配后继续执行，到最近的系统调用或定时器中断等内核入口才触发 `SIGSEGV/SEGV_MTEAERR`；异步报告不记录触发错误的地址和内存访问信息。要定位出错指令，应切换到 SYNC 后复现。
+
+启用 MTE 的应用在发布前应在支持 MTE 的设备上充分测试。原有内存安全错误可能只在这些设备上触发崩溃，不能仅凭未启用 MTE 的设备测试通过就发布。
 
 Armv8.7-A 的 ASYMM 对读使用同步检查、对写使用异步检查。应用清单没有 `asymm` 值；应用请求 `async` 后，设备可通过 CPU 粒度的 `mte_tcf_preferred` 把执行模式升级为 ASYMM 或 SYNC。这个选择握在设备配置手里，应用不要默认所有 MTE 设备都会升级。异步请求被设备升级为 SYNC 时，故障位置会更精确，但分配器的分配栈和释放栈只在进程明确配置为 SYNC 时采集。
 
@@ -942,6 +959,8 @@ Android 12 及更早版本默认只在数据源启动时扫描 PID；Android 13 
 
 `profileable_from_shell` 表示应用允许 Shell 发起性能分析，`profileable` 表示允许受信任的系统会话分析，`debuggable` 表示应用允许调试。这组检查与 `am dumpheap` 的 `SET_ACTIVITY_WATCHER`、`enforceDebuggable()` 不是同一套权限模型。排查“抓不到图”时，应同时确认 trace 发起者、应用 Manifest 中的 profileable/debuggable 属性、目标进程 UID 和 installer 条件。
 
+Android 17 的 ART 插件还会在 `DumpPerfetto()` 中检测 Chromium/WebView 的严格 seccomp（限制进程可执行系统调用的沙箱机制）沙箱。命中时会记录 `Chromium seccomp detected, skipping Perfetto heap dump` 并跳过采集，即使 `CanProfile()` 已允许目标也不会生成引用图。排查空报告时，应检查目标进程日志及沙箱类型。
+
 ### Perfetto 引用图和完整 HPROF 差在哪
 
 Perfetto 文档把 `android.java_hprof` 的结果称为 ART Heap Dump。它记录类型、对象、大小、root 和对象间引用；实例的基本类型字段值、字符串内容、基本类型数组字节和 Bitmap 像素，要靠完整 HPROF 才带得动——所以完整 HPROF 文件更大，也更容易包含隐私数据。
@@ -1127,7 +1146,7 @@ Perfetto ART Heap Graph 自身也使用 fork。只需要引用图和时间轴时
 - [LeakCanary 手动安装 API](https://square.github.io/leakcanary/api/leakcanary/-app-watcher/manual-install/)
 - [LeakCanary UI tests](https://square.github.io/leakcanary/ui-tests/)
 - [LeakCanary for release builds](https://square.github.io/leakcanary/leakcanary-for-releases/)
-- [Android Studio release updates](https://developer.android.com/studio/preview/features)
+- [Android Studio Quail 2：LeakCanary Profiler task 发布说明](https://developer.android.com/blog/posts/android-studio-quail-2-is-stable-multi-task-with-the-android-studio-ai-agent)
 - [Eclipse Memory Analyzer](https://eclipse.dev/mat/)
 - [Android Studio Heap Dump](https://developer.android.com/studio/profile/capture-heap-dump)
 - [Android Bitmap 内存版本边界](https://developer.android.com/topic/performance/graphics/manage-memory)

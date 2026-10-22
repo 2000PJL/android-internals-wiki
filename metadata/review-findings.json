@@ -8977,6 +8977,68 @@
       "summary": "SoloPi PSS 和 Private Dirty 采集表遗漏 SDK 29 分支",
       "type": "source-accuracy",
       "updated_at": "2026-10-22T22:23:24.496458+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+      "close_note": "已区分 .proto 类型定义与 textproto 实例文本，恢复完整 metric_bundles 标识符并保留括注。Android 17 proto、v57.2 官方文档及原生 summarize 实际输出一致。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261022-223520-idle-audit-643a31dd",
+      "created_at": "2026-10-22T22:40:46.034446+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261022-223520-idle-audit-643a31dd",
+      "details": "正文把 v1 输出 schema 写成 protobuf（textproto），并把结果字段拼成 metric_bundle（结果包）s。v57.2 官方指南、Android 17 TraceSummary proto 与本地 summarize 输出共同确认：自定义类型定义使用 .proto；结果字段为 metric_bundles，括注应在代码标识符外。",
+      "id": "finding-14-4-metric-schema-names",
+      "log_path": "logs/audit/2026-10-22-20261022-223520-idle-audit-643a31dd-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/analysis/trace-summary",
+        "https://perfetto.dev/docs/analysis/metrics"
+      ],
+      "status": "verified",
+      "summary": "指标输出说明混淆 .proto 与 textproto，并破坏 metric_bundles 字段名",
+      "type": "output-contract",
+      "updated_at": "2026-10-22T22:44:14.082818+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+      "close_note": "SQL 增加 t.is_idle=0 并说明过滤口径；同一官方示例 Trace 与固定 v57.2 复跑后，PID 0 空闲项消失，原其余前四项保持，Top 5 首项为 GoogleCamera 15154 ms。样本含已知调度导入问题，仅用作查询回归测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261022-223520-idle-audit-643a31dd",
+      "created_at": "2026-10-22T22:40:46.091732+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261022-223520-idle-audit-643a31dd",
+      "details": "固定 v57.2 在官方示例 Trace 上运行原 SQL，首项是 upid=0/pid=0/utid=0/is_idle=1，cpu_time_ms=142715，挤占一个进程名额。thread.is_idle 的官方定义明确标识内核 idle task；进程 CPU 消耗榜应排除该任务并说明筛选语义。",
+      "id": "finding-14-4-cpu-idle-ranking",
+      "log_path": "logs/audit/2026-10-22-20261022-223520-idle-audit-643a31dd-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://raw.githubusercontent.com/google/perfetto/v57.2/src/trace_processor/tables/metadata_tables.py",
+        "https://storage.googleapis.com/perfetto-misc/example_android_trace_30s_1"
+      ],
+      "status": "verified",
+      "summary": "进程 CPU 时间 Top 5 示例把内核 idle task 排入榜单",
+      "type": "metric-semantics",
+      "updated_at": "2026-10-22T22:44:14.145880+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch14-perfetto/04-perfetto-metrics-automation-platform.md",
+      "close_note": "正文补明 beginSection 在应用追踪启用时检查名称长度；程序断言 Android 17 Trace.java 内 isTagEnabled 检查包围 length 与 IllegalArgumentException。未声称设备实测。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261022-223520-idle-audit-643a31dd",
+      "created_at": "2026-10-22T22:40:46.146812+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261022-223520-idle-audit-643a31dd",
+      "details": "Android 17 Trace.java 的 beginSection 先检查 isTagEnabled(TRACE_TAG_APP)，只在该条件为真时检查 sectionName.length() 并抛 IllegalArgumentException；正文原句无条件承诺超长即抛，需补回条件。",
+      "id": "finding-14-4-trace-name-validation",
+      "log_path": "logs/audit/2026-10-22-20261022-223520-idle-audit-643a31dd-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Trace.java"
+      ],
+      "status": "verified",
+      "summary": "beginSection 超长名称抛异常缺少追踪启用条件",
+      "type": "missing-condition",
+      "updated_at": "2026-10-22T22:44:14.210382+08:00"
     }
   ],
   "schema_version": 1

@@ -150,7 +150,7 @@ consolidated_from:
 | 温启动 | 常见口径是进程存活、Activity 需要重建 | 复用进程和 Application，重建 Activity / UI | Macrobenchmark `StartupMode.WARM` |
 | 热启动 | 进程和目标 Activity 仍存在 | 将已有 Activity 带回前台，恢复必要状态并更新画面 | Macrobenchmark `StartupMode.HOT` |
 
-官方启动文档对温启动的描述较宽，还包括“进程重建，但可以使用 saved instance state（已保存实例状态）”的情况。Macrobenchmark 为基准测试提供了更窄、可重复的定义：WARM 保留进程并重建 Activity。比较线上数据和实验室数据时，应记录各自采用的定义。
+官方启动文档对温启动的描述较宽，还包括“进程重建，但可以使用 saved instance state（已保存实例状态）”的情况。Macrobenchmark 为基准测试提供了更窄、可重复的定义：WARM 保留进程并重建 Activity。所以比较线上数据和实验室数据时，应记录各自采用的是哪种定义。
 
 按 Home、按返回键、从 Recents（最近任务） 恢复和点击通知，会产生不同的任务栈状态。生命周期日志可以辅助判断，但单凭出现 `onCreate()` 或 `onResume()` 还定不下启动类型；更可靠的依据是 Perfetto 的 Android App Startups、`am start -W` 输出、Macrobenchmark 配置，以及 API 35 及以上版本的 `ApplicationStartInfo.getStartType()`。
 
@@ -187,13 +187,13 @@ sequenceDiagram
     S->>S: compose and present
 ```
 
-图中的“app windows drawn”是 Android Framework 记录应用窗口首帧完成的时刻。这个时间晚于应用生命周期回调返回，但仍早于面板像素完成发光；面板级的光学测量要另做。
+图中的“app windows drawn”是 Android Framework 记录应用窗口首帧完成的时刻。这个时间晚于应用生命周期回调返回，也早于面板像素实际点亮；面板级的光学测量要另做。
 
 #### 启动请求、任务解析与 starting window
 
 Launcher 通过 Activity API 发起启动，Binder 请求随后进入 `ActivityTaskManagerService`（ATMS）。系统解析 Intent、权限、后台启动限制，以及 Task 与 Activity 的复用关系，并为本次启动建立计时记录。
 
-冷启动期间，WindowManager 可以先显示 starting window（启动占位窗口）。从 Android 12（API 31）开始，标准路径由 SplashScreen API 统一。starting window 是系统在目标应用首帧之前显示的过渡画面，不会让目标 Activity 的 TTID 提前结束。若再使用专门的 trampoline Activity（只负责跳转的中间 Activity）充当启动页，还会额外增加一次 Activity 创建和窗口转场。
+冷启动期间，WindowManager 可以先显示 starting window（启动占位窗口）。从 Android 12（API 31）开始，标准路径由 SplashScreen API 统一。starting window 是系统在目标应用首帧之前显示的过渡画面，TTID 的终点仍是目标 Activity 自己的首帧。若再使用专门的 trampoline Activity（只负责跳转的中间 Activity）充当启动页，还会额外增加一次 Activity 创建和窗口转场。
 
 #### 进程选择与 Zygote fork
 
@@ -232,7 +232,7 @@ Zygote 已加载的 Framework 类、资源和部分 native 映射，可以由子
 - 同步资源解析、主题和 drawable 创建；
 - 首屏数据读取与 UI 状态构建。
 
-系统并不要求每个 Activity 都调用 `setContentView()`。无界面、透明、跳板或延迟安装内容的 Activity 都可能采用其他路径，所以“Activity 启动必然 inflate XML”只适用于典型的 View 页面。
+“Activity 启动必然 inflate XML”只适用于典型的 View 页面；无界面、透明、跳板或延迟安装内容的 Activity 可能走其他路径，系统对 `setContentView()` 也没有强制要求。
 
 #### 窗口、遍历与首帧
 
@@ -440,7 +440,7 @@ ORDER BY s.ts;
 
 #### ContentProvider 早于 Application.onCreate
 
-应检查 Manifest 合并后出现的所有 Provider。WorkManager、Firebase、图片库、APM（应用性能监控）、广告、推送和自定义 SDK 都可能通过 Provider 自动初始化。Provider 的 `onCreate()` 在应用主线程执行，并且早于 `Application.onCreate()`；同步磁盘、数据库、Binder 或类加载都会延迟 Activity 创建。
+排查从 Manifest 合并后的最终 Provider 列表开始：WorkManager、Firebase、图片库、APM（应用性能监控）、广告、推送和自定义 SDK 都可能通过 Provider 自动初始化。Provider 的 `onCreate()` 在应用主线程执行，并且早于 `Application.onCreate()`；同步磁盘、数据库、Binder 或类加载都会延迟 Activity 创建。
 
 检查时应同时查看：
 
@@ -603,7 +603,7 @@ Google 的初始测试显示，在系统存在内存压力时，样本中的应�
 | App → AMS | `getContentProvider()`、`refContentProvider()` | 获取远端 Provider 及管理引用 |
 | App/SDK → PKMS | `getPackageInfo()`、`getApplicationInfo()` 等 | 访问 PKMS（PackageManagerService）；是否出现取决于应用或 SDK 行为 |
 
-`bindApplication` 携带应用信息和 Provider 列表。应用在 `ActivityThread.handleBindApplication()` 中安装本进程 Provider；Provider 初始化代码若访问系统服务、远端 Provider 或其他进程，还会产生相应 IPC（Inter-Process Communication，进程间通信）。观察到 `ContentProvider.onCreate()` 很慢时，应把本进程内的初始化和它发起的 Binder 调用分别计时，避免把两类耗时都记在 Binder 名下。
+`bindApplication` 携带应用信息和 Provider 列表。应用在 `ActivityThread.handleBindApplication()` 中安装本进程 Provider；Provider 初始化代码若访问系统服务、远端 Provider 或其他进程，还会产生相应 IPC（Inter-Process Communication，进程间通信）。观察到 `ContentProvider.onCreate()` 很慢时，我们应把本进程内的初始化和它发起的 Binder 调用分别计时，看清两类耗时各占多少。
 
 #### 1.2 先回答三个问题
 
@@ -688,7 +688,7 @@ data_sources {
 
 #### 2.3 正确制造一次应用冷启动
 
-重启整个 Android framework 会改变系统缓存、服务状态和设备温度，不适合作为普通应用冷启动的准备步骤。手工采集可以用两个终端：一个运行有限时长的 Perfetto，另一个强停并启动目标 Activity。
+重启整个 Android framework 会改变系统缓存、服务状态和设备温度，普通应用的冷启动采集用不到这一步。我们手工采集时用两个终端：一个运行有限时长的 Perfetto，另一个强停并启动目标 Activity。
 
 终端 A 使用下面的命令启动采集。
 
@@ -746,7 +746,7 @@ fun loadBookmarks(): List<Bookmark> {
 
 #### 3.1 标准表包含哪些列
 
-我们先看这张表的来历：Android 17 的 `external/perfetto/.../android/binder.sql` 定义了 `android_binder_txns`，它把客户端和服务端的 Binder slice 配成一对，是一张标准表。常用列包括：
+我们先看这张表的来历：`external/perfetto/.../android/binder.sql` 定义了 `android_binder_txns`，它把客户端和服务端的 Binder slice 配成一对，是一张标准表。常用列包括：
 
 - `binder_txn_id`、`binder_reply_id`；
 - `client_process`、`client_thread`、`client_upid`、`client_utid`；
@@ -758,7 +758,7 @@ fun loadBookmarks(): List<Bookmark> {
 
 其中 `upid` 和 `utid` 分别是 Trace Processor 为进程和线程分配的内部 ID；client/server OOM score 表示进程在内存回收时的相对被杀优先级。
 
-`aidl_name` 依赖服务端 AIDL/HIDL slice，而 HIDL 是较早用于 HAL 接口描述的一套机制。没有对应插桩时 `aidl_name` 可以为空，这时 Binder 调用仍然发生了，只是没有可用的名称。`android_binder_metrics_by_process` 只有 `process_name`、`pid`、`slice_name` 和 `event_count`，是一张计数视图，要看平均延迟还得回到配对表。
+`aidl_name` 取自服务端的 AIDL/HIDL 插桩，HIDL 是较早用于 HAL 接口描述的一套机制；没有对应插桩时 `aidl_name` 可以为空，这时 Binder 调用仍然发生了，只是没有可用的名称。`android_binder_metrics_by_process` 只有 `process_name`、`pid`、`slice_name` 和 `event_count`，是一张计数视图，要看平均延迟还得回到配对表。
 
 这个标准表通过 `flow` 关系把客户端 `binder transaction` slice 与服务端 `binder reply` 或 async receive 关联；在 Perfetto UI 中，flow 通常显示为连接两个 slice 的因果箭头。目标死亡、frozen rejection（因目标被冻结而被拒绝）或采集丢事件时，客户端和服务端可能配不上对，这些事务也就缺席于标准表——Freezer 的问题因此要另找入口查（见 6.4）。
 
@@ -787,7 +787,7 @@ fun loadBookmarks(): List<Bookmark> {
 4. 回到服务端线程 track（时间轨道），阅读该事务下的 AIDL 和业务子 slice。
 5. 若事务未进入标准表，检查未经标准库配对的原始 `binder_return` 事件、采集丢失情况和目标进程状态。
 
-队列增长、服务逻辑变慢和客户端抢占可能叠加。只依据耗时最大的一个字段给出单一结论，容易错过复合瓶颈。
+队列增长、服务逻辑变慢和客户端抢占可能叠加，只依据耗时最大的一个字段下判断，容易错过复合瓶颈。
 
 ### 四、Perfetto SQL：从启动窗口到事务原因
 
@@ -979,7 +979,7 @@ ORDER BY event_count DESC;
 
 `SystemServer` 把 Binder thread-pool max thread count（线程池最大线程数） 配置为 31，libbinder 普通进程的默认值是 15。这个数字只表示配置上限；某一时刻有多少线程正在处理事务、多少空闲，要从 trace 里看。
 
-Binder 线程池拥塞是指可处理新事务的 worker（工作线程） 不足，事务不得不等待派发。判断它要凑齐多项观测：
+Binder 线程池拥塞指的是可处理新事务的 worker（工作线程） 不够用，新事务只能排队等派发。判断它要凑齐多项观测：
 
 - 同一服务进程收到的多笔事务同时出现较长请求派发间隔；
 - 多个客户端在相近窗口受影响；
@@ -1031,12 +1031,7 @@ libbinder 在 `waitForResponse()` 收到 `BR_FROZEN_REPLY` 后，会根据 froze
 
 #### 6.4 为什么 `server_dur = 0` 查不到 frozen rejection
 
-`android_binder_txns` 依赖客户端到服务端的 flow。同步事务在目标 frozen 时会被驱动直接拒绝，没有服务端 receive/reply slice，标准表通常也就没有这一行。因此，下面两种推断都无效：
-
-- 在 `android_binder_txns` 过滤 `server_dur = 0`；
-- 把 `client_dur > 0 AND server_dur = 0` 直接计成 frozen 次数。
-
-诊断 frozen rejection 要保留 `binder_return` 原始事件。下面的查询从 raw ftrace 表中列出返回命令、发生时间和调用线程，供进一步与目标进程状态、调用 slice 对齐。
+`android_binder_txns` 依赖客户端到服务端的 flow。同步事务在目标 frozen 时会被驱动直接拒绝，没有服务端 receive/reply slice，标准表通常也就没有这一行；因此在标准表里过滤 `server_dur = 0`、把 `client_dur > 0 AND server_dur = 0` 直接计成 frozen 次数，这两种推断都靠不住。我们诊断 frozen rejection 时要保留 `binder_return` 原始事件，下面的查询从 raw ftrace 表中列出返回命令、发生时间和调用线程，供进一步与目标进程状态、调用 slice 对齐。
 
 ```sql
 SELECT
@@ -1067,7 +1062,7 @@ Trace Processor 的 `ftrace_event` 是调试表，关闭原始 ftrace 事件解�
 - 发送方 PID 相同；
 - target node pointer（目标 node 的内核指针）和 cookie（与该 node 关联的用户空间标识） 相同。
 
-该机制不合并同步事务，也不会为 `android_binder_txns` 增加 `is_merged`、`frozen_reply` 或 `parent_txn_id` 列。被更新的旧 oneway 不再由服务端消费，因此应用侧发送次数可能多于服务端实际处理次数。
+这套替换只发生在满足上述条件的 oneway 之间：同步事务不参与合并，`android_binder_txns` 里也没有 `is_merged`、`frozen_reply` 或 `parent_txn_id` 这样的列。被更新的旧 oneway 不再由服务端消费，所以应用侧发送次数可能多于服务端实际处理次数。
 
 ### 七、优化策略与验证
 
@@ -1093,7 +1088,7 @@ Trace Processor 的 `ftrace_event` 是调试表，关闭原始 ftrace 事件解�
 - frozen 目标上的 pending 行为；
 - 多 Binder node 或多线程下的顺序要求。
 
-oneway 取消了客户端等待同步结果的约定，因此可以缩短调用方阻塞时间，但不会让服务端处理本身变快，也不保证目标 worker 已被选中并获得优先级调整。
+oneway 取消的是客户端等待同步结果的约定：调用方阻塞时间可以缩短，服务端处理本身仍是原来的耗时，目标 worker 也要等被选中后才有优先级调整。
 
 #### 7.3 用 Macrobenchmark 做 A/B
 
@@ -1116,7 +1111,7 @@ Macrobenchmark 是 AndroidX 提供的应用级基准测试工具，A/B 表示只
 - r6 kernel 的 `binder_command` / `binder_return` 让 `BinderTracker` 在失败、frozen 和 nested transaction（嵌套事务）场景中更可靠地维护事务栈；
 - Android 17 的 Perfetto `android.binder` 表提供 sync/async、client/server、AIDL 名称、OOM score、package metadata（包版本等元数据）与 awake-duration（线程处于唤醒状态的时长）相关字段。
 
-这些能力并不会把因目标冻结而失败的事务自动放进 `android_binder_txns`。分析工具版本升级后，应先阅读所用 tag（源码版本标签） 的表定义，再写 SQL；网页上最新版 stdlib 的列，在 Android 17 内置 Trace Processor 中未必存在。
+因目标冻结而失败的事务，这些能力也补不进 `android_binder_txns`，替代查法见 6.4。分析工具版本升级后，应先阅读所用 tag（源码版本标签） 的表定义，再写 SQL；网页上最新版 stdlib 的列，在 Android 17 内置 Trace Processor 中未必存在。
 
 #### 🔸 多进程应用冷启动 Binder 放大效应
 

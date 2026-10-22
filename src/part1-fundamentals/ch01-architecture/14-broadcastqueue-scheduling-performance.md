@@ -58,7 +58,9 @@ last_review_finalize_at: '2026-08-16T23:03:53+08:00'
 
 Android 广播是一种受系统策略调度的事件分发机制。调用 `sendBroadcast()` 只说明系统接受了发送请求，接收方未必立刻执行。目标进程是否存活、是否为没有活跃组件（例如 Bluetooth、telephony）的缓存进程（cached）、接收者类型、广播是否有序，以及可并行投递的进程槽是否空闲，都会改变投递时间。
 
-早期 Android 示意图里“前台一条队列、后台一条队列”的结构，在 Android 17 上已经找不到了，第一节会专门说明。广播性能由三个层次共同决定：`BroadcastRecord` 记录一次发送和它的接收者，`BroadcastProcessQueue` 记录每个目标进程的待投递项，进程调度槽决定同一时刻有多少个进程队列在投递。
+> 源码基线：AOSP `android-17.0.0_r1`。
+
+早期 Android 示意图里“前台一条队列、后台一条队列”的结构，在 Android 17 上已经找不到了，第一节会专门说明。理解广播性能，可以从三个层次入手：`BroadcastRecord` 记录一次发送和它的接收者，`BroadcastProcessQueue` 记录每个目标进程的待投递项，进程调度槽决定同一时刻有多少个进程队列在投递。
 
 本章按这个顺序展开：第二节讲这三层结构，第三节跟一遍从 `sendBroadcast()` 到 `onReceive()` 的调用路径，第四到第六节分别讲优先级与顺序、cached 进程的延迟和广播 ANR 计时，第七到第十节给应用侧取舍、排查手段、版本差异和源码锚点。
 
@@ -72,7 +74,7 @@ Android 广播是一种受系统策略调度的事件分发机制。调用 `send
 - `backConstants.TIMEOUT = BROADCAST_BG_TIMEOUT`；
 - 两者共同传给一个 `BroadcastQueueImpl`。
 
-也就是说，前台和后台分开的只是超时参数；`mFgBroadcastQueue`、`mBgBroadcastQueue` 两条独立队列的画法，在 Android 17 上已经对不上现状。`Intent.FLAG_RECEIVER_FOREGROUND` 仍然有效，但它改变的是紧急程度、接收进程的调度组和超时参数，记录本身仍在同一套队列里排队。
+也就是说，前台和后台分开的只是超时参数。旧示意图里 `mFgBroadcastQueue`、`mBgBroadcastQueue` 两条独立队列的画法，放到 Android 17 上已经对不上现状。`Intent.FLAG_RECEIVER_FOREGROUND` 仍然有效，但它改变的是紧急程度、接收进程的调度组和超时参数，记录本身仍在同一套队列里排队。
 
 源码中的基准超时为：
 
@@ -83,11 +85,11 @@ Android 广播是一种受系统策略调度的事件分发机制。调用 `send
 
 这两个值是源码基准值，还能通过 `Settings.Global.BROADCAST_FG_CONSTANTS` 和 `BROADCAST_BG_CONSTANTS` 中的 `bcast_timeout` 覆盖，10 秒/60 秒只是起点，实际取值以设置为准。
 
-### 1.2 API 37 的实现类名就是 `BroadcastQueueImpl`
+### 1.2 API 37 的实现类 `BroadcastQueueImpl`
 
-Android 17 标签中不存在 `BroadcastQueueModernImpl.java`。当前的 `BroadcastQueueImpl` 类注释直接说明：广播按目标进程分发，每个进程由一个 `BroadcastProcessQueue` 表示。
+Android 17 的源码标签里已经找不到 `BroadcastQueueModernImpl.java`，队列实现只剩 `BroadcastQueueImpl` 一个类。类注释直接说明：广播按目标进程分发，每个进程由一个 `BroadcastProcessQueue` 表示。
 
-框架内部的类名在开发分支和历史版本中发生过变化。应用可以依赖公开广播语义；设备究竟运行 Legacy 还是 Modern 模式，要看当前源码里的类名，旧类名说明不了问题。以下实现细节均以 `android-17.0.0_r1` 为准。
+框架内部的类名在开发分支和历史版本中发生过变化。应用可以依赖的始终是公开广播语义；设备究竟运行 Legacy 还是 Modern 模式，判断依据是当前源码里的类名，旧类名说明不了问题。
 
 ## 二、三层数据结构分别解决什么问题
 
@@ -121,7 +123,7 @@ Android 17 标签中不存在 `BroadcastQueueModernImpl.java`。当前的 `Broad
 | `mPending` | 普通广播 | 位于 urgent 之后、offload 之前 |
 | `mPendingOffload` | 隐藏标志 `FLAG_RECEIVER_OFFLOAD` | 系统内部使用，优先级最低 |
 
-`Intent.java` 将 `FLAG_RECEIVER_OFFLOAD` 标记为 `@hide`；它的语义只是让这条记录进入 offload 调度类别，并不是“允许系统延迟合并”的公开性能开关。
+`Intent.java` 将 `FLAG_RECEIVER_OFFLOAD` 标记为 `@hide`，它的职责很窄：让这条记录进入 offload 调度类别。想找“允许系统延迟合并”的公开性能开关时，这个标志帮不上忙。
 
 ### 2.3 `runnable`（等待获得执行槽） 与 `running`（已占用执行槽）：控制跨进程并行度
 
@@ -134,7 +136,7 @@ Android 17 标签中不存在 `BroadcastQueueModernImpl.java`。当前的 `Broad
 - urgent 广播可额外使用 1 个槽；
 - 同一时刻只允许发起 1 个广播冷启动。
 
-这些值来自 `BroadcastConstants`，可由 `activity_manager_native_boot` DeviceConfig 配置项调整。额外的 urgent 槽用于在普通槽已占满时让紧急广播继续推进，并不会把所有广播的并行度永久提高到 5。
+这些值来自 `BroadcastConstants`，可由 `activity_manager_native_boot` DeviceConfig 配置项调整。额外的 urgent 槽解决的是紧急广播被普通槽堵住的情况：普通槽已占满时，紧急广播靠这个槽继续推进，所有广播的并行度并不会因此永久提高到 5。
 
 ## 三、从发送到 `onReceive()` 的调用路径
 
@@ -165,13 +167,13 @@ ContextImpl.sendBroadcast()
 
 ### 3.1 冷启动与逐接收者的 Binder 调用
 
-目标进程不存在时，`scheduleReceiverColdLocked()` 请求启动进程；进程完成 attach（与 `system_server` 建立应用线程连接）、与 `system_server` 建立起应用线程连接后，再转入 `scheduleReceiverWarmLocked()`。同一进程的多条广播共用一个进程队列，可以在一次占用 `running` 槽期间连续处理若干项，减少调度槽的反复切换。
+目标进程不存在时，`scheduleReceiverColdLocked()` 请求启动进程；进程完成 attach（与 `system_server` 建立应用线程连接）后，再转入 `scheduleReceiverWarmLocked()`。同一进程的多条广播共用一个进程队列，可以在一次占用 `running` 槽期间连续处理若干项，减少调度槽的反复切换。
 
-不过到了投递这一步，源码仍对每个接收者分别调用 `scheduleRegisteredReceiver()` 或 `scheduleReceiver()`，逐条走 Binder，“同进程多个广播自动合并为一次 IPC”没有源码依据。
+共用队列归共用队列，到了投递这一步，源码仍对每个接收者分别调用 `scheduleRegisteredReceiver()` 或 `scheduleReceiver()`，一条一条走 Binder。“同进程多个广播自动合并为一次 IPC”，在源码里找不到依据。
 
-冷启动耗时也没有 300～800 ms 的平台保证：Zygote 分支、存储冷热、`bindApplication`、应用初始化和设备负载都会改变结果，真实数字要用进程启动轨迹与广播轨迹在目标设备上测量。
+冷启动耗时同样要落到测量上：300～800 ms 没有平台层面的保证，Zygote 分支、存储冷热、`bindApplication`、应用初始化和设备负载都会改变结果，真实数字要用进程启动轨迹与广播轨迹在目标设备上测量。
 
-### 3.2 运行时接收者与清单接收者的完成语义不同
+### 3.2 运行时接收者与清单接收者的完成语义
 
 对于无序、没有完成回调（completion callback）的运行时注册接收者，`BroadcastRecord.isAssumedDelivered()` 返回 `true`：`system_server` 成功发出 `scheduleRegisteredReceiver()` 后，就把该项标记为已投递（delivered），既不等待应用回报，也不为它启动广播 ANR 定时器。
 
@@ -179,11 +181,13 @@ ContextImpl.sendBroadcast()
 
 - 清单接收者；
 - 有序广播接收者；
-- 带完成回调、不能按“假定已投递”（assumed-delivered）处理的投递。
+- 带完成回调、超出“假定已投递”（assumed-delivered）适用范围的投递。
 
-还要补一句：不等待完成回执，只说明 BroadcastQueue 不等它，无序动态接收者照样占用自己应用的主线程——这次投递仍会阻塞该应用的 UI 和后续消息，可能触发输入、前台服务等其他类型的 ANR。
+还有一层容易被看漏：BroadcastQueue 虽然不等这类投递的完成回执，无序动态接收者照样占用自己应用的主线程——这次投递仍会阻塞该应用的 UI 和后续消息，可能触发输入、前台服务等其他类型的 ANR。
 
 ## 四、优先级、顺序与避免低优先级长期等待
+
+这一节回答三个问题：哪些广播算 urgent、接收者 `priority` 在哪一层生效、有序广播怎样串行。
 
 ### 4.1 `urgent` 的判定条件
 
@@ -193,15 +197,15 @@ Android 的 `Intent` 里并没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 
 - `BroadcastOptions` 将其标记为交互型（interactive）广播；
 - `BroadcastOptions` 将其标记为闹钟广播（alarm broadcast）。
 
-后两项主要供系统组件使用。普通应用不应为了抢占调度而滥用前台接收者标志：带上这个标志，接收者会以更高调度优先级运行，广播超时基准也缩短到 10 秒。
+后两项主要供系统组件使用。普通应用拿前台接收者标志抢占调度，代价要一起算上：接收者会以更高调度优先级运行，广播超时基准也同时缩短到 10 秒。
 
 ### 4.2 接收者 `priority` 的生效范围
 
 `IntentFilter` 的 `priority` 仍是整数，但 Android 16 起公开行为多了两项限制：优先级只保证在同一应用进程内生效；应用可设置的值也被限制在系统保留上下界之间。
 
-所以两个应用即便为同一个广播设置了不同 `priority`，也别指望这个数字决定跨应用的接收顺序。需要请求 / 响应、确认或全序处理时，应改用 Binder 服务、明确的任务队列或持久化协调机制。
+所以两个应用即便为同一个广播设置了不同 `priority`，这个数字也定不了跨应用的接收顺序。需要请求 / 响应、确认或全序处理时，应改用 Binder 服务、明确的任务队列或持久化协调机制。
 
-### 4.3 有序广播仍会建立接收者依赖
+### 4.3 有序广播的接收者依赖
 
 有序广播的第 N 个接收者，要等第 N-1 个接收者到达终态或延后（deferred）状态后才能继续；无序广播的接收者没有这条依赖，可以分散到多个进程队列并行推进——不过“并行”到此为止：同时执行的进程数仍受 `running` 槽、单冷启动槽、目标进程主线程和 cached 策略限制。
 
@@ -213,7 +217,7 @@ Android 的 `Intent` 里并没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 
 
 先看 Android 14 起定下的公开行为：应用处于 cached 状态时，系统可以延后运行时注册接收者的广播；应用重新拥有活跃组件、回到 active（有活跃组件） 状态后，系统再投递积压项，某些广播的多个实例还可能被合并。
 
-清单接收者不走同样的无限延迟路径。重要的清单广播可以让应用离开 cached 状态并启动接收进程，“cached 进程的所有广播都要等待其他原因启动进程”并不是统一规则。
+清单接收者不走这条无限延迟路径：重要的清单广播可以让应用离开 cached 状态并启动接收进程。把“cached 进程的所有广播都要等待其他原因启动进程”当成统一规则，会直接漏掉这批投递。
 
 ### 5.2 API 37 如何计算 `runnableAt`
 
@@ -227,14 +231,14 @@ Android 的 `Intent` 里并没有 `PRIORITY_URGENT_APP`、`PRIORITY_NORMAL_APP` 
 | cached 且不能无限延后 | `+120 s` | 延后处理 |
 | cached 且全部记录 `deferUntilActive` | `Long.MAX_VALUE` | 等进程变为 active 或条件变化 |
 
-这些是 DeviceConfig 默认值，不是 API 时延承诺。积压有兜底：普通设备的队列积压上限 `MAX_PENDING_BROADCASTS`（普通设备默认 256、低内存设备默认 128） 默认 256，低内存设备默认 128；达到上限后，代码会绕过已施加的延迟，帮助队列排空。
+我们记住这张表的性质就够了：它们是 DeviceConfig 默认值，不是 API 时延承诺。积压有兜底，队列积压上限 `MAX_PENDING_BROADCASTS` 普通设备默认 256、低内存设备默认 128；达到上限后，代码会绕过已施加的延迟，帮助队列排空。
 
-### 5.3 延后投递与 delivery group 是两个维度
+### 5.3 延后投递与 delivery group 的分工
 
 API 34 加入的 `BroadcastOptions` 提供两组不同能力：
 
 - `setDeferralPolicy(DEFERRAL_POLICY_UNTIL_ACTIVE)`：允许把符合条件的运行时接收者延后到进程 active；它不适用于有序、闹钟、交互型广播和清单接收者；
-- `setDeliveryGroupPolicy(DELIVERY_GROUP_POLICY_MOST_RECENT)`：同一 delivery group（投递组（delivery group））只保留最近一条，旧的待投递项被跳过。
+- `setDeliveryGroupPolicy(DELIVERY_GROUP_POLICY_MOST_RECENT)`：投递组（delivery group）内的待投递项只保留最近一条，旧的被跳过。
 
 对带完成回调（completion callback）的无序广播，`DEFERRAL_POLICY_UNTIL_ACTIVE` 还有一个容易误读的地方：处于 inactive / cached 进程状态的接收者不计入“回调完成前必须接收”的 eligible 集合。完成回调到达时，它覆盖的只是这个集合，这部分 cached 接收者可能还没执行。
 
@@ -250,7 +254,7 @@ API 37 另有受 feature flag 控制的发送方广播延迟：可冻结的发�
 
 ## 六、广播 ANR 的计时方式
 
-### 6.1 定时器从提交给接收进程前开始
+### 6.1 定时器在提交给接收进程之前启动
 
 排查广播超时，我们先要确认定时器的起点。`dispatchReceivers()` 在调用 `scheduleRegisteredReceiver()` 或 `scheduleReceiver()` 之前启动 `AnrTimer`，投递完成后由 `finishReceiverLocked()` 取消；超时会把该接收者标为 `DELIVERY_TIMEOUT`，随后调用 `appNotResponding()`。
 
@@ -276,7 +280,7 @@ API 37 另有受 feature flag 控制的发送方广播延迟：可冻结的发�
 
 ### 7.1 清单接收者与动态接收者的选择
 
-清单接收者的 IntentFilter 在安装阶段解析，看起来便宜，但投递时仍要查询并做权限 / 可见性检查，而且它能启动尚未运行的进程；Android 8 起，多数隐式广播已限制面向 API 26+ 的应用随意静态注册。
+清单接收者的 IntentFilter 在安装阶段就解析完，看起来便宜；真到投递时仍要查询并做权限 / 可见性检查，而且这条路径能启动尚未运行的进程。Android 8 起，多数隐式广播已限制面向 API 26+ 的应用随意静态注册。
 
 两类接收者各管一段：动态接收者适合只在页面、服务或进程存活期间关注的事件；清单接收者适合需要在进程不存在时接收、且平台允许静态注册的事件。按生命周期与后台启动语义选择即可，至于哪个更快，交给测量回答。
 
@@ -286,7 +290,7 @@ API 37 另有受 feature flag 控制的发送方广播延迟：可冻结的发�
 
 如果接收者要接收的系统广播来自 Bluetooth、telephony 这类高权限、不以 system UID 运行的框架组件，官方文档建议使用 `RECEIVER_EXPORTED`；选择导出时又要配套私有 action、权限或发送方校验，因为其他应用也可能向导出接收者发送未保护广播。
 
-`RECEIVER_NOT_EXPORTED` 不会把广播自动变成进程内函数调用，也不能据此说省去了 PackageManager 查询或 Binder IPC；若事件只在一个进程内使用，直接回调、`Flow` 或应用自己的事件模型更简单。
+`RECEIVER_NOT_EXPORTED` 收紧的是发送方身份，性能上没有附带的好处：它没有把广播自动变成进程内函数调用；省去 PackageManager 查询或 Binder IPC 这笔账，也记不到它头上。若事件只在一个进程内使用，直接回调、`Flow` 或应用自己的事件模型更简单。
 
 ### 7.3 广播与低延迟 IPC 的分工
 
@@ -300,13 +304,13 @@ API 37 另有受 feature flag 控制的发送方广播延迟：可冻结的发�
 - 高频状态变化只发送必要字段，或通知接收方读取权威状态源；
 - 需要去重时明确使用 delivery group，让系统按声明的规则执行，业务语义它猜不到。
 
-### 7.4 `goAsync()` 要有提交点和失败语义
+### 7.4 `goAsync()` 的提交点与失败语义
 
 `goAsync()` 只把完成回执从 `onReceive()` 返回点延后到 `PendingResult.finish()`，既不暂停广播 ANR 计时，也不给进程持久任务保证。实现时先把提交点定义清楚：幂等任务已持久化入队、有序广播结果已写完，或短任务确实完成；随后在 `finally` 中调用 `finish()`。只启动一条不受生命周期管理的裸线程、再立刻结束接收者，进程可能在工作完成前就被回收。
 
 短异步任务也应放进应用级协程作用域（scope）、独立调度器（dispatcher），并设置一个短于系统窗口的内部截止时间（deadline）。下载、上传、数据库迁移、大目录扫描以及要求进程死亡后重试的任务，由接收者做快速校验和去重，再交给 WorkManager、JobScheduler 或有明确生命周期的服务。
 
-### 7.5 sticky、系统事件与业务状态要分开
+### 7.5 sticky、系统事件与业务状态的分工
 
 sticky broadcast（粘性广播）保存的是最近一次 Intent，后注册的接收者可立即取得它；它没有版本、一致性和事务语义，承载不了状态仓库的职责。平台仍保留少量系统粘性事件；业务状态方面，普通应用要避免新增 sticky 协议。需要当前值时优先读取权威存储，把广播当作“状态可能变化”的通知。
 

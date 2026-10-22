@@ -83,7 +83,7 @@ last_idle_audit_at: 2026-08-30T18:41:21+08:00
  (Application does not have a focused window)]
 ```
 
-这条记录表示 InputDispatcher 等待可接收输入的焦点窗口超时。至于主线程当时是否在执行慢代码、焦点为什么消失，要靠后面的证据回答。
+这条记录表示 InputDispatcher 等待可接收输入的焦点窗口超时。主线程当时是否在执行慢代码、焦点为什么消失，单凭这条日志还回答不了，我们把这两个问题留给后面的取证。
 
 ### 主线程栈的读法
 
@@ -100,7 +100,7 @@ last_idle_audit_at: 2026-08-30T18:41:21+08:00
  at android.os.MessageQueue.nativePollOnce(Native method)
 ```
 
-Java 栈顶显示 `nativePollOnce`，native 栈却还位于 VSync（垂直同步信号） 回调的返回路径，并在 ART 条件变量上等待。所以“主线程空闲”这个读法太粗：`WaitHoldingLocks` 只说明线程此刻在等条件变量，要判断有没有发生 GC，还得看 GC cause（触发原因）、暂停日志，或 Perfetto 中对应 ART slice（带起止时间的事件片段） 的起止时间。
+Java 栈顶显示 `nativePollOnce`，native 栈却还位于 VSync（垂直同步信号） 回调的返回路径，并在 ART 条件变量上等待。两组栈放在一起，“主线程空闲”这个读法就太粗了：`WaitHoldingLocks` 只说明线程此刻在等条件变量，要判断有没有发生 GC，还得看 GC cause（触发原因）、暂停日志，或 Perfetto 中对应 ART slice（带起止时间的事件片段） 的起止时间。
 
 ### 压力证据
 
@@ -116,7 +116,7 @@ some avg10=85.37 avg60=63.13 avg300=23.13
 full avg10=38.46 avg60=20.76 avg300=7.13
 ```
 
-三个 load 值依次对应 1、5、15 分钟，所以 1 分钟 load 是 `56.48`。PSI（Pressure Stall Information，资源压力停顿信息）的 `some` 表示统计窗口内至少有任务因该资源停顿，`full` 表示所有非 idle（非空闲） 任务同时停顿；读 memory PSI 时要把 `some` 和 `full` 分开解读，把整体数据直接当成“所有任务都在等待内存回收”，就读过头了。
+三个 load 值依次对应 1、5、15 分钟，所以 1 分钟 load 是 `56.48`。PSI（Pressure Stall Information，资源压力停顿信息）的 `some` 表示统计窗口内至少有任务因该资源停顿，`full` 表示所有非 idle（非空闲） 任务同时停顿。我们读 memory PSI 时要把 `some` 和 `full` 分开解读：把整体数据直接当成“所有任务都在等待内存回收”，就读过头了。
 
 同一份报告还给出了 CPU 构成：
 
@@ -127,7 +127,7 @@ full avg10=38.46 avg60=20.76 avg300=7.13
 CPU usage TOTAL: 99% 14% user + 36% kernel + 43% iowait
 ```
 
-`kswapd0`（内核后台内存回收线程）活跃、major fault（需要从存储载入页面的缺页） 频出、memory PSI、I/O PSI 和 `43% iowait` 同时出现，足以确认设备正承受严重的内存与存储压力。
+`kswapd0`（内核后台内存回收线程）活跃、major fault（需要从存储载入页面的缺页） 频出，再加上 memory PSI、I/O PSI 和 `43% iowait`，几组数据同时出现，足以确认设备正承受严重的内存与存储压力。
 
 `iowait` 表示 CPU 空闲期间仍有未完成的 I/O，是整机视角，落到单个进程的 I/O 耗时要看进程级数据。load 还会计入不可中断睡眠的任务，所以“load 除以 CPU 核数”只能当粗略参考。
 
@@ -163,7 +163,7 @@ Launcher 在 Android 14 设备上收到下面的 Input ANR：
  Waited 5001ms for MotionEvent)]
 ```
 
-`Gesture Monitor` 是手势监听连接名称的一部分，括号内的完整字符串来自 InputChannel（输入通道）名称。这个样本运行在 Android 14；AOSP Android 14 的 `InputChannel::openInputChannelPair()` 会把 `(server)` 和 `(client)` 附加到两端名称，Android 17 的同名函数则保留调用者传入的名称。无论后缀来自平台还是厂商分支，作用都只是区分通道端点；消费者在哪个进程、责任归谁，要靠后面的取证步骤回答，单凭后缀里的 server 字样，指认不了 `system_server` 这样的进程。
+`Gesture Monitor` 是手势监听连接名称的一部分，括号内的完整字符串来自 InputChannel（输入通道）名称，后缀的写法还和版本有关：这个样本运行在 Android 14，AOSP Android 14 的 `InputChannel::openInputChannelPair()` 会把 `(server)` 和 `(client)` 附加到两端名称，Android 17 的同名函数则保留调用者传入的名称。无论后缀来自平台还是厂商分支，作用都只是区分通道端点；消费者在哪个进程、责任归谁，要靠后面的取证步骤回答。我们单凭后缀里的 server 字样，指认不了 `system_server` 这样的进程。
 
 ### 时间线对齐
 
@@ -216,7 +216,7 @@ ANR 报告覆盖 `15:01:27.683` 至 `15:01:37.233` 的 CPU 窗口，`system_serv
  at android.app.ActivityThread.handlePauseActivity(ActivityThread.java:4640)
 ```
 
-这份栈确认主线程进入了 `QueuedWork.waitToFinish()`。它来自旧平台或厂商分支；Android 17 对 Activity 的等待位置已经不同。
+这份栈确认主线程进入了 `QueuedWork.waitToFinish()`。这个样本来自旧平台或厂商分支；Android 17 对 Activity 的等待位置已经不同。
 
 ### Android 17 的调用位置
 
@@ -238,7 +238,7 @@ ANR 报告覆盖 `15:01:27.683` 至 `15:01:37.233` 的 CPU 窗口，`system_serv
 - `QueuedWork.waitToFinish()` 指向全进程共享的待完成任务，常见来源是 `apply()`，也可能来自其他框架代码；
 - `SharedPreferencesImpl.awaitLoadedLocked()` 表示该 SharedPreferences 实例仍在读取和解析文件，属于初次加载或加载未完成。
 
-看到前者，应继续寻找 `SharedPreferencesImpl$EditorImpl`、`enqueueDiskWrite()`、`writeToFile()`、`fsync()` 或 block I/O 证据；看到后者，应检查文件大小、XML 解析、备份文件恢复和调用时机。两种等待各自通向不同的根因。
+看到前者，我们应继续寻找 `SharedPreferencesImpl$EditorImpl`、`enqueueDiskWrite()`、`writeToFile()`、`fsync()` 或 block I/O 证据；看到后者，则应检查文件大小、XML 解析、备份文件恢复和调用时机。两种等待各自通向不同的根因。
 
 ### 根因结论
 
@@ -256,7 +256,7 @@ ANR 报告覆盖 `15:01:27.683` 至 `15:01:37.233` 的 CPU 窗口，`system_serv
 - 预加载只能把首次读取成本提前，使用前要测量启动路径和内存代价；
 - 不要反射修改 `QueuedWork`、清空 finisher 或绕过组件完成通知，这会破坏持久化和框架时序。
 
-修复验收要越过平均写入耗时去看长尾：在应用退后台、Service 完成、广播密集和低速存储压力下，确认主线程等待的 P95/P99 与 ANR 数量同时下降。P95/P99 表示 95%/99% 的样本不超过该耗时，用来观察少数慢样本是否改善。
+修复验收时，我们要越过平均写入耗时去看长尾：在应用退后台、Service 完成、广播密集和低速存储压力下，确认主线程等待的 P95/P99 与 ANR 数量同时下降。P95/P99 表示 95%/99% 的样本不超过该耗时，用来观察少数慢样本是否改善。
 
 ## 案例 4：Cached Apps Freezer 冻结了输入连接消费者
 
@@ -303,7 +303,7 @@ Cached Apps Freezer 是 Android 冻结缓存进程、减少其资源消耗的机
 - 若产品设计允许按输入活动解冻，应验证解冻到线程恢复运行的时延能覆盖输入超时预算；
 - 加入回归用例：事件派发后立刻触发进程状态迁移，检查 WaitQueue 能否完成或被有序取消。
 
-应用侧缺少稳定规避这类系统冻结的手段。诊断脚本应按时间和 PID 自动关联 `am_freeze`、`am_unfreeze` 与 InputDispatcher reason。
+应用侧缺少稳定规避这类系统冻结的手段，我们能提前准备的是诊断脚本：按时间和 PID 自动关联 `am_freeze`、`am_unfreeze` 与 InputDispatcher reason。
 
 ## 案例 5：目标进程未完成 attach，焦点恢复也没有完成
 
@@ -473,7 +473,7 @@ Android 17 的 `ProcessState.cpp` 定义 `DEFAULT_MAX_BINDER_THREADS = 15`，并
 
 ## 案例 7：InputTransport finished signal 的历史平台缺陷
 
-一个公开的旧版 Android 游戏案例记录了 InputDispatcher 等待队列持续堆积：
+最后一个案例来自一个公开的旧版 Android 游戏：它的 InputDispatcher 等待队列持续堆积，ANR reason 如下：
 
 ```text
 Input dispatching timed out
@@ -513,7 +513,7 @@ AOSP Gerrit 给出了更强的源码证据：
 
 ## 一套可复用的案例复盘顺序
 
-把上面七个案例的取证动作收拢，可以得到一套按序执行的复盘流程：
+把上面七个案例的取证动作收拢，我们可以整理出一套按序执行的复盘流程：
 
 1. 从 `am_anr` 和 reason 确认 detector（触发超时判定的系统检测器）、被记录为事件主体的进程与输入连接名称。
 2. 校验 trace 头时间、ANR 时间、CPU 统计窗口和日志时钟来源。
@@ -529,9 +529,9 @@ AOSP Gerrit 给出了更强的源码证据：
 
 ### 官方退出信息的覆盖范围
 
-Android 11（API 30）加入 `ActivityManager.getHistoricalProcessExitReasons()`。普通应用可查询自身历史退出记录，找到 `ApplicationExitInfo.REASON_ANR` 后再调用 `getTraceInputStream()`。流可能为 `null`，保留时长和数量也受系统实现与存储状态影响。
+线上聚合的第一步是拿到 ANR 现场：Android 11（API 30）加入 `ActivityManager.getHistoricalProcessExitReasons()`，普通应用可以查询自身历史退出记录，找到 `ApplicationExitInfo.REASON_ANR` 后再调用 `getTraceInputStream()`。这个流可能为 `null`，保留时长和数量也受系统实现与存储状态影响。
 
-这个输入流通常只对应 `/data/anr/traces.txt` 里目标进程相关的部分，谈不上完整稳定副本。ANR 保存路径面向目标进程，内容通常包括头信息和目标进程的第一段 trace；至于其他进程、CPU/PSI、event log 与完整系统上下文，流里未必都有，具备系统 `DUMP` 特权权限的诊断工具看到的范围也与普通应用不同。
+这个输入流通常只对应 `/data/anr/traces.txt` 里目标进程相关的部分，算不上完整稳定的副本：ANR 保存路径面向目标进程，内容一般是头信息加目标进程的第一段 trace。至于其他进程、CPU/PSI、event log 与完整系统上下文，流里未必都有；具备系统 `DUMP` 特权权限的诊断工具，看到的范围也与普通应用不同。
 
 采集器可以按下面的公开 API 入口筛选 ANR：
 
@@ -552,7 +552,7 @@ anr?.traceInputStream?.use { stream ->
 
 ### 主线程历史
 
-ANR 瞬时 trace 采到的状态可能是 `nativePollOnce`、锁等待，也可能是耗时工作已经返回之后的状态。要看清 ANR 之前主线程在做什么，应用可以用公开的 `Looper.setMessageLogging(Printer)` 记录主线程消息的开始和结束。这个接口要在消息分发的热路径上执行，会带来额外开销；输出里也未必有同步屏障（用于暂时阻止同步消息执行的队列标记）、native 回调和每个耗时来源。`Looper.Observer` 属于隐藏接口，绕过 Hidden API 限制后部署到普通应用的做法要避免。
+ANR 瞬时 trace 采到的状态可能是 `nativePollOnce`、锁等待，也可能是耗时工作已经返回之后的状态。要看清 ANR 之前主线程在做什么，我们可以用公开的 `Looper.setMessageLogging(Printer)` 记录主线程消息的开始和结束。这个接口要在消息分发的热路径上执行，会带来额外开销；输出里也未必有同步屏障（用于暂时阻止同步消息执行的队列标记）、native 回调和每个耗时来源。`Looper.Observer` 属于隐藏接口，绕过 Hidden API 限制后部署到普通应用的做法要避免。
 
 历史窗口应按内存预算和目标 ANR 类型配置，并用覆盖最旧记录的环形缓冲区保存。固定“过去 10 秒”只是一种工程选择；Input、前台 Service、后台 Service 和广播的超时预算不同。采样数据至少要包含消息目标、开始/结束时间、线程 CPU 时间、wall time（实际经过时间）、队列延迟和采集版本。
 

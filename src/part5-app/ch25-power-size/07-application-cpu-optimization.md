@@ -95,7 +95,7 @@ sources:
 
 ### `execute()` 的三段决策
 
-系统的 `ThreadPoolExecutor` 取自 libcore 内置的 OpenJDK 并发实现。我们从 `execute()` 的决策顺序看起：
+系统的 `ThreadPoolExecutor` 取自 libcore 内置的 OpenJDK 并发实现。动手调参之前，我们先从 `execute()` 的决策顺序看起：
 
 1. 当前 worker（实际执行任务的工作线程） 少于 `corePoolSize` 时，尝试创建核心 worker；
 2. 否则尝试把任务放入 `workQueue`，入队后还会复查池状态；
@@ -251,9 +251,9 @@ cpu  user nice system idle iowait irq softirq steal guest guest_nice
 
 `user` 与 `nice` 是用户态时间，区别在于后者使用调整过的 nice 优先级；`system` 是内核态时间，`idle` 是空闲时间，`irq` / `softirq` 是硬中断与软中断处理时间，`steal` 是虚拟化环境中被宿主机占用的时间，`guest` / `guest_nice` 是运行虚拟 CPU 的时间。
 
-其中 `guest` 已包含在 `user` 中，`guest_nice` 已包含在 `nice` 中，所以计算总时间时把十个字段全部相加，会重复计算虚拟 CPU 时间；常见做法是只累计 `user` 到 `steal` 的前八项，并明确忙碌时间里要不要排除 `iowait`（CPU 空闲且系统有未完成 I/O 的累计时间）——CPU 空闲且系统有未完成 I/O 的累计时间。
+其中 `guest` 已包含在 `user` 中，`guest_nice` 已包含在 `nice` 中，所以计算总时间时把十个字段全部相加，会重复计算虚拟 CPU 时间；常见做法是只累计 `user` 到 `steal` 的前八项，并明确忙碌时间里要不要排除 `iowait`（CPU 空闲且系统有未完成 I/O 的累计时间）。
 
-`iowait` 这个值很难可靠计算，内核文档说明它在某些条件下甚至可能下降；它说明不了某个特定 CPU 一直在等待 I/O，更当不成应用预加载的安全信号。字段语义见 [`Documentation/filesystems/proc.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)。
+`iowait` 这个值很难可靠计算，内核文档还说明它在某些条件下甚至可能下降；想拿它判断某个特定 CPU 是否一直在等 I/O，或者当成应用预加载的安全信号，都靠不住。字段语义见 [`Documentation/filesystems/proc.rst`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst)。
 
 读 `/proc/self/stat` 时有个细节：进程名字段 `comm` 位于括号内且可能包含空格，直接对整行 `split(" ")` 取固定下标会取错字段，应先识别 `comm` 的结束括号，再解析其后的字段；`utime` 和 `stime` 分别记录用户态与内核态 CPU 时间，是文档中的第 14、15 字段。访问本身也可能因设备策略、SELinux（Linux 的强制访问控制机制） 或未来平台限制而失败，所以采样器要能返回“无数据”，别让业务跟着崩溃。
 
@@ -261,7 +261,7 @@ cpu  user nice system idle iowait irq softirq steal guest guest_nice
 
 ### `times()` 的 USER_HZ 语义
 
-NDK 侧对应的是 `times()`：Android 的 C 标准库 bionic 会把这个调用交给 Linux `do_sys_times()`。在 `android17-6.18-2026-06_r6` 中，内核通过 `thread_group_cputime_adjusted()` 取得当前线程组的用户态/内核态 CPU 时间，再用 `nsec_to_clock_t()` 转成 clock tick（接口定义的计时单位），也就是接口定义的计时单位；返回值来自 `jiffies_64_to_clock_t(get_jiffies_64())`，其中 jiffies 是内核启动后累计的定时节拍。源码可在 [`kernel/sys.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sys.c) 中核对。
+NDK 侧对应的是 `times()`：Android 的 C 标准库 bionic 会把这个调用交给 Linux `do_sys_times()`。在 `android17-6.18-2026-06_r6` 中，内核通过 `thread_group_cputime_adjusted()` 取得当前线程组的用户态/内核态 CPU 时间，再用 `nsec_to_clock_t()` 转成 clock tick（接口定义的计时单位）；返回值来自 `jiffies_64_to_clock_t(get_jiffies_64())`，其中 jiffies 是内核启动后累计的定时节拍。源码可在 [`kernel/sys.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sys.c) 中核对。
 
 四个输出字段里，`tms_utime` 与 `tms_stime` 是当前进程线程组的累计 CPU tick，我们要用的就是这两个；`tms_cutime` 与 `tms_cstime` 反映子进程时间，这些时间已纳入 `times()` 的子进程统计语义，普通 Android 应用通常用不上。`times()` 的返回值是从系统定义起点累计的 elapsed tick，绝对值没有业务含义，应只比较短时间窗口内的差值。
 
@@ -323,11 +323,11 @@ std::optional<double> EquivalentCores(
 - 前后台切换、低内存、温度升高时如何停止；
 - 未命中或被回收后是否比按需加载更差。
 
-`MessageQueue.IdleHandler` 只表示当前 Looper（线程消息循环） 的队列暂时没有到期消息；整机 CPU 是否空闲、到下一次输入或 vsync（屏幕垂直同步信号） 还有多少时间，它都说不上。IdleHandler 中只适合短小、可立即结束的操作；重计算仍应交给受控执行器，并能在页面状态改变时取消。
+`MessageQueue.IdleHandler` 告诉我们的，只是当前 Looper（线程消息循环） 的队列暂时没有到期消息；整机 CPU 是否空闲、到下一次输入或 vsync（屏幕垂直同步信号） 还剩多少时间，要另外找依据。所以 IdleHandler 里只适合放短小、可立即结束的操作；重计算仍应交给受控执行器，并能在页面状态改变时取消。
 
-需要延后、可持久化、受网络或充电等条件约束的后台工作，用 WorkManager 或 JobScheduler 表达约束，由系统结合设备状态调度；精确执行时刻并不在系统的承诺之内。想靠高频轮询 `/proc/stat` 自建“空闲探测器”补上这块，方向是反的：轮询本身也会增加唤醒。
+需要延后、可持久化、受网络或充电等条件约束的后台工作，用 WorkManager 或 JobScheduler 表达约束，由系统结合设备状态调度；精确执行时刻不在系统的承诺之内。想靠高频轮询 `/proc/stat` 自建“空闲探测器”补上这块，方向是反的——轮询本身就会增加唤醒。
 
-评估预加载时，我们至少同时看命中率、废弃工作比例、CPU 时间、I/O、启动与帧性能变化，以及内存侧的 RSS（进程实际驻留在内存中的页面总量） 和 PSS（按共享比例分摊后的内存量）——前者是进程实际驻留在内存中的页面总量，后者按共享比例分摊后的内存量。只有用户收益覆盖设备成本，这项预加载才值得保留。
+评估预加载时，我们至少同时看命中率、废弃工作比例、CPU 时间、I/O、启动与帧性能变化，以及内存侧的 RSS（进程实际驻留在内存中的页面总量） 和 PSS（按共享比例分摊后的内存量）。只有用户收益覆盖设备成本，这项预加载才值得保留。
 
 ## 周期任务：避免固定频率补跑制造恢复尖峰
 
@@ -348,25 +348,27 @@ std::optional<double> EquivalentCores(
 
 ## Android 17：CPU 使用过量终止与取证
 
-这一节谈一类特殊事件：进程因 CPU 使用过量被系统终止之后，怎么留下证据。Android 17 新增 `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE`，把既有的资源使用过量终止路径接入事后性能分析——`ProfilingTrigger` 是应用预先登记“发生指定事件时采集性能资料”的配置，这个新类型只负责接入事后分析，不参与决定任务能否执行。终止记录本身早就有：`ApplicationExitInfo` 是系统保存的应用进程退出记录，其中 `REASON_EXCESSIVE_RESOURCE_USAGE` 从 API 30 已公开。接口语义可在 [`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger) 与 [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo) 中核对。
+这一节处理一类特殊事件：进程因 CPU 使用过量被系统终止之后，怎么留下证据。`ProfilingTrigger` 是应用预先登记“发生指定事件时采集性能资料”的配置；Android 17 新增的 `ProfilingTrigger.TRIGGER_TYPE_KILL_EXCESSIVE_CPU_USAGE` 把既有的资源使用过量终止路径接入事后性能分析，只负责采集，任务能否执行仍由原有路径决定。终止记录本身早就有：`ApplicationExitInfo` 是系统保存的应用进程退出记录，其中 `REASON_EXCESSIVE_RESOURCE_USAGE` 从 API 30 已公开。接口语义可在 [`ProfilingTrigger`](https://developer.android.com/reference/android/os/ProfilingTrigger) 与 [`ApplicationExitInfo`](https://developer.android.com/reference/android/app/ApplicationExitInfo) 中核对。
 
-AOSP r1 用 `setProcState >= PROCESS_STATE_HOME` 筛选受检进程，Home（桌面进程） 及更低重要级的进程都在范围内。系统用检查窗口内的进程累计 CPU 时间除以 `SystemClock.uptimeMillis()` 的增量，再乘以 100 与上限比较，并在终止前再次确认进程仍处于该状态。这个分母不计深度睡眠，和前文计入深度睡眠的 `elapsedRealtime()` 采样是两套口径，两种窗口的百分比直接混用会出错；时钟语义见 [`SystemClock`](https://developer.android.com/reference/android/os/SystemClock)。
+AOSP r1 用 `setProcState >= PROCESS_STATE_HOME` 筛选受检进程，Home（桌面进程） 及更低重要级的进程都在范围内。系统用检查窗口内的进程累计 CPU 时间除以 `SystemClock.uptimeMillis()` 的增量，再乘以 100 与上限比较，并在终止前再次确认进程仍处于该状态。注意这个分母：它不计深度睡眠，而前文的 `elapsedRealtime()` 采样计入深度睡眠，两边的百分比直接混用会出错；时钟语义见 [`SystemClock`](https://developer.android.com/reference/android/os/SystemClock)。
 
-检查间隔和四档上限来自可配置常量，设备厂商可以修改。这个百分比还容易和性能面板混淆：多线程累计 CPU 时间可以超过单核窗口时长，所以源码中的百分比和性能面板显示的整机 CPU 占比是两回事。实现见 [`ActivityManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 与 [`ActivityManagerConstants.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java)。JobScheduler/WorkManager 的后台配额（系统允许后台任务使用的调度机会与运行额度）——系统允许后台任务使用的调度机会与运行额度——和这条 CPU 终止路径没有直接调用关系。
+检查间隔和四档上限来自可配置常量，设备厂商可以修改。这个百分比还容易和性能面板混淆：多线程累计 CPU 时间可以超过单核窗口时长，所以源码中的百分比和性能面板显示的整机 CPU 占比是两回事。实现见 [`ActivityManagerService.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 与 [`ActivityManagerConstants.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java)。JobScheduler/WorkManager 的后台配额（系统允许后台任务使用的调度机会与运行额度）和这条 CPU 终止路径之间，则没有直接的调用关系。
 
 后台任务的常见问题发生在 Worker 已结束或被停止之后：协程、独立线程、JNI（Java/Kotlin 与 C/C++ 互调接口）、子进程或 Binder 循环仍在工作，进程随后转为缓存状态。处理时避免重复任务，根据失败类型逐步延长重试间隔，让取消信号传到所有子任务，并用有界并发、可分批执行的工作单元和进度检查点控制成本；围着某个 AOSP 默认阈值持续轮询，没有意义。
 
-API 37 应用可以预注册触发器，并通过全局结果监听器接收系统触发的产物；系统会限频，每次事件都有结果也得不到保证，详见 [`ProfilingManager`](https://developer.android.com/reference/android/os/ProfilingManager)。`ProfilingResult` 公开的只有触发类型、文件路径、应用 tag、错误码和错误信息，进程 ID、WorkManager 的 Work ID 都不在其中。所以保存结果时，我们只能把它与时间邻近的 `ApplicationExitInfo`、`processStateSummary`（退出前保存的自定义状态摘要）、任务起止时间、停止原因和线程名标记为“可能关联”，精确映射是给不出来的。字段定义见 [`ProfilingResult`](https://developer.android.com/reference/android/os/ProfilingResult)。
+API 37 应用可以预注册触发器，并通过全局结果监听器接收系统触发的产物；系统会限频，每次事件都有结果也得不到保证，详见 [`ProfilingManager`](https://developer.android.com/reference/android/os/ProfilingManager)。`ProfilingResult` 公开的只有触发类型、文件路径、应用 tag、错误码和错误信息，进程 ID、WorkManager 的 Work ID 都不在其中。所以保存结果时，我们把它与时间邻近的 `ApplicationExitInfo`、`processStateSummary`（退出前保存的自定义状态摘要）、任务起止时间、停止原因和线程名放在一起，标记为“可能关联”；要给出精确映射，手头的字段还不够。字段定义见 [`ProfilingResult`](https://developer.android.com/reference/android/os/ProfilingResult)。
 
 产物类型上，官方文档自己也不一致：`android-17.0.0_r1` 的 [`ProfilingTrigger.java`](https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java) 和 API reference 写的是正在运行的 system trace（系统跟踪） 快照，Android 17 [功能页](https://developer.android.com/about/versions/17/features) 写的是调用栈采样。接入端应保存系统返回的原始文件，并根据实际文件类型和错误码选择解析器；只凭 trigger 名称写死产物格式，恰好会踩中这种不一致。
 
-排查时我们按证据逐层缩小范围：任务未启动，先查 pending reason（系统尚未调度的原因），也就是系统尚未调度的原因；启动后被停止，查 Work/Job stop reason（运行中止原因） 给出的停止原因；进程死亡，查 `ApplicationExitInfo`；退出原因是资源使用过量时，再查 `ProfilingResult` 与 Perfetto（Android 系统级跟踪工具）；任务已经结束而 CPU 仍在持续，回查未取消的线程、协程、JNI 与子进程。
+排查时我们逐层缩小范围：任务未启动，先查 pending reason（系统尚未调度的原因）；启动后被停止，查 Work/Job stop reason（运行中止原因）；进程死亡，查 `ApplicationExitInfo`；退出原因是资源使用过量时，再查 `ProfilingResult` 与 Perfetto（Android 系统级跟踪工具）；任务已经结束而 CPU 仍在持续，回查未取消的线程、协程、JNI 与子进程。
 
 ## 锁竞争：低 CPU 也可能让用户等很久
 
+锁的问题常常和 CPU 指标脱节：等锁的线程通常不怎么耗 CPU，用户却在等。我们先看 `synchronized` 在 ART 里怎么实现，再谈处理顺序。
+
 ### synchronized 在 ART 中的实现
 
-Java/Kotlin 的 `synchronized` 在 ART 中由 monitor（与对象关联的互斥锁及等待机制） 实现，也就是与对象关联的互斥锁及等待机制；无竞争时的处理、竞争处理和运行时策略会随实现与状态改变。应用代码要把“先忙等固定次数，再进入内核休眠”这类流程当成实现细节，别依赖它。
+Java/Kotlin 的 `synchronized` 在 ART 中由 monitor（与对象关联的互斥锁及等待机制） 实现；无竞争时的处理、竞争处理和运行时策略会随实现与状态改变。应用代码要把“先忙等固定次数，再进入内核休眠”这类流程当成实现细节，别依赖它。
 
 等锁的线程通常不会持续消耗一个核，但锁竞争会增加尾延迟、线程唤醒、上下文切换和优先级反转的风险——优先级反转指高优先级线程反过来等待低优先级持锁线程。CAS（Compare-And-Set，比较并设置）则相反，竞争激烈时可能反复失败并消耗 CPU。至于 `synchronized`、`ReentrantLock`（可重入的显式锁） 和原子变量之间谁更合适，要由实际负载回答。
 
@@ -374,7 +376,7 @@ Java/Kotlin 的 `synchronized` 在 ART 中由 monitor（与对象关联的互斥
 
 锁问题应按证据处理：
 
-1. 用 Perfetto 或应用自己添加的 trace 标记，找到等待时间长、调用频繁的临界区（同一时刻只允许一个线程进入的共享代码段），即同一时刻只允许一个线程进入的共享代码段；
+1. 用 Perfetto 或应用自己添加的 trace 标记，找到等待时间长、调用频繁的临界区（同一时刻只允许一个线程进入的共享代码段）；
 2. 缩短持锁范围，避免在锁内执行 I/O、Binder 调用、回调和重计算；
 3. 检查是否可以用线程封闭（数据只由一个线程访问）、不可变快照或消息传递减少共享可变状态；
 4. 只有在确认单锁竞争后，再评估分段锁或更复杂的数据结构；
@@ -384,7 +386,7 @@ Java/Kotlin 的 `synchronized` 在 ART 中由 monitor（与对象关联的互斥
 
 ## 协程：控制并发，不隐藏成本
 
-`Dispatchers.Default` 面向 CPU 计算，`Dispatchers.IO` 面向阻塞 I/O，dispatcher（协程调度器） 决定协程在哪组线程资源上执行。两者在 JVM 上共享线程资源，切换 dispatcher 未必创建新线程。`Dispatchers.IO.limitedParallelism(n)` 创建的受限并行视图具有弹性扩容语义：每个视图有自己的并行上限，这个上限独立于 `Dispatchers.IO` 的常规上限，线程和资源仍然共享。具体语义见 kotlinx.coroutines 的 [`Dispatchers.IO` 文档](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html)。
+协程把并发的表达变简单了，该付的成本并没有变少。`Dispatchers.Default` 面向 CPU 计算，`Dispatchers.IO` 面向阻塞 I/O，dispatcher（协程调度器） 决定协程在哪组线程资源上执行。两者在 JVM 上共享线程资源，切换 dispatcher 未必创建新线程。`Dispatchers.IO.limitedParallelism(n)` 创建的受限并行视图具有弹性扩容语义：每个视图有自己的并行上限，这个上限独立于 `Dispatchers.IO` 的常规上限，线程和资源仍然共享。具体语义见 kotlinx.coroutines 的 [`Dispatchers.IO` 文档](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html)。
 
 下面的封装同样要求调用方根据计算预算和下游容量显式给出并行度：
 
@@ -417,7 +419,7 @@ class WorkDispatchers(
 
 ### 优先级与选核的关系
 
-在内核基线 `android17-6.18-2026-06_r6` 上，公平调度类用 EEVDF（Earliest Eligible Virtual Deadline First，最早符合条件虚拟截止时间优先）选择下一个可运行线程或进程；线程最终在哪里运行、以什么资源水平运行，还要结合调度组、cpuset（内核允许线程运行的一组 CPU）、uclamp（为调度器提供利用率上下限提示） 与功耗和温度策略——调度组按进程角色应用资源策略，cpuset 限定内核允许线程运行的一组 CPU，uclamp 这类利用率钳制为调度器提供利用率上下限提示。
+在内核基线 `android17-6.18-2026-06_r6` 上，公平调度类用 EEVDF（Earliest Eligible Virtual Deadline First，最早符合条件虚拟截止时间优先）选择下一个可运行线程或进程；线程最终在哪里运行、以什么资源水平运行，还要结合调度组（按进程角色应用资源策略）、cpuset（内核允许线程运行的一组 CPU）、uclamp（为调度器提供利用率上下限提示），以及功耗和温度策略。
 
 普通应用调用 `Process.setThreadPriority()` 表达 nice 级别的相对优先级；下面这些能力它给不了：
 
@@ -438,7 +440,7 @@ class WorkDispatchers(
 
 ### 建立基线
 
-选择一个可重复的用户场景，记录应用版本、构建类型、设备、刷新率、电量、温度起点和后台环境。性能测量使用接近发布配置的构建，因为调试器、日志和未优化代码都会改变调度与 CPU 成本。
+我们先选一个可重复的用户场景，记录应用版本、构建类型、设备、刷新率、电量、温度起点和后台环境。性能测量使用接近发布配置的构建，因为调试器、日志和未优化代码都会改变调度与 CPU 成本。
 
 ### 用时间线归因
 

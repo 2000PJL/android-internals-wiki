@@ -33,7 +33,7 @@ related_chapters:
 
 # Kotlin Coroutine、Flow 与线程调度实践
 
-协程可以在等待期间释放线程，也可能把大量细小任务集中到同一条调度路径。分析性能时，我们要区分四件事：协程何时挂起、保存后续执行状态的 continuation 是否需要 dispatch（提交给调度器）、目标线程何时获得 CPU，以及业务代码实际运行了多久。把这四个阶段笼统称为“协程切换”，延迟到底出在哪一层就看不清了。
+协程可以在等待期间释放线程，也可能把大量细小任务集中到同一条调度路径。分析性能时，我们要区分四件事：协程何时挂起、保存后续执行状态的 continuation 是否需要 dispatch（提交给调度器）、目标线程何时拿到 CPU，以及业务代码实际运行了多久。这四个阶段常被笼统称作“协程切换”，混在一起就看不清延迟出在哪一层；下面我们按阶段把它们拆开。
 
 > 源码基线：kotlinx.coroutines 1.11.0 公开 API；平台 AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。协程库随应用独立升级，Dispatcher 的内部实现跟着协程库版本走，Android API 级别说明不了它。
 
@@ -49,7 +49,7 @@ related_chapters:
 6. Linux 调度器为目标线程分配 CPU，使它进入 Running 状态。
 7. 协程继续执行。
 
-第 1、3、4 步主要发生在协程运行时；第 5 步属于线程池或 Android Looper；第 6 步属于内核调度。Perfetto 里的 Runnable 表示线程已经具备运行条件、正在等 CPU；continuation 仍停留在 Dispatcher 队列中的等待则不会直接显示成该线程的 Runnable。业务方法消耗 CPU 的时间落在第 7 步。所以只统计 suspend 函数从开始到结束的墙钟时间，我们还是分不清慢在哪一层；要看清，就把这几段分别量出来。
+这七步里，第 1、3、4 步主要发生在协程运行时，第 5 步属于线程池或 Android Looper，第 6 步属于内核调度。Perfetto 里的 Runnable 表示线程已经具备运行条件、正在等 CPU；continuation 还停在 Dispatcher 队列里的等待，则不会直接显示成该线程的 Runnable。业务方法消耗 CPU 的时间落在第 7 步。所以只统计 suspend 函数从开始到结束的墙钟时间，我们还是分不清慢在哪一层；要看清，就把这几段分别量出来。
 
 ## Dispatcher 选择：选执行约束，不按“前台/后台”命名
 
@@ -64,29 +64,29 @@ related_chapters:
 
 #### Main：Handler、Looper 与队列延迟
 
-Android 上的 Main Dispatcher 由 kotlinx-coroutines-android 提供。1.11.0 的 `AndroidDispatcherFactory` 使用主 Looper 创建 async Handler，`HandlerContext.dispatch()` 再调用 `handler.post(block)`。async message 可以越过 MessageQueue 的同步屏障，但仍要排队等主线程当前的回调和排在前面的其他可执行消息。协程路径还要处理 Job、continuation、取消检查和上下文元素，这些环节都算上，再拿一次普通方法调用当参照就不合适了。
+Android 上的 Main Dispatcher 由 kotlinx-coroutines-android 提供：1.11.0 的 `AndroidDispatcherFactory` 用主 Looper 创建 async Handler，`HandlerContext.dispatch()` 再调用 `handler.post(block)`。async message 可以越过 MessageQueue 的同步屏障，但仍要排队等主线程当前的回调，以及排在前面的其他可执行消息。协程路径上还有 Job、continuation、取消检查和上下文元素要处理，把这些环节都算上，再拿一次普通方法调用当参照就不合适了。
 
-`Dispatchers.Main.immediate` 在当前线程已经是目标 Looper 时，可以跳过一次重新投递；从其他线程进入时仍会 dispatch。直接执行会改变事件先后顺序，也可能发生同步重入，也就是当前调用尚未退出、就再次进入同一段状态逻辑。所以要不要用它，先看业务能否接受这两种行为；只冲着“少一次 post”去做选择，理由并不充分。
+`Dispatchers.Main.immediate` 在当前线程已经是目标 Looper 时，可以跳过一次重新投递；从其他线程进入时仍会 dispatch。直接执行会改变事件先后顺序，也可能发生同步重入，也就是当前调用尚未退出、就再次进入同一段状态逻辑。要不要用它，先看业务能否接受这两种行为；省一次 post 只是附带的好处，还够不上选择它的理由。
 
-Android 17 的 MessageQueue 已改为无全局队列锁的实现，减少了一类入队和队列管理竞争。主线程仍然一次只执行一个回调，前面的长消息、其他 async message、帧回调和 Binder 返回仍会造成队列延迟。
+Android 17 把 MessageQueue 改成了无全局队列锁的实现，减少了一类入队和队列管理竞争；但主线程仍然一次只执行一个回调，前面的长消息、其他 async message、帧回调和 Binder 返回照样造成队列延迟。
 
 #### Default：CPU 并行度与阻塞补偿
 
-Default 面向持续占用 CPU 的任务。当前 JVM 调度器使用共享 worker、本地队列、全局队列和 work stealing（空闲 worker 从其他队列窃取任务）；CPU 任务的有效并行度接近可用处理器数量，并保留最低并行度。这些内部实现可能随 kotlinx.coroutines 版本变化，具体 worker 数量、队列顺序和线程名，业务代码要把它们当成会变的细节看待。
+Default 面向持续占用 CPU 的任务。当前 JVM 调度器使用共享 worker、本地队列、全局队列和 work stealing（空闲 worker 从其他队列窃取任务）；CPU 任务的有效并行度接近可用处理器数量，并保留最低并行度。这些内部实现可能随 kotlinx.coroutines 版本变化，我们写业务代码时，要把具体的 worker 数量、队列顺序和线程名当成会变的细节。
 
-CPU 任务数量超过并行度后，新增任务排队属于预期行为。把阻塞调用放入 Default 会一直占用 worker；调度器可以为被正确标记为 blocking 的内部任务增加补偿线程，但普通业务代码不会自动获得这个标记，所以调用方应把阻塞调用放到 IO 或专用的受限 Dispatcher。
+CPU 任务数量超过并行度后，新增任务排队属于预期行为。把阻塞调用放进 Default，会一直占住 worker；调度器可以给被正确标记为 blocking 的内部任务增加补偿线程，但普通业务代码不会自动获得这个标记，所以我们要主动把阻塞调用放到 IO 或专用的受限 Dispatcher。
 
 #### IO：默认限制与弹性视图
 
 `Dispatchers.IO` 默认允许并行执行的阻塞任务数，是 64 与处理器数量二者中的较大值，可以通过 `kotlinx.coroutines.io.parallelism` 调整。这个数限制的是默认 IO 视图中同时执行的阻塞任务；进程里能同时存在多少协程或线程，它管不着。
 
-`Dispatchers.IO` 之所以容易出现更多 worker，有两层原因。一层是默认 IO 并行度较大；另一层在 1.11.0 的实现里：`DefaultScheduler.dispatch()` 默认用 `NonBlockingContext`，`Dispatchers.IO` 则通过 `UnlimitedIoScheduler` 把 `Runnable` 以 `BlockingContext` 交给同一个 `CoroutineScheduler`。`TaskContext` 只是一个 blocking / non-blocking 标记，`Runnable` 里是不是真的在等 I/O，它并不分析。同一段代码放到 Default 或 IO，调度器看到的就是两种任务类型。[来源: 2026-10-08-76933517-CoroutineScheduler 设计解析上为什么 Dispatchers IO.md；已验证: kotlinx.coroutines 1.11.0 `Dispatcher.kt`、`Tasks.kt`、`CoroutineScheduler.kt`]
+`Dispatchers.IO` 之所以容易出现更多 worker，有两层原因。一层是默认 IO 并行度较大；另一层在 1.11.0 的实现里：`DefaultScheduler.dispatch()` 默认用 `NonBlockingContext`，`Dispatchers.IO` 则通过 `UnlimitedIoScheduler` 把 `Runnable` 以 `BlockingContext` 交给同一个 `CoroutineScheduler`。`TaskContext` 只是一个 blocking / non-blocking 标记，至于 `Runnable` 是不是真的在等 I/O，调度器并不查看；同一段代码放到 Default 或 IO，在它眼里就是两种任务类型。[来源: 2026-10-08-76933517-CoroutineScheduler 设计解析上为什么 Dispatchers IO.md；已验证: kotlinx.coroutines 1.11.0 `Dispatcher.kt`、`Tasks.kt`、`CoroutineScheduler.kt`]
 
-调度器处理 blocking task 时，会先增加 blocking 计数；worker 执行 blocking task 前会进入 `BLOCKING` 状态并释放 CPU permit，随后 `signalCpuWork()` 可以唤醒或创建 worker 来保留 CPU 任务并行度。`tryCreateWorker()` 估算 `created - blocking` 后，如果可处理 CPU work 的 worker 少于 `corePoolSize`，且尚未达到 `maxPoolSize`，才会创建新 worker。这就解释了 IO 场景 worker 数可能超过 Default 并行度的原因。排查时除了数线程，还要同时看 IO 并行度、各个 `limitedParallelism` 视图、blocking 调用数量，以及 worker 是否真的处在 Sleep / I/O wait。[来源: 2026-10-08-76933517-CoroutineScheduler 设计解析上为什么 Dispatchers IO.md；已验证: kotlinx.coroutines 1.11.0 `CoroutineScheduler.kt`]
+调度器处理 blocking task 时，会先增加 blocking 计数；worker 执行 blocking task 前会进入 `BLOCKING` 状态并释放 CPU permit，随后 `signalCpuWork()` 可以唤醒或创建 worker 来保留 CPU 任务并行度。`tryCreateWorker()` 估算 `created - blocking` 后，如果可处理 CPU work 的 worker 少于 `corePoolSize`，且尚未达到 `maxPoolSize`，才会创建新 worker。这就解释了 IO 场景 worker 数可能超过 Default 并行度的原因。我们排查时除了数线程，还要同时看 IO 并行度、各个 `limitedParallelism` 视图、blocking 调用数量，以及 worker 是否真的处在 Sleep / I/O wait。[来源: 2026-10-08-76933517-CoroutineScheduler 设计解析上为什么 Dispatchers IO.md；已验证: kotlinx.coroutines 1.11.0 `CoroutineScheduler.kt`]
 
-`Dispatchers.IO.limitedParallelism(n)` 创建的是弹性视图：每个视图不受默认 IO 并行度上限约束，但仍共享底层线程和资源。如果同时创建并行度为 100 和 60 的两个视图，峰值阻塞并行度就可能叠加。它适合表达两个外部系统各自的并发预算，但团队必须同时算清进程总并发量。
+`Dispatchers.IO.limitedParallelism(n)` 创建的是弹性视图：每个视图不受默认 IO 并行度上限约束，但仍共享底层线程和资源。如果同时创建并行度为 100 和 60 的两个视图，峰值阻塞并行度就可能叠加。它适合表达两个外部系统各自的并发预算，但我们要同时算清进程总并发量。
 
-Default 与 IO 共享底层线程。当前协程已经位于 Default worker 时，切换到 IO 后可能仍使用同一线程；官方将这种复用描述为 best effort（尽力而为）：线程能否保持一致并无保证，业务代码要按“随时可能换线程”来设计。
+Default 与 IO 共享底层线程：协程当前已经在 Default worker 上时，切换到 IO 后可能用的还是同一条线程。官方把这种复用描述为 best effort（尽力而为）——线程能否保持一致并无保证，业务代码要按“随时可能换线程”来设计。
 
 #### Unconfined：线程不受约束，结构仍可存在
 
@@ -116,7 +116,7 @@ class ThumbnailRepository(
 }
 ```
 
-这样一来，调用者可以从 Main 调用 `load()`，文件读取和解码仍会分别在指定 Dispatcher 上执行，这就是 main-safe：API 可以安全地从主线程调用。示例假设缩略图文件大小可控；任意大小的文件应改为流式读取。注入 Dispatcher 还允许测试替换为 TestDispatcher。如果阻塞 API 支持 `Thread.interrupt()`，可以评估 `runInterruptible(ioDispatcher)`；取消普通的 `withContext(IO)` 并不会强制中断所有 Java 或 native 阻塞调用。
+这样一来，调用者从 Main 调用 `load()`，文件读取和解码仍会分别在指定 Dispatcher 上执行，这就是 main-safe：API 可以安全地从主线程调用。示例假设缩略图文件大小可控，任意大小的文件应改为流式读取；注入 Dispatcher 还允许测试替换为 TestDispatcher。如果阻塞 API 支持 `Thread.interrupt()`，可以评估 `runInterruptible(ioDispatcher)`——取消普通的 `withContext(IO)`，并不会强制中断所有 Java 或 native 阻塞调用。
 
 ### limitedParallelism 的并发预算与线程亲和
 
@@ -176,7 +176,7 @@ Android 的 `viewModelScope` 和生命周期 scope 使用 `SupervisorJob` 风格
 
 ### 生命周期取消要覆盖“不可见”状态
 
-`lifecycleScope` 会在 Lifecycle 销毁时取消，但页面进入 STOPPED 后仍可能长期存在；如果只等待 DESTROYED，不可见页面可能继续收集热流。下面的代码让两个 Flow 只在视图至少处于 STARTED 状态时并行收集：
+`lifecycleScope` 会在 Lifecycle 销毁时取消，而页面进入 STOPPED 后它仍可能长期存在；只等 DESTROYED 的话，不可见页面可能还在继续收集热流。下面的代码让两个 Flow 只在视图至少处于 STARTED 状态时并行收集：
 
 ```kotlin
 viewLifecycleOwner.lifecycleScope.launch {
@@ -208,9 +208,9 @@ viewLifecycleOwner.lifecycleScope.launch {
 
 ### 默认 Flow 是顺序执行
 
-普通冷 Flow 的上游、中间操作和 collector 默认在同一个协程中顺序执行：collector 处理完当前值之前，上游的 `emit()` 会一直挂起等它，这就是基于挂起的背压——慢消费者通过挂起生产者来限制数据产生速度。它的好处是所有值都会被保留，代价是整体吞吐量由最慢阶段决定。
+收集 Flow 时，我们最先要回答的问题是：生产快、消费慢时，多出来的值放到哪、要不要丢。普通冷 Flow 的答案是顺序执行：上游、中间操作和 collector 默认跑在同一个协程里，collector 处理完当前值之前，上游的 `emit()` 会一直挂起等它。这就是基于挂起的背压——慢消费者通过挂起生产者来限制数据产生速度；好处是所有值都会被保留，代价是整体吞吐量由最慢阶段决定。
 
-`buffer`、`conflate`、`channelFlow`、`flatMapMerge` 等操作会引入并发或 Channel 边界。选它们之前，我们先分清冷流和热流：冷 Flow 通常在每次收集时开始执行；`StateFlow` 和 `SharedFlow` 这类热流的数据源独立于 collector，收集开始之前就已经存在。
+`buffer`、`conflate`、`channelFlow`、`flatMapMerge` 等操作会引入并发，或让值多经过一道 Channel。选它们之前，我们先分清冷流和热流：冷 Flow 通常在每次收集时开始执行；`StateFlow` 和 `SharedFlow` 这类热流的数据源独立于 collector，收集开始之前就已经存在。
 
 ### 三个操作符的语义表
 
@@ -223,7 +223,7 @@ viewLifecycleOwner.lifecycleScope.launch {
 
 `conflate()` 等价于容量 0、溢出策略为 `DROP_OLDEST` 的 buffer 语义。StateFlow 已经根据 `Any.equals` 合并相同状态，在它之上再调 `conflate()` 是多余的一步。
 
-`buffer()` 的默认容量是 `Channel.BUFFERED`，由库方约定。相邻的 `channelFlow`、`flowOn`、`buffer` 和 `produceIn` 可能发生操作符融合，共享底层 Channel；所以最终容量和溢出策略要按照操作符顺序推导。还要当心 `Channel.UNLIMITED`：它会把生产与消费之间长期存在的速率差转化为没有上限的内存增长。
+`buffer()` 的默认容量是 `Channel.BUFFERED`，由库方约定。相邻的 `channelFlow`、`flowOn`、`buffer` 和 `produceIn` 可能发生操作符融合，共享底层 Channel；所以最终容量和溢出策略，我们要按操作符顺序推导。还要当心 `Channel.UNLIMITED`：它会把生产与消费之间长期存在的速率差，转化成没有上限的内存增长。
 
 ### 按数据语义选择
 
@@ -264,11 +264,11 @@ suspend fun collectPipelines(
 
 再看 flatten 这一层：`flatMapConcat` 按顺序处理内层流，`flatMapMerge(concurrency)` 允许多条内层流并发，`flatMapLatest` 则在新值到来时取消旧内层流。并发上限必须符合数据库连接数、HTTP client、文件描述符和内存预算。
 
-取消要及时生效，前提是内层操作支持协作取消。操作符链不会为每一级都创建 Job，但 `buffer`、`flowOn`、`channelFlow` 和并发 flatten（将内层流合并回外层）会引入协程或 Channel 边界。
+取消要及时生效，前提是内层操作支持协作取消。操作符链不会为每一级都创建 Job，但 `buffer`、`flowOn`、`channelFlow` 和并发 flatten（将内层流合并回外层）会让取消跨越额外的协程或 Channel。
 
 ### flowOn 只改变上游
 
-`flowOn(dispatcher)` 只改变它前方上游操作符的执行上下文，下游 collector 原样不动。跨 Dispatcher 时通常会加入 Channel 和额外协程，因此它既影响执行位置，也影响缓冲和取消边界。数据层已经提供 main-safe suspend API 时，不要在每一层重复叠加 `flowOn(IO)`。
+`flowOn(dispatcher)` 只改变它前方上游操作符的执行上下文，下游 collector 原样不动。跨 Dispatcher 时通常会加入 Channel 和额外协程，所以执行位置变了，缓冲和取消的传播也跟着变。数据层已经提供 main-safe suspend API 时，我们就不必在每一层重复叠加 `flowOn(IO)`。
 
 ### UI 收集与共享上游的生命周期
 
@@ -284,7 +284,7 @@ StateFlow 和 SharedFlow 是热流，页面停止显示后，共享上游仍可�
 | Coroutine Debugger | Job 层级、状态、Dispatcher、挂起栈和创建栈 | release 构建中的真实耗时 |
 | CPU Profiler 采样 | 哪些 Java / Kotlin / native 调用栈消耗 CPU | 等待队列、跨线程墙钟路径和完整因果关系 |
 
-调试器暂停和 debug 构建都会扰动线程时序。所以性能结论取自 profileable / release 构建；调试器留给解释 Job 状态用，暂停之后的时间线别拿来当延迟基准。
+调试器暂停和 debug 构建都会扰动线程时序，所以性能结论要取自 profileable / release 构建；调试器留给解释 Job 状态用，暂停之后的时间线就别拿来当延迟基准了。
 
 `CoroutineName` 有助于阅读调试器和日志，但 Perfetto 不会自动为它生成同名 slice；要把业务操作稳定地映射到 trace，我们应显式添加跟踪标记。
 
@@ -341,9 +341,9 @@ ORDER BY running_ms DESC;
 
 Android Studio 的 Java / Kotlin 方法 instrumentation（插桩跟踪）会引入额外开销，高频短协程尤其容易被放大。确认方法热点时我们优先用采样；只有需要精确调用次数时再上 instrumentation，并注明这类数字不可当作生产环境延迟。
 
-### kotlinx-coroutines-debug 的边界
+### kotlinx-coroutines-debug 的适用范围
 
-`kotlinx-coroutines-debug` 的动态 agent 和 DebugProbes 主要面向标准 JVM。Android 设备上的协程调试依赖 Android Studio / IDE 集成，以及打包在 coroutines-core 中的调试元数据；JVM Instrument agent 属于标准 JVM 的工具，在设备侧 Perfetto 分析里派不上用场。调试设施本身会增加开销，线上长期开启并不合适。
+`kotlinx-coroutines-debug` 的动态 agent 和 DebugProbes 主要面向标准 JVM；Android 设备上的协程调试，靠的是 Android Studio / IDE 集成和打包在 coroutines-core 里的调试元数据，JVM Instrument agent 这类标准 JVM 工具在设备侧 Perfetto 分析里派不上用场。调试设施本身会增加开销，线上长期开启并不合适。
 
 ## Coroutine 与 RxJava：比较相同语义
 
@@ -357,7 +357,7 @@ Android Studio 的 Java / Kotlin 方法 instrumentation（插桩跟踪）会引�
 | 生命周期 | Job 树与 scope | Disposable/CompositeDisposable |
 | 融合优化 | 相邻 Flow 通道操作会融合 | 部分操作符支持 queue fusion |
 
-基准必须统一热流 / 冷流、缓冲容量、丢值策略、错误处理、调度边界和消费者工作量。只比较“启动一百万个空任务”，说明的是空任务的开销，说明不了网络、数据库或 UI 路径的表现。已有 RxJava 项目要整体迁移，光凭微基准还不够，应先测量高频路径和维护成本。
+基准必须统一热流 / 冷流、缓冲容量、丢值策略、错误处理、调度方式和消费者工作量。只比较“启动一百万个空任务”，说明的只是空任务的开销，网络、数据库或 UI 路径的表现还得另行测量。已有 RxJava 项目要整体迁移，光凭微基准还不够，应先测量高频路径和维护成本。
 
 ## 自定义 Dispatcher：优先复用线程，再考虑专用线程
 
@@ -422,7 +422,7 @@ ADPF（Android Dynamic Performance Framework）session 绑定一组长期存在�
 - Perfetto 中 `Runnable` 表示线程可运行却未获得 CPU；它与协程在 Dispatcher 队列中尚未出队是不同状态。
 - ADPF `PerformanceHintManager.Session` 绑定 TID，不绑定 coroutine ID。Default worker 之间可以迁移任务，因此一个静态 TID 列表不适合长期代表某条协程。
 - ADPF 适合持续、可度量的渲染或计算 work cycle（工作周期）。不要为每次 suspend / resume 发送 hint，也不要假设 hint 会让任务固定到某一类 CPU 核心。
-- 发现系统调度或 Binder 等待时，平台源码按 android-17.0.0_r1 核对，内核行为按 android17-6.18-2026-06_r6 核对；历史版本的 trace 不可直接代替当前基线。
+- 发现系统调度或 Binder 等待时，平台源码按 android-17.0.0_r1 核对，内核行为按 android17-6.18-2026-06_r6 核对；历史版本的 trace 不可直接代替。
 
 ## 排查清单
 

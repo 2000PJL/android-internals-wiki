@@ -48,10 +48,10 @@ related_chapters:
 
 - 位移还没超过触摸抖动容差 TouchSlop，控件一直把它当作点击候选；
 - 父容器过早拦截，子控件收到的是 `ACTION_CANCEL`；
-- 速度样本或指针 ID 用错，惯性滑动（Fling） Fling 的速度偏小；
+- 速度样本或指针 ID 用错，惯性滑动（Fling）的速度偏小；
 - `ACTION_MOVE` 回调里有分配、日志或业务计算，主线程来不及处理下一批输入。
 
-排查时我们要分开回答四个问题：事件何时到达、谁拿到事件、事件被识别成什么、识别之后如何驱动滚动。
+所以排查这类问题时，我们要分开回答四个问题：事件何时到达、谁拿到事件、事件被识别成什么、识别之后如何驱动滚动。
 
 ## VelocityTracker：从采样点得到速度
 
@@ -101,11 +101,11 @@ public boolean onTouchEvent(MotionEvent event) {
 
 这段代码里有三处容易用错：
 
-1. `addMovement()` 只负责加入样本，供查询方法读取的速度要由 `computeCurrentVelocity()` 生成；加入一个 `ACTION_MOVE` 之后并不需要每次都重算速度。
-2. `getXVelocity(id)`、`getYVelocity(id)` 传的是指针 ID，它在整个手势里稳定不变；`MotionEvent` 里随指针增减变化的是位置索引（index） index，两者别混用。
+1. `addMovement()` 只负责加入样本，供查询方法读取的速度要由 `computeCurrentVelocity()` 生成；`ACTION_MOVE` 到来时记下样本就好，速度留到要读的时候再算。
+2. `getXVelocity(id)`、`getYVelocity(id)` 传的是指针 ID，它在整个手势里稳定不变；`MotionEvent` 里随指针增减变化的是位置索引（index），两者别混用。
 3. 一个 `VelocityTracker` 本来就能同时记录多个指针 ID。源码里的对象池容量为 2，含义只是最多缓存两个按默认策略（框架内置的轴级策略表）创建的实例，多指场景用同一个实例就够了。
 
-Java 封装层把默认策略实例放进 `Pools.SynchronizedPool<VelocityTracker>(2)`：用默认策略创建的实例在 `recycle()` 时清空并回到池中，显式策略实例则留在池外。我们要做的只是成对调用 `obtain()` 和 `recycle()`，至于池有没有命中，不必进手势算法的设计范围。
+Java 封装层把默认策略实例放进 `Pools.SynchronizedPool<VelocityTracker>(2)`：用默认策略创建的实例在 `recycle()` 时清空并回到池中，显式策略实例则留在池外。我们要做的只是成对调用 `obtain()` 和 `recycle()`；池有没有命中由框架处理，设计手势算法时可以把它放在一边。
 
 ### Java、JNI 与原生策略
 
@@ -128,7 +128,7 @@ Java 层还保留着 `obtain(int)`、`obtain(String)` 这些隐藏入口，它�
 
 - `ACTION_DOWN` 会先清空旧状态，再加入 X、Y 样本；
 - `ACTION_MOVE` 会遍历历史批次和当前批次，并为每个指针 ID 加入 X、Y；
-- 标记为重采样（resampled） resampled 的样本会被跳过，避免根据预测坐标再拟合一次速度；
+- 标记为重采样（resampled）的样本会被跳过，避免根据预测坐标再拟合一次速度；
 - `ACTION_UP` 和普通 `ACTION_POINTER_UP` 不重复加入抬手位置，以保留末次有效移动的速度；
 - 同一指针超过 40 ms 没有新移动样本时，下一次采样会按“指针已经停下”处理并重建策略状态；
 - `getComputedVelocity()` 最终按 `units / 1000` 缩放，并限制在 `[-maxVelocity, maxVelocity]`。
@@ -141,11 +141,11 @@ Android 14（API 34）起，公开 API 增加了 `isAxisSupported()` 与 `getAxi
 | Android 12–13 | `Strategy::DEFAULT` 仍映射到全局 `LSQ2` |
 | Android 14–17 | 轴级策略表：X、Y 使用 `LSQ2`，`SCROLL` 使用 `IMPULSE` |
 
-这张表解释的是版本差异，当前行为以 `android-17.0.0_r1` 为准。套用之前先确认输入源和轴：鼠标滚轮、旋钮的 `AXIS_SCROLL` 要单独分析，触摸屏 X、Y 的结论直接搬过去会出错。
+这张表解释的是版本差异。套用之前先确认输入源和轴：鼠标滚轮、旋钮的 `AXIS_SCROLL` 要单独分析，触摸屏 X、Y 的结论直接搬过去会出错。
 
 ### 怎样测量 VelocityTracker 的开销
 
-`addMovement()`、`computeCurrentVelocity()` 的耗时，AOSP 没有承诺过固定值；“整条路径零分配”也无法从对象池推导出来。处理器、编译状态、样本数、策略和调试代码都会改变结果，开销要靠测量说话。
+`addMovement()`、`computeCurrentVelocity()` 的耗时，AOSP 没有承诺过固定值，对象池也撑不起“整条路径零分配”的结论。处理器、编译状态、样本数、策略和调试代码都会改变结果，开销要靠测量说话。
 
 在 Perfetto 里，这两个调用通常只出现在包含它的上层主线程调用里。想知道自定义识别器是否算得过勤，我们可以在受控构建中给待测代码包上 `Trace.beginSection()`、`Trace.endSection()`，同时采集：
 
@@ -172,7 +172,7 @@ flowchart LR
     A -->|"ACTION_CANCEL"| I["清理状态"]
 ```
 
-这张图只是阅读源码的索引，回调之间并不互斥。例如双击监听器启用后，第一次抬手仍可能先触发 `onSingleTapUp()`，之后才轮到 `onDoubleTap()` 或 `onSingleTapConfirmed()`。
+这张图只是阅读源码的索引，回调之间可以先后发生：例如双击监听器启用后，第一次抬手仍可能先触发 `onSingleTapUp()`，之后才轮到 `onDoubleTap()` 或 `onSingleTapConfirmed()`。
 
 ### 从 `ACTION_DOWN` 到 `ACTION_CANCEL`：各阶段分别做什么
 
@@ -222,6 +222,8 @@ mHandler.sendMessageAtTime(
 
 ## View 手势冲突：先确认事件流属于谁
 
+同一串触摸事件，可能被子控件消费，也可能中途被父容器接走。这一节我们沿着分发路径确认事件流属于谁，再决定冲突该在哪一层解决。
+
 ### `ACTION_DOWN` 命中目标，后续事件沿目标链分发
 
 `ViewGroup.dispatchTouchEvent()` 在 `ACTION_DOWN` 时清理上一个手势的状态，并为本次触摸寻找子 View，命中的子 View 保存为 `TouchTarget`。后续的 `ACTION_MOVE`、`ACTION_UP` 通常沿这条已建立的目标链分发，整棵 View 树的命中测试不需要每次重来。
@@ -230,7 +232,7 @@ mHandler.sendMessageAtTime(
 
 ### 横向父容器与纵向子容器
 
-“谁先超过 TouchSlop 谁获胜”在 Android 里没有通用规则，胜负取决于父容器的 `onInterceptTouchEvent()`、子控件是否消费，以及嵌套滑动协议。横向父容器的一个典型做法，是从 `ACTION_DOWN` 保存初始坐标，等位移超过阈值、水平方向占优时再拦截：
+横向父容器和纵向子容器谁赢，平台没有给出通用规则，胜负取决于父容器的 `onInterceptTouchEvent()`、子控件是否消费，以及嵌套滑动协议。横向父容器的一个典型做法，是从 `ACTION_DOWN` 保存初始坐标，等位移超过阈值、水平方向占优时再拦截：
 
 ```java
 private float initialX;
@@ -266,7 +268,7 @@ public boolean onInterceptTouchEvent(MotionEvent event) {
 }
 ```
 
-这段代码是仲裁骨架，不能直接拿来替换所有容器：多指切换、从右到左布局（RTL） RTL、角度滞回（避免在临界角度来回切换），以及子控件能否继续沿该方向滚动，都要按产品语义补上。父容器决定拦截之后，必须接得住随后到来的事件；子控件也要正确清理 `ACTION_CANCEL`。
+这段代码只是仲裁骨架：多指切换、从右到左布局（RTL）、角度滞回（避免在临界角度来回切换），以及子控件能否继续沿该方向滚动，都要按产品语义补上。父容器决定拦截之后，必须接得住随后到来的事件；子控件也要正确清理 `ACTION_CANCEL`。
 
 ### requestDisallowInterceptTouchEvent 的用法与限制
 
@@ -282,7 +284,7 @@ parent.requestDisallowInterceptTouchEvent(true);
 
 - 它只约束祖先 View 的拦截，系统导航手势、窗口级输入策略和应用外的输入消费者都不受它影响；
 - 事件分发路径照旧要走完，横纵方向的判断也要自己解决；
-- 每个 `ACTION_MOVE` 都无条件调一遍没有必要：状态没有变化时 `ViewGroup` 会提前返回，更清楚的做法是只在手势所有权变化时调用一次，需要交还父容器时传 `false`。
+- 调用时机上，只在手势所有权变化时调用一次最清楚：状态没有变化时 `ViewGroup` 会提前返回，每个 `ACTION_MOVE` 都无条件调一遍只是白做；需要交还父容器时传 `false`。
 
 ### Nested Scrolling：按消费距离协作
 
@@ -313,9 +315,11 @@ dispatchNestedScroll(
 
 示例只说明距离如何分配；生产代码通常复用数组，还要处理窗口偏移量、轴、触摸与非触摸类型，以及对应的父级接口。
 
-嵌套回调并不天然昂贵——要等性能跟踪显示某个父级回调或反复布局、绘制占了主线程，才把它列为性能问题。
+嵌套回调要被当成性能问题，前提是性能跟踪里确实看到某个父级回调或反复布局、绘制占了主线程。
 
 ## TouchSlop 与 Fling 阈值
+
+TouchSlop 决定拖动什么时候才算开始，Fling 速度阈值决定松手后惯性滚动什么时候生效。我们先看这两个阈值从哪里来，再看取值时要小心的单位问题。
 
 ### TouchSlop 从哪里来
 
@@ -334,7 +338,7 @@ int touchSlop =
 | `config_viewConfigurationTouchSlop` | 框架默认资源，可被设备资源覆盖 |
 | `getScaledTouchSlop()` | 按当前 `Context` 和配置得到的像素值 |
 
-TouchSlop 过大，拖动启动会显得迟钝；过小，手指的抖动就会被误识别为拖动。写自定义控件时还要分清“从 `ACTION_DOWN` 起的总位移”和“相邻两个 `ACTION_MOVE` 的增量”：判定是否开始拖动通常看前者，否则许多小增量永远无法越过阈值。
+TouchSlop 过大，拖动启动会显得迟钝；过小，手指的抖动就会被误识别为拖动。写自定义控件时还要分清“从 `ACTION_DOWN` 起的总位移”和“相邻两个 `ACTION_MOVE` 的增量”：判定是否开始拖动通常看前者，靠后者的话，单个增量太小，始终越不过阈值。
 
 ### Fling 的最小与最大速度阈值
 
@@ -355,11 +359,13 @@ if (Math.abs(velocityY)
 }
 ```
 
-Android 14（API 34）又增加了带 `inputDeviceId`、`axis`、`source` 的最小和最大 Fling 速度 API；输入设备或轴的组合无效时，最小值返回 `Integer.MAX_VALUE`、最大值返回 `Integer.MIN_VALUE`，表示该组合不支持 Fling。
+Android 14 又增加了带 `inputDeviceId`、`axis`、`source` 的最小和最大 Fling 速度 API；输入设备或轴的组合无效时，最小值返回 `Integer.MAX_VALUE`、最大值返回 `Integer.MIN_VALUE`，表示该组合不支持 Fling。
 
 跟踪旋钮的 `AXIS_SCROLL` 时，还要先把轴值换算成像素每秒，再与对应阈值比较；触摸屏 X、Y 的代码不要原样复用到滚轮和旋钮上。
 
 ## 自定义识别器的性能与正确性陷阱
+
+自定义手势识别器把判定逻辑收回自己手里，也把常见的几个性能坑一并接了过来。我们按对象分配、每步计算量、View 层级三个角度过一遍。
 
 ### 在 `ACTION_MOVE` 中制造短命对象
 
@@ -398,7 +404,7 @@ case MotionEvent.ACTION_MOVE:
 - 可合并的视觉状态交给下一帧更新，不在输入回调里反复请求布局；
 - 慢操作移出主线程，但触摸状态本身仍要按顺序在 UI 线程更新。
 
-设备可能把多个采样点批量放进一个 `MotionEvent` 的历史记录（history） history。需要高保真轨迹时就读历史样本，只读当前坐标会丢掉中间点；想要“补点”也不要自行插值后送进 `VelocityTracker`。
+设备可能把多个采样点批量放进一个 `MotionEvent` 的历史记录（history）。需要高保真轨迹时就读历史样本，只读当前坐标会丢掉中间点；想要“补点”也不要自行插值后送进 `VelocityTracker`。
 
 ### View 层级到底影响什么
 
@@ -439,9 +445,9 @@ Modifier.pointerInput(Unit) {
 }
 ```
 
-选 API 时从高层往低层走：`clickable`、`scrollable`、`draggable`、`transformable` 这些高层组件和修饰符 modifier，同时处理语义、焦点、可访问性、视觉反馈和事件消费；等现有识别器表达不了所需交互，再下沉到 `awaitEachGesture`、`awaitFirstDown`、`awaitTouchSlopOrCancellation` 这些原始 API。
+选 API 时从高层往低层走：`clickable`、`scrollable`、`draggable`、`transformable` 这些高层组件和修饰符（modifier），同时处理语义、焦点、可访问性、视觉反馈和事件消费；等现有识别器表达不了所需交互，再下沉到 `awaitEachGesture`、`awaitFirstDown`、`awaitTouchSlopOrCancellation` 这些原始 API。
 
-Compose 对新指针的第一个事件做命中测试，形成可接收指针输入的节点链，同一指针的后续事件沿这条链传播。每个事件要经过三个传播阶段（pass） pass：
+Compose 对新指针的第一个事件做命中测试，形成可接收指针输入的节点链，同一指针的后续事件沿这条链传播。每个事件要经过三个传播阶段（pass）：
 
 | 传播阶段 | 方向 | 常见用途 |
 |---|---|---|
@@ -451,7 +457,7 @@ Compose 对新指针的第一个事件做命中测试，形成可接收指针输
 
 `consume()` 把当前 `PointerInputChange` 标记为已消费，事件仍会继续传播，其他处理器要自己检查 `isConsumed` 再决定退不退出。这和 View 里“父容器拦截后给子 View 发 `ACTION_CANCEL`”是两套语义，迁移手势代码时照搬会出问题。
 
-平台事件会被适配成 Compose 内部结构，这项转换未必是性能瓶颈；判断 Compose 手势卡顿，还是要看指针处理器的执行时间、状态写入引起的重组、布局与绘制，以及帧时间线。
+平台事件会被适配成 Compose 内部结构，这项转换未必是性能瓶颈；我们判断 Compose 手势卡顿，看的还是指针处理器的执行时间、状态写入引起的重组、布局与绘制，以及帧时间线。
 
 ## 排查清单
 

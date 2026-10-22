@@ -8323,6 +8323,9 @@
     },
     {
       "chapter": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
+      "close_note": "已还原 drivers/dma-buf/dma-buf.c、drivers/dma-buf/dma-heap.c 与 mmap() 的代码标识符，所有括注文字均保留在代码外；将 Perfetto descriptor 括注移回计数器声明句，Vulkan descriptor layout 保留资源布局释义。证据：android17-6.18-2026-06_r6 dma-buf.c L1-L4、dma-heap.c L28-L39/L81-L108；android-17.0.0_r1 bionic mman.h L47-L55、Skia GrVkDescriptorSetManager.cpp L76-L125/L129-L155、Perfetto gpu_counter_descriptor.proto L21-L54；官方 page-sizes 文档 L588-L619（2026-10-22 抓取文本）。精确正文变更、全部括注守恒、代码围栏/标题/链接保护、中文新增行门禁和三项本地校验通过。文章置 ready-for-review，未直接恢复 finalized；不修改中文重写车道 compare 脚本。详见 logs/rework/2026-10-22-20261022-173520-rework-3d5d14f8-rework.md。",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261022-173520-rework-3d5d14f8",
       "created_at": "2026-10-22T10:49:51.836133+08:00",
       "created_by": "aiw-chinese-rewrite",
       "created_run_id": "20261022-103020-cn-rewrite-3d5d14f889e56553",
@@ -8333,10 +8336,10 @@
       "source_paths": [
         "git 96449c871 vs 81b2f3d57^"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "括注还原批次 96449c871 在本篇留下 4 处门禁锁死的错位/坏损标注，车道内无法修复",
       "type": "restoration-artifact",
-      "updated_at": "2026-10-22T10:49:51.836133+08:00"
+      "updated_at": "2026-10-22T17:41:17.152098+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch02-rendering/01-rendering-architecture-evolution.md",

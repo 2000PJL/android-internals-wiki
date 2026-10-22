@@ -5,9 +5,10 @@ title: GPU 渲染与图形 API 选型
 chapter: '2.7'
 applicable_versions: Android 5.0 - Android 17 (API 21-37)
 last_verified: '2026-09-20'
-last_source_verified_at: '2026-10-22T20:14:49+08:00'
+last_source_verified_at: '2026-10-22T20:38:35+08:00'
+last_deep_review_at: '2026-10-22T20:38:35+08:00'
 last_rework_at: '2026-10-22T20:14:49+08:00'
-verification_scope_note: '2026-10-22 全文一致性审读，核对 Vulkan 版本条件、WSI fence、图形缓冲对象与 stride、Perfetto 区间语义、Headroom 和 WebGPU alpha06 迁移边界，补记 ION 旧文档弃用限制；未逐项复核全部厂商工具与设备行为，未更新整章 last_verified。'
+verification_scope_note: '2026-10-22 全文一致性审读，核对 Vulkan 版本条件、WSI fence、图形缓冲对象与 stride、Perfetto 区间语义、Headroom 和 WebGPU alpha06 迁移边界，补记 ION 旧文档弃用限制；另核对 HWUI 双 queue、GPU render stage 配置与 Headroom 调用边界，修正 Vulkan 主机/设备内存观测口径；未逐项复核全部厂商工具与设备行为，未更新整章 last_verified。'
 last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + official Android/Perfetto/APA/AGI GPU documentation + AndroidX WebGPU 1.0.0-alpha06 + Writer rendering_pipelines S01/S02/S05/S08/S13
 confidence: medium-high
 last_idle_audit_at: '2026-09-20T22:39:38+08:00'
@@ -124,6 +125,8 @@ sources:
   path: https://android.googlesource.com/platform/frameworks/support/+/a4d2df01ba0ba977635de4b0f397fa1ce2288f95/webgpu/webgpu/build.gradle
 - type: artifact
   path: https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06.aar
+- type: official
+  path: https://github.com/KhronosGroup/Vulkan-Docs/blob/v1.4.335/chapters/memory.adoc
 tags:
   - gpu
   - rendering
@@ -545,9 +548,13 @@ kernel 源码锚点 `android17-6.18-2026-06_r6` 包含以下相关文件：
 - `dumpsys meminfo <package>` 的 graphics/EGL 等分类；
 - `dumpsys SurfaceFlinger`、layer/buffer dump；
 - dma-buf heap/bufinfo；
-- Vulkan allocation callbacks 或引擎 allocator telemetry（分配器自身记录的统计数据）；
+- 引擎 allocator telemetry（分配器自身记录的统计数据）：跟踪 `vkAllocateMemory()` / `vkFreeMemory()`，区分 `VkDeviceMemory` 分配总量与 buffer/image 的子分配用量；
 - Adreno/Mali/PowerVR 的厂商 profiler；
 - AGI memory pane 与 Vulkan memory tracker。
+
+`VkAllocationCallbacks` 只用于 Vulkan 实现的主机内存分配，例如保存对象状态的内存；即使传给 `vkAllocateMemory()`，它控制的仍是主机内存分配，无法直接统计该调用分配的设备内存。
+
+设备内存应从返回的 `VkDeviceMemory`、分配大小和引擎子分配记录追踪。`VkDeviceMemory` 分配总量与同一内存块的资源子分配用量不能相加，否则会重复计数；这些记录也不等于 GPU 物理驻留量。[Vulkan 1.4.335 内存规范](https://github.com/KhronosGroup/Vulkan-Docs/blob/v1.4.335/chapters/memory.adoc) 分别定义了主机内存与设备内存。
 
 这些来源各自覆盖的范围不同，写报告时应说明是否包含 driver private allocation（驱动私有分配）、共享 buffer、SurfaceFlinger、纹理、render target 和缓存。
 

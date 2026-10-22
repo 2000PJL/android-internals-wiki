@@ -8814,6 +8814,169 @@
       "summary": "GPU 内存追踪错误推荐 Vulkan 主机内存 allocation callbacks",
       "type": "incorrect-observability",
       "updated_at": "2026-10-22T20:40:44.651321+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "close_note": "按官方客户端补齐截图/内存采集扰动、TTFD 上报、双电池口径；删除未经所读来源确认的 FPower 公式与 mW 单位断言，保留原字段/单位和整机能量边界。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-220520-5121b662",
+      "created_at": "2026-10-22T22:13:12.272548+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-220520-5121b662",
+      "details": "客户端手册明确截图仅 USB 且部分设备有扰动，极高帧率下部分低端机不宜收集 Memory Usage/Detail，TTFD 依赖 reportFullyDrawn；原文还把未经本次来源证实的 FPower 公式和 mW 单位写成确定结论，需删除该推断并保留整机归因边界。",
+      "id": "finding-17-7-perfdog-measurement-boundaries",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfdog.qq.com/article_detail?id=10089&issue_id=0&plat_id=1",
+        "https://perfdog.qq.com/article_detail?id=10210&issue_id=0&plat_id=2"
+      ],
+      "status": "fixed",
+      "summary": "PerfDog 采集扰动、TTFD 与功耗字段的适用条件不完整",
+      "type": "source-boundary",
+      "updated_at": "2026-10-22T22:18:36.184647+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "close_note": "按 GB6 Benchmark Internals 第 14、16、24–27 页修正 HTML 解析/布局/二维绘制范围与 Image Editing 类别；保留机器学习首次括注。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-220520-5121b662",
+      "created_at": "2026-10-22T22:13:12.335341+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-220520-5121b662",
+      "details": "官方 May 2024 Benchmark Internals 第 14 页列出 Gumbo、litehtml、FreeType、AGG 等解析/布局/绘制库，并非 JavaScript 引擎测试；GB6 的类别为 Image Editing，Photo Editor 是 GB7 发布说明中的名称。",
+      "id": "finding-17-7-gb6-workload-semantics",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://www.geekbench.com/doc/geekbench6-benchmark-internals.pdf",
+        "https://www.geekbench.com/blog/2026/07/geekbench-7/"
+      ],
+      "status": "fixed",
+      "summary": "Geekbench 6 HTML5 Browser 被误写为 JavaScript 负载且混入 Photo Editor 名称",
+      "type": "source-accuracy",
+      "updated_at": "2026-10-22T22:18:36.244802+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "close_note": "补充 android-17.0.0_r1 TYPE_SKIN 最大状态聚合及 shell override 条件；明确 NONE 不能排除 CPU/GPU 局部限频。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-220520-5121b662",
+      "created_at": "2026-10-22T22:13:12.393309+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-220520-5121b662",
+      "details": "android-17.0.0_r1 的 onTemperatureMapChangedLocked 在非 shell override 时只取 TYPE_SKIN 最大状态；NONE 不能排除 CPU/GPU 局部限频，也不能证明初始温度复位。",
+      "id": "finding-17-7-thermal-none-scope",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java"
+      ],
+      "status": "fixed",
+      "summary": "THERMAL_STATUS_NONE 被泛化为当前不存在节流",
+      "type": "source-accuracy",
+      "updated_at": "2026-10-22T22:18:36.299663+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "close_note": "删除无原始数据支撑的精确 FPS/FTime 数字与 60 秒条件，改成明确非实测的定性分布示例。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-220520-5121b662",
+      "created_at": "2026-10-22T22:13:12.451925+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-220520-5121b662",
+      "details": "60 秒、45/56 FPS 与 FTime 分位数没有原始数据、采样条件或明确示意标识；用定性分布示例保留教学结论，避免读者误作实测。",
+      "id": "finding-17-7-ftime-unattributed-example",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfdog.qq.com/article_detail?id=10089&issue_id=0&plat_id=1"
+      ],
+      "status": "fixed",
+      "summary": "平均 FPS 对比表含未标明来源的精确帧时数据",
+      "type": "unsupported-data",
+      "updated_at": "2026-10-22T22:18:36.356697+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "close_note": "保留 SDK 35/16 KB 库支持范围、Storage 无最终分数修复、部分旧 debug output 的 KB/s 与 ms 误标，以及旧测试已移除的生命周期通知。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-220520-5121b662",
+      "created_at": "2026-10-22T22:13:12.511801+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-220520-5121b662",
+      "details": "3.1.4113 声明 target SDK 35、16 KB 库支持与部分 debug output 的 KB/s/ms 误标修复；3.0 已停止支持并移除 Work 2.0/1.0、Storage 1.0、Computer Vision。现有正文只写分数不可比，需保留这些具体边界。",
+      "id": "finding-17-7-pcmark-lifecycle-notices",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://support.benchmarks.ul.com/support/solutions/articles/44002199189-pcmark-for-android-application-release-notes"
+      ],
+      "status": "fixed",
+      "summary": "PCMark 版本说明遗漏 16 KB、旧调试单位修复和停止支持通知",
+      "type": "lifecycle-boundary",
+      "updated_at": "2026-10-22T22:18:36.412903+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "created_at": "2026-10-22T22:22:56.211115+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-220520-5121b662",
+      "details": "正文写 32 MB 读、2 MB 写、4 KiB 随机、三轮平均与 A1 具体模式。DOI 页面为订阅摘要，进一步下载的公开预览 PDF 仅两页（667–668），未含方法学第 3 节；不能证明这些精确参数。历史官网 androbench.com 与候选 A1 开发者网址 a1dev.com/sd-bench/ 浏览器连接失败，后者不能作为已核验官方来源。需取得论文全文或固定 APK/可靠官方版本文档逐项核对；完成前保持 ready-for-review，不晋级。",
+      "id": "finding-17-7-historical-storage-evidence",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://doi.org/10.1007/978-3-642-27552-4_89",
+        "https://page-one.springer.com/pdf/preview/10.1007/978-3-642-27552-4_89"
+      ],
+      "status": "open",
+      "summary": "AndroBench 历史协议参数及 A1 SD Bench 功能清单仍缺可定位原始证据",
+      "type": "missing-source",
+      "updated_at": "2026-10-22T22:22:56.211115+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "close_note": "更新 3DMark 2.7.5093 和安兔兔 V12.0.2 及资源包条件，V11 改为既有序列；MPC 按指南列表/设备声明/CDD 分开，删除 37 永不存在的断言。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-220520-5121b662",
+      "created_at": "2026-10-22T22:17:08.769802+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-220520-5121b662",
+      "details": "已读取的当前官方资料给出 3DMark 2.7.5093 与安兔兔 V12.0.2；需保留应用/测试双版本、V12 资源包条件与旧 V11 序列。MPC 指南仅列现有等级，Build.java 从属性读取且仅说明从 R 起，不能将指南列表说成 API 37 的全部返回值或直接宣布 37 永不存在。",
+      "id": "finding-17-7-benchmark-version-scope",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://support.benchmarks.ul.com/support/solutions/articles/44002142020-3dmark-android-application-release-notes",
+        "https://antutu.com/download.htm",
+        "https://developer.android.com/topic/performance/performance-class",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Build.java"
+      ],
+      "status": "fixed",
+      "summary": "设备基线未区分当前下载版本、旧安兔兔基线与 MPC 文档枚举范围",
+      "type": "version-boundary",
+      "updated_at": "2026-10-22T22:18:36.470022+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "close_note": "按固定提交 MemoryTools.java 240–278 行同步改正 PSS 与 Private Dirty 的 SDK 29 分支、shell 权限与 TOTAL 文本列核验条件。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-220520-5121b662",
+      "created_at": "2026-10-22T22:22:56.155563+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-220520-5121b662",
+      "details": "固定提交 MemoryTools.getPssAndPDList 在 API 29 以下从 getProcessMemoryInfo 同时取 PSS/PrivateDirty；API 29 起通过高权限 dumpsys meminfo TOTAL 文本同时解析两项。原表把 PSS 简写成 API 路径而只给 Private Dirty 标注 shell，不能准确引导 Android 17 排障。",
+      "id": "finding-17-7-solopi-memory-sdk-branch",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://github.com/alipay/SoloPi/blob/c83276286183f43d99f35cd52a6e2432bd11c7af/solopi-app/shared/src/main/java/com/alipay/hulu/shared/display/items/MemoryTools.java"
+      ],
+      "status": "fixed",
+      "summary": "SoloPi PSS 和 Private Dirty 采集表遗漏 SDK 29 分支",
+      "type": "source-accuracy",
+      "updated_at": "2026-10-22T22:23:24.496458+08:00"
     }
   ],
   "schema_version": 1

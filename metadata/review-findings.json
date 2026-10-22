@@ -8116,6 +8116,104 @@
       "summary": "BufferQueue 的 acquire 上限被误归为 Producer 取走的 buffer 数",
       "type": "incorrect-mechanism",
       "updated_at": "2026-10-22T08:40:48.521146+08:00"
+    },
+    {
+      "chapter": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "created_at": "2026-10-22T10:10:37.954877+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261022-100020-cn-rewrite-fda680b6568c7d5c",
+      "details": "1) 「一个可观测、可拒绝的计算执行器」一节正文链接 https://android.googlesource.com/platform/libcore/+/refs/tag（调用方自定义标识）s/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java —— URL 中 refs/tags/ 被插入全角括注「（调用方自定义标识）」，链接损坏；正确 URL 已存在于文末源码索引。2) 「times() 的 USER_HZ 语义」一节行内代码 `clock_gettime(CLOCK_PROCESS_CPUTIM（即时通信）E_ID, ...)` —— 常量名 CLOCK_PROCESS_CPUTIME_ID 中的 IM 被误注为「（即时通信）」。两处均属 aiw-chinese-rewrite 冻结面（链接集合/行内代码集合），style_lint compare 禁止改动，需技术修复车道处理。",
+      "id": "finding-e58f79300914",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "chapter-internal"
+      ],
+      "status": "open",
+      "summary": "两处历史机损 token 冻结在本车道无法修复：正文链接 URL 内混入括注 refs/tag（调用方自定义标识）s/；行内代码 CLOCK_PROCESS_CPUTIM（即时通信）E_ID 应为 CLOCK_PROCESS_CPUTIME_ID",
+      "type": "text-corruption",
+      "updated_at": "2026-10-22T10:10:37.954877+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "已用 Android 17 固定标签源码替换 traversal 节选、回调对象与 trace 观察入口；明确逐帧 apply 在 android.anim.lf，正常结束回调才交 android.anim。源码/文本断言与本地 gate 通过。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-100520-e286d5fa",
+      "created_at": "2026-10-22T10:11:31.121733+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-100520-e286d5fa",
+      "details": "ViewRootImpl.scheduleTraversals 实际使用 postVsyncCallback/mTraversalCallback，doTraversal 和 performTraversals 无同名显式 trace；SurfaceAnimationRunner 的 mChoreographer 在 SurfaceAnimationThread 创建，逐帧 apply 在该线程，AnimationThread 接收的是结束回调。错误观察入口会误导定位。",
+      "id": "finding-77bdbe58cabc",
+      "log_path": "",
+      "severity": "P1",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/SurfaceAnimationRunner.java"
+      ],
+      "status": "fixed",
+      "summary": "Android 17 traversal 回调、trace 名称和 SurfaceAnimationRunner 提交线程与源码不符",
+      "type": "incorrect-thread-and-trace",
+      "updated_at": "2026-10-22T10:20:09.613925+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "已修正 ActivityRecord 创建 StartingData、SplashScreen 手动移除和低版本限制、SurfaceSyncGroup 公开重载/隐藏 SurfaceView 重载、Unix socket 输入传输、placement 共六次和 readiness 依赖条件；补充返回回调迁移与配置变化资源责任。对应源码和官方 API 说明已核对。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-100520-e286d5fa",
+      "created_at": "2026-10-22T10:11:31.175646+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-100520-e286d5fa",
+      "details": "StartingData 创建者应为 ActivityRecord；退出监听器接管 remove；AndroidX 低版本图标和动画有限制。SurfaceSyncGroup 的直接 SurfaceView add 为隐藏接口，公开 add 的线程和返回值有约束。输入事件通过 Unix socket input channel，不逐事件走 Binder。placement 共最多六次，unfinished 翻译相反且 readiness timeout 需依赖清空。",
+      "id": "finding-9444445ee38e",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/api/current.txt",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/InputTransport.cpp",
+        "https://developer.android.com/reference/kotlin/androidx/core/splashscreen/SplashScreen"
+      ],
+      "status": "fixed",
+      "summary": "启动窗口、SurfaceSyncGroup、输入传输与同步计数的适用边界不完整",
+      "type": "lifecycle-and-transport-boundaries",
+      "updated_at": "2026-10-22T10:20:09.668859+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "created_at": "2026-10-22T10:11:31.229497+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-100520-e286d5fa",
+      "details": "正文包含 Android 12—16 首引/flag 演进及 Connected Display Desktop 在 Android 16 QPR3 GA 的精确断言。已取得的 Android 17 源码可证明当前实现，不能单独证明这些首次版本和 GA 状态；应补与每条断言对应的固定版本或官方发布资料，再考虑整章 finalized。第三方框架拓扑概述也未逐项按版本复核。",
+      "id": "finding-1f0df2d48025",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/api/current.txt"
+      ],
+      "status": "open",
+      "summary": "版本演进表与 Connected Display Desktop 发布状态缺少逐项可定位证据",
+      "type": "source-coverage",
+      "updated_at": "2026-10-22T10:11:31.229497+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",
+      "close_note": "显示图补上 EventThread/DisplayEventReceiver；queueBuffer 按 slot/QueueBufferInput 描述；present fence 保留光学边界并注明 Composer3 电视 LayerPresentFence 例外及 API 约定偏离。Mermaid 渲染并解析成功。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261022-100520-e286d5fa",
+      "created_at": "2026-10-22T10:14:39.144663+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261022-100520-e286d5fa",
+      "details": "公共时序图遗漏 EventThread/DisplayEventReceiver。queueBuffer 按 slot 及 QueueBufferInput 入队，并非每次传 buffer 句柄；present fence 不能直接证明所有 layer 的光学显示已完成，Composer3 还限定了电视画质处理 LayerPresentFence 例外。",
+      "id": "finding-159c6e9488e7",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl"
+      ],
+      "status": "fixed",
+      "summary": "公共显示图省略 VSync 事件中转且 queueBuffer 与 present fence 边界表达过强",
+      "type": "display-boundary",
+      "updated_at": "2026-10-22T10:20:09.723252+08:00"
     }
   ],
   "schema_version": 1

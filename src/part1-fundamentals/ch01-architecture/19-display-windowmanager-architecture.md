@@ -16,7 +16,7 @@ tags:
 last_verified: '2026-10-22'
 last_source_verified_at: '2026-10-22'
 last_rework_at: '2026-10-22T09:37:56+08:00'
-verification_scope_note: Choreographer 源码链接、五类回调与 SurfaceFlinger 应用 VSync 计数器命名；其他技术结论未重新逐项核验。
+verification_scope_note: 已核对 Android 17 的 Choreographer、ViewRootImpl traversal/relayout 与 trace 点、SurfaceAnimationRunner 提交线程、StartingData 创建、SurfaceSyncGroup 公开接口、placement/同步超时、输入传输、queueBuffer 和 Composer3 present fence 边界；版本首引、桌面能力 GA 状态及第三方框架拓扑尚未逐项核验。
 last_verified_against: AOSP android-17.0.0_r1 Choreographer / ViewRootImpl / HWUI RenderThread / BufferQueue / BLASTBufferQueue / SurfaceFlinger FrontEnd / HWComposer / FrameTimeline；Composer3 AIDL；kernel android17-6.18-2026-06_r6 dma-buf / sync_file / dma-fence + AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + Android 17 official windowing/configuration documentation + rendering_pipelines S06
 confidence: medium-high
 sources:
@@ -160,6 +160,20 @@ sources:
   path: https://developer.android.com/guide/topics/resources/runtime-changes
 - type: official
   path: https://developer.android.com/reference/android/window/SurfaceSyncGroup
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/window/SurfaceSyncGroup.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityRecord.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/SurfaceAnimationRunner.java
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/InputTransport.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl
+- type: official
+  path: https://developer.android.com/reference/kotlin/androidx/core/splashscreen/SplashScreen
+- type: official
+  path: https://developer.android.com/develop/ui/views/launch/splash-screen/migrate
 - type: material
   path: rendering_pipelines/S06_multi_window_type.md
 related_chapters:
@@ -211,14 +225,16 @@ consolidated_from:
 
 ```mermaid
 sequenceDiagram
-    participant APP as App MainThread
+    participant ET as VSync EventThread
+    participant APP as App DisplayEventReceiver / MainThread
     participant RT as HWUI RenderThread
     participant BQ as BLAST and BufferQueue
     participant GPU as GPU Queue
     participant SF as SurfaceFlinger
     participant HWC as HWC and Display
 
-    SF->>APP: vsync-app
+    SF->>ET: Scheduler arranges app VSync
+    ET->>APP: VSync event via DisplayEventReceiver
     APP->>APP: Choreographer doFrame
     APP->>RT: syncAndDrawFrame
     RT->>BQ: dequeueBuffer
@@ -250,7 +266,7 @@ sequenceDiagram
 
 `ViewRootImpl.performDraw()` 经 `ThreadedRenderer`、`HardwareRenderer.syncAndDrawFrame()` 进入原生 HWUI。RenderThread 同步 `RenderNode` 状态、组织 Skia 绘制工作并向 GPU 提交命令。我们要留意，主线程可能在同步阶段等 RenderThread；`syncAndDrawFrame()` 返回，说明不了 GPU 已经完成。
 
-RenderThread 通过 `dequeueBuffer` 取得可写的缓冲槽，再用 `queueBuffer` 把 buffer、描述信息和生产完成 fence 交回。fence 表示异步图形工作何时完成，消费者把它当作 acquire fence 使用。`queueBuffer` 交回的只有缓冲槽、buffer 句柄、裁剪区域、变换、色彩空间标识（dataspace）、时间戳和同步对象，整帧像素不经过 Binder 复制。
+RenderThread 通过 `dequeueBuffer` 取得可写的缓冲槽，再用 `queueBuffer` 把该 slot 和描述信息、生产完成 fence 交回。fence 表示异步图形工作何时完成，消费者把它当作 acquire fence 使用。`queueBuffer(slot, QueueBufferInput, ...)` 传入裁剪区域、变换、色彩空间标识（dataspace）、时间戳和同步对象等信息；buffer 对象与 slot 的关联由 `requestBuffer()` 等接口管理。整帧像素不经过 Binder 复制。
 
 标准应用窗口的 `BLASTBufferQueue` 位于应用进程。它取得 `BufferItem` 后，用 `SurfaceComposerClient::Transaction::setBuffer()` 携带 buffer、acquire fence、帧号与释放回调，再把事务提交给 SurfaceFlinger；窗口几何事务还可以按帧号与 buffer 更新对齐。
 
@@ -294,7 +310,7 @@ FrameTimeline 中 SurfaceFlinger 的实际帧区间可延伸到屏幕更新，�
 - `latch`：SurfaceFlinger 已采纳该 layer 的新 buffer；
 - present fence signal：本轮 present 到达用户态可观察的显示时间点。
 
-present fence 不包含面板扫描、像素响应和人眼感知时间。定位端到端显示延迟时，Android 框架系统轨迹只能回答到系统显示边界；再往后的光学延迟需要显示驱动、面板数据或外部测量证据。
+present fence 不能证明整块面板已完成扫描、像素响应或用户已经感知到内容。`android-17.0.0_r1` 的 Composer3 [`PresentFence.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl) 还定义了电视画质处理的受限例外：特定 layer 的 buffer 可能晚于整屏其他内容呈现，由 `LayerPresentFence` 及其延迟字段描述；该例外偏离通常的 `SurfaceControl.Transaction` API 约定，只允许用于需要此能力的电视设备。定位端到端显示延迟时，应确认 fence 对应的显示屏和 layer，光学延迟仍需显示驱动、面板数据或外部测量证据。
 
 ### 3. 出图类型要按拓扑分类
 
@@ -512,7 +528,7 @@ system_server
 
 WCT 是“窗口容器要变成什么状态”的管理请求，处理后可能引发一个或多个 SurfaceControl transaction；它不属于 SurfaceFlinger 的几何 transaction。几何属性与内容 buffer 分属两路输入，resize 时可能短暂出现位置尺寸已更新、buffer 还是旧的；也可能新 buffer 已到，同步组尚未放行新的几何。
 
-这四路信号对齐之后，才能确定问题出在哪条链；只搜索“transaction”定位不到问题位置。
+容器请求、几何事务和内容 buffer 对齐之后，才能确定问题出在哪条链；只搜索“transaction”定位不到问题位置。
 
 ### WMS 的容器树与 Surface 树
 
@@ -572,7 +588,7 @@ WMS 构造通过 `DisplayThread.getHandler().runWithScissors()` 同步切到 Dis
 
 源码没有在这两个类里把线程配置成 `SCHED_FIFO`；display priority 是线程优先级，把它写成实时调度策略属于过度解读。
 
-`SurfaceAnimationRunner` 同时使用两条线程：动画帧计算在 `SurfaceAnimationThread`，transaction apply（提交）会借助 `AnimationThread` 调度。这样可以把逐帧动画计算与持有窗口全局锁的容器变更隔开。
+`SurfaceAnimationRunner` 同时使用两条线程：`mChoreographer` 在 `SurfaceAnimationThread` 上创建，逐帧动画计算以及 `scheduleApplyTransaction()` → `applyTransactionCallback()` → `mFrameTransaction.apply()` 都在这条线程上执行；正常结束时，`mFinishCallback` 才被投递到 `AnimationThread`。定位逐帧提交迟到，应先看 `android.anim.lf`，结束回调或后续窗口状态更新再查 `android.anim`。
 
 线程分开并未消除共享瓶颈：surface placement 仍会读取和修改受 `mGlobalLock` 保护的窗口树，大量同步 Binder 调用或锁内工作仍可能拖慢动画路径。
 
@@ -628,17 +644,18 @@ WMS 构造通过 `DisplayThread.getHandler().runWithScissors()` 同步切到 Dis
 
 #### 决策与创建为何分属 WMS 和 WM Shell（WindowManager Shell）
 
-Android 12 之后，StartingWindow 的决策与实际创建分在两侧。ATMS/WMS 负责判断本次 Activity 启动是否需要 starting surface，`StartingSurfaceController` 按 SplashScreen 或 TaskSnapshot 路径生成 starting data（描述启动窗口类型和资源的请求数据）；WM Shell 的 starting-surface 组件负责创建 SplashScreen/TaskSnapshot 窗口并挂到对应 Task 上。常用源码位置包括：
+Android 12 之后，StartingWindow 的决策与实际创建分在两侧。ATMS/WMS 负责判断 Activity 启动是否需要 starting surface；`ActivityRecord` 根据类型创建 `SplashScreenStartingData` 或 `SnapshotStartingData`（描述启动窗口类型和资源的请求数据），再经 `StartingSurfaceController`、`TaskOrganizerController` 请求 WM Shell 创建窗口。Shell 的 starting-surface 组件负责创建 SplashScreen/TaskSnapshot 窗口并挂到对应 Task 上。常用源码位置包括：
 
-- `frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java`：服务端发起 starting surface 请求
-- `frameworks/base/services/core/java/com/android/server/wm/SplashScreenStartingData.java`：保存 SplashScreen starting data
+- `frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java`：选择启动窗口类型并创建 starting data
+- `frameworks/base/services/core/java/com/android/server/wm/StartingSurfaceController.java`：经 TaskOrganizerController 发起 starting surface 创建请求
+- `frameworks/base/services/core/java/com/android/server/wm/SplashScreenStartingData.java`：保存 SplashScreen starting data，并委托 StartingSurfaceController 创建 surface
 - `frameworks/base/libs/WindowManager/Shell/src/com/android/wm/shell/startingsurface/StartingWindowController.java`：Shell 侧接收 `TaskOrganizer.addStartingWindow` 回调
 - `StartingSurfaceDrawer.java`/`SplashscreenWindowCreator.java`：Shell 侧创建并绘制 SplashScreen window
 
 冷启动路径按这组分工读：
 
 1. ATMS 推进 Activity 启动，WMS 在 `ActivityRecord`/Task 可见性变化中判断是否需要 starting surface。
-2. `StartingSurfaceController` 生成请求，SplashScreen 路径使用 `SplashScreenStartingData`，历史任务恢复路径可能使用 TaskSnapshot starting data。
+2. `ActivityRecord` 创建 `SplashScreenStartingData` 或 `SnapshotStartingData`，其 `createStartingSurface()` 经 `StartingSurfaceController` 发起创建请求。
 3. Android 12+ 的 Shell starting-surface 组件收到 `addStartingWindow` 回调后，在承载 WM Shell 的 Shell/SystemUI 进程侧创建 SplashScreen 或 TaskSnapshot 窗口。
 4. App 进程启动并绘制主 Window 第一帧。
 5. App 通过 `finishDrawing`/`reportDrawFinished` 把主窗口首帧完成信号交给服务端，随后由 `removeStartingWindow` 路径通知 Shell 移除 starting surface。
@@ -649,9 +666,9 @@ Perfetto 里我们要把三段分开看：system_server 侧是 starting data、A
 
 在 Android 12 之前，StartingWindow 的外观主要由 `windowBackground` 决定，OEM 定制差异较大。Android 12 引入 SplashScreen API（`android.window.SplashScreen`），提供统一接口来配置启动页主题、icon（图标）、背景色和退出动画：
 
-- 开发者通过 `Theme.SplashScreen` 配置 icon、背景色、动画等元素。
-- 退出动画通过 `setOnExitAnimationListener` 接入，移除时机仍要和主 Window 首帧完成信号配合。
-- `androidx.core:core-splashscreen` 向后支持 Android 5.0+，但 Android 12+ 的系统 starting surface 创建仍落在 Shell starting-surface 路径。
+- 平台 API 从 Android 12 / API 31 起可用；使用 AndroidX 兼容库时，以 `Theme.SplashScreen` 或 `Theme.SplashScreen.IconBackground` 为父主题配置 icon、背景色等元素。
+- `setOnExitAnimationListener` 会接管自动移除：平台接口需要在动画结束后调用 `SplashScreenView.remove()`；AndroidX 接口对应 `SplashScreenViewProvider.remove()`。只注册监听器而不移除，会让启动画面停留。
+- `androidx.core:core-splashscreen` 在 Android 12+ 调用平台实现，低版本模拟行为。其[API 参考](https://developer.android.com/reference/kotlin/androidx/core/splashscreen/SplashScreen)注明：API 21—22 在应用启动前只显示背景，图标要等应用启动后才出现；API 31 以下不支持启动图标动画，自适应图标也有裁剪与缩放差异。Android 12+ 的系统 starting surface 创建仍落在 Shell starting-surface 路径。
 
 这套 API 可以避免 App 为启动页另建 SplashActivity：自建启动页会多一次 Activity 启动、窗口切换和可能的 relayout，系统 SplashScreen 复用 starting surface 生命周期，不增加 App 侧 Activity 数量。
 
@@ -737,7 +754,7 @@ BLAST 在某台设备上是否降低延迟、降低多少，要靠 trace 比较�
 
 `ViewRootImpl.performTraversals()` 并不会每帧跨进程调用 WMS，直接条件有五类：
 
-- **`mFirst`**：窗口首次显示，必须向 WMS 申请初始 `SurfaceControl`、frames 和 Insets。
+- **`mFirst`**：首次 traversal 进入 relayout；同步路径可取得 WMS 返回的 frames、Insets 与同步信息。SurfaceControl 由服务端返回还是客户端创建，取决于 `useClientSurface()` 路径。
 - **`windowShouldResize`**：`requestLayout()` 后测量结果改变了窗口尺寸，常见于旋转、多窗口 resize，或 Dialog 的 `WRAP_CONTENT` 内容变大。
 - **`viewVisibilityChanged`**：窗口从隐藏变为显示、从显示变为隐藏，或 `mNewSurfaceNeeded=true`。
 - **`params != null`**：`setLayoutParams()`、system UI visibility、keepScreenOn 等窗口属性发生变化。
@@ -747,44 +764,47 @@ Insets 变化会先走 `mApplyInsetsRequested`、`dispatchApplyInsets()`，并�
 
 #### scheduleTraversals 与 performTraversals 的进程边界
 
-`ViewRootImpl.scheduleTraversals()` 是 App 侧调度入口，不跨进程。它向 Choreographer 投递 `TraversalRunnable`，在下一次 VSync 时触发 `doTraversal()` → `performTraversals()`。WMS 跨进程调用只发生在 `performTraversals()` 内部条件满足时。
+`ViewRootImpl.scheduleTraversals()` 是 App 侧调度入口，不跨进程。在 `android-17.0.0_r1` 中，它设置消息队列同步屏障，再通过 `Choreographer.postVsyncCallback(CALLBACK_TRAVERSAL, mTraversalCallback)` 投递 `TraversalCallback`。回调把帧时间传给 `doTraversal(frameTimeNanos)`，后者移除屏障并调用 `performTraversals(frameTimeNanos)`。是否向 WMS 发送 relayout 请求，仍取决于 traversal 内部的条件。
 
-以下代码从 `ViewRootImpl.java` 抽取等价逻辑，只保留调度与 relayout 条件：
+下面是 Android 17 的调度代码节选；线程检查和渲染器通知已省略，保留同步屏障与回调入口：
 
 ```java
-// 调度入口 — App 进程内，不跨进程
 void scheduleTraversals() {
+    // 省略线程检查。
     if (!mTraversalScheduled) {
         mTraversalScheduled = true;
-        mChoreographer.postCallback(Choreographer.CALLBACK_TRAVERSAL,
-                mTraversalRunnable, null);
+        postTraversalBarrier();
+        mChoreographer.postVsyncCallback(
+                Choreographer.CALLBACK_TRAVERSAL, mTraversalCallback);
+        // 省略渲染器通知与绘制唤醒锁处理。
     }
 }
 
-// performTraversals 内部的条件判断 — 跨进程阈值
-final boolean relayoutRequested = mFirst || windowShouldResize
-        || viewVisibilityChanged || params != null
-        || mForceNextWindowRelayout;
-
-if (relayoutRequested) {
-    // 这里才跨进程 → WMS
-    relayoutWindow(params, viewVisibility, insetsPending);
+void doTraversal(long frameTimeNanos) {
+    if (mTraversalScheduled) {
+        mTraversalScheduled = false;
+        removeTraversalBarrier();
+        performTraversals(frameTimeNanos);
+    }
 }
 ```
 
-这段代码只抽取调度与 relayout 分支：`requestLayout()` → `scheduleTraversals()` → `performTraversals()` 先在 App 进程内执行，命中前述五类条件后，才从 `performTraversals()` 调用 WMS。
+`requestLayout()` → `scheduleTraversals()` → `performTraversals()` 先在 App 进程内推进；命中前述五类条件后，才会进入 `relayoutWindow()` 的同步或异步 Binder 路径。代码是内部实现节选，不能作为应用可调用的 API。
 
-Perfetto 中可以用下表区分这些 slice（时间线上有起止时间的一段事件）：
+Perfetto 中要区分源码方法与实际写入的 trace 名称。该标签的 `doTraversal()`、`performTraversals()` 没有各自的同名显式 slice，不能依赖 `ViewRootImpl#doTraversal` 或 `ViewRootImpl#performTraversals` 搜索定位。可从以下 trace 点观察：
 
-| Slice 名称 | 进程 | 线程 | 含义 |
+| Trace 名称或前缀 | 进程 | 线程 | 含义 |
 |-----------|------|------|------|
-| `ViewRootImpl#doTraversal` | App | UI Thread | App 侧 measure/layout/draw 调度 |
-| `ViewRootImpl#performTraversals` | App | UI Thread | 完整 measure+layout+draw，内部可能嵌套 `relayoutWindow` |
-| `relayoutWindow` | system_server | `Binder:*` 入口 | WMS 侧 Window 属性更新；同步/oneway 异步入口都可在当前线程内执行强制 placement |
+| `Choreographer#doFrame` 中的 traversal 回调阶段 | App | UI Thread | 定位这一帧的 ViewRoot 遍历时段；measure、layout、draw 是否发生取决于状态 |
+| `VRI[...]-relayoutWindow#first=.../resize=.../vis=.../params=.../force=.../seqId=...` | App | UI Thread | `performTraversals()` 命中 relayout 分支，名称中记录触发条件 |
+| `relayoutSync ...` | App | UI Thread | 同步 relayout 的原因；这是 instant 事件，不是耗时 slice |
+| `measure`、`layout`、`draw-VRI[...]` | App | UI Thread | 对应实际执行的测量、布局和绘制阶段 |
+
+同步路径的 App 侧 relayout slice 可以包含 Binder 等待；oneway 异步发送不表示服务端已经完成。服务端耗时要继续关联 Binder 入口与 `performSurfacePlacement`，不能从客户端 slice 结束时间推导。
 
 **时序判读**：
 
-- App 发起：`performTraversals` 内嵌同步或异步 relayout，常见于首次显示、尺寸或 LayoutParams 变化；
+- App 发起：traversal 内部条件触发同步或异步 relayout，常见于首次显示、尺寸或 LayoutParams 变化；
 - system_server 发起状态变化：WMS 通过 `IWindow.resized()`、Insets/configuration 等回调通知客户端，客户端再 schedule traversal；下一次 traversal 是否再次调用 relayout，仍由上述五类条件决定。
 
 #### `canRelayoutAsync()` 检查本地计算条件
@@ -853,7 +873,7 @@ requestTraversal()
 
 相关的计数有两处：
 
-1. `performSurfacePlacement()` 的 `loopCount = 6`：同一次直接调用中，如果 placement 又请求 traversal，最多立即再跑 6 轮；
+1. `performSurfacePlacement()` 的 `loopCount = 6`：一次直接调用最多执行 6 次 `performSurfacePlacementLoop()`，包含首次执行；只有重新请求了 traversal 且计数仍大于 0，才继续下一轮；
 2. `performSurfacePlacementLoop()` 的 `mLayoutRepeatCount`：Root 仍标记 `layoutNeeded` 时继续请求 traversal，累计到阈值后输出 `Performed 6 layouts in a row. Skipping` 并重置。
 
 两者会相互影响，只是别把它们描述成“严格跨 6 帧”或“同一帧内、内外两层各 6 次”：源码约束的是调用与重复布局次数，最终跨多少个 vsync 取决于调度时机和每轮耗时。
@@ -905,16 +925,18 @@ Transition 创建 SyncGroup
 
 `BLASTSyncEngine` 分别处理：
 
-- **sync group timeout（同步组超时）**：组没有正常完成。`isReadinessTimeout=true` 只说明所有容器都完成了绘制或同步工作，整组却还没获准提交；`false` 时则可能是未绘制容器或依赖未完成；
+- **sync group timeout（同步组超时）**：组没有正常完成。`isReadinessTimeout=true` 对应所有成员 `isSyncFinished()` 均为 true、依赖已清空，但 `mReady=false`；`false` 时则可能是成员未完成或依赖未清空；
 - **transaction commit timeout（事务提交超时）**：合并 transaction 已交给 listener 或 organizer，却迟迟等不到 committed callback（提交完成回调）。
 
-所以看到 sync timeout，先别断言“应用 buffer 没 acquire”，去查日志里的 unfinished（完成绘制或同步工作） container（未完成容器）、draw state、sync state 和 dependency；commit timeout 则继续核对 organizer、SurfaceFlinger transaction 和 commit callback。
+看到 sync timeout，应检查日志里的 `Unfinished container`（未完成容器）、draw state、sync state 和 `Unfinished dependency`（未完成依赖）。这些状态不能单凭一个“应用 buffer 没 acquire”概括。commit timeout 则继续核对 organizer、SurfaceFlinger transaction 和 commit callback。
 
 [源码依据：`BLASTSyncEngine.SyncGroup`、`Transition.onTransactionReady()`，`android-17.0.0_r1`]
 
 #### 与公开 `SurfaceSyncGroup` 的关系
 
-API 34 起公开的 `SurfaceSyncGroup` 面向 `AttachedSurfaceControl`、`SurfaceView`、`SurfaceControlViewHost` 等 Surface，可跨组件甚至跨进程等待多个 Surface ready（获准提交）后一起应用 transaction。它与 system_server 内部的 `BLASTSyncEngine` 都解决“多个 Surface 何时一起可见”，但调用方和同步对象不同。
+API 34 起公开的 `SurfaceSyncGroup` 用于收集多个 Surface 的事务；调用 `markSyncReady()` 后不再添加数据，等待子组完成，再合并提交。公开 `add()` 重载接受 `AttachedSurfaceControl` 或 `SurfaceControlViewHost.SurfacePackage`，后者可跨进程收集嵌入窗口。`add(AttachedSurfaceControl, Runnable)` 必须在创建该 UI 对象的线程调用；两个重载都返回是否成功加入，失败后不能继续假定该 Surface 已受同步组保护。
+
+类说明也提到 SurfaceView，但 `android-17.0.0_r1` 中直接接受 `SurfaceView` 的 `add()` 重载带 `@hide`，不在公开 SDK 的 `current.txt` 中。应用不能把它当作 API 34 起可直接调用的公开接口。接口范围见[官方 API 参考](https://developer.android.com/reference/android/window/SurfaceSyncGroup)；它与 system_server 内部的 `BLASTSyncEngine` 调用方和同步对象不同。
 
 看到 sync id 或超时，先确认它属于 WMS 的 WindowContainer 同步，还是应用/组件侧的 `SurfaceSyncGroup`：前者继续检查 `WindowState` draw state、SyncGroup 依赖和 transition ready，后者检查参与 Surface 是否报告 ready、回调进程是否存活，以及合并 transaction 是否真正提交。
 
@@ -966,6 +988,8 @@ Predictive Back（预测返回）会随用户返回手势的进度，实时预�
 - **Android 15**：开发者选项不再是系统动画显示前提；对已经 opt-in（显式接入）的应用或 Activity，back-to-home、cross-task、cross-activity 等系统动画会按系统策略显示。未接入的应用仍按传统返回行为处理。
 - **Android 16**：target SDK 36 的应用默认启用 predictive back，`android:enableOnBackInvokedCallback` 默认值改为 `true`；旧 `OnBackPressed`/`KEYCODE_BACK` 调用在该行为下被忽略，同时新增 `finishAndRemoveTaskCallback`、`moveTaskToBackCallback` 等 API。
 - **Android 17**：沿用该 transition/Shell 主路径；应用是否参与预测动画，要按目标 SDK、manifest 与 AndroidX callback 的实际配置判断，光看系统版本判断不出来。
+
+设置 `android:enableOnBackInvokedCallback="false"` 会关闭预测返回系统动画，并让平台忽略 `OnBackInvokedCallback`；AndroidX `OnBackPressedCallback` 仍可工作。`KEYCODE_BACK` 常量本身没有被弃用，需要迁移的是依赖它拦截返回的处理方式。迁移边界见[官方预测返回指南](https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture)。
 
 它的性能路径跨 Input、ATMS/WMS、Shell transition 和 SurfaceFlinger。手势开始后，Input 侧持续上报 back progress（返回进度），WMS/Shell 根据返回目标更新当前窗口和目标窗口的 leash；手势完成或取消时，transition 进入 finish 或 cancel。分析卡顿时要同时看 Input 事件节奏、Shell transition handler、system_server transition 状态，以及 SurfaceFlinger 是否在同一时间段出现 transaction 堆积。
 
@@ -1026,9 +1050,11 @@ WMS add/relayout/focus/layout
 
 ```text
 设备事件 → InputReader/InputDispatcher 选目标
-         → Binder/input channel 到应用
+         → Unix domain socket input channel 到应用
          → 应用主线程分发并处理
 ```
+
+`InputTransport.cpp` 的 [`InputChannel::openInputChannelPair()`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/InputTransport.cpp#359) 使用 `socketpair(AF_UNIX, SOCK_SEQPACKET, ...)` 建立通道；事件消息通过 `sendMessage()`/`receiveMessage()` 收发。窗口注册与通道句柄交付会涉及 Binder，但普通按键、触摸事件不逐个通过 Binder 投递到应用。
 
 如果 input window 快照里的 transform/region/focus 已过期，问题在 WMS/InputMonitor 更新；目标正确但队列等待长，则查 InputDispatcher 与进程调度；事件已到应用却迟迟不处理完，则查主线程、锁和 View 事件处理。
 
@@ -1088,6 +1114,8 @@ Android 17 还减少了部分配置变化的 Activity 重建：`CONFIG_KEYBOARD`
 - 对已列出的 flag，如果 App 依赖 Activity 重建来刷新资源，可以通过 `recreateOnConfigChanges` 显式要求重建；
 - 不要把 `uiMode` 写进该属性；进入或离开 desk mode（桌面模式）时，应在 `onConfigurationChanged()` 更新依赖配置的资源和组件；
 - `recreateOnConfigChanges` 与声明 App 自行处理变化的 `android:configChanges` 方向相反，同一 flag 同时出现在两者时不会重建。
+
+不重建 Activity 仍需要处理资源更新。收到 `onConfigurationChanged()` 后，应重新读取受变化影响的资源，并更新依赖配置的 View 或嵌入组件；仍须保存状态，以应对其他配置变化或进程死亡。
 
 #### Connected Display Desktop 的可用条件
 

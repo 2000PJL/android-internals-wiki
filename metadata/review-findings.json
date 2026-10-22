@@ -8718,6 +8718,84 @@
       "summary": "ION 迁移参考资料遗漏官方 deprecated 和 5.4 kernel only 限定",
       "type": "deprecated-source-boundary",
       "updated_at": "2026-10-22T18:21:20.416765+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch09-anr/01-anr-mechanism-types-triggers.md",
+      "close_note": "已按 ActivityThread.handleBindApplication/installContentProviders 的源码先后顺序修正 Provider 发布期限归因；补入可追溯来源并通过静态顺序断言和本地 gate。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261022-183520-idle-audit-343fc0ae",
+      "created_at": "2026-10-22T18:39:05.694251+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261022-183520-idle-audit-343fc0ae",
+      "details": "android-17.0.0_r1 ActivityThread.handleBindApplication() 先安装并 publish Provider，之后才调用 Application.onCreate()；原正文将后者列为 publish 等待的直接耗时来源，会误导初始化失败排查。",
+      "id": "finding-fd7c970587df",
+      "log_path": "logs/audit/2026-10-22-20261022-183520-idle-audit-343fc0ae-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java"
+      ],
+      "status": "verified",
+      "summary": "Provider publish 超时错误归因到 Application.onCreate()",
+      "type": "source-mismatch",
+      "updated_at": "2026-10-22T18:43:37.189680+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch09-anr/01-anr-mechanism-types-triggers.md",
+      "close_note": "已恢复源码表达式 now() - oldestEntry.deliveryTime；投递时间括注保留在代码外；源码精确匹配与括注守恒检查通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261022-183520-idle-audit-343fc0ae",
+      "created_at": "2026-10-22T18:39:05.751125+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261022-183520-idle-audit-343fc0ae",
+      "details": "正文行内代码 now() - delivery（投递）Time 不是源码标识符；InputDispatcher.onAnrLocked() 使用 now() - oldestEntry.deliveryTime，投递含义应放在行内代码外。",
+      "id": "finding-f4c3eccc507b",
+      "log_path": "logs/audit/2026-10-22-20261022-183520-idle-audit-343fc0ae-idle-audit.md",
+      "severity": "P3",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp"
+      ],
+      "status": "verified",
+      "summary": "Input ANR 等待时长表达式混入中文括注",
+      "type": "invalid-identifier",
+      "updated_at": "2026-10-22T18:43:37.250132+08:00"
+    },
+    {
+      "chapter": "src/part2-performance/ch09-anr/01-anr-mechanism-types-triggers.md",
+      "close_note": "用途句已准确说明选择最近一次 ANR、仅在 trace 仍可用时读取；原 Kotlin 代码未改，官方 API 30 与可返回 null 边界已核对。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261022-183520-idle-audit-343fc0ae",
+      "created_at": "2026-10-22T18:39:05.807259+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261022-183520-idle-audit-343fc0ae",
+      "details": "firstOrNull 仅筛选 REASON_ANR，随后以安全调用读取 trace；最新 ANR trace 为 null 时不会继续查找更早的带 trace 记录。应将用途句改为查找最近一次 ANR 并在 trace 仍可用时读取，保留代码和空值边界。",
+      "id": "finding-d3acd3946e13",
+      "log_path": "logs/audit/2026-10-22-20261022-183520-idle-audit-343fc0ae-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo#getTraceInputStream()"
+      ],
+      "status": "verified",
+      "summary": "ANR 退出记录示例未筛选 trace 可用性但说明声称已筛选",
+      "type": "example-description-mismatch",
+      "updated_at": "2026-10-22T18:43:37.311182+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "created_at": "2026-10-22T18:44:39.775083+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261022-183020-cn-rewrite-f2e8fcf33846f36c",
+      "details": " Geekbench 单核分数段（约 569 行）出现「XML（Machine Learning，机器学习） inflate（从布局 XML 创建 View）」：ML 的解释被错误锚到 XML 上，疑为历史括注搬移事故。本轮无法修复：style_lint compare 的括注保真门禁按 (term, inner) 精确对锁定该括注，且 XML 一词仍存在于 inflate 括注内（“从布局 XML 创建 View”），删除即判“删除括注”失败。同类的「可查询（一次主查询后又逐行追加查询）」错位已在本轮修正（解释移回 N+1 查询，原句改“可以列出”，锚词 可查询 全文消失）。修复需在括注门禁维护窗口处理：删除 XML 后的（Machine Learning，机器学习），并把该解释挂到 566/581 行等 ML 首次出现处。",
+      "id": "finding-888b23cc139b",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "run 20261022-183020-cn-rewrite-f2e8fcf33846f36c GPT 审查前的自检"
+      ],
+      "status": "open",
+      "summary": "错位括注：XML（Machine Learning，机器学习）挂错术语，应为 ML 的解释",
+      "type": "wrong-gloss-anchor",
+      "updated_at": "2026-10-22T18:44:39.775083+08:00"
     }
   ],
   "schema_version": 1

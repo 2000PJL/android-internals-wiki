@@ -5,10 +5,10 @@ title: GPU 渲染与图形 API 选型
 chapter: '2.7'
 applicable_versions: Android 5.0 - Android 17 (API 21-37)
 last_verified: '2026-09-20'
-last_source_verified_at: '2026-10-22T17:38:46+08:00'
-last_rework_at: '2026-10-22T17:38:46+08:00'
-verification_scope_note: '2026-10-22 复核 DMA-BUF 源码路径、mmap() 标识符与 Vulkan/Perfetto descriptor 括注；其余技术结论未在该日期重新核验。'
-last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + official Android/Perfetto/APA/AGI GPU documentation + AndroidX WebGPU 1.0.0-alpha05 + Writer rendering_pipelines S01/S02/S05/S08/S13
+last_source_verified_at: '2026-10-22T20:14:49+08:00'
+last_rework_at: '2026-10-22T20:14:49+08:00'
+verification_scope_note: '2026-10-22 全文一致性审读，核对 Vulkan 版本条件、WSI fence、图形缓冲对象与 stride、Perfetto 区间语义、Headroom 和 WebGPU alpha06 迁移边界，补记 ION 旧文档弃用限制；未逐项复核全部厂商工具与设备行为，未更新整章 last_verified。'
+last_verified_against: AOSP android-17.0.0_r1 + kernel android17-6.18-2026-06_r6 + official Android/Perfetto/APA/AGI GPU documentation + AndroidX WebGPU 1.0.0-alpha06 + Writer rendering_pipelines S01/S02/S05/S08/S13
 confidence: medium-high
 last_idle_audit_at: '2026-09-20T22:39:38+08:00'
 sources:
@@ -106,6 +106,24 @@ sources:
   path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/common/gpu_counter_descriptor.proto
 - type: official
   path: https://developer.android.com/guide/practices/page-sizes
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativewindow/include/android/hardware_buffer.h
+- type: aosp
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java
+- type: aosp
+  path: https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/src/gpu/ganesh/vk/GrVkRenderPass.cpp
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/proto/gpu_event_parser.cc
+- type: aosp
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/gpu/frequency.sql
+- type: official
+  path: https://github.com/KhronosGroup/Vulkan-Docs/blob/v1.4.335/chapters/vertexpostproc.adoc
+- type: official
+  path: https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps
+- type: androidx
+  path: https://android.googlesource.com/platform/frameworks/support/+/a4d2df01ba0ba977635de4b0f397fa1ce2288f95/webgpu/webgpu/build.gradle
+- type: artifact
+  path: https://dl.google.com/dl/android/maven2/androidx/webgpu/webgpu/1.0.0-alpha06/webgpu-1.0.0-alpha06.aar
 tags:
   - gpu
   - rendering
@@ -134,7 +152,7 @@ consolidated_from:
 
 # GPU 渲染与图形 API 选型
 
-“主线程不忙，所以 GPU 慢”——这句话把好几个互不相同的完成时刻混在了一起。我们从头到尾要区分五个时刻：UI 线程结束、RenderThread 提交命令、GPU completion（GPU 完成这批工作）、buffer queue（窗口 buffer 入队）、present（把显示帧提交给显示设备）。它们彼此独立，任何一个迟到，都可能让画面错过目标周期。
+“主线程不忙，所以 GPU 慢”——这句话把好几个互不相同的完成时刻混在了一起。需要区分五个时刻：UI 线程结束、RenderThread 提交命令、GPU completion（GPU 完成这批工作）、buffer queue（窗口 buffer 入队）、present（把显示帧提交给显示设备）。它们有依赖关系，但不能互相替代；例如 buffer 可以先入队，再由 fence 表示 GPU 何时写完。任一关键阶段迟到，都可能让画面错过目标周期。
 
 先约定贯穿全文的对象：Producer 生成并提交 buffer，Consumer 取得并使用它，fence（异步工作完成凭证） 表示异步读写何时完成。
 
@@ -187,7 +205,7 @@ CPU record / submit
 
 这个模型适合建立概念。落到具体帧上，每个 Canvas 操作生成多少顶点、走哪种 shader（运行在 GPU 上的着色程序），主动权在 Skia 手里：它会按图形、抗锯齿、clip、transform（显示变换）、backend 和 GPU capability（设备实际能力），在 analytic shader、实例化几何、tessellation、纹理 quad、离屏 pass 等策略之间挑选。
 
-我们顺着这条链路把各段的工作分清楚：vertex processing 先变换顶点；primitive assembly 把顶点组成三角形等图元，clipping 去掉视口外的部分。接下来 rasterization 把图元转换成片元候选，fragment（等待着色与测试的片元候选） shading 计算颜色或采样纹理。判定与混合在最后：depth/stencil tests 决定哪些结果可写入，blending 把它们与目标中已有颜色混合；最终接收颜色结果的图像，就是 color attachment（颜色、深度或模板等渲染附件）。
+vertex processing 先变换顶点；primitive assembly 把顶点组成三角形等图元，clipping 在裁剪坐标中按 clip volume（裁剪体）裁剪图元。接下来 rasterization 把图元转换成片元候选，fragment（等待着色与测试的片元候选）shading 计算颜色或采样纹理。depth/stencil tests 决定哪些结果可写入，blending 把它们与目标中已有颜色混合；最终接收颜色结果的图像是 color attachment（颜色附件），深度和模板数据使用各自的附件。图中的顺序用于解释职责，深度或模板测试也可能提前执行。
 
 这些策略名词后文会反复出现，我们先把 Skia 侧的几个解释放在这里：analytic shader 用数学表达式直接计算覆盖率；实例化几何复用同一份几何描述绘制多个对象；tessellation 把曲线等复杂形状细分为 GPU 可处理的图元；纹理 quad 是采样一张纹理所用的矩形；离屏 pass 先把结果画到中间目标。backend 指 Skia 连接 OpenGL/Vulkan 与驱动的后端实现，GPU capability 则是设备实际支持的功能与限制。
 
@@ -195,7 +213,7 @@ CPU record / submit
 
 #### Vertex Shader 与几何阶段
 
-Vertex Shader 对每个输入顶点执行位置变换，并输出后续插值所需的属性。图元的取舍发生在它之后的阶段：primitive assembly、viewport clipping（按视口裁剪）、culling（剔除背面或不可见图元） 和 rasterization 各自处理一部分工作，所以“Vertex Shader 自己判断所有不可见图元”这个说法站不住。
+Vertex Shader 对每个输入顶点执行位置变换，并输出后续插值所需的属性。图元组装、clip volume（裁剪体）裁剪、背面剔除与光栅化是后续阶段的职责；viewport transform（视口变换）把坐标映射到帧缓冲空间，不能与裁剪混用。Vertex Shader 可以输出裁剪或剔除距离等属性，图元是否保留仍由后续阶段按这些属性和管线状态决定。
 
 再看 Android UI 里的实际形态。矩形、圆角、文字和 Path 最终可能变成几何、coverage mask（记录像素被形状覆盖程度的遮罩）、glyph atlas（集中存放已栅格化字形的纹理图集） 采样或特定 GPU primitive；一个 `drawRect()` 未必始终是“四个顶点”，复杂 Path 的成本也可能落在 CPU tessellation、GPU 几何、片元 coverage 或缓存失效中的任一处。
 
@@ -234,13 +252,13 @@ alpha blending 通常由固定功能混合阶段按 pipeline（着色器与固�
 - HWUI/Skia 可能绘制到窗口 buffer，也可能先绘制到离屏 surface；
 - Android 窗口最终交付的是 `ANativeWindow`（原生窗口接口）/BufferQueue 中的图形 buffer。
 
-App Window buffer 可以作为 GPU color attachment，完成后连同 producer（向 Perfetto 提供数据的组件） fence（表示 Producer 何时写完 buffer 的同步对象） 一起 queue 给下游。SurfaceFlinger 拿到 buffer 之后，还要处理 transaction、acquire fence、Layer snapshot 和 composition；HWC 可能直接使用该 Layer，也可能让 RenderEngine 把多个 CLIENT Layer 合成到另一张 client target。
+App Window buffer 可以作为 GPU color attachment。App 提交 GPU 工作后，可以把它连同 producer fence（表示 Producer 何时写完 buffer 的同步对象）一起 queue 给下游，无需先在 CPU 上等待 GPU 完成。这里的 Producer 是窗口 buffer 的生产者。该 fence 到 SurfaceFlinger 一侧约束何时可以读取 buffer；SurfaceFlinger 还要处理 transaction、acquire fence、Layer snapshot 和 composition，HWC 可能直接使用该 Layer，也可能让 RenderEngine 把多个 CLIENT Layer 合成到另一张 client target。
 
 这套流程跟“VSync 到来时交换 front/back 指针”的桌面双缓冲模型差别很大。BufferQueue 管理多个 slot（缓冲槽位） 和 buffer：Producer 通过 dequeue 取得可写 buffer，再通过 queue 提交；Consumer 通过 acquire 取得可读 buffer，再通过 release 归还，并用 fence 表达异步完成关系。
 
 #### buffer 大小的下界估算
 
-对于线性 RGBA_8888，`width × height × 4` 可以估算紧密排列像素的下界；实际的 allocation（分配大小） 还要加上 stride（相邻两行像素起点之间的字节跨度）、对齐、layer count、像素格式、压缩 modifier（描述内存排布或压缩方式的修饰信息）、metadata（描述布局、格式等附加信息的数据）、保护属性和 allocator（内存分配器） 实现的影响。另外，就算窗口使用三块 1080p buffer，把这三块的大小当成 GPU 内存总量也差得远——系统还要容纳 depth/stencil、纹理、glyph atlas、离屏层、client target 与 driver 私有分配。
+对于线性 RGBA_8888，`width × height × 4` 可以估算紧密排列像素的下界；实际的 allocation（分配大小）还受行跨度、对齐、layer count、像素格式、压缩 modifier（描述内存排布或压缩方式的修饰信息）、metadata（描述布局、格式等附加信息的数据）、保护属性和 allocator（内存分配器）实现影响。行跨度的单位必须按接口区分：`AHardwareBuffer_Desc.stride` 以像素计，`AHardwareBuffer_Plane.rowStride` 才是相邻两行起点之间的字节跨度。另外，就算窗口使用三块 1080p buffer，把这三块的大小当成 GPU 内存总量也差得远——系统还要容纳 depth/stencil、纹理、glyph atlas、离屏层、client target 与 driver 私有分配。
 
 ### Shader Compilation Jank 与 pipeline 创建
 
@@ -286,7 +304,7 @@ App Window buffer 可以作为 GPU color attachment，完成后连同 producer�
 
 1. 清理或使用新安装状态，首次进入目标效果；
 2. 保持同一进程，再次进入同一效果；
-3. 比较 UI/RenderThread/RHI 的 compile、link、pipeline creation、cache load/store（从外部内存读入或把结果写回） 和 driver slice（Trace 中的驱动执行区间）；
+3. 比较 UI/RenderThread/RHI 的 compile、link、pipeline creation、cache load/store（读取或写入编译缓存）和 driver slice（Trace 中的驱动执行区间）；
 4. 用 AGI（Android GPU Inspector） 查看受支持帧的 pipeline、shader、render pass 与 command；
 5. 改变一个 shader/pipeline 维度，验证卡顿是否随 cache key（用于索引某个缓存变体的键） 变化复现。
 
@@ -451,19 +469,19 @@ Adreno、Mali、PowerVR 或其他 GPU 的 tile 大小、压缩、early test（�
 
 #### GPU buffer 的对象链
 
-从应用到 kernel，我们可以按以下层次理解：
+下面只描述硬件图形共享缓冲的包装和接口关系；普通软件 `Bitmap` 不必经过 gralloc。重点区分新分配与导入、查询和锁定两条路径：
 
 ```text
-Bitmap / HardwareBuffer / Surface / ANativeWindow
+Bitmap.Config.HARDWARE / HardwareBuffer / Surface / ANativeWindow
   → AHardwareBuffer / ANativeWindowBuffer / GraphicBuffer
-  → GraphicBufferAllocator + graphics allocator HAL
-  → GraphicBufferMapper + mapper HAL
+      ├─ 新分配：GraphicBufferAllocator → graphics allocator HAL
+      └─ 导入、查询、CPU lock：GraphicBufferMapper → mapper HAL
   → native_handle: fd + metadata
   → dma-buf exporter / heap or vendor allocator
   → GPU, codec, SurfaceFlinger, HWC imports and mappings
 ```
 
-这条对象链说明的是包装和接口层次，并不表示“每层复制一份像素”：多个进程/设备可以导入同一个 dma-buf（Linux 跨设备共享缓冲内存的对象），对应不同的进程虚拟地址、IOMMU（设备访问内存时使用的地址映射与隔离单元） 映射和引用。`GraphicBuffer` 是 native 图形栈中的包装对象，`AHardwareBuffer` 是公开 NDK/Java 边界，底层 `native_handle` 用 fd（文件描述符） 和 metadata 描述共享 buffer。
+这些包装和接口不表示“每层复制一份像素”：多个进程/设备可以导入同一个 dma-buf（Linux 跨设备共享缓冲内存的对象），对应不同的进程虚拟地址、IOMMU（设备访问内存时使用的地址映射与隔离单元）映射和引用。`GraphicBuffer` 是 native 图形栈中的包装对象，`AHardwareBuffer` 是公开 NDK 对象，Java 对应对象是 `android.hardware.HardwareBuffer`；底层 `native_handle` 用 fd（文件描述符）和 metadata 描述共享 buffer。
 
 `frameworks/native/libs/ui/GraphicBufferAllocator.cpp` / `GraphicBufferMapper.cpp` 对接 graphics allocator（分配器）/mapper：allocator 负责创建 buffer，mapper 负责导入、锁定和查询其布局。`hardware/interfaces` 同时保留历史 HIDL 版本，并提供 allocator AIDL（Android Interface Definition Language） 与 mapper stable-C 接口——HIDL（HAL Interface Definition Language）与 AIDL 是两代 HAL 接口定义体系，stable-C 是稳定的 C 接口。具体产品用哪个版本，要看 vendor manifest（系统与 vendor 接口清单） 和运行时注册的 service。
 
@@ -483,11 +501,13 @@ Bitmap / HardwareBuffer / Surface / ANativeWindow
 
 BufferQueue 管理 slot、dequeued/acquired 状态和 buffer 引用。Producer dequeue 时可以触发新 allocation，也可以复用已有 buffer。buffer 数量受 Producer/Consumer、usage、尺寸变化、async（异步队列）/shared buffer（重复使用同一 buffer） 模式和 in-flight 约束影响。
 
-release fence 表示 Consumer 何时不再使用旧 buffer，Producer 必须在重新写入前等待该依赖完成。queue 满或 release 晚会让 dequeue/acquire/swap/present 等待——这就是 back-pressure。
+release fence 表示 Consumer 何时不再使用旧 buffer，Producer 必须在重新写入前等待该依赖完成。没有可复用 buffer 或 Consumer 释放晚，可能让 Producer 的 dequeue、swap 或 present 等待，形成 back-pressure。Consumer 的 acquire 负责取得已提交的 buffer，读取前还要满足 Producer 完成 fence；不能把 acquire 与 dequeue 当成同一侧的取 buffer 操作。
 
 #### ION 到 DMA-BUF Heaps
 
 从 Android 12 GKI 2.0（Google Kernel Image 2.0，共用内核方案）开始，DMA-BUF heaps 替代了 ION（Android 早期使用的内核共享内存分配机制）。DMA-BUF heaps 提供稳定 UAPI（用户空间与内核之间的接口），并按 `/dev/dma_heap/<name>` 分开访问控制；vendor 仍可提供特定 heap，protected heap 也常由厂商实现。
+
+官方 ION 迁移文档限定为 “5.4 kernel only”，并已标记 deprecated（弃用）；它只用于说明上述迁移历史。Android 17 / 6.18 的共享、分配和同步实现以下面的固定内核标签为准，旧文档中的迁移步骤不能直接套用。
 
 kernel 源码锚点 `android17-6.18-2026-06_r6` 包含以下相关文件：
 
@@ -537,7 +557,7 @@ API 36 的 `SystemHealthManager.getGpuHeadroom()` 返回 `[0, 100]` 区间的 GP
 
 每次有效调用至少包含一次同步 Binder transaction（调用线程等待系统服务返回的跨进程调用），官方说明它可能超过 1 ms，首次调用或更换参数还可能因延迟初始化更慢。所以这类查询要离开 UI、RenderThread 和游戏关键 render loop（逐帧执行的渲染循环），安排到后台线程。
 
-下面的示例把一次查询放到后台 executor（任务执行器），并读取设备声明的最小采样间隔；做周期调度时，相邻查询至少要隔开这个值：
+下面的示例仅在 API 36 及以上的版本分支执行，把一次查询放到后台 executor（任务执行器），并读取设备声明的最小采样间隔；做周期调度时，相邻查询至少要隔开这个值。`executor` 与 `gpuPolicy` 由应用提供，旧系统应使用不依赖 Headroom 的策略：
 
 ```java
 SystemHealthManager health =
@@ -574,7 +594,7 @@ Perfetto 适合把以下时间放在同一时钟域，也就是用可直接对�
 - SurfaceFlinger、RenderEngine、HWC 与 display present；
 - CPU scheduling、thermal、memory 和 I/O。
 
-用 FrameTimeline 选中目标 `SurfaceFrame`（应用向某个 Surface 提交的一帧）和 `DisplayFrame`（显示系统合成并呈现的一帧）后，再追 producer fence 和 GPU submission。GPU 数据缺失时，不要用 RenderThread slice 代替 GPU completion。
+FrameTimeline 需要 Android 12 及以上，官方文档仍列有 SurfaceView 支持限制。先确认目标 Layer 是否上报了可关联的帧事件；有数据时，选中目标 `SurfaceFrame`（应用向某个 Surface 提交的一帧）和 `DisplayFrame`（显示系统合成并呈现的一帧），再追 producer fence 和 GPU submission。独立 Surface 没有对应帧事件时，用引擎帧标识、buffer 提交、GPU stage、fence 与 Layer trace 继续关联，不能据此认定没有卡顿。GPU 数据缺失时，也不要用 RenderThread slice 代替 GPU completion。
 
 #### APA 与 AGI：区分系统 profile、单帧分析
 
@@ -617,7 +637,7 @@ GPU 数据不是由 SurfaceFlinger 统一产生的。采集前我们先查询目
 
 硬件 counter 必须连同 descriptor 保存——descriptor 会声明 counter id、名称、单位、可选峰值、group 以及 counter block capacity；一次请求超过 block capacity，producer 可能拒绝、只启用子集，或者 multiplex（把多组 counter 分时轮换采集）。`counter_period_ns` 越短采样扰动越大；`fix_gpu_clock` 会固定 GPU 时钟、改变正常 DVFS 条件，只适合受控 A/B。
 
-Trace Processor 会把 GPU counter 的“向前回看型”值回填到前一个样本区间：当前样本值描述的是刚刚结束的区间，而非从当前时刻开始的区间。所以我们计算平均频率、带宽或利用率时要按 duration 加权，直接平均所有 `counter.value` 是错的。`gpu_slice` 也不只包含 render stage，还可能包含 Vulkan event 与 GPU log；下面的查询按 track type 过滤出 GPU render stage：
+Trace Processor 在解析 `GpuCounterEvent` 硬件采样时，会把“向前回看型”的值回填到前一个样本区间：当前事件报告的是刚刚结束的区间。`power/gpu_frequency` 等状态变化事件通常从事件时刻向后保持，不能套用同一回填规则。计算平均频率、带宽或利用率，要先确认数据源的区间语义，再按有效 duration 加权；不能直接平均所有 `counter.value`。`gpu_slice` 也不只包含 render stage，还可能包含 Vulkan event 与 GPU log；下面的查询按 track type 过滤出 GPU render stage：
 
 ```sql
 SELECT
@@ -684,7 +704,7 @@ AGI 的 Vulkan frame capture、GLES-on-ANGLE capture、RenderDoc 与 Sokatoa 都
 
 #### 3. 锁定一帧
 
-用 FrameTimeline 选择 janky App `SurfaceFrame`（被系统判定为卡顿的应用帧） 和对应 `DisplayFrame`。对原生图形应用或游戏，额外记录 engine frame id（引擎内部帧标识）、submit、swap/present、buffer id 和 producer fence。
+有 FrameTimeline 数据时，选择 janky App `SurfaceFrame`（被系统判定为卡顿的应用帧）和对应 `DisplayFrame`。对原生图形应用或游戏，额外记录 engine frame id（引擎内部帧标识）、submit、swap/present、buffer id 和 producer fence；独立 Surface 缺少帧事件时，就用这些字段与 GPU stage、Layer trace 关联。
 
 #### 4. 分开 CPU、GPU 与显示
 
@@ -736,7 +756,7 @@ AGI 的 Vulkan frame capture、GLES-on-ANGLE capture、RenderDoc 与 Sokatoa 都
 | Android 13 / API 33 | AGSL `RuntimeShader`；Choreographer FrameData/FrameTimeline 公共 API。 |
 | Android 15 / API 35 | ANGLE 作为可选 GLES-on-Vulkan 层；支持设备引入 ARR（Adaptive Refresh Rate，自适应刷新率）。 |
 | Android 16 / API 36 | GPU Headroom；64 位、非 low-memory launch device 的 Vulkan 1.4 要求；`RuntimeColorFilter` / `RuntimeXfermode`。 |
-| Android 17 / API 37 | 当前源码锚点；`VK_EXT_present_timing`；Jetpack WebGPU `1.0.0-alpha05`；GLES `prefer_angle` 请求。HWUI 仍按设备选择 SkiaOpenGL/SkiaVulkan。 |
+| Android 17 / API 37 | 当前源码锚点；`VK_EXT_present_timing`；GLES `prefer_angle` 请求。HWUI 仍按设备选择 SkiaOpenGL/SkiaVulkan。AndroidX WebGPU 按独立库版本发布，预览状态与最低系统版本见后文。 |
 
 版本号替代不了运行时 capability；Vulkan extension、ASTC、ANGLE、GPU counter、ARR 和 HWC plane 都要在目标设备上查询。
 
@@ -790,7 +810,7 @@ ANGLE 可能增加翻译成本，也可能因 Vulkan driver 质量改善表现�
 ### 官方资料
 
 - [Android graphics architecture: BufferQueue and Gralloc](https://source.android.com/docs/core/graphics/arch-bq-gralloc)
-- [Transition from ION to DMA-BUF heaps](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
+- [Transition from ION to DMA-BUF heaps（5.4 内核迁移文档，已弃用；仅作历史参考）](https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps)
 - [Perfetto GPU data sources](https://perfetto.dev/docs/data-sources/gpu)
 - [Android GPU Inspector](https://developer.android.com/agi)
 - [AGI Frame Profiler](https://developer.android.com/agi/frame-trace/frame-profiler)
@@ -878,8 +898,8 @@ Vulkan 从 Android 7.0 / API 24 开始提供。Android 官方的版本表给出�
 |---|---|---|
 | 1.0 | Android 7 / API 24 | Android 首次支持 Vulkan |
 | 1.1 | Android 9 / API 28 | 平台加入 Vulkan 1.1 支持 |
-| 1.3 | Android 13 / API 33 | Android 13 首发设备基线提升到 1.3 |
-| 1.4 | Android 16 / API 36 | Android 16 及以后首发设备要求 1.4 |
+| 1.3 | Android 13 / API 33 | Android 13 起首发、支持 64 位 ABI 且非低内存设备的要求提升到 1.3 |
+| 1.4 | Android 16 / API 36 | Android 16 起首发、支持 64 位 ABI 且非低内存设备的要求提升到 1.4 |
 
 表里的“平台支持”和“首发设备要求”含义不同：升级到 Android 17 的旧设备，不会因为系统版本变化就获得新的 GPU 硬件特性。所以创建 device 前，必须查询 physical device（物理 GPU） 的 API version、extension、feature、format 和 queue family（具有某类命令能力的一组队列）。
 
@@ -906,7 +926,9 @@ ANGLE 并未消除 GLES 状态机的语义。它仍要跟踪状态、翻译 shad
 
 AndroidX WebGPU 提供 Kotlin/Java 风格的 WebGPU 接口，以 WGSL 编写 shader，并支持图形与通用计算。它比 Vulkan 更高层，能减少平台相关样板代码；相应地，底层资源状态和提交细节也不再全部由应用直接控制。
 
-截至 2026-07-25，AndroidX WebGPU 最新公开版本为 `1.0.0-alpha05`，仍处于 developer preview。官方入门文档给出的最低系统版本是 API 24，优先使用 Vulkan 1.1，兼容 feature level（库定义的一组较低能力档位） 可覆盖部分 GLES 设备；注意这里的 API 24 只是库的系统下限，每台 API 24 设备未必有相同的后端能力。
+截至 2026-10-22，AndroidX WebGPU 最新公开版本为 `1.0.0-alpha06`（2026-10-07 发布），仍处于 developer preview。它是独立于 Android 平台发布的 AndroidX 库；alpha06 的最低系统版本已从 API 24 提高到 API 26，发布 AAR 的 Manifest 也声明 `minSdkVersion="26"`。入门页仍写 API 24，选依赖时应以具体库版本的发布说明和制品为准。后端优先使用 Vulkan 1.1；兼容 feature level（库定义的一组较低能力档位）可覆盖部分 GLES 设备，但最低系统版本不保证后端能力相同。
+
+从 alpha05 升级到 alpha06，还要检查 Java 调用的 Builder 迁移，以及 `WebGpu` 辅助类的单线程执行约束；仅把依赖版本号换掉可能不够。官方发布说明同时警告，随库生成的文档可能包含错误，涉及接口签名或线程要求时，应核对对应版本源码。
 
 WebGPU 适合新工具、跨平台可视化、计算任务和能够承受预览 API 调整的项目。已有大型 Vulkan 引擎若依赖自定义内存分配、精细 barrier、特定 extension 或厂商工具，迁移收益需要逐项评估。
 
@@ -1010,7 +1032,7 @@ vkQueuePresentKHR
 
 `frameworks/native/vulkan/libvulkan/swapchain.cpp` 中包含对应的 `dequeueBuffer()`、`AcquireImageANDROID()`、`QueueSignalReleaseImageANDROID()` 和 `queueBuffer()` 调用。`VK_ANDROID_native_buffer` 是 loader 与 ICD 之间的 Android 私有桥接，普通应用应使用公开的 `VK_KHR_android_surface`/swapchain API。
 
-acquire fence 防止 producer 过早覆盖仍被 consumer 使用的 buffer；queue 给 SurfaceFlinger 的 fence 表示 GPU 何时完成本次生产；显示端不再读取后返回的 release fence，再控制该 buffer 何时可重用。到内核锚点 `android17-6.18-2026-06_r6` 为止，跨模块的 buffer 共享仍建立在 dma-buf 上，同步文件由 `sync_file` 承载 fence——改用 Vulkan 也取消不了这些所有权与同步约束。
+acquire 路径中，Vulkan 接收的 dequeue fence 约束应用何时可以重新写入 image；present 路径把 GPU 生产完成的 fence 随 buffer 交给下游，SurfaceFlinger 将它作为读取该 buffer 前的 acquire 依赖。显示端不再读取后返回的 release fence，再控制该 buffer 何时可重用。“acquire”必须注明是哪一侧：Vulkan 取得可写 image，与 SurfaceFlinger 取得可读 buffer，等待的是不同阶段的依赖。到内核锚点 `android17-6.18-2026-06_r6` 为止，跨模块的 buffer 共享仍建立在 dma-buf 上，同步文件由 `sync_file` 承载 fence——改用 Vulkan 也取消不了这些所有权与同步约束。
 
 #### 5.3 Present mode 需要查询
 
@@ -1133,9 +1155,9 @@ producer 持续尽快提交会逐渐占满可用 buffer；随后 render thread �
 - Android 5.0 / API 21：OpenGL ES 3.1。
 - Android 7.0 / API 24：Vulkan 1.0 与 OpenGL ES 3.2 平台支持。
 - Android 9 / API 28：平台加入 Vulkan 1.1。
-- Android 13 / API 33：新设备 Vulkan 基线提升到 1.3。
+- Android 13 / API 33：首发、支持 64 位 ABI 且非低内存设备的 Vulkan 要求提升到 1.3。
 - Android 15 / API 35：官方进一步明确 ANGLE 作为可选 GLES-on-Vulkan 层及后续路线。
-- Android 16 / API 36：首发设备 Vulkan 基线提升到 1.4。
+- Android 16 / API 36：首发、支持 64 位 ABI 且非低内存设备的 Vulkan 要求提升到 1.4。
 - Android 17/API 37：CDD 增加 present、外部同步与 layer 注入要求；`VP_ANDROID_17_requirements` 定义该代首发/重新冻结芯片组的 Vulkan 1.4.335 能力集合；应用可通过 `com.android.graphics.driver.prefer_angle` 表达 ANGLE 偏好；AndroidX WebGPU 仍处预览阶段。
 
 上面列出的版本节点要分成四类来读：“平台新增”“兼容设备要求”“新芯片组要求”和“活跃设备覆盖率”。它们各自回答不同的问题，不构成一条递增的版本线；做设备分层时，这几类最容易混淆。
@@ -1193,3 +1215,6 @@ capability query 是应用在运行时查询 GPU、驱动和 Surface 实际支�
 - [AGDK Frame Pacing/Swappy](https://developer.android.com/games/sdk/frame-pacing)
 - [Android 17 Vulkan present timing](https://developer.android.com/games/develop/vulkan/frame-pacing-extensions)
 - [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Android 17 HardwareBuffer 定义与 stride 单位](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativewindow/include/android/hardware_buffer.h)
+- [Android 17 GPU counter 区间解析](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/proto/gpu_event_parser.cc)、[GPU 频率区间模块](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/perfetto_sql/stdlib/android/gpu/frequency.sql)
+- [Vulkan 1.4.335 图元裁剪与视口变换](https://github.com/KhronosGroup/Vulkan-Docs/blob/v1.4.335/chapters/vertexpostproc.adoc)

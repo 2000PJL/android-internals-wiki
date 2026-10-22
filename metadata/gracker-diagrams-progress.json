@@ -1249,7 +1249,7 @@
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
       "sha256_before": "c8e0a310f79fc2bee7846e8184bfd807b7573a2e29d2936760a38bcb4b0db8db",
-      "status": "in_progress",
+      "status": "illustrated",
       "diagrams": [
         "ch05-09-gaf-control-and-audio-plane",
         "ch05-09-ase-initial-start",
@@ -1263,20 +1263,71 @@
         "ch05-09-software-media-data-path",
         "ch05-09-offload-control-and-vendor-media",
         "ch05-09-codec-qos-resource-tradeoffs",
-        "ch05-09-latency-mode-to-dsa"
-      ]
+        "ch05-09-latency-mode-to-dsa",
+        "ch05-09-framework-native-control-boundaries",
+        "ch05-09-codec-location-offload-preconditions",
+        "ch05-09-app-capability-and-communication-route",
+        "ch05-09-route-switch-state-dependent-gap",
+        "ch05-09-phone-and-headset-power-components",
+        "ch05-09-iso-timing-versus-ap-idle",
+        "ch05-09-power-ab-controlled-conditions",
+        "ch05-09-broadcast-discovery-to-render",
+        "ch05-09-asha-versus-hap-audio-and-mic",
+        "ch05-09-android17-sco-integration-gate",
+        "ch05-09-hci-snoop-capture-and-interpretation",
+        "ch05-09-diagnostic-evidence-scopes",
+        "ch05-09-acoustic-latency-measurement"
+      ],
+      "sha256_current": "f8d47f2f8a48488a0c3237252a6d1b32f82e5239eedc8d33f4be8939bd290304",
+      "sha256_after": "f8d47f2f8a48488a0c3237252a6d1b32f82e5239eedc8d33f4be8939bd290304"
     },
     {
       "path": "src/part1-fundamentals/ch05-cpu-power/README.md",
       "sha256_before": "fb0c53c1f285ed3417f88f8e2fffc7961071fbb1a95f48a0589757251b693e7b",
-      "status": "pending",
-      "diagrams": []
+      "status": "illustrated",
+      "diagrams": [
+        "ch05-readme-control-planes-and-evidence",
+        "ch05-readme-chapter-reading-map"
+      ],
+      "sha256_current": "7ab1f0ca60f95bcb2956aaee061b94cc14e64aee89aabe48f9b35f059edcd98f",
+      "sha256_after": "7ab1f0ca60f95bcb2956aaee061b94cc14e64aee89aabe48f9b35f059edcd98f"
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
       "sha256_before": "31a02141d5b6b6fc906b75bb0213ce2fe9abbed5d48647488b8aaf2dc086cdc4",
-      "status": "pending",
-      "diagrams": []
+      "status": "illustrated",
+      "diagrams": [
+        "ch06-01-io-wait-causal-layers",
+        "ch06-01-storage-path-optional-frontends",
+        "ch06-01-buffered-cache-and-writeback",
+        "ch06-01-ufs-protocol-layers",
+        "ch06-01-emmc-ufs-ftl-boundary",
+        "ch06-01-mcq-host-queue-capability",
+        "ch06-01-bio-dm-blkmq",
+        "ch06-01-dm-target-responsibilities",
+        "ch06-01-io-task-profile-scheduler-gates",
+        "ch06-01-super-logical-extents",
+        "ch06-01-partition-role-boundaries",
+        "ch06-01-boot-mount-key-preparation",
+        "ch06-01-sqlite-rollback-wal-sync",
+        "ch06-01-f2fs-vs-ftl-gc",
+        "ch06-01-sqlite-batch-atomic-gates",
+        "ch06-01-scoped-access-choices",
+        "ch06-01-fuse-open-and-passthrough",
+        "ch06-01-fbe-system-user-key-classes",
+        "ch06-01-metadata-fbe-keymount-separation",
+        "ch06-01-inlinecrypto-hardware-fallback",
+        "ch06-01-ext4-fsync-data-journal-flush",
+        "ch06-01-vab-version-timeline",
+        "ch06-01-vab-cow-allocation",
+        "ch06-01-android17-ublk-selection",
+        "ch06-01-snapshot-view-and-merge",
+        "ch06-01-write-amplification-boundaries",
+        "ch06-01-sharedprefs-async-generations",
+        "ch06-01-fsync-evidence-workflow"
+      ],
+      "sha256_current": "4d11b41588f985c8c40ed5d9b2741d0f55f4bce840337bae214483fbc866c77d",
+      "sha256_after": "4d11b41588f985c8c40ed5d9b2741d0f55f4bce840337bae214483fbc866c77d"
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
@@ -11588,7 +11639,7 @@
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/ASCS_v1.0.1/out/en/index-en.html",
         "https://developer.android.com/develop/connectivity/bluetooth/ble-audio/overview"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed"
     },
     {
       "id": "ch05-09-ase-initial-start",
@@ -11605,7 +11656,7 @@
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/BAP_v1.0/out/en/index-en.html",
         "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/state_machine.cc"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed"
     },
     {
       "id": "ch05-09-ase-disable-direction-branches",
@@ -11621,7 +11672,7 @@
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/ASCS_v1.0.1/out/en/index-en.html",
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/BAP_v1.0/out/en/index-en.html"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed"
     },
     {
       "id": "ch05-09-ase-release-and-codec-cache",
@@ -11637,7 +11688,7 @@
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/ASCS_v1.0.1/out/en/index-en.html",
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/BAP_v1.0/out/en/index-en.html"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed"
     },
     {
       "id": "ch05-09-big-bis-one-to-many",
@@ -11653,7 +11704,7 @@
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-54/out/en/low-energy-controller/link-layer-specification.html",
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/BAP_v1.0/out/en/index-en.html"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed"
     },
     {
       "id": "ch05-09-lc3-config-and-sdu",
@@ -11670,7 +11721,7 @@
         "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/le_audio_types.h",
         "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/codec_manager.cc"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed"
     },
     {
       "id": "ch05-09-latency-measurement-endpoints",
@@ -11686,7 +11737,7 @@
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/BAP_v1.0/out/en/index-en.html",
         "https://developer.android.com/develop/connectivity/bluetooth/ble-audio/overview"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed"
     },
     {
       "id": "ch05-09-bap-total-delay-boundaries",
@@ -11702,7 +11753,7 @@
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/BAP_v1.0/out/en/index-en.html",
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-54/out/en/low-energy-controller/isochronous-adaptation-layer.html"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed"
     },
     {
       "id": "ch05-09-software-media-data-path",
@@ -11719,7 +11770,7 @@
         "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/audio_hal_interface/aidl/le_audio_software_aidl.cc",
         "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/codec_manager.cc"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed"
     },
     {
       "id": "ch05-09-offload-control-and-vendor-media",
@@ -11735,7 +11786,7 @@
         "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/bluetooth/audio/aidl/android/hardware/bluetooth/audio/SessionType.aidl",
         "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/codec_manager.cc"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed"
     },
     {
       "id": "ch05-09-codec-qos-resource-tradeoffs",
@@ -11752,7 +11803,7 @@
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-54/out/en/low-energy-controller/link-layer-specification.html",
         "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/le_audio_types.h"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed"
     },
     {
       "id": "ch05-09-latency-mode-to-dsa",
@@ -11767,7 +11818,7 @@
       "sources": [
         "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/audio_hal_interface/aidl/le_audio_software_aidl.cc"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed"
     },
     {
       "id": "ch05-09-cig-cis-and-acl",
@@ -11783,7 +11834,742 @@
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-54/out/en/low-energy-controller/link-layer-specification.html",
         "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/BAP_v1.0/out/en/index-en.html"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-09-framework-native-control-boundaries",
+      "title": "Framework、JNI 与 Native 控制分工",
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-09-framework-native-control-boundaries.svg",
+        "src/assets/diagrams/ch05/ch05-09-framework-native-control-boundaries.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-09-framework-native-control-boundaries",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_audio/LeAudioService.java",
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/state_machine.cc",
+        "https://source.android.com/docs/core/connect/bluetooth"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-09-codec-location-offload-preconditions",
+      "title": "CodecLocation 与 offload 的前置检查",
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-09-codec-location-offload-preconditions.svg",
+        "src/assets/diagrams/ch05/ch05-09-codec-location-offload-preconditions.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-09-codec-location-offload-preconditions",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/codec_manager.cc",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/bluetooth/audio/aidl/android/hardware/bluetooth/audio/SessionType.aidl"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-09-app-capability-and-communication-route",
+      "title": "应用能力检查与通信路由请求",
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-09-app-capability-and-communication-route.svg",
+        "src/assets/diagrams/ch05/ch05-09-app-capability-and-communication-route.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-09-app-capability-and-communication-route",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/bluetooth/ble-audio/overview",
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothAdapter.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/AudioManager.java"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-09-route-switch-state-dependent-gap",
+      "title": "路由切换间隙取决于已有状态",
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-09-route-switch-state-dependent-gap.svg",
+        "src/assets/diagrams/ch05/ch05-09-route-switch-state-dependent-gap.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-09-route-switch-state-dependent-gap",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_audio/LeAudioService.java",
+        "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/BAP_v1.0/out/en/index-en.html",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/AudioManager.java"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-09-phone-and-headset-power-components",
+      "title": "手机与耳机的功耗组成",
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-09-phone-and-headset-power-components.svg",
+        "src/assets/diagrams/ch05/ch05-09-phone-and-headset-power-components.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-09-phone-and-headset-power-components",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/codec_manager.cc",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/bluetooth/audio/aidl/android/hardware/bluetooth/audio/SessionType.aidl",
+        "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-54/out/en/low-energy-controller/link-layer-specification.html"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-09-iso-timing-versus-ap-idle",
+      "title": "ISO 事件节奏与 AP idle 的关系",
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-09-iso-timing-versus-ap-idle.svg",
+        "src/assets/diagrams/ch05/ch05-09-iso-timing-versus-ap-idle.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-09-iso-timing-versus-ap-idle",
+      "sources": [
+        "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-54/out/en/low-energy-controller/link-layer-specification.html",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/bluetooth/audio/aidl/android/hardware/bluetooth/audio/SessionType.aidl",
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/audio_hal_interface/aidl/le_audio_software_aidl.cc"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-09-power-ab-controlled-conditions",
+      "title": "LE Audio 功耗 A/B 的可比条件",
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-09-power-ab-controlled-conditions.svg",
+        "src/assets/diagrams/ch05/ch05-09-power-ab-controlled-conditions.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-09-power-ab-controlled-conditions",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/codec_manager.cc",
+        "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-54/out/en/low-energy-controller/link-layer-specification.html",
+        "https://developer.android.com/develop/connectivity/bluetooth/ble-audio/overview"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-09-asha-versus-hap-audio-and-mic",
+      "title": "ASHA 与 HAP 的传输和麦克风边界",
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-09-asha-versus-hap-audio-and-mic.svg",
+        "src/assets/diagrams/ch05/ch05-09-asha-versus-hap-audio-and-mic.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-09-asha-versus-hap-audio-and-mic",
+      "sources": [
+        "https://source.android.com/docs/core/connect/bluetooth/asha",
+        "https://developer.android.com/develop/connectivity/bluetooth/ble-audio/overview",
+        "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/BAP_v1.0/out/en/index-en.html"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-09-android17-sco-integration-gate",
+      "title": "Android 17 SCO 重构的启用边界",
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-09-android17-sco-integration-gate.svg",
+        "src/assets/diagrams/ch05/ch05-09-android17-sco-integration-gate.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-09-android17-sco-integration-gate",
+      "sources": [
+        "https://source.android.com/docs/core/audio/sco-audio-mgmt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/AudioManager.java"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-09-hci-snoop-capture-and-interpretation",
+      "title": "HCI snoop 的采集与解释范围",
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-09-hci-snoop-capture-and-interpretation.svg",
+        "src/assets/diagrams/ch05/ch05-09-hci-snoop-capture-and-interpretation.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-09-hci-snoop-capture-and-interpretation",
+      "sources": [
+        "https://source.android.com/docs/core/connect/bluetooth/verifying_debugging",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/bluetooth/audio/aidl/android/hardware/bluetooth/audio/SessionType.aidl",
+        "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-54/out/en/low-energy-controller/link-layer-specification.html"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-09-diagnostic-evidence-scopes",
+      "title": "四类观测证据的边界",
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-09-diagnostic-evidence-scopes.svg",
+        "src/assets/diagrams/ch05/ch05-09-diagnostic-evidence-scopes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-09-diagnostic-evidence-scopes",
+      "sources": [
+        "https://source.android.com/docs/core/connect/bluetooth/verifying_debugging",
+        "https://perfetto.dev/docs/data-sources/cpu-scheduling",
+        "https://source.android.com/docs/core/audio/latency/measure"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-09-acoustic-latency-measurement",
+      "title": "从已知波形测量声学端到端延迟",
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-09-acoustic-latency-measurement.svg",
+        "src/assets/diagrams/ch05/ch05-09-acoustic-latency-measurement.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-09-acoustic-latency-measurement",
+      "sources": [
+        "https://source.android.com/docs/core/audio/latency/measure",
+        "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/BAP_v1.0/out/en/index-en.html"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-readme-control-planes-and-evidence",
+      "title": "CPU 与功耗的六类控制面",
+      "article": "src/part1-fundamentals/ch05-cpu-power/README.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-readme-control-planes-and-evidence.svg",
+        "src/assets/diagrams/ch05/ch05-readme-control-planes-and-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-readme-control-planes-and-evidence",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/cpuidle/cpuidle.c",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/aidl/android/hardware/power/IPower.aidl",
+        "https://developer.android.com/games/optimize/adpf"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-readme-chapter-reading-map",
+      "title": "按问题选择第 5 章阅读分支",
+      "article": "src/part1-fundamentals/ch05-cpu-power/README.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-readme-chapter-reading-map.svg",
+        "src/assets/diagrams/ch05/ch05-readme-chapter-reading-map.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-readme-chapter-reading-map",
+      "sources": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch05-cpu-power/01-linux-eas-big-little-scheduling.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch05-cpu-power/02-dvfs-thermal-android-power.md",
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/src/part1-fundamentals/ch05-cpu-power/README.md"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch05-09-broadcast-discovery-to-render",
+      "title": "广播音频从发现到呈现",
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch05/ch05-09-broadcast-discovery-to-render.svg",
+        "src/assets/diagrams/ch05/ch05-09-broadcast-discovery-to-render.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch05-09-broadcast-discovery-to-render",
+      "sources": [
+        "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/BAP_v1.0/out/en/index-en.html",
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothLeBroadcast.java",
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothLeBroadcastAssistant.java",
+        "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-54/out/en/low-energy-controller/link-layer-specification.html"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-io-wait-causal-layers",
+      "title": "从主线程等待区分存储瓶颈",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-io-wait-causal-layers.svg",
+        "src/assets/diagrams/ch06/ch06-01-io-wait-causal-layers.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-io-wait-causal-layers",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/block.h",
+        "https://sqlite.org/wal.html"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-storage-path-optional-frontends",
+      "title": "存储路径中的可选入口与公共底层",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-storage-path-optional-frontends.svg",
+        "src/assets/diagrams/ch06/ch06-01-storage-path-optional-frontends.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-storage-path-optional-frontends",
+      "sources": [
+        "https://source.android.com/docs/core/storage/scoped",
+        "https://source.android.com/docs/core/storage/fuse-passthrough",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/vfs.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/blk-mq.rst"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-buffered-cache-and-writeback",
+      "title": "缓存命中、脏页与实际块 I/O",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-buffered-cache-and-writeback.svg",
+        "src/assets/diagrams/ch06/ch06-01-buffered-cache-and-writeback.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-buffered-cache-and-writeback",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/vfs.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/ext4/fsync.c",
+        "https://sqlite.org/wal.html"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-ufs-protocol-layers",
+      "title": "UFS 的命令、传输与互连层",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-ufs-protocol-layers.svg",
+        "src/assets/diagrams/ch06/ch06-01-ufs-protocol-layers.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-ufs-protocol-layers",
+      "sources": [
+        "https://www.mipi.org/specifications/unipro-specifications",
+        "https://www.mipi.org/specifications/m-phy",
+        "https://americas.kioxia.com/content/dam/kioxia/en-us/business/memory/mlc-nand/asset/KIOXIA_Protocol_Analysis_Tech_Brief.pdf",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/ufs/core/ufshcd.c"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-emmc-ufs-ftl-boundary",
+      "title": "eMMC 与 UFS 的接口和器件内部边界",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-emmc-ufs-ftl-boundary.svg",
+        "src/assets/diagrams/ch06/ch06-01-emmc-ufs-ftl-boundary.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-emmc-ufs-ftl-boundary",
+      "sources": [
+        "https://americas.kioxia.com/content/dam/kioxia/en-us/business/memory/mlc-nand/asset/KIOXIA_Protocol_Analysis_Tech_Brief.pdf",
+        "https://www.mipi.org/specifications/unipro-specifications",
+        "https://www.kioxia.com/content/dam/kioxia/shared/business/memory/mlc-nand/asset/productbrief/KIOXIA_Understanding_Logical_Block_Address_Tech_Brief.pdf",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/mmc/host/cqhci-core.c"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-mcq-host-queue-capability",
+      "title": "MCQ 属于 UFS 主控能力",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-mcq-host-queue-capability.svg",
+        "src/assets/diagrams/ch06/ch06-01-mcq-host-queue-capability.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-mcq-host-queue-capability",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/ufs/core/ufs-mcq.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/blk-mq.rst",
+        "https://americas.kioxia.com/content/dam/kioxia/en-us/business/memory/mlc-nand/asset/KIOXIA_Protocol_Analysis_Tech_Brief.pdf"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-bio-dm-blkmq",
+      "title": "bio、映射与 request 的职责",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-bio-dm-blkmq.svg",
+        "src/assets/diagrams/ch06/ch06-01-bio-dm-blkmq.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-bio-dm-blkmq",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/blk-mq.rst",
+        "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libdm/dm_table.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/device-mapper/linear.rst"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-dm-target-responsibilities",
+      "title": "Android 常用映射目标的不同职责",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-dm-target-responsibilities.svg",
+        "src/assets/diagrams/ch06/ch06-01-dm-target-responsibilities.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-dm-target-responsibilities",
+      "sources": [
+        "https://source.android.com/docs/core/ota/virtual_ab",
+        "https://source.android.com/docs/security/features/encryption/metadata",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/device-mapper/linear.rst",
+        "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/snapshot.cpp"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-io-task-profile-scheduler-gates",
+      "title": "I/O 分组意图到实际设备服务的条件",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-io-task-profile-scheduler-gates.svg",
+        "src/assets/diagrams/ch06/ch06-01-io-task-profile-scheduler-gates.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-io-task-profile-scheduler-gates",
+      "sources": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/cgroups.json",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/blk-mq.rst"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-super-logical-extents",
+      "title": "super 容器与逻辑分区的 extent 映射",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-super-logical-extents.svg",
+        "src/assets/diagrams/ch06/ch06-01-super-logical-extents.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-super-logical-extents",
+      "sources": [
+        "https://source.android.com/docs/core/ota/dynamic_partitions/implement",
+        "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/liblp/include/liblp/metadata_format.h",
+        "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/fs_mgr_dm_linear.cpp"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-partition-role-boundaries",
+      "title": "四类分区的职责与访问特点",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-partition-role-boundaries.svg",
+        "src/assets/diagrams/ch06/ch06-01-partition-role-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-partition-role-boundaries",
+      "sources": [
+        "https://source.android.com/docs/security/features/encryption/metadata",
+        "https://source.android.com/docs/security/features/encryption/file-based",
+        "https://source.android.com/docs/core/architecture/partitions/system-as-root"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-boot-mount-key-preparation",
+      "title": "从启动镜像到 /data 可用的依赖",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-boot-mount-key-preparation.svg",
+        "src/assets/diagrams/ch06/ch06-01-boot-mount-key-preparation.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-boot-mount-key-preparation",
+      "sources": [
+        "https://source.android.com/docs/core/architecture/partitions/generic-boot",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/init/first_stage_mount.cpp",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/rootdir/init.rc",
+        "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-17.0.0_r1/MetadataCrypt.cpp",
+        "https://source.android.com/docs/security/features/encryption/metadata"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-f2fs-vs-ftl-gc",
+      "title": "f2fs GC 与 FTL GC 的不同边界",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-f2fs-vs-ftl-gc.svg",
+        "src/assets/diagrams/ch06/ch06-01-f2fs-vs-ftl-gc.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-f2fs-vs-ftl-gc",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/f2fs.rst",
+        "https://www.kioxia.com/content/dam/kioxia/shared/business/memory/mlc-nand/asset/productbrief/KIOXIA_Understanding_Logical_Block_Address_Tech_Brief.pdf"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-scoped-access-choices",
+      "title": "Scoped storage 的访问入口与授权",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-scoped-access-choices.svg",
+        "src/assets/diagrams/ch06/ch06-01-scoped-access-choices.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-scoped-access-choices",
+      "sources": [
+        "https://source.android.com/docs/core/storage/scoped",
+        "https://developer.android.com/training/data-storage/shared/media",
+        "https://developer.android.com/training/data-storage/shared/documents-files"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-metadata-fbe-keymount-separation",
+      "title": "metadata 加密、FBE 与 /metadata 的依赖",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-metadata-fbe-keymount-separation.svg",
+        "src/assets/diagrams/ch06/ch06-01-metadata-fbe-keymount-separation.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-metadata-fbe-keymount-separation",
+      "sources": [
+        "https://source.android.com/docs/security/features/encryption/metadata",
+        "https://source.android.com/docs/security/features/encryption/file-based",
+        "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-17.0.0_r1/MetadataCrypt.cpp",
+        "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-17.0.0_r1/FsCrypt.cpp"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-inlinecrypto-hardware-fallback",
+      "title": "Inline crypto 与软件路径的能力边界",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-inlinecrypto-hardware-fallback.svg",
+        "src/assets/diagrams/ch06/ch06-01-inlinecrypto-hardware-fallback.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-inlinecrypto-hardware-fallback",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/inline-encryption.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig",
+        "https://source.android.com/docs/security/features/encryption/file-based",
+        "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-17.0.0_r1/MetadataCrypt.cpp"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-ext4-fsync-data-journal-flush",
+      "title": "ext4 fsync 的数据、日志与条件 flush",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-ext4-fsync-data-journal-flush.svg",
+        "src/assets/diagrams/ch06/ch06-01-ext4-fsync-data-journal-flush.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-ext4-fsync-data-journal-flush",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/ext4/fsync.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/block.h"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-sqlite-rollback-wal-sync",
+      "title": "SQLite 两种日志模型与同步点",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-sqlite-rollback-wal-sync.svg",
+        "src/assets/diagrams/ch06/ch06-01-sqlite-rollback-wal-sync.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-sqlite-rollback-wal-sync",
+      "sources": [
+        "https://sqlite.org/atomiccommit.html",
+        "https://sqlite.org/wal.html",
+        "https://android.googlesource.com/platform/external/sqlite/+/refs/tags/android-17.0.0_r1/dist/Android.bp"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-vab-version-timeline",
+      "title": "Virtual A/B 的格式与合并机制演进",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-vab-version-timeline.svg",
+        "src/assets/diagrams/ch06/ch06-01-vab-version-timeline.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-vab-version-timeline",
+      "sources": [
+        "https://source.android.com/docs/core/ota/virtual_ab",
+        "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/snapshot.cpp"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-vab-cow-allocation",
+      "title": "COW 在 super 与 /data 之间如何分配",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-vab-cow-allocation.svg",
+        "src/assets/diagrams/ch06/ch06-01-vab-cow-allocation.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-vab-cow-allocation",
+      "sources": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-11.0.0_r1/fs_mgr/libsnapshot/partition_cow_creator.cpp",
+        "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/partition_cow_creator.cpp",
+        "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/snapshot.cpp"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-android17-ublk-selection",
+      "title": "Android 17 r1 的快照后端选择",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-android17-ublk-selection.svg",
+        "src/assets/diagrams/ch06/ch06-01-android17-ublk-selection.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-android17-ublk-selection",
+      "sources": [
+        "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/capabilities.cpp",
+        "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/snapshot.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-snapshot-view-and-merge",
+      "title": "快照读取视图与后续 merge 阶段",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-snapshot-view-and-merge.svg",
+        "src/assets/diagrams/ch06/ch06-01-snapshot-view-and-merge.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-snapshot-view-and-merge",
+      "sources": [
+        "https://source.android.com/docs/core/ota/virtual_ab",
+        "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/snapshot.cpp",
+        "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/partition_cow_creator.cpp"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-write-amplification-boundaries",
+      "title": "应用、主机与 NAND 的写入放大边界",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-write-amplification-boundaries.svg",
+        "src/assets/diagrams/ch06/ch06-01-write-amplification-boundaries.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-write-amplification-boundaries",
+      "sources": [
+        "https://www.kioxia.com/content/dam/kioxia/shared/business/memory/mlc-nand/asset/productbrief/KIOXIA_Understanding_Logical_Block_Address_Tech_Brief.pdf",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/f2fs.rst",
+        "https://sqlite.org/wal.html"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-sharedprefs-async-generations",
+      "title": "SharedPreferences 异步写入的代次跳过",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-sharedprefs-async-generations.svg",
+        "src/assets/diagrams/ch06/ch06-01-sharedprefs-async-generations.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-sharedprefs-async-generations",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-fsync-evidence-workflow",
+      "title": "从 fsync 长尾收敛到可验证原因",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-fsync-evidence-workflow.svg",
+        "src/assets/diagrams/ch06/ch06-01-fsync-evidence-workflow.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-fsync-evidence-workflow",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/block.h",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/ext4/fsync.c",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/snapshot.cpp"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-sqlite-batch-atomic-gates",
+      "title": "SQLite 批量原子写的启用条件",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-sqlite-batch-atomic-gates.svg",
+        "src/assets/diagrams/ch06/ch06-01-sqlite-batch-atomic-gates.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-sqlite-batch-atomic-gates",
+      "sources": [
+        "https://android.googlesource.com/platform/external/sqlite/+/refs/tags/android-17.0.0_r1/dist/Android.bp",
+        "https://sqlite.org/compile.html#enable_batch_atomic_write",
+        "https://sqlite.org/c3ref/c_fcntl_begin_atomic_write.html"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-fuse-open-and-passthrough",
+      "title": "FUSE open 检查与后续数据直通",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-fuse-open-and-passthrough.svg",
+        "src/assets/diagrams/ch06/ch06-01-fuse-open-and-passthrough.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-fuse-open-and-passthrough",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://source.android.com/docs/core/storage/fuse-passthrough",
+        "https://source.android.com/docs/core/storage/scoped"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-01-fbe-system-user-key-classes",
+      "title": "System DE、User DE 与 User CE 存储类",
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-01-fbe-system-user-key-classes.svg",
+        "src/assets/diagrams/ch06/ch06-01-fbe-system-user-key-classes.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-01-fbe-system-user-key-classes",
+      "sources": [
+        "https://source.android.com/docs/security/features/encryption/file-based",
+        "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-17.0.0_r1/FsCrypt.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/fscrypt.rst"
+      ],
+      "visual_review": "passed"
     }
   ],
   "corrections": [
@@ -14076,29 +14862,233 @@
       "after": "| RTN / FT（推荐重传参数 / Flush Timeout） | RTN 是推荐值；FT 限制一个 CIS 载荷可用的事件窗口，以 CIS 事件数计，不是毫秒 |",
       "reason": "RTN并非最终空口重传次数，FT计量单位与作用范围需要明确。",
       "source": "https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-54/out/en/low-energy-controller/link-layer-specification.html"
+    },
+    {
+      "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+      "before": "2. 用外部声卡或同步采集设备记录源参考与耳机声学输出；",
+      "after": "2. 用外部声卡或同步采集设备，以共同采样时基记录源参考与耳机声学输出；报告参考信号的注入位置，并校准测量链路与声传播差。普通 loopback 测得的是输入加输出的往返延迟，不能直接当成单向延迟；",
+      "reason": "补足单向测量参考、同步和校准要求，并明确不能把普通loopback往返结果当作单向。",
+      "source": "https://source.android.com/docs/core/audio/latency/measure"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "一次应用 I/O 会跨越 API、文件系统、页缓存、块层和存储器件，任何一层都可能把短请求放大成长尾。",
+      "after": "一次应用 I/O 可能涉及 API、文件系统、页缓存、块层和存储器件，也可能命中缓存后提前返回；没有命中缓存时，路径上的等待又可能把短请求放大成长尾。",
+      "reason": "避免把所有文件I/O都画成必达器件的串行链；缓存命中不一定产生块请求。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/vfs.rst"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "VFS → ext4 / f2fs → fscrypt",
+      "after": "VFS → ext4 / f2fs（集成 fscrypt；buffered I/O 使用 page cache）",
+      "reason": "fscrypt集成于文件系统，并非所有请求顺序穿过的独立文件系统层。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/fscrypt.rst"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "JEDEC UFS 4.0 Standard (JESD220E)",
+      "after": "JEDEC UFS 4.0 Standard (JESD220F)",
+      "reason": "规范编号JESD220E对应UFS3.1；UFS4.0对应JESD220F。",
+      "source": "https://americas.kioxia.com/content/dam/kioxia/en-us/business/memory/mlc-nand/asset/KIOXIA_Protocol_Analysis_Tech_Brief.pdf",
+      "occurrences": 2
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "│     Application Layer    │  ← SCSI Command Set (UCS)",
+      "after": "│     Application Layer    │  ← UCS（基于 SCSI 的命令集）",
+      "reason": "UCS基于SCSI，不将其直接展开为整个SCSICommandSet。",
+      "source": "https://www.mipi.org/hubfs/Webinars/MIPI-Webinar-JEDEC-UFS-MIPI-UniPro-Enabling-Storage-Mobile-Automotive.pdf"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "│     Data Link Layer      │  ← UniPro",
+      "after": "│     Interconnect Layer   │  ← UniPro（含传输、网络与数据链路）",
+      "reason": "UniPro提供的不止数据链路层；避免把协议栈范围缩小为单层。",
+      "source": "https://www.mipi.org/specifications/unipro-specifications"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "我们把这些 profile 理解为用户空间的分组意图就够了；",
+      "after": "这个基线的 `HighIoPriority` 与 `MaxIoPriority` 都加入 blkio 根组，不能由名字推出两个不同的 I/O 优先级档位。我们把这些 profile 理解为用户空间的分组意图；",
+      "reason": "r1High/MaxIoPriority的JoinCgroup路径相同，名称不等于实际设备服务等级。",
+      "source": "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libprocessgroup/profiles/task_profiles.json"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "要访问其他 App 创建的媒体文件，通常需要通过 MediaStore，并根据 Android 版本取得媒体权限或用户选择授权；",
+      "after": "共享媒体通常先通过 MediaStore 查询和定位，再按 Android 版本取得媒体权限或用户选择授权；Android 11+ 获得访问权后，也可以用直接路径的 File / fopen() 访问媒体；",
+      "reason": "区分媒体发现、授权与实际读写入口，避免与后文直接路径支持矛盾。",
+      "source": "https://developer.android.com/training/data-storage/shared/media"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "要访问 PDF、文档等非媒体文件，需要通过 Storage Access Framework（SAF，存储访问框架）让用户选择；",
+      "after": "访问用户的 PDF、文档等任意文件时，通常通过 Storage Access Framework（SAF，存储访问框架）让用户选择；应用自己的专属目录，以及自己通过 MediaStore.Downloads 创建的文件，按相应规则访问；",
+      "reason": "SAF是任意用户文档的主要入口，但不是所有非媒体文件的唯一可用访问方式。",
+      "source": "https://developer.android.com/training/data-storage/shared/documents-files"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "App 对 `/sdcard` 根目录的直接写入已被移除。",
+      "after": "遵循 scoped storage 的普通 App 不能任意向 `/sdcard` 根路径直接写文件，应使用相应媒体集合、SAF 或自己的专属目录；特殊的 All Files access 另有权限边界。",
+      "reason": "scoped storage限制任意路径访问，不是删除一切向共享根区域写入的系统能力。",
+      "source": "https://source.android.com/docs/core/storage/scoped"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "使用 5.4 以上内核",
+      "after": "使用 5.4 及以上内核",
+      "reason": "官方限制包含5.4本身，明确边界为>=5.4。",
+      "source": "https://source.android.com/docs/core/storage/scoped"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "FBE 则建立在文件系统之上，由 `vold` 在 `/data` 可以挂载后安装 DE/CE key，再由 `fscrypt` 把策略应用到不同目录。",
+      "after": "FBE 由 ext4/f2fs 集成的 `fscrypt` 实现，保护文件内容与文件名；`vold` 在 `/data` 可以挂载后管理和安装相应密钥，并为目录设置策略。System DE、User DE 和 User CE 的准备时机不同，不能把所有 key 都画成挂载后立即一起安装。",
+      "reason": "明确fscrypt所在层级并避免DE与CE安装时间合并。",
+      "source": "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-17.0.0_r1/FsCrypt.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "另一部分是 **Virtual A/B（VABC）**",
+      "after": "另一部分是 **Virtual A/B**",
+      "reason": "VABC特指VirtualA/Bcompression，不能作为全部VirtualA/B的同义缩写。",
+      "source": "https://source.android.com/docs/core/ota/virtual_ab"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "COW 数据会占用 OTA 期间的临时空间；AOSP 的空间模型把 Virtual A/B 的额外用量计入 `/data`，`super` 只需容纳动态分区本体，不再常驻一套完整 B 槽。",
+      "after": "COW 数据会占用 OTA 期间的临时空间。Android 11 的 `PartitionCowCreator` 先使用当前与目标分区布局中都空闲的 `super` 区间，不足部分由 `/data` 上的 COW image 补足；r1 的分配器仍区分 `cow_partition_size` 与 `cow_file_size`。因此不能把 COW 固定画成只在 `super` 或只在 `/data`，但动态分区确实不必常驻一套完整 B 槽。",
+      "reason": "源码支持super空闲区与data镜像组合；修正文图冲突及空间模型的绝对化。",
+      "source": "https://android.googlesource.com/platform/system/core/+/refs/tags/android-11.0.0_r1/fs_mgr/libsnapshot/partition_cow_creator.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "COW 空间主要位于 `/data`",
+      "after": "压缩 COW 也可能使用 `super` 空闲区与 `/data` backing image，实际分配比例由空间与更新布局决定",
+      "reason": "不把压缩COW的位置和比例固定为data为主。",
+      "source": "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/partition_cow_creator.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "Android 17 延续这套模型：成功启动后，`snapuserd` 把 COW 操作合并进 base device；如果新 slot 未通过启动确认，系统仍保留回退能力。",
+      "after": "Android 17 延续 userspace merge，但 r1 还提供 `dm-user` 与 `ublk` 两种 snapshot 后端，不能把 `snapuserd` 等同于只有 dm-user 的 worker。`IsUblkEnabled()` 同时检查 `ro.virtual_ab.ublk.enabled`、`vabc_with_ublk_support` flag 和内核版本门槛（6.6+），测试模式可覆盖属性；更新 manifest 还可禁用 ublk。实际还须具备内核驱动及相应设备节点。新 slot 确认成功后才启动合并；进入 merge 后不能再承诺回退到未修改的旧系统，合并中断则会在后续启动恢复。",
+      "reason": "补齐r1ublk后端及选择条件；明确rollback只在merge开始前安全，不能承诺merge后仍可回滚。",
+      "source": "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/snapshot.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "snapshot delta → dm-snapshot COW → super 内分配",
+      "after": "snapshot delta → dm-snapshot COW → super 空闲区 + 按需 /data backing image",
+      "reason": "同步修正原ASCII图的COW存储位置。",
+      "source": "https://android.googlesource.com/platform/system/core/+/refs/tags/android-11.0.0_r1/fs_mgr/libsnapshot/partition_cow_creator.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "snapshot delta → /data(compressed Android COW)→ dm-user + snapuserd → kernel COW / dm-snapshot merge",
+      "after": "snapshot delta → Android COW（super / /data）→ dm-user + snapuserd → kernel COW / dm-snapshot merge",
+      "reason": "压缩COW格式与其物理存放位置是不同维度。",
+      "source": "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/partition_cow_creator.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "snapshot mount / merge 由 dm-user + snapuserd 执行,移除 kernel COW / dm-snapshot 依赖",
+      "after": "snapshot mount / merge 由 snapuserd 执行，移除 kernel COW / dm-snapshot 依赖\n  Android 17 r1 后端按条件选择 dm-user 或 ublk",
+      "reason": "同步ASCII图与r1快照后端源码。",
+      "source": "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/snapshot.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "| `update_engine` | 下载包、写 COW、触发 merge | 对 `/data` 中的 COW 空间产生写入流量；升级完成后停止 |",
+      "after": "| `update_engine` | 下载/应用更新、协调 COW 与 merge 状态 | 安装期间有下载与 COW 写入；不能由守护进程存在与否判断 merge 是否活跃 |",
+      "reason": "update_engine是守护进程，不能概括为升级完成后进程停止。",
+      "source": "https://android.googlesource.com/platform/system/update_engine/+/refs/tags/android-17.0.0_r1/main.cc"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "| `snapuserd` | Android 12 compressed snapshots 的 COW 读写；Android 13+ 的 userspace merge | 作为用户态 dm-user worker，持续占用 CPU 和 `/data` I/O；Android 13+ 的 merge 阶段仍然活跃 |",
+      "after": "| `snapuserd` | Android 12 compressed snapshots 的 COW 处理；Android 13+ 的 userspace merge | 按 snapshot 读视图与 merge 阶段产生 CPU、COW 和 base device I/O；r1 后端可能为 dm-user 或 ublk |",
+      "reason": "避免把所有snapuserd流量视作持续data I/O，同时覆盖ublk后端。",
+      "source": "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/snapshot.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "`snapuserd` 和前台 App 会争用 `/data` 的 IOPS，明显拉长前台 App 的 I/O 等待。",
+      "after": "`snapuserd` 的 COW/base I/O 与 App 数据 I/O 可能落到同一物理器件并争用带宽、队列和 CPU，即使逻辑分区不同也会相互影响；是否拉长前台等待，要结合实际 trace 与对照负载确认。",
+      "reason": "OTA读写不限data分区；共享物理介质才是争用的关键之一，不能断言必然明显变慢。",
+      "source": "https://android.googlesource.com/platform/system/fs/fs_mgr/+/refs/tags/android-17.0.0_r1/libsnapshot/snapshot.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "**写入放大（Write Amplification Factor，WAF）**通常指 NAND 实际写入量与 host write（主机写入量） 之比。应用写入 4 KiB，NAND 侧实际 program 的量可能高于这个数：文件系统更新、数据库日志、F2FS GC、FTL 垃圾回收和磨损均衡都可能搬移额外数据。具体 WAF 要靠器件计数器或厂商遥测来测；用一次文件写入加固定 erase block（擦除块）大小去推，结果站不住。",
+      "after": "**写入放大（Write Amplification Factor，WAF）**必须先说明测量边界。器件 WAF 是 NAND 实际写入字节数除以主机提交给器件的写入字节数；数据库日志、文件系统 metadata 与 F2FS GC 会先放大“应用有效写入 → 主机块写入”，这些额外字节已经属于器件 WAF 的分母。FTL GC、磨损均衡、SLC 数据搬移等再影响“主机块写入 → NAND program”。因此应用写入 4 KiB 不能直接当作器件 WAF 的分母；具体比值要分别取得主机与 NAND 计数，不能用固定 erase block（擦除块）大小推算。",
+      "reason": "区分软件栈写入放大与设备WAF，避免分母混用。",
+      "source": "https://www.kioxia.com/content/dam/kioxia/shared/business/memory/mlc-nand/asset/productbrief/KIOXIA_Understanding_Logical_Block_Address_Tech_Brief.pdf"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "`SharedPreferences.apply()` 只是把调用方等待改成异步写回，最终仍会写入 XML，写入量本身一个字节都没省，进程生命周期结束时还可能等待未完成的 queued work（排队写入）。若目标是降低 WAF，应先减少写入次数和字节量，再讨论使用同步还是异步 API。",
+      "after": "`SharedPreferences.apply()` 先更新内存再排队持久化，并不保证每次调用都对应一次完整 XML 写盘。r1 的 `writeToFile()` 会跳过磁盘已有的代次，也可能略过已被更新状态取代的异步中间代次；真正持久化最新状态时仍需写 XML 和同步，生命周期切换还可能等待 queued work（排队写入）。若目标是降低总写入与磨损，应先减少逻辑重写，再分别测量主机写入量与器件 WAF；异步 API 本身不保证更少写入。",
+      "reason": "r1按generation跳过过时异步状态，“一个字节都没省”与源码不符；降低总字节不等同保证WAF比值下降。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "排查时我们直接检查 `dm-default-key` 是否启用、`vold` / kernel 日志中是否出现解锁重试，以及块层等待是否与加密阶段重合。",
+      "after": "排查 FBE 要检查 fstab 的 `fileencryption=`、`inlinecrypt`、fscrypt/blk-crypto 能力与驱动实际路径；`dm-default-key` 只说明 metadata encryption，不能单独证明 FBE 是否使用硬件加密。再结合 `vold` / kernel 日志、CPU 活动与块层等待分析具体成本。",
+      "reason": "不能以metadata encryption目标是否启用来判断FBE硬件执行路径。",
+      "source": "https://source.android.com/docs/security/features/encryption/metadata"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "除 Perfetto 外，还应结合 `logcat`、`dmesg`、`mount`、`getprop` 交叉验证。",
+      "after": "`block_rq_issue` 到 `block_rq_complete` 只覆盖请求下发后的区间，不包含全部用户态、文件系统或下发前排队等待，也不能直接当作一次 `fsync()` / `read()` 的总耗时。缓存命中可能不产生 block 事件；要分析调度器中的排队，还需相应的 insert/requeue 等事件与调用区间。\n\n除 Perfetto 外，还应结合 `logcat`、`dmesg`、`mount`、`getprop` 交叉验证。",
+      "reason": "明确issue-complete窗口只覆盖已下发请求，不代表完整调用或所有排队时间。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/block.h"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "bootloader 完成 Verified Boot 和硬件初始化后，把 boot image 中的 kernel 与 ramdisk 交给内核。",
+      "after": "bootloader 完成 Verified Boot 和硬件初始化后，加载 kernel 与启动所需的 ramdisk。首发 Android 13+ 的 GKI 设备把 generic ramdisk 放入独立的 `init_boot`，vendor ramdisk 则来自 `vendor_boot`；不能认定它们都存放在 `boot.img`。",
+      "reason": "按现代GKI拆分说明ramdisk来源，保留升级设备的版本差异。",
+      "source": "https://source.android.com/docs/core/architecture/partitions/generic-boot"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "挂载 `super` 与 `/data` 的职责都在内核和用户空间这一侧",
+      "after": "解析 `super`、建立逻辑设备并挂载相应文件系统，以及挂载 `/data`，都由内核和用户空间协作完成",
+      "reason": "super是分区容器，不把super容器本身称作被挂载的文件系统。",
+      "source": "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/init/first_stage_mount.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/01-storage-architecture.md",
+      "before": "这些配置说明内核同时具备硬件接口与软件 fallback（回退实现），运行时走哪条路径，由设备驱动和 fstab（文件系统挂载配置） 决定。",
+      "after": "这些配置说明内核具备相应接口与软件 fallback（回退实现），实际能否使用还取决于密钥类型、算法、设备驱动和 fstab（文件系统挂载配置）。`blk-crypto-fallback` 不支持 hardware-wrapped keys；选择这类密钥而硬件不匹配时，不能假定会自动改用 CPU 加密。",
+      "reason": "硬件封装密钥不能走blk-crypto-fallback，配置开启不保证任何密钥都有软件回退。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/block/inline-encryption.rst"
     }
   ],
   "validation": {
-    "content_links": "passed:1942 relative Markdown links + 8 local/aiw sources",
-    "mdbook": "passed: whole-book preview through chapter5.8; pre-existing large search-index warning",
+    "content_links": "passed:1970 relative Markdown links + 8 local/aiw sources",
+    "mdbook": "passed: whole-book preview through chapter5; pre-existing large search-index warning",
     "temporary_files": "outside repository in /tmp/gracker-android-wiki-diagrams-20261023",
     "checked_at": "2026-10-23",
-    "svg_canvas_bounds": "535 SVG checked, no overflow; all PNG decode",
-    "embed_integrity": "535 records, 565 images across 74 mdbook pages + 1 standalone existing alternate; all loaded",
-    "through_chapter": "ch04-memory",
-    "illustrated_articles": 75,
-    "diagram_count": 535,
-    "relative_markdown_links": 1942,
+    "svg_canvas_bounds": "563 SVG checked, no text overflow; all PNG decode; 22 group bounds audited",
+    "embed_integrity": "563 records, 593 images across 76 mdbook pages + 1 standalone existing alternate; all loaded",
+    "through_chapter": "ch05-cpu-power",
+    "illustrated_articles": 77,
+    "diagram_count": 563,
+    "relative_markdown_links": 1970,
     "local_frontmatter_sources": 8,
     "mdbook_build": "passed; pre-existing large search-index warning",
     "asset_report": {
-      "checked": 535,
+      "checked": 563,
       "errors": [],
       "kind": "SVG text canvas bounds + PNG decode"
     },
     "embed_report": {
-      "checked_records": 535,
-      "checked_articles": 75,
+      "checked_records": 563,
+      "checked_articles": 77,
       "errors": [],
       "built_pages": [
         {
@@ -14550,26 +15540,39 @@
           "images": 18,
           "all_loaded": true,
           "preview_mode": "mdbook"
+        },
+        {
+          "article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+          "images": 26,
+          "all_loaded": true,
+          "preview_mode": "mdbook"
+        },
+        {
+          "article": "src/part1-fundamentals/ch05-cpu-power/README.md",
+          "images": 2,
+          "all_loaded": true,
+          "preview_mode": "mdbook"
         }
       ]
     },
-    "through_article": "src/part1-fundamentals/ch05-cpu-power/08-cpu-cache-friendly-code-data-layout.md",
-    "diagram_placements": 565,
-    "skill_prompt_packs": "535/535 required source, analysis, structured-content and prompt packs exist; all visual reviews passed",
-    "in_page_visual_review": "5.8 mitigation section in-page placement and readability passed; previous 5.5/5.6 checks retained"
+    "through_article": "src/part1-fundamentals/ch05-cpu-power/README.md",
+    "diagram_placements": 593,
+    "skill_prompt_packs": "563/563 required source, analysis, structured-content and prompt packs exist; all visual reviews passed",
+    "in_page_visual_review": "5.8 mitigation, 5.9 ASE stop + delay boundaries, and chapter5 reading map passed; earlier checks retained"
   },
   "last_checkpoint": {
-    "illustrated_articles": 75,
-    "diagrams": 535,
+    "illustrated_articles": 78,
+    "diagrams": 591,
     "completed_chapters": [
       "ch01-architecture",
       "ch02-rendering",
       "ch03-input",
-      "ch04-memory"
+      "ch04-memory",
+      "ch05-cpu-power"
     ],
-    "next_article": "src/part1-fundamentals/ch05-cpu-power/09-bluetooth-le-audio-performance.md",
+    "next_article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
     "note": "逐篇核对与配图进行中；仅通过视觉验收的条目标记 illustrated。全书任务尚未完成，goal active。",
-    "diagram_placements": 565
+    "diagram_placements": 593
   },
   "replaced_inline_diagrams": [
     {

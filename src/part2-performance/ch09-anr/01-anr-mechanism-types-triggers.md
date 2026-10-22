@@ -3,7 +3,9 @@ title: ANR 机制、类型与触发条件
 chapter: '9.1'
 section: '9.1'
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-17'
+last_verified: '2026-10-22'
+last_source_verified_at: '2026-10-22'
+last_idle_audit_at: '2026-10-22'
 last_verified_against: AOSP android-11.0.0_r1 / android-14.0.0_r1 / android-15.0.0_r1 / android-17.0.0_r1, packages/modules/Profiling android-16.0.0_r1 / android-17.0.0_r1, Android Vitals ANR docs
 confidence: medium
 sources:
@@ -20,6 +22,8 @@ sources:
 - type: official
   path: https://developer.android.com/topic/performance/vitals/anr
 - type: official
+  path: https://developer.android.com/google/play/vitals/anr
+- type: official
   path: https://developer.android.com/reference/android/os/ProfilingManager
 - type: official
   path: https://developer.android.com/reference/android/os/ProfilingTrigger
@@ -35,6 +39,8 @@ sources:
   path: frameworks/base/services/core/java/com/android/server/am/ActiveServices.java
 - type: aosp
   path: frameworks/base/core/java/android/app/AnrTypes.java
+- type: aosp
+  path: frameworks/base/core/java/android/app/ActivityThread.java
 - type: aosp
   path: frameworks/base/core/java/android/content/ContentResolver.java
 - type: aosp
@@ -347,7 +353,7 @@ events 缓冲区会循环覆盖旧记录，所以线上问题要尽早保存带�
 
 普通第三方应用拿不到 `/data/anr` 的遍历权限。开发阶段可以从 bugreport 里取系统收集的 ANR 段；Android 11 / API 30 起，应用还能通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询自己的历史退出记录，用 `ApplicationExitInfo.getTraceInputStream()` 读取系统保留的 trace。trace 放在容量有限的全局循环缓冲区里，可能已被后续记录覆盖，所以这个输入流允许返回 `null`。
 
-下面的 Kotlin 片段查找当前应用最近一次带有 trace 的 ANR 退出记录，并读取文本内容：
+下面的 Kotlin 片段查找当前应用最近一次 ANR 退出记录，并在 trace 仍可用时读取文本内容：
 
 ```kotlin
 val activityManager = getSystemService(ActivityManager::class.java)
@@ -523,7 +529,7 @@ std::chrono::nanoseconds InputDispatcher::getDispatchingTimeoutLocked(
 
 #### Connection ANR
 
-`processAnrsLocked()` 从 `mAnrTracker` 取出已到期的 connection。进入 `onAnrLocked(connection)` 后，源码取 `waitQueue.front()`——队首最早的那条待确认事件——作为诊断线索，再用 `now() - delivery（投递）Time` 算它已经等了多久。
+`processAnrsLocked()` 从 `mAnrTracker` 取出已到期的 connection。进入 `onAnrLocked(connection)` 后，源码取 `waitQueue.front()`——队首最早的那条待确认事件——作为诊断线索，再用 `now() - oldestEntry.deliveryTime` 算它已经等了多久，其中 `deliveryTime`（投递时间）记录该事件的投递时刻。
 
 源码注释还说明一个限制：oldest entry 最适合帮助排查，却不一定是触发计时器到期的那一个事件——窗口超时配置在等待期间变化过的话，较新的事件反而可能更早到自己的期限。所以报告里的事件描述是重要线索，单靠它下因果结论还不够。
 
@@ -668,7 +674,7 @@ Android 14 引入 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE`，给约三分钟内�
 
 #### 10 秒 publish timeout 属于初始化失败保护
 
-进程启动时，AMS 会等应用把清单里声明的 Provider 发布出来。`ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` 默认为 10 秒再乘硬件超时倍率；Provider 的 `onCreate()`、`Application.onCreate()` 或更早的进程初始化，只要拖住发布，都在占用这段时间。
+进程启动时，AMS 会等应用把清单里声明的 Provider 发布出来。`ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` 默认为 10 秒再乘硬件超时倍率。`android-17.0.0_r1` 的 `ActivityThread.handleBindApplication()` 先创建 `Application`，再安装并发布 Provider，最后调用 `Application.onCreate()`。发布前的应用创建、类加载和 Provider `onCreate()` 会消耗这段等待时间；正常启动顺序中的 `Application.onCreate()` 在发布之后执行，不占用 Provider 发布期限。
 
 下面两段源码分别给出默认超时值，以及超时后以初始化失败原因移除进程的动作：
 
@@ -689,7 +695,7 @@ void processContentProviderPublishTimedOutLocked(ProcessRecord app) {
 
 处理函数既没有创建 `TimeoutRecord`，也没有调用 `AnrHelper.appNotResponding()`，而是清理掉 launching provider（仍在等待发布的 Provider），以 `REASON_INITIALIZATION_FAILURE` 移除进程。所以 Provider 在 10 秒内没有 publish，走的是初始化失败，和 ContentProvider ANR 是两条路径。
 
-这类问题照样可能阻塞调用方或启动流程。排查时可以先搜 `timeout publishing content providers`，再检查 `Application`、Provider `onCreate()`、自动初始化 SDK 和类加载开销；ANR 报表通常不会把它归进 Provider ANR。
+这类问题照样可能阻塞调用方或启动流程。排查时可以先搜 `timeout publishing content providers`，再检查发布前的应用创建、Provider `onCreate()`、自动初始化 SDK 和类加载开销；ANR 报表通常不会把它归进 Provider ANR。
 
 #### Provider 调用 ANR 需要显式探测
 
@@ -834,6 +840,7 @@ Perfetto 回答的是“超时窗口内线程和 CPU 在做什么”；单靠一
   - [`StackTracesDumpHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/StackTracesDumpHelper.java)
   - [`BroadcastQueueImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/BroadcastQueueImpl.java)
   - [`ActiveServices.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java)
+  - [`ActivityThread.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
   - [`ContentProviderHelper.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderHelper.java)
   - [`JobServiceContext.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobServiceContext.java)
   - [`AnrController.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/AnrController.java)
@@ -841,7 +848,8 @@ Perfetto 回答的是“超时窗口内线程和 CPU 在做什么”；单靠一
   - [`InputDispatcher.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
   - [`IInputConstants.aidl`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/input/android/os/IInputConstants.aidl)
 - Android Developers：
-  - [ANRs 与 Android vitals](https://developer.android.com/topic/performance/vitals/anr)
+  - [ANR 概览](https://developer.android.com/topic/performance/vitals/anr)
+  - [Android vitals ANR 指标与阈值](https://developer.android.com/google/play/vitals/anr)
   - [Diagnose and fix ANRs](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)
   - [Foreground service timeout behavior](https://developer.android.com/develop/background-work/services/fgs/timeout)
   - [`JobService` API reference](https://developer.android.com/reference/android/app/job/JobService)

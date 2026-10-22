@@ -3,8 +3,10 @@ title: Perfetto 指标自动化与分析平台
 chapter: '14.4'
 section: '14.4'
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-13'
-last_verified_against: Android 17 / API 37 / android-17.0.0_r1 (Perfetto ece66975738007dd0978b911d8a2077e49b8f31e); Perfetto Trace Processor v57.2-da1d152cf; android17-6.18-2026-06_r6; perfetto.dev (2026-08-13)
+last_verified: '2026-10-22'
+last_verified_against: Android 17 / API 37 / android-17.0.0_r1 (Perfetto ece66975738007dd0978b911d8a2077e49b8f31e); Perfetto Trace Processor v57.2-da1d152cf; android17-6.18-2026-06_r6; perfetto.dev (2026-10-22)
+last_source_verified_at: '2026-10-22'
+last_idle_audit_at: '2026-10-22'
 confidence: medium
 sources:
 - type: official
@@ -15,6 +17,12 @@ sources:
   path: https://perfetto.dev/docs/analysis/trace-summary
 - type: official
   path: https://perfetto.dev/docs/analysis/metrics
+- type: official
+  path: https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/trace_summary/file.proto
+- type: official
+  path: https://github.com/google/perfetto/blob/v57.2/src/trace_processor/tables/metadata_tables.py
+- type: official
+  path: https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Trace.java
 - type: official
   path: https://perfetto.dev/docs/analysis/trace-processor-python
 - type: official
@@ -102,7 +110,7 @@ PerfettoSQL 还定义了 `CREATE PERFETTO MACRO`，在查询执行前展开表�
 
 Android 17 标签和 v57.2 命令帮助都把 v1 指标标为 soft deprecated：已有指标与命令行兼容接口继续工作，但官方不再为这套体系增加新功能或新指标。新项目应使用 Trace Summarization。两者的 SQL 能力接近，输出契约差异很大，这正是我们选型时要看的部分。
 
-v1 指标要求每个团队维护独立的输出 protobuf（textproto）；Trace Summarization 统一输出 `TraceSummary`，并在规格中声明维度、数值列、单位和极性——维度是进程名、场景这类分组字段，极性说明数值升高或降低哪一侧更好。有了统一的结构，批量处理、仪表板和长期性能回归追踪才好接上。
+v1 指标要求每个团队维护独立的输出 protobuf（消息类型由 `.proto` 文件定义，textproto 是消息实例的文本表示）；Trace Summarization 统一输出 `TraceSummary`，并在规格中声明维度、数值列、单位和极性——维度是进程名、场景这类分组字段，极性说明数值升高或降低哪一侧更好。有了统一的结构，批量处理、仪表板和长期性能回归追踪才好接上。
 
 一个可维护的选择顺序如下：
 
@@ -149,7 +157,7 @@ trace_processor summarize \
   spec.textproto
 ```
 
-输出是 `TraceSummary`，结果位于 `metric_bundle（结果包）s`；每个 bundle 可以保存一组共享维度结构的指标。`--format binary` 可生成二进制 protobuf，默认 textproto 更适合人工检查。v57.2 仍完整支持旧式 `--summary` 参数，新脚本应采用子命令接口并固定二进制版本。
+输出是 `TraceSummary`，结果位于 `metric_bundles`（结果包列表）；每个 bundle 可以保存一组共享维度结构的指标。`--format binary` 可生成二进制 protobuf，默认 textproto 更适合人工检查。v57.2 仍完整支持旧式 `--summary` 参数，新脚本应采用子命令接口并固定二进制版本。
 
 同一份规格也能从 Python 调用：
 
@@ -221,6 +229,7 @@ FROM sched AS s
 JOIN thread AS t USING (utid)
 JOIN process AS p USING (upid)
 WHERE s.dur > 0
+  AND t.is_idle = 0
 GROUP BY p.upid, p.name
 ORDER BY cpu_time_ms DESC
 LIMIT 5;
@@ -241,9 +250,9 @@ SELECT TopFiveProcesses(
 );
 ```
 
-`upid` 是 Perfetto 在当前 Trace 内分配的进程唯一标识。按 `upid` 分组，可以避开系统进程号 PID 复用和同名进程合并的问题。
+`upid` 是 Perfetto 在当前 Trace 内分配的进程唯一标识。按 `upid` 分组，可以避开系统进程号 PID 复用和同名进程合并的问题。`thread.is_idle` 标识内核空闲任务（Linux 上 PID 为 0），示例用 `t.is_idle = 0` 将它排除，避免把 CPU 空闲时间列入进程 CPU 消耗榜。
 
-`scheduled_thread_count` 统计的是 Trace 中出现过已完成 `sched` 时间片的线程，进程创建过的全部线程要另行统计；`top_five_processes_output` 必须采用 `{TraceMetrics 扩展字段名}_output` 的形式，Trace Processor 靠这个命名约定找到根消息。
+`scheduled_thread_count` 统计的是 Trace 中出现过已完成 `sched` 时间片的非空闲线程，进程创建过的全部线程要另行统计；`top_five_processes_output` 必须采用 `{TraceMetrics 扩展字段名}_output` 的形式，Trace Processor 靠这个命名约定找到根消息。
 
 工具提供两套等价命令，新子命令的参数更容易发现：
 
@@ -590,7 +599,7 @@ val bitmap = tracedSection("ImageDecode") {
 }
 ```
 
-`Trace.java` 把名称限制在 127 个 UTF-16 代码单元；普通汉字通常占一个，部分 emoji 等字符占两个。超长名称会抛出 `IllegalArgumentException`，`|`、换行和空字符则会在底层被替换为空格。名称应保持短、稳定且不含用户数据。
+`Trace.java` 把名称限制在 127 个 UTF-16 代码单元；普通汉字通常占一个，部分 emoji 等字符占两个。`beginSection()` 在应用追踪启用时检查长度，超长名称会抛出 `IllegalArgumentException`；`|`、换行和空字符则会在底层被替换为空格。名称应保持短、稳定且不含用户数据。
 
 跨线程任务要使用相同名称和 cookie 配对：
 
@@ -1028,6 +1037,8 @@ Perfetto 自动化要从一条可复用 SQL 开始，再逐步扩展到 Trace Su
 - [Android 17 `libcutils` ATrace 接口](https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/libcutils/include/cutils/trace.h)
 - [Trace Summarization](https://perfetto.dev/docs/analysis/trace-summary)
 - [旧版 Trace-based Metrics](https://perfetto.dev/docs/analysis/metrics)
+- [Android 17 `TraceSummary` 输出消息定义](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/protos/perfetto/trace_summary/file.proto)
+- [Perfetto v57.2 线程表与 `is_idle` 定义](https://github.com/google/perfetto/blob/v57.2/src/trace_processor/tables/metadata_tables.py)
 - [PerfettoSQL 语法](https://perfetto.dev/docs/analysis/perfetto-sql-syntax)
 - [Trace Processor Python API](https://perfetto.dev/docs/analysis/trace-processor-python)
 - [Batch Trace Processor](https://perfetto.dev/docs/analysis/batch-trace-processor)

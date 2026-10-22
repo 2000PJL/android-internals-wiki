@@ -8214,6 +8214,123 @@
       "summary": "公共显示图省略 VSync 事件中转且 queueBuffer 与 present fence 边界表达过强",
       "type": "display-boundary",
       "updated_at": "2026-10-22T10:20:09.723252+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/03-memory-hprof-heapdump-tools.md",
+      "close_note": "已按官方文档或 android-17.0.0_r1 源码修正并通过来源断言、正文风格和本地文档门禁；本次未运行 Android 设备或 instrumentation 测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261022-103520-idle-audit-f013e101",
+      "created_at": "2026-10-22T10:40:20.247257+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261022-103520-idle-audit-f013e101",
+      "details": "正文称 Panda 3 起提供专用 task；2026-07-16 官方 Quail 2 发布博文明示 Starting with Android Studio Quail 2。Panda 3 发布说明没有该能力。应修正为 Quail 2 并使用固定版本来源，保留 IDE 与 Android API 独立的边界。",
+      "id": "finding-153-studio-leakcanary-task-version",
+      "log_path": "logs/audit/2026-10-22-20261022-103520-idle-audit-f013e101-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/blog/posts/android-studio-quail-2-is-stable-multi-task-with-the-android-studio-ai-agent"
+      ],
+      "status": "verified",
+      "summary": "LeakCanary Profiler task 的首发版本误写为 Android Studio Panda 3",
+      "type": "version-mismatch",
+      "updated_at": "2026-10-22T10:44:54.798036+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/03-memory-hprof-heapdump-tools.md",
+      "close_note": "已按官方文档或 android-17.0.0_r1 源码修正并通过来源断言、正文风格和本地文档门禁；本次未运行 Android 设备或 instrumentation 测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261022-103520-idle-audit-f013e101",
+      "created_at": "2026-10-22T10:40:20.310159+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261022-103520-idle-audit-f013e101",
+      "details": "UI-tests 官方文档要求 main APK 的 debugImplementation 与 test APK 的 instrumentation 依赖并存；JUnit 运行时会禁用常规自动检测。ActivityScenarioRule 内外层顺序决定在 Activity 销毁前或后断言；混淆测试存在 AGP 跨 APK 重写不一致的已知问题。正文仅说依赖只加入测试 APK 且不给这些边界，可能导致漏检或运行时崩溃。",
+      "id": "finding-153-leakcanary-ui-test-boundaries",
+      "log_path": "logs/audit/2026-10-22-20261022-103520-idle-audit-f013e101-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://square.github.io/leakcanary/ui-tests/"
+      ],
+      "status": "verified",
+      "summary": "LeakCanary CI 示例未完整说明双 APK 依赖和测试规则顺序的检测边界",
+      "type": "missing-prerequisite",
+      "updated_at": "2026-10-22T10:44:54.853328+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/03-memory-hprof-heapdump-tools.md",
+      "close_note": "已按官方文档或 android-17.0.0_r1 源码修正并通过来源断言、正文风格和本地文档门禁；本次未运行 Android 设备或 instrumentation 测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261022-103520-idle-audit-f013e101",
+      "created_at": "2026-10-22T10:40:20.370102+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261022-103520-idle-audit-f013e101",
+      "details": "android-17.0.0_r1 malloc_debug/README.md 739–744 行说明 Android 12 的 wrap.<APP> 属性可能失效，规避方式为强制 Java zygote fork loop 后 stop/start；没有反复派生并重启子进程的故障断言。应删除该错误故障模型并说明属性和运行时重启边界。",
+      "id": "finding-153-malloc-debug-wrap-workaround",
+      "log_path": "logs/audit/2026-10-22-20261022-103520-idle-audit-f013e101-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/memory/malloc_debug/README.md#739"
+      ],
+      "status": "verified",
+      "summary": "malloc debug 把 Android 12 wrap 属性失效误解释为 Zygote 子进程反复重启",
+      "type": "source-mismatch",
+      "updated_at": "2026-10-22T10:44:54.908912+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/03-memory-hprof-heapdump-tools.md",
+      "close_note": "已按官方文档或 android-17.0.0_r1 源码修正并通过来源断言、正文风格和本地文档门禁；本次未运行 Android 设备或 instrumentation 测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261022-103520-idle-audit-f013e101",
+      "created_at": "2026-10-22T10:40:20.428091+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261022-103520-idle-audit-f013e101",
+      "details": "NDK 与 AOSP MTE 文档都明确 ASYNC 的 SEGV_MTEAERR 不记录 faulting address 或 memory access；正文说地址与访问类型只是近似，可能使读者误用异步 tombstone。还需保留启用 MTE 的应用发布前应在 MTE 设备充分测试的 Warning。",
+      "id": "finding-153-mte-async-diagnostic-scope",
+      "log_path": "logs/audit/2026-10-22-20261022-103520-idle-audit-f013e101-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/ndk/guides/arm-mte"
+      ],
+      "status": "verified",
+      "summary": "MTE ASYNC 把不记录故障地址和访问改写成提供近似信息",
+      "type": "source-mismatch",
+      "updated_at": "2026-10-22T10:44:54.963741+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/03-memory-hprof-heapdump-tools.md",
+      "close_note": "已按官方文档或 android-17.0.0_r1 源码修正并通过来源断言、正文风格和本地文档门禁；本次未运行 Android 设备或 instrumentation 测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261022-103520-idle-audit-f013e101",
+      "created_at": "2026-10-22T10:40:20.487981+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261022-103520-idle-audit-f013e101",
+      "details": "android-17.0.0_r1 perfetto_hprof.cc 的 DumpPerfetto() 在执行 ForkAndRun 前检查 IsChromiumSeccompSandbox()，命中后日志提示并直接返回。仅说明 CanProfile 许可不足以判断该目标能够采集，需交代 WebView/Chromium 沙箱空报告的明确排查入口。",
+      "id": "finding-153-java-hprof-chromium-sandbox",
+      "log_path": "logs/audit/2026-10-22-20261022-103520-idle-audit-f013e101-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/perfetto_hprof/perfetto_hprof.cc#1213"
+      ],
+      "status": "verified",
+      "summary": "Perfetto Java 堆采集遗漏 Android 17 Chromium seccomp 沙箱跳过条件",
+      "type": "missing-availability-boundary",
+      "updated_at": "2026-10-22T10:44:55.019116+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
+      "created_at": "2026-10-22T10:49:51.836133+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261022-103020-cn-rewrite-3d5d14f889e56553",
+      "details": "1) 行内代码 span 内被塞入括注，路径已坏损：`drivers/dma-buf（Linux 共享 buffer 机制）/dma-buf.c`、`drivers/dma-buf/dma-heap（内核共享 buffer 分配池）.c`、`mmap()（把文件或设备内存映射进进程地址空间）`（16 KB page 一节，括注应在校验 span 外，pre-rewrite 81b2f3d57^ 为 `mmap()`（括注））。style_lint compare 要求行内代码集合完全一致，车道内修复必然失败。2) 「创建 pipeline、descriptor（数据源对计数器字段的描述） layout（描述 shader 如何访问 buffer、纹理等资源的布局）」双括注堆叠：数据源括注属 Perfetto descriptor 语义（应位于「在 descriptor 中声明」句），但保真门禁按 (term,inner) 对锁定两处括注，无法移位。建议人工或专门修复批处理（需同时调整 compare 对坏损基线的容忍策略）。本轮已修复可修复的 5 处同源错位（tag/profile/descriptor 归位 + stag...e/profile...r 断词），见 run 20261022-103020 evidence。",
+      "id": "finding-f49cb9caa5f4",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "git 96449c871 vs 81b2f3d57^"
+      ],
+      "status": "open",
+      "summary": "括注还原批次 96449c871 在本篇留下 4 处门禁锁死的错位/坏损标注，车道内无法修复",
+      "type": "restoration-artifact",
+      "updated_at": "2026-10-22T10:49:51.836133+08:00"
     }
   ],
   "schema_version": 1

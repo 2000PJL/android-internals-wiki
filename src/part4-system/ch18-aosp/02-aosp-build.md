@@ -56,11 +56,11 @@ related_chapters:
 
 > 源码基线：AOSP `android-17.0.0_r1`，Android 17 / API 37；内核 `android17-6.18-2026-06_r6`。
 
-平台和内核分属两套独立的源码树与构建系统，两个 tag（固定源码快照的标签） 不能互换；平台仓库里的预编译 kernel 对应哪个 Android Common Kernel 提交，要在内核侧单独确认。
+平台和内核分属两套独立的源码树与构建系统，两个 tag（固定源码快照的标签）也各自只在自己那套树里有效；平台仓库里的预编译 kernel 对应哪个 Android Common Kernel 提交，要在内核侧单独确认。
 
 ## 构建主机：先满足官方基线
 
-我们先看官方对构建主机的要求：64 位 x86 Linux 主机、glibc 2.17 或以上、至少 400 GB 可用磁盘和至少 64 GB 内存；glibc 指 GNU C Library，是 Linux 的基础 C 运行库。
+我们先看官方对构建主机的要求：64 位 x86 Linux 主机、glibc 2.17 或以上、至少 400 GB 可用磁盘和至少 64 GB 内存。这里的 glibc 指 GNU C Library，是 Linux 的基础 C 运行库。
 
 400 GB 里约 250 GB 是 checkout（检出的完整源码工作区），约 150 GB 是构建产物。做多 target、多工作树或内核构建时还要预留更多空间；这里的 target 指产品、发布配置与构建变体的组合。
 
@@ -83,7 +83,7 @@ sudo apt-get install git-core gnupg flex bison build-essential \
   xsltproc unzip fontconfig repo
 ```
 
-安装完成后运行 `repo version`，确认 Repo launcher（负责初始化源码工作区并下载完整 Repo 工具的启动脚本） 可以工作——它负责初始化源码工作区并下载完整的 Repo 工具。官方当前要求 Repo 2.4 或以上；团队环境里最好记录各主机的实际版本，避免差异过大的 launcher 混用。
+安装完成后运行 `repo version`，确认 Repo launcher（负责初始化源码工作区并下载完整 Repo 工具的启动脚本）可以工作。官方当前要求 Repo 2.4 或以上；团队环境里最好记录各主机的实际版本，避免差异过大的 launcher 混用。
 
 ## 固定 Android 17 源码
 
@@ -127,7 +127,7 @@ m nothing
 
 这个目标只解析并验证构建结构，产物留到真正构建时生成。通过之后仍要编译受影响的模块：类型检查、链接和生成代码的错误，要到对应 action 真正执行时才会暴露。
 
-平台构建文档把 `Android.bp` 描述为语法接近 Bazel BUILD 文件。平台的常规构建入口仍是 Soong；Android Common Kernel 走的是 Kleaf（基于 Bazel 的 Android 内核构建规则），一套基于 Bazel 的内核构建规则。在平台树里看到 Bazel 文件时，构建命令仍按平台这一套来用。
+平台构建文档把 `Android.bp` 描述为语法接近 Bazel BUILD 文件。平台的常规构建入口仍是 Soong；Android Common Kernel 走的是 Kleaf（基于 Bazel 的 Android 内核构建规则）。在平台树里看到 Bazel 文件时，构建命令仍按平台这一套来用。
 
 ## lunch 的三段式 target
 
@@ -161,7 +161,7 @@ m
 | `userdebug` | 平台开发、功耗与性能调试 | 可使用 adb root 等能力，仍与 `user` 存在配置差异 |
 | `eng` | 日常功能开发、快速实验 | 调试检查和工具更多，不适合作为发布性能基线 |
 
-改 Framework 时，我们通常在 `userdebug` 上完成定位和功能验证；要报告绝对性能数字，再换到匹配的 `user` 或量产构建复测。报告里要写清 `userdebug` 和 `user` 之间的差异，这一步不能用“足够接近”来省略。
+改 Framework 时，我们通常在 `userdebug` 上完成定位和功能验证；要报告绝对性能数字，再换到匹配的 `user` 或量产构建复测。报告里要写清 `userdebug` 和 `user` 之间的差异，这一步省不得，“足够接近”替代不了差异本身。
 
 ## 模块编译与产物归属
 
@@ -203,7 +203,7 @@ ls -l /dev/kvm
 
 ARM64 Linux 主机可以运行匹配架构的 Cuttlefish 预编译镜像；平台源码构建文档对编译主机的要求仍是 x86_64。在这类主机上，“运行预编译虚拟设备”和“本地编译完整 AOSP”要分开记录。
 
-用 Android CI（持续集成系统）产物时，`cvd-host_package.tar.gz` 和设备 image 必须来自同一个 build，也就是同一次 CI 构建记录。主机包、镜像和分支混搭会引入协议或配置层面的兼容性问题；组合受支持的依据是同源，“能启动”不能作为证明。
+用 Android CI（持续集成系统）产物时，`cvd-host_package.tar.gz` 和设备 image 必须来自同一个 build，也就是同一次 CI 构建记录。主机包、镜像和分支混搭会引入协议或配置层面的兼容性问题；判断一个组合是否受支持，依据是三者同源，“能启动”只说明问题还没暴露，支撑不了这个组合。
 
 解压 host package 后，在该目录启动 Cuttlefish，再用包内的 ADB（Android Debug Bridge，主机与设备通信工具） 检查设备。两个命令的主体如下，`HOME` 的处理放在代码块后说明：
 
@@ -257,15 +257,15 @@ atest FrameworksServicesTests
 
 ### 日志与 Trace
 
-在高频路径上加 Log 会改变锁竞争、调度和 I/O；Choreographer、Binder（Android 进程间调用机制）、SurfaceFlinger 这些路径尤其敏感。临时日志适合确认控制流，进入测量阶段就要移除，或者改成受控的 trace 点。
+在高频路径上加 Log 会改变锁竞争、调度和 I/O；Choreographer、Binder（Android 进程间调用机制）、SurfaceFlinger 这些路径尤其敏感。我们通常用临时日志确认控制流，进入测量阶段就把它移除，或改成受控的 trace 点。
 
-要用动态日志级别，前提是目标代码确实读取了这个属性，而且属性策略允许。`setprop log.tag.Choreographer VERBOSE` 只影响遵循 log tag 属性的调用，其余 Choreographer 诊断是否打开，取决于对应代码是否读取它。日志时间戳还要先与 Perfetto（Android 系统性能追踪工具） 的时钟域对齐，再做关联分析。
+动态日志级别的前提，是目标代码确实读取了这个属性，且属性策略允许：`setprop log.tag.Choreographer VERBOSE` 只影响遵循 log tag 属性的调用，其余 Choreographer 诊断是否打开，要看对应代码是否读取它。日志时间戳还要先与 Perfetto（Android 系统性能追踪工具） 的时钟域对齐，再做关联分析。
 
 ### System properties
 
-系统属性是全系统共享的键值配置，受命名、类型、稳定性、所属分区、`property_contexts` 和 SELinux 规则控制。`property_contexts` 负责把属性名映射到安全上下文与数据类型；SELinux 是 Android 的强制访问控制机制。
+系统属性是全系统共享的键值配置，调试时想拿它当开关，就要受命名、类型、稳定性、所属分区、`property_contexts` 和 SELinux 规则控制。`property_contexts` 负责把属性名映射到安全上下文与数据类型；SELinux 是 Android 的强制访问控制机制。
 
-可写的 `persist.debug.*` 属性不能由 shell 任意创建；`persist` 前缀只用在确有跨重启需求、且系统属性是合适载体的场合。
+可写的 `persist.debug.*` 属性也在这些规则管控之下，shell 侧新建之前，先确认规则允许；`persist` 前缀只用在确有跨重启需求、且系统属性是合适载体的场合。
 
 平台新增属性时，流程包括：
 
@@ -364,7 +364,7 @@ Cuttlefish 可以用 `cvd create` 指定 kernel 和 initramfs（启动早期的�
 
 ### `lunch` 找不到 target
 
-先检查命令是否来自当前 shell 的 `envsetup.sh`，再核对三段式的 product、release config 和 variant。旧文章里的两段式 target 或其他分支的 `trunk_staging`，不能直接套到这个 tag 上。
+先检查命令是否来自当前 shell 的 `envsetup.sh`，再核对三段式的 product、release config 和 variant。旧文章里的两段式 target 或其他分支的 `trunk_staging`，要对照当前 tag 里实际存在的组合改过再用。
 
 ### `m` 没有重编修改文件
 

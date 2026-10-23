@@ -1383,8 +1383,44 @@
     {
       "path": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
       "sha256_before": "a9afd3bdc8c183f1fd0dab25dced088ba11fe677be044de18f7042a406f4873d",
-      "status": "pending",
-      "diagrams": []
+      "status": "in_progress",
+      "diagrams": [
+        "ch06-03-process-cache",
+        "ch06-03-load-wait-timeline",
+        "ch06-03-load-failure",
+        "ch06-03-commit-memory",
+        "ch06-03-apply-finisher-listener",
+        "ch06-03-enqueue-write-thread",
+        "ch06-03-generation-skip",
+        "ch06-03-xml-backup-sync-result",
+        "ch06-03-queuedwork-finish",
+        "ch06-03-component-wait-points",
+        "ch06-03-broadcast-finish-gates",
+        "ch06-03-anr-stack-types",
+        "ch06-03-logging-thresholds",
+        "ch06-03-datastore-contexts",
+        "ch06-03-datastore-update-decision",
+        "ch06-03-datastore-storage-backends",
+        "ch06-03-filestorage-write-protocol",
+        "ch06-03-file-singleton-immutability",
+        "ch06-03-read-error-policy",
+        "ch06-03-migration-initialization",
+        "ch06-03-migration-key-selection",
+        "ch06-03-migration-data-ownership",
+        "ch06-03-multiprocess-three-mechanisms",
+        "ch06-03-version-before-file",
+        "ch06-03-multiprocess-read-cache",
+        "ch06-03-observer-lifecycle",
+        "ch06-03-shared-counter-runtime",
+        "ch06-03-direct-boot-storage",
+        "ch06-03-split-files-cost",
+        "ch06-03-async-trace-pairing"
+      ],
+      "source_audit": "全文与r1平台/DataStore1.2.1源码包复核完成，累计29项修正；逐节配图与验收中。",
+      "validation_artifacts": [
+        "/tmp/gracker-android-wiki-diagrams-20261023/evidence/datastore-1.2.1/SpDataStoreAar/AndroidManifest.xml",
+        "/tmp/gracker-android-wiki-diagrams-20261023/evidence/datastore-1.2.1/SpDataStoreAar/jni-list.json"
+      ]
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
@@ -13010,22 +13046,6 @@
       "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
     },
     {
-      "id": "ch06-02-ext4-allocation",
-      "title": "ext4 缓冲写分配与有序日志",
-      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
-      "assets": [
-        "src/assets/diagrams/ch06/ch06-02-ext4-allocation.svg",
-        "src/assets/diagrams/ch06/ch06-02-ext4-allocation.png"
-      ],
-      "layout": "linear-progression",
-      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-ext4-allocation",
-      "sources": [
-        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/ext4/allocators.rst",
-        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/ext4/journal.rst"
-      ],
-      "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
-    },
-    {
       "id": "ch06-02-ext4-sync-transaction",
       "title": "ext4 fsync 与 journal 等待范围",
       "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
@@ -13205,6 +13225,506 @@
         "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst"
       ],
       "visual_review": "passed-2026-10-23:全部contact逐图检查，支线语义修正后重验；NAT、profiles、队列均值、App优化在mdbook内复核"
+    },
+    {
+      "id": "ch06-02-ext4-allocation",
+      "title": "ext4 缓冲写分配与有序日志",
+      "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-02-ext4-allocation.svg",
+        "src/assets/diagrams/ch06/ch06-02-ext4-allocation.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-02-ext4-allocation",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/ext4/allocators.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/ext4/journal.rst"
+      ],
+      "visual_review": "passed"
+    },
+    {
+      "id": "ch06-03-process-cache",
+      "title": "SP 实例缓存与进程边界",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-process-cache.svg",
+        "src/assets/diagrams/ch06/ch06-03-process-cache.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-process-cache",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ContextImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-load-wait-timeline",
+      "title": "单加载线程与首次读取等待",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-load-wait-timeline.svg",
+        "src/assets/diagrams/ch06/ch06-03-load-wait-timeline.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-load-wait-timeline",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-commit-memory",
+      "title": "commitToMemory 的快照与代次",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-commit-memory.svg",
+        "src/assets/diagrams/ch06/ch06-03-commit-memory.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-commit-memory",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-apply-finisher-listener",
+      "title": "apply 的后台任务与监听器分支",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-apply-finisher-listener.svg",
+        "src/assets/diagrams/ch06/ch06-03-apply-finisher-listener.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-apply-finisher-listener",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-enqueue-write-thread",
+      "title": "enqueueDiskWrite 的执行线程选择",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-enqueue-write-thread.svg",
+        "src/assets/diagrams/ch06/ch06-03-enqueue-write-thread.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-enqueue-write-thread",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-generation-skip",
+      "title": "SP 已有文件的代次跳过条件",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-generation-skip.svg",
+        "src/assets/diagrams/ch06/ch06-03-generation-skip.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-generation-skip",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-xml-backup-sync-result",
+      "title": "SP XML 备份协议与同步结果边界",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-xml-backup-sync-result.svg",
+        "src/assets/diagrams/ch06/ch06-03-xml-backup-sync-result.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-xml-backup-sync-result",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/FileUtils.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-queuedwork-finish",
+      "title": "waitToFinish 的锁、任务与 finisher",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-queuedwork-finish.svg",
+        "src/assets/diagrams/ch06/ch06-03-queuedwork-finish.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-queuedwork-finish",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-anr-stack-types",
+      "title": "SP ANR 的四种栈形态",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-anr-stack-types.svg",
+        "src/assets/diagrams/ch06/ch06-03-anr-stack-types.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-anr-stack-types",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://perfetto.dev/docs/data-sources/cpu-scheduling"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-load-failure",
+      "title": "SP 加载失败的两类结果",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-load-failure.svg",
+        "src/assets/diagrams/ch06/ch06-03-load-failure.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-load-failure",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-logging-thresholds",
+      "title": "慢同步与慢收尾的观测阈值",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-logging-thresholds.svg",
+        "src/assets/diagrams/ch06/ch06-03-logging-thresholds.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-logging-thresholds",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-datastore-contexts",
+      "title": "DataStore 的调用协程、transform 与 I/O",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-datastore-contexts.svg",
+        "src/assets/diagrams/ch06/ch06-03-datastore-contexts.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-datastore-contexts",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-preferences-core-android/1.2.1/datastore-preferences-core-android-1.2.1-sources.jar"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-datastore-update-decision",
+      "title": "DataStore 更新、相等值与完成信号",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-datastore-update-decision.svg",
+        "src/assets/diagrams/ch06/ch06-03-datastore-update-decision.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-datastore-update-decision",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-datastore-storage-backends",
+      "title": "1.2.1 的 FileStorage 与 OkioStorage 入口",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-datastore-storage-backends.svg",
+        "src/assets/diagrams/ch06/ch06-03-datastore-storage-backends.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-datastore-storage-backends",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-preferences-core-android/1.2.1/datastore-preferences-core-android-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-android/1.2.1/datastore-android-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-okio-jvm/1.2.1/datastore-core-okio-jvm-1.2.1-sources.jar"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-filestorage-write-protocol",
+      "title": "FileStorage 的版本、临时文件、同步与替换",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-filestorage-write-protocol.svg",
+        "src/assets/diagrams/ch06/ch06-03-filestorage-write-protocol.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-filestorage-write-protocol",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-file-singleton-immutability",
+      "title": "文件级单例检查与值的不变性",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-file-singleton-immutability.svg",
+        "src/assets/diagrams/ch06/ch06-03-file-singleton-immutability.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-file-singleton-immutability",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-okio-jvm/1.2.1/datastore-core-okio-jvm-1.2.1-sources.jar"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-read-error-policy",
+      "title": "读流 catch：损坏、I/O 降级与收集结束",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-read-error-policy.svg",
+        "src/assets/diagrams/ch06/ch06-03-read-error-policy.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-read-error-policy",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/catch.html"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-migration-initialization",
+      "title": "初始化迁移、更新与清理的次序",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-migration-initialization.svg",
+        "src/assets/diagrams/ch06/ch06-03-migration-initialization.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-migration-initialization",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-android/1.2.1/datastore-android-1.2.1-sources.jar"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-migration-key-selection",
+      "title": "Preferences 迁移的 key 过滤与旧文件清理",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-migration-key-selection.svg",
+        "src/assets/diagrams/ch06/ch06-03-migration-key-selection.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-migration-key-selection",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-preferences-android/1.2.1/datastore-preferences-android-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-android/1.2.1/datastore-android-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-migration-data-ownership",
+      "title": "按数据所有权推进迁移",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-migration-data-ownership.svg",
+        "src/assets/diagrams/ch06/ch06-03-migration-data-ownership.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-migration-data-ownership",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-android/1.2.1/datastore-android-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-preferences-android/1.2.1/datastore-preferences-android-1.2.1-sources.jar"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-version-before-file",
+      "title": "共享版本先递增的进程退出边界",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-version-before-file.svg",
+        "src/assets/diagrams/ch06/ch06-03-version-before-file.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-version-before-file",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-multiprocess-read-cache",
+      "title": "多进程读取的版本、锁与缓存分支",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-multiprocess-read-cache.svg",
+        "src/assets/diagrams/ch06/ch06-03-multiprocess-read-cache.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-multiprocess-read-cache",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-observer-lifecycle",
+      "title": "FileObserver 与 data 收集者生命周期",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-observer-lifecycle.svg",
+        "src/assets/diagrams/ch06/ch06-03-observer-lifecycle.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-observer-lifecycle",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-shared-counter-runtime",
+      "title": "SharedCounter 的 Android 与主机边界",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-shared-counter-runtime.svg",
+        "src/assets/diagrams/ch06/ch06-03-shared-counter-runtime.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-shared-counter-runtime",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1.aar"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-direct-boot-storage",
+      "title": "Direct Boot 的 API 与文件位置",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-direct-boot-storage.svg",
+        "src/assets/diagrams/ch06/ch06-03-direct-boot-storage.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-direct-boot-storage",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-android/1.2.1/datastore-android-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1.aar",
+        "https://developer.android.com/privacy-and-security/direct-boot"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-split-files-cost",
+      "title": "拆分 SP 文件的收益与串行加载代价",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-split-files-cost.svg",
+        "src/assets/diagrams/ch06/ch06-03-split-files-cost.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-split-files-cost",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-async-trace-pairing",
+      "title": "跨挂起更新的异步 Trace 配对",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-async-trace-pairing.svg",
+        "src/assets/diagrams/ch06/ch06-03-async-trace-pairing.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-async-trace-pairing",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/tracing/Trace"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-component-wait-points",
+      "title": "Activity 与 Service 的 SP 收尾点",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-component-wait-points.svg",
+        "src/assets/diagrams/ch06/ch06-03-component-wait-points.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-component-wait-points",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-broadcast-finish-gates",
+      "title": "广播完成回执的条件排队",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-broadcast-finish-gates.svg",
+        "src/assets/diagrams/ch06/ch06-03-broadcast-finish-gates.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-broadcast-finish-gates",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/BroadcastReceiver.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-03-multiprocess-three-mechanisms",
+      "title": "MultiProcess DataStore 的锁、版本与通知",
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-03-multiprocess-three-mechanisms.svg",
+        "src/assets/diagrams/ch06/ch06-03-multiprocess-three-mechanisms.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-03-multiprocess-three-mechanisms",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
+      ],
+      "visual_review": "pending"
     }
   ],
   "corrections": [
@@ -15869,15 +16389,218 @@
       "after": "持续制造高频小写、无边界缓存或过多事务提交的业务模式如果继续存在，重置后的空间与布局收益仍可能逐渐消失；恢复出厂设置不能根治这种负载来源。",
       "reason": "原说法绝对化；重置能短期改变空间/布局，不能从根本改变业务负载。",
       "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/f2fs.rst"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "每次有效修改都要序列化当前整份键值映射，SP 也没有按 key 增量更新文件的能力。",
+      "after": "实际需要写盘时会序列化整份键值映射，SP 没有按 key 增量更新文件的能力；已有文件的过时异步中间状态可以被跳过。",
+      "reason": "r1 writeToFile 的代次检查会跳过磁盘已覆盖和过时的异步中间代次，不能声称每次有效修改必然全量落盘。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "`apply()` 先更新内存再立刻返回，写盘结果不会反馈给调用方。",
+      "after": "`apply()` 先更新内存，不等待本次写盘结果便可返回；调用中仍有加锁、映射复制和部分监听器执行成本。",
+      "reason": "异步是不用等待写盘结果，不保证方法无CPU/锁/回调成本或立即返回。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "XML 解析或备份恢复失败，异常最终回到调用方。",
+      "after": "常见 XML 读取/解析异常会记日志并回退到空 map，未必抛给调用方；记录到 mThrowable 的其他失败才会在等待结束后转成 IllegalStateException。",
+      "reason": "loadFromDisk 内层catch Exception吞掉常见读取/解析异常，外层Throwable及最终状态构建失败才进入mThrowable。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "它在锁内把 Editor（编辑器对象） 的修改合入 `mMap`，递增内存状态版本号，",
+      "after": "它在锁内把 Editor（编辑器对象）的修改合入 `mMap`，有实际变化时才递增内存状态版本号，",
+      "reason": "commitToMemory 只有changesMade才递增mCurrentMemoryStateGeneration。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "调用方看到的顺序是：内存已更新、写盘任务已安排、监听器收到内存变更，然后 `apply()` 返回。",
+      "after": "确定的顺序是先更新内存、再安排写盘并调用通知逻辑。调用线程是主线程时，监听器在这里直接执行；其他线程调用时，通知会 post 到主线程，可能在 apply() 返回后才发生。监听器观察的是内存变化，不能据此判断磁盘成功。",
+      "reason": "notifyListeners 对主线程直接调用，对其他线程post主线程；不能保证所有监听器先于apply返回。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "| 返回 | 立即返回 `void` | 等待对应写盘结束，返回 `boolean` |",
+      "after": "| 返回 | 不等待本次写盘结果，返回 `void` | 等待对应写盘结果，返回 `boolean` |",
+      "reason": "表格中的立即返回会忽略commitToMemory、锁竞争和同步监听器成本。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "1. 检查内存状态版本号与磁盘版本号，确认是否需要写。",
+      "after": "1. 原文件存在时比较磁盘代次：已覆盖本次代次则跳过；异步 apply 的中间代次若已被更新状态替代也可跳过。只有需要写时才继续；新建文件路径不能直接套用这组已有文件判断。",
+      "reason": "显式保留代次跳过条件与fileExists门槛，便于配图不画成每次apply都写文件。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "4. 对文件描述符执行同步刷新。",
+      "after": "4. 调用 FileUtils.sync(str) 尝试同步文件；这个 r1 实现没有检查它的布尔返回值。",
+      "reason": "FileUtils.sync会将IOException转false，SharedPreferencesImpl忽略该返回值。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/FileUtils.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "这套备份协议降低了进程在写入中途退出时留下半份 XML 的风险，也仅止于此：",
+      "after": "还需保留一个错误传播边界：r1 的 FileUtils.sync() 捕获同步 IOException 后返回 false，writeToFile() 却没有使用这个返回值。因此 commit() 的布尔值并不完整覆盖底层同步失败，不能把 true 当成每种故障下的独立断电持久性证明。\n\n这套备份协议降低了进程在写入中途退出时留下半份 XML 的风险，也仅止于此：",
+      "reason": "结合两个固定r1函数说明commit布尔结果无法完整传播fsync失败，不外推为所有写失败都会被吞掉。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "`processPendingWork()` 先取走 `sWork` 中的待处理任务，并在当前调用线程逐个运行。",
+      "after": "`processPendingWork()` 先获取覆盖整批处理的 sProcessingWork monitor，再取走 sWork 中的任务并在当前线程逐个运行。若后台已持有这个 monitor，主线程会先阻塞在锁入口，尚未走到 finisher 的 latch 等待。",
+      "reason": "sProcessingWork覆盖整个batch执行，后台已取得任务时常见先阻塞monitor，原文漏掉重要ANR栈形态。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "随后它再运行 finisher；如果写盘已由后台线程取得，finisher 会在 `writtenToDiskLatch.await()` 等待。",
+      "after": "完成这批处理后它再运行 finisher；若仍有对应写入未完成，finisher 可以在 writtenToDiskLatch.await() 等待。monitor 等待、主线程直接写盘和 latch 等待是不同位置。",
+      "reason": "区分整批处理锁等待与后续latch等待，不把后台已取走任务一概画成直接等latch。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "若发现 `QueuedWork` 仍有任务，它把 `sendFinished()` 排在队尾，",
+      "after": "仅 TYPE_COMPONENT 分支在 hasPendingWork() 为真时把 sendFinished() 排在队尾；其他类型或没有 pending work 时直接发送。这个检查只看尚在 sWork 中的任务，不等同于统计所有 in-flight 写盘。排队分支会使 ",
+      "reason": "BroadcastReceiver.PendingResult.finish 的延后路径受mType和sWork条件控制，不是所有receiver和所有在途写盘统一等待。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/BroadcastReceiver.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "下面的示例用于区分三种常见栈形态",
+      "after": "下面的示例用于区分四种常见栈形态",
+      "reason": "补入被漏掉的sProcessingWork monitor阻塞。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "# C. 生命周期收尾时由主线程执行写盘",
+      "after": "# B2. 生命周期收尾时等待后台批处理锁\n- waiting to lock <sProcessingWork monitor>\nandroid.app.QueuedWork.processPendingWork\nandroid.app.QueuedWork.waitToFinish\n\n# C. 生命周期收尾时由主线程执行写盘",
+      "reason": "栈为机制示意，明确monitor符号标签不是伪造对象地址或实机trace。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "A 类要关联 `SharedPreferences` 加载线程与 XML 解析；B 类要找后台写盘线程，以及 `writtenToDiskLatch` 尚未释放的时段；C 类的文件 I/O 已经在主线程上。",
+      "after": "A 类要关联 SharedPreferences 加载线程与 XML 解析；B 类区分 writtenToDiskLatch 等待与 B2 的 sProcessingWork monitor 竞争，并找到后台工作线程；C 类的文件 I/O 已经在主线程上。",
+      "reason": "把新增锁等待类型纳入诊断，避免所有等待都归为latch。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "磁盘 I/O 和更新任务都放在 I/O 调度器上，子任务失败也被隔离在作用域内。",
+      "after": "内部 I/O 与 actor 任务使用该作用域，但 transform 会通过 withContext(callerContext) 回到调用方协程上下文，不能把它当作自动迁移到 IO 的任意计算。SupervisorJob 隔离子任务失败；自定义作用域还需按实际配置判断。",
+      "reason": "DataStoreImpl.transformAndWrite 明确用callerContext执行transform，耗时CPU代码仍可能在Main运行。",
+      "source": "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "任意字段改变后，整个对象都会被序列化并持久化。",
+      "after": "新旧对象不相等、实际执行写入时，整个对象会被序列化并持久化；updateData() 的 transform 若返回与旧值相等的新值，1.2.1 会跳过 writeData()。",
+      "reason": "transformAndWrite 使用curData.value != newData门槛，updateData调用不必每次写文件。",
+      "source": "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "执行 transform（更新函数） 更新函数，得到不可变的新值。",
+      "after": "执行 transform（更新函数），得到不可变的新值；新旧值相等时可跳过后续磁盘写入。",
+      "reason": "去掉重复释义并保持全量写入步骤的相等值跳过边界。",
+      "source": "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "        if (error is IOException) {\n            emit(emptyPreferences())",
+      "after": "        if (error is CorruptionException) {\n            throw error\n        } else if (error is IOException) {\n            emit(emptyPreferences())",
+      "reason": "CorruptionException继承IOException，原代码会把未处理的数据损坏也静默映射成空配置，与普通I/O失败降级描述矛盾。",
+      "source": "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "这段代码把普通 `IOException` 临时映射为空配置，适合“默认值可接受”的场景。",
+      "after": "这段代码先排除 CorruptionException，再把其他 IOException 映射为空配置，适合“默认值可接受”的场景。catch 发出默认值后，这次收集会正常结束，不会自动恢复监听后续更新；若需要恢复，应明确设计 retryWhen 或重新收集策略。",
+      "reason": "除损坏类型误捕外，Flow.catch emit fallback会结束该次上游收集，不是临时替换后自动继续。",
+      "source": "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/catch.html"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "读路径拿不到进程内 mutex 或共享文件锁时，仍可读取当前正式文件，但不会把这次无锁结果作为稳定缓存提交。后续再通过共享版本和文件通知校准缓存。这样，读取不必等待正在生成的 `.tmp` 文件，缓存也只会在稳定快照上更新。",
+      "after": "允许尝试锁的读路径（requireLock=false）拿不到进程内 mutex 或共享文件锁时，仍可读取当前正式文件，但不会把这次无锁结果提交为稳定缓存。通知触发的刷新则使用 requireLock=true，会等待协调锁；不能把所有读取都概括为完全不等写锁。后续再通过共享版本和通知校准缓存，读取也不会直接消费正在生成的 .tmp 文件。",
+      "reason": "DataStoreImpl.readDataAndUpdateCache 对requireLock有两条路径，通知collector强制要求锁。",
+      "source": "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "`apply()` 先更新内存并把整份 XML 写入延后；",
+      "after": "`apply()` 先更新内存并把持久化任务延后；需要写入的代次会序列化整份 XML；",
+      "reason": "小结与已有文件中间代次可跳过的源码事实保持一致。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "手机升级到 Android 17 不会替 App 自动升级 DataStore，最终行为由应用依赖的 AndroidX 版本决定。",
+      "after": "手机升级到 Android 17 不会替 App 自动升级 DataStore，最终行为由应用依赖的 AndroidX 版本决定。\n\n版本边界：SP 接口始于 API 1；本文 DataStore 1.2.1 的 Android 实现 `datastore-core-android` 在[官方 AAR](https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1.aar) 的 Manifest 中声明 `minSdkVersion=23`，对应 Android 6.0 / API 23 及以上。",
+      "reason": "文章的API1起始范围属于SP；DataStore1.2.1 Android AAR的Manifest明确minSdkVersion=23，补充分组件版本范围。",
+      "source": "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1.aar"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "读取不会被写入锁长期阻塞，但第一次收集仍需要完成初始化、迁移和首次读盘；",
+      "after": "普通读取可以走缓存或尝试锁路径，通知触发的刷新仍可能等待协调锁；非阻塞 API 不承诺零等待。第一次收集还需要完成初始化、迁移和首次读盘；",
+      "reason": "避免把非阻塞API说成不存在锁等待；1.2.1通知collector使用requireLock=true。",
+      "source": "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "AndroidX DataStore 1.2.1 的 `FileStorage` 写入路径是：",
+      "after": "以下流程限定 AndroidX DataStore 1.2.1 的 `FileStorage` 后端：`preferencesDataStore` 所调用的 Preferences 默认工厂，以及 `DataStoreFactory.create(serializer, produceFile)` 使用它。普通 typed `dataStore` 委托在这个版本使用 `OkioStorage`，自定义 Storage 也可改变底层实现；分析具体调用时，应先确认后端。\n\n`FileStorage` 的实际写入路径是：",
+      "reason": "typed dataStore委托仍构造OkioStorage，PreferencesFileStorage不能泛化成全部DataStore后端。",
+      "source": "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-android/1.2.1/datastore-android-1.2.1-sources.jar"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "Proto DataStore 使用应用定义的 protobuf schema（数据结构定义）；两者都不适合不断增长的大数据集。",
+      "after": "Proto DataStore 使用应用定义的 protobuf schema（数据结构定义）；通用的 typed DataStore<T> 也可用其他 Serializer，protobuf 是一种选择。这些整对象存储都不适合不断增长的大数据集。",
+      "reason": "区分泛型Serializer接口与选用protobuf的Proto DataStore，不把所有类型化对象都限定protobuf。",
+      "source": "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "迁移任务在 DataStore 首次可访问之前执行。成功持久化新数据后，清理步骤会从旧 SP 删除已迁移 key；",
+      "after": "迁移任务在 DataStore 首次可访问之前执行。shouldMigrate() 返回 false 的迁移会跳过，也不会登记该次 cleanUp()；参与迁移的结果成功写入（新旧值相等时可复用原值）后，才执行已登记的清理步骤，从旧 SP 删除所选 key；",
+      "reason": "DataMigrationInitializer只为shouldMigrate为真的迁移登记cleanup，初始化updateData相等值跳过实际写入。",
+      "source": "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "DataStore 1.2.0 起增加了 Direct Boot 支持 API。",
+      "after": "DataStore 1.2.0 起增加了 Direct Boot 支持 API；本文 1.2.1 的 createInDeviceProtectedStorage() / deviceProtectedDataStore() 要求 Android 7.0 / API 24 及以上。这与库本身最低 API 23 的声明是两个边界。",
+      "reason": "DirectBoot工厂/委托带RequiresApi(N)，不能从库minSdk23推断该API可在23调用。",
+      "source": "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+      "before": "同一进程、同一路径同时存在多个活跃 DataStore 实例会破坏功能，并在读写时触发 `IllegalStateException`。",
+      "after": "同一进程、同一路径应只有一个活跃 DataStore 实例。标准 FileStorage 在首次建立读写连接时，按 canonical path 的 activeFiles 登记检查重复并抛出 IllegalStateException；自定义或不同 Storage 也必须遵守唯一实例约束，不能把某个后端的检查当作跨后端全局文件锁。",
+      "reason": "FileStorage和OkioStorage各有自己的activeFiles集合；唯一实例是使用契约，不能把单个后端的重复检查画成所有Storage共享的全局锁。",
+      "source": "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar"
     }
   ],
   "validation": {
     "content_links": "passed:2034 relative Markdown links + 8 local/aiw sources",
-    "mdbook": "passed: latest whole-book preview including all36 figures and corrections in6.2; pre-existing large search-index warning",
+    "mdbook": "passed: latest whole-book preview includes all6.2 figures and6.3 initial23 corrections/source references; pre-existing large search-index warning",
     "temporary_files": "outside repository in /tmp/gracker-android-wiki-diagrams-20261023",
     "checked_at": "2026-10-23",
     "svg_canvas_bounds": "627 SVG text bounds checked, no overflow; all PNG decode",
-    "embed_integrity": "591 records, 621 images across 77 mdbook pages + 1 standalone existing alternate; all loaded",
+    "embed_integrity": "627 records,657 images across78 mdbook pages +1 existing standalone alternate; all loaded",
     "through_chapter": "ch05-cpu-power",
     "illustrated_articles": 79,
     "diagram_count": 627,
@@ -15890,8 +16613,8 @@
       "kind": "SVG text canvas bounds + PNG decode"
     },
     "embed_report": {
-      "checked_records": 591,
-      "checked_articles": 78,
+      "checked_records": 627,
+      "checked_articles": 79,
       "errors": [],
       "built_pages": [
         {
@@ -16361,6 +17084,12 @@
           "images": 28,
           "all_loaded": true,
           "preview_mode": "mdbook"
+        },
+        {
+          "article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
+          "images": 36,
+          "all_loaded": true,
+          "preview_mode": "mdbook"
         }
       ]
     },
@@ -16368,7 +17097,7 @@
     "diagram_placements": 657,
     "skill_prompt_packs": "627/627 required four-file skill packs exist; all visual reviews passed",
     "in_page_visual_review": "6.2 NAT mapping, AOSP blkio profiles, time-weighted depth and App sync workflow passed; earlier checks retained",
-    "working_article": "6.3 next; not yet audited or illustrated"
+    "working_article": "6.3 in progress:全文已读，23项初轮修正；已缓存r1平台、AndroidX1.2.1源码包和AAR manifest/ABI清单；未配图，不标记完成。"
   },
   "last_checkpoint": {
     "illustrated_articles": 79,
@@ -16381,7 +17110,7 @@
       "ch05-cpu-power"
     ],
     "next_article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
-    "note": "第1–5章及6.1–6.2完成：79/301篇、627张图、657处嵌入。6.2新增36图，合计24项修正；goal active，全书尚未完成。",
+    "note": "第1–5章及6.1–6.2完成：79/301篇、627图、657处嵌入；6.2总计24项修正，6.3初轮23项修正、尚未配图；goal active。",
     "diagram_placements": 657
   },
   "replaced_inline_diagrams": [

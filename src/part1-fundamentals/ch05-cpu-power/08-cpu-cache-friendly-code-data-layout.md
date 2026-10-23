@@ -4,7 +4,9 @@ chapter: '5.8'
 section: '5.8'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-26'
+last_verified: '2026-10-23'
+last_source_verified_at: '2026-10-23'
+last_idle_audit_at: '2026-10-23'
 last_verified_against: AOSP android-17.0.0_r1, Android common kernel android17-6.18-2026-06_r6, Android Simpleperf and Startup Profile docs, Arm Cortex-A documentation
 confidence: medium
 sources:
@@ -370,6 +372,8 @@ Startup Profile 让启动关键类和方法更集中，并尽量放入首个 `cl
 - release 构建需要开启 R8、minification 和完整优化；
 - startup journey（启动场景基准流程）通过 `includeInStartupProfile = true` 进入 Startup Profile。
 
+Startup Profile 只包含应用自己定义的启动测试生成的规则，库不能像提供 Baseline Profile 那样贡献 Startup Profile。AGP 8.2 不支持为每个构建变体（variant）保留独立的 Startup Profile；使用 AGP 8.2 时，Baseline Profile Gradle 插件需为 1.2.3 或更高版本，以自动合并各变体的规则。需要按变体区分规则时，应升级到 AGP 8.3 或更高版本。
+
 `dexOptions.reorderClassesWithProfiling` 不是对应的公开 AGP 配置，示例里不要用它。
 
 ### 生成、验证、A/B 测量
@@ -379,9 +383,11 @@ Startup Profile 应覆盖 launcher、常见 deep link（直接打开应用内指
 验证分四步：
 
 1. 用 APK Analyzer 查看 startup 类和方法是否进入预期 DEX；
-2. AGP 8.8 及以上可检查 AAB 内 `BUNDLE-METADATA/com.android.tools/r8.json` 的 `"startup": true`；
+2. AGP 8.8 及以上可检查 AAB 内 `BUNDLE-METADATA/com.android.tools/r8.json` 是否至少有一个 DEX 条目标记为 `"startup": true`，并将各条目的 `checksum` 与 AAB 中对应 DEX 的 SHA-256 核对；
 3. 用 Macrobenchmark 分别测冷启动、温启动和多个入口；
 4. 固定 APK、编译状态、设备温度和系统版本。
+
+应用或依赖库使用 desugared API（脱糖后由兼容实现提供的 API）时，这些兼容实现始终位于最后一个 DEX，该 DEX 不参与布局优化，核验时要单独识别。官方的 AAB 元数据核验流程仅在 Linux 上测试过；这项测试范围限制不代表其他主机系统无法读取元数据。
 
 <!-- gracker-diagram: ch05-08-startup-versus-baseline-profile -->
 ![Startup 与 Baseline Profile 的不同阶段](../../assets/diagrams/ch05/ch05-08-startup-versus-baseline-profile.png)

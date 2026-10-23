@@ -9079,6 +9079,110 @@
       "summary": "heapprofd 的括注（file descriptor，文件描述符）属误插：heapprofd 是 Perfetto 的 native heap profiler，注释内容应属于后文“进程 fd、/proc/<pid>/fdinfo”处的 fd",
       "type": "wrong-gloss",
       "updated_at": "2026-10-23T13:39:01.843779+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "created_at": "2026-10-23T14:13:45.045704+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261023-140520-73d03fa5",
+      "details": "bpfloader.rs 724-736 对 critical=false 的加载错误只记录并继续；198-209 给出 critical/allow_missing；631-636 对 .data/.kconfig/.rodata 内部 map 允许无 descriptor。正文未说明这些例外，容易把 bpf.progs_loaded=1 当作所有对象加载成功。",
+      "id": "finding-3d2c12322a4a",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "system/bpf/loader/bpfloader.rs@android-17.0.0_r1#724-736"
+      ],
+      "status": "open",
+      "summary": "补齐 Rust loader 非关键对象失败与全局完成属性的边界",
+      "type": "loader-error-boundary",
+      "updated_at": "2026-10-23T14:13:45.045704+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "created_at": "2026-10-23T14:13:45.102188+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261023-140520-73d03fa5",
+      "details": "android17-6.18 inode.c 250-318 明确支持部分 map 的 cat 调试输出，并警告输出格式会变化；352-367 区分 map seq_show 与 iterator link 可读接口。正文把所有 map 的普通读取一概视为无意义。",
+      "id": "finding-474a8fd8d0a9",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "kernel/common/kernel/bpf/inode.c@android17-6.18-2026-06_r6#250-367"
+      ],
+      "status": "open",
+      "summary": "修正 pinned map 不能 cat 的过强结论并保留调试格式警告",
+      "type": "pinned-map-read-semantics",
+      "updated_at": "2026-10-23T14:13:45.102188+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "created_at": "2026-10-23T14:13:45.156672+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261023-140520-73d03fa5",
+      "details": "固定内核 tag 的 Documentation/scheduler/sched-ext.rst 357-367 明确说明 ops 回调、常量和 scx_bpf_* kfunc 均无稳定性保证，跨内核版本可不经预告改变；正文只写启用条件，遗漏迁移成本。",
+      "id": "finding-32602d046399",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "kernel/common/Documentation/scheduler/sched-ext.rst@android17-6.18-2026-06_r6#357-367"
+      ],
+      "status": "open",
+      "summary": "补充 sched_ext 不保证跨内核版本 ABI 稳定的官方警告",
+      "type": "missing-abi-lifecycle-boundary",
+      "updated_at": "2026-10-23T14:13:45.156672+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "created_at": "2026-10-23T14:13:45.211588+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261023-140520-73d03fa5",
+      "details": "bpfLockContention.c 51/106 不检查 map 更新结果，首次 BPF_NOEXIST 插入可竞争丢样本；end 未读取 ctx->ret。mutex.c 689-691/781-793 中断失败也会触发 contention_end。原文只强调 sum/count 原子更新，容易被理解为完整竞争计数或成功获锁时延。",
+      "id": "finding-8400c7025147",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "system/bpfprogs/locks/bpfLockContention.c@android-17.0.0_r1#28-119",
+        "kernel/common/kernel/locking/mutex.c@android17-6.18-2026-06_r6#689-793"
+      ],
+      "status": "open",
+      "summary": "补齐 bpfLockContention 配对丢数与等待结果不区分的限制",
+      "type": "aggregation-completeness-boundary",
+      "updated_at": "2026-10-23T14:13:45.211588+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "created_at": "2026-10-23T14:13:45.267076+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261023-140520-73d03fa5",
+      "details": "android-15.0.0_r1 根树仅有 src 等条目，src/Android.bp 是系统容器 flag 和 cc_binary；android-16.0.0_r1 apex/Android.bp 才明示 com.android.uprobestats APEX，且由 RELEASE_UPROBESTATS_MODULE 控制启用。原版本表把 15–16 统一表述为 Mainline 模块。",
+      "id": "finding-b99e2d41ef18",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "packages/modules/UprobeStats/src/Android.bp@android-15.0.0_r1#5-72",
+        "packages/modules/UprobeStats/apex/Android.bp@android-16.0.0_r1#37-68"
+      ],
+      "status": "open",
+      "summary": "区分 Android 15 UprobeStats 源码与 Android 16 APEX 模块",
+      "type": "historical-packaging-boundary",
+      "updated_at": "2026-10-23T14:13:45.267076+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "created_at": "2026-10-23T14:18:50.940414+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261023-140520-73d03fa5",
+      "details": "Android 17 adb client/commandline.cpp 788-796 将 shell 参数直接用空格拼接，不额外转义。宿主单引号在第一次解析后被移除，多行块会落成远端 su root sh -c 后接未引用脚本，不能保证脚本整体以 root 执行。改用无 PTY 的 adb shell -T su root sh -s，并通过引用 heredoc 把脚本送入标准输入。",
+      "id": "finding-405d6a4f74f6",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "packages/modules/adb/client/commandline.cpp@android-17.0.0_r1#698-796"
+      ],
+      "status": "open",
+      "summary": "修正三段 adb shell su root sh -c 多行脚本的引号传递",
+      "type": "adb-remote-shell-quoting",
+      "updated_at": "2026-10-23T14:18:50.940414+08:00"
     }
   ],
   "schema_version": 1

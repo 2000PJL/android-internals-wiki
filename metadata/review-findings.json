@@ -9283,6 +9283,49 @@
       "summary": "Window desired HDR headroom 用法遗漏 10000 上界，容易把任意大于等于 1 的值当作有效参数",
       "type": "api-parameter-boundary",
       "updated_at": "2026-10-23T18:42:30.335526+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "已按 r1 Handler 分支区分 status/ignore/manual，补明单 UID 覆盖、manual 同样被忽略，以及既有 cgroup/JNI 监控/排队终止不会自动撤销。源码静态断言与新增正文检查通过；未冒充设备运行验证。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261023-220520-53632845",
+      "created_at": "2026-10-23T22:12:40.416789+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261023-220520-53632845",
+      "details": "android-17.0.0_r1 的 MESSAGE_IGNORE 只替换单个 mIgnoredUid；MESSAGE_START 与 MESSAGE_CONFIG 检查 shouldIgnore(uid)，ControllerEnabled.setManualLimit 也走 MESSAGE_CONFIG。该分支不重置 cgroup、不移除 JNI 监控，MESSAGE_KILL 不检查 shouldIgnore。原文将 ignore 与 manual 统称会改变限制，遗漏上述边界，易导致把现有约束仍在生效或 manual 没有写入误判为立即豁免/复位。需区分命令副作用并说明读取实际节点，保留 manual none 的既有版本警告。",
+      "id": "finding-a4ec8d097d8c",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java#484",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java#845",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java#4818"
+      ],
+      "status": "fixed",
+      "summary": "MemoryLimiter ignore 未说明只跳过后续配置且会同时屏蔽 manual，不能撤销已有约束或待终止消息",
+      "type": "command-semantics",
+      "updated_at": "2026-10-23T22:18:06.882403+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/01-android-linux-memory-overview.md",
+      "close_note": "已显式保留官方 Deprecated 和 5.4 kernel only 边界，迁移页仅作历史来源；Android 17 当前接口继续依据固定 r6 内核文档和设备节点。未把计划移除日期误写为已经下线。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261023-220520-53632845",
+      "created_at": "2026-10-23T22:16:33.723136+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261023-220520-53632845",
+      "details": "所引 AOSP 迁移页面既限定 5.4 kernel only，也明确声明内容已废弃并指向当前内核文档。原文只保留了标题中的 5.4 范围，未交代 Deprecated 状态。补明该页仅用于历史迁移背景；Android 17 的当前接口、heap 名称与行为继续以 android17-6.18-2026-06_r6 文档和设备节点为准，不把页面仍可访问写成仍受维护。",
+      "id": "finding-7d82e0a5b405",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/core/architecture/kernel/dma-buf-heaps",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/userspace-api/dma-buf-heaps.rst"
+      ],
+      "status": "fixed",
+      "summary": "ION 到 DMA-BUF Heaps 迁移来源未显式保留官方 Deprecated 警告",
+      "type": "source-lifecycle",
+      "updated_at": "2026-10-23T22:18:06.937922+08:00"
     }
   ],
   "schema_version": 1

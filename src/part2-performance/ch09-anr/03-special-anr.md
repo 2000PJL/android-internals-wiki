@@ -3,8 +3,8 @@ title: 特殊与跨边界 ANR
 chapter: '9.3'
 section: '9.3'
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-16'
-last_verified_against: AOSP android-17.0.0_r1 ActivityThread/QueuedWork/Broadcast/ActiveServices/ContentProvider/Binder/ART anchors; Android Common Kernel android17-6.18-2026-06_r6 sched/PSI/cgroup freezer docs; Android Developers ANR/FGS/App Startup/DataStore/16 KB docs; SQLite WAL/locking docs
+last_verified: '2026-10-23'
+last_verified_against: AOSP android-17.0.0_r1 ActivityThread/QueuedWork/Broadcast/ActiveServices/ContentProvider/Binder/ART CC-CMC anchors; Android Common Kernel android17-6.18-2026-06_r6 sched/PSI/cgroup freezer docs; Android Developers ANR/FGS/App Startup/DataStore/16 KB docs; SQLite WAL/locking/fileformat/PRAGMA docs verified 2026-10-23
 confidence: medium-high
 sources:
 - type: aosp
@@ -102,6 +102,11 @@ ANR 仍由 Input、Broadcast、Service、ContentProvider、Job 等 detector 按�
 
 分析时不要用“系统问题”或“应用问题”提前结束调查。每个结论都应写清 detector、等待者、资源拥有者、时间区间和可实施的修复点。
 
+<!-- gracker-diagram: ch09-03-01-cross-boundary-evidence -->
+![从 detector 沿等待关系追到资源拥有者](../../assets/diagrams/ch09/ch09-03-01-cross-boundary-evidence.png)
+
+图：责任进程是调查入口；单个主线程栈不能代表完整跨线程、跨进程因果。
+
 本章的平台实现以 AOSP `android-17.0.0_r1` 为核对版本，内核语义以 `android17-6.18-2026-06_r6` 为准。核对范围覆盖组件调度、`QueuedWork`、广播队列、前台服务、Binder 线程池、ART GC、内核调度/PSI/freezer 和 SQLite WAL；超出这些入口的厂商改动应以目标设备源码、DeviceConfig 与 trace 为准。
 
 ## CPU 饥饿、I/O 等待与 freezer
@@ -120,9 +125,19 @@ ANR 仍由 Input、Broadcast、Service、ContentProvider、Job 等 detector 按�
 
 多核总利用率没有达到 100% 时也可能发生局部饥饿。空闲核可能不在目标 cpuset、频率很低，或者任务受 affinity 限制。即使所有核都很忙，主线程也仍可能得到运行机会；更高优先级和调度组仍可能让它及时运行。
 
-### 判断 `D` 状态需要 kernel callstack
+<!-- gracker-diagram: ch09-03-02-runnable-starvation -->
+![Runnable 等待和 CPU 执行分别计时](../../assets/diagrams/ch09/ch09-03-02-runnable-starvation.png)
 
-6.18 内核中的 `TASK_UNINTERRUPTIBLE` 会在常见工具里显示为 `D`。它表示任务正处于不可中断等待，但状态字母没有说明具体原因；磁盘、驱动、futex（快速用户态互斥锁）、内存回收和 freezer（进程冻结机制）都可能出现这种等待。
+图：饥饿要由目标线程调度时间线支持；Load 与整机CPU百分比只提供环境线索。
+
+### 判断 `D` 状态需要等待位置与同期事件
+
+6.18 内核中的 `TASK_UNINTERRUPTIBLE` 会在常见工具里显示为 `D`。它表示不可中断等待，文件系统、驱动、内核锁或内存回收等路径都可能涉及这种状态；具体原因要查等待位置、内核栈和同期事件。普通 futex 等待通常使用 `TASK_INTERRUPTIBLE | TASK_FREEZABLE`，应按 `S` 分析；freezer 另有独立的 `TASK_FROZEN`，不能把二者直接列成 `D` 的同义原因。参见 [futex 等待实现](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/kernel/futex/waitwake.c) 与 [任务状态](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/include/linux/sched.h)。
+
+<!-- gracker-diagram: ch09-03-03-sleep-state-boundaries -->
+![S、D 与冻结状态分别取证](../../assets/diagrams/ch09/ch09-03-03-sleep-state-boundaries.png)
+
+图：D本身不给原因；__refrigerator栈帧也不足以证明Android缓存应用当前已冻结。
 
 把 `D` 归到 I/O 至少需要一组相互支持的信号：
 
@@ -131,6 +146,11 @@ ANR 仍由 Input、Broadcast、Service、ContentProvider、Job 等 detector 按�
 - 请求提交、设备服务和线程唤醒在时间线上能够对齐。
 
 `loadavg`（系统平均负载）把 Runnable 与不可中断等待任务都计入。8 核设备的 Load 为 16，不能直接解释成“CPU 使用 200%”，也不能据此判断其中有多少任务在等待 I/O。
+
+<!-- gracker-diagram: ch09-03-04-io-wait-causality -->
+![I/O 归因从目标等待连接到恢复](../../assets/diagrams/ch09/ch09-03-04-io-wait-causality.png)
+
+图：同机同时有慢I/O不足以独自证明它阻塞了目标；需要实际依赖和时间证据。
 
 ### freezer 要用冻结状态确认
 
@@ -145,6 +165,11 @@ Android 17 的 Broadcast 路径对 freezer 有明确处理：
 
 这些规则只约束 Broadcast。Input、execute-service、Provider 和应用自建 Binder 协议各有自己的冻结与进程状态路径。报告应同时给出目标 PID 的冻结区间、unfreeze reason、receiver（广播接收器）调度时间和 ANR timer 起点。
 
+<!-- gracker-diagram: ch09-03-05-broadcast-thaw-timer -->
+![广播投递中的解冻与 timer 配置](../../assets/diagrams/ch09/ch09-03-05-broadcast-thaw-timer.png)
+
+图：延期需可用的native计时器按目标PID调度等待计算；extend不等于开启timer冻结。
+
 ## 广播洪峰：排队延迟与 receiver ANR 要分开
 
 ### Android 17 按进程组织广播队列
@@ -153,6 +178,11 @@ Android 17 的 Broadcast 路径对 freezer 有明确处理：
 
 普通广播默认可同时运行的进程队列数在低内存设备上为 2，其他设备上为 4，DeviceConfig（系统可动态调整的配置）可以改写该值。系统还限制单个 running process queue 连续投递的 active broadcast（当前活跃广播）数量，以便其他进程获得调度机会。
 
+<!-- gracker-diagram: ch09-03-06-per-process-broadcast-queues -->
+![按进程排队仍受全局与进程内约束](../../assets/diagrams/ch09/ch09-03-06-per-process-broadcast-queues.png)
+
+图：2/4是普通广播默认软限制，可由DeviceConfig改写；不等于所有广播、所有设备的硬并行上限。
+
 按进程组织队列以后，下面几点仍然成立：
 
 - 同一进程默认仍由主线程顺序处理 receiver callback（接收器回调）；
@@ -160,11 +190,23 @@ Android 17 的 Broadcast 路径对 freezer 有明确处理：
 - `goAsync()` 之后，`PendingResult.finish()` 仍是本次交付的完成信号；
 - 某些运行时注册的无序 receiver 可以走 assumed-delivered（系统投递后即视为完成）路径，不启动 receiver ANR timer。
 
-receiver ANR timer 在 `dispatchReceivers()` 准备向 warm process 调度回调时启动。广播在 `system_server` 队列里等待的时间不会自动计入该 receiver 的 10/60 秒窗口；系统调度 receiver 之后，主线程排队、应用初始化、`onReceive()`、异步工作和延迟的完成回执才会消耗这段计时。
+受跟踪的 receiver ANR timer 在 `dispatchReceivers()` 准备向 warm process 调度回调时启动。此前的系统排队不自动计入该 receiver 的 10/60 秒基准期限；投递后的主线程或自定义 Handler 排队、回调、异步工作和完成回执会消耗期限。Android 17 默认 `enable_wait_for_finish_attach_application=true`：冷启动应用先完成 Provider 初始化和 `Application.onCreate()`，回报 `finishAttachApplication()`，AMS 才交付待处理广播与服务；关闭该配置时，尚未完成的初始化才可能进入组件 timer。CPU 饥饿补偿还取决于 native timer 是否可用，不能把基准期限当设备实测总时长。
+
+⚠️ 矛盾：[官方 ANR 诊断指南](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs#broadcast-receiver) 将冷启动概括为广播期限的一部分；[Android 17 AMS](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 的默认 finish-attach 等待与现代队列起算点更细。判断具体设备时应使用其配置和实际 dispatch 时间。
+
+<!-- gracker-diagram: ch09-03-07-dispatch-window -->
+![排队、初始化与 receiver timer 的边界](../../assets/diagrams/ch09/ch09-03-07-dispatch-window.png)
+
+图：默认r1中的timer不覆盖全部fork和初始化；官方通用描述与固定实现差异已在正文标明。
 
 ### 洪峰为何仍会产生一组 ANR
 
 大量广播可以同时制造三种压力：
+
+<!-- gracker-diagram: ch09-03-08-broadcast-flood-pressure -->
+![广播洪峰可同时加压三类资源](../../assets/diagrams/ch09/ch09-03-08-broadcast-flood-pressure.png)
+
+图：同时出现多条Broadcast reason只说明事件集中；洪峰因果还需队列增长、窗口重叠和同资源依赖。
 
 - system_server 排队和进程启动增加，用户可见动作整体变晚；
 - 多个接收进程同时执行初始化、Binder、数据库和文件写入，争用 CPU 与 I/O；
@@ -185,6 +227,11 @@ receiver ANR timer 在 `dispatchReceivers()` 准备向 warm process 调度回调
 
 若主线程 trace 停在 `nativePollOnce`，应检查自定义 Handler、`goAsync()` worker 和 `QueuedWork`。耗时的广播工作可能位于其他线程，因此主线程采样时空闲与 Broadcast ANR 可以同时成立。
 
+<!-- gracker-diagram: ch09-03-09-async-receiver-completion -->
+![onReceive 返回不一定结束广播责任](../../assets/diagrams/ch09/ch09-03-09-async-receiver-completion.png)
+
+图：图为一条可能路径；Manifest receiver待处理工作可延迟sendFinished，运行时注册receiver规则需另核对。
+
 ### 修复方向
 
 - 合并应用内部的高频事件，避免用全局广播传递可直接调用的进程内状态；
@@ -195,6 +242,11 @@ receiver ANR timer 在 `dispatchReceivers()` 准备向 warm process 调度回调
 
 扩大线程池可能让 CPU、Binder 或数据库竞争更严重。应先确认排队来自容量不足，还是任务本身在等待不可用资源。
 
+<!-- gracker-diagram: ch09-03-10-bounded-receiver-work -->
+![广播工作先限流，再保证每条路径完成](../../assets/diagrams/ch09/ch09-03-10-bounded-receiver-work.png)
+
+图：goAsync不能把Broadcast timer变成无限时长；长任务仍须遵守Job/WorkManager/FGS各自规则。
+
 ## Provider 初始化：三个超时出口
 
 ### Provider 早于 `Application.onCreate()`
@@ -203,15 +255,25 @@ Android 17 的 `ActivityThread.handleBindApplication()` 先创建 `Application` 
 
 Provider 的 `attachInfo()` 会进入其 `onCreate()`，所以清单注册的 Provider 会在应用冷启动的主线程早期完成初始化。
 
+<!-- gracker-diagram: ch09-03-11-provider-startup-order -->
+![Provider 发布先于 Application.onCreate](../../assets/diagrams/ch09/ch09-03-11-provider-startup-order.png)
+
+图：Provider初始化发生在应用早期；不要混淆Application对象构造与Application.onCreate回调。
+
 这段时间可能从三个出口表现出来：
 
 1. **No-focused-window 或 Input ANR**：Activity 因 Provider 初始化过久而迟迟没有建立首个可聚焦窗口，或主线程无法处理输入。
-2. **Broadcast/execute-service ANR**：系统已经把 receiver 或 Service transaction（组件调度事务）排在 `bindApplication` 之后，应用初始化占用了组件的完成期限。
+2. **启动保护或后续组件 ANR**：Android 17 默认先等初始化及 `finishAttachApplication()`，再派发待处理 receiver/Service，因此不能把 Provider 初始化一概算进这些组件的执行 timer。初始化本身另受启动与发布保护；关闭等待配置、其他线程并发依赖 Provider，或交付后继续进行慢工作时，才可能阻塞对应的组件完成期限。
 3. **调用方派生 ANR**：另一个应用在主线程同步获取或调用该 Provider，等待目标进程发布 Provider 并回复，最终耗尽调用方自己的输入期限。
 
-Android 17 的 10 秒 Provider publish guard（发布保护计时器）属于进程初始化保护。超时后，系统以 `REASON_INITIALIZATION_FAILURE`（初始化失败）移除 Provider 进程，这类退出不记为 Provider ANR。
+Android 17 在存在等待发布的 launching provider 时，从 attach 阶段安排 Provider publish guard，默认 10 秒再乘硬件超时倍率；不是所有声明了 Provider 的进程每次启动都无条件挂这只 timer。到期仍未完成发布时，系统以 `REASON_INITIALIZATION_FAILURE`（初始化失败）移除进程，这条处理路径不生成 Provider ANR。
 
-远程调用是否受监视，取决于调用方是否显式配置 `ContentResolver.setDetectNotResponding()`；监视到期后才进入 `ContentProvider not responding` ANR。三条路径的 reason（系统记录的原因字段）和被归责进程不同，详见 [§9.1 的 Provider 边界](01-anr-mechanism-types-triggers.md#contentprovider发布保护与调用-anr-要分开)。
+远程调用是否受这类探测，取决于客户端是否配置 `ContentProviderClient.setDetectNotResponding()`。它是带 `@SystemApi` 和 `REMOVE_TASKS` 权限要求的特权接口，普通第三方应用不能把它当作公开 SDK 的 CRUD 超时保证；客户端探测到期后才报告远端 Provider 无响应。三条路径的 reason（系统记录的原因字段）和被归责进程不同，详见 [§9.1 的 Provider 边界](01-anr-mechanism-types-triggers.md#contentprovider发布保护与调用-anr-要分开)。
+
+<!-- gracker-diagram: ch09-03-12-provider-three-exits -->
+![Provider 慢可影响不同 detector 与失败出口](../../assets/diagrams/ch09/ch09-03-12-provider-three-exits.png)
+
+图：默认finish-attach还会影响Broadcast/Service起算；同一Provider慢路径不能统一贴成Provider ANR。
 
 ### 诊断 Provider 冷启动
 
@@ -226,6 +288,11 @@ Android 17 的 10 秒 Provider publish guard（发布保护计时器）属于进
 
 若目标进程在 Provider publish guard 到期时被移除，调用方可能收到 provider acquisition failure（获取 Provider 失败），目标进程不会因此留下 ANR。调用方主线程若仍在等待或重试，随后仍可能发生自己的 Input ANR。
 
+<!-- gracker-diagram: ch09-03-13-provider-identity-timeline -->
+![Provider 冷启动要同时保留 caller 和 host](../../assets/diagrams/ch09/ch09-03-13-provider-identity-timeline.png)
+
+图：这是证据核对次序，caller获取请求可能先触发host启动。发布保护默认10秒乘倍率，只在相关launching-provider条件下安排；失败不自动生成host ANR。
+
 ### App Startup 能解决哪部分
 
 Jetpack App Startup 让多个初始化组件共享一个 `InitializationProvider`，并用 `Initializer.dependencies()` 声明依赖顺序。通过 manifest 注册的 initializer（初始化器）仍在 Provider 初始化阶段执行；把多个 Provider 合并为一个，并不会自动减少各项初始化工作的总耗时。
@@ -236,6 +303,11 @@ Jetpack App Startup 让多个初始化组件共享一个 `InitializationProvider
 - 对启动不必需的组件关闭自动初始化，在业务需要时用 `AppInitializer` 懒加载。
 
 第三方 SDK 自带 Provider 时，要检查 manifest merge（清单合并）结果，并按 SDK 文档关闭自动初始化。直接删除 Provider 可能破坏 SDK 的初始化约定。
+
+<!-- gracker-diagram: ch09-03-14-startup-eager-lazy -->
+![共享 InitializationProvider 与按需初始化](../../assets/diagrams/ch09/ch09-03-14-startup-eager-lazy.png)
+
+图：懒加载是时间和责任迁移，仍须验证首次使用路径；不能直接删除第三方Provider来假设收益。
 
 ## `SharedPreferences.apply()`：返回快，完成信号仍会等待
 
@@ -262,7 +334,12 @@ Runnable postWriteRunnable = () -> {
 enqueueDiskWrite(mcr, postWriteRunnable);
 ```
 
-`apply()` 返回时，新的内存值已经可见，磁盘写入却可能仍未结束。`enqueueDiskWrite()` 会串行执行 XML 写入、`FileUtils.sync()` 与结果通知；存储拥塞、文件过大或短时间内多次修改都会增加后续任务的排队时间。
+`apply()` 返回时，新的内存值已经可见，磁盘写入却可能仍未结束。`enqueueDiskWrite()` 用实例级写盘锁串行处理结果：需要持久化时才写 XML、调用 `FileUtils.sync()` 并通知结果；已有文件且 generation 已持久化或被更新的异步 generation 替代时，可能直接跳过物理写入。存储拥塞、文件过大或频繁修改仍可能拖慢组件完成回执。
+
+<!-- gracker-diagram: ch09-03-15-apply-memory-disk -->
+![apply 的内存可见与磁盘完成是不同边界](../../assets/diagrams/ch09/ch09-03-15-apply-memory-disk.png)
+
+图：apply返回快不保证后续组件完成信号不等待；也不意味着每次apply必有一次物理fsync。
 
 ### 不同组件边界有两种等待方式
 
@@ -276,6 +353,11 @@ Android 17 的调用点需要逐条区分：
 
 Broadcast 路径中，主线程可能已经回到 `nativePollOnce`，但完成回执仍排在慢写盘任务之后。
 
+<!-- gracker-diagram: ch09-03-16-component-finish-boundaries -->
+![Activity/Service 等待与广播回执排队分开](../../assets/diagrams/ch09/ch09-03-16-component-finish-boundaries.png)
+
+图：两条路径都可能拖住系统完成信号；waitToFinish不仅处理SharedPreferences任务。
+
 ### 如何确认
 
 需要把以下证据放到同一时间窗：
@@ -288,6 +370,11 @@ Broadcast 路径中，主线程可能已经回到 `nativePollOnce`，但完成�
 
 只看到 `apply()` 调用不足以归因，因为被后续修改合并的中间 generation 可能没有落盘。只看到 `waitToFinish()` 也不足以归因，`QueuedWork` 还可能承载其他框架任务。
 
+<!-- gracker-diagram: ch09-03-17-apply-evidence-generation -->
+![写盘归因要核对任务与 generation](../../assets/diagrams/ch09/ch09-03-17-apply-evidence-generation.png)
+
+图：多个apply可能合并中间generation；一个waitToFinish栈也不能独自证明SP慢。
+
 ### 修复
 
 - 把一次业务状态的多个键合并到同一个 Editor；
@@ -297,24 +384,46 @@ Broadcast 路径中，主线程可能已经回到 `nativePollOnce`，但完成�
 - 结构化、大体量或需要查询的数据使用 Room 等数据库；
 - 在 userdebug 或测试构建中启用 StrictMode，并记录从 `apply()` 到写盘完成的耗时。
 
-把 `apply()` 换成 `commit()` 会把同步写盘直接暴露给调用线程，通常会加重主线程风险。
+把 `apply()` 换成 `commit()` 会让调用线程同步等待提交结果：队列原本为空时可能在当前线程写盘，否则可能等待已经排队的写入。它不会自动消除 I/O 和完成边界风险；放在主线程通常更危险。
+
+<!-- gracker-diagram: ch09-03-18-preference-remedies -->
+![修复偏好写入按数据形态和完成边界选择](../../assets/diagrams/ch09/ch09-03-18-preference-remedies.png)
+
+图：commit会同步等结果，空队列时可在调用线程写盘；替换API不能自动消除主线程等待。
 
 ## Binder 循环等待与线程池耗尽
 
 ### 用资源等待图描述死锁
 
-“A 调 B，B 回调 A”还不足以构成死锁。Binder 支持嵌套同步事务和一定程度的重入，也就是处理线程可以在等待期间承接特定回调；回调还可能由 Binder 线程池中的其他线程处理。只有资源等待关系形成循环，才会发生死锁。例如：
+“A 调 B，B 回调 A”还不足以构成死锁。Binder 支持嵌套同步事务和一定程度的重入，也就是处理线程可以在等待期间承接特定回调；回调还可能由 Binder 线程池中的其他线程处理。要确认这里的循环等待死锁，需要闭合具体线程和资源的互等关系，并排除超时、取消等退出路径；单个 Binder 栈或 A→B→A 的调用形状都不够。即使没有采到循环，漏唤醒、资源泄漏或未采完整的依赖仍可能造成长期挂起。下面是一个明确跨线程的例子：
 
-1. A 的线程持有锁 L，发起同步事务到 B；
-2. B 的处理线程调用回 A；
-3. A 的回调处理需要锁 L，或必须同步切到正等待 B 的主线程；
-4. A 等 B，B 等 A 的回调，回调又等 L 或主线程。
+1. A 的线程 A0 持有锁 L，发起同步事务到 B；
+2. B 的处理线程 B0 把任务交给 B1，并同步等待 B1 的结果；
+3. B1 不在原嵌套事务栈上，另发同步回调到 A 的线程 A1；A1 请求由 A0 持有的 L；
+4. 若没有超时、取消等出口，就形成 A0→B0→B1→A1→L→A0 的闭环。
 
-另一种常见循环来自线程池：A 的 Binder workers（工作线程）全在等待 B，B 回调 A 时找不到可服务的线程；B 的 workers 又逐步被这些调用占满。此时没有 Java monitor（对象锁）循环，互相等待的资源是两端有限的线程槽位。
+直接嵌套的同步回调可能被驱动定向回原调用线程；同一线程重新获取可重入 Java monitor 不会仅因这一点死锁。上例特意引入 B1 与不同的 A1，避免把安全重入画成必然死锁。参见 [Binder 嵌套目标线程选择](https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/android/binder.c)。
+
+<!-- gracker-diagram: ch09-03-19-cross-thread-deadlock -->
+![跨线程回调形成资源互等闭环](../../assets/diagrams/ch09/ch09-03-19-cross-thread-deadlock.png)
+
+图：箭头含等待边及锁到持有者的分配边；示例假定没有超时或取消出口。
+
+另一种循环来自有限线程槽位：A 的 Binder workers 都在等待 B，而 B 从独立工作线程发出的回调无法沿原事务栈重入，只能等待 A 中可服务的线程；这些回调又阻止 B 释放处理槽位。要确认死锁，还须核对实际可服务线程、驱动增线程请求及退出机制。仅仅看到一组嵌套同步调用占满线程，不能忽略 Binder 的定向重入规则。
+
+<!-- gracker-diagram: ch09-03-20-nested-reentry -->
+![嵌套同步回调不必切到另一条池线程](../../assets/diagrams/ch09/ch09-03-20-nested-reentry.png)
+
+图：A→B→A的调用形状不足以判死锁；必须从实际TID和资源拥有关系确认。
 
 ### “默认 15”不是进程线程总数
 
 Android 17 的 libbinder `ProcessState.cpp` 把 `DEFAULT_MAX_BINDER_THREADS` 设为 15，并通过 `BINDER_SET_MAX_THREADS` 告诉驱动最多可以按需请求多少个线程。进程还可能显式加入 thread pool（线程池）、修改上限或采用系统进程专用配置，因此不能看到 15 条 Binder 栈就认定线程池已经耗尽。
+
+<!-- gracker-diagram: ch09-03-21-binder-pool-budget -->
+![默认15是驱动扩展配置，线程总数另算](../../assets/diagrams/ch09/ch09-03-21-binder-pool-budget.png)
+
+图：15条Binder栈不能独自证明池满；libbinder总计数还考虑启动线程和显式join者。
 
 诊断时记录：
 
@@ -332,13 +441,37 @@ Android 17 的 libbinder `ProcessState.cpp` 把 `DEFAULT_MAX_BINDER_THREADS` 设
 - `oneway` 只省去调用方等待 reply 的过程，事务仍会排队并占用内核 buffer（缓冲区），不能当作无限容量通道；
 - 记录服务端耗时、并发数和队列长度，并在过载时拒绝或延后非关键工作。
 
+<!-- gracker-diagram: ch09-03-23-binder-protocol-budget -->
+![异步协议仍要限制容量和完成责任](../../assets/diagrams/ch09/ch09-03-23-binder-protocol-budget.png)
+
+图：oneway不能解决业务级依赖循环，也不是无限容量通道；改协议后仍需验证完成时限。
+
 扩大 Binder thread pool 可能延后饱和，也可能增加锁、CPU 和内存竞争。应优先消除循环等待和无界扇出（一次请求触发数量不受限的并发调用）。
+
+<!-- gracker-diagram: ch09-03-22-pool-slot-cycle -->
+![线程池互等也须排除嵌套重入与退出](../../assets/diagrams/ch09/ch09-03-22-pool-slot-cycle.png)
+
+图：线程多不等于吞吐高；只有实际闭环且无可推进路径时才支持此类资源死锁。
 
 ## GC、reclaim 与 LMKD 的叠加
 
 ### GC 要拆成暂停、分配等待和 CPU 竞争
 
-Android 8 起，ART 默认采用 Concurrent Copying（并发复制）垃圾回收器；Android 10 起，该回收器支持按对象存活时间分代收集。并发收集仍包含短暂停顿，线程到达 suspend point（可安全暂停的位置）所花的时间也计入暂停。一次 ANR 时间窗内还可能出现：
+从历史演进看，Android 8 的 ART 默认转向 Concurrent Copying（并发复制），Android 10 起 CC 支持分代收集。Android 17 固定源码同时含 CC 与 Concurrent Mark Compact（CMC，并发标记整理）等分支：`gUseReadBarrier` 与 `gUseUserfaultfd` 对应不同 collector，诊断时应记录目标进程实际的 collector 名称和配置。并发收集仍有暂停；time to suspend（等线程到达可暂停点）已包含在相应 GC pause 统计中，不要再次相加。
+
+⚠️ 矛盾：[GC 调试文档](https://source.android.com/docs/core/runtime/gc-debug) 仍以 CC/CMS 说明默认计划；[Android 17 Heap 源码](https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc) 已有 CMC 与 CC 的配置分支。文档历史默认不能替代当前进程的实际 collector。
+
+<!-- gracker-diagram: ch09-03-24-collector-config -->
+![历史默认与 Android17 实际 collector 分开](../../assets/diagrams/ch09/ch09-03-24-collector-config.png)
+
+图：官方调试页仍以CC/CMS说明默认；固定r1已有CMC路径，正文保留来源差异。
+
+一次 ANR 时间窗内还可能出现：
+
+<!-- gracker-diagram: ch09-03-25-gc-time-components -->
+![GC 总时长不等于主线程持续暂停](../../assets/diagrams/ch09/ch09-03-25-gc-time-components.png)
+
+图：条带仅示意一种阶段关系；并非每种collector、每轮GC都具有固定暂停次数或比例。
 
 - 主线程等待正在进行的 GC；
 - 分配慢路径触发 `kGcCauseForAlloc`；
@@ -348,6 +481,11 @@ Android 8 起，ART 默认采用 Concurrent Copying（并发复制）垃圾回�
 - 大对象、fragmentation（内存碎片）或 collector transition（回收器切换）改变收集成本。
 
 Android 17 的 `Heap::GrowForUtilization()` 会依据回收后存活字节、target utilization（目标堆利用率）和 growth limit（堆增长上限）等信息，更新 `target_footprint_`（目标堆大小）与 `concurrent_start_bytes_`（启动并发 GC 的字节阈值）。因此不存在跨设备通用的“堆到 50% 就 GC”规则，也没有固定的 GC 次数或耗时可以直接定义“GC 风暴”。
+
+<!-- gracker-diagram: ch09-03-26-heap-growth-policy -->
+![回收后堆目标与并发起点动态调整](../../assets/diagrams/ch09/ch09-03-26-heap-growth-policy.png)
+
+图：不存在所有设备“堆到50%就GC”或固定次数定义GC风暴的统一阈值。
 
 应读取该进程自己的 GC performance dump 和 Perfetto：
 
@@ -359,11 +497,21 @@ Android 17 的 `Heap::GrowForUtilization()` 会依据回收后存活字节、tar
 
 官方文档中的 1.83 ms 是特定示例设备的一组 Young CC 数据，不是 Android 平台阈值。
 
+<!-- gracker-diagram: ch09-03-27-gc-evidence -->
+![GC 归因同时看暂停、分配与 CPU](../../assets/diagrams/ch09/ch09-03-27-gc-evidence.png)
+
+图：1.83ms来自官方示例数据，不是平台GC或ANR阈值；总GC时长不能直接当主线程暂停。
+
 ### 系统内存压力是另一条链
 
 可用内存不足时，系统可能启动 kswapd（后台内存回收线程）、direct reclaim（由申请内存的线程直接回收）、compaction（内存规整）、zram/swap I/O（压缩内存或交换区读写）和 major fault。这些活动会增加 CPU 与 I/O 压力，使 GC 和应用分配变慢。
 
 LMKD（Low Memory Killer Daemon，低内存终止守护进程）会根据压力与进程优先级选择终止进程，通常通过结束后台进程缓解压力；不能据此认定存活进程随后一定会发生磁盘缺页。
+
+<!-- gracker-diagram: ch09-03-28-memory-pressure-chain -->
+![全局回收与进程自身 GC 是两条可叠加的链](../../assets/diagrams/ch09/ch09-03-28-memory-pressure-chain.png)
+
+图：资源压力可以放大应用慢路径；必须将目标等待、页来源与压力区间连接，不能只看一次lmkd kill。
 
 归因需要同时观察：
 
@@ -375,6 +523,11 @@ LMKD（Low Memory Killer Daemon，低内存终止守护进程）会根据压力�
 
 如果主线程主要卡在自身高频分配和 GC，修复点在对象生命周期与分配热点。若多个进程同时受 reclaim 和调度影响，应把系统内存压力列为主因或放大因素，并保留应用侧可移除的主线程工作。
 
+<!-- gracker-diagram: ch09-03-29-memory-fix-validation -->
+![按证据选择分配治理或系统压力修复](../../assets/diagrams/ch09/ch09-03-29-memory-fix-validation.png)
+
+图：这是一条调查与选择次序；不表示每个样本都依次经历两种原因。
+
 ## 前台服务附近的四条结果
 
 FGS（Foreground Service，前台服务）日志经常与 ANR 同时出现，但四条规则的结果各不相同。Android 17 的边界如下：
@@ -383,14 +536,29 @@ FGS（Foreground Service，前台服务）日志经常与 ANR 同时出现，但
 |---|---|---|
 | `startForegroundService()` 后未及时 `startForeground()` | 公开契约要求几秒内完成，ANR 概览给出 5 秒；源码默认内部 timeout 为 30 秒，另有 10 秒 ANR delay，均可配置 | ANR 延迟路径或 `ForegroundServiceDidNotStartInTimeException` |
 | 后台不满足豁免却启动 FGS | 启动入口检查 | `ForegroundServiceStartNotAllowedException`，不是 ANR |
-| `shortService` 到期未停止 | 默认约 3 分钟，`onTimeout(int, int)` 后源码默认再等 10 秒 | ANR |
-| targetSdk 35+ 的 `dataSync` / `mediaProcessing` 用尽后台额度仍未停止 | 每个类型各自默认累计 6 小时，`onTimeout(int, int)` 后源码默认清理期 10 秒 | `ForegroundServiceDidNotStopInTimeException` 崩溃 |
+| `shortService` 到期未停止 | 默认到期点为本轮起点 + 3 分钟，ANR 点为该起点 + 3 分钟 + 10 秒；迟到的 `onTimeout(int, int)` 不重新获得 10 秒 | ANR |
+| targetSdk 35+ 的 `dataSync` / `mediaProcessing` 用尽后台额度仍未停止 | 按 UID 与类型共享 24 小时统计中的默认 6 小时额度；系统安排 `onTimeout(int, int)` 后另发默认 10 秒 crash 消息，排队也消耗这段清理期 | `ForegroundServiceDidNotStopInTimeException` 崩溃 |
 
 源码中的内部 30 秒配置不能替代 SDK 文档要求应用遵守的 5 秒约束。DeviceConfig、HW timeout multiplier（硬件超时倍数）、targetSdk 和 compat change（按目标版本启用的兼容性变更）可能改变设备行为，报告应记录原始原因字段与实际观测时长。
 
-特殊场景常发生在服务 transaction 已经排到主线程，而 `bindApplication`、Provider、数据库迁移或同步 I/O 仍未完成。修复时先构造最小合规通知并及时调用 `startForeground()`，再启动耗时工作；收到 `onTimeout()` 后只执行限制时长的清理，并尽快停止服务。
+<!-- gracker-diagram: ch09-03-30-fgs-four-outcomes -->
+![前台服务附近四类结果分别记录](../../assets/diagrams/ch09/ch09-03-30-fgs-four-outcomes.png)
+
+图：内部默认常量用于解释设备行为；应用按公开数秒契约晋升，超时结果与ANR统计分别核对。
+
+服务 transaction 交付后的主线程排队、数据库迁移或同步 I/O 都可能延迟晋升或停止。若要把 `bindApplication`、Provider 初始化算进同一期限，须先核对 finish-attach 配置及具体 timer：默认待处理服务执行 timer 通常晚于这些初始化步骤，FGS 晋升与启动保护则是另外的时钟。修复时先构造最小合规通知并及时调用 `startForeground()`，再启动耗时工作；收到 `onTimeout()` 后只执行限制时长的清理，并尽快停止服务。
+
+<!-- gracker-diagram: ch09-03-31-short-fgs-absolute -->
+![shortService 的 ANR 点锚定本轮起点](../../assets/diagrams/ch09/ch09-03-31-short-fgs-absolute.png)
+
+图：标出公式而非伪造实测比例；到点仍须系统重核服务状态，已停止或类型改变可避免该结果。
 
 完整 detector 和源码路径见 [§9.1 的 FGS 分类](01-anr-mechanism-types-triggers.md#前台服务附近有三种不同的超时结果)。
+
+<!-- gracker-diagram: ch09-03-32-limited-fgs-quota -->
+![六小时额度共享，清理期从系统安排回调后算](../../assets/diagrams/ch09/ch09-03-32-limited-fgs-quota.png)
+
+图：targetSdk与兼容开关会影响适用范围；限时FGS的DidNotStopInTime是崩溃路径，不能算作ANR。
 
 ## SQLite：连接池、WAL、checkpoint 与 I/O
 
@@ -403,13 +571,23 @@ Rollback journal（回滚日志）使用的 `UNLOCKED/SHARED/RESERVED/PENDING/EX
 - checkpoint 可以与 reader 并行，但不能越过仍被 reader 使用的 end mark；
 - 长 reader 会让 checkpoint 无法推进到末尾，WAL 可能继续增长。
 
+<!-- gracker-diagram: ch09-03-34-wal-reader-checkpoint -->
+![WAL 读快照限制 checkpoint 的推进](../../assets/diagrams/ch09/ch09-03-34-wal-reader-checkpoint.png)
+
+图：这是机制阶段示意；WAL通常允许reader与writer并发，但同一WAL同时只有一个writer，也仍可能返回BUSY。
+
 Android framework 还通过 `SQLiteConnectionPool` 管理数据库连接。主线程可能等待可用连接、唯一 writer 或应用 Java 锁，也可能进入 `fsync()`、checkpoint 或文件系统等待。把所有栈都归为“文件锁”会遗漏具体修复位置。
+
+<!-- gracker-diagram: ch09-03-33-sqlite-lock-domains -->
+![先区分框架连接池、WAL 锁与存储等待](../../assets/diagrams/ch09/ch09-03-33-sqlite-lock-domains.png)
+
+图：“数据库卡住”不足以决定修复点；同一个主线程栈可能跨越本地池、数据库锁和I/O多层。
 
 ### 多进程场景
 
 多进程直接打开同一数据库时，writer、reader 和 checkpoint 分布在不同进程。一个后台进程持有长事务，主进程可能经历：
 
-- 连接池没有可用连接；
+- 本进程连接被已有任务占用，新请求在本地 `SQLiteConnectionPool` 等待；远端事务不会直接占据这组 Java 连接对象，但可能让持有本地连接的操作等待数据库锁；
 - 新 writer 等待当前 writer；
 - 长 reader 阻止 checkpoint 前进；
 - WAL 变大增加读取和恢复成本；
@@ -417,15 +595,26 @@ Android framework 还通过 `SQLiteConnectionPool` 管理数据库连接。主�
 
 ContentProvider 可以把跨进程数据库访问集中到一个所有者进程，但调用方若在主线程同步查询，慢 Provider 仍会转化为 Binder 等待。Room 默认禁止主线程数据库访问，不应使用 `allowMainThreadQueries()` 绕过这项保护。
 
+<!-- gracker-diagram: ch09-03-35-process-local-pool -->
+![远端事务通过锁等待影响本地持连接操作](../../assets/diagrams/ch09/ch09-03-35-process-local-pool.png)
+
+图：每条箭头都是需要验证的候选依赖；跨进程长事务不必然导致本地池耗尽。
+
 ### 16 KB 内核页不是 SQLite 页
 
-Android 15 起，AOSP 支持采用 16 KB 内存页的设备，Android 17 继续支持。内核 page size（内存页大小）、文件系统 block size（块大小）、SQLite `PRAGMA page_size`（数据库页大小）和 WAL frame size（日志帧大小）属于不同层级。16 KB 内核页不会自动把既有数据库页改成 16 KB，也不存在“checkpoint 固定放大四倍”的平台规律。
+Android 15 起，AOSP 支持采用 16 KB 内存页的设备，Android 17 继续支持。内核 page size（内存页大小）、文件系统 block size（块大小）、SQLite `PRAGMA page_size`（数据库页大小）和 WAL frame size（日志帧大小）属于不同层级。WAL frame 由 24 字节帧头加一页数据库内容组成，因此它与 SQLite 页大小有关，并非四种大小彼此独立。16 KB 内核页不会自动把既有数据库页改成 16 KB，也不存在“checkpoint 固定放大四倍”的平台规律。参见 [WAL 文件格式](https://www.sqlite.org/fileformat.html#walformat)。
+
+<!-- gracker-diagram: ch09-03-36-page-size-layers -->
+![内核页、文件系统块、数据库页与 WAL 帧](../../assets/diagrams/ch09/ch09-03-36-page-size-layers.png)
+
+图：四个概念处于不同层，其中WAL帧与SQLite页有确定关系；不能据16KB内核页推断checkpoint固定放大四倍。
 
 下面的命令用于记录设备与数据库的现场配置：
 
 ```bash
+target_pid=12345  # 替换为要检查的真实 PID
 adb shell getconf PAGE_SIZE
-adb shell grep -m 1 KernelPageSize /proc/<pid>/smaps
+adb shell "grep -m 1 KernelPageSize /proc/${target_pid}/smaps"
 
 sqlite3 app.db 'PRAGMA page_size;'
 sqlite3 app.db 'PRAGMA journal_mode;'
@@ -433,7 +622,12 @@ sqlite3 app.db 'PRAGMA wal_autocheckpoint;'
 sqlite3 app.db 'PRAGMA synchronous;'
 ```
 
-设备命令用于确认进程运行时采用的内存页大小，PRAGMA 查询用于确认数据库层设置。还要测量 WAL 大小、checkpoint 返回值与耗时、connection wait（等待连接）、数据库返回 busy/locked 的次数和块设备延迟。没有这些数据时，不应把 16 KB 兼容性直接写成 ANR 根因。
+`getconf PAGE_SIZE` 用于确认设备基础内存页大小；`smaps` 需要相应读取权限，且这里 `-m 1` 只查看首个匹配映射的 KernelPageSize，不能据此断言全部 VMA（虚拟内存区域）的页配置都相同。PRAGMA 查询用于确认数据库层设置；本地 `sqlite3 app.db` 需要可访问的一致数据库环境，不要把复制时分离了 WAL 的裸文件当作完整现场。还要测量 WAL 大小、checkpoint 返回值与耗时、connection wait（等待连接）、数据库返回 busy/locked 的次数和块设备延迟。没有这些数据时，不应把 16 KB 兼容性直接写成 ANR 根因。
+
+<!-- gracker-diagram: ch09-03-37-sqlite-field-evidence -->
+![用现场配置与等待测量验证数据库假设](../../assets/diagrams/ch09/ch09-03-37-sqlite-field-evidence.png)
+
+图：正文shell需要真实PID、设备权限与可访问数据库；图没有声称在设备上完成采集。
 
 ### 修复顺序
 
@@ -445,6 +639,11 @@ sqlite3 app.db 'PRAGMA synchronous;'
 6. 多进程数据库建立单一所有者或明确的进程间访问协议。
 
 `beginTransactionNonExclusive()` 在 WAL 下可以提高读写并发，但它不能让两个 writer 同时提交，也不能解决长事务和 I/O 拥塞。
+
+<!-- gracker-diagram: ch09-03-38-sqlite-remedy-order -->
+![缩短数据库关键路径，再用负载验证配置](../../assets/diagrams/ch09/ch09-03-38-sqlite-remedy-order.png)
+
+图：WAL下NonExclusive可改善读写并发，但不能让两个writer同时写，也不能直接消除长事务与存储拥塞。
 
 ## 快速判断表
 
@@ -461,6 +660,11 @@ sqlite3 app.db 'PRAGMA synchronous;'
 | Load 很高 | 所有 CPU 核已满 | sched 调度事件、CPU idle/frequency、`D` 状态任务 |
 | WAL 文件很大 | writer 挡住所有 reader | reader end mark、checkpoint、数据库连接池 |
 
+<!-- gracker-diagram: ch09-03-39-evidence-recheck -->
+![从采样现象回到同窗口的依赖证据](../../assets/diagrams/ch09/ch09-03-39-evidence-recheck.png)
+
+图：nativePollOnce、15个worker、D、高Load或大WAL都不能独自承担根因结论。
+
 ## 版本演进
 
 - **Android 8 / API 26**：加入 `startForegroundService()`；ART 默认垃圾回收器切换到 Concurrent Copying。
@@ -471,6 +675,11 @@ sqlite3 app.db 'PRAGMA synchronous;'
 - **Android 17 / API 37**：本章结论已按 `BroadcastQueueImpl`、`BroadcastAnrTimer`、Android 17 `ActivityThread`/`QueuedWork`、ART heap 和 6.18 内核状态核对。
 
 历史变化可以帮助解释旧设备日志，现场结论仍要按 build fingerprint（系统构建标识）、targetSdk、DeviceConfig 和原始原因字段校准。
+
+<!-- gracker-diagram: ch09-03-40-version-and-device -->
+![历史规则先映射到目标构建再解释](../../assets/diagrams/ch09/ch09-03-40-version-and-device.png)
+
+图：图为验证次序，不是所有Android版本都具备相同功能或默认配置。
 
 ## 与其他章节的关系
 

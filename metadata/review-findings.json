@@ -9222,6 +9222,67 @@
       "summary": "Startup Profile 构建与核验遗漏官方适用边界",
       "type": "source-boundary-omission",
       "updated_at": "2026-10-23T14:42:53.338271+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/10-hdr-color-management-pipeline-performance.md",
+      "close_note": "已引用完整远端命令并显式指定本机 pull 目标；主机 shell argv/重定向回归通过，三项仓库 gate 通过。未执行实机 dump。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261023-183520-idle-audit-1159b21f",
+      "created_at": "2026-10-23T18:39:37.857963+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261023-183520-idle-audit-1159b21f",
+      "details": "11.1 的 > 被主机 shell 消费；将完整远端命令置于单引号内，并为 adb pull 指明本机目标。已用真实主机 shell 的 argv/重定向探针验证，不声称完成实机 dump。",
+      "id": "finding-4ba830933895",
+      "log_path": "logs/audit/2026-10-23-20261023-183520-idle-audit-1159b21f-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/packages/modules/adb/+/refs/tags/android-17.0.0_r1/docs/user/adb.1.md"
+      ],
+      "status": "verified",
+      "summary": "SurfaceFlinger dump 示例的未引用重定向发生在主机，后续 adb pull 没有对应设备文件",
+      "type": "command-redirection",
+      "updated_at": "2026-10-23T18:42:30.221123+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/10-hdr-color-management-pipeline-performance.md",
+      "close_note": "已改为 SkiaRenderEngine.cpp 文件级静态函数 needsToneMapping()；与 android-17.0.0_r1 源码声明对照通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261023-183520-idle-audit-1159b21f",
+      "created_at": "2026-10-23T18:39:37.918738+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261023-183520-idle-audit-1159b21f",
+      "details": "android-17.0.0_r1 SkiaRenderEngine.cpp:449 定义 static bool needsToneMapping；更正源码定位，保留传递函数与 LinearEffect 机制结论。",
+      "id": "finding-c26a9f18082c",
+      "log_path": "logs/audit/2026-10-23-20261023-183520-idle-audit-1159b21f-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/renderengine/skia/SkiaRenderEngine.cpp#449"
+      ],
+      "status": "verified",
+      "summary": "needsToneMapping 被误写为 SkiaRenderEngine 类成员，Android 17 实际是文件级静态函数",
+      "type": "source-symbol-mismatch",
+      "updated_at": "2026-10-23T18:42:30.277426+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/10-hdr-color-management-pipeline-performance.md",
+      "close_note": "已补全非零 headroom 参数的有限闭区间 [1,10000]，保留 0 自动及 API 35/独立 Surface 边界；Window、WindowManager.LayoutParams 与 SurfaceView 源码均已核验。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261023-183520-idle-audit-1159b21f",
+      "created_at": "2026-10-23T18:39:37.983827+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261023-183520-idle-audit-1159b21f",
+      "details": "Android 17 Window.java 的参数契约为 0 自动或 [1,10000]，SurfaceView.java 同时拒绝非有限值和越界值；补全有限闭区间，保留 API 35、COLOR_MODE_HDR 与独立 Surface 边界。",
+      "id": "finding-5612afc21a58",
+      "log_path": "logs/audit/2026-10-23-20261023-183520-idle-audit-1159b21f-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Window.java#1419",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceView.java#1123"
+      ],
+      "status": "verified",
+      "summary": "Window desired HDR headroom 用法遗漏 10000 上界，容易把任意大于等于 1 的值当作有效参数",
+      "type": "api-parameter-boundary",
+      "updated_at": "2026-10-23T18:42:30.335526+08:00"
     }
   ],
   "schema_version": 1

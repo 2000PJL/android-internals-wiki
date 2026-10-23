@@ -4,8 +4,8 @@ chapter: '9.2'
 section: '9.2'
 status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-09-02'
-last_verified_against: "AOSP android-17.0.0_r1（AnrHelper、ProcessErrorStateRecord、StackTracesDumpHelper、AppExitInfoTracker、ProfilingManager、ProfilingTrigger、PerfettoCategories）；Android Common Kernel android17-6.18-2026-06_r6（sched、binder、block、futex、PSI）；Android Developers ApplicationExitInfo、ProfilingTrigger、ANR vitals docs checked 2026-09-02"
+last_verified: '2026-10-23'
+last_verified_against: "AOSP android-17.0.0_r1（AnrHelper、ProcessErrorStateRecord、StackTracesDumpHelper、AppExitInfoTracker、ProfilingManager、ProfilingTrigger、PerfettoCategories）；Android Common Kernel android17-6.18-2026-06_r6（sched、binder、block、futex、PSI）；Android Developers ApplicationExitInfo、ProfilingTrigger、ANR vitals docs checked 2026-10-23；Perfetto v58.2 与 android-17.0.0_r1 stdlib 实测查询"
 last_idle_audit_at: '2026-09-02T10:46:17+08:00'
 confidence: medium
 sources:
@@ -96,11 +96,16 @@ ANR 的判定信息本身很薄：系统认定某项关键响应超过了期限�
 
 `nativePollOnce`、高 Load、某个 `D` 状态，每一条都只是线索。我们把这些线索和调用链、时间线、资源证据对应起来之后，责任才能落定；所以报告先记事实，再写这些事实支持或排除哪些解释，最后才把某项解释升级成根因。
 
+<!-- gracker-diagram: ch09-02-01-evidence-model -->
+![先确认事件，再闭合等待证据链](../../assets/diagrams/ch09/ch09-02-01-evidence-model.png)
+
+图：单个栈帧、Load 或 D 状态都不足以独自证明根因。
+
 ### ANR trace 是怎样生成的
 
 “系统向进程发送 `SIGQUIT`，ART 写出 `traces.txt`”——这句流传很广的描述来自旧版本。当前主路径由 `system_server` 创建 ANR 文件，再通过 `Debug.dumpJavaBacktraceToFileTimeout()` 或 native backtrace 接口，请求 tombstoned/debuggerd（负责进程转储的系统组件） 写入；`ProcessErrorStateRecord` 直接向目标进程发送 `SIGQUIT` 信号的路径，只在 trace 文件创建失败等降级场景才会走到。
 
-`StackTracesDumpHelper` 为整轮 dump 设置约 20 秒预算，单个 native dump 的超时约为 2 秒；这些值还会乘以 HW timeout multiplier（硬件超时倍数）。文件可能按顺序包含：
+`StackTracesDumpHelper` 为正式多进程 dump 设置默认 20 秒的共享预算，native dump 默认上限为 2 秒；这些值都会乘以 HW timeout multiplier（硬件超时倍数）。它是控制采集成本的预算，不是整条 ANR 处理严格不超过 20 秒的保证：独立 early dump 默认最多 10 秒；Java dump 失败后补做 native dump 还可能额外消耗时间，CPU/DropBox 等处理也在这笔预算之外。文件可能按顺序包含：
 
 - `Subject`、超时起止时间、额外诊断头和 CriticalEventLog；
 - `firstPids` 中优先采集的各进程线程栈；
@@ -110,15 +115,25 @@ ANR 的判定信息本身很薄：系统认定某项关键响应超过了期限�
 
 所以拿到文件后，我们要逐段确认：文件头之后未必紧跟 PID 段；超时、进程退出、权限问题或整轮预算耗尽，都可能留下失败标记或截断结果，文件读到结尾，也还要确认每个候选进程是否都成功完成了 dump。
 
+<!-- gracker-diagram: ch09-02-02-modern-dump-path -->
+![现代 ANR 文件由系统组织转储](../../assets/diagrams/ch09/ch09-02-02-modern-dump-path.png)
+
+图：正式循环有共享预算，early dump 与 fallback 另有成本；文件存在不等于全部候选进程都抓取成功。
+
 #### dump 的进程范围
 
 `ProcessErrorStateRecord.appNotResponding()` 会构造三组候选：
 
-- `firstPids` 以 ANR 目标进程开头，还可以包含其 parent（父进程）、`system_server`、persistent（常驻） 进程，以及被判断为 Activity 或很可能是当前输入法的进程；
+- `firstPids` 以 ANR 目标进程开头，还可以包含其 parent（父进程）、`system_server`、persistent（常驻） 进程，以及服务状态被标为 `treatLikeActivity` 的进程（源码注释把它视作可能的输入法）；
 - `lastPids` 收集剩余的 LRU（最近最少使用顺序） Java 进程，随后由 `ProcessCpuTracker` 根据本轮 CPU 活动挑选额外进程；
 - `nativePids` 来自 `NATIVE_STACKS_OF_INTEREST`（系统关心的原生进程清单），并受调用方、进程类型和系统配置限制。
 
 这份清单按本轮采集候选规则圈定，某个进程出现在文件里，说明的也只是它符合规则。要确认 Binder 因果关系，我们还要用事务 flow（因果连线）、双方调用栈、transaction log 或对端业务日志。
+
+<!-- gracker-diagram: ch09-02-03-dump-candidates -->
+![抓栈候选规则不等于 Binder 因果图](../../assets/diagrams/ch09/ch09-02-03-dump-candidates.png)
+
+图：进程出现在同一文件只说明进入候选或采集规则；Binder 对端还需 transaction/flow 或双方调用证据。
 
 后台 silent ANR（不显示对话框的后台 ANR）、系统启动早期和报告排队过久等场景都会缩小采集范围：`AnrHelper` 在 ANR 报告进入处理队列后等待超过 10 秒时，会把报告视为已经积压，启用 `onlyDumpSelf`（只转储目标进程），只采集被归因进程；系统启动后的前 10 分钟也使用相同策略。这个 10 秒度量的是“报告在 `system_server` 队列中等了多久”，线程栈是否可信要另行判断。
 
@@ -126,13 +141,23 @@ ANR 的判定信息本身很薄：系统认定某项关键响应超过了期限�
 
 `AppExitInfoTracker` 保存 ANR trace 时，只复制从文件开头到目标进程第一段结束位置的区间，再压缩。应用经 `ApplicationExitInfo.getTraceInputStream()` 读到的就是这个子集，`system_server`、native daemon（原生守护进程） 和额外热点进程可能已经被截掉；文件也可能已被覆盖、清理或没有保存成功，所以 API 允许返回 `null`。
 
+<!-- gracker-diagram: ch09-02-04-exit-trace-subset -->
+![历史退出 API 只拿到第一目标段的子集](../../assets/diagrams/ch09/ch09-02-04-exit-trace-subset.png)
+
+图：这是文件区间示意；保存失败、清理或覆盖会导致 getTraceInputStream 返回 null。
+
 ### 阅读 ANR trace
 
 #### 从文件头部定位问题
 
-拿到文件先看头部。我们把 `Subject`、`Reason`、`Timeout`、进程名、PID、时间戳和触发组件记下来：输入分发与广播超时即使留下相似的主线程栈，分析窗口和责任链也不同。头部若包含 `TimeoutStart`，可以用它对齐 Perfetto；目标构建缺少该字段时，就改用 `am_anr`、bugreport 时间戳和业务日志，建立带误差范围的时间区间。
+拿到文件先看头部。我们把 `Subject`、`Reason`、`Timeout`、进程名、PID、时间戳和触发组件记下来：输入分发与广播超时即使留下相似的主线程栈，分析窗口和责任链也不同。头部若包含 `TimeoutStart`，它在这条 timer 路径上是 MONOTONIC/uptime 系的毫秒起点；需要先换算单位，并按 trace 的 clock snapshot 处理与 Trace Processor 时间基准的偏移，跨休眠时尤其不能直接相减，再用它辅助定位受监控窗口；目标构建缺少该字段时，就改用 `am_anr`、bugreport 时间戳和业务日志，建立带误差范围的时间区间。
 
 随后我们确认文件是否完整：
+
+<!-- gracker-diagram: ch09-02-05-trace-completeness -->
+![先验事件身份与文件完整度](../../assets/diagrams/ch09/ch09-02-05-trace-completeness.png)
+
+图：头部字段可随版本和路径变化；TimeoutStart 还需单位与时钟换算。
 
 - 目标 PID 的 `----- pid ... at ... -----` 与 `----- end ... -----` 是否成对；
 - 是否出现 dump timeout、process exited、copy failed 等错误；
@@ -167,17 +192,27 @@ ANR 的判定信息本身很薄：系统认定某项关键响应超过了期限�
 
 | 证据 | 示例 | 可得出的结论 |
 |---|---|---|
-| ART 线程状态 | `Blocked`、`Waiting`、`TimedWaiting`、`Native`、`Runnable` | ART 在线程可安全暂停检查的 suspend point 观察到的运行或等待类型 |
+| ART 线程状态 | `Blocked`、`Waiting`、`TimedWaiting`、`Native`、`Runnable` | ART 维护的运行时状态；它与 Linux 是否正在使用 CPU 是不同维度 |
 | Linux 状态 | `state=R/S/D` | 内核在采样点看到的 task state（任务状态） |
 | Java/native 栈 | `Object.wait`、`futex_wait`、`nativePollOnce` | 当前调用路径或正在使用的等待机制 |
 
 ART 状态 `Native` 表示线程正在原生代码中，至于有没有在消耗 CPU，要回到调度轨迹上确认——主线程在 epoll 中等待消息时，显示的同样是 `Native`。`sCount` 度量的是当前挂起的 suspend count（暂停请求计数）；线程历史上被 GC 或调试器暂停过几次，这个字段里查不到。
+
+<!-- gracker-diagram: ch09-02-06-three-state-domains -->
+![ART 状态、内核状态与栈语义各自解释](../../assets/diagrams/ch09/ch09-02-06-three-state-domains.png)
+
+图：sCount 是当前暂停请求计数；Native 或 ART Runnable 都不能直接翻译为正在 CPU 上执行。
 
 6.18 内核里，`D` 对应 `TASK_UNINTERRUPTIBLE` 一类不可中断等待，I/O、direct reclaim（线程同步参与内存回收）、驱动 completion、内核锁等待等路径都可能落到这一状态；状态字母本身不带等待原因，归因要靠后面的内核轨迹。
 
 普通 futex（快速用户态互斥锁） 等待在该内核源码中设置为 `TASK_INTERRUPTIBLE|TASK_FREEZABLE`，通常按 `S` 等待分析。所以要把 D-state 归到用户态锁头上，光有 `futex_wait` 还不够。
 
 Freezer 还有独立的 `TASK_FROZEN` 状态；cgroup v2 通过 `cgroup.freeze` 请求冻结，并在完成后将 `cgroup.events` 中的 `frozen` 更新为 `1`。只有冻结控制状态、freeze/unfreeze 事件和调度证据能够相互对应时，才能把停顿归因给 freezer。
+
+<!-- gracker-diagram: ch09-02-07-sleep-and-freezer -->
+![S、D 与 freezer 不能只凭字母互推](../../assets/diagrams/ch09/ch09-02-07-sleep-and-freezer.png)
+
+图：分类依据为固定6.18源码；设备冻结仍须目标 PID、控制状态与时间证据闭合。
 
 #### 沿锁地址建立等待图
 
@@ -195,9 +230,19 @@ Freezer 还有独立的 `TASK_FROZEN` 状态；cgroup v2 通过 `cgroup.freeze` 
   - locked <0x0e57c91f> (a java.lang.Object)
 ```
 
-对象地址 `<0x0e57c91f>` 把两段栈连成一条等待边：主线程在等 `CacheWriter`，后者持着锁做同步写盘。顺着这条边往下追，若 `CacheWriter` 又在等主线程手里的另一把锁，等待图闭合成环，就可以判定为死锁；环没有闭上，就是长临界区或锁竞争。修复方向也随之清楚：缩短持锁范围、把 I/O 移出临界区，或统一多把锁的获取顺序。
+对象地址 `<0x0e57c91f>` 把两段栈连成一条等待边：主线程在等 `CacheWriter`，后者持着锁做同步写盘。顺着这条边往下追，若 `CacheWriter` 又在等主线程手里的另一把锁，在同一时段确认双方互持、互等且没有可打破等待的路径，才构成这类 monitor 死锁；没有找到闭环时，只能确认当前已观察到的等待边，可能是锁竞争、长临界区，也可能缺了其他线程或进程的证据。修复方向也随之清楚：缩短持锁范围、把 I/O 移出临界区，或统一多把锁的获取顺序。
+
+<!-- gracker-diagram: ch09-02-08-monitor-wait-edge -->
+![同份转储用对象地址连接等待者与持有者](../../assets/diagrams/ch09/ch09-02-08-monitor-wait-edge.png)
+
+图：地址只用于同一转储的关联；单向等待也可能是未采完整的等待链，不能据此排除死锁或漏唤醒。
 
 `tid=89` 这类编号只在所属工具内有效：ART 的 `tid` 是 ART 内部线程编号，Linux 的 `sysTid` 是内核线程 ID，Perfetto 的 TID 对应 Linux 线程；在 ANR trace 内按 ART `tid` 找持锁者，切换到 Perfetto 时要使用 `sysTid`。
+
+<!-- gracker-diagram: ch09-02-09-thread-id-translation -->
+![ART tid 与 Linux sysTid 通过同一段映射](../../assets/diagrams/ch09/ch09-02-09-thread-id-translation.png)
+
+图：utid/upid 只在当前 trace 内有效；同名线程与 PID/TID 复用要分别处理。
 
 #### 识别 Binder 等待
 
@@ -212,6 +257,11 @@ Binder 分析应闭合四段证据：
 
 对端耗时可能来自 Binder 线程池排队、对端锁竞争、磁盘 I/O，或再次同步调用第三方进程；也可能服务端已经回复，但调用方长期处于 Runnable，迟迟没有重新运行。这几种原因对应不同的修复方向，报告里要逐一拆开，“Binder 慢”三个字只够当现象记。
 
+<!-- gracker-diagram: ch09-02-10-binder-wait-chain -->
+![同步 Binder 等待包含远端和恢复调度](../../assets/diagrams/ch09/ch09-02-10-binder-wait-chain.png)
+
+图：轨道说明可能包含的阶段，不代表任一 trace 必定有固定比例；空闲 Binder 线程也可能停在 binder_thread_read。
+
 ### 用采集延迟校准线程栈
 
 栈是采样来的，采样和触发之间隔了多久，直接决定栈里还剩多少现场——`AnrLatencyTracker` 就是量化这个间隔的。它为 ANR 处理过程写入 Perfetto slice/counter（区间和数值轨道），并在目标进程第一段后附加 `DurationsV5` 延迟数据，常见名称包括：
@@ -223,6 +273,11 @@ Binder 分析应闭合四段证据：
 - `dumpingFirstPids`、`dumpingNativePids`、`dumpingExtraPids`。
 
 这些字段回答报告何时排队、何时开始处理、各组 dump 花了多久。AOSP 也没有“采样延迟低于 500 ms 就可信”一类通用阈值；栈还对应不对应触发现场，看的是应用执行路径在触发时刻和采样时刻之间有没有变过。
+
+<!-- gracker-diagram: ch09-02-12-latency-observations -->
+![采集延迟标记用于校准快照现场](../../assets/diagrams/ch09/ch09-02-12-latency-observations.png)
+
+图：低延迟能减少现场变化机会，但不能单凭一个数值保证栈仍覆盖根因。
 
 推荐给每份证据标记以下时间：
 
@@ -236,6 +291,11 @@ Binder 分析应闭合四段证据：
 
 若 `T_dump_main` 时主线程已经进入 `nativePollOnce`，但 Perfetto 显示它在 `T_deadline`（完成期限） 前连续执行同一条耗时消息，时间线就补回了栈中已经消失的现场。若采样时主线程仍停在同一路径，点状快照与连续时间线会互相印证。若两者冲突且采集窗口不完整，我们就把结论降级为“疑似”，并列出缺失证据。
 
+<!-- gracker-diagram: ch09-02-11-sampling-times -->
+![早期目标栈与后续进程栈来自不同时刻](../../assets/diagrams/ch09/ch09-02-11-sampling-times.png)
+
+图：概念顺序允许并行；目标采样可能早于完整报告消费，不能用最后日志时刻代替 deadline。
+
 ### 从 Perfetto 还原超时窗口
 
 #### 数据源的覆盖范围
@@ -243,12 +303,17 @@ Binder 分析应闭合四段证据：
 在 Perfetto 里搜不到 `am_anr` 时，先检查 trace 是否包含 Android log/EventLog 数据源；采集期间有没有发生 ANR，要另外找证据判断。ANR 分析常用的配置要覆盖：
 
 - `linux.ftrace`：线程调度、CPU 频率、idle、Binder 等内核事件；
-- `track_event`：应用和系统的 trace section；
+- `track_event`：采用 Perfetto SDK/Track Event 发出的事件，例如系统 `debug.anr` 标记；应用 `android.os.Trace`/atrace 的 section 则经 ftrace `print`/trace_marker 导入，需要相应 atrace category 与应用过滤配置；
 - `android.log`：需要用 `am_anr` 对时的 EventLog/logcat；
 - `linux.process_stats`：进程、线程和部分计数器；
 - 设备支持时的内存、I/O、thermal（温控）与 power 数据源。
 
 `system_server` 在相应功能开关启用时，还会发出名为 `ANR Detected` 的 Perfetto SDK instant（瞬时事件），并携带 `anrId`、`errorId`。这个信号取决于系统构建和开关，各设备未必有固定的对应轨道。
+
+<!-- gracker-diagram: ch09-02-13-data-source-boundaries -->
+![atrace、Track Event 和 Android log 分别采集](../../assets/diagrams/ch09/ch09-02-13-data-source-boundaries.png)
+
+图：搜不到 am_anr 或 ANR Detected，先查来源、开关和覆盖；缺失记录不是没有发生的证明。
 
 离线复现时，下面三条命令分别采集 Perfetto、生成 bugreport，并在有权限时列出原始 ANR trace：
 
@@ -259,13 +324,18 @@ adb bugreport bugreport-anr.zip
 adb shell ls -lt /data/anr
 ```
 
-Perfetto 配置决定 trace 包含哪些数据；bugreport 补充 ANR 报告、EventLog、进程和系统快照。直接访问 `/data/anr` 通常需要 root、user（用户态）debug/eng 构建或 bugreport 权限，普通应用和量产 user build（应用构建版本） 拉不到这些文件。
+Perfetto 配置决定 trace 包含哪些数据；bugreport 补充 ANR 报告、EventLog、进程和系统快照。直接遍历或拉取 `/data/anr` 通常需要可用的 root/adbd 调试权限；userdebug/eng 也要看实际权限。量产 user 构建可使用授权的 `adb bugreport` 收集系统选择导出的内容，但这不等于普通应用或 shell 获得了直接读取该目录的权限。
 
 #### 选对时间窗
 
 我们以 `T_deadline` 为中心，向前至少覆盖该 ANR 类型的完整响应期限，再向后覆盖目标进程 dump。输入超时需要回看事件进入、窗口焦点和分发；广播超时需要回看 receiver 调度、`onReceive()`、`goAsync()` 和 `finish()`；Service 与 Job 则要对齐对应的生命周期回调。
 
 时间窗的原点应选在检测器超时处：对话框、系统通知、`ANR in` 日志和线程 dump 都可能明显晚于检测器超时，从对话框出现时刻向前固定截取几秒可能错过窗口。
+
+<!-- gracker-diagram: ch09-02-14-detector-window -->
+![分析窗口从真正的协议起点覆盖到 dump](../../assets/diagrams/ch09/ch09-02-14-detector-window.png)
+
+图：Android17默认finish-attach可能把初始化放在广播/服务执行timer之前；先确认设备实际计时边界。
 
 #### 阅读主线程调度轨迹
 
@@ -279,11 +349,26 @@ Perfetto 配置决定 trace 包含哪些数据；bugreport 补充 ANR 报告、E
 
 CPU 饥饿要用“Runnable 区间远大于 Running 区间”和显著的 wakeup-to-run（线程被唤醒到真正运行） 延迟来证明。
 
+<!-- gracker-diagram: ch09-02-15-scheduling-states -->
+![将窗口内 CPU 执行与等待分开](../../assets/diagrams/ch09/ch09-02-15-scheduling-states.png)
+
+图：CPU 饥饿需要目标线程的调度证据；整机百分比高或存在空闲核都不能独自判定。
+
 整机 CPU 百分比高只能提供环境背景。大小核调度、cpuset（允许线程运行的 CPU 集合） 限制、uclamp（调度器利用率约束）、温控降频或一个高优先级线程，都可能让主线程得不到 CPU，即使整机仍有空闲核。
+
+<!-- gracker-diagram: ch09-02-16-runnable-constraints -->
+![Runnable 饥饿要查可用 CPU 与竞争条件](../../assets/diagrams/ch09/ch09-02-16-runnable-constraints.png)
+
+图：“系统负载高”是环境描述；需要具体约束与调度事件支持资源侧因果。
 
 #### 跟踪同步 Binder
 
 在 Perfetto 中沿调用方 Binder transaction 的 flow 跳到服务端线程，检查以下阶段：
+
+<!-- gracker-diagram: ch09-02-17-binder-five-stages -->
+![事务发送到返回不能全算成驱动执行](../../assets/diagrams/ch09/ch09-02-17-binder-five-stages.png)
+
+图：轨道为阶段示意；没有“超过10ms就必为Binder驱动竞争”的通用阈值。
 
 - 调用方发起事务前是否已经在主线程执行了耗时工作；
 - 事务是否排队等待对端 Binder 线程；
@@ -291,27 +376,32 @@ CPU 饥饿要用“Runnable 区间远大于 Running 区间”和显著的 wakeup
 - reply 产生后，调用方何时被唤醒并运行；
 - oneway 调用是否因异步队列拥塞而间接占满服务端资源。
 
-接口名和 transaction code 可以帮助定位 AIDL Stub 方法，但不同系统构建的 EventLog tag（版本标签） 或采样格式不一定相同。我们优先依赖 Binder flow 和双方调用栈，日志字段则按照目标设备的 `event-log-tags` 定义解释。
+接口名和 transaction code 可以帮助定位 AIDL Stub 方法，但不同系统构建的 EventLog tag（事件标签）定义或采样格式不一定相同。我们优先依赖 Binder flow 和双方调用栈，日志字段则按照目标设备的 `event-log-tags` 定义解释。
 
 #### 用 Perfetto SQL 批量抽取线程状态
 
-下面的查询导出指定进程主线程的全部状态区间，供后续按 `T_deadline` 裁剪并汇总 Running、Runnable 与阻塞时间：
+下面的查询先导出同名进程各生命周期的主线程状态与 `upid/utid`，供后续选定事件所属实例。线程名可以修改，所以用 `is_main_thread`，不把名称必须等于 `main` 当条件：
 
 ```sql
 SELECT
-  thread_state.ts,
-  thread_state.dur,
-  thread_state.state,
-  thread_state.cpu
+  process.upid, process.pid, process.name AS process_name,
+  thread.utid, thread.tid, thread.name AS thread_name,
+  thread_state.ts, thread_state.dur,
+  thread_state.state, thread_state.cpu
 FROM thread_state
 JOIN thread USING (utid)
 JOIN process USING (upid)
 WHERE process.name = 'com.example.app'
-  AND thread.name = 'main'
-ORDER BY thread_state.ts;
+  AND thread.is_main_thread = 1
+ORDER BY process.upid, thread_state.ts;
 ```
 
 `ts` 和 `dur` 使用 Trace Processor 的纳秒时间基准。不同 Perfetto 版本的状态字符串和可选列可能有差异，批处理前先通过 `.schema thread_state` 查当前表结构，再按 `T_deadline` 的时间范围过滤和聚合。SQL 结果给出的是状态时长；至于原因，我们还要回到调用栈、flow 和系统计数器上解释。
+
+<!-- gracker-diagram: ch09-02-18-sql-state-identity -->
+![先发现稳定 ID，再对状态窗口统计](../../assets/diagrams/ch09/ch09-02-18-sql-state-identity.png)
+
+图：查到状态分布只是事实抽取；不从 Running/R/S/D 一张表自动宣布根因。
 
 ### 常见根因的证据链
 
@@ -328,17 +418,27 @@ ORDER BY thread_state.ts;
 
 把一个长任务切成大量主线程消息，缩短的只是每条消息的占用时间；总工作量降不下来，消息积压仍可能拖过 deadline，所以整体完成时间也要量。
 
+<!-- gracker-diagram: ch09-02-19-main-work-split -->
+![主线程优化按依赖拆分工作](../../assets/diagrams/ch09/ch09-02-19-main-work-split.png)
+
+图：拆成许多主线程消息也可能积压；需要验证完成信号更早到达，而非只缩短单条消息。
+
 #### 主线程 I/O
 
 Java 栈可能出现 `FileInputStream.read()`、`FileOutputStream.write()`、SQLite、`fsync()`、资源解压或类加载；native 栈和 Perfetto 则可能显示 page fault（缺页）、block（块设备） I/O 或 `D` 等待。即使代码量很少，冷页、存储抖动和同步落盘也可能产生很长的 wall time（从开始到结束的实际经过时间）。
 
 `SharedPreferences.apply()` 会把数据写入异步排队，但组件停止阶段可能通过 `QueuedWork.waitToFinish()` 等待此前未完成的工作。分析时要检查累计写入量、生命周期时点和 `fsync()`；即使 `apply()` 本身返回很快，它对后续等待的影响也要查。
 
+<!-- gracker-diagram: ch09-02-20-apply-lifecycle-wait -->
+![apply 快速返回后仍可能在生命周期等待](../../assets/diagrams/ch09/ch09-02-20-apply-lifecycle-wait.png)
+
+图：这是可能的等待关系；后台I/O仍需恢复语义，不应把异步返回当作磁盘已经安全落盘。
+
 修复方向包括将 I/O 移到后台、合并批量提交、减少同步持久化、提前加载必要缓存，以及减少超时期限内的工作。涉及用户可见状态时，还要定义进程被杀后怎样恢复——推迟写入只解决写入本身的耗时，恢复要另行设计。
 
 #### 锁竞争与死锁
 
-死锁必须存在一条闭合等待环；只有单向等待时，属于锁竞争或长临界区。常见的恶化因素包括：
+对这里的互斥锁案例，确证死锁需要闭合且无法推进的等待环；只观察到单向等待时，可以先定位竞争或长临界区，但还不能排除缺失的等待边、漏唤醒或其他无限等待。常见的恶化因素包括：
 
 - 持锁执行磁盘或 Binder 调用；
 - 主线程与工作线程使用相反锁序；
@@ -347,6 +447,11 @@ Java 栈可能出现 `FileInputStream.read()`、`FileOutputStream.write()`、SQL
 - 读写锁中的写线程长期拿不到锁。
 
 线程栈显示的是采样点上的等待图。对反复出现、每次持续较短的竞争，我们还可以结合 `monitor contention`、`dvm_lock_sample`、Perfetto slice 或应用埋点统计持锁时长。
+
+<!-- gracker-diagram: ch09-02-21-lock-remedies -->
+![等待图和持锁区证据决定锁的修复方向](../../assets/diagrams/ch09/ch09-02-21-lock-remedies.png)
+
+图：只看到一个单向等待不能证明无死锁；contention采样还受触发阈值与采样策略影响。
 
 #### 同步 Binder 卡住
 
@@ -372,6 +477,11 @@ CPU 饥饿的直接证据是目标线程已经可以运行，却迟迟没有进�
 
 若 `kswapd`（内核后台回收线程）、direct reclaim（由申请内存的线程直接回收内存页）、频繁 major fault、memory PSI 和 lmkd 事件出现在同一窗口，内存压力解释会更可信。还要区分应用工作集增长、系统全局压力和厂商内存策略。
 
+<!-- gracker-diagram: ch09-02-22-gc-memory-faults -->
+![GC、缺页和 reclaim 用不同证据核对](../../assets/diagrams/ch09/ch09-02-22-gc-memory-faults.png)
+
+图：计数在相同窗口相互印证才增强解释；单个 major fault 不足以认定磁盘导致 ANR。
+
 ### 解读 ANR 报告里的 CPU 与压力信息
 
 #### CPU 百分比
@@ -390,6 +500,11 @@ CPU usage from 0ms to 13135ms later:
 
 这份快照给出的事实是：`system_server` 在该区间消耗了约 1.91 个 CPU 核的时间，其中内核态占比较高。内核时间究竟花在 Binder、文件系统、内存管理还是驱动，要交给 Perfetto callstack、系统计数器或更细的 profile（性能剖析）继续区分。
 
+<!-- gracker-diagram: ch09-02-23-cpu-percentage -->
+![进程超过100%意味着多核时间相加](../../assets/diagrams/ch09/ch09-02-23-cpu-percentage.png)
+
+图：数字来自正文说明样例，非本次设备测量；必须保留采样分母和起止时间。
+
 分析时我们同时看：
 
 - 统计区间是否覆盖 `T_deadline`；
@@ -404,13 +519,18 @@ CPU usage from 0ms to 13135ms later:
 
 Load 适合提示系统近期有多少任务正在争用 CPU 或不可中断地等待；要确认 CPU 是否满载，还要用 Perfetto 的 sched、CPU frequency（CPU 频率）/idle 和 I/O 轨迹区分来源。
 
+<!-- gracker-diagram: ch09-02-24-load-versus-cpu -->
+![Load 与 CPU 执行利用率分开](../../assets/diagrams/ch09/ch09-02-24-load-versus-cpu.png)
+
+图：八核Load8不保证八核满载；分钟级平均值也可能稀释几秒钟的ANR尖峰。
+
 #### PSI
 
 6.18 内核通过 `/proc/pressure/{cpu,memory,io}` 暴露 PSI（Pressure Stall Information，资源压力停顿信息）：
 
 - `some`：至少有一部分任务因该资源不足而停顿的时间占比；
 - `full`：所有 non-idle（非空闲） 任务同时因该资源不足而停顿的时间占比；
-- `avg10`、`avg60`、`avg300`：10、60、300 秒趋势百分比；
+- `avg10`、`avg60`、`avg300`：以 10、60、300 秒为时间尺度的指数衰减趋势百分比，不是精确滑动窗口内的算术平均；
 - `total`：自启动以来累计停顿微秒数。
 
 系统级 `cpu.pressure` 的 `full` 没有可用语义，为兼容始终保持为 0。memory 或 I/O 的 `full` 非零，说明采样窗口内出现过所有 non-idle 工作同时停顿。判断相关性时，我们计算 ANR 窗口内 `total` 的增量，再结合 avg 趋势、reclaim、block I/O 和目标线程状态；很短的尖峰可能和当前 ANR 无关。
@@ -424,7 +544,12 @@ full avg10=0.00 avg60=0.00 avg300=0.00 total=34803
 ----- End output from /proc/pressure/memory -----
 ```
 
-这里的 `full avg10=0.00` 只表示按当前显示精度计算的最近 10 秒趋势为零；累计 `total` 仍可能包含更早的 full stall（所有任务同时停顿）。判断当前事件时，要比较相邻两次采样的 `total` 增量；系统启动以来的累计值只提供背景。
+这里的 `full avg10=0.00` 只表示这项指数趋势按两位小数显示为 0.00，可能是低于显示精度的非零值，不能断定过去十秒完全没有 full stall；累计 `total` 仍可能包含更早的 full stall（所有任务同时停顿）。判断当前事件时，要比较相邻两次采样的 `total` 增量；系统启动以来的累计值只提供背景。
+
+<!-- gracker-diagram: ch09-02-25-psi-semantics -->
+![PSI 趋势与累计停顿分开解释](../../assets/diagrams/ch09/ch09-02-25-psi-semantics.png)
+
+图：累计total非零可能来自早期事件；PSI是压力线索，仍需同窗口依赖与线程证据。
 
 #### CPU 摘要的两种采样窗口
 
@@ -437,7 +562,12 @@ ANR 路径可能输出两套 `ProcessCpuTracker` 结果，两者采样起止时�
 
 `ProcessErrorStateRecord` 记录的 `anrTime` 位于 ANR 处理开始附近。临时榜通常在它之后采样，因此标题可能出现 `ms later`；长期榜则可能覆盖 deadline 之前、之后或两侧。解析每个 CPU 块时，要保存 `sample_start`、`sample_end`、`duration`、它位于 `anrTime` 之前还是之后、采样器类型，以及与超时窗口的重叠关系。只覆盖转储阶段的数据，支撑的结论止于“抓栈时仍观察到该现象”。
 
-进程和线程行以各自两个采样点之间的 uptime 为分母，因此多线程进程超过 `100%` 合法。`TOTAL` 行的分母则是所有 CPU 的 `/proc/stat` 增量总和；其非 idle 百分比包含 `iowait`（CPU 等待 I/O 的记账时间），把它当纯执行利用率，或与进程行直接相减，都会得出错误数字。
+<!-- gracker-diagram: ch09-02-26-two-cpu-sampling-windows -->
+![长期 CPU 榜与临时榜有各自采样窗口](../../assets/diagrams/ch09/ch09-02-26-two-cpu-sampling-windows.png)
+
+图：轨道为一种可能相对位置，不保证每次deadline都落在采样范围；silent路径还可能跳过临时榜。
+
+进程和线程行以各自两个采样点之间的 uptime 为分母，因此多线程进程超过 `100%` 合法。`TOTAL` 行的分母则是该实现从所有 CPU 汇总的 `/proc/stat` user（含 nice）、system、idle、iowait、irq、softirq 六类增量之和，并不是读取全部可能字段；其非 idle 百分比包含 `iowait`（CPU 等待 I/O 的记账时间），把它当纯执行利用率，或与进程行直接相减，都会得出错误数字。
 
 AOSP `ProcessCpuTracker` 的标准输出不附带 `R/S/D`，若报告中带有状态字符，应按厂商扩展或其他采集器解释，并保留来源名称。
 
@@ -450,6 +580,11 @@ AOSP `ProcessCpuTracker` 的标准输出不附带 `R/S/D`，若报告中带有�
 3. **候选解释**：每项同时列出支持证据、反证、缺失材料和规则版本。
 
 自动解析器要避免内置跨设备的固定结论，例如“iowait 超过 5% 就是 I/O 瓶颈”或“major fault 超过 100 次就是磁盘问题”。阈值应来自同机型、同场景、同采样窗口的基线；若时间不重叠、字段缺失或 OEM 格式未知，解析器要降低置信度并保留原文。
+
+<!-- gracker-diagram: ch09-02-27-parser-confidence -->
+![自动解析分事实、派生观察与候选解释](../../assets/diagrams/ch09/ch09-02-27-parser-confidence.png)
+
+图：进程行与TOTAL分母不同；TOTAL含iowait，不能直接用二者相减或套统一5%/100次阈值归因。
 
 ### 一套可复用的分析流程
 
@@ -468,8 +603,8 @@ AOSP `ProcessCpuTracker` 的标准输出不附带 `R/S/D`，若报告中带有�
 - 输入：输入事件、焦点窗口、目标连接、主线程分发；
 - 广播：receiver 调度、`onReceive()`、异步 `PendingResult` 完成；
 - Service：创建、启动、绑定或前台服务晋升所对应的检查点；
-- ContentProvider：发布或跨进程调用的具体监视路径；
-- Job：绑定、回调、运行期限或用户发起任务通知要求。
+- ContentProvider：先区分发布失败保护与显式的远程调用探测；发布保护到期按初始化失败移除进程，不能直接算作 Provider 调用 ANR；
+- Job：区分绑定失败、回调超时、运行期限与所需通知；绑定或正常运行期限耗尽本身不等于回调 ANR。
 
 类型边界和各类期限见 [§9.1 ANR 类型与触发条件](01-anr-mechanism-types-triggers.md)。
 
@@ -489,13 +624,18 @@ AOSP `ProcessCpuTracker` 的标准输出不附带 `R/S/D`，若报告中带有�
 
 一条能够指导修复的根因，应能回答：移除某段同步工作、缩短某个持锁区、改变某个 Binder 协议或解除某项资源限制后，为什么 deadline 就能满足。修复后要在相同场景下比较期限内的主线程状态、P95/P99 耗时和 ANR Rate，避免只让采样时的栈顶换了位置。
 
+<!-- gracker-diagram: ch09-02-28-reusable-investigation -->
+![把诊断结果闭合到同场景修复对照](../../assets/diagrams/ch09/ch09-02-28-reusable-investigation.png)
+
+图：系统压力与应用慢路径可以同时存在；报告应把主因、触发条件和可改因素分开。
+
 ### 线上工具链
 
 开发阶段的证据链搭好之后，线上还要拿得到数据。这一节看应用侧可以自建的几类入口：系统回捞、Watchdog 探针、触发式采集，以及 SIGQUIT hook（挂接系统行为） 能覆盖到哪里。
 
 #### `ApplicationExitInfo` 回捞
 
-Android 11（API 30）起，应用可以查询自身历史退出记录，并读取系统仍然保留的 ANR trace。下面的代码找到最近一条 ANR 退出记录，并将可读的 trace 以流式复制方式保存到应用私有目录：
+Android 11（API 30）起，应用可以查询自身历史退出记录，并读取系统仍然保留的 ANR trace。下面的代码应在后台执行器中运行，找到最近一条 ANR 退出记录，并将可读的 trace 以流式复制方式保存到应用私有目录。它是采集顺序示例：生产实现需要处理打开/复制时的 `IOException`、限制实际复制字节数，并用临时文件完成后原子替换，避免异常留下半份报告；固定 64 KB 缓冲只限制每次复制块的大小，不限制总文件大小：
 
 ```kotlin
 if (Build.VERSION.SDK_INT >= 30) {
@@ -521,6 +661,11 @@ if (Build.VERSION.SDK_INT >= 30) {
 
 `traceInputStream` 允许为 `null`，代码必须分别处理“退出记录存在”和“trace 仍可读取”。保存的内容是目标进程第一段及其前置头部，内容范围小于完整 bugreport。上线后还要限制文件保留数量、大小和上传网络条件，并按隐私规范清洗用户数据。
 
+<!-- gracker-diagram: ch09-02-29-exit-file-lifecycle -->
+![历史 trace 流式复制还需总量与失败管理](../../assets/diagrams/ch09/ch09-02-29-exit-file-lifecycle.png)
+
+图：正文代码是流式复制顺序示例，尚未实现总量上限、原子提交与上传；原样copyTo不提供这些保证。
+
 #### Watchdog 与业务埋点
 
 应用自建的 Watchdog 线程会定期向主线程投递探针任务，可以在系统判定 ANR 前保存消息队列、页面、业务阶段和自定义栈。它直接测量的是“探针没有按期执行”；GC、调度饥饿、debugger 和设备休眠都可能造成这种现象，因此它代替不了系统 ANR 统计，两者要一起看。
@@ -535,9 +680,19 @@ if (Build.VERSION.SDK_INT >= 30) {
 
 探针阈值要按业务场景和设备能力分组设置；线上上报还需要采样、限制频率和去重，避免监控本身造成负担。
 
+<!-- gracker-diagram: ch09-02-30-probe-versus-system -->
+![主线程探针延迟与系统 ANR 各有口径](../../assets/diagrams/ch09/ch09-02-30-probe-versus-system.png)
+
+图：两套信号可交叉验证，但同一阈值不能生成所有系统ANR类型的等价计数。
+
 #### ProfilingManager 触发式采集
 
-`ProfilingManager` 在 Android 15（API 35）加入公开 API；Android 16（API 36）的 `ProfilingTrigger` 提供 `TRIGGER_TYPE_ANR`。系统识别 ANR 后、可能杀进程前，可以从正在后台运行的系统 trace 环形缓冲区中截取一份快照；它不会等到 ANR 发生才开始录 trace，所以产物能否覆盖超时之前的过程，取决于 system trace 是否已经在运行、缓冲区还保留多少内容、系统规则和设备配置。触发之后应用未必被杀，也不保证每次都产生文件，rate limit（频率限制） 也会拦住一部分请求。
+`ProfilingManager` 在 Android 15（API 35）加入公开 API；Android 16（API 36）的 `ProfilingTrigger` 提供 `TRIGGER_TYPE_ANR`。系统可在 ANR 触发后，从当时正在后台运行的系统 trace 环形缓冲区中截取快照；后台 trace 是周期性随机采样，并非持续常开。它不会等到 ANR 发生才开始录 trace，所以产物能否覆盖超时之前的过程，取决于 system trace 是否已经在运行、缓冲区还保留多少内容、系统规则和设备配置。触发之后应用未必被杀，也不保证每次都产生文件，rate limit（频率限制） 也会拦住一部分请求。
+
+<!-- gracker-diagram: ch09-02-31-random-trigger-history -->
+![系统触发式采集从已在运行的环形 trace 取历史](../../assets/diagrams/ch09/ch09-02-31-random-trigger-history.png)
+
+图：API35主动采集、API36 ANR trigger；图不保证trigger先于进程终止，r1报告路径与公开注释存在已标明差异。
 
 下面的代码在 API 36 及以上注册 ANR trigger，并通过全局结果 listener（监听器） 接收系统返回的 profiling 文件：
 
@@ -565,6 +720,8 @@ if (Build.VERSION.SDK_INT >= 36) {
 }
 ```
 
+⚠️ 矛盾：[`ProfilingTrigger` 的公开注释](https://developer.android.com/reference/android/os/ProfilingTrigger#TRIGGER_TYPE_ANR) 描述 ANR trigger 发生在系统尝试杀应用之前；但 [Android 17 r1 `AnrHelper`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java) 在 `r.appNotResponding()` 返回后发送 trigger，而该调用中的 `ProcessErrorStateRecord` 已可能执行 `killLocked()`。因此不要把 trigger 当作“应用尚未被杀”或“原现场仍保留”的保证；结果回调可能要等应用下次启动并注册监听器。
+
 触发式结果只会投递给通过 `registerForAllProfilingResults()` 注册的全局 listener。生产代码还要检查 `ProfilingResult` 的 error code（错误码）、文件生命周期，并避免重复注册，同时按隐私规范处理产物。Android 17（API 37）新增的 `TRIGGER_TYPE_ANOMALY` 面向系统检测到的通用异常，产物类型取决于 anomaly tag；ANR 采集应继续使用含义明确的 `TRIGGER_TYPE_ANR`。
 
 公开 SDK 中没有 `android.os.PerfettoManager`：开发调试用 Perfetto CLI，普通应用的系统触发入口是 `ProfilingManager`。
@@ -572,6 +729,11 @@ if (Build.VERSION.SDK_INT >= 36) {
 #### SIGQUIT hook 的适用范围
 
 部分 APM 会拦截或旁路观察 `SIGQUIT`，再自行采集线程栈。这类 hook 依赖 ART、信号处理、tombstoned 路径和厂商改动，可能与系统 dump 竞争，也可能在目标版本失效；在 Android 17 的 ANR 主路径上，第三方也未必总能收到可供 hook 的 `SIGQUIT`。经过版本验证后，它可以作为 `ApplicationExitInfo`、Perfetto 和系统事件之外的补充信号。
+
+<!-- gracker-diagram: ch09-02-32-hook-and-public-api -->
+![公开回捞、系统时间段与信号 hook 覆盖不同](../../assets/diagrams/ch09/ch09-02-32-hook-and-public-api.png)
+
+图：没有公开 android.os.PerfettoManager；CLI、公开profiling与私有hook不能互相替代为同等能力。
 
 ### 线上指标与聚类
 
@@ -581,9 +743,14 @@ if (Build.VERSION.SDK_INT >= 36) {
 - **受影响会话率**：发生过至少一次 ANR 的会话数 / 会话数；
 - **受影响用户率**：发生过至少一次 ANR 的用户数 / 活跃用户数。
 
-Google Play Android vitals 按 DAU 计算：ANR rate 的分子是当天至少遇到一次任意 ANR 的用户；user-perceived ANR rate 的分子是当天至少遇到一次用户感知 ANR 的用户。当前公开定义把 `Input dispatching timed out` 计入用户感知 ANR。厂商平台和自建 APM 可能使用会话、事件或设备作为分母，因此报表必须标注去重周期、前后台过滤条件和分母。只按事件总量排序会掩盖低频但影响面大的问题，也会让单个高频触发用户放大计数。
+Google Play Android vitals 按每日活跃用户与设备组合计数（同一用户同一天使用多台设备会分别贡献活跃数）：ANR rate 的分子是当天至少遇到一次任意 ANR 的用户；user-perceived ANR rate 的分子是当天至少遇到一次用户感知 ANR 的用户。当前公开定义把 `Input dispatching timed out` 计入用户感知 ANR。厂商平台和自建 APM 可能使用会话、事件或设备作为分母，因此报表必须标注去重周期、前后台过滤条件和分母。只按事件总量排序会掩盖低频但影响面大的问题，也会让单个高频触发用户放大计数。
 
 聚类是把原因相近的 ANR 合并为一组。聚类键可以按稳定程度分层：
+
+<!-- gracker-diagram: ch09-02-33-metrics-and-clusters -->
+![事件率、会话影响与用户影响分别计算](../../assets/diagrams/ch09/ch09-02-33-metrics-and-clusters.png)
+
+图：Vitals按每日活跃用户设备组合计数，当前可感知定义为Input dispatch超时；聚类本身不是根因证明。
 
 1. ANR 类型、组件与规范化主线程栈；
 2. 第一条应用帧、等待对象或 Binder 接口；
@@ -598,7 +765,7 @@ Google Play Android vitals 按 DAU 计算：ANR rate 的分子是当天至少遇
 | 信号 | 能说明什么 | 不能直接说明什么 |
 |---|---|---|
 | `am_anr` / `ANR in` | event log 与 logcat 中的 ANR 事件及报告信息 | 二者的时间差不能单独证明系统负载高 |
-| `Slow dispatch` / `Slow delivery` | Handler 回调执行过久，或消息到达 Looper 后迟迟没有开始执行 | 必须结合日志所属进程、Looper 线程和消息内容定位责任方 |
+| `Slow dispatch` / `Slow delivery` | Handler 回调执行过久，或从消息计划执行时间 `when` 到真正开始执行之间的延迟过长 | 必须结合日志所属进程、Looper 线程和消息内容定位责任方 |
 | `dvm_lock_sample` | ART 采样到了 monitor（`synchronized` 使用的对象锁）竞争 | 阈值和采样策略会随构建配置变化 |
 | `binder_sample` | 当前构建的采样机制记录到慢 Binder 调用 | 字段顺序和阈值并非跨版本固定协议 |
 | `binder thread pool starved` | 某进程的 Binder 线程池长期没有空闲线程 | 仍需查明各线程被哪些事务、锁或 I/O 占用 |
@@ -607,6 +774,11 @@ Google Play Android vitals 按 DAU 计算：ANR rate 的分子是当天至少遇
 | freeze / unfreeze | 进程或 cgroup（控制组）的冻结状态发生变化 | 需要与目标 PID 和超时窗口对齐 |
 
 日志中的固定毫秒阈值往往来自设备配置、采样策略或厂商修改。分析报告应保留原始字段并注明构建版本，避免把某台设备的阈值写成 Android 平台保证。
+
+<!-- gracker-diagram: ch09-02-34-logs-as-signals -->
+![日志信号先按机制解释再定位责任](../../assets/diagrams/ch09/ch09-02-34-logs-as-signals.png)
+
+图：单个信号不宣布因果；保留原始字段、构建与来源，不把某机型阈值写成平台保证。
 
 ### 已验证的公开 API 演进
 
@@ -661,12 +833,17 @@ Java 或 Native 栈给出线程停留位置，内核轨迹解释它为什么长�
 内核 trace 事件量很大，采集前我们至少记录以下信息：
 
 1. ANR 类型和 timeout reason（超时原因）；
-2. 目标包名、进程 PID、主线程 TID；
+2. 目标包名、进程 PID、主线程 TID，以及 trace 内用于区分生命周期的 `upid/utid`；
 3. 需要覆盖的时间窗；
 4. 想验证的假设，例如“主线程等 system_server 的同步 Binder”；
-5. 目标 build fingerprint（用于识别同类事件的特征签名）、平台 tag 与 kernel release（内核版本）。
+5. 目标 build fingerprint（系统构建标识）、平台 tag 与 kernel release（内核版本）。
 
 不同 ANR 的 deadline 并不相同，窗口不该固定向前看 5 秒。输入超时、广播、Service、ContentProvider 和 Job 的计时起点各有边界；窗口应从对应 timeout record（超时记录） 或业务事件起点向后覆盖到系统识别 ANR。若起点未知，可以先抓取更宽的环形窗口，再用证据缩小范围。
+
+<!-- gracker-diagram: ch09-02-35-kernel-capture-hypothesis -->
+![先提出可验证假设，再选择内核事件](../../assets/diagrams/ch09/ch09-02-35-kernel-capture-hypothesis.png)
+
+图：默认五秒窗口不足以覆盖所有组件；build fingerprint是系统构建标识，utid/upid只属于当前trace。
 
 ### 3. Android 17 中可用的数据源
 
@@ -685,6 +862,11 @@ Java 或 Native 栈给出线程停留位置，内核轨迹解释它为什么长�
 | 内存回收 | atrace `memreclaim` | reclaim slices/raw ftrace | 主线程或系统是否进入 direct reclaim |
 
 这里有三条容易混淆的实现细节：
+
+<!-- gracker-diagram: ch09-02-36-capture-name-spaces -->
+![category、tracepoint 与解析表属于不同层](../../assets/diagrams/ch09/ch09-02-36-capture-name-spaces.png)
+
+图：没有 block atrace category；旧binder_lock事件也不能从category存在推断当前6.18内核必定提供。
 
 - 磁盘 category 叫 `disk`，没有名为 `block` 的 atrace category。
 - `binder_driver` 只要求 transaction、received 和 alloc-buffer 事件。`binder_lock` 是另一个可选 category；`android17-6.18-2026-06_r6` 的 common kernel `binder_trace.h` 没有这些旧式全局锁事件。
@@ -733,6 +915,7 @@ data_sources {
     target_buffer: 0
     ftrace_config {
       atrace_categories: "am"
+      atrace_apps: "com.example.app"
 
       ftrace_events: "sched/sched_switch"
       ftrace_events: "sched/sched_waking"
@@ -779,7 +962,27 @@ data_sources {
 }
 ```
 
+若需要在同一 trace 内解析 EventLog/logcat，再增加下面的数据源；前面的配置没有自动包含 `android.log`。`atrace_apps` 也要换成目标包名。
+
+```textproto
+data_sources {
+  config {
+    name: "android.log"
+    android_log_config {
+      log_ids: LID_EVENTS
+      log_ids: LID_SYSTEM
+      log_ids: LID_DEFAULT
+    }
+  }
+}
+```
+
 `debug.anr` 是 `PerfettoCategories.ANR_CATEGORY` 的 category 名。64 MB 环形缓冲和 30 秒时长只是复现起点。应根据设备事件速率、丢事件统计、问题周期和内存预算调整，这组数值不宜直接照搬到线上。
+
+<!-- gracker-diagram: ch09-02-37-configuration-coverage -->
+![配置、设备支持和缓冲预算共同决定可用证据](../../assets/diagrams/ch09/ch09-02-37-configuration-coverage.png)
+
+图：30秒可能不足以覆盖长广播期限；配置成功解析不证明设备支持、权限或真实覆盖。
 
 临时复现也可以用 atrace 快速抓取。下面的命令会在设备上抓 30 秒并把输出保存到主机：
 
@@ -804,6 +1007,11 @@ adb shell atrace -z -b 32768 -t 30 \
 
 Perfetto SQL 的 `ts` 使用 trace 内部时钟，EventLog 和日志文件常带 wall clock（日期时间）。手工对齐不同产物时，应使用 trace 中的 clock snapshot（时钟对应关系快照） 或同一个业务标记做换算；“纳秒 ts”和日期字符串直接相减得不出有效结果。
 
+<!-- gracker-diagram: ch09-02-38-cross-clock-alignment -->
+![TimeoutStart、uptime、日期与 trace ts 先做时钟对齐](../../assets/diagrams/ch09/ch09-02-38-cross-clock-alignment.png)
+
+图：没有系统instant时，用业务起点和日志补证；应用标记本身不能代替系统detector到期记录。
+
 ### 5. 从主线程状态开始
 
 #### 5.1 `sched` 与 `thread_state` 各自表示什么
@@ -816,80 +1024,84 @@ Perfetto SQL 的 `ts` 使用 trace 内部时钟，EventLog 和日志文件常带
 | `S` | 可中断睡眠，等待唤醒 |
 | `D` | 不可中断睡眠 |
 | `X` / `Z` | 退出或 zombie（进程已结束但退出状态尚未被父进程回收） |
-| `NULL` | trace 在该片段结束前停止 |
+| `NULL` | 没有解析到运行片段的结束状态，常见于 trace 截止时仍未闭合 |
 
 `end_state` 不会用 `Running` 表示当前片段；行本身就是 Running 区间。要统计等待时间，我们查询 `thread_state`，它会给出 `Running`、`R`、`S`、`D` 等状态区间。
+
+<!-- gracker-diagram: ch09-02-39-sched-end-state -->
+![sched 行是运行区间，end_state 说明离开 CPU 后状态](../../assets/diagrams/ch09/ch09-02-39-sched-end-state.png)
+
+图：不要用sched的行时长累加成Sleeping；等待时长应查thread_state并处理观察边界。
 
 下面的 SQL 用于列出目标进程主线程在分析窗口内的状态，并把跨越窗口边界的 slice 裁剪到窗口以内：
 
 ```sql
-WITH
-params AS (
+WITH params AS (
   SELECT
-    'com.example.app' AS process_name,
+    42 AS target_utid,
     123000000000 AS window_start,
     133000000000 AS window_end
-),
-target AS (
-  SELECT t.utid
-  FROM thread t
-  JOIN process p USING (upid)
-  JOIN params
-  WHERE p.name = params.process_name
-    AND t.is_main_thread = 1
-  LIMIT 1
+), observed AS (
+  SELECT
+    MAX(s.ts, params.window_start) AS ts,
+    MIN(
+      CASE WHEN s.dur = -1 THEN trace_bounds.end_ts
+           ELSE s.ts + s.dur END,
+      params.window_end
+    ) AS end_ts,
+    s.state, s.io_wait, s.blocked_function,
+    s.dur = -1 AS observed_open
+  FROM thread_state s
+  CROSS JOIN params
+  CROSS JOIN trace_bounds
+  WHERE s.utid = params.target_utid
+    AND (s.dur > 0 OR s.dur = -1)
+    AND s.ts < params.window_end
 )
-SELECT
-  MAX(s.ts, params.window_start) AS ts,
-  MIN(s.ts + s.dur, params.window_end)
-    - MAX(s.ts, params.window_start) AS dur,
-  s.state,
-  s.io_wait,
-  s.blocked_function
-FROM thread_state s
-JOIN target USING (utid)
-JOIN params
-WHERE s.dur > 0
-  AND s.ts < params.window_end
-  AND s.ts + s.dur > params.window_start
+SELECT ts, end_ts - ts AS dur, state,
+       io_wait, blocked_function, observed_open
+FROM observed
+WHERE end_ts > ts
 ORDER BY ts;
 ```
 
-把三个参数替换为 trace 中的包名和时间边界。结果先描述“线程经历了什么状态”，根因仍需与栈、Binder flow、reclaim、I/O 和 CPU 负载在时间上对齐。
+先从前面的结果选出事件所属进程的主线程 `utid`，再替换 `target_utid` 和两个时间边界；`utid/upid` 只在当前 trace 内有效。这里 `dur=-1` 表示缺少闭合终点，查询仅把它统计到 `trace_bounds.end_ts` 与窗口终点中较早者，并用 `observed_open` 标记；这不是线程已在该处恢复的证据。未采到的时间、丢事件和数据源晚启动仍可能留下空洞，要比较状态时长之和与窗口长度，不能把空洞补成 Sleeping。结果先描述“线程经历了什么状态”，根因仍需与栈、Binder flow、reclaim、I/O 和 CPU 负载在时间上对齐。
+
+<!-- gracker-diagram: ch09-02-40-clip-open-and-gaps -->
+![窗口统计区分已闭合、未闭合和未采到](../../assets/diagrams/ch09/ch09-02-40-clip-open-and-gaps.png)
+
+图：图示无实测刻度；状态时长之和可能小于窗口长度，需另查来源晚启动、丢事件或缺失轨迹。
 
 下面的聚合查询用于计算窗口内各状态的时长分布：
 
 ```sql
-WITH
-params AS (
+WITH params AS (
   SELECT
-    'com.example.app' AS process_name,
+    42 AS target_utid,
     123000000000 AS window_start,
     133000000000 AS window_end
-),
-target AS (
-  SELECT t.utid
-  FROM thread t
-  JOIN process p USING (upid)
-  JOIN params
-  WHERE p.name = params.process_name
-    AND t.is_main_thread = 1
-  LIMIT 1
-),
-clipped AS (
+), observed AS (
   SELECT
-    s.state,
-    MIN(s.ts + s.dur, params.window_end)
-      - MAX(s.ts, params.window_start) AS clipped_dur
+    MAX(s.ts, params.window_start) AS ts,
+    MIN(
+      CASE WHEN s.dur = -1 THEN trace_bounds.end_ts
+           ELSE s.ts + s.dur END,
+      params.window_end
+    ) AS end_ts,
+    s.state, s.io_wait, s.blocked_function,
+    s.dur = -1 AS observed_open
   FROM thread_state s
-  JOIN target USING (utid)
-  JOIN params
-  WHERE s.dur > 0
+  CROSS JOIN params
+  CROSS JOIN trace_bounds
+  WHERE s.utid = params.target_utid
+    AND (s.dur > 0 OR s.dur = -1)
     AND s.ts < params.window_end
-    AND s.ts + s.dur > params.window_start
 )
-SELECT state, SUM(clipped_dur) / 1e6 AS duration_ms
-FROM clipped
+SELECT state,
+       SUM(end_ts - ts) / 1e6 AS duration_ms,
+       SUM(observed_open) AS open_intervals
+FROM observed
+WHERE end_ts > ts
 GROUP BY state
 ORDER BY duration_ms DESC;
 ```
@@ -913,26 +1125,42 @@ WITH params AS (
   SELECT
     123000000000 AS window_start,
     133000000000 AS window_end
+), observed AS (
+  SELECT
+    p.upid, p.pid,
+    COALESCE(p.name, '[unresolved process]') AS process_name,
+    MAX(s.ts, params.window_start) AS ts,
+    MIN(
+      CASE WHEN s.dur = -1 THEN trace_bounds.end_ts
+           ELSE s.ts + s.dur END,
+      params.window_end
+    ) AS end_ts,
+    s.dur = -1 AS observed_open
+  FROM sched s
+  JOIN thread t USING (utid)
+  LEFT JOIN process p USING (upid)
+  CROSS JOIN params
+  CROSS JOIN trace_bounds
+  WHERE COALESCE(t.is_idle, 0) = 0
+    AND (s.dur > 0 OR s.dur = -1)
+    AND s.ts < params.window_end
 )
-SELECT
-  COALESCE(p.name, '[kernel]') AS process_name,
-  SUM(
-    MIN(s.ts + s.dur, params.window_end)
-      - MAX(s.ts, params.window_start)
-  ) / 1e6 AS cpu_ms
-FROM sched s
-JOIN thread t USING (utid)
-LEFT JOIN process p USING (upid)
-JOIN params
-WHERE s.dur > 0
-  AND s.ts < params.window_end
-  AND s.ts + s.dur > params.window_start
-GROUP BY process_name
+SELECT upid, pid, process_name,
+       SUM(end_ts - ts) / 1e6 AS cpu_ms,
+       SUM(observed_open) AS open_intervals
+FROM observed
+WHERE end_ts > ts
+GROUP BY upid, pid, process_name
 ORDER BY cpu_ms DESC
 LIMIT 20;
 ```
 
-这里统计的是各 CPU 上运行时间的总和，多核设备的 `cpu_ms` 可以高于实际经过的窗口时长。排名只能说明同期有哪些 CPU 竞争者；指认“谁抢走了主线程的 CPU”，仅 `sched_switch.next_pid` 一项证据不够。
+这里按 `upid` 区分同名进程的不同生命周期，并排除 idle 线程；无进程元数据的线程归入 unresolved，不能仅凭 NULL 认定为内核线程。`open_intervals` 标记统计到可观测末尾的未闭合运行。各 CPU 上运行时间相加后，多核设备的 `cpu_ms` 可以高于实际经过的窗口时长。排名只能说明同期有哪些 CPU 竞争者；指认“谁抢走了主线程的 CPU”，仅 `sched_switch.next_pid` 一项证据不够。
+
+<!-- gracker-diagram: ch09-02-41-cpu-rank-identity -->
+![CPU 榜按生命周期分组，排名不是抢占证明](../../assets/diagrams/ch09/ch09-02-41-cpu-rank-identity.png)
+
+图：CPU总时间可超过窗口wall time；没有进程名不等于已证明是内核线程。
 
 #### 5.3 `sched_blocked_reason`
 
@@ -946,6 +1174,11 @@ Perfetto 会把可解析结果放入 `thread_state.blocked_function` 和 `io_wai
 
 `blocked_function` 只是等待位置线索。`io_schedule`、文件系统 wait、driver completion（驱动完成回调）或 reclaim 函数，都要结合相邻事件和符号化质量（地址能否正确解析为函数名）解释。`io_wait=1` 能增强 I/O 假设，却标识不了某个具体 request（请求）。
 
+<!-- gracker-diagram: ch09-02-42-blocked-reason -->
+![blocked_function 与 io_wait 是等待线索](../../assets/diagrams/ch09/ch09-02-42-blocked-reason.png)
+
+图：等待位置不等于完整内核调用链，也不能用一个函数名把所有D-state归成同一种原因。
+
 #### 5.4 CPU 频率与 thermal
 
 低频本身证明不了 thermal throttling（温控限频）：线程休眠或负载很低时，DVFS（动态电压频率调节）主动降频是正常行为。我们认定 thermal 影响，至少要同时满足：
@@ -956,6 +1189,11 @@ Perfetto 会把可解析结果放入 `thread_state.blocked_function` 和 `io_wai
 - 高频竞争、CPU hotplug（CPU 核动态上下线）和 idle 解释得并不比 thermal 更好。
 
 如果 trace 只采到了 `cpu_frequency`，结论应写成“低频与延迟时间重合，thermal 原因待补证”。
+
+<!-- gracker-diagram: ch09-02-43-thermal-evidence -->
+![低频、需求与热控限制必须对应到同一窗口](../../assets/diagrams/ch09/ch09-02-43-thermal-evidence.png)
+
+图：仅有cpu_frequency不能确认thermal throttling；结论应标明热控原因仍待补证。
 
 ### 6. Binder：拆开客户端等待与服务端处理
 
@@ -971,6 +1209,11 @@ Perfetto 会把可解析结果放入 `thread_state.blocked_function` 和 `io_wai
 
 从 send 到 received 的间隔，除了驱动执行还包含接收线程取得事务、获得 CPU，并运行到 received tracepoint 之前的等待。固定用 10 ms 判定“驱动竞争”，会把调度和线程池排队时间误算到驱动。
 
+<!-- gracker-diagram: ch09-02-44-binder-raw-identity -->
+![Binder debug_id 连接事务，发送方看事件上下文](../../assets/diagrams/ch09/ch09-02-44-binder-raw-identity.png)
+
+图：不能把整个send到received间隔当作纯驱动执行或用固定10ms阈值宣布驱动竞争。
+
 #### 6.1 优先使用 Perfetto Binder 标准库
 
 Perfetto 会根据 Binder tracepoint 生成 transaction slice 和 flow。下面的查询用于查看目标进程在窗口内发起的 Binder 调用：
@@ -978,24 +1221,37 @@ Perfetto 会根据 Binder tracepoint 生成 transaction slice 和 flow。下面�
 ```sql
 INCLUDE PERFETTO MODULE android.binder;
 
+WITH params AS (
+  SELECT 7 AS client_upid,
+         123000000000 AS window_start,
+         133000000000 AS window_end
+)
 SELECT
-  client_ts,
-  client_dur / 1e6 AS client_wall_ms,
-  client_process,
-  client_thread,
-  server_process,
-  server_thread,
-  server_dur / 1e6 AS server_wall_ms,
-  aidl_name,
-  interface,
-  method_name
-FROM android_binder_txns
-WHERE client_process = 'com.example.app'
-  AND client_ts BETWEEN 123000000000 AND 133000000000
-ORDER BY client_dur DESC;
+  txn.binder_txn_id, txn.client_ts,
+  txn.client_upid, txn.client_utid,
+  txn.client_dur / 1e6 AS client_wall_ms,
+  txn.client_process, txn.client_thread,
+  txn.server_upid, txn.server_utid,
+  txn.server_process, txn.server_thread,
+  CASE WHEN txn.server_dur >= 0 THEN txn.server_dur / 1e6 END
+    AS server_wall_ms,
+  txn.aidl_name, txn.interface, txn.method_name
+FROM android_binder_txns txn
+CROSS JOIN params
+WHERE txn.client_upid = params.client_upid
+  AND txn.is_sync = 1
+  AND txn.client_dur > 0
+  AND txn.client_ts < params.window_end
+  AND txn.client_ts + txn.client_dur > params.window_start
+ORDER BY txn.client_dur DESC;
 ```
 
-`client_wall_ms` 是客户端同步等待区间，`server_wall_ms` 是服务端处理并回复的实际经过时间。二者还需与双方 `thread_state` 联合分析：服务端长时间处于 `R`，更可能存在调度延迟；长时间 Running 表示执行量较大；`S` 则可能在等待锁或嵌套调用。
+这条查询只保留已能关联且客户端区间已闭合的同步事务。先替换 `client_upid`；筛选采用与窗口相交的条件，输出的 `client_wall_ms/server_wall_ms` 仍是整次事务的时长，不能直接当作窗口内贡献。oneway 已单独排除；客户端尚未闭合或缺少配对事件的事务仍要回到原始 slice/flow 检查，查询无结果不代表没有 Binder 等待。`server_wall_ms` 为 NULL 时不能按零时延解释。二者还需与双方 `thread_state` 联合分析：服务端长时间处于 `R`，更可能存在调度延迟；长时间 Running 表示执行量较大；`S` 则可能在等待锁或嵌套调用。
+
+<!-- gracker-diagram: ch09-02-45-binder-sql-scope -->
+![Binder 查询显式限定同步、实例和窗口](../../assets/diagrams/ch09/ch09-02-45-binder-sql-scope.png)
+
+图：查询只覆盖可关联且客户端已闭合的同步事务；没有行不能证明没有Binder等待。
 
 主机侧 Perfetto 工具支持较新的标准库时，可以加载 `android.binder_breakdown`，查看同一事务的延迟主要发生在 client 侧还是 server 侧：
 
@@ -1003,26 +1259,40 @@ ORDER BY client_dur DESC;
 INCLUDE PERFETTO MODULE android.binder;
 INCLUDE PERFETTO MODULE android.binder_breakdown;
 
+WITH params AS (
+  SELECT 7 AS client_upid,
+         123000000000 AS window_start,
+         133000000000 AS window_end
+)
 SELECT
-  txn.client_ts,
-  txn.client_process,
-  txn.server_process,
-  txn.aidl_name,
-  breakdown.reason_type,
-  breakdown.reason,
-  SUM(breakdown.dur) / 1e6 AS duration_ms
+  txn.binder_txn_id, txn.client_ts,
+  txn.client_process, txn.server_process, txn.aidl_name,
+  breakdown.reason_type, breakdown.reason,
+  SUM(
+    MIN(breakdown.ts + breakdown.dur, params.window_end)
+      - MAX(breakdown.ts, params.window_start)
+  ) / 1e6 AS duration_ms
 FROM android_binder_txns txn
 JOIN android_binder_client_server_breakdown breakdown
   USING (binder_txn_id)
-WHERE txn.client_process = 'com.example.app'
-GROUP BY
-  txn.binder_txn_id,
-  breakdown.reason_type,
-  breakdown.reason
+CROSS JOIN params
+WHERE txn.client_upid = params.client_upid
+  AND txn.is_sync = 1
+  AND breakdown.dur > 0
+  AND breakdown.ts < params.window_end
+  AND breakdown.ts + breakdown.dur > params.window_start
+GROUP BY txn.binder_txn_id, txn.client_ts,
+  txn.client_process, txn.server_process, txn.aidl_name,
+  breakdown.reason_type, breakdown.reason
 ORDER BY duration_ms DESC;
 ```
 
-标准库会随 trace processor（Perfetto trace 解析器）演进。查询报“module/table 不存在”时，应升级主机侧 Perfetto 工具，原始 trace 无需重新采集。
+标准库会随 trace processor（Perfetto trace 解析器）演进。查询报“module/table 不存在”时，先核对模块名、工具版本和字段，可升级主机侧工具重试，或用兼容的原始表查询。升级只解决解析能力；如果原 trace 没采 Binder、调度或所需字段，仍需要重新采集，不能把缺失事件事后补出来。
+
+<!-- gracker-diagram: ch09-02-46-binder-breakdown -->
+![标准库 breakdown 帮助定位，不能补回未采历史](../../assets/diagrams/ch09/ch09-02-46-binder-breakdown.png)
+
+图：breakdown是对已有轨迹的分解，不等于所有等待已成功归因，也不能自动把间隔都算到驱动。
 
 #### 6.2 用原始事件核对字段
 
@@ -1078,6 +1348,11 @@ Java 栈停在 `FileDescriptor.sync()`、SQLite checkpoint 或资源读取附近
 
 因此，把每次 `write()` 都描述成“主线程进入 D，直到 `block_rq_complete`”并不成立。
 
+<!-- gracker-diagram: ch09-02-47-buffered-write-path -->
+![缓冲写返回与持久化完成是不同边界](../../assets/diagrams/ch09/ch09-02-47-buffered-write-path.png)
+
+图：图给出可能阶段；并非每次write都进入D，也不是每次都立即对应一个块请求。
+
 #### 7.2 Android 17 / kernel 6.18 的块事件
 
 块层用 request 表示送往设备的请求，用 bio 表示块 I/O 操作。`android17-6.18-2026-06_r6` 中的事件含义如下：
@@ -1090,6 +1365,11 @@ Java 栈停在 `FileDescriptor.sync()`、SQLite checkpoint 或资源读取附近
 insert→issue 可以反映 request 在块队列中的一段等待，issue→complete 覆盖驱动可见的服务阶段。文件系统准备、page cache、reclaim、request merge（请求合并）、device mapper 和完成后的线程唤醒，都在这两个区间之外。
 
 这些 raw event 都没有可以稳定跨事件使用的 request id。仅用 `dev + sector（设备号与扇区号）` 配对，会在并发、merge、split（请求拆分）、重复访问同一扇区和 partial completion（部分完成） 时发生错配。完成事件也常在 IRQ 或 kworker（内核工作线程）上下文触发，按 `ftrace_event.utid` 归属到最初发起 I/O 的应用会张冠李戴。
+
+<!-- gracker-diagram: ch09-02-48-block-request-stages -->
+![request 入队、下发与完成有不同含义](../../assets/diagrams/ch09/ch09-02-48-block-request-stages.png)
+
+图：原始事件通常不带稳定request ID；完成事件的发射线程可能是IRQ或kworker，不能当作原始应用归属。
 
 下面的查询用于查看目标窗口内块事件的真实参数，避免进行依据不足的一对一配对：
 
@@ -1113,7 +1393,8 @@ WHERE event.name IN (
   'block_bio_queue',
   'block_bio_complete'
 )
-  AND event.ts BETWEEN 123000000000 AND 133000000000
+  AND event.ts >= 123000000000
+  AND event.ts < 133000000000
 ORDER BY event.ts, event.name, args.key;
 ```
 
@@ -1130,6 +1411,11 @@ ORDER BY event.ts, event.name, args.key;
 
 若只有“主线程 D + 全机有慢 block request”，结论只能写到相关性。要证明因果，还需要 syscall（系统调用）或内核栈采样、文件系统 trace、device mapper 路径或可控复现实验。
 
+<!-- gracker-diagram: ch09-02-49-io-causality -->
+![I/O 归因需要从调用点连接到目标线程恢复](../../assets/diagrams/ch09/ch09-02-49-io-causality.png)
+
+图：只有main D加全机慢block请求仍是相关性；阈值按同机型、温度、深度和请求类型基线判断。
+
 固定的 4 KB/50 ms、1 MB/100 ms 阈值不适用于所有设备。判断设备是否变慢，要与同机型、同温度、同队列深度、同 request 类型的正常数据比较，并分开观察耗时分位数和明显偏离主体分布的样本。
 
 ### 8. 内存回收和全局压力
@@ -1143,6 +1429,11 @@ ORDER BY event.ts, event.name, args.key;
 - 触发点是一次大分配、缺页，还是全局内存压力。
 
 应用发起大分配与系统内存紧张可以同时成立，没必要把责任强行二分为“应用侧”或“系统侧”。修复可能包括降低内存峰值、把工作移出完成期限、避免同步触发缺页，也可能需要调整系统内存参数和 vendor 策略。
+
+<!-- gracker-diagram: ch09-02-50-direct-reclaim-context -->
+![direct reclaim 同时连接申请方与全局压力](../../assets/diagrams/ch09/ch09-02-50-direct-reclaim-context.png)
+
+图：应用工作集增长和全局内存紧张可同时成立；不要强行只选应用侧或系统侧。
 
 ### 9. AnrHelper 与取样偏差
 
@@ -1163,11 +1454,21 @@ ANR 处理走异步队列：目标进程的转储先提交，完整 ANR 处理�
 
 这组时间能解释“ANR 时主线程被卡住，trace 却已经回到 `nativePollOnce`”一类矛盾。线程可能在 dump 到达前恢复，栈没有错，只是样本晚了。
 
+<!-- gracker-diagram: ch09-02-51-early-dump-bias -->
+![onlyDumpSelf 与时序偏差限制能看到的依赖](../../assets/diagrams/ch09/ch09-02-51-early-dump-bias.png)
+
+图：先确认目标是否入候选与是否成功抓栈；报告处理时刻晚不等于此前主线程始终空闲。
+
 ### 10. eBPF 的适用范围
 
 Android 的 eBPF 基础设施早于 Android 14。内核配置、SELinux、BPF loader（加载器） 和稳定性评估允许时，系统组件可以用 BPF 在内核事件发生时做过滤和聚合。这份能力留在系统侧：第三方应用没有随意加载 BPF 程序的权限，BPF 在应用侧也扮演不了通用 ANR SDK 的角色。
 
-BPF 程序仍会在事件路径上执行，事件频率、map（BPF 键值存储）操作、栈采样和上报都会产生开销。若系统团队采用它辅助 ANR，需在目标内核与 SoC 上测量 CPU、内存、功耗、丢事件情况和 verifier（内核安全校验器）限制，并提供停用开关。
+BPF 程序仍会在事件路径上执行，事件频率、map（BPF 键值存储）操作、栈采样和上报都会产生开销。若系统团队采用它辅助 ANR，需在目标内核与 SoC 上测量 CPU、内存、功耗、丢事件情况和 verifier（内核安全校验器）限制，并提供停用开关。BPF 的校验和权限只说明程序满足加载约束，不能据此保证零开销或绝不扰动事件时序。
+
+<!-- gracker-diagram: ch09-02-52-bpf-event-path -->
+![系统 BPF 过滤聚合仍在事件路径消耗资源](../../assets/diagrams/ch09/ch09-02-52-bpf-event-path.png)
+
+图：通过verifier不代表零开销；低负载测试也不能外推为所有高频Binder/I/O场景无扰动。
 
 ### 11. 从证据生成分类
 
@@ -1182,6 +1483,11 @@ BPF 程序仍会在事件路径上执行，事件频率、map（BPF 键值存储
 7. 输出证据、反证、置信度及仍缺的数据。
 
 分类结果止步于“Binder ANR”“I/O ANR”这样的标签，指导修复的力度有限。更便于采取行动的描述是：“主线程在输入期限的 4.2 秒内等待同步 Binder；server 线程晚 3.6 秒开始运行；同一窗口 server 的全部 Binder 线程持续处理请求；未发现客户端长 Runnable。”这样的结论能指向服务端线程池、共享锁或请求合并策略，也保留后续验证空间。
+
+<!-- gracker-diagram: ch09-02-53-evidence-classification -->
+![自动分类输出候选原因与待补证据](../../assets/diagrams/ch09/ch09-02-53-evidence-classification.png)
+
+图：正文4.2秒与3.6秒是说明性案例文案；只有真实样本证据支持时才可作为测量结论写入报告。
 
 ### 12. 生产采集策略
 
@@ -1201,6 +1507,11 @@ BPF 程序仍会在事件路径上执行，事件频率、map（BPF 键值存储
 
 每次修改 category 都应重新测量。设备提供某个 tracepoint，未必适合持续开启；低频测试结果也外推不到 Binder 或 I/O 请求集中出现的场景。
 
+<!-- gracker-diagram: ch09-02-54-production-capture -->
+![开发、灰度与线上快照按覆盖和成本选择](../../assets/diagrams/ch09/ch09-02-54-production-capture.png)
+
+图：没有统一的零开销百分比；设备有tracepoint不等于适合持续启用，也不能ANR后补回未采历史。
+
 ### 13. 一份联合诊断报告应包含什么
 
 交付给应用、Framework 或内核团队时，报告至少包含：
@@ -1215,6 +1526,11 @@ BPF 程序仍会在事件路径上执行，事件频率、map（BPF 键值存储
 - 结论置信度、缺失事件与下一次复现要增加的数据源。
 
 联合诊断靠的是时间一致性：线程栈说明取样位置，scheduler（调度器） 说明线程何时能运行，Binder flow 说明跨进程依赖，filesystem/block 说明 I/O 经过了哪些阶段。只有这些证据在同一个窗口互相支持时，才适合把“相关”写成“根因”。
+
+<!-- gracker-diagram: ch09-02-55-report-closure -->
+![联合诊断报告将身份、时间与依赖证据写完整](../../assets/diagrams/ch09/ch09-02-55-report-closure.png)
+
+图：只有同窗口证据互相支持时才把相关性升级为根因；保留下一次复现需要补充的数据。
 
 
 ## 常见误区

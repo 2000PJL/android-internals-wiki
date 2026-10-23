@@ -207,7 +207,7 @@ View 侧还有一层内容变化节流。`ViewRootImpl.SendWindowContentChangedA
 <!-- gracker-diagram: ch07-06-prefetch-batch-and-interruption -->
 ![Prefetch 计数与可中断模式](../../assets/diagrams/ch07/ch07-06-prefetch-batch-and-interruption.png)
 
-图：客户端可在滚动、禁用缓存或 bypass 时清除预取标志；两种返回模式的计数范围不同。PrivateHandler 检测的是自己队列里的待处理消息，整个 ViewRoot 队列要另行查看。
+图：客户端可在滚动、禁用缓存或 bypass 时清除预取标志；两种返回模式的计数范围不同。PrivateHandler 只检测以自身为 target 的消息与回调；这些消息仍位于关联 Looper 的共享队列中，不能视为独立队列。
 
 有这三条限制在，一次 `getRootInActiveWindow()` 查询的实际规模，要按缓存命中情况和 prefetch 实际放行的节点数来确认。我们定位成本时，要同时记录请求 API、prefetch flags、缓存是否命中、虚拟节点 provider 和实际返回的节点数。
 
@@ -693,7 +693,7 @@ ContentCapture 的结构大小和耗时没有全设备通用的阈值：节点�
 <!-- gracker-diagram: ch07-06-autofill-inline-optional-path -->
 ![Autofill 与 IME 的可选 inline 协作](../../assets/diagrams/ch07/ch07-06-autofill-inline-optional-path.png)
 
-图：inline 是可选展示路径，IME 用现成的结构数据，无须独立再建一份 AssistStructure。候选晚到应沿系统、提供方、IME 与渲染分段取证，遍历次数与提供方数量之间没有换算关系。
+图：inline 是可选展示路径，IME 参与内联请求与建议展示，无须为此独立再建一份 AssistStructure。候选晚到应沿系统、提供方、IME 与渲染分段取证，遍历次数与提供方数量之间没有换算关系。
 
 IME 自身的启动、`InputConnection` 和窗口动画问题见 [3.5 InputMethodManager 与软键盘性能](../../part1-fundamentals/ch03-input/05-input-method-manager-performance.md)。Binder 等待和异步事务容量可结合 [1.9 Android IPC 全景与 Binder 性能](../../part1-fundamentals/ch01-architecture/09-ipc-binder-performance.md) 继续分析。
 
@@ -708,7 +708,7 @@ IME 自身的启动、`InputConnection` 和窗口动画问题见 [3.5 InputMetho
 | `AutofillService` / 密码提供方 | 无 | 解析 `FillRequest`、生成 dataset、处理认证 | provider CPU / I/O、response latency |
 | IME | 无 | inline request、展示与交互 | IME main/render、窗口动画 |
 
-应用 UI 线程出现一次较长的 traversal 时，先确认触发者是 ContentCapture 初始报告还是 Autofill assist request；后台 `sendEvents()` 变长时，检查事件批次、Parcel 和 Binder 异步压力。如果建议出现得晚而 App frame 正常，我们就继续分解系统路由、提供方响应、IME 与建议渲染的时延，用分段证据锁定主要耗时方——App 帧正常只排除应用渲染这一段，端到端时延按链路分段记录，与 App 渲染卡顿分开看。
+应用 UI 线程出现一次较长的 traversal 时，先确认触发者是 ContentCapture 初始报告还是 Autofill assist request；后台 `sendEvents()` 变长时，检查事件批次、Parcel 和 Binder 异步压力。如果建议出现得晚而 App frame 正常，我们就继续分解系统路由、提供方响应、IME 与建议渲染的时延，用分段证据锁定主要耗时方——App 帧正常只说明当前样本未观察到对应的帧异常，仍需检查其他应用侧工作与跨进程等待；端到端时延按链路分段记录，与 App 渲染卡顿分开看。
 
 ### 应用侧结构设计
 

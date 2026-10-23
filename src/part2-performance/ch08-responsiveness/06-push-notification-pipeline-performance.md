@@ -5,7 +5,7 @@ section: '8.6'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
 last_verified: '2026-10-23'
-last_verified_against: AOSP android-17.0.0_r1 frameworks/base NotificationManagerService / NotificationManager / Notification / RemoteViews / SystemUI notification row; Android common kernel android17-6.18-2026-06_r6 binder.c; Firebase Cloud Messaging receive / priority / delivery docs; Android notification, FGS and Live Update docs checked 2026-08-19
+last_verified_against: AOSP android-17.0.0_r1 frameworks/base NotificationManagerService / NotificationManager / Notification / RemoteViews / SystemUI notification row; Android common kernel android17-6.18-2026-06_r6 binder.c; Firebase Cloud Messaging receive / priority / delivery docs; Android notification, FGS and Live Update docs checked 2026-10-23; Firebase AndroidConfigV2 EAP separately checked; fixed open Firebase SDK main/EAP commits archived
 confidence: medium-high
 sources:
 - type: aosp
@@ -331,12 +331,12 @@ Android 17 的 [`NotificationManager.java`](https://android.googlesource.com/pla
 
 图：getProgressState 只按 progress、max、indeterminate 分 NONE/ONGOING/COMPLETE；业务文字变化不保证绕过更新限速。
 
-同一源码还限制普通包同一 user 的通知数，计入已发布和已入队项；`getNotificationCount()` 排除被同一 tag / ID 替换的旧项，普通路径上限为 50；FGS、UIJ 和部分聚合通知适用单独规则。更新速率限制和通知数量上限解决的是两类问题，指标也要分别记录。
+同一源码还限制普通包同一 user 的通知数，计入已发布和已入队项；`getNotificationCount(pkg, userId, id, tag)` 只从已发布列表排除同 tag / ID 旧项，已入队列表仍逐项计数，普通路径上限为 50；FGS、UIJ 和部分聚合通知适用单独规则。更新速率限制和通知数量上限解决的是两类问题，指标也要分别记录。
 
 <!-- gracker-diagram: ch08-06-21-count-versus-rate -->
 ![50 条上限与更新速率分开核算](../../assets/diagrams/ch08/ch08-06-21-count-versus-rate.png)
 
-图：同包同 user 的 posted 与 enqueued 计数限制不同于 EWMA；同 key 替换和 FGS/UIJ/聚合例外按源码判断。
+图：同包同 user 计入 posted 与 enqueued；仅 posted 排除同 tag/ID 旧项，入队项仍计数。数量规则与 EWMA 分开判断。
 
 进度或指标通知可采用以下发布策略：
 
@@ -406,12 +406,12 @@ SystemUI 的 [`NotificationRowContentBinderImpl.kt`](https://android.googlesourc
 
 ### ProgressStyle、MetricStyle 与 Live Update
 
-Android 16（API 36）的 `Notification.ProgressStyle` 和 Android 17（API 37）的 [`Notification.MetricStyle`](https://developer.android.com/develop/ui/views/notifications/metric-style) 都是系统模板。`MetricStyle` 最多展示三个 metric（数值指标），适合健身、计时和出行；模板只负责内容表达与渲染，应用仍要调用 `notify()` 更新数值，NMS 限速也继续适用。
+Android 16（API 36）的 `Notification.ProgressStyle` 和 Android 17（API 37）的 [`Notification.MetricStyle`](https://developer.android.com/develop/ui/views/notifications/metric-style) 都是系统模板。`MetricStyle` 最多展示三个 metric（数值指标），适合健身、计时和出行；普通业务数值变化仍需按需更新通知，NMS 限速继续适用；但计时有重要例外：`Metric.TimeDifference` 可把零点交给系统 Chronometer 连续计时，不需要 App 每秒调用 `notify()`。暂停、继续或基准变化再更新描述，不能把所有 metric 都当成必须频繁重发的固定数字。
 
 <!-- gracker-diagram: ch08-06-28-metric-style -->
-![MetricStyle 是表达模板，不是自动更新引擎](../../assets/diagrams/ch08/ch08-06-28-metric-style.png)
+![MetricStyle 的数值更新与计时特例](../../assets/diagrams/ch08/ch08-06-28-metric-style.png)
 
-图：API 37 MetricStyle 最多渲染三个 metric；系统模板和语义颜色不能代替数据更新、限流与成本控制。
+图：MetricStyle 最多渲染三个 metric；TimeDifference 可交给系统连续计时，无需每秒 notify，其他业务变化仍按需更新并受限速。
 
 Live Update 是一种获得系统突出展示的资格，并不等同于某个 notification style。当前 [Live Update 文档](https://developer.android.com/develop/ui/views/notifications/live-update) 要求通知使用标准 style、`BigTextStyle`、`CallStyle`、`ProgressStyle` 或 `MetricStyle`，声明 `POST_PROMOTED_NOTIFICATIONS`，请求 promoted ongoing（提升展示的持续通知），并满足 ongoing、content title、channel 等通用条件。
 

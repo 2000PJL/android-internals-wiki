@@ -141,12 +141,12 @@ flowchart LR
 | 数据处理与结束 | `update()`、`doFinal()`、`sign()` | 数据传输、硬件计算、认证 token 校验 | payload 大小、端到端耗时 |
 | 用户认证 | `BiometricPrompt.authenticate()` | 系统 UI、用户操作、传感器、认证 TA | prompt 回调与认证错误 |
 
-分段时我们先定好切分点：认证 UI 的等待时间归认证阶段，密码算法耗时另算；网络换会话 token、由服务端校验 attestation 的时间，都记到网络和服务端段。指标沿这些切点记录，各段耗时才有归因的意义。它们是观测切点，不保证全部串行或互不重叠；总耗时应独立测量，不能把重叠 span 直接求和。
+分段时我们先定好切分点：认证 UI 的等待时间归认证阶段，密码算法耗时另算；网络换会话 token、由服务端校验 attestation 的时间，都记到网络和服务端段。指标沿这些切点记录，各段耗时才有归因的意义。这些切点是观测用的，各段之间可能重叠；重叠的 span 直接相加会重复计时，总耗时要单独测量。
 
 <!-- gracker-diagram: ch08-05-03-phase-spans -->
 ![总耗时与子阶段分别计量](../../assets/diagrams/ch08/ch08-05-03-phase-spans.png)
 
-图：key lookup、begin、prompt、finish 与网络各设切点；有重叠时不能把 span 直接相加。
+图：key lookup、begin、prompt、finish 与网络各设切点；有重叠时把 span 相加会重复计时。
 
 ### `init()` 已经创建 KeyMint operation
 
@@ -193,7 +193,7 @@ flowchart LR
 - 用户启用支付、设备绑定或安全登录的设置流程；
 - 注册完成后、进入高频登录之前的准备阶段。
 
-同一用途的密钥，没必要在每次 App 冷启动、每次登录点击或每个网络请求里重复生成。检查密钥是否存在时，还要考虑它可能已被删除，或按密钥策略因锁屏重置、biometric enrollment 变化而失效。OTA 本身不意味着所有 key 都应失效或重建；升级后遇到错误仍须区分暂时不可用、可升级 key blob 与永久失效。
+同一用途的密钥，没必要在每次 App 冷启动、每次登录点击或每个网络请求里重复生成。检查密钥是否存在时，还要考虑它可能已被删除，或按密钥策略因锁屏重置、biometric enrollment 变化而失效。OTA 本身给不出让所有 key 失效或重建的理由；升级后遇到错误，仍须区分暂时不可用、可升级 key blob 与永久失效。
 
 <!-- gracker-diagram: ch08-05-06-generation-policy -->
 ![密钥生成移出高频路径并分类恢复](../../assets/diagrams/ch08/ch08-05-06-generation-policy.png)
@@ -220,12 +220,12 @@ flowchart LR
 
 #### 密钥证明（attestation）
 
-attestation 用证书链证明密钥的属性及其受保护环境，测量时先区分本地生成并取得证明链、上传和服务端验证。证明链可随生成调用一起返回，App 外层计时不能把同一次调用内部的生成与证明开销精确分离；需要 HAL / 服务插桩才能继续拆分。另行读取证书链可单独计时，网络与服务端也各设观测切点。证书链、challenge 和应用标识本身是敏感数据：日志只记录长度、结果类别和版本，原始内容不落盘。
+attestation 用证书链证明密钥的属性及其受保护环境，测量时先区分本地生成并取得证明链、上传和服务端验证。证明链可随生成调用一起返回，同一次调用内部的生成与证明开销，App 外层计时分不开；想继续拆分，就要靠 HAL / 服务插桩。另行读取证书链可单独计时，网络与服务端也各设观测切点。证书链、challenge 和应用标识本身是敏感数据：日志只记录长度、结果类别和版本，原始内容不落盘。
 
 <!-- gracker-diagram: ch08-05-08-attestation-measurement -->
 ![证明链生成与服务端验证的观测边界](../../assets/diagrams/ch08/ch08-05-08-attestation-measurement.png)
 
-图：本地生成可一起返回证明链，App 不能据外层耗时精确拆开内部生成和证明；上传及验证另外计时。
+图：本地生成可一起返回证明链，App 外层耗时拆不开内部生成和证明；上传及验证另外计时。
 
 ### 认证绑定密钥：per-use 与 time-based 两套流程
 
@@ -260,7 +260,7 @@ val spec = KeyGenParameterSpec.Builder(
     .build()
 ```
 
-生成密钥后，每次使用都新建一个 `Signature` 并调用 `initSign()`，再把它包装成 `BiometricPrompt.CryptoObject`。认证成功的回调会带回已经获得本次授权的 operation，我们在同一对象上完成签名即可；若在回调前另建了一个 `Signature`，那个对象对应另一项 operation，刚才的 per-use 认证不能授权另一项 operation。回调成功也不保证后续 sign / doFinal 必定成功：等待期间的 prune、密钥状态变化或后端错误仍须处理。不要把 KeyMint operation challenge 与服务端要求签名的业务 challenge 混成同一个值。
+生成密钥后，每次使用都新建一个 `Signature` 并调用 `initSign()`，再把它包装成 `BiometricPrompt.CryptoObject`。认证成功的回调会带回已经获得本次授权的 operation，我们在同一对象上完成签名即可；若在回调前另建了一个 `Signature`，那个对象对应另一项 operation，刚才的 per-use 认证盖不住另一项 operation。回调成功也不保证后续 sign / doFinal 必定成功：等待期间的 prune、密钥状态变化或后端错误仍须处理。KeyMint operation challenge 与服务端要求签名的业务 challenge 是两个值，别混用。
 
 <!-- gracker-diagram: ch08-05-10-per-use-binding -->
 ![per-use 的 HAT 绑定 operation challenge](../../assets/diagrams/ch08/ch08-05-10-per-use-binding.png)
@@ -311,12 +311,12 @@ Android 9 / API 28 及以上设备可以提供 StrongBox KeyMint。TEE 已经与
 
 #### 设备能力与业务策略
 
-我们先从设备能力查起。`FEATURE_STRONGBOX_KEYSTORE` 只说明设备声明了 StrongBox 能力，具体到算法、key size（密钥长度）、digest（摘要算法）、padding（填充方式） 或 attestation 的参数组合，仍可能不受支持。`setIsStrongBoxBacked(true)` 只是生成参数；生成时相应硬件不可用等错误可映射为 `StrongBoxUnavailableException`，其他参数或 Provider 错误也可能以其他异常返回。平台不会因此自动改去生成 TEE 密钥，不应把任意异常都当成允许降级的信号。
+我们先从设备能力查起。`FEATURE_STRONGBOX_KEYSTORE` 只说明设备声明了 StrongBox 能力，具体到算法、key size（密钥长度）、digest（摘要算法）、padding（填充方式） 或 attestation 的参数组合，仍可能不受支持。`setIsStrongBoxBacked(true)` 只是生成参数；生成时相应硬件不可用等错误可映射为 `StrongBoxUnavailableException`，其他参数或 Provider 错误也可能以其他异常返回。平台不会因此自动改去生成 TEE 密钥；哪些异常允许降级，要由应用按预定义策略判断，见到任意异常就降级，会把其他错误一起吞掉。
 
 <!-- gracker-diagram: ch08-05-14-strongbox-fallback -->
-![请求 StrongBox 不等于实际成功生成](../../assets/diagrams/ch08/ch08-05-14-strongbox-fallback.png)
+![请求 StrongBox 与实际成功生成是两步](../../assets/diagrams/ch08/ch08-05-14-strongbox-fallback.png)
 
-图：能力声明、参数支持、生成结果和业务 fallback 是不同步骤；不能把所有异常都当降级许可。
+图：能力声明、参数支持、生成结果和业务 fallback 是不同步骤；异常本身给不了降级许可。
 
 应用需要预先定义三类策略：
 
@@ -342,15 +342,15 @@ Android 12 / API 31 及以上可通过 `KeyInfo.getSecurityLevel()` 读取：
 <!-- gracker-diagram: ch08-05-15-security-evidence -->
 ![记录请求、实际级别和降级原因](../../assets/diagrams/ch08/ch08-05-15-security-evidence.png)
 
-图：API 31+ 的 KeyInfo securityLevel 是结果证据；UNKNOWN 不能直接归为 TEE 或 StrongBox。
+图：API 31+ 的 KeyInfo securityLevel 是结果证据；UNKNOWN 先按未知归类，拿到进一步结果前别算进 TEE 或 StrongBox。
 
 ### operation slot 与 prune 策略
 
-并发上限的新旧说法容易混淆，我们先把事实摆清楚：AOSP KeyMint AIDL 自 Android 12 / API 31 起，把 `IKeyMintDevice.begin()` 的最低并发上限写成 32，注释原文为 "IKeyMintDevice implementations must support 32 concurrent operations"；`source.android.com/docs/security/features/keystore/implementer-ref` 上仍写的 16，与这里核对的 Android 12 r1 和 Android 17 r1 AIDL（均为最低 32）存在差异，不能据此反推所有旧版 KeyMint 都只支持 16；当前合同以固定 AIDL 为准。keystore2 代码本身没有固定配额常量，上限交给 KeyMint HAL 的 AIDL 合同。
+并发上限的新旧说法容易混淆，我们先把事实摆清楚：AOSP KeyMint AIDL 自 Android 12 / API 31 起，把 `IKeyMintDevice.begin()` 的最低并发上限写成 32，注释原文为 "IKeyMintDevice implementations must support 32 concurrent operations"；`source.android.com/docs/security/features/keystore/implementer-ref` 上仍写的 16，与这里核对的 Android 12 r1 和 Android 17 r1 AIDL（均为最低 32）存在差异，据此反推“所有旧版 KeyMint 都只支持 16”站不住脚；当前合同以固定 AIDL 为准。keystore2 代码本身没有固定配额常量，上限交给 KeyMint HAL 的 AIDL 合同。
 
 `vold` 是 Android 的卷管理守护进程，会使用 KeyMint 支撑存储加密。Keystore2 源码里并没有为它写死保留 slot；想给 `vold` 留余量，正确做法是在自测时直接观察 prune 和返回错误，而不是套用旧文档里的“15+1”分配。
 
-32 是 HAL 合同的最低支持量，不是普通 App 的独占配额，也不是“第 32 个请求必然失败”的阈值。
+32 是 HAL 合同的最低支持量；把它读成普通 App 的独占配额，或读成“第 32 个请求必然失败”的阈值，都会读错它的含义。
 
 <!-- gracker-diagram: ch08-05-16-slot-contract -->
 ![最低 32 项合同不是 App 配额](../../assets/diagrams/ch08/ch08-05-16-slot-contract.png)
@@ -374,14 +374,14 @@ Android 12 / API 31 及以上可通过 `KeyInfo.getSecurityLevel()` 读取：
 <!-- gracker-diagram: ch08-05-18-prune-retry -->
 ![容量压力通过 prune 和重试处理](../../assets/diagrams/ch08/ch08-05-18-prune-retry.png)
 
-图：TOO_MANY_OPERATIONS 触发服务端 prune / begin 重试；旧 operation 可能失效，不能假设新请求 FIFO 排队。
+图：TOO_MANY_OPERATIONS 触发服务端 prune / begin 重试；旧 operation 可能失效，新请求也未必按 FIFO 排队。
 
-客户端也可能把 busy 变成长等待：r1 的 `KeyStoreSecurityLevel.createOperation()` 检查兼容变更 `KEYSTORE_OPERATION_CREATION_MAY_FAIL`；开启时抛出带退避提示的 `BackendBusyException`，关闭时按随机 20–100 ms 退避后重试。该变更在 r1 声明为 `@Disabled`，不能仅凭 target API 31+ 就断言 App 一定立即收到 busy；设备兼容配置仍须核对。这条重试路径也不因 Java 线程中断而保证退出。[来源][login-client-busy]。
+客户端也可能把 busy 变成长等待：r1 的 `KeyStoreSecurityLevel.createOperation()` 检查兼容变更 `KEYSTORE_OPERATION_CREATION_MAY_FAIL`；开启时抛出带退避提示的 `BackendBusyException`，关闭时按随机 20–100 ms 退避后重试。该变更在 r1 声明为 `@Disabled`，仅凭 target API 31+ 还断言不了 App 一定立即收到 busy；设备兼容配置仍须核对。这条重试路径面对 Java 线程中断也未必退出。[来源][login-client-busy]。
 
 <!-- gracker-diagram: ch08-05-19-client-busy -->
 ![服务端 busy 可能表现为客户端长等待](../../assets/diagrams/ch08/ch08-05-19-client-busy.png)
 
-图：兼容变更开启时抛 BackendBusyException；关闭时退避重试，r1 的 @Disabled 不等于 target 31 自动开启。
+图：兼容变更开启时抛 BackendBusyException；关闭时退避重试；r1 标了 @Disabled，target 31 也未必自动开启。
 
 #### 容易耗尽 slot 的写法
 
@@ -391,7 +391,7 @@ Android 12 / API 31 及以上可通过 `KeyInfo.getSecurityLevel()` 读取：
 - 多个 SDK 各自使用无界线程池访问 Keystore。
 - 超时后保留旧 `Cipher`，同时开始新一轮重试。
 
-Keystore 并发预算应由设备测试决定；线程数、等待队列和在途 operation 数要分别限制，不能因线程池大小固定就假设接单已经有界。合适的并发值分别在 TEE 和 StrongBox 上压测确定，直接照搬 CPU 核数得不出可靠结论。
+Keystore 并发预算应由设备测试决定；线程数、等待队列和在途 operation 数要分别设限；线程池大小固定，只约束住了线程这一项。合适的并发值分别在 TEE 和 StrongBox 上压测确定，直接照搬 CPU 核数得不出可靠结论。
 
 <!-- gracker-diagram: ch08-05-20-slot-occupancy -->
 ![临用时初始化缩短等待中的 slot 占用](../../assets/diagrams/ch08/ch08-05-20-slot-occupancy.png)
@@ -461,16 +461,16 @@ class ChallengeSigner : Closeable {
 }
 ```
 
-示例适用于无需通过 `CryptoObject` 单独授权的密钥。per-use 密钥应先在后台初始化 `Signature`，再回到主线程将它交给 BiometricPrompt；认证成功后，把回调返回的同一对象转移到后台完成签名，整个过程中这个对象始终单线程使用。owner 结束时先停止接单，按策略取消或等待在途工作，再关闭 signer；close 不强制打断已进入的 Binder / KeyMint 调用。`asCoroutineDispatcher()` 遇到 Executor 拒绝会取消相应 Job 并回退 IO 推进取消清理，业务要识别拥塞 / 拒绝，且不能假设拒绝后的 finally 仍有原线程亲和性。
+示例适用于无需通过 `CryptoObject` 单独授权的密钥。per-use 密钥应先在后台初始化 `Signature`，再回到主线程将它交给 BiometricPrompt；认证成功后，把回调返回的同一对象转移到后台完成签名，整个过程中这个对象始终单线程使用。owner 结束时先停止接单，按策略取消或等待在途工作，再关闭 signer；close 不强制打断已进入的 Binder / KeyMint 调用。`asCoroutineDispatcher()` 遇到 Executor 拒绝会取消相应 Job 并回退 IO 推进取消清理，业务要识别拥塞 / 拒绝；拒绝后的 finally 未必还带着原线程亲和性。
 
 #### 超时与取消
 
-JCA Keystore API 没有统一的 per-operation deadline。`Future.get(timeout)` 可终止本次 get 的等待，但不会自动取消 Future；`withTimeout` 取消协程代码块，不保证在同步 Binder 调用尚未返回时就立刻返回，父作用域也可能继续等子任务结束。若 UI 必须按期限切换展示，应由明确的业务 owner 分离 UI 等待状态与受控 worker，并用请求代次隔离晚结果；不要借此无限创建后台任务。调用进入 Binder / KeyMint 后，上层计时器或线程中断不保证底层操作立即停止。
+JCA Keystore API 没有统一的 per-operation deadline，超时语义要应用自己搭。`Future.get(timeout)` 终止的只是本次 get 的等待，Future 本体要另行取消；`withTimeout` 取消的是协程代码块，同步 Binder 调用尚未返回时能否立刻返回，它保证不了，父作用域也可能继续等子任务结束。UI 若必须按期限切换展示，就由明确的业务 owner 分离 UI 等待状态与受控 worker，并用请求代次隔离晚结果，后台任务的总量同样要设上限。调用一旦进入 Binder / KeyMint，上层计时器或线程中断未必能立即停止底层操作。
 
 <!-- gracker-diagram: ch08-05-23-timeout-boundary -->
 ![UI 超时与硬件调用结束是两件事](../../assets/diagrams/ch08/ch08-05-23-timeout-boundary.png)
 
-图：上层超时不能保证同步 Binder 立即返回；用 owner 与请求代次隔离晚结果，同时保留总并发预算。
+图：上层超时管不到同步 Binder 的返回时机；用 owner 与请求代次隔离晚结果，同时保留总并发预算。
 
 处理超时应遵守：
 
@@ -521,7 +521,7 @@ TEE/StrongBox 内部阶段在普通 Perfetto trace 里通常看不到。时间�
 <!-- gracker-diagram: ch08-05-25-perfetto-boundary -->
 ![Perfetto 可见段与安全环境内部区分](../../assets/diagrams/ch08/ch08-05-25-perfetto-boundary.png)
 
-图：App marker、Binder 和调度可定位等待区间；无 HAL 内部证据时不能把整段归因到密码算法。
+图：App marker、Binder 和调度可定位等待区间；无 HAL 内部证据时，归因止步于可见段。
 
 #### 测试组合
 
@@ -544,6 +544,8 @@ TEE/StrongBox 内部阶段在普通 Perfetto trace 里通常看不到。时间�
 
 ### 性能动作与安全策略
 
+我们把常用的性能动作和各自的约束对照着看：
+
 | 动作 | 性能收益 | 安全边界 |
 |---|---|---|
 | 首帧后预生成 | 移出冷启动和点击路径 | 只预生成已获同意、允许提前存在的 key |
@@ -563,7 +565,7 @@ TEE/StrongBox 内部阶段在普通 Perfetto trace 里通常看不到。时间�
 
 ### Passkey / Credential Manager 的角色
 
-Credential Manager 是初始登录的统一凭据入口，也支持后续的重新授权。普通依赖方 App（relying party）请求 passkey 时，私钥通常由凭据提供方 credential（凭据） provider（凭据提供方） 管理；用户创建 passkey，业务 App 自己的 `AndroidKeyStore` alias 并没有随之新增。
+密钥归谁管，直接决定性能指标该记到谁头上，我们先把这件事分清。Credential Manager 是初始登录的统一凭据入口，也支持后续的重新授权。普通依赖方 App（relying party）请求 passkey 时，私钥通常由凭据提供方 credential（凭据） provider（凭据提供方） 管理；用户创建 passkey，业务 App 自己的 `AndroidKeyStore` alias 并没有随之新增。
 
 <!-- gracker-diagram: ch08-05-28-passkey-ownership -->
 ![passkey 私钥通常归 credential provider 管理](../../assets/diagrams/ch08/ch08-05-28-passkey-ownership.png)
@@ -609,7 +611,7 @@ Credential Manager 是初始登录的统一凭据入口，也支持后续的重�
 - Keystore2 [`operation.rs`](https://android.googlesource.com/platform/system/security/+/android-17.0.0_r1/keystore2/src/operation.rs)：operation 生命周期、并发保护和 pruning 算法。
 - [`IKeyMintDevice.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/security/keymint/aidl/android/hardware/security/keymint/IKeyMintDevice.aidl)：KeyMint HAL 的 generate/import/begin 接口。
 
-App 到 `keystore2`、`keystore2` 到 Binderized KeyMint HAL（通过 Binder 暴露的 KeyMint 服务），这两段都经过 Binder。内核侧按 `android17-6.18-2026-06_r6` 固定查看 [`drivers/android/binder.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)。TEE / StrongBox 的具体 transport 和集成依设备实现；common kernel 可包含 OP-TEE 等通用驱动，不能笼统说所有相关 driver 都不在其中。要把现场归到具体通道，仍需实际设备的内核、HAL 与固件证据；手头没有设备内核与 HAL 源码时，归因到这里为止，剩余部分明确记为厂商实现内部。
+App 到 `keystore2`、`keystore2` 到 Binderized KeyMint HAL（通过 Binder 暴露的 KeyMint 服务），这两段都经过 Binder。内核侧按 `android17-6.18-2026-06_r6` 固定查看 [`drivers/android/binder.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)。TEE / StrongBox 的具体 transport 和集成依设备实现；common kernel 可包含 OP-TEE 等通用驱动，别把“相关 driver 都不在 common kernel”当成默认结论。要把现场归到具体通道，仍需实际设备的内核、HAL 与固件证据；手头没有设备内核与 HAL 源码时，归因到这里为止，剩余部分明确记为厂商实现内部。
 
 <!-- gracker-diagram: ch08-05-53-kernel-boundary -->
 ![内核 Binder 与设备认证实现分层定位](../../assets/diagrams/ch08/ch08-05-53-kernel-boundary.png)
@@ -657,7 +659,7 @@ flowchart LR
 
 </details>
 
-Credential Manager 返回的 Credential 仍需按其类型完成业务及服务端验证；passkey assertion 由服务端按 WebAuthn 协议验证。会话内 BiometricPrompt 成功只说明本次平台认证通过，后续可能是本地敏感动作，也可能是签名后交服务端校验；它不自动返回 passkey assertion，也不自动新建登录会话。
+Credential Manager 返回的 Credential 仍需按其类型完成业务及服务端验证；passkey assertion 由服务端按 WebAuthn 协议验证。会话内 BiometricPrompt 成功只说明本次平台认证通过，后续可能是本地敏感动作，也可能是签名后交服务端校验；passkey assertion 与新登录会话，都要由后续业务步骤自己完成。
 
 性能拆分建议使用下列口径：
 
@@ -672,7 +674,7 @@ Credential Manager 返回的 Credential 仍需按其类型完成业务及服务�
 `CredentialManager.getCredential()` 的等待时间，包含用户在系统 UI 上查看和选择凭据的时间；`BiometricPrompt` 从发起请求到收到回调的区间，同样包含用户操作。没有平台专用观测能力时，我们只能把这类指标命名为“请求到结果”——整段时间标成“provider 查询耗时”或“传感器识别耗时”，都超出了实际观测的范围。
 
 <!-- gracker-diagram: ch08-05-31-observable-endpoints -->
-![请求到结果不能改名为传感器耗时](../../assets/diagrams/ch08/ch08-05-31-observable-endpoints.png)
+![请求到结果与传感器耗时分属不同指标](../../assets/diagrams/ch08/ch08-05-31-observable-endpoints.png)
 
 图：RP 可直接记录请求、结果与异常；系统显示、provider 查询和用户操作混在等待区间中，需额外证据拆分。
 
@@ -693,7 +695,7 @@ AndroidX `BiometricPrompt` 是应用侧推荐使用的封装：Android 9（API 2
 
 图：BiometricScheduler 维护单个 sensor 的当前操作和待处理队列；它不是全系统所有 sensor 共享的一个 FIFO。
 
-这条路径跨越 App、`system_server`、SystemUI 和厂商 HAL；AuthService、BiometricService、AuthSession 及常见传感器系统服务属于 `system_server` 内的不同组件，不应各画成一个独立进程。应用主线程 trace 覆盖的是调用方看到的这一段，再往下，各系统组件各自的耗时就分不出来了。
+这条路径跨越 App、`system_server`、SystemUI 和厂商 HAL；AuthService、BiometricService、AuthSession 及常见传感器系统服务都在 `system_server` 进程之内，画链路图时共用一个进程框。应用主线程 trace 覆盖的是调用方看到的这一段，再往下，各系统组件各自的耗时就分不出来了。
 
 <!-- gracker-diagram: ch08-05-32-biometric-processes -->
 ![认证组件按真实进程边界展开](../../assets/diagrams/ch08/ch08-05-32-biometric-processes.png)
@@ -702,7 +704,7 @@ AndroidX `BiometricPrompt` 是应用侧推荐使用的封装：Android 9（API 2
 
 #### 应用侧可记录的 prompt 事件
 
-AndroidX 公开的 `AuthenticationCallback` 只提供成功、终态错误和本次样本未识别三类结果，缺一个“对话框已显示”回调；埋点命名要把这个限制反映出来：
+我们先看回调给了什么。AndroidX 公开的 `AuthenticationCallback` 只提供成功、终态错误和本次样本未识别三类结果，缺一个“对话框已显示”回调；埋点命名要把这个限制反映出来：
 
 <!-- gracker-diagram: ch08-05-35-callback-state -->
 ![未识别是非终态，成功与错误结束会话](../../assets/diagrams/ch08/ch08-05-35-callback-state.png)
@@ -728,7 +730,7 @@ AndroidX 公开的 `AuthenticationCallback` 只提供成功、终态错误和本
 <!-- gracker-diagram: ch08-05-36-config-reattach -->
 ![旋转重建接续 callback，进程重建重新判断](../../assets/diagrams/ch08/ch08-05-36-config-reattach.png)
 
-图：AndroidX prompt 默认跨配置变更保留；重建时注册新 callback，不能据持久化标记假定进程死亡后旧会话还在。
+图：AndroidX prompt 默认跨配置变更保留；重建时注册新 callback，进程死亡后旧会话是否还在要重新判断，持久化标记说了不算。
 
 同一个 Activity 或 Fragment 创建多个 `BiometricPrompt` 时，只有最近创建实例的 callback 会被保存。登录页应只维护一个 prompt 实例，并用业务状态阻止重复点击。应用离开前台后，系统可能因安全策略关闭 prompt；这类终止要与旋转重建分别统计。
 
@@ -779,7 +781,7 @@ class LoginActivity : FragmentActivity() {
 }
 ```
 
-重建后的 Activity 会注册新的 callback，正在显示的认证会话继续运行。`beginAttempt()` 负责拒绝重复点击；`onAuthenticationFailed()` 只记录一次样本未识别，不结束业务状态。成功或错误回调结束本次 attempt；同步启动失败也必须清理。业务 ViewModel 应只允许一个活动 / 正在取消的 attempt，取消时先记原因并等平台终态，不在旧 prompt 尚未结束时启动新 prompt。旋转时保留内存中的业务 attempt，但进程重建不能仅凭持久化的“正在认证”标记假定旧系统会话仍存在。
+重建后的 Activity 会注册新的 callback，正在显示的认证会话继续运行。`beginAttempt()` 负责拒绝重复点击；`onAuthenticationFailed()` 只记录一次样本未识别，不结束业务状态。成功或错误回调结束本次 attempt；同步启动失败也必须清理。业务 ViewModel 应只允许一个活动 / 正在取消的 attempt，取消时先记原因并等平台终态，不在旧 prompt 尚未结束时启动新 prompt。旋转时保留内存中的业务 attempt；进程重建后旧系统会话是否还在要重新判断，持久化的“正在认证”标记说了不算。
 
 <!-- gracker-diagram: ch08-05-37-attempt-owner -->
 ![业务状态维持一个活动或正在取消的 attempt](../../assets/diagrams/ch08/ch08-05-37-attempt-owner.png)
@@ -798,12 +800,12 @@ class LoginActivity : FragmentActivity() {
 
 #### 认证类型与传感器形态
 
-`AuthenticationResult.getAuthenticationType()` 能区分 biometric、device credential（设备 PIN、图案或密码） 和部分旧版本上的 unknown，分辨力到认证类型为止。想再往下问“本次用的是指纹、人脸还是虹膜、用的是哪一颗传感器”，接口层面已经没有公开信息；普通应用要读到本次认证的 modality（传感器形态），同样没有可靠的 API。
+`AuthenticationResult.getAuthenticationType()` 能区分 biometric、device credential（设备 PIN、图案或密码） 和部分旧版本上的 unknown，分辨力到认证类型为止。我们想再往下问“本次用的是指纹、人脸还是虹膜、用的是哪一颗传感器”，接口层面已经没有公开信息；普通应用要读到本次认证的 modality（传感器形态），同样没有可靠的 API。
 
 <!-- gracker-diagram: ch08-05-38-auth-type-not-modality -->
 ![authenticationType 的分辨力止于认证类型](../../assets/diagrams/ch08/ch08-05-38-auth-type-not-modality.png)
 
-图：公开结果区分 biometric、device credential 或 unknown；不能据此上报具体传感器或本次识别强度。
+图：公开结果区分 biometric、device credential 或 unknown；上报内容止于认证类型，具体传感器与识别强度拿不到。
 
 实验室的设备清单可以标注 UDFPS（屏下指纹传感器）、侧边指纹、后置指纹、2D face 或 3D face，用来解释设备组差异；线上事件则没有依据声称记录到了本次使用的 sensor 类型——设备同时支持多种 modality 时，按机型猜测尤其容易失真。
 
@@ -812,7 +814,7 @@ class LoginActivity : FragmentActivity() {
 <!-- gracker-diagram: ch08-05-39-preflight-policy -->
 ![预检查采用同一认证器组合](../../assets/diagrams/ch08/ch08-05-39-preflight-policy.png)
 
-图：canAuthenticate 是瞬时能力判断；prompt 配置仍需合法，允许 DEVICE_CREDENTIAL 时不能另设 negative button。
+图：canAuthenticate 是瞬时能力判断；prompt 配置仍需合法，允许 DEVICE_CREDENTIAL 时负按钮交给系统管理。
 
 ### Credential Manager 的应用方与 provider 方
 
@@ -852,7 +854,7 @@ AndroidX [`prepareGetCredential()`](https://developer.android.com/reference/kotl
 - 页面退出、账号切换或请求失效时能够取消或丢弃旧 handle；
 - 完成阶段使用 Activity context，使系统 UI 依附于当前页面所在的任务栈。
 
-挂起版 getCredential / prepare 把协程取消传播到 CancellationSignal，且丢弃取消后到达的 callback；这不证明所有 provider 工作已经停止。跨旋转需要同时处理业务 owner、当前 Activity / task 与结果接续，不能仅换成 viewModelScope 就宣称 UI 会自动重连，也不能长期持有已销毁 Activity。按所用库版本支持的 context 包装与结果衔接方式实现；页面结束、账号切换或请求过期时取消并隔离旧代次。回调版显式管理 CancellationSignal。
+挂起版 getCredential / prepare 把协程取消传播到 CancellationSignal，且丢弃取消后到达的 callback；这不证明所有 provider 工作已经停止。跨旋转时，业务 owner、当前 Activity / task 与结果接续都要应用自己衔接，viewModelScope 替代不了这部分工作，已销毁的 Activity 也要及时放手。按所用库版本支持的 context 包装与结果衔接方式实现；页面结束、账号切换或请求过期时取消并隔离旧代次。回调版显式管理 CancellationSignal。
 
 <!-- gracker-diagram: ch08-05-42-credential-cancel -->
 ![协程取消传播信号，UI 接续仍需独立设计](../../assets/diagrams/ch08/ch08-05-42-credential-cancel.png)
@@ -868,7 +870,7 @@ AndroidX [`prepareGetCredential()`](https://developer.android.com/reference/kotl
 <!-- gracker-diagram: ch08-05-43-single-tap-eligibility -->
 ![single tap 是 provider 侧的有条件能力](../../assets/diagrams/ch08/ch08-05-43-single-tap-eligibility.png)
 
-图：API 35+ 单账号可包含多种凭据；是否 single tap 依赖系统和 provider，RP 不能凭短耗时推断。
+图：API 35+ 单账号可包含多种凭据；是否 single tap 依赖系统和 provider，RP 凭短耗时推断会失真。
 
 `BiometricPromptData` 是 AndroidX Credentials 1.5.0 增加的 provider 侧 API。凭据提供方把它放入 `CreateEntry` 或 `PublicKeyCredentialEntry` 后，系统才获得内嵌认证所需的信息。普通依赖方应用不构造这个对象，也拿不到 provider 侧的 `biometricPromptResult`。
 
@@ -877,17 +879,17 @@ provider 集成时有四条硬约束：
 <!-- gracker-diagram: ch08-05-44-provider-crypto-policy -->
 ![provider CryptoObject 要求精确 STRONG](../../assets/diagrams/ch08/ch08-05-44-provider-crypto-policy.png)
 
-图：BiometricPromptData 的 crypto 非空时只接受精确 BIOMETRIC_STRONG，不能套用普通 App 的设备凭据组合规则；固定实现部分组合未拒绝，也不能据此视作受支持。
+图：BiometricPromptData 的 crypto 非空时只接受精确 BIOMETRIC_STRONG，组合规则要与普通 App 分开查；固定实现部分组合未拒绝，也当不成已受支持的证明。
 
 1. 显式设置 `allowedAuthenticators`。当前 single tap 指南的创建部分与 [`BiometricPromptData` API 参考](https://developer.android.com/reference/androidx/credentials/provider/BiometricPromptData) 对默认值的描述不一致，默认值靠不住。
-2. 按公开 API 契约，`cryptoObject` 非空时，`allowedAuthenticators` 必须精确设置为 `BIOMETRIC_STRONG`。固定 AndroidX 源码的校验只检查生物强度掩码，部分 device credential 组合并不抛异常；这是实现与文档的差异，不能把“构造成功”当作受支持或已安全授权的证据，也不应依赖这条宽松路径。
+2. 按公开 API 契约，`cryptoObject` 非空时，`allowedAuthenticators` 必须精确设置为 `BIOMETRIC_STRONG`。固定 AndroidX 源码的校验只检查生物强度掩码，部分 device credential 组合并不抛异常；这是实现与文档的差异；“构造成功”在这里说明的只是校验宽松，受支持与已安全授权都要按公开契约另行确认，这条宽松路径也当不成依赖。
 3. 设备配置要求使用 PIN、图案或密码时，系统采用标准 Credential Manager 流程，provider 收到的 `biometricPromptResult` 为 `null`。
-4. provider 必须处理 result 为成功、错误和 `null` 三种情况；`null` 表示这次没有内嵌生物认证结果，既不代表认证失败，也不代表已经认证成功；provider 仍须按业务安全要求自行完成必要认证，不能绕过授权。
+4. provider 必须处理 result 为成功、错误和 `null` 三种情况；`null` 只说明这次没有内嵌生物认证结果，成功与失败都读不出来；provider 仍须按业务安全要求自行完成必要认证，授权这一步绕不过去。
 
 <!-- gracker-diagram: ch08-05-45-provider-result -->
 ![provider 要处理成功、错误与 null](../../assets/diagrams/ch08/ch08-05-45-provider-result.png)
 
-图：null 只表示没有此次内嵌认证结果；provider 仍须完成必要授权，不能视作成功绕过认证。
+图：null 只表示没有此次内嵌认证结果；provider 仍须完成必要授权，把它当绕过认证的捷径就错了。
 
 因此，依赖方应用只能稳定记录本次返回的 credential 类型、总耗时和 exception 类型。只有平台或 provider 提供了直接信号时，才能上报 `single_tap_used`；仅因总耗时较短就推测使用了 single tap，会让指标失真。
 
@@ -909,7 +911,7 @@ provider 集成时有四条硬约束：
 
 当前 [Android 生物认证指南的 auth-per-use 章节](https://developer.android.com/identity/sign-in/biometric-auth#auth-per-use-keys) 给出的密钥策略允许 `AUTH_BIOMETRIC_STRONG | AUTH_DEVICE_CREDENTIAL`；AndroidX `BiometricPrompt.authenticate(info, crypto)` 参考文档还说明了 Android 11 之前的兼容限制。指南中“不带 `CryptoObject`”的说明只覆盖 time-based key 流程，Android 11+ 的 auth-per-use key 按上表第二行处理。
 
-密钥授权条件还要和 prompt 策略保持一致。`KeyProperties.AUTH_*` 与 `BiometricManager.Authenticators.*` 是不同的常量空间，不能把同一整数位掩码直接传到两种 API。若密钥只允许 strong biometric，prompt 就算同时提供 device credential，PIN 也过不了这把密钥的授权检查。密钥允许两种认证器时，调用方仍需处理密钥失效、认证 token 不匹配和安全级别差异。完整的初始化顺序、KeyMint operation 与异常分类见前文 [「密钥生成、访问与 KeyMint 延迟」](05-keystore-biometric-credential-login.md) 一节。
+密钥授权条件还要和 prompt 策略保持一致。`KeyProperties.AUTH_*` 与 `BiometricManager.Authenticators.*` 是不同的常量空间，同一个整数位掩码直接传进另一种 API，含义就对不上，两边要分别构造配置。若密钥只允许 strong biometric，prompt 就算同时提供 device credential，PIN 也过不了这把密钥的授权检查。密钥允许两种认证器时，调用方仍需处理密钥失效、认证 token 不匹配和安全级别差异。完整的初始化顺序、KeyMint operation 与异常分类见前文 [「密钥生成、访问与 KeyMint 延迟」](05-keystore-biometric-credential-login.md) 一节。
 
 <!-- gracker-diagram: ch08-05-47-auth-constant-spaces -->
 ![密钥策略与 Prompt 认证器不是同一位掩码](../../assets/diagrams/ch08/ch08-05-47-auth-constant-spaces.png)
@@ -983,7 +985,7 @@ stateDiagram-v2
 <!-- gracker-diagram: ch08-05-50-error-and-cancel -->
 ![错误分类与取消意图分别记录](../../assets/diagrams/ch08/ch08-05-50-error-and-cancel.png)
 
-图：取消前记录页面关闭、换号、过期或替换原因；公开 error code 不能完整还原 App 的业务意图。
+图：取消前记录页面关闭、换号、过期或替换原因；公开 error code 还原不了 App 的业务意图。
 
 ### 线上事件的字段设计
 
@@ -1013,7 +1015,7 @@ stateDiagram-v2
 
 SystemUI 和 Framework API 为应用提供一致接口，但 sensor HAL、屏幕协作、锁定行为和错误分布仍会因设备而异。UDFPS 需要屏幕局部高亮、触控和指纹传感器协作；被动人脸认证还受光线、摄像头启动和是否要求用户确认等因素影响。`setConfirmationRequired(false)` 只是应用向系统表达“不要求额外确认”的偏好，系统可以根据设备设置忽略它。
 
-实验室测试至少覆盖：
+我们的实验室测试至少覆盖：
 
 - Android 版本、厂商系统版本和升级路径；
 - strong / weak biometric（强/弱生物识别） 与 device credential 策略；
@@ -1027,7 +1029,7 @@ SystemUI 和 Framework API 为应用提供一致接口，但 sensor HAL、屏幕
 <!-- gracker-diagram: ch08-05-52-oem-measurement -->
 ![设备差异用实验室补证，线上看分布](../../assets/diagrams/ch08/ch08-05-52-oem-measurement.png)
 
-图：系统调度与用户操作都在请求时长内；线上按设备组统计分位数和回退完成率，不能固定阈值宣称 sensor 异常。
+图：系统调度与用户操作都在请求时长内；线上按设备组统计分位数和回退完成率，固定阈值宣判 sensor 异常会把用户操作也算了进去。
 
 ### Android 17 源码与内核锚点
 
@@ -1069,7 +1071,7 @@ Jetpack 库版本和平台 API level 要分别记录。`BiometricPromptData` 来
 <!-- gracker-diagram: ch08-05-54-version-and-library -->
 ![平台 API 与 Jetpack 库版本共同决定行为](../../assets/diagrams/ch08/ch08-05-54-version-and-library.png)
 
-图：平台能力可用不等于 provider 已集成相应 Jetpack API；诊断同时记录 API、系统 Build、库和 provider 版本。
+图：平台能力可用，provider 未必已集成相应 Jetpack API；诊断同时记录 API、系统 Build、库和 provider 版本。
 
 ## 小结
 

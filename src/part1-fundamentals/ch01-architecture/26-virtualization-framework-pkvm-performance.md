@@ -50,15 +50,15 @@ sources:
 
 # Android 17 AVF 架构与 pKVM 隔离性能边界
 
-Android Virtualization Framework（Android 虚拟化框架，AVF）从 Android 13 开始提供受保护虚拟机能力。它面向敏感工作负载：这些负载要抵御的威胁是宿主（host）Android 被攻破。宿主仍负责创建、调度和终止虚拟机，但不能读取 protected VM（受保护虚拟机，pVM）的私有内存，也不能悄悄替换通过验证的 Microdroid 和其中运行的载荷（payload）。
+Android Virtualization Framework（Android 虚拟化框架，AVF）从 Android 13 开始提供受保护虚拟机能力。它面向敏感工作负载：这类负载要抵御的威胁，是宿主（host）Android 被攻破。宿主照样创建、调度和终止虚拟机，但读不到 protected VM（受保护虚拟机，pVM）的私有内存，也无法悄悄替换通过验证的 Microdroid 和其中运行的载荷（payload）。
 
-“运行在虚拟机里会慢多少”没有跨设备固定答案。AVF 的成本取决于 vCPU（虚拟 CPU）调度、VM exit（执行从客户机退出到虚拟机监控器或宿主）、共享内存窗口、virtio 虚拟 I/O、验证启动以及 payload 行为。可复现的测量必须建立在 Android 17 的组件关系和安全边界之上。
+“运行在虚拟机里会慢多少”没有跨设备的固定答案。AVF 的成本分散在 vCPU（虚拟 CPU）调度、VM exit（执行从客户机退出到虚拟机监控器或宿主）、共享内存窗口、virtio 虚拟 I/O、验证启动和 payload 行为里；可复现的测量，要先建立在这套组件关系和安全边界之上。
 
-## 一、Android 17 中的 AVF 组件
+## 一、AVF 的组件构成
 
 ### 1.1 宿主侧有两个服务层次
 
-AVF 文档里的 `VirtualizationService` 容易与 `system_server` 中的 Java 服务混淆。API 37 的实现由多个独立进程组成：宿主应用经 `framework-virtualization` Java 库连到 `virtmgr`，`virtmgr` 为每台运行中的 VM 拉起一个 crosvm 子进程，另有全局的 `VirtualizationServiceInternal`（全局 Rust lazy Binder 服务）管 CID 和全局资源；crosvm 经宿主 KVM 接口创建并运行 VM，受保护内存访问由 EL2 上的 pKVM 约束；全局服务本身负责用户空间资源管理。
+我们从宿主侧看起。AVF 文档里的 `VirtualizationService` 很容易和 `system_server` 里的 Java 服务混为一谈，API 37 的实现由多个独立进程组成：宿主应用先经 `framework-virtualization` Java 库连到 `virtmgr`，`virtmgr` 为每台运行中的 VM 拉起一个 crosvm 子进程；另有全局的 `VirtualizationServiceInternal`（全局 Rust lazy Binder 服务）负责 CID 和用户空间资源管理；crosvm 经宿主 KVM 接口创建并运行 VM，受保护内存的访问由 EL2 上的 pKVM 约束。
 
 ```text
 Host app / system component
@@ -72,11 +72,11 @@ Host app / system component
                                 → pvmfw / guest OS / payload
 ```
 
-`libs/framework-virtualization/.../VirtualizationService.java` 明确说明，该类代表一个正在运行并承载 AIDL 服务的 `virtmgr` 实例。`nativeSpawn()` 创建子进程，Unix 域套接字（一种本机进程间通信通道）上的 RpcBinder 负责宿主客户端与 `virtmgr` 通信。
+沿这条链路读源码会更清楚。`libs/framework-virtualization/.../VirtualizationService.java` 写得很直接：这个类代表一个正在运行、承载 AIDL 服务的 `virtmgr` 实例；`nativeSpawn()` 创建子进程，宿主客户端与 `virtmgr` 之间靠 Unix 域套接字（一种本机进程间通信通道）上的 RpcBinder 通信。
 
-`android/virtualizationservice/src/main.rs` 则注册全局的 `android.system.virtualizationservice` lazy Binder 服务；lazy 表示有请求时按需启动。它负责虚拟机上下文 ID（CID）、全局资源、统计和维护。它与每个客户端启动的 `virtmgr` 不在同一进程，也不位于 `system_server`。
+`android/virtualizationservice/src/main.rs` 注册的则是全局的 `android.system.virtualizationservice` lazy Binder 服务——lazy 指有请求时按需启动，它管虚拟机上下文 ID（CID）、全局资源、统计和维护。这个服务独立成进程，与每个客户端拉起的 `virtmgr` 是两个进程，也位于 `system_server` 之外。
 
-每个 crosvm 进程只运行一台 VM；一个 `virtmgr` 可以管理多台 crosvm 子进程。crosvm 通过 `/dev/kvm` 的系统、VM、vCPU 和设备 ioctl（用户态控制内核设备的系统调用）创建并运行虚拟机。
+到了 VM 这一层，每个 crosvm 进程只运行一台 VM，一个 `virtmgr` 可以同时管理多台 crosvm 子进程；crosvm 通过 `/dev/kvm` 的系统、VM、vCPU 和设备 ioctl（用户态控制内核设备的系统调用）创建并运行虚拟机。
 
 <!-- gracker-diagram: ch01-26-avf-process-boundaries -->
 ![AVF 用户空间管理与受保护执行的不同层次](../../assets/diagrams/ch01/ch01-26-avf-process-boundaries.png)
@@ -93,42 +93,42 @@ Host app / system component
 | pvmfw | pVM 首段固件 | 验证初始镜像、维护实例身份、派生每台 VM 的机密 | 提供 Android framework API |
 | Microdroid | 客户机 OS | 验证启动、SELinux、Bionic、原生 payload、Binder RPC | 完整 Android UI 和应用框架 |
 
-Microdroid 是 AVF 提供的一种轻量客户机 OS，但不是 AVF 唯一支持的客户机。API 37 还允许自定义 VM 配置；在支持该功能的部分设备上，Android 的 Linux 开发环境也是基于 AVF 的 non-protected VM（非受保护虚拟机）用例。
+Microdroid 是 AVF 提供的一种轻量客户机 OS，同时也是 AVF 支持的客户机形态之一：API 37 还允许自定义 VM 配置；在支持该功能的部分设备上，Android 的 Linux 开发环境也是基于 AVF 的 non-protected VM（非受保护虚拟机）用例。
 
-## 二、Microdroid 不是“小号完整 Android”
+## 二、Microdroid 的能力范围
 
-payload 通常是 APK 内嵌的原生共享库，由 Microdroid payload launcher（载荷启动器）执行。Microdroid 为原生 payload 提供 Android 基础设施：Bionic C 库、验证启动（Verified Boot）、SELinux、APEX 系统组件包、日志 / 崩溃调试能力，以及基于 vsock（宿主与客户机通信的虚拟套接字）的 Binder RPC。它明确不提供：
+payload 通常是 APK 内嵌的原生共享库，由 Microdroid payload launcher（载荷启动器）执行。Microdroid 为原生 payload 配齐了 Android 基础设施：Bionic C 库、验证启动（Verified Boot）、SELinux、APEX 系统组件包、日志 / 崩溃调试能力，以及基于 vsock（宿主与客户机通信的虚拟套接字）的 Binder RPC。它明确不提供：
 
 - `system_server` 和 Zygote；
 - 图形/UI；
 - HAL；
 - `android.*` Java framework API。
 
-启用 ART APEX 后可以使用 `java.*` 核心 API，但这不等于拥有常规 Android 应用运行环境。
+启用 ART APEX 后可以用上 `java.*` 核心 API，但离常规 Android 应用运行环境还有距离。
 
-因此，下列推断在 API 37 中没有依据：
+所以下面这些推断在 API 37 里站不住：
 
 - Microdroid 默认含完整 ART、SystemServer 和 Service Manager 服务集；
 - protected 模式的 Microdroid 可以直接使用 virtio-gpu 或 NPU 硬件抽象层（HAL）加速通用 AI 推理；
 - 它能直接承载完整工作资料、Launcher 或 SystemUI。
 
-需要 UI、GPU 或设备直通的自定义 VM，应按具体客户机、crosvm 构建选项和产品安全策略单独评估，不能套用 Microdroid 的能力表。
+需要 UI、GPU 或设备直通的自定义 VM，应按具体客户机、crosvm 构建选项和产品安全策略单独评估，Microdroid 的能力表不能直接套用。
 
 ## 三、pKVM 如何阻止宿主读取 pVM 内存
 
 ### 3.1 宿主也受 Stage-2 约束
 
-传统 KVM 通常不使用 Stage-2 限制宿主，因此宿主内核可以访问承载客户机内存的物理页。pKVM 在宿主上下文中也启用 Stage-2：
+我们先看宿主这一侧。传统 KVM 通常不拿 Stage-2 限制宿主，宿主内核因此可以访问承载客户机内存的物理页；pKVM 把 Stage-2 也套在了宿主身上：
 
 - 宿主 Stage-2 使用恒等映射（identity mapping），即映射前后地址不变，主要负责访问控制；
 - 客户机仍有自己的 Stage-2，把客户机中间物理地址（IPA）映射到真实物理地址；
 - EL2 维护页面所有者，并决定宿主、某台 pVM、虚拟机监控器或设备能否映射该页。
 
-Android 启动之初，除虚拟机监控器保留区外的内存归宿主所有。创建 pVM 时，宿主把页面 donate（捐赠）给客户机；EL2 随后从宿主 Stage-2 中撤销这些页的访问权限。crosvm 进程仍保留用于建立 KVM memslot（客户机内存槽）的虚拟地址区间和内存记账关系，但对应物理页已不在宿主 Stage-2 的可访问映射中。
+这套机制从开机就排好了序：Android 启动之初，除虚拟机监控器保留区外的内存都归宿主所有；创建 pVM 时，宿主把页面 donate（捐赠）给客户机，EL2 随即从宿主 Stage-2 里撤销这些页的访问权限。crosvm 进程手里仍留着建立 KVM memslot（客户机内存槽）用的虚拟地址区间和内存记账关系，但这些地址对应的物理页，已经落在宿主 Stage-2 的可访问映射之外。
 
-宿主 CPU 或受宿主控制的设备，不能凭借这段用户空间地址绕过 EL2 读取 pVM 私有页。
+所以宿主 CPU 或受宿主控制的设备，就算拿着这段用户空间地址，也绕不过 EL2 去读 pVM 私有页。
 
-当前内核把宿主 Stage-2 标记为 `KVM_PGTABLE_S2_IDMAP`，并在 `host_stage2_set_owner_locked()` 中根据所有者 ID 建立宿主映射或记录其他所有者。保护来自 EL2 管理的权限，与某个用户空间 `shared_buf` 名称无关。
+当前内核把宿主 Stage-2 标记为 `KVM_PGTABLE_S2_IDMAP`，并在 `host_stage2_set_owner_locked()` 中按所有者 ID 建立宿主映射或记录其他所有者。保护作用来自 EL2 管理的权限，用户空间 `shared_buf` 起什么名字在这里不起作用。
 
 <!-- gracker-diagram: ch01-26-stage2-private-memory -->
 ![pKVM 同时约束 host 与 guest 的内存访问](../../assets/diagrams/ch01/ch01-26-stage2-private-memory.png)
@@ -144,7 +144,7 @@ Android 启动之初，除虚拟机监控器保留区外的内存归宿主所有
 | `unshare` | 所有者不变 | 取消宿主映射 | 结束临时共享 |
 | `relinquish` | pVM → 宿主 | 是，重新归宿主 | 内存 balloon 或长期运行的 VM 归还不用的页 |
 
-客户机归还私有页时，这段内核路径先撤销客户机 Stage-2 映射，默认调用 `hyp_poison_page()` 处理内容；若调用显式带有 `KVM_FUNC_MEM_RELINQUISH_NO_POISON`，则改走 `hyp_flush_page()` 缓存维护，该分支不在此处覆盖页面内容。之后才把所有者改回宿主。不能把所有 `relinquish` 调用一概描述成先清零。核心顺序如下：
+客户机归还私有页时，内核路径分三步走：先撤销客户机 Stage-2 映射，再处理页面内容，最后把所有者改回宿主。内容处理有两种可能：默认调用 `hyp_poison_page()`；调用若显式带有 `KVM_FUNC_MEM_RELINQUISH_NO_POISON`，则改走 `hyp_flush_page()` 做缓存维护，这一分支并不覆盖页面内容——“所有 `relinquish` 调用都先清零”因此成了一刀切的误读。核心顺序如下：
 
 ```c
 /* Zap the guest stage2 pte and return ownership to the host */
@@ -160,42 +160,42 @@ ret = __host_stage2_set_owner_locked(
         HOST_SET_PSCI_MEM_PROTECT);
 ```
 
-页面回收伴随权限变更和内容处理；配置给 VM 的内存也可以在 VM 销毁前归还。pKVM 提供 `relinquish` hypercall（客户机通过它请求虚拟机监控器执行操作），virtio balloon（由客户机配合归还内存的虚拟设备）可以借此回收长期运行 VM 中不用的页。
+页面回收伴随权限变更和内容处理，配置给 VM 的内存也可以在 VM 销毁前归还：pKVM 提供 `relinquish` hypercall（客户机通过它请求虚拟机监控器执行操作），virtio balloon（由客户机配合归还内存的虚拟设备）可以借此回收长期运行 VM 中闲置的页。
 
 ### 3.3 共享窗口为什么影响 I/O
 
-virtio 的常规设计假设宿主设备后端可以根据 virtqueue（virtio 队列）描述符访问客户机 buffer。pVM 私有页不满足这个假设。共享按页进行，若每次请求都临时 `share` 一个小 buffer，同页中无关的数据也可能一并暴露。
+virtio 的常规设计假设宿主设备后端能顺着 virtqueue（virtio 队列）描述符访问客户机 buffer，pVM 的私有页恰好打破了这个假设；而且共享按页进行，每次请求都临时 `share` 一个小 buffer 的话，同页里无关的数据也可能一并暴露。
 
-AVF 的受保护客户机因此为 virtqueue 和数据 buffer 预留固定共享内存窗口，客户机在私有页与共享窗口之间执行 bounce copy（中转复制）。性能影响包括：
+于是 AVF 的受保护客户机为 virtqueue 和数据 buffer 预留固定共享内存窗口，数据在私有页与共享窗口之间靠 bounce copy（中转复制）来回。性能影响包括：
 
 - 小型内存映射 I/O（MMIO）控制访问，可能触发客户机 → EL2 → 宿主 VMM → 客户机的往返；
 - 大数据通常走共享 virtqueue，不需要每个字节都触发 VM exit；
 - bounce copy、缓存维护和唤醒次数会影响吞吐与尾延迟；
 - buffer 大小、批量深度和 I/O 模式不同，结果会相差很大。
 
-这也是不能给所有 virtio 块设备（virtio-blk）、vsock 或 Binder RPC 写一个固定微秒数的原因。
+这也是 virtio 块设备（virtio-blk）、vsock 和 Binder RPC 写不出统一固定微秒数的原因。
 
 <!-- gracker-diagram: ch01-26-shared-io-window -->
 ![受保护客户机通过共享窗口进行 virtio I/O](../../assets/diagrams/ch01/ch01-26-shared-io-window.png)
 
-图：host 设备后端不能读取 pVM 私有页，因此常规 virtio 数据通过明确共享的窗口交换，guest 在私有数据与窗口之间中转复制。控制通知、队列深度和后端处理共同影响成本，不能按每字节一次 VM exit 估计。
+图：host 设备后端读不到 pVM 私有页，常规 virtio 数据因此通过明确共享的窗口交换，guest 在私有数据与窗口之间中转复制。控制通知、队列深度和后端处理共同决定成本，按每字节一次 VM exit 估计会失真。
 
 ## 四、内存占用与宿主内存压力
 
 ### 4.1 客户机 RAM 记在 crosvm 名下
 
-crosvm 通过 `mmap`（内存映射）分配 VM 物理内存，再用 `KVM_SET_USER_MEMORY_REGION` 建立 memslot。Android 官方架构文档指出，这部分内存归属管理该 VM 的 crosvm 进程；宿主内存不足时，crosvm 可以被终止，整台 VM 也会随之停止。
+内存账我们先从宿主侧看：crosvm 通过 `mmap`（内存映射）分配 VM 物理内存，再用 `KVM_SET_USER_MEMORY_REGION` 建立 memslot。Android 官方架构文档指出，这部分内存记在管理该 VM 的 crosvm 进程名下；宿主内存吃紧时，crosvm 可以被终止，整台 VM 也随之停止。
 
 对于已经捐赠给 pVM 的私有页：
 
-- 宿主不能把页面换出到 swap，也不能执行 KSM（合并相同内存页）；
-- 宿主不能把它当作普通匿名页读取；
+- 宿主换不出这些页，也对它们做不了 KSM（合并相同内存页）；
+- 宿主也无法把它们当普通匿名页读取；
 - 客户机通过 `relinquish` 或 balloon 归还后，页面可以回到宿主；
 - VM 停止时，虚拟机监控器清理并归还剩余页面。
 
-“128 MiB 配置永久硬占 128 MiB，直到销毁”过于绝对；“宿主的低内存终止守护进程（lmkd）能直接回收客户机内某几页”也不准确。内存压力的控制单元通常是 crosvm 或整台 VM，细粒度回收依赖客户机主动配合。
+两句常见的说法都偏了：“128 MiB 配置永久硬占 128 MiB，直到销毁”过于绝对；“宿主的低内存终止守护进程（lmkd）能直接回收客户机内某几页”同样不准确。宿主管理内存压力的单元通常是 crosvm 或整台 VM，页级别的细回收要靠客户机主动配合。
 
-### 4.2 不要用静态组件表估算最小内存
+### 4.2 最小启动内存要靠运行时探测
 
 Microdroid 的最低可启动内存受下列因素影响：
 
@@ -206,7 +206,7 @@ Microdroid 的最低可启动内存受下列因素影响：
 - 大页（huge page）可用性；
 - 客户机页缓存（page cache）与运行时峰值。
 
-AOSP 的 `MicrodroidBenchmarks.canBootMicrodroidWithMemory()` 在 16～512 MiB 区间做二分尝试，只有 payload 成功启动才记录结果。源码选择运行时探测，说明“内核 8 MiB + ART 24 MiB + 设备 4 MiB”这类静态加法不能作为产品容量结论。
+AOSP 的 `MicrodroidBenchmarks.canBootMicrodroidWithMemory()` 在 16～512 MiB 区间做二分尝试，只有 payload 成功启动才记录结果。源码自己选择了运行时探测，等于说明“内核 8 MiB + ART 24 MiB + 设备 4 MiB”这类静态加法给不出产品容量结论。
 
 ### 4.3 AOSP 的内存测量方式
 
@@ -216,49 +216,49 @@ API 37 的基准测试同时采集三组数据：
 2. 宿主 `/proc/<crosvm-pid>/smaps`：区分 `crosvm_guest` 映射与 VMM 自身的 RSS（驻留内存）和 PSS（按共享比例分摊后的内存）；
 3. KVM 调试统计（设备支持时）：如 `protected shared` / `hyp` 相关内存，其中 hyp 指虚拟机监控器层。
 
-这三组数的口径不同，不能相加后当作 AVF 总内存。应分别报告客户机配置量、客户机工作集、crosvm 在宿主侧的 PSS、pKVM / KVM 额外开销，以及回收前后的变化。
+三组数的口径各异，直接相加得到的“AVF 总内存”没有意义。我们分别报告客户机配置量、客户机工作集、crosvm 在宿主侧的 PSS、pKVM / KVM 额外开销，以及回收前后的变化。
 
 ## 五、CPU 调度与 VM exit
 
 ### 5.1 vCPU 是宿主调度器管理的线程
 
-每个 vCPU 对应 crosvm 中的一个 POSIX 线程。线程调用 `KVM_RUN` 后进入客户机；出现需要 VMM 处理的 I/O、vCPU 停机（halt）或其他退出原因时，`KVM_RUN` 返回宿主用户空间。
+要追一台 VM 的 CPU 去向，我们的起点是：每个 vCPU 对应 crosvm 中的一个 POSIX 线程。线程调用 `KVM_RUN` 后进入客户机；一旦出现需要 VMM 处理的 I/O、vCPU 停机（halt）或其他退出原因，`KVM_RUN` 就返回宿主用户空间。
 
-宿主 Linux 调度器仍可抢占 vCPU 线程，并把客户机执行时间计入该线程。vCPU 线程可以使用常规 QoS（服务质量）机制设置 CPU affinity（亲和性）、cpuset（可运行的 CPU 集合）、uclamp（调度器利用率上下界）和调度策略。客户机不能绕过宿主调度器获得物理 CPU。
+宿主 Linux 调度器照样可以抢占 vCPU 线程，客户机的执行时间都记在这条线程上。线程一侧可以用常规 QoS（服务质量）机制设置 CPU affinity（亲和性）、cpuset（可运行的 CPU 集合）、uclamp（调度器利用率上下界）和调度策略——客户机想拿到物理 CPU，只有经过宿主调度器这一条路。
 
-因此，VM 内看到的慢任务至少可能来自三层：
+所以在 VM 里看到的慢任务，至少可能来自三层：
 
-1. 客户机内线程没有被客户机调度器选中；
-2. 对应 vCPU 线程在宿主上处于 runnable（已就绪）状态，但没有获得 CPU；
+1. 客户机内的线程还没被客户机调度器选中；
+2. 对应 vCPU 线程在宿主上已 runnable（已就绪），CPU 还没轮到它；
 3. vCPU 因 MMIO、virtio 或中断等事件退出，在 crosvm 或宿主内核等待。
 
-只看客户机内的 Perfetto 无法区分后两层。性能分析需要把客户机时间线与宿主的 crosvm / vCPU 线程调度对齐。
+后两层在客户机内部的 Perfetto 里长得一样，要把客户机时间线与宿主的 crosvm / vCPU 线程调度对齐才能区分开。
 
 <!-- gracker-diagram: ch01-26-vcpu-scheduling -->
 ![客户机任务与宿主 vCPU 调度是两层等待](../../assets/diagrams/ch01/ch01-26-vcpu-scheduling.png)
 
 图：Guest 调度器挑选任务，但真正执行还要让对应 crosvm vCPU 线程在 host 获得 CPU。需要用户空间处理的退出会进入 VMM；因此要同时检查 Guest 排队、host runnable 等待和退出后的处理时间。
 
-### 5.2 每次 I/O 不等同于一次完整 VM exit
+### 5.2 I/O 与 VM exit 的对应关系
 
-virtio 用 MMIO 完成设备控制与通知，数据面主要通过共享 virtqueue 传输。一次高层文件读写可能拆成多个队列请求，也可能批量消费多个描述符。eventfd / epoll 事件通知、中断合并（interrupt coalescing）和队列深度，都会改变 VM exit 与唤醒次数。
+virtio 用 MMIO 完成设备控制与通知，数据面主要通过共享 virtqueue 传输。一次高层文件读写可能拆成多个队列请求，也可能批量消费多个描述符；eventfd / epoll 事件通知、中断合并（interrupt coalescing）和队列深度，都会改变 VM exit 与唤醒次数。
 
-准确的优化目标通常是：
+所以准确的优化目标通常是：
 
 - 每单位业务数据产生多少次通知和唤醒；
 - vCPU 线程退出后在宿主停留多久；
 - crosvm 设备处理是否受 CPU、I/O 或锁限制；
 - 客户机提交深度能否覆盖宿主处理延迟。
 
-没有设备型号、CPU 频点、负载、virtqueue 配置和统计分布时，`VM exit = 5–10 μs` 或“比系统调用（syscall）慢 3–10 倍”都不能作为 Android 17 平台结论。
+离开设备型号、CPU 频点、负载、virtqueue 配置和统计分布，`VM exit = 5–10 μs` 或“比系统调用（syscall）慢 3–10 倍”都算不上平台结论。
 
 ## 六、vsock 与 Binder RPC 的边界
 
 ### 6.1 vsock 是宿主与 pVM 的基础通信通道
 
-`VirtualizationServiceInternal` 为运行中的 VM 分配上下文 ID（CID）。CID 在 VM 存活期间唯一；VM 结束且相关 `IVirtualMachine` 引用释放后，数值可以复用。端口由客户机服务自行选择。
+`VirtualizationServiceInternal` 会为运行中的 VM 分配上下文 ID（CID）。CID 在 VM 存活期间唯一；VM 结束、相关 `IVirtualMachine` 引用释放之后，数值可以复用。端口则由客户机服务自行选择。
 
-Java `VirtualMachine.connectVsock(port)` 返回一个新的 `ParcelFileDescriptor`。它是字节流通信入口，调用方负责消息分帧（framing，即如何划分消息边界）、超时、下游压力控制和关闭。一次 `write()` 不一定对应对端的一次 `read()`。
+Java `VirtualMachine.connectVsock(port)` 返回一个新的 `ParcelFileDescriptor`。这只是字节流通信入口，消息分帧（framing，即如何划分消息边界）、超时、下游压力控制和关闭都要调用方自己负责；一次 `write()` 也未必对应对端的一次 `read()`。
 
 ### 6.2 Binder RPC 运行在预连接的 vsock 上
 
@@ -270,11 +270,11 @@ connectToVsockServer(port)
     + binderFromPreconnectedClient(connectionProvider)
 ```
 
-这条链路使用 Binder RPC 协议和 Binder 对象模型，但传输不依赖宿主与客户机共享同一个 `/dev/binder` 驱动实例。客户机私有内存也不会因为传递了 Binder 对象而自动对宿主可见。
+这条链路使用 Binder RPC 协议和 Binder 对象模型，但传输并不依赖宿主与客户机共享同一个 `/dev/binder` 驱动实例；客户机私有内存也不会因为传递了 Binder 对象而自动对宿主可见。
 
-对 payload API，Binder RPC 适合控制命令和结构化小消息；大数据应评估流式 vsock、文件交换或专用共享机制。选择依据包括复制次数、批量大小、失败恢复和数据敏感性，不能套用未经测量的固定延迟表。
+对 payload API，Binder RPC 适合控制命令和结构化小消息；大数据应评估流式 vsock、文件交换或专用共享机制。选择依据包括复制次数、批量大小、失败恢复和数据敏感性，未经测量的固定延迟表在这里派不上用场。
 
-### 6.3 AOSP 的测量方式值得复用
+### 6.3 AOSP 的测量方式
 
 `MicrodroidBenchmarks` 分别测量：
 
@@ -283,13 +283,13 @@ connectToVsockServer(port)
 - `testVsockTransferFromHostToVM()`：48 MiB 连续发送，报告吞吐；
 - `testVirtioBlkSeqReadRate()` / `RandReadRate()`：区分顺序与随机读，并丢弃首次受宿主页缓存冷启动影响的样本。
 
-这些用例没有把某一台实验设备的结果固化为平台常量。复用时应保留原始样本，报告 P50 / P90 / P99 分位数，并记录 protected 模式、调试级别、内存、vCPU 数量与拓扑、huge page、uclamp、温度和 CPU 频点。
+这些用例始终没有把某一台实验设备的结果固化成平台常量。复用时我们保留原始样本，报告 P50 / P90 / P99 分位数，并记录 protected 模式、调试级别、内存、vCPU 数量与拓扑、huge page、uclamp、温度和 CPU 频点。
 
 ## 七、VM 生命周期语义
 
-### 7.1 `run()` 返回不代表 payload 已就绪
+### 7.1 `run()` 返回与 payload 就绪
 
-`VirtualMachine.run()` 完成启动请求后即可返回。VM 是否开始运行、OS 是否启动、payload 是否就绪，要通过 `VirtualMachineCallback` 观察。常用节点包括：
+`VirtualMachine.run()` 完成启动请求后即可返回。VM 是否开始运行、OS 是否启动、payload 是否就绪，我们用 `VirtualMachineCallback` 观察，常用节点包括：
 
 - API 调用开始；
 - vCPU 开始；
@@ -300,9 +300,9 @@ connectToVsockServer(port)
 
 AOSP 启动基准测试将总时长分成 `VM_START`、`BOOTLOADER`、`KERNEL` 和 `USERSPACE`。更细的分段依赖 `FULL` 调试输出中的日志标记；调试配置本身会改变启动路径，因此总时长与分段测试应分别标注配置。
 
-### 7.2 `stop()` 会强制停止 VM
+### 7.2 `stop()` 的强制停止语义
 
-API 文档把 `VirtualMachine.stop()` 比作拔电源：客户机软件不会收到正常关机通知，加密存储写入可能未持久化。需要正常关机（graceful shutdown）时，应通过 payload 的 Binder / vsock 协议请求退出，并等待 `onPayloadFinished()`。
+API 文档把 `VirtualMachine.stop()` 比作拔电源：客户机软件收不到正常关机通知，加密存储写入可能未持久化。需要正常关机（graceful shutdown）时，应通过 payload 的 Binder / vsock 协议请求退出，并等待 `onPayloadFinished()`。
 
 “正常销毁 100–500 ms，强杀 50–200 ms”没有平台保证。应分别测量：
 
@@ -317,11 +317,11 @@ API 文档把 `VirtualMachine.stop()` 比作拔电源：客户机软件不会收
 
 ### 7.3 引用生命周期会影响 VM 存活
 
-`IVirtualMachine` Binder 对象跟踪 VM 所有权。没有强引用后，`VirtualizationService` 会关闭 VM；启动它的客户端若被低内存终止机制（LMK）结束，VM 也会随引用消失而停止，避免孤儿资源长期占用。
+`IVirtualMachine` Binder 对象跟踪 VM 所有权。强引用全部消失后，`VirtualizationService` 会关闭 VM；启动它的客户端若被低内存终止机制（LMK）结束，VM 也会随引用消失而停止，避免孤儿资源长期占用。
 
-### 7.4 并发 VM 没有“Arm 最多 16 台”的通用限制
+### 7.4 并发 VM 的数量上限
 
-API 37 的 `VirtualMachine.run()` 注释写明：并发运行数量除可用内存外没有 Java API 固定限制。当前 6.18 内核定义 `KVM_MAX_PVMS = 255`，这是内核对象上限，也不是设备可承载 255 台 VM 的性能承诺。
+流传的“Arm 最多 16 台”在 API 37 里站不住：`VirtualMachine.run()` 的注释写明，并发运行数量除可用内存外没有 Java API 固定限制。当前 6.18 内核定义 `KVM_MAX_PVMS = 255`，这是内核对象的上限，离“设备可承载 255 台 VM”的性能承诺还差一层；实际容量要按下面的条件另算。
 
 产品上限还受以下条件约束：
 
@@ -331,7 +331,7 @@ API 37 的 `VirtualMachine.run()` 注释写明：并发运行数量除可用内�
 - pKVM 固件、IOMMU（I/O 内存管理单元）和可分配设备资源；
 - 前后台管理策略。
 
-AOSP 基准测试包含同时创建 8 台 VM 的测试路径，说明“每个应用默认只能运行 1 台”的概括并不成立，但也不代表所有设备都应以 8 台为容量目标。
+AOSP 基准测试里有同时创建 8 台 VM 的测试路径，说明“每个应用默认只能运行 1 台”的概括站不住脚；至于一台设备该以几台为目标，回到上面这些条件来定。
 
 ## 八、protected 与 non-protected 模式的选择
 
@@ -344,15 +344,15 @@ AOSP 基准测试包含同时创建 8 台 VM 的测试路径，说明“每个�
 | 可用性 | 宿主仍能停止、饿死或拒绝服务 | 宿主同样控制资源 |
 | 远程证明 | 依赖设备和 AVF 能力，可用于 pVM | 不提供同等级 pVM 证明 |
 
-pKVM 保护机密性和完整性，不承诺客户机相对于宿主的可用性。宿主调度器可以不给 vCPU 时间，宿主也可以终止 crosvm。安全设计不能把“数据不被读取”误写成“服务不会被中断”。
+pKVM 保障机密性和完整性，但客户机相对宿主的可用性不在承诺范围：宿主调度器可以压缩甚至暂停 vCPU 时间，宿主也可以直接终止 crosvm。做安全设计时，我们要把“数据受保护”与“服务持续可用”当成两件事来写。
 
-AVF 也没有完全替代 TrustZone。可信执行环境（TEE）仍承载 KeyMint、Gatekeeper 等依赖安全世界（secure world）的设备能力；pVM 提供更丰富、可动态创建的隔离执行环境。两者的信任根、设备访问和攻击面不同，不宜用固定的强弱关系或世界切换微秒数排序。
+TrustZone 的位置同样还在：可信执行环境（TEE）继续承载 KeyMint、Gatekeeper 等依赖安全世界（secure world）的设备能力，pVM 则提供更丰富、可动态创建的隔离执行环境。两者的信任根、设备访问和攻击面各不相同，固定的强弱排序或世界切换微秒数在这里说明不了问题。
 
-## 九、Android 17 的性能验证清单
+## 九、性能验证清单
 
 ### 9.1 固定实验条件
 
-至少记录以下配置：
+我们至少要记录以下配置：
 
 - 系统构建指纹（build fingerprint）、AOSP / GKI（通用内核镜像）/ 厂商内核版本；
 - `protected` / `non-protected`；
@@ -415,4 +415,4 @@ AVF 也没有完全替代 TrustZone。可信执行环境（TEE）仍承载 KeyMi
   - [AVF security](https://source.android.com/docs/core/virtualization/security)
   - [AVF use cases](https://source.android.com/docs/core/virtualization/usecases)
 
-从 Android 13 到 Android 17，AVF 的 API 与客户机能力持续增加；性能结论仍必须绑定设备、内核、客户机、调试级别和具体负载。缺少这些条件的固定启动时间、微秒延迟或百分比开销，不应写成平台事实。
+从 Android 13 到 Android 17，AVF 的 API 与客户机能力持续增加；性能结论始终要绑定设备、内核、客户机、调试级别和具体负载。缺了这些条件的固定启动时间、微秒延迟或百分比开销，只能算个例，成不了平台事实。

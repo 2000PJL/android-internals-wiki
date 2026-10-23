@@ -856,7 +856,7 @@ val searchState: StateFlow<SearchUiState> = query
         if (value.isEmpty()) {
             flowOf(SearchUiState.Empty)
         } else {
-            flow {
+            flow<SearchUiState> {
                 delay(searchDebounceMs)
                 emitAll(repository.observeSearch(value))
             }

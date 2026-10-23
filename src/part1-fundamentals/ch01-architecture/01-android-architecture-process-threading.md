@@ -219,11 +219,11 @@ consolidated_from:
 
 Android 的“五层架构”按职责划分系统组件，并不对应五个严格套叠的进程。我们从一个应用进程说起：它同时装着应用代码、Framework 客户端代码、ART 和原生库；`system_server` 既运行 Java 系统服务，也加载 JNI 庂；SurfaceFlinger 是独立的显示合成服务进程；HAL 既可能通过 Binder 提供跨进程服务，也可能在旧实现中作为共享库加载到调用方进程。
 
-这种分层仍适合用来确定排查方向。面对一次卡顿、启动慢或硬件访问延迟（debounce），我们先确定工作发生在哪个进程，再确认它通过 Binder、JNI、系统调用还是 HAL 接口进入下一个模块。进程、接口和调度状态共同构成证据，单看“属于哪一层”不足以定位问题。
+这种分层仍适合用来确定排查方向。面对一次卡顿、启动慢或硬件访问延迟，我们先确定工作发生在哪个进程，再确认它通过 Binder、JNI、系统调用还是 HAL 接口进入下一个模块。进程、接口和调度状态共同构成证据，单看“属于哪一层”不足以定位问题。
 
 定位架构问题时，先确认调用跨越了哪些系统层，再沿进程生命周期和线程调度寻找等待、抢占或回收发生的位置。三条线共同决定一次系统行为最终落在哪个进程、哪条线程以及哪个资源边界。
 
-> 源码基线：AOSP `android-17.0.0_r1`；内核 Android Common Kernel（ACK）`android17-6.18-2026-06_r6`。量产设备通常还会在 ACK 之上叠加片上系统（SoC）驱动、通用内核（Android Common Kernel，ACK）镜像（GKI）厂商模块与厂商调度策略，公共内核源码标签替代不了设备自己的内核提交版本（targetSdk）与配置。
+> 源码基线：AOSP `android-17.0.0_r1`；内核 Android Common Kernel（ACK）`android17-6.18-2026-06_r6`。量产设备通常还会在 ACK 之上叠加片上系统（SoC）驱动、通用内核镜像（Generic Kernel Image，GKI）厂商模块与厂商调度策略，公共内核源码标签替代不了设备自己的内核提交版本与配置。
 
 ## 系统分层、进程边界与跨层接口
 
@@ -249,6 +249,11 @@ flowchart TB
 ```
 
 图中的箭头表示常见接口，请求也常走捷径：应用可以直接通过 Bionic 发起文件系统调用，SurfaceFlinger 可以直接与 Composer HAL 和 Linux DRM 显示子系统或显示驱动交互，媒体数据则常通过共享缓冲区传递。
+
+<!-- gracker-diagram: ch01-01-process-boundaries -->
+![分层职责与实际进程边界](../../assets/diagrams/ch01/ch01-01-process-boundaries.png)
+
+图：应用代码、Framework 客户端、ART 与原生库可以处在同一个进程；WMS 与 SurfaceFlinger 分属不同进程。箭头列出常见接口，HAL 的直通式实现另见正文。
 
 | 层次 | Android 17 中的典型对象 | 主要边界 | 性能分析入口 |
 | --- | --- | --- | --- |
@@ -291,7 +296,7 @@ init 进程仍按 first stage、SELinux 访问控制初始化、second stage 三
 
 所以 `Looper.loop()` 只说明主启动控制流进入了长期消息循环；要判断“Framework 全部 ready”，我们还要结合 `SystemServerTiming`/trace tag、具体服务的 `StartService ...` 片段、Binder 线程状态和 Boot Phase/`systemReady()` 事件，单看某个线程是否活跃判断不了。[来源: https://juejin.cn/post/7681897078311108623；已验证: frameworks/base/services/java/com/android/server/SystemServer.java 与 frameworks/base/services/core/java/com/android/server/SystemServiceManager.java @ android-17.0.0_r1]
 
-排查时可以把进程树、socket 和死亡重启分开取证：`ps -A -o PID（GID）,PPID（pid）,NAME,ARGS`（或 `/proc/<pid>/status` 的 `PPid`）用于确认 `system_server` 的父进程是否指向 Zygote；Zygote socket 只解释后续应用进程 fork 请求；若 `system_server` 退出，Zygote 的 SIGCHLD 处理路径会 `waitpid()` 匹配 `gSystemServerPid` 并杀死 Zygote，让 init 的 Zygote 服务监督链路接管后续重启。[已验证: frameworks/base/core/jni/com_android_internal_os_Zygote.cpp 与 system/core/rootdir/init.zygote64.rc @ android-17.0.0_r1]
+排查时可以把进程树、socket 和死亡重启分开取证：`ps -A -o PID,PPID,NAME,ARGS`（或 `/proc/<pid>/status` 的 `PPid`）用于确认 `system_server` 的父进程是否指向 Zygote；Zygote socket 只解释后续应用进程 fork 请求；若 `system_server` 退出，Zygote 的 SIGCHLD 处理路径会 `waitpid()` 匹配 `gSystemServerPid` 并杀死 Zygote，让 init 的 Zygote 服务监督链路接管后续重启。[已验证: frameworks/base/core/jni/com_android_internal_os_Zygote.cpp 与 system/core/rootdir/init.zygote64.rc @ android-17.0.0_r1]
 
 ```java
 // AOSP android-17.0.0_r1
@@ -329,7 +334,7 @@ Binder 由用户态 `libbinder` 与内核 Binder 驱动共同完成。`framework
 
 Binder 事务数据由驱动从发送方用户空间复制到接收方可映射的 Binder 缓冲区，常被概括为“一次拷贝”。但端到端延迟由整条请求决定：文件描述符转换、对象解析、权限检查、线程调度和目标服务执行，都在“一次拷贝”之外各自产生开销。
 
-SELinux 也在 Binder 事务路径上参与授权。ACK `android17-6.18-2026-06_r6` 的 `security/selinux/hooks.c` 中，`selinux_binder_transaction()` 会检查 `BINDER__CALL`；当前线程的 SELinux 安全标识符（SID（uid））与事务发起方凭据的 SID 不同时，还会先检查 `BINDER__IMPERSONATE`，通过后再检查 `BINDER__CALL`。这里比较的就是 SID，结论也就到 SID 为止，推广到任意凭据字段差异并不成立。源码能证明的，是这些检查与条件存在；要写出固定的纳秒开销，需要同设备、同策略与同负载的测量（measure）。
+SELinux 也在 Binder 事务路径上参与授权。ACK `android17-6.18-2026-06_r6` 的 `security/selinux/hooks.c` 中，`selinux_binder_transaction()` 会检查 `BINDER__CALL`；当前线程的 SELinux 安全标识符（SID）与事务发起方凭据的 SID 不同时，还会先检查 `BINDER__IMPERSONATE`，通过后再检查 `BINDER__CALL`。这里比较的就是 SID，结论也就到 SID 为止，推广到任意凭据字段差异并不成立。源码能证明的，是这些检查与条件存在；要写出固定的纳秒开销，需要同设备、同策略与同负载的测量（measure）。
 
 #### JNI：同一进程里的托管代码与原生代码边界
 
@@ -343,7 +348,7 @@ JNI 是同一进程内从 ART 托管执行环境进入原生函数的应用二�
 
 两种注解互斥，同一个方法只选其一。`@CriticalNative` 只适用于没有托管对象参数、返回值或隐式 `this` 的原生方法，并改变 JNI ABI：原生实现的签名不带 `JNIEnv` 和 `jclass`。注解执行期间，GC 失去了按普通 JNI 路径挂起该线程的手段，可能因此受阻；所以方法要短小、耗时有界，大量 I/O 和可能长期持有的原生锁都要避开。
 
-兼容旧设备时还要区分版本（`targetSdk`）：Android 8–13 已有相关实现，但没有 Android 14 起的 CTS 保证；Android 8–11 必须通过 `RegisterNatives` 显式注册，Android 12 起才支持动态查找，官方仍建议显式注册。Android 7 及以下会忽略这些注解，`@CriticalNative` 的 ABI 不匹配可能导致参数传递错误和崩溃。[JNI tips](https://developer.android.com/ndk/guides/jni-tips#fast_critical_native) 给出了这些限制。
+兼容旧设备时还要区分 Android 系统版本：Android 8–13 已有相关实现，但没有 Android 14 起的 CTS 保证；Android 8–11 必须通过 `RegisterNatives` 显式注册，Android 12 起才支持动态查找，官方仍建议显式注册。Android 7 及以下会忽略这些注解，`@CriticalNative` 的 ABI 不匹配可能导致参数传递错误和崩溃。[JNI tips](https://developer.android.com/ndk/guides/jni-tips#fast_critical_native) 给出了这些限制。
 
 是否值得调整，要用目标设备上的基准和调用栈判断：空 JNI 基准测出的纳秒数，代表不了包含字符串、数组、锁和 I/O 的业务调用。
 
@@ -364,7 +369,7 @@ HIDL 时代需要区分两种传输：
 
 HIDL 从 Android 13 起废弃，既有实现仍受支持；新 HAL 接口应优先使用 Stable AIDL，上游接口仍为 HIDL 时则按该接口实现。用于 `system`/`vendor` 边界的 AIDL HAL 以 Binder 服务运行，需要在类型上声明 `@VintfStability`，在 `aidl_interface` 中设置 `stability: "vintf"`，加入 VINTF 清单并满足接口冻结等 VTS 检查。旧 HIDL HAL 仍可能为了兼容已有 vendor 镜像而保留；即便在 Android 17 设备上，仅凭系统版本也判断不了全部 HAL 是否都已迁移。
 
-Stable AIDL 还约束运行时（ART）后端。vendor 原生代码应使用 NDK 后端并链接 `libbinder_ndk`，通过 `/dev/binder` 通信；不稳定的 `libbinder` C++ 接口只对 `system`/`system_ext` 开放。Java 后端从 vendor 分区连不到 ServiceManager；API 34 之后，新增的 System API 也对 vendor 分区关闭。这些分区与后端限制，接口稳定性声明替代不了。
+Stable AIDL 还约束接口所用的语言后端。vendor 原生代码应使用 NDK 后端并链接 `libbinder_ndk`，通过 `/dev/binder` 通信；不稳定的 `libbinder` C++ 接口只对 `system`/`system_ext` 开放。Java 后端从 vendor 分区连不到 ServiceManager；API 34 之后，新增的 System API 也对 vendor 分区关闭。这些分区与后端限制，接口稳定性声明替代不了。
 
 排查 HAL 延迟时，我们按实际传输模式走：
 
@@ -519,6 +524,11 @@ USAP（Unspecialized App Process）池改变的是“从哪个预备进程完成
 
 排查应用“出生点”时，我们把三个时间点分开：`ProcessList` 发起进程启动、Zygote/USAP 返回 PID、应用进程进入 `ActivityThread.main()` 并通过 Binder attach 到 AMS。`ps -A -o PID,PPID,NAME,ARGS` 可以先确认新进程父子关系，`dumpsys activity processes` 可以核对 AMS 视角的进程记录；只看到 PID 返回时，`bindApplication`、组件生命周期和首帧都还没有着落。[来源: https://juejin.cn/post/7681511201547255842；已验证: frameworks/base/services/core/java/com/android/server/am/ProcessList.java 与 frameworks/base/core/java/android/app/ActivityThread.java @ android-17.0.0_r1]
 
+<!-- gracker-diagram: ch01-01-app-birth -->
+![普通应用进程创建与回连](../../assets/diagrams/ch01/ch01-01-app-birth.png)
+
+图：以常规 Zygote 创建路径为主线。USAP 满足条件时可复用预先 fork 的进程；返回 PID、attach、应用绑定和首帧完成是不同边界。
+
 多进程会带来额外的隔离成本。一个 `android:process=":remote"` 至少增加一套进程地址空间、ART 运行时状态、Java 与原生堆、线程栈、主线程消息循环和 `Application` 初始化；原来的进程内调用也可能变成 Binder IPC。
 
 普通 `android:process=":remote"` 默认仍使用应用的 UID 和权限，分开的只是地址空间以及一部分崩溃、内存故障；不可信代码的权限沙箱，它单独承担不了。若需要让服务不继承应用自身的权限，应评估 `<service android:isolatedProcess="true">` 等系统支持的隔离进程模型，并按该组件允许的 Service 接口交互。传给隔离服务的数据、文件描述符和 Binder 接口仍需限制，宿主权限不得经由接口重新开放给它。
@@ -600,6 +610,11 @@ if (app == topApp && PROCESS_STATE_CUR_TOP == PROCESS_STATE_TOP) {
 - 能力标志描述进程当前可以继承或使用的特定能力。冻结策略会直接检查 CPU 时间能力标志。
 
 所以排查时我们要同时记录这几组值：`oom_score_adj` 较低，只说明回收保护强，进程是否落在 top-app CPU 集合（cpuset）要看 `schedGroup`；前台服务也换不来顶层 Activity 的完整待遇，是否等同要看 `procState` 与组件状态。
+
+<!-- gracker-diagram: ch01-01-memory-policy -->
+![进程重要性、冻结与低内存终止的分工](../../assets/diagrams/ch01/ch01-01-memory-policy.png)
+
+图：组件及依赖关系参与进程状态计算；CPU 分组、冻结和低内存终止各有条件。mmd 负责 ZRAM 维护，冻结不会释放进程的全部内存。
 
 ### `lmkd` 决定何时杀、杀谁
 
@@ -819,6 +834,11 @@ public static void main(String[] args) {
 
 `Looper` 通过线程局部变量 `ThreadLocal` 与当前线程关联。它不会自己创建线程，也不会自动改用后台线程。回调在哪个线程执行，只取决于 `Handler` 绑定的 `Looper`。
 
+<!-- gracker-diagram: ch01-01-handler-looper -->
+![Handler、消息队列与回调线程](../../assets/diagrams/ch01/ch01-01-handler-looper.png)
+
+图：多个线程可以向同一个 Handler 投递工作；取消息和执行回调发生在该 Handler 绑定的 Looper 所在线程。到期只代表具备被选择的条件。
+
 循环主体仍可以概括为：
 
 ```java
@@ -930,6 +950,11 @@ void DrawFrameTask::postAndWait() {
 ```
 
 `RenderThread` 执行 `run()` 时先同步帧状态。满足条件时，它可以在提交绘制前解除主线程等待；如果纹理准备等工作要求继续保持同步，则会在稍后解除。“主线程提交后立即自由运行”和“主线程必须等 GPU 完成整帧”这两个极端，都简化过头了。
+
+<!-- gracker-diagram: ch01-01-render-handoff -->
+![主线程与 RenderThread 的同步交接](../../assets/diagrams/ch01/ch01-01-render-handoff.png)
+
+图：这里画出允许提前唤醒主线程的一种路径。真实唤醒位置取决于帧状态和纹理准备；主线程解除等待不代表 GPU 已完成。横条仅表示阶段关系。
 
 Perfetto 中常见三种情况：
 

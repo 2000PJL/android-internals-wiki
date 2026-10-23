@@ -25,6 +25,11 @@ Android 内存问题不只表现为内存不足（Out of Memory，OOM）。垃�
 
 Java 堆转储（heap dump）看不到原生内存、图形内存、页缓存和内核分配。进程 RSS 也会把共享页面完整计入每个进程。选择指标前，要先说明调查的是对象滞留、进程内存规模（footprint）、系统内存压力，还是跨进程共享缓冲区。
 
+<!-- gracker-diagram: ch04-readme-memory-domains -->
+![先分清内存域，再选择对应证据](../../assets/diagrams/ch04/ch04-readme-memory-domains.png)
+
+图：ART 对象、原生堆、匿名与文件映射、图形共享缓冲、内核分配和交换内容来自不同管理者。对象图回答保活关系，smaps 与进程计数回答驻留和归属，DMA-BUF 或厂商接口补外部资源，vmstat、PSI 与 ZRAM 统计补系统压力；同一份进程 RSS 还可能重复包含共享页。
+
 ## 2. 内存压力没有固定处理顺序
 
 内存压力下可能同时出现以下动作：
@@ -39,7 +44,12 @@ Java 堆转储（heap dump）看不到原生内存、图形内存、页缓存和
 
 这些动作在不同设备上没有统一的先后顺序。GC 只管理目标进程的 ART 堆；页面回收和内存规整在内核中处理页面；lmkd 是用户空间守护进程，负责选择并终止进程。应用无法直接控制 `kswapd` 或 lmkd，但可以减少不必要的持有、响应当前版本仍会送达的内存裁剪级别（trim level），并通过生命周期保存可恢复状态。
 
-`/proc/meminfo` 的 `SwapTotal` 是配置容量，`SwapFree` 是未使用容量，`SwapCached` 是已经换回内存、但仍保留交换条目的页面。三者不能相加当作“zram 使用量”。分析 zram 还要结合 `/sys/block/zram*/mm_stat`、交换 I/O 和压缩率。
+<!-- gracker-diagram: ch04-readme-pressure-concurrent-paths -->
+![压力下多条路径可以并行，没有全设备统一的处理阶梯](../../assets/diagrams/ch04/ch04-readme-pressure-concurrent-paths.png)
+
+图：ART GC 处理对象与托管堆；内核页面回收增加可用页，物理规整改变空闲页连续性；冻结器改变缓存进程可运行状态，lmkd 根据压力与优先级决定是否终止。匿名回收可将内容写入 ZRAM，MMD 再按配置维护冷条目。这些路径可以交错运行，归因必须对齐线程、操作窗口与指标增量。
+
+`/proc/meminfo` 的 `SwapTotal` 是配置容量，`SwapFree` 是未使用容量，`SwapCached` 是交换缓存中仍驻留 RAM、并保留交换条目的页面，可能处于换出或换入后的保留阶段。三者不能相加当作“zram 使用量”。分析 zram 还要结合 `/sys/block/zram*/mm_stat`、交换 I/O 和压缩率。
 
 ## 3. PSS、RSS、USS 与 swap
 

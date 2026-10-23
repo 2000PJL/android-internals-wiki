@@ -279,7 +279,7 @@ refresh period = 1 second / refresh rate
 
 不均匀节拍常见于：
 
-- 内容帧率与显示刷新率没有良好的整数倍关系（pacesetter 是调度基准显示器，follower 跟随其节拍）；
+- 内容帧率与显示刷新率没有良好的整数倍关系；
 - Producer（buffer 生产者） 没有正确进行 frame pacing（主动对齐帧的生成与提交节奏），帧时早时晚；
 - 某些帧错过 deadline（截止时间）；
 - BufferQueue 中有多帧积压；
@@ -308,6 +308,11 @@ refresh period = 1 second / refresh rate
 
 45 FPS 内容若直接映射到 120 Hz，也需要在 2 个和 3 个刷新周期之间安排 cadence。设备若同时支持 90 Hz，90 Hz 往往更适合 45 FPS；最终选择仍受其他 Layer、显示 policy、切换是否要求 seamless（切换时不出现明显黑屏或闪烁） 以及设备能力影响。
 
+<!-- gracker-diagram: ch02-02-content-cadence -->
+![同为 24 FPS，帧保持时长可以不同](../../assets/diagrams/ch02/ch02-02-content-cadence.png)
+
+图：理想映射示意：相同的约 166.67 ms 内均显示 4 个内容帧。120 Hz 下每帧保持 5 个周期；60 Hz 的 3:2 下拉让保持时长在 50 ms 与约 33.33 ms 之间交替。平均内容帧率相同，节奏仍可能不同。
+
 #### 2.3 没有新帧时显示端会继续使用旧内容
 
 显示设备到达下一刷新机会时，如果目标 Layer 没有可用新缓冲区，系统可以继续显示旧缓冲区。这个行为本身还算不上“丢弃了一帧”：
@@ -333,7 +338,7 @@ MRR 的特征是：选择结果可能要求从一个 display mode 切换到另�
 
 #### 3.2 ARR：单个显示配置内按离散 VSync 步进更新
 
-Android 15 引入自适应刷新率（Adaptive Refresh Rate（ARR），ARR）。在支持 ARR 的配置中：
+Android 15 引入自适应刷新率（Adaptive Refresh Rate，ARR）。在支持 ARR 的配置中：
 
 - display VSync/TE（Tearing Effect） 节拍与内容实际刷新节拍可以解耦，TE（Tearing Effect，防撕裂同步信号） 是面板给出的扫描时序信号；
 - 面板在同一 display mode 内按离散 VSync 步进选择呈现时机；
@@ -341,6 +346,11 @@ Android 15 引入自适应刷新率（Adaptive Refresh Rate（ARR），ARR）。
 - 减少了仅为改变刷新率而切换 display mode 的需求。
 
 Composer3 的 `DisplayConfiguration.aidl` 与 `VrrConfig.aidl` 描述 `vsyncPeriod`、`minFrameIntervalNs` 等能力。特定 display configuration 的 `vrrConfig` 为空时，它按非 ARR 配置处理。设备采用了 LTPO 面板，也说明不了 ARR 已启用。
+
+<!-- gracker-diagram: ch02-02-mrr-arr -->
+![MRR 切换配置，ARR 在配置内改变节拍](../../assets/diagrams/ch02/ch02-02-mrr-arr.png)
+
+图：左侧是普通 MRR 的配置切换；右侧采用官方 ARR 示例：TE 约 240 Hz，最小帧间隔约 8.33 ms。ARR 的更新机会落在 TE 步进上，并受最小间隔约束；LTPO 面板名称本身无法证明 ARR 已启用。
 
 #### 3.3 VRR：硬件能力的泛称
 
@@ -617,6 +627,11 @@ producer 连续提交速度高于显示消费速度时，多个缓冲区可能�
 - FrameTimeline 标记 `Buffer Stuffing`。
 
 Android 17 的 Choreographer/HWUI 还包含 buffer stuffing recovery（积压恢复机制）。看到 recovery trace 时，应同时检查队列深度、主动延迟和后续积压是否回落。
+
+<!-- gracker-diagram: ch02-02-hint-pacing-queue -->
+![表达帧率需求与控制生产节奏是两件工作](../../assets/diagrams/ch02/ch02-02-hint-pacing-queue.png)
+
+图：帧率 hint 进入系统的选模与节奏决策；应用循环仍需安排生产时机、时间戳和显式同步，并控制在途帧。连续尽快提交可能维持平均 FPS，却在队列里增加等待与输入延迟。
 
 #### 6.6 Android 17 的 producer throttling
 
@@ -1020,6 +1035,11 @@ LTPO 面板常用于实现宽范围刷新率，但 Android 公共 API 没有要�
 结果是 `DesiredDisplayModeSpecs`：其中包含基准模式 base mode（基准显示模式）、primary 与 app-request 两组 physical/render rate 范围、`allowGroupSwitching` 等信息。`DisplayManagerService.DesiredDisplayModeSpecsObserver` 把结果写入 `LogicalDisplay`，`LocalDisplayAdapter` 再转换为 `SurfaceControl.DesiredDisplayModeSpecs` 交给 SurfaceFlinger。
 
 这一段决定“哪些模式和帧率仍可被选择”，不负责逐帧估算当前内容需要多少 Hz。
+
+<!-- gracker-diagram: ch02-02-policy-content-selection -->
+![允许范围与内容需求在选择器汇合](../../assets/diagrams/ch02/ch02-02-policy-content-selection.png)
+
+图：DisplayModeDirector 合并显示策略并下发允许范围；LayerHistory 汇总可见内容的有效投票。RefreshRateSelector 在候选范围内结合投票与全局信号选择 FrameRateMode，结果再影响应用节奏和按需发生的物理模式切换。
 
 #### 2.2 SurfaceFlinger Scheduler 再按可见内容选择
 
@@ -1520,6 +1540,11 @@ Scheduler 使用时间线调整 VSync 预测。如果 `refreshRequired` 为真�
 
 DisplayCommand modeset 成功且 `refreshRequired = false` 时不经过这段等待，SurfaceFlinger 会立即 finalize（完成状态更新）。对于需要等待的路径，present fence 给出了“对应显示提交已经完成”的时序证据，通常比请求发起时间更接近用户看到新模式的时刻；面板内部时序单靠它是测不出来的。
 
+<!-- gracker-diagram: ch02-02-modeset-completion -->
+![物理模式切换有两条提交路径与不同完成条件](../../assets/diagrams/ch02/ch02-02-modeset-completion.png)
+
+图：图示物理模式切换的成功主路径。HAL 时间线要求额外刷新时，平台等待相关显示提交退出 pending；不需要刷新时可直接 finalize。DisplayCommand 的立即 finalize 是平台状态处理，不能据此认定面板像素的光学响应已经完成。
+
 #### 3.5 分辨率切换要单独分析
 
 跨配置组切换可能同时改变分辨率。Android 17 在完成模式切换时会区分纯刷新率变化和分辨率变化；后者还可能触发 `DisplayDevice` 或 framebuffer（帧缓冲） 相关重建。
@@ -1853,6 +1878,11 @@ MRR 在多个固定刷新率模式之间切换，VRR 允许显示器在可变范
 
 这里的 VRR 候选不表示面板能在 1 Hz 到 120 Hz 之间任意连续取值。它是 SurfaceFlinger 为调度和帧率覆盖建立的一组离散 `FrameRateMode`，仍然受 HWC 能力与设备策略约束。
 
+<!-- gracker-diagram: ch02-02-candidate-layers -->
+![先构造可用候选，再按投票分支排名](../../assets/diagrams/ch02/ch02-02-candidate-layers.png)
+
+图：候选需要通过分辨率、DPI、模式组及 physical/render 范围等过滤，再形成 FrameRateMode。内容选择主要在 app-request 集合中进行；投票类型、全局信号、权重和同分偏好都会影响结果，评分没有一个适用于全部分支的距离公式。
+
 ### 3. 图层投票从哪里来
 
 #### 3.1 公共兼容性参数与内部投票使用不同枚举
@@ -2011,6 +2041,11 @@ Scheduler 会为多个物理显示器生成选择结果。节奏基准显示器�
 内容帧率覆盖用于在显示器保持某个物理刷新率时，按 UID 为应用事件回调选择一个可以整除该物理频率的较低渲染帧率。例如，120 Hz 可以按每两个物理周期一次回调得到 60 fps。MRR 分支不会给出低于 30 fps 的覆盖值；ARR 分支会从应用请求候选中保留能整除当前显示刷新率的值。某个 UID 含有 `Max` 或 `Heuristic` 图层、满足触摸升频条件，或者没有可评分意见时，也可能不生成覆盖值。
 
 游戏模式干预值和游戏默认帧率不会写入这两个映射表。它们进入 `LayerHistory` 改变图层投票，再间接影响模式排名和后续的内容帧率覆盖计算。若把两者看成同一张 UID 表，就会混淆显示模式选择与应用回调限频。
+
+<!-- gracker-diagram: ch02-02-uid-override-paths -->
+![游戏干预投票与 UID 回调覆盖经过不同通路](../../assets/diagrams/ch02/ch02-02-uid-override-paths.png)
+
+图：游戏干预先进入 LayerHistory 改变投票；内容计算结果才可更新按 UID 的内容覆盖表。内部接口直接写入的覆盖表是另一条路径，查询时优先。120 Hz 显示配合 60 fps 应用回调只是可能结果，还需满足覆盖能力与内容条件。
 
 如果我们正在排查“应用请求了 60 fps，但 UID 覆盖值不是 60”的问题，先区分两个映射表：直接写入表按 UID 设置并优先返回，内容表则由选择器根据当前内容需求整体刷新。[来源: DeepResearch/2026-07-17-android17-displaymode-refreshrateselector-sourcecode.md; 已验证: frameworks/native/services/surfaceflinger/Scheduler/FrameRateOverrideMappings.cpp, Scheduler/LayerHistory.cpp @ android-17.0.0_r1]
 

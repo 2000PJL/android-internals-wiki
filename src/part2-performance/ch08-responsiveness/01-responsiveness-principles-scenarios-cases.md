@@ -85,7 +85,7 @@ sources:
   path: https://developer.android.com/reference/android/os/ProfilingManager
 - type: blog
   path: 性能优化日报/2026-03-15-Baseline-Profiles-启动优化标配.md
-last_verified: '2026-10-12'
+last_verified: '2026-10-23'
 last_verified_against: AOSP android-17.0.0_r1 Input/Choreographer/View/ActivityInfo and external/perfetto android.input stdlib; Android Developers MotionPredictor/ARR/Display/Vitals/ANR docs; source.android.com eval_perf
 last_idle_audit_at: '2026-10-12T10:35:33+08:00'
 related_chapters:
@@ -121,7 +121,12 @@ consolidated_from:
 以同一个按钮为例，至少有两种合理的测量口径：
 
 - 按压反馈：从 `ACTION_DOWN` 的事件时间开始，到包含按钮按下状态的帧实际呈现为止。
-- 点击结果：从 `ACTION_UP` 的事件时间开始，到包含操作结果的帧实际呈现为止。Android 的普通 `View` 通常在抬手后才确认点击，业务完成时间也就应从 `ACTION_UP` 起算。
+- 点击结果：从 `ACTION_UP` 的事件时间开始，到包含操作结果的帧实际呈现为止。Android 的普通 `View` 通常在抬手后才确认点击；这里选择 `ACTION_UP` 是本指标的约定。键盘、无障碍和其他业务入口应分别定义起点，不能要求所有业务耗时都从触摸抬手起算。
+
+<!-- gracker-diagram: ch08-01-interaction-endpoints -->
+![按压反馈、点击结果与业务终点](../../assets/diagrams/ch08/ch08-01-interaction-endpoints.png)
+
+图：同一个按钮可有不同的计时合同。起点和反馈内容先确定，再选帧；点击、键盘和无障碍入口应分别约定。
 
 拖动和滚动要换一种测法：逐个考察输入样本与对应画面更新之间的 event-to-photon（事件采样到画面发光） 延迟，并观察整段手势中的延迟分布是否稳定。只记录“手指开始移动到列表开始滚动”这一个数，手势中段偶发的延迟波动就看不见了。
 
@@ -137,28 +142,46 @@ consolidated_from:
 | 应用启动 | 系统接收启动请求 | TTID 或 TTFD | TTID 只到首帧，与“内容可交互”含义不同 |
 | 长任务 | 用户确认操作 | 进度反馈帧与业务完成点 | 只量业务耗时会漏掉反馈延迟 |
 
-`MotionEvent.getEventTimeNanos()` 接近输入样本的时间基准，但不等同于手指接触屏幕玻璃的物理时刻。帧的 present 信号也证明不了面板像素已经完成发光。所以要测实验室级 touch-to-photon（触摸到画面发光） 延迟，需要高速相机、光电传感器或厂商显示链路 trace；普通应用采集的 Perfetto 更适合定位软件路径中的耗时阶段。
+`MotionEvent.getEventTimeNanos()` 在 API 34 才成为公开 API；Android 12–13 可使用毫秒精度的 `getEventTime()`，历史样本也要保留对应时间。两者使用不含深度睡眠时间的 uptime 时钟，不能直接与含 suspend 的 boottime 时间戳相减；跨 trace 时钟应先用时钟快照换算。纳秒单位也不保证纳秒测量准确度。这些时间接近输入样本的时间基准，但不等同于手指接触屏幕玻璃的物理时刻。帧的 present 信号也证明不了面板像素已经完成发光。所以要测实验室级 touch-to-photon（触摸到画面发光） 延迟，需要高速相机、光电传感器或厂商显示链路 trace；普通应用采集的 Perfetto 更适合定位软件路径中的耗时阶段。
+
+<!-- gracker-diagram: ch08-01-clock-and-photon-boundaries -->
+![输入时钟与软件呈现的测量边界](../../assets/diagrams/ch08/ch08-01-clock-and-photon-boundaries.png)
+
+图：纳秒是单位和精度约定，不能自动提升采样准确度；跨时钟不可直接相减，面板发光还在软件证据之外。
 
 ### RAIL 在 Android 中怎样使用
 
-[RAIL](https://web.dev/articles/rail) 是 Web 性能模型，名称来自 Response、Animation、Idle、Load 四类工作预算。我们可以借它讨论用户对等待的感受，数值则产生于浏览器环境；落到 Android，判断依据仍然是帧期限、Android Vitals 和产品实测基线。
+[RAIL](https://web.dev/articles/rail) 是较早的 Web 性能模型；该文档现在建议用 Core Web Vitals 评估现代 Web 体验。RAIL 名称来自 Response、Animation、Idle、Load 四类工作预算。我们可以借它讨论用户对等待的感受，数值则产生于浏览器环境；落到 Android，判断依据仍然是帧期限、Android Vitals 和产品实测基线。
 
 | RAIL 项 | Web 文档口径 | Android 中可借鉴的做法 | 不应照搬的部分 |
 | --- | --- | --- | --- |
 | Response | 输入后 100 ms 内响应 | 为交互设定可见反馈的长尾延迟目标 | 100 ms 不是 Android API 或 ANR 的硬阈值 |
 | Animation | Web 主线程约 10 ms 产出一帧 | 以 FrameTimeline 的 expected deadline 判断是否按时 | 10 ms 预留了浏览器渲染时间，不能当作 Android 通用帧预算 |
-| Idle | 空闲任务分块，每块不超过约 50 ms | 将可延后的工作切片，并允许高优先级交互抢占 | 50 ms 的主线程任务仍可能跨过多个高刷新率帧期限 |
-| Load | 首次可交互约 5 s、后续约 2 s | 区分首屏反馈与完整可用状态 | Web 网络条件下的 load 目标不等于 Android 启动告警 |
+| Idle | 空闲任务分块，每块不超过约 50 ms | 将可延后的工作切片，并在片间返回事件循环，让交互获得执行机会 | 50 ms 的主线程任务仍可能跨过多个高刷新率帧期限 |
+| Load | 慢 3G、中低端手机的首次可交互约 5 s，后续约 2 s | 区分首屏反馈与完整可用状态 | Web 网络条件下的 load 目标不等于 Android 启动告警 |
 
 Android 动画和滚动应以系统为当前帧分配的 deadline（截止时间） 为准。60 Hz 屏幕的刷新周期约为 16.67 ms，120 Hz 约为 8.33 ms；留给应用 CPU 的时间通常更少，因为 RenderThread、GPU、SurfaceFlinger 和显示提交还要继续工作。从 Android 12（API 31）开始，Perfetto FrameTimeline 会同时给出 expected timeline（预期时序） 和 actual timeline（实际时序），也就是系统预期的时序与实际执行的时序；我们直接比较这两条时序，比套用固定的 16 ms 可靠。
 
-支持 Adaptive Refresh Rate（ARR，自适应刷新率）的设备还会动态改变刷新节奏。ARR 从 Android 15 开始面向启用该能力的设备提供，是否生效仍取决于设备显示能力、系统策略以及应用或窗口的帧率请求。Android 16 增加了 `Display.hasArrSupport()` 和 `Display.getSuggestedFrameRate(int)` 等查询能力。解释数据时仍需结合当前帧率、应用请求的帧率和 FrameTimeline——设备未必一直跑在最高刷新率上。
+支持 Adaptive Refresh Rate（ARR，自适应刷新率）的设备还会动态改变刷新节奏。ARR 从 Android 15 QPR1 开始面向满足 HAL 等条件并启用该能力的设备提供，是否生效仍取决于设备显示能力、系统策略以及应用或窗口的帧率请求。Android 16 增加了 `Display.hasArrSupport()` 和 `Display.getSuggestedFrameRate(int)` 等查询能力。解释数据时仍需结合当前帧率、应用请求的帧率和 FrameTimeline——设备未必一直跑在最高刷新率上。
+
+<!-- gracker-diagram: ch08-01-response-versus-frame-budget -->
+![反馈目标与单帧预算分别设置](../../assets/diagrams/ch08/ch08-01-response-versus-frame-budget.png)
+
+图：RAIL 数字是 Web 上下文，刷新周期是设备节奏，应用实际可用预算还要考虑渲染和显示依赖。
 
 ### 触摸到显示的完整路径
 
 本节沿输入、应用、渲染和显示四个阶段追踪一次触摸。涉及内核调度、IRQ（硬件中断请求）和驱动的部分，以篇首给出的内核基线为准；分析普通应用层的阻塞，用平台源码就够了。
 
-下图是完整路径：
+下图是完整路径（ACK 与帧处理并非固定串行）：
+
+<!-- gracker-diagram: ch08-01-touch-to-display-path -->
+![触摸到显示的组件与 ACK 回路](../../assets/diagrams/ch08/ch08-01-touch-to-display-path.png)
+
+图：输入传输、窗口输入、应用帧与显示分属不同阶段。ACK 回到分发端，帧处理可能与输入交叠，图中连线表达依赖而非全程串行。
+
+<details>
+<summary>查看 Mermaid 源码</summary>
 
 ```mermaid
 flowchart LR
@@ -191,18 +214,25 @@ flowchart LR
         R --> T["面板扫描显示"]
     end
 
-    I -->|finishInputEvent ACK| F
+    H -->|处理结束后经 InputEventReceiver 回 ACK| F
 ```
 
-图中的 ACK（确认消息） 只代表应用完成了这次输入事件的分发处理；这时界面可能还没开始绘制，对应 buffer 也可能还没经 HWC（Hardware Composer，硬件合成器） 呈现到显示设备。
+</details>
+
+图中的 ACK（确认消息）由 `ViewRootImpl` 输入处理收尾经 `InputEventReceiver` 回传，表示该输入事件已完成处理。普通 View 的 `PerformClick` 通常另行 post，业务 `onClick()` 可能在 ACK 之后才执行。ACK 与反馈帧完成没有固定的先后边界，buffer 也可能尚未呈现。
 
 #### 输入读取与目标窗口选择
 
 我们从内核侧看起。触摸驱动通过 Linux input 子系统产生事件，Android 的 `EventHub` 从输入设备节点读取原始数据；`InputReader` 完成设备映射、坐标变换和手势状态整理等工作，再把格式统一后的事件交给 `InputDispatcher`。
 
-`InputManager` 分别启动 `InputReader` 和 `InputDispatcher` 的 native 线程，二者都由 `system_server` 中的 `InputManagerService` 托管。我们按这两个组件本来的归属记录即可；“InputFlinger 进程”“InputFlinger 线程”这类叫法在源码里没有对应实体。
+`InputManager` 分别启动 `InputReader` 和 `InputDispatcher` 的 native 线程，二者都由 `system_server` 中的 `InputManagerService` 托管。这里描述常规 Android 设备中由 `system_server` 托管的路径；分析具体产品仍应核对进程和线程，不能用目录名 `inputflinger` 推定进程名或线程名。
 
 `InputDispatcher` 根据当前窗口、触摸目标、焦点和系统策略选择接收端。`publishMotionEvent()` 通过 `InputPublisher` 将事件写入目标 `InputChannel`。`InputTransport.cpp` 中的 `InputChannel::sendMessage()` 和 `receiveMessage()` 展示了这条逐事件传输通道，其底层使用 Unix domain socket（本机进程间套接字）。Binder 负责窗口与通道的建立、配置和控制调用，不传输每一条 `MotionEvent`。
+
+<!-- gracker-diagram: ch08-01-input-owner-and-transport -->
+![输入线程归属与传输通道](../../assets/diagrams/ch08/ch08-01-input-owner-and-transport.png)
+
+图：上方表示托管关系，两线程通过输入处理链衔接；目标事件走 socket，不能按 inputflinger 目录名猜测独立进程。
 
 #### 应用接收、排队与 ACK
 
@@ -214,15 +244,31 @@ flowchart LR
 - 消息已经可以读取，但应用 Looper 尚未执行接收回调的排队时间；
 - `dispatchTouchEvent()`、监听器和业务代码的执行时间。
 
-应用处理完成后调用 `finishInputEvent()` 回送 ACK。Perfetto 的 `android.input` 标准库为分发、接收、ACK 和帧呈现分别提供字段，因此可以区分系统分发延迟、应用排队延迟、应用处理耗时和画面呈现延迟。
+应用输入阶段处理完成后经 `finishInputEvent()` 回送 ACK。`android.input` 的 dispatch 区间从系统发送到应用接收，已包含通道与接收线程调度等待；handling 区间从接收到发 ACK，也可能包含批处理或延后处理的等待。不能把这些列逐一等同于纯排队、纯业务 CPU 时间，应继续检查线程状态和切片。
+
+<!-- gracker-diagram: ch08-01-input-latency-intervals -->
+![输入往返区间与真实等待](../../assets/diagrams/ch08/ch08-01-input-latency-intervals.png)
+
+图：dispatch、handling、ack 是时间边界，不是三种纯 CPU 工作。先看区间，再用线程状态判断执行、排队或阻塞。
 
 连续的 `MOVE` 事件可能被批量传递，一个 `MotionEvent` 可以携带多个 historical samples；`ViewRootImpl` 也可以等到下一次帧回调前再消费这批样本。分析滑动时要保留历史样本：只看最新坐标会漏掉中间轨迹，也容易把框架有意做的帧对齐误判成事件丢失。
 
+<!-- gracker-diagram: ch08-01-batched-move-overlap -->
+![批量 MOVE 在帧内消费](../../assets/diagrams/ch08/ch08-01-batched-move-overlap.png)
+
+图：MOVE 可带历史样本并在 doFrame input 阶段消费，因此 doFrame 开始可能早于消费和 ACK。轨道无刻度，仅示意关系。
+
 #### 状态变更与帧调度
 
-调用 `invalidate()`、`requestLayout()` 或改变 Compose 状态，会促使窗口安排后续遍历。`ViewRootImpl.scheduleTraversals()` 会向 `Choreographer` 投递 traversal callback（遍历回调），并在消息队列中设置同步屏障。允许穿过屏障的异步帧消息会优先执行，普通同步消息不会继续排在本帧遍历之前。
+调用 `invalidate()`、`requestLayout()` 或改变 Compose 状态，会促使窗口安排后续遍历。`ViewRootImpl.scheduleTraversals()` 会向 `Choreographer` 投递 traversal callback（遍历回调），并在消息队列中设置同步屏障。队列扫描到屏障时，可跳过其后的同步消息寻找异步消息；屏障前已到期的同步消息仍可执行，正在运行的消息也不会被抢占。这里的“异步”是消息标志，不代表在后台线程执行。
+
+<!-- gracker-diagram: ch08-01-sync-barrier-scope -->
+![同步屏障只影响队列扫描](../../assets/diagrams/ch08/ch08-01-sync-barrier-scope.png)
+
+图：同步屏障不会抢占当前长消息，也不把主线程工作转交后台。阻塞出现在帧回调之前时，仍要回查当前消息和调度。
 
 `Choreographer` 需要生成新帧时，会通过 `DisplayEventReceiver.scheduleVsync()` 请求 VSync（显示垂直同步信号）。主路径中的回调顺序如下：
+
 
 1. input；
 2. animation；
@@ -230,65 +276,94 @@ flowchart LR
 4. traversal；
 5. commit。
 
+<!-- gracker-diagram: ch08-01-choreographer-phases -->
+![Choreographer 回调阶段与帧槽等待](../../assets/diagrams/ch08/ch08-01-choreographer-phases.png)
+
+图：回调阶段存在顺序，输入到达相位和主线程可运行时间影响能否赶上帧槽；commit 回调仍不是画面已经呈现。
+
 输入事件到达时刻与 VSync 相位会影响等待时间：业务处理再短，只要刚好错过可用的帧槽，视觉反馈仍可能多等一个刷新周期。这部分等待记在帧调度阶段，`onClick()` 自身的执行时间另算。
 
 #### UI Thread、RenderThread、GPU 与 SurfaceFlinger
 
-View 体系的 traversal 会依次执行 measure、layout 和 draw，也就是测量、布局与绘制。启用硬件加速时，UI Thread 记录或更新渲染节点和绘制命令，RenderThread 在 `DrawFrame` 等阶段完成同步、命令提交和 buffer 生产。GPU 工作可能与 CPU 工作部分重叠，也可能等待 fence（表示前序图形工作完成的同步对象）、内存或驱动。
+View 体系的 traversal 按窗口和脏状态按需执行 measure、layout、draw，也就是测量、布局与绘制；并非每帧都会完整测量、布局整棵树。启用硬件加速时，UI Thread 记录或更新渲染节点和绘制命令，RenderThread 在 `DrawFrame` 等阶段执行同步、绘制命令处理和 buffer 提交；CPU 切片结束或 buffer 入队都不单独证明 GPU 已完成写入，仍要检查 acquire fence。GPU 工作可能与 CPU 工作部分重叠，也可能等待 fence（表示前序图形工作完成的同步对象）、内存或驱动。
 
-生成的 buffer 经 Surface / BufferQueue 交给 SurfaceFlinger。SurfaceFlinger 按显示调度选择可用 buffer 并计算合成策略，再由 HWC 使用 device composition 或 client composition 完成显示提交。应用帧即使按时结束，仍可能遇到 SurfaceFlinger、GPU 或 HWC 延迟；我们一路要追到呈现为止，单看 `Choreographer#doFrame` 只覆盖应用这一段。
+生成的 buffer 经 Surface / BufferQueue 交给 SurfaceFlinger。SurfaceFlinger 按显示调度选择可用 buffer 并计算合成策略，client composition 由 SurfaceFlinger 的 RenderEngine 处理，device composition 由 HWC 承担，client target 也交给 HWC 参与最终 present。两种工作可能混合存在。应用帧即使按时结束，仍可能遇到 SurfaceFlinger、GPU 或 HWC 延迟；我们一路要追到呈现为止，单看 `Choreographer#doFrame` 只覆盖应用这一段。
+
+<!-- gracker-diagram: ch08-01-cpu-gpu-composition-boundaries -->
+![CPU 提交、GPU 就绪与合成呈现](../../assets/diagrams/ch08/ch08-01-cpu-gpu-composition-boundaries.png)
+
+图：生产者 GPU 写入可与 SurfaceFlinger 的 CPU 准备交叠，实际使用仍须满足 fence 依赖。RenderEngine 承担 client composition，HWC 承担 device composition 与 present。
 
 ### 用一组时间点定位延迟
 
-实际排查时，我们可以把一次交互记录成下面的时间点，再用相邻时间点的差值定位阶段：
+实际排查应记录里程碑和真实区间，而不是预设所有时间点都按 `t0 → t7` 串行发生：
 
-| 时间点 | 含义 | 主要证据 |
+| 里程碑 | 含义 | 主要证据 |
 | --- | --- | --- |
-| `t0` | 输入样本产生 | `MotionEvent.eventTime`、input trace |
-| `t1` | InputReader 读取 | Perfetto `read_time` |
-| `t2` | InputDispatcher 发出 | `dispatch_ts` |
-| `t3` | 应用接收 | `receive_ts` |
-| `t4` | 应用 ACK | handling 与 ack 相关字段 |
-| `t5` | 对应帧开始 | `Choreographer#doFrame`、frame id |
-| `t6` | 应用与 RenderThread 完成帧 | FrameTimeline、`DrawFrame` |
-| `t7` | 显示帧呈现 | FrameTimeline actual end、SurfaceFlinger/HWC trace |
+| 样本时间 | 输入设备报告的事件时间 | `eventTime`，注意时钟域与精度 |
+| read | 输入读取链路上的 trace 标记 | `read_time`，r1 从 notifyMotion 切片提取 |
+| dispatch / receive | 系统发出、应用接收 | `dispatch_ts` / `receive_ts` |
+| finish / ACK received | 应用发完成消息、系统收到 | handling / ack 两段，不是同一时刻 |
+| doFrame | 候选反馈帧开始 | `Choreographer#doFrame`、帧标识 |
+| CPU submit / buffer ready | CPU 提交、GPU 写入完成 | UI/RenderThread 切片、入队、acquire fence，分别记录 |
+| present | 采用该 buffer 的显示帧呈现 | FrameTimeline 与 SF/HWC present fence，不能代替完整扫描到发光 |
 
-这些差值分别对应不同的排查范围：
+按有证据的区间分解：
 
-- `t2 - t1` 长：检查 InputDispatcher 调度、窗口状态、输入策略和 `system_server` 调度。
-- `t3 - t2` 长：检查 socket 投递、接收线程是否获得 CPU，以及目标进程是否冻结或繁忙。
-- `t4 - t3` 长：检查应用事件处理、同步 Binder、锁、GC 和主线程 I/O。
-- `t5 - t4` 长：检查帧请求、VSync 相位和主线程消息队列。
-- `t6 - t5` 长：检查 UI Thread、RenderThread、GPU 和 buffer dequeue（获取可写缓冲区）。
-- `t7 - t6` 长：检查 SurfaceFlinger、合成策略、present fence（显示提交完成信号） 和显示设备。
+- `dispatch - read` 长：检查读取后处理、策略、分发和 `system_server` 调度。
+- `receive - dispatch` 长：检查 socket、接收线程调度和冻结状态。
+- `finish - receive` 长：检查输入阶段、批处理等待、同步 Binder、锁、GC、I/O 和执行时间。
+- `ACK received - finish` 长：检查回传与系统接收线程。
+- 帧请求到可执行帧槽、UI 工作、RenderThread、GPU 与合成各自单独计时，再按依赖连接；并行区间不能直接相加。
+
+批量 MOVE 可以在 `doFrame` 的 input 阶段才消费，所以帧开始可能早于消费和 ACK；`PerformClick` 又可能晚于 ACK。不能把“doFrame 开始减 ACK”当作普遍成立的帧调度等待，更不能把 `DrawFrame` 返回到 present 全部算作 SurfaceFlinger 耗时。present fence 对物理显示器通常表示该帧开始出现在屏幕，或开始传输到面板，仍有面板扫描与发光过程。
+
+<!-- gracker-diagram: ch08-01-milestones-not-linear-timestamps -->
+![输入与帧的里程碑允许交叠](../../assets/diagrams/ch08/ch08-01-milestones-not-linear-timestamps.png)
+
+图：上、下两组是独立的常见时序示例：批量输入可在帧内处理，普通点击业务可在输入 ACK 之后执行。条宽不代表测量值，不能拼成同一个真实样本。
 
 每一段都按 trace 里实际看到的来判断；给输入系统、主线程或 GPU 预设固定毫秒阈值的做法，在刷新率、芯片、触摸采样率或系统负载一变时很容易失真。
 
 ### Perfetto：直接查询 input 到 present
 
-较新的 Perfetto trace processor 标准库提供 `android_input_events` 表，其中包含 input dispatch、应用接收、ACK，以及能够关联到帧时的 input-to-present（输入到呈现） 时间。前提是 trace 启用了对应的 input 和 FrameTimeline 数据；关联不到帧时，`end_to_end_latency_dur` 就会是 `NULL`。
+本文以 AOSP `android-17.0.0_r1` 的 `android.input` SQL 为准。`android_input_events` 依赖 `sendMessage` / `receiveMessage`、输入处理等 atrace 切片及帧数据；只启用 input proto 与 FrameTimeline 数据源，未必满足这些条件。缺少完整传输四阶段时，事件可能整行缺失；帧关联失败则相关列可能为 `NULL`。空表不能证明没有输入，也不能把缺失事件记成零延迟。
 
-下面的 SQL 查询用于找出指定进程中输入处理总时长最长的 50 个事件，并分别列出分发、应用处理、ACK 和画面呈现耗时：
+下面的 SQL 按 dispatch 到系统收到 ACK 的往返时间选出指定进程中最慢的 50 行，并保留通道、序号、输入 ID、候选帧和推测标志，供后续复核：
 
 ```sql
 INCLUDE PERFETTO MODULE android.input;
-
 SELECT
-  event_type,
-  event_action,
-  event_time,
+  upid, pid, tid, event_channel, event_seq, input_event_id,
+  event_type, event_action, event_time, read_time,
+  dispatch_ts, receive_ts,
   dispatch_latency_dur / 1e6 AS dispatch_ms,
   handling_latency_dur / 1e6 AS app_handling_ms,
   ack_latency_dur / 1e6 AS ack_ms,
-  end_to_end_latency_dur / 1e6 AS input_to_present_ms,
-  frame_id
+  total_latency_dur / 1e6 AS dispatch_to_ack_ms,
+  end_to_end_latency_dur / 1e6 AS candidate_read_to_present_ms,
+  frame_id, is_speculative_frame
 FROM android_input_events
 WHERE process_name = 'com.example.app'
 ORDER BY total_latency_dur DESC
 LIMIT 50;
 ```
 
-`total_latency_dur` 统计到系统收到 ACK 为止，`end_to_end_latency_dur` 才延伸到关联帧的呈现时刻。两列相差较大时，说明事件回调可能很快结束，但后续帧调度、渲染或合成仍然耗时较长。
+`total_latency_dur = ACK_received - dispatch`，`end_to_end_latency_dur = candidate_present - read_time`，二者起点不同且可能重叠；相减不能得到“ACK 之后的渲染时间”。r1 的帧关联先找同线程中与输入分发切片相交的 `doFrame`，否则选择随后一帧并标记 `is_speculative_frame = 1`。即使标志为 0，也只是时间相交，不能证明画面包含业务结果。
+
+<!-- gracker-diagram: ch08-01-sql-latency-origins -->
+![Perfetto 两种延迟列的起止点](../../assets/diagrams/ch08/ch08-01-sql-latency-origins.png)
+
+图：往返时间解释输入协议处理，read 到候选呈现解释软件链路候选。列名相似不代表可以直接做差得到渲染时间。
+
+r1 还存在实现限制：最终帧连接只按 `event_seq`，未同时约束 channel；选择非丢弃显示帧的子查询缺少进程过滤与显式排序。多窗口、多个通道、丢帧或并发输入时必须回查完整身份与实际采用的 buffer，不能把本查询直接作为产品验收指标。此处说明固定版本的实现，其他 processor 版本应重新核对。
+
+<!-- gracker-diagram: ch08-01-sql-frame-candidate-gates -->
+![输入到帧关联的候选与缺失](../../assets/diagrams/ch08/ch08-01-sql-frame-candidate-gates.png)
+
+图：r1 的两种候选路径都不证明业务反馈内容。多通道连接和显示帧选择还有实现限制，不能直接作为验收真值。
+
+示例已在官方输入测试 trace 上用 Perfetto v58.2 内置库和 r1 SQL 分别执行：均可返回输入行，覆盖候选帧、推测关联与帧为 NULL 的情况。这只验证查询与数据边界，不代表目标应用的响应性能。
 
 Perfetto UI 中可按以下顺序核对：
 
@@ -298,7 +373,12 @@ Perfetto UI 中可按以下顺序核对：
 4. 查看 `Choreographer#doFrame`、`performTraversals`、RenderThread `DrawFrame`、GPU 工作与 fence。
 5. 延伸到 SurfaceFlinger 和 HWC，确认应用 buffer 是否被该显示帧采用。
 
-没有 input-to-frame 关联时，可以根据事件时间、业务 `Trace.beginSection()` 标记和首个视觉变化帧进行人工对齐，同时在结论中注明这是“推测关联”。两个事件时间接近，只说明时序相邻；是否属于同一次交互，要靠本节前面的关联查询来确认。
+没有 input-to-frame 关联时，可以根据事件时间、业务 `Trace.beginSection()` 标记和首个视觉变化帧进行人工对齐，同时在结论中注明这是“推测关联”。两个事件时间接近，只说明时序相邻；查询给出候选关系后，仍需用事件身份、业务阶段、窗口/图层和采用的 buffer 确认是否属于同一次交互。
+
+<!-- gracker-diagram: ch08-01-interaction-causal-evidence -->
+![从时间相邻到同一交互的证据链](../../assets/diagrams/ch08/ch08-01-interaction-causal-evidence.png)
+
+图：事件时间接近只能帮助定位。完整结论要把事件身份、业务阶段与实际显示内容对应起来，并保留缺失和推测样本。
 
 ### Capacity 与 Jitter
 
@@ -310,31 +390,47 @@ Jitter 则是偶发工作阻塞了用户能感知到的执行路径，常见来�
 
 平均值会掩盖 jitter。响应速度报告至少应保留 P50、P90、P99（第 50、90、99 百分位）、最大值、超过目标的样本占比和总样本量，并按设备档位、刷新率、温度、前后台状态及交互类型分组。平均耗时降低了，最慢的那批交互未必跟着变好，这正是要保留高分位的原因。
 
+<!-- gracker-diagram: ch08-01-capacity-jitter-diagnosis -->
+![持续容量不足与偶发抖动的分支](../../assets/diagrams/ch08/ch08-01-capacity-jitter-diagnosis.png)
+
+图：先区分长期持续超期和偶发等待，再沿实际依赖定位。设备、温度、刷新率和缓存状态要分组。
+
 ### Android Vitals 能回答什么
 
 Google Play 的 Android Vitals 提供多类真实用户设备指标，不过公开指标里，既没有覆盖“所有点击到下一次绘制”的统一指标，也没有和 Web INP 完全等价的那一个。分析响应问题时，我们把下面几类数据组合起来看：
 
 | 指标 | 回答的问题 | 边界 |
 | --- | --- | --- |
-| Slow rendering | UI Toolkit 帧是否落入 16 ms 到 700 ms 的慢帧区间 | 固定 16 ms 是 Vitals 分类口径，诊断仍要结合设备 deadline |
-| Frozen frames | UI Toolkit 帧是否达到 700 ms 或更长 | 原生 Vulkan、OpenGL、Unity 等路径可能不在这组统计内 |
+| Slow rendering | UI Toolkit 帧是否超过 16 ms；冻结帧另列监控 | 固定 16 ms 是 Vitals 分类口径，诊断仍要结合设备 deadline |
+| Frozen frames | UI Toolkit 帧是否超过 700 ms | 原生 Vulkan、OpenGL、Unity 等路径可能不在这组统计内 |
 | User-perceived ANR rate | 用户可感知 ANR 的现场发生率 | ANR 类型和超时规则不同，不能从一个固定数字反推全部原因 |
-| TTID | 启动请求到首帧显示 | 首帧可能只是启动壳，未必可交互 |
+| TTID | 启动请求到首帧显示 | 首帧可为应用自己的占位 UI，未必可交互；系统 starting window 本身不是此应用首帧 |
 | TTFD | 启动请求到应用报告 fully drawn | 依赖应用在可用状态调用 `reportFullyDrawn()` |
 | Slow sessions | 游戏会话中慢帧占比 | 游戏专用，统计口径不同于普通 UI Toolkit 帧 |
 
 Android Vitals 将冷启动达到 5 秒、温启动达到 2 秒、热启动达到 1.5 秒视为 excessive startup（启动时间过长），并使用 TTID 统计告警。TTFD 包含 TTID 以及首帧后的异步内容加载时间，需要应用在内容可用时主动报告。这两个指标描述的是启动的不同阶段：TTID 短只代表首帧快，内容何时完整可用，还要看 TTFD 里首帧之后那段异步加载。
 
+<!-- gracker-diagram: ch08-01-vitals-metric-coverage -->
+![帧、启动与 ANR 指标的范围](../../assets/diagrams/ch08/ch08-01-vitals-metric-coverage.png)
+
+图：帧耗时、输入超时和启动时间测量不同事件。冷/温/热启动告警为 TTID ≥5/2/1.5 秒，不据此推导点击目标。
+
 ANR 同样要按类型分别看。AOSP / Pixel 的 input dispatch 默认超时为 5 秒；`Service`、`BroadcastReceiver`、`ContentProvider`、`JobService` 和前台服务还有各自的规则。Android 14 及更高版本会根据进程是否 CPU-starved（长时间得不到足够 CPU）在一定区间内调整广播超时，OEM 也可能修改默认值。分析响应问题时，应先确认 ANR 类型，再检查对应的计时起点、截止条件和责任线程。
 
 ### 从 Web INP 借鉴交互口径
 
-Web INP（Interaction to Next Paint）衡量一次交互从事件处理到下一次绘制的长尾表现。Android 没有与它同名、按同样方式统计的公开 Vitals 指标，不过有两点值得借鉴：
+Web INP（Interaction to Next Paint）包含输入等待、事件处理和下一次绘制前的呈现延迟。页面访问内选最差交互，并按每 50 次交互可忽略一个最高值的规则处理长尾；站点层面用页面访问的第 75 百分位评估。它既不等于单次 handler 耗时，也不等于所有交互的 P99。Android 没有与它同名、按同样方式统计的公开 Vitals 指标，不过有两点值得借鉴：
+
 
 - 以完整交互为单位关联输入、处理与下一次可见更新；
 - 关注高分位和最差交互，避免只看平均帧率。
 
-Android 上的依据应来自 input trace、应用标记、FrameTimeline 和显示呈现信息。团队可以把内部指标命名为 UIL（User Interaction Latency，用户交互延迟），文档里就要写清起点、终点、采样范围，以及关联不到帧时如何处理。P99 200 ms 这类目标若来自 Web INP，标为内部目标或类比值即可；Android 官方标准里并没有对应指标。
+Android 上的依据应来自 input trace、应用标记、FrameTimeline 和显示呈现信息。团队可以把内部指标命名为 UIL（User Interaction Latency，用户交互延迟），文档里就要写清起点、终点、采样范围，以及关联不到帧时如何处理。例如“P99 ≤ 200 ms”应明确是团队自定的目标；Web INP 的良好阈值为 200 ms，配套的是上述页面访问与 P75 口径，不能连同数字改写为 Android P99 标准；Android 官方标准里并没有对应指标。
+
+<!-- gracker-diagram: ch08-01-inp-two-level-aggregation -->
+![Web INP 的计时与两层聚合](../../assets/diagrams/ch08/ch08-01-inp-two-level-aggregation.png)
+
+图：INP 的时间边界、页面访问内选值和站点 P75 必须一起理解。Android 自建指标要另写起止点与聚合合同。
 
 ### 感知速度的工程边界
 
@@ -350,17 +446,24 @@ Android 上的依据应来自 input trace、应用标记、FrameTimeline 和显�
 binding.submitButton.setOnClickListener {
     if (uiState != UiState.Idle) return@setOnClickListener
 
-    render(UiState.Submitting)
+    uiState = UiState.Submitting // 同步改变用于防重复提交的状态
+    render(uiState)
     lifecycleScope.launch {
         val result = withContext(ioDispatcher) {
             repository.submit()
         }
-        render(UiState.from(result))
+        uiState = UiState.from(result)
+        render(uiState)
     }
 }
 ```
 
 `render(Submitting)` 会请求一帧，但协程在第一次挂起前仍从主线程开始执行。`repository.submit()` 必须切换到合适的调度器，提交前还要避开同步 I/O、长时间计算和阻塞锁，否则 loading 状态仍会延迟显示。
+
+<!-- gracker-diagram: ch08-01-feedback-background-overlap -->
+![可见反馈与后台执行允许并行](../../assets/diagrams/ch08/ch08-01-feedback-background-overlap.png)
+
+图：先写状态为绘制创造条件，显示仍需帧路径。后台任务也要控制争用，suspend 或 launch 本身不保证阻塞工作离开主线程。
 
 #### 骨架屏与占位图
 
@@ -368,15 +471,25 @@ binding.submitButton.setOnClickListener {
 
 图片占位图应提前保留目标尺寸，避免图片解码完成后触发大范围重新布局。模糊缩略图可以让内容切换更连续，但仍要控制解码、缩放和 GPU 上传开销。
 
+<!-- gracker-diagram: ch08-01-placeholder-cost-boundary -->
+![占位反馈与渲染开销的取舍](../../assets/diagrams/ch08/ch08-01-placeholder-cost-boundary.png)
+
+图：占位有助于解释等待，却不会自动降低启动或数据耗时；成本要和真实内容切换一起测量。
+
 #### 过渡动画与进度
 
 过渡动画用来说明界面如何从一个状态变到另一个状态，拿无限延长动画来掩盖等待属于误用。耗时还估计不出来时改用不确定进度，进度可以估算时再显示有依据的确定进度。长时间操作还应允许用户取消、重试或转到后台继续，别让界面一直在动、用户却无从下手。
 
 #### 触摸预测
 
-Android 14（API 34）开始提供公开的 `MotionPredictor` API，用来根据已收到的运动样本预测短时间后的触点位置。应用需要把完整事件序列传给 `record(MotionEvent)`，在调用 `predict(long)` 前使用 `isPredictionAvailable(deviceId, source)` 检查设备和输入源是否支持，并处理预测结果中的 historical samples。
+Android 14（API 34）开始提供公开的 `MotionPredictor` API，用来根据已收到的运动样本预测短时间后的触点位置。应用需要把完整事件序列传给 `record(MotionEvent)`，在调用 `predict(long)` 前使用 `isPredictionAvailable(deviceId, source)` 检查设备和输入源是否支持，并处理预测结果中的 historical samples。预测目标参数使用 uptime 基准的纳秒时间，不能传墙钟或直接传未换算的 boottime。
 
 预测用估算位置补偿采样到显示之间的空间滞后，不会改变原始事件的分发时间。预测可能返回 `null`，也可能达不到请求的时间点；手势结束、方向突然变化或设备不支持时，应用必须回退到真实样本。Android 不会自动为所有 View 或 Compose 手势启用这项能力。
+
+<!-- gracker-diagram: ch08-01-motion-prediction-fallback -->
+![触摸预测的输入、时钟与回退](../../assets/diagrams/ch08/ch08-01-motion-prediction-fallback.png)
+
+图：预测基于已收到的样本；遇到不支持、手势结束或不可靠结果，应继续使用真实输入。
 
 ### 一套可复现的检查流程
 
@@ -389,6 +502,11 @@ Android 14（API 34）开始提供公开的 `MotionPredictor` API，用来根据
 
 自动化点击会改变输入来源和时间路径，Macrobenchmark、UI Automator、真实触摸和硬件注入的结果应分别记录，混合使用前先说明条件差异。验收端到端硬件延迟时还要加入外部测量，软件 trace 则用于解释系统内部各阶段的耗时。
 
+<!-- gracker-diagram: ch08-01-response-experiment-loop -->
+![响应优化的可复现实验闭环](../../assets/diagrams/ch08/ch08-01-response-experiment-loop.png)
+
+图：实验先固定测量合同，再解释 trace 并复测。软件轨迹解释阶段，物理端到端验收需相应硬件测量。
+
 ### 常见判断错误
 
 #### “主线程没有长任务，响应就一定快”
@@ -397,7 +515,7 @@ Android 14（API 34）开始提供公开的 `MotionPredictor` API，用来根据
 
 #### “事件 ACK 很快，点击反馈已经完成”
 
-ACK 表示应用已返回事件处理结果。帧请求、VSync 等待、渲染、合成和呈现仍在后面，应继续查看 `end_to_end_latency_dur` 或对应的 FrameTimeline。
+ACK 表示这次输入事件已处理完成；另行 post 的点击业务和反馈帧仍可能未完成。帧处理可与输入处理相交，应继续复核候选关联、业务状态、FrameTimeline 和实际呈现，不能预设后续阶段全从 ACK 之后开始。
 
 #### “所有主线程任务控制在 100 ms 就够了”
 
@@ -423,13 +541,18 @@ ACK 表示应用已返回事件处理结果。帧请求、VSync 等待、渲染�
 
 | 场景 | 起点 | 第一个终点 | 业务终点 |
 | --- | --- | --- | --- |
-| Activity / Fragment 跳转 | 触发导航的输入事件 | 目标页提交第一帧 | 目标内容可交互 |
+| Activity / Fragment 跳转 | 触发导航的输入事件 | 目标页第一帧实际呈现 | 目标内容可交互 |
 | Tab 切换 | 点击 Tab 或滑动手势 | 新页稳定呈现 | 新页主要数据可用 |
 | 普通点击 | 输入事件进入应用 | pressed、Ripple 或状态变化呈现 | 点击动作完成或进入可恢复状态 |
 | 实时搜索 | 归一化后的查询发生变化 | Loading / 空结果状态呈现 | 当前查询的结果呈现 |
 | Deep Link / Widget | 外部宿主发起 Intent 或 PendingIntent | 目标页第一帧 | 链接内容可交互 |
 
 起点同样需要明确。`ACTION_DOWN`、`ACTION_UP`、`onClick()` 和导航调用分别发生在不同时间点；搜索文字变化、debounce 等待结束和请求发出也属于不同阶段。Perfetto 适合关联 Input、主线程、Binder、FrameTimeline 和自定义 trace，Macrobenchmark 适合重复执行固定交互。
+
+<!-- gracker-diagram: ch08-01-scenario-measurement-contract -->
+![场景端点对应不同完成信号](../../assets/diagrams/ch08/ch08-01-scenario-measurement-contract.png)
+
+图：场景共享输入和帧链路，但完成条件取决于交互语义。先约定反馈与内容的两层终点，再选自动化等待条件。
 
 任何固定毫秒数的收益，都必须附带设备、刷新率和业务入口条件；平台与内核基线见篇首。
 
@@ -443,18 +566,24 @@ ACK 表示应用已返回事件处理结果。帧请求、VSync 等待、渲染�
 2. 客户端通过 `IActivityTaskManager.startActivity()` 发起 Binder 请求。
 3. ATMS / `ActivityStarter` 解析 Intent、权限、Task、launch mode（启动模式）和窗口状态。
 4. 目标进程不存在时，系统先请求 Zygote 创建并绑定进程。
-5. 目标进程已经存在时，系统通过 `ClientTransaction` 发送 `LaunchActivityItem`、`ResumeActivityItem` 等生命周期事务项。
+5. 目标进程已存在，或新进程启动、绑定就绪后，系统通过 `ClientTransaction` 发送相应启动/恢复事务项；新建 Activity 才需要 `LaunchActivityItem`，复用已有实例可能走新 Intent 和恢复路径。
 6. 应用主线程创建 Activity，执行生命周期、构建窗口和 UI，并提交目标页首帧。
 
 Android 9（API 28）引入了 `ClientTransaction` 体系；Android 8.x 的旧路径使用 `scheduleLaunchActivity()`。这项版本差异可以解释旧 trace 中的方法名；本文结论统一对照 `android-17.0.0_r1`。
 
 “打开 Activity”至少有三种成本形态：
 
+
 | 状态 | 可能出现的工作 |
 | --- | --- |
 | 目标 Activity 尚未创建，应用进程存活 | ATMS 调度、Activity 实例与窗口、生命周期、UI 和首帧 |
 | 目标 Activity 已在 Task 中 | Task / launchMode 决策、`onNewIntent()` 或生命周期恢复、必要重绘 |
 | 目标进程不存在 | 额外包含进程创建、`Application`、Provider 和首 Activity；接近冷启动 |
+
+<!-- gracker-diagram: ch08-01-activity-cold-warm-routing -->
+![Activity 请求与进程就绪分支](../../assets/diagrams/ch08/ch08-01-activity-cold-warm-routing.png)
+
+图：新进程绑定后也要接收启动事务，复用实例则不必再次 Launch。各状态的实际工作与首帧成本应分别测量。
 
 Binder、Activity 构造、inflate、首帧这几段都没有可套用的通用时间：进程是否存活、目标页资源、转场、系统负载和编译状态都会改变结果。
 
@@ -480,6 +609,11 @@ trace("Navigation.OpenDetail") {
 
 这个 slice 会在 `navigate()` 返回时结束，并不表示目标页已经显示。验收时还要结合目标窗口的 FrameTimeline、目标页的阶段标记和内容就绪事件。slice 命名同样要控制基数，做法见“用 Perfetto 和基准把场景关联起来”。
 
+<!-- gracker-diagram: ch08-01-navigation-marker-scope -->
+![导航调用标记只覆盖发起步骤](../../assets/diagrams/ch08/ch08-01-navigation-marker-scope.png)
+
+图：导航 slice 定位调用入口；目标页面可能在其返回后继续准备，转场动画也可能与准备交叠。示意轨道无实测比例。
+
 转场动画需要单独测量。动画播放期间可以同时创建页面；流畅动画能遮住部分准备时间，掉帧动画则会让延迟感更明显。动画时长代替不了页面准备耗时，两个数要分开记；有助于理解页面空间关系的过渡，也不必为了一个数字而删除。
 
 #### Android 17 的配置变更边界
@@ -489,13 +623,18 @@ Android 17 默认不再因以下变化重建 Activity：
 - keyboard、keyboardHidden、navigation、touchscreen、colorMode；
 - `uiMode` 只在进入或离开 `UI_MODE_TYPE_DESK` 时变化的情况。
 
-运行中的 Activity 会收到 `onConfigurationChanged()`。如果应用依赖销毁重建来重新读取资源，需要在 Manifest 的 `android:recreateOnConfigChanges` 中声明对应标志。`android-17.0.0_r1` 的 Manifest 属性说明还规定：同一个标志同时写入 `configChanges` 和 `recreateOnConfigChanges` 时，Activity 不会重建。
+这里是默认策略，不能读成所有 Activity 必然不重建：r1 的 `ActivityRecord` 对 desk 切换还检查应用是否有 desk 资源；`AppCompatRecreateOnConfigChangePolicy` 会检查 keyboard 等专用资源并可要求重建，另有运行时 flag/compat 条件。未重建的 Activity 才走配置回调。若应用依赖重建，应按 Manifest 支持的标志配置 `android:recreateOnConfigChanges`；该属性在 r1 并没有可声明的 `uiMode` 标志。`android-17.0.0_r1` 的 Manifest 属性说明还规定：同一个标志同时写入 `configChanges` 和 `recreateOnConfigChanges` 时，Activity 不会重建。
+
+<!-- gracker-diagram: ch08-01-configuration-recreation-gates -->
+![配置变更的声明与资源判定](../../assets/diagrams/ch08/ch08-01-configuration-recreation-gates.png)
+
+图：不能由 Android 17 默认策略推断某次切换必定没有重建。声明规则与源码资源策略都需核对，最终以实际生命周期和 UI 更新验证。
 
 这项变化可以减少某些显示器、输入设备和桌面模式切换时的状态丢失，但资源刷新也因此由仍然存活的 Activity 负责。测试应覆盖主题、drawable、尺寸、导航状态和输入设备切换；只统计生命周期调用次数，会漏掉资源没有更新的问题。
 
 #### FragmentTransaction 是主线程异步队列
 
-`FragmentTransaction.commit()` 会把事务加入主线程队列，不会在调用点同步完成。`setReorderingAllowed(true)` 允许 FragmentManager 合并同一批事务中的中间状态，官方建议每个事务都启用。`replace()` 的效果接近在同一容器中先 remove 再 add；事务加入 back stack（返回栈） 后，旧 Fragment 实例和它的 View 生命周期会分别转换状态，返回时可能重新创建 View。
+`FragmentTransaction.commit()` 会把事务加入主线程队列，不会在调用点同步完成。`setReorderingAllowed(true)` 允许 FragmentManager 优化同批执行/回退操作中的冗余中间状态，例如略去随即被替换的 Fragment 的生命周期和转场；它不承诺任意事务都会合并为一笔，官方建议每个事务都启用。`replace()` 的效果接近在同一容器中先 remove 再 add；事务加入 back stack（返回栈） 后，旧 Fragment 实例和它的 View 生命周期会分别转换状态，返回时可能重新创建 View。
 
 Fragment 切换的常见成本包括：
 
@@ -509,7 +648,12 @@ Fragment 切换的常见成本包括：
 
 AndroidX Fragment 没有保证为每个生命周期或事务自动生成稳定的 Perfetto slice。应用应在导航入口、目标页 UI 构建和数据提交处加入 trace 标记，再结合 `inflate`、RecyclerView、FrameTimeline 和线程状态分析。
 
-`commitNow()` 会立即在当前主线程执行事务，而且与 `addToBackStack()` 互斥。它只适合调用方必须立刻读取事务结果的少数情况；为追求“更快”而使用它，会把创建、生命周期和布局工作同步放进当前消息。FragmentManager 已保存状态后，普通 commit 还会抛出异常；`commitAllowingStateLoss()` 也不是性能优化手段。
+`commitNow()` 会立即在当前主线程执行事务，而且与 `addToBackStack()` 互斥。它只适合调用方必须立刻读取事务结果的少数情况；为追求“更快”而使用它，会把事务执行、创建和生命周期等工作同步放进当前消息；View 创建完成仍不意味着后续窗口 layout、draw 或 present 已完成。FragmentManager 已保存状态后，普通 commit 还会抛出异常；`commitAllowingStateLoss()` 也不是性能优化手段。
+
+<!-- gracker-diagram: ch08-01-fragment-transaction-boundaries -->
+![Fragment 提交、生命周期与帧的边界](../../assets/diagrams/ch08/ch08-01-fragment-transaction-boundaries.png)
+
+图：commitNow 改变事务执行时机，也可能把创建工作集中进当前消息；它不是保证页面立即显示的性能开关。
 
 #### Fragment 页面怎样减少等待
 
@@ -521,6 +665,11 @@ AndroidX Fragment 没有保证为每个生命周期或事务自动生成稳定�
 - 成功、失败、取消和超时路径都要调用或触发 `startPostponedEnterTransition()`；
 - 返回栈频繁重建 View 时，应区分数据复用和 View 复用；长期保留大型 View 树换速度的做法并不可取。
 
+<!-- gracker-diagram: ch08-01-fragment-postpone-timeout -->
+![Fragment 转场等待必须有结束路径](../../assets/diagrams/ch08/ch08-01-fragment-postpone-timeout.png)
+
+图：延后转场是带边界的依赖等待；需要正常、失败、取消和超时均能退出，并与 View 销毁后的工作取消配合。
+
 Activity 和 Fragment 的选择应由导航、模块划分、状态恢复和窗口需求决定。二者都会在应用主线程创建 UI，Fragment 也可能因为复杂布局和同步工作产生长帧。
 
 ### Tab 切换：ViewPager2 的保留范围与生命周期
@@ -529,7 +678,7 @@ Activity 和 Fragment 的选择应由导航、模块划分、状态恢复和窗�
 
 ViewPager2 内部使用 RecyclerView。默认值 `OFFSCREEN_PAGE_LIMIT_DEFAULT (-1)` 沿用 RecyclerView 的缓存策略，不保证固定保留多少个相邻页面。手动设置时，值必须大于等于 1；传入 0 会抛出 `IllegalArgumentException`。
 
-设置为 `N` 后，当前页两侧各 N 页会被创建并保留在 View 层级中；范围外的页面会从 View 层级移除，再按照 adapter / RecyclerView 规则在需要时重建或复用。增大这个值可能减少往返滑动时的 inflate 和 layout，也会增加 View、图片、Compose composition 和数据订阅所占用的内存与资源。
+设置为 `N` 后，当前页两侧各最多 N 个实际存在的页面会被创建并保留在 View 层级中；范围外的页面会从 View 层级移除，再按照 adapter / RecyclerView 规则在需要时重建或复用。增大这个值可能减少往返滑动时的 inflate 和 layout，也会增加 View、图片、Compose composition 和数据订阅所占用的内存与资源。
 
 我们可以按下面的步骤对候选值做对照测试：
 
@@ -541,9 +690,14 @@ ViewPager2 内部使用 RecyclerView。默认值 `OFFSCREEN_PAGE_LIMIT_DEFAULT (
 
 ViewPager2 的公开 API 不允许替换内部 `LayoutManager`。可调整的范围主要包括页面保留数量、页面构建开销、adapter 稳定 ID、数据预取和生命周期管理。
 
+<!-- gracker-diagram: ch08-01-pager-retention-tradeoff -->
+![ViewPager2 页面保留的成本交换](../../assets/diagrams/ch08/ch08-01-pager-retention-tradeoff.png)
+
+图：offscreen limit 决定保留范围，收益与内存成本取决于页面复杂度。默认缓存不等于固定一个相邻页。
+
 #### FragmentStateAdapter 的可见生命周期
 
-`FragmentStateAdapter` 通过 `setMaxLifecycle()` 限制各页面的最高生命周期状态：选中页达到 `RESUMED`，其他已添加页面通常停在 `STARTED`。旧 ViewPager 的 `setUserVisibleHint()` 已废弃，旧 adapter 的 `BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT` 也不属于 ViewPager2 API。
+`FragmentStateAdapter` 通过 `setMaxLifecycle()` 限制各页面的最高生命周期状态：在 pager 空闲且宿主允许时，选中页的上限为 `RESUMED`，其他已添加页面的上限为 `STARTED`。这只是上限，实际状态还受宿主和 FragmentManager 限制；拖动、settling 时的选中位置不保证已立即完成生命周期更新。旧 ViewPager 的 `setUserVisibleHint()` 已废弃，旧 adapter 的 `BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT` 也不属于 ViewPager2 API。
 
 数据加载可以分为两件事：
 
@@ -569,6 +723,11 @@ override fun onResume() {
 
 `ensureLoaded()` 要能区分 Loading、Success、可重试 Error 和强制刷新，仅靠 Fragment 中的一个布尔成员表达不出这些状态。ViewModel 可以在同一 Fragment 重建 View 时保留状态；进程死亡后的恢复仍需要 SavedState 或持久化数据源。
 
+<!-- gracker-diagram: ch08-01-pager-lifecycle-and-loading -->
+![页面最大生命周期与加载状态](../../assets/diagrams/ch08/ch08-01-pager-lifecycle-and-loading.png)
+
+图：最大生命周期不是当前状态保证；滑动期间要看 pager 状态。加载幂等与 UI 订阅分别管理，避免每次返回都重复请求。
+
 不要把页面可见性与数据加载直接绑定到 `onViewCreated()`：相邻页面可能提前创建，从而让所有 Tab 的请求同时发生在当前交互期间。也不要在每次 `onResume()` 时无条件刷新，否则往返滑动会触发重复网络请求和列表更新。
 
 #### 邻页预取要有预算
@@ -586,9 +745,19 @@ override fun onResume() {
 
 滑动动画期间应优先保证主线程和 RenderThread 获得资源。大量 JSON 解析、图片解码、DiffUtil 提交或 Compose 状态更新即使发生在 worker 中，也可能在提交结果时集中进入同一批帧。
 
+<!-- gracker-diagram: ch08-01-pager-prefetch-budget -->
+![邻页预取的触发、预算与提交](../../assets/diagrams/ch08/ch08-01-pager-prefetch-budget.png)
+
+图：预取移动了工作发生的时机，不能消除 CPU、内存或结果提交成本。当前滚动帧与主线程所需资源要优先保障。
+
 #### adapter 数据变化也会制造抖动
 
 `FragmentStateAdapter` 默认将 item ID 与 position 绑定。动态增删或重排页面时，应按照文档实现稳定的 `getItemId()` 和 `containsItem()`，让同一业务页面在位置变化后仍保持身份；否则 Fragment 状态恢复和创建次数可能偏离业务预期。更新时应使用 `notifyItem*` 或可靠的差分通知，不要每次刷新都重建整个 ViewPager2 adapter。
+
+<!-- gracker-diagram: ch08-01-pager-stable-identity -->
+![动态 Tab 的身份与恢复链路](../../assets/diagrams/ch08/ch08-01-pager-stable-identity.png)
+
+图：稳定 ID 与 containsItem 要共同实现，避免位置变化导致页面状态错配；通知范围仍要与实际数据变化一致。
 
 ### 点击响应：反馈帧比 onClick 返回更接近用户感受
 
@@ -597,7 +766,7 @@ override fun onResume() {
 我们把触摸事件从设备到目标 View 的路径拆成以下步骤：
 
 1. 内核 evdev（Linux 输入事件接口）上报触摸数据；
-2. InputReader 读取数据、统一坐标和状态，并生成 `MotionEvent`；
+2. InputReader 读取数据、统一坐标和状态，并生成规范化的原生运动事件；
 3. InputDispatcher 根据窗口、触摸焦点和策略选择目标；
 4. InputChannel 将带序号的事件送到应用，应用处理后回传完成状态；
 5. `ViewRootImpl.WindowInputEventReceiver` 把事件交给应用主线程输入阶段；
@@ -612,9 +781,14 @@ override fun onResume() {
 
 #### pressed 与 Ripple 也依赖主线程和帧
 
-`View.onTouchEvent()` 会在普通可点击 View 收到 `ACTION_DOWN` 时设置 pressed 状态。View 位于可滚动容器中时，Framework 会先进入 prepressed（预按下）状态，并等待一个 tap timeout（点击判定时限），避免用户其实想滚动时过早显示点击反馈。`ACTION_UP` 路径会 post `PerformClick`，让 pressed 状态有机会先进入一帧绘制。
+`View.onTouchEvent()` 会在普通可点击 View 收到 `ACTION_DOWN` 时设置 pressed 状态。View 位于可滚动容器中时，Framework 会先进入 prepressed（预按下）状态，并等待一个 tap timeout（点击判定时限），避免用户其实想滚动时过早显示点击反馈。`ACTION_UP` 路径通常 post `PerformClick`（post 失败时直接执行），源码意图是先处理视图状态；这不是保证 pressed 已经 present 的帧屏障。
 
-Ripple 根据 drawable state 绘制点击波纹，走的仍是主线程和渲染路径。主线程被长消息、同步 Binder、锁或停顿阻塞时，即使 pressed 状态已经写入，也可能错过下一帧。
+<!-- gracker-diagram: ch08-01-pressed-click-ack-boundaries -->
+![按压态、PerformClick 与 ACK 分别追踪](../../assets/diagrams/ch08/ch08-01-pressed-click-ack-boundaries.png)
+
+图：按压态、点击业务和输入 ACK 是不同信号。主线程或显示链路堵塞时，状态写入也可能尚未成为可见反馈。
+
+Ripple 的初始状态更新依赖输入/UI 路径；支持硬件动画的实现可在 RenderThread 上继续动画，不能把每次波纹推进都算成主线程绘制。主线程被长消息、同步 Binder、锁或停顿阻塞时，即使 pressed 状态已经写入，也可能错过下一帧。
 
 一次点击可以有两个视觉终点：
 
@@ -629,9 +803,15 @@ Ripple 根据 drawable state 绘制点击波纹，走的仍是主线程和渲染
 
 能够使用标准 `Button`、可点击 View 或 Compose `clickable` 时，应保留组件自带的语义、触摸目标、键盘操作和无障碍支持。自定义 View 还要让触摸、键盘和无障碍动作进入同一个业务入口，避免三种输入方式维护各自不同的状态。
 
+<!-- gracker-diagram: ch08-01-custom-view-click-semantics -->
+![自定义点击保留统一语义入口](../../assets/diagrams/ch08/ch08-01-custom-view-click-semantics.png)
+
+图：自定义手势状态机确认点击后进入 performClick；标准输入和辅助功能也应共享业务入口。取消的手势不能提交操作。
+
 #### 重复点击要按业务状态处理
 
 只设置固定点击间隔，可能误伤快速但合法的操作，也拦不住已经发往服务端的两个请求。更可靠的方案包括：
+
 
 - 提交期间把按钮状态切为 Loading，并决定是否允许取消；
 - 为创建、支付等操作使用业务幂等键，让服务端识别并拒绝同一次操作的重复提交；
@@ -639,6 +819,11 @@ Ripple 根据 drawable state 绘制点击波纹，走的仍是主线程和渲染
 - 列表操作按 item ID 隔离，避免全页面禁用；
 - 失败后恢复按钮并给出明确重试入口；
 - 仍需时间门限时使用单调时钟 `SystemClock.elapsedRealtime()`，并覆盖键盘与无障碍点击。
+
+<!-- gracker-diagram: ch08-01-repeat-click-state-gates -->
+![重复点击的业务状态与幂等保护](../../assets/diagrams/ch08/ch08-01-repeat-click-state-gates.png)
+
+图：客户端反馈减少重复触发，服务端幂等处理已发出的重复请求。两端责任不同，失败和恢复必须留有状态出口。
 
 ### 实时搜索：把等待、执行和过期结果分开
 
@@ -653,25 +838,31 @@ Ripple 根据 drawable state 绘制点击波纹，走的仍是主线程和渲染
 
 debounce 会主动增加一段等待，用来减少用户仍在输入时发出的查询。这段等待是前端主动加的，我们统计时要单独列出来，别把它混进一个不分阶段的“搜索总耗时”数字里。等待期间可以显示 Loading，或先清空已经过期的旧结果。
 
+<!-- gracker-diagram: ch08-01-search-stage-latency -->
+![搜索从查询变化到结果帧的阶段](../../assets/diagrams/ch08/ch08-01-search-stage-latency.png)
+
+图：去抖是主动等待，不能藏进网络耗时。查询执行很快时，大量结果和布局、无障碍更新仍可能推迟结果帧。
+
 #### Flow 管线要处理空查询与取消
 
 下面的 ViewModel 管线会让空查询立即清空结果，为非空查询使用可配置的 debounce，并在新查询到来时停止收集旧查询：
 
 ```kotlin
-@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 val searchState: StateFlow<SearchUiState> = query
     .map { it.trim() }
-    .debounce { value ->
-        if (value.isEmpty()) 0L else searchDebounceMs
-    }
     .distinctUntilChanged()
     .flatMapLatest { value ->
         if (value.isEmpty()) {
             flowOf(SearchUiState.Empty)
         } else {
-            repository.observeSearch(value)
+            flow {
+                delay(searchDebounceMs)
+                emitAll(repository.observeSearch(value))
+            }
         }
     }
+    .buffer(0)
     .stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(),
@@ -681,7 +872,12 @@ val searchState: StateFlow<SearchUiState> = query
 
 `distinctUntilChanged()` 只去掉相邻的相同值。序列 `foo → bar → foo` 仍会再次搜索 foo，这通常符合用户重新选择查询的预期。如果需要缓存，应在 repository 中按照规范化 query、账号、筛选条件和数据版本建立 key。
 
-`flatMapLatest` 会取消旧 Flow 的收集，但底层 Room、网络客户端或自定义数据源还需要支持协作式取消；服务器已经收到的请求仍可能继续执行。每个结果都应携带 query 或 generation（查询代次编号），UI 只接受当前 generation，旧回调即使取消不掉，也覆盖不了新结果。
+把 `delay` 放在 `flatMapLatest` 内，新归一化查询才会立即取消旧查询的等待与收集；若把 `debounce` 放在它之前，旧查询会一直收集到新值通过去抖，期间仍可发出过期结果。`buffer(0)` 减少算子预先缓存的结果，但不会撤回已经交给 UI 的值。`SharingStarted.WhileSubscribed()` 默认也会保留上次状态，重新订阅时需校验状态所属查询。底层 Room、网络客户端或自定义数据源还需要支持协作式取消；服务器已经收到的请求仍可能继续执行。每个结果都应携带 query 或 generation（查询代次编号），UI 只接受当前 generation，旧回调即使取消不掉，也覆盖不了新结果。
+
+<!-- gracker-diagram: ch08-01-search-cancellation-window -->
+![取消作用域包住等待与查询](../../assets/diagrams/ch08/ch08-01-search-cancellation-window.png)
+
+图：真实协程虚拟时间测试复现了旧查询在去抖期间发结果；把等待放入最新作用域后，新查询可立即取消旧收集。轨道无时间比例。
 
 `searchDebounceMs` 没有适用于所有应用的固定值。内存索引可能完全不需要 debounce，远程补全则要结合打字节奏、请求成本和服务端限流选择。应根据输入到反馈的延迟、请求数、取消率、结果呈现分布和用户完成率调整参数。
 
@@ -696,6 +892,11 @@ val searchState: StateFlow<SearchUiState> = query
 - 错误、离线和空结果属于不同 UI 状态，旧列表要与新查询的结果区分开。
 
 搜索结果呈现时，键盘、焦点和无障碍播报也会影响响应。大量结果一次性触发布局和 accessibility event，可能出现网络请求很快、界面更新却仍然迟缓的情况。
+
+<!-- gracker-diagram: ch08-01-search-result-generation -->
+![搜索结果防过期覆盖与缓存隔离](../../assets/diagrams/ch08/ch08-01-search-result-generation.png)
+
+图：取消减少无用工作，generation 防止过期回调或已缓存状态误盖新页面。提交成本仍应纳入反馈帧。
 
 ### Deep Link（外部链接进入应用的路径）：路由正确性属于响应时间
 
@@ -713,6 +914,7 @@ Deep Link 入口可能命中存活进程，也可能触发完整冷启动。优�
 
 下面的命令发起一次 Deep Link 启动，并通过 `-W` 等待 Activity 启动结果：
 
+
 ```bash
 adb shell am start \
   -W \
@@ -721,7 +923,12 @@ adb shell am start \
   com.example.app
 ```
 
-`-W` 输出适合快速回归；要分别统计路由、页面创建和结果渲染耗时，还得靠正式实验——对同一个 URI 分别测量冷、温状态，并用 Macrobenchmark / Perfetto 关联目标页 TTID、TTFD 和 FrameTimeline。
+这条命令指定了目标包，只验证该包能否处理链接，不能证明无包限制时的默认 App Link 路由；验证域名与默认选择时，还要去掉末尾包名，并覆盖真实外部入口。`-W` 输出适合快速回归；要分别统计路由、页面创建和结果渲染耗时，还得靠正式实验——对同一个 URI 分别测量冷、温状态，并用 Macrobenchmark / Perfetto 关联目标页 TTID、TTFD 和 FrameTimeline。
+
+<!-- gracker-diagram: ch08-01-deep-link-route-and-ready -->
+![Deep Link 路由、认证与目标内容](../../assets/diagrams/ch08/ch08-01-deep-link-route-and-ready.png)
+
+图：Android 12+ HTTP(S) 默认路由受域名验证影响；路由正确性、冷暖启动与内容就绪应分段计时。
 
 ### Widget 点击：从宿主进程进入应用
 
@@ -748,7 +955,12 @@ remoteViews.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 
 `requestCode` 和 Intent data 都参与 `PendingIntent` 身份判断，因而可以避免多个 Widget 实例错误复用旧路由。只有系统或宿主必须补充 Intent 内容的 API 才使用 mutable（可变） 模式；直接打开 Activity 的简单点击应保持 immutable（不可变）。Widget 顶层背景使用 `@android:id/background`，可以让 Android 12 及以上版本的 Launcher 识别转场背景。
 
-切换开关或执行轻量命令时，可以把 `PendingIntent` 指向 Receiver。`onReceive()` 应尽快返回：先更新可见状态，再把可延迟工作交给受约束的后台机制；长时间网络请求要放到 Receiver 之外。还要分别测试应用进程存活、进程不存在、设备锁定、Widget 多实例，以及目标页面已经位于 Task 中的情况。
+<!-- gracker-diagram: ch08-01-widget-host-pending-intent -->
+![Widget 宿主与 PendingIntent 启动链](../../assets/diagrams/ch08/ch08-01-widget-host-pending-intent.png)
+
+图：Widget 界面在宿主进程。多实例应有不同动作身份，直接 Activity PendingIntent 可使用支持的启动转场。
+
+切换开关或执行轻量命令时，可以把 `PendingIntent` 指向 Receiver。`onReceive()` 应尽快返回：先提交 Widget 状态更新请求（宿主还需渲染才可见），再把可延迟工作交给受约束的后台机制；长时间网络请求要放到 Receiver 之外。还要分别测试应用进程存活、进程不存在、设备锁定、Widget 多实例，以及目标页面已经位于 Task 中的情况。
 
 ### 用 Perfetto 和基准把场景关联起来
 
@@ -763,6 +975,11 @@ remoteViews.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 
 Macrobenchmark 可以通过 UIAutomator 重复执行点击、滑动和输入，并配合 `FrameTimingMetric`、自定义 trace 和目标状态等待。每个用例都要固定入口、数据、动画、编译状态和设备。点击后只调用 `waitForIdle()` 可能过早或过晚，应等待明确的页面节点或业务完成标记。
 
+<!-- gracker-diagram: ch08-01-scenario-four-evidence-types -->
+![场景关联需要输入、线程、帧与业务状态](../../assets/diagrams/ch08/ch08-01-scenario-four-evidence-types.png)
+
+图：系统轨道提供调度与帧信息，业务状态解释页面内容。自动化必须等待约定目标，才可重复比较。
+
 #### 响应回归看分布与失败
 
 页面切换和搜索都可能因为缓存是否命中而形成双峰分布，也就是快速和慢速样本各聚成一组。报告至少应按冷 / 温数据、入口、设备、Android 版本和网络条件分组，并同时记录：
@@ -776,13 +993,23 @@ Macrobenchmark 可以通过 UIAutomator 重复执行点击、滑动和输入，�
 
 少量但很慢的长尾样本，平均值描述不了。阈值应来自产品场景和设备基线；RAIL 可以作为 Web 交互的参考，各 Android 设备的硬门槛要按自己的基线定。
 
+<!-- gracker-diagram: ch08-01-scenario-distribution-controls -->
+![场景回归以分层分布和失败共同验收](../../assets/diagrams/ch08/ch08-01-scenario-distribution-controls.png)
+
+图：快慢双峰和长尾需要分组报告。平均值不能替代失败样本、尾延迟和明确的业务终点。
+
 ### 平台改动与进入内核分析的时机
 
 Android 17 会为 targetSdk 37 及以上的应用启用 lock-free（无锁） `MessageQueue`。它可能减少消息生产者和 Looper 之间的锁竞争，也会让通过反射读取 `mMessages` 或调用私有方法的旧监控失效。页面切换和点击监控应使用公开 trace、FrameTimeline 和测试 API；队列实现发生变化后，仍需进行应用侧对照测量。
 
-Android 17 还引入了 generational Concurrent Mark-Compact GC，也就是按对象代际管理、并以并发标记和压缩方式回收内存的 GC；它还可能通过 ART Mainline 更新覆盖部分较早系统。这会改变停顿和 CPU 时间分布。看到点击或切换附近出现 GC slice 时，应检查对象分配速率、堆状态和 collector 事件；固定收益要从测量来，单看平台版本推不出来。
+⚠️ 矛盾校正：旧文把 generational Concurrent Mark-Compact GC 的引入归于 Android 17；[Android 16 QPR2 发布说明](https://developer.android.com/about/versions/16/qpr2/release-notes)已明确包含该能力，与第 4 章的版本说明一致。Android 17 继续演进；具体设备的 ART/Mainline 版本与开关仍需核对，不能仅按系统大版本推定 collector。这会改变停顿和 CPU 时间分布。看到点击或切换附近出现 GC slice 时，应检查对象分配速率、堆状态和 collector 事件；固定收益要从测量来，单看平台版本推不出来。
 
-只有在出现线程长时间处于 runnable（可运行但未获得 CPU） 却未获得 CPU、频繁被抢占、CPU frequency 不足、input driver 延迟或 I/O wait 时，才需要进入 `android17-6.18-2026-06_r6` 分析调度和驱动。Activity、View、InputDispatcher、MessageQueue 和配置变更仍应依据 `android-17.0.0_r1` 的平台源码。
+线程长时间处于 runnable（可运行但未获得 CPU）、频繁被抢占、CPU frequency 不足、input driver 延迟或 I/O wait，是继续进入 `android17-6.18-2026-06_r6` 分析调度和驱动。Activity、View、InputDispatcher、MessageQueue 和配置变更仍应依据 `android-17.0.0_r1` 的平台源码。
+
+<!-- gracker-diagram: ch08-01-platform-version-and-kernel-scope -->
+![平台改动与内核下钻的证据边界](../../assets/diagrams/ch08/ch08-01-platform-version-and-kernel-scope.png)
+
+图：消息队列的兼容门槛与 GC 的首次发布版本分别说明。查到系统或内核依赖后继续核对，避免用版本升级代替性能证据。
 
 ### 场景审计清单
 
@@ -831,7 +1058,7 @@ Android 17 还引入了 generational Concurrent Mark-Compact GC，也就是按�
 
 这些生产案例形成于不同年份，保留历史数据是为了分析优化方法；把结论迁移到当前平台时，仍以篇首的统一基线为准。
 
-### 案例一：Reddit 用分屏 CUJ 改善冷启动与页面切换
+### 案例一：Reddit 用分页面 CUJ 改善冷启动与页面切换
 
 #### 优化前数据
 
@@ -864,6 +1091,11 @@ Reddit 进行了四项工程改动：
 3. 为每条 CUJ 生成 Baseline Profile，并随版本自动更新。
 4. 分阶段发布 R8、Profile 和 Compose 改动，观察实验室结果和线上分位数是否同向变化。
 
+<!-- gracker-diagram: ch08-01-reddit-cuj-profile-ci -->
+![Reddit 的 CUJ、Profile 与 CI 路径](../../assets/diagrams/ch08/ch08-01-reddit-cuj-profile-ci.png)
+
+图：案例展示从真实高频路径到可重复 Profile 生成的工程流程。代码编译优化不能消除原有的 I/O、锁和布局成本。
+
 Baseline Profile 让 ART 在安装或后台优化阶段优先编译已标记的热点方法，从而减少关键路径上的解释执行和 JIT（运行时即时编译）。I/O、锁等待或低效布局仍在原地，页面指标还要结合 Perfetto 和帧数据分析。
 
 #### 优化后数据
@@ -872,18 +1104,23 @@ Baseline Profile 让 ART 在安装或后台优化阶段优先编译已标记的�
 
 | 范围 | 指标 | 优化前（归一化） | 优化后（归一化） | 原文披露的变化 | 归因边界 |
 |---|---:|---:|---:|---:|---|
-| 首个 Feed Profile 的早期基准 | 启动耗时中位数 | 1.00 | 0.49 | 降低 51% | 原文归到该 Baseline Profile |
+| 首个 Feed Profile 的早期基准 | 启动耗时中位数 | 1.00 | 0.49 | 降低 51% | 首个 Feed Profile 的早期基准，处在 Profile/R8 组合计划中；未公开单变量对照 |
 | 首页 Feed | P95 frozen frames | 1.00 | 0.64 | 降低 36% | 原文归到首页 Feed Profile |
 | 社区 Feed | P90 TTI | 1.00 | 0.88 | 改善 12% | 原文归到社区 Feed Profile |
-| 社区 Feed | 首帧时间 | 1.00 | 0.78 | 降低 22% | 原文归到社区 Feed Profile |
+| 社区 Feed | P90 time to first draw | 1.00 | 0.78 | 降低 22% | 原文归到社区 Feed Profile |
 | 社区 Feed | P90 slow frames | 1.00 | 0.88 | 降低 12% | 原文归到社区 Feed Profile |
-| App 全局 | 冷启动 | 1.00 | 0.80 | 改善 20% | Profile、R8 与 UI 演进的整体结果 |
+| App 全局 | 冷启动 | 1.00 | 0.80 | 改善 20% | Profile/R8 段落的整体结果，Compose 后续升级另报 |
 
 “首个 Feed Profile 的 51%”描述特定路径，“全局冷启动的 20%”描述整体分布，两者口径不同。
 
+<!-- gracker-diagram: ch08-01-reddit-result-scopes -->
+![Reddit 特定路径与全局结果的边界](../../assets/diagrams/ch08/ch08-01-reddit-result-scopes.png)
+
+图：启动中位数、页面 TTI、first draw 和帧指标分别引用。公开组合计划没有给出所有工具的严格单变量收益。
+
 #### 投入产出比
 
-Reddit 工程师披露，一个功能团队制作一条 CUJ Profile 通常只需数小时，约一周后可以观察到生产结果。这段时间只代表单条 CUJ 的协作周期，不包括平台团队搭建 CI、指标系统和发布实验的初始投入。
+所引 2024 年一手文章没有披露单条 CUJ 的小时数、观察一周或具体人天。旧文“数小时、一周见效”的成本说法缺少该来源支持，已撤回；不能用它承诺本地实施周期。
 
 可以确认的产出包括冷启动与页面切换分位数下降，以及 Profile 能随版本重复生成。原文没有公开具体人天成本、服务器费用和每项工具的独立收益。本地评估时，应把 Profile 生成、基准设备维护、失败用例修复和发布观察都计入投入。
 
@@ -911,6 +1148,11 @@ Gmail Wear OS 团队公开了诊断步骤和相对收益，但没有披露优化
 
 这套步骤进一步判断“主线程没有执行”的原因究竟是等待 Binder、等待调度、等待 I/O，还是 CPU 被应用自己的动画和工作线程占用。只看主线程方法栈，很难完整区分这几种情况。
 
+<!-- gracker-diagram: ch08-01-gmail-runnable-contention -->
+![Gmail Wear OS 的可运行等待与 CPU 争用](../../assets/diagrams/ch08/ch08-01-gmail-runnable-contention.png)
+
+图：概念轨道区分主线程 Runnable 与阻塞等待 Binder：等待回复时，延迟可能来自对端线程未获 CPU。条宽不是案例原始数据，不能用 Runnable 代替所有“未执行”状态。
+
 #### 优化手段
 
 团队做了两组改动，原文分别报告收益：
@@ -929,11 +1171,16 @@ Gmail Wear OS 团队公开了诊断步骤和相对收益，但没有披露优化
 
 两行来自不同改动，官方资料也没有说明它们是否基于同一版本、是否串行叠加；能引用的只有各自一行，“合计改善 70%”推不出来，把 0.50 与 0.80 相乘当成最终值，同样没有依据。
 
+<!-- gracker-diagram: ch08-01-gmail-independent-experiments -->
+![Gmail 两项收益各自保留基线](../../assets/diagrams/ch08/ch08-01-gmail-independent-experiments.png)
+
+图：两组实验的改善数字各自有效，缺少联合设计时不能叠加；延长启动画面也不能作为其他设备的通用优化。
+
 #### 投入产出比
 
 团队没有披露工期。从公开信息看，UI 修改和构建配置涉及的代码范围较小；但采集可比较的 trace、维护 Wear OS 设备组合、执行 A/B 测试和验证视觉状态仍需要工程投入。
 
-这个案例的产出还包括一条清晰的诊断结论：“主线程执行的方法太多”这一单一解释被排除，后续工作指向 DEX、Binder、调度和 JIT 四条可验证路径。资源有限的团队可以借此少做没有依据的重构。
+这个案例的诊断结论是：主线程方法执行时长不足以解释全部启动延迟，还要沿 DEX、Binder、调度和 JIT 继续核对；这不排除主线程本身仍有可优化工作。资源有限的团队可以借此少做没有依据的重构。
 
 ### 案例三：Disney+ 清理旧 R8 默认规则
 
@@ -947,11 +1194,17 @@ Disney+ 的案例没有披露业务规模、DRM 初始化、播放器加载或�
 
 这个问题涉及五个配置面：
 
+
 - `isMinifyEnabled` 控制 release 变体是否运行代码缩减和优化流程。
 - `isShrinkResources` 控制资源缩减。
 - `proguard-android.txt` 是旧默认规则集，其中的 `-dontoptimize` 会关闭代码优化。
 - `proguard-android-optimize.txt` 是当前推荐的优化规则入口。
 - 从 AGP 8.0 开始，R8 full mode 默认开启；历史项目仍可能在 `gradle.properties` 中保留 `android.enableR8.fullMode=false`。从 AGP 9.0 开始，官方已经移除对 `proguard-android.txt` 的支持。
+
+<!-- gracker-diagram: ch08-01-disney-r8-rule-audit -->
+![Disney+ 的 R8 规则审查路径](../../assets/diagrams/ch08/ch08-01-disney-r8-rule-audit.png)
+
+图：旧默认规则中的 dontoptimize 会抑制优化。修改配置后还需检查实际产物和运行行为，不能把配置名当作效果证明。
 
 文件名、Gradle 属性和 keep rules（保留规则）需要分别检查。只替换规则文件却保留 `fullMode=false`，或者使用优化文件后又通过宽泛的 keep rules 保留大量代码，都会削弱收益。
 
@@ -973,10 +1226,15 @@ R8 会删除、重命名、移动或合并程序元素。测试只覆盖应用�
 
 | 指标 | 优化前（归一化） | 优化后（归一化） | 原文披露的变化 |
 |---|---:|---:|---:|
-| App 启动耗时 | 1.00 | 0.70 | 加快 30% |
+| App 启动 | 未披露绝对值 | 不作精确耗时比换算 | 原文：30% faster app startup |
 | user-perceived ANR | 1.00 | 0.75 | 减少 25% |
 
-第二行是 Google Play 定义的 user-perceived ANR（用户感知到的 ANR），适用范围就到这一类 ANR 为止。原文只说明新版本发布后观察到这两项变化，没有公开 ANR 类型分布，也没有给出各项 R8 优化分别贡献了多少。现有数据只能支持配置变更与生产指标同向变化这一层结论。
+第一行保留原文的 faster 表述；“速度提高 30%”与“耗时降低 30%”在数学上不同，原文不足以判定 0.70 或 1/1.30 的精确耗时比。第二行是 Google Play 定义的 user-perceived ANR（用户感知到的 ANR），适用范围就到这一类 ANR 为止。原文只说明新版本发布后观察到这两项变化，没有公开 ANR 类型分布，也没有给出各项 R8 优化分别贡献了多少。现有数据只能支持配置变更与生产指标同向变化这一层结论。
+
+<!-- gracker-diagram: ch08-01-disney-production-result-limits -->
+![Disney+ 的相对结果与归因范围](../../assets/diagrams/ch08/ch08-01-disney-production-result-limits.png)
+
+图：速度提升与耗时降幅不是同一个数学量。案例未给精确换算定义和机制拆分，保留原文百分比最稳妥。
 
 #### 投入产出比
 
@@ -990,7 +1248,7 @@ R8 会删除、重命名、移动或合并程序元素。测试只覆盖应用�
 
 Duolingo 围绕三条产品路径开展性能实验：打开应用、开始一次学习和结束一次学习。团队发布的 [Android 性能复盘](https://blog.duolingo.com/android-app-performance/) 说明，课程结束时需要提交本次学习数据，并获取广告、奖励等后续页面信息。旧流程在所有这些工作完成前一直显示全屏加载指示器。
 
-用户点击 `continue` 后能立即看到按钮按下状态，但页面主体仍然是等待画面。这个案例测量的是从点击到出现有意义完成反馈的感知等待。公开资料没有披露输入事件到首帧的绝对毫秒数，也没有证明后端请求本身变快。
+旧流程的主要可见等待是全屏加载；一手文字没有分别测量按钮按下态何时显示，不能据此补造“按压反馈已立即呈现”的细节。这个案例测量的是从点击到出现有意义完成反馈的感知等待。公开资料没有披露输入事件到首帧的绝对毫秒数，也没有证明后端请求本身变快。
 
 #### 分析过程
 
@@ -1007,23 +1265,40 @@ Duolingo 围绕三条产品路径开展性能实验：打开应用、开始一�
 
 新流程在用户点击 `continue` 后立即显示烟花、动画和 `Session Complete` 文案，同时在后台提交数据并准备后续页面。它改变的是可见状态的先后顺序，并未声称整个网络事务变得更快。
 
-工程上可以为这条路径记录三个时间点：
+<!-- gracker-diagram: ch08-01-duolingo-feedback-order -->
+![Duolingo 调整可见反馈与后台工作的顺序](../../assets/diagrams/ch08/ch08-01-duolingo-feedback-order.png)
 
-- `input_received`：主线程收到点击。
-- `meaningful_feedback_drawn`：完成页的有意义反馈已经提交到显示管线。
-- `operation_committed`：服务端确认或本地可靠队列完成持久化。
+图：案例降低的是有意义反馈前的感知等待，不证明网络更快。轨道只对比依赖关系，后台条宽相同也不表示实测耗时相同。
 
-点击响应由前两个时间点决定，业务完成由第三个时间点决定。如果把后两个时间点合为一个指标，报表里“反馈快、提交慢”和“反馈慢、提交快”就混在一起了。
+[推断] 工程上可分别记录以下里程碑，这是一种本地测量设计，不是 Duolingo 公布的原始 marker：
+
+- `input_received`：应用接收到该输入，另行记录业务点击回调起点。
+- `feedback_submitted`：反馈状态对应的帧已提交，尚不证明可见。
+- `feedback_presented`：经窗口/图层和帧证据复核，反馈帧已经呈现。
+- `operation_durably_queued`：业务操作已写入可恢复的本地可靠队列，仍可能未到服务端。
+- `operation_server_confirmed`：服务端确认成功。
+
+可见点击响应量到 `feedback_presented`；本地持久化与服务端确认分别统计，不能把它们并为同一个“已提交成功”。业务允许哪一阶段展示何种反馈，要由状态语义决定。
+
+<!-- gracker-diagram: ch08-01-feedback-durability-confirmation -->
+![反馈呈现、本地持久化与服务端确认](../../assets/diagrams/ch08/ch08-01-feedback-durability-confirmation.png)
+
+图：图是从案例推导的测量设计。提交帧不等于可见，本地可靠入队也不等于服务器已经成功处理。
 
 #### 优化后数据
 
 | 指标 | 优化前（归一化） | 优化后（归一化） | 原文披露的变化 |
 |---|---:|---:|---:|
-| 感知到的 session end 延迟 | 1.00 | 小于等于 0.40 | 降低 60% 以上 |
+| 感知到的 session end 延迟 | 1.00 | 小于 0.40 | 原文 60%+ 降幅 |
 | 服务端提交耗时 | 未披露 | 未披露 | 不能从案例推断 |
 | DAU 与完成 session 数 | 未披露 | 上升 | 原文只给定性结果 |
 
 同一篇复盘还披露了整个 2024 Android 性能计划的总体结果：团队运行了 200 多个 A/B 实验；入门设备的应用打开转化率从 91% 提高到 94.7%；启动等待超过 5 秒的入门设备用户占比从 39% 降到 8%。这些数据属于整个计划整体，不是 session end 这一项改动单独带来的。
+
+<!-- gracker-diagram: ch08-01-duolingo-experiment-attribution -->
+![Duolingo 单项与全年计划的归因边界](../../assets/diagrams/ch08/ch08-01-duolingo-experiment-attribution.png)
+
+图：不同范围的数据可以并列，不能把全年多项实验的产品变化全部算到一个反馈改动上。
 
 #### 投入产出比
 
@@ -1075,6 +1350,11 @@ Macrobenchmark 适合建立可重复的启动和交互基准，[官方概览](ht
 
 同一项收益只计一次。启动变快可能同时改善转化率，两者可以并列展示；没有经济模型时，相加只会得到一个虚构金额。案例只提供相对变化时，本地团队仍需根据自己的样本量和用户价值判断是否值得投入。
 
+<!-- gracker-diagram: ch08-01-case-experiment-roi-contract -->
+![案例迁移的实验与成本合同](../../assets/diagrams/ch08/ch08-01-case-experiment-roi-contract.png)
+
+图：能复核的时间分布、故障、业务变化和维护成本，比一个没有金额与人天依据的 ROI 结论更有用。
+
 ### 把案例方法迁移到当前基线
 
 四个案例主要涉及应用代码和构建工具，并不依赖某个 Android 17 新 API。把方法迁移到当前平台时，我们仍用统一基线解释 trace：
@@ -1087,6 +1367,11 @@ Macrobenchmark 适合建立可重复的启动和交互基准，[官方概览](ht
 - I/O 或缺页占主要时间时，要区分冷缓存、设备存储和内核版本，避免把一台设备上的收益外推到全部用户。
 
 Android 17 framework 或 6.18 内核可能改变某些 slice 的耗时，案例中的历史百分比只是当时的测量结果；迁移时可以复用诊断步骤，数据必须在当前基线上重新采集。
+
+<!-- gracker-diagram: ch08-01-current-baseline-evidence-routing -->
+![把历史案例方法迁移到当前基线](../../assets/diagrams/ch08/ch08-01-current-baseline-evidence-routing.png)
+
+图：Running 和 Runnable 只是诊断起点。Binder 需追对端，I/O 需区分缓存与设备，结论依赖当前 trace 和对照实验。
 
 ### 常见误读
 
@@ -1124,7 +1409,7 @@ minify 开关、默认规则文件、full mode 属性和 keep rules 会共同影
 
 ## 小结
 
-分析响应速度时，我们要把输入、线程调度、业务执行和反馈帧分别计时。Activity、Fragment、ViewPager2、点击、搜索、Deep Link 和 Widget 的入口各不相同，对主线程的要求却一致：不限时长的工作都要移出主线程；后台任务也要限制 CPU、I/O，并正确处理取消和结果提交。
+分析响应速度时，我们要把输入、线程调度、业务执行和反馈帧分别计时。Activity、Fragment、ViewPager2、点击、搜索、Deep Link 和 Widget 的入口各不相同，对主线程的要求却一致：会超过交互/帧预算或不可控阻塞的工作应移出主线程；后台任务也要限制 CPU、I/O，并正确处理取消和结果提交。
 
 固定毫秒经验、单一回调耗时，以及简单地“加一个异步”，都不足以证明性能已经改善；能作数的，是起止点一致的基准测试、Perfetto 关键路径和线上分布。
 
@@ -1159,6 +1444,15 @@ minify 开关、默认规则文件、full mode 属性和 keep rules 会共同影
 - [`Display` API](https://developer.android.com/reference/android/view/Display)
 - [RAIL performance model](https://web.dev/articles/rail)
 
+- [MotionEvent 时间 API 与版本](https://developer.android.com/reference/android/view/MotionEvent#getEventTimeNanos())
+- [Web INP：输入、处理、呈现与页面访问聚合](https://web.dev/articles/inp)
+- [Android 16 QPR2：Generational CMC](https://developer.android.com/about/versions/16/qpr2/release-notes)
+- [r1 配置变更资源策略](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/AppCompatRecreateOnConfigChangePolicy.java)
+- [r1 ActivityRecord：desk 资源与重建判定](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityRecord.java)
+- [r1 InputEventReceiver：输入完成回传](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/InputEventReceiver.java)
+- [r1 HWC present fence 语义](https://android.googlesource.com/platform/hardware/libhardware/+/android-17.0.0_r1/include_all/hardware/hwcomposer2.h)
+- [Perfetto 官方输入测试 trace 的校验和](https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/test/data/android_input_tracing_e2e_latency.pb.gz.sha256)
+
 ### 场景与平台资料
 
 - [AOSP Android 17：Activity.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Activity.java)
@@ -1170,6 +1464,7 @@ minify 开关、默认规则文件、full mode 属性和 keep rules 会共同影
 - [AOSP Android 17：View.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java)
 - [Android Developers：Fragment transactions](https://developer.android.com/guide/fragments/transactions)
 - [Android Developers：Fragment animations and postponed transitions](https://developer.android.com/guide/fragments/animate)
+- [FragmentStateAdapter 源码快照](https://android.googlesource.com/platform/frameworks/support/+/35d8f1dda494fcd09f52177d9dd54bc65f9929de/viewpager2/viewpager2/src/main/java/androidx/viewpager2/adapter/FragmentStateAdapter.java)：2026-10-23 核对的 AndroidX 提交。
 - [Android Developers：ViewPager2 API](https://developer.android.com/reference/androidx/viewpager2/widget/ViewPager2)
 - [Android Developers：Swipe views with ViewPager2](https://developer.android.com/develop/ui/views/animations/screen-slide-2)
 - [Android Developers：Lifecycle-aware coroutine collection](https://developer.android.com/topic/libraries/architecture/coroutines)

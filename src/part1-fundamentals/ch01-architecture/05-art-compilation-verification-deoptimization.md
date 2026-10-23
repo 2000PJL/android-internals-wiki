@@ -187,6 +187,11 @@ DEX
 
 `.odex` 文件存在，只说明产物在；哪些方法有机器码，还要看编译过滤器和代码使用画像。
 
+<!-- gracker-diagram: ch01-05-execution-modes -->
+![解释执行、JIT 与画像引导 AOT 的关系](../../assets/diagrams/ch01/ch01-05-execution-modes.png)
+
+图：执行方式按方法、产物有效性与运行状态选择。解释执行可产生热度并触发 JIT；Profile 可参与设备侧 dex2oat，云端或基准画像本身不携带适用于所有设备的机器码。
+
 ### 编译策略为什么经历多次反转
 
 | 版本 | 主要策略 | 代价落点 |
@@ -862,6 +867,11 @@ guard 条件失败
 
 这条路径直接调用 `Thread::Deoptimize()`。它没有先抛出一个普通 Java 异常，因此把所有 deopt 概括为“特殊异常”会掩盖入口差异。
 
+<!-- gracker-diagram: ch01-05-single-frame-deopt -->
+![显式单帧去优化与解释器状态恢复](../../assets/diagrams/ch01/ch01-05-single-frame-deopt.png)
+
+图：这张图只描述优化代码显式触发的单帧 deopt。一个编译帧若内联多个 Java 方法，可能重建多个 ShadowFrame；随后从相应 DEX PC 继续，不是从方法开头重跑。
+
 #### 1.3 守卫条件的代价分为未命中和命中两部分
 
 守卫条件未触发时，热路径通常只多一次比较和条件跳转，仍有指令与分支预测成本。触发时才进入 ART runtime，主要工作包括：
@@ -928,6 +938,11 @@ CHA 失效按以下顺序处理：
 6. 编译代码执行 `HShouldDeoptimizeFlag` 守卫时进入 `HDeoptimize(kCHA)`。
 
 checkpoint 是让目标线程在安全点执行指定检查的协作机制。这里它只负责在目标线程上标记栈帧，不在 checkpoint 回调内构造 `ShadowFrame`。类链接线程会等待相关线程通过 checkpoint，因此大量线程或很深的栈可能把这部分成本反映到类加载延迟上。
+
+<!-- gracker-diagram: ch01-05-cha-invalidation -->
+![类加载触发 CHA 去优化的条件与分工](../../assets/diagrams/ch01/ch01-05-cha-invalidation.png)
+
+图：只有新类破坏单实现假设且已有依赖编译代码时，才进入这条 CHA 失效路径。checkpoint 标记现有栈帧；执行线程之后命中守卫才进入实际 deopt。
 
 Android 17 ART 源码中没有 `runtime/deopt_checkpoint.cc`：CHA checkpoint 定义在 `runtime/cha.cc`，JVMTI 的线程级同步 checkpoint 位于 `openjdkjvmti/deopt_manager.cc`，查源码时按这两个文件找。
 

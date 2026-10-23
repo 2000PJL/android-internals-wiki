@@ -208,6 +208,11 @@ NMS 把同一条通知的异步处理分成两步：
 
 这些容器并非各自独立的数据副本；同一记录可能同时出现在列表和索引中。源码中的 `mNotificationLock` 保护跨结构一致性。诊断“更新丢失”时，要先分清记录仍在 enqueued、已被淘汰，还是 post 后尚未到达 SystemUI。
 
+<!-- gracker-diagram: ch01-23-notify-display-boundaries -->
+![notify 同步返回与通知异步显示的边界](../../assets/diagrams/ch01/ch01-23-notify-display-boundaries.png)
+
+图：应用先整理通知，再同步进入 NMS 校验；请求投递到 Handler 后，同步调用即可返回。enqueue、assistant 等待、post、listener 投递和 SystemUI 显示继续异步推进，任何阶段都可能受策略抑制。
+
 ## NMS 的线程模型
 
 ### `mHandler` 绑定 `system_server` 主 Looper
@@ -269,6 +274,11 @@ Android 17 对高频更新设置了两级保护，但两者的作用域和算法
 
 合适的处理方式是按通知 key 合并状态，只发送用户能看见的变化；完成、失败、暂停等状态切换立即发送，中间进度按时间窗口采样。
 
+<!-- gracker-diagram: ch01-23-update-rate-scopes -->
+![两级更新限流的计数范围不同](../../assets/diagrams/ch01/ch01-23-update-rate-scopes.png)
+
+图：客户端以通知 key 判断是否为同进度状态更新，但速率估算器由同一个 NotificationManager 实例共享；服务端则使用包级估算。中间百分比变化仍可能属于同一 ONGOING 状态，完成状态变化只绕过相应更新限流条件，仍受其他策略约束。
+
 ### 每包 50 条并非无条件配额
 
 `MAX_PACKAGE_NOTIFICATIONS` 在 AOSP Android 17 中为 50。NMS 统计同包、同 user 已发布和正在入队的记录，排除本次更新所替换的 `(id, tag)`。达到上限后，新记录会被拒绝。
@@ -279,7 +289,7 @@ Android 17 对高频更新设置了两级保护，但两者的作用域和算法
 
 ### 创建和更新规则
 
-`NotificationChannel` 从 API 26 开始就是发布通知的必要路由。渠道 ID 是持久身份，不应把版本号、语言或临时业务状态编码进 ID。
+运行在 Android 8.0 及以上、且 target SDK 为 26 及以上的应用，发布通知必须指定有效的 `NotificationChannel`；旧目标版本应用仍有兼容渠道路径。渠道 ID 是持久身份，不应把版本号、语言或临时业务状态编码进 ID。
 
 `createNotificationChannel()` 可以重复调用，但重复调用不会覆盖全部配置。Android 17 的 `PreferencesHelper.createNotificationChannel()` 对应用侧更新采用以下规则：
 
@@ -307,6 +317,11 @@ Android 17 对高频更新设置了两级保护，但两者的作用域和算法
 ```
 
 这项设计防止应用用“删掉再创建”绕过用户选择。需要一套全新的声音、重要性或用途时，应设计新的稳定渠道 ID，并向用户解释迁移原因。
+
+<!-- gracker-diagram: ch01-23-channel-tombstone -->
+![同渠道 ID 删除后重建仍保留原设置](../../assets/diagrams/ch01/ch01-23-channel-tombstone.png)
+
+图：创建稳定 ID 的渠道后，系统保留渠道配置与用户锁定字段。删除主要留下 tombstone，同 ID 重建恢复原对象与设置；应用不能借此重置用户决定的声音或重要性。
 
 ### 渠道不存在时不会替现代应用兜底
 
@@ -415,6 +430,11 @@ Android 17 还在 SystemUI 的 `NotificationCustomContentMemoryVerifier` 增加�
 `CHECK_SIZE_OF_INFLATED_CUSTOM_VIEWS` 使用 `@EnabledAfter(BAKLAVA)`，所以从 target API 37 开始强制拒绝；目标版本较低的应用在同样超限时只收到迁移警告。这个检查针对展开后的 Drawable，因而覆盖了 URI 和资源图片未计入 Parcel 估算的情况。
 
 应用应优先使用系统模板；确需自定义视图时，要在解码前限制图片尺寸，并为视图被 NMS 剥离或被 SystemUI 拒绝准备可接受的退化路径。AOSP 阈值适合用于理解源码和日志，不适合作为应用的图片预算。
+
+<!-- gracker-diagram: ch01-23-remoteviews-memory -->
+![自定义通知的两层内存检查观察不同对象](../../assets/diagrams/ch01/ch01-23-remoteviews-memory.png)
+
+图：第一层 NMS 检查 RemoteViews 传输对象的估算内存，第二层 SystemUI 检查 apply 后自定义视图中的 Drawable。资源和 URI 图片可能在第二层才显露真实占用；通过第一层不等于最终可显示。
 
 共享 bitmap backing（多个对象共用的像素存储）只能减少部分重复拷贝，不能消除解码、缩放、Parcel 元数据、SystemUI 图片解析和 GPU 上传。大图通知的成本需要在应用、NMS、SystemUI 和渲染四段分别观察，详见 §9.5。
 

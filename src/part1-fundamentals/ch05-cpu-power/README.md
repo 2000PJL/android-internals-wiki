@@ -17,6 +17,11 @@
 
 这些控制面不是固定的串行调用链。调度器选择任务；schedutil 可以根据 PELT 负载跟踪和 UClamp 利用率约束请求频率；Power HAL 可能改变厂商策略；温控机制还能压低可用上限。CPUIdle 处理没有可运行任务的时段，DVFS（动态电压频率调节）则调整运行时的电压与频率，二者不能混为一个“省电开关”。
 
+<!-- gracker-diagram: ch05-readme-control-planes-and-evidence -->
+![CPU 与功耗的六类控制面](../../assets/diagrams/ch05/ch05-readme-control-planes-and-evidence.png)
+
+图：调度、调频、空闲、性能反馈、温控和后台政策可能并行施加影响。DVFS 管运行时的档位，CPUIdle 管无工作时的低功耗状态；只看 CPU 使用率不足以定位问题。
+
 ## 连续阅读目录
 
 - [5.1 Linux 调度、EAS 与大小核架构](01-linux-eas-big-little-scheduling.md)
@@ -46,3 +51,9 @@
 ## 阅读分组与前置关系
 
 5.1 与 5.2 奠定任务放置、频率和功耗约束的基础，5.3 与 5.4 说明后台策略与应用反馈接口。端侧 AI 按 5.5 → 5.6 阅读；周期性外围设备负载按 5.7 → 5.9 阅读。5.8 讨论应用热路径的数据布局，可在 5.1 之后阅读，它与传感器、蓝牙音频没有前置依赖。
+
+
+<!-- gracker-diagram: ch05-readme-chapter-reading-map -->
+![按问题选择第 5 章阅读分支](../../assets/diagrams/ch05/ch05-readme-chapter-reading-map.png)
+
+图：箭头表示建议的知识入口。端侧 AI 按 5.5→5.6，外围设备按问题选 5.7/5.9；5.8 与传感器、蓝牙音频没有前置依赖，也不要求先读完其他分支。

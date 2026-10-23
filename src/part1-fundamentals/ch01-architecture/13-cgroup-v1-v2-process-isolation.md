@@ -106,6 +106,11 @@ Android 17 AOSP 中不存在统一的 `/dev/cgroot/cpu/top-app` 基线路径。C
 
 `/proc/<pid>/cgroup` 会按 hierarchy 列出这些归属。看到 v2 行中的 `0::/apps/...`，不能据此推断 CPU 与 cpuset 也已迁入 v2；必须结合 `/proc/<pid>/mountinfo`（该进程看到的挂载信息）或设备上的 `cgroups.json` 解释每一行。
 
+<!-- gracker-diagram: ch01-13-hybrid-hierarchies -->
+![Android 17 AOSP 的 cgroup v1/v2 混合归属](../../assets/diagrams/ch01/ch01-13-hybrid-hierarchies.png)
+
+图：AOSP 固定基线中 CPU、cpuset、blkio 使用 v1；freezer 和可选 memory 位于 v2。箭头只表示同一任务的层级归属，设备可以覆盖版本、路径与参数。
+
 ## 2. init 如何建立层级
 
 ### 2.1 控制器挂载由 `CgroupSetup()` 完成
@@ -259,6 +264,11 @@ procstate 是 framework 对进程当前业务重要性的分类，sched group �
 | 其他默认情形 | `THREAD_GROUP_DEFAULT` |
 
 OomAdjuster 通过 `mProcessGroupHandler` 异步发送组变更，再由 callback 调整应用及相关子进程。profile 文件写入不在 OomAdjuster 的计算循环内执行。状态字段先更新、cgroup 迁移随后执行，因此短时间观察可能同时看到“新 sched group”与“旧 cgroup 路径”；这两步之间的间隔不能预设为固定的 100～200 ms。
+
+<!-- gracker-diagram: ch01-13-scheduling-group-application -->
+![从 OomAdjuster 调度组到 profile 文件操作](../../assets/diagrams/ch01/ch01-13-scheduling-group-application.png)
+
+图：调度组先在框架计算，再由 Handler 异步应用。进程级 JNI 入口使用 CPUSET_SP 聚合配置，libprocessgroup 按实际 JSON 展开动作；状态变化与底层写入的时间需要分别观测。
 
 进入或离开 `top-app` 时，framework 还可能单独调整主线程/RenderThread nice，或在配置允许时切换 FIFO（先进先出实时调度）UI scheduling。这些动作和 cgroup 迁移有关联，但属于不同内核接口，排查时要分别取证。
 

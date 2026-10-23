@@ -69,10 +69,15 @@ consolidated_from:
 
 1. 哪一类内存在增长：Java、原生堆、图形内存、共享页、交换空间（swap），还是文件描述符？
 2. 增长发生在哪个业务场景，退出场景后能否回落？
-3. 增长来自仍在使用的对象、缓存、延迟释放，还是不可达却仍被引用的对象？
+3. 增长来自仍在使用的对象、缓存、延迟释放，还是业务已不再需要却仍从 GC Root 可达的对象？
 4. 问题表现为 OOM、系统低内存终止、GC 干扰帧执行，还是后台驻留能力下降？
 
 这四个问题的答案直接决定工具选择：PSS（Proportional Set Size）按共享比例分摊驻留内存，适合观察进程总体占用；定位具体的引用或分配调用栈，一张总 PSS 曲线通常帮不上忙。
+
+<!-- gracker-diagram: ch04-04-resource-domain-investigation -->
+![先按内存域和业务表现选证据，再定位对象或调用栈](../../assets/diagrams/ch04/ch04-04-resource-domain-investigation.png)
+
+图：先固定设备、构建和重复场景，用分类指标确认增长发生在 Java、Native、图形共享资源或其他映射。Java 保留问题查引用图，Native 未释放分配查采样调用栈，DMA-BUF 查 inode、导出方与持有者。总 PSS 是归因快照，不能单独指出具体泄漏对象或分配函数。
 
 ## 四步优化顺序
 
@@ -108,6 +113,11 @@ consolidated_from:
 
 弱引用改变的只是引用强度：取消工作、注销观察者、关闭资源，仍然要靠业务代码自己完成。所以首选方案是让任务和注册行为服从生命周期，再根据 API 合约决定是否需要弱引用。
 
+<!-- gracker-diagram: ch04-04-lifecycle-strong-reference-chain -->
+![页面已经结束，长期所有者仍可把整棵 UI 留住](../../assets/diagrams/ch04/ch04-04-lifecycle-strong-reference-chain.png)
+
+图：示例中，进程级单例、活动线程或消息队列持有回调，回调捕获已结束的页面，页面继续持有 View 与业务资源。对象仍从 GC Root 可达，所以 GC 不会替业务解除这条所有权。修复应在对应作用域取消任务、移除回调或注销监听；外部句柄再按 close / use 协议释放。
+
 ### 第四层：监控和回归
 
 开发期可用 LeakCanary 和堆转储（Heap Dump）查引用链，用 Android Studio Memory Profiler 看分配热点；性能测试可用 Perfetto、heapprofd、`dumpsys meminfo` 和 `/proc` 指标；线上则关注退出原因、用户可感知的低内存终止率，以及不同设备档位的内存水位。
@@ -125,7 +135,7 @@ ART 的垃圾收集器和代际策略随版本、设备配置与运行状态变�
 - 分配速率、存活对象数量与回收后基线；
 - 60 Hz、90 Hz、120 Hz 等目标刷新率下的业务负载。
 
-120 Hz 的帧间隔约为 8.33 ms，60 Hz 约为 16.67 ms；刷新率越高，每帧可用时间越短，同样时长的暂停占的比例就越大。是否掉帧，还取决于该帧的其他工作、线程调度和设备性能。所以固定的“3 ms GC 黄金线”缺少跨设备依据；判断 GC 是否真的伤到了帧，看 FrameTimeline 与 GC 事件在时间上是否重叠。
+120 Hz 的帧间隔约为 8.33 ms，60 Hz 约为 16.67 ms；刷新率越高，每帧可用时间越短，同样时长的暂停占的比例就越大。是否掉帧，还取决于该帧的其他工作、线程调度和设备性能。所以固定的“3 ms GC 黄金线”缺少跨设备依据；判断 GC 是否真的伤到了帧，应先用 FrameTimeline 找问题帧，再检查主线程暂停、分配等待与 CPU 调度；GC 时间重叠只是调查入口，不能单独证明因果。
 
 ### 对象池的取舍
 
@@ -152,7 +162,7 @@ Bitmap 像素数据所在位置经历过三段变化：
 
 | Android 版本 | 像素数据主要位置 | 管理要点 |
 | --- | --- | --- |
-| Android 2.2 / API 8 及更早 | 原生内存 | Java 对象与原生像素数据的释放时机需要特别谨慎 |
+| Android 2.3.3 / API 10 及更早 | 原生内存 | Java 对象与原生像素数据的释放时机需要特别谨慎 |
 | Android 3.0～7.1 / API 11～25 | Dalvik/ART 堆 | 像素数据计入受管理堆 |
 | Android 8.0 / API 26 及以后 | 原生内存 | 平台通过 `NativeAllocationRegistry` 把原生分配压力反馈给运行时 |
 
@@ -187,6 +197,11 @@ fun calculateInSampleSize(
 ```
 
 这个结果只做粗粒度下采样。后续还要结合 EXIF 方向、目标密度、裁剪方式和图片库的尺寸解析，避免把尺寸刚好的图片又放大一截。
+
+<!-- gracker-diagram: ch04-04-bitmap-target-decode-sizing -->
+![先取尺寸再采样解码，像素预算与压缩文件大小无关](../../assets/diagrams/ch04/ch04-04-bitmap-target-decode-sizing.png)
+
+图：按正文算法，4000×3000 原图要覆盖 200×200 目标时可选 inSampleSize=8，粗采样约 500×375；继续取 16 会使高度不足 200。ARGB_8888 的紧密像素估算由 48,000,000 B 降到 750,000 B，后续仍需处理 EXIF、密度与裁剪。实际分配还看 rowBytes、格式、解码器和临时缓冲区。
 
 ### 像素格式
 
@@ -244,9 +259,14 @@ val decoded = try {
 
 失败后移除候选再解码，可以避免把尺寸不匹配当成图片损坏。成熟图片库通常已经实现了更完整的候选筛选、引用计数和并发保护，业务代码无需重复造池。
 
+<!-- gracker-diagram: ch04-04-inbitmap-reuse-and-ownership -->
+![inBitmap 要检查可变性和容量，并始终使用解码返回值](../../assets/diagrams/ch04/ch04-04-inbitmap-reuse-and-ownership.png)
+
+图：先确认候选可变、非 HARDWARE 且没有其他使用者，再按目标格式与缩放结果判断容量。API19+ 比较解码所需字节与 AllocationByteCount；不匹配时可捕获 IllegalArgumentException，清除 inBitmap 后重试。最终使用 decode 返回值，候选池负责归还与容量管理，业务不能擅自 recycle 图片库仍在使用的对象。
+
 ### `recycle()` 与所有权
 
-`Bitmap.recycle()` 会立即释放像素资源。调用它的前提，是调用方能证明这块 Bitmap 此后不会再被 View、Drawable、Canvas、图片库、后台任务或其他线程使用，否则后续访问会失败。
+`Bitmap.recycle()` 会把该 Bitmap 标为不可再使用，并释放它持有的原生像素对象引用；若渲染端或其他原生对象仍持有后备，底层存储的最终释放还受引用与渲染生命周期约束，不能保证此刻 RSS 立即下降。调用它的前提，是调用方能证明这块 Bitmap 此后不会再被 View、Drawable、Canvas、图片库、后台任务或其他线程使用，否则后续访问会失败。
 
 官方 Bitmap 内存指南把手动 `recycle()` 的重点放在 Android 2.3.3 / API 10 及更早版本；现代应用通常让清晰的所有权、GC 和图片库来管生命周期。图片变换产生的中间 Bitmap，若由当前函数独占、下游也已拿到新结果，可以及时回收；由 Glide 等库管理的 Bitmap，回收交给库自己。
 
@@ -587,9 +607,19 @@ SLRU（Segmented LRU）把预算拆成两个 access-order 段：
 
 一次扫描因此主要竞争观察段预算，稳定复用的条目得到单独保护。两段比例没有通用答案，应由 key 分布、value 权重、重复访问间隔和内存预算共同决定。图片可以用实际字节数作为权重；普通对象只能采用团队能持续校准的近似值。
 
+<!-- gracker-diagram: ch04-04-slru-probation-protected -->
+![分段 LRU：新条目先观察，复用后再保护](../../assets/diagrams/ch04/ch04-04-slru-probation-protected.png)
+
+图：这是业务缓存的两段设计：新条目先进 probation；再次命中后晋升 protected；protected 超预算时将最久未使用者降回观察段；观察段超预算再逐出其最久未使用者。一次性扫描主要竞争观察段，稳定复用条目得到保护。两段都要有权重预算，分配比例需按实际访问模式验证。
+
 ### 并发加载与释放
 
 `LruCache.create()` 在内部锁外计算 value。多个线程同时 miss 同一个 key 时，可能并行创建多个结果，缓存只保留其中一个。加载昂贵时，我们要在缓存外合并同 key 的在途请求，并定义失败是否缓存、多久后允许重试。磁盘、网络或解码工作要放在全局缓存锁之外，否则其他 key 的命中也会等待这次 I/O。
+
+<!-- gracker-diagram: ch04-04-cache-create-outside-lock -->
+![LruCache 的 create 在锁外，同 key 并发 miss 可以重复加载](../../assets/diagrams/ch04/ch04-04-cache-create-outside-lock.png)
+
+图：两个线程可在各自短暂加锁检查后都得到 miss，随后同时在锁外 create。提交时 LruCache 会在锁内协调冲突并保留已有值，锁外通知新建但未采用的结果。昂贵加载需额外合并同 key 的在途请求；不能为了去重把网络、磁盘或解码放到全局缓存锁里。
 
 若 value 持有 `Bitmap`、文件句柄或其他需释放资源，应先在锁内收集逐出项，再在锁外执行释放回调，避免回调重入缓存或长时间占锁。上线 A/B 至少同时观察：
 
@@ -653,6 +683,11 @@ Perfetto 中常用的四个内存数据源回答不同问题：
 
 收尾时，我们还要把“释放”拆成四个时刻：业务断开引用、GC 或内存分配器把空间标为空闲、运行时或分配器把页面归还内核、内核更新统计后 RSS/PSS 下降。四个时刻之间隔着时间差：对象不可达后 PSS 迟迟未降，可能只是释放链路还没走完，先别急着定性为泄漏；反过来，PSS 暂时下降，也证明不了所有权问题已经修复。
 
+<!-- gracker-diagram: ch04-04-release-four-distinct-moments -->
+![断引用、对象回收、归还页与 RSS/PSS 下降不是同一时刻](../../assets/diagrams/ch04/ch04-04-release-four-distinct-moments.png)
+
+图：业务先断开不需要的引用，随后 GC 或分配器才把合适空间标为空闲；运行时或分配器可能继续保留空闲页，也可能归还或标为可回收。驻留与共享映射再影响 RSS/PSS 读数。四阶段可隔开，且比例归因还会受共享者变化影响；读数没立刻下降不直接等于泄漏，下降也不证明所有权已经正确。
+
 ## PSS 与 CPU 缓存局部性
 
 内存占用和访问效率可能同时改善或恶化，但测量对象不同：
@@ -668,6 +703,11 @@ PSS 由内核按驻留页的映射次数（mapcount）分摊。`Debug.MemoryInfo
 伪共享是多个线程修改同一缓存行里的不同变量，导致缓存行频繁失效。这类 CPU 侧的现象影响内存指标要走一条间接路径：只有当换核、缓存未命中或伪共享改变了实际访问的页面、对象布局或工作集，驻留页才可能跟着变，PSS 的分摊算法始终只认映射次数。
 
 优化局部性时，我们保持工作量、线程亲和性与设备状态一致，分别采集结构体或数组的布局和访问顺序、CPU/核心簇调度、目标设备支持的 PMU 缓存事件，以及相同时间窗内的 RSS/PSS。读数时把两套指标分开：缓存未命中要看 PMU 事件计数，内存占用要看 RSS/PSS；“PSS 下降”替代不了缓存未命中指标，单个未命中计数也证明不了内存占用已经改善。
+
+<!-- gracker-diagram: ch04-04-memory-granularity-and-locality -->
+![缓存行、基础页与 ART card 分别回答不同问题](../../assets/diagrams/ch04/ch04-04-memory-granularity-and-locality.png)
+
+图：CPU cache line 是缓存传输和一致性的粒度，大小看目标 CPU；基础页承载映射、缺页与驻留统计，按设备 PAGE_SIZE；ART card 在 r1 覆盖 1024 B，用于记录引用写入候选。伪共享与 cache miss 查 PMU，RSS/PSS 查驻留页和共享比例，card 则帮助 GC 扫描。它们可能相互影响，但指标不能互相替代。
 
 ## 常见误区
 

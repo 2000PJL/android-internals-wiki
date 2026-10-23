@@ -109,7 +109,7 @@ SF LayerSnapshot 集合
 
 系统产出快照的时机主要就三类：transition（转场） 提交前、设备休眠前，以及特权调用方主动请求。我们先看最主要的 transition 路径。
 
-### 2.1 Shell transition 在 transaction ready（可显示） 阶段记录
+### 2.1 Shell transition 在 transaction ready（同步事务就绪） 阶段记录
 
 现代 transition 路径的入口是 `SnapshotController.onTransactionReady()`，它逐个检查 `Transition.ChangeInfo`（转场中对象的变化信息）；对满足条件且即将不可见的 Task，系统会在 transition transaction（转场图层事务） 启动前调用：
 
@@ -131,7 +131,7 @@ SnapshotController.onTransactionReady()
 
 ### 2.2 休眠前还有一条捕获路径
 
-屏幕即将关闭或设备进入 sleep（休眠） 时，还有第二条路径：`snapshotForSleeping(displayId)` 会遍历对应 Display 上可见的 leaf Task（`Task.isVisible()` 为 true 且没有子 Task 的叶子任务），即 `Task.isVisible()` 为 true 且没有子 Task 的叶子任务。正在被 Recents animation 控制的 Task 会被跳过（`!task.isAnimatingByRecents()`），因为 Recents 路径需要在更合适的时刻处理快照和 IME（输入法窗口）。
+屏幕即将关闭或设备进入 sleep（休眠） 时，还有第二条路径：`snapshotForSleeping(displayId)` 会遍历对应 Display 上可见的 leaf Task（`Task.isVisible()` 为 true 且没有子 Task 的叶子任务）。正在被 Recents animation 控制的 Task 会被跳过（`!task.isAnimatingByRecents()`），因为 Recents 路径需要在更合适的时刻处理快照和 IME（输入法窗口）。
 
 安全锁屏进入 sleep 是特例：只有默认 Display（`Display.DEFAULT_DISPLAY`）上、keyguard 为 secure 的 home Task 才可能被捕获，用于解锁回到桌面的 starting window；其他情况下的 home Task 都被显式跳过。
 
@@ -176,6 +176,11 @@ flowchart TD
 
 注意捕获的产物：这是一次新生成的截图 buffer。Task 中可能同时有多个窗口、SurfaceView、壁纸或装饰 layer，SurfaceFlinger 要按当前 layer 状态重新合成出捕获结果，而非直接读走某个 App Window 的 `GraphicBuffer`。
 
+<!-- gracker-diagram: ch02-17-capture-new-buffer -->
+![TaskSnapshot 捕获生成新的截图 buffer](../../assets/diagrams/ch02/ch02-17-capture-new-buffer.png)
+
+图：WMS 选择 Task Surface 子树并排除指定 Layer，再由 SurfaceFlinger 根据当前 Layer 状态执行同步捕获与截图渲染，产出新的 HardwareBuffer 和 ColorSpace。TaskSnapshot 还保存旋转、任务尺寸、Insets 等元数据，随后进入缓存、持久化或 Binder 消费路径。
+
 ### 3.2 同步捕获与 transition 关键路径
 
 这条路径里，`ScreenCaptureInternal.captureLayers()` 调用 native synchronous capture（原生层同步捕获） 并等待 `ScreenshotHardwareBuffer` 结果；SurfaceFlinger 一侧的 `captureLayersSync()` 最终经过 `captureScreenCommon()` 与 screenshot render（截图渲染）。
@@ -198,7 +203,7 @@ AOSP 也没有“1080p 必须 5–15 ms”一类的保证：截图策略、SoC�
 - `ACTIVITY_TYPE_HOME` 总是走 `SNAPSHOT_MODE_REAL`，并不会因为是 home Task 就跳过；
 - 其他 Task 在 top Activity 触发 `shouldUseAppThemeSnapshot()`（综合 `setRecentsScreenshotEnabled(false)`、FLAG_SECURE、敏感内容策略和设备策略）时选择 app-theme，否则走 real。
 
-TV（`FEATURE_LEANBACK`）、IoT（`FEATURE_EMBEDDED`）或设备 overlay（硬件叠加平面） `config_disableTaskSnapshots = true` 也会通过 `shouldDisableSnapshots()` 直接关闭整个快照路径。
+TV（`FEATURE_LEANBACK`）、IoT（`FEATURE_EMBEDDED`）或设备资源 overlay（覆盖配置） `config_disableTaskSnapshots = true` 也会通过 `shouldDisableSnapshots()` 直接关闭整个快照路径。
 
 以下情况会选择 app-theme snapshot：
 
@@ -206,6 +211,11 @@ TV（`FEATURE_LEANBACK`）、IoT（`FEATURE_EMBEDDED`）或设备 overlay（硬�
 - Task 中窗口被 `FLAG_SECURE`、敏感内容策略或设备策略判为 secure。
 
 主题占位由 system_server（承载系统核心服务的进程） 使用 `RenderNode` 和 `ThreadedRenderer.createHardwareBitmap()` 绘制，包含背景色与 system-bar 装饰信息，不含应用的敏感像素。
+
+<!-- gracker-diagram: ch02-17-real-theme-none-policy -->
+![先过捕获条件，再决定 REAL、APP_THEME 或 NONE](../../assets/diagrams/ch02/ch02-17-real-theme-none-policy.png)
+
+图：调用方先检查设备是否禁用快照、Task 可见性和转场等条件。通过这些筛选后，getSnapshotMode 对 recents / dream 返回 NONE，对 home 返回 REAL；其他 Task 由 top Activity 的主题快照策略决定。APP_THEME 生成背景与装饰，不捕获敏感应用像素。HOME 的模式为 REAL 不等于每次调用都会捕获它。
 
 ### 3.4 两个隐私 API 的范围
 
@@ -238,6 +248,11 @@ low-res 写回还有一段容易想简单的流程。`onlyCacheLowResTaskSnapsho
 
 写回成功时，`TaskSnapshotCache` 会把旧 high-res 从主 `mRunningCache` 替换出去，并在 `DeferRemoveHighResCache` 中短暂保留同一 ID 的 high-res；Android 17 源码里的延迟移除常量是 5000 ms。也就是说，flag 开启后主缓存的目标确实是 low-res，但 high-res buffer 在格式转换、回调排队和延迟移除的窗口内仍可能被引用。我们排查内存时，要按“high-res 延迟一段时间才释放”来记，别写成“生成 low-res 后立即释放”。
 
+<!-- gracker-diagram: ch02-17-lowres-cache-update -->
+![low-res 写回需复查身份，high-res 可以延迟释放](../../assets/diagrams/ch02/ch02-17-lowres-cache-update.png)
+
+图：图仅对应 onlyCacheLowResTaskSnapshot 开启时。后台持久化完成后回到 Handler 与全局锁内，检查 Task 仍 attached、snapshot ID 仍匹配且缓存仍为 high-res；成功才替换主缓存，旧 high-res 进入延迟移除缓存。移除缓存引用也不保证所有消费者已释放同一 buffer。
+
 ### 4.2 内存估算要带上 scale、format 与 stride
 
 单个未压缩 buffer 的下限估算为：
@@ -250,7 +265,7 @@ width × height × bytesPerPixel
 
 实际分配还要算上 row stride（每行实际字节跨度）、gralloc（图形缓冲区分配器） 对齐和附加元数据；再叠加高低分辨率版本、Binder 引用、Launcher hardware `Bitmap` 和 starting window 的引用，总占用还会进一步变化。
 
-默认情况下，real snapshot 使用 RGBA_8888。设备 overlay（硬件叠加层） 开启 `config_use16BitTaskSnapshotPixelFormat` 后，`AbsAppSnapshotController` 也只会在 snapshot pixel format（像素格式） 仍为 `UNKNOWN`、`use16BitFormat()` 为真、top Activity `fillsParent()`，且主窗口不是“半透明并显示壁纸”的组合时选择 RGB_565；否则回退到 RGBA_8888。
+默认情况下，real snapshot 使用 RGBA_8888。设备资源 overlay（覆盖配置） 开启 `config_use16BitTaskSnapshotPixelFormat` 后，`AbsAppSnapshotController` 也只会在 snapshot pixel format（像素格式） 仍为 `UNKNOWN`、`use16BitFormat()` 为真、top Activity `fillsParent()`，且主窗口不是“半透明并显示壁纸”的组合时选择 RGB_565；否则回退到 RGBA_8888。
 
 随后 `isTranslucent` 再由 `PixelFormat.formatHasAlpha(pixelFormat)`、`fillsParent()` 和窗口半透明状态计算。
 
@@ -304,6 +319,11 @@ Android 17 默认路径下，JPEG 压缩质量常量为 `SnapshotPersistQueue.CO
 
 回到排查现场：没有 trace 时，把 Overview 空卡统一归因于 GPU 是轻率的——它可能卡在磁盘、Binder、Launcher executor（后台执行器） 或主线程 bind（数据绑定） 任何一环上。
 
+<!-- gracker-diagram: ch02-17-disk-roundtrip -->
+![磁盘命中仍要经历读取、解码与硬件位图分配](../../assets/diagrams/ch02/ch02-17-disk-roundtrip.png)
+
+图：后台 TaskSnapshotPersister 保存 proto，复制为 software Bitmap 后编码图像；磁盘恢复则读取 proto、decodeFile，再复制为 HARDWARE Bitmap 取得 HardwareBuffer。onlyCacheLowResTaskSnapshot 开启时 high-res 实际写 PNG，文件名仍沿用 .jpg，判断格式应看文件头。
+
 ## 5. Overview：静态缩略图与 live tile
 
 ### 5.1 静态缩略图由 Launcher 自己绘制
@@ -324,7 +344,7 @@ Launcher3 的 `TaskThumbnailView` 是 Launcher View hierarchy（View 树） 中�
 
 静态 snapshot 最终设置到 `FixedSizeImageView`，由 Launcher 的 View 与 HWUI（Android 硬件加速 UI 渲染管线） 绘制进 Launcher App Window buffer。
 
-回到合成器视角：SurfaceFlinger 看到的主体通常是 Launcher 窗口 layer，而不是“每张最近任务卡片各有一个独立 `BufferStateLayer`”。HWC 仍会按整屏 layer 集合选择 `DEVICE` 或 `CLIENT` composition（由 HWC 合成）；hardware `Bitmap` 也不保证卡片拿到独立 overlay。
+回到合成器视角：SurfaceFlinger 看到的主体通常是 Launcher 窗口 layer，而不是“每张最近任务卡片各有一个独立 `BufferStateLayer`”。HWC 仍会按整屏 layer 集合选择 `DEVICE`（由 HWC 合成）或 `CLIENT` composition（由 RenderEngine 合成）；hardware `Bitmap` 也不保证卡片拿到独立 overlay。
 
 ### 5.2 Launcher 还有自己的缓存和预加载
 
@@ -365,6 +385,11 @@ live tile 与静态缩略图的选择，经常被简化成：
 
 所以这一步没有统一的“Launcher 把静态 snapshot layer 渐变切换为 App 实时 Surface”模型：Launcher 静态缩略图、Shell remote leash 和 WMS starting window 是三套不同的对象。
 
+<!-- gracker-diagram: ch02-17-three-display-objects -->
+![静态卡片、快照启动窗口与 live tile 使用不同显示对象](../../assets/diagrams/ch02/ch02-17-three-display-objects.png)
+
+图：静态 Overview 和 snapshot starting window 都可使用旧 TaskSnapshot，但前者作为 Bitmap 画进 Launcher 窗口，后者直接把 buffer 设置到独立 starting surface。live tile 使用当前 Recents animation 的真实 Task Surface 和 leash，应用进程存活并不自动意味着显示 live tile。
+
 ## 6. Snapshot starting window
 
 ### 6.1 WMS 先判断能否使用旧快照
@@ -402,13 +427,18 @@ flowchart TD
 
 尺寸不一致时，系统会：
 
-- 创建或使用匹配 buffer 的 BLAST Surface（由 BLASTBufferQueue 管理的 Surface）；
+- 创建子 BLAST buffer layer，或在 `useClientSurface()` 分支复用 root Surface；随后直接通过 transaction 设置 snapshot buffer；
 - 按 letterbox insets 调整 position；
 - 分别计算 X、Y scale（横纵缩放比例） 填充目标 frame；
 - 设置 snapshot color space；
 - 提交 buffer transaction。
 
 这个路径能遮住部分 resize 间隙，代价是旧内容可能短暂缩放；App 的新布局仍要由 App 自己提交符合新 bounds 的首帧。
+
+<!-- gracker-diagram: ch02-17-starting-snapshot-geometry -->
+![先判断快照兼容性，再处理 starting surface 几何](../../assets/diagrams/ch02/ch02-17-starting-snapshot-geometry.png)
+
+图：WMS 先根据启动条件、component、rotation 与 task aspect ratio 等判断能否使用旧 snapshot；不兼容时可能选择 splash 或 NONE。被接受后，Shell 再处理 buffer 与 window 尺寸是否匹配：匹配可直接设到 root，不匹配则使用子 BLAST buffer layer 或 client root，配置缩放、位置与色彩空间后设置 buffer。
 
 ### 6.4 移除时机与 IME
 
@@ -466,7 +496,7 @@ real snapshot 的 pixel format 可为 RGBA_8888，`TaskSnapshot.isTranslucent()`
 
 snapshot starting window 同样从 `TaskDescription` 取背景色，并处理 system-bar 区域。只看 screenshot buffer，可能漏掉最终屏幕上的背景和装饰。
 
-### 8.3 HardwareBuffer 与 composition（由 RenderEngine 合成） type（合成类型）
+### 8.3 HardwareBuffer 与 composition type（合成类型）
 
 TaskSnapshot 使用 gralloc buffer，可被 GPU 采样，也可在满足设备约束时参与 HWC 的 DEVICE composition（设备直接合成）。最终选哪种 composition type，取决于：
 
@@ -494,6 +524,11 @@ Overview 静态卡片通常已经画入 Launcher App Window；启动 snapshot �
 | 缩略图过旧 | snapshot capture time 或 ID | 用户打开 Overview 的时间 |
 
 注意分段：捕获耗时、磁盘恢复耗时和显示耗时是三段数据，报告时别压缩成一个“TaskSnapshot latency（延迟）”。
+
+<!-- gracker-diagram: ch02-17-observation-domains -->
+![把捕获、加载、显示分成三个可验证区间](../../assets/diagrams/ch02/ch02-17-observation-domains.png)
+
+图：捕获区间关注 WMS 同步调用与 SF 截图；加载区间关注 system cache / disk、Binder 和 Launcher executor；显示区间关注静态卡片、starting surface 或 App 新帧的实际 present。对齐同一 task、snapshot、window 与 display，才能判断空卡或闪烁发生在哪一段。
 
 ### 9.2 Perfetto 关注的 slice（带起止时间的 trace 片段）
 

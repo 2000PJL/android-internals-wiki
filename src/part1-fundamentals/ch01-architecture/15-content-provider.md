@@ -163,6 +163,11 @@ fork 进程
 
 `Application.onCreate()` 位于 Provider 发布之后，通常不在“等待 Provider 发布”的前置路径内。不过 Provider 一经发布，远程 Binder 请求就可能与提供方主线程的 `Application.onCreate()` 并发执行。若二者争用同一数据库锁、CPU 或 I/O，第一次 `query()` 仍会被间接拖慢。
 
+<!-- gracker-diagram: ch01-15-provider-publication -->
+![Provider 发布与 Application 初始化的并发边界](../../assets/diagrams/ch01/ch01-15-provider-publication.png)
+
+图：当前进程的 Application.attachBaseContext 完成后，主线程逐个安装 Provider 并调用 onCreate，然后一起发布。远程调用方取得引用后即可发请求，不需要等 Application.onCreate 结束。
+
 ---
 
 ## 跨进程查询怎样返回 Cursor
@@ -171,13 +176,23 @@ fork 进程
 
 ### `CursorWindow` 传的是窗口，不是整个结果集
 
-跨进程 Cursor 不会把全部结果行序列化到一笔 Binder 事务中。提供方用 `CursorWindow` 保存一批行，Binder 只传递文件描述符和控制元数据，调用方再通过 `BulkCursorToCursorAdaptor` 访问窗口。
+跨进程 Cursor 按 `CursorWindow` 分批传递结果，不会无条件把整个结果集一次性序列化。Android 17 的原生窗口有两种传输形态：初始使用轻量 inline 分配，空间不足时才膨胀为共享区域。`CursorWindow::writeToParcel()` 对已使用共享区域的非空窗口写入文件描述符和元数据；对非共享窗口，则把压紧后的行数据直接写入 Parcel。调用方由 `BulkCursorToCursorAdaptor` 管理当前窗口，因此“小窗口行数据仍可能占 Binder 事务空间”也是实际路径。参见 [CursorWindow.cpp @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/androidfw/CursorWindow.cpp)。
 
-AOSP Android 17 的 `config_cursorWindowSize` 默认为 2048 KiB。产品配置可以覆盖该值，它也不是所有窗口统一且不可调整的硬上限。公开构造函数 `CursorWindow(String, long)` 允许调用方指定容量；实际内存按写入数据动态分配，不超过该窗口的配置容量。
+AOSP Android 17 的 `config_cursorWindowSize` 默认为 2048 KiB。产品配置可以覆盖该值，它也不是所有窗口统一且不可调整的硬上限。公开构造函数 `CursorWindow(String, long)` 允许调用方指定容量。原生窗口初始分配为配置容量与 `kInlineSize = 16384` 字节中的较小值，需要更多空间时才扩展到配置的共享区域；映射大小和实际物理驻留量还要分开观察。这里的 16 KiB 是源码中的 inline 初始容量，不是 Binder 单笔事务上限。
+
+<!-- gracker-diagram: ch01-15-cursor-window-encoding -->
+![CursorWindow 的共享 fd 与 inline 两种编码](../../assets/diagrams/ch01/ch01-15-cursor-window-encoding.png)
+
+图：writeToParcel 根据窗口当前是否拥有共享区域 fd 选择编码；已膨胀的窗口不会仅因本次行数据变少就自动按大小改回 inline。两条路径都有元数据和 Binder 控制开销。
 
 窗口能减少大结果集的复制，但容量仍然有限。一个窗口装不下全部结果时，调用方一旦移动到窗口之外的行，`BulkCursorToCursorAdaptor` 就会调用远端 `getWindow(newPosition)` 取得新窗口。若 Provider 要求接收所有游标移动事件，即使目标仍在当前窗口，也可能调用远端 `onMove()`。
 
 “`moveToNext()` 永远不走 Binder”并不准确。通常在当前窗口内读取列值不需要远程取数；窗口失效、越界或 Provider 请求所有移动回调时，仍会发生 Binder 往返。
+
+<!-- gracker-diagram: ch01-15-cursor-window-movement -->
+![游标移动何时需要再次调用远程 Provider](../../assets/diagrams/ch01/ch01-15-cursor-window-movement.png)
+
+图：BulkCursorToCursorAdaptor 先检查目标位置是否被当前窗口覆盖；未覆盖时远程 getWindow。窗口内还要检查 mWantsAllOnMoveCalls，要求时仍远程通知 onMove；成功后再从本地窗口读列值。
 
 ### 深位置访问为什么会变慢
 
@@ -206,7 +221,7 @@ LIMIT ?
 
 在 Android 17 的 `frameworks/native/libs/binder/ProcessState.cpp` 中，Binder 缓冲区的默认映射大小为 `1 MiB - 2 × 系统页大小`。一个进程内所有进行中的 Binder 事务共享这块空间，并非每次调用都独享 1 MiB。
 
-`CursorWindow` 中的行数据不直接写入这块缓冲区，但下列内容仍会占用 Binder 事务空间：
+共享区域形态的 `CursorWindow` 通过 fd 传递其行数据访问能力；inline 形态会把压紧后的行数据直接写入 Parcel。除这类小窗口数据外，下列内容也会占用 Binder 事务空间：
 
 - URI、查询列清单（`projection`）、筛选条件（`selection`）、参数和附加数据（extras）；
 - `ContentValues`、`Bundle`、`ContentProviderOperation` 数组；
@@ -514,7 +529,7 @@ Android 17 的 `ContentProvider.Transport` 会用 `TRACE_TAG_ACTIVITY_MANAGER` �
 
 ### “CursorWindow 绕过了 Binder”
 
-行数据使用共享窗口，但窗口描述、控制调用、翻页和其他参数仍通过 Binder。
+窗口可以通过共享区域 fd 或 inline 行数据传递；窗口描述、控制调用、翻页和其他参数仍通过 Binder。只有共享区域形态的行数据不需要作为普通 Parcel 数据再次传送。
 
 ### “多进程能消除数据库卡顿”
 

@@ -53,6 +53,11 @@ SensorService 的功耗问题常被简化为“采样频率越低越省电”，
 
 一次传感器请求的成本可以分成三处，它们的影响因素和优化手段并不相同：
 
+<!-- gracker-diagram: ch05-07-three-power-costs -->
+![传感器功耗的三个位置](../../assets/diagrams/ch05/ch05-07-three-power-costs.png)
+
+图：Batching 主要合并交付与 AP 唤醒，不会自动降低传感器采样量。元数据 getPower() 是厂商估算电流，不能代替本次场景实测能量。
+
 | 成本 | 发生位置 | 主要影响因素 | 常见误判 |
 |---|---|---|---|
 | 采样与计算 | 微机电系统（MEMS）、模数转换器（ADC）、sensor hub、融合算法 | 采样频率、传感器类型、融合复杂度 | 只看应用回调次数 |
@@ -84,9 +89,19 @@ frequency_hz ≈ 1_000_000 / samplingPeriodUs
 
 应用应通过 `Sensor.getReportingMode()` 判断模式，不能对所有 sensor 都使用 `1 / period` 计算事件频率。one-shot sensor 应使用 `requestTriggerSensor()`，不应注册到普通 `registerListener()`。
 
+<!-- gracker-diagram: ch05-07-reporting-modes -->
+![上报模式决定采样周期的含义](../../assets/diagrams/ch05/ch05-07-reporting-modes.png)
+
+图：只有合适的连续型场景才可用周期换算请求频率。One-shot 用 requestTriggerSensor，触发后停用；特殊类型遵循自己的定义。
+
 ## 从应用请求到硬件 FIFO
 
 普通监听器（listener）路径中，请求从应用经过 framework、SensorService 和 HAL 到达硬件 FIFO，事件沿反方向返回：
+
+<!-- gracker-diagram: ch05-07-request-and-event-path -->
+![请求配置与传感器事件的往返路径](../../assets/diagrams/ch05/ch05-07-request-and-event-path.png)
+
+图：展示普通 listener 路径。配置经服务聚合到 HAL，事件反向进入应用队列；AIDL Event FMQ 位于 HAL→framework，并非 App 直接读取。
 
 ```mermaid
 flowchart LR
@@ -111,15 +126,20 @@ SensorService 在启用前根据 sensor 的 `minDelay` / `maxDelay` 限制采样
 
 - `batch(handle, samplingPeriodNs, maxReportLatencyNs)`：配置采样与最大上报延迟；
 - `activate(handle, enabled)`：启停 sensor；
-- `flush(handle)`：立即交付当前 FIFO 中的事件，并产生表示操作完成的 flush-complete 元数据；
+- `flush(handle)`：请求尽快交付当前 FIFO 中的事件，在该 sensor 的事件流末尾加入 flush-complete 元数据；请求返回不等于应用已收到全部回调；
 - Event FMQ：HAL 向 framework 传递事件；
 - Wake Lock FMQ：framework 确认 wake-up 事件已经处理。
 
-这里的 `batch()` 只负责提交配置。真正的省电效果来自 hub / FIFO 在 AP 之外暂存事件，从而合并交付和唤醒。没有硬件 FIFO 或低功耗 hub 时，即使 `batch()` 返回成功，也可能无法减少 AP 唤醒。
+这里的 `batch()` 只负责提交配置。真正的省电效果来自 hub / FIFO 在 AP 之外暂存事件，从而合并交付和唤醒。没有硬件 FIFO 或低功耗 hub 时，即使 `batch()` 返回成功，也可能无法减少 AP 唤醒。另外，r1 的 `BaseEventQueue.addSensor()` 在正数 latency 的启用请求失败后，会以 latency=0 再试一次；所以 `registerListener()` 返回 true 也不能证明 batching 已按原参数启用。
+
+<!-- gracker-diagram: ch05-07-registration-batch-fallback -->
+![注册成功不等于 batching 成功](../../assets/diagrams/ch05/ch05-07-registration-batch-fallback.png)
+
+图：r1 的 addSensor 可在批量启用失败后退回实时模式。true 只证明最终启用成功，实际 batching 还要核对 selected 参数与事件时间线。
 
 ## `samplingPeriodUs` 与 `maxReportLatencyUs`
 
-`maxReportLatencyUs` 控制事件允许暂存在 FIFO 中的最长时间。正数表示允许批量交付，0 表示尽快上报。它不会降低采样频率，也不保证事件一定等到整个窗口结束；实际交付时机还受 FIFO 容量、其他 sensor 和 AP 状态影响，见「AP 醒着时的 batching」一节。
+`maxReportLatencyUs` 约束事件在 AP 醒着时从产生到经 HAL 上报的最大延迟；它不是应用回调完成的硬性期限，后续 framework 与 Looper 排队还会增加等待。AP suspend 时 non-wake-up sensor 的例外见下文。正数表示允许批量交付，0 表示尽快上报。它不会降低采样频率，也不保证事件一定等到整个窗口结束；实际交付时机还受 FIFO 容量、其他 sensor 和 AP 状态影响，见「AP 醒着时的 batching」一节。
 
 应用可以通过四参数重载同时指定采样周期和最大批量延迟。例如这次注册请求约 50 Hz 采样，并允许最多延迟约 5 秒交付：
 
@@ -132,7 +152,12 @@ val registered = sensorManager.registerListener(
 )
 ```
 
-这段请求会继续以约 50 Hz 产生事件，只是允许每批事件最多等待 5 秒；它不会将 sensor 改为 0.2 Hz。应用回调可能一次收到多个事件，其时间戳（timestamp）早于回调时刻。
+这段请求会继续以约 50 Hz 产生事件，只是允许每批事件最多等待 5 秒；它不会将 sensor 改为 0.2 Hz。应用可能在短时间内连续收到多个 `onSensorChanged()` 回调，每次普通回调仍只交付一个 `SensorEvent`，其时间戳（timestamp）早于回调时刻。
+
+<!-- gracker-diagram: ch05-07-sampling-versus-batching -->
+![采样频率与批量交付是两个参数](../../assets/diagrams/ch05/ch05-07-sampling-versus-batching.png)
+
+图：请求 5 秒 latency 不会把 50 Hz 改成 0.2 Hz。事件 timestamp 仍是发生时刻；应用排队时间不属于硬件 FIFO 上报期限。轨道只表示概念。
 
 批量时长的理论上限可以用 FIFO 能容纳的事件数估算，即用 FIFO 事件数除以采样频率：
 
@@ -147,6 +172,11 @@ fifo_duration_seconds ≈ fifo_event_count / frequency_hz
 - `getFifoMaxEventCount() == 0` 表示该 sensor 不支持硬件 batching。
 
 共享 FIFO 会被其他 sensor 占用，实际容量可能介于保留值（reserved）与最大值（max）之间。如果 50 Hz sensor 只有 100 个可用槽位，即使请求延迟 5 秒，FIFO 也可能在约 2 秒后填满并提前上报。
+
+<!-- gracker-diagram: ch05-07-fifo-capacity-window -->
+![FIFO 容量如何限制批量窗口](../../assets/diagrams/ch05/ch05-07-fifo-capacity-window.png)
+
+图：100 槽与 50 Hz 是正文中的计算示例，实际可用槽数受共享占用影响。Wake-up 与 non-wake-up 事件使用不同 FIFO，挂起时的满队列处理也不同。
 
 ## SensorService 如何合并多个客户端
 
@@ -164,6 +194,11 @@ Android 17 的 `SensorDevice` 为每个连接保存一组 `BatchParams`，再由
 
 因此，一个请求 200 Hz 且 `maxReportLatencyUs=0` 的客户端，会使同一 handle 的硬件采用高频实时交付配置。另一个请求 10 Hz、10 秒 batching 的应用，无法用自己的参数覆盖前一个更严格的请求。
 
+<!-- gracker-diagram: ch05-07-multi-client-aggregation -->
+![同一 handle 的多客户端参数聚合](../../assets/diagrams/ch05/ch05-07-multi-client-aggregation.png)
+
+图：本例聚合为约 200 Hz、latency=0。B 的低频长延迟不能覆盖 A 的严格要求；最终采样与回调表现还须实测。
+
 `SensorDevice::updateBatchParamsLocked()` 只在选中参数发生变化，而且仍有有效客户端时调用 HAL `batch()`。客户端注销、用户标识符（User Identifier，UID）进入空闲状态（idle）、服务受到限制（restricted），以及 Android 17 条件性启用的 frozen-PID 路径，都可能使某个连接退出聚合，随后系统会重新计算硬件参数。
 
 Android 调试桥（ADB）命令 `adb shell dumpsys sensorservice` 会输出各连接的请求值和最终选中值（selected）：
@@ -174,7 +209,7 @@ sampling_period(ms) = {...}, selected = ... ms
 batching_period(ms) = {...}, selected = ... ms
 ```
 
-输出中的 `selected` 是聚合后实际传给硬件的值。回调比预期密集时，先检查 selected batching period。如果 selected 已经为 0，应检查请求聚合和其他客户端；如果 selected 较大但事件仍提前到达，再检查 FIFO 容量、共享 FIFO、flush 和 AP resume。
+输出中的 `selected` 是 framework 选中并用于 HAL `batch()` 的聚合参数，不等于实测硬件 ODR 或应用回调间隔；HAL 还会按硬件档位和能力执行配置。回调比预期密集时，先检查 selected batching period。如果 selected 已经为 0，应检查请求聚合和其他客户端；如果 selected 较大但事件仍提前到达，再检查 FIFO 容量、共享 FIFO、flush 和 AP resume。
 
 ## AP 醒着时的 batching
 
@@ -186,7 +221,12 @@ AP 处于运行（on）或空闲但未挂起（idle）状态时，HAL 可以将�
 - HAL 或共享 FIFO 中的其他 sensor 需要上报；
 - AP 因其他原因醒来。
 
-一旦某批事件必须上报，FIFO 中其他 sensor 的事件也可能同时交付，即使它们各自的最大延迟尚未到期。因此，应用观察到的批次间隔通常小于或等于请求值，不能将 `maxReportLatencyUs` 当作固定定时器周期。
+一旦某批事件必须上报，FIFO 中其他 sensor 的事件也可能同时交付，即使它们各自的最大延迟尚未到期。因此，硬件可以提前交付一批事件，`maxReportLatencyUs` 不能当作固定定时器周期。应用回调还受调度与队列影响，不能用相邻回调的墙钟间隔是否超过该值，单独判定 HAL 违约。
+
+<!-- gracker-diagram: ch05-07-early-batch-delivery -->
+![批量窗口为何提前结束](../../assets/diagrams/ch05/ch05-07-early-batch-delivery.png)
+
+图：同批提前交付可能涉及其他 sensor，甚至不同 FIFO。Wake-up 与 non-wake-up 事件仍须存放在各自 FIFO；应用线程还可能增加后续排队。
 
 事件 timestamp 必须对应物理事件发生时间，延迟上报不能改写它。应用可以用与 `elapsedRealtimeNanos()` 相同时间基准记录回调到达时间，再减去 `SensorEvent.timestamp`，估算事件在 FIFO、framework 和回调队列中的总等待时间。不能用可能受校时影响的墙钟时间（wall clock）减去 sensor timestamp。
 
@@ -206,7 +246,12 @@ AP 挂起期间的行为由 sensor 实例的 wake-up 属性决定。应用应使
 
 on-change sensor 有一项特殊保证：HAL 要在共享 FIFO 之外保存最新事件，避免最新状态被其他 continuous sensor 覆盖。Step counter 等累计值尤其依赖这项语义。
 
-如果业务要求灭屏期间每个 non-wake-up 事件都不丢失，应用只能让 AP 保持唤醒，或改用满足需求的 wake-up sensor。持有部分唤醒锁（partial wake lock）会阻止 CPU 完全休眠，显著改变功耗模型；通常应先确认业务是否只需要最新状态或累计结果。
+<!-- gracker-diagram: ch05-07-on-change-latest-retention -->
+![On-change 最新状态为何保存在 FIFO 外](../../assets/diagrams/ch05/ch05-07-on-change-latest-retention.png)
+
+图：Non-wake-up on-change 最新事件须避免被其他 continuous 数据覆盖。AP 恢复时可得到最新累计值，但不能据此推断每个历史变化都被保留。
+
+Non-wake-up FIFO 在容量足够的有限挂起窗口内可以保留全部事件，但不能对任意长的 suspend 保证完整性，也不会按上报期限主动唤醒 AP。若业务要求挂起时仍按期完整交付，需要评估合适的 wake-up sensor，或让 AP 保持唤醒；两种方式都要验证系统访问限制与实际事件完整性。持有部分唤醒锁（partial wake lock）会阻止 CPU 完全休眠，显著改变功耗模型；通常应先确认业务是否只需要最新状态或累计结果。
 
 ### Wake-up sensor
 
@@ -220,13 +265,25 @@ on-change sensor 有一项特殊保证：HAL 要在共享 FIFO 之外保存最�
 
 设备从 suspend 恢复时，平台会尽量交付 FIFO 中的全部内容，包括尚未达到各自延迟的批次，从而减少 AP 刚回到 suspend 后又被另一批事件唤醒的概率。
 
+<!-- gracker-diagram: ch05-07-suspend-wakeup-contrast -->
+![Suspend 时的 wake-up 与 non-wake-up](../../assets/diagrams/ch05/ch05-07-suspend-wakeup-contrast.png)
+
+图：以 isWakeUpSensor() 判断实例属性，同一类型可能有两种实例。Non-wake-up 在 suspend 中不会因 maxReportLatency 到期主动唤醒 AP；on-change 还有最新状态保留例外。
+
 ## Wake lock 确认链
 
-Wake-up 事件需要跨越 HAL、SensorService 和应用进程；在事件尚未被消费时，系统必须防止 AP 再次 suspend。Android 17 AIDL Sensors HAL 在 HAL 与 framework 之间使用两级确认，SensorService 侧另有一把唤醒锁覆盖到应用连接确认：
+Wake-up 事件需要跨越 HAL、SensorService 和应用进程；在事件尚未被消费时，系统必须防止 AP 再次 suspend。Android 17 AIDL 路径包含两段确认：Wake Lock FMQ 确认 HAL→framework 的交接，应用队列 ACK 确认 SensorService→应用的交接；HAL 与 SensorService 分别持锁：
 
 1. HAL 在将 wake-up 事件写入 Event FMQ 前，持有名称以 `SensorsHAL_WAKEUP` 开头的唤醒锁（wake lock）；
-2. framework 读到事件后，通过 Wake Lock FMQ 告知 HAL 已处理的 wake-up 事件数；
-3. SensorService 自身持有 `SensorService_wakelock`，直到相关应用连接确认事件。
+2. framework 读到事件并先取得自己的 wake lock 后，通过 Wake Lock FMQ 告知 HAL 已处理的 wake-up 事件数；
+3. 正常路径中，SensorService 自身持有 `SensorService_wakelock`，由应用 native 队列的 ACK 减少连接欠账，直到所有相关连接不再需要持锁。
+
+r1 的 Java 监听器路径由 JNI 在一组事件回调处理后调用 `sendAck()`；回调只把工作提交给另一个线程时，ACK 并不等待那个异步任务完成。异常路径也有回收：AIDL HAL 规定最近一次写入 wake-up 事件后 1 秒仍未收到 Wake Lock FMQ 消息时释放自己的锁；SensorService 的 ACK looper 在持锁且一次 5 秒轮询超时时清理引用。后者不是每个事件固定最多持锁 5 秒的承诺。
+
+<!-- gracker-diagram: ch05-07-two-stage-wakelock-ack -->
+![Wake-up 事件的两段确认与持锁交接](../../assets/diagrams/ch05/ch05-07-two-stage-wakelock-ack.png)
+
+图：HAL 与 SensorService 分别持锁。正常交接先由服务接管锁，再确认 HAL；应用 ACK 的计数与 HAL 原始事件计数不同。超时与错误回收另按 r1 契约处理。
 
 这个机制解释了两类耗电：
 
@@ -249,6 +306,11 @@ Wake-up 事件需要跨越 HAL、SensorService 和应用进程；在事件尚未
 
 Android 17 的 `SensorService::enable()` 还有一项避免事件混入新连接的逻辑：当 continuous sensor 已有其他连接时，新连接启用前会先请求 flush，并等待属于该连接的首个 flush-complete，然后才开始发送普通事件。这样可以避免将先前连接积累的旧事件误交给新连接。注册后立即看到 flush 相关活动，不表示应用主动调用过 `flush()`。
 
+<!-- gracker-diagram: ch05-07-flush-completion-and-new-client -->
+![公开 flush 与新连接的首个 flush 边界](../../assets/diagrams/ch05/ch05-07-flush-completion-and-new-client.png)
+
+图：flush 返回不等于所有应用回调已执行。右列仅适用于已有连接的 continuous sensor；one-shot、on-change、旧 HAL 错误路径需按各自规则处理。
+
 ## Android 12 以来的 200 Hz 访问限制
 
 高采样率限制并非 Android 17 新增。目标版本为 Android 12（API 31）及以上的应用访问部分运动 / 姿态传感器（motion / position sensor）时，普通 listener 默认最多约 200 Hz；Sensor Direct Channel 默认最高为 `RATE_NORMAL`，通常约 50 Hz。需要更高频率时，应在应用清单（manifest）中声明以下权限：
@@ -269,11 +331,16 @@ Android 17 的 `SensorService::enable()` 还有一项避免事件混入新连接
 
 `SensorService.h` 将普通 listener 的受限周期（capped period）设为 5 ms。`SensorService::getSensorList()` 会根据调用包的权限，返回经过限制的 `minDelay` 和直接上报速率等级（direct-report rate level）；`SensorEventConnection` 与 `SensorDirectConnection` 在启用时还会再次检查请求。
 
-当用户关闭麦克风访问权限（microphone access）时，这六类 sensor 即使已经获得高采样权限，也会受到限制。原因是高频运动 / 姿态数据可能泄露音频相关信息。
+当用户通过设备隐私开关关闭麦克风访问（microphone access）时，这六类 sensor 即使已经获得高采样权限，也会受到限制。原因是高频运动 / 姿态数据可能泄露音频相关信息。
 
 公开 SDK 文档要求应用声明权限，并提示高频请求可能抛出 `SecurityException`。Android 17 源码还包含兼容模式（compatibility）、可调试构建（debuggable）和服务端不抛异常而直接限制采样率的分支。
 
 应用不应依赖某一种失败表现，而应声明权限、检查注册结果，并根据实际事件时间戳（event timestamp）验证最终采样率。
+
+<!-- gracker-diagram: ch05-07-high-rate-permission-and-privacy -->
+![高采样率限制的权限与隐私条件](../../assets/diagrams/ch05/ch05-07-high-rate-permission-and-privacy.png)
+
+图：Android 12 起目标 API≥31 的受限六类型适用默认限制；声明高采样权限仍不绕过设备麦克风隐私开关。返回结果与真实事件频率都要检查。
 
 ## Sensor Direct Channel 的适用边界
 
@@ -288,6 +355,11 @@ Direct Channel 的支持必须逐 sensor 查询：
 
 Direct Channel 不提供普遍的节能保证。高频 sensor、持续轮询共享内存和后续算法仍会消耗传感器器件、hub、内存和 CPU。比较普通 listener 与 Direct Channel 时，要固定传感器频率、消费算法和测试时长，再测量 CPU 时间、请求能量、温度和丢样率。
 
+<!-- gracker-diagram: ch05-07-direct-channel-data-path -->
+![Direct Channel 的控制与数据路径](../../assets/diagrams/ch05/ch05-07-direct-channel-data-path.png)
+
+图：Direct Channel 减少普通回调与队列调度，但高频采样、共享内存消费和算法仍有成本。无节制忙轮询可能抵消收益。
+
 ## Android 17 的 frozen-PID 条件路径
 
 `android-17.0.0_r1` 的 SensorService / `SensorDevice` 包含由 `android::hardware::flags::suspend_sensor_event_delivery_on_frozen_pid()` 控制的路径。这里的 frozen-PID 表示进程已被系统冻结、线程暂停执行。flag 开启时：
@@ -299,9 +371,14 @@ Direct Channel 不提供普遍的节能保证。高频 sensor、持续轮询共�
 5. 如果它是最后一个有效客户端，底层 sensor 会停用；
 6. `SensorEventConnection::hasSensorAccess()` 也会在 PID frozen 时拒绝向该连接投递事件。
 
-解冻后，连接会重新参与参数聚合，必要时重新激活 sensor。源码没有向普通应用承诺补发冻结期间的全部事件，因此应用不能将进程冻结器（freezer）当作另一种 batching 机制。
+解冻只移除该连接的 PID_FROZEN 禁用原因；UID idle、服务限制等其他禁用原因也清除后，连接才会重新参与参数聚合，必要时重新激活 sensor。源码没有向普通应用承诺补发冻结期间的全部事件，因此应用不能将进程冻结器（freezer）当作另一种 batching 机制。
 
 这条路径受 Android 配置系统 aconfig / 硬件 flag 控制。`android-17.0.0_r1` 中存在调用点，不能证明所有 Android 17 产品都默认启用它。分析具体设备时，要结合 `dumpsys sensorservice` 中客户端冻结 / 禁用（client frozen / disabled）信息、产品 flag 和实际事件时间线。
+
+<!-- gracker-diagram: ch05-07-frozen-pid-conditional-path -->
+![Android 17 冻结连接的条件处理](../../assets/diagrams/ch05/ch05-07-frozen-pid-conditional-path.png)
+
+图：这是由 flag 控制的普通事件连接路径。解冻只清除 PID_FROZEN，UID idle 等其他原因仍可能阻止恢复；源码存在不等于所有产品默认开启。
 
 ## 批处理失效或收益变小的常见原因
 
@@ -358,6 +435,11 @@ Perfetto 可按设备能力采集：
 
 公开的性能跟踪（trace）不一定提供独立的 sensor FIFO 轨道（track）。诊断时，应将 sensor timestamp、回调 slice 和 suspend / resume 放在同一时间线上；厂商 sensor hub trace 只能作为特定设备的补充证据。
 
+<!-- gracker-diagram: ch05-07-sensor-observation-evidence -->
+![传感器诊断的三组证据](../../assets/diagrams/ch05/ch05-07-sensor-observation-evidence.png)
+
+图：事件发生时间与回调到达时间使用相同 elapsed realtime 基准。selected 是请求配置；单次持锁快照或 sensor active time 都不能独自证明硬件能量和唤醒原因。
+
 ### 4. 看电池统计
 
 Battery Historian 或 `dumpsys batterystats` 可以观察 UID 的 sensor 使用、wake lock 和测试窗口内的电量活动。严谨测试应：
@@ -384,6 +466,11 @@ Battery Historian 或 `dumpsys batterystats` 可以观察 UID 的 sensor 使用�
 每组都要确认 `dumpsys sensorservice` 的 selected 参数没有被其他客户端改变。如果 A 与 B 的事件总数接近，而 B 的回调批次更大、AP wakeup 更少，可以将主要差异归因于 batching；如果 B 与 C 的事件总数也明显不同，C 还包含降低采样率带来的收益。
 
 灭屏测试还要区分 wake-up 和 non-wake-up 实例。Non-wake-up 组出现事件缺口可能符合 suspend 规则，不能直接判断为 HAL 丢失数据包。
+
+<!-- gracker-diagram: ch05-07-sensor-three-group-experiment -->
+![采样与 batching 的三组对照](../../assets/diagrams/ch05/ch05-07-sensor-three-group-experiment.png)
+
+图：A/B 保持请求采样周期一致，B/C 再改变采样周期。只有排除其他客户端干扰、确认实际事件率和访问状态后，才能解释 batching 与降采样各自收益。
 
 ## 与应用治理章节的分工
 
@@ -454,5 +541,8 @@ WakeLock、Doze 和后台限制决定 AP / 应用能否继续运行；SensorServ
 - Suspend mode：<https://source.android.com/docs/core/interaction/sensors/suspend-mode>
 - Sensor stack：<https://source.android.com/docs/core/interaction/sensors/sensor-stack>
 - Sensors AIDL HAL：<https://source.android.com/docs/core/interaction/sensors/sensors-aidl-hal>
+- [r1 SystemSensorManager](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/SystemSensorManager.java)：注册失败后的 latency=0 重试与逐事件回调。
+- [r1 Sensors AIDL](https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/sensors/aidl/android/hardware/sensors/ISensors.aidl)：FMQ 交接和 HAL 持锁超时。
+- [r1 SensorService](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/sensorservice/SensorService.cpp)：聚合、flush、持锁接管与 ACK 超时清理。
 - SensorManager API：<https://developer.android.com/reference/android/hardware/SensorManager>
 - Sensors overview / rate limiting：<https://developer.android.com/develop/sensors-and-location/sensors/sensors_overview>

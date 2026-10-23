@@ -259,6 +259,11 @@ sequenceDiagram
 
 这里的 buffer 是承载一帧像素的图形缓冲区。从这一步开始，我们就要区分四个时刻：CPU 调用结束、GPU 完成、buffer 被 SurfaceFlinger 采纳、画面提交到显示设备。它们属于不同时间边界；把它们合成一个“渲染完成”时间，排查方向就会被带偏。
 
+<!-- gracker-diagram: ch01-19-display-mainline -->
+![标准窗口的生产、采纳与合成主线](../../assets/diagrams/ch01/ch01-19-display-mainline.png)
+
+图：标准硬件加速窗口中，主线程准备绘制状态，RenderThread 提交 GPU 工作，应用内 BLAST 把 buffer 与 fence 通过事务交给 SurfaceFlinger。合成类型需要逐帧协商，CLIENT 部分由 RenderEngine 生成 client target。
+
 #### 1.1 起帧与 UI 状态准备
 
 我们先看起帧。SurfaceFlinger 调度器按预测显示时间和应用、SurfaceFlinger 双方的工作预算安排唤醒时刻，再经 EventThread 与 `DisplayEventReceiver` 把 VSync 事件送到应用。旧资料里的固定应用偏移、SurfaceFlinger 偏移或 `DispSync` 模型，不宜直接拿来解释现在的调度器。
@@ -318,6 +323,11 @@ FrameTimeline 中 SurfaceFlinger 的实际帧区间可延伸到屏幕更新，�
 - present fence signal：本轮 present 到达用户态可观察的显示时间点。
 
 present fence 不能证明整块面板已完成扫描、像素响应或用户已经感知到内容。`android-17.0.0_r1` 的 Composer3 [`PresentFence.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl) 还定义了电视画质处理的受限例外：特定 layer 的 buffer 可能晚于整屏其他内容呈现，由 `LayerPresentFence` 及其延迟字段描述；该例外偏离通常的 `SurfaceControl.Transaction` API 约定，只允许用于需要此能力的电视设备。定位端到端显示延迟时，应确认 fence 对应的显示屏和 layer，光学延迟仍需显示驱动、面板数据或外部测量证据。
+
+<!-- gracker-diagram: ch01-19-fence-directions -->
+![三类 fence 的方向与回答的问题](../../assets/diagrams/ch01/ch01-19-fence-directions.png)
+
+图：acquire fence 约束内容何时可读，release fence 约束旧 buffer 何时可复用，present fence 则反馈显示提交的时间边界。fence 句柄的传递和 fence 发出完成信号是不同事件。
 
 ### 3. 出图类型要按拓扑分类
 
@@ -515,6 +525,11 @@ system_server
 
 `addWindow()` 只把逻辑窗口加入系统。方法尾部的源码注释明确说明：这里不做 layout，窗口必须随后调用 relayout，让 WMS 重新计算窗口几何与 Surface，之后才会显示。所以“addWindow 返回成功”和“首帧已经可见”是两个时间点，两者之间隔着整个首次 traversal。
 
+<!-- gracker-diagram: ch01-19-window-first-frame -->
+![addWindow 成功之后仍有完整首帧链](../../assets/diagrams/ch01/ch01-19-window-first-frame.png)
+
+图：addView 先跨 Binder 注册逻辑窗口；addWindow 成功后，应用仍要执行首次 traversal，按路径协商 frame、Insets 和 Surface，再绘制并提交首帧。最终可见还要等待系统合成和显示。
+
 #### 三个容易混在一起的对象
 
 | 对象 | 所在进程 | 持有什么 |
@@ -672,6 +687,11 @@ Android 12 之后，StartingWindow 的决策与实际创建分在两侧。ATMS/W
 5. App 通过 `finishDrawing`/`reportDrawFinished` 把主窗口首帧完成信号交给服务端，随后由 `removeStartingWindow` 路径通知 Shell 移除 starting surface。
 
 Perfetto 里我们要把三段分开看：system_server 侧是 starting data、Activity/Task 状态和移除请求；Shell/SystemUI 侧负责启动 surface 的创建与绘制；App 侧的 `reportDrawFinished` 标记主 Window 首帧完成。把 starting surface 的绘制职责放到 system_server，就混淆了服务端、Shell 和 App 的进程分工。
+
+<!-- gracker-diagram: ch01-19-starting-window-handoff -->
+![StartingWindow 的跨进程首帧交接](../../assets/diagrams/ch01/ch01-19-starting-window-handoff.png)
+
+图：服务端决定 StartingWindow 类型，Shell 侧创建并绘制占位内容，目标应用继续启动并提交主窗口首帧；服务端收到完成信号后推进移除。实际视觉交接还需对齐 Shell 退出动画及 SurfaceFlinger 显示。
 
 #### Android 12 SplashScreen API 的责任边界
 
@@ -846,6 +866,11 @@ relative position changed AND size changed
 
 异步路径也分两种：server-created surface 调用 `relayoutAsync()`，client-created surface 调用 `relayoutAsync2()`。所以 async relayout 的覆盖范围比这两种说法都宽：它服务的场景超出 visibility/insets，server-created 与 client-created 路径也都会走。
 
+<!-- gracker-diagram: ch01-19-relayout-selection -->
+![traversal 内部如何选择 relayout 路径](../../assets/diagrams/ch01/ch01-19-relayout-selection.png)
+
+图：并非每次 traversal 都调用 WMS。进入 relayout 后，canRelayoutAsync 先决定能否本地计算；允许时继续比较 frame。相对位置和尺寸同时变化仍要同步获取同步序号，其余可异步发送。
+
 优化 resize 时，我们查看 `TRACE_TAG_VIEW` 下源码明确写入的 `relayoutSync ...` instant（瞬时 trace 事件）事件，结合 frame、sync id 与应用 draw 时长判断同步原因。
 
 [源码依据：`ViewRootImpl.canRelayoutAsync()`、`relayoutWindow()`、`IWindowSession.relayout*()`，`android-17.0.0_r1`]
@@ -940,6 +965,11 @@ Transition 创建 SyncGroup
 - **transaction commit timeout（事务提交超时）**：合并 transaction 已交给 listener 或 organizer，却迟迟等不到 committed callback（提交完成回调）。
 
 看到 sync timeout，应检查日志里的 `Unfinished container`（未完成容器）、draw state、sync state 和 `Unfinished dependency`（未完成依赖）。这些状态不能单凭一个“应用 buffer 没 acquire”概括。commit timeout 则继续核对 organizer、SurfaceFlinger transaction 和 commit callback。
+
+<!-- gracker-diagram: ch01-19-syncgroup-readiness -->
+![BLASTSyncEngine 完成同步组的三个门槛](../../assets/diagrams/ch01/ch01-19-syncgroup-readiness.png)
+
+图：正常完成需要调用方已 ready、依赖清空、所有成员同步完成。之后合并事务并交给 listener；commit callback 属于后续阶段，present 还需要另外观察。同步组超时和提交超时要分别归因。
 
 [源码依据：`BLASTSyncEngine.SyncGroup`、`Transition.onTransactionReady()`，`android-17.0.0_r1`]
 
@@ -1081,6 +1111,11 @@ InputDispatcher 的 `onWindowInfosChanged()` 按 Display 替换窗口缓存并�
 
 窗口移动、转场、焦点或 touchable region 变化时，我们应依次对齐：WMS 标记并提交 input info、SurfaceFlinger 生成新 snapshot、InputDispatcher 替换缓存和处理 focus request、应用 input channel 收到事件。
 
+<!-- gracker-diagram: ch01-19-input-snapshot -->
+![窗口输入快照与事件投递的两条路径](../../assets/diagrams/ch01/ch01-19-input-snapshot.png)
+
+图：WMS 通过事务更新输入窗口信息，SurfaceFlinger 发布窗口快照，InputDispatcher 更新按显示屏保存的窗口缓存。设备事件随后依据该缓存选目标，经 socket input channel 到应用；普通触摸不逐个向 WMS 发 Binder 请求。
+
 点击无响应可能来自旧 snapshot、不可触摸窗口、未完成的焦点请求、channel backlog 或应用主线程迟到；只凭焦点切换就下结论，会把问题看窄。
 
 ### 多窗口、自由窗体与大屏
@@ -1118,7 +1153,7 @@ fluid resize 的重点是减少不必要的同步 relayout，同时保证“尺�
 
 target SDK 37 的应用运行在 `sw >= 600dp` 的大屏时，固定方向、`resizeableActivity` 和 min/max aspect ratio 限制会被忽略。这里的 `sw` 是 smallest width，即设备当前配置下的最小可用宽度；游戏、小于 600 dp 的屏幕，以及用户显式选择 App 默认比例的情况属于例外。窗口因此更可能经历 resize、旋转和 configuration 回调，但 BLAST/SF 主线没有换代。
 
-Android 17 还减少了部分配置变化的 Activity 重建：`CONFIG_KEYBOARD`、`CONFIG_KEYBOARD_HIDDEN`、`CONFIG_NAVIGATION`、`CONFIG_TOUCHSCREEN`、`CONFIG_COLOR_MODE`，以及进入/离开 `UI_MODE_TYPE_DESK` 的 `CONFIG_UI_MODE` 默认改为 `onConfigurationChanged()`。
+Android 17 减少了部分配置变化的 Activity 重建：`CONFIG_KEYBOARD`、`CONFIG_KEYBOARD_HIDDEN`、`CONFIG_NAVIGATION`、`CONFIG_TOUCHSCREEN`、`CONFIG_COLOR_MODE` 的默认策略仍受功能开关、兼容变更、相应资源限定符和应用清单影响；进入/离开 `UI_MODE_TYPE_DESK` 时，仅在没有对应桌面模式资源等条件满足时跳过重建。其余变化位仍可能使 Activity 重建，完整判定见[资源与配置篇](18-resourcesmanager-configuration-performance.md)。
 
 当前 AOSP tag 的 `attrs_manifest.xml` 为 `android:recreateOnConfigChanges` 定义了 `mcc`、`mnc`、`touchscreen`、`keyboard`、`keyboardHidden`、`navigation`、`colorMode`，没有 `uiMode`。`mcc`/`mnc` 分别是移动国家码和移动网络码，其余名称对应触摸屏、键盘、导航设备和颜色模式等配置。
 

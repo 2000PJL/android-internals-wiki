@@ -81,7 +81,7 @@ consolidated_from:
 - **离散响应**：按下按钮后，下一帧何时显示按下状态或业务结果。
 - **连续跟手**：手指或笔持续移动时，屏幕轨迹与当前位置相差多少时间和空间。
 
-连续跟手会反复暴露位置差，通常比一次点击更容易显出延迟。我们做工程测试时，要在目标设备上分别统计点击响应和连续手势，至少报告刷新率、触控模式、冷机与热机状态、P50、P90、P99 以及丢帧情况；缺了这些条件的单一数字，承担不了产品服务水平目标（SLA） SLA 的角色。
+连续跟手会反复暴露位置差，通常比一次点击更容易显出延迟。我们做工程测试时，要在目标设备上分别统计点击响应和连续手势，至少报告刷新率、触控模式、冷机与热机状态、P50、P90、P99 以及丢帧情况；缺了这些条件的单一数字，承担不了产品服务水平目标（SLA） 的角色。
 
 ## 先统一测量口径
 
@@ -105,6 +105,11 @@ consolidated_from:
 | 面板输出 | 从系统呈现到光学变化 | HWC、显示时序和面板响应 |
 
 CPU 与 GPU 可能并行，多个样本也可能合并到同一帧；FrameTimeline 的呈现时刻还可能早于面板上某个像素完成响应。所以这张预算表用来划分调查责任；把各段经验值加成一个看似精确的总数，会掩盖上面这些并行与合并带来的重叠。
+
+<!-- gracker-diagram: ch03-02-latency-measurement-boundaries -->
+![读取、完成确认、呈现、光学变化是不同终点](../../assets/diagrams/ch03/ch03-02-latency-measurement-boundaries.png)
+
+图：物理接触、设备事件、EventHub 读取、分发确认、目标帧呈现和光学变化各有证据来源。dispatch-to-ACK 只量消息处理往返；真实 read-to-present 需要 RawEvent.readTime 与对应帧；touch-to-photon 还需外部触发和像素测量。图只表示边界先后和关联，不给出固定阶段耗时。
 
 ### 人机交互的感知阈值
 
@@ -170,9 +175,9 @@ void InputReader::loopOnce() {
 
 事件在 InputDispatcher 中经过三个关键队列：
 
-1. **输入队列（InboundQueue，`iq`） InboundQueue，计数器 `iq`**：`InputReader` 交付的事件先进入这里，`InputDispatcher` 从队首取出事件开始处理；
-2. **输出队列（OutboundQueue，`oq`） OutboundQueue，计数器 `oq`**：每个目标 `Connection` 都有一条输出队列。事件被包装成 `DispatchEntry` 后进入此队列，等待发布到 `InputChannel`；
-3. **等待队列（WaitQueue，`wq`） WaitQueue，计数器 `wq`**：发布成功后，条目从输出队列移到等待队列，等待应用返回 `FINISHED`。回收路径由 `handleReceiveCallback()` 接收响应，再经 `finishDispatchCycleLocked()` 和 `doDispatchCycleFinishedCommand()` 按序列号删除等待队列条目。
+1. **输入队列（InboundQueue，计数器 `iq`）**：`InputReader` 交付的事件先进入这里，`InputDispatcher` 从队首取出事件开始处理；
+2. **输出队列（OutboundQueue，计数器 `oq`）**：每个目标 `Connection` 都有一条输出队列。事件被包装成 `DispatchEntry` 后进入此队列，等待发布到 `InputChannel`；
+3. **等待队列（WaitQueue，计数器 `wq`）**：发布成功后，条目从输出队列移到等待队列，等待应用返回 `FINISHED`。回收路径由 `handleReceiveCallback()` 接收响应，再经 `finishDispatchCycleLocked()` 和 `doDispatchCycleFinishedCommand()` 按序列号删除等待队列条目。
 
 `FINISHED` 表示应用结束了这枚输入事件的分发责任，不表示相应画面已经呈现。若事件触发了异步 `InputStage`，或应用主线程迟迟没有执行到 `finishInputEvent()`，等待队列会保持非空；渲染也可以在完成确认之后继续。因此，输入确认延迟与触摸到显示延迟需要分开测量。
 
@@ -192,7 +197,7 @@ void InputReader::loopOnce() {
 
 `NativeInputEventReceiver` 把事件转换成 Java `InputEvent` 后，`WindowInputEventReceiver` 会将其加入 `ViewRootImpl` 的待处理队列，队列长度由 `aq:pending:<window>` 计数器记录，同步和异步 `deliverInputEvent` 区段则标记整段处理。触摸这类指针事件通常从 IME 后处理链进入 `EarlyPostImeInputStage`、`NativePostImeInputStage` 和 `ViewPostImeInputStage`，再由 View 树处理。
 
-View 的触摸分发沿命中的目标分支和已经建立的 `TouchTarget` 关系走，只有命中路径上的节点参与分发，整棵 View 树不会被每个 `MOVE` 扫一遍。事件可能只更新滚动偏移或状态，也可能触发 `invalidate()`、`requestLayout()` 或动画；前者通常只要求重绘，后者可能让下一次遍历执行测量、布局与绘制。
+`DOWN` 时，ViewGroup 可能检查并尝试分发给多个候选子节点；建立 `TouchTarget` 后，后续事件通常沿目标分支分发，整棵 View 树不会被每个 `MOVE` 无条件扫一遍。事件可能只更新滚动偏移或状态，也可能触发 `invalidate()`、`requestLayout()` 或动画；前者通常只要求重绘，后者可能让下一次遍历执行测量、布局与绘制。
 
 ### 7. 渲染上屏
 
@@ -211,6 +216,11 @@ View 的触摸分发沿命中的目标分支和已经建立的 `TouchTarget` 关
 | 目标帧 → 呈现 | FrameTimeline、RenderThread、GPU、SurfaceFlinger | 画面为何晚一个或多个刷新周期 |
 
 `InputEventAssigner` 有一项限制：在连续手势中，一帧只关联一枚输入事件 ID。首帧优先关联尚未处理的 `DOWN`，后续帧通常关联该帧之前的最新事件；中间的 `MOVE` 可能没有独立的帧归因。所以做端到端关联时，我们要保留事件 ID 和历史样本，逐个核对采样点对应到哪一帧。
+
+<!-- gracker-diagram: ch03-02-event-to-frame-attribution -->
+![一帧只归因一枚输入 ID，中间 MOVE 可能没有独立帧](../../assets/diagrams/ch03/ch03-02-event-to-frame-attribution.png)
+
+图：源码示例为 DOWN → MOVE1 → MOVE2 → VSYNC1 → MOVE3 → VSYNC2。VSYNC1 对应帧仍优先使用未处理 DOWN 的 ID；notifyFrameProcessed 清除该优先状态后，VSYNC2 对应帧使用 MOVE3。MOVE1 / MOVE2 未独立归因不表示它们没有被消费。
 
 ## 触摸采样率与跟手性
 
@@ -233,6 +243,11 @@ View 的触摸分发沿命中的目标分支和已经建立的 `TouchTarget` 关
 - **无缓冲分发与前缓冲渲染**：前者缩短 `MOVE` 进入应用前的等待，后者缩短局部笔迹从绘制到可见的路径。两者作用于不同阶段，都需要设备与应用实现配合。
 
 上面的样本数是按理想频率比估出来的，每个周期实际收到的样本数以设备行为为准：触控控制器可能动态调整报告率，显示器也可能运行在 VRR（可变刷新率）模式。验证设备规格时，我们应根据驱动事件时间或结构化输入跟踪统计相邻样本间隔。
+
+<!-- gracker-diagram: ch03-02-sampling-display-phases -->
+![240 Hz 采样与 120 Hz 显示：频率比不等于每帧延迟](../../assets/diagrams/ch03/ch03-02-sampling-display-phases.png)
+
+图：理想示例中，240 Hz 采样间隔约 4.17 ms，120 Hz 显示周期约 8.33 ms。多个真实样本可以参与同一帧的 MotionEvent 历史点、速度估计或轨迹拟合；实际采样与刷新相位不必对齐，事件还要及时经过处理与渲染才能赶上显示机会。
 
 ## 输入事件批处理与 Choreographer 的配合
 
@@ -296,6 +311,11 @@ for (int h = 0; h < event.getHistorySize(); h++) {
 
 笔迹、绘图、签名场景如果已经确认目标 View 和手势归属，可以在已 attach 的 View 上针对触摸 `ACTION_DOWN` 或 `ACTION_MOVE` 请求无缓冲分发；该请求只影响到对应 `ACTION_UP` 之前的当前序列。即便事件更早交付，应用仍要逐个处理事件，CPU 调度和回调压力也会增加。
 
+<!-- gracker-diagram: ch03-02-batched-versus-unbuffered -->
+![批处理保留历史点，无缓冲分发改变交付时机](../../assets/diagrams/ch03/ch03-02-batched-versus-unbuffered.png)
+
+图：兼容 MOVE / HOVER_MOVE 样本可进入批处理。默认路径安排 CALLBACK_INPUT，携有效 frameTime 消费并保留重采样机会；无缓冲请求则立即以 -1 消费待处理样本，常规实现跳过重采样。无缓冲不是系统通用性能开关，普通滚动仍要考虑唤醒、分发压力和抖动。
+
 ### 批处理与等待队列在 Perfetto 中的表现
 
 批处理与应用处理能力要分开看，它们在 Perfetto 中对应不同的轨道与执行片段。
@@ -328,7 +348,7 @@ for (int h = 0; h < event.getHistorySize(); h++) {
 - 目标时间为 `sampleTime = frameTime - 5 ms`；
 - 若一批事件中还有目标时间之后的未来样本，则在当前样本与未来样本之间线性插值；两点间隔至少为 2 ms；
 - 没有未来样本时，使用最近两个点外推；两点间隔必须在 2 ms 到 20 ms 之间；
-- 外推最远到 `currentTime + min(delta / 2, 8 ms)`；
+- 外推最远到 `current.eventTime + min(delta / 2, 8 ms)`；
 - 支持 `FINGER`、`MOUSE`、`STYLUS`、`UNKNOWN` 工具类型，并要求触点 ID、工具类型和显示器等条件一致；
 - 只对指针来源的 `ACTION_MOVE` 执行；厂商可以通过只读属性 `ro.input.resampling=0` 关闭。
 
@@ -345,6 +365,11 @@ evdev → EventHub → InputReader → TouchInputMapper → InputDispatcher
 ```
 
 重采样发生在目标应用进程中，不在 `InputReader` 或 `InputDispatcher` 中。它通过插值或受限外推，让 `MOVE` 坐标更接近帧时序，但急转弯、速度突变和稀疏样本仍可能产生偏差。评估时要同时比较真实样本、重采样标记与最终笔迹，不要只看坐标是否更接近帧时间。
+
+<!-- gracker-diagram: ch03-02-resampling-time-target -->
+![重采样对齐目标时间：插值或有边界的外推](../../assets/diagrams/ch03/ch03-02-resampling-time-target.png)
+
+图：常规 ViewRootImpl JNI 的 InputConsumer 在条件满足时取 sampleTime = frameTime − 5 ms。有后续真实样本时线性插值；没有时用最近两个真实样本受限外推，最远不超过最新样本 eventTime + min(delta / 2, 8 ms)。5 ms 是目标相位偏移，不是额外睡眠。
 
 ## 触摸场景的性能分析方法
 
@@ -425,6 +450,11 @@ Perfetto 标准库的 `android_input_events` 会把套接字往返与关联帧�
 
 标准库拿不准事件驱动的是哪一帧时，可能选择随后最近的一帧，并把 `is_speculative_frame` 设为 `true`；这类样本适合观察整体分布，作单个事件的因果结论时要谨慎。
 
+<!-- gracker-diagram: ch03-02-perfetto-ack-and-present -->
+![Perfetto total_latency 到 ACK，end_to_end 使用读取代理点](../../assets/diagrams/ch03/ch03-02-perfetto-ack-and-present.png)
+
+图：android.input 的 total_latency_dur 是 dispatch 到 finish_ack；end_to_end_latency_dur 是 frame.present_time − frame.read_time。Android17 随附 SQL 的 read_time 来自 UnwantedInteractionBlocker::notifyMotion 区段起点，属于读取阶段代理，不能冒充真实 RawEvent.readTime。推测关联帧需保留 is_speculative_frame 标记。
+
 ```sql
 INCLUDE PERFETTO MODULE android.input;
 
@@ -502,7 +532,7 @@ FrameTimeline 还可能出现“帧率稳定，但内容整体晚一帧”的高
 
 ### 5. GPU 渲染瓶颈
 
-如果输入处理和 View 树分发都很快，但渲染管线跟不上，例如 GPU 执行 `DisplayList` 过久、SurfaceFlinger 合成延迟或缓冲区状态异常，画面更新仍会延迟。用户会感到“手指动了但画面跟不上”。
+如果输入处理和 View 树分发都很快，但渲染管线跟不上，例如 RenderThread 回放 `DisplayList` 后提交的 GPU 工作耗时过长、SurfaceFlinger 合成延迟或缓冲区状态异常，画面更新仍会延迟。用户会感到“手指动了但画面跟不上”。
 
 这种情况在 Perfetto 中表现为：
 - 应用 FrameTimeline 标记错过截止时间，但主线程的输入处理与遍历已经按时结束；
@@ -523,7 +553,7 @@ FrameTimeline 还可能出现“帧率稳定，但内容整体晚一帧”的高
 
 ## 轨迹预测：面向笔迹与绘图的感知降延迟
 
-轨迹预测（Motion Prediction（轨迹预测））涉及四层彼此独立的概念，我们一层一层看：
+轨迹预测（Motion Prediction）涉及四层彼此独立的概念，我们一层一层看：
 
 - **framework API**：`android.view.MotionPredictor`，API 34 加入。
 - **AndroidX 库**：`androidx.input:input-motionprediction`，为不同系统版本提供封装。
@@ -544,7 +574,7 @@ FrameTimeline 还可能出现“帧率稳定，但内容整体晚一帧”的高
 
 ### 调用与绘制约束
 
-下面的 Java 骨架展示系统框架 API 的最小调用顺序。目标时间必须使用系统运行时间（uptime） uptime 时基的纳秒值，而且同一个实例在一次手势中只能记录一个设备的事件流。
+下面的 Java 骨架展示系统框架 API 的最小调用顺序。目标时间必须使用系统运行时间（uptime）时基的纳秒值，而且同一个实例在一次手势中只能记录一个设备的事件流。
 
 ```java
 MotionPredictor predictor = new MotionPredictor(context);
@@ -585,7 +615,12 @@ Jetpack 低延迟图形组件会把短生命周期的增量内容放到专用前
 | 普通按钮反馈 | 通常不适合 | 需要与 View 状态、无障碍和动画系统保持一致 |
 | 画笔、游戏准星 | 取决于引擎 | 只有引擎能正确管理局部增量层才适用 |
 
-手写场景的完整链路是：读取真实样本及历史点；必要时用无缓冲分发缩短到达等待；用 `MotionPredictor` 只产生短时间窗口内的临时点，并在前缓冲层绘制；真实样本到达后修正预测段；抬笔或分段结束时通过 `commit()` 提交到多缓冲层，并清理临时内容。只增加预测而不修正，会在轨迹急转时出现回弹；只增加前缓冲却不限制更新区域，画面撕裂可能比延迟更显眼。
+手写场景的完整链路是：读取真实样本及历史点；必要时用无缓冲分发缩短到达等待；用 `MotionPredictor` 只产生短时间窗口内的临时点，并在前缓冲层绘制；真实样本到达后修正预测段；抬笔或分段结束时通过 `commit()` 提交到多缓冲层，并清理临时内容。只增加预测而不修正，会在轨迹急转时出现回弹；只增加前缓冲却不限制更新区域，画面撕裂可能比延迟更显眼。 对 `CanvasFrontBufferedRenderer`，收到 `ACTION_CANCEL` 时应调用 `cancel()` 撤回临时绘制；取消不应当作正常抬笔去 `commit()`，预测段也不能成为永久笔迹。[API 约定](https://developer.android.com/reference/androidx/graphics/lowlatency/CanvasFrontBufferedRenderer#cancel())
+
+<!-- gracker-diagram: ch03-02-prediction-frontbuffer-lifecycle -->
+![真实点保留，预测点临时显示，结束时提交稳定内容](../../assets/diagrams/ch03/ch03-02-prediction-frontbuffer-lifecycle.png)
+
+图：手写组件先消费真实点与历史点；可选无缓冲优化交付，预测只补短时临时轨迹，前缓冲承载局部增量。新真实点到来要撤换旧预测，正常结束可 commit 稳定多缓冲内容。ACTION_CANCEL 应取消临时绘制并回滚对应段，不能把尚未确认的预测永久提交。
 
 ## 厂商触控优化方案
 
@@ -601,7 +636,7 @@ Jetpack 低延迟图形组件会把短生命周期的增量内容放到专用前
 
 ### 调度与提频策略
 
-厂商系统常会在输入到来后短时间提高 CPU 或 GPU 频率，或者提高 UI 相关线程的调度优先级；同一类策略在不同平台的名字、触发条件和覆盖范围都不一样（原理与判读边界见本章“4. CPU 频率和调度问题”），原理与判读方法见上文“4. CPU 频率和调度问题”。策略是否存在、持续多长、是否把线程放到高性能核心，都要以目标设备的系统跟踪、内核和系统实现为准，写成固定数值就失去了意义。排查时直接看 Perfetto 中的 CPU 频率、线程调度、SurfaceFlinger 与 `RenderThread` 行为。
+厂商系统常会在输入到来后短时间提高 CPU 或 GPU 频率，或者提高 UI 相关线程的调度优先级；同一类策略在不同平台的名字、触发条件和覆盖范围都不一样，原理与判读边界见上文“4. CPU 频率和调度问题”。策略是否存在、持续多长、是否把线程放到高性能核心，都要以目标设备的系统跟踪、内核和系统实现为准，写成固定数值就失去了意义。排查时直接看 Perfetto 中的 CPU 频率、线程调度、SurfaceFlinger 与 `RenderThread` 行为。
 
 ### 交互提示与自适应刷新率（ARR）的边界
 

@@ -227,6 +227,11 @@ APK 和原生库位于包级代码目录，可被多个 Android 用户共用；`
 
 因此，单用户归档时若共享代码目录仍被占用，实际收益可能只有缓存和代码缓存。
 
+<!-- gracker-diagram: ch01-17-archive-lifetime -->
+![归档改变用户安装状态，代码回收另有条件](../../assets/diagrams/ch01/ch01-17-archive-lifetime.png)
+
+图：ArchiveState 与 installed 按用户保存；代码目录由多个用户共享。归档会保留业务数据并清理缓存，能否回收 APK 还要检查其他用户的安装状态和 PMS 缓存策略。
+
 ### 4.2 保留与清理的边界
 
 | 对象 | Android 17 归档结果 | 说明 |
@@ -344,6 +349,11 @@ Intent.ACTION_UNARCHIVE_PACKAGE
 
 把 `UNARCHIVAL_OK` 当作安装完成，会让监控数据提前结束，也会让桌面启动器在 APK 仍不存在时再次尝试启动。
 
+<!-- gracker-diagram: ch01-17-unarchive-protocol -->
+![归档恢复的接受状态与安装终态](../../assets/diagrams/ch01/ch01-17-unarchive-protocol.png)
+
+图：第一次点击因入口不可用而中止；系统创建草稿会话并显式通知恢复责任安装器。UNARCHIVAL_OK 只表示可以开始，之后仍需下载、提交安装并等待包恢复成功；AOSP 不保证重放第一次点击。
+
 ## 8. 恢复性能要拆成四段
 
 从用户请求恢复到应用再次可用，总耗时可按下面四段计算：
@@ -357,6 +367,11 @@ T_user_ready
 ```
 
 这四个名称是本文建议的观测指标，不是 Android 平台定义的公开常量。分段记录后，才能判断延迟来自系统请求、安装器准备、下载与安装，还是安装后的首次启动。
+
+<!-- gracker-diagram: ch01-17-restore-measurement -->
+![恢复体验的四段观测边界](../../assets/diagrams/ch01/ch01-17-restore-measurement.png)
+
+图：四段是建议的性能归因范围，不是平台标准计时常量。若需要整体用户体验耗时，还要明确是否包含用户确认、再次点击和产品自动打开的等待。
 
 ### 8.1 `T_framework_request`
 
@@ -378,7 +393,7 @@ T_user_ready
 
 `T_next_launch` 是恢复后的首次启动，仍然走普通应用冷启动：Zygote 创建应用进程、`bindApplication`、Provider、`Application`、Activity 到首帧，这些步骤都不会被归档机制跳过。
 
-归档路径还会清理缓存、代码缓存和 ART 应用配置文件，因此首次启动可能比应用一直保持安装状态时的冷启动更慢。应用内置 Baseline Profile（预先列出的启动热点代码）并控制启动依赖和安装包体积，仍能帮助 ART 更早优化常用路径；但这不等于恢复后一定完成 AOT（安装前编译）优化。
+归档路径还会清理缓存、代码缓存和 ART 应用配置文件，因此首次启动可能比应用一直保持安装状态时的冷启动更慢。应用内置 Baseline Profile（预先列出的启动热点代码）并控制启动依赖和安装包体积，仍能帮助 ART 更早优化常用路径；但这不等于恢复后一定完成 AOT（提前编译）优化。
 
 ## 9. 指标与观测
 

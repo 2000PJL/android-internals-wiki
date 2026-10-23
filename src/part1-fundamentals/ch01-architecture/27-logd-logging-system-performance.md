@@ -67,7 +67,7 @@ android.util.Log.d(tag, message)
 
 这条路径上有四个细节会影响我们后面的判断：JNI 取字符串、native 侧的第二次级别过滤、`writev()` 的提交方式，以及 socket 的凭据传递。
 
-JNI 层用 `GetStringUTFChars()` 取到 tag 和 message 的表示，编码是 Modified UTF-8（JNI 使用的一种 UTF-8 变体），也就是 JNI 使用的一种变体，用完即释放。虚拟机会不会复制字符串，取决于具体实现和字符串内容，直接写成“一次堆分配”并不可靠；可以确定的是，取编码和跨一次 JNI 都有成本。
+JNI 层用 `GetStringUTFChars()` 取到 tag 和 message 的表示，编码是 Modified UTF-8（JNI 使用的一种 UTF-8 变体），用完即释放。虚拟机会不会复制字符串，取决于具体实现和字符串内容，直接写成“一次堆分配”并不可靠；可以确定的是，取编码和跨一次 JNI 都有成本。
 
 文本日志进入 `__android_log_buf_write()` 后会再次执行 `__android_log_is_loggable()`。`Log.d()` 的参数在进入 native 方法前已经求值，所以这层过滤能省去套接字写入，却省不掉调用方已经完成的字符串拼接、对象 `toString()` 或 JSON 序列化。
 
@@ -88,7 +88,7 @@ liblog 用 `writev()` 把头部和 payload（日志消息体） 一次提交。�
 
 `LogdWrite()` 给普通日志用的 socket 带 `SOCK_NONBLOCK`：套接字暂时不可用时，写入立即返回。这里的普通日志覆盖 `main`、`system`、`radio`、`events`、`stats`、`crash` 等合法 buffer；`security` 是受权限控制的特殊二进制 buffer，liblog 为它单独准备了阻塞 socket。
 
-logd 一旦来不及接收，socket 就返回 `EAGAIN`（表示“稍后再试”），liblog 记一次丢弃并直接返回；等后续写入恢复、liblog 内部日志允许输出时，它会尝试写入 event tag `1006（`liblog`）`，也就是 `liblog` 自己的事件，报告此前丢了多少条。这与旧版 `chatty` 行是两套机制。
+logd 一旦来不及接收，socket 就返回 `EAGAIN`（表示“稍后再试”），liblog 记一次丢弃并直接返回；等后续写入恢复、liblog 内部日志允许输出时，它会尝试写入 event tag `1006`（`liblog`），也就是 liblog 自己的事件，报告此前丢了多少条。这与旧版 `chatty` 行是两套机制。
 
 所以应用日志风暴的代价主要落在四处：
 
@@ -97,9 +97,14 @@ logd 一旦来不及接收，socket 就返回 `EAGAIN`（表示“稍后再试�
 - logd 忙于接收、压缩、裁剪和服务读取客户端，增加系统负载；
 - 日志对象和中间字符串增加分配压力。
 
-在这套机制下，“socket 满后 `write()` 阻塞主线程并导致 ANR”的说法与 `android-17.0.0_r1` 的 liblog 实现不符。trace 里如果真有线程长期停在日志相关调用上，我们要查的是自建日志框架的锁、磁盘输出端（sink） sink、格式化、崩溃收集器或厂商改动；AOSP 的 `logdw` 只丢不堵，没有“下游变慢、上游等待”式的反压（下游处理变慢后迫使上游等待）。
+在这套机制下，“socket 满后 `write()` 阻塞主线程并导致 ANR”的说法与 `android-17.0.0_r1` 的 liblog 实现不符。trace 里如果真有线程长期停在日志相关调用上，我们要查的是自建日志框架的锁、磁盘输出端（sink）、格式化、崩溃收集器或厂商改动；普通日志的非阻塞 `logdw` 过载分支会丢弃新记录，不会因为 socket 队列满而等待下游；前述 security 阻塞 socket 是另一条路径。
 
 对 `EAGAIN` 也不要做无间隔重试——那等于把“允许丢日志”的保护机制变成 CPU 自旋。
+
+<!-- gracker-diagram: ch01-27-log-write-read-path -->
+![普通文本日志的调用方、守护进程与读取端](../../assets/diagrams/ch01/ch01-27-log-write-read-path.png)
+
+图：参数格式化先发生在应用调用线程，之后才经过 JNI、liblog 级别判断和普通非阻塞 logdw 写入。socket 过载可丢新日志，logd 保存后的日志则经独立的 logdr 连接读出；security 使用的阻塞写入路径另行处理。
 
 ### 1.3 payload 上限与长消息
 
@@ -158,6 +163,11 @@ adb logcat -g
 
 从外面看，这套设计仍表现为“只保留有限窗口，并淘汰旧数据”；内部的管理单位则换成了 chunk 和序列化条目。我们分析裁剪成本、内存占用或慢速读取客户端行为时，都要落到这套实现上看。
 
+<!-- gracker-diagram: ch01-27-serialized-retention -->
+![SerializedLogBuffer 按数据块压缩与裁剪](../../assets/diagrams/ch01/ch01-27-serialized-retention.png)
+
+图：默认 serialized 路径把日志追加到当前 chunk，封存后压缩；容量超限时裁剪较老 chunk。读取压缩块会按需要解压，reader 状态也要随裁剪推进。增大容量不会消除调用方格式化或 socket 过载丢弃。
+
 ### 2.4 `chatty` 属于历史机制
 
 `system/logging/logd/README.compression.md` 的标题就写着 Android S 的这次变化：用日志压缩取代 Chatty。到了 Android 17，logd 源码里已经没有当前默认路径所需的 `ChattyLogBuffer.cpp`，默认的 serialized buffer 也不会按旧说明插入 `uid=... expired ... lines` 来表示重复日志。
@@ -200,6 +210,11 @@ adb logcat -b main --pid="$(adb shell pidof -s com.example.app)" \
 ```
 
 这里 `-b main` 和 `--pid` 控制服务端数据范围，后面的过滤规则（filter spec）决定 logcat 打印哪些 tag。`$(...)` 命令替换应在主机 shell 中执行；多进程应用还要确认 `pidof -s` 选中的进程是不是我们要排查的那个。
+
+<!-- gracker-diagram: ch01-27-logcat-filter-scopes -->
+![服务端读取条件与 logcat 显示过滤](../../assets/diagrams/ch01/ch01-27-logcat-filter-scopes.png)
+
+图：服务端按 buffer、PID、起点与 tail 等条件读取，再把记录传给 logcat；tag/priority 与正则匹配在 logcat 进程中执行。显示更少不意味着应用少写了日志，也不保证服务端少发同样多的记录。
 
 ### 3.3 慢速读取客户端与多个 reader
 

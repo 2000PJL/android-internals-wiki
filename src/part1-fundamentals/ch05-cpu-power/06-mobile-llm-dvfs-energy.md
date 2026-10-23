@@ -85,11 +85,17 @@ TPOT = (t_last_token - t_first_token) / (N_output - 1)
 
 request_energy_per_output_token
     = (E_done - E_request) / N_output
+      仅在 N_output > 0 时定义；E 为同一口径的累计消耗能量
 ```
 
-按这套定义，TTFT 覆盖了分词器（tokenizer）处理、排队和冷启动，描述的是用户实际等待的时间。如果还要分析执行后端，我们另外报告 `t_prefill_end - t_prefill_start`，并分别测量模型文件读取、权重映射、delegate 初始化、计算图编译和首轮 kernel 预热。预热之后量到的后端时间属于热身后的稳态数据，报告里要与冷启动 TTFT 分开列。
+按这套定义，TTFT 覆盖请求进入 API 后到首个 token 交付前发生的工作，可能包括分词、排队和冷启动；若模型创建或分词在 `t_request` 之前完成，就不会计入该 TTFT。点击到首个可见结果还需另计调用前处理和 UI 呈现。如果还要分析执行后端，我们另外报告 `t_prefill_end - t_prefill_start`，并分别测量模型文件读取、权重映射、delegate 初始化、计算图编译和首轮 kernel 预热。预热之后量到的后端时间属于热身后的稳态数据，报告里要与冷启动 TTFT 分开列。
 
 TPOT 是整段 decode 的平均值，容易掩盖个别 token 的停顿，工程报告还应给出相邻 token 延迟（inter-token latency）的第 50、95 百分位数（P50、P95）、最大值和随时间变化的曲线。在采用推测解码（speculative decoding）、并行解码（decode）或一次提交多个 token 的运行时里，输出回调与硬件 kernel 可能不再一一对应；这时 token 到达间隔仍能描述用户体验，要推断每个 token 在硬件上的执行周期，还需要另找依据。
+
+<!-- gracker-diagram: ch05-06-latency-boundaries -->
+![TTFT 与 TPOT 的计时边界](../../assets/diagrams/ch05/ch05-06-latency-boundaries.png)
+
+图：TPOT 仅在输出 token 数大于 1 时定义，并配合 P95 相邻 token 延迟。API 仅交付文本分片时，应改报分片指标，不能还原逐 token 时刻。
 
 能耗同样要写清分母：
 
@@ -98,11 +104,21 @@ TPOT 是整段 decode 的平均值，容易掩盖个别 token 的停顿，工程
 - `request_energy / output_token` 包含加载、prefill、decode 和应用开销；
 - `joules / successful_request` 以焦耳 / 成功请求为单位，还能反映取消、超时与失败造成的能量浪费。
 
-这几组指标可以同时报告。横向比较之前，先确认两边用的是同一个分母，再谈“模型能效”的高下。
+这几组指标可以同时报告。横向比较之前，先确认两边用的是同一个分母，再谈“模型能效”的高下。如果 API 只交付文本分片而不暴露逐 token 时间，应报告首分片与分片间隔；按 tokenizer 统计分片里的 token 数，并不能还原各 token 的真实到达时刻。零输出的失败或取消请求保留在请求能量和成功率统计中。
+
+<!-- gracker-diagram: ch05-06-energy-denominators -->
+![LLM 能量指标的分母与窗口](../../assets/diagrams/ch05/ch05-06-energy-denominators.png)
+
+图：能量必须来自相同测量口径与时间窗。零输出请求不计算焦耳/输出 token，但仍计入请求成本、成功率和浪费统计。
 
 ## 一次请求经过哪些硬件
 
 一次端侧推理请求会穿过多个执行层，每层都有一部分容易被漏看的成本；具体分工由模型格式、运行时和 delegate 决定。我们先用下表建立一个排查用的层次视图：
+
+<!-- gracker-diagram: ch05-06-hardware-responsibilities -->
+![LLM 请求的多部件成本](../../assets/diagrams/ch05/ch05-06-hardware-responsibilities.png)
+
+图：图为常见混合执行关系。模型加载还涉及存储，屏幕、网络与其他进程会进入整机能量；具体算子分工由模型、runtime 和 delegate 决定。
 
 | 层级 | 常见工作 | 容易漏看的成本 |
 |---|---|---|
@@ -157,6 +173,11 @@ Prefill 一次处理较长的输入序列，张量运算容易组织成批量工
 
 这段流程里选核与选频会互相影响：任务落到哪个 CPU 核簇（cluster）会改变可用容量和频点，频率又会影响执行时间。所以两条路径要分开观察：任务迁核后变快，未必是 governor 升频的功劳；看到 `cpu_frequency` 变化，也未必说明 EAS 改变了放置决策。
 
+<!-- gracker-diagram: ch05-06-scheduling-frequency-layers -->
+![选核、选频与最终约束](../../assets/diagrams/ch05/ch05-06-scheduling-frequency-layers.png)
+
+图：EAS 的能耗模型用于比较放置方案，不是整机功耗计。CPU 目标频率还受 QoS、温控与硬件限制；GPU/内存另有设备策略。
+
 ### GPU 与内存 DVFS 多由厂商实现
 
 Linux 提供了 devfreq 框架和通用 governor，但 Android 设备的 GPU、片上互连和内存控制器多由 SoC 厂商的驱动与策略管理，带宽请求和相关遥测数据（telemetry）也是。
@@ -183,7 +204,17 @@ AIDL 接口 `IPower` 支持创建性能提示会话（hint session）。Framewor
 6. **热与功率上限**：观测到的低频可能来自 thermal clamp 或平台功率预算，不一定是 governor 低估了利用率；
 7. **后台竞争**：相机、显示、网络、系统服务和其他应用会共同消耗 CPU、内存带宽与热余量。
 
+<!-- gracker-diagram: ch05-06-prefill-decode-shapes -->
+![Prefill 与自回归 Decode 的工作形态](../../assets/diagrams/ch05/ch05-06-prefill-decode-shapes.png)
+
+图：Prefill 较易形成批量计算，decode 多轮有数据依赖；计算、带宽、提交与同步均可能成为瓶颈，不能只按利用率高低判断。
+
 所以诊断要从 token 时间线开始，再关联 CPU 放置、CPU / GPU 频率、调度、内存、功耗和温度。单张利用率（utilization）截图说明不了升频策略的问题。
+
+<!-- gracker-diagram: ch05-06-decode-utilization-blindspot -->
+![Decode 的交接与利用率盲区](../../assets/diagrams/ch05/ch05-06-decode-utilization-blindspot.png)
+
+图：示意一个依赖周期，长度不代表实测时间。CPU 或加速器空闲可能是在等待另一侧，带宽与热限制也会拉长周期；低利用率本身不证明 governor 失效。
 
 ## FUSE 论文：Pixel 7 上的频点组合实验
 
@@ -207,9 +238,14 @@ AIDL 接口 `IPower` 支持创建性能提示会话（hint session）。Framewor
 | TinyLlama decode / CPU | 约 1130.8 MHz | 2252 MHz | 降低 13.2% |
 | StableLM decode / CPU | 约 1038.8 MHz | 2401 MHz | 降低 13.4% |
 
-以 TinyLlama 的 GPU 案例为例：论文给出默认 governor 下 TPOT 为 215.1 ms、单 token 能耗为 402.7 mJ（毫焦耳）；固定 GPU 848 MHz 后，TPOT 为 126.9 ms、单 token 能耗为 396.5 mJ。在这台设备与这一请求上，提高 GPU 频率缩短了执行时间，单 token 能耗仍与默认 governor 相近。这条数据支持的是这一个组合上的观察，还撑不起“GPU 总应保持高频”这样的普遍结论。
+这些表格行来自隔离单个 governor 的实验：测 GPU 时固定 CPU/内存，测 CPU 时固定其他部件，并非每行都表示整机所有 governor 同时默认运行。以 TinyLlama 的 GPU 案例为例：论文给出默认 governor 下 TPOT 为 215.1 ms、单 token 能耗为 402.7 mJ（毫焦耳）；固定 GPU 848 MHz 后，TPOT 为 126.9 ms、单 token 能耗为 396.5 mJ。在这台设备与这一请求上，提高 GPU 频率缩短了执行时间，单 token 能耗仍与默认 governor 相近。这条数据支持的是这一个组合上的观察，还撑不起“GPU 总应保持高频”这样的普遍结论。
 
-FUSE 联合搜索 CPU、GPU 与内存频率组合，再按请求特征选择配置。论文在其工作负载上报告：单 token 能耗相同时，TTFT 平均改善 7.0%～16.9%，TPOT 平均改善 25.4%～36.8%。
+论文的前期测量枚举 CPU、GPU、内存频率组合；FUSE 原型的高效搜索则先选 GPU 候选频点，再搜索 CPU 频点，内存保留默认 governor。运行时按 prefill/decode 阶段和输入长度范围选择已测配置。论文的 TTFT 按其 prefill 计时、不包含输入排队，与本文 API 进入到 token 交付的边界应区分。论文在其工作负载上报告：单 token 能耗相同时，TTFT 平均改善 7.0%～16.9%，TPOT 平均改善 25.4%～36.8%。
+
+<!-- gracker-diagram: ch05-06-fuse-search-scope -->
+![FUSE 的搜索流程与实验边界](../../assets/diagrams/ch05/ch05-06-fuse-search-scope.png)
+
+图：FUSE 并未在其高效搜索中枚举内存频点。论文设备拆机、旁路电池、关屏，用外置功耗仪测量；结果不能直接外推到 Android 17 量产 App 或 NPU。
 
 这项研究能支持的工程判断是：CPU、GPU、内存和请求阶段要联合测量，各自独立的利用率策略可能错过更好的组合。把结果外推之前，先对照这份清单：
 
@@ -220,7 +256,7 @@ FUSE 联合搜索 CPU、GPU 与内存频率组合，再按请求特征选择配�
 - 未 root 的量产应用；
 - 屏幕点亮、联网、边充边测等不同整机条件。
 
-复现这篇论文时，我们把它当作 root 实验机上的机制验证：固定频率脚本依赖 root 接口，普通量产应用没有对应入口，而且会绕过平台功耗与温控约束。
+复现这篇论文时，我们把它当作 root 实验机上的机制验证：固定频率脚本依赖 root 接口，普通量产应用没有对应入口，它会改变默认 governor 的选频行为，但只写最小 / 最大频率并不保证绕过热限制、QoS 或硬件约束；是否另改温控必须单独记录。
 
 ## 普通应用、系统组件与 root 实验各能做什么
 
@@ -240,24 +276,38 @@ FUSE 联合搜索 CPU、GPU 与内存频率组合，再按请求特征选择配�
 
 普通应用应通过模型、上下文长度、线程数和请求队列等参数改变工作负载，并向系统描述时间目标；指定硬件频率这件事不在应用侧。Power HAL、调度参数、GPU / 内存策略和 thermal 配置适合由系统团队评估。两类结论需要分开记录，避免把 root 实验结果写成 SDK 能力。
 
+<!-- gracker-diagram: ch05-06-application-system-root-scope -->
+![应用、系统与 root 实验的控制边界](../../assets/diagrams/ch05/ch05-06-application-system-root-scope.png)
+
+图：普通 App 可调模型与请求负载，并使用公开 HintSession/热接口；系统负责策略集成，root 调试接口不构成 SDK 能力，写 min/max 也不保证绕过热限制。
+
 ## 用 ADPF 描述周期工作
 
-我们可以用 `android.os.PerformanceHintManager` 为一组相互关联、长期存在的线程创建性能提示 `Session`。这段代码创建会话，并报告一次 decode 的实际工作时长：
+我们可以用 `android.os.PerformanceHintManager` 为一组相互关联、长期存在的线程创建性能提示 `Session`。下面示例只为应用自管的稳定 CPU 工作段建立会话；target 与 actual 都对应这个 CPU 工作段，并在场景内复用会话：
 
 ```java
+// API 31+；在负责该 CPU 工作段的长期线程中串行执行。
 PerformanceHintManager manager =
         context.getSystemService(PerformanceHintManager.class);
-
-long targetNanos = initialDecodeTargetNanos;
-PerformanceHintManager.Session session =
-        manager.createHintSession(workerTids, targetNanos);
-
-if (session != null) {
-    session.reportActualWorkDuration(actualDecodeNanos);
+long targetNanos = decodeCpuTargetNanos; // 产品分配给本 CPU 段的预算
+PerformanceHintManager.Session session = manager == null ? null :
+        manager.createHintSession(
+                new int[] {android.os.Process.myTid()}, targetNanos);
+try {
+    while (decoder.hasNextStep()) { // 应用自己的场景循环
+        long start = System.nanoTime();
+        decoder.runDecodeCpuPhase(); // 不包含 UI 消费或设备侧完成等待
+        long actual = System.nanoTime() - start;
+        if (session != null && actual > 0) {
+            session.reportActualWorkDuration(actual);
+        }
+    }
+} finally {
+    if (session != null) session.close();
 }
 ```
 
-这段代码表达“这些线程会周期性完成一轮工作，并希望在目标时间内结束”。`createHintSession()` 可能返回 `null`，所以应用必须保留没有 hint session 时仍可正确执行的路径。线程 ID 应来自长期负责推理的 worker，而不是 UI 线程。
+这段代码表达“这些线程会周期性完成一轮工作，并希望在目标时间内结束”。`createHintSession()` 可能返回 `null`，所以应用必须保留没有 hint session 时仍可正确执行的路径。线程 ID 应来自被度量 CPU 工作的长期 worker；示例用 `Process.myTid()` 取得 Linux TID，不能用 Java `Thread.getId()`。同一 Session 的更新、上报和关闭要串行化；只有公共 API 明确支持且边界匹配时，才使用 `WorkDuration` 分别报告 CPU/GPU 工作，不能把整个服务请求等待直接当成本进程 CPU 工作。
 
 这个 `Session` 的主要操作包括：
 
@@ -275,6 +325,11 @@ LLM decode 具有周期性，可以把一个稳定的 token 生成过程或一�
 3. actual duration 的起止点固定，避免这轮只量 GPU、下一轮又把采样与 UI 回调计入。
 
 Prefill 往往是一段较长的批量工作。如果运行时没有稳定、可重复的 prefill 分块（chunk）周期，把整段 prefill 硬当作一个高频次重复的周期上报，信号会难以解释。我们可以为起止点明确的 prefill chunk 单独建 session，也可以只为 decode 建立 session，用 trace 另行评估 TTFT。
+
+<!-- gracker-diagram: ch05-06-decode-hint-lifecycle -->
+![Decode CPU 工作段的 HintSession](../../assets/diagrams/ch05/ch05-06-decode-hint-lifecycle.png)
+
+图：target 与 actual 必须对应同一工作范围。ADPF 只提供提示；GPU 细分报告需遵循 WorkDuration 契约，不控制 AICore 服务或保证频率。
 
 目标时长也不是越短越好。如果产品只要求稳定达到某个 token 速率，可以将 target 设在体验预算附近，并在温度升高、电量策略变化或应用进入后台时适当放宽。`setPreferPowerEfficiency(true)` 只表达偏好，最终选择仍由平台决定；调用前检查当前 SDK、flag 和设备能力。
 
@@ -302,9 +357,14 @@ KV bytes ≈ 2 × layers × tokens
            × num_kv_heads × head_dim × bytes_per_element
 ```
 
-公式中的系数 2 对应 key 和 value。分组查询注意力（GQA）、多查询注意力（MQA）、分页 cache、量化 cache、滑动窗口或特殊布局，都会让公式参数和额外元数据发生变化。
+该式假定单条序列、各层 KV 形状一致且 key/value 维度相同，系数 2 对应 key 和 value。相同长度的 batch 还要乘 batch size；不同序列长度则逐条求和，并另计对齐、分页、预分配和元数据开销。分组查询注意力（GQA）、多查询注意力（MQA）、分页 cache、量化 cache、滑动窗口或特殊布局，都会让公式参数和额外元数据发生变化。
 
 上下文越长，cache 容量与访问成本通常越高，也更容易触发内存压力。我们应记录运行时真实分配、RSS 和 PSS，只按模型配置推算是靠不住的。
+
+<!-- gracker-diagram: ch05-06-kv-capacity-boundary -->
+![KV cache 的容量估算边界](../../assets/diagrams/ch05/ch05-06-kv-capacity-boundary.png)
+
+图：同长度 batch 可再乘 batch size，不同长度逐序列求和。分页、预分配、滑窗、量化或特殊 attention 需重算；单个公式不能代表 runtime 总内存。
 
 产品可以控制历史消息长度、检索片段数量、system prompt 大小和最大输出 token 数。截断规则要与语义评测一起验证，避免以明显降低回答质量为代价换取更高的 tokens/s。
 
@@ -330,6 +390,11 @@ KV bytes ≈ 2 × layers × tokens
 - 取消请求后 worker、缓冲区（buffer）和 hint session 的清理；
 - 低内存回调和设备热状态变化。
 
+<!-- gracker-diagram: ch05-06-runtime-work-reduction -->
+![从模型与运行时减少无效工作](../../assets/diagrams/ch05/ch05-06-runtime-work-reduction.png)
+
+图：更低位宽不保证后端更快，资源复用也需要容量上限和明确生命周期。按设备、模型和版本记录覆盖、失败和持续能量。
+
 ## 建立可复现的能效实验
 
 这一节按五个环节搭建能效实验：固定负载、标记阶段、采集频率、区分功耗、积分与重复试验。我们从固定工作负载开始。
@@ -348,6 +413,11 @@ KV bytes ≈ 2 × layers × tokens
 - 环境温度、测试开始时的电池温度和热状态（thermal status）。
 
 结果要按这些维度分组。将 32-token prompt 和 2K-token prompt 的 TTFT 混合求平均，所得数值很难用于指导优化。
+
+<!-- gracker-diagram: ch05-06-energy-experiment-protocol -->
+![可复现的端侧 LLM 能效实验](../../assets/diagrams/ch05/ch05-06-energy-experiment-protocol.png)
+
+图：32-token 与 2K-token 输入不混成一组平均值。冷/热路径、充放电与模型后端分开记录，持续实验按时间窗口报告。
 
 ### 2. 用应用 trace 标记请求阶段
 
@@ -387,6 +457,11 @@ data_sources {
 
 这段配置使用 ring buffer，数据写满后会覆盖旧数据。100 ms 适合作为观察长期趋势的起点，解析单个很短的 kernel 就不够用了。分析短周期时，我们把频率变化事件、调度 slice 和应用 token 标记放在一起看，同时评估 trace 本身的开销。
 
+<!-- gracker-diagram: ch05-06-frequency-event-and-poll -->
+![CPU 频率变化事件与轮询互补](../../assets/diagrams/ch05/ch05-06-frequency-event-and-poll.png)
+
+图：变化事件与轮询提供不同证据。CPUFreq 通常按 policy/簇共享，读到的频率及支持情况依设备实现解释；GPU/NPU/内存轨道另行确认。
+
 GPU、NPU、互连和内存频率数据源依赖设备，采集前要确认 counter 的名称、单位和更新含义。
 
 ### 4. 区分整机功耗与部件能量
@@ -415,6 +490,11 @@ data_sources {
 
 使用外置功耗仪时，要记录供电路径、采样频率、电压设置、电池是否被旁路、屏幕状态与 ADB 连接状态。外置仪器能提高采样一致性，但拆机并旁路电池后的结论仍只适用于相应实验条件，与正常电池供电的数据要分开存放、分开比较。
 
+<!-- gracker-diagram: ch05-06-power-data-scope -->
+![电池计数、PowerStats 与外置仪器](../../assets/diagrams/ch05/ch05-06-power-data-scope.png)
+
+图：电池计数描述电池侧整机流量；power rail/consumer 是设备定义的子系统口径，可能缺失。外置测量需记录电池旁路、屏幕与 ADB 条件。
+
 ### 5. 积分、基线与重复试验
 
 若测得随时间变化的电压 `V(t)` 和电流 `I(t)`，请求窗口能量可以积分近似为：
@@ -427,6 +507,11 @@ E_request = ∫ V(t) × I(t) dt
 
 每组配置都需要多次重复，并随机安排测试顺序，免得所有“高性能配置”都赶在设备尚未升温时运行，而“节能配置”全在设备已经升温后运行。至少报告样本数、中心趋势、离散程度和失败请求；长时间测试还应按时间窗口分别展示结果。
 
+<!-- gracker-diagram: ch05-06-energy-integration-validation -->
+![从采样到请求能量](../../assets/diagrams/ch05/ch05-06-energy-integration-validation.png)
+
+图：短请求的低频采样和基线扣除可能放大误差。已提供累计能量的同一通道，可按一致时间窗取差，不要再当瞬时功率重复积分。
+
 ## 把温控纳入性能结论
 
 短时间 benchmark 往往让激进升频策略表现更好，连续对话则更容易暴露热约束。一个完整测试应包含：
@@ -438,6 +523,11 @@ E_request = ∫ V(t) × I(t) dt
 5. 冷却后复测，排除后台任务与偶发驱动错误。
 
 “尽快完成后进入空闲”（race to idle）只有在更高瞬时功率被更短执行时间抵消，并且没有提前触发温控或占用其他部件预算时，才有能效优势。判断依据是请求总能量、持续 TPOT、热状态和恢复时间，别只看峰值频率。
+
+<!-- gracker-diagram: ch05-06-sustained-thermal-validation -->
+![持续热约束与 race to idle 的验证](../../assets/diagrams/ch05/ch05-06-sustained-thermal-validation.png)
+
+图：更高频率只有在更短执行时间抵消瞬时功率、且不提前触发热限制时才可能节能。结论需要请求总能量、持续 TPOT 和恢复成本共同支持。
 
 应用可以按产品目标采取降载措施：
 
@@ -530,6 +620,9 @@ LiteRT-LM 是 Google AI Edge 在 AOSP 之外维护的端侧生成式 AI 运行�
 
 - LiteRT-LM：<https://github.com/google-ai-edge/LiteRT-LM>
 - FUSE 论文：<https://arxiv.org/abs/2507.02135>
+- [FUSE 论文全文 §3、§5、§6](https://arxiv.org/html/2507.02135v1)：实验计时口径、隔离单个 governor 的实验，以及保留默认内存 governor 的两步搜索。
+- [KV cache 策略](https://huggingface.co/docs/transformers/kv_cache)：动态、静态、滑窗和量化缓存的容量与执行成本差异。
+- [CPUFreq cooling（固定内核基线）](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/thermal/cpufreq_cooling.c)：通过频率 QoS 上限实施热限制。
 - Perfetto CPU frequency：<https://perfetto.dev/docs/data-sources/cpu-freq>
 - Perfetto battery counters：<https://perfetto.dev/docs/data-sources/battery-counters>
 - Android Performance Hint API：<https://source.android.com/docs/core/perf/performance-hint-api>

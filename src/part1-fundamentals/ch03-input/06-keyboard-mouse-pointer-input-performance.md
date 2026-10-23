@@ -152,13 +152,18 @@ flowchart LR
 普通鼠标由 `CursorInputMapper` 处理 `REL_X`、`REL_Y`、滚轮和按钮。未捕获时：
 
 1. 相对位移先经过指针速度调节（pointer velocity control）；
-2. `PointerController` 更新显示中的光标位置；
-3. 映射器生成带屏幕光标坐标的 `SOURCE_MOUSE` 事件；
+2. 映射器先生成携带相对位移的 `NotifyMotionArgs`；普通未捕获鼠标的 cursor position 此时仍可为无效值；
+3. 下游 `PointerChoreographer` 通过 `PointerController` 移动光标，补全屏幕 X/Y、cursor position 与目标 display ID，再继续转发 `SOURCE_MOUSE` 事件；
 4. 未按按钮时通常是 `ACTION_HOVER_MOVE`，按下期间是 `ACTION_MOVE`；
 5. 滚轮生成 `ACTION_SCROLL`，数值位于 `AXIS_VSCROLL` 和 `AXIS_HSCROLL`；
 6. 按钮状态还会产生 `ACTION_BUTTON_PRESS`、`ACTION_BUTTON_RELEASE`，主按钮状态变化伴随 `ACTION_DOWN`、`ACTION_UP`。
 
 应用看到的指针坐标已经经过显示映射和速度曲线。鼠标 DPI、USB 或 Bluetooth 报告间隔、用户指针速度、显示刷新率都会改变观测结果，所以事件频率和精度要按具体设备确认，先别预设固定值。
+
+<!-- gracker-diagram: ch03-06-device-conversion-and-cursor -->
+![鼠标 mapper 产出相对量，屏幕坐标由 PointerChoreographer 补全](../../assets/diagrams/ch03/ch03-06-device-conversion-and-cursor.png)
+
+图：键盘由 mapper 生成 KeyArgs；普通鼠标由 CursorInputMapper 处理相对移动与速度曲线；触控板先把多点硬件状态解释成光标或手势。PointerChoreographer 更新 PointerController 并补全普通指针的屏幕坐标、光标位置与 Display，再由下游分发器选择窗口。图省略其他透传或条件监听阶段。
 
 ### 2.4 触控板：普通模式先解释手势
 
@@ -203,6 +208,11 @@ Android 17 为触控板明确了两种模式：
 
 绝对模式还会提供 `AXIS_RELATIVE_X/Y`，不过 `getX(index)`、`getY(index)` 的坐标空间属于触控板表面，直接当屏幕坐标用会出错。
 
+<!-- gracker-diagram: ch03-06-pointer-capture-coordinate-spaces -->
+![普通、相对捕获、绝对触控板捕获有不同坐标空间](../../assets/diagrams/ch03/ch03-06-pointer-capture-coordinate-spaces.png)
+
+图：普通模式以显示光标坐标进行窗口命中；相对捕获把移动交给有焦点窗口，鼠标隐藏光标并关闭加速，触控板仍可解释移动和滚动；触控板绝对模式跳过 gestures，报告表面空间的多点数据。API37 模式受平台 flag 控制，无参数默认也依赖 flag，具体需求应显式表达并处理捕获变化回调。
+
 以下代码在可以使用 API 37 指针捕获模式常量的项目中，用显式参数表达捕获意图：
 
 ```kotlin
@@ -235,7 +245,7 @@ override fun onCapturedPointerEvent(event: MotionEvent): Boolean {
 2. 显示设备 ID 无效时使用 `mFocusedDisplayId`；
 3. 在目标显示设备上查找焦点窗口（focused window）；
 4. 若焦点应用（focused application）已存在，但窗口尚未获得焦点，则进入“无焦点窗口”（no-focused-window）的等待与超时逻辑；
-5. 对按键事件，分发器还会等待先前未完成的输入，因为前一条点击可能打开新窗口并改变焦点。
+5. 对按键事件，分发器可按策略超时短暂等待先前未完成的输入，因为前一条点击可能打开新窗口并改变焦点；等待到期后，即使仍有未完成项，也会继续向当前焦点窗口发送按键。
 
 第 5 点解释了一个常见现象：主线程积压的鼠标事件拖慢悬停响应，也可能让紧随其后的键盘输入一起等待。这段等待是在保焦点顺序，跟键盘硬件没有关系。
 
@@ -252,7 +262,7 @@ override fun onCapturedPointerEvent(event: MotionEvent): Boolean {
 
 `InputDispatcherConfiguration` 的默认值是首次等待 500 ms、后续间隔 50 ms。这两个值系统可以重配，应用侧要读 `repeatCount` 和事件时间，把默认值当成业务定时器的协议是靠不住的。
 
-长按操作要做到重复执行也无额外副作用，也就是幂等，同时区分好初次按下与重复：
+长按操作应把一次性初始化和允许重复的动作分开，避免每次重复都产生额外副作用，并区分初次按下与重复：
 
 ```kotlin
 override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
@@ -290,6 +300,11 @@ flowchart LR
 
 把 IME 描述成 View 未消费后的 Binder 兜底会颠倒执行顺序。Binder 是 Android 的跨进程调用机制；硬件键盘事件可以先交给 IME，软键盘输入又常通过 `InputConnection.commitText()`、`setComposingText()` 等编辑协议送入文本控件，不保证对应一串 `KeyEvent`。
 
+<!-- gracker-diagram: ch03-06-key-target-wait-and-ime -->
+![按键先按焦点选窗口，等待前序输入也有超时边界](../../assets/diagrams/ch03/ch03-06-key-target-wait-and-ime.png)
+
+图：系统策略可消费或延迟按键；未消费的按键按显式 Display ID 或 focused display 查找焦点窗口。为等待可能改变焦点的前序输入，分发器可按策略有限等待；超时后仍可继续发送。应用内通常先经过 pre-IME / IME，再到 post-IME View。软键盘编辑协议不必生成相同 KeyEvent 序列。
+
 应用快捷键应按语义消费并返回 `true`，只在 `ACTION_DOWN && repeatCount == 0` 执行一次性命令。系统快捷键、IME 组合和辅助功能仍有更高优先级。
 
 ### 4.4 Rust 键盘过滤器位于 InputFlinger 主链中
@@ -299,10 +314,11 @@ flowchart LR
 ```text
 InputReader
   → UnwantedInteractionBlocker
-  → InputFilter
   → PointerChoreographer
   → InputProcessor
-  → Metrics / InteractionReporter
+  → InputDeviceMetricsCollector（构建条件）
+  → InputFilter
+  → InteractionReporter（服务条件）
   → InputDispatcher
 ```
 
@@ -332,6 +348,11 @@ Slow Keys 会把延后后的 `DOWN` 改写为新的 `downTime/eventTime`，并�
 
 Rust 状态初始为关闭（disabled），安装任一过滤器后转为启用（enabled）。“曾开启、随后全部关闭”时，Android 17 可能仍显示 `enabled`，但重建后的链里只剩负责原样转发的 `BaseFilter`，功能上不再有 Bounce、Slow 或 Sticky 语义，只可能多一次本地调用往返。这是 `android-17.0.0_r1` 的实现细节，API 层面并没有相应承诺。
 
+<!-- gracker-diagram: ch03-06-rust-filter-local-chain -->
+![Rust 只承担局部键盘过滤，调用往返仍在同一进程](../../assets/diagrams/ch03/ch03-06-rust-filter-local-chain.png)
+
+图：实际原生主链中，Rust InputFilter 位于 PointerChoreographer、InputProcessor 和条件 Metrics 之后，InteractionReporter 与 Dispatcher 之前。C++ 包装层只把启用的键盘事件交给 Rust；三过滤器同时开启时按 Bounce → Slow → Sticky → Base 执行，再回 C++ 下游。motion 等其他通知由包装层直接转发。
+
 ## 5. 鼠标悬停、滚轮与窗口命中
 
 ### 5.1 指针目标来自位置
@@ -358,6 +379,11 @@ ViewGroup：窗口局部坐标 → child View
 ```
 
 层级很深的 View 树、频繁变化的变换属性，以及每次悬停都触发布局，都会提高第二层的成本。框架不会因为悬停事件到达就无条件让所有 View 重绘；重绘通常来自组件状态变化或应用自己的 `invalidate()`、`requestLayout()`。
+
+<!-- gracker-diagram: ch03-06-hover-two-hit-tests -->
+![悬停要经历窗口命中和 View 命中，焦点不随每次移动改变](../../assets/diagrams/ch03/ch03-06-hover-two-hit-tests.png)
+
+图：InputDispatcher 根据显示位置和窗口拓扑选择输入窗口，并维护窗口级 HOVER_ENTER / EXIT。应用 ViewRootImpl 处理窗口局部坐标后，ViewGroup 再命中子 View、维护 View 级悬停与指针图标。移动光标不等于应用已及时响应，也不会自动改变键盘焦点。
 
 ### 5.3 滚动的轴值
 
@@ -464,13 +490,13 @@ flowchart LR
     D --> E["InputDispatcher 命中目标窗口"]
     E --> F["DRAG_LOCATION / DRAG_EXITED"]
     E --> G["抬起时通知 WMS drop window"]
-    G --> H["ACTION_DROP + ClipData"]
+    G --> H["ACTION_DROP + ClipData（IWindow Binder）"]
     H --> I["目标 ViewRootImpl / ViewGroup"]
     I --> J["reportDropResult"]
     J --> B
 ```
 
-拖放输入通道负责接收位置变化，普通应用输入通道则接收最终的 `DragEvent`。
+拖放输入通道接收拖动指针；目标窗口可经普通 InputChannel 收到位置与离开消息，再由 ViewRootImpl 转成 `ACTION_DRAG_LOCATION` / `ACTION_DRAG_EXITED`。最终携带 `ClipData` 的 `ACTION_DROP` 则由 WMS 经 `IWindow.dispatchDragEvent()` Binder 回调发送，不能把它也归入输入套接字的数据面。
 
 ### 8.1 移动阶段
 
@@ -488,6 +514,11 @@ WMS 创建 `DragState`，将拖影的 SurfaceControl 图层放到显示设备的
 指针抬起后，`InputDispatcher` 把目标窗口、窗口局部坐标和原始坐标通知 WMS，`DragState` 再向合法目标发送 `ACTION_DROP`；普通应用目标到这个阶段才拿到放下所需的 `ClipData` 和 URI 临时授权令牌。能够拦截全局拖放的特权窗口有单独的数据传递规则。目标窗口报告是否消费后，WMS 结束拖放并广播 `ACTION_DRAG_ENDED`。
 
 WMS 对放下结果另有 5 秒等待。这个计时属于拖放状态机，与输入通道的连接超时是两个不同的观察点。
+
+<!-- gracker-diagram: ch03-06-drag-position-versus-drop-data -->
+![拖动位置走输入消息，最终 DROP 与数据走 WMS Binder](../../assets/diagrams/ch03/ch03-06-drag-position-versus-drop-data.png)
+
+图：WMS 建立 DragState、拖影与专用拖放通道；InputDispatcher 在拖动时按坐标找目标。普通目标窗口的 DRAG 位置 / 离开消息可经 InputChannel 到 ViewRootImpl；抬起时则先报告 WMS，再由 IWindow Binder 发送携带 ClipData 的 ACTION_DROP。目标 reportDropResult 后结束，URI 大数据应按权限异步读取。
 
 ### 8.3 ClipData 与大数据
 

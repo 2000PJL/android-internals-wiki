@@ -156,6 +156,11 @@ Binder 延迟由服务端线程供给、事务排队方式和目标进程状态�
 
 libbinder 这边的应对在 `IPCThreadState::getAndExecuteCommand()`：收到命令后调用 `ProcessState::spawnPooledThread(false)`，新线程再用 `BC_REGISTER_LOOPER` 向驱动注册。线程是按需增加的，进程启动时并不会一次性创建到上限。
 
+<!-- gracker-diagram: ch01-10-binder-pool-growth -->
+![Binder 线程池的主动启动与按需增长](../../assets/diagrams/ch01/ch01-10-binder-pool-growth.png)
+
+图：max_threads 约束驱动按需请求的线程数；startThreadPool 主动启动的线程和手动 join 的线程另计。驱动默认判断满足后返回 BR_SPAWN_LOOPER，用户空间再创建并注册新线程。
+
 本节源码位置：
 
 - `frameworks/native/libs/binder/ProcessState.cpp`
@@ -573,6 +578,11 @@ if (thread) {
 | `node->async_todo` | 同一 node 已有未完成的 `oneway` | 后续事务在该 node 上串行等待 |
 
 目标进程用完第一个异步事务 buffer 并发送 `BC_FREE_BUFFER` 后，驱动才从该 node 的 `async_todo` 取出下一项，转入 `proc->todo` 并唤醒目标进程。
+
+<!-- gracker-diagram: ch01-10-oneway-node-queue -->
+![同一 Binder 对象的 oneway 串行队列](../../assets/diagrams/ch01/ch01-10-oneway-node-queue.png)
+
+图：同一 node 已有未完成异步事务时，后续事务进入 async_todo。前笔 buffer 释放后再推进下一项；处理线程可以变化，服务端继续转交其他线程后的业务顺序由自己的队列保证。
 
 #### 2.1 顺序保证到哪里为止
 
@@ -1000,7 +1010,12 @@ ACK `android17-6.18-2026-06_r6` 的 `BINDER_FREEZE` 路径也说明了这一点�
 3. 再检查仍在等待回复的事务调用栈。
 4. 若检查失败，清除 `is_frozen`，并把失败交给 Android 框架处理。
 
-`CachedAppOptimizer` 遇到尚未完成的事务，或冻结后新出现的待处理事务，不会把本次操作记录为冻结成功。它会解冻、调整重试时间并重新安排冻结；反复出现时还会识别 Binder 事务洪泛，避免应用靠持续发送事务永久逃过冻结。
+`CachedAppOptimizer` 在 Binder 冻结前检查到尚未完成的事务时，会处理失败并安排重试。若事后检查发现新的 pending transaction，框架此时可能已经写入 frozen 标记和 `AM_FREEZE`，随后会解冻、调整重试时间并重新安排冻结。因此，冻结事件要结合后续检查和解冻记录判断，不能把单条 `AM_FREEZE` 当成持续冻结成功的证明；反复出现时还会识别 Binder 事务洪泛，避免应用靠持续发送事务永久逃过冻结。
+
+<!-- gracker-diagram: ch01-10-freeze-order -->
+![Binder freeze 先于 cgroup freeze 的执行顺序](../../assets/diagrams/ch01/ch01-10-freeze-order.png)
+
+图：通过资格和延迟检查后，先冻结 Binder 并检查未完成事务，再请求 cgroup 暂停任务。框架记录后还会复查 Binder 竞态；失败需要解冻或重新安排，不能只凭缓存态或一次写入判断成功。
 
 ### 5. cgroup v2 freezer：请求冻结不等于已经冻结
 
@@ -1106,6 +1121,11 @@ return BR_TRANSACTION_PENDING_FROZEN
 
 - 事务继续占用目标进程的 Binder 缓冲区；空间耗尽时，系统会以 `SUBREASON_FREEZER_BINDER_ASYNC_FULL` 终止目标。
 - 事件可能已经过期；解冻后一次性处理大量旧回调，还可能造成 CPU 使用突增和业务状态倒退。
+
+<!-- gracker-diagram: ch01-10-frozen-binder-branches -->
+![冻结目标的同步与 oneway 事务分流](../../assets/diagrams/ch01/ch01-10-frozen-binder-branches.png)
+
+图：对已经 Binder frozen 的目标，同步事务被驱动拒绝，框架处理冻结期间的违规同步调用；oneway 可缓冲到解冻后，但仍占用有限空间，溢出可能终止目标。
 
 把调用改成 `oneway`，我们只解决了等待方式，没有解决事件模型。更合适的策略通常是：
 

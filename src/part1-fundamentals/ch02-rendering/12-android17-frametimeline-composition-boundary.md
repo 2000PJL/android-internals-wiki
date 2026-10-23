@@ -99,6 +99,11 @@ DisplayFrame.token = SurfaceFrame.display_frame_token
 
 等式表示一个 SurfaceFrame 通过 `display_frame_token` 指向所属 DisplayFrame。同一个应用 token（关联帧的整数标识）还可能对应多个 layer，例如一个进程同时更新多个 Surface。查询时必须保留 `upid`（Perfetto 进程标识）与 `layer_name`，不能只按 token 去重。
 
+<!-- gracker-diagram: ch02-12-surface-display-tokens -->
+![多个 SurfaceFrame 通过 display token 关联一次 DisplayFrame](../../assets/diagrams/ch02/ch02-12-surface-display-tokens.png)
+
+图：示例中多个进程、多个 Layer 的 SurfaceFrame 指向同一 DisplayFrame。应用 token 用于关联生产侧帧，display_frame_token 用于关联本轮系统显示帧；同一 app token 的多 Layer 记录不能直接去重。
+
 ### token 怎样从应用到达 SurfaceFlinger
 
 Android 17 的关键对象是 `FrameTimelineInfo`：
@@ -115,7 +120,12 @@ token 可能无效或过期。`SurfaceFrame::trace()` 会跳过无效 token；�
 
 ### TokenManager 的容量边界
 
-源码注释把预测描述为大约保留 120 ms，但 Android 17 的具体实现是固定容量环形缓冲区，不是为每个 token 建一个 TTL（Time To Live，存活时间）定时器。生产速度、刷新率和是否及时消费都会影响某个 token 何时被覆盖。分析 `prediction expired` 时，应检查 token 创建、transaction 到达和 SurfaceFlinger 消费之间的真实时间，不要把 120 ms 当作精确过期闹钟。
+源码注释把预测描述为大约保留 120 ms，但 Android 17 的实现使用 `kMaxTokens = 500` 个环形槽位：达到容量后，后续生成的 token 按编号取模覆盖最旧记录。查询不会取走或删除条目，因而消费是否及时不会改变覆盖规则；生成数量决定旧记录何时被覆盖。分析 `prediction expired` 时，应检查 token 生成、transaction 到达与查询的时间关系，不要把 120 ms 当作精确过期闹钟。[源码：TokenManager](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/FrameTimeline.cpp)
+
+<!-- gracker-diagram: ch02-12-token-ring-capacity -->
+![预测按 500 个环形槽位保存，查询不消费条目](../../assets/diagrams/ch02/ch02-12-token-ring-capacity.png)
+
+图：未满时追加，达到 500 条后按 token 编号取模覆盖；查询从最近记录向前找，只读且不删除。旧预测是否还在取决于后续生成数量，无法用旧注释的 120 ms 直接判定。过期帧应先核对 token 传递与有效性。
 
 ## FrameTracer 与 FrameTimeline 的身份边界
 
@@ -129,6 +139,11 @@ Android 图形 trace 中有两个独立的数据源：
 | Trace Processor | `frame_slice` | `expected_frame_timeline_slice`、`actual_frame_timeline_slice` |
 
 两套 proto 没有声明 `FrameTracer.frame_number = FrameTimeline.surface_frame_token`。可靠关联要同时收窄到同一 layer、同一 Producer、相邻时间窗、buffer 与 transaction 事件、display token 这些维度；只按整数相等执行 join（表连接）会把无关帧拼在一起。
+
+<!-- gracker-diagram: ch02-12-two-trace-identities -->
+![FrameTracer 与 FrameTimeline 使用不同身份体系](../../assets/diagrams/ch02/ch02-12-two-trace-identities.png)
+
+图：FrameTracer 追踪 buffer 生命周期，FrameTimeline 比较计划与结果并分类。两者的整数标识不是同一命名空间；关联时保留 Layer、Producer、时间窗和事务证据，不能直接拿 frame number 与 surface token 相等做 join。
 
 FrameTracer 的事件时间位于外层 `TracePacket.timestamp`。带 fence 的事件会先进入 pending tracker（待完成事件跟踪器），fence signal（发出完成信号）后再闭合 span（时间区间）；立即完成的事件可能表现为 instant（瞬时事件）。Trace Processor 依据事件 phase（阶段）构造 `frame_slice`，因此不能假设每个枚举都对应一条固定 duration slice。
 
@@ -160,6 +175,11 @@ if (acquireFenceTime == Fence::SIGNAL_TIME_PENDING) {
 这段代码把 CPU 提交完成与 Producer GPU 完成分开处理。应用很早调用 `queueBuffer()`，但 acquire fence 很晚才 signal，Actual SurfaceFrame 仍会延长到 GPU 可供 Consumer（消费者）读取的时刻。
 
 SurfaceFrame 的 Actual slice 结束于上述 ready（可供后续读取）边界，不延伸到最终上屏；`present_type` 与 `jank_type` 会在 DisplayFrame 获得 present 反馈后回填分类结果。slice 右边界不能直接作为屏幕更新时间。
+
+<!-- gracker-diagram: ch02-12-ready-vs-present -->
+![SurfaceFrame 的 ready 终点与 DisplayFrame 的 present 终点不同](../../assets/diagrams/ch02/ch02-12-ready-vs-present.png)
+
+图：应用 Actual end 采用 queue time 与 acquire fence signal 的较晚者；fence 仍 pending 时当前先用 queue time。SF DisplayFrame 的 Actual 则延伸到显示 present 反馈，不能当作 SF 纯 CPU 时间。两类记录的完成、呈现和预测有效性要分开读。
 
 ### SurfaceFlinger 侧 DisplayFrame
 
@@ -258,6 +278,11 @@ actualDisplayFrameStartEvent->set_gpu_composition(
 - DEVICE composition 表示 SF 这一层的图层叠加交给 HWC，不等于系统中“没有 CPU”或“没有 GPU 工作”。
 
 这组标志描述的是 CLIENT 与 DEVICE 合成边界。CPU 调度与控制工作贯穿两条路径，差别在于 SurfaceFlinger 是否用 RenderEngine 生成 client target。
+
+<!-- gracker-diagram: ch02-12-gpu-composition-scopes -->
+![gpu_composition 标志的粒度决定能推导什么](../../assets/diagrams/ch02/ch02-12-gpu-composition-scopes.png)
+
+图：SurfaceFrame 标志按对应 output layer 是否需要 CLIENT 设置；DisplayFrame 标志按本轮 pacesetter 是否记录 SF client composition GPU fence 设置。false 不能排除 App Producer 使用 GPU，true 也不能单独证明 GPU 导致 deadline miss。
 
 ## Jank 分类与颜色
 

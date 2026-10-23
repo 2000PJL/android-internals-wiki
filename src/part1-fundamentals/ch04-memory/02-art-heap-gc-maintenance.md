@@ -163,6 +163,11 @@ flowchart LR
 
 这五类空间的差别集中在三点：放什么对象、GC 回收哪些、GC 移动哪些。
 
+<!-- gracker-diagram: ch04-02-heap-space-map -->
+![ART Heap 管理多种空间，主移动空间随收集器选择](../../assets/diagrams/ch04/ch04-02-heap-space-map.png)
+
+图：Heap 管理启动镜像、Zygote、主移动、非移动和大对象等空间。CC 的主空间是 RegionSpace，CMC 是 BumpPointerSpace；LOS 的优先入口还要求达到运行时阈值且属于基本类型数组或 String。DirectByteBuffer 和 Bitmap 的 Java 包装对象与 Native / GPU 后备要分别统计。
+
 | 空间 | 主要内容 | 可回收 | 可移动 | Android 17 主要实现 |
 |---|---|---:|---:|---|
 | 启动镜像空间（Boot Image Space） | 启动镜像中的预加载类、对象和运行时元数据 | 否 | 否 | `ImageSpace` |
@@ -295,6 +300,11 @@ TLAB 补充（refill）不是单一路径：
 
 所以，再看到 16 KiB、32 KiB 和 256 KiB 这三个数，我们先确认它说的是部分 TLAB、默认 TLAB，还是 RegionSpace 区域；它们也不随设备基础页大小机械保持倍数关系。
 
+<!-- gracker-diagram: ch04-02-tlab-fast-refill -->
+![TLAB 快路径只推进线程本地指针，补充时才协调共享空间](../../assets/diagrams/ch04/ch04-02-tlab-fast-refill.png)
+
+图：在 TLAB 分配器下，线程本地空间够用时可递增指针完成地址分配，随后仍有对象初始化等工作。空间不足时可能先扩展可用尾部，再按当前空间实现补充 TLAB；RegionSpace 补充涉及 region_lock_。默认 TLAB 32 KiB、部分 TLAB 参考 16 KiB 与 region 256 KiB 是不同层次。
+
 ##### RosAlloc 的线程本地内存块（slot/run）
 
 Mark-Sweep/CMS 系列收集器仍可使用 RosAlloc。RosAlloc 按尺寸档位（size bracket）把小对象放入内存块（run），并优先使用线程本地 run；只有共享 run 的分配与回收才需要进对应档位的锁。超过小对象档位的请求按页粒度处理。
@@ -326,7 +336,7 @@ flowchart TD
     G --> H{"成功？"}
     H -->|是| Z
     H -->|否| I["全堆回收并清除 SoftReference"]
-    I --> J["必要时有限次重试与规整"]
+    I --> J["按收益与运行状态决定重试和规整"]
     J --> K{"成功？"}
     K -->|是| Z
     K -->|否| L["抛出 OutOfMemoryError"]
@@ -341,6 +351,11 @@ flowchart TD
 - OOM 日志若显示总空闲字节大于请求大小，ART 会补充最大连续块等碎片信息。
 
 “分配失败 → 后台 GC → 全堆 GC → OOM”只是粗略图示；源码里还有等待、并发竞争、分配器变化、回收收益和碎片规整等分支，真正的路径比它曲折。
+
+<!-- gracker-diagram: ch04-02-allocation-failure-gc-retry -->
+![分配失败：先等已有 GC，再按收益和分配结果决定下一步](../../assets/diagrams/ch04/ch04-02-allocation-failure-gc-retry.png)
+
+图：普通分配失败先等待正在运行的 GC，有回收完成时重试；仍不成功才按 next_gc_type_ 等条件执行分配线程上的 GC。之后会用最完整计划清除 SoftReference，并按收益、并发竞争和分配器条件重试或规整。满足条件可随时返回对象，最终仍不能满足则抛 OOME；5 次限制并不覆盖全部重试。
 
 ### GC 的三种分类不要混用
 
@@ -376,6 +391,11 @@ flowchart TD
 | `HeapTrim` | 堆裁剪；它不是普通对象回收 |
 
 `GarbageCollector::Run()` 生成的跟踪名称由 GC 原因、收集器名称和 `GC` 组成。例如，CMC 的收集器名称是 `concurrent mark compact`，完整名称还会带 `Alloc`、`Background` 或 `Explicit`。
+
+<!-- gracker-diagram: ch04-02-gc-three-dimensions -->
+![收集器、回收范围和触发原因是三组不同信息](../../assets/diagrams/ch04/ch04-02-gc-three-dimensions.png)
+
+图：收集器说明使用 CC、CMC 等算法；GcType 说明 Sticky、Partial、Full 等范围；GcCause 说明分配、后台、显式或已登记的 Native 压力等触发条件。trace 名由 cause、collector name 与 GC 组成，年轻代名称还反映所选收集器。blocking 表示操作需要等待，与范围和暂停长短需分别判断。
 
 ### GC 演进：历史版本与 Android 17 当前选择
 
@@ -419,6 +439,11 @@ CMC 的规整过程会预留一段权限为 `PROT_NONE` 的来源空间（from-s
 
 它的真实开销在这两种说法之间：CMC 需要额外虚拟地址和 GC 元数据，这是“原地规整、零额外内存”盖住的部分；但旧页可以通过重新映射形成来源空间视图，规整完成后再用 `madvise` 释放，离“保留完整的第二份物理堆”也很远。我们分析收益时，应同时看 RSS、按共享页比例分摊的 PSS、虚拟映射、GC CPU 时间和应用慢路径。
 
+<!-- gracker-diagram: ch04-02-cmc-page-coordination -->
+![CMC 用来源视图与按页处理协调并发规整](../../assets/diagrams/ch04/ch04-02-cmc-page-coordination.png)
+
+图：CMC 标记存活对象、计算目标布局并准备逐页状态。mremap 等机制建立来源与目标视图，之后 GC 线程或触发缺页的 mutator 按页协调引用更新、复制或映射。来源视图与状态表需要额外地址和元数据，既不能称为零额外内存，也不能推断完整物理堆必然复制一份。
+
 #### Android 16 QPR2：分代 CMC 对外发布
 
 Android 16 QPR2 的官方发布说明确认 ART 引入分代 CMC（Generational CMC），目标是优先回收新对象，降低 CPU 使用并改善电池效率。发布版本支持该能力，到了具体厂商进程里，配置仍可能各自不同。
@@ -430,6 +455,11 @@ Android 16 QPR2 的官方发布说明确认 ART 引入分代 CMC（Generational 
 - `ShouldUseGenerationalGC()` 返回 `true`。
 
 CMC 之上还叠加 `use_generational_cmc()` 这个 feature flag，设备配置属性也能关掉分代。三代划分与晋升规则，我们在本章「分代回收、Region 与暂停来源」中展开。
+
+<!-- gracker-diagram: ch04-02-collector-selection-and-generational -->
+![选择 CMC 与启用分代需要分别通过运行时条件](../../assets/diagrams/ch04/ch04-02-collector-selection-and-generational.png)
+
+图：在正文讨论的运行时配置中，默认目标设备需属性允许且内核 UFFD 探测成功才选择 CMC；否则可走读屏障 CC。显式命令行 CMC 是另一个入口，可能使用 STW 后备。选完算法后，分代还要求 Baker 读屏障或 UFFD、Xgc 分代选项与运行时开关，CMC 另查专用 flag。Android 版本号无法替代这些检查。
 
 ### GC 为什么会开始
 
@@ -670,7 +700,7 @@ adb shell kill -s QUIT <pid>
 
 - **Android 8.0**：并发复制（Concurrent Copying，CC）成为默认收集器，读屏障与按区域分配的线程本地缓冲区（RegionTLAB）让主要工作可以并发执行。
 - **Android 10 及以后**：CC 支持分代模式，年轻代回收（young collection）可以推迟成本更高的全堆回收（full-heap collection）。
-- **Android 17**：并发标记压缩（Concurrent Mark-Compact，CMC）增加了分代 GC，可以频繁执行成本较低的年轻代回收。官方发布说明提到，它降低了 GC 对应用线程的干扰和最大 RSS。
+- **Android 16 QPR2 起对外发布分代 CMC，Android 17 继续提供**：并发标记压缩（Concurrent Mark-Compact，CMC）可以优先执行年轻代回收。Android 17 官方发布说明提到，它降低了 GC 对应用线程的干扰和最大 RSS；是否启用仍需核对进程配置。
 
 ART 属于可通过 Google Play 系统更新下发的 Mainline 模块。系统版本相同的两台设备，ART 模块版本、厂商配置和内核能力仍可能不同。所以只知道设备在跑 Android 17，还证明不了某个进程正在用分代 CMC；我们要结合设备构建和运行时观测来判断。
 
@@ -731,6 +761,11 @@ use_generational_gc =
 
 增加 mid 这一层，可以减少短期对象过早进入 old 后产生的后续扫描成本。
 
+<!-- gracker-diagram: ch04-02-young-mid-old-promotion -->
+![分代 CMC：young 存活后进 mid，再存活才进 old](../../assets/diagrams/ch04/ch04-02-young-mid-old-promotion.png)
+
+图：新分配对象 A 进入 young；第一次年轻代 GC 后若仍可达，它成为 mid；下一次回收 mid 时仍存活，才晋升 old。每轮年轻代回收处理 young 和 mid，并扫描符合卡表条件的老区域引用。三代是 BumpPointerSpace 内的逻辑年龄边界，图不表示固定容量比例。
+
 可以把连续两轮回收理解为：
 
 ```text
@@ -784,6 +819,11 @@ Android 17 的 `CardTable` 以 `kCardShift = 10` 划分堆，因此一个卡表�
 
 年轻代 CMC 的 `ScanOldGenObjects()` 会扫描可移动的 old 区域，以及非移动空间（non-moving space）中达到指定卡表年龄的区域。这样可以找到老对象指向年轻对象的引用，同时避免每轮都遍历完整老年代。
 
+<!-- gracker-diagram: ch04-02-write-barrier-holder-card -->
+![写屏障标记持有字段的对象，脏卡只是扫描候选](../../assets/diagrams/ch04/ch04-02-write-barrier-holder-card.png)
+
+图：老对象 H 写入指向年轻对象 Y 的字段时，ForFieldWrite 用 dst，即 H 的地址标记卡表。一个 card 覆盖 1024 字节堆地址，dirty 只是保守候选；GC 还要扫描对应区域的对象与字段，确认哪些引用指向年轻对象。被标脏的是持有者所在区域，并不直接证明存在跨代引用。
+
 ### 5. Young 之后何时执行 Full
 
 年轻代与全堆回收的轮换没有固定次数。`heap.cc` 在一次非 sticky 回收后把下一次设为 sticky；完成 sticky 回收后，则比较本次回收吞吐和历史非 sticky 回收的平均吞吐，再结合目标阈值决定下一次继续 sticky，还是改用非 sticky 回收。这里的 sticky 表示只处理近期分配或特定范围，非 sticky 则覆盖更大范围。
@@ -810,6 +850,11 @@ Android 17 的 `CardTable` 以 `kCardShift = 10` 划分堆，因此一个卡表�
 | GC runnable duration | GC 线程已可运行、但等待 CPU 调度了多久 |
 
 墙钟时间长，应用线程未必全程暂停。实际运行时间高，说明 GC 消耗了较多 CPU；可运行等待时间高，说明 GC 线程自己也受调度竞争影响。若同一时段主线程或 RenderThread 也频繁处于 Runnable，我们就该进一步查看 CPU 核、优先级、频率和其他进程负载。
+
+<!-- gracker-diagram: ch04-02-gc-wall-pause-running-wait -->
+![一轮 GC 的墙钟、线程运行、应用暂停和分配等待分别量](../../assets/diagrams/ch04/ch04-02-gc-wall-pause-running-wait.png)
+
+图：示意中，一轮 GC 包含线程运行与等待 CPU 的阶段，应用只在必要阶段暂停；但某个分配线程可以等待这轮 GC 的较长部分。实际分析要分别统计 GC wall duration、Running、Runnable、mutator pause 与 Wait For Completion，并对齐问题帧。图中区段只解释关系，不是实测时长或固定比例。
 
 平均值也说明不了暂停的全貌：少量长尾，以及等所有应用线程停下来的时间（time to suspend），常常比稳定的小暂停更伤交互。对滚动、动画和输入响应，应同时看 P95/P99 或最大值，并回到发生长尾的那段 trace。
 
@@ -843,6 +888,11 @@ ART 堆碎片、原生内存分配器碎片与 Linux 物理页碎片属于不同
 `RegionSpace::Region::ShouldBeEvacuated()` 返回是否疏散的布尔值；随后 `SetFromSpace()` 把选中的 Region 标记为 `FromSpace`，其余标记为 `UnevacFromSpace`。后两者是 Region 状态，和前面的疏散策略属于不同分类。
 
 75% 的比较使用按 Region 大小向上对齐后的已分配字节数，只在存活率策略中决定是否疏散，换算不成整个 Java 堆的碎片告警线。RegionSpace 中跨越多个 Region 的大型 Region 不做疏散，但仍属于主移动空间的布局；它和独立的非移动大对象空间 LOS 是两种东西。
+
+<!-- gracker-diagram: ch04-02-cc-region-evacuation -->
+![CC 按 Region 选择疏散，大型 Region 另有边界](../../assets/diagrams/ch04/ch04-02-cc-region-evacuation.png)
+
+图：CC 的 RegionSpace 以 256 KiB 为 region 单位。ForceAll、存活率加新分配、仅新分配三种策略决定普通 region 是否进入疏散；选中者为 FromSpace，其他为 UnevacFromSpace。大型 region 不疏散，且不能与 LOS 混为一谈。75% 是特定策略的区域级选择条件。
 
 #### CMC 与 UFFD 处理页级搬迁
 
@@ -1064,6 +1114,11 @@ Compose 重组的代价因场景而异：编译器可以记忆部分值，稳定
 
 若修改后分配量降了，长尾帧却没改善，原来的 GC 重叠就未必是主因。这时我们回到 Binder、锁、I/O、CPU 调度或 GPU 等方向继续排查。
 
+<!-- gracker-diagram: ch04-02-gc-slow-frame-evidence -->
+![先找问题帧与线程状态，再决定采分配栈还是保留图](../../assets/diagrams/ch04/ch04-02-gc-slow-frame-evidence.png)
+
+图：用同场景 trace 找慢帧，再查看主线程与 RenderThread 是否暂停、等待 GC 或等待 CPU。若有频繁分配证据，采 ART 分配栈；若存活量持续偏高、Full 后释放很少，采 Java 保留图。修改后需同时复测长尾帧、CPU、等待与 RSS，分配量下降本身不证明慢帧问题已解决。
+
 ### 13. 常见问题
 
 #### Young GC 没有扫描整个 old，如何保证不漏对象？
@@ -1180,6 +1235,11 @@ std::multiset<HeapTask*, CompareByTargetRunTime> tasks_;
 
 这个语义与 Java 源码注释一致：运行到停止，且没有待处理任务。
 
+<!-- gracker-diagram: ch04-02-heap-task-queue-lifecycle -->
+![HeapTaskDaemon 串行取到期任务，执行后释放任务对象](../../assets/diagrams/ch04/ch04-02-heap-task-queue-lifecycle.png)
+
+图：Java HeapTaskDaemon 通过 VMRuntime / JNI 进入 TaskProcessor。AddTask 在锁内按 target_run_time 排序并唤醒等待；GetTask 检查最早任务，运行中按到期时间等待。取出后串行 Run，再 Finalize 默认释放对象。Stop 将运行标记清零后，非空队列会忽略未来目标时间继续排空，不能把 Stop 当取消任务。
+
 ### HeapTask 的种类与统计范围
 
 统计数量必须先约定范围：只看 `art/runtime/gc/heap.cc` 有 6 种；搜遍 ART 运行时的生产 C++ 源码，是 10 种。测试文件里的 `RecursiveTask`、`TestOrderTask` 不计入生产类型。
@@ -1232,6 +1292,11 @@ static constexpr bool kAsyncReferenceQueueAdd = false;
 - 任务运行结束：清空待处理任务指针。
 
 这种策略适合“只关心末次状态与末次执行时间”的工作。
+
+<!-- gracker-diagram: ch04-02-heap-task-dedup-policies -->
+![任务合并各有规则：GC 序号、改期与忽略重复](../../assets/diagrams/ch04/ch04-02-heap-task-dedup-policies.png)
+
+图：ConcurrentGCTask 用已请求与已完成的 GC 序号合并请求，运行时再判定是否仍需 GC。CollectorTransitionTask 保留一个待处理对象，后续请求可以改期。HeapTrimTask 已有待处理指针时直接忽略新请求，保留原执行时间。TaskProcessor 的 multiset 本身并不按任务类型去重。
 
 #### HeapTrimTask：重复请求不改变原计划
 
@@ -1307,6 +1372,11 @@ static constexpr bool kAsyncReferenceQueueAdd = false;
 
 任务运行时还会比较 GC 序号：若启动期间已经发生 GC，它就不会再申请一轮；只有长期没做过 GC 的进程才会收到后台 GC 请求。所以“派生后固定 10 秒强制 GC”“每个进程固定创建三个有效任务”这类概括，都与源码对不上。
 
+<!-- gracker-diagram: ch04-02-post-fork-targets-and-fallback -->
+![派生后先放宽 ART 目标，再按配置降低并检查兜底 GC](../../assets/diagrams/ch04/ch04-02-post-fork-targets-and-fallback.png)
+
+图：PostForkChildAction 先使过早 GC 请求的序号过期，并把 target_footprint 暂时提高到 growth_limit。目标降低任务按堆参数安排 0、1 或 2 次，时间分别可为派生后 2 秒与 10 秒。兜底请求在最后目标时间基础上再加 8 秒与 UID 偏移；若已经有 GC，则相应任务可成为空操作。时间是目标时刻，冻结与调度会推迟实际运行。
+
 ### 启动完成、追踪与 JIT 任务
 
 #### StartupCompletedTask 有显式通知和超时兜底
@@ -1341,6 +1411,11 @@ JIT 在进程派生后的阶段，若满足配置条件，会安排一个 10 秒
 4. 多个逾期任务由同一个 `HeapTaskDaemon` 串行处理。
 
 至于会不会执行 GC，仍取决于每个任务自身的守卫条件，例如 GC 序号、待处理任务指针和当前收集器状态。看到解冻后一连串 ART 工作时，我们应逐项核对任务条件；冻结期间任务停在原地，积累下来的只是已经到期的队列项，“冻结期间积累了多轮 GC”的说法把队列项当成了 GC 轮次。
+
+<!-- gracker-diagram: ch04-02-startup-completion-and-freezer -->
+![到期任务执行仍要过守卫，冻结会推迟实际运行](../../assets/diagrams/ch04/ch04-02-startup-completion-and-freezer.png)
+
+图：显式启动完成通知可提交立即任务，另有 5 秒目标的兜底；NotifyStartupCompleted 的首次判断避免核心清理重复。进程被冻结时，HeapTaskDaemon 无法执行，目标时间却可能过去；解冻后串行处理逾期队列项，每项仍检查 GC 序号等条件。逾期项既可能执行清理，也可能成为空操作。
 
 ### 如何在 Perfetto 中验证
 
@@ -1512,6 +1587,11 @@ Activity 按 `mActivities` 的逆序收集，次序跟着 `mActivities` 的实�
 
 `WindowManagerGlobal.trimMemory()` 会直接调用 `ThreadedRenderer.trimMemory(level)`，缩减的是应用进程图形栈的缓存；SurfaceFlinger 中 BufferQueue（图形缓冲区队列）的空闲缓冲区在系统侧，超出这条调用链的范围。
 
+<!-- gracker-diagram: ch04-02-framework-trim-callback-dispatch -->
+![trim 回调从 system_server 发出，在应用主线程分发](../../assets/diagrams/ch04/ch04-02-framework-trim-callback-dispatch.png)
+
+图：AppProfiler 按进程状态与 pendingUiClean 发送 UI_HIDDEN(20)，CachedAppOptimizer 在安排冻结前发送 BACKGROUND(40)。oneway Binder 不等待应用处理完成；应用优先投递到主线程 Choreographer COMMIT，或回退 Handler。handleTrimMemory 可能按前台跳过开关提前返回；正常路径依次回调 Application、Activity、Service、Provider，再调用应用渲染器 trim。
+
 ### 6. 应用回调怎样写
 
 以下实现先判断数值较大的级别，并把清理成本控制在较低范围：
@@ -1565,6 +1645,11 @@ Heap::CollectGarbageInternal()
 `RequestTrim()` 会合并重复请求；`Heap::Trim()` 负责把分配器中可以归还的页面、JNI 引用表和部分运行时内存区（runtime arena）交还给内核，或标记为内核可回收。它是页面归还动作，和“完整 GC 加堆规整”是两件事，也不会按整理回调级别去选新生代或老年代。
 
 进程前后台变化还会沿 `ActivityThread.updateProcessState()` → `VMRuntime.updateProcessState()` 影响 ART 垃圾收集器（collector）切换与堆目标大小。它可能与 `onTrimMemory(20/40)` 在相近时间发生，却是两条独立的调用链。
+
+<!-- gracker-diagram: ch04-02-app-trim-versus-art-heap-trim -->
+![应用缩减缓存与 ART 归还堆页是两条独立的链](../../assets/diagrams/ch04/ch04-02-app-trim-versus-art-heap-trim.png)
+
+图：Framework trim 回调让应用缩减可重建缓存，断开引用后对象只是具备回收条件。ART 按自身压力与策略决定 GC；GC 完成后可 RequestTrim，默认安排 5 秒目标的 HeapTrimTask，并合并重复请求。Heap::Trim 再处理堆空间、JNI 引用表与 arena 等可归还区域。回调没有直接调用 GC 或 RequestTrim。
 
 `ActivityThread` 仍保留 `handleLowMemory()`，执行时会分发 `onLowMemory()` 并通过 `BinderInternal.forceGc("mem")` 请求 GC。但 [`ComponentCallbacks.onLowMemory()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ComponentCallbacks.java) 的接口注释明确写明：该回调自 API 14 起由 `onTrimMemory()` 取代，自 API 34 起不再由系统调用，且已标记为弃用。Android 17 应用不能依赖它接收低内存通知；判断常规通知行为时，还要核对系统发送路径。
 
@@ -1635,7 +1720,7 @@ ORDER BY ts;
 
 `dumpsys activity processes` 可显示进程记录中的 `trimMemoryLevel`、进程状态与优先级分值 `adj`。应用可以通过 `ActivityManager.getMyMemoryState()` 读取 `lastTrimLevel`。
 
-PSS/RSS 测量应在相同设备状态下重复多轮，并按 Java 堆、原生内存、图形内存、文件映射与交换空间分类。一次 PSS 下降能直接说明的只有“进程占用变小了”；物理页有没有交还系统、MemoryLimiter 或 lmkd 有没有触发，要分别对照对应子系统的记录再确认。
+PSS/RSS 测量应在相同设备状态下重复多轮，并按 Java 堆、原生内存、图形内存、文件映射与交换空间分类。一次 PSS 下降直接说明的是该次采样的比例归因值降低；共享者变化、换出和分类口径都可能改变它，不能仅据此断言对象减少或物理页已交还系统。MemoryLimiter 或 lmkd 有没有触发，也要对照对应子系统的记录确认。
 
 ### 10. 常见错误
 

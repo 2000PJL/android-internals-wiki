@@ -88,6 +88,11 @@ related_chapters:
 
 所以彩色区域的作用是定位：它告诉我们哪里值得停下来检查。GPU 是否已超出帧预算、整屏所有 Layer 的最终合成成本有多少，要靠后面的帧时间与合成数据来回答。
 
+<!-- gracker-diagram: ch02-05-three-cost-scopes -->
+![像素覆盖、GPU 工作与系统合成分属三层](../../assets/diagrams/ch02/ch02-05-three-cost-scopes.png)
+
+图：调试叠加色主要反映 HWUI 重放命令的逻辑覆盖；真实 GPU 工作还受裁剪、分块、采样、混合和离屏 pass 影响；跨 Surface 的组合则在 SurfaceFlinger/HWC 层分析。这三类统计无法用一个颜色或倍率互相换算。
+
 ## 过度绘制颜色是怎样生成的
 
 这套调试功能由 HWUI 的 `debug.hwui.overdraw` 属性控制，涉及的源码集中在三处：
@@ -104,6 +109,11 @@ related_chapters:
 - 调试模式本身会多出一张全尺寸 A8 表面、一次重放和一次着色合成，所以要测页面的正常 GPU 时长，得先把它关掉。
 
 诊断重放还有一个 Hardware Layer 的盲区。`RenderNodeDrawable` 遇到已有 layer surface 的 RenderNode 时，会通过 `drawImageRect()` 合成 layer snapshot，最终窗口的 overdraw pass（过度绘制诊断的这次重放）也就停在 snapshot 这一层，不会逐条展开该 layer 内部的 DisplayList。源码还保留了刚重绘 layer 的透明矩形调试分支。所以最终叠加色反映的是 layer 粒度的合成；layer 内部每条 draw op（绘制操作） 的逐像素计数，要靠另外的分析。我们后续看到 layer build/update 或离屏 pass 时，还要结合 [2.4 MainThread、RenderThread 与 Hardware Layer](04-main-render-thread-hardware-layer.md) 的 RenderThread、GPU 和内存数据一起看。
+
+<!-- gracker-diagram: ch02-05-diagnostic-replay -->
+![叠加色来自额外 A8 计数重放](../../assets/diagrams/ch02/ch02-05-diagnostic-replay.png)
+
+图：正常帧之后，调试路径增加全尺寸 A8 表面，用 SkOverdrawCanvas 重放并映射叠加色。已有 Hardware Layer 主要以 snapshot 参与，颜色无法展开内部每条 draw op。性能测量应关闭此调试模式，避免把诊断开销算进正常结果。
 
 ### 颜色应该怎样读
 
@@ -419,6 +429,11 @@ Modifier.graphicsLayer {
 7. 比较帧截止时间、GPU 活跃时间、功耗或厂商 counter；保留没有改善的结果，避免把颜色变化写成性能结论。
 
 如果问题涉及多个 Surface，还要列出每个 Producer、Consumer、SurfaceFlinger Layer、buffer 和 fence。宿主 App Window 的一次 FrameTimeline，代表不了视频、相机或游戏 Surface 的完整节拍。
+
+<!-- gracker-diagram: ch02-05-overdraw-ab-workflow -->
+![先定位重复覆盖，再验证它是否位于关键路径](../../assets/diagrams/ch02/ch02-05-overdraw-ab-workflow.png)
+
+图：先用叠加色找到区域与绘制对象，再关闭叠加采集正常帧。仅在确认目标帧的关键路径后修改一个因素，并以相同设备与条件比较结果；颜色减少本身不能证明 GPU 时间、功耗或掉帧已经改善。
 
 ## Kernel 与厂商驱动边界
 

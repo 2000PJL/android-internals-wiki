@@ -111,6 +111,11 @@ Manifest 可以声明：
 
 宿主要通过受约束的 Binder 接口，只传完成一次请求所需的内容：fd、只读共享区和最少的元数据。需要 GPU、编解码器或其他硬件服务时，还要确认设备为对应的隔离安全域（isolated domain）配置了哪些服务和设备权限——AOSP 给 `isolated_compute_app` 单独写了 SELinux 规则，普通 `isolated_app` 并不会因此获得相同能力。
 
+<!-- gracker-diagram: ch04-10-deployment-identity-and-isolation -->
+![推理部署到哪个 PID，先决定记账与隔离边界](../../assets/diagrams/ch04/ch04-10-deployment-identity-and-isolation.png)
+
+图：进程内推理与主进程共享故障和内存；:inference 通常仍用应用 UID，只分开地址空间与进程故障。isolated service 获得隔离 UID，依赖获准 IPC 与句柄拿数据；系统或厂商服务的权限、cgroup 和硬件能力则看具体实现。优先级由状态和绑定依赖决定，推理名称不构成固定 adj 或保护。
+
 ## 4.10.2 RSS、PSS 与共享页怎样记账
 
 跨进程复用内存时，我们最常撞见的误判是：“两个进程都显示 400 MiB RSS，所以系统用了 800 MiB。”错在 RSS 的记法：RSS（Resident Set Size，驻留集大小）把每个进程页表里当前驻留的共享页完整计入该进程，直接相加就会重复。PSS（Proportional Set Size）则按映射者数量把共享页分摊开。
@@ -133,6 +138,11 @@ Manifest 可以声明：
 | 加速器私有内存 | 依赖驱动 | 未必能归入调用进程的常规 PSS | 驱动复制、常驻缓存和固件内存 |
 
 分析模型内存时，我们至少要分别记录 Java 堆、原生堆、文件映射、共享内存/dma-buf、交换空间和驱动侧内存。只看 `Debug.MemoryInfo.getTotalPss()`，解释不了每一类内存各自的生命周期。
+
+<!-- gracker-diagram: ch04-10-shared-page-rss-pss-accounting -->
+![同一驻留物理页可以计入两份 RSS，PSS 按映射分摊](../../assets/diagrams/ch04/ch04-10-shared-page-rss-pss-accounting.png)
+
+图：教学示例假定一张 16 KiB 驻留物理页分别被两个进程各映射一次：两边 RSS 都计 16 KiB，PSS 各计约 8 KiB，合计回到这一张页。只读模型文件可共享页缓存，但 COW、反量化、重排和驱动副本会新增私有存储。PSS 是归属分摊，也不能覆盖全部加速器私有成本。
 
 ## 4.10.3 IPC 先传控制信息，再传大块数据
 
@@ -158,6 +168,11 @@ Binder 这一侧的容量要从原生库看起：libbinder 在 `ProcessState.cpp
 
 “通过 Binder 传 fd”仍会发送一个小型 Parcel。真正共享的是 fd 指向的对象，控制消息本身仍然存在。
 
+<!-- gracker-diagram: ch04-10-binder-control-and-fd-data -->
+![Binder 传控制与句柄，大块数据由缓冲对象承载](../../assets/diagrams/ch04/ch04-10-binder-control-and-fd-data.png)
+
+图：libbinder 接收映射约为 1 MiB 减两个基础页，由进程内并发事务共享，64 KiB 只是公开 API 的建议大小。控制 Parcel 传长度、版本和 fd 等句柄；载荷放在共享页、硬件缓冲或受控内容对象中。TransactionTooLargeException 不能证明服务未执行，重试还需要请求幂等和状态确认。
+
 ## 4.10.4 SharedMemory：共享页加上能力句柄
 
 `android.os.SharedMemory` 实现了 `Parcelable`，所以对应句柄可以通过 Binder 传递。Java 实现通过原生函数 `ashmem_create_region()` 创建区域，映射时调用 `mmap(..., MAP_SHARED, ...)`；设备上的 libcutils 有没有改用 memfd 兼容实现，光看 Java 类名是推断不出来的。
@@ -165,23 +180,18 @@ Binder 这一侧的容量要从原生库看起：libbinder 在 `ProcessState.cpp
 下面的示例传递一块写完后只读的数据。AIDL 接口可定义为 `void consume(in SharedMemory region, int validBytes)`：
 
 ```java
-SharedMemory region = SharedMemory.create("inference-context", capacity);
-ByteBuffer writable = region.mapReadWrite();
-try {
-    writable.put(payload);
-} finally {
-    SharedMemory.unmap(writable);
-}
+try (SharedMemory region = SharedMemory.create("inference-context", capacity)) {
+    ByteBuffer writable = region.mapReadWrite();
+    try {
+        writable.put(payload);
+    } finally {
+        SharedMemory.unmap(writable);
+    }
 
-if (!region.setProtect(OsConstants.PROT_READ)) {
-    region.close();
-    throw new IllegalStateException("Failed to make shared region read-only");
-}
-
-try {
+    if (!region.setProtect(OsConstants.PROT_READ)) {
+        throw new IllegalStateException("Failed to make shared region read-only");
+    }
     remote.consume(region, payload.length);
-} finally {
-    region.close();
 }
 ```
 
@@ -190,16 +200,26 @@ try {
 接收方读取完成后，要分别解除映射并关闭 fd：
 
 ```java
-ByteBuffer readable = region.mapReadOnly();
-try {
-    consumeBytes(readable, validBytes);
-} finally {
-    SharedMemory.unmap(readable);
-    region.close();
+try (SharedMemory received = region) {
+    ByteBuffer readable = received.mapReadOnly();
+    try {
+        if (validBytes < 0 || validBytes > readable.capacity()) {
+            throw new IllegalArgumentException("Invalid shared region length");
+        }
+        readable.limit(validBytes);
+        consumeBytes(readable, validBytes);
+    } finally {
+        SharedMemory.unmap(readable);
+    }
 }
 ```
 
 `close()` 只关闭当前 `SharedMemory` 对象持有的 fd；已经建立的映射仍然有效。只有等所有 fd 都已关闭、所有映射都已解除，相关物理页才具备释放条件。
+
+<!-- gracker-diagram: ch04-10-sharedmemory-readonly-ownership -->
+![只读共享快照：先撤掉可写映射，再降权限并传句柄](../../assets/diagrams/ch04/ch04-10-sharedmemory-readonly-ownership.png)
+
+图：发送方创建区域并映射写入，解除可写映射后检查 setProtect(PROT_READ) 成功，再传 SharedMemory 句柄。接收方独立校验长度、建立只读映射并消费。close 只关当前 fd，unmap 只撤映射，两者必须分别处理；try-with-resources 与 finally 还要覆盖映射、写入或 IPC 抛异常的路径。
 
 ### “零拷贝”的观察范围
 
@@ -212,6 +232,11 @@ try {
 - 任一可写私有映射触发 COW。
 
 所以更准确的说法是“两个进程可以共享同一组页面”。从输入到推理后端的完整路径有没有避开复制，我们要结合 PSS、缺页（page fault）和驱动统计来判断。
+
+<!-- gracker-diagram: ch04-10-shared-pages-copy-boundaries -->
+![共享同一组页，只省掉路径中的部分复制](../../assets/diagrams/ch04/ch04-10-shared-pages-copy-boundaries.png)
+
+图：SharedMemory 可以让两进程访问同一组页，省掉整块 Binder 序列化及接收端为访问同页再复制的需求。源数组写入共享区、ByteBuffer.get、运行时张量重排及驱动 staging 仍可能复制。是否避开这些步骤要查实际后端和分配证据，不能由传 fd 这一步替整条管线下结论。
 
 ### fd 的能力与身份校验
 
@@ -237,6 +262,11 @@ try {
 
 不要把 `HardwareBuffer` 统一称为“GPU 显存”。许多 Android 设备使用统一物理内存；缓冲区来自哪个分配堆、具有何种缓存属性、哪些硬件可以访问，都由 gralloc 与驱动决定。
 
+<!-- gracker-diagram: ch04-10-hardwarebuffer-import-and-fences -->
+![HardwareBuffer 能否直达后端，要同时满足导入与同步契约](../../assets/diagrams/ch04/ch04-10-hardwarebuffer-import-and-fences.png)
+
+图：生产与消费双方要支持相同格式、尺寸、层数和 usage，目标 HAL/驱动还必须支持导入。数据可见性与所有权转移依赖缓存一致性和 fence 协议；CPU 映射也可能需要 flush/invalidate。布局、量化和对齐不匹配时仍可能复制。统一物理内存也不等于任意 NPU 都可使用任意缓冲对象。
+
 ## 4.10.6 ContentProvider：共享数据，不暴露进程内存
 
 `ContentProvider` 适合让目标应用保留数据所有权，调用方按 URI、权限和查询条件读取。它提供的是访问控制与数据协议，另一个应用的地址空间并不会因此对智能体敞开。
@@ -252,6 +282,11 @@ try {
 - 及时关闭 Cursor、`ParcelFileDescriptor` 和输入流。
 
 这样“小型索引”和“大型内容”就分开了，撤销、审计和按用户隔离也都能在 ContentProvider 一侧执行。
+
+<!-- gracker-diagram: ch04-10-provider-index-and-content-stream -->
+![ContentProvider：小型索引分页，大型内容经 URI 与 fd 读取](../../assets/diagrams/ch04/ch04-10-provider-index-and-content-stream.png)
+
+图：结构化查询用 CursorWindow 承载小型记录与内容 URI；r1 原生窗口可先用至多 16 KiB 内联空间，超出再膨胀为共享区域，接收端只读。大型 blob 通过受控 URI 打开 fd 或流。授权、分页和审计由 Provider 协议决定，传 URI 不会开放另一个进程的整个地址空间。
 
 ## 4.10.7 App Functions：受控函数调用，不是共享内存 API
 
@@ -272,6 +307,11 @@ Android 17 / API 37 新增了 `AppFunctionUriGrant` 和 `ExecuteAppFunctionRespo
 临时授权通常持续到设备重启；可持久化标志只表示接收方可以调用 `takePersistableUriPermission()`，不会自动把授权持久化。需要更短的生命周期时，仍要由 ContentProvider 设计一次性 URI、过期检查或主动撤销。
 
 App Functions 也不会自动拿到目标应用的全部数据：目标函数读的是目标应用自己有权访问的内容，返回哪些字段也由函数实现决定。
+
+<!-- gracker-diagram: ch04-10-appfunctions-authorization-and-uri-grants -->
+![App Functions 管资格与函数执行，大结果仍走内容协议](../../assets/diagrams/ch04/ch04-10-appfunctions-authorization-and-uri-grants.png)
+
+图：system_server 校验调用包与 UID、用户及设备策略，并在 permission-v2 下验证跨包权限和调用方—目标允许列表；同包与系统执行权限有对应例外。系统绑定受 BIND_APP_FUNCTION_SERVICE 保护的服务，主线程回调应把重任务转给 worker。响应可附 content URI 授权，系统只发给本次调用包；可持久化标志还需接收方主动领取。
 
 ### 生成式 UI 描述的物化与读取
 
@@ -331,6 +371,11 @@ kv_bytes
 
 这只是示例。MHA、GQA、MQA 对 KV 头的共享方式不同：MHA 为各注意力头保留独立 KV，GQA 让一组查询头共享 KV，MQA 则让所有查询头共享 KV。分页 KV、滑动窗口、量化 KV、候选序列数（beam）和多会话并发也会改变结果。评估具体模型时，我们应从模型配置和推理运行时分配日志中取参数，单靠参数量或层数是估不准的。
 
+<!-- gracker-diagram: ch04-10-weights-kv-and-workspace-budget -->
+![模型参数量只给权重下限，KV 与工作区需要另算](../../assets/diagrams/ch04/ch04-10-weights-kv-and-workspace-budget.png)
+
+图：2B 参数、4 bit 权重的纯数据下限是 10^9 字节，约 0.93 GiB，尚未包含 scale、元数据、重排与设备副本。标准注意力的 K/V 缓存按层数、KV 头、头维度、token、batch 与元素字节相乘。正文示例 FP16、26 层、4 个 KV 头、维度 256，1024/4096 token 分别约 104/416 MiB；工作区与并发峰值还要实测。
+
 ### 工作区与内存峰值
 
 推理运行时往往预先分配内存区，或复用计算缓冲区，以减少频繁调用 `malloc/free`。峰值仍可能来自：
@@ -343,6 +388,11 @@ kv_bytes
 - 分配器保留已经释放的内存块（span）。
 
 会话结束后，就算 Java/原生对象已经不可达，RSS 也未必立刻降下来。这时我们要区分四种情况：对象仍被引用、分配器留存、干净文件页仍驻留、驱动仍持有缓冲区。
+
+<!-- gracker-diagram: ch04-10-inference-phases-and-retention -->
+![推理峰值取决于阶段，释放会话不保证 RSS 立刻回落](../../assets/diagrams/ch04/ch04-10-inference-phases-and-retention.png)
+
+图：示意轨道标记初始化、模型映射、预填充、解码和释放；它们的内存分量并不都同步变化。模型页按访问驻留，KV 随缓存策略和 token 变化，临时工作区受后端与形状影响。会话结束后若 RSS 未下降，应分别查真实引用、allocator 留存、干净文件驻留与驱动引用，不能直接等同泄漏。
 
 ## 4.10.9 Android 17 MemoryLimiter 与 lmkd 的边界
 
@@ -382,6 +432,11 @@ lmkd 从较高 `oom_score_adj` 向较低档位搜索满足最低阈值的进程�
 3. 系统推理服务占用大量内存时，被终止的可能是其他 `adj` 更高的进程；具体结果取决于当时的进程集合和设备配置。
 
 lmkd 终止日志还会读取 RSS、匿名 RSS、交换空间、dma-buf PSS 和 dma-buf RSS。排查硬件推理时，只截 Java 堆或匿名 RSS 是不够的。
+
+<!-- gracker-diagram: ch04-10-memorylimiter-and-lmkd-independent -->
+![MemoryLimiter 管限制与监控，lmkd 按压力和优先级选进程](../../assets/diagrams/ch04/ch04-10-memorylimiter-and-lmkd-independent.png)
+
+图：MemoryLimiter 启用后按状态与厂商 XML 配置 memory.high 和 memory.swap.max，前者增加回收与节流压力，后者限制该 cgroup 的交换容量；高水位并非立即 OOM。默认沙箱推理服务包可被显式豁免。lmkd 独立结合压力与 adj 搜索候选，同档位再按策略比较占用；推理命名、服务拆分和大模型大小都不产生通用 AI 保护。
 
 ## 4.10.10 一套可执行的测量方法
 
@@ -434,6 +489,11 @@ Perfetto 中可启用：
 - Binder、线程调度、缺页和 lmkd 相关的 ftrace/atrace 跟踪事件。
 
 heapprofd 面向原生堆分配，覆盖不了只读模型文件映射的全部驻留页，也替代不了 dma-buf 和加速器驱动统计；Java 堆还要结合 ART 堆转储、内存分配采样或 `dumpsys meminfo` 分析。
+
+<!-- gracker-diagram: ch04-10-pid-fd-phase-measurement -->
+![测量按所有权与阶段交叉记录，再解释共享与峰值](../../assets/diagrams/ch04/ch04-10-pid-fd-phase-measurement.png)
+
+图：先列组件身份、状态、模型与缓冲持有者，再按初始化、映射、预热、预填充、解码、释放和后台状态采样。进程与系统统计给规模和压力，heapprofd 查受支持的原生堆分配，堆图查对象，驱动统计查设备资源；没有任何一个工具独自覆盖全部模型成本。修复后重复同输入与同后端场景，验证峰值、长尾及生命周期。
 
 ## 4.10.11 设计评审清单
 

@@ -142,13 +142,21 @@ consolidated_from:
 - src/part1-fundamentals/ch01-architecture/19-zygote-graphics-driver-preload.md
 ---
 
-# 系统启动、Zygote（child zygote，即专门派生某类进程的次级父进程） 与图形栈预加载
+# 系统启动、Zygote 与图形栈预加载
 
 谈“开机耗时”，我们得先把终点定下来：Bootloader 把控制权交给内核、`system_server` 进入 `run()`、屏幕被允许点亮、Launcher 提交首帧、用户收到 `LOCKED_BOOT_COMPLETED` 或 `BOOT_COMPLETED`，都可以当里程碑，只是它们回答的问题各不相同。比较设备或版本时，起点和终点不一致，数字就没有可比性。
 
 > 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
 主启动路径可以概括为：
+
+<!-- gracker-diagram: ch01-03-boot-milestones -->
+![系统启动与相互独立的完成里程碑](../../assets/diagrams/ch01/ch01-03-boot-milestones.png)
+
+图：主启动链到 SystemServer 后分出多条工作路径。屏幕启用、Launcher 首帧、输入可用和按用户发送的启动完成广播需要分别取证；两类结果没有固定的先后间隔。
+
+<details>
+<summary>可编辑 Mermaid 源码</summary>
 
 ```mermaid
 flowchart LR
@@ -164,10 +172,13 @@ flowchart LR
     UI["Launcher 首帧与输入可用"]
     BC["per-user boot completed 广播"]
 
-    ROM --> BL --> K --> F --> S --> I --> Z --> SS --> H --> UI --> BC
+    ROM --> BL --> K --> F --> S --> I --> Z --> SS --> H --> UI
+    SS -->|用户生命周期及解锁条件| BC
 ```
 
-这条主线里每一段都可能并行执行或争用 CPU、存储与锁：驱动（updatable GPU driver）探测（probe）、init 服务、APEX 模块准备、SystemServer 内部初始化和 Virtual A/B 快照合并（snapshot merge）都会参与进来。
+</details>
+
+这条主线里每一段都可能并行执行或争用 CPU、存储与锁：驱动探测（probe）、init 服务、APEX 模块准备、SystemServer 内部初始化和 Virtual A/B 快照合并（snapshot merge）都会参与进来。
 
 归因时可以按三段拆：系统启动负责内核与系统服务；进程孵化由 Zygote 复用预加载结果并创建进程；应用进程还要完成图形环境和首帧资源初始化。
 
@@ -183,7 +194,7 @@ Android Verified Boot（AVB）校验可执行代码和只读数据的完整性�
 
 ### Linux 内核：建立 Android 用户空间的运行条件
 
-内核这一段完成 CPU、内存（PSS）管理、调度器、中断、设备模型、文件系统与必要驱动初始化，并启动 PID 1。版本上要分清两套标签：本书用 Android 公共内核（ACK）`android17-6.18-2026-06_r6` 解释 Android 17 的公共内核实现，量产设备还要核对自身的内核提交版本、配置、设备树和厂商模块。
+内核这一段完成 CPU、内存管理、调度器、中断、设备模型、文件系统与必要驱动初始化，并启动 PID 1。版本上要分清两套标签：本书用 Android 公共内核（ACK）`android17-6.18-2026-06_r6` 解释 Android 17 的公共内核实现，量产设备还要核对自身的内核提交版本、配置、设备树和厂商模块。
 
 启动期常见的内核耗时来源包括：
 
@@ -261,7 +272,7 @@ init 的 Zygote `.rc` 服务通过 `app_process` 启动 `ZygoteInit.main()`，�
 
 这里两条路径要分开记住：SystemServer 进程由 Zygote 主动创建，用不着 AMS 发起；应用进程才由 `system_server` 通过 Zygote 命令套接字请求创建。[已验证: `ZygoteInit.java` 与 `ZygoteProcess.java` @ AOSP `android-17.0.0_r1`]
 
-`frameworks/base/config/preloaded-classes` 在 `android-17.0.0_r1` 中去掉注释和空行后有 18,784 条。这个数字只描述该固定源码标签的生成输入，换版本或厂商构建就未必还是这个数。预加载过少会把公共类加载成本留给进程启动，过多则增加整机开机时间、Zygote 常驻内存和可能被写脏的页面，所以调整列表必须同时测量整机启动、进程启动与 PSS（按共享比例分摊后的进程物理内存），也就是按共享比例分摊后的物理内存（PSS）。[已验证: `frameworks/base/config/preloaded-classes` 与 `ZygoteInit.java` @ AOSP `android-17.0.0_r1`]
+`frameworks/base/config/preloaded-classes` 在 `android-17.0.0_r1` 中去掉注释和空行后有 18,784 条。这个数字只描述该固定源码标签的生成输入，换版本或厂商构建就未必还是这个数。预加载过少会把公共类加载成本留给进程启动，过多则增加整机开机时间、Zygote 常驻内存和可能被写脏的页面，所以调整列表必须同时测量整机启动、进程启动与 PSS（按共享比例分摊后的进程物理内存）。[已验证: `frameworks/base/config/preloaded-classes` 与 `ZygoteInit.java` @ AOSP `android-17.0.0_r1`]
 
 Zygote 创建进程时使用写时复制（Copy-on-Write）共享未修改页面，公共运行时因此不必在每个进程里重复占用物理内存。但私有页照样会来：ART 线程、应用类加载、堆写入和原生代码初始化都会逐步产生。[已验证: `ZygoteInit.java` 与 ART/Zygote fork 路径 @ AOSP `android-17.0.0_r1`]
 
@@ -298,11 +309,11 @@ startApexServices(t);
 - 其他服务组（other services）覆盖窗口、输入、Alarm、JobScheduler、通知及大量可选或设备相关服务。
 - APEX 服务组（apex services）从已激活 APEX 中发现并启动声明的 SystemServer 服务。
 
-分组只描述启动顺序，线程模型要另外看：某个服务的构造、`onStart()`、boot phase 回调（post-fork child hooks）或异步任务可能运行在不同线程。Perfetto 中我们先从 `SystemServerTiming`/`TimingsTraceAndSlog` 时间片找到具体服务，再看它跑在哪个线程、依赖谁。
+分组只描述启动顺序，线程模型要另外看：某个服务的构造、`onStart()`、boot phase 回调或异步任务可能运行在不同线程。Perfetto 中我们先从 `SystemServerTiming`/`TimingsTraceAndSlog` 时间片找到具体服务，再看它跑在哪个线程、依赖谁。
 
 ### Home（桌面）、屏幕点亮与启动完成广播
 
-`ActivityManagerService（AMS）.systemReady()` 之后，Activity/Task 管理路径会尝试在各显示设备启动 Home。注意这个调用只表示系统请求启动 Launcher，Launcher 首帧是否已经提交或显示，要另外确认。
+`ActivityManagerService.systemReady()` 之后，Activity/Task 管理路径会尝试在各显示设备启动 Home。注意这个调用只表示系统请求启动 Launcher，Launcher 首帧是否已经提交或显示，要另外确认。
 
 用户可见启动至少包含三类不同信号：
 
@@ -579,6 +590,11 @@ ZygoteHooks.postForkCommon();
 - 私有可写页在被修改后逐步私有化；
 - 预加载后对象越容易被子进程修改，共享收益越低。
 
+<!-- gracker-diagram: ch01-03-cow-sharing -->
+![fork 后的页面共享与写时复制](../../assets/diagrams/ch01/ch01-03-cow-sharing.png)
+
+图：以一张私有可写页为例，fork 后父子映射可以指向同一物理页；子进程写入时，通常复制并建立自己的可写页。若页面已独占，内核可直接恢复写权限。
+
 已退出的普通应用进程不会成为后续应用的父进程。`lmkd` 终止缓存应用，不会让下一次 fork 脱离 Zygote，也不会因为“缓存子进程少了”直接降低 Zygote 的 COW 复用率。内存压力可以通过回收文件页、swap 交换空间（swap）、调度与 I/O 间接影响启动，但这属于另一条因果路径。
 
 #### 16KB 内存页的收益与代价
@@ -601,6 +617,11 @@ USAP 池启用后，主/次 Zygote 可以预先维护一小组尚未绑定具体
 | USAP 命中 | 否，使用池中现有进程 | `specializeAppProcess()` | 现有进程完成特化并进入应用入口 |
 
 两条路径都会在目标进程中开始名为 `PostFork` 的 Trace 区段。它只说明 fork 后或特化后的准备阶段已经开始；这次启动是不是刚执行了 `fork()`，要再结合上下文判断。
+
+<!-- gracker-diagram: ch01-03-usap-selection -->
+![普通 fork 与 USAP 命中的两条创建路径](../../assets/diagrams/ch01/ch01-03-usap-selection.png)
+
+图：USAP 命中复用预先 fork 的进程；不满足条件或通信失败时走普通 Zygote 路径。两条路径都要完成身份特化，随后才进入应用初始化。
 
 #### USAP 默认关闭
 
@@ -812,6 +833,11 @@ Activity 即将创建
 ```
 
 四段发生在不同进程、不同线程。Zygote 只处理可复用的公共准备；接下来具体应用要选驱动、创建渲染线程与上下文，最后把缓冲区提交给 SurfaceFlinger 合成显示。哪一段变慢，修复位置就在哪一段。
+
+<!-- gracker-diagram: ch01-03-graphics-preload -->
+![图形初始化的四段责任边界](../../assets/diagrams/ch01/ch01-03-graphics-preload.png)
+
+图：Zygote 预热可共享的公共入口；应用进程再选择图形环境、启动 RenderThread，并为窗口和首帧准备资源。RenderThread 预热可与 Activity 创建重叠，首帧仍可能等待同步。
 
 ### 1. Zygote 预加载转移了什么成本
 
@@ -1412,7 +1438,7 @@ adb logcat -v threadtime \
 - [AOSP：ZygoteInit.java @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ZygoteInit.java)
 - [AOSP：com_android_internal_os_ZygoteInit.cpp（android-17.0.0_r1） @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/com_android_internal_os_ZygoteInit.cpp)
 - [AOSP：zygote_preload_graphics（android-17.0.0_r1） @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/apex/jni_runtime.cpp)
-- [AOSP：GraphicBufferMapper.cpp（android-17.0.0_r1） @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/ui/GraphicBufferMapper.cpp（android-13.0.0_r1）)
+- [AOSP：GraphicBufferMapper.cpp（android-17.0.0_r1） @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/ui/GraphicBufferMapper.cpp)
 - [AOSP：GraphicsEnvironment.java（android-17.0.0_r1） @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/GraphicsEnvironment.java)
 - [AOSP：ActivityThread.java（android-17.0.0_r1） @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
 - [AOSP：HardwareRenderer.java（android-17.0.0_r1） @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java)

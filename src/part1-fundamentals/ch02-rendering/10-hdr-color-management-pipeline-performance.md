@@ -117,6 +117,11 @@ flowchart LR
 
 图中像素与 metadata 在 SurfaceFlinger 汇合，再由 HWC 逐帧决定合成路径。`DEVICE` 与 `CLIENT` 是 HWC `validate`（合成能力校验）后的结果：即使上一帧视频 Layer 使用 `DEVICE`，下一帧增加模糊、复杂裁剪或更多 Layer 后也可能改为 `CLIENT`。LUT 是 lookup table（查找表），external sink 指外接显示接收端。
 
+<!-- gracker-diagram: ch02-10-pixel-color-metadata -->
+![像素存储与色彩语义必须一起正确](../../assets/diagrams/ch02/ch02-10-pixel-color-metadata.png)
+
+图：像素格式描述通道布局与精度；dataspace 描述如何解释像素值；HDR metadata、亮度与 headroom 进一步描述内容及显示意图。这些信息经 buffer/事务路径汇合到 Layer 状态，再参与输出配置和合成协商。10-bit、P3 或某个 HDR 标签均无法单独证明最终路径。
+
 ### 1.3 未知 dataspace 不是安全的万能值
 
 Android 17 的 `Layer::translateDataspace()` 会按兼容规则处理一部分旧 dataspace 和未知值。这个行为服务于历史应用，不能当作生产代码省略 dataspace 标记的理由。缺少或错误的 dataspace 可能造成：
@@ -171,6 +176,11 @@ Android 17 的 `Output::composeSurfaces()` 在准备 client composition 时，�
 
 判断某台设备的结果，要查看该帧经过 HWC validate 后的 composition type。
 
+<!-- gracker-diagram: ch02-10-output-color-policy -->
+![可见内容与 HWC 能力共同决定输出色彩配置](../../assets/diagrams/ch02/ch02-10-output-color-policy.png)
+
+图：Output 汇总当前可见 Layer 的 dataspace 等需求，DisplayColorProfile 匹配 HWC 报告的 ColorMode 与 RenderIntent；系统设置和合成条件也参与选择。输出配置确定后，逐帧合成类型仍需协商，source 与 output dataspace 不同不能直接推出 DEVICE 回退。
+
 ---
 
 ## 三、HWC 路径与 RenderEngine 路径
@@ -208,6 +218,11 @@ Android 17 源码中没有名为 `LinearTube` 的组件，实际类型是 `shade
 `SkiaRenderEngine::needsToneMapping()` 主要比较源与目标的 transfer。PQ、HLG、sRGB 与 linear（线性传递函数）之间需要不同处理；代码对不支持的 transfer 按 sRGB 处理。需要 tone mapping、Layer color transform（颜色变换）、线性域 dimming（调暗）或特定 gamma（伽马）修正时，`requiresLinearEffect` 才成立。
 
 有两个容易混淆的现象：
+
+<!-- gracker-diagram: ch02-10-linear-color-processing -->
+![需要 LinearEffect 时的色彩处理职责](../../assets/diagrams/ch02/ch02-10-linear-color-processing.png)
+
+图：这是 LinearEffect 与 Skia 工作色彩空间共同完成的概念处理链。需要 tone mapping、颜色变换或相应 dimming 等条件时才启用，部分步骤可融合或由包装 shader 完成；在线性域计算不意味着一定额外分配 FP16 中间 buffer。
 
 - “在线性域处理”是 shader 的颜色计算方式，不等于系统为每帧额外分配一个 FP16 中间 buffer；
 - client target 的实际格式由 SurfaceFlinger 与 HWC 配置决定，不能从 `LinearEffect` 这个名字推断内存一定翻倍。
@@ -373,6 +388,11 @@ Android 17 的 RenderEngine 包含 `GainmapFactory`，也能在截图路径生�
 
 应用应先确认图片含有 gain map，再按可见范围决定是否请求 HDR，不能只按文件扩展名切换。
 
+<!-- gracker-diagram: ch02-10-ultrahdr-headroom -->
+![Ultra HDR 用 base image、gain map 和目标余量重建](../../assets/diagrams/ch02/ch02-10-ultrahdr-headroom.png)
+
+图：Ultra HDR 保留 SDR 可显示的基础图，并携带 gain map 及参数；支持的 HDR 路径按目标 headroom 应用增益。应用确认 gain map 与当前可见内容后再动态请求 HDR，实际输出仍受窗口、显示与系统能力约束。
+
 ---
 
 ## 七、HDR 视频：优先保留独立 Layer
@@ -394,6 +414,11 @@ Android 17 的 RenderEngine 包含 `GainmapFactory`，也能在截图路径生�
 - vendor 对某种 dataspace 与 metadata 的支持。
 
 每帧以 HWC validate 结果为准。
+
+<!-- gracker-diagram: ch02-10-hdr-video-topology -->
+![HDR 视频的独立 Surface 保留系统合成边界](../../assets/diagrams/ch02/ch02-10-hdr-video-topology.png)
+
+图：SurfaceView 通常让解码 buffer 作为独立 Layer 进入 SF，HWC 可直接获得其 dataspace 和 HDR metadata；TextureView 则先采样到宿主 Window，HDR 支持受限。独立 Layer 提供设备合成机会，实际 DEVICE/CLIENT 仍由整屏条件与保护路径决定。
 
 ### 7.2 protected 与 secure 不要混用
 

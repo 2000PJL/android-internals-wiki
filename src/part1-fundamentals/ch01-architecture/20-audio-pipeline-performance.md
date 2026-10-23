@@ -68,7 +68,7 @@ last_idle_audit_at: '2026-09-13T14:35:20+08:00'
 
 1. 这条流最终走了 Normal、Fast、MMAP 还是 Offload 路径？
 2. 延迟来自排队、调度、重采样、算法处理，还是硬件路径？
-3. 出现输出欠载（underrun）或输入溢出（overrun）——两者统称 xrun（输出欠载与输入溢出的统称）——时，哪一环没有按时生产或消费数据？
+3. 出现输出欠载（underrun）或输入溢出（overrun）——两者统称 xrun——时，哪一环没有按时生产或消费数据？
 4. Android 17 的后台音频限制和新硬件卸载 API，是否改变了现象的含义？
 
 ## 1. 先分清四类延迟
@@ -151,6 +151,11 @@ App buffer
 
 对照这张图可以看到：Binder 主要负责建流、状态、路由、参数和控制操作，高频 PCM 数据通常走共享内存队列；“每个音频缓冲区都经过一次 Binder 序列化”这类描述，可以直接排除。
 
+<!-- gracker-diagram: ch01-20-audio-control-data -->
+![音频控制操作与连续 PCM 数据的分工](../../assets/diagrams/ch01/ch01-20-audio-control-data.png)
+
+图：控制侧协商设备、配置档和轨道；典型传统 PCM 播放的数据侧通过客户端与服务端共享队列进入 AudioFlinger，再交给 HAL 与设备。MMAP、Direct 和 Offload 的具体样本路径另行区分。
+
 ### 2.1 AudioPolicyService 决定“用哪条路”
 
 我们先看决定“走哪条路”的一侧：策略侧根据 `AudioAttributes`、设备连接状态、产品音频策略和可用配置档，选择输出或输入。它会影响：
@@ -178,7 +183,7 @@ AudioFlinger 负责创建 track、维护共享缓冲区状态、混音或转交�
 
 ### 2.3 Audio HAL 的 AIDL（Android Interface Definition Language）与 HIDL（HAL Interface Definition Language）
 
-Android 14 起，官方鼓励厂商把 Audio HAL 从 HID（uid）L 迁移到 AIDL；Android 框架仍同时支持两者。AIDL Core HAL 的 `IConfig` 承接一部分原先来自 HIDL XML 的系统级配置。
+Android 14 起，官方鼓励厂商把 Audio HAL 从 HIDL 迁移到 AIDL；Android 框架仍同时支持两者。AIDL Core HAL 的 `IConfig` 承接一部分原先来自 HIDL XML 的系统级配置。
 
 Android 16 扩展了 AIDL Audio HAL 对可配置音频策略（Configurable Audio Policy，CAP）的支持，但迁移进度因产品而异，运行 Android 16/17 的设备未必都已完成。查看具体设备时应确认：
 
@@ -208,6 +213,11 @@ FastMixer 保留：
 - 每条音轨的音量衰减。
 
 它省掉的是每条快速音轨的重采样、单音轨音效和混音整体音效，混音本身仍然要做：Normal Mixer 先把普通音轨合成一份子混音，经索引 0 送给 FastMixer，FastMixer 再把它与应用快速音轨合并后写向 HAL。
+
+<!-- gracker-diagram: ch01-20-fastmixer-topology -->
+![FastMixer 同时接收普通子混音与快速音轨](../../assets/diagrams/ch01/ch01-20-fastmixer-topology.png)
+
+图：在启用 FastMixer 的混音输出中，普通轨先经 Normal Mixer 形成子混音，再与已接纳的快速轨合并。默认总槽位 8 个，其中 0 号用于普通子混音；总数可由设备配置覆盖。
 
 ### 4.1 源码里的接纳条件
 
@@ -328,6 +338,11 @@ Android 8.1 扩展了 AAudio MMAP。设备需要在 Audio HAL 和驱动中声明
 
 AAudio 的 MMAP 策略通常允许自动回退。只有在专用验证环境里才适合强制 MMAP 并禁止回退；面向用户的代码要能处理传统 AudioFlinger 路径。
 
+<!-- gracker-diagram: ch01-20-aaudio-paths -->
+![AAudio API 不等于 MMAP 独占数据路径](../../assets/diagrams/ch01/ch01-20-aaudio-paths.png)
+
+图：AAudio 在设备能力、系统策略与参数允许时打开 MMAP；AUTO 策略下不可用时可以回退传统路径。MMAP 独占由应用访问与驱动共享的映射缓冲区，共享模式则由服务侧混合；控制与资源管理始终由系统参与。
+
 ### 5.4 Oboe 的能力与选路
 
 Oboe 是 Google 的 C++ 封装：
@@ -381,6 +396,11 @@ AAudio/Oboe 的数据回调运行在高优先级线程上。回调内应避免�
 
 这种分工减少了高优先级回调被外部工作阻塞的机会。但“无锁”两个字本身保证不了安全：生产者和消费者必须定义清楚容量、读写索引、跨线程读写可见性的内存顺序、欠载时的填零策略和音频流关闭时序。
 
+<!-- gracker-diagram: ch01-20-callback-buffer-boundary -->
+![把音频数据回调与耗时生产工作隔开](../../assets/diagrams/ch01/ch01-20-callback-buffer-boundary.png)
+
+图：工作线程负责解码、网络与复杂计算，数据回调只消费预备好的样本并做有界处理。队列的容量、内存可见性、欠载策略和关闭顺序需要明确设计；使用无锁队列本身并不保证音频按期供数。
+
 ### 6.3 输入和输出时钟的漂移
 
 即便两边都报告 48kHz，我们也要把录制时钟与播放时钟当作两个可能来自不同晶振的时钟，实际速率略有差异。长时间回环时，固定大小的 FIFO 会逐渐积满或耗空。
@@ -393,6 +413,11 @@ AAudio/Oboe 的数据回调运行在高优先级线程上。回调内应避免�
 - 把算法固有延迟与系统排队延迟分开记录。
 
 只把输入回调的缓冲区原样交给输出回调，短时间测试可能正常，长时间运行仍会周期性出现 xrun。
+
+<!-- gracker-diagram: ch01-20-duplex-clock-drift -->
+![双向音频为何需要监控时钟漂移](../../assets/diagrams/ch01/ch01-20-duplex-clock-drift.png)
+
+图：输入与输出即使都标为 48 kHz，实际时钟仍可能有偏差。应用应结合时间戳与 FIFO 水位估计漂移，以异步重采样或小幅速度补偿稳定供数；增大队列只能延后问题暴露并增加延迟。
 
 ## 7. Android 17 / API 37 的音频行为变化
 

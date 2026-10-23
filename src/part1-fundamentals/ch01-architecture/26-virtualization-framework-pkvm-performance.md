@@ -58,26 +58,18 @@ Android Virtualization Framework（Android 虚拟化框架，AVF）从 Android 1
 
 ### 1.1 宿主侧有两个服务层次
 
-AVF 文档里的 `VirtualizationService` 容易与 `system_server` 中的 Java 服务混淆。API 37 的实现由多个独立进程组成：宿主应用经 `framework-virtualization` Java 库连到 `virtmgr`，`virtmgr` 为每台运行中的 VM 拉起一个 crosvm 子进程，另有全局的 `VirtualizationServiceInternal`（全局 Rust lazy Binder 服务）管 CID 和全局资源；crosvm 与它最终都落到 EL2 上的 pKVM。
+AVF 文档里的 `VirtualizationService` 容易与 `system_server` 中的 Java 服务混淆。API 37 的实现由多个独立进程组成：宿主应用经 `framework-virtualization` Java 库连到 `virtmgr`，`virtmgr` 为每台运行中的 VM 拉起一个 crosvm 子进程，另有全局的 `VirtualizationServiceInternal`（全局 Rust lazy Binder 服务）管 CID 和全局资源；crosvm 经宿主 KVM 接口创建并运行 VM，受保护内存访问由 EL2 上的 pKVM 约束；全局服务本身负责用户空间资源管理。
 
 ```text
 Host app / system component
-        │  VirtualMachineManager / VirtualMachine (@SystemApi)
-        ▼
-framework-virtualization Java library
-        │  spawn + RpcBinder over Unix-domain socket
-        ▼
-virtmgr child process (Rust)
-        │  one crosvm child process for each running VM
-        ├─────────────────────────────┐
-        ▼                             ▼
-VirtualizationServiceInternal     crosvm
-(global Rust lazy Binder service)          │ /dev/kvm ioctl
-        │ CID / global resources     ▼
-        └────────────────────────► pKVM at EL2
-                                      │
-                                      ▼
-                           pvmfw → bootloader → guest OS
+  → framework-virtualization Java library
+      → spawn virtmgr child + RpcBinder over Unix-domain socket
+          ├─ Binder → VirtualizationServiceInternal
+          │             全局 CID / 资源管理
+          └─ spawn → 每台运行 VM 对应一个 crosvm
+                        → /dev/kvm ioctl / 宿主 KVM
+                            → pKVM at EL2
+                                → pvmfw / guest OS / payload
 ```
 
 `libs/framework-virtualization/.../VirtualizationService.java` 明确说明，该类代表一个正在运行并承载 AIDL 服务的 `virtmgr` 实例。`nativeSpawn()` 创建子进程，Unix 域套接字（一种本机进程间通信通道）上的 RpcBinder 负责宿主客户端与 `virtmgr` 通信。
@@ -85,6 +77,11 @@ VirtualizationServiceInternal     crosvm
 `android/virtualizationservice/src/main.rs` 则注册全局的 `android.system.virtualizationservice` lazy Binder 服务；lazy 表示有请求时按需启动。它负责虚拟机上下文 ID（CID）、全局资源、统计和维护。它与每个客户端启动的 `virtmgr` 不在同一进程，也不位于 `system_server`。
 
 每个 crosvm 进程只运行一台 VM；一个 `virtmgr` 可以管理多台 crosvm 子进程。crosvm 通过 `/dev/kvm` 的系统、VM、vCPU 和设备 ioctl（用户态控制内核设备的系统调用）创建并运行虚拟机。
+
+<!-- gracker-diagram: ch01-26-avf-process-boundaries -->
+![AVF 用户空间管理与受保护执行的不同层次](../../assets/diagrams/ch01/ch01-26-avf-process-boundaries.png)
+
+图：Java 包装层启动 virtmgr 并通过 UDS 上的 RpcBinder 通信；virtmgr 管理每台运行 VM 的 crosvm，并向全局 Rust 服务申请 CID 等资源。真正的 VM 执行经 crosvm 的 KVM ioctl 进入宿主 KVM 与 EL2。
 
 ### 1.2 pKVM、crosvm 与 Microdroid 的分工
 
@@ -133,6 +130,11 @@ Android 启动之初，除虚拟机监控器保留区外的内存归宿主所有
 
 当前内核把宿主 Stage-2 标记为 `KVM_PGTABLE_S2_IDMAP`，并在 `host_stage2_set_owner_locked()` 中根据所有者 ID 建立宿主映射或记录其他所有者。保护来自 EL2 管理的权限，与某个用户空间 `shared_buf` 名称无关。
 
+<!-- gracker-diagram: ch01-26-stage2-private-memory -->
+![pKVM 同时约束 host 与 guest 的内存访问](../../assets/diagrams/ch01/ch01-26-stage2-private-memory.png)
+
+图：pKVM 把 host 也放在 Stage-2 权限约束之下。页面捐给 pVM 后，host 的访问权限被撤销；guest 通过自己的 IPA→PA 映射访问私有内存。保留 crosvm 虚拟地址区间并不授予 host 读取权限。
+
 ### 3.2 `donate`、`share`、`unshare`、`relinquish` 四类动作
 
 | 动作 | 所有权 | 宿主是否可访问 | 常见用途 |
@@ -142,7 +144,7 @@ Android 启动之初，除虚拟机监控器保留区外的内存归宿主所有
 | `unshare` | 所有者不变 | 取消宿主映射 | 结束临时共享 |
 | `relinquish` | pVM → 宿主 | 是，重新归宿主 | 内存 balloon 或长期运行的 VM 归还不用的页 |
 
-客户机归还页面时，内核会撤销客户机 Stage-2 映射，清理页面内容，再把所有者改回宿主。下面的片段展示归还私有页的核心顺序：
+客户机归还私有页时，这段内核路径先撤销客户机 Stage-2 映射，默认调用 `hyp_poison_page()` 处理内容；若调用显式带有 `KVM_FUNC_MEM_RELINQUISH_NO_POISON`，则改走 `hyp_flush_page()` 缓存维护，该分支不在此处覆盖页面内容。之后才把所有者改回宿主。不能把所有 `relinquish` 调用一概描述成先清零。核心顺序如下：
 
 ```c
 /* Zap the guest stage2 pte and return ownership to the host */
@@ -172,6 +174,11 @@ AVF 的受保护客户机因此为 virtqueue 和数据 buffer 预留固定共享
 - buffer 大小、批量深度和 I/O 模式不同，结果会相差很大。
 
 这也是不能给所有 virtio 块设备（virtio-blk）、vsock 或 Binder RPC 写一个固定微秒数的原因。
+
+<!-- gracker-diagram: ch01-26-shared-io-window -->
+![受保护客户机通过共享窗口进行 virtio I/O](../../assets/diagrams/ch01/ch01-26-shared-io-window.png)
+
+图：host 设备后端不能读取 pVM 私有页，因此常规 virtio 数据通过明确共享的窗口交换，guest 在私有数据与窗口之间中转复制。控制通知、队列深度和后端处理共同影响成本，不能按每字节一次 VM exit 估计。
 
 ## 四、内存占用与宿主内存压力
 
@@ -226,6 +233,11 @@ API 37 的基准测试同时采集三组数据：
 3. vCPU 因 MMIO、virtio 或中断等事件退出，在 crosvm 或宿主内核等待。
 
 只看客户机内的 Perfetto 无法区分后两层。性能分析需要把客户机时间线与宿主的 crosvm / vCPU 线程调度对齐。
+
+<!-- gracker-diagram: ch01-26-vcpu-scheduling -->
+![客户机任务与宿主 vCPU 调度是两层等待](../../assets/diagrams/ch01/ch01-26-vcpu-scheduling.png)
+
+图：Guest 调度器挑选任务，但真正执行还要让对应 crosvm vCPU 线程在 host 获得 CPU。需要用户空间处理的退出会进入 VMM；因此要同时检查 Guest 排队、host runnable 等待和退出后的处理时间。
 
 ### 5.2 每次 I/O 不等同于一次完整 VM exit
 
@@ -297,6 +309,11 @@ API 文档把 `VirtualMachine.stop()` 比作拔电源：客户机软件不会收
 - payload 收到退出请求到 `onPayloadFinished()`；
 - `stop()` 调用到 `onStopped()`；
 - crosvm 退出后 RSS、KVM 和 pKVM 页面完成归还的时间。
+
+<!-- gracker-diagram: ch01-26-vm-start-stop-contracts -->
+![VM 启动返回、payload 就绪与两种停止语义](../../assets/diagrams/ch01/ch01-26-vm-start-stop-contracts.png)
+
+图：run 返回只代表启动请求已提交，payload 是否就绪由回调或业务握手确认。正常退出应通过 payload 协议请求并等待结束；stop 则是强制停止，不能据其返回推断客户机已经完成存储刷写。
 
 ### 7.3 引用生命周期会影响 VM 存活
 

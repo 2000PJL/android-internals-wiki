@@ -151,6 +151,11 @@ Android 会记录 `finalize()` 抛出的异常。常规情况下，这类异常�
 
 Java 允许终结方法把对象重新放回可达对象图，这种行为称为对象复活。终结机制并不会因此成为可靠的复用协议；对象复活会显著增加生命周期推理难度，工程代码应禁止这种做法。
 
+<!-- gracker-diagram: ch04-06-finalization-list-pending-queue -->
+![全部终结引用链表与待执行队列是两套结构](../../assets/diagrams/ch04/ch04-06-finalization-list-pending-queue.png)
+
+图：FinalizerReference.add 将可终结对象登记在 LIST_LOCK 保护的全量链表中，此时对象仍可正常可达。GC 判定需要终结后保留 zombie，并把待处理引用交给 ReferenceQueueDaemon；该线程再放入 FinalizerReference.queue。FinalizerDaemon 串行取出，移除全量链表节点、取对象并清引用，再调用 finalize。资源何时释放仍取决于动作与调度。
+
 ## 3. `ReferenceQueue` 的同步边界
 
 ### 3.1 每个队列一把实例锁，队内保持先进先出
@@ -169,7 +174,7 @@ public Reference<? extends T> poll() {
 }
 ```
 
-`poll()` 立即返回；`remove(timeout)` 在同一把锁上调用 `wait()`，入队方完成修改后调用 `notifyAll()`。`wait()` 会释放锁，因此阻塞消费者不会持续占住入队锁。
+`poll()` 不等待新元素，但仍需获取实例锁；`remove(timeout)` 在同一把锁上调用 `wait()`，入队方完成修改后调用 `notifyAll()`。`wait()` 会释放锁，因此阻塞消费者不会持续占住入队锁。
 
 由此得到的并发边界是：
 
@@ -208,6 +213,11 @@ progressCounter.incrementAndGet();
 - `FinalizerDaemon` 有自己的 `progressCounter`，两者互不共用。
 - 该数值是运行时内部的活性信号，不是公开的队列长度或性能指标。
 
+<!-- gracker-diagram: ch04-06-referencequeue-lock-and-batch -->
+![ReferenceQueue 按相邻同队列引用批处理，每个队列有自己的锁](../../assets/diagrams/ch04/ch04-06-referencequeue-lock-and-batch.png)
+
+图：GC pending 链可能混有多个目标队列；enqueuePending 一次持目标实例锁处理相邻同队列引用，最多 100 次迭代，然后通知等待者并更新进度。每个队列的头尾在实例锁下维护，poll 不等待新元素，remove 可 wait 并释放锁。应用自己的队列仍需应用消费，进度计数也不是队列长度。
+
 ### 3.3 Android 17 没有接入 `ConcurrentMessageQueue`
 
 在 `android-17.0.0_r1` 的 `ReferenceQueue.java`、引用类目录和 `Daemons.java` 中，`ReferenceQueue` 仍采用上述 FIFO、实例锁和批处理实现，没有 `ConcurrentMessageQueue` 接入点。
@@ -237,6 +247,11 @@ progressCounter.incrementAndGet();
 确认超时且调试器未连接时，看门狗会先给本进程发送 `SIGQUIT`，留出时间记录原生线程栈，再把超时异常交给未捕获异常处理机制。由 Zygote 派生的应用进程通常会由 `RuntimeInit` 的处理器生成崩溃报告并终止。调试器连接期间，源码明确跳过这次致命超时处理。
 
 “看到 FinalizerDaemon 很忙”和“看门狗判定进程必须终止”之间，还有进度、超时窗口、调试器状态等条件。诊断报告要保留这些条件。
+
+<!-- gracker-diagram: ch04-06-watchdog-progress-and-timeout -->
+![看门狗监控活性与进度，线程忙碌不直接等于致命超时](../../assets/diagrams/ch04/ch04-06-watchdog-progress-and-timeout.png)
+
+图：FinalizerWatchdogDaemon 观察两个守护线程各自的活动标记与 progressCounter。超时值来自 VMRuntime，每个窗口分 5 次唤醒复查。Finalizer 长期不推进可在本轮生成异常；RQD 对同一未完成批次容忍 5 次，超过后才报告。一旦确认异常，仍要检查调试器状态；无调试器时先 SIGQUIT 留线程栈，再交给未捕获异常机制。
 
 ## 5. Android 17 的三种 Cleaner 路径
 
@@ -302,6 +317,11 @@ SystemCleaner.cleaner()
 | `SystemCleaner.cleaner()` | `FinalizerDaemon` | 阻塞共享 Cleaner 和普通终结方法 | 未捕获异常通常导致进程崩溃 |
 
 三种机制都只保证清理动作至多执行一次，不保证 GC 触发时间，也不保证动作一定会在进程退出前执行。
+
+<!-- gracker-diagram: ch04-06-cleaner-three-execution-threads -->
+![同名 Cleaner 有三套执行线程和异常边界](../../assets/diagrams/ch04/ch04-06-cleaner-three-execution-threads.png)
+
+图：旧 sun.misc.Cleaner 由 ReferenceQueueDaemon 直接清理，是隐藏平台实现。公开 Cleaner.create 每个实例有自己的守护线程，后台动作抛出的 Throwable 被循环忽略。SystemCleaner 是进程共享实例，使用 FinalizerReference.queue，由 FinalizerDaemon 与普通 finalize 串行处理；未捕获清理异常通常导致进程崩溃。显式 clean 则在调用线程执行。
 
 ## 6. 正确的资源所有权设计
 
@@ -374,6 +394,11 @@ final class NativeSession implements AutoCloseable {
 
 这里的 `State` 不持有 `NativeSession`。显式调用 `close()` 时，`cleanable.clean()` 在调用线程执行释放；遗忘关闭时，SystemCleaner 才提供延迟兜底。
 
+<!-- gracker-diagram: ch04-06-cleaner-state-no-owner-back-reference -->
+![清理 State 只持资源状态，不能反向强引用 Owner](../../assets/diagrams/ch04/ch04-06-cleaner-state-no-owner-back-reference.png)
+
+图：清理注册本身会保存 action；如果 action 捕获 Owner，就把本应进入 phantom 状态的对象强保活，自动清理无法开始。正文用静态嵌套 State 仅保存 AtomicLong 句柄，getAndSet(0) 合并显式 close 与兜底释放，避免同一句柄重复销毁；它仍需要业务保证关闭后没有使用者。
+
 如果 `nativeRelease()` 可能等待 Binder、磁盘、网络或不可控锁，这个清理动作就不适合 `SystemCleaner`。应把耗时释放设计成可显式等待或受控调度的业务操作，Cleaner 中只保留快速、有限、不会阻塞的最后一道防线。
 
 低于 API 33 的设备不能直接假设存在公共 `java.lang.ref.Cleaner`。项目可以在兼容层选择其他实现，但 `AutoCloseable` 的调用契约应保持一致。不要把隐藏的 `sun.misc.Cleaner` 当作兼容方案；API 脱糖（desugaring）会把部分新版 Java API 改写或补充到旧系统，若没有验证构建配置和运行时语义，也不能断言它与 Android 17 原生 Cleaner 完全等价。
@@ -424,6 +449,11 @@ Java 堆变化不大，而原生堆或图形内存持续上涨，因此是合理
 `FinalizerDaemon` 串行处理普通终结方法和 SystemCleaner。假设每个动作只耗时 20 ms，前面堆积 500 个对象时，队尾对象也可能等待很久。这里不能用固定公式预测线上延迟，因为 GC 触发、线程调度和清理耗时都在变化；但只要生成速度长期高于消费速度，积压就会扩大。
 
 慢清理一般不会直接运行在主线程，却仍可能造成：
+
+<!-- gracker-diagram: ch04-06-serial-cleanup-retains-native-resources -->
+![单个慢清理会推迟后续资源归还，小包装对象也可能持有大资源](../../assets/diagrams/ch04/ch04-06-serial-cleanup-retains-native-resources.png)
+
+图：FinalizerDaemon 串行处理普通 finalize 与 SystemCleaner。一个动作等 I/O、Binder 或锁时，后续动作就无法开始；其 Java 包装可能很小，仍间接持有 fd、原生内存或图形缓冲区。持续生成快于消费会扩大积压。性能影响可能通过锁、CPU、系统服务或资源耗尽传到前台，不能仅凭线程忙碌判定队列深度。
 
 - 与主线程争抢 CPU；
 - 持有主线程需要的原生或 Java 锁；
@@ -550,6 +580,11 @@ NEW -> OPEN -> CLOSING -> CLOSED
 6. 修复后重复同样轮数，要求资源曲线回到稳定区间，并让 StrictMode/CloseGuard 不再报告遗漏。
 
 按这个顺序走一遍，“守护线程很忙”会落到某个可验证的资源所有权问题上。
+
+<!-- gracker-diagram: ch04-06-resource-leak-evidence-workflow -->
+![先证明资源随操作增长，再把线程执行点与所有权对应起来](../../assets/diagrams/ch04/ch04-06-resource-leak-evidence-workflow.png)
+
+图：固定进入、使用、退出为一轮，先记录 fd、Native / Graphics 和包装对象趋势。再看 CloseGuard / StrictMode 与多次线程栈，确认清理发生在 RQD、FinalizerDaemon 还是独立 Cleaner。Perfetto 用于量运行和等待，堆图查保活链，CPU 采样查热点；它们都不能单独给出引用队列深度。最终在正常、异常和取消路径修显式关闭，再重复场景。
 
 ## 11. Android 8 到 Android 17 的版本边界
 

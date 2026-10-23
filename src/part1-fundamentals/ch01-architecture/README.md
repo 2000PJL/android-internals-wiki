@@ -39,6 +39,11 @@ last_consolidated_at: '2026-08-24'
 
 性能现象通常跨越两层以上。比如主线程卡在 `BinderProxy.transactNative()`，这只是调用方的等待点；还要沿这次 Binder 事务（transaction）找到服务端线程，检查它是在执行业务、等锁、等输入输出（I/O），还是尚未从目标进程队列取出。
 
+<!-- gracker-diagram: ch01-00-five-layer-diagnosis -->
+![五层视角：先定位执行载体，再追等待链](../../assets/diagrams/ch01/ch01-00-five-layer-diagnosis.png)
+
+图：层次用于定位职责，不能当作每次请求都必须经过的固定五步。看到调用方等待时，要沿 Binder、JNI、共享队列或设备依赖追到实际工作与等待点，并记录进程、线程和版本条件。
+
 ## 内容索引
 
 

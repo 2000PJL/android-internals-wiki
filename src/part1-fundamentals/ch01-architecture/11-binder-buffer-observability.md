@@ -104,7 +104,7 @@ Binder 的事务上限常被简化成一句“单笔 1 MiB”，这个说法丢�
 
 > 源码基线：Android 17 / API 37；AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
-排查 Binder 故障时，我们既要看事务是否进入驱动，也要看目标进程的缓冲区和异步预算是否允许继续分配；内核分配状态、AID（TID）L Trace 与 Perfetto 事务切片是同一问题的不同观察面。事务时序观测见后半部分“从 AIDL Trace 到内核事务快照”，`oneway` 排队见 [1.10 Binder 线程池、异步事务与 Freezer](10-binder-scheduling-freezer-threadpool.md)。
+排查 Binder 故障时，我们既要看事务是否进入驱动，也要看目标进程的缓冲区和异步预算是否允许继续分配；内核分配状态、AIDL Trace 与 Perfetto 事务切片是同一问题的不同观察面。事务时序观测见后半部分“从 AIDL Trace 到内核事务快照”，`oneway` 排队见 [1.10 Binder 线程池、异步事务与 Freezer](10-binder-scheduling-freezer-threadpool.md)。
 
 ## 事务缓冲区、分配器与大小限制
 
@@ -174,6 +174,11 @@ alloc->buffer_size = min_t(
 
 发送方用户态 `Parcel` 的内存是另一份数据：驱动会把 Parcel 数据区、对象偏移数组和附加 buffer 复制或修正到接收方映射区。所以发送方 Parcel 容量和接收方 Binder 空间是两个独立的量，分析时要分开看。
 
+<!-- gracker-diagram: ch01-11-receiver-buffer-budget -->
+![请求与回复占用各自接收方的 Binder 映射](../../assets/diagrams/ch01/ch01-11-receiver-buffer-budget.png)
+
+图：A 发出的请求占 B 的接收映射；B 发回的回复占 A 的接收映射。每个接收池还要容纳其他尚未释放的入站事务，发送 Parcel 则是另外的用户态内存。
+
 ### 三、`binder_alloc` 如何分配一笔事务
 
 映射区大小定下来之后，一笔事务实际占用多少空间由分配器计算，算出来的结果和 Parcel 数据区的大小是两回事。
@@ -229,6 +234,11 @@ alloc->free_async_space = alloc->buffer_size / 2;
 同步和异步事务仍从同一棵空闲 buffer 树分配。`free_async_space` 是额外的记账预算：异步分配前检查预算，成功后扣减，释放后归还。同步事务不扣这项预算，但仍需要地址池中存在足够大的连续空闲 buffer。
 
 一半空间没有被提前划成 `oneway` 专用区。该预算只限制异步事务最多消耗的总量，为同步请求和回复保留余地。
+
+<!-- gracker-diagram: ch01-11-allocation-failure -->
+![Binder 事务分配、异步预算与释放](../../assets/diagrams/ch01/ch01-11-allocation-failure.png)
+
+图：同步和异步从同一空闲 buffer 树分配；oneway 额外检查 free_async_space。预算不足或没有合适连续空闲块都会失败，增加 Binder 线程无法扩大这个地址池。
 
 #### 2. `oneway` 的 node 级串行会延长占用
 
@@ -431,6 +441,11 @@ r6 内核在创建目标 `binder_buffer` 时把 `TF_CLEAR_BUF` 写入 `clear_on_
 | 请求和回复的 Parcel 是什么 | `RecordedTransaction` | 接口名、事务码（code）、标志位（flags）、状态、请求 / 回复数据 | 稳定文件协议、低扰动线上采集 |
 
 这些能力之间没有“粗粒度到细粒度”的固定层级，也不都是 Android 17 才新增的；本文引用的源码入口只反映当前基线的行为，从中反推不出某个能力的引入版本。
+
+<!-- gracker-diagram: ch01-11-observation-scopes -->
+![Binder 观测工具各自回答的问题](../../assets/diagrams/ch01/ch01-11-observation-scopes.png)
+
+图：先确定要回答的问题，再选择证据。Perfetto 流与线程状态解释等待；冻结 ioctl 给状态位；扩展错误属于当前线程的失败信息；内容录制需要满足调试条件。
 
 ### 二、binderfs 的功能文件
 

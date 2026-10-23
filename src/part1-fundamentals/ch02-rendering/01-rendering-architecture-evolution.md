@@ -275,6 +275,11 @@ latch（选定本帧使用的 buffer） 指 SurfaceFlinger 选中并取得某个
 
 Perfetto 中出现多条 BufferQueue 或多个 SurfaceFlinger Layer 时，我们按生产者和 Surface 归属拆分，再逐条分析时序。
 
+<!-- gracker-diagram: ch02-01-surface-topologies -->
+![SurfaceView 与 TextureView 改变内容合成位置](../../assets/diagrams/ch02/ch02-01-surface-topologies.png)
+
+图：SurfaceView 内容通常保留独立 Surface/Layer，与宿主窗口分别进入系统合成；TextureView 的外部 buffer 则由 HWUI 作为纹理采样，主体内容进入宿主 Window buffer。是否使用硬件叠加平面由整屏条件与设备能力决定。
+
 ### 2. 标准应用窗口的一帧经过哪些阶段
 
 普通应用窗口的一帧可以概括为下面这条路径：
@@ -373,7 +378,7 @@ CALLBACK_COMMIT
 - 布局（layout）：确定 View 在父容器中的位置；
 - 绘制（draw）：录制或更新需要重绘的内容。
 
-三者都有条件判断。Perfetto 里出现 `performTraversals` 的 slice（带起止时间的事件区间），只说明这一轮遍历发生过；这一帧实际测了、排了、画了哪些内容，要展开这个 slice（Trace 中的一段带起止时间事件） 内部的分段才能回答。
+三者都有条件判断。`android-17.0.0_r1` 的 `performTraversals()` 没有提供同名的显式系统 trace 区间；应从 `Choreographer#doFrame` 的 traversal 回调范围，以及实际存在的 `measure`、`layout`、`draw-VRI[...]` 等区间判断工作。厂商或自定义 trace 即使标出方法名，也不能据此认定完整三步或整棵 View 树都执行过。
 
 ##### Measure：父子双方参与尺寸协商
 
@@ -461,6 +466,11 @@ Java 层 `RecordingCanvas` 的绘制 API 最终进入 `BaseRecordingCanvas` 等�
 
 看到 `drawRect()`、`drawBitmap()` 或 `drawRenderNode()` 返回，说明相应的调用已经完成；对硬件加速 Canvas 来说，GPU 的执行通常还在后面。
 
+<!-- gracker-diagram: ch02-01-traversal-record-sync -->
+![重复 UI 请求合并调度，再按状态录制与同步](../../assets/diagrams/ch02/ch02-01-traversal-record-sync.png)
+
+图：mTraversalScheduled 合并的是待执行遍历的调度，实际 measure/layout/draw 仍由状态决定。硬件加速路径先录制 RenderNode/DisplayList，再同步到 RenderThread；录制返回不代表 GPU 已完成像素生成。
+
 #### 4.3 `syncAndDrawFrame()` 是 UI 到 RenderThread 的提交边界
 
 `ThreadedRenderer` 通过 `HardwareRenderer` 把帧信息提交给 native 渲染代理，核心入口名为 `syncAndDrawFrame()`。它连接两类工作：
@@ -484,6 +494,11 @@ SurfaceFlinger 合成更早的一帧
 ```
 
 这种重叠是图形管线维持吞吐量的基础。所以某条 GPU track（Perfetto 中记录 GPU 工作的时间轨道） 超过一个刷新周期时，先别急着下掉帧的结论：我们要结合依赖 fence、队列深度和 FrameTimeline，确认该 GPU 工作是否真的挡住了目标帧的 deadline（本周期必须完成的截止时间）。
+
+<!-- gracker-diagram: ch02-01-pipeline-overlap -->
+![不同执行域可以同时推进不同帧](../../assets/diagrams/ch02/ch02-01-pipeline-overlap.png)
+
+图：轨道只是并行关系示意，宽度和相位不代表实测时间，也不规定各域永远相差一帧。应使用目标帧号、fence 和 deadline 关联依赖；一段 GPU 工作跨刷新周期，本身不能证明它挡住目标帧。
 
 #### 4.5 SkiaGL、SkiaVulkan 与渲染后端
 
@@ -538,6 +553,11 @@ BufferQueue 中常见的槽位状态为：
 生产者能同时持有的 buffer 是有限的：最大已 dequeue 数、最大已 acquire 数、异步模式、消费者是否会阻塞以及当前可用槽位共同决定它要不要等待。
 
 `BufferQueueCore` 的初始配置中可看到最大 acquired 和 dequeued 数的默认值；实际最大缓冲区数量由运行时条件计算，并不是全系统固定的三个，要以当时的队列状态为准。
+
+<!-- gracker-diagram: ch02-01-bufferqueue-slot-cycle -->
+![BufferQueue 槽位流转与两次安全使用条件](../../assets/diagrams/ch02/ch02-01-bufferqueue-slot-cycle.png)
+
+图：常见流转是 FREE→DEQUEUED→QUEUED→ACQUIRED→FREE。dequeue 返回的 fence 保护生产者再次写入，queue 携带的 fence 则保护消费者读取；槽位回到可流转状态不代表此前异步工作已结束。
 
 #### 5.3 “三缓冲”要按队列状态理解
 
@@ -710,6 +730,11 @@ Hardware Composer HAL 连接 SurfaceFlinger 与设备显示合成能力。Surfac
 
 同一帧可以混合使用两者。某个 Layer 的 composition type 也可能随帧变化，因此我们以该帧的 HWC/SurfaceFlinger 数据为准；按应用或控件类型做永久归类，会漏掉这些变化。
 
+<!-- gracker-diagram: ch02-01-hwc-validation-branches -->
+![presentOrValidate 成功时不再重复 present](../../assets/diagrams/ch02/ch02-01-hwc-validation-branches.png)
+
+图：无客户端合成且满足时序条件时可尝试 presentOrValidate；若直接 PresentSucceeded，本轮已完成提交，不再追加一次 present。若返回已验证，或走普通 validate，则读取类型与请求，按需准备 client target 后再 present。
+
 #### 9.3 RenderEngine 与应用 HWUI 是两个组件
 
 两者都可能使用 Skia、OpenGL ES 或 Vulkan 相关图形能力，但职责不同：
@@ -835,7 +860,7 @@ SurfaceFlinger 的预算要按当前显示模式、调度相位、预测和 Fram
 
 | 观察 | 不能直接推出 | 还需要的证据 |
 | --- | --- | --- |
-| `performTraversals` 出现 | 完整 measure/layout/draw 都已执行 | 内部 slice、布局标志、脏区域 |
+| 已确认 traversal 回调执行 | 完整 measure/layout/draw 都已执行 | 实际 measure/layout/draw 区间、布局标志、脏区域 |
 | `syncAndDrawFrame` 返回 | GPU 或显示已完成 | GPU fence、`queueBuffer`、FrameTimeline |
 | `queueBuffer` 成功 | 画面已经显示 | BLAST/SF latch、HWC present |
 | GPU Track 超过一个周期 | 该工作必然导致当前帧掉帧 | GPU 依赖、frame id、deadline |
@@ -925,6 +950,11 @@ Android 渲染史不适合只记成一串版本号。拿到一份 Perfetto，我
 这三条线的变化速度不同：Android 5.0 增加 RenderThread，页面仍要经过 SurfaceFlinger 显示；Android 11 引入 BLAST，BufferQueue 依然存在；Android 12 增加 FrameTimeline，Trace 里标红的卡顿帧也还是要一帧一帧去查根因。
 
 本节的旧版本只用来解释每条线从哪里来；当前的类名与行为，以 Android 17 的实现为准。
+
+<!-- gracker-diagram: ch02-01-responsibility-evolution -->
+![三个版本节点改变三种不同责任边界](../../assets/diagrams/ch02/ch02-01-responsibility-evolution.png)
+
+图：RenderThread 改变 HWUI 的执行线程分工，BLAST 改变窗口 buffer 与事务的配合，FrameTimeline 增加帧之间的关联和结果观测。后者加入后前面的机制仍然存在；设备是否启用还需核对版本分支和条件。
 
 ### 时间线速查
 

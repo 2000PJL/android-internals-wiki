@@ -129,7 +129,7 @@ Android 显示框架把物理设备和系统对外使用的逻辑 Display 分开
 - **物理 Display**：面板与 HWC display，由物理地址标识；
 - **`DisplayDevice`**：DisplayManager 对物理或虚拟显示设备的包装；
 - **`LogicalDisplay`**：系统用于组织 layer stack（图层栈）、`DisplayInfo`、display group（显示组） 和窗口内容的逻辑对象；
-- **SurfaceFlinger Display 与 Composition（前后位置）Engine Output**：针对最终输出建立合成状态并执行 present（送显）。
+- **SurfaceFlinger Display 与 CompositionEngine Output**：针对最终输出建立合成状态并执行 present（送显）。
 
 折叠设备的具体做法由厂商配置决定：可以让一个稳定的 logical display ID（逻辑显示标识） 在不同设备状态下映射到不同内建面板，也可以保留多个逻辑 Display，在 layout（显示布局配置） 里改变它们的 enabled（是否启用） 状态。
 
@@ -160,7 +160,7 @@ Android 显示框架把物理设备和系统对外使用的逻辑 Display 分开
 - lead display（联动显示中的主显示）；
 - brightness、refresh-rate、thermal、power（电源） throttling（亮度、刷新率、热管理和功耗限制） 策略 ID。
 
-logical display ID 由框架分配：`Layout.createDisplayLocked()` 调用 `DisplayIdProducer（缓冲区生产者）.getId(isDefault)`，把结果保存在 layout 中；`LogicalDisplayMapper` 再为默认 Display 返回 `DEFAULT_DISPLAY`，为非默认 Display 递增分配 ID。我们分析状态切换时，就用 `dumpsys display` 核对 layout 保存的 ID 与物理地址映射。[源码：`DeviceStateToLayoutMap.java` L168–179；`Layout.java` L155–163；`LogicalDisplayMapper.java` L223–224]
+logical display ID 由框架分配：`Layout.createDisplayLocked()` 调用 `DisplayIdProducer.getId(isDefault)`，把结果保存在 layout 中；`LogicalDisplayMapper` 再为默认 Display 返回 `DEFAULT_DISPLAY`，为非默认 Display 递增分配 ID。我们分析状态切换时，就用 `dumpsys display` 核对 layout 保存的 ID 与物理地址映射。[源码：`DeviceStateToLayoutMap.java` L168–179；`Layout.java` L155–163；`LogicalDisplayMapper.java` L223–224]
 
 刷新率和亮度策略可以随 layout 改变，但 AOSP 没有“展开态固定 120 Hz、折叠态固定低刷新率”的通用规则。具体 mode 还要经过 `DisplayModeDirector`、设备配置、内容帧率投票、热限制和用户设置。
 
@@ -213,6 +213,11 @@ flowchart TD
 
 这条路径先把连续的传感器条件归纳成离散 DeviceState，再选择相应 display layout。DisplayManager 收到回调后，先向 WMS 投递 device state 消息，再调用 `LogicalDisplayMapper.setDeviceState()`。源码注释说明，这个次序是为了让 WMS 的 device-state 更新与 display change 事件保持可控的先后关系。
 
+<!-- gracker-diagram: ch02-16-display-remapping -->
+![DeviceState 选择布局，逻辑 Display 可以重映射物理面板](../../assets/diagrams/ch02/ch02-16-display-remapping.png)
+
+图：设备状态选择对应的 display layout。需要切换的 Display 先进入 transition 并关闭输出；正常条件满足，或延迟超时回调 force 推进后，框架应用新的逻辑显示与设备映射，再更新 WMS / SF。已经满足关闭与交互条件时可以直接切换，不必等待超时。
+
 ### 2.3 切换过程中的黑场与过渡层
 
 切换过程中为什么会出现黑场或过渡层？`LogicalDisplayMapper` 比较新 layout 时，以下情况会把 Display 标为 `in-transition`（正在切换）：
@@ -222,7 +227,7 @@ flowchart TD
 - DisplayDevice 只出现在新旧 layout 的一侧；
 - Display 已处于 transition（`STATE_COLLECTING` 或 `STATE_STARTED`）。
 
-系统先发送 transition 阶段更新，让相关 Display 关闭。正常推进要求所有 transitioning Display（正在切换的显示设备） 确认 `OFF`，且没有待完成的设备唤醒或休眠——`finishStateTransition（WMS 侧）Locked(false（`isPopulated` 为 false 或 `getCanBeIndependent` 返回 false）)` 检查的就是 `displaysOff && !waitingToWakeDevice && !waitingToSleepDevice`。后两项由设备状态、`mIsInteractive`、启动完成情况及折叠休眠设置等条件决定。这些条件满足后，系统才清除 transition 标记、应用新 layout 并发出后续更新；500 ms 超时则以 `force=true` 强制推进。[源码：`LogicalDisplayMapper.java` L116、L683–705、L720–835、L1748–1752]
+系统先发送 transition 阶段更新，让相关 Display 关闭。正常推进要求所有 transitioning Display（正在切换的显示设备） 确认 `OFF`，且没有待完成的设备唤醒或休眠——`finishStateTransitionLocked(false)` 检查的就是 `displaysOff && !waitingToWakeDevice && !waitingToSleepDevice`。后两项由设备状态、`mIsInteractive`、启动完成情况及折叠休眠设置等条件决定。这些条件满足后，系统才清除 transition 标记、应用新 layout 并发出后续更新；500 ms 超时则以 `force=true` 强制推进。[源码：`LogicalDisplayMapper.java` L116、L683–705、L720–835、L1748–1752]
 
 display blanking（暂时关闭显示输出） 的作用是遮住 resize 过程中可能出现的错误尺寸。500 ms 只是 Handler（消息处理器） 超时消息的延迟配置：消息回调执行后才会强制推进，实际执行还受队列调度影响，深睡眠也会增加延迟。要量黑场或折叠动画的时长，以 trace 里的实际区间为准。[源码：`LogicalDisplayMapper.java` L669–670；`Handler.java` L730–734、L752–775]
 
@@ -301,7 +306,7 @@ Shell Transition 把窗口状态管理、同步事务和动画播放分开：WMS
 
 WMS 在 `system_server`，WM Shell 通常运行在 SystemUI 进程内。`ITransitionPlayer` 是 `oneway` AIDL 接口，启动与就绪分别通过以下通知传递：
 
-- `requestStartTransition(token（`Transition.mToken`，由 `new Binder()` 创建）, request)`：WMS 发送 transition 标识和请求信息。`Transition.mToken` 由 `new Token(this)` 创建，`Token` 继承 `Binder`，内部以弱引用关联 `Transition`。
+- `requestStartTransition(token, request)`：WMS 发送 transition 标识和请求信息。`Transition.mToken` 由 `new Token(this)` 创建，`Token` 继承 `Binder`，内部以弱引用关联 `Transition`。
 - `onTransitionReady(token, info, startT, finishT)`：WMS 发送 `TransitionInfo`（包含 Roots、每个参与容器的 Changes、leash Surface） 中的动画目标、root leash 和变化信息，以及动画初态事务 `startT`、结束时恢复父子关系与层级等状态的 `finishT`。
 
 Shell 的 `TransitionPlayerImpl` 收到 Binder 通知后，将处理投递到 `mMainExecutor`。在未启用 `transitMixpatcherBase` 的分支中，`Transitions.requestStartTransition()` 先分发请求、处理 Display 变化，再调用 `mOrganizer.startTransition()` 回告 WMS；启用该标志时则转交 Mixpatcher。WMS 的 `WindowOrganizerController` 也可能将 `transition.start()` 与窗口事务应用投递到 Handler。因此，一次 Binder 调用返回只能证明消息送达，两端状态是否同步推进，要以两侧各自的观测为准。[源码：`ITransitionPlayer.aidl` L42–66；`Transitions.java` L1337–1418、L2036–2052；`WindowOrganizerController.java` L397–444；`Transition.java` L410–416、L4955–4959]
@@ -320,6 +325,11 @@ STATE_PENDING / STATE_COLLECTING / STATE_STARTED → STATE_ABORT
 非中止路径的 `onTransactionReady()` 先提交可见性，再设置 `STATE_PLAYING`、保存初态事务，随后计算动画目标与 `TransitionInfo`、分配 track、调用 `moveToPlaying()`，最后通知 Shell。WMS 进入 `PLAYING` 与 Shell 开始执行动画仍有时间间隔。
 
 动画结束时，Shell 的普通完成路径应用合并后的结束事务，再调用 `mOrganizer.finishTransition(token, wct)`。WMS 经 `WindowOrganizerController.finishTransition()` 和 `TransitionController.finishTransition()` 完成窗口状态清理。`abort()` 只允许在 `PENDING`、`COLLECTING` 或 `STARTED` 阶段中止；播放后不能再沿这条路径中止。[源码：`Transition.java` L165–199、L832–898、L1949–1977、L2034–2128、L2247–2284；`Transitions.java` L1276–1325；`WindowOrganizerController.java` L514–535]
+
+<!-- gracker-diagram: ch02-16-transition-handshake -->
+![WMS 状态推进与 Shell 播放之间还有 Binder 和队列](../../assets/diagrams/ch02/ch02-16-transition-handshake.png)
+
+图：WMS 发启动请求，Shell 接收后通过 executor 处理并回告 startTransition；同步事务 ready 后 WMS 构造目标并发 onTransitionReady，Shell 再排队和播放。普通完成路径应用结束事务并回告 finishTransition。WMS 进入 PLAYING、Shell 开始动画和目标显示帧 present 是三个不同边界。
 
 `isPopulated()` 的实现是 `mState >= STATE_STARTED && allReady()`，表示预期参与者与就绪条件已齐备；它保证的是“收齐了”，绘制是否完成、能否并行收集，还要看其他条件。[源码：`Transition.java` L1267–1275]
 
@@ -340,6 +350,11 @@ STATE_PENDING / STATE_COLLECTING / STATE_STARTED → STATE_ABORT
 
 同步等待还有超时路径。该基线给 `TRANSIT_CHANGE` 配置 2000 ms，其余类型配置 5000 ms；超时会记录未完成容器或依赖，调用 `onSyncGroupTimeout()` 后执行 `finishNow()`。它可能使 transition 在绘制尚未全部就绪时推进到播放，这是超时兜底，与 `abort()` 语义不同；这两个数值只约束同步等待，不表示动画时长。[源码：`TransitionController.java` L116–124、L443–447；`BLASTSyncEngine.java` L90–94、L408–457；`Transition.java` L880–887、L4424–4436]
 
+<!-- gracker-diagram: ch02-16-blast-sync-join -->
+![SyncGroup 完成的是同步条件，不是所有窗口的新内容已显示](../../assets/diagrams/ch02/ch02-16-blast-sync-join.png)
+
+图：正常 tryFinish 需要 group ready、依赖清空、根容器同步条件满足；超时也可强制走 finishNow。窗口绘制事务、容器事务与 orphan 事务合并后交给 Transition。不可见、无需重绘等窗口可以跳过等待，METHOD_NONE 更不保证 BLAST 级 buffer 同步；最终显示仍需核对实际 buffer 与 present。
+
 #### 3.5.4 TransitionController 的三个队列与并行收集
 
 `TransitionController` 用以下容器管理收集与等待：
@@ -351,6 +366,11 @@ STATE_PENDING / STATE_COLLECTING / STATE_STARTED → STATE_ABORT
 `startCollectOrQueue()` 先保持已有队列顺序；没有活跃同步时直接开始收集；存在 collecting transition 时，只有 `canStartCollectingNow()` 允许，才把旧的移入 waiting、让新的开始收集。该检查要求当前 collecting 已 populated，并对它及所有 waiting transition 调用 `TransitionController.getCanBeIndependent(collecting, queued)`。
 
 `getCanBeIndependent()` 默认返回 false。该基线的放行分支针对测试用的双方 `PARALLEL_TYPE_MUTUAL`，以及带附加限制的 `PARALLEL_TYPE_RECENTS` 场景；跨 Display 检查位于 recents 分支内部。所以存在第二个 Display，离“允许并行收集”还差得远：即使放行，SyncGroup 依赖或后续播放独立（`getCanBeIndependent()` 返回 true）性检查仍可能让它继续等待。[源码：`TransitionController.java` L188–229、L1303–1364、L1406–1504、L1766–1798]
+
+<!-- gracker-diagram: ch02-16-transition-collection-queues -->
+![当前收集、等待同步、排队：三种等待位置](../../assets/diagrams/ch02/ch02-16-transition-collection-queues.png)
+
+图：没有活跃同步时可直接收集；存在当前 collecting 时，只有旧 transition 已 populated、且对当前与所有 waiting 的独立性检查通过，新 transition 才能开始收集。旧的移入 waiting 继续等同步，其余请求留在 queued。不同 Display 本身不构成通用放行条件。
 
 #### 3.5.5 折叠/展开分析的观察点
 
@@ -401,6 +421,11 @@ foldingFeature.state == FoldingFeature.State.HALF_OPENED &&
 连续柔性屏在平放时可以 `NONE` 且不 separating；半开时通常 separating。双面板 hinge 可以 separating，即使 feature bounds 的某个维度为零。`occlusionType` 回答“是否遮挡”，`isSeparating` 回答“是否应分区布局”，两者各有分工。
 
 布局代码应分别判断 bounds、遮挡和分隔状态；只用 `state == FLAT` 推导“整个窗口没有铰链约束”，会把遮挡和分区信息一并丢掉。
+
+<!-- gracker-diagram: ch02-16-folding-feature-layout -->
+![FoldingFeature 描述本窗口的折叠约束，不提供精确角度](../../assets/diagrams/ch02/ch02-16-folding-feature-layout.png)
+
+图：HORIZONTAL 指铰链线沿水平方向，HALF_OPENED 可对应 tabletop；VERTICAL 指垂直轴线，可对应 book。bounds 使用当前窗口坐标。occlusionType 决定特征区域是否遮挡，isSeparating 决定是否按两个区域布局，FLAT 也可能仍分隔。
 
 ### 4.4 生命周期安全的收集方式
 
@@ -463,6 +488,11 @@ DeviceStateProvider 可以用 hinge sensor 条件产生离散设备状态；Syst
 
 Perfetto 中出现 `DeviceStateChanged`，只证明 DeviceState 已提交；原始 hall 或 hinge 的采样时间，要看 sensor 侧自己的记录。要测 sensor-to-photon（从传感器事件到屏幕像素变化的延迟），需要平台 tracepoint（跟踪点）、App 自定义 trace 或外部硬件时间基准。
 
+<!-- gracker-diagram: ch02-16-hinge-three-consumers -->
+![同一铰链角度，可以进入三条不同消费链](../../assets/diagrams/ch02/ch02-16-hinge-three-consumers.png)
+
+图：DeviceStateProvider 可把传感器条件归纳成设备状态；可选 SystemUI unfold 模块把角度映射为平滑进度，再由 Shell 更新 leash；应用也能自行订阅并按 UI 帧采样。三条链路各自调度，DeviceStateChanged 不能代替原始采样时间。
+
 ## 6. 应用连续性与布局成本
 
 系统侧的链路走完了，我们回到应用自己：一次折叠会让 Activity 面临重建、重排和状态保留的取舍。
@@ -484,7 +514,12 @@ Perfetto 中出现 `DeviceStateChanged`，只证明 DeviceState 已提交；原�
 
 保存状态时只记录恢复所需的 ID、滚动位置或少量输入。大型草稿、图片和其他业务数据应持久化到数据库或文件，保存状态中保留读取它们所需的标识；复杂对象的序列化发生在主线程，可能增加配置变化时的卡顿。`SavedStateHandle` 和 `rememberSaveable` 只管恢复这少量数据，长期存储要交给数据库或文件。
 
-保存状态的持久化有自己的节奏。官方 [Save UI state（界面状态）s](https://developer.android.com/topic/libraries/architecture/saving-states#savedstateregistry) 明确说明：Activity 已停止期间的写入，需再次经历 `onStart()`、`onStop()` 才会保存。用户划掉任务、强行停止应用或结束 Activity 后，原有保存记录未必还能恢复出编辑内容。这些 AndroidX/Compose 机制使用 `Bundle`，用 `PersistableBundle` 替代它来实现长期保存同样行不通。
+<!-- gracker-diagram: ch02-16-continuity-state-lifetimes -->
+![窗口重排与业务状态按不同生命周期保存](../../assets/diagrams/ch02/ch02-16-continuity-state-lifetimes.png)
+
+图：折叠引发配置重建时，ViewModel 通常跨重建保留，但它不能跨进程死亡保存。保存状态 API 承载少量恢复数据；大型草稿和业务内容持久化到数据库或文件。窗口大小、姿态与 pane 策略应驱动布局，不能覆盖用户导航和编辑状态。
+
+保存状态的持久化有自己的节奏。官方 [Save UI states](https://developer.android.com/topic/libraries/architecture/saving-states#savedstateregistry) 明确说明：Activity 已停止期间的写入，需再次经历 `onStart()`、`onStop()` 才会保存。用户划掉任务、强行停止应用或结束 Activity 后，原有保存记录未必还能恢复出编辑内容。这些 AndroidX/Compose 机制使用 `Bundle`，用 `PersistableBundle` 替代它来实现长期保存同样行不通。
 
 ### 6.2 自行处理 configChanges 的代价
 
@@ -582,6 +617,11 @@ present 调用返回与 fence signal 是不同时间点。HWC 契约中，video-
 4. 目标 Display 对应帧的 present fence 已 signal。
 
 buffer 尺寸变了，内容未必完成适配；尺寸没变，内容也可能已经适配。`SurfaceHolder.setFixedSize()` 可以让 Surface 保持固定尺寸，对 SurfaceView 该设置须在其窗口所属线程调用。排查时我们还要核对内容布局和缩放关系，“新尺寸 buffer”只是其中一条线索。[源码：`SurfaceHolder.java` L185–202]
+
+<!-- gracker-diagram: ch02-16-first-adapted-frame-evidence -->
+![第一帧已适配：内容、latch 与目标 Display present 要对齐](../../assets/diagrams/ch02/ch02-16-first-adapted-frame-evidence.png)
+
+图：先确认应用收到新窗口信息，再找包含新布局内容的 buffer、SF 对该 buffer 的 latch，以及目标 Display 对应帧的 present fence signal。Shell 几何更新、旧 buffer 缩放和 snapshot 都可能先出现；尺寸变化只能辅助判断，不能代替内容核对。
 
 ## 8. 性能测量的起点与终点
 

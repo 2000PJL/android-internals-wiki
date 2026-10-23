@@ -153,6 +153,11 @@ system_server ── IStatusBarService ──► SystemUI process
 3. `AuthController` 运行在独立的 SystemUI 进程，不属于 `system_server`。
 4. HAL 运行在 vendor 侧进程；采集、模板与匹配的安全要求由安全隔离环境及厂商实现满足。TEE 是 Trusted Execution Environment（可信执行环境），不能把 HAL 进程本身称为 TEE。
 
+<!-- gracker-diagram: ch01-24-biometric-boundaries -->
+![BiometricPrompt 的访问控制、仲裁和硬件边界](../../assets/diagrams/ch01/ch01-24-biometric-boundaries.png)
+
+图：应用先访问 AuthService，再由 BiometricService 仲裁 Prompt 会话；对应模态的 provider 和单传感器 scheduler 执行操作。SystemUI 负责面板交互，HAL 与安全隔离环境承担各自的硬件和安全职责。
+
 对应源码入口：
 
 - `BiometricPrompt.Builder.build()`：`core/java/android/hardware/biometrics/BiometricPrompt.java`
@@ -371,6 +376,11 @@ goToInitialState()
 
 重试时 UI 已存在，`AuthSession` 重新准备可重试传感器，cookie 就绪后直接恢复相应传感器，不再创建第二个对话框。
 
+<!-- gracker-diagram: ch01-24-prepare-ui-start -->
+![cookie 就绪与 UI 反馈共同决定传感器启动](../../assets/diagrams/ch01/ch01-24-prepare-ui-start.png)
+
+图：初次会话先为所有可用传感器 prepare，等各自 scheduler 回报 cookie 就绪。非指纹可先启动，指纹则等待 SystemUI 的入场和启动许可；重试已有 UI 时使用恢复分支。
+
 ## 线程模型与 Binder 回调
 
 ### framework 线程
@@ -423,6 +433,11 @@ mExecutor.execute(() -> {
 3. 等当前 operation 的完成 callback 执行后，再启动队列中的下一项。
 
 因此，“录入一定比认证优先”或“认证一定能抢占录入”都不成立。是否中断取决于具体 client 的属性、当前 operation 是否已经开始以及它是否可取消。
+
+<!-- gracker-diagram: ch01-24-sensor-scheduler -->
+![单传感器队列先完成当前任务，再推进下一项](../../assets/diagrams/ch01/ch01-24-sensor-scheduler.png)
+
+图：每个 sensor 的 scheduler 保持一个当前任务和待执行队列。可执行的队首任务若 cookie 为零可直接启动，非零则回报就绪并等待仲裁层许可；中断请求也必须按条件取消并等当前任务终止。
 
 ### Fingerprint 与 Face HAL 的终止条件不同
 
@@ -588,6 +603,11 @@ App 观察到的 success 时间包含 UI 收尾和 token 注入阶段。HAL 已�
 
 Gatekeeper 负责 PIN、图案和密码等设备凭据验证；设备的安全生物识别组件负责匹配；Keystore2/KeyMint 消费合适的 AuthToken。StrongBox 是隔离的 KeyMint 实现，不能据此推断 biometric matcher 也运行在 StrongBox 中。各组件共享安全认证协议，但职责不同。
 
+<!-- gracker-diagram: ch01-24-success-token-callback -->
+![HAL 匹配成功到应用成功回调还有收尾阶段](../../assets/diagrams/ch01/ch01-24-success-token-callback.png)
+
+图：Strong 生物识别成功后，AuthSession 暂存 HAT 并通知 UI；必要确认或成功动画结束后收到 dismiss，再向 Keystore 提交令牌并发送应用回调。应用 Executor 的等待只是最后一部分，success 也不能代替后续密钥操作本身的错误检查。
+
 ## 失败、取消与锁定
 
 ### failure、error 和 cancel 不同
@@ -677,11 +697,11 @@ sensor 启动协调耗时     = S_start[id] - S_ready[id]
 首个样本等待            = S_acquired[id] - S_start[id]
 当前 operation 耗时            = S_end[id] - S_start[id]
 Prompt 入场耗时          = U_animated - U_show
-UI 与 token 收尾          = U_dismiss - 成功 sensor 的 S_end[id]
-应用调度延迟            = A_callback - U_dismiss
+HAL 成功后的 UI 收尾      = U_dismiss - 成功 sensor 的 S_end[id]
+token 提交与回调交付阶段  = A_callback - U_dismiss
 ```
 
-`S_start[id]` 需要从 framework client 或 vendor trace 取得。对 Face，`S_start[id]` 可以早于 `U_show`；对 Fingerprint，`S_start[id]` 往往不早于 `U_animated`。仅有 App 的 `A_request/A_callback` 时，只能得到端到端耗时，不能据此判断安全环境或传感器慢。
+`S_start[id]` 需要从 framework client 或 vendor trace 取得。对 Face，`S_start[id]` 可以早于 `U_show`；对 Fingerprint，`S_start[id]` 往往不早于 `U_animated`。仅有 App 的 `A_request/A_callback` 时，只能得到端到端耗时，不能据此判断安全环境或传感器慢。 `U_dismiss` 若记录在 `AuthSession.onDialogDismissed()` 入口，其后仍包含 `addAuthToken()`、回调 Binder 交付和 App Executor 等待；`A_callback - U_dismiss` 不能单独解释成应用线程调度延迟。若需拆分，应增加 token 提交后与应用 Binder stub 收到回调时的标记。
 
 ### 系统自带诊断入口
 

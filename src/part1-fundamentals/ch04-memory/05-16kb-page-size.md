@@ -68,11 +68,11 @@ Android 的 16 KiB 页适配，我们把它拆成两个问题来看：
 1. 应用能否在使用 16 KiB 基础页的内核上正确安装、加载和运行。
 2. 更大的基础页能否改善目标应用的性能。
 
-第一个问题有明确的工程检查项：ELF（Executable and Linkable Format，可执行与可链接格式）和 APK 都通过对齐检查判定。第二个问题必须测量：对齐检查通过只说明产物具备兼容性，启动能快多少，要靠后面的测量回答。
+第一个问题有明确的工程检查项：ELF（Executable and Linkable Format，可执行与可链接格式）和 APK 都通过对齐检查判定。第二个问题必须测量：对齐检查通过只覆盖产物布局这一层，运行时页大小假设和完整业务路径仍需测试；启动能快多少，要靠后面的测量回答。
 
 推动适配的主要是 Google Play 的要求：目标版本为 Android 15（API 35）或更高的应用，要在 64 位设备上支持 16 KB 页；从 2027 年 2 月 1 日起，不支持 16 KB 页的应用更新将失去发布资格。这项要求看的是 `targetSdkVersion` 与最终分发产物，和测试设备的系统版本是两回事。
 
-Play 的两套门槛针对的对象也不同：16 KB 页大小要求面向含原生代码产物的安装/加载兼容性；Play 在 2026-08 公布的内存与 DEX 优化技术质量门槛，按 Android vitals 近 28 天 P90 评估 `Anonymous RSS + Swap`、bitmap memory 和 optimized DEX 覆盖，未达标会触发 Console 告警并可能影响可见度与发布能力。后者回答的是内存质量问题，所以 ELF/ZIP 对齐检查要单独做，16 KiB 页是否引发内存回归也要另行测量。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/01-dump-play-thresholds.md]
+Play 的两套门槛针对的对象也不同：16 KB 页大小要求面向含原生代码产物的安装/加载兼容性；Play 在 2026-08 公布的内存与 DEX 优化技术质量门槛中，`Anonymous RSS + Swap` 与 bitmap memory 按 Android vitals 近 28 天数据的 P90 评估；DEX 优化要求则按上传产物检查优化、压缩与混淆覆盖，并非内存采样的 P90。未达标会触发 Console 告警，并可能影响可见度与发布能力。后者回答的是内存质量问题，所以 ELF/ZIP 对齐检查要单独做，16 KiB 页是否引发内存回归也要另行测量。[来源: DeepResearch/2026-08-28-evening-Android-App-memory-thresholds-2027-02/01-dump-play-thresholds.md]
 
 > 源码基线：AOSP `android-17.0.0_r1`，Android 17 / API 37；内核 `android17-6.18-2026-06_r6`。
 
@@ -91,11 +91,16 @@ TLB 表项数量不变时，16 KiB 叶子页映射的理论覆盖范围是 4 KiB
 
 这个对比给出的只是 TLB 覆盖范围（TLB reach）的变化；要换算成性能增幅，还得把 CPU 的 TLB 层级、页表缓存、访存局部性、工作集大小和大页映射都算进来。
 
+<!-- gracker-diagram: ch04-05-page-count-and-tlb-reach -->
+![同一 64 MiB 范围，16 KiB 基础页只需四分之一叶子页数](../../assets/diagrams/ch04/ch04-05-page-count-and-tlb-reach.png)
+
+图：仅用基础页覆盖同一 64 MiB 地址范围时，4 KiB 需要 16,384 页，16 KiB 需要 4,096 页。若 TLB 条目数相同，叶子页理论覆盖量可变为四倍；真实命中和启动收益仍看 TLB 结构、页表缓存、局部性、工作集与大页。TLB miss 先遍历页表，不自动等于进入内核缺页处理。
+
 另外，TLB 未命中和缺页（page fault）是两类事件，要分开看：
 
 - **TLB 未命中**：当前虚拟页的转换结果不在 TLB 中，通常由硬件遍历页表处理。
 - **次缺页（minor page fault）**：页表映射尚未建立，但数据无需从块设备读入，例如匿名页首次访问，或者文件页已经在页缓存中。
-- **主缺页（major page fault）**：内核需要等待文件数据从存储设备读入。
+- **主缺页（major page fault）**：内核把本次处理标记为 `VM_FAULT_MAJOR`，常见于文件或交换数据需要恢复；交换后端可以是 ZRAM，不能把每次主缺页都解释为等待磁盘文件读取。
 
 TLB 未命中不会自然表现为 Perfetto 调度轨道里的一个内核持续区间，缺页则会进入内核异常处理路径，所以这两类事件要用不同的工具和指标来看。
 
@@ -139,6 +144,11 @@ TLB 未命中不会自然表现为 Perfetto 调度轨道里的一个内核持续
 2. **APK 内未压缩 `.so` 的 ZIP 对齐**：文件在 APK 中的起始偏移要满足 16 KiB 对齐，包管理器才能直接从 APK 映射该文件。
 
 这两项各自独立：修好其中一个，另一个仍可能使安装或加载失败。
+
+<!-- gracker-diagram: ch04-05-elf-and-zip-independent-alignment -->
+![ELF 布局与 APK 内位置分别对齐，最终分发包两项都查](../../assets/diagrams/ch04/ch04-05-elf-and-zip-independent-alignment.png)
+
+图：ELF 检查库内部 PT_LOAD 的对齐与布局，官方要求相关 64 位库的 LOAD align 至少 2**14；ZIP 检查未压缩 .so 数据在 APK 内的偏移，直接 mmap 需要 16 KiB 对齐。两者由不同环节决定。AAB 还要确认 PAGE_ALIGNMENT_16K，并复查 Play 实际生成的 split、重签名和加固后产物。
 
 ### 3.1 纯 Java/Kotlin 应用
 
@@ -254,6 +264,11 @@ static uintptr_t align_up(uintptr_t value, size_t alignment) {
 
 这个写法要求 `alignment` 是 2 的幂，Android 支持的 4 KiB 和 16 KiB 基础页都满足该条件。落到 `mprotect()` 上，起始地址必须按运行时页大小对齐，长度还要覆盖取整后的完整范围。
 
+<!-- gracker-diagram: ch04-05-runtime-page-alignment -->
+![保护范围必须按运行时页大小覆盖，不能把 4096 换成另一个常量](../../assets/diagrams/ch04/ch04-05-runtime-page-alignment.png)
+
+图：示例需要保护 [0x5100,0x6100)。4 KiB 页下应覆盖 [0x5000,0x7000)，16 KiB 页下则覆盖 [0x4000,0x8000)。应从 sysconf 获取 PAGE_SIZE，对起点向下、对原始终点向上取整，再计算覆盖长度；扩大的保护域可能包含相邻数据，必须先确认这些数据允许相同权限。
+
 ### 4.3 小型映射要合并
 
 如果原生组件连续建立多个 1 KiB～4 KiB、权限相同的匿名映射，16 KiB 内核会为每个独立映射保留至少一个基础页；把同类数据放进一个内存分配区（arena），再在其中做更小粒度的分配，通常比逐对象调用 `mmap()` 更节省内存。
@@ -313,6 +328,11 @@ program alignment (4096) cannot be smaller than system page size (16384)
 `linker_phdr_16kib_compat.cpp` 中的 `protect_segment_middle_pages()` 遇到 `PT_GNU_RELRO` 时会强制使用 `PROT_READ`；兼容模式保留了 RELRO 保护，把权限恢复放进专用的 16 KiB 兼容处理流程。
 
 兼容模式让旧库有机会运行，但可能带来匿名拷贝、更多私有内存、额外读入和启动开销，具体增量取决于 ELF 布局和共享方式。评估它时我们要记住，系统依旧使用 16 KiB 基础页：应用是否因此失去 TLB 收益、`Shared_Clean` 是否归零、PSS 增加多少，都要按这两个因素来判断。
+
+<!-- gracker-diagram: ch04-05-linker-native-versus-compat -->
+![16 KiB 链接器先查 ELF 对齐，再决定是否进入兼容加载](../../assets/diagrams/ch04/ch04-05-linker-native-versus-compat.png)
+
+图：r1 在 16 KiB 系统且 min_align 小于页大小时才检查兼容开关。可兼容且布局满足要求的旧 ELF，会按旧 4 KiB 段边界 pread 到匿名映射，再调整加载与权限、处理 RELRO；未允许兼容则报对齐错误。正常兼容 ELF 可直接按文件映射。兼容路径有布局限制，也不会把内核页大小变回 4 KiB。
 
 ### 5.4 兼容模式的验证开关
 
@@ -393,6 +413,11 @@ adb shell getprop ro.build.fingerprint
 
 至少记录启动耗时、PSS/RSS、次缺页与主缺页数量、线程数和原生内存映射。若应用自建小型映射较多，还要比较 `/proc/<pid>/maps` 与 `smaps` 中的虚拟内存区域（VMA）数量和页尾损失。
 
+<!-- gracker-diagram: ch04-05-migration-artifact-runtime-workflow -->
+![迁移验收从全部依赖到最终包，再到完整运行路径](../../assets/diagrams/ch04/ch04-05-migration-artifact-runtime-workflow.png)
+
+图：盘点主包、AAR、动态模块、闭源 SDK、加固与下载库，再用支持工具链全量重建。逐 ABI 检查 ELF、APK ZIP 与 AAB 配置后，在确认 PAGE_SIZE=16384 的环境里测试，核对兼容模式和 fatal 设置，覆盖按需 dlopen、多进程及完整场景。最后比较内存、缺页、启动与长尾，兼容通过不等于性能已改善。
+
 ## 7. 常见故障如何定位
 
 迁移过程中的故障多数能归到下面五类，我们按现象对号入座。
@@ -454,6 +479,11 @@ Perfetto 可以对齐应用启动、主线程调度、Binder、文件 I/O、`mma
 
 TLB 指标降低而启动时间不变，说明 TLB 可能不在关键路径。启动更快而 TLB 事件不可用时，我们只知道端到端结果变了，把原因归给 TLB 还缺一环。
 
+<!-- gracker-diagram: ch04-05-measure-endpoint-and-mechanism -->
+![用端到端耗时证明结果，用缺页和 PMU 解释机制](../../assets/diagrams/ch04/ch04-05-measure-endpoint-and-mechanism.png)
+
+图：同一设备、系统与应用构建下固定工作量、缓存状态、温度和压力，再重复测启动与长尾。Perfetto 用来对齐阶段、调度、I/O 和回收；累计缺页计数用窗口终值减初值。PMU / simpleperf 的 TLB 事件先核对设备支持和含义。端到端变快只证明结果，归因给 TLB 或缺页还需关键路径证据。
+
 ## 9. 与 THP、mTHP、contpte 的关系
 
 16 KiB 基础页之外，内核还有几套放大映射粒度的机制，不分开看就没法归因。我们逐个来看：基础页、透明大页（Transparent Huge Pages，THP）和连续页表项（contpte）都能改变 TLB 覆盖范围与缺页行为，但生效粒度和条件不同。
@@ -490,6 +520,8 @@ adb shell 'cat /sys/kernel/mm/transparent_hugepage/hugepages-*/enabled 2>/dev/nu
 
 Linux 6.18 文档中的默认规则是：PMD 尺寸 THP 继承顶层 `enabled`，其他粒度默认为 `never`，产品配置可以修改这些值。后台线程 `khugepaged` 当前只扫描并合并 PMD 尺寸 THP；较小的 mTHP 主要在发生缺页时直接分配。
 
+这里按匿名 mTHP 讨论尺寸。r6 的 `include/linux/huge_mm.h` 中，`THP_ORDERS_ALL_ANON` 排除了 order-0 和 order-1；因此 16 KiB 基础页下，匿名 mTHP 最小候选是 order-2，即 64 KiB。文件或 shmem 路径的 folio 尺寸与策略要另外核对，不能直接套用这个匿名页下限。 [已验证: android17-6.18-2026-06_r6 `THP_ORDERS_ALL_ANON`、`THP_ORDERS_ALL_FILE_DEFAULT`]
+
 ### 9.3 ARM64 contpte
 
 `CONFIG_ARM64_CONTPTE` 使用 Arm 的连续映射提示（contiguous hint），在满足条件时把一组 PTE 标为连续映射，让硬件更高效地缓存地址转换结果。6.18 内核源码给出：
@@ -515,11 +547,16 @@ CONT_PTE_SIZE = 128 × 16 KiB = 2 MiB
 | 机制 | 16 KiB 内核上的典型粒度 | 主要作用 | 关键条件 |
 |---|---:|---|---|
 | 基础页 | 16 KiB | 所有普通映射的基本粒度 | 内核以 16 KiB 页粒度构建 |
-| mTHP | 32 KiB～小于 32 MiB 的可用粒度 | 一次缺页处理多个基础页 | 对应尺寸的策略、连续 folio |
+| 匿名 mTHP | 64 KiB～小于 32 MiB 的可用粒度 | 一次缺页处理多个基础页 | 对应尺寸的策略、连续 folio；r6 匿名 THP 排除 order-1 |
 | contpte | 2 MiB PTE 组 | 利用连续映射提示降低 TLB 压力 | 对齐、连续 PFN、同一 folio、相容权限 |
 | PMD THP | 32 MiB | PMD 块映射 | THP 策略、连续大 folio |
 
 四者可以共存，但各自的生效条件有限，并不会对每个应用、每段内存同时生效；性能报告要同时记录基础页大小、THP 的 sysfs 状态、`smaps` 和相关 `vmstat`，避免把 THP 或 contpte 的变化误算成基础页带来的收益。
+
+<!-- gracker-diagram: ch04-05-base-mthp-contpte-pmd -->
+![16 KiB 基础页上，匿名 mTHP、contpte 与 PMD THP 各有条件](../../assets/diagrams/ch04/ch04-05-base-mthp-contpte-pmd.png)
+
+图：16 KiB 基础页是内核粒度。r6 匿名 THP 排除 order-1，所以匿名 mTHP 最小候选为 64 KiB，可用尺寸与 enabled 策略另查；PMD THP 在该 ARM64 页表几何中为 32 MiB。contpte 则是 128 个 16 KiB PTE 构成 2 MiB 连续提示组，要求对齐、连续 PFN、相容权限及同一 folio。较小 mTHP 不会自动满足 contpte 条件。
 
 ## 10. Android 15 到 Android 17 的里程碑
 

@@ -156,7 +156,7 @@ consolidated_from:
 - src/part1-fundamentals/ch02-rendering/16-sync-fence.md
 ---
 
-# BufferQueue（不含 BLAST 特有封装的那条队列路径）、Gralloc 与 Sync Fence
+# BufferQueue、Gralloc 与 Sync Fence
 
 我们排查渲染问题时，迟早会走到三个基础机制上：BufferQueue 管理 Producer（生产者） 与 Consumer（消费者） 之间的缓冲区所有权，Gralloc 和 DMA-BUF 提供实际内存，fence（异步工作完成信号） 表示读写何时完成。是否阻塞、能否复用、跨进程共享是否安全，都由这三层共同决定。本文按这三层依次展开。
 
@@ -232,7 +232,7 @@ virtual status_t queueBuffer(
 
 #### 2. `requestBuffer()`：按需取得新映射
 
-首次分配、尺寸、格式或 usage 变化，以及 Consumer 重新附着 buffer 等情况，会让 `dequeueBuffer()` 返回 `BUFFER_NEEDS_REALLOCATION`（Android 旧的共享内存分配框架），表示 Producer 需要刷新 slot 对应的 buffer 引用。`Surface::dequeueBuffer()` 收到该标志，或者本地 slot 尚未缓存 `GraphicBuffer` 时，才调用 `requestBuffer()`。
+首次分配、尺寸、格式或 usage 变化，以及 Consumer 重新附着 buffer 等情况，会让 `dequeueBuffer()` 返回 `BUFFER_NEEDS_REALLOCATION`（slot 对应的 buffer 引用需要刷新），表示 Producer 需要刷新 slot 对应的 buffer 引用。`Surface::dequeueBuffer()` 收到该标志，或者本地 slot 尚未缓存 `GraphicBuffer` 时，才调用 `requestBuffer()`。
 
 稳定渲染时，Producer 已经缓存了 slot 到 `GraphicBuffer` 的映射。native handle 是跨进程描述底层内存和相关文件描述符的句柄，每帧都完整传一份会带来 Binder 与句柄映射成本，slot 机制的存在就是为了省掉这笔开销。
 
@@ -298,6 +298,11 @@ shared buffer mode 允许 `mShared` 与 dequeued、queued、acquired 计数并�
 
 `releaseBuffer()` 会把 slot 放回 FREE 集合并保存 release fence，无需先等待 fence 完成。下一次 Producer 可能马上 dequeue 到该 slot，同时取得尚未 signal 的 fence。因此，“已经 FREE”和“已经可写”是两个时间点：前者表示所有权可以交回 Producer，后者还要求旧读操作确实结束。
 
+<!-- gracker-diagram: ch02-08-slot-buffer-fence -->
+![slot、实际分配与 fence 是三个独立对象](../../assets/diagrams/ch02/ch02-08-slot-buffer-fence.png)
+
+图：slot 表达队列持有状态，GraphicBuffer/handle 关联共享内存，fence 表达异步工作完成条件。FREE 槽位可能尚未绑定 buffer，也可能保留旧 buffer 和未完成的 release fence；只有逻辑可选，不能推出已经可写或内存已释放。
+
 ### buffer 数量由什么决定
 
 “三缓冲”这个名字适合描述常见现象，拿来当固定配置就会出错。队列深度是算出来的：max dequeued 表示 Producer 最多同时持有多少个已 dequeue 的 slot，max acquired 表示 Consumer 最多同时持有多少个已 acquire 的 slot，`BufferQueueCore::getMaxBufferCountLocked()` 按下式约束：
@@ -343,7 +348,7 @@ SF 的 release 信息还会携带当前刷新率对应的 acquired 数。对于 
 
 ### `dequeueBuffer()` 等待的精确条件
 
-`wait（等待）ForFreeSlotThenRelock()` 先统计当前 dequeued/acquired 数，再选择 free buffer 或 free slot。这里要区分三种结果，我们逐条看：
+`waitForFreeSlotThenRelock()` 先统计当前 dequeued/acquired 数，再选择 free buffer 或 free slot。这里要区分三种结果，我们逐条看：
 
 1. 历史标志 `mBufferHasBeenQueued` 已为 true，且 `dequeuedCount >= mMaxDequeuedBufferCount`：直接返回 `INVALID_OPERATION`。它表示 Producer 试图超过 dequeued 上限，属于调用状态不合法；不要求当前 `mQueue` 非空，也不会等待 Consumer release。
 2. 没有满足条件的 free slot，或 `mQueue.size() > maxBufferCount`：进入重试。
@@ -368,6 +373,11 @@ waitForFreeSlotThenRelock()
 ```
 
 背压指下游消费不及，上游生产被迫停住；把 `INVALID_OPERATION`、`WOULD_BLOCK` 和长时间等待一股脑归为背压，会得出错误结论。要确认是不是背压，我们要同时记录返回码、Surface 模式、slot 数量和 Consumer 进度。
+
+<!-- gracker-diagram: ch02-08-dequeue-outcomes -->
+![dequeue 的错误、不可阻塞返回与等待要分开](../../assets/diagrams/ch02/ch02-08-dequeue-outcomes.png)
+
+图：图简化 waitForFreeSlotThenRelock 的主要分支。已排过 buffer 且 Producer 持有数达上限会直接报 INVALID_OPERATION；需要重试时，只有满足不可阻塞与 acquired 条件才返回 WOULD_BLOCK，其余等待状态变化后重新检查，也可能超时。
 
 ### 通用 BufferQueue 与 Android 17 BLAST 的等待方式
 
@@ -403,6 +413,11 @@ BLAST 初始化时创建 `BufferReleaseChannel` 两端，并通过独立的 `Sur
 `BBQBufferQueueCore::notifyBufferReleased()` 的当前实现会中断阻塞读取，让等待线程重新检查本地 free slot。所以标准 App Window 的长 dequeue，只看 `mDequeueCondition` 是不够的。
 
 正常归还主要来自 SF 的 release callback 或 release channel。BLAST 注册的 transaction-completed callback 还有一条兜底：如果较新的 transaction 已越过仍留在 `mSubmitted` 中的旧 buffer，它会以 `fakeRelease=true` 为这条过时的旧提交补记一次 release，再由同一个 `releaseBufferCallbackLocked()` 去重和归还。这个“fake”只处理漏掉正常 release 的旧提交；把每次 buffer 回收都归到 transaction-completed callback 头上，就归错了地方。
+
+<!-- gracker-diagram: ch02-08-release-channel -->
+![BLAST 等待 release 时会释放 core 锁并读 channel](../../assets/diagrams/ch02/ch02-08-release-channel.png)
+
+图：标准 BLAST Producer 等待空闲槽位时，可通过 BufferReleaseReader 做可中断的阻塞读；等待期间不持有 BufferQueue core mutex。SF 的 per-buffer release 信息与本地中断都可唤醒它，归还后仍需保留 release fence 供未来安全复用。
 
 ### BLAST 如何把 buffer 变成 transaction
 
@@ -448,6 +463,11 @@ SurfaceFlinger
 
 BLAST 画出的是明确的 transaction 边界，所有窗口始终使用同一帧这件事，它保证不了。
 
+<!-- gracker-diagram: ch02-08-blast-transaction -->
+![标准窗口先由本地 BLAST 消费，再提交 SF 事务](../../assets/diagrams/ch02/ch02-08-blast-transaction.png)
+
+图：BLAST 位于 App 进程，先 acquire 本地 BufferItem，再把 buffer、acquire fence 和相关状态放进 SurfaceControl.Transaction。按帧号合并的几何更新只覆盖参与该协议的对象，外部独立 producer 不会仅因同屏就自动同步为同一业务帧。
+
 #### latch 与读取是两个同步边界
 
 Android 13 起，`AutoSingleLayer` 允许 SurfaceFlinger 在严格条件下先 latch acquire fence 尚未 signal 的 buffer。Android 17 的 `transactionReadyBufferCheck()` 会检查 `shouldLatchUnsignaled()`；`AutoSingleLayer` 路径要求本次只更新一个 layer、位于 transaction 队首、不使用 early VSync（提前触发的 VSync 调度） 配置，并且通过 `RequestedLayerState::isSimpleBufferUpdate()`。包含 geometry change 或 sync transaction 的更新不符合该模型。
@@ -467,6 +487,11 @@ Android 13 起，`AutoSingleLayer` 允许 SurfaceFlinger 在严格条件下先 l
 present fence 按 display frame 生成，属于整个显示帧，而非某一块 App buffer 独享；release fence 与 present fence 也是两类对象。CLIENT composition（由 RenderEngine/GPU 先合成） 时，RenderEngine 会先消费输入 layer 的 fence，再为 client target（交给显示硬件的合成结果 buffer） 产生自己的 acquire fence——这里的 client target（交给显示系统的 GPU 合成结果），说的就是这块交给显示硬件的合成结果 buffer。SF 还可能按 layer 使用方式合并或选择 release fence。
 
 进入 kernel 后，native fence fd（文件描述符） 由 `sync_file` 暴露，底层依赖 `dma_fence` 的 signal、callback 与 wait。公共 kernel 讲清的是通用同步机制；vendor GPU、DPU（显示处理单元）或 codec 在某台设备上为何晚 signal，要靠设备驱动、vendor trace 和调用现场来回答。
+
+<!-- gracker-diagram: ch02-08-fence-role-granularity -->
+![输入 acquire、逐层 release 与逐显示 present 粒度不同](../../assets/diagrams/ch02/ch02-08-fence-role-granularity.png)
+
+图：Producer 完成 fence 到下游成为 acquire 依赖，保护新 buffer 的读取；每层 release 约束旧 buffer 的复用；display present 按显示帧报告平台可观察的呈现边界。CLIENT 合成还会为 client target 建立新的完成依赖，不能把这些 fence 统一算作应用 GPU 时间。
 
 ### Android 17 的 buffer-stuffing recovery
 
@@ -766,7 +791,7 @@ Android 15 起平台支持 16 KB page size 的设备。它会影响 ELF 可执�
 
 #### 4.3 DMA-BUF Heap 的页对齐边界
 
-在 `android17-6.18-2026-06_r6` 中，通用 `dma_heap_buffer_alloc()` 会对传入长度执行 `__PAGE_ALIGN（按内核页大小向上对齐）`。16 KB 内核因而把交给 DMA-BUF Heap 的最终长度向上取整到 16 KB；这一步发生在 Gralloc 已经决定 stride、plane、压缩 metadata 和实现对齐之后，因此推不出“所有 GraphicBuffer 的 stride 都是 16 KB 倍数”。
+在 `android17-6.18-2026-06_r6` 中，通用 `dma_heap_buffer_alloc()` 会对传入长度执行 `__PAGE_ALIGN`（按内核页大小向上对齐）。16 KB 内核因而把交给 DMA-BUF Heap 的最终长度向上取整到 16 KB；这一步发生在 Gralloc 已经决定 stride、plane、压缩 metadata 和实现对齐之后，因此推不出“所有 GraphicBuffer 的 stride 都是 16 KB 倍数”。
 
 通用 system heap 可以用多个不同 order（连续页块大小等级） 的连续页块构造 `sg_table`，不承诺整块 buffer 物理连续。IOMMU domain（同一套 I/O 地址空间）还会按自己的 `pgsize_bitmap` 选择支持的映射页大小；CPU base page、IOMMU page 和 GPU page table 不是同一个参数。
 
@@ -821,6 +846,11 @@ sequenceDiagram
 ```
 
 图中 import 的进程和 IPC 次数取决于 BufferQueue 拓扑。同进程 producer/consumer 不需要跨 Binder 复制 fd。标准应用窗口常由应用进程内的 BLASTBufferQueue 先消费窗口 buffer，再用 `SurfaceControl.Transaction` 把 buffer 与窗口状态提交给 SurfaceFlinger；此时 SF 侧还有自己的 buffer cache 与自己的 import 路径；通用 BufferQueue 的单次 IPC 示意，套到所有窗口上并不合适。
+
+<!-- gracker-diagram: ch02-08-handle-cache -->
+![新对象传 handle，稳定帧复用 slot 映射](../../assets/diagrams/ch02/ch02-08-handle-cache.png)
+
+图：左侧是新分配或映射需更新时的 handle 路径，跨进程反序列化会调用 Mapper import；右侧是已经缓存同一对象的稳定帧。requestBuffer 取得映射，分配通常已在 dequeue 内发生；每帧仍要传同步和内容元数据。
 
 ### 6. 同步：共享地址与读写顺序
 
@@ -1150,6 +1180,11 @@ CLIENT composition（由 SurfaceFlinger 的 RenderEngine/GPU 完成合成） 还
 
 merge 适合表达“等待所有前置工作”，但不要无条件合并整条显示管线：
 
+<!-- gracker-diagram: ch02-08-fence-wrapper-merge -->
+![Fence 包装完成依赖，merge 表达同时满足](../../assets/diagrams/ch02/ch02-08-fence-wrapper-merge.png)
+
+图：android::Fence 管理 sync_file fd，内核文件再引用 dma_fence 或其组合；关闭 fd 只释放对应引用，不会替 BufferQueue 归还槽位。merge 新建合并结果，等待所有有效前置依赖，原输入仍独立有效且由调用方按约定管理。
+
 - HWC layer release fence 本来就按 layer 生成；
 - present fence 按 display 生成；
 - 为了方便只保留一个 fd 而合并无关 fence，会扩大等待范围并掩盖慢依赖；
@@ -1172,7 +1207,7 @@ Android native fence 使用 `VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_SYNC_FD_BIT` 与 
 
 源码中的 `VkSemaphoreCreateInfo` 没有挂接 `VkSemaphoreTypeCreateInfo`，因此这条路径用的是 binary semaphore。变量 `VkDrawResult.presentFence` 最终传给 `presentCurrentBuffer()`；站在 BufferQueue consumer 侧看，它是新 buffer 的 acquire fence，与 HWC 的 display present fence 是两回事。
 
-`SYNC_FD` 的 import 只支持 temporary import（临时导入） 和 copy transference（句柄携带当次同步状态，供一次性交接） 两种语义；这里的 payload 指信号量内部携带的同步状态。成功调用 `vkImportSemaphoreFdKHR()` 后，fd 所有权交给 Vulkan；binary semaphore 的 wait 会消费临时 payload，随后恢复信号量原来的 permanent payload（永久同步状态）。对 `SYNC_FD` 调用 `vkGetSemaphoreFdKHR()` 同样会消费当次可导出的状态，同一次 signal 的可导出状态只有一份。HWUI 会为每次桥接创建 semaphore，交给 Skia wait/signal 后销毁，避免把一次性 payload 当成可复用计数器。
+`SYNC_FD` 的 import 必须使用 temporary import（临时导入），同时遵循 copy transference（句柄携带当次同步状态，供一次性交接）语义；这里的 payload 指信号量内部携带的同步状态。成功调用 `vkImportSemaphoreFdKHR()` 后，fd 所有权交给 Vulkan；binary semaphore 的 wait 会消费临时 payload，随后恢复信号量原来的 permanent payload（永久同步状态）。对 `SYNC_FD` 调用 `vkGetSemaphoreFdKHR()` 同样会消费当次可导出的状态，同一次 signal 的可导出状态只有一份。HWUI 会为每次桥接创建 semaphore，交给 Skia wait/signal 后销毁，避免把一次性 payload 当成可复用计数器。
 
 Timeline semaphore（时间线信号量） 是 Vulkan 1.2 的计数器型同步，可用于应用或引擎内部的多轮 queue 依赖。Vulkan 1.4.335 规范要求具有 copy-transference 语义的 handle 从 binary semaphore 导出。因此，BufferQueue、SurfaceFlinger 与 HWC 之间的 native fence fd 协议，不是 timeline semaphore 能直接替换的。设备是否支持 timeline feature（时间线信号量能力） 仍需在运行时查询。
 

@@ -164,13 +164,13 @@ flowchart TD
     A["触摸从左右边缘开始"] --> B["App 与 edge-swipe 并行收到 pointer stream"]
     B --> C["EdgeBackGestureHandler 检查资格、方向与阈值"]
     C -->|候选失败| D["App 继续处理原触摸流"]
-    C -->|达到识别阈值| E{"BackAnimation 是否可用"}
-    E -->|否| F["SystemUI 直接 pilferPointers"]
+    C -->|候选资格成立| E{"BackAnimation 是否可用"}
+    E -->|否| F["阈值越过后 SystemUI 直接 pilferPointers"]
     F --> G["原 App 窗口收到 ACTION_CANCEL"]
     G --> H["提交时注入 KEYCODE_BACK"]
-    E -->|是| I["WM Shell startBackNavigation"]
+    E -->|是| I["首次 MOVE 即可 startBackNavigation（可早于阈值）"]
     I --> J["解析 BackNavigationInfo 与动画目标"]
-    J --> K["按需 pilfer、分发 progress、绘制预览"]
+    J --> K["跟踪阈值、按需 pilfer、分发 progress 与预览"]
     K --> L{"松手时是否提交"}
     L -->|提交| M["onBackInvoked 或系统返回转场"]
     L -->|取消| N["onBackCancelled 与预览回撤"]
@@ -181,6 +181,11 @@ flowchart TD
 右侧走的是提前分发：`ACTION_DOWN` 和 `MOVE` 经 `dispatchToBackAnimation()` 切到 Shell 执行器，`BackAnimationController` 调用 `IActivityTaskManager.startBackNavigation()` 获取 `BackNavigationInfo`，再决定使用系统动画控制器还是应用回调。`setTriggerBack(true)` 只是记录“松手后提交”的状态；收到 `ACTION_UP` 后，Shell 才执行 `onBackInvoked()` 或启动提交后动画。取消路径则执行 `onBackCancelled()`。如果没有取得 `BackNavigationInfo`，源码仍保留注入返回键的兜底。
 
 预测性返回（Predictive Back）也可能抢占指针。接管时机交给 `BackAnimationController.tryPilferPointers()`：使用系统动画控制器、应用侧生成不了进度、焦点变化或导航信息为空，都可能触发抢占。所以排查性能跟踪时，想分清旧式返回与预测性返回，光有 `ACTION_CANCEL` 还不够，还要结合 Shell 返回动画和回调轨道。
+
+<!-- gracker-diagram: ch03-03-legacy-and-ahead-routing -->
+![提前解析返回目标可以早于手势识别阈值](../../assets/diagrams/ch03/ch03-03-legacy-and-ahead-routing.png)
+
+图：SystemUI 与应用先并行观察指针流，候选成立后按是否连接 BackAnimation 分流。legacy 越过阈值后直接 pilfer，提交时注入 BACK；提前分发可在首次 MOVE 就解析 BackNavigationInfo，之后根据阈值、目标和进度生成能力决定抢占与预览。两条路径都可能让原应用收到 CANCEL。
 
 ### 手势冲突处理：系统手势优先区域与应用的 WindowInsets
 
@@ -207,6 +212,11 @@ override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
 配额的大小由 `mSystemGestureExclusionLimit` 决定：它限制左右边缘各自可排除的**纵向总高度**，矩形的横向宽度不受影响。`WindowManagerConstants` 保证该值至少为 200 dp，设备可以通过 `system_gesture_exclusion_limit_dp` 配置更大的值。`addToGlobalAndConsumeLimit()` 对边缘相交区域逐个消耗高度预算，超出部分会被裁掉。
 
 WMS 同时保留受限区域（restricted `Region`）与原始未受限区域（unrestricted `Region`）。SystemUI 用受限区域决定系统是否让开；触点只命中未受限区域时，表示应用申请过排除，但该片段没有获得配额，系统仍可识别返回，并把它记为被拒绝的排除请求（rejected exclusion）。我们遇到“同一条边有些位置有效、有些位置仍触发返回”时，要检查纵向预算、窗口遮挡与最终获批区域。
+
+<!-- gracker-diagram: ch03-03-exclusion-request-to-grant -->
+![排除矩形先转换坐标，再经过相交与每侧高度预算](../../assets/diagrams/ch03/ch03-03-exclusion-request-to-grant.png)
+
+图：应用提供 View 局部矩形，ViewRootImpl 收集并转换到窗口坐标，上报 WMS。DisplayContent 再按窗口 Z 序、可触摸区域和显示坐标汇总，消耗左右边缘各自的纵向总高度配额。SystemUI 使用最终受限 Region；仅申请过但未批准的片段仍可触发系统返回。
 
 部分系统窗口和特定的粘性沉浸模式（sticky immersive）场景可以绕过普通限制。粘性沉浸指系统栏短暂出现后会自动再次隐藏，这属于平台权限和窗口策略；第三方应用仍然只能按前面的限制申请排除。
 
@@ -407,6 +417,11 @@ Perfetto 的查询引擎 Trace Processor 在 `android.input` 模块中提供 `an
 
 我们把界线划在这里：在 `onBackProgressed()` 中结束 Activity、弹出 Fragment 或写数据库，会破坏取消语义。系统动画同样遵守这条线：手势阶段只变换 SurfaceControl 动画控制柄（leash），提交后才调用真实回调，并把预览接入正式的窗口转场。leash 让动画执行者变换窗口图层，但不会把窗口 Surface 本身的所有权交出去。
 
+<!-- gracker-diagram: ch03-03-preview-commit-cancel -->
+![手势进度只做可撤销视觉更新，提交后才改变导航](../../assets/diagrams/ch03/ch03-03-preview-commit-cancel.png)
+
+图：onBackStarted 保存起点，onBackProgressed 随进度更新可恢复的属性。手势取消时 onBackCancelled 恢复视觉状态；确认提交后 onBackInvoked 才执行 finish、pop 或其他导航操作。进度和取消由 OnBackAnimationCallback 提供，OnBackInvokedCallback 本身只有提交方法。
+
 #### 1.2 返回目的地与动画执行者
 
 `BackNavigationInfo` 是 `system_server` 返回给 WM Shell 的返回目标与动画能力描述，定义了以下主要类型：
@@ -450,6 +465,11 @@ flowchart TD
 - `BackAnimationController` 位于 WM Shell，负责手势状态、指针抢占、远程动画就绪状态、进度分发以及提交后的收尾。
 
 Android 17 的 WMS 里查不到 `TaskAnimationCoordinator` 这个类，解释跨 Activity、跨任务或任务快照路径时也用不上它。
+
+<!-- gracker-diagram: ch03-03-navigation-target-and-executor -->
+![WMS 预测目的地，Shell 按能力选择动画执行者](../../assets/diagrams/ch03/ch03-03-navigation-target-and-executor.png)
+
+图：SystemUI 把手势交给 Shell，Shell 经 ATMS 请求 WMS 的 BackNavigationController。WMS 读取焦点窗口 top callback，判断应用回调或系统目标；满足准备条件且产品有动画执行者时交付 RemoteAnimationTarget 与 leash。应用回调、系统 leash 动画和无有效信息时的按键兜底应分别取证。
 
 ### 3. 输入事件怎样到达返回动画
 
@@ -498,7 +518,12 @@ WMS 无需遍历应用的全部回调，只读取当前窗口已经选出的最�
 
 高优先级先执行；同一优先级按注册顺序逆序选择。应用注册不了普通负优先级回调，`PRIORITY_SYSTEM_NAVIGATION_OBSERVER` 是专门允许的例外。API 36 对观察者数量有限制，API 37 起可注册多个；它们不会改变系统返回结果。
 
-`Activity` 在新模型启用时会以 `PRIORITY_SYSTEM` 注册默认回调。应用注册 `PRIORITY_DEFAULT` 或 `PRIORITY_OVERLAY` 回调后，它会成为最高优先级回调，`BackNavigationController` 将本次导航归类为 `TYPE_CALLBACK`。
+`Activity` 在新模型启用时会以 `PRIORITY_SYSTEM` 注册默认回调。应用注册 `PRIORITY_DEFAULT` 或 `PRIORITY_OVERLAY` 回调后，会覆盖 Activity 的内部系统默认回调；若还存在其他普通回调，仍按优先级和同级注册顺序选择 top。当前 top 为应用回调时，`BackNavigationController` 才将本次导航归类为 `TYPE_CALLBACK`。
+
+<!-- gracker-diagram: ch03-03-callback-priority-selection -->
+![应用本地选 top callback，再把结果上报当前窗口](../../assets/diagrams/ch03/ch03-03-callback-priority-selection.png)
+
+图：窗口分发器在应用进程维护普通回调，按优先级从高到低、同级后注册优先选出 top callback，再把 CallbackInfo 上报对应 WindowState。OVERLAY / DEFAULT 可以覆盖 Activity 的内部 SYSTEM 默认导航。SYSTEM_NAVIGATION_OBSERVER 不消费返回，API37 可有多个，观察者之间没有固定顺序。
 
 #### 4.3 应用进程内的进度生成
 
@@ -512,6 +537,11 @@ WMS 无需遍历应用的全部回调，只读取当前窗口已经选出的最�
 此时应用 `ViewRootImpl` 根据本地 `MotionEvent` 更新 `BackTouchTracker` 与 `BackProgressAnimator`，Shell 跳过对应的 Binder 进度分发。条件不满足时，Shell 仍通过 `IOnBackInvokedCallback.onBackProgressed()` 发送进度。
 
 所以当我们看到应用回调每帧都在运行，先别急着断定每帧都走了一遍 SystemUI → `system_server` → 应用的完整 IPC。
+
+<!-- gracker-diagram: ch03-03-local-versus-binder-progress -->
+![应用回调每帧运行，不代表每帧都跨进程发送进度](../../assets/diagrams/ch03/ch03-03-local-versus-binder-progress.png)
+
+图：符合应用动画回调、窗口许可、触摸区域匹配且无需转交嵌入窗口等条件时，应用可根据本地 MotionEvent 生成进度，Shell 跳过对应 Binder 进度分发。其他条件下 Shell 经 IOnBackInvokedCallback 发送进度，应用 Handler 与 BackProgressAnimator 再驱动回调。
 
 ### 5. system_server 如何预测返回目标
 
@@ -574,6 +604,11 @@ WMS 核心准备完成后，会把描述打开和关闭窗口图层的 `RemoteAn
 
 源码里的 2 秒 `MAX_ANIMATION_DURATION` 是等待远程动画完成的看门狗阈值，兜住的是动画执行器未回调、动画迟到这类异常；产品动画时长和性能目标另有尺度，别拿它当参考。
 
+<!-- gracker-diagram: ch03-03-leash-content-and-postcommit -->
+![系统预览改变 leash，应用内容与提交导航另行推进](../../assets/diagrams/ch03/ch03-03-leash-content-and-postcommit.png)
+
+图：系统动画 runner 根据进度更新打开 / 关闭目标的 leash 几何，应用若继续生产内容则走独立 buffer 路径。松手取消要恢复预览；提交时 Shell 进入 post-commit、按类型触发真实回调并与 Transition 衔接。2 秒常量用于异常看门狗，不能当作动画时长。
+
 ### 7. 任务快照在预测返回中的角色
 
 系统可以在以下组合条件下为打开侧目标创建无窗口启动占位图层（windowless starting surface）：
@@ -599,7 +634,7 @@ WMS 核心准备完成后，会把描述打开和关闭窗口图层的 `RemoteAn
 - 不在每帧反复修改复杂 `LayoutParams`；
 - 取消后完整恢复界面状态。
 
-以下代码只用于标记应用回调占用的 CPU 时间：
+以下代码标记应用回调的墙钟区间；其中实际占用 CPU 的时间，还需结合线程调度状态计算：
 
 ```kotlin
 override fun onBackProgressed(backEvent: BackEvent) {
@@ -642,6 +677,11 @@ flowchart LR
 `ImeBackAnimationController` 在预提交阶段只移动输入法高度的一小部分作为预探效果（peek），提交后再完成隐藏；取消则回到已显示状态。它直接控制 `WindowInsetsAnimationController`，不会让 IMMS 与页面的跨 Activity 动画并行运行。
 
 输入法隐藏提交后，控制器会暂时清除输入法回调，让下一次返回交到后续回调手里，即使隐藏动画还在收尾。常见“两次返回”的现象有这个状态基础，但把它写成所有输入法、窗口模式和回调组合下的硬性规则，会在例外场景翻车。
+
+<!-- gracker-diagram: ch03-03-ime-back-callback-control -->
+![IME 返回先转发注册，再由应用窗口控制 Insets 动画](../../assets/diagrams/ch03/ch03-03-ime-back-callback-control.png)
+
+图：IME 通过 Sender / ResultReceiver 把回调注册传给当前应用 Proxy；默认系统回调在应用窗口映射到 DEFAULT，通常高于 Activity 的内部 SYSTEM 回调。可用时 ImeBackAnimationController 在预提交阶段做 peek，取消恢复，提交后完成隐藏并临时清除回调，让后续返回可以继续导航。
 
 ### 10. 如何建立性能结论
 

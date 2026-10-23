@@ -59,7 +59,7 @@ Android 13（API 33）加入了系统级 LE Audio 支持。到 Android 17（API 
 
 > 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
-LE Audio 的延迟和功耗由整条音频路径共同决定：从 LC3 编解码（LE Audio 的标准 Codec）、AudioFlinger 缓冲，到 Bluetooth Audio HAL（硬件抽象层） 的数据路径，再到 ISO（等时传输）调度、射频环境和耳机端渲染，每一段都贡献自己的延迟与功耗。我们看到“BLE”“7.5 ms 帧”或“硬件 offload（部分处理交给专用硬件）”这些字眼时，先想清楚它们各自对应路径上的哪一段——只凭这些标签，判断不了某台设备一定低延迟或一定省电。
+LE Audio 的延迟和功耗由整条音频路径共同决定：从 LC3 编解码（LE Audio 的标准 Codec）、AudioFlinger 缓冲，到 Bluetooth Audio HAL（硬件抽象层） 的数据路径，再到 ISO（等时传输）调度、射频环境和耳机端渲染，每一段都贡献自己的延迟与功耗。我们看到“BLE”“7.5 ms 帧”或“硬件 offload（把部分处理移出 Host 主路径）”这些字眼时，先想清楚它们各自对应路径上的哪一段——只凭这些标签，判断不了某台设备一定低延迟或一定省电。
 
 LE Audio 的 Controller（蓝牙控制器） 与 vendor（芯片或设备厂商） 实现高度依赖芯片和固件，内核标签也没有规定一套跨设备通用的 LC3、ISO 或功耗实现。所以下任何结论之前，我们先分清两类东西：AOSP 源码能证明的系统行为，和只能在具体设备上实测的行为。
 
@@ -80,7 +80,31 @@ LE Audio 的控制面位于 Generic Audio Framework（GAF，通用音频框架�
 | VCS / VOCS | 音量和通道偏移控制 | 属于控制面，不应和媒体数据路径混在一起计时 |
 | MCS / TBS | 媒体与电话控制 | 播放控制和音频承载可以走不同协议过程 |
 
-ASCS 管理的 ASE（音频流端点）在首次启动时通常经过 Idle → Codec Configured → QoS Configured → Enabling → Streaming。停止过程按音频方向分支：Sink ASE（Audio Stream Endpoint，音频流端点） 接受 Disable 后回到 QoS Configured；Source ASE 进入 Disabling，接受 Receiver Stop Ready 后再回到 QoS Configured。Release 会进入 Releasing，释放完成后可回到 Idle，或保留 Codec 配置并回到 Codec Configured。至于 Disabling 和 Releasing，只有走停止、释放流程时才会经过。
+<!-- gracker-diagram: ch05-09-gaf-control-and-audio-plane -->
+![GAF 控制服务与等时音频的分工](../../assets/diagrams/ch05/ch05-09-gaf-control-and-audio-plane.png)
+
+图：图表示职责依赖，不是所有服务依次转发音频。PACS/ASCS 等通过 GATT 管理能力与状态；媒体数据走等时路径，不能把控制面操作时间直接当成声学延迟。
+
+ASCS 管理的 ASE（音频流端点）在首次启动时通常经过 Idle → Codec Configured → QoS Configured → Enabling → Streaming。
+
+<!-- gracker-diagram: ch05-09-ase-initial-start -->
+![ASE 首次启动的典型状态链](../../assets/diagrams/ch05/ch05-09-ase-initial-start.png)
+
+图：这是典型首次启动链，不是每次恢复都从 Idle 重走。Source ASE 的 Receiver Start Ready 由客户端 Audio Sink 发起；Sink ASE 的就绪由服务端 Audio Sink 自主完成，不能对两个方向都画成同一条客户端写命令。
+
+停止过程按音频方向分支：Sink ASE（Audio Stream Endpoint，音频流端点） 接受 Disable 后回到 QoS Configured；Source ASE 进入 Disabling，接受 Receiver Stop Ready 后再回到 QoS Configured。
+
+<!-- gracker-diagram: ch05-09-ase-disable-direction-branches -->
+![ASE 停止必须按 Sink 与 Source 分支](../../assets/diagrams/ch05/ch05-09-ase-disable-direction-branches.png)
+
+图：ASE 的 Sink/Source 是服务端端点的音频方向。Disable 与 Receiver Stop Ready 完成后不强制终止 CIS；是否保留链路要看其他 ASE 和当前过程。
+
+Release 会进入 Releasing，释放完成后可回到 Idle，或保留 Codec 配置并回到 Codec Configured。至于 Disabling 和 Releasing，只有走停止、释放流程时才会经过。
+
+<!-- gracker-diagram: ch05-09-ase-release-and-codec-cache -->
+![ASE 释放与 Codec 配置缓存](../../assets/diagrams/ch05/ch05-09-ase-release-and-codec-cache.png)
+
+图：图画成功释放的主要资源关系。BAP 对共用同一 CIS/CIG 且仍 Enabling/Streaming 的其他 ASE 有限制，不能在仍有活动方向时随意释放；释放完成也不一定回 Idle。
 
 首次建流、复用已有配置、切换音频上下文或改变 Codec/QoS，经过的步骤可能各不相同。所以分析启动耗时前，我们先确认测的是哪一种：首次连接、已连接后的建流，还是已有 CIG（Connected Isochronous Group）/CIS（连接等时组与流） 的恢复，再到 ASCS 通知里核对 ASE 的方向和实际状态迁移。
 
@@ -91,6 +115,11 @@ LE Audio 用等时传输承载必须按时送达的音频数据：
 - **CIS（Connected Isochronous Stream）** 用于单播，一个或多个 CIS 组成 CIG。CIS 与 ACL（设备之间的基础数据连接） 关联，由 ACL 承载建立和控制过程；ACL 丢失时，关联的 CIS 也会终止。
 - **BIS（Broadcast Isochronous Stream）** 用于广播，一个或多个 BIS 组成 BIG。广播源通过扩展广播和周期广播公布同步信息与 BASE（描述广播音频配置的数据），接收端随后同步 BIG。
 
+<!-- gracker-diagram: ch05-09-cig-cis-and-acl -->
+![CIG 内的 CIS 与关联 ACL](../../assets/diagrams/ch05/ch05-09-cig-cis-and-acl.png)
+
+图：虚线框中的两个 CIS 构成本例 CIG；ACL 承担建立与控制关联，不是把 CIS 音频当作普通 GATT 数据发送。ACL 断开会终止关联 CIS，单个 CIS 丢失不必反过来终止 ACL。
+
 单播的接收端可以确认链路层传输，Controller 可以在已分配的子事件时隙里安排重传。广播没有面向单个接收端的确认：广播源可以配置重复、交织或预传输来提高抗干扰能力，但没有为某个接收端单独重发的机制。丢包之后的听感，还取决于 LC3 的丢包隐藏、耳机缓冲和连续丢包长度，把结果写成“丢一包就必然一次可闻断音”是把问题说简单了。
 
 两个模式的扩展性也不同：
@@ -98,6 +127,11 @@ LE Audio 用等时传输承载必须按时送达的音频数据：
 - 广播发送端的空口计划不会随着收听人数线性增加；
 - 单播增加设备或音频方向时，通常会增加 CIS、子事件或控制开销；
 - 广播接收端还要执行扫描、周期广播同步和 BIG 同步，这些阶段也会产生成本，所以“广播接收一定比单播省电”没有通用依据。
+
+<!-- gracker-diagram: ch05-09-big-bis-one-to-many -->
+![BIG/BIS 的一对多广播拓扑](../../assets/diagrams/ch05/ch05-09-big-bis-one-to-many.png)
+
+图：媒体广播不为每位听众单独建 CIS，也没有面向单个接收端的 ACK/专属补发。相同空口配置的发送计划不随收听人数线性增长，但手机整机功耗、扫描和 UI 仍可能变化。
 
 ### LC3 的能力需要协商
 
@@ -111,7 +145,12 @@ LC3（Low Complexity Communication Codec）是 LE Audio 基础音频配置要求
 
 LC3 常见帧时长为 7.5 ms 和 10 ms。帧时长只是预算中的一项 Codec 参数，算法总延迟和端到端延迟都要另算。讨论码率时，要把采样率、每帧字节数、每个 SDU 的帧块数和声道数一起给出，只列一个“LC3 固定范围”说明不了问题。
 
-LC3 与 SBC 的 CPU 占用、主观音质 MOS（Mean Opinion Score，主观音质评分） 或耗电量对比，同样依赖实现、配置和测试方法：在 Host（主机侧软件栈） 软件栈上用软件运行、交给音频 DSP、Controller 或 vendor offload（把部分处理交给专用硬件）er，可能得到不同结果。手里没有目标芯片、编译选项、音频配置和功耗仪器时，跨设备对比表里那些看似精确的数字没有依据。
+LC3 与 SBC 的 CPU 占用、主观音质 MOS（Mean Opinion Score，主观音质评分） 或耗电量对比，同样依赖实现、配置和测试方法：在 Host（主机侧软件栈） 软件栈上用软件运行、交给音频 DSP、Controller 或 vendor offloader（厂商卸载模块），可能得到不同结果。手里没有目标芯片、编译选项、音频配置和功耗仪器时，跨设备对比表里那些看似精确的数字没有依据。
+
+<!-- gracker-diagram: ch05-09-lc3-config-and-sdu -->
+![LC3 帧、声道与 SDU 的配置层次](../../assets/diagrams/ch05/ch05-09-lc3-config-and-sdu.png)
+
+图：7.5 ms / 10 ms 是常见帧时长配置，不等于算法总延迟或声学端到端延迟。码率与 CPU/功耗比较需要同时给出声道、每帧字节数、组帧、有效间隔和执行位置。
 
 ## 延迟要按测量对象拆开
 
@@ -126,11 +165,21 @@ LC3 与 SBC 的 CPU 占用、主观音质 MOS（Mean Opinion Score，主观音�
 | 路由切换间隙 | 旧路由最末帧，到新路由第一帧 | A2DP/LE Audio 或扬声器/耳机切换 |
 | 抖动与 glitch（爆音或短暂中断） | 稳态延迟分布、缓冲欠载和丢帧 | 射频干扰、调度和缓冲稳定性 |
 
+<!-- gracker-diagram: ch05-09-latency-measurement-endpoints -->
+![先确定测量延迟的起止点](../../assets/diagrams/ch05/ch05-09-latency-measurement-endpoints.png)
+
+图：同一张报告里要分别写出冷启动、已连接启动、稳态单向、双向往返与路由间隙。抖动和 glitch 另做分布与计数，不用一项“蓝牙延迟”包办所有问题。
+
 手机向耳机播放时，我们按 BAP 的定义把稳态单向延迟拆成三部分：
 
 `手机端音频处理（应用/AudioTrack、AudioFlinger/HAL、编码与组帧）+ Transport_Latency + Presentation_Delay`
 
 BAP 第 7 节规定，Transport_Latency 是设备间传输音频负载的延迟；接收端的 Presentation_Delay 从 SDU Synchronization Reference 计算到音频开始呈现，耳机内部传输、Codec 处理、DAC 和音频后处理都已经算在里面。拆解设备实测结果时，先对齐各项的起止时刻，避免把耳机解码与渲染在 Presentation_Delay 之外再算一遍。
+
+<!-- gracker-diagram: ch05-09-bap-total-delay-boundaries -->
+![BAP 总延迟的三段边界](../../assets/diagrams/ch05/ch05-09-bap-total-delay-boundaries.png)
+
+图：本图以手机发送、耳机接收为例。三段边界须与测量参考对齐；Presentation Delay 可为多设备同步和缓冲留余量，LC3 帧长与 HCI 建流通知都不能替代总延迟。 底部是无刻度概念分段，宽度不表示时长。
 
 这些部分都可能跨越多个音频周期，Presentation Delay（规定接收端播放时刻的呈现延迟） 还可能为了多设备同步和接收端缓冲而加大。用 7.5 ms 或 10 ms 的 LC3 帧长直接推导“总延迟 20–40 ms”，会漏掉手机和耳机两端的缓冲，也会忽略 QoS 与射频重传。
 
@@ -155,7 +204,17 @@ flowchart LR
     H --> I["LC3 解码、DSP 后处理与扬声器"]
 ```
 
+<!-- gracker-diagram: ch05-09-software-media-data-path -->
+![LE Audio 软件编码的媒体路径](../../assets/diagrams/ch05/ch05-09-software-media-data-path.png)
+
+图：实线表示本例媒体数据流。PACS/ASCS 和路由/session 控制没有串入 PCM 数据链；上行软件解码路径方向相反，不能把编码、解码 session 混成一个状态。
+
 对照上图，ASCS/PACS 负责能力协商与状态管理；软件 session 的 PCM（未压缩音频采样） 交给 Host 编解码，offload session 主要承载控制，媒体数据走平台实现的数据路径，厂商内部连接要按设备实现确认。排障时我们先区分建流控制耗时与 Streaming 之后的数据传输，再根据当前 session 判断能在哪一层看到媒体数据。
+
+<!-- gracker-diagram: ch05-09-offload-control-and-vendor-media -->
+![Offload 会话控制与厂商媒体路径](../../assets/diagrams/ch05/ch05-09-offload-control-and-vendor-media.png)
+
+图：实线为示意媒体数据，虚线为 session 控制。SessionType 名称包含 HARDWARE_OFFLOAD，但部分编码路径注释允许硬件或软件卸载；内部连接及唤醒成本要核对目标产品。
 
 ### Codec 与 QoS 参数怎样改变结果
 
@@ -165,16 +224,26 @@ flowchart LR
 | octets per codec frame | 音质、码率和单帧负载 | 更大负载增加空口占用 |
 | blocks per SDU / SDU interval | 组帧和发送节奏 | 聚合可减少调用次数，也会增加等待 |
 | PHY（物理层模式） | 每次发送的空口时间和链路预算 | 2M PHY 传输更快，覆盖和干扰条件仍需实测 |
-| BN / NSE（每个事件的数据突发数 / 子事件数） | 每个等时事件的数据与子事件安排 | 资源增加会占用更多射频时间 |
-| RTN / FT（重传次数 / Flush Timeout） | 单播可靠性、可用重传窗口和最大时限 | 可靠性、延迟、共存和功耗互相制约 |
+| BN / NSE（突发载荷数 / 子事件预算） | BN 规定每个 burst 关联的载荷数；NSE 是每个 CIS 事件的最大子事件数，或每个 BIG 事件中每个 BIS 的子事件数 | 资源增加会占用更多射频时间 |
+| RTN / FT（推荐重传参数 / Flush Timeout） | RTN 是推荐值；FT 限制一个 CIS 载荷可用的事件窗口，以 CIS 事件数计，不是毫秒 | 可靠性、延迟、共存和功耗互相制约 |
 | Presentation Delay | 接收端何时播放 | 增大可换取同步与抗抖动余量 |
 | CIS/BIS 数量与方向 | 多声道、左右耳和双向语音 | 增加调度、编码和空口资源 |
 
-`RTN=2` 常被读成“任何包最多重传两次，延迟固定增加多少”，实际的重传安排还受 BN、NSE、FT、PHY、PDU（协议数据单元）分段和 Controller 调度约束。所以调参时以最终 HCI（Host Controller Interface，主机控制器接口） 配置与抓包结果为准，上层期望值只作参考。
+RTN 是提交给 Controller 的推荐重传参数，Controller 可按目标可靠性和带宽选取不同值。`RTN=2` 常被读成“任何包最多重传两次，延迟固定增加多少”，实际的重传安排还受 BN、NSE、FT、PHY、PDU（协议数据单元）分段和 Controller 调度约束。所以调参时以最终 HCI（Host Controller Interface，主机控制器接口） 配置与抓包结果为准，上层期望值只作参考。
+
+<!-- gracker-diagram: ch05-09-codec-qos-resource-tradeoffs -->
+![Codec、QoS 与空口资源的取舍](../../assets/diagrams/ch05/ch05-09-codec-qos-resource-tradeoffs.png)
+
+图：最终HCI配置、Controller行为和射频证据比上层期望值更接近实际。更短帧、更多重传或更大呈现余量，分别带来不同资源代价，需要把音质、可靠性、延迟和功耗一起测量。
 
 ### `SetLatencyMode()` 与延迟模式
 
 Android 17 的 LE Audio transport 提供了 `SetLatencyMode()`：它接收 `FREE`、`LOW_LATENCY`、动态空间音频软件和硬件等枚举，并映射到内部 `DsaMode`。源码里没有任何一个枚举直接对应 7.5 ms LC3 配置，也没有端到端延迟低于某个固定值的承诺。
+
+<!-- gracker-diagram: ch05-09-latency-mode-to-dsa -->
+![SetLatencyMode 实际映射到 DsaMode](../../assets/diagrams/ch05/ch05-09-latency-mode-to-dsa.png)
+
+图：r1 的 LeAudioTransport::SetLatencyMode 按以上关系设置 DsaMode；模式变化且存在缓存源元数据时，会触发元数据更新。这里没有 LC3 帧长或端到端毫秒保证。
 
 普通应用设置 `AudioAttributes` 或游戏 `usage` 后，Audio Policy、Bluetooth 栈和设备能力仍会共同决定路由与配置；耳机厂商提供的 Gaming Mode 也可能改变私有缓冲、Codec 配置或射频策略。测试报告应记录最终协商参数，而不是把产品模式名称当成协议参数。
 
@@ -202,6 +271,11 @@ Android 17 的 LE Audio transport 提供了 `SetLatencyMode()`：它接收 `FREE
 
 `LeAudioService` 管理组、活跃输入/输出设备、广播与单播切换这些 Framework 状态；Codec 能力选择、CIG/CIS 和 ASE 状态由 Native LE Audio 代码接手。审阅文档或报告时，看到 `LeAudioService` “注册 Audio Provider 并独自决定所有 LC3 参数”这类描述，可以对照上面的分工判定为错：Audio Framework、Bluetooth Audio HAL 与 Native 栈各管一段。
 
+<!-- gracker-diagram: ch05-09-framework-native-control-boundaries -->
+![Framework、JNI 与 Native 控制分工](../../assets/diagrams/ch05/ch05-09-framework-native-control-boundaries.png)
+
+图：LeAudioService 不是独自决定所有 LC3/QoS 参数的中心。Audio Framework、Bluetooth Audio HAL、Native 栈和 Controller 各有职责；图是层次边界，不能把各层回调简单串成固定延迟。
+
 ### 音频数据路径
 
 `SessionType.aidl` 明确区分了以下几类路径：
@@ -211,7 +285,12 @@ Android 17 的 LE Audio transport 提供了 `SetLatencyMode()`：它接收 `FREE
 - LE Audio 广播软件编码与硬件 offload 编码；
 - 广播解码和 peripheral offload（把部分数据处理放到外设侧） 等路径。
 
-软件路径中，Bluetooth 栈负责相应的编解码和媒体数据处理；硬件 offload session 主要承载控制，数据和 Codec 工作由平台硬件实现负责。AOSP `codec_manager.cc` 还区分 `CodecLocation::HOST` 与 `CodecLocation::ADSP`（音频 DSP），检查设备属性和 HAL 能力之后才启用 offload。源码里还留着“offload 不支持某项配置时如何切换”的待完善点，“设备有 DSP”本身说明不了当前音频流已经 offload。
+软件路径中，Bluetooth 栈负责相应的编解码和媒体数据处理；硬件 offload session 主要承载控制，数据和 Codec 工作由平台卸载实现负责；部分名为 HARDWARE_OFFLOAD 的编码 session，接口注释也允许软件卸载。AOSP `codec_manager.cc` 还区分 `CodecLocation::HOST` 与 `CodecLocation::ADSP`（音频 DSP），检查设备属性和 HAL 能力之后才启用 offload。源码里还留着“offload 不支持某项配置时如何切换”的待完善点，“设备有 DSP”本身说明不了当前音频流已经 offload。
+
+<!-- gracker-diagram: ch05-09-codec-location-offload-preconditions -->
+![CodecLocation 与 offload 的前置检查](../../assets/diagrams/ch05/ch05-09-codec-location-offload-preconditions.png)
+
+图：r1 先检查 ro.bluetooth.leaudio_offload.supported、persist.bluetooth.leaudio_offload.disabled 和 HAL 能力，再设置平台路径及 ADSP 位置。某项配置不受支持时，源码仍有切软件 session 的 TODO，不能画成必定自动回退。
 
 ### 音频设备类型
 
@@ -244,6 +323,11 @@ val broadcastSourceSupported =
 
 这两个方法返回状态码而非布尔值，蓝牙关闭时还可能返回错误码。手机报告支持只是第一步：当前耳机、通信双方的 Profile、区域配置和产品 UI 是否满足目标场景，还要单独确认，应用仍要处理功能不可用与路由变化。
 
+<!-- gracker-diagram: ch05-09-app-capability-and-communication-route -->
+![应用能力检查与通信路由请求](../../assets/diagrams/ch05/ch05-09-app-capability-and-communication-route.png)
+
+图：图的路由分支限于通信场景，媒体播放仍走对应媒体 API。setCommunicationDevice 只接受系统可用列表中的输出设备，匹配输入由平台选择；LE Audio 和 Auracast 不能通过 SCO 开关控制。
+
 ### 路由与切换延迟
 
 A2DP 与 LE Audio 都可用时，Android 会结合设备能力、用户选择、音频策略和 Profile 状态决定活跃路由；“Android 14 起总是优先 LE Audio”这类概括，以及“当前内容格式不兼容就固定回退 A2DP”这类规则，公开资料里都没有依据。应用提交给 AudioFlinger 的 PCM 或媒体解码结果，与蓝牙空口使用的 Codec 属于两个层次。
@@ -258,6 +342,11 @@ A2DP 与 LE Audio 都可用时，Android 会结合设备能力、用户选择、
 - 耳机按 Presentation Delay 对应的时刻输出音频。
 
 这些步骤是否发生、是否并行、是否复用已有连接，都由当次状态决定。300–800 ms 之类的固定范围属于某组设备的测试结果，平台层面没有这样的保证。
+
+<!-- gracker-diagram: ch05-09-route-switch-state-dependent-gap -->
+![路由切换间隙取决于已有状态](../../assets/diagrams/ch05/ch05-09-route-switch-state-dependent-gap.png)
+
+图：箭头表示可能贡献间隙的工作关系，不是强制执行序列。首次建流、已有 CIG/CIS 恢复、保持旧路由到新路由就绪，可能走不同路径；不能从系统版本推导总是优先 LE Audio。
 
 ## 功耗：看执行位置和射频计划
 
@@ -278,6 +367,11 @@ A2DP 与 LE Audio 都可用时，Android 会结合设备能力、用户选择、
 5. **是否命中共存问题**：2.4 GHz Wi-Fi、人体遮挡、手机握持和左右耳位置都可能改变丢包与功耗。
 6. **耳机功能是否相同**：ANC、头部跟踪、麦克风和后处理常比协议差异更显著。
 
+<!-- gracker-diagram: ch05-09-phone-and-headset-power-components -->
+![手机与耳机的功耗组成](../../assets/diagrams/ch05/ch05-09-phone-and-headset-power-components.png)
+
+图：这是测量归因框架，不是按比例分配的功耗图。多流、双向、射频可靠性与耳机功能会改变成本；手机省电和耳机省电也可能是不同结论，应分别测量。
+
 Classic TWS（真无线立体声） 常采用主副耳中继，LE Audio 多流则允许手机分别向左右设备发送音频。多流消除了某些中继拓扑的限制，代价是手机要调度多条 CIS。整机省不省电，取决于手机与耳机两端的实现，拓扑本身给不出答案。
 
 ### ISO 与系统 idle（空闲）
@@ -285,6 +379,11 @@ Classic TWS（真无线立体声） 常采用主副耳中继，LE Audio 多流�
 Controller 具备独立的定时与射频调度能力，不要求 AP 在每个 CIS/BIS event 都运行。Host 软件路径可能按音频批次唤醒，offload 路径可以让 AP idle 更久；但唤醒频率取决于缓冲和具体实现，10 ms 帧长推不出“AP 固定以 100 Hz 唤醒”。
 
 维持 Bluetooth 连接也不表示 Android 设备被禁止进入某个名为“Deep Doze”的状态；活跃音频、音频 wakelock（唤醒锁）、应用前后台状态和系统电源策略共同影响 suspend/idle。要判断 LE Audio 是否让 AP 退出了深 idle，我们看 trace 中的调度、wakeup source（唤醒来源）、AudioFlinger 周期和电源轨数据。
+
+<!-- gracker-diagram: ch05-09-iso-timing-versus-ap-idle -->
+![ISO 事件节奏与 AP idle 的关系](../../assets/diagrams/ch05/ch05-09-iso-timing-versus-ap-idle.png)
+
+图：维持蓝牙连接不能单独决定设备 Doze 或系统 suspend；活跃音频、wakelock、应用状态和电源策略都要核对。Controller 重传还可能间接改变 Host 负载，不能只看 CPU 频率推断整机成本。
 
 Controller 重传主要消耗 Controller 和射频资源，也可能通过数据短缺、状态事件或 Host 路径间接改变 AP 负载；“与 CPU DVFS 完全无关”的写法过于笼统，CPU 频率只反映其中一部分成本。
 
@@ -305,6 +404,11 @@ HFP active-device handover 属于 Classic 通话路径，统计时延时应与 L
 
 手机侧优先使用外部电源监测或设备电源轨；耳机侧需要夹具、电池电量计或厂商遥测。`batterystats` 适合观察系统归因和长期趋势，很难单独分离几十毫秒周期内的 Codec 与射频成本。Pixel 电流数据要同时说明设备、固件、测量仪器和置信区间，才谈得上通用参考。
 
+<!-- gracker-diagram: ch05-09-power-ab-controlled-conditions -->
+![LE Audio 功耗 A/B 的可比条件](../../assets/diagrams/ch05/ch05-09-power-ab-controlled-conditions.png)
+
+图：batterystats 可看长期归因，难以独立分解每个 Codec/RF 周期。A2DP 与 LE Audio 对比应说明设备、固件、配置、执行位置、仪器与置信区间，手机和耳机分别报告。
+
 ## 广播音频与 Auracast
 
 Auracast 是 Bluetooth Broadcast Audio 的品牌名称。要看它的性能，我们先看接收端怎么加入：广播源创建 BIG/BIS，并通过广播公告和周期广播发布同步信息；接收端自己扫描，或由 Broadcast Assistant（广播助手）代为发现来源，再帮助 Broadcast Sink（广播接收设备） 加入。
@@ -322,6 +426,11 @@ BIS 没有面向每个接收端的 ACK（确认响应），靠重复和预传输
 
 AOSP 源码中的 `BluetoothLeBroadcast` 与 `BluetoothLeBroadcastAssistant` 是 `@SystemApi`，同时带有 `@Hide`；普通第三方应用没有一套等价的公开控制接口。`AudioManager.setBluetoothScoOn()` 控制的是 SCO/HFP，不用于 Auracast；该方法在 API 37 弃用，官方文档还明确指出，它对普通应用已在多个版本中不执行实际操作。通信应用应使用 API 31 起提供的 `setCommunicationDevice()` 选择可用通信输出设备，广播功能则依赖平台系统 UI、受支持角色和相应的 Bluetooth Profile 接口。
 
+<!-- gracker-diagram: ch05-09-broadcast-discovery-to-render -->
+![广播音频从发现到呈现](../../assets/diagrams/ch05/ch05-09-broadcast-discovery-to-render.png)
+
+图：Assistant 可帮助发现并通过扫描卸载/同步信息转移协助 Sink，不要求每台 Sink 都完整重复手机的扫描过程。Android r1 的 Broadcast 与 Assistant 代理为隐藏 SystemApi，普通应用需依赖受支持的系统能力。
+
 ## 助听场景的 ASHA 与 HAP
 
 我们先把 ASHA 的来历说清楚：ASHA（Audio Streaming for Hearing Aids）早于标准 LE Audio，本身就运行在 BLE 上。Android 的 ASHA 设计使用 GATT 控制，并通过 LE L2CAP CoC（面向连接的逻辑信道）传输音频；CoC 的弹性缓冲能抵抗部分丢包，也会增加延迟。ASHA 没有从助听器返回手机的音频 backlink，通话上行使用手机麦克风。
@@ -329,6 +438,11 @@ AOSP 源码中的 `BluetoothLeBroadcast` 与 `BluetoothLeBroadcastAssistant` 是
 HAP（Hearing Access Profile）属于标准 LE Audio/GAF，使用 LE Audio 的能力、控制和 ISO 音频机制，可以支持更完整的通话与 VoIP 场景。“HAP 是用 BLE 替代 Classic ASHA”的说法不成立——ASHA 本身就运行在 BLE 上。Android 需要同时兼容旧有 ASHA 设备和基于 LE Audio 的 HAP 设备。
 
 Android 13 提供的是 LE Audio 基础支持；具体某台 Android 13 设备是否具备 HAP、广播或双向高采样率能力，要以设备查询结果为准。助听场景对声学延迟、左右同步、丢包、麦克风路径和电池寿命都更敏感，20–40 ms 或固定省电比例仍需在目标产品上验证。
+
+<!-- gracker-diagram: ch05-09-asha-versus-hap-audio-and-mic -->
+![ASHA 与 HAP 的传输和麦克风边界](../../assets/diagrams/ch05/ch05-09-asha-versus-hap-audio-and-mic.png)
+
+图：两条路径都基于 BLE；ASHA 早于标准 LE Audio，使用 CoC 而非 CIS/BIS。HAP 通话、麦克风与产品能力需实际查询，Android 13 的基础 LE Audio 支持不等于所有 HAP 或广播角色都已具备。
 
 ## Android 13 到 Android 17 的能力对照
 
@@ -340,6 +454,11 @@ Android 13 提供的是 LE Audio 基础支持；具体某台 Android 13 设备�
 | Android 17 / API 37 | AOSP 同时存在单播/广播的软件、硬件 offload 与 peripheral 数据路径 |
 
 Android 17 提供了 Audio Managed SCO 重构，将新路径中的 SCO 启停交给 Audio Framework 管理。启用新路径需要相应系统属性和兼容的 Audio HAL/Bluetooth Audio HAL；属性关闭或 HAL 版本过旧时，设备可以保留旧路径，单凭 Android 17 版本号确认不了是否采用重构。这项变化面向 HFP/SCO，不改变本章对 LE Audio 数据路径的分工。
+
+<!-- gracker-diagram: ch05-09-android17-sco-integration-gate -->
+![Android 17 SCO 重构的启用边界](../../assets/diagrams/ch05/ch05-09-android17-sco-integration-gate.png)
+
+图：新 SCO 管理要求属性与兼容 HAL；设备可因旧 HAL 或属性关闭继续走旧路径。setCommunicationDevice 面向通信路由请求，不能从它推导当前一定采用哪套内部 SCO 管理。
 
 ## 诊断与测量
 
@@ -386,6 +505,11 @@ HCI snoop 记录 Host 与 Controller 之间的命令、事件和数据包。软�
 
 Wireshark 字段名会随 dissector（协议解析器）版本变化。`btatt` 常用于 ATT/GATT，ISO 过滤字段以当前版本能够识别的协议树为准，固定过滤字符串不适合写进自动化判据。
 
+<!-- gracker-diagram: ch05-09-hci-snoop-capture-and-interpretation -->
+![HCI snoop 的采集与解释范围](../../assets/diagrams/ch05/ch05-09-hci-snoop-capture-and-interpretation.png)
+
+图：始终开启的内存摘要日志限制个人数据，只能看概要。完整 snoop 记录 Host/Controller 接口；日志位置、权限与解析字段按产品和工具版本确认，优先从 bugreport 获取。
+
 ### 第三步：用 Perfetto 看 Host 侧
 
 Perfetto 适合检查 AudioFlinger 线程、Binder、调度、CPU idle/frequency 和 wakeup；HCI snoop 用于还原 Host/Controller 接口上的建流控制过程，以及经过该接口的 ISO 数据。两者都替代不了空口抓包。AOSP 不保证 Android 17 提供名为 `android.bluetooth` 的专用 Perfetto data source（数据源），`btif_le_audio_thread` 这条固定轨道同样要看具体产品。
@@ -400,17 +524,27 @@ Perfetto 适合检查 AudioFlinger 线程、Binder、调度、CPU idle/frequency
 
 把 trace 中的 Host 时间点与 btsnoop 中的 HCI 时间点对齐，可以定位应用供数、Audio HAL 缓冲和 Bluetooth 建流耗时；判断射频异常还要结合 Controller 或空口证据。
 
+<!-- gracker-diagram: ch05-09-diagnostic-evidence-scopes -->
+![四类观测证据的边界](../../assets/diagrams/ch05/ch05-09-diagnostic-evidence-scopes.png)
+
+图：先查询目标构建的数据源与 atrace 类别，再对齐事件和时钟。AOSP 不保证固定的 android.bluetooth 数据源或 btif_le_audio_thread 轨道；跨次采集也应注明，不能伪装成同一时间线。
+
 ### 第四步：用声学标记测端到端
 
 稳态单向延迟最好使用已知波形：
 
 1. 在源端生成脉冲、MLS（最大长度序列）或带时间标记的音频；
-2. 用外部声卡或同步采集设备记录源参考与耳机声学输出；
+2. 用外部声卡或同步采集设备，以共同采样时基记录源参考与耳机声学输出；报告参考信号的注入位置，并校准测量链路与声传播差。普通 loopback 测得的是输入加输出的往返延迟，不能直接当成单向延迟；
 3. 对多次事件做互相关，用波形相似度估算时间偏移，并报告中位数、P95/P99（第 95/99 百分位）和离群值；
 4. 另行统计冷启动、已连接启动和路由切换间隙；
 5. 同步保存 Codec/QoS、HCI snoop、Perfetto 和射频条件。
 
 logcat 里的“stream started”给不出声学端到端延迟：这个时间点通常还在控制面，离耳机按协商的 Presentation Delay 完成缓冲、解码与声学输出还有一段距离。
+
+<!-- gracker-diagram: ch05-09-acoustic-latency-measurement -->
+![从已知波形测量声学端到端延迟](../../assets/diagrams/ch05/ch05-09-acoustic-latency-measurement.png)
+
+图：这是正文建议的单向测量设计，需要外部参考与同步采集。常规音频 loopback 得到的是输入+输出往返延迟，不能直接当作单向；logcat 的 stream started 也不代表声学呈现。
 
 ## 常见误判
 
@@ -467,5 +601,6 @@ logcat 里的“stream started”给不出声学端到端延迟：这个时间�
 - [codec_manager.cc（android-17.0.0_r1）](https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/codec_manager.cc)：Host/ADSP 选择、平台 ISO 数据路径与 offload 能力检查。
 - [audio-base-utils.h（android-17.0.0_r1）](https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:system/media/audio/include/system/audio-base-utils.h)：BLE headset、speaker、broadcast、hearing aid 与 central 设备类型。
 - [AOSP Bluetooth 验证与调试](https://source.android.com/docs/core/connect/bluetooth/verifying_debugging)：HCI snoop 的接口范围、内存摘要日志限制和启用后的蓝牙重启要求。
+- [AOSP 音频延迟测量](https://source.android.com/docs/core/audio/latency/measure)：同步采集、相关性定位，以及 loopback 往返延迟的边界。
 - [AudioManager API reference](https://developer.android.com/reference/android/media/AudioManager)：`setCommunicationDevice()` 的可用设备选择、清理要求，以及 SCO API 的弃用与无操作边界。
 - [Audio Managed SCO rearchitecture](https://source.android.com/docs/core/audio/sco-audio-mgmt)：Android 17 的 SCO/HFP 管理变化，以及系统属性和兼容 HAL 的启用条件。

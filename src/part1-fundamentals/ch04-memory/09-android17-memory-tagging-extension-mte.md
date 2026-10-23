@@ -94,6 +94,11 @@ MTE 常用于发现两类原生内存错误：
 
 4 位标签只有 16 种取值，检测因此带有概率性；越界访问若还落在同一个 16 字节粒度里，标签一致，检查也就无从触发。MTE 的定位是原生内存安全的检测与缓解手段，跑完 MTE 测试没有报错，也只代表这两类错误这次没被抓到。标签元数据相对数据本身的存储比例，见后文“标签存储的内存开销与 vMTE 展望”。
 
+<!-- gracker-diagram: ch04-09-pointer-tag-and-granule -->
+![指针的逻辑标签，逐个对照 16 字节粒度的分配标签](../../assets/diagrams/ch04/ch04-09-pointer-tag-and-granule.png)
+
+图：MTE 比较指针 bits[59:56] 的逻辑标签与访问地址所在 16 字节粒度的分配标签。示例中 A 指针访问 A 粒度可通过，越到 B 粒度或内存重标成 C 后仍使用旧 A 指针才会不匹配。同一粒度内的越界或标签碰撞可能漏检，比较通过也不证明业务访问合法。
+
 ### 标签指令与分配器约定
 
 常用指令可以按职责分为以下几类：
@@ -125,6 +130,11 @@ Bionic 初始化 MTE 时会把这个位掩码（mask）交给 `prctl()`。非零
 4. 当前执行上下文没有通过 `PSTATE.TCO` 临时关闭检查。
 
 四个条件都满足后，CPU 才比较逻辑标签与分配标签。架构规范只约束外部可观察的异常语义；每款 CPU 的 TLB（地址转换缓存）、高速缓存、ROB（乱序重排序缓冲区）和写缓冲区怎么做，属于各自的微架构选择。这也是一套推测出来的流水线时序套不到所有 Arm CPU 头上的原因：开销要看数字，还是得回到目标设备。
+
+<!-- gracker-diagram: ch04-09-mapping-thread-and-bypass -->
+![映射与线程是两套开关，TCO 还可临时关闭检查](../../assets/diagrams/ch04/ch04-09-mapping-thread-and-bypass.png)
+
+图：先有 CPU 与内核 MTE 能力，再分别给地址映射 PROT_MTE、给当前线程选择检查模式，且访问时 TCO 未关闭检查，才会比较标签。PR_GET_TAGGED_ADDR_CTRL 返回请求配置；请求多个模式时会保留多个位，不能据此证明某地址已带标签或当前 CPU 实际采用哪一个首选模式。
 
 ## 三种检测模式：报告行为与开销评估
 
@@ -163,6 +173,11 @@ si_addr = 0
 ASYMM 把两种检查拆开用：读走同步，写走异步。AOSP 文档指出，它通常具有接近 ASYNC 的性能特征，同时又能准确定位读取错误。
 
 应用接口请求不到 ASYMM，它由系统代选：Android 的 Bionic 在请求 ASYNC 时，先把 `PR_MTE_TCF_ASYNC | PR_MTE_TCF_SYNC` 两个可接受模式位一并交给内核，新内核据此结合当前 CPU 的首选模式，在 ASYNC、ASYMM 和 SYNC 里挑一个；内核若不接受多个模式位，Bionic 再回退到单独请求 ASYNC。
+
+<!-- gracker-diagram: ch04-09-sync-async-asymm-reporting -->
+![三种报告方式：精确访问位置与延后报告的取舍](../../assets/diagrams/ch04/ch04-09-sync-async-asymm-reporting.png)
+
+图：SYNC 在出错访问报告 SEGV_MTESERR，地址与 PC 可定位；ASYNC 可在一次或多次错误后报告 SEGV_MTEAERR，地址为 0，报告 PC 不能直接视为触发指令。ASYMM 读同步、写异步。应用 manifest 只有 off/default/sync/async；ASYNC 请求可由 Bionic 提交多个可接受模式，再由内核按 CPU 首选代选。
 
 ### 开销评估与实测方法
 
@@ -239,6 +254,11 @@ bool running_with_mte() {
 
 覆盖来源的优先级固定在 `libc_init_mte.cpp` 里：先 `MEMTAG_OPTIONS`，再 `arm64.memtag.process.<basename>`，然后是 DeviceConfig 里的进程覆盖值，最后是 `persist.arm64.memtag.default`。这些开关面向平台和调试配置，普通应用不要把它们当成稳定 API。
 
+<!-- gracker-diagram: ch04-09-native-executable-initialization -->
+![原生可执行文件：ELF 与覆盖配置汇入 libc 初始化](../../assets/diagrams/ch04/ch04-09-native-executable-initialization.png)
+
+图：动态程序由 linker，静态程序由 libc 启动路径进入 __libc_init_mte。ELF 动态表项或旧 note 提供默认请求；环境与属性按优先级覆盖堆模式。初始化向内核提交线程配置，并通过 __libc_shared_globals 把初始堆级别和栈 ABI 等交给进程 libc，随后 Scudo 决定是否标签分配。
+
 ### 应用进程由 Zygote 决策
 
 应用进程从 Zygote 派生（fork）而来，走不了原生可执行文件那套完整启动选择，改由 Zygote 代为决策。`Zygote.getRequestedMemtagLevel()` 在 `android-17.0.0_r1` 里按以下顺序取值：
@@ -248,8 +268,8 @@ bool running_with_mte() {
 3. `<application android:memtagMode>`；
 4. `NATIVE_MEMTAG_SYNC` 兼容性变更开关（compat change）；
 5. `NATIVE_MEMTAG_ASYNC` 兼容性变更开关；
-6. `persist.arm64.memtag.app_default`；
-7. 旧版 TBI 指针标签兼容行为。
+6. 未命中以上来源时，若 `allowsNativeHeapPointerTagging()` 为 false，直接返回 NONE；否则读取 `persist.arm64.memtag.app_default`；
+7. 仍未选定模式时，再判断旧版 TBI 指针标签兼容行为。
 
 拿到结果后，`decideTaggingLevel()` 按硬件能力降级；在 userdebug/eng 调试系统且平台默认要求 SYNC 时，它还会把应用的 ASYNC 升为 SYNC。进程派生完成后，原生函数 `SpecializeCommon()` 把运行时标志转换成 `M_HEAP_TAGGING_LEVEL_*`，再调用：
 
@@ -258,6 +278,11 @@ mallopt(M_BIONIC_SET_HEAP_TAGGING_LEVEL, heap_tagging_level);
 ```
 
 这次 `mallopt()` 调用把堆标签级别交给 Bionic 内存分配器。
+
+<!-- gracker-diagram: ch04-09-zygote-request-priority -->
+![应用由 Zygote 决策：显式请求优先，默认前还有退出分支](../../assets/diagrams/ch04/ch04-09-zygote-request-priority.png)
+
+图：Zygote 先取应用属性覆盖，再取 process/application manifest、SYNC/ASYNC compat 请求。都未命中时先检查是否退出原生堆指针标签，再读 app_default 和 TBI 兼容行为。decideTaggingLevel 根据硬件降级，调试系统还可升级 ASYNC；fork 后 SpecializeCommon 把运行时标志交给 Bionic 堆标签 mallopt。
 
 `ApplicationInfo` 的内部常量是 `DEFAULT=-1`、`OFF=0`、`ASYNC=1`、`SYNC=2`。这几个整数属于隐藏实现，应用侧只认 manifest 字符串。
 
@@ -272,9 +297,19 @@ AOSP 暴露了两种分配标签策略，侧重点不同：
 
 粒度的限制还在：偏重缓冲区溢出的策略，同样管不到同一 16 字节粒度内的越界。
 
+<!-- gracker-diagram: ch04-09-allocator-pointer-and-memory-tags -->
+![分配器要同时维护指针与内存标签，IRG 不会替内存写标签](../../assets/diagrams/ch04/ch04-09-allocator-pointer-and-memory-tags.png)
+
+图：IRG 生成指针逻辑标签，STG 等指令才写内存分配标签。Scudo 在 malloc/free 的受保护路径维护两端，普通分配排除标签 0，块头保留 0；启用释放重标记时还排除先前标签。越界和复用仍受粒度、选标策略与覆盖范围限制，不能仅按 4 位位宽给所有情形套统一检测概率。
+
 ### 堆标签级别的状态转换
 
 `SetHeapTaggingLevel()` 允许 ASYNC 与 SYNC 之间来回切换。ASYNC/SYNC 降到 `NONE` 之后，Bionic 会关闭各线程的标签检查模式、停止栈 MTE，并通知 Scudo 禁用内存标签。这一步走完就回不去了：从 `NONE` 重新开启标签会失败，TBI 与 ASYNC/SYNC 之间也不能随意互换，因为进程中已有的指针、内存块和栈状态，恢复不成统一的带标签状态。所以策略要在进程启动时选好，运行时切换留给在 ASYNC 与 SYNC 之间复现问题。
+
+<!-- gracker-diagram: ch04-09-heap-tagging-mode-transitions -->
+![ASYNC 与 SYNC 可互换，关闭到 NONE 是单向转换](../../assets/diagrams/ch04/ch04-09-heap-tagging-mode-transitions.png)
+
+图：在支持的进程配置中，SetHeapTaggingLevel 可在 ASYNC 与 SYNC 间切换，Bionic 同时调整线程 TCF 和 Scudo 分配栈记录。关闭到 NONE 会停止检查与标签管理，当前实现不支持再开启；TBI 与 ASYNC/SYNC 的切换也不被支持。这个进程级接口与直接调用某一线程 prctl 的范围不同。
 
 ## 栈与全局变量的 MTE 支持
 
@@ -301,6 +336,11 @@ target_link_options(
 ```
 
 插桩构建只应在支持 MTE 的设备上运行，官方对它的定位是调试用途。发布包若只打算检查原生堆，启用 manifest 模式就够了，不必把所有原生目标都编成 memtag 插桩版本。
+
+<!-- gracker-diagram: ch04-09-heap-stack-globals-coverage -->
+![堆、栈、全局变量需要三套配合，manifest 只解决堆入口](../../assets/diagrams/ch04/ch04-09-heap-stack-globals-coverage.png)
+
+图：普通原生堆依赖 manifest 模式与系统分配器；栈需要编译器按局部对象生命周期插桩，运行时准备标签栈与历史缓冲；全局变量需要编译器、LLD 描述符及动态链接器共同设置标签与重定位。只启用一个入口不能据此宣布三类存储都被覆盖。
 
 ### 栈 MTE
 
@@ -331,6 +371,11 @@ DT_AARCH64_MEMTAG_GLOBALSSZ
 5. 执行数据段保护步骤，并为替换文件映射的匿名虚拟内存区（VMA）命名，方便诊断；当前标签范围仍限于可写数据段。
 
 这一步的代价是失去原有的文件页共享，所以链接器只在 ELF 明确请求全局变量标签、且设备支持 MTE 时才执行重新映射。
+
+<!-- gracker-diagram: ch04-09-globals-tagged-remapping -->
+![全局变量：描述符驱动重映射、分配标签与重定位](../../assets/diagrams/ch04/ch04-09-globals-tagged-remapping.png)
+
+图：ELF 有非空 globals 描述符且进程启用 MTE 时，链接器选择可写、不可执行 PT_LOAD 段并尝试 PROT_MTE。原文件映射不支持时复制成固定地址私有匿名映射，再解码描述符写入标签、给符号和重定位加逻辑标签，恢复保护并命名 VMA。代价包含原有文件页共享的损失。
 
 ### 支持 MTE 的 libc ifunc
 
@@ -394,6 +439,11 @@ SYNC 模式下还要看 `Cause: [MTE]`、内存分配/释放调用栈，以及�
 5. 检查自定义分配器、JNI 指针算术、对象生命周期和跨线程移交。
 6. 修复后用同一工作负载重新测试，并保留 MTE 与内存错误检测工具 ASan/HWASan 的互补测试。
 
+<!-- gracker-diagram: ch04-09-tombstone-diagnosis-and-retest -->
+![先读信号语义，再用同场景 SYNC 补足生命周期证据](../../assets/diagrams/ch04/ch04-09-tombstone-diagnosis-and-retest.png)
+
+图：确认设备能力、进程重启与预期配置后，先按 tombstone 信号代码分类。MTESERR 的故障 PC/地址可直接定位访问，MTEAERR 则需要同场景切 SYNC 复现。再对应分配、释放或栈历史及自定义分配器，修复真实生命周期或边界错误；没有新报告也不等于覆盖所有错误。
+
 ## 标签存储的内存开销与 vMTE 展望
 
 从架构信息量计算，每 16 字节数据需要 4 位分配标签，比例为：
@@ -408,11 +458,16 @@ Linux 核心转储（core dump）会把两个 4 位标签压成一个字节，�
 
 “vMTE”常被用来指让标签存储更灵活或虚拟化的后续方案，Android 17 SDK/NDK 和 `android17-6.18-2026-06_r6` 都没有向应用提供这样的接口。评估 Android 17 产品时，我们以设备规格书、内核公布的能力和实测 PSS/RSS 为准，未来架构的设想先不算进当前收益。
 
+<!-- gracker-diagram: ch04-09-tag-capacity-and-detection-limits -->
+![3.125% 是标签信息量，运行成本与检测概率还要另算](../../assets/diagrams/ch04/ch04-09-tag-capacity-and-detection-limits.png)
+
+图：每 16 字节携带 4 位分配标签，理论信息量为数据的 1/32。实际产品成本还含 allocator 对齐、Scudo 元数据与诊断历史、栈历史以及 globals 重映射等。标签碰撞、同粒度错误和侧信道限制检测能力；具体检测概率取决于标签集合与生命周期，不能仅由位宽推得统一数值。
+
 ## MTE 安全攻击面与缓解
 
 ### 检测概率与标签保密
 
-攻击者猜中 4 位标签，或者错误访问仍落在同一标签粒度内，MTE 就可能漏报。AOSP 的释放后使用调优策略采用独立随机标签时，给出的均匀检测概率约为 93%，对应 `15/16` 的标签不匹配概率；相邻标签策略则优先让常见的线性越界跨过内存块后撞上不同标签。
+攻击者猜中 4 位标签，或者错误访问仍落在同一标签粒度内，MTE 就可能漏报。AOSP 对独立随机标签策略给出的检测概率约为 93%，这是特定标签策略下的近似描述，不能直接等同于均匀使用全部 16 个标签的 `15/16` 模型：Android Scudo 的随机生成会排除标签 0，释放重标记还会排除先前标签。即时释放后访问与多次复用后的碰撞概率也不同。相邻标签策略则优先让常见的线性越界跨过内存块后撞上不同标签。
 
 TIKTAG 等研究还展示了借助推测执行与高速缓存侧信道（cache side channel）推断 MTE 标签的可行性。做安全评估时，我们把标签当成可被推断的信息看待，而不是密码学秘密。某台 Android 17 设备是否受影响，取决于具体微架构、内核与缓解配置；CPU 声称支持 FEAT_MTE4，也证明不了设备已经免疫。
 

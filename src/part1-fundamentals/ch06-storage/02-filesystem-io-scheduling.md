@@ -94,7 +94,7 @@ consolidated_from:
 
 # 文件系统与 I/O 调度
 
-应用 I/O 从系统调用进入 VFS、页缓存和具体文件系统，最后由块层和设备队列提交给存储。这一篇我们讲两件事：文件系统解释数据怎样组织和持久化，I/O 调度解释多个请求如何排序、合并与限流。
+应用 I/O 从系统调用进入 VFS、页缓存和具体文件系统；缓存未满足或需要回写、同步时，才可能继续由块层和设备队列提交给存储。这一篇我们讲两件事：文件系统解释数据怎样组织和持久化，I/O 调度解释多个请求如何排序、合并与限流。
 
 > 源码基线：Android 17 / API 37，AOSP `android-17.0.0_r1`；Android Common Kernel `android17-6.18-2026-06_r6`。
 
@@ -103,6 +103,11 @@ consolidated_from:
 ### VFS 与 Page Cache（页缓存）：统一接口之下的差异
 
 VFS（Virtual File System，虚拟文件系统）通过 `super_block`、`inode`（索引节点）、`dentry` 和 `file` 等内核对象向上提供统一接口：它们分别描述挂载的文件系统、文件元数据、目录项和已打开文件。App 调用同一套 `open()`、`read()`、`write()` 和 `fsync()`，VFS 再把操作分发到具体文件系统的 `file_operations`、`address_space_operations` 等实现。接口统一，行为各不相同，这也是我们分析 I/O 问题时总要落到具体文件系统上的原因。
+
+<!-- gracker-diagram: ch06-02-vfs-objects -->
+![VFS 对象与操作分发](../../assets/diagrams/ch06/ch06-02-vfs-objects.png)
+
+图：dentry 表示名字关系，inode 表示文件本体，file 表示一次打开；VFS 按操作接口分发到具体实现。
 
 普通缓冲 I/O 的 `write()` 通常先修改 Page Cache，页面随后被标记为 dirty。内核回写线程可以异步提交这些页面；`fsync()` 则要求指定文件在相应范围内达到持久化语义，因此调用者可能需要等待：
 
@@ -113,9 +118,14 @@ VFS（Virtual File System，虚拟文件系统）通过 `super_block`、`inode`�
 
 Page Cache 命中会掩盖很多读取差异。分析随机读时，我们先区分缓存命中、page fault（缺页） 触发的读取和落到存储设备上的读取，就不会把内存访问的速度算到文件系统名下。
 
+<!-- gracker-diagram: ch06-02-buffered-persistence -->
+![缓存返回与持久化完成](../../assets/diagrams/ch06/ch06-02-buffered-persistence.png)
+
+图：write 返回通常只表示数据进入缓存；fsync 要等待对应持久化工作，flush/FUA 的使用由文件系统与块层条件决定。
+
 ### 先把 `fsync` 卡顿放回完整 I/O 路径
 
-在 Perfetto 里，我们偶尔会看到主线程进入一段不可中断睡眠，调用栈停在 `fsync()`、`fdatasync()` 或文件关闭附近。这只说明线程在等持久化路径走完。要判断问题出在哪一层，得把这一次同步写放回完整的 I/O 路径。它可能经过这些层次：
+在 Perfetto 里，我们偶尔会看到主线程进入一段不可中断睡眠，调用栈停在 `fsync()`、`fdatasync()` 或文件关闭附近。这是持久化相关等待的一条线索，仍需调用栈和事件确认；文件关闭本身不等同于一次 fsync，不可中断等待也可能来自其他内核资源。要判断问题出在哪一层，得把这一次同步写放回完整的 I/O 路径。它可能经过这些层次：
 
 1. App 或数据库提交修改。
 2. VFS 把脏页交给 ext4 或 F2FS；脏页就是内存中已修改、还没写回存储的数据页。
@@ -123,7 +133,7 @@ Page Cache 命中会掩盖很多读取差异。分析随机读时，我们先区
 4. 块层处理请求合并、调度、加密与 device-mapper（设备映射层） 映射。
 5. UFS 控制器和设备内部 FTL 完成写入与缓存刷新。
 
-`fsync()` 的返回语义还受挂载参数和写屏障影响；存储设备怎样实现 flush（刷写）/FUA（刷新设备缓存/要求本次写入到达非易失介质），同样会改变它。文件系统能改变这条路径上的一部分成本；器件尾延迟、温度降频、磨损控制和队列拥塞，它消除不了。
+`fsync()` 的返回语义还受挂载参数和写屏障影响；存储设备怎样实现 flush（刷新设备写缓存）与 FUA（Force Unit Access，要求本次写入到达非易失介质），同样会改变它。文件系统能改变这条路径上的一部分成本；器件尾延迟、温度降频、磨损控制和队列拥塞，它消除不了。
 
 SQLite 的同步次数同样要看条件：事务边界、journal 模式、`PRAGMA synchronous`、是否发生 cache spill（缓存页提前写出），以及文件系统是否提供 SQLite 能识别的原子批写能力，一起决定一次修改要同步几次；“每执行一条 SQL 就调用一次 `fsync()`”这样的固定对应，在这里套不上。
 
@@ -145,6 +155,11 @@ ext4 在 arm64 GKI（Generic Kernel Image，通用内核镜像）中仍为内建
 
 “就地更新”说的是 ext4 在逻辑块分配上的倾向。NAND 的物理擦除、搬移和磨损均衡由 UFS/eMMC 内部的 FTL（闪存转换层）处理，固定的 NAND erase block（擦除块）只出现在 FTL 内部，ext4 面对的是逻辑块。把每次 ext4 小写入都描述成一次固定大小的“读—改—擦—写”，就把逻辑写入和 NAND 物理操作绑得太死了。
 
+<!-- gracker-diagram: ch06-02-ext4-allocation -->
+![ext4 缓冲写分配与有序日志](../../assets/diagrams/ch06/ch06-02-ext4-allocation.png)
+
+图：extent 合并连续逻辑映射，延迟分配为批量布局提供机会；data=ordered 约束相关数据先于元数据日志提交完成。
+
 ext4 今天仍是 Android 设备的候选之一：分区职责、升级方案、故障恢复经验和性能目标，都会影响一台设备是否选择它。
 
 #### ext4 `fsync` 的等待路径
@@ -164,13 +179,18 @@ if (needs_barrier)
 
 这条路径先提交并等待目标文件范围的数据，再等待对应的 journal transaction（日志事务）；需要写屏障时还会发出块设备 flush。`ext4_fsync_journal()` 会对普通文件尝试 `ext4_fc_commit()`，能否走 fast commit 由文件系统特性和本次修改类型共同决定。
 
+<!-- gracker-diagram: ch06-02-ext4-sync-transaction -->
+![ext4 fsync 与 journal 等待范围](../../assets/diagrams/ch06/ch06-02-ext4-sync-transaction.png)
+
+图：fsync 先等待目标文件数据，再等待相关 journal/fast commit；同一日志事务可能包含其他工作，最终按需 flush 并报告错误。
+
 因此我们会看到，ext4 的一次 `fsync()` 可能捎带等待同一 journal transaction 中的其他工作；把它扩写成“等待所有进程的脏数据”或“每次都做完整 checkpoint”就过度了。诊断时应同时查看 `ext4_sync_file_enter/exit`、jbd2 commit 和块层事件。
 
 ### F2FS：围绕闪存负载组织写入
 
 #### LFS 思路与 F2FS 的修正
 
-F2FS 借鉴 LFS（log-structured file system（LFS，日志结构文件系统），日志结构文件系统）的思路，目标是减少随机覆盖写，同时控制经典 LFS 的两大成本：wandering tree（更新叶节点后逐级改写索引节点）与空间清理。arm64 GKI 启用了：
+F2FS 借鉴 LFS（Log-Structured File System，日志结构文件系统）的思路，目标是减少随机覆盖写，同时控制经典 LFS 的两大成本：wandering tree（更新叶节点后逐级改写索引节点）与空间清理。arm64 GKI 启用了：
 
 - `CONFIG_F2FS_FS=y`
 - `CONFIG_F2FS_FS_COMPRESSION=y`
@@ -184,13 +204,28 @@ F2FS 的空间分配单位是 segment，默认含 512 个 block；一个 section
 - **Checkpoint**：保存一组可恢复的一致状态。双 checkpoint pack 让挂载恢复可以选择有效版本。
 - **多路 active logs（活跃日志）**：按 node/data、冷热等类别分配写入，尽量降低 GC 搬移有效块的成本。
 
+<!-- gracker-diagram: ch06-02-f2fs-metadata-roles -->
+![F2FS 的日志、有效性与恢复结构](../../assets/diagrams/ch06/ch06-02-f2fs-metadata-roles.png)
+
+图：active logs 分流 node/data 与冷热写入；NAT 定位 node，SIT 记录有效块，SSA 提供归属摘要，checkpoint 固化可恢复状态。 箭头表示状态协作，不代表每次 GC 后立即 checkpoint。
+
 容易搞错的是 NAT 的分工：NAT 只负责 `nid → node block address`，文件数据块地址放在 inode 或其他 node 的地址数组里。要是把 NAT 说成“文件逻辑块到数据块的直接映射”，就漏掉了 F2FS 解决 wandering tree 的关键一层。
+
+<!-- gracker-diagram: ch06-02-f2fs-nat-mapping -->
+![F2FS 的 NAT、node 与数据地址](../../assets/diagrams/ch06/ch06-02-f2fs-nat-mapping.png)
+
+图：NAT 解析 node 的当前位置，node 的地址数组再解析文件数据块；node 搬移时更新 NAT，父节点仍可引用稳定 nid。
 
 #### SSR 与 IPU：追加式写入的例外
 
 追加式写入是 F2FS 的默认倾向，但也有例外。默认的 adaptive（自适应） 模式会在 LFS 分配与 SSR（Selective Segment Reuse，选择性复用分段）之间选择：空间宽裕时，out-of-place update（异地更新）更容易保持追加式写入；空间紧张时，SSR 可以复用已用 segment 中的空洞。挂载为 `mode=lfs` 时，主区域不采用随机覆盖分配，代价是需要更多连续空闲空间。
 
 F2FS 还存在 IPU（in-place update，就地更新）路径。内核的 `f2fs_do_sync_file()` 会在 `fdatasync()` 或脏页较少时设置 `FI_NEED_IPU`，随后执行范围写回。所以，“F2FS 的每一次数据修改都是 CoW（写时复制）”属于过度简化。
+
+<!-- gracker-diagram: ch06-02-f2fs-opu-ipu-ssr -->
+![OPU / IPU 与 LFS / SSR 的两个维度](../../assets/diagrams/ch06/ch06-02-f2fs-opu-ipu-ssr.png)
+
+图：F2FS 既要决定数据地址是否变化，也要决定新地址如何分配；SSR 复用的是 segment 空洞，IPU 则覆盖当前有效数据块地址。
 
 当前 `f2fs_need_SSR()` 的判断条件很清晰，我们逐条看：
 
@@ -200,11 +235,21 @@ F2FS 还存在 IPU（in-place update，就地更新）路径。内核的 `f2fs_d
 
 这些阈值来自运行时状态和格式化参数，没有一份适用于所有设备的固定百分比；排查时直接读现场状态，比背一个百分比可靠。
 
+<!-- gracker-diagram: ch06-02-f2fs-ssr-gates -->
+![f2fs_need_SSR 的判断次序](../../assets/diagrams/ch06/ch06-02-f2fs-ssr-gates.png)
+
+图：先检查 mode=lfs；只有未被它排除时，urgent/禁用 checkpoint 或空间阈值才可能要求 SSR。
+
 #### `fsync`、roll-forward 与 checkpoint
 
 我们跟着一次普通的 `fsync()` 走：F2FS 会先写回目标文件数据，再判断是否需要 checkpoint。普通、可 roll-forward（通过重放 fsync node 恢复）的情况，会写入带 fsync 标记的 node 链并发出必要的 flush；非普通文件、压缩文件、硬链接或超级块明确要求 checkpoint 等情况，则可能转入完整 checkpoint。
 
-较短的 roll-forward 路径可以减少恢复信息和等待范围，但仍需满足掉电恢复语义。设备 cache flush、node writeback（节点回写）、checkpoint 以及 GC 都可能成为尾延迟来源，所以“F2FS 上的 `fsync()` 没有成本”是错误结论。
+<!-- gracker-diagram: ch06-02-f2fs-fsync-recovery -->
+![F2FS fsync 的恢复分支](../../assets/diagrams/ch06/ch06-02-f2fs-fsync-recovery.png)
+
+图：正常启用 checkpoint 的路径先写数据，再按恢复条件选择完整 checkpoint 或 fsync node；没有新增修改时还可能提前结束。
+
+以上描述针对正常启用 checkpoint 的可写文件系统；checkpoint disabled 时，`f2fs_do_sync_file()` 在范围写回后会提前返回，不能沿用普通 checkpoint/roll-forward 的持久化推断。没有新增修改等情况也可能跳过恢复信息写入。较短的 roll-forward 路径可以减少恢复信息和等待范围，但仍需满足掉电恢复语义。设备 cache flush、node writeback（节点回写）、checkpoint 以及 GC 都可能成为尾延迟来源，所以“F2FS 上的 `fsync()` 没有成本”是错误结论。
 
 #### 原子文件写与 Android SQLite
 
@@ -215,9 +260,21 @@ F2FS 还存在 IPU（in-place update，就地更新）路径。内核的 `f2fs_d
 - `F2FS_IOC_ABORT_ATOMIC_WRITE`
 - `F2FS_IOC_START_ATOMIC_REPLACE`
 
-`f2fs_ioc_start_atomic（原子）_write()` 会为普通文件准备 COW（写时复制） inode；commit 路径调用 `f2fs_commit_atomic_write()`，随后按 atomic 语义同步文件，失败或结束后再清理原子写状态。这里的“原子”指一批文件页修改在崩溃恢复时要么全部可见，要么全部不可见，写入本身仍可能有 I/O 等待。
+`f2fs_ioc_start_atomic_write()` 会为普通文件准备 COW（写时复制） inode；commit 路径调用 `f2fs_commit_atomic_write()`，随后按 atomic 语义同步文件，失败或结束后再清理原子写状态。这里的“原子”指一批文件页修改在崩溃恢复时要么全部可见，要么全部不可见，写入本身仍可能有 I/O 等待。
 
-AOSP SQLite 在 `external/sqlite/dist/Android.bp` 中启用了 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE`，编译期开关提供了使用机会。但 Unix VFS（Unix 平台的虚拟文件系统适配层） 只有在 `F2FS_IOC_START_ATOMIC_WRITE` 探测成功后才报告 `SQLITE_IOCAP_BATCH_ATOMIC`，SQLite pager（页面缓存与事务管理模块） 还会检查数据库状态和事务条件——要断言一个事务真的走了 F2FS 原子写，这几层都要确认。
+<!-- gracker-diagram: ch06-02-f2fs-atomic-cow -->
+![F2FS 原子文件写的 COW 生命周期](../../assets/diagrams/ch06/ch06-02-f2fs-atomic-cow.png)
+
+图：START 为普通可写文件准备 COW inode；COMMIT 安装修改并执行 atomic 同步，随后清理原子状态。
+
+AOSP SQLite 在 `external/sqlite/dist/Android.bp` 中启用了 `SQLITE_ENABLE_BATCH_ATOMIC_WRITE`，编译期开关提供了使用机会。但 Unix VFS（Unix 平台的虚拟文件系统适配层）先用 `F2FS_IOC_GET_FEATURES` 查询 `F2FS_FEATURE_ATOMIC_WRITE`，成功且包含该位时才报告 `SQLITE_IOCAP_BATCH_ATOMIC`；实际开始批写时才发出 `F2FS_IOC_START_ATOMIC_WRITE`。SQLite pager（页面缓存与事务管理模块）还会检查数据库状态和事务条件——要断言一个事务真的走了 F2FS 原子写，这几层都要确认。
+
+在这个 r1 pager 中，WAL 走独立分支；batch atomic 的候选提交要求没有 super-journal、VFS 报告能力、未关闭同步，而且 journal 仍在内存中。条件满足后才尝试 BEGIN / 写页 / COMMIT；执行出错还可能回退到普通 journal 或向上报告错误。编译宏、文件系统类型和事务实际路径不能画等号。
+
+<!-- gracker-diagram: ch06-02-sqlite-batch-decision -->
+![SQLite F2FS batch atomic 的实际门槛](../../assets/diagrams/ch06/ch06-02-sqlite-batch-decision.png)
+
+图：编译开关、GET_FEATURES 能力位、非 WAL pager 条件和实际 ioctl 执行逐层成立，才有本次 batch atomic 提交。
 
 #### GC：空间紧张时为什么会抬高尾延迟
 
@@ -233,9 +290,14 @@ required_secs = needed + reserved_sections(sbi) +
 return free_secs < required_secs;
 ```
 
-`__get_secs_required()` 会把 dirty node、dentry、inode metadata，以及特定模式下的 dirty data，换算为所需 section。`f2fs_balance_fs()` 在空间足够时直接返回；空间不足时，它可以唤醒启用了 `gc_merge` 的 GC 线程并等待，也可以调用 `f2fs_gc()` 释放 section。普通后台 GC 可以使用 cost-benefit（成本收益） 或 age-threshold（年龄阈值） 选择 victim，前台 GC 则使用 greedy（贪心） 选择逻辑。
+`__get_secs_required()` 会把 dirty node、dentry、inode metadata，以及特定模式下的 dirty data，换算为所需 section。`f2fs_balance_fs()` 在空间足够时直接返回；空间不足时，它可以唤醒启用了 `gc_merge` 的 GC 线程并等待，也可以调用 `f2fs_gc()` 释放 section。默认策略下，后台 GC 使用 cost-benefit（成本收益）或启用 ATGC 时的 age-threshold（年龄阈值），前台 GC 使用 greedy（贪心）；`gc_mode` 的 idle/urgent 模式还可以覆盖这个选择。
 
 这也解释了“剩余容量尚未显示为 0，写入已经变慢”的现象：文件系统要保留可完成写回、checkpoint 和 GC 搬移的工作空间；UFS 自身也需要预留块进行 FTL 回收。两层空间压力可能同时出现。
+
+<!-- gracker-diagram: ch06-02-f2fs-gc-pressure -->
+![F2FS GC 与前台空间等待](../../assets/diagrams/ch06/ch06-02-f2fs-gc-pressure.png)
+
+图：GC 需要把 victim 中仍有效的块搬到别处，才能释放可复用空间；空闲 section 不足会让前台参与或等待。
 
 #### 4 KB 与 16 KB 页大小
 
@@ -243,20 +305,30 @@ Android 15 开始支持 16 KB page size（页大小），Android 17 继续支持
 
 - AOSP 用户空间可以构建为 page-size agnostic（不依赖固定页大小），ELF 以 16 KB 对齐后可在 4 KB/16 KB kernel 上运行。
 - `android17-6.18-2026-06_r6` 的 `include/linux/f2fs_fs.h` 明确规定 `F2FS_BLKSIZE == PAGE_SIZE`。
-- 同一源码中的默认 segment 仍含 512 个 block，因此 4 KB 页时默认 segment 为 2 MB，16 KB 页时为 8 MB。
+- 同一源码中的默认 segment 仍含 512 个 block，因此 4 KB 页时默认 segment 为 2 MiB，16 KB 页时为 8 MiB。
 
 16 KB kernel 使用的 F2FS 格式参数需要按 16 KB block 生成。设备升级后能否保留 `/data`，取决于 OEM 的分区、迁移和升级方案；App 的 ELF 兼容结论回答的是另一件事，“旧 4 KB `/data` 可原样挂载”这样的推断要从设备实现里找答案。App 工程师要做的是修复 native library 对页大小的硬编码；格式化与用户数据迁移则由设备实现负责。
+
+<!-- gracker-diagram: ch06-02-pages-elf-f2fs-format -->
+![16 KB：ELF 对齐与 F2FS 格式分别检查](../../assets/diagrams/ch06/ch06-02-pages-elf-f2fs-format.png)
+
+图：16 KB ELF 对齐解决用户空间兼容的一部分；该 r6 的 F2FS block 等于 PAGE_SIZE，磁盘格式与迁移还需设备方案。
 
 #### quota、casefold 与 fscrypt
 
 F2FS 和 ext4 都可以承载 Android 所需的配额、大小写无关目录与文件加密能力，但可用性取决于内核配置、文件系统 feature、格式化参数和挂载参数：
 
-- project quota（项目配额） 可以帮助系统按目录项目统计或限制空间；`CONFIG_QUOTA（在线系统更新）=y` 只是内核能力，目标分区有没有启用 `prjquota`，还要看格式化与挂载配置。
+- project quota（项目配额） 可以帮助系统按目录项目统计或限制空间；`CONFIG_QUOTA=y`（配额支持） 只是内核能力，目标分区有没有启用 `prjquota`，还要看格式化与挂载配置。
 - casefold 使用 Unicode 规则进行不区分大小写的查找；只有文件系统具备相应 feature，且目录被设置为 casefold 时才生效。
 - fscrypt 提供文件级加密策略，Android 的 FBE 在其上组织 DE/CE 密钥域。
 - inline encryption（内联加密） 可以把数据加解密交给存储控制器，但文件系统仍负责密钥上下文与 `bio`（块 I/O 描述结构） 标记。
 
 检查设备行为时，我们要读的是实际的 superblock feature（超级块特性）、mount options（挂载选项） 和内核配置；这些细节都藏在里面，文件系统类型只给出一个起点。
+
+<!-- gracker-diagram: ch06-02-filesystem-feature-gates -->
+![quota、casefold、fscrypt 的启用门槛](../../assets/diagrams/ch06/ch06-02-filesystem-feature-gates.png)
+
+图：从内核支持到磁盘 feature、挂载/目录/策略状态逐层核对，才能解释某个目标文件的行为。
 
 ### EROFS：面向不可变镜像的只读文件系统
 
@@ -274,6 +346,11 @@ EROFS 的核心能力包括：
 - chunk-based 与 rolling-hash（滚动哈希） 压缩数据去重；
 - 面向随机访问的索引设计。
 
+<!-- gracker-diagram: ch06-02-erofs-compressed-read -->
+![EROFS 压缩文件的按需读取](../../assets/diagrams/ch06/ch06-02-erofs-compressed-read.png)
+
+图：EROFS 在构建期生成只读镜像；压缩文件 cache miss 时按索引读取 PCluster，再解压得到文件数据。
+
 AOSP 当前构建文档的默认 compressor（压缩器） 是 `lz4hc`，也允许禁用压缩和调整 PCluster（物理压缩簇） 大小。官方给出的镜像体积数据是平均约缩小 25%，高压缩配置可到约 45%；这组数字描述的是文档中的测试范围，拿来推算任意设备的启动耗时，就超出了它的适用范围。
 
 6.18 arm64 GKI 已启用 `CONFIG_EROFS_FS=y`、`CONFIG_EROFS_FS_ZIP_ZSTD=y` 和 `CONFIG_EROFS_FS_PCPU_KTHREAD=y`，ZSTD 因此具备内核解压支持；镜像是否使用 ZSTD 仍由产品构建配置决定，而且 6.18 Kconfig 仍把该能力标记为 experimental（实验性）。LZ4HC 依然是 AOSP EROFS 构建文档中的默认选择。
@@ -290,7 +367,12 @@ EROFS 负责解释只读文件和压缩数据；dm-verity 负责校验块完整�
 
 dm-verity 会按需读取哈希树并验证数据，挂载时并不会重新计算整棵树。哈希算法、数据块大小和错误策略来自 AVB descriptor（描述符） 与设备配置，把它们固定写成“所有设备每块都用 4 KB SHA-256”是行不通的。
 
-Virtual A/B OTA 合并期间还可能插入 `dm-user`/`snapuserd` snapshot（快照） 层。AOSP 从 Android 13 起完整支持 EROFS 与 Virtual A/B，并能在生成增量 OTA 时处理 LZ4 数据流。这里容易混淆的是两个“压缩”：EROFS 镜像压缩缩小只读文件系统镜像，Virtual A/B snapshot 压缩缩小更新期间暂存的 COW 数据，属于不同层次。
+<!-- gracker-diagram: ch06-02-erofs-verity-layers -->
+![EROFS、AVB 与 dm-verity 的职责](../../assets/diagrams/ch06/ch06-02-erofs-verity-layers.png)
+
+图：读取从文件系统经 dm-verity、逻辑分区映射到 super；AVB 提供可信校验根，文件系统压缩和 OTA COW 压缩处于不同层。
+
+Virtual A/B OTA 的 snapshot（快照）读取与合并阶段还可能插入 `snapuserd` 服务的用户态后端；Android 17 r1 支持按条件选择 `dm-user` 或 `ublk`，实际以本次更新状态为准，后端选择见 6.1。AOSP 从 Android 13 起完整支持 EROFS 与 Virtual A/B，并能在生成增量 OTA 时处理 LZ4 数据流。这里容易混淆的是两个“压缩”：EROFS 镜像压缩缩小只读文件系统镜像，Virtual A/B snapshot 压缩缩小更新期间暂存的 COW 数据，属于不同层次。
 
 ### 文件系统如何影响随机 I/O
 
@@ -313,6 +395,11 @@ POSIX（可移植操作系统接口）语义可以简化为：
 - `fsync(fd)`：同步文件数据，以及恢复该文件状态所需的元数据。
 - `fdatasync(fd)`：可以跳过不影响后续数据读取的元数据，例如仅修改时间戳；文件大小变化仍需持久化。
 
+<!-- gracker-diagram: ch06-02-fsync-fdatasync-scope -->
+![fsync 与 fdatasync 的持久化范围](../../assets/diagrams/ch06/ch06-02-fsync-fdatasync-scope.png)
+
+图：两者都要保证数据可恢复；fdatasync 可省略不影响数据读取的元数据，文件大小变化仍属于必要状态。
+
 “`fdatasync()` 固定少一次元数据写”是常见的预期，实际两者最终走到哪些写回和 flush，取决于文件修改类型与文件系统实现。F2FS 甚至会在 `fdatasync()` 路径设置 `FI_NEED_IPU`——前面我们已经见过这个标志——单看 syscall（系统调用） 名称，估不出一次调用的成本。
 
 SQLite 在 rollback journal、WAL 和不同 `synchronous` 配置下会安排不同的同步操作。要求断电恢复的安全配置需要保留相应同步保证；修改 PRAGMA 来换取性能前，必须先定义允许丢失多少数据，以及是否允许数据库损坏。业务层更稳妥的优化通常是减少事务数量和主线程等待，而非关闭同步保证。
@@ -331,11 +418,11 @@ SQLite 在 rollback journal、WAL 和不同 `synchronous` 配置下会安排不�
 
 ```bash
 adb shell cat /proc/mounts
-adb shell stat -f -c '%T %s' /data
+adb shell stat -f -c '%T %S' /data
 adb shell getconf PAGE_SIZE
 ```
 
-第一条显示实际 mount options，第二条显示 `/data` 的文件系统类型和基本块大小，第三条确认运行内核的页大小。`stat` 的输出只能当第一条线索，完整的判断要落到 F2FS on-disk feature（磁盘格式特性） 上。
+第一条显示实际 mount options，第二条用 Toybox 的 `%T %S` 显示 `/data` 的文件系统类型和基本块大小（`%s` 是最佳传输大小），第三条确认运行内核的页大小。`stat` 的输出只能当第一条线索，完整的判断要落到 F2FS on-disk feature（磁盘格式特性） 上。
 
 Perfetto/ftrace（内核跟踪） 可以按设备开放情况观察：
 
@@ -368,9 +455,14 @@ ext4 的空闲空间可能随着文件创建、扩展、截断和删除而逐渐
 
 F2FS 的更新会产生旧的无效块，GC 随后搬移 victim 中仍然有效的块。冷热数据混放、空闲 section 少或后台 GC 缺少运行窗口时，需要搬移的有效数据会增多，前台分配也更容易等待。F2FS 同样可能把一个文件的逻辑块映射到分散的物理地址，因此“F2FS 没有文件碎片”并不成立。
 
+<!-- gracker-diagram: ch06-02-fragmentation-gc-cost -->
+![长期布局变化与两类额外成本](../../assets/diagrams/ch06/ch06-02-fragmentation-gc-cost.png)
+
+图：布局不连续可能削弱请求合并与预读；F2FS 还需为 GC 搬移有效块，空闲空间和冷热混放会改变成本。
+
 保留一定空闲空间通常有利于文件系统和 FTL 回收；具体保留多少，系统开发者应结合 `/sys/fs/f2fs/<dev>/` 统计、GC trace、块层延迟和产品容量策略建立阈值，“至少 10%”这类跨设备的统一数字只适合当参考。普通 App 要避免用 root 工具对用户设备定期强制 defrag（碎片整理）。
 
-恢复出厂设置会重建或清空用户数据，短期内改变空间与布局状态。对持续制造高频小写、无边界缓存或过多事务提交的业务模式，恢复出厂设置不起作用。
+恢复出厂设置会重建或清空用户数据，短期内改变空间与布局状态。持续制造高频小写、无边界缓存或过多事务提交的业务模式如果继续存在，重置后的空间与布局收益仍可能逐渐消失；恢复出厂设置不能根治这种负载来源。
 
 ### 版本脉络：AOSP 能力与设备事实
 
@@ -448,6 +540,11 @@ I/O scheduler（I/O 调度器） 管的是块层请求进入设备前的一段�
 
 先看清块层自己的形状：现代 Linux 块层使用 blk-mq（多队列块层），软件提交队列把请求分发到一个或多个硬件队列，驱动再把命令交给控制器。可选的 elevator（块 I/O 调度器） 挂在 request queue（请求队列） 上，负责合并、排序或限流尚未 dispatch 的请求——后面讨论的每一种调度器，都工作在这个位置上。
 
+<!-- gracker-diagram: ch06-02-blk-mq-elevator -->
+![blk-mq 中 elevator 的位置](../../assets/diagrams/ch06/ch06-02-blk-mq-elevator.png)
+
+图：elevator 管理尚未派发的请求；none 跳过可选策略，软件上下文、硬件队列、tag 与驱动仍然存在。
+
 UFS 没有机械磁头，但 scheduler 仍可能有价值：
 
 - 读与同步写对交互延迟敏感，后台顺序写更重视吞吐。
@@ -471,6 +568,11 @@ CFQ 本身支持 I/O class（优先级类别） 与 priority，“所有进程�
 
 BFQ（Budget Fair Queueing，预算公平排队）按照权重和 budget（一次获准处理的数据量）为队列分配服务，目标是在吞吐、公平性和交互延迟之间取得平衡。启用 `CONFIG_BFQ_GROUP_IOSCHED` 后，它还能进行 cgroup 层级调度。
 
+<!-- gracker-diagram: ch06-02-bfq-budget -->
+![BFQ：权重、budget 与服务机会](../../assets/diagrams/ch06/ch06-02-bfq-budget.png)
+
+图：BFQ 为队列分配以数据量计的 budget，并结合权重和交互策略分配服务；组间比例调度还需 GROUP_IOSCHED 支持。
+
 BFQ 的 per-request（逐请求） 处理和队列管理比 mq-deadline 更复杂。在较慢设备、需要比例带宽或交互保障的负载上，这份成本可能值得；在高 IOPS（每秒 I/O 操作次数） 设备上，额外调度工作也可能限制吞吐。“BFQ 的最低延迟一定是 mq-deadline 的数倍”并不适用于所有设备。
 
 6.18 的 `Kconfig.iosched` 把 BFQ 保留为可选项，但 arm64 GKI defconfig（默认内核配置） 没有显式启用 `CONFIG_IOSCHED_BFQ`。vendor 可以改变配置，所以实机上会不会出现 `bfq`，仍以 sysfs（内核导出的运行时属性接口） 为准。
@@ -489,13 +591,23 @@ static const int writes_starved = 2;
 static const int fifo_batch = 16;
 ```
 
-`read_expire=500ms` 和 `write_expire=5s` 是 scheduler 开始考虑 dispatch 的软期限，设备完成延迟要用另一条时间线衡量。`writes_starved=2` 表示连续优先处理一定次数的读批次后要照顾写队列，讲的是批次的交替节奏；“读写 2:1”带宽比例是另一个概念，从这里读不出来。
+`read_expire=500ms` 和 `write_expire=5s` 是 FIFO 防饥饿检查所用的软到期时间，请求可以在到期之前正常 dispatch；它们既不是最短等待时间，也不是设备完成期限。设备完成延迟要用另一条时间线衡量。`writes_starved=2` 表示连续优先处理一定次数的读批次后要照顾写队列，讲的是批次的交替节奏；“读写 2:1”带宽比例是另一个概念，从这里读不出来。
+
+<!-- gracker-diagram: ch06-02-mq-deadline-dispatch -->
+![mq-deadline 的索引与派发选择](../../assets/diagrams/ch06/ch06-02-mq-deadline-dispatch.png)
+
+图：每个 class 内同时维护位置树与 FIFO；正常批次可在到期前派发，新批次再按方向、超期和位置选择请求。
 
 6.18 实现会把 `IOPRIO_CLASS_NONE` 映射到 BE，并识别 RT/BE/IDLE class。优先级 class 可以影响 dispatch；class 内的 0–7 level（等级） 是否生效要看 scheduler 消费与否，`ionice` 命令返回成功与最终效果之间还隔着这一层。
 
 #### Kyber：用 token（令牌） 控制队列深度
 
 Kyber 把请求分成 READ、WRITE、DISCARD 和 OTHER 域，用 token 限制各域同时在途的请求数，并根据延迟直方图动态调整。6.18 源码中的默认 target 是读 2 ms、写 10 ms、discard 5 s；这些值用于内部控制，并不承诺每个请求都在目标时间内完成。
+
+<!-- gracker-diagram: ch06-02-kyber-feedback -->
+![Kyber 的 token 与延迟反馈](../../assets/diagrams/ch06/ch06-02-kyber-feedback.png)
+
+图：Kyber 用域 token 控制在途深度，再根据完成延迟直方图调整；target 是控制目标，不能当作每个请求的完成保证。
 
 Linux 的通用 I/O priority 文档把 BFQ 和 mq-deadline 列为支持者；需要 `ionice` 或 cgroup I/O class 时，Kyber 能否提供相同效果要单独确认。
 
@@ -518,6 +630,11 @@ done'
 
 方括号包围的名称是当前选择。某个设备只显示 `[none]`，可能源于驱动能力、queue 类型或内核配置；要谈“Android 17 的统一默认值”，得先把多台设备的读数摆在一起。
 
+<!-- gracker-diagram: ch06-02-scheduler-device-evidence -->
+![从 GKI 能力找到实机 scheduler](../../assets/diagrams/ch06/ch06-02-scheduler-device-evidence.png)
+
+图：先确认设备配置，再沿 dm 映射找到承载请求的叶子设备；queue/scheduler 中方括号标出当前选择。
+
 ### I/O priority：先问谁消费它
 
 Linux 的 `ioprio_set()` 和 `ionice` 使用三种通用 I/O priority class：
@@ -534,6 +651,11 @@ adb shell su 0 ionice -c 2 -n 4 -p <pid>
 ```
 
 第一条把进程设为 IDLE class，第二条设为 BE level 4。命令通常需要足够权限；如果 scheduler 不读取相应的 class/level，即使命令设置成功，也未必改变请求派发。
+
+<!-- gracker-diagram: ch06-02-ioprio-consumer -->
+![ioprio 的产生、限制与消费](../../assets/diagrams/ch06/ch06-02-ioprio-consumer.png)
+
+图：ionice/init 设置的 class/level 经具体 I/O 路径和 blkcg 策略进入请求；scheduler 是否读取它决定实际效果。
 
 Android init service 还支持 `ioprio <rt|be|idle> <0-7>`，最终通过 `SYS_ioprio_set` 设置服务进程。但 Android App 的前后台保障并不是由 ActivityManager 为每个前台进程调用一次 `ionice RT` 实现的。
 
@@ -553,6 +675,11 @@ Android init service 还支持 `ioprio <rt|be|idle> <0-7>`，最终通过 `SYS_i
 
 这些名称容易让人望文生义：AOSP 的 `HighIoPriority` 和 `MaxIoPriority` 都只是把任务移回 blkio 根组，本身没有设置 RT class；前台收益主要来自避开 background 组的降权和 class 限制。
 
+<!-- gracker-diagram: ch06-02-aosp-blkio-profiles -->
+![AOSP task profile 的 blkio 分组](../../assets/diagrams/ch06/ch06-02-aosp-blkio-profiles.png)
+
+图：r1 的 Normal/High/MaxIoPriority 都加入根组；LowIoPriority 进入 background，不能按名字推断设置了 RT 或不同前台 I/O 层级。
+
 下面的 init 配置摘录固定了 AOSP 对后台 blkio 组的初始设置，来自 `system/core/rootdir/init.rc`：
 
 ```rc
@@ -562,7 +689,7 @@ write /dev/blkio/background/blkio.bfq.weight 10
 write /dev/blkio/background/blkio.prio.class restrict-to-be
 ```
 
-根组与后台组配置了不同权重；只有内核和目标 queue 使用 BFQ 时，BFQ 专用权重才会生效。`restrict-to-be` 来自 blk-cgroup I/O priority policy，它会把后台请求限制在 BE class，并能作用于支持 cgroup writeback（按控制组归属回写） 的缓冲写。
+根组与后台组配置了不同权重；只有内核和目标 queue 使用 BFQ 时，BFQ 专用权重才会生效。`restrict-to-be` 来自 blk-cgroup I/O priority policy，它把 NONE/RT 请求降到 BE，保留原本更低的 IDLE 等优先级，并能作用于支持 cgroup writeback（按控制组归属回写） 的缓冲写。
 
 #### 从内核能力到产品配置
 
@@ -577,13 +704,23 @@ Android 允许 API-level 和 vendor 文件覆盖默认 `cgroups.json` / `task_pr
 
 不要混用 blkio v1 的 `blkio.*` 示例和 cgroup v2 的 `io.*` 示例。应先确认层级版本，再解释 `blkio.weight`、`io.weight`、`io.max`、`io.prio.class` 或 `io.pressure`。
 
+<!-- gracker-diagram: ch06-02-cgroup-runtime-check -->
+![I/O cgroup：先确认层级，再读参数](../../assets/diagrams/ch06/ch06-02-cgroup-runtime-check.png)
+
+图：r1 AOSP 默认仍将 blkio 配置为 v1；产品可覆盖。先看实际挂载与线程归属，再解释对应版本的控制文件。
+
 ### Buffered I/O、Page Cache 与 cgroup writeback
 
 #### 读路径
 
 普通 `read()` 会先查询 Page Cache：命中时不访问存储；未命中时，文件系统读取 folio（由内核管理的一组连续内存页），并可能触发 readahead。App 冷启动中的 DEX、资源和数据库读取是否命中缓存，会显著改变耗时；“同一文件第二次读更快”这样的观察，衡量的是缓存行为，而非 UFS 性能。
 
-Page Cache 属于可回收的 file-backed memory（有文件作为后备的数据页）。内存压力出现时，内核会在活跃/非活跃 file LRU（文件页最近最少使用链表）、匿名页与 swap（交换空间） 之间选择回收对象；后台大范围扫描可能挤出前台仍需使用的数据，增加 refault（回收后很快再次缺页）。回收决策还受 memcg（内存控制组） 保护、访问频率、working set（工作集） 检测和 swap 成本影响。
+Page Cache 属于可回收的 file-backed memory（有文件作为后备的数据页）。内存压力出现时，内核会在文件页与匿名页之间选择回收对象，并考虑 swap（交换空间）成本；该 6.18 GKI 基线还启用了 MGLRU（多代 LRU），不能只按经典活跃/非活跃两条 file LRU 链表解释所有设备；后台大范围扫描可能挤出前台仍需使用的数据，增加 refault（回收后很快再次缺页）。回收决策还受 memcg（内存控制组） 保护、访问频率、working set（工作集） 检测和 swap 成本影响。
+
+<!-- gracker-diagram: ch06-02-pagecache-reclaim-refault -->
+![Page Cache、MGLRU 与 refault](../../assets/diagrams/ch06/ch06-02-pagecache-reclaim-refault.png)
+
+图：缓存命中无需读盘；内存压力下回收文件页会影响后续命中，refault 与块层延迟需要一起观察。
 
 #### 写路径
 
@@ -596,6 +733,11 @@ Buffered write（缓冲写） 会先把 folio 标为 dirty，writeback 随后把
 
 缓冲写转交给后台线程后，原进程的 cgroup 信息并不一定丢失。支持 cgroup writeback 的路径会把 `bio` 关联到 inode owner 所属的 blkcg。
 
+<!-- gracker-diagram: ch06-02-cgroup-writeback-owner -->
+![缓冲回写的 memory 与 blkcg 归属](../../assets/diagrams/ch06/ch06-02-cgroup-writeback-owner.png)
+
+图：内存按页归属，回写按 inode owner 关联 blkcg；回写线程身份不能直接替代原始写入归属。
+
 #### dirty sysctl 与 swappiness
 
 `dirty_background_ratio`、`dirty_ratio`、对应的 `*_bytes`、`dirty_expire_centisecs` 和 `dirty_writeback_centisecs` 会影响回写触发条件与节奏。它们可以被产品 init 配置覆盖，也会与 backing device（后备存储设备）、memcg 阈值共同作用；Linux 的常见默认值，直接搬到 Android 设备上是靠不住的。
@@ -603,6 +745,11 @@ Buffered write（缓冲写） 会先把 folio 标为 dirty，writeback 随后把
 AOSP 只在 low-RAM（低内存） 或 batteryless（无电池） 等特定条件下写入部分参数，例如 low-RAM 分支把 `dirty_background_ratio` 设为 5。某台设备用不用 5，取决于它是否命中这些条件。
 
 `swappiness` 描述 swap I/O 与 filesystem paging（文件页换入换出） 的相对成本，范围为 0–200，100 表示两者成本相同。它影响匿名页与 file-backed page 的回收权衡，并不表示 Page Cache 的最大占比。Android 通常使用 zram（内存压缩交换设备），合适的取值仍要结合压缩成本、refault 和产品内存容量测量。
+
+<!-- gracker-diagram: ch06-02-dirty-swap-psi -->
+![dirty 控制、swappiness 与 PSI 的分工](../../assets/diagrams/ch06/ch06-02-dirty-swap-psi.png)
+
+图：dirty 参数调节回写，swappiness 影响匿名页与文件页回收权衡，PSI 观测资源停顿；三者不是同一组容量配额。
 
 下面的命令用于采集现场内存与 I/O 控制参数：
 
@@ -626,7 +773,12 @@ Page Cache 可以合并小写、提供 readahead，并让热点数据复用，�
 
 #### `O_DIRECT` 的适用条件
 
-`O_DIRECT` 尝试让文件数据 I/O 绕过 Page Cache。它适合自身管理缓存、访问模式明确、能够满足对齐约束的系统软件。Linux 6.18 可以通过 `statx(..., STATX_DIOALIGN)` 查询文件系统报告的 direct-I/O 对齐要求。
+`O_DIRECT` 尝试让文件数据 I/O 绕过 Page Cache。它适合自身管理缓存、访问模式明确、能够满足对齐约束的系统软件。Linux 6.18 可以通过 `statx(..., STATX_DIOALIGN)` 请求文件系统报告 direct-I/O 对齐要求；还要检查返回的 `stx_mask` 是否包含该位，再解释 `stx_dio_mem_align` 和 `stx_dio_offset_align`。接口存在不保证每种文件系统都返回这组信息。
+
+<!-- gracker-diagram: ch06-02-direct-io-gates -->
+![O_DIRECT 的缓存、对齐与持久化边界](../../assets/diagrams/ch06/ch06-02-direct-io-gates.png)
+
+图：O_DIRECT 尝试绕过文件数据 Page Cache；使用前检查返回的对齐能力、访问模式和混用成本，持久化仍需单独保证。
 
 使用时要记住几个限制：
 
@@ -652,6 +804,11 @@ AOSP SQLite 的 Unix VFS 以普通缓冲文件 I/O 为基线，F2FS batch atomic
 
 `sched_blocked_reason` 在不同 build type（系统构建类型） 和内核配置上的可用性不同。缺了它，`thread_state.io_wait` 可能为 NULL，把所有 `D` 状态都记成 I/O 等待，排查范围就会偏大。
 
+<!-- gracker-diagram: ch06-02-perfetto-d-iowait -->
+![从 D 状态确认 I/O 等待线索](../../assets/diagrams/ch06/ch06-02-perfetto-d-iowait.png)
+
+图：D 只说明不可中断等待；io_wait=1 缩小到 I/O 等待线索，仍需调用栈、文件系统与 block 事件定位具体对象。
+
 #### 第一问：哪些线程在 I/O sleep（睡眠等待）
 
 下面的 PerfettoSQL 用于聚合明确标记为 `io_wait=1` 的 D 状态，兼容当前的 `thread_state` schema（表结构）：
@@ -667,12 +824,13 @@ JOIN thread USING (utid)
 LEFT JOIN process USING (upid)
 WHERE thread_state.state = 'D'
   AND thread_state.io_wait = 1
+  AND thread_state.dur > 0
 GROUP BY thread.utid, process.name, thread.name
 ORDER BY iowait_ms DESC
 LIMIT 20;
 ```
 
-查询结果给出线程等待总量和单次最大值；至于线程正在等哪个文件、哪块设备，要回到对应时间窗，检查调用栈、文件系统 slice（事件区间） 和 block 请求。
+查询只汇总已结束的正时长区间，排除了 `dur=-1` 等不完整状态；结果给出录制范围内可确认的线程等待总量和单次最大值；至于线程正在等哪个文件、哪块设备，要回到对应时间窗，检查调用栈、文件系统 slice（事件区间） 和 block 请求。
 
 #### 第二问：块设备队列是否积压
 
@@ -681,16 +839,35 @@ LIMIT 20;
 ```sql
 INCLUDE PERFETTO MODULE linux.block_io;
 
+WITH io_intervals AS (
+  SELECT
+    dev,
+    ops_in_queue_or_device,
+    LEAD(ts, 1, (SELECT end_ts FROM trace_bounds)) OVER (
+      PARTITION BY dev ORDER BY ts
+    ) - ts AS dur
+  FROM linux_active_block_io_operations_by_device
+)
 SELECT
   dev,
   MAX(ops_in_queue_or_device) AS max_ops,
-  ROUND(AVG(ops_in_queue_or_device), 2) AS avg_ops
-FROM linux_active_block_io_operations_by_device
+  ROUND(
+    SUM(1.0 * ops_in_queue_or_device * dur) /
+    NULLIF((SELECT end_ts - start_ts FROM trace_bounds), 0),
+    2
+  ) AS time_avg_ops
+FROM io_intervals
+WHERE dur > 0
 GROUP BY dev
 ORDER BY max_ops DESC;
 ```
 
-这个 stdlib view（Perfetto 标准库视图） 基于 `track.type='block_io'` 的 slice。录制中没有 block issue/complete 数据时，查询不会凭空生成结果；device id 还要映射到实机的 major:minor（主/次设备号） 和 device-mapper 层。
+这个 stdlib view（Perfetto 标准库视图） 输出计数变化的时间点，而不是等间隔采样，因此查询先用 LEAD 得到每个计数持续多久，再计算整个 trace 时间窗的加权均值；未出现 I/O 的时间按零贡献处理，不能直接 AVG 这些变化点。它基于 `track.type='block_io'` 的 slice，事件缺失或不完整时，队列深度统计也可能不完整。录制中没有 block issue/complete 数据时，查询不会凭空生成结果；device id 还要映射到实机的 major:minor（主/次设备号） 和 device-mapper 层。
+
+<!-- gracker-diagram: ch06-02-perfetto-time-weighted-depth -->
+![变化点队列计数要按时间加权](../../assets/diagrams/ch06/ch06-02-perfetto-time-weighted-depth.png)
+
+图：示例 trace 共 100 ms，只有 20–50 ms 处于 2 个在途操作；时间均值是 0.6，变化点数值均值会得到 1.0。
 
 #### 第三问：等待发生在哪一层
 
@@ -700,13 +877,23 @@ ORDER BY max_ops DESC;
 - 从 issue 到 complete 的时间很长：关注设备排队、UFS、加密、dm 层和器件状态。
 - `D` 状态很长，但 `io_wait` 不明确，block 事件也没有活动：检查 blocked function（阻塞函数）、reclaim（内存回收） 以及 Binder/驱动等待。
 - 后台 `wbytes/wios`（写入字节数/写操作数） 上升，且前台 refault/major fault（需要存储读取的缺页） 增多：同时检查 blkio、memcg 和 Page Cache 竞争。
-- `io.pressure` 的 `full` 持续上升：系统曾有一段时间所有非 idle 任务都因 I/O 受阻，需要结合 CPU、内存和块层判断原因。
+- I/O PSI 的 `full` 持续上升：在对应统计范围内，曾有所有非 idle 任务同时因 I/O 停顿的时间；`/proc/pressure/io` 统计系统，cgroup 的 `io.pressure` 只统计该组。还需结合 CPU、内存和块层判断原因。
+
+<!-- gracker-diagram: ch06-02-perfetto-latency-windows -->
+![调用、文件系统与块请求的不同区间](../../assets/diagrams/ch06/ch06-02-perfetto-latency-windows.png)
+
+图：先对齐同一时间窗，再区分调用区间、文件系统同步区间与单个 block 请求区间；相邻或重叠不能单独证明归因。
 
 跨设备固定的“fsync 超过 5 ms”“随机读超过 1 ms”“iowait 超过 5%”这类异常线，我们都不要用。UFS 代际、容量、温度、文件系统、队列深度和 trace 开销都会改变分布；更可靠的基线来自同机型、同镜像、同电量与温度，以及相同 workload（工作负载） 下的 P50/P95/P99。
 
 #### CPU iowait 的含义
 
 CPU iowait 是 CPU idle 记账中的一个状态，记的是 CPU 的时间，叠加不出各线程的 I/O 等待，也切分不到单个 App 头上。异步 writeback 可能让设备很忙而 CPU iowait 很低；一个线程等 I/O 时，其他 runnable（可运行） 线程也可能让 CPU 保持忙碌。
+
+<!-- gracker-diagram: ch06-02-cpu-thread-psi-scopes -->
+![CPU iowait、线程等待与 I/O PSI](../../assets/diagrams/ch06/ch06-02-cpu-thread-psi-scopes.png)
+
+图：CPU 时间、单线程等待和任务群体停顿属于不同统计口径；结合使用才能解释系统与交互压力。
 
 CPU iowait 因此适合作为系统级线索；定位时还要结合线程 `io_wait`、I/O PSI、block queue、文件系统事件和应用调用栈。
 
@@ -720,11 +907,21 @@ CPU iowait 因此适合作为系统级线索；定位时还要结合线程 `io_w
 4. **SharedPreferences**：`apply()` 把磁盘写排到后台，连续调用仍制造 I/O，生命周期切换也可能等待排队任务。
 5. **开发期检查**：StrictMode 可以发现主线程磁盘访问；release（发布版本） 的性能仍需通过 Perfetto、数据库统计和现场分位数验证。
 
+<!-- gracker-diagram: ch06-02-app-sync-work -->
+![减少事务与移出 UI 等待](../../assets/diagrams/ch06/ch06-02-app-sync-work.png)
+
+图：先减少不必要的同步工作，再安排执行线程；WAL、apply 与底层原子写都保留各自的同步及生命周期成本。
+
 AOSP SQLite 编译了 F2FS batch atomic write 支持，运行时还要由 Unix VFS 探测文件系统 ioctl，并满足 pager 的条件。它可以减少部分 journal 工作；剩下的同步与块层竞争，还要靠事务本身的安排来压低。
 
 ### `io_uring`（Linux 异步 I/O 接口） 与 FUSE：能力与实际使用
 
 6.18 Kconfig 默认提供 `IO_URING`，GKI 也启用了 FUSE（Filesystem in Userspace，用户空间文件系统）和 FUSE BPF（借助内核可编程机制处理部分 FUSE 操作）。由此只能确认内核具备相关能力；若要声称 Android 17 的某条 MediaProvider、外部存储或 OTA 路径用上了 io_uring，需要找到对应的 AOSP 调用点、进程权限、设备配置与 trace 事件。
+
+<!-- gracker-diagram: ch06-02-io-uring-usage-evidence -->
+![从 io_uring 能力到实际收益的证据](../../assets/diagrams/ch06/ch06-02-io-uring-usage-evidence.png)
+
+图：kernel 支持不能直接推出某条 FUSE、MediaProvider 或 OTA 路径已使用；收益还需对照具体实现和负载验证。
 
 “io_uring 让 FUSE 快 40%”“dm-verity 并行哈希让冷读快 35%”这类数字都缺少可迁移到所有 Android 17 设备的前提，当不了平台结论。
 

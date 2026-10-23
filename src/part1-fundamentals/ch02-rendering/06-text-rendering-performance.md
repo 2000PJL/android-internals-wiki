@@ -110,7 +110,7 @@ flowchart LR
     BW --> SF["SurfaceFlinger / HWC / present"]
 ```
 
-`measure`、`layout` 和 `draw` 是否执行，由 `ViewRootImpl.performTraversal（View 树遍历）s()` 根据 dirty flag（需要重新处理的脏标记） 决定。只改变滚动位置、item（列表项） 与 DisplayList 都能复用时，文字布局可能完全不重建；新的 item bind（列表项数据绑定）、宽度变化、字体参数变化或 `requestLayout()`，才会把排版工作带回本帧。后面讲到的优化手段，大多围绕“让能复用的层继续复用”这一条展开。
+`measure`、`layout` 和 `draw` 是否执行，由 `ViewRootImpl.performTraversals()` 根据 dirty flag（需要重新处理的脏标记） 决定。只改变滚动位置、item（列表项） 与 DisplayList 都能复用时，文字布局可能完全不重建；新的 item bind（列表项数据绑定）、宽度变化、字体参数变化或 `requestLayout()`，才会把排版工作带回本帧。后面讲到的优化手段，大多围绕“让能复用的层继续复用”这一条展开。
 
 ## `TextView` 怎样选择 Layout
 
@@ -140,6 +140,11 @@ flowchart LR
 
 `BoringLayout` 的“简单”指单行、LTR（从左向右）和较少的段落结构，整形这一步照常执行：`isBoring()` 仍要通过 `TextLine.metrics()` 计算宽度和字体指标，ellipsize 后还可能再次测量。它的工作量少于完整的多行换行，但单次 `Paint.measureText()` 估算不了它。
 
+<!-- gracker-diagram: ch02-06-layout-choice -->
+![TextView 先检查 Dynamic，再判断 Boring 资格与宽度](../../assets/diagrams/ch02/ch02-06-layout-choice.png)
+
+图：DynamicLayout 优先于 Boring 判断。其余文本需要通过字符、方向和段落结构资格检查，再满足宽度或省略条件，才会使用 BoringLayout；否则进入 StaticLayout。单行配置不会跳过这些判断，Boring 也仍然需要测量与整形。
+
 ### `StaticLayout`：不可变多行文本的主路径
 
 其余常见文本由 `StaticLayout.Builder` 构建，构造大致分两步：
@@ -167,6 +172,11 @@ Minikin 的 `WordBreaker` 先用 ICU break iterator（Unicode 文本边界迭代
 
 动手优化前，我们先读出设备上实际的 `breakStrategy` 和 `hyphenationFrequency`：默认已是 `NONE` 的设备上再设置一遍，省不下排版工作。
 
+<!-- gracker-diagram: ch02-06-shaping-linebreak -->
+![字体整形产出 glyph，断行还需要宽度与策略](../../assets/diagrams/ch02/ch02-06-shaping-linebreak.png)
+
+图：字体匹配与 HarfBuzz shaping 生成 glyph、位置和推进距离；ICU 规则提供候选断点，LineBreaker 再结合测量、可用宽度和策略确定实际断行。字符数不等于 glyph 数，也不能直接换算复杂文字或 emoji 的成本。
+
 ### LayoutCache 与 StrikeCache
 
 整形结果缓存在 Minikin 的 `LayoutCache` 里：这是进程内单例的 LRU（Least Recently Used，最近最少使用）缓存，当前最多保存 5000 个条目；待整形的 piece（文本片段） 长度达到 128 个 UTF-16 code unit 时，会绕过这层缓存直接计算。
@@ -178,6 +188,11 @@ Minikin 的 `WordBreaker` 先用 ICU break iterator（Unicode 文本边界迭代
 - 两条业务文本只有局部字词相同时未必共享缓存，因为键里还包含传入的文字上下文和 range。
 
 `TextLine` 另有一个容量为 3 的静态对象池，用来减少临时对象分配；它缓存的是可复用对象，排版结果不在里面。再往绘制执行一侧，Skia 的 `StrikeCache` 管理 GPU 文字 strike/glyph 资源，一个 strike 对应同一字体、字号和变换参数下的一组字形。它和 Minikin 的整形缓存处在流水线的不同阶段，我们分开统计各自的命中率，不合成一个笼统的“文字缓存命中率”。
+
+<!-- gracker-diagram: ch02-06-text-cache-scopes -->
+![整形缓存、对象池与 GPU 字形资源不能混算](../../assets/diagrams/ch02/ch02-06-text-cache-scopes.png)
+
+图：Minikin 复用整形结果，TextLine 池复用临时对象，Skia GPU StrikeCache 管理绘制执行侧的字形资源。宽度变化会影响行布局，却不直接成为 Minikin LayoutCache 的键；字体、字号、方向或 variation 等变化则可能打破整形复用。
 
 ## Span 与 Emoji 的成本层次
 
@@ -248,6 +263,11 @@ class MessageHolder(
 ```
 
 这段代码演示的是写回条件：`generation` 未变、测量参数仍一致，两项都过才把预计算结果设回 `TextView`。实际项目里还要取消无用任务、限制队列长度，并按 API 版本选择平台或 AndroidX 实现。`TextView.setText(PrecomputedText)` 遇到不兼容的测量参数会抛出 `IllegalArgumentException`；只有可重新计算的文字方向存在差异时，framework（框架层） 也可能重新计算。
+
+<!-- gracker-diagram: ch02-06-precompute-bind-guard -->
+![预计算提前测量，写回仍要核对 holder 与参数](../../assets/diagrams/ch02/ch02-06-precompute-bind-guard.png)
+
+图：从目标 TextView 取得 Params 后，在后台计算段落测量与 glyph positioning。写回 UI 时同时检查 bind generation 和测量参数；兼容结果可复用，但最终宽度、maxLines、省略和行高仍需在 Layout 阶段处理。
 
 AndroidX 的 `AppCompatTextView.setTextFuture()` 会在 `onMeasure()` 中调用 `future.get()`，后台任务没算完，主线程就阻塞等待。它适合提前 prefetch（预取）；用了它之后主线程还有多少文字处理成本，取决于后台任务是否及时算完。
 

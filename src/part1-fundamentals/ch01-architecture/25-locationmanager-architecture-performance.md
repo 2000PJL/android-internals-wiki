@@ -261,6 +261,11 @@ protected void onStop() {
 
 `removeUpdates()` 需要原先的 Listener 对象。及时取消既能断开 Activity/Fragment 与回调对象的引用，也能把该注册从服务端合并请求中移除，避免页面不可见后仍维持高频 Provider 请求。若产品需要后台定位，应把注册放到有明确停止条件且满足权限要求的组件，不应依赖页面对象继续存活。
 
+<!-- gracker-diagram: ch01-25-location-read-modes -->
+![最近缓存、单次结果和连续注册的成本边界](../../assets/diagrams/ch01/ch01-25-location-read-modes.png)
+
+图：最近位置只读服务端缓存；单次位置先判断合格缓存，否则在激活和有效期限内等待；连续注册则参与 Provider 请求合并，直到取消、达到次数或有效期等终止条件。三者都要处理权限和结果可用性。
+
 ## 4. Binder 入口之后发生了什么
 
 以连续 Listener 注册为例，Android 17 的主要路径是：
@@ -347,6 +352,11 @@ lowPower=false
 
 合并结果只用来配置一次 `gps` Provider。A、B 各自是否收到某个位置，仍要经过各自注册的 min interval、min distance、权限、AppOps、duration 和 max updates 过滤。B 不会因为底层以 5 秒工作就必然每 5 秒收到回调。
 
+<!-- gracker-diagram: ch01-25-provider-request-merging -->
+![同一 Provider 合并驱动请求，再分别过滤交付](../../assets/diagrams/ch01/ch01-25-provider-request-merging.png)
+
+图：A、B 必须是同一 gps Provider 下已激活的非 passive 请求，才能参与这次合并。最短 interval、最强 quality 和最短 maxDelay 共同配置 Provider，lowPower 取 AND；每个注册仍按自身条件接收结果。
+
 ### 5.2 一条高频请求会抬高该 Provider 的共同成本
 
 同一 Provider 的活动请求共享底层工作。一条 1 秒 GPS 请求可能使 GNSS 持续工作；其他低频 GPS 注册虽然被单独限速，底层工作强度已经由频率最高、质量要求最强的请求决定。优化时应找出参与合并的最短 interval 和最强 quality，而不能只看某个业务模块自己的配置。
@@ -388,6 +398,11 @@ Provider.reportLocation()
 3. 回调中如果需要比这更长的后台工作，应用应自行采用符合系统约束的执行与保活机制，不能把 framework 的交付 wakelock 当作业务 wakelock。
 
 不要假设 Perfetto 中存在稳定的 `LocationManagerService` 或 `GnssLocationProvider` 自定义 track（时间轨道）。`android-17.0.0_r1` 的这些 Java 路径没有提供可依赖的统一 slice（带起止时间的区间事件）名称。可结合 Binder、线程调度、CPU frequency/idle、wakelock 和应用自定义 trace 分析延迟。
+
+<!-- gracker-diagram: ch01-25-delivery-completion -->
+![位置回调完成通知影响交付唤醒锁](../../assets/diagrams/ch01/ch01-25-delivery-completion.png)
+
+图：非 passive 的连续交付在发送前获取带超时的唤醒锁。oneway 通知到达应用后还要等 Executor 执行；轻量回调完成后，transport 再回报 completion，服务端释放交付锁。
 
 [源码依据：`ILocationListener.aidl`、`LocationManager.LocationListenerTransport`、`LocationProviderManager.Registration.acceptLocationChange()`，`android-17.0.0_r1`]
 
@@ -456,6 +471,11 @@ Android 17 framework 至少检查：
 满足这些条件后，`GnssNative.startBatch()` 才会进入 `IGnssBatching.start()`。如果请求的 batch 长度小于硬件缓冲区容量对应的时长，framework 还会设置精确定时器（alarm），按 batch 长度调用 `flushBatch()`。
 
 batching 的收益来自减少 AP（Application Processor，应用处理器）唤醒和 Binder/Java 交付次数，但 GNSS 接收机仍可能按设定周期采样。它不能自动把射频跟踪成本降为零。评估收益要同时比较 AP idle（空闲）时间、唤醒次数、GNSS power stats（功耗统计）和厂商电源轨数据。
+
+<!-- gracker-diagram: ch01-25-gnss-batching-gates -->
+![GNSS 硬件批处理需要能力与请求同时满足](../../assets/diagrams/ch01/ch01-25-gnss-batching-gates.png)
+
+图：合并请求允许 batching 只是第一步。GNSS 还要成功初始化批处理、拥有大于 1 的容量，并满足截断后的 batchLength 至少覆盖两个实际 batchInterval，才会尝试 startBatch。
 
 ### 8.3 GNSS measurement 的 full tracking 是另一条请求
 
@@ -551,6 +571,11 @@ Android 17 还存在独立的硬件围栏基础设施：
 `GnssGeofenceProxy` 支持 add/remove/pause/resume，并缓存已接受的条目，以便 HAL 重启后恢复。`GeofenceProxy` 是否创建取决于设备 overlay 与可解析的系统服务。
 
 不能由此得出 `addProximityAlert()` 会自动把同一个围栏切换到 GNSS 硬件。前者在 `GeofenceManager` 中以位置更新做软件判断；后者服务于设备配置的硬件 geofence provider。Google Play services Geofencing API 也不属于这条公开平台调用链。
+
+<!-- gracker-diagram: ch01-25-geofence-paths -->
+![公开邻近提醒与硬件 GNSS 围栏是不同路径](../../assets/diagrams/ch01/ch01-25-geofence-paths.png)
+
+图：公开的 addProximityAlert 进入 GeofenceManager，借 fused 位置更新在 framework 判断进出；配置的硬件围栏 Provider 则经过独立代理与 GNSS HAL。两者没有自动互换的公开契约，Play services Geofencing 也另有自己的 API。
 
 [源码依据：`GeofenceManager.java`、`GeofenceProxy.java`、`GnssGeofenceProxy.java`、`IGnssGeofence.aidl`，`android-17.0.0_r1`]
 

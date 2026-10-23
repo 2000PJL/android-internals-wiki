@@ -4,6 +4,11 @@
 
 平台基线为 Android 17 / API 37 / `android-17.0.0_r1`；涉及调度、功耗和温控时，内核基线为 `android17-6.18-2026-06_r6`。本章依次说明帧时间的含义、诊断证据和常见优化边界，目标是把“界面感觉很卡”变成可复现、可定位原因、可验证的结论。
 
+<!-- gracker-diagram: ch07-overview-diagnostic-routes -->
+![第7章流畅性诊断阅读路线](../../assets/diagrams/ch07/ch07-overview-diagnostic-routes.png)
+
+图：先用 7.1—7.2 建立观测与证据，再按感知节奏、SystemUI、合成显示或语义字段管线选入口。分支是阅读索引，不表示各类机制必然同时出现或按顺序触发。
+
 ## 内容索引
 
 - [7.1 卡顿定义、分类与原因体系](01-jank-definition-causes.md)

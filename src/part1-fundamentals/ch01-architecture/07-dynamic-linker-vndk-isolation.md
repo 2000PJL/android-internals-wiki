@@ -179,6 +179,11 @@ linker64 从新任务中生成待映射列表：普通路径会随机化映射�
 
 所以我们看到一次 `System.loadLibrary()` 或 `dlopen()` 耗时，它可能包含文件处理、映射、重定位和 ELF 构造函数，Java 调用链还包含 ART 的 `JNI_OnLoad`。把总时间都归到“linker 重定位慢”上，归因就下错了地方。
 
+<!-- gracker-diagram: ch01-07-dlopen-stages -->
+![dlopen 的装载阶段与链接器全局锁](../../assets/diagrams/ch01/ch01-07-dlopen-stages.png)
+
+图：这里展示需要装载新 DSO 时的成功主路径。公开装载入口持有 g_dl_mutex，ELF 构造函数也在 dlopen 返回前同步执行；映射顺序的随机化不代表并行加载。
+
 ### Linker Namespace：控制“从哪里找”和“允许看见谁”
 
 `android_namespace_t` 主要维护：
@@ -287,6 +292,11 @@ ART 还维护每个库的 `JNI_OnLoad` 状态：
 - ART 不会贸然 `dlclose()` 一个已经部分注册 native 方法的失败库，而是记录失败，令后续装载也失败。
 
 这和 ELF constructor 的故障模型不同。`JNI_OnLoad` 有返回值，ART 能识别失败；constructor 没有受控失败协议。
+
+<!-- gracker-diagram: ch01-07-elf-jni-initialization -->
+![ELF 构造函数与 JNI_OnLoad 的先后边界](../../assets/diagrams/ch01/ch01-07-elf-jni-initialization.png)
+
+图：System.loadLibrary 先经 ART/NativeLoader 完成原生库装载；bionic 的 dlopen 同步执行 ELF 构造函数。返回后，ART 才查找并调用可选 JNI_OnLoad，两个阶段具有不同的等待与失败处理。
 
 #### 静态查找与 `RegisterNatives`
 
@@ -573,6 +583,11 @@ return false;
 这段摘录的重点在顺序：`is_isolated_` 为假时直接返回 true；`allowed_libs_` 非空时先查库名，不在集合里就直接返回 false；三组路径检查排在库名限制之后。
 
 两组路径函数的行为不同：`ld_library_paths_` 与 `default_library_paths_` 使用 `file_is_in_dir()`，只接受目录的直接子项；`permitted_paths_` 使用 `file_is_under_dir()`，允许更深层路径。
+
+<!-- gracker-diagram: ch01-07-namespace-access -->
+![isolated namespace 的库名与路径检查顺序](../../assets/diagrams/ch01/ch01-07-namespace-access.png)
+
+图：is_accessible 先判断 namespace 是否隔离，再按非空 allowed_libs 检查库名，最后检查三组路径。这里的 true 只表示通过该 namespace 的路径检查，文件权限和 SELinux 仍单独生效。
 
 `allowed_libs_` 的实现类型是 `std::vector<std::string>`，检查用的是线性查找的 `std::find()`，所以“哈希表平均 O(1)”的印象与源码对不上；这份名单在 namespace 建立时就写进了对象，是一份静态配置，运行期没有单独的动态允许列表服务可查。
 

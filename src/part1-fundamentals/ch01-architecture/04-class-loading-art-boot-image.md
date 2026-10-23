@@ -114,7 +114,7 @@ last_body_apply_at: '2026-09-15T09:18:26+08:00'
 
 > 源码基线：AOSP `android-17.0.0_r1`（ART、libcore 与 Framework）；内核 `android17-6.18-2026-06_r6`（`MAP_PRIVATE` 写时复制）。
 
-应用侧 Baseline Profile 与 Startup Profile 的结论以 Android Developers 文档为准，最终仍要回到所用 AGP/R8（release build 的 minify） 版本、release APK 和目标设备 trace 验证。
+应用侧 Baseline Profile 与 Startup Profile 的结论以 Android Developers 文档为准，最终仍要回到所用 AGP/R8 版本、release APK 和目标设备 trace 验证。
 
 全文还有几个反复出现的词，先约定清楚：ART 指 Android Runtime；Zygote 是预先初始化运行时、再 fork 出 System Server 和应用进程的父进程；Boot Class Path 是系统核心 Java 类路径，System Server Class Path 承载 `system_server` 专用类；profile 记录应优先处理哪些类和方法，作为编译输入；AOT（Ahead-of-Time） 在运行前编译，JIT（Just-in-Time） 在运行时即时编译。
 
@@ -131,6 +131,11 @@ last_body_apply_at: '2026-09-15T09:18:26+08:00'
 `ClassLoader.loadClass()` 会取得类并完成 ART 所需的定义/链接，但仅凭这次调用还不会执行 `<clinit>`。`Class.forName(name)` 的单参数重载会请求初始化；`new`、调用静态方法、读写非常量静态字段等“主动使用”也可能触发初始化。验证结果可能已经存在于有效产物中；尚未满足验证条件的类，可以在后续初始化或使用路径进入 verifier。
 
 所以，一段启动耗时即使明确来自某个类的首次出现，我们还要继续判断时间落在查找、定义/链接、验证，还是业务自己的 `<clinit>`——四者的修复方向不同。
+
+<!-- gracker-diagram: ch01-04-loading-initialization -->
+![类查找、定义与初始化的不同触发条件](../../assets/diagrams/ch01/ch01-04-loading-initialization.png)
+
+图：已经加载的类可以直接命中；新类需要查找并定义、链接。验证可能复用产物或在必要时运行；只有需要初始化时，才进入 `<clinit>` 等初始化工作。
 
 ### 从 Java API 到 ART
 
@@ -224,7 +229,7 @@ API 37 的主要步骤可概括为：
 
 其中，vtable、iftable 和 IMT 分别服务于虚方法、接口及接口方法分派；CHA 是类层次分析（Class Hierarchy Analysis），用于根据当前继承关系优化调用。
 
-这段顺序能解释 trace 里两个常见现象。其一，定义一个类可能递归解析父类和接口，所以外层类的实际经过时间（wall time，包含计算、等待和被调度出去的时间）——wall time，包含计算、等待和被调度出去的时间——会计入依赖类的工作。其二，CHA 更新发生在类变为 `kResolved` 之前；新类若推翻了 JIT 编译器此前采用的“某调用点只有一个实现”假设，还可能让已编译代码失效并触发去优化，相关机制见 §1.5。
+这段顺序能解释 trace 里两个常见现象。其一，定义一个类可能递归解析父类和接口，所以外层类的实际经过时间（wall time，包含计算、等待和被调度出去的时间）会计入依赖类的工作。其二，CHA 更新发生在类变为 `kResolved` 之前；新类若推翻了 JIT 编译器此前采用的“某调用点只有一个实现”假设，还可能让已编译代码失效并触发去优化，相关机制见 §1.5。
 
 #### 托管堆与 `LinearAlloc` 的分工
 
@@ -262,7 +267,7 @@ compiler filter 决定 dexopt 执行验证、提取和方法编译到什么程�
 | `speed-profile` | 是 | profile 中的方法 | 是 |
 | `speed` | 是 | 全部方法 | 否 |
 
-`verify` 会在 dexopt 阶段执行验证并生成可复用结果，但只到验证为止：它不做 AOT 方法编译，也不做类解析与初始化。运行时能否跳过 verifier，还取决于产物是否存在、校验是否通过、编译时记录的 class loader context（编译时记录的加载器类型、DEX 路径及依赖关系）——加载器类型、DEX 路径及依赖关系——是否与运行时匹配，以及编译期是否记录了需要在运行时重试的软失败。
+`verify` 会在 dexopt 阶段执行验证并生成可复用结果，但只到验证为止：它不做 AOT 方法编译，也不做类解析与初始化。运行时能否跳过 verifier，还取决于产物是否存在、校验是否通过、编译时记录的 class loader context（编译时记录的加载器类型、DEX 路径及依赖关系）是否与运行时匹配，以及编译期是否记录了需要在运行时重试的软失败。
 
 同理，`speed-profile` 也保证不了每个启动类都免去运行时验证：profile 覆盖范围、产物有效性、依赖变化和验证器失败类型都会改变实际路径。验证优化做没做对，要以 `VerifyClass ...` 时间片（Perfetto 中记录一段起止时间的 slice）、ART 产物状态和可重复的启动测量为准。
 
@@ -282,7 +287,7 @@ kNotReady → kIdx → kLoaded → kResolving/kResolved
 
 OAT 中记录的 class status 可用 `kSuperclassValidated` 表示父类描述符已经校验，但运行时类对象不会把它作为每次初始化都经历的固定节点。临时类在确定最终大小并复制到正式对象后会进入 `kRetired`。因此，诊断代码不应假设每个类都会逐项经历同一组状态。
 
-`kInitialized` 表示执行初始化的线程已经完成工作，但其他线程仍需通过 acquire 内存语义取得此前写入的值；`kVisiblyInitialized` 表示初始化结果已经对所有线程可见，编译代码因而可以使用开销更小的检查。API 37 在 x86/x86_64 或单线程事务中可直接进入 `kVisiblyInitialized`。其他路径先记录 `kInitialized`，再由批处理回调建立可见性：要么调用 `membarrier()（Linux 内存屏障系统调用）`——Linux 的内存屏障系统调用，要么走线程 checkpoint（让目标线程运行一段 ART 检查代码），让目标线程运行一段 ART 检查代码。
+`kInitialized` 表示执行初始化的线程已经完成工作，但其他线程仍需通过 acquire 内存语义取得此前写入的值；`kVisiblyInitialized` 表示初始化结果已经对所有线程可见，编译代码因而可以使用开销更小的检查。API 37 在 x86/x86_64 或单线程事务中可直接进入 `kVisiblyInitialized`。其他路径先记录 `kInitialized`，再由批处理回调建立可见性：要么调用 `membarrier()`（Linux 内存屏障系统调用），要么走线程 checkpoint（让目标线程运行一段 ART 检查代码）。
 
 #### 谁执行，谁等待
 
@@ -338,7 +343,7 @@ LoadedApk.makeApplicationInner()
 
 `fork` 之后，应用借着写时复制（copy-on-write）共享 Zygote 已建立的类元数据、初始化状态和相关内存页——页面要等进程修改时才真正复制。应用仍要按 boot class path 和类表执行查找；首次解析指向自身 DEX 的引用，也可能更新应用侧用于缓存已解析字符串、类型、字段和方法的 `DexCache`。成功预加载的类，定义、验证和初始化已经在 Zygote 完成并具备共享条件，只是后续查找仍有成本。
 
-`--enable-lazy-preload` 是 Zygote 的配置分支：启用时，Zygote 启动阶段跳过立即预加载（eager preload），改在第一次 `fork` 前完成预加载。是否启用由产品启动策略决定，设备之间可能不同，应用侧别依赖同一种配置。
+`--enable-lazy-preload` 是 Zygote 的配置分支：启用时，Zygote 启动阶段跳过立即预加载（eager preload），由后续预加载命令触发。AOSP 的 64/32 位配置中，SystemServer 会提交 `SecondaryZygotePreload` 任务，通过 `--preload-default` 提前触发次 Zygote 的默认预加载，不能把它简化为首次应用启动触发。是否启用仍由产品启动策略决定，具体链路见 [1.3 Zygote 延迟预加载](03-boot-zygote-graphics-preload.md)。
 
 #### `ApplicationLoaders` 缓存存在适用条件
 
@@ -470,7 +475,7 @@ Baseline Profile 可以减少解释执行、JIT 和部分运行时验证，也�
 
 普通类加载沿 ClassLoader 和 DEX 路径查找，Boot Image 则把常用类放进预生成映像。映像是否命中、是否重定位、页面如何共享，都会改变前面那些类加载成本。
 
-Boot Image 处在 ART 启动、系统镜像预编译和 Zygote 共享内存的交点。排查开机变慢、Zygote 私有脏页增长，或 ART Mainline（可独立于完整系统 OTA 更新的 ART 模块）——可独立于完整系统 OTA（系统无线更新） 更新的 ART 模块——更新后的编译行为时，我们要分别观察镜像文件、编译 profile 和 Zygote 预加载。
+Boot Image 处在 ART 启动、系统镜像预编译和 Zygote 共享内存的交点。排查开机变慢、Zygote 私有脏页增长，或 ART Mainline（可独立于完整系统 OTA 更新的 ART 模块）更新后的编译行为时，我们要分别观察镜像文件、编译 profile 和 Zygote 预加载。
 
 ### Boot Image 保存了什么
 
@@ -630,7 +635,7 @@ MemMap::MapFileAtAddress(
 Boot Image 的内存收益有两层来源：
 
 1. 直接文件映射让多个进程可以引用同一份 page cache（文件页缓存）。
-2. Zygote `fork()` 让子进程继承相同页表；匿名页和私有文件页在发生写入前都可以共享。
+2. Zygote `fork()` 为子进程建立相应的地址映射并复制必要的页表；匿名页和私有文件页在发生写入前都可以共享。
 
 `MAP_PRIVATE` 表示写入不会回写原文件。Linux 在私有映射发生 write fault（首次写入触发的页故障）时执行写时复制（Copy-on-Write，COW），`android17-6.18-2026-06_r6` 的相关实现位于 `mm/memory.c`。页面一旦被某个进程修改，该进程获得私有页，PSS（按共享者数量分摊后的物理内存）、`Private_Dirty`（该进程私有且已写脏的页） 和物理内存占用随之变化。
 
@@ -648,6 +653,11 @@ Boot Image 的内存收益有两层来源：
 
 Boot Image 提供构建期生成的对象与元数据；Zygote preload 提供本次开机中的类初始化和额外对象。两者都能减少子进程重复工作，但对象来源、生成时机和调优入口不同。
 
+<!-- gracker-diagram: ch01-04-boot-image-lifecycle -->
+![Boot Image 装载、Zygote 预加载与子进程共享](../../assets/diagrams/ch01/ch01-04-boot-image-lifecycle.png)
+
+图：ART 先选择并校验当前可用镜像，装载与必要的重定位完成后，Java 层 Zygote 才开始预加载。fork 让子进程继承地址映射；后续写入可能使共享页私有化。
+
 ### 五类 profile 与清单的作用阶段
 
 | 名称 | 作用对象 | 使用阶段 | 是否直接改变 Boot Image |
@@ -661,6 +671,11 @@ Boot Image 提供构建期生成的对象与元数据；Zygote preload 提供本
 应用 Startup Profile 通常对应 Baseline Profile 中启动路径规则的那一部分，用来影响最终安装 APK 中 DEX 的排列，让启动代码更集中。官方构建链路把这项优化限定在应用构建期：需要 release 构建启用 R8 minify 和 AGP 8.1+ 的 DEX layout optimization，AGP 8.3 起默认启用；AGP 8.1–8.2 需要在 app 模块 `baselineProfile {}` 中显式设置 `dexLayoutOptimization = true`，AGP 8.2 还不支持按 variant 区分 Startup Profile。Startup Profile 必须由应用启动测试生成，库单独贡献不了；它既不会生成 `/system/etc/preloaded-classes`，也不会选择平台 `boot.art` 中的类。
 
 Boot Image Profile 与 `preloaded-classes` 可以来自同一批代表性使用场景采样。`profman --generate-boot-image-profile` 也能同时输出 Boot Image Profile 和预加载类清单，但两个输出文件的用途不同。
+
+<!-- gracker-diagram: ch01-04-profile-scopes -->
+![Startup、Baseline 与 Boot Image Profile 的作用阶段](../../assets/diagrams/ch01/ch01-04-profile-scopes.png)
+
+图：三类 Profile 面向不同阶段和对象。应用 Startup/Baseline Profile 不会修改平台 Boot Image；`preloaded-classes` 另有 Zygote 预加载职责，不能和 Profile 混用。
 
 ### ART Mainline 更新与 `odrefresh`
 

@@ -74,6 +74,11 @@ Android 17 的新 ACK 是 `android17-6.18`，`android17-6.18-2026-06_r6` 是对�
 
 四项取交集后，才是某台 Android 17 设备上的 BPF 能力。仅看到 `CONFIG_BPF_SYSCALL=y`、某个 `.bpf` 文件或 `/sys/fs/bpf` 目录，都不足以单独得出“可用”的结论。
 
+<!-- gracker-diagram: ch01-28-bpf-availability-gates -->
+![设备可用的 BPF 能力是多项条件的交集](../../assets/diagrams/ch01/ch01-28-bpf-availability-gates.png)
+
+图：固定 ACK 有实现只是起点；还需目标配置与 JIT 支持、对象部署并成功加载附着、事件触发和消费方权限。四层证据缺一，节点存在或一次空读都不足以判断设备能力。
+
 ## 1. Android 17 的内核版本边界
 
 ### 1.1 新 ACK 与兼容旧 ACK 要分开看
@@ -182,6 +187,11 @@ mount bpf bpf /sys/fs/bpf nodev noexec nosuid
 
 `loader/Android.bp` 的 `required` 表示对象会被构建并安装到镜像依赖中，不表示运行时一定会加载、附着或向任意进程开放。
 
+<!-- gracker-diagram: ch01-28-loader-load-attach -->
+![Rust 平台加载器把加载与附着分开处理](../../assets/diagrams/ch01/ch01-28-loader-load-attach.png)
+
+图：平台 loader 按显式描述表筛选对象，再加载并 pin。auto_attach 为真时立即附着并 pin link，为假时由后续组件完成 attach；镜像依赖、pin program 和运行中的采集不是同一事实。
+
 ## 4. `android-17.0.0_r1` 的平台 BPF 程序清单
 
 平台 BPF 程序不止一类。`cyclePerUid`、`dmabufIter`、`kernelWakelockDuration` 和锁竞争程序只是其中一部分；每个程序支持的 CPU 架构、功能开关和 attach 状态各不相同。
@@ -278,6 +288,11 @@ Arena 可能降低 BPF 与用户空间交换特定数据结构时的开销，减
 
 要把 Arena 用于 Android 观测，仍要编写 BPF 程序、选择稳定的 attach 点、定义共享数据结构、编写有权限的用户空间消费程序，并测量引入的内存和 CPU 开销。“内存减少 40%”若没有测试对象、对照基线、设备和复现步骤，不能作为平台结论。
 
+<!-- gracker-diagram: ch01-28-arena-shared-memory -->
+![BPF Arena 是稀疏共享内存，不是自动观测器](../../assets/diagrams/ch01/ch01-28-arena-shared-memory.png)
+
+图：Arena 让有权限的用户进程与 BPF 程序按约定布局访问共享数据。预留的虚拟范围并不等于全部物理内存已经分配，页可按 fault 或 kfunc 分配；程序附着、事件采集和同步协议仍需单独实现。
+
 ## 7. `sched_ext`：编入内核不等于正在调度
 
 ACK 6.18 的 arm64 GKI 配置包含：
@@ -307,6 +322,11 @@ adb shell 'cat /sys/kernel/sched_ext/enable_seq 2>/dev/null'
 `state` 显示框架当前是 `disabled`、`enabling` 还是 `enabled`；`switch_all` 表示当前调度器是否接管全部符合条件的任务；`root/ops` 在调度器对象存在时显示 ops 名称。
 
 `enable_seq` 是只增不减的计数器：值为 0 表示本次启动后从未成功启用 BPF 调度器，非 0 只能证明曾经启用过，不能证明当前仍在运行。节点不存在或访问被拒绝时，应记录内核版本、构建类型和 SELinux 拒绝日志，不能把空输出直接解释成某项能力不存在。
+
+<!-- gracker-diagram: ch01-28-sched-ext-activation -->
+![sched_ext 从编译支持到实际接管任务](../../assets/diagrams/ch01/ch01-28-sched-ext-activation.png)
+
+图：CONFIG_SCHED_CLASS_EXT 提供框架，初始仍为 disabled。成功加载并附着 sched_ext_ops 后才接管符合条件的任务；错误、退出或 watchdog 可使其停用并回到内置调度器。enable_seq 是历史成功启用次数，当前状态应读 state。
 
 Android 17 AOSP 平台源码没有提供名为“ML Scheduler”的系统级 BPF 调度器，也没有 `bpf_runqueue_hook` 或 `bpf_cpufreq_hook` 这类通用接口。调度观测通常依赖已有的 sched/power tracepoint、BPF tracing 程序或 Perfetto；调度控制则需要单独实现 `sched_ext` 策略，并完成权限配置和产品验证。“关键任务响应时间改善 35%”如果缺少可复现实验，不能作为平台结论。
 

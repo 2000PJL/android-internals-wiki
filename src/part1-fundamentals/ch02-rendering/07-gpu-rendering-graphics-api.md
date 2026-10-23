@@ -212,6 +212,11 @@ vertex processing 先变换顶点；primitive assembly 把顶点组成三角形�
 
 这些策略名词后文会反复出现，我们先把 Skia 侧的几个解释放在这里：analytic shader 用数学表达式直接计算覆盖率；实例化几何复用同一份几何描述绘制多个对象；tessellation 把曲线等复杂形状细分为 GPU 可处理的图元；纹理 quad 是采样一张纹理所用的矩形；离屏 pass 先把结果画到中间目标。backend 指 Skia 连接 OpenGL/Vulkan 与驱动的后端实现，GPU capability 则是设备实际支持的功能与限制。
 
+<!-- gracker-diagram: ch02-07-gpu-stage-model -->
+![概念图形管线：从命令到颜色附件](../../assets/diagrams/ch02/ch02-07-gpu-stage-model.png)
+
+图：图是传统图形管线的职责模型，实际测试可以提前，Skia 也会按后端和能力选择不同策略。Fragment Shader 与固定功能混合不是同一个阶段；一个 Canvas draw 操作也不对应固定数量的顶点或 GPU 命令。
+
 还要拆掉一个常见误会：`View.invalidate()` 并不会立即启动 GPU。它只是标记内容需要更新，并安排一次 traversal（测量、布局、绘制等 View 树遍历工作）；UI 线程在帧回调中记录或更新 RenderNode，随后由 RenderThread 同步状态、准备 GPU 工作并提交窗口 buffer。RenderNode 是 HWUI 保存绘制指令与合成属性的节点。
 
 #### Vertex Shader 与几何阶段
@@ -325,6 +330,11 @@ App Window buffer 可以作为 GPU color attachment。App 提交 GPU 工作后�
 
 反过来，把所有组合一次性创建出来，可能增加启动时间、内存和 cache churn（缓存条目频繁加入与淘汰）。
 
+<!-- gracker-diagram: ch02-07-shader-pipeline-cache -->
+![SPIR-V 之后仍可能有硬件编译与 pipeline 创建](../../assets/diagrams/ch02/ch02-07-shader-pipeline-cache.png)
+
+图：不同 API 与后端会把这些工作放在不同调用中。SPIR-V 是中间表示，无法保证驱动已生成可执行代码；缓存命中与精确配置的预热可减少关键帧准备，更新、变体变化或淘汰仍可能带来 miss。
+
 ### Vulkan、OpenGL ES 与 ANGLE
 
 #### 控制模型与性能差异
@@ -391,6 +401,11 @@ bound 的意思是帧时间主要受某类资源限制：vertex/geometry 看几�
 | Thermal / power bound | 运行一段时间后频率下降 | 固定温度/电源条件做短长对照 | GPU frequency、thermal、power rail（芯片供电轨的功耗数据） |
 
 另外，跨 GPU 通用的“Fragment Shader 超过 60% 就是 fill bound”阈值并不存在；counter 名称、单位与统计范围由 GPU producer/driver 在 descriptor（数据源对计数器字段的描述）中声明。
+
+<!-- gracker-diagram: ch02-07-bottleneck-ab -->
+![单因素实验缩小 GPU 瓶颈范围，counter 再验证](../../assets/diagrams/ch02/ch02-07-bottleneck-ab.png)
+
+图：减少提交、降低几何或降低像素与带宽负载，分别提供不同线索；响应不具有唯一归因。还要用同一帧的 CPU、GPU queue、硬件 counter、温控与 SF 数据确认，不能从 GPU busy 或某个百分比阈值直接下结论。
 
 #### Fillrate bound
 
@@ -487,6 +502,11 @@ Bitmap.Config.HARDWARE / HardwareBuffer / Surface / ANativeWindow
 这些包装和接口不表示“每层复制一份像素”：多个进程/设备可以导入同一个 dma-buf（Linux 跨设备共享缓冲内存的对象），对应不同的进程虚拟地址、IOMMU（设备访问内存时使用的地址映射与隔离单元）映射和引用。`GraphicBuffer` 是 native 图形栈中的包装对象，`AHardwareBuffer` 是公开 NDK 对象，Java 对应对象是 `android.hardware.HardwareBuffer`；底层 `native_handle` 用 fd（文件描述符）和 metadata 描述共享 buffer。
 
 `frameworks/native/libs/ui/GraphicBufferAllocator.cpp` / `GraphicBufferMapper.cpp` 对接 graphics allocator（分配器）/mapper：allocator 负责创建 buffer，mapper 负责导入、锁定和查询其布局。`hardware/interfaces` 同时保留历史 HIDL 版本，并提供 allocator AIDL（Android Interface Definition Language） 与 mapper stable-C 接口——HIDL（HAL Interface Definition Language）与 AIDL 是两代 HAL 接口定义体系，stable-C 是稳定的 C 接口。具体产品用哪个版本，要看 vendor manifest（系统与 vendor 接口清单） 和运行时注册的 service。
+
+<!-- gracker-diagram: ch02-07-buffer-allocation-import -->
+![共享图形 buffer：新分配与导入各有接口](../../assets/diagrams/ch02/ch02-07-buffer-allocation-import.png)
+
+图：新分配以尺寸、格式和 usage 等描述符进入 allocator；已有 native_handle 可经 mapper 导入、查询或 CPU lock。GPU、Codec、SF 和 HWC 可持有同一共享分配的不同导入与映射，包装对象和引用增多不等于像素副本增多。
 
 #### Gralloc 根据描述符选择布局
 
@@ -877,6 +897,11 @@ flowchart LR
 
 HWUI 还要单独看待。普通 View 的硬件加速由 `libhwui`、Skia 和 RenderThread 管理；应用直接创建 EGL context（保存 GLES 状态和资源关系的上下文） 或 Vulkan device 时，资源和提交策略由应用或引擎管理。平台 HWUI 的实现能说明 Android 自身如何使用 Vulkan，但第三方引擎照抄它的线程、队列或缓存结构并不合适。
 
+<!-- gracker-diagram: ch02-07-api-driver-paths -->
+![GLES、ANGLE 与 Vulkan 在 API 和驱动层分流](../../assets/diagrams/ch02/ch02-07-api-driver-paths.png)
+
+图：GLES 可由厂商 GLES 驱动实现，也可经 ANGLE 的 Vulkan backend；直接 Vulkan 应用则自己管理显式对象与同步。这几条原生窗口路径最终通过 Android WSI/ANativeWindow 提交 buffer。API 名称本身无法决定哪条路径更快。
+
 ### 2. API 演进：版本号只回答“接口何时出现”
 
 #### 2.1 OpenGL ES
@@ -1041,6 +1066,11 @@ vkQueuePresentKHR
 
 acquire 路径中，Vulkan 接收的 dequeue fence 约束应用何时可以重新写入 image；present 路径把 GPU 生产完成的 fence 随 buffer 交给下游，SurfaceFlinger 将它作为读取该 buffer 前的 acquire 依赖。显示端不再读取后返回的 release fence，再控制该 buffer 何时可重用。“acquire”必须注明是哪一侧：Vulkan 取得可写 image，与 SurfaceFlinger 取得可读 buffer，等待的是不同阶段的依赖。到内核锚点 `android17-6.18-2026-06_r6` 为止，跨模块的 buffer 共享仍建立在 dma-buf 上，同步文件由 `sync_file` 承载 fence——改用 Vulkan 也取消不了这些所有权与同步约束。
 
+<!-- gracker-diagram: ch02-07-vulkan-buffer-fences -->
+![Vulkan 取得可写 image，SF 取得可读 buffer](../../assets/diagrams/ch02/ch02-07-vulkan-buffer-fences.png)
+
+图：公开 Vulkan acquire 取得待复用 image，并通过 Android WSI 接入 dequeue fence；GPU 写入后，present 路径把 producer 完成 fence 随 buffer 入队。SF 读取前遵守该依赖，使用结束后的 release 信息再约束未来复用，CPU present 返回无法代替这些完成条件。
+
 #### 5.3 Present mode 需要查询
 
 桌面 Vulkan 的常见 present mode（交换链怎样排队并呈现图像）到了 Android 上要重新确认。建立 swapchain 前，应用应查询 surface 支持的 format、color space（颜色空间）、extent（图像宽高）、transform、usage、image count 和 present mode。
@@ -1086,6 +1116,11 @@ adb shell settings delete global angle_gl_driver_selection_values
 ```
 
 配置命令本身只改变选路输入。验证结果时要检查 `dumpsys gpu`、logcat（Android 日志） 的 GraphicsEnvironment/EGL 信息，以及 `glGetString(GL_VENDOR)`、`glGetString(GL_RENDERER)`；要下性能结论，再结合 Perfetto 或 AGI。判断 backend 时，“设备是 Android 17”这条信息还不够。
+
+<!-- gracker-diagram: ch02-07-angle-selection-load -->
+![ANGLE 偏好、策略选中和实际加载是三道边界](../../assets/diagrams/ch02/ch02-07-angle-selection-load.png)
+
+图：manifest 偏好只是输入，还要经过设备条件与平台策略。ANGLE 可用并被选中后，EGL loader 才进入对应加载路径；该路径加载失败属于 fatal。文档所说的 ANGLE 不可用时使用厂商 GLES，不能外推为已选中后任何加载故障都静默回退。
 
 ### 7. 怎样选择 API
 

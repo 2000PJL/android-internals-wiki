@@ -197,6 +197,11 @@ agent 的注册和更新通道是 Binder：
 
 `NetworkMonitor` 中也不存在表示断网的 `LOST` 状态。物理链路断开或 agent 注销由提供者和 Connectivity 管理；对应用而言，`onLost()` 还可能只表示该网络不再满足当前请求。对于默认网络回调，旧网络被更优网络替代后仍可能继续存在。
 
+<!-- gracker-diagram: ch01-22-agent-validation-lifecycle -->
+![网络 connected、验证与默认选择分别推进](../../assets/diagrams/ch01/ch01-22-agent-validation-lifecycle.png)
+
+图：NetworkAgent 注册后系统建立 NAI，并异步创建 NetworkMonitor；提供者继续上报 connected。connected 网络可以满足不要求验证的请求，验证结果到来后再更新能力和重匹配。验证失败不直接等于物理断链。
+
 native network 与 DNS 缓存由 `ConnectivityService` 协调创建。不同能力和 VPN（lockdown） 场景会让创建发生在 agent 注册期或首次 connected 处理期；销毁时，服务先重新匹配请求和默认网络，再调用 netd、DnsResolver 与 DnsManager 清理旧数据通路，最后释放 netId。这套顺序是为了减少切换中断；排障时看到 DNS 清理动作，先别把断网直接归到它头上。
 
 ## NetworkMonitor 验证的是什么
@@ -289,6 +294,11 @@ rematchAllNetworksAndRequests()
 
 计算阶段遍历需要重新评估的 request/layer（请求及其优先级层），应用阶段更新 satisfier、默认网络、可用/丢失通知、被动监听和不活动状态，随后才通知提供者新的网络需求。源码明确提示重匹配可能较慢；实际耗时要从调试日志中的 compute/apply/issue 三段量出来，固定复杂度或毫秒常数替代不了实测。
 
+<!-- gracker-diagram: ch01-22-policy-ranking -->
+![网络排序逐项筛候选，不相加整数分数](../../assets/diagrams/ch01/ch01-22-policy-ranking.png)
+
+图：先筛选满足请求的候选，再按固定策略顺序缩小集合；前面的条件已经分出高下时，不再用后面的条件推翻。仍等价时优先保留当前 satisfier，具体策略顺序和 offer 特例见正文。
+
 ## NetworkRequest 与 NetworkCallback
 
 ### 常见需求对应的 API
@@ -307,17 +317,25 @@ rematchAllNetworksAndRequests()
 
 ### 回调顺序和线程
 
-Android 8.0 起，`onAvailable()` 后会按顺序收到：
+Android 8.0 起，`onAvailable()` 后保证按顺序派发 `onCapabilitiesChanged()` 和 `onLinkPropertiesChanged()`。`onBlockedStatusChanged(Network, boolean)` 从 API 29 才公开；在本章 Android 14–17 的范围内，初始通知顺序为：
 
-1. `onCapabilitiesChanged()`；
-2. `onLinkPropertiesChanged()`；
-3. `onBlockedStatusChanged()`。
+1. `onAvailable()`；
+2. `onCapabilitiesChanged()`；
+3. `onLinkPropertiesChanged()`；
+4. `onBlockedStatusChanged()`。
+
+版本与顺序依据见 [NetworkCallback API 参考](https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback)。
 
 不要在 `onAvailable()` 内同步调用 `getNetworkCapabilities()` 或 `getLinkProperties()`。网络可能已经再次变化，同步查询拿到的结果会与当前回调的时序错位。使用随后回调携带的对象，可以保留 framework 保证的事件顺序。
 
 无 `Handler` 参数时，回调运行在 framework 为应用创建的 Connectivity 线程；传入 `Handler` 后，运行在该 handler 对应的 Looper。回调先经跨进程通知进入应用，再由 `CallbackHandler` 串行分发，并不直接执行在应用 Binder 线程池里。
 
 默认回调不只在默认网络对象变化时触发。当前网络的 capabilities、link properties 或 blocked status 改变时，应用仍会收到对应回调。
+
+<!-- gracker-diagram: ch01-22-callback-order -->
+![初始网络回调的顺序与应用线程](../../assets/diagrams/ch01/ch01-22-callback-order.png)
+
+图：在本章 Android 14–17 范围内，初始可用通知依次派发 available、capabilities、link properties 和 blocked。应用应使用回调携带的快照，后续属性变化也会单独回调；框架通过应用侧 CallbackHandler 分发。
 
 下面的示例用于维护一个可供 UI 和任务调度读取的快照。耗时探测仍应交给独立执行器。
 
@@ -458,6 +476,11 @@ map 是内核与用户空间交换计数数据的容器，pin 则是为 BPF 对�
 
 历史数据不存放在 SQLite 中。`NetworkStatsRecorder` 使用 `FileRotator`（按时间轮换历史文件）和 `NetworkStatsCollection` 管理按时间段聚合的 bucket 记录。`queryDetailsForUid()` 打开统计 session，读取权限允许的历史集合——它走的路径，比“Binder 后直接查询单个 UID 的 BPF map”要长。
 
+<!-- gracker-diagram: ch01-22-networkstats-collection -->
+![NetworkStats 从内核累计计数到历史查询](../../assets/diagrams/ch01/ch01-22-networkstats-collection.png)
+
+图：内核 BPF 更新累计计数，用户空间交换详细统计的活跃与非活跃 map，再读取合并快照、处理归属并维护历史文件。历史查询还包含权限与时间范围聚合，需要在工作线程执行。
+
 ### 何时采集
 
 默认 `NetworkStatsSettings.getPollInterval()` 是 30 分钟，基于不精确重复闹钟，系统可以合并触发时间。除此之外，网络状态变化、上游变化、全局流量阈值警报、注册用量回调、强制更新、UID 删除及 dumpsys 参数都可能引发采集或持久化。排障时要记录触发本次采集的具体原因（poll reason）。
@@ -514,6 +537,11 @@ Connectivity 代码会从 BPF 规则状态取得所跟踪 UID 的 blocked reason
 `Ikev2VpnProfile` 由 `VpnManager` 配置（provision）后，可以由系统运行，不要求 VPN 应用持续在后台处理数据包。`Vpn.IkeV2VpnRunner` 使用 IKE 密钥协商会话、`IpSecTunnelInterface` 和 `IpSecTransform`；双方支持时，可以用 MOBIKE 在底层网络变化后更新 IKE/IPsec 路径。它的数据通路与用户空间 `VpnService` 是两条路，画架构图时要把两种 VPN 分开画。
 
 两种路径最终都会注册 VPN `NetworkAgent`，并在 capabilities 中设置受影响的 UID 和 underlying networks（承载隧道的底层网络）。VPN 在排序中有显式策略优先级；底层 Wi-Fi 或蜂窝仍负责承载隧道，但 VPN 不通过复制底层 score 成为默认网络。
+
+<!-- gracker-diagram: ch01-22-vpn-data-paths -->
+![应用 TUN VPN 与平台 IKEv2 的数据面差别](../../assets/diagrams/ch01/ch01-22-vpn-data-paths.png)
+
+图：VpnService 把 TUN fd 交给 VPN 应用，由它搬运、加密和收发包；平台 IKEv2 由系统管理 IKE 与 IPsec，不要求配置应用持续逐包处理。两者都可形成 VPN 网络，底层 Wi-Fi 或蜂窝承担隧道传输。
 
 优化 VPN 时，我们要测的是端到端指标：
 

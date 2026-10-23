@@ -306,6 +306,11 @@ if (!canUnblockUiThread) {
 
 “SyncFrameState 栅栏”描述的是 UI → RenderThread 的同步等待关系，这里既没有固定时长、也没有固定解锁位置的 GPU fence；实际协调两个线程的是条件变量，与 Linux 把图形 fence 暴露为文件描述符的 `sync_file`（把图形同步 fence 暴露为文件描述符的框架） 框架相比，实现和参与者都是两回事。
 
+<!-- gracker-diagram: ch02-04-ui-unblock-branches -->
+![UI 等待结束点由 prepareTextures 分支决定](../../assets/diagrams/ch02/ch02-04-ui-unblock-branches.png)
+
+图：UI 在 postAndWait 等待 DrawFrameTask 的解锁点。prepareTextures 为 true 时可在 draw 前解锁；为 false 时推迟到 draw/skip 处理之后。两者都没有把 GPU 执行完成作为这一条件变量的直接含义。
+
 ### RenderThread：准备、绘制与 buffer 提交
 
 #### RenderThread 是进程级共享线程
@@ -350,6 +355,11 @@ void CanvasContext::draw(bool solelyTextureViewUpdates) {
 `getFrame()` 从当前渲染后端取得目标 frame；`draw()` 处理脏区（本帧相对上一帧发生变化的区域）、RenderNode 和 layer 更新；`swapBuffers()` 把结果交给 NativeWindow（图形 Producer 操作 Surface 的原生接口）/BufferQueue 路径。CPU 方法返回时，GPU 仍可能继续执行已提交的图形工作。
 
 这里还有一个容易混淆的同名概念：`CanvasContext::waitOnFences()` 等待的是 `mFrameFences` 中的 `std::future<void>`。这些 future 是异步任务的完成凭据，由 HWUI 的共享工作线程池 `CommonPool::async()` 创建，用来保证相关任务在本帧结束前完成。方法名里虽有 `Fences`，等待对象却是 std::future，跟 `sync_file` 图形 fence、“等待 SurfaceFlinger release fence”都对不上号。GraphicBuffer 的 Producer/Consumer fence 由 NativeWindow、BufferQueue、BLAST 和 SurfaceFlinger 路径携带，排查时按来源区分。
+
+<!-- gracker-diagram: ch02-04-waits-three-objects -->
+![同名等待要先辨认被等待的对象](../../assets/diagrams/ch02/ch02-04-waits-three-objects.png)
+
+图：三类等待的参与者和完成含义不同。CanvasContext::waitOnFences 在此等待 CommonPool future；buffer 的 acquire/release fence 则保护异步图形读写与复用。仅凭方法中有 Fence 或 Sync，无法认定它在等待 SF 或 GPU。
 
 #### `queueBuffer()` 表示 Producer 已提交
 
@@ -492,7 +502,7 @@ UI 侧我们通常关注这些 slice：
 
 - `Choreographer#doFrame <vsyncId>`；
 - input、animation、insets animation、traversal、commit；
-- `performTraversals`、measure、layout；
+- `traversal` 回调范围，以及实际存在的 `measure`、`layout`、`draw-VRI[...]` 等区间；
 - `Record View#draw()` 或相关 DisplayList 记录 slice；
 - `syncAndDrawFrame()` / `postAndWait()` 等待区间。
 
@@ -538,7 +548,7 @@ FROM slice s
 JOIN thread_track tt ON s.track_id = tt.id
 JOIN thread t ON tt.utid = t.utid
 LEFT JOIN process p ON t.upid = p.upid
-WHERE t.name IN ('main', 'RenderThread')
+WHERE (t.tid = p.pid OR t.name = 'RenderThread')
   AND s.dur > 1000000
   AND (
     s.name GLOB 'Choreographer#doFrame*'
@@ -569,7 +579,7 @@ ORDER BY s.ts;
 
 #### 主线程过重：RenderThread 得到的时间窗口变窄
 
-复杂布局、自定义绘制、同步 I/O、锁竞争或运行队列等待，都可能让 UI 线程错过提交时间。排查时先分清线程状态——运行、RUNNABLE、SLEEPING 还是 BLOCKED——再定位 Java/Kotlin/native 调用栈。一个很长的 `performTraversals` 还要继续拆成 measure、layout、record 和 `syncAndDrawFrame`，只按总时长优化 View 数量往往没抓到重点。
+复杂布局、自定义绘制、同步 I/O、锁竞争或运行队列等待，都可能让 UI 线程错过提交时间。排查时先分清线程状态——运行、RUNNABLE、SLEEPING 还是 BLOCKED——再定位 Java/Kotlin/native 调用栈。一个很长的 `traversal` 回调区间还要继续拆成 measure、layout、record 和 `syncAndDrawFrame`，只按总时长优化 View 数量往往没抓到重点。
 
 改动也要与证据对应：
 
@@ -604,6 +614,11 @@ Producer 提交过快、Consumer/SF 处理变慢、acquire fence 迟到、releas
 
 Dialog、PopupWindow、画中画、嵌入式 Surface 等场景还要确认是否创建独立 Window 或 Producer。减少 Window 数量有时能降低调度与 buffer 成本，但 UI 语义、无障碍、输入、层级和生命周期同样是设计约束，线程数量只是其中一个变量。
 
+<!-- gracker-diagram: ch02-04-shared-renderthread -->
+![同一进程的 HWUI 窗口共享 RenderThread](../../assets/diagrams/ch02/ch02-04-shared-renderthread.png)
+
+图：同一应用进程内的多个 HWUI CanvasContext 共用 RenderThread 单例与工作队列，一个窗口的长任务可能推迟另一个窗口。其他进程有自己的 RenderThread，仍与前者共享 GPU、系统合成和内存带宽。
+
 ### Kernel 边界：调度证据与图形 fence 分开看
 
 kernel 侧的调度依据可从以下文件核对：
@@ -613,7 +628,7 @@ kernel 侧的调度依据可从以下文件核对：
 
 UI 线程或 RenderThread 长时间处于 runnable 时，可结合 `sched_wakeup`、`sched_switch`、CPU 频率、idle、优先级和 cgroup 判断调度延迟。线程在睡眠（SLEEPING）或等待锁/fence 时，调整 scheduler（调度器） 参数通常帮不上忙，瓶颈在上游依赖。
 
-GPU 与 display fence 的等待点还涉及 `dma_fence`（内核表示异步硬件任务完成关系的对象）、`sync_file` 框架和厂商 GPU、DRM/display 驱动。AOSP framework 的 `syncAndDrawFrame()` 条件变量、CommonPool frame fence、GraphicBuffer acquire/release fence 属于不同层次，后两者落在设备实现上，`kernel/sched` 两个文件解释不了。详细 fence 生命周期见 [2.8 BufferQueue、Gralloc 与 Sync Fence](08-bufferqueue-gralloc（Android 图形缓冲分配模块）-sync-fence.md)。
+GPU 与 display fence 的等待点还涉及 `dma_fence`（内核表示异步硬件任务完成关系的对象）、`sync_file` 框架和厂商 GPU、DRM/display 驱动。AOSP framework 的 `syncAndDrawFrame()` 条件变量、CommonPool 的 `std::future` 与 GraphicBuffer acquire/release fence 属于不同层次。前两者是用户态任务协调；图形 fence 的信号来源和驱动路径还需结合设备实现，不能仅靠 `kernel/sched` 两个文件解释。详细 fence 生命周期见 [2.8 BufferQueue、Gralloc 与 Sync Fence](08-bufferqueue-gralloc-sync-fence.md)。
 
 ### 版本演进：保留历史，结论锚定 Android 17
 
@@ -717,6 +732,11 @@ flowchart LR
 ```
 
 Hardware Layer 的收益与代价都发生在 `DL → L → W` 这一段：先把 View 子树画到离屏目标，再把这个中间结果合成进窗口。SurfaceFlinger 只处理最终窗口 Layer，SF Layer 数量里看不出某个 View 是否使用了 Hardware Layer。
+
+<!-- gracker-diagram: ch02-04-internal-layer-placement -->
+![View Hardware Layer 先合成进宿主窗口](../../assets/diagrams/ch02/ch02-04-internal-layer-placement.png)
+
+图：HWUI Hardware Layer 是 RenderNode 子树的离屏中间结果，随后采样进入 App Window buffer；交给 SurfaceFlinger 的通常仍是宿主窗口 Layer。给 View 建 Hardware Layer 不会自动产生独立 SurfaceControl、BufferQueue 或 HWC plane。
 
 ### 硬件加速与 Hardware Layer
 
@@ -855,6 +875,11 @@ LayerType effectiveLayerType() const {
 
 摘录中的字段名做了类成员前缀压缩，条件与 Android 17 源码一致。自动升层覆盖四类情况：一是 functor（由外部渲染组件交给 HWUI 执行的绘制回调） 需要隔离；二是设置了 `ImageFilter` 图像滤镜；三是需要 `StretchEffect` 拉伸效果；四是非零半透明 alpha 与 overlapping rendering（子树中的绘制内容彼此重叠）同时成立。尺寸超过最大纹理限制时，这条 RenderLayer 路径就走不通了。
 
+<!-- gracker-diagram: ch02-04-auto-layer-conditions -->
+![自动升层由语义条件触发](../../assets/diagrams/ch02/ch02-04-auto-layer-conditions.png)
+
+图：自动升层要求显式类型为 None、尺寸适合，并至少满足一个效果条件。半透明 alpha 这一分支还要求存在重叠绘制；它不是根据绘制指令复杂度决定是否缓存，也不能用错误的 hasOverlappingRendering 声明换取性能。
+
 #### `hasOverlappingRendering()` 为什么重要
 
 把 alpha 直接乘到每条绘制操作上，和先把整棵子树画到离屏层、再对整体乘 alpha，在重叠区域会得到不同结果。View 声明没有 overlapping rendering 时，HWUI 有机会直接调制每条绘制指令的 alpha，避免创建离屏 buffer。
@@ -899,6 +924,11 @@ CanvasContext::draw()
 ```
 
 内容 `invalidate()` 后，现有 layer surface 可以按 damage（本次需要重绘的受损区域）更新；尺寸、像素格式、图形 context（保存 GPU 资源与提交状态的上下文）、可渲染状态或最大纹理限制变化时，才可能释放并重分配资源。把每次内容变化都称为“纹理重建”，会高估分配次数，同时仍可能低估重绘和 GPU 带宽成本。
+
+<!-- gracker-diagram: ch02-04-layer-reuse-damage -->
+![复用、重绘和重分配是三种不同情况](../../assets/diagrams/ch02/ch02-04-layer-reuse-damage.png)
+
+图：只改整体变换且内容稳定时，可复用已栅格化结果；内容 dirty 时需要重绘受影响区域，但未必重新分配；尺寸、格式或上下文等变化则可能重建资源。是否划算要同时看建层、更新、采样、内存和复用帧数。
 
 #### 属性变化与内容变化
 
@@ -1008,6 +1038,11 @@ view.animate()
 #### 其他 Animator 要覆盖取消路径
 
 使用 `ObjectAnimator` 或自定义动画时，如实测证明需要 layer，应在 start 前设置，在 end 与 cancel 都恢复原类型。还要处理 View detach、动画被替换和多个动画重叠，避免一个 listener 提前释放另一个动画仍在使用的 layer。
+
+<!-- gracker-diagram: ch02-04-layer-prebuild-lifetime -->
+![预建层需要即将使用，并覆盖动画结束与取消](../../assets/diagrams/ch02/ch02-04-layer-prebuild-lifetime.png)
+
+图：图示显式 HARDWARE layer 的管理思路。预建需要 View 已 attach、尺寸有效且渲染器可用，随后还要在实际绘制树中被使用；动画结束或取消时恢复原类型。withLayer 会替下一次 ViewPropertyAnimator 管理准备与恢复，自定义动画还需处理重叠和 detach。
 
 长期把整个页面或 RecyclerView item 固定为 HARDWARE，通常缺少收益依据。动态场景更适合把稳定背景与频繁变化内容拆成不同节点，再单独评估稳定部分。
 

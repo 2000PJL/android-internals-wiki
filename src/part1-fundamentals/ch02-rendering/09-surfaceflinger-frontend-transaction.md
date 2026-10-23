@@ -369,6 +369,11 @@ void Scheduler::onFrameSignal(ICompositor& compositor,
 
 `commit` 返回 `false` 可能只是本轮没有需要提交到显示的变化，也可能受 mode set 或 backpressure 分支影响；把它直接记成丢帧，结论下早了。
 
+<!-- gracker-diagram: ch02-09-commit-composite -->
+![每轮先建立 Display 目标，commit 决定是否合成](../../assets/diagrams/ch02/ch02-09-commit-composite.png)
+
+图：Scheduler 为本轮 pacesetter 与适用 follower 建立 FrameTarget，再进入 commit。只有需要继续合成时才调用 composite；每个 Output 有自己的合成状态和显示完成结果。commit 返回 false 需要结合无变化、模式切换或反压等分支解释。
+
 #### `composite()`：把 snapshot 交给各个 Output
 
 `SurfaceFlinger::composite()` 构造 `CompositionRefreshArgs`（一次合成刷新所需参数的集合），把物理/虚拟 Display 对应的 Output 和 frame target 交给 CompositionEngine。每个 Output 会建立自己的 `OutputLayer`，也就是某个全局 Layer 在该 Display 上的合成表示。Output 的主流程包括：
@@ -421,6 +426,11 @@ DEVICE composition 通常可以减少 SF 的 GPU client composition 工作，但
 - SOLID_COLOR（纯色）、CURSOR、SIDEBAND、DISPLAY_DECORATION（显示装饰） 和 REFRESH_RATE_INDICATOR（刷新率指示） 等 Composer3 类型。
 
 当前的 AIDL `Composition.aidl` 中没有通用 `CLIENT_BYPASS` 枚举。`SIDEBAND` 要求设备提供 `Capability.SIDEBAND_STREAM`；`DISPLAY_DECORATION` 要求 `getDisplayDecorationSupport()` 返回有效能力描述。枚举里有的类型，还要设备能力跟得上；`REFRESH_RATE_INDICATOR` 也允许在 validate 时退回 CLIENT。厂商日志若出现额外类型，按 vendor 扩展记录设备、版本和日志来源。
+
+<!-- gracker-diagram: ch02-09-mixed-composition -->
+![同一显示帧可混合 CLIENT 与 DEVICE 内容](../../assets/diagrams/ch02/ch02-09-mixed-composition.png)
+
+图：HWC 协商出的 CLIENT 内容由 RenderEngine 合成到 client target，再与 DEVICE 等内容共同送到 HWC。每个输入仍需遵守 acquire fence。能否保持 DEVICE 取决于整屏属性与资源，不能按应用、控件名称或 Layer 数量永久分类。
 
 #### 哪些因素会改变策略
 
@@ -789,6 +799,11 @@ flowchart LR
 
 上面八步里有三个常被混为一谈的时刻，我们把它们摆在一起区分：transaction 已进入 `RequestedLayerState`、新 buffer 已被 latch、目标 display 已经 present。第一项是请求状态更新；后两项还涉及 buffer、fence、CompositionEngine、HWC 和显示设备，各自有各自的完成条件。
 
+<!-- gracker-diagram: ch02-09-frontend-state-pipeline -->
+![FrontEnd 把客户端请求转换成当前帧快照](../../assets/diagrams/ch02/ch02-09-frontend-state-pipeline.png)
+
+图：collect 后先登记新 Layer，再筛选就绪事务并合并请求状态；层级更新与 snapshot 计算随后发生。Android 17 仍与 legacy Layer 的 latch 路径共存，FrontEnd 的状态更新无法直接证明 buffer 已可读或显示已完成。
+
 ### 2. FrontEnd 与旧 `Layer` 对象共存
 
 旧的 `Layer` 对象在当前实现里仍然存在，`RequestedLayerState` 与它共存。
@@ -896,6 +911,11 @@ struct RequestedLayerState : layer_state_t {
 
 `onHandlesDestroyed()` 先把 `handleAlive` 置为 `false`；layer 还要没有 parent，`canBeDestroyed()` 才会返回 true。删除 parent 时，manager 还会更新 child、relative、mirror 和 touch-crop 引用，并继续处理由此满足销毁条件的 layer。
 
+<!-- gracker-diagram: ch02-09-layer-lifetime -->
+![handle 释放与 Layer 可销毁之间还隔着 parent 关系](../../assets/diagrams/ch02/ch02-09-layer-lifetime.png)
+
+图：Layer 生命周期由客户端强 handle 与 parent 关系共同影响。handle 销毁先清除 handleAlive；仍有 parent 的节点未必可销毁。屏上不可达也不意味着对象立刻删除，底层 buffer 的释放还受其他引用与设备导入影响。
+
 #### 4.4 `commitChanges()` 清理本轮变化记录
 
 `commitChanges()` 会：
@@ -942,6 +962,11 @@ relative children 的 Z 值相同时，再按 layer id 保持稳定顺序，较�
 - `mPathToSnapshot`：按 traversal path 找 snapshot；
 - `mIdToSnapshots`：找到同一 layer id 对应的全部 snapshot。
 
+<!-- gracker-diagram: ch02-09-path-specific-snapshots -->
+![同一 Layer id 经不同镜像路径可得到不同快照](../../assets/diagrams/ch02/ch02-09-path-specific-snapshots.png)
+
+图：RequestedLayerState 只保存节点自己的请求；不同镜像路径带来不同父级变换、裁剪与可见性，因此一个 Layer id 可有多份 snapshot。合成还需检查 reachability 和 Output 筛选，不能把局部请求参数直接当成每块屏上的最终 bounds。
+
 ### 6. `TransactionHandler` 如何决定本轮应用哪些事务
 
 `queueTransaction()` 把 transaction 推进 `mLocklessTransactionQueue`，同时增加 `TransactionQueue` trace counter（随队列长度变化的跟踪计数器）；`collectTransactions()` 再按 `applyToken` 分组放入 pending queues。applyToken 约束的是同组事务的应用顺序。
@@ -953,6 +978,11 @@ relative children 的 Z 值相同时，再按 layer id 保持稳定顺序，较�
 FrontEnd 文档说明，默认情况下每个进程和每个 buffer producer（缓冲区生产者） 提供不同的 `applyToken`：这个隔离可以避免一个客户端的队首等待直接堵住全部客户端，不过 token 之间并没有天然全序。
 
 需要跨进程排序时，还有显式 transaction barrier 可用；跨 `applyToken` 的生效顺序，提交时间顺序顶替不了。
+
+<!-- gracker-diagram: ch02-09-token-fifo -->
+![同 applyToken 保序，队首未就绪只挡本桶](../../assets/diagrams/ch02/ch02-09-token-fifo.png)
+
+图：无锁入口经 collect 后按 applyToken 分桶，每桶 FIFO。A1 未就绪会挡住 A2，但 B 桶仍可继续扫描；两桶之间没有由提交时刻自动建立的应用全序，需要跨桶依赖时应使用显式 barrier。
 
 #### 6.2 三组 readiness filters
 
@@ -1221,6 +1251,11 @@ pop():
 
 队列一直有明确的原子入队次序；反转只修正头插链表的方向，顺序本身从没有丢过。
 
+<!-- gracker-diagram: ch02-09-lockless-batch-reversal -->
+![生产者 CAS 头插，单消费者接管后反转批次](../../assets/diagrams/ch02/ch02-09-lockless-batch-reversal.png)
+
+图：示例假定 CAS 成功次序为 A、B、C，生产者链头最终是 C→B→A。单消费者 exchange 接管这一批并反转为 A→B→C；接管后新到的节点留在新的 mPush。CAS 可重试，new/delete 也超出队列无锁保证的范围。
+
 #### 3.3 无锁、wait-free 与系统调用的区别
 
 源码能支持的结论是：
@@ -1307,6 +1342,11 @@ Android 17 的 `AutoSingleLayer` 至少要求：
 - layer state 是简单 buffer update，几何和同步语义保持干净，才保得住 fast path。
 
 `NotReadyUnsignaled` 距离立即应用还有一步：`TransactionHandler` 先记住该 token，等本轮尚未选出任何正常 ready transaction，才单独弹出这笔事务；后续 RenderEngine 或 HWC 读取 buffer 时依然必须遵守 fence。
+
+<!-- gracker-diagram: ch02-09-readiness-filters -->
+![三类过滤器后才决定本轮能否应用事务](../../assets/diagrams/ch02/ch02-09-readiness-filters.png)
+
+图：timeline、buffer 和 transaction barrier 按注册顺序检查；结果不是简单的 fence 是否 signal。NotReadyUnsignaled 仅是严格条件下的候选，本轮没有正常 ready 项时才可取出一笔。读取像素前仍须满足 acquire 依赖。
 
 #### 5.3 transaction barrier：Android 17 的显式 token 依赖
 

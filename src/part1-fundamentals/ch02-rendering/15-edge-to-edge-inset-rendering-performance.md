@@ -89,6 +89,11 @@ Android 15（API 35）开始对满足版本条件的 Activity 强制 Edge-to-Edg
 
 把这三层混在一起，容易把透明系统栏误判为新增 GPU 合成层，或把 Insets 动画误判为每帧完整重新布局。
 
+<!-- gracker-diagram: ch02-15-three-responsibility-boundaries -->
+![Edge-to-Edge 的三层责任：几何、数据、像素](../../assets/diagrams/ch02/ch02-15-three-responsibility-boundaries.png)
+
+图：窗口是否延伸到系统栏后方属于几何策略；WindowInsets 告知各组件需要避让的区域；应用和系统窗口最终各自产生像素并参与合成。DecorView color view 画入当前 App Window buffer，透明配置本身不能证明新增 Layer 或 HWC CLIENT 回退。
+
 ## 1. Android 15 到 Android 17 的行为边界
 
 ### 1.1 Edge-to-Edge 由运行平台和 target SDK 共同决定
@@ -196,6 +201,11 @@ WMS（WindowManagerService，窗口管理服务）维护带类型的 `InsetsStat
 
 系统发来新的 Insets 状态时，`ViewRootImpl.notifyInsetsChanged()` 会设置 `mApplyInsetsRequested`、调用 `requestLayout()`，并在需要时安排 traversal。应用主动调用 `View.requestApplyInsets()` 时，View 请求根节点重新分发；这条路径不等于收到一次新的 WMS 状态，也不会为每种 Insets type 分别发起一轮 Binder（跨进程通信）请求。
 
+<!-- gracker-diagram: ch02-15-state-to-view-dispatch -->
+![InsetsState 到 View 树：先更新状态，再安排 traversal](../../assets/diagrams/ch02/ch02-15-state-to-view-dispatch.png)
+
+图：系统状态变化经 ViewRootImpl / InsetsController 更新当前窗口 Insets，notifyInsetsChanged 请求布局和 traversal；应用 requestApplyInsets 也可要求本地重新分发。下一次实际 traversal 中再向根 View 分发计算出的 WindowInsets，多种 type 可以由同一个对象承载。
+
 ### 3.2 一次 `WindowInsets` 可以同时携带多种 type
 
 状态栏、导航栏、caption、IME、cutout、system gestures（系统手势区域）等信息都可以出现在同一个 `WindowInsets` 中。下面的代码只从已有对象读取并合并两种 type：
@@ -230,6 +240,11 @@ val safe = insets.getInsets(
 - 让同一组件在 Dialog、分屏或外接 Display 中拿到错误缓存。
 
 消费应该发生在明确负责这块避让区域的容器，并测试其后代和兄弟节点。
+
+<!-- gracker-diagram: ch02-15-listener-consumption -->
+![listener 与默认实现二选一；消费先影响当前子树](../../assets/diagrams/ch02/ch02-15-listener-consumption.png)
+
+图：当前 View 有 listener 时调用 listener，否则调用 onApplyWindowInsets。ViewGroup 自身返回 consumed 会停止其子树分发；现代路径把相同输入分别交给兄弟节点，前一个子节点的返回值不会覆盖后一个节点的输入。target < 30 的兼容路径仍会顺序消费。
 
 ## 4. Insets Animation：两条路径不能混写
 
@@ -267,6 +282,11 @@ INPUT → ANIMATION → INSETS_ANIMATION → TRAVERSAL → COMMIT
 这些条件成立时，`dispatchWindowInsetsAnimationProgress()` 会走 `notifyInsetsChanged()`，把动画进度 Insets 放入普通 apply 与 traversal 路径。源码注释说明这条路径资源开销更高，因此低端设备会被排除。
 
 Android 17 已实现逐帧 apply Insets，但仅凭 API 37 无法判断某个窗口是否正在走这条路径。还需结合设备 flag、窗口 compat 状态、是否注册 callback，以及 trace 中 `dispatchApplyInsets` 与 traversal 是否随动画逐帧出现。
+
+<!-- gracker-diagram: ch02-15-animation-dispatch-branches -->
+![Insets 动画：回调分发与条件式逐帧 apply](../../assets/diagrams/ch02/ch02-15-animation-dispatch-branches.png)
+
+图：INSETS_ANIMATION 位于普通 ANIMATION 之后、TRAVERSAL 之前。有 View 动画 callback 时向回调树分发进度；没有 callback 且满足同步动画的其他条件时，进度 Insets 可经 notifyInsetsChanged 进入普通 apply / traversal。修改渲染属性和修改布局属性的成本仍取决于具体代码。
 
 ### 4.3 IME 动画时不要硬编码时长和帧数
 
@@ -361,6 +381,11 @@ ViewCompat.setOnApplyWindowInsetsListener(list) { view, windowInsets ->
 
 返回原对象让后代继续按自己的责任处理。只有当前容器明确拥有整个子树的避让策略时，才考虑返回 `CONSUMED`。
 
+<!-- gracker-diagram: ch02-15-idempotent-padding -->
+![每次用原始 padding 加当前 Insets，避免累加](../../assets/diagrams/ch02/ch02-15-idempotent-padding.png)
+
+图：初始 padding 在安装监听器时保存一次；每次回调用当前窗口的 Insets 计算目标值，而不是继续加在上一次的结果上。目标值变化时才 setPadding，默认返回原 Insets，让后代继续处理自己的避让责任。
+
 ### 5.2 滚动内容与固定控件采用不同策略
 
 - 列表背景和滚动内容可以延伸到系统栏后方，常见做法是设置内边距并关闭 `clipToPadding`（不按 padding 裁剪滚动内容）；
@@ -416,14 +441,14 @@ Android 17 `ViewRootImpl.dispatchApplyInsets()` 自带名为 `dispatchApplyInset
 建议同时采集：
 
 - 目标进程的 `Choreographer#doFrame` 与五类帧阶段 callback；
-- `dispatchApplyInsets`、`performTraversals`、measure、layout、draw；
+- `dispatchApplyInsets`、Choreographer 的 `traversal` 回调范围，以及实际存在的 `measure`、`layout`、`draw-VRI[...]` 等区间；
 - 自定义 `InsetsApply/<screen>`、`ImeProgress/<screen>` section；
 - RenderThread `DrawFrame`、dequeue 与 queue buffer（取出和提交缓冲区）；
 - App 和 SurfaceFlinger FrameTimeline；
 - WMS 与 WM Shell 的 Insets、IME、transition 和 SurfaceControl transaction；
 - HWC composition type、client composition（客户端合成）和 present。
 
-### 8.2 `performTraversals` 只能证明 traversal，不等于重复 layout
+### 8.2 `traversal` 回调区间不等于重复 layout
 
 同一 pending frame（待处理帧）的多个 `requestLayout()` 或 `invalidate()` 可能被 `Choreographer` 合并。一次 `performTraversals` 也不一定同时执行 measure、layout 和 draw。
 
@@ -437,11 +462,11 @@ SELECT
   ROUND(MAX(s.dur) / 1e6, 3) AS max_ms
 FROM slice AS s
 WHERE s.ts BETWEEN :start_ts AND :end_ts
-  AND s.name IN ('dispatchApplyInsets', 'performTraversals')
+  AND s.name IN ('dispatchApplyInsets', 'traversal')
 GROUP BY s.name;
 ```
 
-查询结果只能显示两个 slice 的次数和耗时。若 `dispatchApplyInsets` 随 IME 动画逐帧出现，再核对窗口是否满足同步 Insets 动画条件；如果只有 `onProgress` 自定义 section 增长，则检查动画 callback 的业务代码。随后进入每次 traversal，确认实际执行的 measure、layout、draw 子段。
+AOSP `android-17.0.0_r1` 的 `performTraversals()` 没有同名显式系统 trace；这里统计的是 Choreographer 的 `traversal` 回调区间。查询结果只显示这两类区间的次数和耗时。若 `dispatchApplyInsets` 随 IME 动画逐帧出现，再核对窗口是否满足同步 Insets 动画条件；如果只有 `onProgress` 自定义 section 增长，则检查动画 callback 的业务代码。随后进入每次 traversal，确认实际执行的 measure、layout、draw 子段。
 
 ### 8.3 用 FrameTimeline 判断帧有没有错过显示时机
 
@@ -488,7 +513,7 @@ LIMIT 40;
 | 内容画到状态栏后方 | 多了一个应用 Surface | App Window layer、SystemUI layer、DecorView color view |
 | Insets 数值变化 | 每种 type 分别完成一次 Binder 分发 | `InsetsState` 序列、`dispatchApplyInsets` 次数 |
 | `onProgress()` 每帧出现 | 每帧都执行普通 `onApplyWindowInsets()` | callback 路径与同步 apply 条件 |
-| `performTraversals` 出现 | measure、layout、draw 全部发生 | traversal 内部子段和 View 请求来源 |
+| `traversal` 回调区间出现 | measure、layout、draw 全部发生 | traversal 内部子段和 View 请求来源 |
 | 三键导航有半透明背景 | SurfaceFlinger 必须 CLIENT composition | DecorView scrim、layer composition type |
 | 桌面窗口出现浮动 IME | `ime()` 必为 0 | 窗口与 IME 相交、InsetsState、adjust mode |
 | Predictive Back 卡顿 | 应用固定双份渲染页面 | 系统 transition 与应用自定义 progress 分开 |

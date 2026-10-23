@@ -56,7 +56,7 @@ last_review_finalize_at: '2026-08-16T23:03:53+08:00'
 
 # Android 17 BroadcastQueue 进程级调度与广播性能边界
 
-Android 广播是一种受系统策略调度的事件分发机制。调用 `sendBroadcast()` 只说明系统接受了发送请求，接收方未必立刻执行。目标进程是否存活、是否为没有活跃组件（例如 Bluetooth、telephony）的缓存进程（cached）、接收者类型、广播是否有序，以及可并行投递的进程槽是否空闲，都会改变投递时间。
+Android 广播是一种受系统策略调度的事件分发机制。调用 `sendBroadcast()` 只说明系统接受了发送请求，接收方未必立刻执行。目标进程是否存活、是否处于缓存进程状态（cached）、接收者类型、广播是否有序，以及可并行投递的进程槽是否空闲，都会改变投递时间。
 
 > 源码基线：AOSP `android-17.0.0_r1`。
 
@@ -137,6 +137,11 @@ Android 17 的源码标签里已经找不到 `BroadcastQueueModernImpl.java`，�
 - 同一时刻只允许发起 1 个广播冷启动。
 
 这些值来自 `BroadcastConstants`，可由 `activity_manager_native_boot` DeviceConfig 配置项调整。额外的 urgent 槽解决的是紧急广播被普通槽堵住的情况：普通槽已占满时，紧急广播靠这个槽继续推进，所有广播的并行度并不会因此永久提高到 5。
+
+<!-- gracker-diagram: ch01-14-process-queues -->
+![广播记录、进程队列与运行槽的三层结构](../../assets/diagrams/ch01/ch01-14-process-queues.png)
+
+图：一个 BroadcastRecord 关联多个接收者；每个接收者以记录和下标进入 processName+uid 对应的进程队列。runnableAt 决定候选顺序，running 槽决定同时推进多少个进程队列；实际投递仍逐接收者发 Binder。
 
 ## 三、从发送到 `onReceive()` 的调用路径
 
@@ -263,6 +268,11 @@ API 37 另有受 feature flag 控制的发送方广播延迟：可冻结的发�
 ### 6.2 `goAsync()` 与完成窗口
 
 需要异步完成的接收者可以调用 `goAsync()` 取得 `PendingResult`，在短任务结束后调用 `finish()`。对于需要 `system_server` 等待完成的投递，ANR 定时器并不因 `goAsync()` 自动取消。
+
+<!-- gracker-diagram: ch01-14-completion-timeout-window -->
+![广播调度延迟与接收完成计时窗口](../../assets/diagrams/ch01/ch01-14-completion-timeout-window.png)
+
+图：这里限定系统已就绪、需要完成回执且没有超时豁免的投递。队列等待与必要冷启动先发生；dispatchReceivers 在 Binder 提交前启动完成计时，直到 finishReceiver。goAsync 延长完成回执到 finish，不会暂停这段计时。
 
 长时间网络、磁盘扫描、数据库迁移等工作，留在广播完成窗口里并不合适；接收者更适合做参数校验、去重和任务入队。提交点怎么划、执行交给哪类机制，见 7.4。
 

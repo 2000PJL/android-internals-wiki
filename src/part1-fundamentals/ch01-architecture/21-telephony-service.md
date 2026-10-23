@@ -140,6 +140,11 @@ App 进程
 
 所有 Telephony API 因此不能都画成一条 `TelephonyManager → RIL → Modem` 直线。查询可能只读 framework 缓存；回调走 `TelephonyRegistry`；短信与订阅走各自的 Binder 服务；呼叫 UI 和 `PhoneAccount` 管理由 Telecom 协调。
 
+<!-- gracker-diagram: ch01-21-service-processes -->
+![Telephony 查询控制与状态监听的进程边界](../../assets/diagrams/ch01/ch01-21-service-processes.png)
+
+图：ITelephony 查询控制进入 Phone 进程，部分查询直接读取缓存，真正的 radio 操作才继续进入 HAL。监听注册进入 system_server 的 TelephonyRegistry，状态变化再通过 oneway 回调进入应用指定的 Executor。
+
 ## 1. Phone 进程怎样提供 `ITelephony`
 
 `packages/services/Telephony` 的 manifest 使用 `android.uid.phone` shared UID（让受平台签名与配置约束的组件共享同一个 Linux UID），默认应用进程名是 `com.android.phone`。
@@ -209,6 +214,11 @@ AIDL `IRadio*` 接口是异步的 `oneway`：调用线程不会等待 HAL 方法
 主动上报走 `IRadio*Indication`，没有等待中的应用请求与它一一对应。例如 `IRadioNetworkIndication.currentSignalStrength()` 把 HAL `SignalStrength` 转成 framework 对象，再通知 RIL 中预先登记的监听者（registrant）。
 
 RIL 还处理 Binder/HwBinder 服务死亡、服务重连和未完成请求。RIL wakelock 是阻止 CPU 在请求处理期间休眠的唤醒锁，它的 timeout 用来避免唤醒锁长期不释放，不等同于取消请求。源码会保留已经等到 wakelock timeout 的 `mRequestList` 项，以便处理迟到的响应。
+
+<!-- gracker-diagram: ch01-21-radio-request-response -->
+![Radio 请求用 serial 关联异步结果](../../assets/diagrams/ch01/ch01-21-radio-request-response.png)
+
+图：RIL 先登记请求和 serial，再异步调用 Radio HAL；响应携带 serial 返回并找到原请求。wakelock 超时会释放唤醒锁，但仍保留请求表项以接收迟到响应；它不是通用业务取消期限。
 
 Vendor HAL 到 Modem 的传输由厂商实现决定，可能涉及共享内存、字符设备、专有 IPC 或其他机制。AOSP framework 无法证明某台产品一定使用 AT 命令，也无法证明一定存在独立的 `/vendor/bin/rild` 进程。现场分析应查看该设备的 VINTF manifest（声明 framework 与 vendor 接口实例的设备清单）、服务列表与 vendor 进程。
 
@@ -319,6 +329,11 @@ Modem
 
 每个生命周期范围应复用少量回调，在停止观察时调用 `unregisterTelephonyCallback()`。framework 只保存回调对象的弱引用，不会阻止它被垃圾回收；应用因此还要在注册期间持有强引用。
 
+<!-- gracker-diagram: ch01-21-registry-fanout -->
+![信号变化经注册表扇出到应用 Executor](../../assets/diagrams/ch01/ch01-21-registry-fanout.png)
+
+图：Phone 侧先判断完整信号对象和订阅是否变化，TelephonyRegistry 再在记录列表上按事件、订阅和权限筛选并投递。应用业务代码由注册 Executor 执行；慢 Executor 会造成应用内积压。
+
 ## 5. 数据网络状态机与 Connectivity
 
 Android 17 的 `DataNetwork` 继承 `StateMachine`，用显式状态和事件驱动转换管理一条数据网络。主要状态如下：
@@ -352,6 +367,11 @@ Connected
 5. Connectivity validation、默认网络选择、DNS 和路由是否完成。
 
 默认数据 `subId` 变化会触发 `PhoneSwitcher` 重新评估，并可能建立、迁移或释放数据网络。具体是否出现完整的 `DISCONNECTED → CONNECTING → CONNECTED`，取决于 Modem 并发能力、当前网络请求、切换（handover）方式与产品配置，不能把该序列写成固定行为。
+
+<!-- gracker-diagram: ch01-21-data-network-connectivity -->
+![蜂窝已连接与应用互联网可用之间的层次](../../assets/diagrams/ch01/ch01-21-data-network-connectivity.png)
+
+图：Radio 注册、DataNetwork 建链和 Connectivity 验证分别回答不同问题。NetworkAgent 在 Connecting 阶段就会注册，连接建立后再 markConnected；验证和默认选择还受网络请求、能力与策略影响。
 
 ## 6. 通话状态：Telephony 与 Telecom 要分层
 

@@ -478,6 +478,11 @@ bionic 把 `BIONIC_SIGNAL_DEBUGGER` 定义为 `__SIGRTMIN + 3`，这是平台保
 
 更准确的说法是「持续数据可以避免重复的 IPC 复制」：避免的是逐条消息再次经过内核传输的那次复制，生产方写入、缺页、缓存同步和消费方转换的成本都还在。
 
+<!-- gracker-diagram: ch01-09-control-shared-data -->
+![Binder 传递共享内存句柄与双方映射](../../assets/diagrams/ch01/ch01-09-control-shared-data.png)
+
+图：控制事务先把共享对象的 fd 等描述交给接收方；双方在各自地址空间映射同一组物理页。下方箭头表示映射关系，读写顺序、通知和资源关闭仍由协议明确。
+
 #### 7.2 Java `SharedMemory`
 
 `android.os.SharedMemory` 从 API 27 提供，可通过 `Parcelable` 传递文件描述符。下面是业务代码片段，`size` 应大于 0 且足够容纳 `payload`，`remote.consume()` 代表自行定义的远程接口；外围方法需处理或声明 `ErrnoException`、`RemoteException`。重点看外层资源关闭和内层解除映射：
@@ -678,6 +683,11 @@ eventfd/fence/event flag：完成通知与同步
 ```
 
 这种分工让控制协议保留 Binder 的身份与生命周期能力，同时避免把大块数据反复写进事务缓冲区。
+
+<!-- gracker-diagram: ch01-09-ipc-selection -->
+![按交互语义选择 IPC 与数据通道](../../assets/diagrams/ch01/ch01-09-ipc-selection.png)
+
+图：先确定接口语义，再选择传输、数据和同步通道。同一链路可以同时使用 Binder 传句柄、共享内存承载数据，并由事件或 fence 协调完成。
 
 ### 15. Perfetto 与现场证据
 
@@ -881,6 +891,11 @@ Client
 6. 同步调用把结果与异常状态写入回复事务；驱动再把回复投递给原调用线程。
 
 排查方法分发时，可将 `binder_transaction` 跟踪点中的 `code` 字段与生成的 Stub 中的 `TRANSACTION_*` 常量对照。事务码位于事务头，接口标识和业务参数位于 Parcel 数据区，读取源码或轨迹时要分别检查。
+
+<!-- gracker-diagram: ch01-09-sync-binder-roundtrip -->
+![同步 AIDL 请求、业务执行与反向回复](../../assets/diagrams/ch01/ch01-09-sync-binder-roundtrip.png)
+
+图：以跨进程同步调用为例，请求进入服务端接收缓冲区，回复进入客户端接收缓冲区。事务码位于事务头，接口标识和参数位于 Parcel；排队、调度和服务端等待都计入端到端延迟。
 
 Binder 还能在传输时转换 Binder 对象、句柄和文件描述符。内核提供调用方 UID，服务端据此结合权限规则鉴权；PID 可能为 0 或被复用，只能作为调试线索。SELinux 安全上下文 SID 也不会默认随每次事务附带，目标节点需显式请求 `FLAT_BINDER_FLAG_TXN_SECURITY_CTX`；原生 `BBinder::setRequestingSid(true)` 必须在对象首次被编组、传给其他进程之前设置。
 

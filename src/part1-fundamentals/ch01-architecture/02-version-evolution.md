@@ -26,7 +26,7 @@ sources:
 - type: official
   path: https://source.android.com/docs/core/architecture/vndk
 - type: official
-  path: https://source.android.com/docs/core/architecture/kernel/gki
+  path: https://source.android.com/docs/core/architecture/kernel/generic-kernel-image
 - type: official
   path: https://source.android.com/docs/core/architecture/kernel/android-common
 - type: official
@@ -136,7 +136,12 @@ GKI 核心内核 + vendor modules
 Boot firmware / 可选 GBL
 ```
 
-我们先看这张分层图怎么读：SDK API 约束应用与平台，厂商接口（VINTF）约束系统框架与厂商实现，KMI 约束通用内核（Android Common Kernel，ACK）映像（GKI）与厂商内核模块。三者各管一层，合起来支撑起整套分层结构的独立更新。
+我们先看这张分层图怎么读：SDK API 约束应用与平台，厂商接口（VINTF）约束系统框架与厂商实现，KMI 约束通用内核镜像（Generic Kernel Image，GKI）与厂商内核模块。三者各管一层，合起来支撑起整套分层结构的独立更新。
+
+<!-- gracker-diagram: ch01-02-update-contracts -->
+![Android 独立更新的三条兼容边界](../../assets/diagrams/ch01/ch01-02-update-contracts.png)
+
+图：SDK API、VINTF 和 KMI 分别约束不同组合。Mainline 为部分模块提供独立更新路径，VNDK 的废弃也没有移除所有原生库隔离机制。
 
 ### Treble、VINTF 与 HAL
 
@@ -210,7 +215,7 @@ Android 7.0 引入带代码使用画像的 JIT，并与 AOT、解释执行组合
 4. 后台 DEX 优化按画像做 `speed-profile` 编译；
 5. 已编译代码和画像会随更新、空间压力或校验条件变化。
 
-画像引导编译（Profile-Guided Compilation）下，应用第一次运行是慢是快，很大程度上取决于画像从哪里来。云端画像（Cloud Profile）可能由安装来源下发，它根据用户使用数据生成；应用和库也可以自带开发阶段准备好的基准画像（Baseline Profile），让 ART 在用户首次运行前就编译关键路径。这里分发的是代码使用画像；`.odex`/`.vdex` 机器码要靠设备上的编译流程产出。
+画像引导编译（Profile-Guided Compilation）下，应用第一次运行是慢是快，很大程度上取决于画像从哪里来。云端画像（Cloud Profile）可能由安装来源下发，它根据用户使用数据生成；应用和库也可以自带开发阶段准备好的基准画像（Baseline Profile），让 ART 在用户首次运行前就编译关键路径。这里分发的是代码使用画像；设备上的编译流程生成 `.odex` 等 AOT 产物；`.vdex` 主要保存验证相关数据，具体内容随 ART 版本变化，不能统称为机器码，参见 [ART 编译产物说明](https://source.android.com/docs/core/runtime/configure)。
 
 Android 16 的无缝应用更新优化走的是另一条路：把 `dexopt`/`dex2oat` 移到安装流程更早的阶段，缩短应用包在代码和资源切换期间的停摆时间。
 
@@ -222,6 +227,11 @@ ART 从 Android 12 起成为 Mainline 模块，Android 12 及以上的设备可�
 - ART APEX 版本；
 - 应用包的编译过滤器、代码使用画像和 DEX 优化原因（dexopt reason）；
 - 是否刚经历安装、OTA 或 Mainline 更新。
+
+<!-- gracker-diagram: ch01-02-art-evolution -->
+![ART 编译时机与模块化演进](../../assets/diagrams/ch01/ch01-02-art-evolution.png)
+
+图：Android 4.4 的 ART 为可选预览；5.0 成为默认运行时；7.0 引入带画像的混合执行；12 起 ART 模块可独立更新。箭头表示版本演进，不表示每个方法都依次经历这些阶段。
 
 `adb shell cmd package art dump <package>` 可以查看 ART Service 维护的应用包编译状态。命令输出属于诊断接口，字段可能随版本变化，自动化脚本应针对目标构建验证。
 

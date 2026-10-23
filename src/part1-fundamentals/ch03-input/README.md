@@ -51,9 +51,9 @@ last_consolidated_at: '2026-08-24'
 | 应用接收 | `InputConsumer`、`InputEventReceiver`、`ViewRootImpl` | 读取消息、依次经过输入处理阶段，处理批量输入并发送完成信号 | 应用主线程、输入执行片段、回调 |
 | 视觉反馈 | `Choreographer`、HWUI、SurfaceFlinger、HWC | 更新状态、提交缓冲区、锁存图层并呈现到显示设备 | FrameTimeline、缓冲区、图层、栅栏与呈现时间 |
 
-Android 17 的 [`InputManager.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/InputManager.cpp) 明确列出当前监听链顺序：
+Android 17 的 [`InputManager.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/inputflinger/InputManager.cpp) 需要按构造函数的实际依赖连接还原监听链顺序；文件顶部流程注释仍保留旧顺序，应以实际装配为准：
 
-`InputReader → UnwantedInteractionBlocker → InputFilter → PointerChoreographer → InputProcessor → Metrics 与 InteractionReporter → InputDispatcher`
+`InputReader → UnwantedInteractionBlocker → PointerChoreographer → InputProcessor → InputDeviceMetricsCollector（条件）→ InputFilter → InteractionReporter（条件）→ InputDispatcher`
 
 指标收集器（Metrics collector）和交互报告器（interaction reporter）可能因构建配置或服务条件而省略。旧资料中的 `classifier/InputClassifier.cpp` 在 `android-17.0.0_r1` 中不存在；动作分类位于 `InputProcessor.cpp`，手掌误触拒绝位于 `UnwantedInteractionBlocker.cpp`。两者职责不同，不能合并概括为“所有输入都经过 AI 分类”。
 
@@ -69,6 +69,11 @@ Android 17 的 [`InputManager.cpp`](https://android.googlesource.com/platform/fr
 6. SurfaceFlinger 和 HWC 完成本轮显示呈现。
 
 `MotionEvent.getEventTime()` 接近设备产生事件的时间，不等于应用收到事件的时间。业务回调结束也不代表画面已经显示。只测量事件时间到回调时间的差值，得到的是“输入到应用”延迟；端到端的“触摸到显示”延迟还要包含应用渲染、缓冲区提交、SurfaceFlinger 合成与显示呈现。
+
+<!-- gracker-diagram: ch03-00-input-evidence-map -->
+![输入问题先分事件路由、消息完成与视觉反馈三条证据链](../../assets/diagrams/ch03/ch03-00-input-evidence-map.png)
+
+图：事件未到窗口，先查设备读取、监听链、目标与安全策略；事件已发布未完成，查 InputChannel、Looper、InputStage 和 FINISHED；处理很快却反馈晚，继续关联目标帧与 Display present。三条证据链可能重叠，须用事件、窗口、Display 与帧标识对齐。
 
 触摸 `MOVE` 事件可能批量传输，并在接近 VSYNC 时由 `ViewRootImpl` 消费。批处理（batching）可以减少线程唤醒和 IPC 压力，但也会改变单个采样点的消费时刻。分析重采样和预测坐标时，还要区分原始采样时间、预测目标时间和画面呈现时间。
 

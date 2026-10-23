@@ -70,6 +70,11 @@ sources:
 
 这些对象通常有关联，但不是严格一一对应。例如镜像 layer 可以出现在多个 Output（合成输出目标）；虚拟 Display 有自己的 SF token（SurfaceFlinger 侧的显示句柄），却未必承载可启动任意 Activity 的 WMS `DisplayContent`；`DisplayTopology` 也不会替代 `LogicalDisplayMapper` 的设备状态布局。
 
+<!-- gracker-diagram: ch02-13-display-identities -->
+![物理身份、逻辑显示与窗口合成使用不同对象](../../assets/diagrams/ch02/ch02-13-display-identities.png)
+
+图：SF 维护物理 ID 与 token，DMS 用 DisplayDevice 表示设备，再由 Mapper 建立 LogicalDisplay 身份与布局。WMS 和 SF 分别管理窗口与输出，DisplayGroup 与 DisplayTopology 则解决分组和相对位置问题；图中的关联不保证对象数量一一对应。
+
 平台锚点固定为 Android 17（API 37）的 `android-17.0.0_r1`。涉及内核同步栅栏、调度或显示驱动时，公共语义以 `android17-6.18-2026-06_r6` 为锚点；物理 hotplug（热插拔）、plane allocation（硬件合成平面分配）、bandwidth（带宽）和 panel timing（面板时序）仍需核对设备的 vendor HAL（厂商硬件抽象层）与 driver（驱动）。
 
 ## 1. 服务启动与默认 Display
@@ -128,6 +133,11 @@ VirtualDisplayAdapter 已创建
 
 `PHASE_BOOT_COMPLETED` 的职责不同：DMS 通知 DisplayPowerController、DisplayModeDirector、LogicalDisplayMapper、外接屏策略等组件启动完成，不负责首次默认屏发现。
 
+<!-- gracker-diagram: ch02-13-default-display-startup -->
+![默认 Display 与 VirtualDisplayAdapter 两项同时满足才结束等待](../../assets/diagrams/ch02/ch02-13-default-display-startup.png)
+
+图：onStart 加载持久化状态并投递适配器注册消息，同时发布服务。DisplayThread 异步注册本地与虚拟适配器；PHASE_WAIT_FOR_DEFAULT_DISPLAY 等待默认 LogicalDisplay 和 VirtualDisplayAdapter 两项均建立，超时保护不是实际固定初始化时长。
+
 ## 2. 物理 Display 的发现、变更与移除
 
 ### 2.1 本地屏事件从 SurfaceFlinger 进入
@@ -181,6 +191,11 @@ flowchart TD
 5. 窗口被放到该 Display 后，相关 SurfaceControl（图层控制对象）才进入目标可见 layer 集合。
 
 这是一组跨服务状态变化，不会先删除再重建 SurfaceFlinger 的整棵全局 layer hierarchy（图层层级）。已有 layer 是镜像、reparent（更换父节点），还是只出现在原 Display，取决于 WMS 与 Shell 的 transaction（图层事务）、Display projection（显示投影）和 SF Output 选择。
+
+<!-- gracker-diagram: ch02-13-hotplug-management-output -->
+![hotplug 先更新管理模型，用户可见结果还需 WMS 与 SF](../../assets/diagrams/ch02/ch02-13-hotplug-management-output.png)
+
+图：物理 hotplug 经 SF 事件通道到 LocalDisplayAdapter，再异步转成 DisplayDevice 事件。DMS 更新逻辑显示、回调和 traversal 请求，WMS/Shell 与 SF 随后配置窗口和输出；收到 Display added 只能证明管理事件已发布，不能证明目标屏已有有效画面。
 
 ## 3. `mSyncRoot` 单锁模型
 
@@ -333,6 +348,11 @@ DMS 完成 Layout 只表示 LogicalDisplay 配置确定。用户看到新画面�
 
 因此，折叠黑帧不能只用 `setDeviceState()` 到 `applyLayoutLocked()` 的时间解释。应把 DMS 过渡、WMS geometry（窗口几何）、App buffer 和目标 Display present 放在同一条时间线上。
 
+<!-- gracker-diagram: ch02-13-device-state-two-phase -->
+![DeviceState 切换先进入过渡，再应用目标 Layout](../../assets/diagrams/ch02/ch02-13-device-state-two-phase.png)
+
+图：需要改变布局的 DeviceState 先标记过渡并发布状态，让相关 Display 关闭；满足 OFF 与 wake/sleep 条件可继续，未满足则等更新或超时保护。应用目标 Layout 后还需 WMS、App 和显示后段推进，500 ms 不是固定黑屏时长。
+
 ## 6. Display 事件与 VSync 是两条通道
 
 ### 6.1 DMS 分发管理事件
@@ -448,6 +468,11 @@ DisplayPowerController#updatePowerState
 
 这三段不能合并为一个 slice 解读。
 
+<!-- gracker-diagram: ch02-13-power-lock-boundary -->
+![DMS 锁内更新状态，耗时物理 power 操作在锁外](../../assets/diagrams/ch02/ch02-13-power-lock-boundary.png)
+
+图：DPC 的异步状态机发出请求，DMS 在 mSyncRoot 下更新逻辑状态并取得待执行 Runnable；退出锁后才执行物理 power mode 和亮度调用。逻辑请求、物理提交和面板响应是不同边界，应使用对应 trace 与设备证据。
+
 ### 8.3 多屏亮度可使用 lead 与 follower
 
 Layout 可以为 LogicalDisplay 指定 lead display（主屏）。DMS 在 Display 连接或配置变化时，调用 `updateDisplayPowerControllerLeaderLocked()`：
@@ -498,6 +523,11 @@ DisplayManager.createVirtualDisplay()
 - callback Binder death（回调进程的 Binder 连接死亡）或主动 release 会停止设备、释放 Surface 引用、销毁 SF virtual display token，并发送 `REMOVED`。
 
 换 Surface 或 resize 的 API 返回不代表新输出帧已经到达 consumer。还要继续观察 virtual Output composition（虚拟屏输出合成）、目标 BufferQueue 和 consumer 时间线。
+
+<!-- gracker-diagram: ch02-13-virtual-output-surface -->
+![VirtualDisplay 提供的 Surface 是合成输出目标](../../assets/diagrams/ch02/ch02-13-virtual-output-surface.png)
+
+图：VirtualDisplayAdapter 主动在 SF 创建虚拟显示 token，再纳入 DMS 设备与逻辑映射。调用方 Surface 作为输出目标，在 display traversal 事务中配置；SF 写出合成结果，下游编码器或 ImageReader acquire/release。消费不及时会反压到 SF 的输出 dequeue。
 
 ## 10. DMS、WMS 与 SurfaceFlinger 的交接
 
@@ -691,7 +721,7 @@ mode 变化与 App 逐帧生产是两个阶段：前者完成只说明配置层�
 - output Surface 为 null；
 - resize 或 Surface transaction 未应用；
 - SF 没有可见内容；
-- consumer 不 dequeue，BufferQueue 形成背压；
+- consumer 未及时 acquire 或 release，SF 作为输出 Producer 在 dequeue 时受到背压；
 - MediaProjection 或 secure policy 阻止内容；
 - encoder（编码器）或 ImageReader 消费慢；
 - virtual Output composition 或 GPU、HWC 资源不足。

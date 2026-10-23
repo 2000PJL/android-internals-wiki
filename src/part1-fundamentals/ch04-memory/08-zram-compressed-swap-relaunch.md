@@ -97,11 +97,16 @@ ZRAM 用 CPU 换取匿名页的压缩驻留空间，为系统争取时间和容�
 | 场景 | PID | 主要成本 | ZRAM 与本次恢复的关系 |
 | --- | --- | --- | --- |
 | 进程存活，部分匿名页在 ZRAM | 不变 | 换入缺页（swap fault）、解压、可能的后备设备读取，以及恢复后的业务工作 | 直接相关 |
-| 进程已被 LMKD 或其他机制终止 | 改变 | 创建进程、初始化运行时、加载代码和资源、重建组件 | 旧进程的 ZRAM 页面已随交换槽位清理，不构成本次新进程的直接恢复路径 |
+| 进程已被 LMKD 或其他机制终止 | 改变 | 创建进程、初始化运行时、加载代码和资源、重建组件 | 新进程不会沿旧进程的 swap PTE 自动恢复状态；旧进程退出会解除其交换条目引用，共享条目仍可能因其他引用保留 |
 
 术语先约定清楚：Android 的冷启动、温启动和热启动是 Activity 启动分类；论文和系统优化语境中的“重新拉起”（relaunch）范围更宽，可能包含从后台任务恢复、Activity 重建或进程重建。本文用“换入恢复”表示 PID 不变、但需要重新访问已换出页面；用“冷启动”表示原进程已经终止。
 
-用户说“感觉像冷启动”，描述的只是体验；判断进程是否真的重建过，要靠现场记录。先记下 PID 与 Activity 启动类型，在 Android 11（API 30）及以上再结合 `ApplicationExitInfo`，低版本则需要日志、`dumpsys activity` 或自有启动埋点。
+用户说“感觉像冷启动”，描述的只是体验；判断进程是否真的重建过，要靠现场记录。先记下 PID、进程启动时间与 Activity 启动类型，避免 PID 复用造成误判；在 Android 11（API 30）及以上再结合 `ApplicationExitInfo`，低版本则需要日志、`dumpsys activity` 或自有启动埋点。
+
+<!-- gracker-diagram: ch04-08-alive-swapin-or-new-process -->
+![恢复慢的第一处分流：原进程存活，还是已被重建](../../assets/diagrams/ch04/ch04-08-alive-swapin-or-new-process.png)
+
+图：先确认进程身份与启动记录，再解释 VmSwap。存活进程访问换出页时，才沿原有 swap PTE 换入；原进程终止后的新进程要重建运行时、组件和业务状态。ApplicationExitInfo 的最后采样 RSS/PSS 既非退出瞬间峰值，也不记录旧页面在 ZRAM 中的完整历史。
 
 ## ZRAM 位于匿名页回收与进程淘汰之间
 
@@ -133,6 +138,11 @@ ZRAM 用 CPU 换取匿名页的压缩驻留空间，为系统争取时间和容�
 | 交换缓存 | 可能复用已在内存中的页面 | 页表更新与普通缺页处理 |
 
 所以 `VmSwap` 相同的两个进程，恢复耗时也可能不同。排查时我们要逐一确认：对应页面是否已经写回、访问是否集中在首帧之前、设备当时的 CPU 与存储负载。
+
+<!-- gracker-diagram: ch04-08-page-backing-and-restore -->
+![文件页可重读原文件，匿名页要保存内容后才能回收](../../assets/diagrams/ch04/ch04-08-page-backing-and-restore.png)
+
+图：干净文件页丢弃后可从原文件重读；匿名页需要 swap 保存内容。ZRAM 存于内存池，配置写回后条目可能转移到后备设备；恢复时也可能命中交换缓存。相同 VmSwap 只说明归属规模相近，不等于存放位置、首帧前触碰量或恢复成本相同。
 
 ## Android 17 的管理者是 MMD
 
@@ -183,11 +193,16 @@ flowchart TD
 `com.android.server.memory.ZramMaintenance` 通过 JobScheduler 周期性发起维护。AOSP 默认要求设备处于空闲状态且电量不低，以减少维护工作与前台交互争用。任务触发后：
 
 1. `system_server` 异步调用 `mmd.doZramMaintenanceAsync()`。
-2. MMD 把任务放入低优先级工作队列。
-3. MMD 在同一个全局维护任务中先尝试写回，再尝试重新压缩；源码注释给出的原因是当前写回路径会先把待写回页面从 ZRAM 解压后再写到磁盘。
-4. 高优先级的按进程预取可以先于低优先级维护执行。
+2. 启用按进程写回工作队列时，MMD 把维护任务放入低优先级队列；未启用该队列时，服务直接调用维护实现。
+3. MMD 在同一个全局维护任务中先尝试写回，再尝试重新压缩。这里以执行代码为准：`service.rs` 的解释注释仍按未压缩写回描述，但 r6 驱动已有 `compressed_writeback` 分支，可直接读取压缩对象写回；`mmd_setup` 在相应功能启用且接口存在时会尝试打开它，服务也要求所有 ZRAM 设备开启压缩写回后，才对外宣告支持按进程操作。
+4. 队列取任务时，按进程预取优先；已在执行的整段全局维护不会被该队列中途抢占。按进程写回则可以分段让出工作线程，让待处理预取先执行。
 
 维护按周期调度，而非持续扫描：官方默认的首次调度和后续周期均为一小时；重新压缩与写回还有各自的退避时间、空闲时长、容量门槛和每日写入预算。产品可以调整这些值。
+
+<!-- gracker-diagram: ch04-08-mmd-scheduling-and-queues -->
+![MMD：系统服务安排时机，工作线程执行维护与预取](../../assets/diagrams/ch04/ch04-08-mmd-scheduling-and-queues.png)
+
+图：mmd_setup 按属性设置设备；ZramMaintenance 默认以空闲且电量不低为条件发起周期任务。启用工作队列时，预取优先于其他待处理任务；一项全局维护内部先写回、后重压。优先出队不等于中途抢占整段维护，按进程写回才有分段让出机制；未启用该队列时服务直接调用维护实现。
 
 ### 按进程写回与预取
 
@@ -201,6 +216,11 @@ flowchart TD
 6. 进程解除冻结后，只有此前带有 `isZramWrittenBack` 标记、解冻原因是 `UNFREEZE_REASON_ACTIVITY`，且写回功能与 MMD 按进程操作可用时，`CachedAppOptimizer.prefetchZram()` 才调用 `mmd.asyncPrefetchProcessZramMemory()`。应用线程此时已可继续执行，无需等待预取完成。
 
 pidfd 是内核提供的进程文件描述符，可以避免只用整数 PID 时遇到编号复用问题。写回和预取都是异步请求，目标进程可能在执行前退出，后备设备也可能空间不足；这些都属于预期失败分支。
+
+<!-- gracker-diagram: ch04-08-per-process-writeback-and-unfreeze -->
+![缓存进程写回后加保护，Activity 解冻时才尝试预取](../../assets/diagrams/ch04/ch04-08-per-process-writeback-and-unfreeze.png)
+
+图：缓存进程冻结并回收页面后，系统延迟检查 Activity、swap 与图形资源等条件，再用 pidfd 请求 MMD。写回成功回调设置 isZramWrittenBack；OOM 调整向 lmkd 发送 min(adj,249) 的基线保护值。解冻清标记，只有此前已标记且因 Activity 解冻、功能和能力都可用时才请求预取；进程退出或空间不足会走失败分支。
 
 ## 恢复耗时为什么容易出现长尾
 
@@ -237,6 +257,11 @@ pidfd 是内核提供的进程文件描述符，可以避免只用整数 PID 时
 ```
 
 这段并行时序可以用来安排性能轨迹标记：进程解除冻结后，应用执行与预取可以重叠；预取就绪的条目，应用仍要通过缺页把它们恢复到自己的页面；预取与应用初始化也可以重叠，两段耗时简单相加，会把重叠的部分算两遍。
+
+<!-- gracker-diagram: ch04-08-prefetch-overlaps-app-execution -->
+![预取与应用执行重叠，就绪条目仍需换入到进程页](../../assets/diagrams/ch04/ch04-08-prefetch-overlaps-app-execution.png)
+
+图：Activity 解冻后，应用立即按业务顺序执行；MMD 预取同时从 backing 异步读回条目到 ZRAM。赶在访问前就绪的条目可减少同步存储等待，但应用仍需缺页恢复到进程页；访问早于预取就绪时仍可能等待 I/O。总恢复时间取关键依赖路径，不能把两条轨道耗时简单相加。
 
 ### CPU 与 I/O 竞争会放大延迟
 
@@ -282,6 +307,11 @@ drivers/block/zram/
 
 评估压缩效率时，我们看 `orig_data_size / mem_used_total` 和 `compr_data_size / mem_used_total` 这两个比值；单看 `compr_data_size` 会漏掉 zsmalloc 的池开销。
 
+<!-- gracker-diagram: ch04-08-slot-storage-and-accounting -->
+![一个槽位对应一个基础页，实际存法与占用各不相同](../../assets/diagrams/ch04/ch04-08-slot-storage-and-accounting.png)
+
+图：PAGE_SIZE 决定条目原始粒度。全同值页只保存一个值；普通压缩对象放入 zsmalloc；压缩收益不足时以 ZRAM_HUGE 保存原页。orig_data_size 是逻辑未压缩规模，compr_data_size 是池中载荷，mem_used_total 是池物理页占用；另行分配的条目表、压缩上下文等仍在总成本之外。
+
 ### 最多四个压缩器槽位
 
 启用 `CONFIG_ZRAM_MULTI_COMP` 时，内核定义：
@@ -304,9 +334,14 @@ drivers/block/zram/
 
 所以“冷页统一改用 zstd”只是粗略的说法：MMD 的默认次级算法可以是 zstd，驱动本身支持多个后端和优先级，最终可用的组合取决于内核配置与设备属性。
 
+<!-- gracker-diagram: ch04-08-recompression-admission-and-gain -->
+![重新压缩只有跨入更小尺寸类别才值得替换](../../assets/diagrams/ch04/ch04-08-recompression-admission-and-gain.png)
+
+图：多压缩器最多四个优先级槽位，不意味着每台设备都启用四种算法。候选筛选跳过写回、全同值、INCOMPRESSIBLE 等条目，再尝试更高优先级算法。只有跨入更小 zsmalloc class 且满足 threshold 才替换；无收益或分配失败保留旧对象，穷尽有效算法后可标记 INCOMPRESSIBLE。
+
 ### 后处理串行化
 
-重新压缩、写回与预取都属于后处理。驱动使用 `pp_in_progress` 阻止它们并发执行，避免同一槽位的后备存储块、压缩对象和页表扫描相互竞争。按进程预取的注释还明确写到：预取应优先于同一进程的写回，但当前实现通过 `pp_in_progress` 禁止两者并行。
+重新压缩、写回与预取都属于后处理。驱动使用 `pp_in_progress` 互斥后处理入口中的扫描与提交阶段，按进程预取遇到另一个后处理入口占用时返回 `EAGAIN`。这个标记并不覆盖预取 I/O 的全部生命周期：`zram_prefetch_slots()` 提交异步读取后即可返回，ioctl 随后清除标记，I/O 完成与延后回填仍可继续。回填依赖槽位锁及 `ZRAM_WB` 再检查处理并发变化，不能把入口互斥理解为所有后续工作都已完成。
 
 槽位的选择靠 `ZRAM_PP_SLOT` 保护标记：按进程写回扫描页表时，即使页表项（PTE）快照在解锁后变旧，后续写回前仍会检查该标记；槽位被访问、释放或覆盖时会清掉标记，过期候选也就用不上了。
 
@@ -319,7 +354,7 @@ drivers/block/zram/
 - 兼容旧调用的 `ZRAM_ANDROID_IOC_PROCESS_WRITEBACK`；
 - `ZRAM_ANDROID_IOC_GET_VERSION`。
 
-`zram_ioctl.c` 要求调用方具备 `CAP_SYS_NICE` 权限，再通过 pidfd 获取目标任务和描述进程地址空间的 `mm_struct`。页表遍历器只选取属于当前 ZRAM 设备的交换页表项。范围写回支持 `start_addr`、扫描字节数和 `next_addr`，便于分段处理较大的地址空间。
+`zram_ioctl.c` 要求调用方具备 `CAP_SYS_NICE` 权限，再通过 pidfd 获取目标任务和描述进程地址空间的 `mm_struct`。页表遍历器只选取属于当前 ZRAM 设备的交换页表项。范围写回支持 `start_addr`、候选未压缩字节数上限 `size` 和续扫位置 `next_addr`，便于分段处理较大的地址空间；`size` 统计合格的目标 ZRAM 交换页，不是地址范围长度，也不是压缩后的实际 I/O 字节数。
 
 预取的内核执行分为三段：
 
@@ -329,9 +364,14 @@ drivers/block/zram/
 
 这个时序允许驱动在等待后备存储 I/O 时释放槽位锁，再通过 I/O 完成后的二次检查处理并发变化。
 
+<!-- gracker-diagram: ch04-08-prefetch-ioctl-and-async-refill -->
+![ioctl 扫描提交受入口互斥，异步 I/O 回填有自己的检查](../../assets/diagrams/ch04/ch04-08-prefetch-ioctl-and-async-refill.png)
+
+图：CAP_SYS_NICE、pidfd 和目标 mm 校验通过后，只扫描属于当前 ZRAM 设备的 swap PTE。pp_in_progress 互斥扫描与提交入口；预取提交 bio 后即可清除入口标记并返回。I/O 完成再把可睡眠回填交给 system_highpri_wq，取得槽位锁并重新检查 ZRAM_WB；期间若槽位已释放或替换，则放弃过期结果。
+
 ## `kswapd`、直接回收与 LMKD
 
-内存压力之下，内核先自己回收，回收扛不住时 Android 再终止进程；我们把相关机制放在一起看。
+内存压力之下，内核回收与 Android 的进程终止策略可能交错运行；`lmkd` 根据压力证据独立决策，不必等待某个分配线程的直接回收结束。我们把相关机制放在一起看。
 
 ### kswapd
 
@@ -373,7 +413,7 @@ PSI 的工作机制比读取 `/proc/pressure/memory` 的 `avg10`/`avg60` 摘要�
 
 `lmkd.cpp` 的默认 PSI 阈值表包含 low=`some 70ms/1s`、medium=`some 100ms/1s`、critical=`full 70ms/1s`；启用新策略时，low 阈值会被置为 0，medium 与 critical 改用 `ro.lmk.psi_partial_stall_ms` 和 `ro.lmk.psi_complete_stall_ms`。因此排查设备时，我们要同时记录 `/proc/pressure/memory` 的 `some/full` 增量、`ro.lmk.*` 实际属性和设备是否使用新策略；杀进程的时机要从这些现场数据判断，AOSP 默认阈值表只是起点。[来源: DeepResearch/2026-07-14-android17-zram-psi-pressure-management.md；已验证: android-17.0.0_r1 system/memory/lmkd/lmkd.cpp]
 
-PSI 事件触发的是一次评估，而非一次杀动作：`__mp_event_psi()` 会把 PSI 唤醒与内存水位、ZRAM-aware free swap、反复换入换出、进程 `oom_score_adj` 等状态合并后再选候选进程。`find_and_kill_process()` 从较大的 `adj` 开始向下遍历；启用 `kill_heaviest_task` 时，`proc_get_heaviest()` 在同一个 `adj` 内比较 `/proc/<pid>/statm` 的 RSS，并在可以读取 `dmabuf_pss` 时加上 DMA-BUF PSS。该比较不包含 swap 用量。[来源: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp，`proc_get_size()`、`proc_get_heaviest()`、`find_and_kill_process()`]
+PSI 事件触发的是一次评估，而非一次杀动作：`__mp_event_psi()` 会把 PSI 唤醒与内存水位、ZRAM-aware free swap、反复换入换出、进程 `oom_score_adj` 等状态合并后再选候选进程。`find_and_kill_process()` 从较大的 `adj` 开始向下遍历；启用 `kill_heaviest_task` 时，`proc_get_heaviest()` 在同一个 `adj` 内比较 `/proc/<pid>/statm` 的 RSS，并在可以读取 `dmabuf_pss` 时加上 DMA-BUF PSS。该比较不包含 swap 用量。即使 `kill_heaviest_task` 为 false，当遍历到当前 `adj <= 200`（`PERCEPTIBLE_APP_ADJ`）时，r1 也会切换为同分值内选择最重进程；它不会因此跳过从较大 `adj` 向下遍历的顺序。[来源: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp，`proc_get_size()`、`proc_get_heaviest()`、`find_and_kill_process()`]
 
 ## 16 KB 页大小的准确影响
 
@@ -385,7 +425,7 @@ Android 17 同时支持 4 KB 与 16 KB 基础页设备。ZRAM 驱动每次按 `P
 - 同样的虚拟地址范围需要的页表项和交换槽位更少；
 - 页面内部只使用一小部分数据时，换入的额外字节可能增加。
 
-不过恢复延迟并不会固定变成 4 KB 设备的四倍：页数减少、TLB（页表项高速缓存）覆盖范围增加、算法吞吐、压缩率、访问局部性和存储队列都会影响结果。对比设备时我们至少记录：
+不过恢复延迟并不会固定变成 4 KB 设备的四倍：页数减少、TLB（译址后备缓冲器）覆盖范围增加、算法吞吐、压缩率、访问局部性和存储队列都会影响结果。对比设备时我们至少记录：
 
 ```bash
 adb shell getconf PAGE_SIZE
@@ -422,6 +462,11 @@ Android 17 的按进程写回和预取与 Ariadne 的“提前准备热数据”
 | 提前恢复 | 进程因 Activity 激活而解冻后，按进程预取已写回的条目 | 预测下一批将访问的数据并主动解压 |
 
 截至 Android 17 基线，没有证据表明 Ariadne 的完整论文设计已经合入 AOSP。它适合用来说明相关研究方向；性能数字方面，Android 系统并没有给出对应的承诺。
+
+<!-- gracker-diagram: ch04-08-aosp-and-ariadne-boundary -->
+![AOSP 预取与 Ariadne 主动解压：准备层次与依据不同](../../assets/diagrams/ch04/ch04-08-aosp-and-ariadne-boundary.png)
+
+图：Android 17 MMD 主要按进程、条目类型和策略维护基础页槽位；对已写回进程，在 Activity 解冻时请求条目读回 ZRAM。Ariadne 研究原型按恢复历史估计热度，组合自适应压缩块与预测解压。二者有提前准备的共同方向，但 AOSP 预取并不等于采用整套论文设计；研究收益绑定其实验环境。
 
 ## 观测：把交换、压力和启动放到同一时间窗
 
@@ -485,6 +530,11 @@ adb shell cat /sys/kernel/tracing/available_events \
 3. 比较恢复窗口内 `pswpin`、主缺页（major fault）、ZRAM 后备设备读取量与块设备 I/O 增量。
 4. 检查主线程处于可运行（runnable）还是阻塞（blocked）状态，以及它是否与 `kswapd`、MMD 或解压任务争用 CPU。
 5. 再关联 LMKD、PSI 和文件缓存重新缺页，判断系统是否在持续反复换入换出。
+
+<!-- gracker-diagram: ch04-08-restore-observation-window -->
+![按三个时间点取增量，再对齐恢复关键路径](../../assets/diagrams/ch04/ch04-08-restore-observation-window.png)
+
+图：后台稳定、点击前和首帧后三个点记录身份与计数，再用 trace 还原点击、Activity 解冻、页面访问、首帧和完整显示。进程内归属、ZRAM 设备状态与全系统压力来自不同范围，要按同一窗口交叉解释。RSS/PSS 最后采样、pgmajfault 或单次 PSI 都不能单独证明解压长尾。
 
 ### 退出原因
 

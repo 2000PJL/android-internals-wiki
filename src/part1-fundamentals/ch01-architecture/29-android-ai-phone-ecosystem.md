@@ -60,6 +60,11 @@ sources:
 
 系统版本相同，AI 能力仍可能不同。应用需要检测具体 API 和模型是否可用，并准备回退到 CPU、其他本地实现或云端。
 
+<!-- gracker-diagram: ch01-29-ai-execution-routes -->
+![AI 推理能力的三类交付路径](../../assets/diagrams/ch01/ch01-29-ai-execution-routes.png)
+
+图：共享端侧模型由兼容设备上的 AICore 管理，自带模型由应用管理交付和运行时，云端模型则需要网络与服务端能力。选择路径时先核对设备支持、模型准备和数据边界；Android 系统版本本身不能代替这些检查。
+
 ## 1.29.2 NNAPI 与 Neural Networks HAL：应用入口已经改变
 
 NNAPI 从 Android 8.1 开始提供 C API，让上层推理框架把计算图交给 CPU、GPU、DSP 或专用加速器。它提供模型、编译、内存和执行等抽象，也支持同步或异步执行与编译缓存。
@@ -94,16 +99,23 @@ AICore 是 Google 在兼容设备上交付的系统组件。Android 17 源码中
 
 需要自定义模型、离线控制或更广设备覆盖时，应用可以自带或按需下载模型，再由 LiteRT 等运行时执行。LiteRT 当前把 `CompiledModel` 作为高性能推理的主要 API，可在支持条件满足时使用 CPU、GPU 或 NPU；`Interpreter` API 继续用于兼容场景。
 
+以 2026-10-23 官方文档列出的 LiteRT 2.3.0 为例，`CompiledModel` 覆盖 CPU/GPU/NPU 加速入口，2.x 的 `Interpreter` 标为 CPU-only；1.4.x 是独立的兼容版本线。排查 delegate 时必须记录 API 与运行时版本，不能把不同版本的后端支持拼成同一套能力。
+
 典型调用链如下：
 
 ```text
-App → LiteRT CompiledModel / Interpreter
-    → CPU backend 或 GPU/NPU delegate
+App → LiteRT CompiledModel
+    → 受支持的 CPU / GPU / NPU 后端
     → 厂商运行时与驱动
     → 计算单元和内存
 ```
 
 箭头越靠下，设备差异越大。运行时能创建某个 delegate，不代表整个计算图都由该加速器执行。以 GPU delegate 为例，不受支持的算子会让计算图分段在 CPU 与 GPU 上执行；频繁同步和数据转换可能抵消并行计算收益。
+
+<!-- gracker-diagram: ch01-29-partitioned-inference -->
+![算子分段会增加 CPU 与加速器的交接成本](../../assets/diagrams/ch01/ch01-29-partitioned-inference.png)
+
+图：这是使用支持 GPU delegate 的运行时与版本时的示意图：部分算子回到 CPU，会在分段之间引入同步或格式转换。要比较整次任务的延迟、内存和能量，并记录实际图覆盖率，不能仅凭创建 delegate 成功判断加速有效。
 
 自带模型路线需要应用承担更多工作：
 
@@ -117,9 +129,9 @@ App → LiteRT CompiledModel / Interpreter
 
 ## 1.29.5 AppFunctions：把应用能力提供给智能代理
 
-AppFunctions 解决的是跨应用能力发现和执行。提供方声明函数元数据，并用 `AppFunctionService` 或 Android 17 的运行时注册实现函数；持有相应权限的系统级智能代理（agent）可以搜索函数、读取状态并发起调用。
+AppFunctions 解决的是跨应用能力发现和执行。提供方声明函数元数据，并用 `AppFunctionService` 或 Android 17 的运行时注册实现函数；满足权限与平台准入条件的调用方（包括智能代理 agent、助手或应用）可以搜索函数、读取状态并发起调用。
 
-AOSP `AppFunctionService` 要求服务声明 `BIND_APP_FUNCTION_SERVICE`，只有 `system_server` 可以绑定。跨包执行还受 `EXECUTE_APP_FUNCTIONS` 或系统级权限约束。它不是一个让任意应用自由调用其他应用的通用远程调用（RPC）注册表。
+AOSP `AppFunctionService` 要求服务声明 `BIND_APP_FUNCTION_SERVICE`，只有 `system_server` 可以绑定。跨包执行还受 `EXECUTE_APP_FUNCTIONS` 或系统级权限约束。固定标签的 Manifest 为 `EXECUTE_APP_FUNCTIONS` 保留两条功能开关路径：`app_function_access_api_enabled` 开启时为 `normal` 权限，但仍要求设备允许名单与用户授权；未开启时为 `internal|privileged`。持有普通权限声明并不自动获得任意跨应用执行能力。`EXECUTE_APP_FUNCTIONS_SYSTEM` 则服务于受限制的系统角色。参见 [AndroidManifest.xml @ android-17.0.0_r1](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/AndroidManifest.xml)。
 
 Android 17 源码明确标注了函数执行回调的线程边界：
 
@@ -138,6 +150,11 @@ public abstract void onExecuteFunction(
 Android 17（API 37）还增加了运行时注册、Activity 或全局作用域、函数状态观察等能力。运行时注册只在相应进程和 `Context` 生命周期内有效，调用者必须保存 `AppFunctionRegistration`，并在不再需要时调用 `unregister()`。
 
 AppFunctions 不负责动态模型加载、模型版本回滚或推理调度。它可以把“总结当前笔记”暴露为函数，但该函数内部使用 AICore、自带模型还是云端，是提供方自己的实现选择。
+
+<!-- gracker-diagram: ch01-29-appfunction-execution -->
+![AppFunctions 连接授权调用方与提供方能力](../../assets/diagrams/ch01/ch01-29-appfunction-execution.png)
+
+图：获得权限且通过平台准入与用户授权的调用方，经系统请求提供方函数。AppFunctionService 的经典执行入口在提供方主线程，耗时工作需要转交 worker 并响应取消，最终用回调交付结果；模型选择仍由函数实现者决定。
 
 ## 1.29.6 VoiceInteractionService 的位置
 
@@ -177,6 +194,11 @@ try {
 - 热路径复用会话、`CompiledModel` 和缓冲区，测量稳定请求。
 - 连续运行覆盖热平衡后的性能，避免只记录设备尚未升温的前几次。
 - 结果按设备型号、系统版本、运行时版本、模型版本和后端分组。
+
+<!-- gracker-diagram: ch01-29-ai-measurement-stages -->
+![把冷准备、稳态推理与可见结果分别测量](../../assets/diagrams/ch01/ch01-29-ai-measurement-stages.png)
+
+图：前五项表示一次请求的工作范围，资源与热状态则贯穿多轮观测。冷路径和复用会话后的热路径要分别测，流式输出还应区分首个可见结果与整个响应结束。方框宽度不代表实测时长。
 
 ## 1.29.8 内存、量化与并发的常见误区
 

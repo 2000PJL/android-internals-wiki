@@ -43,6 +43,11 @@ Android 的掉帧、首帧延迟、SurfaceView 错位、视频抖动和刷新率
 
 这条主线提供分析基准，不代表所有内容都由 HWUI 生产。SurfaceView、TextureView、Camera、视频、Flutter、OpenGL ES、Vulkan 与游戏引擎会改变 Producer、Surface 数量、layer 拓扑或合成位置。遇到这些类型，应配合 [第 13 章：渲染管线专题](../../part2-performance/ch13-rendering-pipelines/README.md)按实际路径分类。
 
+<!-- gracker-diagram: ch02-00-rendering-responsibility-map -->
+![先确认 Producer 与 Surface，再沿 buffer 和显示信号定位](../../assets/diagrams/ch02/ch02-00-rendering-responsibility-map.png)
+
+图：普通硬件加速窗口从 UI 线程与 HWUI 生产内容，视频、Camera 或游戏可有自己的 Producer。先确认其 Surface 和 Layer 拓扑，再沿提交、采纳、合成和目标 Display 的 present 分段取证；共享 GPU、队列和 fence 会把等待传到上游。
+
 分析一帧时要分开四组时间点：
 
 1. App VSync 到 `Choreographer#doFrame()`：应用何时获得垂直同步回调并开始工作；

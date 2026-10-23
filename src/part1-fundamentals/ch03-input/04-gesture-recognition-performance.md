@@ -130,7 +130,7 @@ Java 层还保留着 `obtain(int)`、`obtain(String)` 这些隐藏入口，它�
 - `ACTION_MOVE` 会遍历历史批次和当前批次，并为每个指针 ID 加入 X、Y；
 - 标记为重采样（resampled）的样本会被跳过，避免根据预测坐标再拟合一次速度；
 - `ACTION_UP` 和普通 `ACTION_POINTER_UP` 不重复加入抬手位置，以保留末次有效移动的速度；
-- 同一指针超过 40 ms 没有新移动样本时，下一次采样会按“指针已经停下”处理并重建策略状态；
+- 原生层用共享的 `mLastEventTime` 判断停顿：对已有 pointer ID，新移动样本距最近一次移动超过 40 ms 时会清空已配置策略；抬手时也有对应的停顿检查；
 - `getComputedVelocity()` 最终按 `units / 1000` 缩放，并限制在 `[-maxVelocity, maxVelocity]`。
 
 Android 14（API 34）起，公开 API 增加了 `isAxisSupported()` 与 `getAxisVelocity()`，`AXIS_SCROLL` 也进入公开可跟踪范围。各版本的默认策略演进如下：
@@ -142,6 +142,11 @@ Android 14（API 34）起，公开 API 增加了 `isAxisSupported()` 与 `getAxi
 | Android 14–17 | 轴级策略表：X、Y 使用 `LSQ2`，`SCROLL` 使用 `IMPULSE` |
 
 这张表解释的是版本差异。套用之前先确认输入源和轴：鼠标滚轮、旋钮的 `AXIS_SCROLL` 要单独分析，触摸屏 X、Y 的结论直接搬过去会出错。
+
+<!-- gracker-diagram: ch03-04-velocity-sample-compute-query -->
+![VelocityTracker 先收真实样本，需要读速度时再计算](../../assets/diagrams/ch03/ch03-04-velocity-sample-compute-query.png)
+
+图：obtain 后 addMovement 收集时间、坐标、pointer ID 与历史样本，原生实现跳过 resampled 点。AOSP17 的 X / Y 默认 LSQ2，SCROLL 差分轴默认 IMPULSE；需要查询时 computeCurrentVelocity 生成结果，再按 pointer ID 读取并在结束时 recycle。数组 index 会变，不能替代 ID。
 
 ### 怎样测量 VelocityTracker 的开销
 
@@ -173,6 +178,11 @@ flowchart LR
 ```
 
 这张图只是阅读源码的索引，回调之间可以先后发生：例如双击监听器启用后，第一次抬手仍可能先触发 `onSingleTapUp()`，之后才轮到 `onDoubleTap()` 或 `onSingleTapConfirmed()`。
+
+<!-- gracker-diagram: ch03-04-gesture-detector-candidates -->
+![GestureDetector 同时维护候选，事件和定时消息推进状态](../../assets/diagrams/ch03/ch03-04-gesture-detector-candidates.png)
+
+图：DOWN 建立 Tap 候选并安排 Handler 消息；MOVE 超过阈值可转 Scroll，UP 且速度足够可触发 Fling。Tap 区域内 UP 可立即 onSingleTapUp；双击监听器按时间和距离继续判断 DoubleTap 或 SingleTapConfirmed。长按需定时条件仍有效，CANCEL 会清理所有候选与消息。
 
 ### 从 `ACTION_DOWN` 到 `ACTION_CANCEL`：各阶段分别做什么
 
@@ -229,6 +239,11 @@ mHandler.sendMessageAtTime(
 `ViewGroup.dispatchTouchEvent()` 在 `ACTION_DOWN` 时清理上一个手势的状态，并为本次触摸寻找子 View，命中的子 View 保存为 `TouchTarget`。后续的 `ACTION_MOVE`、`ACTION_UP` 通常沿这条已建立的目标链分发，整棵 View 树的命中测试不需要每次重来。
 
 父 `ViewGroup` 在后续事件里仍有机会调用 `onInterceptTouchEvent()`：一旦从“不拦截”翻成“拦截”，原先命中的子 View 会收到 `ACTION_CANCEL`，之后的事件改交父容器。所以诊断冲突时，我们要把同一序列的 `ACTION_DOWN → ACTION_MOVE → ACTION_CANCEL/ACTION_UP` 连起来看，单看其中一个 `ACTION_MOVE` 很容易误判。
+
+<!-- gracker-diagram: ch03-04-view-touch-ownership -->
+![View 父级中途拦截，要给原子目标 CANCEL](../../assets/diagrams/ch03/ch03-04-view-touch-ownership.png)
+
+图：DOWN 时父容器检查候选并建立接受事件的子 TouchTarget。后续 MOVE / UP 通常沿已有目标链走；父级若决定拦截，原子目标收到 CANCEL，后续流转给父容器。requestDisallowInterceptTouchEvent 约束祖先 View 的拦截，不能阻止系统导航或窗口级取消。
 
 ### 横向父容器与纵向子容器
 
@@ -317,6 +332,11 @@ dispatchNestedScroll(
 
 嵌套回调要被当成性能问题，前提是性能跟踪里确实看到某个父级回调或反复布局、绘制占了主线程。
 
+<!-- gracker-diagram: ch03-04-nested-scroll-distance -->
+![Nested Scrolling 围绕距离协作，先预消费再处理余量](../../assets/diagrams/ch03/ch03-04-nested-scroll-distance.png)
+
+图：先 startNestedScroll 找到参与父级；每轮子级消费前，父级通过 pre-scroll 消费一部分 Δy。子级滚动剩余距离，再把自身已消费和未消费余量交给 post-scroll；结束时 stopNestedScroll。示意中的距离是同一坐标和单位下的分配，实际实现还需处理窗口偏移与 TOUCH / NON_TOUCH 类型。
+
 ## TouchSlop 与 Fling 阈值
 
 TouchSlop 决定拖动什么时候才算开始，Fling 速度阈值决定松手后惯性滚动什么时候生效。我们先看这两个阈值从哪里来，再看取值时要小心的单位问题。
@@ -362,6 +382,11 @@ if (Math.abs(velocityY)
 Android 14 又增加了带 `inputDeviceId`、`axis`、`source` 的最小和最大 Fling 速度 API；输入设备或轴的组合无效时，最小值返回 `Integer.MAX_VALUE`、最大值返回 `Integer.MIN_VALUE`，表示该组合不支持 Fling。
 
 跟踪旋钮的 `AXIS_SCROLL` 时，还要先把轴值换算成像素每秒，再与对应阈值比较；触摸屏 X、Y 的代码不要原样复用到滚轮和旋钮上。
+
+<!-- gracker-diagram: ch03-04-runtime-thresholds-and-units -->
+![运行时 TouchSlop 是像素，Fling 阈值是像素每秒](../../assets/diagrams/ch03/ch03-04-runtime-thresholds-and-units.png)
+
+图：TouchSlop 用带 Context 的 ViewConfiguration 读取像素阈值，通常比较从 DOWN 起的累计位移。Fling 用 computeCurrentVelocity(1000, max) 得到每秒速度，再与运行时最小速度比较。SCROLL 差分轴还要经过设备滚动因子换算，并用设备、轴、source 对应的能力与阈值。
 
 ## 自定义识别器的性能与正确性陷阱
 
@@ -456,6 +481,11 @@ Compose 对新指针的第一个事件做命中测试，形成可接收指针输
 | `Final` | 父到子 | 根据前面阶段的消费结果收尾 |
 
 `consume()` 把当前 `PointerInputChange` 标记为已消费，事件仍会继续传播，其他处理器要自己检查 `isConsumed` 再决定退不退出。这和 View 里“父容器拦截后给子 View 发 `ACTION_CANCEL`”是两套语义，迁移手势代码时照搬会出问题。
+
+<!-- gracker-diagram: ch03-04-compose-three-passes -->
+![Compose 沿命中链三次传播，consume 只设置消费标记](../../assets/diagrams/ch03/ch03-04-compose-three-passes.png)
+
+图：首个指针事件建立命中链，同一指针后续事件通常复用它。每个事件按 Initial 父到子、Main 子到父、Final 父到子传播；consume 不会自动阻断传播，其他处理器要检查 isConsumed。高层组件已有焦点、语义、无障碍和反馈职责，只有确有需要时再自行写 pointerInput。
 
 平台事件会被适配成 Compose 内部结构，这项转换未必是性能瓶颈；我们判断 Compose 手势卡顿，看的还是指针处理器的执行时间、状态写入引起的重组、布局与绘制，以及帧时间线。
 

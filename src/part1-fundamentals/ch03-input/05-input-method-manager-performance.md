@@ -65,6 +65,11 @@ sources:
 
 `showSoftInput()` 只表达“希望显示当前 IME”。如果输入连接已经存在，显示一个暂时隐藏的 IME 可以直接进入 `onShowInputRequested()` 和 `showWindow()`，不必再次调用 `onStartInput()`。排查重复初始化时，应确认初始化代码位于哪个生命周期回调。
 
+<!-- gracker-diagram: ch03-05-connection-request-presentation -->
+![输入连接、显隐请求与最终呈现各有状态](../../assets/diagrams/ch03/ch03-05-connection-request-presentation.png)
+
+图：输入连接对应编辑器与 IME 的输入会话；显隐 API 表达显示意愿；最终 Insets 可见状态和目标显示帧还需分别确认。已有输入连接可以重复隐藏与显示，未必再次触发 onStartInput，初始化和显示耗时不能混算。
+
 ### 1.2 API 返回值只说明请求有没有被接纳
 
 Android 17 的 `InputMethodManager.showSoftInput(view, flags)` 要求：
@@ -82,7 +87,7 @@ Android 16 起，`SHOW_IMPLICIT`、`SHOW_FORCED`、`HIDE_IMPLICIT_ONLY` 和 `HID
 
 ### 1.3 “动画开始”仍早于“用户看到完整键盘”
 
-应用收到 `WindowInsetsAnimation.Callback.onStart()`，说明客户端已经取得 Insets 动画控制并进入动画阶段。它不等于 IME 第一帧已经提交，也不等于显示屏已经扫描出像素。时间终点应按测量目标选择：
+应用收到 IME 的 `WindowInsetsAnimation.Callback.onStart()`，说明客户端已进入动画开始回调阶段。在正常下发 IME leash 的路径中，WMS 已要求 IME 窗口 `isDrawn()`、Insets 数据就绪且服务端可见，因此不能把这个回调一律放在首个 buffer 提交之前。但绘制就绪仍不能证明目标 Display 已 present，更不代表键盘已经完整可见。时间终点应按测量目标选择：
 
 | 目标 | 建议终点 | 能回答的问题 |
 |---|---|---|
@@ -134,6 +139,11 @@ flowchart TD
 
 Android 17 已没有独立的 `ImeInsetsSourceConsumer.java`。IME 特殊分支位于通用的 `InsetsSourceConsumer` 和 `InsetsController` 中；旧类名只适合描述早期版本，不能用来解释 `android-17.0.0_r1` 的当前实现。
 
+<!-- gracker-diagram: ch03-05-show-through-wms-and-leash -->
+![Android17 的显示请求经 WMS 状态机，再等待 IME 控制权](../../assets/diagrams/ch03/ch03-05-show-through-wms-and-leash.png)
+
+图：应用 InsetsController 上报 requestedVisibleTypes，WMS / ImeInsetsSourceProvider 把 IME 请求变化通知 IMMS。IME 接口、当前 client、session 齐备后才向输入法发 show；输入法接受并 showWindow 后，还需满足窗口绘制、Insets 与 leash 条件，应用才取得控制对象并推进动画。
+
 ## 3. 冷启动、绑定和会话等待
 
 ### 3.1 用状态划分冷热路径
@@ -159,6 +169,11 @@ Android 17 已没有独立的 `ImeInsetsSourceConsumer.java`。IME 特殊分支�
 - Android 17 还为特定多用户和工作资料场景准备后台连接（background connection）。
 
 这套设计说明“已绑定”和“正在显示”具有不同的进程重要性。它不能推出统一的冷、热耗时，也不能证明某个输入法一定常驻。进程是否仍在、资源是否已加载、会话是否可复用，都需要根据现场数据判断。
+
+<!-- gracker-diagram: ch03-05-binding-readiness-states -->
+![IME 冷热先按接口、连接和会话状态分组](../../assets/diagrams/ch03/ch03-05-binding-readiness-states.png)
+
+图：未取得接口可能要等进程与服务绑定；接口已连接但会话为空，还要等 session；接口、client 与 session 都在才具备热显示请求条件。main connection 维持服务接口，visible connection 表达正在显示所需的重要性，不能从某一个绑定字段推导输入法必然常驻或固定耗时。
 
 ### 3.3 启动抑制配置不代表隔离进程
 
@@ -319,6 +334,11 @@ ImeTracker 历史记录会给出请求类型、状态、持续时间、最终阶
 - 已到 `CLIENT_ANIMATION_RUNNING`：把注意力移到应用、IME 和 SurfaceFlinger 的帧调度；
 - 状态为 `FAIL`、`CANCEL` 或 `TIMEOUT`：先读最终阶段和原因（reason），不要只看“键盘没出来”的表象。
 
+<!-- gracker-diagram: ch03-05-tracker-stop-and-frame-diagnosis -->
+![先找请求停在哪个 phase，再分析动画帧](../../assets/diagrams/ch03/ch03-05-tracker-stop-and-frame-diagnosis.png)
+
+图：同一 ImeTracker token 贯穿跨进程请求。若停在 WAIT_IME，检查接口、绑定和 session；已 showWindow 却缺控制对象，检查 IME 绘制、Insets 与 leash；已进入 ANIMATION_RUNNING，再对齐 App、IME 和 SF 帧。FAIL / CANCEL / TIMEOUT 还需读最终阶段与原因，不能只用“键盘没出来”归因。
+
 ## 8. `dumpsys input_method` 应该看哪些字段
 
 先保存问题发生后的完整状态：
@@ -376,6 +396,11 @@ FrameTimeline 的帧异常类型（jank type）用于描述错过截止时间（
 4. 动画前已经在绑定、会话或 leash 阶段等待。
 
 只有把 ImeTracker 的阶段和 FrameTimeline 的帧结果放在同一时间轴上，才能区分“显示得晚”和“动画不流畅”。
+
+<!-- gracker-diagram: ch03-05-app-ime-display-frames -->
+![App 与 IME 各自产生窗口内容，动画控制和合成另有边界](../../assets/diagrams/ch03/ch03-05-app-ime-display-frames.png)
+
+图：应用处理 Insets、布局和自身 HWUI 帧；IME 进程独立绘制键盘与候选栏。Insets 动画控制更新 IME leash，SurfaceFlinger 再把两侧可用 buffer 与几何状态合成到目标 Display。动画前的绑定、会话和控制权等待，以及动画中的两侧慢帧，需要分开统计。
 
 ## 10. 可复现的测量方法
 

@@ -112,9 +112,14 @@ flowchart LR
 
 这张图省略了焦点监视器、输入监视器、指针捕获、拖放、IME 异步回调和注入事件，它要建立的是主路径。每个事件实际经过的业务处理并不相同：触摸和按键在 `InputDispatcher` 中使用不同的目标选择规则，批量 `MotionEvent` 到达应用后还可能等待下一次 `CALLBACK_INPUT` 回调。
 
+<!-- gracker-diagram: ch03-01-hardware-to-window -->
+![输入先在系统选窗口，再在应用内分发并返回完成消息](../../assets/diagrams/ch03/ch03-01-hardware-to-window.png)
+
+图：驱动通过 evdev 提供事件，system_server 中的 InputReader 完成读取与映射，经过监听链进入 InputDispatcher 选择窗口；应用窗口线程从 InputChannel 接收，再经 ViewRootImpl 与 View 树处理，最后回传 FINISHED。完成输入处理和绘制结果上屏是不同边界。
+
 #### 1.1 进程与线程边界
 
-AOSP 的 `InputManager` 由 `InputManagerService` 的原生实现持有，默认位于 `system_server` 进程。它内部主要包含四类线程：
+AOSP 的 `InputManager` 由 `InputManagerService` 的原生实现持有，默认位于 `system_server` 进程。主路径涉及以下四类线程：
 
 - `InputReader`：读取、解析设备数据；
 - `InputDispatcher`：目标选择、事件发布、完成反馈与 ANR 检查；
@@ -234,6 +239,11 @@ InputReader
 
 这样 `InputReader` 的通知线程就无须同步等待每一次 HAL Binder 调用，代价是时序上的松散：某个事件携带的分类结果可能来自同一手势中更早的事件，迟到且已经跨越新一轮 `DOWN` 的结果会被丢弃。
 
+<!-- gracker-diagram: ch03-01-reader-classifier-async -->
+![映射器组装输入，动作分类 HAL 在另一条工作线程执行](../../assets/diagrams/ch03/ch03-01-reader-classifier-async.png)
+
+图：InputReader 在锁外等待 EventHub，在锁内按设备和 mapper 组装 NotifyArgs，再在锁外通知监听链。启用 MotionClassifier 后，InputProcessor 把事件排入有限队列，由专用线程执行 HAL classify；当前事件读取最近分类结果继续转发，不同步等待自己的 HAL 返回。
+
 ---
 
 ### 四、InputDispatcher 如何选择目标
@@ -277,6 +287,11 @@ InputReader
 - 系统合成 CANCEL，结束原接收者的手势。
 
 “点到谁就永远给谁”只是粗略描述；我们分析手势时，要跟踪的是触摸状态、触点 ID 与 `CANCEL` 事件。
+
+<!-- gracker-diagram: ch03-01-focus-versus-touch-target -->
+![焦点窗口与触摸目标来自不同的选择规则](../../assets/diagrams/ch03/ch03-01-focus-versus-touch-target.png)
+
+图：按键及部分非指针事件查找焦点窗口；指针 DOWN 依据窗口拓扑、可触摸区域与安全条件命中并建立 TouchState，后续 MOVE / UP 通常沿已有状态分发。抢占、拆分、窗口变化或安全策略可改变目标并合成 CANCEL。焦点应用用于无焦点窗口等待，不能当作触摸命中窗口。
 
 #### 4.4 分发中的坐标转换
 
@@ -351,7 +366,7 @@ socketpair 的两端都设为非阻塞，并共享一个 Binder 令牌。服务�
 
 `SOCK_SEQPACKET` 会保留每条消息的边界；非阻塞发送在套接字缓冲区已满时返回 `WOULD_BLOCK`。若等待队列非空，`InputDispatcher` 会等待应用完成部分事件后继续；连接出错时，则终止当前分发周期并执行清理。
 
-#### 5.4 每个 Connection 的三段队列
+#### 5.4 全局输入队列与每个 Connection 的两段队列
 
 | 位置 | 系统跟踪计数器 | 含义 |
 |---|---|---|
@@ -366,6 +381,11 @@ inbound → pending → outbound → publish → wait → FINISHED → remove
 ```
 
 `wq` 短暂大于 0 属于正常状态。要往 ANR 方向怀疑，得同时看到事件年龄接近超时阈值、队列持续增长，或者连接被标记为无响应。
+
+<!-- gracker-diagram: ch03-01-queues-publish-finish -->
+![输入反压要区分未发布与已发布未完成](../../assets/diagrams/ch03/ch03-01-queues-publish-finish.png)
+
+图：全局 inbound / pending 完成目标选择后，给各 Connection 建立 outbound 分发项。成功发布时事件送入应用通道，分发项移入 waitQueue；应用 FINISHED 回来后再移除等待项并继续发布。socket WOULD_BLOCK 且 wait 非空时保留 outbound 队首等待进展；wait 为空却不可写则按异常清理。
 
 ---
 
@@ -430,6 +450,11 @@ NativePreImeInputStage
 - 延后处理，等待异步恢复。
 
 只有 `ViewRootImpl.finishInputEvent()` 调用接收器的 `finishInputEvent(event, handled)` 后，客户端才会尝试发回 `FINISHED`。
+
+<!-- gracker-diagram: ch03-01-app-stages-and-finish -->
+![InputStage 可异步挂起，方法返回不等于事件已完成](../../assets/diagrams/ch03/ch03-01-app-stages-and-finish.png)
+
+图：窗口线程从 fd 接收消息，部分 MotionEvent 等待 CALLBACK_INPUT 批量消费，随后进入 ViewRootImpl pending queue 和 InputStage。按键通常经过 pre-IME 与 IME；符合条件的指针事件可从 post-IME 开始。异步阶段返回后还可能等回调，最终 finishInputEvent 才触发 FINISHED，仍不保证画面已显示。
 
 #### 6.5 进入 Window 与 View 树
 
@@ -571,6 +596,11 @@ currentTime - eventTime >= 10s × HwTimeoutMultiplier()
 - 解除分发冻结后出现成批过期事件：这些事件在冻结期间一起失去时效。
 
 按键和动作事件使用单调时钟域。`SensorEntry` 的时间戳使用启动时钟（boottime），判定时也会读取当前 boottime。注入端或驱动端使用了错误的时钟基准，也会制造大量虚假的过期事件。
+
+<!-- gracker-diagram: ch03-01-stale-versus-anr -->
+![过期丢弃、连接 ANR、无焦点窗口 ANR 的起点不同](../../assets/diagrams/ch03/ch03-01-stale-versus-anr.png)
+
+图：STALE 检查 pending 事件相对于 eventTime 的年龄；连接 ANR 检查已发布项的 timeoutTime；无焦点窗口 ANR 则要同时存在焦点应用、缺少焦点窗口、到来需要焦点目标的事件。默认 10 秒过期和 5 秒分发超时都是基线，后者还可由窗口覆盖并乘硬件超时系数。
 
 #### 8.2 不同事件的丢弃语义
 
@@ -813,6 +843,11 @@ if (shouldSendMotionToInputFilterLocked(args)) {
 
 按键使用同一模型，只是原生判断入口换成 `shouldSendKeyToInputFilterLocked()`。启用或禁用过滤器时，`InputDispatcher#setInputFilterEnabled()` 会调用 `resetAndDropEverythingLocked()` 清理进行中的分发状态；系统选择丢弃当前事件流，是为了避免新旧过滤器状态拼成不一致的手势。
 
+<!-- gracker-diagram: ch03-01-system-filter-reinjection -->
+![系统 InputFilter 拦下原事件，再决定消费或重新注入](../../assets/diagrams/ch03/ch03-01-system-filter-reinjection.png)
+
+图：全局 Java InputFilter 由 WMS / IMS 隐藏入口安装；启用后，原始事件先经策略回调交给过滤器 Handler，原事件不直接入普通分发队列。过滤器可消费，或通过 Host 以 FLAG_FILTERED 重新注入后继续选择目标。普通 Instrumentation 等标准注入不再进入全局过滤器。
+
 #### InputFilter 的事件处理模型
 
 `InputFilter#onInputEvent()` 默认调用 `sendInputEvent(event, policyFlags)` 放行。自定义过滤器可以不发送原事件，也可以构造替代事件再发布。事件在回调返回后会被回收；需要跨回调保存时必须复制。
@@ -846,6 +881,11 @@ Android 默认的 `AccessibilityInputFilter` 运行在 `system_server`。接口�
 2. **接管阶段**：调用 `pilferPointers()` 后，InputDispatcher 从其他允许被抢占的窗口移走当前指针，并向被取消的目标合成取消事件。典型结果是原目标窗口收到 `ACTION_CANCEL`，后续事件流由请求抢占的监视窗口持有；标记了 `DO_NOT_PILFER` 的窗口例外。
 
 SystemUI 的边缘返回手势使用这套模式：先用手势监视器观察边缘触摸，确认系统返回手势后再抢占指针。
+
+<!-- gracker-diagram: ch03-01-monitor-to-pilfer -->
+![SPY 先旁路观察，pilfer 后原目标收到取消](../../assets/diagrams/ch03/ch03-01-monitor-to-pilfer.png)
+
+图：监视阶段，普通命中窗口和 SPY 监视窗口通过各自连接接收指针事件；确认系统手势后，监视窗口调用 pilferPointers，分发器从允许被抢占的窗口移走当前指针并合成 CANCEL。DO_NOT_PILFER 目标例外；监视器也要及时完成自己的 InputChannel 消费确认。
 
 在 Perfetto 中，目标窗口的触摸轨迹区段会以 `ACTION_CANCEL` 中断，同时 SystemUI 进程开始处理手势。如果应用的触摸流意外中断，可以检查是否有系统监视窗口抢占了指针。
 
@@ -903,7 +943,12 @@ Android 10 到 Android 17 都使用“配置能力加运行时标志”这套门
 - 至少一个服务返回“已处理”，且所有服务都已返回或超时后，事件在无障碍层结束；
 - 所有服务都返回“未处理”，或未响应服务到达 500 ms 超时后，`KeyEventDispatcher` 把按键送回输入过滤器，再继续分发。
 
-多个服务的等待并行记在同一个待决事件上，500 ms 记在待决事件这一层，与服务数量无关。分析按键延迟时，我们分别看 `AccessibilityManagerService`、`KeyEventDispatcher` 和服务进程自己的处理时间。
+多个服务的等待并行记在同一个待决事件上，500 ms 记在待决事件这一层，与服务数量无关。 这是 Handler 超时消息的延迟配置，不是严格的实际响应时间上限；消息队列拥堵时，超时处理也可能晚于配置值。分析按键延迟时，我们分别看 `AccessibilityManagerService`、`KeyEventDispatcher` 和服务进程自己的处理时间。
+
+<!-- gracker-diagram: ch03-01-accessibility-key-results -->
+![无障碍按键判定在 PendingKeyEvent 等待多个异步结果](../../assets/diagrams/ch03/ch03-01-accessibility-key-results.png)
+
+图：配置能力和运行时 flag 允许按键过滤后，KeyboardInterceptor / KeyEventDispatcher 把副本送给服务，并为共享 PendingKeyEvent 记录待返回引用。服务异步回报 handled；全部返回或超时释放待决引用后，至少一方已处理则消费，否则送回过滤器继续分发。500 ms 是 Handler 超时消息配置，实际执行可更晚。
 
 #### 事件修改的安全限制
 
@@ -939,7 +984,7 @@ private void syncInputTransactionsAndInjectEventIntoSelf(MotionEvent event) {
 }
 ```
 
-它绕开 `ViewRootImpl` 的 InputChannel，底层仍进入 `InputManagerService.injectInputEventToTarget()`。方法使用 `WAIT_FOR_FINISH`，只等待接收方完成事件处理并回传 `FINISHED`；对应界面有没有绘制或呈现，这一步管不到。
+它绕过真实设备、evdev 与 InputReader，底层进入 `InputManagerService.injectInputEventToTarget()` 后，仍由 InputDispatcher 通过目标窗口的 InputChannel 交给 ViewRootImpl。方法使用 `WAIT_FOR_FINISH`，只等待接收方完成事件处理并回传 `FINISHED`；对应界面有没有绘制或呈现，这一步管不到。
 
 ##### 2. UiAutomation.injectInputEvent()
 
@@ -983,6 +1028,11 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 | `AccessibilityService.dispatchGesture()` | `MotionEventInjector` 在无障碍变换链内生成 | 在过滤器内产生，再以带 `FLAG_FILTERED` 的事件注入 | 指定显示屏上的命中窗口 | 无；系统和测试代码有隐藏的无障碍标志 |
 
 `POLICY_FLAG_INJECTED` 是 InputDispatcher 内部的策略标志，`InputEvent` 基类也没有统一的 `getFlags()`。`MotionEvent.isFromSource()` 只判断设备来源，注入事件和硬件事件它区分不了。
+
+<!-- gracker-diagram: ch03-01-injection-entry-points -->
+![标准注入与无障碍手势在不同入口生成，最终仍按窗口分发](../../assets/diagrams/ch03/ch03-01-injection-entry-points.png)
+
+图：Instrumentation、UiAutomation 标准入口与 shell input 进入系统标准注入，并绕过全局 Java InputFilter；各自受目标 UID 或受信任身份权限约束。dispatchGesture 由无障碍变换链里的 MotionEventInjector 生成，再以过滤后事件注入。两条路径最终都由 InputDispatcher 选择窗口并通过目标 InputChannel 交给应用。
 
 #### 注入事件的权限控制
 
@@ -1057,7 +1107,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 
 无障碍的性能成本要按事件类型分开看。
 
-**按键事件。** 开启 `FLAG_REQUEST_FILTER_KEY_EVENTS` 后，事件会先到 `KeyboardInterceptor`，再交给 `KeyEventDispatcher` 等待服务结果。等待窗口上限是 500 ms。这个等待发生在无障碍子系统维护的 `PendingKeyEvent` 队列里，不是 `InputDispatcher` 同步等待远端 Binder。
+**按键事件。** 开启 `FLAG_REQUEST_FILTER_KEY_EVENTS` 后，事件会先到 `KeyboardInterceptor`，再交给 `KeyEventDispatcher` 等待服务结果。超时消息的延迟配置为 500 ms，实际处理还受 Handler 调度影响。这个等待发生在无障碍子系统维护的 `PendingKeyEvent` 队列里，不是 `InputDispatcher` 同步等待远端 Binder。
 
 **触摸事件。** `TouchExplorer`、放大镜手势处理器、`MotionEventInjector` 可能把一段原始触摸重写成另一串 `MotionEvent`。这会增加事件数量，也会让时序更复杂。TalkBack 的“朗读后双击激活”就是这类变换。
 
@@ -1074,7 +1124,7 @@ public void dispatchGesture(int sequence, ParceledListSlice gestureSteps, int di
 | 机制 | 额外工作发生位置 | 影响范围 | 当前能直接核对的结论 |
 |------|------------------|----------|----------------------|
 | 轻量 `InputFilter` | `system_server` 的过滤器回调 | 经过过滤器的按键和运动事件 | 会增加分发前处理时间，幅度取决于过滤器代码 |
-| 无障碍按键过滤 | `KeyboardInterceptor`、`KeyEventDispatcher` 与服务进程 | 开启按键过滤的事件 | 单个待决事件的等待上限为 500 ms；无人处理时继续分发 |
+| 无障碍按键过滤 | `KeyboardInterceptor`、`KeyEventDispatcher` 与服务进程 | 开启按键过滤的事件 | 单个待决事件配置 500 ms 超时消息；无人处理时继续分发 |
 | 无障碍手势注入 | `MotionEventInjector` | 目标窗口 | 会额外生成无障碍注入的 `MotionEvent` |
 | 应用自己的 `onInterceptTouchEvent()` | 应用进程 | 仅本应用 | 不会回过头影响全局 `InputDispatcher` |
 

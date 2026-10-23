@@ -202,7 +202,7 @@ consolidated_from:
 | ART Service / `artd` | `system_server` / 原生守护进程 | 组织和执行设备端 dexopt，管理编译产物 | 不发布 PackageManager 状态 |
 | `dex2oat` | 独立原生进程 | 按 ART Service 给出的参数生成 OAT、VDEX 等 ART 编译产物 | 不判断包能否安装 |
 
-Android 14 起，设备端 AOT（Ahead-of-Time，运行前编译） 任务（post-boot dexopt job）改由 ART Service 统一调度。PMS 中仍能看到 `DexOptHelper`，但它在安装流程里主要负责转交请求：根据安装状态发起编译，实际的组织和执行由 `ArtManagerLocal`、`artd` 和 `dex2oat` 完成。所以我们追安装编译问题时，要顺着 ART Service 这条线往下找；仍按“PMS 调用 `installd` 做 dexopt”的旧模型画图，就会漏掉真正的调度和执行位置。
+Android 14 起，设备端应用 dexopt 改由 ART Service 统一调度，既可包含验证，也可包含 AOT（运行前编译）。PMS 中仍能看到 `DexOptHelper`，但它在安装流程里主要负责转交请求：根据安装状态发起编译，实际的组织和执行由 `ArtManagerLocal`、`artd` 和 `dex2oat` 完成。所以我们追安装编译问题时，要顺着 ART Service 这条线往下找；仍按“PMS 调用 `installd` 做 dexopt”的旧模型画图，就会漏掉真正的调度和执行位置。
 
 ---
 
@@ -240,7 +240,7 @@ PMS 内部仍有多个锁，“已经无锁化”的说法与源码不符：
 - `mInstallLock` 保护对 `installd` 的访问，源码要求不要在持有 `mLock` 时再获取它；
 - `mSnapshotLock` 只用于构造或取得 `Computer` 快照。
 
-`snapshotComputer()` 会比较当前数据版本（target SDK）和缓存快照的版本：一致时可直接返回缓存，落后才在 `mSnapshotLock` 与 `mLock` 的保护下重建快照。当前线程已经持有 `mLock` 时，它会改而返回基于当前可变数据的实时查询视图（源码中的 live computer），也就是源码里的 live computer，避免写操作拿到前后矛盾的快照。
+`snapshotComputer()` 会比较当前包状态数据版本和缓存快照的版本：一致时可直接返回缓存，落后才在 `mSnapshotLock` 与 `mLock` 的保护下重建快照。当前线程已经持有 `mLock` 时，它会改而返回基于当前可变数据的实时查询视图（源码中的 live computer），避免写操作拿到前后矛盾的快照。
 
 从这里我们可以得到两个结论：
 
@@ -253,7 +253,7 @@ PMS 内部仍有多个锁，“已经无锁化”的说法与源码不符：
 
 ### 普通 APK 安装怎样提交
 
-无论入口是 `adb install` 还是应用商店调用的 `PackageInstaller` API，普通安装最终都会进入安装会话模型。一个会话把一批待提交文件及其状态作为一次事务（transaction），可以包含主包（base APK） base APK、拆分包（split APK） split APK、安装元数据以及一个或多个子会话（child session）。
+无论入口是 `adb install` 还是应用商店调用的 `PackageInstaller` API，普通安装最终都会进入安装会话模型。一个会话把一批待提交文件及其状态作为一次事务（transaction），可以包含主包（base APK）、拆分包（split APK）、安装元数据以及一个或多个子会话（child session）。
 
 #### 1. 写入和密封安装会话
 
@@ -298,6 +298,11 @@ prepareInstallPackages
 ```
 
 路径切换发生在 dexopt 前，因为 OAT、VDEX 等 ART 产物会关联最终代码路径。应用数据也要在编译前准备好。
+
+<!-- gracker-diagram: ch01-16-ordinary-install-stages -->
+![普通 APK 安装事务与异步 dexopt](../../assets/diagrams/ch01/ch01-16-ordinary-install-stages.png)
+
+图：这里从 InstallPackageHelper 的普通安装事务开始，前置会话验证已完成。Prepare、Scan、Reconcile 后先切换路径和准备数据，再按策略等待异步 dexopt，随后提交包状态并做安装后处理。
 
 `DexOptHelper.performDexoptIfNeededAsync()` 用一个单线程执行器处理安装 dexopt，同一时刻只有一个任务在跑。源码同时规定：dexopt 失败不拖垮整个安装，应用可以先以解释执行或较低优化级别运行，之后再由后台 dexopt 补齐优化。
 
@@ -738,6 +743,11 @@ Android 17 的 `Build.VERSION_CODES_FULL.CINNAMON_BUN` 为 37.0，自然满足�
 ### 5. 一次提交可能产生多次回调
 
 `Session.commit(IntentSender)` 只是把已封存的安装会话交给系统异步处理；方法顺利返回，离安装完成还有整个后台流程。
+
+<!-- gracker-diagram: ch01-16-install-status-callbacks -->
+![安装提交与多次状态回调](../../assets/diagrams/ch01/ch01-16-install-status-callbacks.png)
+
+图：commit 返回后继续等待异步回调。STATUS_PENDING_USER_ACTION 表示尚需系统交互，不能统计为安装成功或最终失败；用户操作后继续等待终态。失败附加字段不存在时，不能套用默认原因值做归因。
 
 Developer Verification 失败时，`EXTRA_STATUS` 取决于安装器的目标 SDK 版本、权限，以及该失败是否允许用户处理：
 
@@ -1282,6 +1292,11 @@ Developer Verification 位于安装会话的通用验证路径中，发生在分
 
 包含 APEX 且设备支持 checkpoint 时，`resumeSession()` 不会过早把 `apexd` 会话宣告为永久成功。会话 ID 会保留到 `PHASE_BOOT_COMPLETED`，届时 `markStagedSessionsAsSuccessful()` 才通知 `apexd`。本次启动能否进入开机完成阶段，也属于健康检查的一部分。
 
+<!-- gracker-diagram: ch01-16-staged-reboot-order -->
+![含 APEX 的 staged 会话跨重启激活顺序](../../assets/diagrams/ch01/ch01-16-staged-reboot-order.png)
+
+图：图示含 APEX/APK 且设备支持 checkpoint 的成功路径。先持久化 PackageInstaller ready，再通知 apexd；重启后先激活 APEX，system_server 再恢复并安装 APK，开机完成阶段再确认相应 APEX 会话成功。
+
 ### 失败处理与回退边界
 
 三个名字相近的操作负责不同层次的失败处理：
@@ -1570,6 +1585,11 @@ PackageInstaller 通过 IntentSender 返回最终状态
 ```
 
 这条链上有三个经常被混为一谈的分界点。
+
+<!-- gracker-diagram: ch01-16-app-distribution -->
+![AAB 分发与设备端安装的职责切换](../../assets/diagrams/ch01/ch01-16-app-distribution.png)
+
+图：AAB 是发布输入，商店或 bundletool 生成目标设备需要的 APK 集合；安装器负责下载和写入会话，PackageInstaller/PMS 校验并安装 APK，最终通过状态回调报告结果。
 
 #### 1. AAB 与设备端 APK 的关系
 

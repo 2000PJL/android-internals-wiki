@@ -241,6 +241,11 @@ flowchart TB
 
 图中的箭头表示管理或记账关系：procfs 是挂载在 `/proc` 的虚拟文件系统，暴露进程和内核状态；cgroup v2 按进程组统计和限制资源。ART 堆、原生堆和图形内存最终都依赖内核提供的页面、映射或设备缓冲区，同一物理页还可能被多个进程和设备共享。
 
+<!-- gracker-diagram: ch04-01-process-domains-kernel-pages -->
+![应用内存域最终对应页、映射或设备缓冲区](../../assets/diagrams/ch04/ch04-01-process-domains-kernel-pages.png)
+
+图：应用按 Java、Native、文件、栈和图形分类；内核按页、VMA、回收与设备缓冲区组织。虚拟预留可以还没有物理驻留，同一物理页也可被多个进程共享。统计用于解释归属，分配失败、ART OOME、系统压力退出与单进程限制则要分别取证。
+
 ### 从物理内存（RAM）到进程地址空间
 
 #### 物理内存与应用可用内存
@@ -305,6 +310,11 @@ flowchart TB
 
 看到“PSS 连续上升”，我们把它当作继续调查的信号，离泄漏结论还有一段距离。
 
+<!-- gracker-diagram: ch04-01-shared-pages-pss-example -->
+![共享者退出，剩余进程的 PSS 可以上升而没有泄漏](../../assets/diagrams/ch04/ch04-01-shared-pages-pss-example.png)
+
+图：假设 A、B、C 各自映射一次同一 12 MiB 驻留共享区，每进程 RSS 各计 12 MiB，PSS 各分 4 MiB。B、C 退出后，A 映射的页面和对象不增加，PSS 却可变成 12 MiB。比较泄漏还需看私有页、保留对象和稳定业务状态。
+
 #### USS 与进程退出后的内存释放
 
 用 USS 预测“终止进程后能释放多少”之前，先把几类页的出路分开：私有干净页可直接丢弃，私有脏页需要回收或释放；共享页在进程退出后会重新分摊；文件描述符关联的内核对象、图形缓冲区和服务端引用也有各自生命周期。所以 USS 适合描述私有驻留规模，要精确预测进程退出后的 `MemAvailable` 增量，还得回到这些页各自的去向。
@@ -321,7 +331,7 @@ adb shell 'cat /proc/meminfo | grep -E "^(MemTotal|MemFree|MemAvailable|Buffers|
 
 `Cached` 包含普通文件页缓存，也包含 tmpfs 与共享内存（shmem）；`Shmem` 与它有重叠，两项直接相加会把 tmpfs 部分算两遍。`Cached` 大只说明页缓存多：丢弃后从磁盘重读只适用于普通文件页，tmpfs/shmem 的部分要等 Swap 可用才能释放。 [已验证: android17-6.18-2026-06_r6 `Documentation/filesystems/proc.rst` 的 `Cached`、`Shmem`；`Documentation/filesystems/tmpfs.rst`]
 
-`SwapFree` 下降说明逻辑交换空间在消耗；`SwapCached` 统计已经换入（swap-in）、同时仍在交换空间保留副本的页面；它是交换空间视角的读数，ZRAM 设备的实际占用要按后文 ZRAM 一节的统计另行核对。
+`SwapFree` 下降说明逻辑交换空间在消耗；`SwapCached` 统计已经换入（swap-in）、同时仍在交换空间保留副本的页面；这些页当前驻留在 RAM，同时仍占用 Swap 槽位；该值不能当作 ZRAM 压缩对象内存池的 RAM 成本，后者要按后文 ZRAM 统计另行核对。
 
 #### `/proc/<pid>/status`：低成本进程概览
 
@@ -381,7 +391,7 @@ adb shell getconf PAGE_SIZE
 
 ZIP 条目的数据起点是 `data_start = header_offset + 30 + name_len + extra_len`，其中两个长度要从本地文件头读取；`header_offset` 本身不是 DEX 起点。按页文件区间与条目数据区间求交集，才能把跨条目的页分开统计。直接把交集解释为 DEX 内部字节，还要求该条目采用 `ZIP_STORED`，且映射内容与所采集 APK 一致；Deflate 压缩、运行时解密或另一个文件中的 DEX，需要单独处理。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §2.1、§5.2、§5.4]
 
-1. 在测试前后保留同一 PID（PID）、同一构建的 `smaps` 与目标 VMA 的 `pagemap`，记录时间和业务阶段。比较前核对文件身份、地址范围、权限与映射偏移；VMA 已变化时应单独分析，直接对旧虚拟地址集合做差会出错。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §1、§3.1、§5.5] [已验证: 本章“为什么 PSS 会在代码不变时波动”与“先确认命令和采样条件”]
+1. 在测试前后保留同一 PID、同一构建的 `smaps` 与目标 VMA 的 `pagemap`，记录时间和业务阶段。比较前核对文件身份、地址范围、权限与映射偏移；VMA 已变化时应单独分析，直接对旧虚拟地址集合做差会出错。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §1、§3.1、§5.5] [已验证: 本章“为什么 PSS 会在代码不变时波动”与“先确认命令和采样条件”]
 2. 对稳定 VMA 按基础页读取 `present`，分别记录 `pages_t1 - pages_t0` 的新增驻留页与反向差集的离开驻留页。新增页数量只描述进入量；比较净 RSS 变化时还要扣除离开量，并注意 `smaps` 与 `pagemap` 不是同一时刻的原子快照。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §5.5、§6.2] [已验证: android17-6.18-2026-06_r6 `fs/proc/task_mmu.c` 的 `show_smap()` 与 `pagemap_read()` 独立读取路径]
 3. 把新增页换算成文件区间，先汇总各 ZIP 条目的交集字节。ZIP 头、填充、未支持的压缩条目以及解析失败范围保留为未归因字节，避免只归一化已识别内容而隐藏遗漏。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §5.2、§5.4、§5.5]
 4. 对 DEX 条目，先校验格式版本和边界，再解析 `map_list` 与具体项。`method_ids` 是方法标识符表；回到方法字节码要沿 `class_data_item` 中的 `encoded_method.code_off` 找 `code_item`。变长项必须完整解码，几个定长表的偏移代表不了全部类、方法或字符串。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §5.3] [已验证: AOSP DEX 格式文档 `method_id_item`、`class_data_item`、`encoded_method`、`code_item`]
@@ -389,6 +399,11 @@ ZIP 条目的数据起点是 `data_start = header_offset + 30 + name_len + extra
 页内的字节占比只能说明驻留页里包含什么。一页同时覆盖方法字节码和字符串时，字符串占比高只说明它在这页里，缺页是否由它触发，还要靠别的证据；`present` 同样只表示驻留，访问频率要另找信号。soft-dirty 只记录写入及映射更新，只读 APK 的访问它跟踪不全。要追触发路径，我们把驻留分布与 perf/simpleperf 调用栈采样、ART 分析或业务时间线放到一起看。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §5.4、§6.2、§6.4] [已验证: android17-6.18-2026-06_r6 `Documentation/admin-guide/mm/soft-dirty.rst`]
 
 单进程的 `present` 集合只覆盖驻留页，共享页的 PSS 仍要靠 `smaps` 实测。材料把 VMA 的 PSS 增量按已归因字节占比分摊，这依赖页间共享比例相近等假设；共享者变化、离开驻留页和未归因内容都会影响结果。报告应并列保留 `smaps` 实测的 RSS/PSS 差值、进入与离开页数、条目分布和未归因字节，把比例分摊值标为估算；没有归因字节时如实写未归因，避免输出伪精确的零 PSS。 [来源: 技术文章/source/juejin-android/2026-10-14-76956227-APK_mmap_内存增长定位：page.md §5.5、§6.2] [已验证: 本章“为什么 PSS 会在代码不变时波动”]
+
+<!-- gracker-diagram: ch04-01-apk-page-file-attribution -->
+![从驻留页到 APK 条目：先算文件区间，再解析 DEX](../../assets/diagrams/ch04/ch04-01-apk-page-file-attribution.png)
+
+图：同 PID / 构建下先核对 VMA 与文件身份，再比较 pagemap present 集合的进入与离开。把页地址换算为 APK 文件区间，与 ZIP 条目数据区间求交；只有未压缩且文件匹配的 DEX，才继续解析内部结构。字节覆盖比例不能直接证明触发缺页的函数，也不能代替实测 PSS。
 
 ### `dumpsys meminfo` 应该怎样读
 
@@ -417,6 +432,11 @@ adb shell dumpsys meminfo com.example.app
 - `TOTAL SWAP PSS` / `TOTAL SWAP`：前者展示比例化 Swap，内核不提供该统计时回退展示后者的未分摊 Swap 总量。
 
 App Summary 的 `TOTAL PSS` 与 `/proc/<pid>/smaps_rollup` 的驻留 `Pss` 口径不同。比较两者前，应先分清 SwapPss、映射分类和 memtrack 数据；计算驻留加交换的总量时，这里的 `TOTAL PSS` 已包含比例化 Swap，直接用它即可，再加 `TOTAL SWAP PSS` 会重复计算。`System` 也是计算余量，内核替该应用分配的全部内存要看别的字段。 [已验证: AOSP android-17.0.0_r1 `Debug.MemoryInfo.getTotalPss()`、`getSummarySystem()`、`getSummaryTotalSwapPss()`]
+
+<!-- gracker-diagram: ch04-01-proc-pss-versus-debug-total -->
+![smaps 驻留 PSS 与 dumpsys TOTAL PSS 要先统一口径](../../assets/diagrams/ch04/ch04-01-proc-pss-versus-debug-total.png)
+
+图：procfs 的 Pss 是驻留映射比例归因，SwapPss 列出相应比例化换出量。Android17 Debug.MemoryInfo.getTotalPss 把 Dalvik、Native、Other PSS 与总 SwapPss 相加；展示时还要核对 memtrack 与分类来源。该 TOTAL PSS 再加 TOTAL SWAP PSS 会重复计入交换部分。
 
 #### 详细表格用于解释“增长来自哪里”
 
@@ -502,6 +522,11 @@ adb shell cat /proc/pressure/memory
 
 `memory.stat` 的 `file` 已经包含 `shmem`，把 `anon + file + shmem` 相加会把 shmem 算两遍；内核内存等其他占用也另有去处，这一求和只能当分类参考，用量以 `memory.current` 节点原值为准。共享页按 cgroup 所有权记账，各进程之间不做 PSS 那种比例分摊。父级节点的读数已汇总其子组用量，直接读即可；只想定位当前层级的事件，则读 `memory.events.local`。 [已验证: android17-6.18-2026-06_r6 `Documentation/admin-guide/cgroup-v2.rst` 的 `Memory Interface Files` 与 `Memory Ownership`]
 
+<!-- gracker-diagram: ch04-01-cgroup-controls-and-accounting -->
+![cgroup 的回收、硬上限与 Swap 限制各管一层](../../assets/diagrams/ch04/ch04-01-cgroup-controls-and-accounting.png)
+
+图：memory.high 越界会让相关分配进入回收与节流，本身不直接调用 OOM killer；memory.max 是回收仍不能满足时可能触发组内 OOM 的硬上限；memory.swap.max 限制继续换出匿名页。memory.current 已包含后代，共享页按所有权计账，file 内又包含 shmem，不能重复相加或按进程 PSS 解释。
+
 Android 通过 `libprocessgroup` 与 task profile 管理进程所在的 cgroup。设备可以采用不同控制器和层级配置；定位时读取该构建的 `cgroups.json`、`task_profiles.json` 以及运行设备的 cgroup 文件系统，比凭版本号推断路径可靠。
 
 #### Android 17 MemoryLimiter：只在部分设备生效
@@ -533,13 +558,18 @@ adb shell am memory-limiter manual 12345 10
 adb shell am memory-limiter manual 12345 none
 ```
 
-`ignore` 在 r1 接受 UID、`none` 或 `all`，其中 `ignore none` 清除忽略设置。`manual` 接受 PID 和一个整数（或 `none`）或 `none`，Java 层把整数按 MiB 转换，帮助文本仍写成 `PERCENT|none`。但 `manual ... none` 在这份实现中先变为 `-1`，再被乘成 `-1048576`，JNI 对这种值跳过节点写入，因此想撤销已写入的手动限制，靠它靠不住；测试后应重启目标进程，并重新读取该进程的 cgroup 节点确认。 [已验证: AOSP android-17.0.0_r1 `ActivityManagerShellCommand.runMemoryLimiter()`、`MemoryLimiter.setManualLimit()`、JNI `Process::setLimit()`]
+`ignore` 在 r1 接受 UID、`none` 或 `all`，其中 `ignore none` 清除忽略设置。`manual` 接受 PID 和一个整数或 `none`，Java 层把整数按 MiB 转换，帮助文本仍写成 `PERCENT|none`。但 `manual ... none` 在这份实现中先变为 `-1`，再被乘成 `-1048576`，JNI 对这种值跳过节点写入，因此想撤销已写入的手动限制，靠它靠不住；测试后应重启目标进程，并重新读取该进程的 cgroup 节点确认。 [已验证: AOSP android-17.0.0_r1 `ActivityManagerShellCommand.runMemoryLimiter()`、`MemoryLimiter.setManualLimit()`、JNI `Process::setLimit()`]
 
 公开二手材料可能把命令写成 `<limit>|max|none`，当前官方文档也给出字节数及 `MB`/`GB` 后缀写法；r1 的 shell 解析不接受 `max` 或这些后缀。使用前核对目标构建源码和运行结果，`am help` 里 r1 的单位与复位说明，单独当不了依据。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android Memory Limiter 官方文档；AOSP android-17.0.0_r1 `ActivityManagerShellCommand.java` 与 `MemoryLimiter.java`]
 
 排查时先看 `status` 输出里的 `enabled`、`limits`、`monitoring`、`killing` 和 `ignored`，区分服务存在、限制生效、事件监控与终止开关。`visibleMem`、`visibleSwap`、`notVisibleMem`、`notVisibleSwap` 展示的是可见/不可见档位的配置模板，不保证等于某个 PID 当前节点中的值：手动配置、cached 状态和 JNI 的水位余量调整都可能让两者不同。应结合 PID 的进程状态、事件计数和实际 cgroup 节点读取；公开示例里的 14 GiB / 8192 MiB / 4096 MiB 也外推不成 Android 17 固定阈值。 [来源: 技术文章/source/juejin-android/2026-10-09-76535333-解读Android17全新内存限制有没有豁免后门.md] [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` `initializeMemoryLimits()`、`dump()` 与 JNI `Process::setLimit()`]
 
 MemoryLimiter 与 lmkd 的决策依据也不同。MemoryLimiter 约束单个受监控进程的匿名页、共享内存与交换空间；lmkd 在系统压力下结合进程重要性等信息选择终止目标。复盘进程消失时，应先读取 `ApplicationExitInfo`、系统日志和 PSI，再确定是哪条路径。 [已验证: AOSP android-17.0.0_r1 MemoryLimiter 源码；本章“MemAvailable 与 PSI 描述不同维度”段落]
+
+<!-- gracker-diagram: ch04-01-memory-limiter-anon-swap -->
+![MemoryLimiter 比较匿名 + shmem + Swap 联合上限](../../assets/diagrams/ch04/ch04-01-memory-limiter-anon-swap.png)
+
+图：r1 只有设备配置匹配、服务功能开启且进程符合监控条件时才生效。Java 按进程状态选择档位，JNI 配置 cgroup memory.high / swap.max，并读取 anon、shmem、swap.current；联合量超过 memHigh + swapMax 后解除限制，按相关开关触发 profiling 与延迟终止。它不等同于 ART 托管堆上限，也不要求系统已经整体低内存。
 
 #### PMGD 与 MemoryLimiter 的差别
 
@@ -548,6 +578,11 @@ Android 17 官方文档还描述了进程内存守护进程 PMGD（Process Memor
 PMGD 使用 `inotify` 监听 cgroup v2 的 `memory.events`。命中后，它先检查匿名内存；如果超过 `anon_limit_in_mb` 会立即终止目标进程。如果匿名内存未超过硬上限，PMGD 会等待 `reclaim_wait_time_secs`，再检查 `memory.current` 是否仍大于等于 `memory.high`，或匿名内存是否超过硬上限；仍超限时终止进程，并记录 Statsd memory atoms。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android PMGD 官方文档 `https://source.android.com/docs/core/perf/pmgd`]
 
 PMGD 官方文档还规定，每个目标进程在一次设备重启周期内最多被 PMGD 终止一次，历史记录在 `/data/misc/pmgd/history.json`。重复实验时要核对这项限流；SELinux 未允许访问目标进程的域时，PMGD 监控不了，logcat 可能出现拒绝记录。 [已验证: Android PMGD 官方文档 `System health features`、`SELinux configuration`]
+
+<!-- gracker-diagram: ch04-01-pmgd-two-checks -->
+![PMGD：事件后先查匿名量，再决定是否等待回收](../../assets/diagrams/ch04/ch04-01-pmgd-two-checks.png)
+
+图：设备用配置点名进程并设置 cgroup high 与匿名量阈值。memory.events 通知后，匿名量已超硬上限则立即终止；否则等待配置时间再复查 current ≥ high 或匿名量超限。每个目标每次开机最多由 PMGD 终止一次，复现实验还需核对历史记录与 SELinux。
 
 系统或厂商进程因内存被终止时，应同时确认 PMGD 配置与历史记录、SELinux 策略、`memory.events`/`memory.current`、`ApplicationExitInfo`、lmkd 日志与 PSI 时间线，再判断是否属于普通应用的 MemoryLimiter 路径。 [已验证: Android PMGD 官方文档；本章“MemAvailable 与 PSI 描述不同维度”段落]
 
@@ -633,6 +668,11 @@ adb shell cat /sys/block/zram0/bd_stat
 
 判断系统是否陷入内存抖动，还要观察 PSI、换入换出、回收扫描、CPU 压缩开销和前台延迟。单次 `SwapTotal - SwapFree` 或一个容量比都不足以支持这一结论。
 
+<!-- gracker-diagram: ch04-01-zram-logical-pool-and-backing -->
+![ZRAM 逻辑占用、对象池 RAM 与后备存储要分开](../../assets/diagrams/ch04/ch04-01-zram-logical-pool-and-backing.png)
+
+图：orig_data_size 按逻辑页大小累计；当前对象池数据用 compr_data_size 表示，池实际 RAM 用 mem_used_total 表示且不含全部驱动元数据。同值页可只存填充值，难压缩页可按原大小存放，可选回写又把对象移到 backing device；这些都会改变容量比。bd_stat 固定以 4 KiB 计数，不能改乘 16 KiB 基础页。
+
 ### 用 Perfetto 把“数值”变成“时间线”
 
 #### 进程与系统统计来自不同数据源
@@ -710,7 +750,7 @@ data_sources {
 
 ### MTE 与内存数据的比较条件
 
-Arm MTE（Memory Tagging Extension，内存标签扩展（Memory Tagging Extension，MTE））通过分配标签和指针标签检测 use-after-free、缓冲区溢出（buffer overflow）等错误。Android 应用可按设备能力与配置使用同步或异步模式。MTE 的成本来自标签存储、分配器与检查，具体多少取决于硬件、模式、分配模式和工作负载；AOSP 文档没有给出适用于所有设备的固定 RAM 百分比，我们自己测量时要把这些变量记录下来。
+Arm MTE（Memory Tagging Extension，内存标签扩展）通过分配标签和指针标签检测 use-after-free、缓冲区溢出（buffer overflow）等错误。Android 应用可按设备能力与配置使用同步或异步模式。MTE 的成本来自标签存储、分配器与检查，具体多少取决于硬件、模式、分配模式和工作负载；AOSP 文档没有给出适用于所有设备的固定 RAM 百分比，我们自己测量时要把这些变量记录下来。
 
 比较两个版本的内存数据时，我们把这几项记下来：
 
@@ -827,6 +867,11 @@ flowchart LR
 
 分配走哪条分支由上下文决定：GFP 分配标志、表示连续页数量级的 order、可用 zone、memcg，以及是否允许阻塞和 I/O。所以只凭 `MemFree`，我们推断不出一次分配会走到哪里。
 
+<!-- gracker-diagram: ch04-01-allocation-fast-and-slow -->
+![一次 malloc 不必进内核，页分配慢路径也没有固定顺序](../../assets/diagrams/ch04/ch04-01-allocation-fast-and-slow.png)
+
+图：用户分配器先可复用已有块，补充映射或首次访问才可能需要内核工作。页分配按 node、zone、order、水位与 GFP 约束尝试快速路径；失败后按条件唤醒 kswapd、直接回收或规整并重试。高阶请求可能先规整，回收和规整也可能重复；最终可成功、失败或进入允许的 OOM 路径。
+
 ### 虚拟地址怎样变成物理访问
 
 #### 页表层级由架构配置决定
@@ -854,6 +899,11 @@ ARM64 设备的页表层级要看配置：页大小、`VA_BITS` 和架构能力�
 - 权限或无效地址：修复不了时向进程发送 `SIGSEGV`、`SIGBUS` 等信号。
 
 Linux 统计把缺页分成两种：次要缺页（minor fault）通常不需要等待存储 I/O，例如零页、COW 或命中页缓存；主要缺页（major fault）表示处理被标记为 `VM_FAULT_MAJOR`，常见于需要等待文件或交换数据的情况。两者都可能发生在正常执行中，我们把数量放回延迟和场景里解释，才算读懂。
+
+<!-- gracker-diagram: ch04-01-tlb-walk-and-page-fault -->
+![TLB 未命中仍可能正常翻译，缺页要看页表与权限](../../assets/diagrams/ch04/ch04-01-tlb-walk-and-page-fault.png)
+
+图：TLB 命中且权限满足即可完成翻译；未命中先遍历页表，页表有效时仍可直接访问。页表或权限无法满足时才进入异常处理：合法访问可能补匿名页、建立文件页映射、处理 COW 或换入；无法修复的地址或权限错误则发信号。COW 并非每次都复制，独占匿名页有条件可复用。
 
 #### 缺页的观察入口
 
@@ -903,7 +953,7 @@ adb shell 'pid=$(pidof com.example.app); cat /proc/$pid/stat'
 
 #### SLUB 服务小型内核对象
 
-伙伴系统按页分配内存，SLUB 在这些页面上组织对象缓存，再复用相同布局的对象。`task_struct`、`dentry` 等内核对象使用各自的专用 slab 缓存，通用小块请求走 `kmalloc` 缓存；两类入口要分开看，对象大小也不保证小于一个基础页。folio（内核把一个或多个页面作为整体管理的结构） 表示内核作为整体管理的一个或多个页面；slab 可以占用一个或多个页面。 [已验证: android17-6.18-2026-06_r6 `kernel/fork.c` `alloc_task_struct_node()`、`fs/dcache.c` `__d_alloc()`；`mm/slub.c` `kmalloc_slab()`]
+伙伴系统按页分配内存，SLUB 在这些页面上组织对象缓存，再复用相同布局的对象。`task_struct`、`dentry` 等内核对象使用各自的专用 slab 缓存，通用小块请求走 `kmalloc` 缓存；两类入口要分开看，对象大小也不保证小于一个基础页。folio 表示内核作为整体管理的一个或多个页面；slab 可以占用一个或多个页面。 [已验证: android17-6.18-2026-06_r6 `kernel/fork.c` `alloc_task_struct_node()`、`fs/dcache.c` `__d_alloc()`；`mm/slub.c` `kmalloc_slab()`]
 
 Linux 6.18 的内核配置文件 `mm/Kconfig` 将 `CONFIG_SLUB` 定义为默认启用；旧的 SLAB、SLOB 是历史背景，Android 17 里并列运行三种实现的说法不成立。arm64 GKI 还启用了空闲链表随机化与安全加固，并默认关闭 slab 缓存合并。
 
@@ -932,6 +982,11 @@ adb shell cat /proc/slabinfo
 匿名页装的是堆、栈和匿名映射的数据，背后没有可重新读取的普通文件；内核只有在存在可用交换空间或内存分层目标时，才能在保留内容的前提下回收它的物理页。Android 常用 ZRAM 充当这个交换空间，厂商也可以配置 ZRAM 回写；没有可用交换空间时，匿名页能腾挪的余地就小得多。
 
 tmpfs/shmem 虽然计入 `Cached` 和 cgroup `memory.stat` 的 `file`，保留内容时却不能像磁盘文件的干净页那样丢弃后重读。它们可以使用 Swap 释放驻留页，但要有可用交换空间且相关配置允许；tmpfs 挂载为 `noswap` 时不能走这条路径。判断缓存能否回收，应先核对页面后备类型，再看 `Shmem`、对应映射和 cgroup 的 Swap 用量。 [已验证: android17-6.18-2026-06_r6 `Documentation/filesystems/tmpfs.rst` 的 Swap 与 `noswap` 说明；`Documentation/filesystems/proc.rst`；`Documentation/admin-guide/cgroup-v2.rst`]
+
+<!-- gracker-diagram: ch04-01-reclaim-by-backing -->
+![页面能否丢弃，先看数据能从哪里恢复](../../assets/diagrams/ch04/ch04-01-reclaim-by-backing.png)
+
+图：普通文件的干净页可丢弃后重读；需要保留内容的脏文件页先写回或交给文件系统处理。匿名页没有普通文件后备，保留内容时通常依赖可用 Swap，或迁移到其他内存层。tmpfs/shmem 虽计入 Cached/file，也不能按干净磁盘文件直接丢弃；可换出性仍受配置和 noswap 限制。
 
 回收的目标是腾出可分配页，同时尽量保留近期工作集。代价可能来自：
 
@@ -994,11 +1049,21 @@ adb shell cat /sys/kernel/mm/lru_gen/enabled
 
 普通 LRU 与 MGLRU 都在 LRU 列表容器 `lruvec` 的 `lru_lock` 下完成部分列表操作，并把开销较高的 `shrink_folio_list()` 放到锁外；r6 的 `shrink_inactive_list()` 和 `evict_folios()` 都能看到这种结构。所以“普通 LRU 全程持锁、MGLRU 把持锁复杂度从 O(n) 做到 O(1)”这组对比不成立，评价 MGLRU 还是看代际老化、页表扫描、页面再次访问反馈和具体设备指标。
 
+<!-- gracker-diagram: ch04-01-mglru-aging-eviction-feedback -->
+![MGLRU 用访问代际挑候选，再用 refault 反馈调整选择](../../assets/diagrams/ch04/ch04-01-mglru-aging-eviction-feedback.png)
+
+图：老化阶段依据页表访问状态等推进代际，驱逐从较老代际挑选候选；页面后来再次访问形成 refault 反馈，帮助调整匿名页与文件页的保护和回收选择。代际只是热度估计，实际回收仍受页类型、Swap、保护与权限限制，收益要用扫描效率、PSI、缺页和前台延迟验证。
+
 ### 内存规整与物理碎片
 
 #### 内存规整与连续空闲块
 
 回收腾出的是零散页，规整要的是连续块：内存规整（memory compaction）从一端扫描可迁移页，从另一端找空闲页，把内容迁移过去，腾出更大的连续空闲范围。它做的是搬页，数据压缩是 ZRAM 那条路上的事。
+
+<!-- gracker-diagram: ch04-01-compaction-page-relocation -->
+![规整搬动可迁移页，形成满足 order 的连续空闲块](../../assets/diagrams/ch04/ch04-01-compaction-page-relocation.png)
+
+图：示意区间中，迁移前后都只有 4 个空闲基础页。把可迁移的 B、D 移到右侧空闲位置后，左半段才形成对齐的连续 4 页，可作为 order-2 候选。规整没有压缩页面，也没有增加总空闲页；真实请求还受 zone、水位、不可移动页与 CMA 条件限制。
 
 高阶页分配在伙伴系统快速路径失败时，可能进入：
 
@@ -1048,6 +1113,11 @@ flowchart LR
 ```
 
 传递 fd 时，各方共享的是同一个 dma-buf 对象，整块像素数据不用复制。至于各进程是否建立了 CPU `mmap`、设备怎样映射、哪一方还持着引用，要分别核对。
+
+<!-- gracker-diagram: ch04-01-dmabuf-export-import-reference -->
+![DMA-BUF：共享同一个对象，设备映射和 CPU 映射各有条件](../../assets/diagrams/ch04/ch04-01-dmabuf-export-import-reference.png)
+
+图：用户从指定 dma_heap 请求分配，导出方封装 dma_buf 并返回 fd；fd 传递使多个进程引用同一个对象。设备 importer 建立 attachment 与适合该设备的 DMA / IOMMU 映射，CPU mmap 则是另一个可选入口。引用大小不等于进程独占 RAM，同一 inode 跨持有者直接求和会重复计算。
 
 #### ION 到 DMA-BUF Heaps 的版本边界
 
@@ -1112,6 +1182,11 @@ adb shell 'base=/sys/kernel/mm/transparent_hugepage; for p in "$base"/enabled "$
 ```
 
 方括号标出当前策略，`hpage_pmd_size` 给出 PMD 大页的字节数。逐尺寸节点中的 `inherit` 要结合顶层 `enabled` 解释；节点不可读或不存在时，需继续核对内核配置和设备权限，不能当作已关闭 THP 的证据。 [已验证: android17-6.18-2026-06_r6 `Documentation/admin-guide/mm/transhuge.rst`；`mm/huge_memory.c` `enabled_show()`、`anon_enabled_show()`]
+
+<!-- gracker-diagram: ch04-01-base-pages-versus-thp-policy -->
+![基础页大小与 THP 策略是两个需要分别确认的维度](../../assets/diagrams/ch04/ch04-01-base-pages-versus-thp-policy.png)
+
+图：基础页大小由目标内核决定，直接影响 PAGE_SIZE、order 字节数、对齐与碎片。THP 是在该基础上使用更大粒度：mTHP 可仍由 PTE 映射，PMD THP 则取决于页表几何。运行时逐尺寸 enabled、顶层继承、defrag、进程和 VMA 限制共同影响自动路径；MADV_COLLAPSE 是另查的显式折叠入口。
 
 ### KASAN、MTE 与版本测量
 

@@ -106,6 +106,11 @@ Managed caller
 
 这里的“托管代码”指由 ART 管理内存和线程状态的 Java/Kotlin 代码，“原生代码”指 C/C++。我们要区分的是 JNI 边界本身的成本与原生函数内部的成本，选错优化位置，后面的功夫就都花偏了。
 
+<!-- gracker-diagram: ch01-06-jni-cost-boundaries -->
+![普通 JNI 调用的成本与进程边界](../../assets/diagrams/ch01/ch01-06-jni-cost-boundaries.png)
+
+图：普通 JNI 调用在同一个进程内完成。线程状态转换、引用与参数处理属于 JNI 成本；原生函数中的计算、锁、I/O 或后续 Binder 调用需要另行归因。FastNative/CriticalNative 使用不同约束与入口。
+
 Native 性能问题通常跨过 Java/Native 调用边界、动态链接器和 libc 实现。JNI 决定参数转换与线程附着成本，Bionic 决定常用系统接口、分配器和同步原语在 Android 上的具体行为。
 
 ## JNI 边界与 Native 调用成本
@@ -124,7 +129,7 @@ Native 性能问题通常跨过 Java/Native 调用边界、动态链接器和 li
 
 所以一次 JNI 调用没有固定的执行路径，方法属性、参数类型、编译状态和运行时挂起请求都会让它走上不同分支。
 
-`@FastNative` 与 `@CriticalNative` 让线程保持 `Runnable` 状态，省去普通 JNI 状态切换，但也推迟了线程响应垃圾回收暂停请求（GC suspend）的机会。`@CriticalNative` 进一步去掉 `JNIEnv*`、`jclass` 和对象参数能力。它们只适合调用链末端那些极短、无锁、无 I/O 的叶子函数，也就是不会再调用其他函数的末端实现。长计算即使平均耗时更短，也可能延长 GC 在 P95/P99 等尾部样本中的暂停时间。
+`@FastNative` 与 `@CriticalNative` 让线程保持 `Runnable` 状态，省去普通 JNI 状态切换，但也推迟了线程响应垃圾回收暂停请求（GC suspend）的机会。`@CriticalNative` 进一步去掉 `JNIEnv*`、`jclass` 和对象参数能力。它们只适合执行时间短、最坏耗时有明确上限的原生方法，应避开显著 I/O 和可能长时间持有的锁；调用受控的辅助函数本身并非禁用条件。长计算即使平均耗时更短，也可能延长 GC 在 P95/P99 等尾部样本中的暂停时间。
 
 官方 `@CriticalNative` 文档保留了一组 2016 年 7 月、`angler-userdebug` 上的参考数据：
 
@@ -363,6 +368,11 @@ JNI 规范只要求虚拟机保证至少 16 个本地引用槽位。Android 8 �
 
 用于在 C++ 作用域结束时自动清理资源的 RAII 对象，其生命周期必须覆盖整个操作系统线程，只覆盖线程池中的单个任务是不够的；`JNIEnv*` 则任何时候都不要跨线程保存。
 
+<!-- gracker-diagram: ch01-06-native-thread-attachment -->
+![原生线程的 JNI 附着与所有权](../../assets/diagrams/ch01/ch01-06-native-thread-attachment.png)
+
+图：每条操作系统线程查询自己的 JNIEnv。只有当前组件首次附着的线程，才由该组件在线程结束前分离；已附着线程的环境只借用。附着失败时不能继续调用 JNI。
+
 原生线程本身也有成本。bionic 的 `pthread_create()` 要建立线程栈、栈保护页（guard）和线程本地存储（TLS）映射，再通过 `clone` 创建内核任务；首次访问栈页还会触发缺页。默认栈预留的虚拟地址空间，和实际占用的驻留物理内存（RSS）是两回事，但高频创建线程仍会叠加内存映射、TLS、调度实体、ART 附着和缓存预热成本。我们应按真实栈深度测量所需的栈大小并复用线程，这通常比为每个数据块创建一个 pthread 更可靠。
 
 ### 6. 引用、异常与所有权
@@ -386,7 +396,7 @@ JNI 规范只要求虚拟机保证至少 16 个本地引用槽位。Android 8 �
 ```cpp
 jclass clazz = env->FindClass("com/example/Decoder");
 if (clazz == nullptr) {
-    // 此时通常已有待处理的 ClassNotFoundException。
+    // 此时已有待处理的 Java 异常，不应继续按成功路径使用 clazz。
     return;
 }
 
@@ -688,6 +698,11 @@ NDK / Framework JNI / native system service
 
 所以我们在 `malloc` 火焰图里看到 `libc.so`，还不足以认定问题出在 Bionic；在 `pthread_mutex_lock` 调用栈里看到 futex，同样说明不了每次加锁都进入内核。
 
+<!-- gracker-diagram: ch01-06-bionic-dispatch -->
+![Bionic API、用户态路径与实际分配器](../../assets/diagrams/ch01/ch01-06-bionic-dispatch.png)
+
+图：Bionic 包含用户态实现和系统调用封装；malloc 经当前 dispatch 进入分配器。常规产品使用 Scudo，低内存构建配置可选择 jemalloc；诊断工具还可能安装拦截层。
+
 ### 2. malloc：Bionic 负责入口和分派，Scudo 负责分配
 
 #### 2.1 malloc dispatch 与默认分配器
@@ -813,6 +828,11 @@ Android 的 `top-app` 属于 task profile（系统为一组线程应用的资源
 - `2`：已锁、存在竞争。
 
 无竞争的 `pthread_mutex_lock` 通过原子比较并交换（compare-and-exchange）把状态从 `0` 改为 `1`，不进入内核。竞争路径把状态改为 `2`，然后通过 futex（Linux 用户空间锁的内核等待/唤醒机制）等待；解锁发现旧状态为 `2` 时，再用 futex 唤醒一个等待者。源码中没有能够证明“Android 17 新增乐观自旋（optimistic spinning）”的分支。
+
+<!-- gracker-diagram: ch01-06-mutex-fast-contended -->
+![普通非 PI mutex 的用户态快路径与 futex 等待](../../assets/diagrams/ch01/ch01-06-mutex-fast-contended.png)
+
+图：无竞争时原子操作即可取得锁。竞争路径把状态设为 2，旧状态为 0 时仍可直接取得锁，否则尝试 futex wait；wait 可能因状态变化直接返回。解锁根据旧状态决定是否唤醒等待者。
 
 进程间共享的 mutex 会选择共享 futex 操作，进程内私有 mutex 可以使用开销更低的 private futex。recursive 和 errorcheck 类型还要记录持有者（owner）与递归计数。我们分析高频锁路径时，先确认锁类型、是否跨进程、竞争比例和临界区长度，再讨论是否替换同步原语。
 

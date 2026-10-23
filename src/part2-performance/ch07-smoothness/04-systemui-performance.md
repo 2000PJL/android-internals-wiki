@@ -19,8 +19,8 @@ related_chapters:
 - '7.2'
 - '14.2'
 confidence: medium-high
-last_verified: '2026-08-19'
-last_verified_against: 'AOSP android-17.0.0_r1 SystemUI/WM Shell/Launcher3 anchors: systemui.aconfig; super_notification_shade.xml / scene_window_root.xml; ShadeViewProviderModule / ShadeWindowLayoutParams / NotificationShadeWindowView; SceneContainerFlag / SceneContainerFrameworkModule / SceneWindowRootViewBinder; NotificationStackScrollLayout / NotificationRowContentBinderImpl / BigPictureIconManager / notification icon binder; StatusBarWindowControllerImpl / NavigationBar / NavigationBarView / DisplayBackGestureHandler / EdgeBackGestureHandler / SysUIConcurrencyModule / DisplayContent; Transitions / StartingWindowController / RecentsView; Android notification, SplashScreen and aconfig official docs checked 2026-08-19.'
+last_verified: '2026-10-23'
+last_verified_against: 'AOSP android-17.0.0_r1 SystemUI/WM Shell/Launcher3 anchors: systemui.aconfig; super_notification_shade.xml / scene_window_root.xml; ShadeViewProviderModule / ShadeWindowLayoutParams / NotificationShadeWindowView; SceneContainerFlag / SceneContainerFrameworkModule / SceneWindowRootViewBinder; NotificationStackScrollLayout / NotificationRowContentBinderImpl / BigPictureIconManager / notification icon binder; StatusBarWindowControllerImpl / NavigationBar / NavigationBarView / DisplayBackGestureHandler / EdgeBackGestureHandler / SysUIConcurrencyModule / DisplayContent; Transitions / StartingWindowController / RecentsView; Android notification, SplashScreen and aconfig official docs checked 2026-08-19. Additional diagram/source audit rechecked 2026-10-23: RemoteViews/AsyncTask/SceneTransitionLatencyMonitor and SQL wall-clock boundaries.'
 last_rework_at: '2026-08-19T13:51:21+08:00'
 sources:
 - type: aosp
@@ -114,17 +114,22 @@ adb shell dumpsys window windows | grep -E 'NotificationShade|StatusBar|Navigati
 
 这组输出要与 Perfetto trace（系统跟踪） 一起存档。`aflags list` 只给出 flag 值，窗口列表和线程列表才能证明对应实现真的建出来了。量产设备还可能隐藏部分调试信息，这时要借助 userdebug（可调试系统构建）或厂商内部符号补齐材料。
 
+<!-- gracker-diagram: ch07-04-configuration-evidence -->
+![SystemUI 路径选择的证据链](../../assets/diagrams/ch07/ch07-04-configuration-evidence.png)
+
+图：tag、flag、窗口与线程列表提供不同层级的证据；仅知道 Android 版本或 flag 值，仍不足以认定目标实现已经运行。
+
 ### 组件边界
 
 | 画面或工作 | Android 17 的主要实现 | 分析时要确认的窗口或线程 |
 | --- | --- | --- |
-| 状态栏窗口 | `StatusBarWindowControllerImpl`、状态栏 View/Compose root（根节点）、通知与系统图标绑定 | `StatusBar` 或 `StatusBar(displayId=N)` 窗口；主线程或专用 UI 线程 |
-| 通知抽屉与锁屏主窗口 | legacy `NotificationShadeWindowView`，或 `SceneWindowRootView` 承载的 View/Compose 混合树 | `NotificationShade` 窗口；主线程或专用 UI 线程 |
-| 通知列表 | `SharedNotificationContainer` 与 `NotificationStackScrollLayout`（简称 NSSL，通知列表容器） | Scene 与 legacy 两条路径都可能出现 NSSL |
-| 三按钮导航 | `NavigationBar`、`NavigationBarView` | `NavigationBarN` 窗口及其 ViewRoot |
-| 边缘返回 | `EdgeBackGestureHandler`、`DisplayBackGestureHandlerImpl`、Back Panel（返回手势箭头面板） | `edge-swipe` input monitor（输入监听器）；`BackPanelUiThread` 或主线程 |
-| Overview / Recents | Launcher3 Quickstep 的 `RecentsView` 等组件 | 设备当前 Launcher 进程，包名不必然是 `com.android.launcher3` |
-| 窗口转场与起始窗口 | WM Shell `Transitions`、`StartingWindowController` | Shell main/animation/splashscreen executor（主逻辑/动画/启动画面执行器）所在线程及宿主进程 |
+| 状态栏窗口 | <code>Status<wbr>Bar<wbr>Window<wbr>Controller<wbr>Impl</code>、状态栏 View/Compose root（根节点）、通知与系统图标绑定 | <code>Status<wbr>Bar</code> 或 <code>Status<wbr>Bar(display<wbr>Id=N)</code> 窗口；主线程或专用 UI 线程 |
+| 通知抽屉与锁屏主窗口 | legacy <code>Notification<wbr>Shade<wbr>Window<wbr>View</code>，或 <code>Scene<wbr>Window<wbr>Root<wbr>View</code> 承载的 View/Compose 混合树 | <code>Notification<wbr>Shade</code> 窗口；主线程或专用 UI 线程 |
+| 通知列表 | <code>Shared<wbr>Notification<wbr>Container</code> 与 <code>Notification<wbr>Stack<wbr>Scroll<wbr>Layout</code>（简称 NSSL，通知列表容器） | Scene 与 legacy 两条路径都可能出现 NSSL |
+| 三按钮导航 | <code>Navigation<wbr>Bar</code>、<code>Navigation<wbr>Bar<wbr>View</code> | <code>Navigation<wbr>Bar<wbr>N</code> 窗口及其 ViewRoot |
+| 边缘返回 | <code>Edge<wbr>Back<wbr>Gesture<wbr>Handler</code>、<code>Display<wbr>Back<wbr>Gesture<wbr>Handler<wbr>Impl</code>、Back Panel（返回手势箭头面板） | <code>edge-swipe</code> input monitor（输入监听器）；<code>Back<wbr>Panel<wbr>Ui<wbr>Thread</code> 或主线程 |
+| Overview / Recents | Launcher3 Quickstep 的 <code>Recents<wbr>View</code> 等组件 | 设备当前 Launcher 进程，包名不必然是 <code>com.<wbr>android.<wbr>launcher3</code> |
+| 窗口转场与起始窗口 | WM Shell <code>Transitions</code>、<code>Starting<wbr>Window<wbr>Controller</code> | Shell main/animation/splashscreen executor（主逻辑/动画/启动画面执行器）所在线程及宿主进程 |
 | 最终合成与显示 | SurfaceFlinger、HWC（Hardware Composer，硬件合成器）、显示驱动 | SurfaceFlinger、FrameTimeline（逐帧时间线）、fence（同步栅栏）与显示时序 |
 
 还要说明一点：WM Shell 是一组组件，未必对应一个独立进程。目标产品可以把 Shell 组件装进 SystemUI 宿主，也可以另选宿主。所以在 Perfetto 里，我们按进程的 `cmdline`（命令行标识） 和线程名定位，不预设总有一个固定的“WM Shell 进程”。
@@ -135,11 +140,16 @@ adb shell dumpsys window windows | grep -E 'NotificationShade|StatusBar|Navigati
 
 | 窗口 | 类型 | AOSP 标题 | 源码入口 |
 | --- | --- | --- | --- |
-| 顶部状态栏 | `TYPE_STATUS_BAR` | 默认屏为 `StatusBar`，辅助屏为 `StatusBar(displayId=N)` | `StatusBarWindowControllerImpl.getBarLayoutParamsForRotation()` |
-| 通知抽屉/锁屏主窗口 | `TYPE_NOTIFICATION_SHADE` | `NotificationShade` | `ShadeWindowLayoutParams.create()` |
-| 三按钮导航栏 | `TYPE_NAVIGATION_BAR` | `NavigationBarN` | `NavigationBar.getBarLayoutParams()` |
+| 顶部状态栏 | <code>TYPE_<wbr>STATUS_<wbr>BAR</code> | 默认屏为 <code>Status<wbr>Bar</code>，辅助屏为 <code>Status<wbr>Bar(display<wbr>Id=N)</code> | <code>Status<wbr>Bar<wbr>Window<wbr>Controller<wbr>Impl.<wbr>get<wbr>Bar<wbr>Layout<wbr>Params<wbr>For<wbr>Rotation()</code> |
+| 通知抽屉/锁屏主窗口 | <code>TYPE_<wbr>NOTIFICATION_<wbr>SHADE</code> | <code>Notification<wbr>Shade</code> | <code>Shade<wbr>Window<wbr>Layout<wbr>Params.<wbr>create()</code> |
+| 三按钮导航栏 | <code>TYPE_<wbr>NAVIGATION_<wbr>BAR</code> | <code>Navigation<wbr>Bar<wbr>N</code> | <code>Navigation<wbr>Bar.<wbr>get<wbr>Bar<wbr>Layout<wbr>Params()</code> |
 
 窗口名和 Layer（图层） 也未必一一对应：一个窗口可以在 SurfaceFlinger 中产生多个图层。窗口由谁创建，用 `dumpsys window` 确认；到了合成阶段，再按名称和时间在 SurfaceFlinger Layers 里找对应图层。
+
+<!-- gracker-diagram: ch07-04-three-window-topology -->
+![状态栏、Shade 与导航栏的窗口边界](../../assets/diagrams/ch07/ch07-04-three-window-topology.png)
+
+图：status_bar_expanded 是 Shade 的展开布局名；顶部 StatusBar、NotificationShade 与 NavigationBarN 使用独立窗口入口。三按钮导航窗口的显示仍受设备导航策略约束。
 
 ### Legacy shade 的树
 
@@ -151,6 +161,11 @@ adb shell dumpsys window windows | grep -E 'NotificationShade|StatusBar|Navigati
 - `SharedNotificationContainer`；
 - bouncer（锁屏认证界面）、light reveal（亮屏揭示动画）等兼容内容。
 
+<!-- gracker-diagram: ch07-04-legacy-shade-tree -->
+![Legacy Shade 的视图职责](../../assets/diagrams/ch07/ch07-04-legacy-shade-tree.png)
+
+图：Legacy Shade 的 XML 根直接包含展开面板、Scrim、锁屏与共享通知容器等区域；共享容器并非 status_bar_expanded 的子节点，NSSL 还可能由运行时 section 移入共享容器。
+
 `NotificationShadeWindowView` 会在 `onMeasure()` 中写入 `NotificationShadeWindowView#onMeasure` slice（时间区间），并在 `requestLayout()` 时写入 instant event（瞬时事件）。它的类注释也写明：该 View 可以担任主 SystemUI 窗口的根节点，但调用方别假定它永远处于根节点位置。
 
 ### Scene shade 是 Compose 与 View 的混合树
@@ -161,21 +176,38 @@ Scene flag 开启时，`ShadeViewProviderModule` 改为 inflate（从布局资�
 2. 将 `legacy_window_root`（传统窗口根节点）设为不可见。
 3. 把包含 NSSL 的 `SharedNotificationContainer` 从旧父节点移出，放到 Scene ComposeView 之后，作为同一窗口中的兄弟 View。
 
-所以 Scene 开启后，NSSL 相关观察点仍要保留：锁屏、Shade、QS（Quick Settings，快捷设置）等场景切换进了 Compose，通知行仍可以走 View 体系。一次面板展开，可能同时包含 Compose 的 recomposition/layout/draw（重组/布局/绘制）、NSSL 的 View 测量与状态计算、RenderThread 的绘制记录和提交，以及 SurfaceFlinger 合成。
+所以 Scene 开启后，NSSL 相关观察点仍要保留：锁屏、Shade、QS（Quick Settings，快捷设置）等场景切换进了 Compose，通知行仍可以走 View 体系。一次面板展开，可能同时包含 Compose 的 recomposition/layout/draw（重组/布局/绘制）、NSSL 的 View 测量与状态计算、UI 线程的绘制记录、RenderThread 的绘制执行与提交，以及 SurfaceFlinger 合成。
+
+<!-- gracker-diagram: ch07-04-scene-view-hybrid -->
+![Scene Shade 的 Compose 与 View 混合树](../../assets/diagrams/ch07/ch07-04-scene-view-hybrid.png)
+
+图：SceneWindowRootViewBinder 添加 ComposeView、隐藏 legacy root，并把共享通知容器移到根下。省略教育提示、Bouncer 专用 ComposeView 和认证涟漪等附加兄弟节点。
 
 ## SceneContainer 的开关与场景
 
 `SceneContainerFlag.isEnabled` 在 `android-17.0.0_r1` 中等于 `Flags.sceneContainer() && isEnabledOnVariant`，并不要求一组 secondary flags（辅助开关） 同时开启。Automotive 等 SystemUI variant（产品变体） 可以通过 `isEnabledOnVariant` 强制关闭；普通产品仍以目标构建的 aconfig 值为准。
 
-开关打开后，`SceneContainerFrameworkModule` 注册的场景包括 `Gone`、`Communal`、`Dream`、`Occluded`、`Lockscreen`、`QuickSettings` 和 `Shade`；overlay（覆盖层）包括通知 Shade、QS Shade、Quick Actions 与 Bouncer。Dual Shade（双面板通知/快捷设置）生效后，某些大屏配置会省去 Shade/QS scene，改用两类 overlay——这个差异会直接改变 Compose 节点数量、过渡路径和 trace 名称。
+开关打开后，`SceneContainerFrameworkModule` 注册的场景包括 `Gone`、`Communal`、`Dream`、`Occluded`、`Lockscreen`、`QuickSettings` 和 `Shade`；overlay（覆盖层）包括通知 Shade、QS Shade 与 Bouncer；Quick Actions 只在 `StatusBarPopupChips.isEnabled` 时加入。Dual Shade（双面板通知/快捷设置）生效后，某些大屏配置会省去 Shade/QS scene，改用两类 overlay——这个差异会直接改变 Compose 节点数量、过渡路径和 trace 名称。
+
+<!-- gracker-diagram: ch07-04-scene-configuration-branches -->
+![Scene 内容集合的条件分支](../../assets/diagrams/ch07/ch07-04-scene-configuration-branches.png)
+
+图：Dual Shade 开启并且资源配置不要求保留时，才省去 Shade/QS 两个 scene。通知与 QS overlay 仍在配置中；Quick Actions 另有条件。
 
 ### 性能观察点
 
-- `SceneWindowRootViewBinder` 的绑定 trace 名为 `SceneWindowRootViewBinder`，它只回答“Scene 根节点建好了没有”，量每次过渡的耗时要用别的 slice。
+> ⚠️ 矛盾校正（Android 17 r1）：旧文将 `SceneTransitionLatencyMonitor` 概括为完整转场的起止监控；当前实现只在进入 Shade/QS 内容时开启 `ACTION_EXPAND_PANEL`，并以主线程队首回调结束，不能替代整段转场或实际呈现测量。
+
+- `SceneWindowRootViewBinder` 被传给 `view.viewModel()` 的 `traceName`，用于根节点生命周期绑定相关跟踪；它不是每次 scene transition 的时长，也不能仅凭同名标识证明目标帧已经呈现。
 - `SceneJankMonitor` 将特定 scene transition（场景过渡）映射到 `InteractionJankMonitor` 的 CUJ（Critical User Journey，关键用户操作流程）。
-- `SceneTransitionLatencyMonitor` 记录 scene transition 的开始、结束和延迟。
+- `SceneTransitionLatencyMonitor.onTransitionStart()` 在目标为 Shade/QS scene 或相应 overlay 时启动 `ACTION_EXPAND_PANEL`，再向 `@Main Handler` 的队首投递结束回调。源码注释将其限定为首帧相关区间；它不等待整段转场完成，也不以实际 present fence 结束。
 - `SceneTransitionBlurViewModel.requestWindowBackgroundBlur()` 根据 transition state（过渡状态） 和进度请求窗口背景模糊；`WindowBackgroundBlur` log buffer（日志缓冲区） 会记录请求值和支持状态。
 - `status_bar_root_modernization` 与 `status_bar_system_status_icons_in_compose` 是状态栏自身的迁移开关，从 `scene_container` 的值推导不出它们。
+
+<!-- gracker-diagram: ch07-04-scene-monitor-boundaries -->
+![Scene 监控的区间与呈现边界](../../assets/diagrams/ch07/ch07-04-scene-monitor-boundaries.png)
+
+图：CUJ、LatencyTracker 与 FrameTimeline 的结束条件不同；绑定 trace 也不能代表每次转场。模糊成本需在目标设备上对照验证。
 
 模糊的成本要按目标设备的 RenderThread、GPU 和 SurfaceFlinger 数据判断。`debug.hwui.disable_blur_visual_feedback` 在参考源码中没有形成稳定的 SystemUI 诊断接口，别把它当通用诊断入口。工程验证可以在可控分支中关闭具体的 blur flag，或把模糊半径设为零做实验，同时保留同一设备、同一场景、同一热状态下的对照 trace。
 
@@ -187,16 +219,26 @@ Compose 路径的 PSS（按比例分摊的进程内存）也没有固定增幅�
 
 1. `NotifInflaterImpl.inflateViews()` 或 `rebindViews()` 把 entry（一条通知记录）交给 `NotificationRowBinderImpl`。
 2. `NotificationRowBinderImpl` 创建或复用 `ExpandableNotificationRow`（可展开的通知行 View），更新图标，并通过 `RowContentBindStage` 请求需要的 contracted、expanded、public、single-line（折叠、展开、隐私、单行）等内容形态。
-3. `NotificationRowContentBinderImpl` 创建 `AsyncInflationTask`，在 `@NotifInflation Executor（通知创建工作线程执行器）`（通知内容工作线程执行器）上构建通知内容、加载所需图片并等待预加载任务。
-4. `RemoteViews`（可跨进程描述界面内容的对象） 负责跨进程描述界面内容：新建视图时走 `applyAsync()`，复用现有视图时走 `reapplyAsync()`。
+3. `NotificationRowContentBinderImpl` 创建 `AsyncInflationTask`；正常异步路径先在 `@NotifInflation Executor` 上恢复 Builder、生成模板与部分 View，加载所需图片并等待预加载任务。该阶段的结果经 `onPostExecute()` 回到 SystemUI 主线程，再发起 RemoteViews apply。
+4. 新建 RemoteViews 内容走 `applyAsync()`，复用现有内容走 `reapplyAsync()`，两者都显式使用同一个 `inflationExecutor`。RemoteViews 的 worker 阶段负责 inflate 与 `initActionAsync` 等准备；剩余 Action 应用及 `onViewApplied/onError` 在其 Context 的主 looper 回调，不能把整个 apply 都归到 worker。
 5. 异步 apply 失败时，`OnViewAppliedListener.onError()` 会在 UI 回调路径尝试同步 `apply()` 或 `reapply()`，用来区分异步框架的异常和通知内容自身的 inflate 失败。
 6. 所需内容全部完成后，更新后的 row 进入 View 树，引起后续的测量、布局、动画和绘制。
+
+<!-- gracker-diagram: ch07-04-notification-binding-overview -->
+![通知 entry 到 row 与窗口的绑定链路](../../assets/diagrams/ch07/ch07-04-notification-binding-overview.png)
+
+图：通知绑定完成会影响后续 View 树和窗口帧，但完成回调本身不表示已经显示。内容形态可以含 heads-up、public 和单行等分支。
 
 这里有一个容易踩的坑：Android 17 已经没有旧路径中的 `NotificationContentInflater.java`，实现类迁移为 Kotlin 的 `NotificationRowContentBinderImpl.kt`，但 `doInBackground()` 仍保留历史 trace 名 `NotificationContentInflater.AsyncInflationTask#doInBackground`。搜 trace 时要记住，这个 slice 名是为了兼容保留的，别据此认为当前源码里还有同名类。
 
 ### 异步绑定后的线程分工
 
-`AsyncInflationTask` 把 Builder 恢复（从通知数据还原模板构建器）、模板生成、部分图片工作和 RemoteViews inflate 挪到 `NotifInflation` 线程；UI 线程剩下的是处理完成回调、把 View 加入界面树、更新 wrapper（内容包装 View）、响应 `requestLayout()`、维护动画状态，并完成窗口 traversal（界面遍历）。所以大量通知在短时间内到达时，常见的时序是：
+`NotifInflation` 在参考实现中是单个后台优先级 `HandlerThread`，由 `ExecutorImpl` 投递任务；Builder/模板阶段与后续 RemoteViews 准备阶段共享这个执行器，可能互相排队。`AsyncInflationTask.onPostExecute()` 使用默认主 looper；RemoteViews 回调使用其 Context 的主 looper，完成部分 Action、wrapper 更新和内容挂接等工作。窗口 traversal 仍要到该 ViewRoot 的实际 UI 线程核对，不能从窗口线程 flag 推断所有通知回调都已迁移。所以大量通知在短时间内到达时，可能观察到：
+
+<!-- gracker-diagram: ch07-04-remoteviews-thread-handoffs -->
+![通知异步绑定的线程交接](../../assets/diagrams/ch07/ch07-04-remoteviews-thread-handoffs.png)
+
+图：正常异步路径多次往返 worker 与回调 looper。底部只示意同一内容的阶段先后，间距和条长不是实测时长；窗口 traversal 应核对实际 ViewRoot 线程。
 
 - `NotifInflation` 队列持续工作；
 - 多个异步结果在相近时刻完成；
@@ -206,9 +248,19 @@ Compose 路径的 PSS（按比例分摊的进程内存）也没有固定增幅�
 
 同步 fallback（后备路径）也要单独标记。trace 或日志里如果看到 `applyAsync()` 失败后频繁回到同步处理，耗时位置就会从 worker（工作线程） 转移到 UI 回调。这时降低通知更新频率，只能减少发生次数；我们还要查清楚，自定义 `RemoteViews`、资源、URI 权限或厂商控件，到底是哪个导致了异步 apply 失败。
 
+<!-- gracker-diagram: ch07-04-async-apply-fallback -->
+![异步 apply 失败后的同步回退](../../assets/diagrams/ch07/ch07-04-async-apply-fallback.png)
+
+图：异步失败会在 UI 回调里尝试同步 apply/reapply；成功不代表没有代价。应定位失败原因，并核对同步回退是否拖延目标帧。
+
 ### NSSL 的测量成本由什么决定
 
-`NotificationStackScrollLayout#onMeasure` 会遍历全部 child（子 View），连 `GONE` 的也会明确测量，因为算法要用这些高度估算面板能容纳多少条通知。也就是说，通知行在视觉上被藏起来了，测量工作照样在进行。一帧里工作量的大小，取决于这些条件：
+`NotificationStackScrollLayout#onMeasure` 先调用父类测量；当 `mSuppressChildrenMeasureAndLayout` 为真时会提前返回。通常未抑制的分支显式遍历全部直接 child（子 View），连 `GONE` 的也调用 `measureChild`，因为算法要用这些高度估算面板能容纳多少条通知。也就是说，通知行在视觉上被藏起来了，测量工作照样在进行。一帧里工作量的大小，取决于这些条件：
+
+<!-- gracker-diagram: ch07-04-nssl-measure-branches -->
+![NSSL 显式测量的抑制与 GONE 分支](../../assets/diagrams/ch07/ch07-04-nssl-measure-branches.png)
+
+图：NSSL 通常显式测量所有直接 child，包括 GONE；但抑制标志为真会提前返回。图不把一次 measureChild 调用等同于整棵子树必然重新完整计算。
 
 - entry（SystemUI 中的一条通知记录） 与 row 总数；
 - 分组展开/折叠和 heads-up（悬浮通知）状态；
@@ -216,18 +268,35 @@ Compose 路径的 PSS（按比例分摊的进程内存）也没有固定增幅�
 - OEM 增加的包装层和装饰 View；
 - 配置变化、字体缩放、屏幕形态切换触发的重新测量。
 
-NSSL 的状态更新在两条路径中时机不同：legacy 通过 pre-draw listener（绘制前监听器） 调用 `updateChildren()`，Scene 在绘制前的 `onJustBeforeDraw()` 处理待更新状态；两条路径都保留 `NSSL#updateChildren` slice。这个 slice 里做的是运行 stack algorithm（通知堆叠布局算法）、应用当前状态或启动状态动画，并处理通知之间的重叠。
+NSSL 的状态更新在两条路径中时机不同：legacy 通过 pre-draw listener（绘制前监听器） 调用 `updateChildren()`，Scene 在 `onDraw()` 开始调用 `onJustBeforeDraw()`，且仅在 `mChildrenUpdateRequested` 为真时处理待更新状态；两条路径都保留 `NSSL#updateChildren` slice。这个 slice 里做的是运行 stack algorithm（通知堆叠布局算法）、应用当前状态或启动状态动画，并处理通知之间的重叠。
+
+<!-- gracker-diagram: ch07-04-nssl-update-entry-points -->
+![Legacy 与 Scene 的 NSSL 更新入口](../../assets/diagrams/ch07/ch07-04-nssl-update-entry-points.png)
+
+图：Legacy 使用 pre-draw listener；Scene 在 onDraw 开始且有待更新请求时进入。两条路径共用 NSSL#updateChildren，随后选择直接应用状态或启动状态动画。
 
 ### 普通模板、自定义 RemoteViews 与大图
 
 | 负载 | 主要风险 | 证据入口 |
 | --- | --- | --- |
-| 标准模板高频更新 | entry 反复 rebind（重新绑定）、图标变化、多个完成回调集中到达 | `NotifInflation` 队列、row bind 日志、NSSL requestLayout |
-| 自定义 `RemoteViews` | 层级复杂、资源异常、异步 apply fallback、内存校验失败 | `applyAsync/reapplyAsync`、`onError`、`CustomViewMemorySizeExceededException` |
+| 标准模板高频更新 | entry 反复 rebind（重新绑定）、图标变化、多个完成回调集中到达 | <code>Notif<wbr>Inflation</code> 队列、row bind 日志、NSSL requestLayout |
+| 自定义 <code>Remote<wbr>Views</code> | 层级复杂、资源异常、异步 apply fallback、内存校验失败 | <code>apply<wbr>Async/reapply<wbr>Async</code>、<code>on<wbr>Error</code>、<code>Custom<wbr>View<wbr>Memory<wbr>Size<wbr>Exceeded<wbr>Exception</code> |
 | 大图通知 | 解码与缩放、像素常驻、异步预加载等待、纹理上传 | worker CPU、bitmap/native（位图/原生）内存、RenderThread 与 GPU |
 | 分组通知 | summary/child（摘要/子通知）内容形态、展开状态与动画、更多 row 参与测量 | group 状态变化、NSSL measure/updateChildren |
 
-`BigPictureIconManager` 对部分 URI/resource（资源） 类型支持延迟加载；bitmap（数据转换）、adaptive bitmap（自适应位图）和 data 类型会跳过这套延迟策略，因为像素仍会常驻内存。`NotificationRowContentBinderImpl` 的 worker 最多等待图片预加载 1000 ms。这个超时发生在异步任务中，UI 线程未必跟着卡一秒；但队列延迟、完成回调集中到达和后续纹理上传，仍可能影响可见帧。
+`BigPictureIconManager` 对部分 URI/resource（资源） 类型支持延迟加载；bitmap（位图）、adaptive bitmap（自适应位图）和 data 类型会跳过这套延迟策略，因为像素仍会常驻内存。
+
+<!-- gracker-diagram: ch07-04-big-picture-loading-types -->
+![大图通知的类型与延迟加载边界](../../assets/diagrams/ch07/ch07-04-big-picture-loading-types.png)
+
+图：BigPictureIconManager 对 bitmap、adaptive bitmap 和 data 类型跳过这套延迟策略；URI/resource 等类型能否延迟，还要结合功能开关、可见性和消费方状态。
+
+`NotificationRowContentBinderImpl` 的正常异步任务为 `waitForPreloadedImages()` 传入 1000 ms；resolver 为这一批目标 URI 共用一个截止时间，并逐张递减剩余等待预算。它不是每张图各等一秒，也不是整个绑定任务的总时限。该等待发生在 worker 中，UI 线程未必跟着卡一秒；但队列延迟、完成回调集中到达和后续纹理上传，仍可能影响可见帧。
+
+<!-- gracker-diagram: ch07-04-image-preload-budget -->
+![图片预加载等待的 1000 ms 预算](../../assets/diagrams/ch07/ch07-04-image-preload-budget.png)
+
+图：1000 ms 是该次预加载等待的共享预算，源码逐 URI 递减剩余时间。其前后的图片、绑定与呈现阶段另计；正常异步路径中的这次等待发生在 worker。
 
 App 侧的改进通常更直接：合并高频进度更新，保持通知 ID 与模板稳定，减少内容未变化时的 `notify()`，避免每秒替换大图，控制自定义 RemoteViews 层级，并利用通知分组减少不必要的结构变化。SystemUI 侧则要保留异步路径，修复触发 fallback 的原因，限制同一帧中的状态更新量，并用设备数据验证任何缓存策略。
 
@@ -235,11 +304,21 @@ App 侧的改进通常更直接：合并高频进度更新，保持通知 ID 与
 
 左侧通知图标，Android 12—14 的资料常从 presenter/controller 追起；当前实现已经移到 `statusbar/notification/icon/ui`，按三个组件看：
 
-- `NotificationIconContainerStatusBarViewModel.icons` 从 `iconsInteractor.statusBarNotifs` 生成 `NotificationIconsViewData`；map 在后台 context（协程执行上下文）中执行，更新再经过 `conflate()（来不及处理时只保留最新值）` 与 `distinctUntilChanged()（相邻结果相同时不再发送）` 控制——前者来不及处理时只保留最新值，后者相邻结果相同就不再发送。
+- `NotificationIconContainerStatusBarViewModel.icons` 从 `iconsInteractor.statusBarNotifs` 生成 `NotificationIconsViewData`；map 在后台 context（协程执行上下文）中执行，更新再经过 `conflate()` 与 `distinctUntilChanged()` 控制：前者在下游来不及处理时保留最新值，后者过滤相邻相等结果；两者都不等价于“每帧最多更新一次”。
 - `NotificationIconContainerStatusBarViewBinder.bindWhileAttached()` 按 `displayId` 选择图标 View store，再绑定到 `NotificationIconContainer`。
 - 默认屏复用通知处理流程保存的 status bar icon；辅助屏使用 `ConnectedDisplaysStatusBarNotificationIconViewStore`，按通知 key 缓存为目标 display context 创建的 `StatusBarIconView`。
 
+<!-- gracker-diagram: ch07-04-notification-icon-flow -->
+![通知图标 Flow 的合并与去重](../../assets/diagrams/ch07/ch07-04-notification-icon-flow.png)
+
+图：图标集合在后台映射，再合并积压值和过滤相邻相等值；这些算子不保证每帧最多更新一次，也不代替后续 View 与呈现分析。
+
 `NICStatusBar#bindWhileAttached` 只覆盖绑定关系建立的过程。每次通知变化产生的帧耗时，我们还要从 Flow（异步数据流）更新、View 容器变化、ViewRoot traversal 与 FrameTimeline 中观察。
+
+<!-- gracker-diagram: ch07-04-icon-store-by-display -->
+![通知图标 View 的 per-display 选择](../../assets/diagrams/ch07/ch07-04-icon-store-by-display.png)
+
+图：通知数据不等于同一个 View 实例：默认屏复用 pipeline 中的图标，辅助屏按 display context 创建并缓存 View。绑定入口的 trace 不覆盖每次通知更新的完整帧。
 
 右侧网络、电池、时钟和其他系统状态图标，仍由状态图标处理流程与 `StatusBarIconControllerImpl` 等组件管理；另有 `status_bar_system_status_icons_in_compose` 开关，目标产品可能把部分区域迁到 Compose。排查大量通知同时到达的场景时，应把两类输入分开：
 
@@ -247,13 +326,23 @@ App 侧的改进通常更直接：合并高频进度更新，保持通知 ID 与
 - 右侧压力来自网络、电话、热点、隐私指示、OEM 扩展等状态变化；
 - 两者可在同一状态栏窗口帧内叠加，但原因和限制更新频率的位置不同。
 
+<!-- gracker-diagram: ch07-04-status-bar-two-signal-paths -->
+![通知图标与系统状态图标的两类输入](../../assets/diagrams/ch07/ch07-04-status-bar-two-signal-paths.png)
+
+图：同一状态栏窗口可以承受通知图标与系统状态图标两类压力。按输入和组件分开归因，再核对它们是否在同一目标帧叠加。
+
 ## 导航输入的两条路径
 
 ### 三按钮导航
 
 `NavigationBarView.onInterceptTouchEvent()` 和 `onTouchEvent()` 把事件交给 `mTouchHandler`，按钮再触发 back、home、recents（返回、主页、最近任务） 等行为。定位三按钮延迟时，时间线应包含：
 
-`InputDispatcher` 投递 → `NavigationBarN` 窗口 UI 线程 → 按钮回调 → WM/Launcher 或目标 App 状态变化 → 导航栏反馈帧。
+`InputDispatcher` 投递 → `NavigationBarN` 窗口 UI 线程 → 事件与按钮处理。此后分开记录导航栏 pressed/动画反馈帧，以及按钮行为触发的 WM/Launcher 或目标 App 状态变化与转场；两条结果路径可交叠，反馈帧不必等目标窗口切换完成。
+
+<!-- gracker-diagram: ch07-04-three-button-parallel-results -->
+![三按钮导航的反馈与行为分支](../../assets/diagrams/ch07/ch07-04-three-button-parallel-results.png)
+
+图：从导航栏事件处理处分开跟踪反馈帧与目标窗口行为。底部只是可交叠的阶段示意，具体先后与耗时应读取设备 trace。
 
 如果 Input 已经送达，按钮 pressed（按下状态） 或动画却迟到了，先查这个窗口的 UI 线程和 ViewRoot；如果按钮反馈及时、窗口切换迟到，就继续看 WM Shell、Launcher 或目标 App，别把整段延迟都算到 `NavigationBarView` 头上。
 
@@ -262,6 +351,11 @@ App 侧的改进通常更直接：合并高频进度更新，保持通知 ID 与
 返回手势把 per-display（每块显示屏独立） 的资源放进 `DisplayBackGestureHandlerImpl`：它为每个 display 创建 `InputMonitorCompat("edge-swipe", displayId)`，用 `UiThreadContext` 的 looper（消息循环） 与 Choreographer 建立 input receiver（输入接收器），并注册 system gesture exclusion listener（系统手势排除区域监听器）。跨 display 的共享状态和回调收在 `EdgeBackGestureHandler` 里，它保存多个 `DisplayBackGestureHandler`。
 
 `edge_back_gesture_handler_thread` 开启时，`SysUIConcurrencyModule` 创建具有显示相关优先级的 `BackPanelUiThread`；关闭时，同一个 `UiThreadContext` 改用 SystemUI 主线程。由此得到两个诊断分支，外加一条后续检查：
+
+<!-- gracker-diagram: ch07-04-edge-back-thread-branches -->
+![边缘返回的 per-display 输入与线程分支](../../assets/diagrams/ch07/ch07-04-edge-back-thread-branches.png)
+
+图：边缘返回不依赖三按钮窗口的触摸入口；它使用 per-display input monitor。线程开关决定 UiThreadContext 使用专用 BackPanelUiThread 还是主线程。
 
 - trace 中有 `BackPanelUiThread`：检查 input receiver、手势判定、Back Panel 绘制与该线程的 Choreographer；
 - trace 没有该线程：检查 aconfig 值，并在 SystemUI 主线程寻找同一路径；
@@ -275,29 +369,54 @@ per-display status bar（每块显示屏独立状态栏） 的基础设施已经
 
 具备基础设施，离每块 display 都创建状态栏还差几道判断。`DisplayContent.isSystemDecorationsSupported()` 会排除 VR 2D display 和不可信 display，再检查 display window settings（显示窗口设置）、`FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS`，以及旧 display-content-mode 管理路径下的强制桌面条件。产品 flag、display 类型、信任属性和系统策略共同决定结果。
 
+<!-- gracker-diagram: ch07-04-display-decor-policy -->
+![Display 系统装饰的策略判断](../../assets/diagrams/ch07/ch07-04-display-decor-policy.png)
+
+图：系统装饰支持先经过安全排除，再看设置/flag 与特定旧桌面条件。该结果仍不是“每屏已创建全部系统栏”的运行时证据。
+
 还有三件事容易混：
 
 - `NavigationBarControllerImpl` 用 `SparseArray<NavigationBar>` 按 display 管理导航栏，并通过 WMS（WindowManagerService，窗口管理服务）查询该 display 是否有 navigation bar/taskbar（导航栏/任务栏）。连接屏的 Taskbar 可能由 Launcher 管理，SystemUI 的 `TaskbarDelegate` 负责协调状态与回调。
 - AOSP Shade 是 display-aware（能够识别不同显示屏） 的单例主窗口，可以在 display 之间移动，或在 display 移除时重新挂到默认屏；从 per-display StatusBar 推导不出“每块屏都有一套 NotificationShade”。
 - 桌面任务布局、窗口装饰与转场主要属于 WM Shell desktop mode；桌面任务 View 和光标，别统称为 SystemUI 渲染内容。
 
+<!-- gracker-diagram: ch07-04-multi-display-responsibilities -->
+![多显示时 StatusBar、Shade 与 Taskbar 的边界](../../assets/diagrams/ch07/ch07-04-multi-display-responsibilities.png)
+
+图：StatusBar 可按 display 管理，Shade 主窗口可在 display 间移动；Nav/Taskbar 与桌面装饰另有策略和宿主。具体实例数需现场窗口列表证明。
+
 多显示性能至少要分别记录：单屏折叠态、单屏展开态、外屏连接但休眠、双屏点亮、桌面窗口模式，以及导航栏与 Taskbar 两种界面形态。实验记录还要包含分辨率、刷新率、Layer 数、状态栏实例数和通知 Shade 所在 display。CPU、GPU、显存或 PSS 的增幅，只能根据同一设备上的对照数据得出。
 
 ## App 启动与 Overview 的参与者
 
-从桌面或 Overview 启动一次 App，这条链路至少跨越以下参与者：
+从桌面或 Overview 启动一次 App，至少要核对以下参与者。下面按职责列举，并非每次启动都严格按编号串行执行；starting window、目标 App 生产 buffer、系统栏更新和转场可能交叠：
 
 1. Launcher/Quickstep 接收点击或手势，更新 workspace（桌面工作区）、任务卡片或 Overview 状态。
 2. system_server 的窗口管理核心创建并推进 transition（窗口过渡）。
-3. WM Shell `Transitions` 接收 request/ready（请求/就绪） 回调，选择 transition handler（过渡处理器），在 Shell main/animation executor 上推进动画。
-4. `StartingWindowController` 调用 `StartingWindowTypeAlgorithm` 选择 snapshot（任务快照）、solid-color splash（纯色启动画面）、SplashScreen 或无起始窗口，并在 splashscreen executor 上创建或移除起始 Surface。
+3. WM Shell `Transitions` 接收 request/ready（请求/就绪） 回调，选择 transition handler（过渡处理器），由 Shell main executor 调度；动画执行位置取决于所选 handler，可能在 Shell animation executor，也可能委托 Launcher 等 remote transition 宿主。
+4. `StartingWindowController` 调用 `StartingWindowTypeAlgorithm` 在 splashscreen executor 中选择 snapshot（任务快照）、solid-color splash（纯色启动画面）、SplashScreen、windowless starting surface（无独立窗口的起始 Surface）或无起始窗口，并执行相应创建；移除请求先由 Shell main 上的 observer 协调，再把实际移除提交给 splashscreen executor。
 5. 目标 App 提交首批 buffer。
 6. SystemUI 更新状态栏、导航栏、锁屏或 Shade 的相关状态。
 7. SurfaceFlinger 合成 Launcher、starting window、目标 App 与系统栏，并交给 HWC 和显示设备呈现。
 
+<!-- gracker-diagram: ch07-04-launch-participants-overlap -->
+![启动与 Overview 的多方参与](../../assets/diagrams/ch07/ch07-04-launch-participants-overlap.png)
+
+图：启动职责列表不是固定串行时序；Shell handler、起始画面、目标 App 与系统栏可能交叠。示意条长不表示真实耗时，当前并非所有生产者都一定可见。
+
 `Transitions.java` 保留了 `dispatchRequest: <type>`、`playTransition: <type>` 与 `<Handler>#startAnimation animated <type>` 等 WM trace。`StartingWindowController` 同时使用 Shell main executor 和 splashscreen executor，起始窗口的工作别全部算到 Shell main 上。
 
+<!-- gracker-diagram: ch07-04-starting-surface-executors -->
+![起始 Surface 的创建与移除执行器](../../assets/diagrams/ch07/ch07-04-starting-surface-executors.png)
+
+图：添加请求分别提交 Shell main 状态协调与 splashscreen 创建工作；类型选择含 windowless/none。移除请求先协调，再派发实际移除。
+
 Overview 的 `RecentsView.applyLoadPlan()` 会增删、复用并绑定任务卡片，但该方法名本身并未成为稳定的 trace slice；源码中的方法与设备上实际出现的 trace，要分开说明。
+
+<!-- gracker-diagram: ch07-04-overview-load-plan-evidence -->
+![Overview 任务卡绑定与 trace 锚点](../../assets/diagrams/ch07/ch07-04-overview-load-plan-evidence.png)
+
+图：先查真实 Launcher 宿主，再用 applyLoadPlan 等源码方法解释任务卡变化；方法名本身不是固定 trace 名，仍需与对应窗口帧关联。
 
 Launcher 的包名和进程名受产品实现影响：AOSP 的参考实现是 Launcher3 Quickstep，Pixel 或 OEM 构建可能用不同包名。我们通过默认 HOME activity、进程 `cmdline` 和窗口 owner（所有者） 找到当前宿主，别只搜索固定的 `com.android.launcher3`。
 
@@ -305,41 +424,58 @@ Launcher 的包名和进程名受产品实现影响：AOSP 的参考实现是 La
 
 SystemUI 特殊在窗口数量多、状态来源多，还能通过开关选择专用线程；但 HWUI 的主路径仍遵循标准时序：
 
-`VSync` → Choreographer 的 `INPUT`、`ANIMATION`、`INSETS_ANIMATION`、`TRAVERSAL`、`COMMIT` 回调 → View/Compose 状态处理与 traversal → RenderThread/HWUI → BLAST buffer queue（窗口缓冲队列）→ SurfaceFlinger → HWC/present。
+`VSync` 驱动对应窗口 UI 线程的 Choreographer；`doFrame()` 按 `INPUT`、`ANIMATION`、`INSETS_ANIMATION`、`TRAVERSAL`、`COMMIT` 顺序分发回调。输入和动画更新发生在相应阶段，ViewRoot 的 traversal/绘制记录及向 RenderThread 同步通常位于 `TRAVERSAL`，不是等 `COMMIT` 之后才开始。RenderThread/HWUI 经 BLAST buffer queue（窗口缓冲队列）向 SurfaceFlinger 提交结果，再由 HWC/present 链路处理；各线程阶段可流水交叠，`COMMIT` 也不等待 GPU 或显示呈现完成。
+
+<!-- gracker-diagram: ch07-04-ui-callback-render-pipeline -->
+![SystemUI 的回调阶段与渲染流水](../../assets/diagrams/ch07/ch07-04-ui-callback-render-pipeline.png)
+
+图：ViewRoot traversal 通常在 TRAVERSAL 回调中记录绘制并与 RenderThread 同步；COMMIT 在其后，不能当作 GPU 或屏幕呈现的完成点。底部只表示可能流水交叠，不按时长比例绘制。
 
 沿着这条路径核对时，有几点约束：
 
-- `doFrame` 很长，只说明 UI 线程在这一帧占用时间较多，断定不了 layout 慢。
+- `doFrame` 很长，首先说明该 slice 的墙钟区间较长；其中可能包含 CPU 执行、Runnable 排队和阻塞等待。先结合 sched 分解，再判断输入、动画、measure/layout、绘制记录或同步等待哪一段变长。
 - `Traversal` 包含 measure/layout、绘制记录和向 RenderThread 同步等工作。其尾部的 `syncAndDrawFrame()` 可能等待 RenderThread 状态同步；后续阶段处理不及时造成的 backpressure（反压）也可能延长 traversal。
 - Compose 的 recomposition、layout 和 draw 记录仍在对应窗口的 UI 线程；GPU 工作与 display 合成，要到 RenderThread、SurfaceFlinger 和 HWC 中继续确认。
 - `requestLayout` instant event 只说明请求已经发出，当场是否完成 layout 要看后续的 measure/layout。
 - App `SurfaceFrame` 使用 `surface_frame_token`，Display `DisplayFrame` 使用 `display_frame_token`；二者分属不同命名空间，数值相同也不构成关联。
 
+<!-- gracker-diagram: ch07-04-frame-identity-and-causality -->
+![Surface、Display 与根因的关联边界](../../assets/diagrams/ch07/ch07-04-frame-identity-and-causality.png)
+
+图：保留 Surface/Layer/进程身份并沿 FrameTimeline 关系关联显示帧；再检查最早延迟依赖。多个 SurfaceFrame 可进入同一显示结果，单一 CPU 峰值不能给出责任结论。
+
 ### Perfetto 中的观察顺序
 
 | 步骤 | 要回答的问题 | 主要轨道或证据 |
 | --- | --- | --- |
-| 确认呈现异常 | 哪个 display frame missed（错过截止时间），异常在 deadline 还是 present 环节 | FrameTimeline `DisplayFrame`、VSYNC、HWC |
-| 找到受影响 Surface | 是 NotificationShade、StatusBar、NavigationBar、Launcher 还是目标 App | `SurfaceFrame`、SurfaceFlinger Layers、窗口 owner |
+| 确认呈现异常 | 哪个 display frame missed（错过截止时间），异常在 deadline 还是 present 环节 | FrameTimeline <code>Display<wbr>Frame</code>、VSYNC、HWC |
+| 找到受影响 Surface | 是 NotificationShade、StatusBar、NavigationBar、Launcher 还是目标 App | <code>Surface<wbr>Frame</code>、SurfaceFlinger Layers、窗口 owner |
 | 确认生产者线程 | 哪个进程和 ViewRoot 产生该 buffer | 目标进程 UI 线程、RenderThread、BLAST |
 | 细分应用或系统 UI 工作 | 输入、动画、绑定、measure/layout、绘制记录中哪段变长 | slice、sched（调度）、binder、CPU frequency（频率） |
-| 检查后续阶段的反压 | UI 是否等待 RenderThread，RenderThread 是否等待 GPU/buffer，SurfaceFlinger 是否错过合成 | `syncAndDrawFrame`、dequeue/queue（出队/入队）、fence、SurfaceFlinger/HWC |
-| 回到源码 | trace 名对应哪个 Android 17 方法，目标 flag 是否选择该实现 | `android-17.0.0_r1` 源码、aflags、产品差异 |
+| 检查后续阶段的反压 | UI 是否等待 RenderThread，RenderThread 是否等待 GPU/buffer，SurfaceFlinger 是否错过合成 | <code>sync<wbr>And<wbr>Draw<wbr>Frame</code>、dequeue/queue（出队/入队）、fence、SurfaceFlinger/HWC |
+| 回到源码 | trace 名对应哪个 Android 17 方法，目标 flag 是否选择该实现 | <code>android-17.<wbr>0.<wbr>0_<wbr>r1</code> 源码、aflags、产品差异 |
 
 下面的 Trace Processor SQL 用于列出 SystemUI 中三个已核对的通知列表 slice：
 
 ```sql
 SELECT
+  s.id AS slice_id,
+  p.upid,
+  p.pid,
   p.name AS process_name,
+  t.utid,
+  t.tid,
   t.name AS thread_name,
   s.ts,
   s.dur,
+  s.dur / 1e6 AS wall_dur_ms,
   s.name
 FROM slice AS s
 JOIN thread_track AS tt ON s.track_id = tt.id
 JOIN thread AS t USING (utid)
 JOIN process AS p USING (upid)
 WHERE p.name GLOB '*systemui*'
+  AND s.dur >= 0 -- 排除尚未结束的 slice；空结果不证明该工作没有发生
   AND s.name IN (
     'NotificationShadeWindowView#onMeasure',
     'NotificationStackScrollLayout#onMeasure',
@@ -348,7 +484,12 @@ WHERE p.name GLOB '*systemui*'
 ORDER BY s.ts;
 ```
 
-查询结果只给出 slice 的线程耗时。还要在同一时间范围内核对 `SurfaceFrame`、`DisplayFrame`、RenderThread、SurfaceFlinger 与调度状态，才能判断这段 CPU 工作是否造成用户可见的 missed frame。
+查询结果给出已完成 slice 的墙钟时长，包含运行、调度等待或阻塞，并非线程 CPU 时间。进程名和三个 slice 名只适用于相应实现及采集覆盖；空结果也可能来自 OEM 改名、未采集或未完成区间。还要用实际进程/线程身份、Surface 与逐帧关联核对同一时间范围内的 `SurfaceFrame`、`DisplayFrame`、RenderThread、SurfaceFlinger 和调度状态，不能仅凭时间重叠认定这段工作造成用户可见卡顿。
+
+<!-- gracker-diagram: ch07-04-notification-sql-scope -->
+![通知 slice SQL 的结果范围](../../assets/diagrams/ch07/ch07-04-notification-sql-scope.png)
+
+图：SQL 输出是指定实现下已结束 slice 的墙钟区间。进程名、slice 名和采集覆盖要逐项核对；以目标帧身份与依赖继续归因。
 
 ## 四类常见现场
 
@@ -363,15 +504,30 @@ ORDER BY s.ts;
 
 下一步看信号落在哪：NSSL measure 随通知总数增长，优化目标就是减少参与测量的 row、内容形态和层级；`NSSL#updateChildren` 变长，就检查分组、heads-up、动画状态与同一帧中的更新次数；UI 与 RenderThread 都没有异常而 display frame 仍然 miss，继续检查 SurfaceFlinger/HWC、其他高层 Surface 或显示模式切换。
 
+<!-- gracker-diagram: ch07-04-shade-jank-triage -->
+![Shade 展开异常的三组检查分支](../../assets/diagrams/ch07/ch07-04-shade-jank-triage.png)
+
+图：先关联实际异常帧与 Shade 生产者，再拆分 measure、updateChildren 和下游依赖。图中分支是调查线索，最终需调度、依赖与对照支持根因。
+
 ### 通知集中到达
 
 分别检查三组信号：`NotifInflation` worker、SystemUI 窗口 UI 线程，以及状态栏/NotificationShade 的 FrameTimeline。常见原因包括 worker 排队、图片预加载、异步 apply fallback、完成回调集中到达、row 批量挂接、图标批量变化和 NSSL 连续重新计算。
 
 主线程里看不到 `RemoteViews.apply()`，也排除不了通知绑定：异步的主要工作本来就在 worker 上，用户可见的卡顿往往发生在任务完成后的 View 树更新阶段。反过来，worker 队列变长但可见帧没有受影响时，先别判定它就是 jank 的原因。
 
+<!-- gracker-diagram: ch07-04-notification-burst-feedback -->
+![通知集中到达后的工作与可见帧](../../assets/diagrams/ch07/ch07-04-notification-burst-feedback.png)
+
+图：同一执行器中的模板和 apply 准备可互相排队，回调再影响内容挂接与窗口帧。底部只给出一种阶段排列示意，不能作为设备上的耗时或必然回调顺序。
+
 ### 返回手势反馈迟缓
 
 以 input event 到达 `edge-swipe` receiver 为起点，以 Back Panel 首帧或目标窗口 transition 为终点。若 `BackPanelUiThread` 存在，主线程上的通知工作未必会直接阻塞箭头绘制；两条线程仍可能通过共享状态、WM 调用和合成资源相互影响。若 input receiver 很快、Back Panel 也按时出帧，只有窗口切换阶段变慢，就应检查 WM Shell 和目标 App。
+
+<!-- gracker-diagram: ch07-04-back-feedback-triage -->
+![返回手势反馈与窗口转场的分段检查](../../assets/diagrams/ch07/ch07-04-back-feedback-triage.png)
+
+图：用输入到 Back Panel 首次反馈和输入到目标转场两个区间检查问题。专用线程能改变直接阻塞位置，但不能据此排除共享状态、WM 或合成资源影响。
 
 ### 启动动画不连贯
 
@@ -384,7 +540,7 @@ ORDER BY s.ts;
 - StatusBar/NavigationBar 同期更新超预算；
 - SurfaceFlinger/HWC 合成或 present 延迟。
 
-只看 SystemUI CPU 使用率的峰值，分不清责任归谁。只有当受影响的系统栏 SurfaceFrame 与其 UI/RenderThread 工作在时间上相互对应，我们才能把该帧归因到 SystemUI。
+只看 SystemUI CPU 使用率的峰值，分不清责任归谁。受影响的系统栏 SurfaceFrame 与其 UI/RenderThread 工作在时间上对应，只能建立进一步归因的候选。还要证明最早拖延该帧的依赖、区分本地计算与等待外部资源，并用同场景对照验证；时间重叠和 CPU 峰值都不足以单独认定 SystemUI 是根因。
 
 ## OEM 差异的处理方式
 
@@ -395,6 +551,11 @@ ORDER BY s.ts;
 - 目标设备的窗口、线程、Layer、Perfetto 和日志。
 
 写结论时也要带上适用条件。例如，“Scene path 的 NSSL 仍参与通知行布局”有 AOSP Android 17 源码直接支持；“某机型在 120 Hz 下展开通知面板时 blur 是瓶颈”需要该机型的对照 trace；“连接显示器后会创建第二个 StatusBar”还需要 display policy（显示策略）与运行时窗口列表证明。
+
+<!-- gracker-diagram: ch07-04-oem-evidence-and-controls -->
+![OEM 差异与优化验证的证据关系](../../assets/diagrams/ch07/ch07-04-oem-evidence-and-controls.png)
+
+图：AOSP 提供基线，产品 diff 和现场窗口决定适用范围。内存、模糊或多显示成本都应依据同设备对照，不能使用固定增幅或仅凭开关值下结论。
 
 ## 实战检查清单
 
@@ -452,3 +613,11 @@ ORDER BY s.ts;
 - Android Open Source Project：[读取和修改 aconfig flag](https://source.android.com/docs/setup/build/feature-flagging/flip-a-flag)
 - Android Developers：[通知概览](https://developer.android.com/develop/ui/views/notifications)
 - Android Developers：[SplashScreen API](https://developer.android.com/develop/ui/views/launch/splash-screen)
+
+- [NotificationInlineImageResolver.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/notification/row/NotificationInlineImageResolver.java)
+- [RemoteViews.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/widget/RemoteViews.java)
+- [AsyncTask.java](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/AsyncTask.java)
+- [SceneTransitionLatencyMonitor.kt](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/scene/ui/view/SceneTransitionLatencyMonitor.kt)
+- [StatusBarWindowControllerStore.kt](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/statusbar/window/StatusBarWindowControllerStore.kt)
+- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)
+- [Perfetto slice 表与线程时间字段](https://perfetto.dev/docs/analysis/sql-tables#slice)

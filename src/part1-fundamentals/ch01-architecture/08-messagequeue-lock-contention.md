@@ -110,7 +110,7 @@ Android 17 没有改变 `Handler`、`Looper` 和同步屏障对应用呈现的�
 
 DeliQueue 直接优化的是前两段的队列管理；第三段一旦耗时，还要沿业务调用栈继续往下查。
 
-本文先用 DeliQueue 解释 MessageQueue 如何减少生产者与 Looper 的结构性争锁，再把视角扩展到 Java Monitor、futex、Binder 与 system_server 锁。两部分共享同一个诊断问题：等待链里究竟哪个节点（binder node）推不动。拿到一段性能轨迹，我们先区分两种情况：消息还没轮到执行，还是执行线程已经在运行、只是在等其他资源。
+本文先用 DeliQueue 解释 MessageQueue 如何减少生产者与 Looper 的结构性争锁，再把视角扩展到 Java Monitor、futex、Binder 与 system_server 锁。两部分共享同一个诊断问题：等待链里究竟哪个节点推不动。拿到一段性能轨迹，我们先区分两种情况：消息还没轮到执行，还是执行线程已经在运行、只是在等其他资源。
 
 ## Looper 队列、唤醒与 DeliQueue
 
@@ -155,7 +155,7 @@ private static boolean loopOnce(final Looper me,
 一次短暂加锁通常问题不大，锁竞争与调度叠加后却可能形成优先级反转。例如：
 
 1. 后台低优先级线程取得 MessageQueue 的监视器锁。
-2. 中优先级线程抢占 CPU（Runnable），后台线程暂时跑不下去，锁也释放不了。
+2. 中优先级线程抢占 CPU 并运行，后台持锁线程处于 Runnable 状态，暂时跑不下去，锁也释放不了。
 3. 高优先级 UI 线程回到 `next()`，却必须等那个后台线程。
 
 UI 线程表面上被低优先级线程阻塞，实际等待时间还被中优先级任务放大，这就是优先级反转。Perfetto 里最直接的信号，就是主线程出现 `monitor contention with ...`，并且能顺着它定位持锁线程（owner）和加锁代码位置。
@@ -271,6 +271,11 @@ Looper 线程
 
 线程间共享的部分只保留无锁栈和少量原子状态，两个 `MessageHeap` 的实际增删和排序全部由 Looper 线程独自完成，不存在所有线程共同修改的并发优先队列。
 
+<!-- gracker-diagram: ch01-08-deliqueue-ownership -->
+![DeliQueue 的共享栈与 Looper 私有堆](../../assets/diagrams/ch01/ch01-08-deliqueue-ownership.png)
+
+图：多个生产者用 CAS 向共享 Treiber 栈提交消息；Looper 通过 heapSweep 整理进同步和异步最小堆，再按到期时间及屏障条件选出消息。回调执行仍在同一 Looper 线程。
+
 #### 5.1 入队：Treiber 栈与 CAS
 
 `MessageStack` 的源码注释将其定义为 “Treiber stack of Message objects”。Treiber 栈是一种后进先出的无锁栈，生产者通过比较并交换（Compare-And-Set，CAS）原子更新栈顶。入队路径把新节点发布到栈顶时使用 release CAS；后续的 `isQuitting()`、`heapSweep()` 和删除遍历再通过 acquire 读取当前栈顶或空闲链表，以保证节点内容在线程间可见：
@@ -286,7 +291,7 @@ do {
 
 CAS 失败说明栈顶已被其他线程改变，当前线程会重新读取并重试。它免掉了旧实现中“先取得全局监视器锁才能入队”的互斥等待，但入队并不因此变成一条指令：高竞争下仍可能多次重试，还要处理消息计数、插入序号和原生唤醒协调。
 
-调用线程的提交路径是 O(1)，不随队列长度线性增长；随后 Looper 把消息放入最小堆时，仍要付出 O(log N) 的排序成本。排序成本没有消失，只是换了承担者：从“生产者在带锁链表中线性查找”，改为“生产者快速提交、由单个消费者集中排序”。
+按队列长度衡量，生产者发布栈顶节点的结构操作是 O(1)，无需线性查找插入位置；竞争下 CAS 可能反复重试，因此不能据此保证单次调用的总耗时有常数上界。随后 Looper 把消息放入最小堆时，仍要付出 O(log N) 的排序成本。排序成本没有消失，只是换了承担者：从“生产者在带锁链表中线性查找”，改为“生产者快速提交、由单个消费者集中排序”。
 
 #### 5.2 出队：Looper 独占两个最小堆
 
@@ -316,6 +321,11 @@ DeliQueue 没有引入业务优先级、机器学习调度或新的线程优先�
 3. Looper 在 `drainFreelist()` 中把节点从栈和相应的堆里物理移除。
 
 非 Looper 线程只负责把消息标记为无效，Looper 再清理自己独占的数据结构。读取线程即使短暂看到墓碑节点，也会根据已删除标记忽略它。
+
+<!-- gracker-diagram: ch01-08-deliqueue-removal -->
+![DeliQueue 消息删除的逻辑与物理两阶段](../../assets/diagrams/ch01/ch01-08-deliqueue-removal.png)
+
+图：删除 API 仍需按条件查找，整体不能视为 O(1)。删除方标记 FLAG_REMOVED、清理引用并登记待清理节点；Looper 随后才从栈和私有堆中移除结构。
 
 #### 5.4 DeliQueue 为什么不复用 Message 池
 
@@ -657,7 +667,7 @@ futex（fast userspace mutex）让用户态原子状态与内核等待队列协�
 ACK `android17-6.18-2026-06_r6` 的实时互斥锁（rt-mutex）文档描述了优先级继承（Priority Inheritance，PI）的完整行为：
 
 - 高优先级等待者阻塞在 rt-mutex 上时，低优先级持锁者临时继承更高优先级；
-- 持锁者释放锁（acquire/release）后撤销这次提升；
+- 持锁者释放锁后撤销这次提升；
 - 持锁者又阻塞在另一把 rt-mutex 上时，优先级提升可以沿依赖链传播；
 - 等待者按优先级组织，同优先级按 FIFO 排队。
 
@@ -750,6 +760,11 @@ Android 17 的 `ProcessState.cpp` 定义：
 - Binder 工作线程接近饱和，新事务迟迟没有线程处理。
 
 分析时，我们从调用端事务跟到服务端回复，再看服务端线程的状态；如果它在等锁，就继续找持锁线程。“Binder 调用耗时”只是起点，停在这里就断了线索。
+
+<!-- gracker-diagram: ch01-08-binder-lock-wait-chain -->
+![从同步 Binder 等待继续追到服务端锁](../../assets/diagrams/ch01/ch01-08-binder-lock-wait-chain.png)
+
+图：这是服务端已经收到请求、随后等待业务锁的一种现场。沿 Binder 事务找到服务端线程，再沿锁找到持有者，区分持锁者未获 CPU、做长计算或等待下游资源。
 
 #### 6.1 Android 17 AMS 的 `mGlobalLock` 与 `mProcLock`
 

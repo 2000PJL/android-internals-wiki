@@ -130,6 +130,11 @@ Resources
 
 多个 `Resources` 可以指向同一个 `ResourcesImpl`。因此，看到多个 `Context` 或 `Resources` 对象，不能据此认定原生资源表复制了多份。
 
+<!-- gracker-diagram: ch01-18-resource-sharing -->
+![Resources 包装层与共享实现](../../assets/diagrams/ch01/ch01-18-resource-sharing.png)
+
+图：多个 Resources 可共享一个 ResourcesImpl。全局配置更新会更新已有实现；资源键包含路径、显示屏和覆盖配置等，键不同才需要查找或创建对应实现。缓存表通过弱引用持有实现。
+
 ### ResourcesKey 保存什么
 
 Android 17 的 `ResourcesKey` 包含：
@@ -163,6 +168,11 @@ ResourcesManager#applyConfigurationToResources
 
 “旋转一次就创建一个新 `ResourcesImpl`”和“拖动窗口时为每个尺寸都保留一份缓存”这两种推断都不成立。是否新建取决于资源键和覆盖配置是否改变，以及旧 `ResourcesImpl` 能否复用。
 
+<!-- gracker-diagram: ch01-18-global-resource-update -->
+![全局配置更新与资源键变化的不同处理](../../assets/diagrams/ch01/ch01-18-global-resource-update.png)
+
+图：全局配置更新主要遍历现有存活实现并合并覆盖配置；Activity 覆盖配置、显示屏或路径等改变资源键时，查找或创建对应实现，再让 Resources 改指向它。两条路径可能共同参与一次界面变化。
+
 ## Activity 为什么会重新启动
 
 `ActivityRecord.shouldRelaunchLocked()` 的最终判断可以写成一个位运算：
@@ -183,6 +193,11 @@ ResourcesManager#applyConfigurationToResources
 8. `AppCompatRecreateOnConfigChangePolicy.getRecreateConfigMask()`：包内存在相应限定符资源，或应用明确要求重建时，把这些位从免重建掩码中移除。
 
 只要还有一个变化位未被免重建掩码覆盖，Activity 就会 relaunch。`orientation` 经常和 `screenSize`、`screenLayout`、窗口边界一起变化，所以只声明 `orientation` 仍可能重建。
+
+<!-- gracker-diagram: ch01-18-relaunch-decision -->
+![合并配置之后，按变化位决定 Activity 重建](../../assets/diagrams/ch01/ch01-18-relaunch-decision.png)
+
+图：ActivityRecord 先比较合并配置，再结合清单、资源和兼容策略计算免重建掩码。仍有未覆盖变化位时重建 Activity，否则走配置派发；无有效变化等情况可以直接返回。进程级资源更新是另一条相关路径。
 
 ### 应用进程内的重建顺序
 

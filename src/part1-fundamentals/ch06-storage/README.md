@@ -2,9 +2,14 @@
 
 > 平台源码统一锚定 AOSP `android-17.0.0_r1` / Android 17（API 37）；涉及内核机制时，以 `android17-6.18-2026-06_r6` 为核对基线。量产设备的文件系统、块设备、调度器和厂商补丁以产品配置为准。
 
-Android I/O（输入/输出）问题常常看起来是偶发的：主线程某次读取被 page fault（缺页）拉长，`fsync()` 等待闪存完成持久化，后台任务与前台启动争用块设备，或共享存储请求经过 MediaProvider 和 FUSE（用户态文件系统）后增加了延迟。只看 Java 调用栈，很容易把存储等待误判成业务计算。
+Android I/O（输入/输出）问题常常看起来是偶发的：主线程某次读取被 page fault（缺页）拉长，fsync() 等待文件系统提交并按存储栈协议同步，后台任务与前台启动争用块设备，或共享存储请求经过 MediaProvider 和 FUSE（用户态文件系统）后增加了延迟。只看 Java 调用栈，很容易把存储等待误判成业务计算。
 
 分析时应先确认请求经过哪些层、在哪里等待，再看上层接口和底层设备条件，最后讨论优化，不预设哪个文件系统更快：
+
+<!-- gracker-diagram: ch06-overview-storage-layers -->
+![存储访问入口与共同下层](../../assets/diagrams/ch06/ch06-overview-storage-layers.png)
+
+图：直接私有路径与共享存储入口不同；下层的文件系统、缓存、加密和块设备仍共同影响延迟。图为概念分层，具体产品可能没有 device-mapper 或采用不同配置。
 
 - 应用私有目录通常经由 VFS（统一文件系统接口）、ext4/F2FS、device-mapper（块设备映射层）和块 I/O 层到达存储设备；
 - 共享存储还要考虑 MediaProvider、FUSE、passthrough（绕过部分用户态数据转发）、FUSE BPF（让部分 FUSE 操作在内核侧处理）和 scoped storage（分区存储）权限检查；
@@ -15,6 +20,11 @@ Android I/O（输入/输出）问题常常看起来是偶发的：主线程某�
 eMMC、UFS 和 NVMe 是不同的存储接口，并发队列能力并不相同；ext4 与 F2FS 在写入、回收和一致性策略上也有差异。Android 平台允许产品选择不同组合，不能把“UFS 已普及”或“F2FS 随机写一定优于 ext4”当作具体设备的事实。调试前应记录挂载表、文件系统、块设备、内核配置和测试负载。
 
 ## 内容索引
+
+<!-- gracker-diagram: ch06-overview-reading-map -->
+![第6章按问题选择阅读入口](../../assets/diagrams/ch06/ch06-overview-reading-map.png)
+
+图：四个入口按问题选择，也可从架构到具体机制顺序阅读；图中的连接表示知识关系。
 
 
 - [6.1 Android 存储架构](01-storage-architecture.md)
@@ -32,5 +42,10 @@ eMMC、UFS 和 NVMe 是不同的存储接口，并发队列能力并不相同；
 2. 用 Perfetto 和 ftrace（内核跟踪工具）对齐应用延迟、调度、page fault、writeback（脏页回写）和块 I/O；
 3. 区分同步语义、队列拥塞、闪存长尾、文件系统回收和权限路径成本；
 4. 在同一设备、同一构建和同一温度条件下做单变量复测。
+
+<!-- gracker-diagram: ch06-overview-investigation-flow -->
+![存储延迟的调查顺序](../../assets/diagrams/ch06/ch06-overview-investigation-flow.png)
+
+图：先证明延迟发生在哪段等待，再做单变量复测。单独看到 D 状态、page fault 或 block 事件，只是线索，仍需与目标请求的时间和调用链关联。
 
 应用启动阶段的 I/O 问题可以结合启动章节分析；如果同时出现 reclaim（内存回收）、PSI（资源压力停顿指标）或 page fault，还应查看内存管理章节。

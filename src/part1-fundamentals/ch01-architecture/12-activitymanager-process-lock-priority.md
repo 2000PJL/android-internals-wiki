@@ -208,7 +208,7 @@ AMS 通过 `IActivityManager` Binder 接口接受跨进程请求。请求通常�
 - Binder 事务、线程状态和 Java 监视器锁竞争（monitor contention）；
 - 系统事件日志（EventLog），例如 `am_proc_start`、`am_proc_bound`、`am_anr`、`am_crash`、`am_kill`。
 
-EventLog 属于另一类数据：只有跟踪配置启用了 Android 日志数据源并包含事件缓冲区（events buffer），`android_logs` 表中才会有这些记录。下面的查询同时保留消息内容，便于读取 PID（PID）、进程名和原因（`reason`）：
+EventLog 属于另一类数据：只有跟踪配置启用了 Android 日志数据源并包含事件缓冲区（events buffer），`android_logs` 表中才会有这些记录。下面的查询同时保留消息内容，便于读取 PID、进程名和原因（`reason`）：
 
 ```sql
 SELECT
@@ -265,15 +265,15 @@ Android 的进程分级远多过“前台”和“后台”两档。AMS 会综�
 | `SERVICE_B_ADJ` | 800 | 较低优先级的旧 Service |
 | `CACHED_APP_MIN_ADJ`～`CACHED_APP_MAX_ADJ` | 900～999 | 缓存进程 |
 
-表中数值是源码常量，具体进程落在哪一档要看当时的依赖关系：Android 17 还可以通过功能开关（feature flag）对可见进程和上一个应用（previous app）分配更细的档位。`TOP（顶部）_SLEEPING` 则是计算分支中的调整类型 `adjType`，常量表里并没有它。
+表中数值是源码常量，具体进程落在哪一档要看当时的依赖关系：Android 17 还可以通过功能开关（feature flag）对可见进程和上一个应用（previous app）分配更细的档位。`TOP_SLEEPING` 则是计算分支中的调整类型 `adjType`，常量表里并没有它。
 
-前台 Service 的 `adj` 同样不是“永远 100”。在当前固定源码版本中，常规的非 `short（短时）Service` 类型 FGS 通常受 `PERCEPTIBLE_APP_ADJ = 200` 保护；刚从顶层应用进入 FGS 的进程可在宽限期内使用 50。它仍可能在极端内存压力、异常或用户停止服务时退出。
+前台 Service 的 `adj` 同样不是“永远 100”。在当前固定源码版本中，常规的非 `shortService` 类型 FGS 通常受 `PERCEPTIBLE_APP_ADJ = 200` 保护；刚从顶层应用进入 FGS 的进程可在宽限期内使用 50。它仍可能在极端内存压力、异常或用户停止服务时退出。
 
 #### AMS 如何把分数交给 `lmkd`
 
 实际计算位于 `com.android.server.am.psc.OomAdjuster` 和 `OomAdjusterImpl`。
 
-计算完成后，`ProcessList.setOomAdj()` 通过 socket 向低内存终止守护进程（lmkd） `lmkd` 发送 `LMK_PROCPRIO` 消息，消息中包含 PID（UID）、UID 与 `adj`。`lmkd` 再结合 PSI（资源压力停顿信息（PSI））、剩余内存水位、回收压力及候选进程信息，决定是否终止进程以及选择哪个进程。
+计算完成后，`ProcessList.setOomAdj()` 通过 socket 向低内存终止守护进程（lmkd） `lmkd` 发送 `LMK_PROCPRIO` 消息，消息中包含 PID、UID 与 `adj`。`lmkd` 再结合 PSI（资源压力停顿信息）、剩余内存水位、回收压力及候选进程信息，决定是否终止进程以及选择哪个进程。
 
 “`lmkd` 每次从 `/proc/<pid>/oom_score_adj` 扫描并按最大值终止进程”过度简化了现行实现。`oom_score_adj` 仍是内核可见的重要状态，但 AMS 与 `lmkd` 之间存在明确的控制消息。
 
@@ -836,6 +836,11 @@ private void updateLruProcessLSP(...) {
 
 双锁允许 LRU 读取避开全局锁，但 LRU 排序、插入和删除仍要同时保护列表结构与关联状态。
 
+<!-- gracker-diagram: ch01-12-composite-lock-contract -->
+![AMS 组合锁的读取与写入契约](../../assets/diagrams/ch01/ch01-12-composite-lock-contract.png)
+
+图：以 mLruProcesses 为例，读取可由任一锁保护；写入须先取得全局锁，再取得进程锁。CompositeRWLock 表达静态契约，实际仍是两把 Java monitor，其他字段以自己的注解为准。
+
 ### 4. 方法后缀是锁契约的速记
 
 读 AMS 进程管理代码时，我们会不断碰到 `LOSP`、`LSP`、`Locked` 这类方法名后缀。它们提示调用方：进入方法前需要持有什么锁。
@@ -1223,6 +1228,11 @@ Provider 连接也能传播客户端重要性。持有外部进程句柄（exter
 - 发送 `process_state_changed` Perfetto 事件；
 - 必要时主动清理超额 cached 进程。
 
+<!-- gracker-diagram: ch01-12-psc-computation -->
+![PSC 到 OomAdjuster 的状态计算与结果应用](../../assets/diagrams/ch01/ch01-12-psc-computation.png)
+
+图：组件和依赖变化经 PSC 提交到计算视图。OomAdjuster 先计算本地状态，再传播服务与 Provider 依赖、分配相关 LRU 档位，最终提交 adj、procState、schedGroup 和能力位；低内存终止仍由 lmkd 结合压力策略判断。
+
 ### 五、`procState`、`schedGroup` 与 capability（能力位）
 
 #### 5.1 `procState` 的数字顺序表示重要性顺序
@@ -1254,7 +1264,7 @@ API 37 的 AMS 调度组常量是：
 | `SCHED_GROUP_TOP_APP_BOUND` | 4 | `THREAD_GROUP_TOP_APP` |
 | `SCHED_GROUP_FOREGROUND_WINDOW` | 5 | `THREAD_GROUP_FOREGROUND_WINDOW` |
 
-具体使用哪些 cgroup 控制器、uclamp（调度器利用率上下界） 和 cpuset（可运行的 CPU 集合），由设备的 task profile（任务配置（task profile））和 libprocessgroup 配置决定：uclamp 设定调度器的利用率上下界，cpuset 圈定可运行的 CPU 集合。`schedGroup` 的含义要落到这些具体策略上；把它读成固定 CPU 百分比，或假定 API 37 仍通过某个 `/dev/cpuctl` 路径写值，都会出错。
+具体使用哪些 cgroup 控制器、uclamp（调度器利用率上下界） 和 cpuset（可运行的 CPU 集合），由设备的 task profile（任务配置）和 libprocessgroup 配置决定：uclamp 设定调度器的利用率上下界，cpuset 圈定可运行的 CPU 集合。`schedGroup` 的含义要落到这些具体策略上；把它读成固定 CPU 百分比，或假定 API 37 仍通过某个 `/dev/cpuctl` 路径写值，都会出错。
 
 进入 `top-app` 时，OomAdjuster 还会更新 UI / RenderThread 优先级；启用 FIFO UI 调度的产品使用先进先出调度回调，否则使用 `THREAD_PRIORITY_TOP_APP_BOOST`。离开 `top-app` 时再恢复。
 

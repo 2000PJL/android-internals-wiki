@@ -98,7 +98,7 @@ Linux 物理页规整、页面回收、ZRAM 压缩、Android 缓存应用回收�
 
 ### 1.3 ZRAM 保存换出的匿名内容
 
-ZRAM 把换出页压缩后保存在 RAM 中，压缩后的数据占用比原始页小，代价是压缩、解压的 CPU 时间和内存带宽。它回答的是“换出的匿名页放在哪”这个问题。
+ZRAM 把换出页保存在 RAM 中；可压缩数据通常能减少占用，但不可压缩页可能按原大小保存，内存池碎片和管理开销也要计入。压缩、解压还会消耗 CPU 时间和内存带宽。它回答的是“换出的匿名页放在哪”这个问题。
 
 至于释放出的基础页能否形成连续块，还要取决于物理位置、迁移类型和后续规整——ZRAM 只提供匿名页换出的存放位置，伙伴系统里的离散空闲页要靠规整去合并。
 
@@ -111,6 +111,11 @@ Framework 的 `CachedAppOptimizer` 也使用 compaction 这个名称，其 JNI �
 - 部分配置可以通过控制组（cgroup）的 `memory.reclaim` 执行进程级回收。
 
 这套机制针对缓存进程的 RSS，与 `mm/compaction.c` 中的伙伴系统物理页规整同名而含义不同。所以我们在 Perfetto 中看到 `Compaction` 轨道时，第一步是确认它来自 Framework 的 ATrace，还是 `compaction/mm_compaction_*` 内核跟踪点（tracepoint）——两个名字相同的事件，讲的并不是同一件事。
+
+<!-- gracker-diagram: ch04-07-four-memory-mechanisms -->
+![四种内存工作：连续性、数量、存放位置与目标进程](../../assets/diagrams/ch04/ch04-07-four-memory-mechanisms.png)
+
+图：物理页规整迁移存活页以形成连续空闲块；页面回收丢弃或换出内容以增加可用页；ZRAM 是交换后端，可压缩数据才有容量收益。CachedAppOptimizer 面向目标缓存进程执行冷却或回收建议，名字虽叫 compaction，处理的仍是驻留页面，并非伙伴系统物理布局。
 
 ## 2. order 描述连续物理页数量
 
@@ -142,6 +147,11 @@ order-0 是一个基础页，order-1 是两个相邻基础页。要把高阶分�
 
 注意这个表只做页数换算：设备是否使用 2 MiB THP、某次 2 MiB 虚拟内存申请是否会进入对应 order 的伙伴系统分配，都要另行确认。
 
+<!-- gracker-diagram: ch04-07-order-and-physical-contiguity -->
+![连续虚拟地址与连续物理页要分开判断](../../assets/diagrams/ch04/ch04-07-order-and-physical-contiguity.png)
+
+图：大块 malloc 或 Java 对象通常只要求虚拟地址连续，物理页可能逐次缺页获得。伙伴系统 order 则要求 2^order 个连续基础页；相同 order 的字节数随 PAGE_SIZE 改变。CMA、DMA heap、IOMMU 和驱动要求必须单独核对，不能从应用对象大小直接推导高阶分配。
+
 ## 3. 规整如何形成连续空闲区
 
 规整从两个方向扫描内存区域：
@@ -150,6 +160,11 @@ order-0 是一个基础页，order-1 是两个相邻基础页。要把高阶分�
 - 空闲页扫描器寻找可作为迁移目标的空闲页。
 
 页迁移成功后，低地址或目标区域中的占用页被移走，分散空闲页便有机会按伙伴系统规则合并。哪些页搬得动，直接决定这一轮规整的收获：长期固定（pinned）或无法迁移的页、不可移动的内核分配、受约束的页块，都会降低迁移成功率。
+
+<!-- gracker-diagram: ch04-07-two-scanners-and-migration -->
+![迁移页后合并空闲块：空闲总量可以保持不变](../../assets/diagrams/ch04/ch04-07-two-scanners-and-migration.png)
+
+图：八个基础页的简化示例中，M 表示可移动占用页，F 表示空闲页。把第 0、2 页迁往第 4、6 页后，前四页都空闲，若满足伙伴系统对齐与类型条件即可合并为 order-2。空闲页数仍为四页；变化的是物理分布。实际规整还有隔离、映射更新、迁移失败与跳过页块等成本。
 
 ### 3.1 迁移类型降低长期碎片
 
@@ -222,6 +237,11 @@ flowchart TD
 
 图里没有 `lmkd`，因为它是独立的用户空间守护进程：内核慢路径可以走进内核 OOM Killer，`lmkd` 则根据另一组压力证据，异步选择要终止的 Android 进程。
 
+<!-- gracker-diagram: ch04-07-allocation-slowpath-order -->
+![高阶慢路径可能先规整，常规重试才先回收](../../assets/diagrams/ch04/ch04-07-allocation-slowpath-order.png)
+
+图：空闲链表仍失败后，只有允许直接回收、允许规整、满足 costly 或非 MOVABLE 高阶等条件的请求，才先做初次规整。普通重试再次查链表并检查许可，然后直接回收、再直接规整。各次取得页面都可返回；GFP 策略可能提前失败。order-0 在直接规整入口立即返回，不会执行其中的物理页迁移。
+
 ### 4.3 order-0 分配与直接规整
 
 直接规整的入口先做一项检查：
@@ -258,11 +278,13 @@ PSI 直接告诉我们的，是任务因内存资源短缺而停顿这一层信�
 
 ## 5. 外部碎片指数的适用范围
 
-要判断“空闲页总量够、却合不出高阶块”是不是碎片问题，我们可以看 `/sys/kernel/debug/extfrag/extfrag_index`：按内存节点（node）、内存区域和 order 展示外部碎片指数（external fragmentation index）。内核文档给出的读法是：
+要判断“空闲页总量够、却合不出高阶块”是不是碎片问题，我们可以看 `/sys/kernel/debug/extfrag/extfrag_index`：按内存节点（node）、内存区域和 order 展示外部碎片指数（external fragmentation index）。该 debugfs 文件把内部整数指数除以 1000，以三位小数显示，读法是：
 
-- `-1`：只要满足 watermark，分配可以成功；
-- 趋近 `0`：失败更偏向可用内存不足；
-- 趋近 `1000`：失败更偏向外部碎片。
+- `-1.000`：已有满足 order 的空闲块，是否可分配仍取决于 watermark 等约束；
+- 趋近 `0.000`：失败更偏向可用内存不足；
+- 趋近 `1.000`：失败更偏向外部碎片。
+
+源码 `fragmentation_index()` 的内部表示则是 `-1000` 或 `0—1000`；`vm.extfrag_threshold` 与内部整数比较，不能把 debugfs 的显示值直接当作 sysctl 的数值尺度。
 
 在 `android17-6.18-2026-06_r6` 的 `compaction_suitable()` 中，内存水位检查先决定该区域是否具备迁移所需的空闲页。只有 `order > PAGE_ALLOC_COSTLY_ORDER` 时，代码才进一步使用外部碎片指数和 `vm.extfrag_threshold`，跳过预期收益偏低的规整：
 
@@ -282,6 +304,11 @@ if (suitable) {
 ```
 
 当前内核源码标签的 sysctl 文档写明 `extfrag_threshold` 默认值为 500；设备的实际值仍应现场读取。该阈值参与高成本阶数的规整适用性判断，即使超过阈值也不保证规整成功。
+
+<!-- gracker-diagram: ch04-07-extfrag-display-and-threshold -->
+![同一碎片指数有两种尺度，主动规整另用一套分数](../../assets/diagrams/ch04/ch04-07-extfrag-display-and-threshold.png)
+
+图：extfrag_index 按三位小数显示：-1.000 表示已有满足 order 的块，0.000 与 1.000 两端分别偏向容量不足和碎片。内部 fragmentation_index 使用 -1000 或 0—1000。compaction_suitable 先查迁移所需水位；costly order 才用内部整数与默认 500 的阈值比较。主动规整的 0—100 分数另行计算。
 
 读取 `extfrag_index` 需要 `CONFIG_DEBUG_FS`、`CONFIG_COMPACTION` 和相应权限，量产设备上往往读不到。这时可以退而求其次，用伙伴系统空闲块分布、迁移类型、规整结果和分配 order 建立间接证据；仅凭 `MemAvailable` 就宣布存在物理碎片，依据是不足的。
 
@@ -313,6 +340,11 @@ high = min(low + min(10, low / 2), 100)
 - 极端值可能产生过量后台规整和延迟尖峰。
 
 设备厂商可以改变配置和运行值。我们分析具体设备时应读取实际 sysctl；通用内核默认值只是上游基线，各 Android 17 产品的实际参数以现场读取为准。
+
+<!-- gracker-diagram: ch04-07-proactive-compaction-hysteresis -->
+![主动规整以高低阈值控制启动与退出](../../assets/diagrams/ch04/ch04-07-proactive-compaction-hysteresis.png)
+
+图：proactiveness 默认 20 时，low=80、high=90。kcompactd 用按 zone 大小加权的节点分数判断是否超过 high；规整具体 zone 时，其分数降到 low 或满足退避条件即可停止。kswapd 正运行会跳过或退出主动规整。写非零值会立即唤醒一次，0 只关闭主动模式；产品运行值必须实测。
 
 ### 6.2 三个参数服务不同决策
 
@@ -365,7 +397,7 @@ Android 17 源码可以通过内存事件监听器识别直接回收和 `kswapd`
 
 因此，`MemAvailable` 看起来仍高时，`lmkd` 仍可能因为马上可分配页贴近水位而把“低内存 + swap/thrashing”等条件纳入候选；反过来，水位没破、swap 充足且 refault 不增长时，PSI 唤醒也可能被判为无需 kill。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md]
 
-文件页抖动的分子是 `workingset_refault_file` 的区间增量，分母是上一窗口记录的 `nr_inactive_file + nr_active_file`；ZRAM 场景下，可用 swap 还会经过 `easy_available` 和 `swap_compression_ratio` 约束，而不是直接相信 `SwapFree` 的名义容量。排查 LMK 与直接回收相邻发生的问题时，应保存同一时间窗口内的 `/proc/vmstat`、`/proc/meminfo`、`/proc/zoneinfo` 和 `/proc/pressure/memory`，再用增量解释 thrashing、水位和 PSI 是否共同满足同一次查杀条件。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md]
+文件页抖动的分子是 `workingset_refault_file` 的区间增量，分母是上一窗口记录的 `nr_inactive_file + nr_active_file` 再加 1（避免除零）；ZRAM 场景下，可用 swap 还会经过 `easy_available` 和 `swap_compression_ratio` 约束，而不是直接相信 `SwapFree` 的名义容量。排查 LMK 与直接回收相邻发生的问题时，应保存同一时间窗口内的 `/proc/vmstat`、`/proc/meminfo`、`/proc/zoneinfo` 和 `/proc/pressure/memory`，再用增量解释 thrashing、水位和 PSI 是否共同满足同一次查杀条件。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-Android高版本LMKD源码解析PSI内存压力监控与查杀全流程.md]
 
 把这些增量放在一起，可以得到四条判断：
 
@@ -381,6 +413,11 @@ Android 17 源码可以通过内存事件监听器识别直接回收和 `kswapd`
 `libpsi` 的职责很窄，只负责 trigger 的注册与销毁；何时杀进程、内存压力为什么高，都在它的职责之外。`init_psi_monitor()` 以 `O_WRONLY | O_CLOEXEC` 打开 `/proc/pressure/memory`、`/proc/pressure/io` 或 `/proc/pressure/cpu`，写入 `"some|full threshold_us window_us"` 后返回同一个 fd；`register_psi_monitor()` 把这个 fd 以 `EPOLLPRI` 加入 `lmkd` 的 epoll，`destroy_psi_monitor()` 关闭 fd 并让内核销毁对应 trigger。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/libpsi/psi.cpp; system/memory/lmkd/libpsi/include/psi/psi.h; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md]
 
 因此，PSI 在 `lmkd` 中有两条通道：trigger fd 只负责“何时唤醒”，统计读取由 `lmkd.cpp` 的 `reread_file()` 缓存另一个只读 fd 后解析 `some/full avg10/avg60/avg300/total`。`psi_parse_mem()` 解析 memory 的 `some` 与 `full` 两行，`psi_parse_cpu()` 只按 `some` 解析 CPU 压力；把 `/proc/pressure/memory` 的读数和 trigger 唤醒混成同一个 fd，会误判采集链路。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; system/memory/lmkd/libpsi/psi.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md]
+
+<!-- gracker-diagram: ch04-07-psi-two-fds-and-lmkd -->
+![PSI 唤醒与统计读取走两条 fd，终止进程还需后续决策](../../assets/diagrams/ch04/ch04-07-psi-two-fds-and-lmkd.png)
+
+图：libpsi 用写 fd 注册 some/full 阈值与窗口，并让 lmkd 监听 EPOLLPRI；lmkd 另缓存只读 fd 读取 avg 与 total。事件后还会轮询，默认 10 或 100 ms，等待进程退出时暂停。最终决策结合水位、swap、refault、回收与候选优先级；compact_fail 既不是 PSI 事件，也不是直接 kill 条件。
 
 排查“PSI 明明升高但 `lmkd` 没动作”时，我们要同时检查三件事：内核是否支持 PSI trigger、写入的 stall 类型与阈值是否满足、事件监听是否等待 `EPOLLPRI` 而非普通可读事件。即使 `avg10` 抬高，也只说明统计窗口内发生过压力停顿；是否触发 `lmkd` 决策，还取决于上述 trigger 条件、窗口限速、轮询补盲和后续决策树。[已验证: AOSP android-17.0.0_r1 system/memory/lmkd/lmkd.cpp; system/memory/lmkd/libpsi/psi.cpp; 来源: 技术文章/source/juejin-android/2026-08-26-76772546-AndroidPSI详解libpsi源码解析116行架起lmkd与内核的桥.md]
 
@@ -406,6 +443,11 @@ Android 17 新增内存管理守护进程（memory management daemon，`mmd`）�
 | 交换空间后处理 | 如何维护 ZRAM 中的冷页 | `mmd` |
 
 它们共享同一台设备的 CPU、物理内存、交换空间和 I/O，所以可能互相影响，但实现职责仍然分开。
+
+<!-- gracker-diagram: ch04-07-allocation-lmkd-mmd-responsibilities -->
+![分配慢路径、lmkd 与 mmd 共享资源，职责各自独立](../../assets/diagrams/ch04/ch04-07-allocation-lmkd-mmd-responsibilities.png)
+
+图：内核分配、回收与规整在请求线程或内核后台线程执行；lmkd 根据压力证据选择进程；mmd 管理 ZRAM 配置、重压缩、写回和预取。缓存进程经 CachedAppOptimizer 回收页面后，system_server 可延迟请求 mmd 写回相应 ZRAM 页；这不改变物理页规整与 kill 选择的归属。
 
 ## 8. Perfetto：先确认事件，再解释影响
 
@@ -452,7 +494,7 @@ data_sources {
 1. 卡顿起止与该线程的 `mm_vmscan_direct_reclaim_begin/end` 重叠；
 2. 事件字段与调用栈指向同一次分配；
 3. PSI 或 vmstat 在相同窗口给出压力证据；
-4. 排除 Binder 对端、锁竞争和磁盘 I/O 等更直接原因。
+4. 区分回收内部的 I/O、锁等待与操作本身的其他等待，核对 Binder 对端、外部锁竞争等是否另有延迟贡献。
 
 若归因给直接规整，还应补充：
 
@@ -474,6 +516,11 @@ data_sources {
 - 是否随后触发 Android 17 的按进程 ZRAM 写回。
 
 统计内核的 `compact_stall` 时，要把 Framework 的 `Compaction` 持续区间单独归类，两者来自不同机制。
+
+<!-- gracker-diagram: ch04-07-trace-thread-context-and-latency -->
+![同一时间窗里，要把目标线程与后台内存工作分轨](../../assets/diagrams/ch04/ch04-07-trace-thread-context-and-latency.png)
+
+图：示意轨道显示目标线程内部的同步回收或规整，与 kswapd、kcompactd 和 Framework 应用回收可在时间上重叠。归因需要目标 TID、同次分配 order/GFP、成对事件、调用栈及调度状态。后台线程活跃或全局累计计数增长，都不能单独给出目标线程等待了多久。
 
 ## 9. bugreport 与 adb：用增量，不用单点
 
@@ -529,7 +576,7 @@ adb shell cat /proc/meminfo
 - `/proc/swaps` 给出交换设备和使用量；
 - ZRAM `mm_stat` 字段含义应按设备内核文档解释；
 - `SwapTotal/SwapFree`、`CmaTotal/CmaFree` 是否存在取决于配置；
-- ZRAM 占用上涨只说明匿名页进入了压缩交换空间；目标线程是否执行了直接回收，要另行证明。
+- ZRAM 上涨要先明确字段：`orig_data_size` 表示逻辑未压缩数据量，`compr_data_size` 表示压缩数据量，`mem_used_total` 还含内存池开销与碎片。匿名页和可交换的 shmem 都可能进入 ZRAM，重压缩、写回也会改变占用；目标线程是否执行了直接回收，要另行证明。
 
 debugfs 可用时再读取：
 
@@ -656,6 +703,11 @@ Android 17 通用内核的 arm64 GKI 配置（`arch/arm64/configs/gki_defconfig`
 | 目标线程直接回收明显，未出现物理页规整 | 可用页数量压力，或交换空间/页缓存代价 | 降低峰值、减少驻留页、检查 I/O |
 | 目标高阶分配反复规整失败，CMA/驱动证据一致 | 连续页供应或不可迁移页问题 | 驱动、DMA 堆、CMA 与系统配置 |
 | 只有 Framework 的 `Compaction` 持续区间 | CachedAppOptimizer 正在回收缓存进程页面 | 分析冻结/回收策略与前台资源竞争 |
+
+<!-- gracker-diagram: ch04-07-camera-latency-diagnosis -->
+![相机首帧延迟：先找目标线程，再按入口分流证据](../../assets/diagrams/ch04/ch04-07-camera-latency-diagnosis.png)
+
+图：案例中的 200 ms 是假设值。先定位相机请求线程、调度与调用栈，再识别是否有直接回收、高阶规整或仅有 Framework 应用回收。把目标 zone/order、buddyinfo、水位与区间计数对齐；CMA、DMA heap 和驱动证据一致时，才转向连续页供应。应用侧仍要量分配峰值和释放时机，再做单变量复测。
 
 ## 14. 复核清单
 

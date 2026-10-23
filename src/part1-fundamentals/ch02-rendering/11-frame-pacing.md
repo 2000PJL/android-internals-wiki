@@ -75,6 +75,11 @@ Frame pacing（帧节奏控制）要同时约束三件事：应用从哪个节�
 
 这四项会互相影响，却谁也替代不了谁：Choreographer tick 只给出一帧工作的起点，frame-rate vote 只声明内容倾向的帧率，presentation target 只描述希望的时刻；队列深度、GPU 完成情况和显示反馈，仍要靠 pacing 算法一并处理。
 
+<!-- gracker-diagram: ch02-11-four-controls -->
+![起帧、pacing、目标时间与帧率投票各有职责](../../assets/diagrams/ch02/ch02-11-four-controls.png)
+
+图：四种控制分别回答何时开始、何时等与提交、希望何时显示、偏好什么内容帧率。它们共同作用于体验，任何一个单独 API 都不足以控制 GPU 完成、队列深度与最终呈现。
+
 ## 帧节奏问题在 trace 中的表现
 
 我们先看数字：90 Hz 的刷新周期约为 11.11 ms，而 60 FPS 内容的目标帧间隔约为 16.67 ms，两者没有整数倍关系。应用如果每次 GPU 工作一结束就 present，显示侧可能让相邻内容帧分别停留一个和两个刷新周期，重负载下间隔的组合还会更杂乱。
@@ -126,6 +131,11 @@ bool SwappyGL::swapInternal(EGLDisplay display, EGLSurface surface) {
 
 所以 Swappy 的作用范围超过“替换一次 swap”：它用 fence 约束在途帧，用 presentation timestamp 选择显示周期，再依据观测到的 CPU/GPU 时间调整 swap interval（间隔倍数） 与 pipeline mode。
 
+<!-- gracker-diagram: ch02-11-swappy-swap-sequence -->
+![Swappy 在真正 swap 前后安排同步与时序](../../assets/diagrams/ch02/ch02-11-swappy-swap-sequence.png)
+
+图：该版本 GL 路径先插入同步 fence，由等待线程观察 GPU 进度；onPreSwap 根据节拍、完成反馈和目标 interval 决定等待。满足条件时才设置 presentation time，然后实际 swap，onPostSwap 更新统计与下一次目标。
+
 ## Choreographer 与 DisplayManager 的回退路径
 
 接入 Swappy 时，公开约定只有一条：`SwappyGL_init(JNIEnv*, jobject)` 与 `SwappyVk_initAndGetRefreshCycleDuration(JNIEnv*, jobject, ...)` 都必须接收 JNI env（JNI 调用环境） 和 Activity。内部 `ChoreographerThread` 的选择树是实现细节，源码中的 `vm == nullptr` 分支只描述内部对象如何选择节拍源，不能据此省掉公开入口要求的 Android 上下文。
@@ -150,7 +160,7 @@ bool SwappyGL::swapInternal(EGLDisplay display, EGLSurface surface) {
 
 ## Auto 模式与多刷新率按运行状态计算
 
-Auto 模式常被理解成 90 FPS、45 FPS、30 FPS 三档阈值表。我们拿 `SwappyCommon::calculate（延迟）SwapInterval(frameTime, refreshPeriod)` 的源码对照一下，就会对不上。它的逻辑是：
+Auto 模式常被理解成 90 FPS、45 FPS、30 FPS 三档阈值表。我们拿 `SwappyCommon::calculateSwapInterval(frameTime, refreshPeriod)` 的源码对照一下，就会对不上。它的逻辑是：
 
 - `frameTime < refreshPeriod`，interval 取 1。
 - 否则用 `frameTime / refreshPeriod` 做整数除法。
@@ -179,6 +189,11 @@ int SwappyCommon::calculateSwapInterval(nanoseconds frameTime,
 - `FrameDurations` 的采样窗口是 `2 s`，用来估计近期 CPU/GPU 的帧耗时。
 
 拿 90 Hz 设备估算：22 ms 左右的 frame time 会被 `calculateSwapInterval()` 算成 2 个 refresh period，得到约 22.22 ms 的展示节奏。这个数来自运行时计算，不来自配置表里的“45 FPS 档位”。
+
+<!-- gracker-diagram: ch02-11-auto-interval -->
+![Auto interval 来自运行时帧耗时与刷新周期](../../assets/diagrams/ch02/ch02-11-auto-interval.png)
+
+图：图只表示 calculateSwapInterval 的取整规则。先比较 frameTime 与 refreshPeriod，否则用商和余数决定是否再加一；500 ns 是取整边界容差，50 ms 则属于 Auto 主动等待策略的另一阈值，二者用途不同。
 
 ## OpenGL、Vulkan 与非游戏场景的接入边界
 
@@ -237,6 +252,12 @@ VkResult result = SwappyVk_queuePresent(queue, &presentInfo);
 
 `SwappyVk_queuePresent(VkQueue, const VkPresentInfoKHR*)` 会代应用调用 `vkQueuePresentKHR()`，中间还可能改写 `pNext` 或插入同步命令。因此重建 swapchain（交换链，用于管理待显示图像） 前应先调用 `SwappyVk_destroySwapchain()`，device 生命周期结束时再调用 `SwappyVk_destroyDevice()`；顺序反了，库内按 swapchain/device 保存的状态就会失效。
 
+<!-- gracker-diagram: ch02-11-vulkan-setup-lifetime -->
+![Vulkan 扩展先于 device 创建，Swappy 状态跟随对象寿命](../../assets/diagrams/ch02/ch02-11-vulkan-setup-lifetime.png)
+
+图：创建 VkDevice 前先合并 Swappy 要求的扩展；对象创建后再初始化对应 swapchain，并设置 Window
+与 queue family 信息。每帧由 Swappy 接管 present，重建或退出时先清理库保存的 swapchain/device 状态，避免使用失效对象。
+
 Unity、Unreal 这类引擎的集成方式与默认开关随版本变化，分析时我们记录引擎版本、graphics API、render pipeline（渲染管线） 和 frame-pacing 配置；“引擎支持 Swappy”只是前提，某个 APK 是否启用，要看它的打包配置。
 
 非游戏的 native 渲染器若只需要 VSync 驱动，直接用 `AChoreographer` 就够；Java 渲染循环则可以用 `Choreographer.FrameCallback`。下面的例子演示 callback 每次执行后把自己重新注册一次：
@@ -263,13 +284,18 @@ Android 17/API 37 新增了 `VK_EXT_present_timing` 平台支持。对自研 Vul
 
 在 `swapchain.cpp` 的映射里，前两项分别对应 render-complete timestamp（渲染完成时间） 与 composition-latch timestamp（合成锁存时间）；后两项目前都落在同一个 actual-present timestamp（实际显示时间） 上，两者之差也就给不出 scan-out（扫描输出）时长。该扩展与较早的 `VK_GOOGLE_display_timing` 解决相近问题，但接口更标准，反馈阶段也更细。
 
+<!-- gracker-diagram: ch02-11-present-stage-mapping -->
+![Android 17 的两个首像素阶段当前共享实际呈现时间戳](../../assets/diagrams/ch02/ch02-11-present-stage-mapping.png)
+
+图：AOSP 17 当前映射中，QUEUE_OPERATIONS_END 对应 render complete，REQUEST_DEQUEUED 对应 composition latch；两个 IMAGE_FIRST_PIXEL 阶段共享 actual present。阶段名不保证独立光学传感信息，该版本 Swappy release 也不会自动改用新 EXT 接口。
+
 AOSP 的 `VP_ANDROID_17_requirements.json` 把 `VK_EXT_present_timing`、`VK_KHR_present_id2` 和 `VK_KHR_present_wait2` 列为 Android 17 Vulkan Profile（能力要求集合） 的 `MUST`（必须支持） 项。这个 Profile 约束的是 Android 17 首发设备和新芯片的能力；应用仍要做自己的运行时检查，升级设备、定制系统、驱动状态和 feature（功能） 开关都可能造成差异。
 
 `android-17.0.0_r1` 的 Vulkan loader（加载器） 公布这个扩展是有条件的，`EnumerateDeviceExtensionProperties()` 只有在以下三项都满足时才加入 `VK_EXT_present_timing`：
 
 1. `service.sf.present_timestamp` 为 true；
 2. `present_timing_ext` 平台 flag（功能开关） 已开启；
-3. ICD（Install（停顿）able Client Driver，可安装客户端驱动）支持该扩展硬依赖的 calibrated timestamps（校准时间戳）能力。
+3. ICD（Installable Client Driver，可安装客户端驱动）支持该扩展硬依赖的 calibrated timestamps（校准时间戳）能力。
 
 所以应用仍要自己执行 `vkEnumerateDeviceExtensionProperties()`，并通过 `VkPhysicalDevicePresentTimingFeaturesEXT`、`VkPhysicalDevicePresentId2FeaturesKHR` 等 feature 结构查询、启用所需能力；查询 past presentation timing（历史显示时序） 之前，还要先用 `vkSetSwapchainPresentTimingQueueSizeEXT()` 配置反馈队列。
 

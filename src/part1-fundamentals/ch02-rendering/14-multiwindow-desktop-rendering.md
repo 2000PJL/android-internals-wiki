@@ -234,7 +234,7 @@ flowchart LR
 
 ### 先确认画面是否对应多个 Window
 
-同一 Activity 内的双栏 View、`Slid（上盖）ingPaneLayout` 或 Compose pane 可能只有一个 `ViewRootImpl` 和一条 App Window buffer 链路。比较可靠的多窗口判断依据是：
+同一 Activity 内的双栏 View、`SlidingPaneLayout` 或 Compose pane 可能只有一个 `ViewRootImpl` 和一条 App Window buffer 链路。比较可靠的多窗口判断依据是：
 
 - 多个顶层 `ViewRootImpl`；
 - WMS 中存在不同的 `WindowState`、Window token、Task 或 TaskFragment；
@@ -260,6 +260,11 @@ flowchart LR
 
 共享主线程和 RenderThread，并不改变每个窗口各自的 buffer 周期：A 的 release fence 直接决定 A 的旧 buffer 何时可复用；A 在共享 RenderThread 上一旦等待，排在后面的 B 也会被推迟。
 
+<!-- gracker-diagram: ch02-14-shared-execution-separate-buffers -->
+![窗口可共享执行线程，buffer 与 fence 仍各自独立](../../assets/diagrams/ch02/ch02-14-shared-execution-separate-buffers.png)
+
+图：图假定 A、B 位于同一进程、同一 UI Looper。两者的到期回调在共享 Choreographer 上串行执行，HWUI 任务也进入进程级 RenderThread；它们仍各有窗口 buffer 链路和 acquire/release 依赖。
+
 ### 跨进程窗口共享的设备资源
 
 不同进程各有 UI Looper、Choreographer 待处理帧状态、RenderThread、App Surface、GC 和处理 Binder 调用的线程池，并通过各自的 display event connection 接收 VSync 预测，应用任务不会直接排在同一线程。但在同一 Display 上，它们仍共享：
@@ -277,6 +282,11 @@ flowchart LR
 每个 Display 都有自己的可见 layer 集合、mode、HWC output 与 present fence。窗口从内屏移到外接屏后，解释外屏延迟要用外屏自己的 FrameTimeline 和 present fence，默认屏的数据套不过去。
 
 Output 指 SurfaceFlinger 面向某个 Display 构造的合成输出，同一个 layer 还可能经镜像、virtual display（虚拟显示） 或投屏进入多个 Output。检查延迟前先确认目标 Display 的 output layer state，全局 layer 存在与否只是第一步。
+
+<!-- gracker-diagram: ch02-14-display-specific-evidence -->
+![全局 Layer 快照不能直接当作每个 Display 的可见集合](../../assets/diagrams/ch02/ch02-14-display-specific-evidence.png)
+
+图：全局 Layer 状态会按目标 Output 的投影、layer stack 与可见性等条件筛选。同一 Layer 可经镜像参与多个输出，而每屏模式、合成类型、deadline 与 present fence 仍需分别保存；仅按 snapshot_id 做表连接会误判归属。
 
 ## Perfetto 与 dumpsys 的观察面
 
@@ -389,6 +399,11 @@ Android 17 的 window decoration 可以复用 `ViewHost`，减少 caption 反复
 
 fluid resize 期间，几何先到而新 buffer 未到时，旧内容可能被暂时缩放；veiled resize 则把成本推迟到结束点。排查时要记录当前策略、pointer/input、WCT、transition start/finish transaction、应用 relayout/traversal、BLAST buffer 尺寸和 display present，把“模糊”统一归因于 GPU sampling（纹理采样） 并不可靠，对照这些记录再下判断。
 
+<!-- gracker-diagram: ch02-14-move-fluid-veiled -->
+![移动、fluid resize 与 veiled resize 更新内容的时机不同](../../assets/diagrams/ch02/ch02-14-move-fluid-veiled.png)
+
+图：仅移动位置通常可以只更新 Surface position；fluid resize 连续推进几何并等待应用的新尺寸内容；veiled resize 用遮罩或预览承接拖拽，结束时提交最终 bounds。图表示策略差别，实际启用方式与设备、Shell 版本和配置有关。
+
 WMS 内部 `BLASTSyncEngine` 与 transition handler（过渡处理器） 协调参与同一过渡的 WindowContainer 和 surface transaction：start transaction 建立起始视觉状态，finish transaction 恢复或提交最终状态。未注册的 Camera、codec（编解码器）、SurfaceView producer 不会因为同屏就自动参加该同步协议。
 
 ## WMS geometry 与应用 buffer 是两条输入
@@ -406,6 +421,11 @@ Shell transition 常把 Task 或 Activity Surface 临时 reparent 到 leash 上�
 `ViewRootImpl.performTraversals()` 只在首帧、尺寸、可见性、Insets（系统栏等占用区域）或 `LayoutParams` 等条件变化时才进入 `IWindowSession.relayout()`，稳定的绘制帧里没有这一步。所以稳定绘制帧里没有 relayout slice 时，应用 draw 慢的原因要到 WMS 之外找。
 
 WMS 内部的 `BLASTSyncEngine` 可以等待一组 WindowContainer 的 draw/transaction；公开的 `SurfaceSyncGroup` 面向应用与嵌入 Surface。两者都只等已注册的参与者，Camera、codec 或游戏引擎的下一业务帧要另外建立同步。
+
+<!-- gracker-diagram: ch02-14-geometry-content-inputs -->
+![窗口 geometry 与应用 buffer 沿两条路径到达](../../assets/diagrams/ch02/ch02-14-geometry-content-inputs.png)
+
+图：WCT 改变 Task/WindowContainer 的管理状态，Shell/WMS 的 Surface 事务改变 leash 或 Layer 几何；应用在配置和尺寸变化后另外产出 buffer，经 BLAST 提交。新几何配旧 buffer 可能是过渡策略，参与同步的对象与目标帧必须单独核对。
 
 ### 从回调队列到 Display present
 
@@ -509,6 +529,11 @@ Android 17 r1 中，未设置的 `autoEnterEnabled` 返回 `false`。`seamlessRe
 
 PiP 的常见风险：leash geometry 已变而新 buffer 未到；圆角、alpha、HDR 的组合改变 HWC strategy；旧的大尺寸 buffer 尚未 release，新尺寸 buffer 已开始分配；进入小窗后 Producer 仍维持不必要的高分辨率或高帧率。SurfaceFlinger 缩小 layer 只改变合成时的几何，Producer 的分辨率和供帧节奏并不会跟着变。
 
+<!-- gracker-diagram: ch02-14-pip-leash-content -->
+![PiP 动画改变 leash，不要求每个采样点都重画视频](../../assets/diagrams/ch02/ch02-14-pip-leash-content.png)
+
+图：PiP 的 Shell 动画可持续更新 leash 位置、裁剪和缩放，视频 Producer 则按自己的内容节奏供帧。已有 buffer 可以在多个显示周期被复用；缩小 Layer 不会自动降低解码分辨率或生产帧率，仍需应用结合场景管理。
+
 ### Freeform resize：分开 geometry 与 buffer
 
 为便于对照，把旧 geometry 与旧 buffer 记为 `G0/B0`，新 geometry 与新 buffer 记为 `G1/B1`：
@@ -608,6 +633,11 @@ override fun onStop() {
 - `onStop()`：只在 Activity 离开屏幕时触发，离屏工作在这里停止。
 
 PiP 也要单独判断：它通常“可见但拿不到输入焦点”。持续播放视频时，要按动态窗口对待；内容已暂停时，则无须每帧都做完整 UI 刷新。
+
+<!-- gracker-diagram: ch02-14-visible-focus-stopped -->
+![可见、top-resumed 与 stopped 决定不同的资源策略](../../assets/diagrams/ch02/ch02-14-visible-focus-stopped.png)
+
+图：多窗口里多个可见 Activity 可以处于 RESUMED，top-resumed 还提供交互与资源仲裁信号。失去 top-resumed 时可减少非必要动画并准备处理资源抢占；可见的视频仍可能需要持续供帧，离屏进入 stopped 后再停止相应离屏工作。
 
 ## 优化策略
 

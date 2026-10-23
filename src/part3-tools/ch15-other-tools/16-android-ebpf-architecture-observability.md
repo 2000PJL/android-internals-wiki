@@ -188,7 +188,7 @@ flowchart LR
 
 #### bpfloader 做了什么
 
-`platform/system/bpf` 以 Rust 入口加载平台 libbpf 对象。libbpf 是 Linux 的 BPF 用户态加载库；Android 这里通过 Rust 绑定 `libbpf_rs` 使用它。`load_libbpf_progs()` 遍历内置文件描述，逐个打开对象、复用或创建 map、加载程序，并按元数据设置 pin 路径、所有者和权限；对象还可以声明内核版本范围、构建类型限制以及是否自动附加。Rust 路径执行完成后，入口会创建 vendor pin 目录并调用 `vendorBpfLoader()`，这个函数来自旧 C++ loader，负责为兼容旧接入方式而保留的 vendor BPF 对象。
+先看平台侧的入口：`platform/system/bpf` 以 Rust 入口加载平台 libbpf 对象。libbpf 是 Linux 的 BPF 用户态加载库；Android 这里通过 Rust 绑定 `libbpf_rs` 使用它。`load_libbpf_progs()` 遍历内置文件描述，逐个打开对象、复用或创建 map、加载程序，并按元数据设置 pin 路径、所有者和权限；对象还可以声明内核版本范围、构建类型限制以及是否自动附加。Rust 路径执行完成后，入口会创建 vendor pin 目录并调用 `vendorBpfLoader()`，这个函数来自旧 C++ loader，负责为兼容旧接入方式而保留的 vendor BPF 对象。
 
 两条路径都属于启动期的特权加载流程，`/sys/fs/bpf` 下的名称由对象前缀和元数据决定，各版本的命名格式未必一致。进程划分、对象清单和权限规则的完整展开放在后文《bpfloader、对象组织与权限》。把一个 `.o` 文件 push 到设备后通常还加载不起来，系统侧还要准备构建规则、SELinux 规则、loader 清单、map 权限和兼容性声明。
 
@@ -205,15 +205,15 @@ flowchart LR
 | Connectivity BPF | cgroup、socket、traffic-control（tc）等网络 hook | 按 UID、tag、接口等维度的流量和策略 map | netd、NetworkStats、Connectivity |
 | UprobeStats | 用户态 ELF 文件偏移对应的 uprobe | ring buffer、StatsD atom、bridge event | 受 statsd 配置控制的系统诊断 |
 
-表里的几个术语先弄清楚：UID 是 Android/Linux 用来标识用户或应用身份的整数；TGID 是 Linux 线程组 ID，通常对应用户看到的进程 ID。cgroup 是把进程分组并施加资源策略的内核机制，socket 是网络端点，tc 是 Linux 流量控制层。
+表里的术语我们顺着数据流向串一遍。timeInState 统计的 UID 是 Android/Linux 用来标识用户或应用身份的整数，进程级的 TGID 是 Linux 线程组 ID，通常对应用户看到的进程 ID。Connectivity 挂钩的 cgroup 是把进程分组并施加资源策略的内核机制，socket 是网络端点，tc 是 Linux 流量控制层。bpfMemEvents 面向的 AMS 指 ActivityManagerService，lmkd 是 Android 的低内存终止守护进程，kswapd 是内核后台页面回收线程，OOM/LMK 分别指内核内存耗尽与 Android 低内存终止流程。
 
-StatsD atom 是 statsd 接收的结构化指标记录；bridge event 则经 UprobeStats 的 Binder 桥接服务送往有权限的 framework 消费者。这里的 framework 是承载系统 Java API 与系统服务的 Android 框架层。AMS 指 ActivityManagerService，lmkd 是 Android 的低内存终止守护进程，kswapd 是内核后台页面回收线程，OOM/LMK 分别指内核内存耗尽与 Android 低内存终止流程。
+输出侧，StatsD atom 是 statsd 接收的结构化指标记录。bridge event 则经 UprobeStats 的 Binder 桥接服务送往有权限的 framework 消费者，这里的 framework 是承载系统 Java API 与系统服务的 Android 框架层。
 
 `timeInState.bpf` 不生成 Perfetto 的调度时间线，它在调度事件发生时更新累计 map。Perfetto 的线程运行状态通常来自 ftrace（内核函数与事件跟踪器） 的 `sched_switch`、`sched_waking` 等事件。两者能观察同一内核活动，只是一个保留累计值，一个保留事件顺序。
 
 ### Attach 点决定了 `ctx` 的结构
 
-BPF 程序的 `ctx` 是内核传给探针的上下文指针，没有统一布局。ELF section（对象文件分区） 名称、程序类型和目标事件共同决定参数怎么取。代码能通过 C 编译，运行时布局仍可能对不上。
+BPF 程序的 `ctx` 是内核传给探针的上下文指针，没有统一布局——参数怎么取，由 ELF section（对象文件分区） 名称、程序类型和目标事件共同决定。我们尤其要注意，代码能通过 C 编译，运行时布局仍可能对不上。
 
 | 附加方式 | section 示例 | `ctx` 的含义 | 适用场景 |
 |---|---|---|---|
@@ -223,7 +223,7 @@ BPF 程序的 `ctx` 是内核传给探针的上下文指针，没有统一布局
 | uprobe / uretprobe | 由用户态二进制、偏移和 perf event 建立 | `pt_regs`，参数按用户态 ABI 读取 | native 函数入口/返回；需正确换算 ELF 文件偏移并跟踪二进制版本 |
 | cgroup / socket / tc | 由具体 BPF program type 定义 | socket buffer、socket、cgroup 等专用上下文 | Android 网络统计和策略 |
 
-`pt_regs` 是内核保存寄存器现场的结构；ABI（application binary interface） 规定参数和返回值放在哪些寄存器或栈位置。tracepoint 是内核显式定义的事件接口，kprobe/uprobe 则分别在内核函数和用户态二进制位置放置动态探针。perf event（性能计数事件） 是 Linux 性能事件接口，uprobe 可借它完成附加。
+表中反复出现的 `pt_regs` 是内核保存寄存器现场的结构，参数和返回值放在哪些寄存器或栈位置，由 ABI（application binary interface） 规定。这几种附加方式里，tracepoint 是内核显式定义的事件接口，kprobe/uprobe 则分别在内核函数和用户态二进制位置放置动态探针；perf event（性能计数事件） 是 Linux 性能事件接口，uprobe 可借它完成附加。
 
 #### `raw_syscalls/sys_enter` 的两种读法
 
@@ -314,11 +314,13 @@ UprobeStats 面向平台控制的系统诊断，第三方应用拿不到任意�
 
 ### 五类常见问题该怎样选观测点
 
+这一节按问题类型过一遍选点思路：每类先看平台已有的数据源能回答什么，再判断要不要写新的 BPF 程序。
+
 #### CPU 时间与调度延迟
 
 `timeInState.bpf` 适合系统做累计记账，问题通常是“某 UID 在各频率上累计运行了多久”。它监听 `sched_switch`，根据当前 CPU 和频率更新 map；CPU 频率变化时，`cpu_frequency` 事件会更新频率索引。
 
-线程为何晚被调度、runnable（已经可以运行、正在等待 CPU） 状态持续了多久，则应采集 Perfetto 的 `sched_switch`、`sched_waking`、`sched_wakeup` 等 ftrace 事件。时间线保留事件顺序和线程状态，更适合定位抢占、CPU 饱和、优先级与 affinity 问题。affinity 是限制线程可在哪些 CPU 上运行的亲和性掩码。
+我们要回答的若是线程为何晚被调度、runnable（已经可以运行、正在等待 CPU） 状态持续了多久，则应采集 Perfetto 的 `sched_switch`、`sched_waking`、`sched_wakeup` 等 ftrace 事件。时间线保留事件顺序和线程状态，更适合定位抢占、CPU 饱和、优先级与 affinity 问题。affinity 是限制线程可在哪些 CPU 上运行的亲和性掩码。
 
 `/proc/stat` 导出的计数单位与内核配置和字段语义有关，采样间隔由采集方的轮询策略决定，先别把它描述成固定 10 ms 精度；这个接口的主要问题是全局累计值难以还原短时线程调度因果。
 
@@ -343,7 +345,7 @@ UprobeStats 面向平台控制的系统诊断，第三方应用拿不到任意�
 
 Android 的网络 BPF 由 Connectivity 与 netd 体系管理。netd 是系统网络守护进程；NetworkStats 是 framework 使用的按 UID、网络类型等维度统计流量的数据接口。BPF 程序可以在 cgroup、socket 和 traffic-control 等位置统计 UID/tag 流量或执行策略，用户态服务读取 pinned map 后形成上层数据。
 
-这套设施面向系统侧的计费与策略，不是给应用复用的抓包 API。应用侧若要看请求时序，应使用网络库事件、Perfetto 已开放的数据源或受控代理；系统开发者排查计费和策略问题时，再去核对 Connectivity BPF 对象、map 和对应服务。
+这套设施面向系统侧的计费与策略，不是给应用复用的抓包 API。应用侧若要看请求时序，应使用网络库事件、Perfetto 已开放的数据源或受控代理；轮到我们做系统侧的计费与策略排查时，再核对 Connectivity BPF 对象、map 和对应服务。
 
 #### 内存压力与分配异常
 
@@ -357,7 +359,7 @@ Android 的网络 BPF 由 Connectivity 与 netd 体系管理。netd 是系统网
 | dma-buf 或图形缓冲增长 | dma-buf 统计、GPU memory、SurfaceFlinger/BufferQueue |
 | 某个内核函数疑似泄漏 | 受控设备上的 tracepoint；没有稳定事件时再评估 kprobe |
 
-heap dump 是某一时刻堆对象与引用关系的快照，allocation track（时间线轨道）ing/sampling 记录对象分配；heapprofd（file descriptor，文件描述符） 是 Perfetto 的 native heap profiler，malloc debug 与 LeakSanitizer（LSan）则依赖不同程度的调试或插桩条件。
+heap dump 是某一时刻堆对象与引用关系的快照，allocation track（时间线轨道）上的 tracking/sampling 记录对象分配；heapprofd（file descriptor，文件描述符） 是 Perfetto 的 native heap profiler，malloc debug 与 LeakSanitizer（LSan）则依赖不同程度的调试或插桩条件。
 
 eBPF 擅长在事件发生时按条件计数，但不会自动理解对象所有权。泄漏结论仍要靠分配与释放配对、进程生命周期和上层资源语义证明。
 
@@ -494,7 +496,7 @@ Mainline 是 Android 可通过模块更新独立发布部分系统组件的机�
 | 网络请求时序 | 应用网络埋点、Perfetto | 系统网络统计或策略本身有问题 |
 | 平台长期轻量记账 | 已有系统 BPF map | 自有系统组件有明确且稳定的新指标 |
 
-PMU（Performance Monitoring Unit）是 CPU 的硬件性能计数单元，可记录 cycles、cache miss 等事件；simpleperf 是 Android 对 perf 能力的命令行封装。atrace 是 Android 写入 ftrace/Perfetto 的用户态标记接口，适合表示 framework 或应用中的区间和瞬时事件。
+表里的 PMU（Performance Monitoring Unit）是 CPU 的硬件性能计数单元，可记录 cycles、cache miss 等事件；simpleperf 是 Android 对 perf 能力的命令行封装；同属工具层的 atrace 则是 Android 写入 ftrace/Perfetto 的用户态标记接口，适合表示 framework 或应用中的区间和瞬时事件。
 
 ### 常见误读
 
@@ -589,7 +591,7 @@ netbpfload done
 
 `init.rc` 在 `on init` 阶段把 bpffs 挂到 `/sys/fs/bpf`。主启动序列完成 `post-fs-data` 后触发 `load-bpf-programs`，位置早于 `zygote-start`。Connectivity 的 `netbpfload.rc` 还要求此时 APEX 与日志系统已经可用，并要求 BPF 程序在 netd 启动前加载完成。
 
-`post-fs-data` 是 `/data` 挂载后的初始化阶段；Zygote 是 Android 应用与多数 Java 系统进程的孵化进程；netd 是系统网络守护进程。
+这段里的几个名词：`post-fs-data` 是 `/data` 挂载后的初始化阶段；Zygote 是 Android 应用与多数 Java 系统进程的孵化进程；netd 是系统网络守护进程。
 
 `exec_start bpfloader` 是同步动作，init 会等它结束。加载链末端的 `netbpfload done` 设置 `bpf.progs_loaded=1`，init 随后才启动 netd。
 
@@ -603,7 +605,7 @@ netbpfload done
 | 平台 system image | Rust `bpfloader.rs` + `libbpf-rs` | `/system/etc/bpf/` 及其子目录 | 文件必须登记在 Rust descriptor 中 |
 | 厂商分区 | `Loader.cpp::vendorBpfLoader()` | `/vendor/etc/bpf/*.o` | 保留 Android 旧式对象格式和加载规则 |
 
-clatd 负责 IPv4/IPv6 地址转换，offload 指把部分网络处理交给内核或硬件。system image（系统镜像） 是平台系统分区，vendor partition 是厂商分区。
+表里的几个词也交代一下：clatd 负责 IPv4/IPv6 地址转换，offload 指把部分网络处理交给内核或硬件；system image（系统镜像） 是平台系统分区，vendor partition 是厂商分区。
 
 `libbpf-rs` 是 libbpf 的 Rust binding（语言绑定）。平台 Rust 加载器不会扫描 `/system/etc/bpf` 后无条件加载每个文件，而是按 `BpfFileDesc` descriptor（描述文件路径、权限和对象清单的数据结构） 打开指定对象，逐个核对 map、program 名称。
 
@@ -729,7 +731,7 @@ map 的 PERCPU、HASH、ARRAY 类型以 `timeInState.c` 中的 `DEFINE_BPF_MAP_*
 4. 把 delta 写入 UID 驻留时间、UID 并发时间与整机总量；
 5. 若 TGID 在跟踪列表中，再写入进程级频率驻留 map。
 
-CPU policy 是共享同一调频策略的一组 CPU，frequency bucket 是把频点映射成的紧凑索引。`ktime` 是内核单调时钟时间，delta 是本次与上次事件的时间差。
+结算用到的几个量：CPU policy 是共享同一调频策略的一组 CPU，frequency bucket 是把频点映射成的紧凑索引，`ktime` 是内核单调时钟时间，delta 则是本次与上次事件的时间差。
 
 SDK sandbox 是 Android 为第三方 SDK 提供的隔离进程环境。它的 UID 有一段专门逻辑：运行时间会记到对应 App UID，也会记到保留的 `AID_SDK_SANDBOX` 聚合 UID；framework 侧计算系统总量时要处理这份重复记录。
 
@@ -972,7 +974,7 @@ adb shell su root cat \
 paste - - - - < dmabuf.snapshot
 ```
 
-第一条命令中的重定向由主机 shell 执行，因此 `dmabuf.snapshot` 保存在主机上；`paste - - - -` 再把连续四行拼成一行。合并后的列顺序是 inode、bytes、name、exporter（导出方）。诊断时至少采集两个时间点，按 inode 对比新增、消失和大小变化；单次快照只能描述读取当时仍存活的 DMA-BUF。
+第一条命令中的重定向由主机 shell 执行，因此 `dmabuf.snapshot` 保存在主机上；`paste - - - -` 再把连续四行拼成一行。合并后的列顺序是 inode、bytes、name、exporter（导出方）。我们诊断时至少采集两个时间点，按 inode 对比新增、消失和大小变化；单次快照只能描述读取当时仍存活的 DMA-BUF。
 
 #### 能做与不能做
 

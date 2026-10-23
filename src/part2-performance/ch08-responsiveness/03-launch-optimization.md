@@ -3,8 +3,8 @@ title: 启动优化策略
 chapter: '8.3'
 status: finalized
 applicable_versions: Android 8.0 (API 26) - Android 17 (API 37)
-last_verified: '2026-08-29'
-last_verified_against: Android Developers launch-time/SplashScreen/SplashScreen migration/Baseline Profiles/App Startup/AsyncLayoutInflater/Android 17 MessageQueue docs + AOSP android-17.0.0_r1 ActivityThread/ViewStub + AndroidX AppInitializer/InitializationProvider/AsyncLayoutInflater sources
+last_verified: '2026-10-23'
+last_verified_against: Android Developers launch-time/SplashScreen/SplashScreen migration/Baseline Profiles/App Startup/AsyncLayoutInflater/Android 17 MessageQueue docs + AOSP android-17.0.0_r1 ActivityThread/ViewStub + AndroidX AppInitializer/InitializationProvider/AsyncLayoutInflater sources; AndroidX implementation pinned at 35d8f1dda494fcd09f52177d9dd54bc65f9929de; profileable API29 and actual PerfettoSQL schema verified
 confidence: medium
 sources:
 - type: blog
@@ -36,11 +36,11 @@ sources:
 - type: aosp
   path: android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewStub.java
 - type: aosp
-  path: android.googlesource.com/platform/frameworks/support/+/androidx-main/startup/startup-runtime/src/main/java/androidx/startup/AppInitializer.java
+  path: android.googlesource.com/platform/frameworks/support/+/35d8f1dda494fcd09f52177d9dd54bc65f9929de/startup/startup-runtime/src/main/java/androidx/startup/AppInitializer.java
 - type: aosp
-  path: android.googlesource.com/platform/frameworks/support/+/androidx-main/startup/startup-runtime/src/main/java/androidx/startup/InitializationProvider.java
+  path: android.googlesource.com/platform/frameworks/support/+/35d8f1dda494fcd09f52177d9dd54bc65f9929de/startup/startup-runtime/src/main/java/androidx/startup/InitializationProvider.java
 - type: aosp
-  path: android.googlesource.com/platform/frameworks/support/+/androidx-main/asynclayoutinflater/asynclayoutinflater/src/main/java/androidx/asynclayoutinflater/view/AsyncLayoutInflater.java
+  path: android.googlesource.com/platform/frameworks/support/+/35d8f1dda494fcd09f52177d9dd54bc65f9929de/asynclayoutinflater/asynclayoutinflater/src/main/java/androidx/asynclayoutinflater/view/AsyncLayoutInflater.java
 tags:
 - startup-optimization
 - lazy-init
@@ -87,17 +87,27 @@ last_idle_audit_at: '2026-08-29'
 
 这几步要按顺序走：把无用初始化移到后台，它照样消耗 CPU、I/O 和内存；盲目增加并发，还可能让首帧线程长时间拿不到 CPU。
 
+<!-- gracker-diagram: ch08-03-01-decision-order -->
+![启动优化的工程决策顺序](../../assets/diagrams/ch08/ch08-03-01-decision-order.png)
+
+图：先固定指标并减少工作，再缩短关键依赖和控制并发，最后用实验与线上分布验证。
+
 ## 从 TTID、TTFD 和关键路径开始
 
 动手删任务之前，先把两个终点和一条关键路径定清楚，后面的每一步取舍都挂在它们上面。
 
 ### TTID 与 TTFD 的终点定义
 
-TTID（Time to Initial Display，首帧显示时间）的终点，是系统报告应用首帧已经绘制。首帧可以是完整首页，也可以是骨架屏、占位内容或错误页；系统 Splash 已经可见，离 TTID 结束可能还有一段，继续保留 Splash，应用首帧就随之后移。
+本文的 Framework TTID 终点是系统收到目标应用窗口 drawn 回报，不等于 GPU 完成、HWC present 或面板发光；Perfetto / Macrobenchmark 的具体显示代理端点也需按版本核对（见 8.2）。首帧可以是完整首页、骨架屏、占位或错误页。通过 keep condition 阻止应用首帧绘制会推迟这个端点；仅在已绘制后延长退出覆盖动画，则不能直接等同为 TTID 增长。
 
 TTFD（Time to Full Display，完整显示时间）由应用调用 `reportFullyDrawn()` 标记，表达“当前入口的主要内容已经可用”。具体边界由产品和工程团队共同定义：支持离线使用的首页，可以在本地数据显示完成后上报，无须等推荐位、广告和后台同步。应用没有上报时，测量工具可能拿不到 TTFD 结果，这时也不能拿 TTID 顶替。
 
 `adb shell am start -W`、Perfetto 的 `android_startups`、Macrobenchmark 的 `StartupTimingMetric` 和 Play Android Vitals 使用的数据来源相关但不完全相同，所以分析前先记录工具、版本、启动类型和终点定义；跨工具的数字各自成线，拼不成一条趋势线。
+
+<!-- gracker-diagram: ch08-03-02-endpoints -->
+![首帧、就绪与 Splash 覆盖分别计时](../../assets/diagrams/ch08/ch08-03-02-endpoints.png)
+
+图：Framework 窗口 drawn、业务 fully drawn 与 Splash 覆盖有不同端点；软件时刻不自动代表物理呈现。
 
 ### 给启动工作分三类
 
@@ -106,30 +116,52 @@ TTFD（Time to Full Display，完整显示时间）由应用调用 `reportFullyD
 | 类别 | 判断问题 | 常见处理 |
 | --- | --- | --- |
 | TTID 必需 | 缺少它时，应用能否提交一帧稳定、无错误的界面 | 保留在首帧路径，继续缩短执行时间 |
-| TTFD 必需 | 首帧可以出现，但主要内容或主交互尚不可用 | 首帧后继续执行，完成后上报 TTFD |
+| TTFD 必需 | 首帧可以出现，但主要内容或主交互尚不可用 | 可与首帧工作并行；主内容提交并可用后再报告 fully drawn |
 | 当前入口不需要 | 用户没有进入相关功能时，是否可以一直不执行 | 条件初始化或按需初始化 |
 
 分类的依据是当前入口的依赖和任务失败后的影响，SDK 名字本身说明不了什么。崩溃恢复、加密密钥、用户同意状态和路由规则，在某些产品中必须很早准备；图片、网络、统计或推送，在另一个入口可能完全用不到。
 
+<!-- gracker-diagram: ch08-03-03-task-classification -->
+![按目标终点划分初始化任务](../../assets/diagrams/ch08/ch08-03-03-task-classification.png)
+
+图：同一 SDK 可因入口不同而改变前置要求；TTFD 工作可与首帧准备并行。
+
 ### 关键路径决定总时长
 
-把启动任务画成 DAG（Directed Acyclic Graph，有向无环图），节点是任务，箭头是先后依赖，图中没有循环依赖。总时长由最长依赖链决定，所有任务耗时的简单相加说明不了它。下图是一个只保留实际执行依赖的简化入口，用来看首帧与完整可交互内容各自依赖哪些任务：
+把启动任务画成 DAG（Directed Acyclic Graph，有向无环图），节点是任务，箭头是先后依赖，图中没有循环依赖。[推断：依赖模型] 仅按依赖、假定资源充足且任务时长固定时，最长依赖链给出该终点的理想完成时间；真实执行还受线程亲和性、队列、CPU / I/O 争用和渲染约束影响，可能更长。不能把所有任务简单相加，也不能把静态 DAG 的最长链直接当成已测启动时间。下图是一个只保留实际执行依赖的简化入口，用来看首帧与完整可交互内容各自依赖哪些任务：
+
+<!-- gracker-diagram: ch08-03-04-content-dag -->
+![主内容依赖图与 fully drawn 门槛](../../assets/diagrams/ch08/ch08-03-04-content-dag.png)
+
+图：图中主数据可与首屏 UI 准备交叠，完整内容提交同时依赖两者；报告时刻与窗口 drawn 计时仍要核对。
+
+<details>
+<summary>查看 Mermaid 源码</summary>
 
 ```mermaid
 flowchart LR
     A["Application 绑定"] --> B["读取本地启动配置"]
     B --> C["创建首屏状态"]
     C --> D["inflate / compose 首屏"]
-    D --> E["提交应用首帧（TTID）"]
+    D --> E["目标窗口 drawn 回报（Framework TTID）"]
     B --> F["恢复账户快照"]
     F --> G["加载首页主数据"]
     C --> G
     G --> H["提交完整内容"]
-    H --> I["reportFullyDrawn（TTFD）"]
-    E --> J["统计、推送、预取等首帧后任务"]
+    D --> H
+    H --> I["报告 fully drawn，由 Framework 协调计时"]
+    E --> I
+    E --> J["可推迟的统计、推送、预取等任务"]
 ```
 
-比如 `D` 是 TTID 关键路径上耗时最长的节点，那么把 `F` 与 `G` 的并发度开得再大，也缩短不了 TTID；工作线程继续争用 CPU，TTID 还可能变差。所以每次修改前，我们先在 Perfetto 中标出目标 slice（时间片）、线程状态和前后依赖。
+</details>
+
+在这个简化依赖图中，若 `F / G` 的结果确实不阻塞 `D / E`，只加速 `F / G` 就不会直接缩短 TTID；即使 `D` 是链上最大节点，也应检查其他前置依赖和资源竞争。工作线程争用 CPU 时，TTID 还可能变差。所以每次修改前，我们先在 Perfetto 中标出目标 slice（时间片）、线程状态和前后依赖。
+
+<!-- gracker-diagram: ch08-03-05-critical-resources -->
+![DAG 最长链与真实资源限制](../../assets/diagrams/ch08/ch08-03-05-critical-resources.png)
+
+图：静态最长依赖链是资源充足模型的理想时间；队列与争用可延长真实关键路径。
 
 ## 延迟、懒加载与异步初始化
 
@@ -139,7 +171,17 @@ flowchart LR
 - **懒加载**改变触发条件，例如用户进入搜索页时才创建搜索索引。
 - **异步初始化**改变执行线程或等待方式，但任务仍可能在启动时立即开始。
 
-还要记住一点：换了线程，任务仍可能留在关键路径上。把任务交给后台线程，主线程转头就 `await`、`join` 或等锁，依赖链一段都没短，调度和同步开销反而多了一层。
+<!-- gracker-diagram: ch08-03-06-delay-lazy-async -->
+![延迟、懒加载与异步改变不同属性](../../assets/diagrams/ch08/ch08-03-06-delay-lazy-async.png)
+
+图：开始时间、触发条件、执行方式是三个独立维度，可组合安排。
+
+还要记住一点：换了线程，任务仍可能留在关键路径上。若首帧仍必须等后台结果，换线程不会消除这条依赖；是否能与其他必需工作重叠要按实际时序判断。协程的挂起式 `await` / `join` 可释放主线程执行别的消息，和 `CountDownLatch.await()` 或阻塞锁不同，但结果未就绪仍可能阻止约定的首帧 / 完整内容。
+
+<!-- gracker-diagram: ch08-03-07-suspend-blocking -->
+![挂起等待与主线程阻塞要分开](../../assets/diagrams/ch08/ch08-03-07-suspend-blocking.png)
+
+图：挂起 await 可释放主线程处理其他消息，阻塞等待会占住线程；必需结果未就绪时，两者仍有显示依赖。
 
 ### 为每项初始化写出任务契约
 
@@ -157,7 +199,7 @@ flowchart LR
 | idempotence | 幂等性：重复调用或进程重建时，是否会得到一致且安全的结果 |
 | observability | trace 名称、耗时、结果与失败原因 |
 
-下面的 Kotlin 数据结构只记录任务契约，不包含实际调度逻辑：
+下面的 Kotlin 数据结构只记录任务契约，不包含实际调度逻辑；`FailurePolicy` 是项目自行定义的失败策略类型：
 
 ```kotlin
 enum class StartupDeadline {
@@ -184,9 +226,14 @@ data class StartupTaskSpec(
 
 有了这些字段，代码评审就能检查一项任务为何必须提前执行、失败会影响谁。依赖检查、状态管理、线程切换、取消和追踪这些执行逻辑，仍要由执行器另外实现。
 
+<!-- gracker-diagram: ch08-03-08-task-contract -->
+![初始化任务契约必须回答什么](../../assets/diagrams/ch08/ch08-03-08-task-contract.png)
+
+图：描述符让决策可审查；线程切换、依赖管理、状态、取消与观测仍由执行器实现。
+
 ### 推迟到首帧之后
 
-主线程 `post`、协程 `launch` 或生命周期回调，管到的只是任务何时进入队列；轮到它执行时系统忙不忙，谁也保证不了。首帧后一口气提交过多任务，第二帧和输入响应照样受影响。实践上可以采用这些约束：
+主线程 `post`、协程 `launch` 或生命周期回调本身都不证明目标首帧已经绘制 / 提交，任务还可能早于首帧运行。若约定“首帧后”，应核对实际绘制 / 提交信号及其软件端点，再安排任务；这些信号也不等于物理 present。轮到任务执行时系统是否空闲仍无保证。首帧后一口气提交过多任务，第二帧和输入响应照样受影响。实践上可以采用这些约束：
 
 - 按用户可见价值排序，并限制同一时刻的 CPU 与 I/O 工作量；
 - 将大任务分成带有明确检查点的小段，并允许随生命周期取消；
@@ -194,11 +241,26 @@ data class StartupTaskSpec(
 - 限制主线程任务每次执行的时长，必要时跨帧继续；
 - 缓存与预取失败时允许页面走正常加载路径。
 
-`MessageQueue.IdleHandler` 的回调时机只由一件事决定：当前消息队列暂时没有到期消息。CPU、磁盘或整个进程是否空闲、回调多久之后到来，它一概不知，所以它只适合允许延后甚至跳过的维护工作；有明确业务期限的初始化要另找时机。
+<!-- gracker-diagram: ch08-03-09-after-first-frame -->
+![首帧后调度仍需预算与真实信号](../../assets/diagrams/ch08/ch08-03-09-after-first-frame.png)
+
+图：post、launch 与生命周期都不构成首帧屏障；确认目标软件端点后，仍需限制后续资源占用。
+
+`MessageQueue.IdleHandler` 在所属 Looper 的队列被判定 idle 时执行；r1 的实现会检查队列内容、消息时间及同步屏障等条件，到期屏障不能简单当作“没有可执行消息所以空闲”。它既不表示 CPU / 磁盘 / 全进程空闲，也不保证首帧之后或固定期限内运行。回调本身占用该 Looper 线程，只适合短小且可延后甚至跳过的工作。
+
+<!-- gracker-diagram: ch08-03-10-idlehandler -->
+![IdleHandler 只观察所属消息队列](../../assets/diagrams/ch08/ch08-03-10-idlehandler.png)
+
+图：队列 idle 不是系统空闲，也不证明首帧已完成；回调占用所属 Looper 线程。
 
 ### 按需初始化的状态机
 
 按需初始化可能被多个线程同时触发，所以我们需要一个状态机，明确当前处于 `UNINITIALIZED`、`INITIALIZING`、`READY` 还是 `FAILED`，并规定失败后能否重试。把初始化对象交给其他线程前，还要满足内存可见性要求，确保对方看到的是完整状态；语言级同步原语、`Mutex`、`CompletableFuture` 或受控的 `Deferred` 都可以做到。
+
+<!-- gracker-diagram: ch08-03-11-init-state -->
+![按需初始化的并发状态机](../../assets/diagrams/ch08/ch08-03-11-init-state.png)
+
+图：多线程触发须合并初始化；成功后安全发布，失败按有界策略处理，不让主线程无限阻塞。
 
 主线程发现组件仍处于 `INITIALIZING` 时，可以暂时禁用局部操作、缓存事件或显示轻量占位。无条件调用 `CountDownLatch.await()`，等于让主线程重新等后台任务，还可能因锁获取顺序形成死锁；业务确实无法降级时才选择等待，并且要设好有限期限、取消语义和现场记录。
 
@@ -207,6 +269,11 @@ data class StartupTaskSpec(
 启动期的后台工作和主线程抢的是同一份资源：CPU 时间、内存带宽、文件缓存、Binder 线程和存储队列。在 `android17-6.18-2026-06_r6` 上，调度器只负责从可运行任务中挑出下一项，哪个自定义 SDK 对 TTID 更重要，它并不知道；线程优先级、CPU 集群选择和频率，还要受系统策略影响。
 
 并发上限的确定顺序是：先看 Perfetto 中的 `sched`、`thread_state`、CPU frequency、Binder 和 I/O 轨迹，再结合设备实验和任务消耗的资源类型定数字。照 CPU 核数建同等数量的启动线程、给每个库单独建线程池，这两种捷径都容易把并发开过头。
+
+<!-- gracker-diagram: ch08-03-12-resource-contention -->
+![初始化并发上限由资源证据决定](../../assets/diagrams/ch08/ch08-03-12-resource-contention.png)
+
+图：线程数不等于可用性能；观察任务的实际 CPU、I/O、Binder 与共享锁竞争，再确定并发预算。
 
 ## 多线程初始化：DAG 只是起点
 
@@ -226,11 +293,26 @@ data class StartupTaskSpec(
 - 让超时、取消和任务本身的停止动作保持一致；
 - 阻止失败任务被无边界地重复提交。
 
-超时通常只取消了等待方：底层 SDK、Binder 调用或阻塞 I/O 并不会自动终止。所以执行器必须知道任务是否支持协作式取消——也就是任务能否主动检查并响应取消信号；对不支持取消的任务，要把结果隔离起来，避免稍后写入已经销毁的页面。
+<!-- gracker-diagram: ch08-03-13-dag-executor -->
+![执行器从合法依赖到实际调度](../../assets/diagrams/ch08/ch08-03-13-dag-executor.png)
+
+图：拓扑合法只表示先后关系可满足；执行器还要处理亲和性、资源、失败、排队与取消。
+
+超时的效果取决于 API：例如协程 `withTimeout` 会取消其代码块及结构化子任务，但取消是协作式的，不保证强行终止非协作 SDK、同步 Binder 或阻塞 I/O。所以执行器必须知道任务是否支持协作式取消——也就是任务能否主动检查并响应取消信号；对不支持取消的任务，要把结果隔离起来，避免稍后写入已经销毁的页面。
+
+<!-- gracker-diagram: ch08-03-14-cancellation -->
+![超时、取消与旧结果隔离](../../assets/diagrams/ch08/ch08-03-14-cancellation.png)
+
+图：协程超时会取消代码块，但停止执行仍取决于合作；非协作工作返回后不得污染已失效页面。
 
 ### 主线程亲和性的判断依据
 
-View、许多 AndroidX 组件，以及依赖当前 Looper 的 API，都要在主线程创建或调用，有些 SDK 的初始化文档也写明了这一点。把这类代码放进 worker（工作线程），少量测试可能暂时通过，随后却因 Handler、线程局部状态或回调顺序而崩溃。任务契约里 thread affinity 一栏要认真填，依据就在这里。
+应按 API 的 `@MainThread` / `@UiThread`、组件所有者线程与 SDK 文档决定亲和性。依赖“当前 Looper”并不自动等于必须使用主 Looper；某些 API 可用于准备好 Looper 的其他线程，而 AsyncLayoutInflater 也只在受限条件下允许后台构造 View。把这类代码放进 worker（工作线程），少量测试可能暂时通过，随后却因 Handler、线程局部状态或回调顺序而崩溃。任务契约里 thread affinity 一栏要认真填，依据就在这里。
+
+<!-- gracker-diagram: ch08-03-15-thread-affinity -->
+![线程亲和性按 API 契约决定](../../assets/diagrams/ch08/ch08-03-15-thread-affinity.png)
+
+图：需要当前 Looper 不等于需要主 Looper；UI、后台 CPU 与阻塞 I/O 按各自契约执行。
 
 CPU 任务和阻塞 I/O 也要分开管理。协程的 `Dispatchers.Default` 与 `Dispatchers.IO` 调度策略不同，但 CPU、锁和 Binder 的争用仍在原地，换用协程本身消不掉。任务契约应记录调用链中的真实阻塞点，只看最外层函数是否标记为 `suspend` 是不够的。
 
@@ -244,6 +326,11 @@ CPU 任务和阻塞 I/O 也要分开管理。协程的 `Dispatchers.Default` 与
 
 任务完成状态还要和进程生命周期绑定。Android 可能杀死后台进程，内存里的“已初始化”出了本进程就作废；持久化标记同样证明不了 SDK 在新进程中的对象已经就绪。
 
+<!-- gracker-diagram: ch08-03-16-failure-tiers -->
+![启动任务按失败影响分级](../../assets/diagrams/ch08/ch08-03-16-failure-tiers.png)
+
+图：非必要 SDK 不应进入全局显示门槛；失败后的界面、重试和进程重建状态都要定义。
+
 ## Jetpack App Startup 的准确边界
 
 Jetpack App Startup 使用一个 `InitializationProvider`，读取 manifest metadata 中注册的 `Initializer`，并通过 `dependencies()` 声明依赖顺序。AndroidX `AppInitializer#doInitialize()` 会先递归完成依赖，再调用 `Initializer.create()`。
@@ -254,11 +341,21 @@ Jetpack App Startup 使用一个 `InitializationProvider`，读取 manifest meta
 
 1. 各 `Initializer` 之间即便互不依赖，库也不会自动并行执行。
 2. `create()` 的耗时仍计入启动；合并 Provider 消除的只是 Provider 数量，库本身的工作还在。
-3. 自动初始化只适合耗时较短、所有相关进程都需要，并且必须很早可用的组件。
+3. 是否应自动初始化，应按该 Provider 所属进程和实际入口判断；库不会因为使用 App Startup 就自动在 APK 的全部进程执行。
 
-不满足这些条件的组件，可以移除对应的 `<meta-data>`，改由 `AppInitializer.initializeComponent()` 在业务触发点执行。手动初始化同样会递归完成依赖节点，迁移时要把整棵依赖树检查一遍。
+需要推迟的组件应移除对应 `<meta-data>`，并确认它不再被其他 eager Initializer 的依赖图引用；只移除自己的注册，仍可能因依赖而提前执行。之后在业务触发点调用 `AppInitializer.initializeComponent()`；手动入口会在调用线程同步递归依赖，不会自动切后台。
+
+<!-- gracker-diagram: ch08-03-17-app-startup -->
+![App Startup 的递归依赖与调用线程](../../assets/diagrams/ch08/ch08-03-17-app-startup.png)
+
+图：自动 discovery 由 Provider 触发，递归依赖同步完成；移除 metadata 后还须检查其他 eager 依赖。
 
 如果 `Initializer.create()` 内部自己发起异步工作并立即返回，返回值是否已经可用就必须写清楚。其他 `Initializer` 会把这次返回视为依赖完成；返回的若只是个尚不可用的外壳对象，后续组件就可能过早访问它。
+
+<!-- gracker-diagram: ch08-03-18-initializer-ready -->
+![Initializer 返回值必须有明确可用语义](../../assets/diagrams/ch08/ch08-03-18-initializer-ready.png)
+
+图：App Startup 把 create 返回视为本次依赖完成，不自动等待内部另起的异步任务。
 
 ## ContentProvider：先发现，再决定是否移除
 
@@ -275,6 +372,11 @@ Jetpack App Startup 使用一个 `InitializationProvider`，读取 manifest meta
 3. 查库文档是否支持关闭自动初始化；
 4. 为手动初始化选定触发点和失败策略；
 5. 覆盖冷启动、后台任务、通知、深链和多进程入口。
+
+<!-- gracker-diagram: ch08-03-19-provider-audit -->
+![Provider 初始化先查来源与所属进程](../../assets/diagrams/ch08/ch08-03-19-provider-audit.png)
+
+图：Application 对象先创建，Provider 安装早于 Application.onCreate；是否移除须按组件职责与各入口验证。
 
 下面的命令先生成 release variant 的合并 Manifest，再搜索其中的 Provider 和 metadata：
 
@@ -304,17 +406,32 @@ AGP 版本和模块结构会改变中间目录。Android Studio 的 Merged Manif
 </provider>
 ```
 
-移除后，需要在使用分析能力的入口手动初始化，并验证这个 `Initializer` 的依赖是否也被推迟。对第三方自定义 Provider，`tools:node="remove"` 只在库文档明确支持时才能用，否则可能破坏启动、备份、分享、后台任务或远程进程。
+移除后先检查其他 eager Initializer 是否仍依赖它，再在使用分析能力的入口手动初始化；其依赖也要按实际触发时点验证。对第三方自定义 Provider，`tools:node="remove"` 只在库文档明确支持时才能用，否则可能破坏启动、备份、分享、后台任务或远程进程。
+
+<!-- gracker-diagram: ch08-03-20-manifest-disable -->
+![关闭单项自动初始化的完整检查](../../assets/diagrams/ch08/ch08-03-20-manifest-disable.png)
+
+图：tools:node=remove 只删除匹配 metadata；依赖可达性与后续手动入口仍须核查。
 
 ### 多进程应用的逐进程成本
 
-带有 `android:process` 的 Service、Receiver 或 Provider 运行在独立进程里，每个进程都可能安装对自己可见的 Provider，并创建一份 `Application`。所以冷启动成本要逐进程计算：主进程首页优化得再好，推送进程和工具进程的冷启动也沾不上光。初始化器应检查当前进程和入口需求，避免所有进程都加载主进程专属组件。
+组件的 `android:process`（或 application 的默认进程）决定所属进程；普通新应用进程创建自己的 `Application`，安装系统分配给该进程的 Provider，而不是安装所有“可见”的 Provider。冷启动应逐进程核算；共享代码、Profile 或缓存优化也可能同时惠及多个进程，主进程指标改善本身却不能证明子进程同样改善。初始化器应检查当前进程和入口需求，避免所有进程都加载主进程专属组件。
+
+<!-- gracker-diagram: ch08-03-21-process-costs -->
+![多进程初始化按实际归属分别审计](../../assets/diagrams/ch08/ch08-03-21-process-costs.png)
+
+图：每个普通新进程有自己的 Application 与所属 Provider；主进程结果不代替子进程测量。
 
 ## SplashScreen：控制过渡画面，不隐藏等待
 
-从 Android 12（API 31）开始，系统为冷启动和温启动提供标准 Splash，热启动通常不显示；`androidx.core:core-splashscreen` 把兼容实现带到 API 23。Splash 能改善的是过渡观感，`Application`、Provider、Activity 和首帧渲染消耗的 CPU 时间，一点不会因此减少。
+从 Android 12（API 31）开始，系统为冷启动和温启动提供标准 Splash，热启动通常不显示；`androidx.core:core-splashscreen` 把兼容实现带到 API 23。Splash API 本身不自动减少必要初始化和首帧工作；移除独立 Splash Activity 等迁移可以实际减少冗余生命周期 / 窗口开销，保持与退出动画也有自己的渲染成本，须分别衡量。
 
 专门创建透明或全屏的 Splash Activity，会多付一次 Activity 生命周期、窗口创建和转场，通常应迁移到启动主题。Splash 颜色与首屏背景协调，退出时才不会闪色；图标和动画遵循系统的尺寸与时长规范。
+
+<!-- gracker-diagram: ch08-03-22-splash-purpose -->
+![Splash 过渡与冗余 Activity 的区别](../../assets/diagrams/ch08/ch08-03-22-splash-purpose.png)
+
+图：系统 Splash 提供过渡；移除额外 Splash Activity 可以减少真实工作，单纯遮住等待不会自动减少初始化。
 
 ### 安装顺序与启动主题
 
@@ -337,8 +454,10 @@ override fun onCreate(savedInstanceState: Bundle?) {
     val splash = installSplashScreen()
     super.onCreate(savedInstanceState)
 
+    // 在绘制条件外取得 ViewModel / 状态对象，避免首次求值才触发懒创建。
+    val blocksFirstDraw = viewModel.blocksFirstDraw
     splash.setKeepOnScreenCondition {
-        viewModel.blocksFirstDraw.value
+        blocksFirstDraw.value
     }
 
     setContentView(R.layout.activity_main)
@@ -347,15 +466,30 @@ override fun onCreate(savedInstanceState: Bundle?) {
 
 `installSplashScreen()` 必须在 `super.onCreate()` 之前调用。保持条件会在绘制路径上频繁执行，因此函数体要快速、无锁、无 I/O，也不要修改状态。耗时工作放在别处完成，这里只读取已经安全发布的状态。
 
+<!-- gracker-diagram: ch08-03-23-splash-install -->
+![Splash 安装与主题切换顺序](../../assets/diagrams/ch08/ch08-03-23-splash-install.png)
+
+图：installSplashScreen 在 super.onCreate 之前；keep condition 高频执行，只读已发布状态。
+
 ### Splash 的保持条件与 TTID
 
 短暂保持 Splash 的适用场景很窄：首屏确实要先读少量本地设置，而且不读就会立刻切换主题、改变路由或显示错误内容。等待网络、广告、完整远程配置或大型数据库迁移，会直接延长应用首帧，失败后的界面也会迟迟不出现。这类场景更合适的做法，是先绘制可用占位、缓存内容或局部错误状态，再异步更新。
 
-保持条件还需要明确的失败出口：数据读取失败、协程取消或页面销毁时，都要把状态更新为允许绘制。超时策略放在状态持有层实现并记录原因；时钟查询、磁盘访问和网络操作，都不要放进每次条件求值里。
+保持条件还需要明确的失败出口：页面仍存活时，数据失败或任务取消应切换到可绘制的降级状态，或交接给替代任务；页面已销毁则取消观察、丢弃旧结果，不要求继续更新销毁页面。超时策略放在状态持有层实现并记录原因；时钟查询、磁盘访问和网络操作，都不要放进每次条件求值里。
+
+<!-- gracker-diagram: ch08-03-24-keep-predraw -->
+![keep condition 怎样阻止首帧](../../assets/diagrams/ch08/ch08-03-24-keep-predraw.png)
+
+图：keep=true 时 pre-draw 返回 false，应用首帧被推迟；保持门槛须有存活页面的失败出口。
 
 ### 退出动画的线程约束
 
-设置 `setOnExitAnimationListener` 接管退出动画后，应用要在动画结束时调用 `SplashScreenView.remove()`。动画只修改轻量属性，并考虑系统可能跳过图标动画；要衔接图标动画时，用 `iconAnimationStart` 和 `iconAnimationDuration` 计算剩余时间，并确保结果不小于零。退出回调里适合做的事很少，启动 SDK、同步准备首页数据都不要放在这里。
+沿用上文 AndroidX 入口，`setOnExitAnimationListener` 得到的是 `SplashScreenViewProvider`，接管后必须在结束或取消的清理路径调用它的 `remove()`。若要衔接图标动画，AndroidX 属性名是 `iconAnimationStartMillis` / `iconAnimationDurationMillis`：API 31+ 开始值使用 epoch 毫秒，不能与 uptime 直接相减；API 31 以下图标不可动画且值为 0。剩余时间需夹到不小于零，并允许跳过。`windowSplashScreenAnimationDuration` 是图标时长信息，不决定 Splash 总停留时间。退出回调里适合做的事很少，启动 SDK、同步准备首页数据都不要放在这里。
+
+<!-- gracker-diagram: ch08-03-25-splash-exit -->
+![AndroidX Splash 退出对象、时钟与清理](../../assets/diagrams/ch08/ch08-03-25-splash-exit.png)
+
+图：AndroidX listener 给出 SplashScreenViewProvider；动画属性采用 Millis 名称与 epoch 起点，结束和取消都要清理覆盖。
 
 ## 首屏布局：减少必须创建的节点
 
@@ -376,6 +510,11 @@ override fun onCreate(savedInstanceState: Bundle?) {
 
 布局层级数只能当线索，当不了结论：`ConstraintLayout` 可能减少嵌套，也可能因约束规模增大而提高求解成本。最终以 trace 和 Macrobenchmark 结果为准。
 
+<!-- gracker-diagram: ch08-03-26-layout-phases -->
+![首屏布局先分阶段再删节点](../../assets/diagrams/ch08/ch08-03-26-layout-phases.png)
+
+图：setContentView 长并不证明全部花在 XML；按构造、测量、布局、绘制和实际资源依赖归因。
+
 ### ViewStub 适合可选 View 子树
 
 下面的 XML 使用 `ViewStub` 占据错误详情的位置，只有真正需要显示时才创建对应布局：
@@ -391,34 +530,65 @@ override fun onCreate(savedInstanceState: Bundle?) {
 
 `ViewStub` 本身不绘制，measure 结果为零；调用 `inflate()`，或者把可见性设置为 `VISIBLE` / `INVISIBLE` 时，它会被目标布局替换，而目标布局的根不能是 `<merge>`。替换完成后，原 `ViewStub` 已从父节点移除，代码要保存新 View 的引用，或通过 `inflatedId` 查找。
 
+<!-- gracker-diagram: ch08-03-27-viewstub -->
+![ViewStub 从零占位到替换子树](../../assets/diagrams/ch08/ch08-03-27-viewstub.png)
+
+图：ViewStub 不绘制、测量为零；触发时被真实布局替换，调用方应保存新 View 或使用 inflatedId。
+
 `ViewStub` 的前提是这块子树本次首帧大概率不会出现。如果每次启动都会立即 inflate，它换来的只是创建时机的移动，还可能多付一次查找和状态切换。
 
 ### AsyncLayoutInflater 的适用前提
 
 `AsyncLayoutInflater` 适合延后创建、或用户交互后才需要的布局。它的构造和 `inflate()` 调用发生在 UI 线程，View 在后台线程创建；没有传入 callback executor 时，完成回调回到 UI 线程，创建出的布局也不会自动加入 parent。
 
+<!-- gracker-diagram: ch08-03-28-async-inflate -->
+![AsyncLayoutInflater 的成功、重试与回调](../../assets/diagrams/ch08/ch08-03-28-async-inflate.png)
+
+图：后台构造需线程安全，失败回 UI 重试；显式 callback executor 不保证 UI 线程，附加逻辑由调用方负责。
+
 下面的示例提前创建一个首帧之后才可能展示的筛选面板，并在回调中把它加入父容器：
 
 ```kotlin
+// Activity 示例：filterContainer 是已挂接且专用的空容器。
+val requestId = ++filterPanelGeneration
 val inflater = AsyncLayoutInflater(this)
 
 inflater.inflate(R.layout.view_filter_panel, filterContainer) {
         view, _, parent ->
-    parent?.addView(view)
+    if (isFinishing || isDestroyed || requestId != filterPanelGeneration ||
+        parent !== filterContainer || !filterContainer.isAttachedToWindow ||
+        filterContainer.childCount != 0
+    ) return@inflate
+    filterContainer.addView(view) // 默认回调在 UI 线程
 }
 ```
 
-父容器的 `generateLayoutParams()` 和所有 View 构造过程都要能在后台线程安全执行；View 不能在构造时创建 Handler，也不能依赖当前 Looper。
+`filterPanelGeneration` 是 Activity 持有的主线程整数字段；页面作废或请求被替换时递增，使旧结果失效。上述默认重载没有取消接口，丢弃结果不等于后台 inflate 已停止。父容器的 `generateLayoutParams()` 和所有 View 构造过程都要能在后台线程安全执行；View 不能在构造时创建 Handler，也不能依赖当前 Looper。
 
-普通的 `LayoutInflater.Factory / Factory2` 设置方式和包含 Fragment 的布局不受支持；当前库提供的 `AsyncLayoutFactory` 构造入口需要单独验证适配。后台 inflate 抛出运行时异常时，AndroidX 会回到 UI 线程重试。
+<!-- gracker-diagram: ch08-03-29-async-result-validity -->
+![异步布局回调如何丢弃旧结果](../../assets/diagrams/ch08/ch08-03-29-async-result-validity.png)
+
+图：在默认 UI 回调中核对 Activity、请求代次与专用容器，附加一次；丢弃结果不停止后台工作。
+
+普通的 `LayoutInflater.Factory / Factory2` 设置方式和包含 Fragment 的布局不受支持；当前库提供的 `AsyncLayoutFactory` 构造入口需要单独验证适配。后台 inflate 抛出 `RuntimeException` 时会经 Handler 在 UI 线程重试；重试仍可能失败。若显式传 callback executor，回调最终在该 executor 执行，附加 View 前还须切回 UI 线程。所核对实现使用一个共享 inflate worker 和容量 10 的阻塞队列，提交调用用 `put()`，队列满时可能阻塞提交的 UI 线程；不能无限量预创建。
+
+<!-- gracker-diagram: ch08-03-30-async-backpressure -->
+![共享 inflate worker 与提交反压](../../assets/diagrams/ch08/ch08-03-30-async-backpressure.png)
+
+图：所核对实现只有一个共享 worker，等待队列容量 10；enqueue 使用阻塞 put，不能把预创建数量无限放大。
 
 如果应用必须等异步结果才能设置首屏根布局，这项工作就还在 TTID 关键路径上，线程切换还可能多一层开销。它更适合提前准备后续 UI，或让当前 UI 在 inflate 期间保持可响应。选用前测试主题包装、AppCompat / Material 自定义 View、回调生命周期，以及任务取消后如何丢弃结果。
 
 ## Baseline Profile 与 Startup Profile
 
-Baseline Profile 随 release 产物发布热点类和方法规则，让 ART 能在用户开始使用前对这些代码执行 profile-guided compilation（基于性能画像的编译）；Startup Profile 面向 DEX 布局，让构建工具把启动期类和方法排列到更便于连续读取的位置。两者作用于不同阶段，可以同时使用。
+Baseline Profile 随 release 产物发布热点类和方法规则，供 ART 对覆盖路径做运行前编译；实际何时完成依赖系统与安装渠道。API 26–27 可能在首次运行由 ProfileInstaller 写入，再等待后台编译，不能保证首次启动前已获 AOT 收益。Startup Profile 面向 DEX 布局，让构建工具把启动期类和方法排列到更便于连续读取的位置。两者作用于不同阶段，可以同时使用。
 
-官方资料里“代码执行从首次启动起约有三成改善”是跨样本的概述，落到单个应用的 TTID 上未必兑现三成。启动瓶颈若在磁盘读取、锁等待、Binder、布局或网络，编译优化能覆盖的比例就小得多。完整的生成、打包、分发渠道和设备编译状态，见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)。
+<!-- gracker-diagram: ch08-03-31-profile-stages -->
+![Baseline 与 Startup Profile 的作用阶段](../../assets/diagrams/ch08/ch08-03-31-profile-stages.png)
+
+图：ART 编译与构建期 DEX 布局可以同时优化；首次启动是否已完成 AOT 取决于平台和渠道。
+
+官方资料里“代码执行从首次启动起约有三成改善”是跨样本的概述，落到单个应用的 TTID 上未必兑现三成。应按关键路径中可改善的比例评估收益：布局、初始化等 CPU 路径也可能被 Baseline Profile 加速，Startup Profile 还可改善 DEX 访问布局；它们不能自动消除所有磁盘、锁、Binder、网络或显示瓶颈。完整的生成、打包、分发渠道和设备编译状态，见 [21.4 Baseline、Startup 与 Cloud Profile 编译优化](../../part5-app/ch21-startup/04-baseline-startup-cloud-profile.md)。
 
 ### 用对照实验量化
 
@@ -449,7 +619,12 @@ private fun measureCold(mode: CompilationMode) {
 }
 ```
 
-`BaselineProfileMode.Require` 在 profile 缺失时直接暴露配置错误，适合验收。示例里的迭代次数只是示例，样本量根据设备噪声和 CI 成本确定，并检查原始分布；模拟器与宿主机共享资源，最终的启动性能结论要由物理设备给出。
+`BaselineProfileMode.Require` 会在 Baseline Profile 安装失败或无法按要求使用时暴露错误，适合验收；Partial 默认 `warmupIterations = 0`，可在需要排除额外 warmup 时显式设置。None / Partial 控制 ART 编译状态，同一 APK 的对比没有改变构建期 Startup Profile DEX 布局，不能据此单独量出 Startup Profile 收益。示例里的迭代次数只是示例，样本量根据设备噪声和 CI 成本确定，并检查原始分布；模拟器与宿主机共享资源，最终的启动性能结论要由物理设备给出。
+
+<!-- gracker-diagram: ch08-03-32-profile-experiments -->
+![ART 编译 A/B 与 DEX 布局 A/B 分开](../../assets/diagrams/ch08/ch08-03-32-profile-experiments.png)
+
+图：None / Partial 对比固定 APK 的 ART 状态；Startup Profile 的单独收益需要控制构建期布局变量。
 
 需要测 TTFD 时，在页面稳定且可交互的业务状态调用 `reportFullyDrawn()`，并让 benchmark 操作等待对应 UI 状态；缺了这个标记，TTFD 结果就是缺失，不能改写成 TTID。还要确认 APK / AAB 内的 profile、设备编译状态和 R8 映射一致，避免文件生成成功、目标产物却没有实际使用。
 
@@ -458,6 +633,11 @@ private fun measureCold(mode: CompilationMode) {
 Google Play 可以在安装阶段使用随包提供的 Baseline Profile，也可以根据用户设备数据聚合并分发 Cloud Profile。其他渠道能否在安装时编译，取决于安装器和系统；`ProfileInstaller` 能把随包 profile 写入设备，后续编译仍受系统任务执行时机和设备状态影响。
 
 评估渠道差异时，检查构建产物和设备编译状态本身；地区并不决定 Baseline Profile 是否有效。Cloud Profile 属于 Google Play 的分发能力，与随 APK / AAB 发布的 Baseline Profile 是两条不同路径。
+
+<!-- gracker-diagram: ch08-03-33-profile-distribution -->
+![Profile 渠道与首次编译时机](../../assets/diagrams/ch08/ch08-03-33-profile-distribution.png)
+
+图：随包规则、安装器编译与 Play 聚合是不同路径；API 26–27 首次写入后可能仍等待后台编译。
 
 ## 观测与回归：把收益变成可维护指标
 
@@ -472,6 +652,11 @@ Google Play 可以在安装阶段使用随包提供的 Baseline Profile，也可
 | 用户分布 | 哪些设备、版本、入口或启动类型恶化 | Android vitals、应用自有启动事件 |
 | 业务完成 | 主内容何时可用，失败和降级占比多少 | `reportFullyDrawn()`、业务状态与 trace ID |
 
+<!-- gracker-diagram: ch08-03-34-observation-layers -->
+![四层证据分别回答不同问题](../../assets/diagrams/ch08/ch08-03-34-observation-layers.png)
+
+图：基准比较、单次归因、线上分布与业务就绪共同验证收益，各自注明端点。
+
 Play Android Vitals 把冷启动 5 秒、温启动 2 秒、热启动 1.5 秒及以上归为 excessive startup（启动时间过长）。这些数值是平台健康阈值，产品自己的时间预算要另行设定：按入口和设备层级设置预算，观察 P50、P90 / P95、超过阈值的比例、失败率和样本量。
 
 线上事件至少带上：
@@ -484,23 +669,33 @@ Play Android Vitals 把冷启动 5 秒、温启动 2 秒、热启动 1.5 秒及�
 
 平均值会被大量高性能设备摊薄，慢设备的问题就藏在里面，所以分位数必须附带样本量。设备构成一变，整体 P90 就可能跟着变，哪怕同一型号的性能没有任何变化。
 
+<!-- gracker-diagram: ch08-03-35-distribution-mix -->
+![线上分位数必须带设备构成与样本量](../../assets/diagrams/ch08/ch08-03-35-distribution-mix.png)
+
+图：整体分位数随样本混合比例变化；按设备、入口、版本与启动类型分层比较后再解释回归。
+
 ### Perfetto 中验证关键路径
 
-Android App Startups 标准库提供启动区间和 TTID 信息。下面的 SQL 列出一份 trace 中的所有应用启动记录及其类型和区间时长：
+`android.startup.startups` 识别派生启动区间；下面只列记录、类型和该 slice 时长，不直接计算 TTID / TTFD。显示指标及其代理端点另查 `android.startup.time_to_display` 并复核帧关联，见 8.2：
 
 ```sql
 INCLUDE PERFETTO MODULE android.startup.startups;
 
 SELECT
-    startup_id,
+    startup_id, ts, ts_end,
     package,
     startup_type,
-    dur / 1e6 AS startup_ms
+    dur / 1e6 AS startup_slice_ms
 FROM android_startups
 ORDER BY ts;
 ```
 
-Perfetto 不同版本的表字段会演进，以当前 Trace Processor stdlib 文档和 `DESCRIBE` 结果为准。拿到启动区间后，我们接着检查应用主线程、worker、Binder、`sched`、频率、缺页、I/O、GC、`inflate` 和 FrameTimeline——总区间只说明慢，该改哪一段要从这些轨道里找。
+表字段依赖所用离线 Trace Processor，而不是只看设备 Android 版本。本文验证的处理器不接受 `DESCRIBE android_startups`；可在 INCLUDE 后运行 `SELECT name, type FROM pragma_table_info('android_startups');` 核对模式，并结合该版本源码。拿到启动区间后，我们接着检查应用主线程、worker、Binder、`sched`、频率、缺页、I/O、GC、`inflate` 和 FrameTimeline——总区间只说明慢，该改哪一段要从这些轨道里找。
+
+<!-- gracker-diagram: ch08-03-36-startup-sql -->
+![SQL 启动窗口不是独立的显示时长证明](../../assets/diagrams/ch08/ch08-03-36-startup-sql.png)
+
+图：启动 slice 给出样本窗口；TTID / TTFD 代理端点和帧关联需另查并复核。
 
 应用自己的任务用 `androidx.tracing.trace` 或平台 trace API 标记稳定名称，用户 ID、URL 这类高基数字段（取值组合极多）不要写进 slice 名。在线上采样时，还要控制性能开销并保护隐私。
 
@@ -516,7 +711,17 @@ CI 规定“单次慢 5% 就失败”，很容易把温度、后台负载和动�
 - 同时检查变化幅度、波动范围和连续构建趋势；
 - 失败时保存 benchmark JSON、APK 版本和 Perfetto trace。
 
-`android:profileable="true"` 允许 shell 对不可调试应用采集受支持的 profiling 数据。benchmark target 通常由构建插件为性能测试配置；它说明不了 Cloud Profile 是否会生成，也不该被简单归结为“release 构建一律关闭”。
+<!-- gracker-diagram: ch08-03-37-ci-noise -->
+![CI 门禁从单次阈值走向可解释趋势](../../assets/diagrams/ch08/ch08-03-37-ci-noise.png)
+
+图：固定实验协议、采样和历史基线；变化幅度与波动范围共同判断回归，失败须能复盘。
+
+Manifest 中的正确写法是在 `<application>` 内放置 `<profileable android:shell="true" />` 子元素（API 29+），并非 `android:profileable="true"` 属性。它允许 shell 对不可调试应用采集受支持的 profiling 数据；API 26–28 需另核对工具的采集条件。benchmark target 通常由构建插件为性能测试配置；它说明不了 Cloud Profile 是否会生成，也不该被简单归结为“release 构建一律关闭”。
+
+<!-- gracker-diagram: ch08-03-38-profileable -->
+![profileable 的 Manifest 位置与版本](../../assets/diagrams/ch08/ch08-03-38-profileable.png)
+
+图：API 29+ 用 application 内的 profileable 子元素允许 shell 支持的采样；它不决定 Cloud Profile。
 
 ## Android 17 与环境边界
 
@@ -535,6 +740,11 @@ adb shell am compat disable USE_NEW_MESSAGEQUEUE com.example.app
 
 执行任一命令后，先强制结束目标进程，再重新运行启动和 UI 测试。Espresso 升级到 3.7.0 或更高版本；Robolectric 升级到 4.17 或更高版本，并迁移旧 Looper 模式。新队列可能减少某些样本中的锁竞争，但启动是否因此变快，仍要对照 trace 验证。
 
+<!-- gracker-diagram: ch08-03-39-messagequeue-compat -->
+![MessageQueue 升级按公开接口做兼容对照](../../assets/diagrams/ch08/ch08-03-39-messagequeue-compat.png)
+
+图：Android 17 target 37 默认新队列；私有 mMessages 在新实现为 null，测试与监控需迁移到受支持接口。
+
 启动监控用 Perfetto、Macrobenchmark、`Looper.setMessageLogging()` 的公开行为或受支持的测试 API。依赖 `MessageQueue` 私有链表布局的实现，在 `android-17.0.0_r1` 中已经没有稳定的结构保证。
 
 ### 16 KB 页与 Zygote COW 传闻
@@ -543,9 +753,19 @@ adb shell am compat disable USE_NEW_MESSAGEQUEUE com.example.app
 
 “启动时写应用静态字段会按 16 KB 触发 Zygote COW，因此应统一推迟写入”——这条推断缺少对象到共享物理页的映射证据，还容易把应用后来创建的类静态存储和 Zygote 共享页混为一谈。要诊断 COW（写时复制），我们看的是 page fault、PSS（进程按共享比例折算后的内存）、映射属性和可复现实验；物理页归属从字段类型是推不出来的。
 
+<!-- gracker-diagram: ch08-03-40-page-cow-evidence -->
+![16 KB 页与静态字段 COW 的证据链](../../assets/diagrams/ch08/ch08-03-40-page-cow-evidence.png)
+
+图：先证明对象映射到共享物理页，再讨论写入引发的 COW；页大小与字段类型不足以推导优化策略。
+
 ### 内核基线的适用范围
 
-trace 显示主线程长时间处于 runnable（可运行但未获得 CPU）、频繁被抢占、等待 I/O 或出现大量缺页时，才需要继续查 `android17-6.18-2026-06_r6` 里的调度、存储和内存路径。平台侧的 `ActivityThread`、ART、MessageQueue 和 SplashScreen 行为仍以 `android-17.0.0_r1` 为准，内核分支名代替不了平台源码证据。
+若用户态与系统 trace 的证据指向调度、存储或缺页瓶颈，可继续查 `android17-6.18-2026-06_r6` 里的调度、存储和内存路径。平台侧的 `ActivityThread`、ART、MessageQueue 和 SplashScreen 行为仍以 `android-17.0.0_r1` 为准，内核分支名代替不了平台源码证据。
+
+<!-- gracker-diagram: ch08-03-41-kernel-boundary -->
+![从系统 trace 证据走向对应源码](../../assets/diagrams/ch08/ch08-03-41-kernel-boundary.png)
+
+图：调度、存储与缺页问题可继续追内核；组件生命周期和 Splash 等机制仍查平台或库源码。
 
 ## 一套可执行的审计清单
 
@@ -582,6 +802,11 @@ trace 显示主线程长时间处于 runnable（可运行但未获得 CPU）、�
 - 分批发布，按版本、入口、设备和启动类型观察分位数。
 - 回归时保留 trace、构建产物、profile 状态和实验配置。
 
+<!-- gracker-diagram: ch08-03-42-acceptance-loop -->
+![从启动改动到可持续回归验证](../../assets/diagrams/ch08/ch08-03-42-acceptance-loop.png)
+
+图：基线、任务清点、路径改动和多入口验收形成闭环；收益须经实验和分层线上样本共同确认。
+
 ## 常见误判
 
 下面这些判断听起来都有道理，逐条用前面的方法拆开验证。
@@ -608,7 +833,7 @@ AndroidX 只负责统一发现 `Initializer` 并按依赖顺序执行。自动�
 
 ### Baseline Profile 有固定启动收益
 
-Profile 只改善被编译代码的执行成本。关键路径主要由 I/O、锁、Binder 或渲染决定时，收益会明显不同。
+Baseline Profile 主要改善覆盖代码的编译与执行，Startup Profile 改善构建期 DEX 布局。UI / 初始化 CPU 和部分 DEX 访问也可能受益；实际收益依赖覆盖比例、编译状态与剩余等待，不能套用固定启动百分比。
 
 ## 小结
 
@@ -622,8 +847,8 @@ Profile 只改善被编译代码的执行成本。关键路径主要由 I/O、�
 - [Android Developers：Migrate your existing splash screen implementation to Android 12](https://developer.android.com/develop/ui/views/launch/splash-screen/migrate)
 - [Android Developers：Jetpack App Startup](https://developer.android.com/topic/libraries/app-startup)
 - [Android Developers：AsyncLayoutInflater API](https://developer.android.com/reference/androidx/asynclayoutinflater/view/AsyncLayoutInflater)
-- [AndroidX：AsyncLayoutInflater source](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/asynclayoutinflater/asynclayoutinflater/src/main/java/androidx/asynclayoutinflater/view/AsyncLayoutInflater.java)
-- [AndroidX：AppInitializer source](https://android.googlesource.com/platform/frameworks/support/+/androidx-main/startup/startup-runtime/src/main/java/androidx/startup/AppInitializer.java)
+- [AndroidX：AsyncLayoutInflater source](https://android.googlesource.com/platform/frameworks/support/+/35d8f1dda494fcd09f52177d9dd54bc65f9929de/asynclayoutinflater/asynclayoutinflater/src/main/java/androidx/asynclayoutinflater/view/AsyncLayoutInflater.java)
+- [AndroidX：AppInitializer source](https://android.googlesource.com/platform/frameworks/support/+/35d8f1dda494fcd09f52177d9dd54bc65f9929de/startup/startup-runtime/src/main/java/androidx/startup/AppInitializer.java)
 - [Android Developers：ViewStub 按需加载布局](https://developer.android.com/develop/ui/views/layout/improving-layouts/loading-ondemand)
 - [AOSP Android 17：ActivityThread.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)
 - [AOSP Android 17：ViewStub.java](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewStub.java)
@@ -633,3 +858,10 @@ Profile 只改善被编译代码的执行成本。关键路径主要由 I/O、�
 - [Perfetto stdlib：Android startup tables](https://perfetto.dev/docs/analysis/stdlib-docs#android-startup-startups)
 - [Android Developers：Android 17 MessageQueue behavior change](https://developer.android.com/about/versions/17/changes/messagequeue)
 - [Android Developers：Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes)
+
+- [Android Developers：profileable Manifest 子元素（API 29+）](https://developer.android.com/guide/topics/manifest/profileable-element)
+- [AndroidX 固定提交：SplashScreen.kt](https://android.googlesource.com/platform/frameworks/support/+/35d8f1dda494fcd09f52177d9dd54bc65f9929de/core/core-splashscreen/src/main/java/androidx/core/splashscreen/SplashScreen.kt)
+- [AndroidX 固定提交：SplashScreenViewProvider.kt](https://android.googlesource.com/platform/frameworks/support/+/35d8f1dda494fcd09f52177d9dd54bc65f9929de/core/core-splashscreen/src/main/java/androidx/core/splashscreen/SplashScreenViewProvider.kt)
+- [Kotlin：withTimeout 与协作式取消](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html)
+- [Android Developers：进程、线程与 UI 线程规则](https://developer.android.com/guide/components/processes-and-threads)
+- [AOSP r1：CombinedMessageQueue 实现](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/CombinedMessageQueue/MessageQueue.java)

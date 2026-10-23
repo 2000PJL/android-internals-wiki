@@ -143,6 +143,11 @@ Unconfined 会在调用者当前调用栈中开始执行，第一次挂起后的
 
 线程约束和 Job 父子关系是两个独立维度。Unconfined 保留了结构化并发的父子关系，代价是代码究竟在哪个线程运行变得难以推断。需要“在当前调用栈执行到首次挂起，后续仍回到指定 Dispatcher”时，可以评估 `CoroutineStart.UNDISPATCHED`；普通 UI 和数据层代码，我们优先选线程约束明确的 Dispatcher。
 
+<!-- gracker-diagram: ch08-04-44-unconfined-undispatched -->
+![Unconfined 与 UNDISPATCHED 的恢复规则](../../assets/diagrams/ch08/ch08-04-44-unconfined-undispatched.png)
+
+图：两者都可从调用帧开始；Unconfined 的恢复线程取决于挂起函数，UNDISPATCHED 后续按目标 Dispatcher 恢复。仅改变这两项不会自动脱离 Job 树。
+
 ### 让 suspend API 对主线程安全
 
 下面的代码将阻塞文件读取和 CPU 解码的线程选择封装在 Repository 内部，同时允许测试替换 Dispatcher：

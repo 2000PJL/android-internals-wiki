@@ -54,7 +54,7 @@ consolidated_from:
 
 > 源码基线：平台为 Android 17 / API 37，AOSP `android-17.0.0_r1`；Jetpack 实现为 AndroidX（Jetpack 库集合） DataStore 1.2.1。手机升级到 Android 17 不会替 App 自动升级 DataStore，最终行为由应用依赖的 AndroidX 版本决定。
 
-版本边界：SP 接口始于 API 1；本文 DataStore 1.2.1 的 Android 实现 `datastore-core-android` 在[官方 AAR](https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1.aar) 的 Manifest 中声明 `minSdkVersion=23`，对应 Android 6.0 / API 23 及以上。
+版本范围：SP 接口始于 API 1；本文 DataStore 1.2.1 的 Android 实现 `datastore-core-android` 在[官方 AAR](https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1.aar) 的 Manifest 中声明 `minSdkVersion=23`，对应 Android 6.0 / API 23 及以上。
 
 ## `apply()` 返回后的写盘与主线程关系
 
@@ -150,9 +150,11 @@ private void awaitLoadedLocked() {
 
 ## 从 `edit()` 到 `fsync()`：SP 写入的完整路径
 
+一次写入从 `edit()` 到 `fsync()`，要经过内存提交、finisher 排队、线程选择和整文件重写四步。我们按发生顺序把这四步走完，后面看 ANR 栈时，每一段都能对回这里的位置。
+
 ### 第一步：`commitToMemory()` 修改内存状态
 
-无论 `apply()` 还是 `commit()`，第一步都是 `commitToMemory()`。它在锁内把 Editor（编辑器对象）的修改合入 `mMap`，有实际变化时才递增内存状态版本号，记录受影响的 key 和监听器，并把在途写入计数 `mDiskWritesInFlight` 加一。
+无论 `apply()` 还是 `commit()`，第一步都是 `commitToMemory()`：在锁内把 Editor（编辑器对象）的修改合入 `mMap`。有实际变化时，才递增内存状态版本号、记录受影响的 key 和监听器，并把在途写入计数 `mDiskWritesInFlight` 加一。
 
 如果已有写盘正在使用旧 map，代码会先复制一份再修改，避免写盘序列化期间改动同一个对象。这里的“提交”只覆盖进程内状态；文件有没有落盘，要等写盘结束才知道。
 
@@ -186,14 +188,14 @@ public void apply() {
 }
 ```
 
-确定的顺序是先更新内存、再安排写盘并调用通知逻辑。调用线程是主线程时，监听器在这里直接执行；其他线程调用时，通知会 post 到主线程，可能在 apply() 返回后才发生。监听器观察的是内存变化，不能据此判断磁盘成功。`awaitCommit` 作为 finisher（收尾任务）留在 `QueuedWork.sFinishers` 里，直到写盘结束后由 `postWriteRunnable`（可执行任务） 移除，或者被框架的收尾逻辑取出来执行。
+确定的顺序是先更新内存、再安排写盘并调用通知逻辑。调用线程是主线程时，监听器在这里直接执行；其他线程调用时，通知会 post 到主线程，可能在 apply() 返回后才发生。监听器观察的只是内存变化；磁盘结果如何，要等写盘结束才知道。`awaitCommit` 作为 finisher（收尾任务）留在 `QueuedWork.sFinishers` 里，直到写盘结束后由 `postWriteRunnable`（可执行任务） 移除，或者被框架的收尾逻辑取出来执行。
 
 <!-- gracker-diagram: ch06-03-apply-finisher-listener -->
 ![apply 的后台任务与监听器分支](../../assets/diagrams/ch06/ch06-03-apply-finisher-listener.png)
 
 图：apply 注册 finisher 并排队写盘，再触发内存变更通知；监听器是否同步执行取决于调用线程，返回无需等待磁盘结果。
 
-`apply()` 没有返回值，序列化、`fsync()` 还是重命名失败了，调用方都无从知道。所以写重要安全状态、或必须确认数据已持久化时，判断依据应该是写盘结果本身；只凭“内存已经读到新值”认定成功，是不够的。
+`apply()` 没有返回值，序列化、`fsync()` 还是重命名失败了，调用方都拿不到信号。所以写重要安全状态、或必须确认数据已持久化时，我们的判断依据是写盘结果本身；只凭“内存已经读到新值”认定成功，是不够的。
 
 ### 第三步：`enqueueDiskWrite()` 决定在哪条线程写
 
@@ -211,7 +213,7 @@ public void apply() {
 | 错误信息 | 无磁盘结果 | 只有布尔结果，没有详细失败原因 |
 | 生命周期收尾 | pending work（待处理任务）/finisher（收尾任务）可能被框架等待 | 调用点已经同步等待 |
 
-“`commit()` 总在当前线程写”和“`apply()` 总在 `queued-work-looper` 写”这两种说法都不严谨：`commit()` 可能先排队再等待，`apply()` 的任务也可能被随后调用 `waitToFinish()` 的线程取走执行。
+两种常见说法都站不住：“`commit()` 总在当前线程写”和“`apply()` 总在 `queued-work-looper` 写”——`commit()` 可能先排队再等待，`apply()` 的任务也可能被随后调用 `waitToFinish()` 的线程取走执行。
 
 <!-- gracker-diagram: ch06-03-enqueue-write-thread -->
 ![enqueueDiskWrite 的执行线程选择](../../assets/diagrams/ch06/ch06-03-enqueue-write-thread.png)
@@ -222,7 +224,7 @@ public void apply() {
 
 我们把一次有效写入的步骤完整走一遍：
 
-1. 原文件存在时比较磁盘代次：已覆盖本次代次则跳过；异步 apply 的中间代次若已被更新状态替代也可跳过。只有需要写时才继续；新建文件路径不能直接套用这组已有文件判断。
+1. 原文件存在时比较磁盘代次：已覆盖本次代次则跳过；异步 apply 的中间代次若已被更新状态替代也可跳过。只有需要写时才继续；这组跳过判断只适用于已有文件，新建文件另算。
 2. 若原文件存在且没有备份，把原文件重命名为 `.bak`。
 3. 创建新的 XML 文件，把 `mapToWriteToDisk` 整体序列化。
 4. 调用 FileUtils.sync(str) 尝试同步文件；这个 r1 实现没有检查它的布尔返回值。
@@ -235,30 +237,30 @@ public void apply() {
 
 图：已有文件时，磁盘已覆盖该代次或异步中间状态已过时，都可以跳过；新建文件与需要持久化的最新状态走写入路径。
 
-还需保留一个错误传播边界：r1 的 FileUtils.sync() 捕获同步 IOException 后返回 false，writeToFile() 却没有使用这个返回值。因此 commit() 的布尔值并不完整覆盖底层同步失败，不能把 true 当成每种故障下的独立断电持久性证明。
+还有一个错误传播上的缺口要交代：r1 的 FileUtils.sync() 捕获同步 IOException 后返回 false，writeToFile() 却没有使用这个返回值。因此 commit() 的布尔值覆盖不了全部底层同步失败，true 也证明不了每种故障下的独立断电持久性。
 
 <!-- gracker-diagram: ch06-03-xml-backup-sync-result -->
 ![SP XML 备份协议与同步结果边界](../../assets/diagrams/ch06/ch06-03-xml-backup-sync-result.png)
 
-图：SP 先保留旧文件备份，再写新 XML；r1 忽略 FileUtils.sync 的布尔值，所以 commit 的 true 不能完整覆盖同步失败。
+图：SP 先保留旧文件备份，再写新 XML；r1 忽略 FileUtils.sync 的布尔值，commit 的 true 覆盖不到这层同步失败。
 
 这套备份协议降低了进程在写入中途退出时留下半份 XML 的风险，也仅止于此：源码没有在每次替换后同步父目录，文件系统、内核与存储设备仍会影响最终的持久性语义。
 
-SP 没有按 key 更新磁盘文件的能力，改一个布尔值也可能重写整份 map。耗时由文件大小、序列化成本、`fsync()` 延迟和前序队列长度共同决定。
+SP 没有按 key 更新磁盘文件的能力，改一个布尔值也可能重写整份 map。所以一次写盘的耗时，由文件大小、序列化成本、`fsync()` 延迟和前序队列长度共同决定。
 
-### 两个日志阈值只负责观测
+### 两个内部观测阈值
 
 平台保留了两个内部观测阈值：
 
 - `SharedPreferencesImpl.MAX_FSYNC_DURATION_MILLIS = 256`：单次 `fsync` 超过 256 ms 时输出累计直方图；每 1024 次同步也会输出。
 - `QueuedWork.MAX_WAIT_TIME_MILLIS = 512`：`waitToFinish()` 超过 512 ms 时输出等待直方图；每 1024 次等待也会输出。
 
-这些阈值不会取消写盘，也不会阻止 ANR，也没有面向普通 App 的公开调参接口。256 ms 和 512 ms 只是日志观测线，别当成系统超时线。
+这两个阈值只做观测，既取消不了写盘，也拦不住 ANR，也没有面向普通 App 的公开调参接口。256 ms 和 512 ms 只是日志观测线，我们别把它们当成系统超时线。
 
 <!-- gracker-diagram: ch06-03-logging-thresholds -->
 ![慢同步与慢收尾的观测阈值](../../assets/diagrams/ch06/ch06-03-logging-thresholds.png)
 
-图：256 ms 和 512 ms 触发的是内部直方图日志；写盘与组件等待仍继续，阈值不能代替实际 ANR 时限和调用栈证据。
+图：256 ms 和 512 ms 触发的是内部直方图日志；写盘与组件等待仍继续，判断 ANR 仍以实际时限和调用栈为准。
 
 ## `apply()` 如何进入组件收尾路径
 
@@ -308,7 +310,7 @@ public static void waitToFinish() {
 
 ### 组件收尾的四类调用点
 
-`android-17.0.0_r1` 中需要区分四类路径：
+组件收尾的等待点分四类：
 
 - **现代 Activity**：`handleStopActivity()` 在 Activity 停止时调用 `QueuedWork.waitToFinish()`。
 - **pre-Honeycomb Activity**：面向 Android 3.0（API 11）之前行为的兼容路径仍在 `handlePauseActivity()` 调用；现代 App 的主路径要按 `handleStopActivity()` 理解，不要写成 `onPause()`。
@@ -334,7 +336,7 @@ BroadcastReceiver 的 Java `onReceive()` 返回，只说明应用侧代码执行
 
 ### 先从 ANR 栈判断阻塞类型
 
-下面的示例用于区分四种常见栈形态，行号会随源码版本改变：
+拿到一份 ANR trace，我们先看主线程卡在哪一类 SP 栈上。下面的示例区分四种常见形态，行号会随源码版本改变：
 
 ```text
 # A. 首次加载等待
@@ -388,7 +390,7 @@ Perfetto 默认并不会给每个 Java 方法生成名为 `QueuedWork` 的 slice
 
 ### 非阻塞 API 的完成时序
 
-DataStore 的 `data` 是 `Flow<T>（异步数据流）`，`edit()`/`updateData()` 是挂起 API。默认工厂的协程作用域使用 `Dispatchers.IO + SupervisorJob()`，内部 I/O 与 actor 任务使用该作用域，但 transform 会通过 withContext(callerContext) 回到调用方协程上下文，不能把它当作自动迁移到 IO 的任意计算。SupervisorJob 隔离子任务失败；自定义作用域还需按实际配置判断。调用方线程不会像 SP `commit()` 那样同步执行文件 I/O，但调用方协程会挂起；挂起期间不占用当前线程，直到更新完成或异常抛出。
+DataStore 的 `data` 是 `Flow<T>（异步数据流）`，`edit()`/`updateData()` 是挂起 API。默认工厂的协程作用域使用 `Dispatchers.IO + SupervisorJob()`，内部 I/O 与 actor 任务使用该作用域，但 transform 会通过 withContext(callerContext) 回到调用方协程上下文；把它当成自动迁移到 IO 的任意计算，属于误用。SupervisorJob 隔离子任务失败；自定义作用域还需按实际配置判断。调用方线程不会像 SP `commit()` 那样同步执行文件 I/O，但调用方协程会挂起；挂起期间不占用当前线程，直到更新完成或异常抛出。
 
 <!-- gracker-diagram: ch06-03-datastore-contexts -->
 ![DataStore 的调用协程、transform 与 I/O](../../assets/diagrams/ch06/ch06-03-datastore-contexts.png)
@@ -462,7 +464,7 @@ Proto DataStore 的 schema 更利于审查和演进，但业务迁移仍要应�
 
 ### 单例是文件级约束
 
-同一进程、同一路径应只有一个活跃 DataStore 实例。标准 FileStorage 在首次建立读写连接时，按 canonical path 的 activeFiles 登记检查重复并抛出 IllegalStateException；自定义或不同 Storage 也必须遵守唯一实例约束，不能把某个后端的检查当作跨后端全局文件锁。顶层 `by preferencesDataStore` 属性是一种方便的单例组织方式，但指向同一文件创建多个 delegate（属性委托） 依旧是错的。
+同一进程、同一路径应只有一个活跃 DataStore 实例。标准 FileStorage 在首次建立读写连接时，按 canonical path 的 activeFiles 登记检查重复并抛出 IllegalStateException；自定义或不同 Storage 也必须遵守唯一实例约束；某个后端自带的检查，当不成跨后端的全局文件锁。顶层 `by preferencesDataStore` 属性是一种方便的单例组织方式，但指向同一文件创建多个 delegate（属性委托） 依旧是错的。
 
 <!-- gracker-diagram: ch06-03-file-singleton-immutability -->
 ![文件级单例检查与值的不变性](../../assets/diagrams/ch06/ch06-03-file-singleton-immutability.png)
@@ -471,7 +473,7 @@ Proto DataStore 的 schema 更利于审查和演进，但业务迁移仍要应�
 
 自建 `DataStoreFactory` 时，传入的协程作用域应与应用级数据拥有者同寿命。Activity、Fragment 或一次请求里都不要重复创建实例，`produceFile` 也不要每次返回不同路径。
 
-多进程场景的实例与路径要求、单进程与多进程工厂的选择，见 MultiProcess DataStore 的实现边界一节。路径要先规范化，transform 返回的数据对象必须保持不可变，否则进程内缓存的 hash（哈希） 校验就失去了意义。
+多进程场景的实例与路径要求、单进程与多进程工厂的选择，见后文 MultiProcess DataStore 一节。路径要先规范化，transform 返回的数据对象必须保持不可变，否则进程内缓存的 hash（哈希） 校验就失去了意义。
 
 ### 错误与损坏要分开处理
 
@@ -500,6 +502,8 @@ val safeSettings: Flow<Preferences> =
 `ReplaceFileCorruptionHandler` 只在 Serializer 抛出 `CorruptionException` 时参与恢复；权限不足、磁盘空间不够等其他 I/O 错误，要走业务自己的恢复策略，恢复值也要满足业务的安全要求。
 
 ## 从 SP 迁移到 DataStore
+
+迁移要解决的事情很具体：把旧 key 搬进 DataStore、清理旧文件，并保证迁移重跑安全。我们先看官方迁移组件怎么用，再按数据所有权安排迁移顺序。
 
 ### 使用 `SharedPreferencesMigration`
 
@@ -554,7 +558,7 @@ val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
 
 图：先建立唯一数据接口，再迁移并观察失败与耗时；旧进程和旧版本如何读写、如何回退，要在删除旧路径前明确。
 
-“SP 超过 50 KB 就必须迁移”这样的通用阈值并不存在。文件大小只是一个维度，key 数、启动位置、写频率、设备分布和等待分位数同样要看；按线上 trace 和按相似调用栈归组的 ANR 聚类（按相似调用栈归组）确定优先级，更可靠。
+“SP 超过 50 KB 就必须迁移”这样的通用阈值并不存在。文件大小只是一个维度，key 数、启动位置、写频率、设备分布和等待分位数同样要看；按线上 trace 和 ANR 聚类（按相似调用栈归组）确定优先级，更可靠。
 
 ## MultiProcess DataStore 的实现边界
 
@@ -600,7 +604,7 @@ override suspend fun incrementAndGetVersion(): Int =
 
 实际源码在文件锁报告死锁错误时还会退避重试，共享读锁也有兼容处理；上面的精简代码只作示意，读真实实现以库为准。
 
-允许尝试锁的读路径（requireLock=false）拿不到进程内 mutex 或共享文件锁时，仍可读取当前正式文件，但不会把这次无锁结果提交为稳定缓存。通知触发的刷新则使用 requireLock=true，会等待协调锁；不能把所有读取都概括为完全不等写锁。后续再通过共享版本和通知校准缓存，读取也不会直接消费正在生成的 .tmp 文件。
+允许尝试锁的读路径（requireLock=false）拿不到进程内 mutex 或共享文件锁时，仍可读取当前正式文件，但不会把这次无锁结果提交为稳定缓存。通知触发的刷新则使用 requireLock=true，会等待协调锁；读取等不等写锁，取决于走哪条读路径。后续再通过共享版本和通知校准缓存，读取也不会直接消费正在生成的 .tmp 文件。
 
 <!-- gracker-diagram: ch06-03-multiprocess-read-cache -->
 ![多进程读取的版本、锁与缓存分支](../../assets/diagrams/ch06/ch06-03-multiprocess-read-cache.png)
@@ -636,7 +640,7 @@ override suspend fun incrementAndGetVersion(): Int =
 <!-- gracker-diagram: ch06-03-shared-counter-runtime -->
 ![SharedCounter 的 Android 与主机边界](../../assets/diagrams/ch06/ch06-03-shared-counter-runtime.png)
 
-图：Android 真实计数器依赖本地库与共享映射；非 Android 主机测试可回退进程内 shadow，但不能用它证明跨进程一致性。
+图：Android 真实计数器依赖本地库与共享映射；非 Android 主机测试可回退进程内 shadow，跨进程一致性仍以真机验证为准。
 
 所以，多进程路径至少要在模拟器或真机 instrumentation 测试里覆盖以下场景：
 
@@ -646,7 +650,7 @@ override suspend fun incrementAndGetVersion(): Int =
 - APK/AAB 经过 R8（代码压缩与优化工具） 处理和 ABI（应用二进制接口） 拆分后，是否仍包含这一本地库。
 - Direct Boot 与凭据解锁前后的文件位置是否符合预期。
 
-DataStore 1.2.0 起增加了 Direct Boot 支持 API；本文 1.2.1 的 createInDeviceProtectedStorage() / deviceProtectedDataStore() 要求 Android 7.0 / API 24 及以上。这与库本身最低 API 23 的声明是两个边界。Direct Boot 允许部分组件在用户解锁前访问特定存储；只有确需在这一阶段读取的数据才应放进 device-protected storage（设备保护存储区），并且要避开依赖用户凭据保护的敏感内容。
+DataStore 1.2.0 起增加了 Direct Boot 支持 API；本文 1.2.1 的 createInDeviceProtectedStorage() / deviceProtectedDataStore() 要求 Android 7.0 / API 24 及以上。这与库本身最低 API 23 的声明是两个不同的版本要求。Direct Boot 允许部分组件在用户解锁前访问特定存储；只有确需在这一阶段读取的数据才应放进 device-protected storage（设备保护存储区），并且要避开依赖用户凭据保护的敏感内容。
 
 <!-- gracker-diagram: ch06-03-direct-boot-storage -->
 ![Direct Boot 的 API 与文件位置](../../assets/diagrams/ch06/ch06-03-direct-boot-storage.png)
@@ -717,7 +721,7 @@ suspend fun updateNightMode(enabled: Boolean) {
 
 图：异步 Trace 用同一 name/cookie 配对 begin/end；edit 可挂起并切换执行线程，finally 收尾覆盖成功、异常和取消路径。
 
-除了时长，建议记录成功、异常类型和调用场景计数。单次 DataStore 更新慢可能来自首次迁移、transform 执行过久、文件同步、跨进程锁竞争或设备 I/O，只有一个总 slice 还不能定位原因。
+除了时长，建议记录成功、异常类型和调用场景计数。单次 DataStore 更新慢可能来自首次迁移、transform 执行过久、文件同步、跨进程锁竞争或设备 I/O，只有一个总 slice 的话，慢在哪里仍定位不到。
 
 ## 常见误区
 

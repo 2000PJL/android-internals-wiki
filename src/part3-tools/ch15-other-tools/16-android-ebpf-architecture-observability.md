@@ -2,12 +2,19 @@
 title: Android eBPF 架构与性能观测
 chapter: '15.16'
 section: '15.16'
-status: finalized
+status: ready-for-review
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
-last_verified: '2026-08-14'
-last_verified_against: AOSP android-17.0.0_r1 (system/bpf, system/bpfprogs, system/memory/libmeminfo, packages/modules/UprobeStats, frameworks/native/services/gpuservice); Android common kernel android17-6.18-2026-06_r6 (include/trace/events/syscalls.h, kernel/sched/ext.c); external/perfetto android-17.0.0_r1 (data_source_config.proto)
+last_verified: '2026-10-23'
+last_rework_at: '2026-10-23T13:36:37+08:00'
+last_source_verified_at: '2026-10-23'
+verification_scope_note: 2026-10-23 仅复核 heapprofd 的用途、Android 10 起可用与 user 构建的目标限制，以及 fd/fdinfo 释义；其余平台实现的来源核验日期为 2026-08-14。
+last_verified_against: AOSP android-17.0.0_r1 (system/bpf, system/bpfprogs, system/memory/libmeminfo, packages/modules/UprobeStats, frameworks/native/services/gpuservice); Android common kernel android17-6.18-2026-06_r6 (include/trace/events/syscalls.h, kernel/sched/ext.c, Documentation/filesystems/proc.rst); external/perfetto android-17.0.0_r1 (data_source_config.proto, docs/data-sources/native-heap-profiler.md)
 confidence: high
 sources:
+- type: aosp
+  path: external/perfetto/docs/data-sources/native-heap-profiler.md (android-17.0.0_r1)
+- type: kernel
+  path: Documentation/filesystems/proc.rst (android17-6.18-2026-06_r6)
 - type: aosp
   path: system/bpf/loader/bpfloader.rs
 - type: aosp
@@ -359,7 +366,7 @@ Android 的网络 BPF 由 Connectivity 与 netd 体系管理。netd 是系统网
 | dma-buf 或图形缓冲增长 | dma-buf 统计、GPU memory、SurfaceFlinger/BufferQueue |
 | 某个内核函数疑似泄漏 | 受控设备上的 tracepoint；没有稳定事件时再评估 kprobe |
 
-heap dump 是某一时刻堆对象与引用关系的快照，allocation track（时间线轨道）上的 tracking/sampling 记录对象分配；heapprofd（file descriptor，文件描述符） 是 Perfetto 的 native heap profiler，malloc debug 与 LeakSanitizer（LSan）则依赖不同程度的调试或插桩条件。
+heap dump 是某一时刻堆对象与引用关系的快照，allocation track（时间线轨道）上的 tracking/sampling 记录对象分配；heapprofd 是 Perfetto 的 native heap profiler，要求 Android 10 及以上；量产 `user` 构建仅能分析声明了 `debuggable` 或 `profileable` 的应用。malloc debug 与 LeakSanitizer（LSan）则依赖不同程度的调试或插桩条件。
 
 eBPF 擅长在事件发生时按条件计数，但不会自动理解对象所有权。泄漏结论仍要靠分配与释放配对、进程生命周期和上层资源语义证明。
 
@@ -985,7 +992,7 @@ paste - - - - < dmabuf.snapshot
 - 比较场景前后的全局 DMA-BUF 集合。
 - 用 inode 作为同一快照内和相邻快照间的关联线索；对象销毁后 inode 可能被复用，别把它当作长期全局 ID。
 
-它没有读取 attachment list、文件引用计数、进程、UID 或分配调用栈。仅凭四字段输出判断不出由哪个进程泄漏，`exp_name` 指的也是 exporter 导出方，而非当前引用者。需要进程归因时，应把快照与进程 fd、`/proc/<pid>/fdinfo`、DMA-BUF sysfs 统计和图形或相机服务状态联合分析。`fdinfo` 是内核为某个文件描述符暴露的附加信息，sysfs 则是 `/sys` 下的内核对象属性接口。
+它没有读取 attachment list、文件引用计数、进程、UID 或分配调用栈。仅凭四字段输出判断不出由哪个进程泄漏，`exp_name` 指的也是 exporter 导出方，而非当前引用者。需要进程归因时，应把快照与进程 fd（file descriptor，文件描述符）、`/proc/<pid>/fdinfo`、DMA-BUF sysfs 统计和图形或相机服务状态联合分析。`fdinfo` 是内核为某个文件描述符暴露的附加信息，sysfs 则是 `/sys` 下的内核对象属性接口。
 
 ### `kernelWakelockDuration`：全局 active 时间并集
 
@@ -1117,6 +1124,8 @@ adb shell su root bpftool map dump pinned \
 
 ## 参考资料
 
+- [Android 17 Perfetto heapprofd：用途、Android 10 起可用与目标应用限制](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/docs/data-sources/native-heap-profiler.md#3)
+- [Android common 6.18 proc 文档：进程文件描述符与 fdinfo](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst#2005)
 - [Android 17 platform manifest](https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/default.xml)
 - [Android 17 init.rc](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/rootdir/init.rc)
 - [Android 17 netbpfload.rc](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/bpf/loader/netbpfload.rc)

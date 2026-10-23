@@ -258,6 +258,8 @@ latch（选定本帧使用的 buffer） 指 SurfaceFlinger 选中并取得某个
 
 ## 帧生产、缓冲与系统合成
 
+这一节我们沿一帧的完整路线走一遍：先分清内容走哪条输出路径，再依次看主线程、HWUI、BufferQueue、BLAST、SurfaceFlinger 与 HWC 各自负责什么，最后讲怎么用 Perfetto 把这些阶段串成一条可核对的链路。
+
 ### 1. 输出拓扑分类
 
 拿到一段渲染 trace，我们先要分清内容从哪条路径画出来。这里的输出拓扑，指一类内容由哪个 Producer 生成、经过哪个 Surface 和 BufferQueue，并最终成为哪个 Layer。“Android 渲染”包含多种数据路径，它们可能同时出现在一个窗口里，Producer 和 BufferQueue 却未必是同一套。
@@ -314,7 +316,7 @@ HWC 协商合成方式（常规 validate；满足条件时可跳过）
 HWC present：返回 present fence 与各 Layer 的 release fence
 ```
 
-其中，client target 是 SurfaceFlinger 执行客户端合成时生成的中间输出缓冲区。present（向显示设备提交本帧）fence 标记显示端的呈现边界，release fence 则保护相应 buffer 的再次写入；两者对应的对象和帧号可能不同，不构成固定的 signal 先后顺序，具体契约见下文 Fence 一节。
+其中，client target 是 SurfaceFlinger 执行客户端合成时生成的中间输出缓冲区。present fence 标记接口约定的呈现边界：物理显示可能是开始呈现或开始向面板传输，虚拟显示则是输出 buffer 写入完成，release fence 保护相应 buffer 何时可以再次写入；两者对应的对象和帧号可能不同，signal 的先后顺序要按具体契约判断，见下文 Fence 一节。
 
 这些阶段大多是并行推进的：主线程、RenderThread、GPU、SurfaceFlinger 和显示硬件常常重叠处理不同的帧。所以分析时我们要保留帧号、VSync 周期和 fence 依赖，各段耗时直接相加，得不出整帧的结论。
 
@@ -378,7 +380,7 @@ CALLBACK_COMMIT
 - 布局（layout）：确定 View 在父容器中的位置；
 - 绘制（draw）：录制或更新需要重绘的内容。
 
-三者都有条件判断。`android-17.0.0_r1` 的 `performTraversals()` 没有提供同名的显式系统 trace 区间；应从 `Choreographer#doFrame` 的 traversal 回调范围，以及实际存在的 `measure`、`layout`、`draw-VRI[...]` 等区间判断工作。厂商或自定义 trace 即使标出方法名，也不能据此认定完整三步或整棵 View 树都执行过。
+三者都有条件判断。`android-17.0.0_r1` 的 `performTraversals()` 没有提供同名的显式系统 trace 区间；应从 `Choreographer#doFrame` 的 traversal 回调范围，以及实际存在的 `measure`、`layout`、`draw-VRI[...]` 等区间判断工作。厂商或自定义 trace 即使标出方法名，也只说明这个方法被调用过，完整三步或整棵 View 树是否执行，要看实际存在的区间。
 
 ##### Measure：父子双方参与尺寸协商
 
@@ -469,7 +471,7 @@ Java 层 `RecordingCanvas` 的绘制 API 最终进入 `BaseRecordingCanvas` 等�
 <!-- gracker-diagram: ch02-01-traversal-record-sync -->
 ![重复 UI 请求合并调度，再按状态录制与同步](../../assets/diagrams/ch02/ch02-01-traversal-record-sync.png)
 
-图：mTraversalScheduled 合并的是待执行遍历的调度，实际 measure/layout/draw 仍由状态决定。硬件加速路径先录制 RenderNode/DisplayList，再同步到 RenderThread；录制返回不代表 GPU 已完成像素生成。
+图：mTraversalScheduled 合并的是待执行遍历的调度，实际 measure/layout/draw 仍由状态决定。硬件加速路径先录制 RenderNode/DisplayList，再同步到 RenderThread；录制返回时，GPU 的像素生成通常还在后面的阶段。
 
 #### 4.3 `syncAndDrawFrame()` 是 UI 到 RenderThread 的提交边界
 
@@ -498,7 +500,7 @@ SurfaceFlinger 合成更早的一帧
 <!-- gracker-diagram: ch02-01-pipeline-overlap -->
 ![不同执行域可以同时推进不同帧](../../assets/diagrams/ch02/ch02-01-pipeline-overlap.png)
 
-图：轨道只是并行关系示意，宽度和相位不代表实测时间，也不规定各域永远相差一帧。应使用目标帧号、fence 和 deadline 关联依赖；一段 GPU 工作跨刷新周期，本身不能证明它挡住目标帧。
+图：轨道只是并行关系示意，宽度和相位按示意阅读即可，各域也未必总相差一帧。应使用目标帧号、fence 和 deadline 关联依赖；一段 GPU 工作跨刷新周期，还要结合依赖和 deadline 确认它是否真的挡住目标帧。
 
 #### 4.5 SkiaGL、SkiaVulkan 与渲染后端
 
@@ -507,7 +509,7 @@ Skia 是 Android 使用的二维图形引擎；渲染后端决定它通过哪套
 - `SkiaOpenGLPipeline`
 - `SkiaVulkanPipeline`
 
-`Properties::peekRenderPipelineType()` 通过 `use_vulkan()` 读取只读产品属性 `ro.hwui.use_vulkan`：值为 true 时，`debug.hwui.renderer` 的默认值为 `skiavk`，否则为 `skiagl`。随后，`debug.hwui.renderer` 的值决定选择 SkiaVulkan 还是 SkiaGL。这个属性用于选择 HWUI 渲染后端，不提供实际 GPU 驱动名称。判断某台设备的默认后端，要同时检查产品属性和调试属性，不能只看 Android 版本。
+`Properties::peekRenderPipelineType()` 通过 `use_vulkan()` 读取只读产品属性 `ro.hwui.use_vulkan`：值为 true 时，`debug.hwui.renderer` 的默认值为 `skiavk`，否则为 `skiagl`。随后，`debug.hwui.renderer` 的值决定选择 SkiaVulkan 还是 SkiaGL。这个属性用于选择 HWUI 渲染后端，不提供实际 GPU 驱动名称。判断某台设备的默认后端，要同时检查产品属性和调试属性；只看 Android 版本，这两个属性就都漏掉了。
 
 Vulkan 与 OpenGL ES 的 CPU 开销、驱动行为、着色器编译、内存压力和功耗表现依赖具体设备及负载；要判断某一帧的快慢，回到该帧的 trace 和计数器，后端名称本身给不出答案。
 
@@ -515,7 +517,7 @@ Vulkan 与 OpenGL ES 的 CPU 开销、驱动行为、着色器编译、内存压
 
 #### 5.1 Producer 与 Consumer
 
-一条 BufferQueue 连接一个图形缓冲区生产者和一个消费者：
+绘制记录要变成屏幕上的像素，先得解决缓冲区在两边怎么流转。一条 BufferQueue 连接一个图形缓冲区生产者和一个消费者：
 
 ```text
 Producer                         Consumer
@@ -535,7 +537,7 @@ queueBuffer(fence)
 
 `queueBuffer()` 主要提交缓冲区槽位、元数据和同步信息。GraphicBuffer 背后的内存通过句柄共享，正常路径不需要在 `queueBuffer()` 时复制整张图片。
 
-`dequeueBuffer()` 返回的 fence 约束 Producer 再次写入的时机，未 signal 时不能覆写 buffer；`queueBuffer(fence)` 携带的 fence 则交给 Consumer，约束读取本帧内容的时机。槽位已经交还，不代表上一轮异步使用已经完成；前一项契约见 [`IGraphicBufferProducer.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/IGraphicBufferProducer.h#233)。
+`dequeueBuffer()` 返回的 fence 约束 Producer 再次写入的时机：要等这个 fence signal 之后才能覆写 buffer；`queueBuffer(fence)` 携带的 fence 则交给 Consumer，约束读取本帧内容的时机。槽位交还了，上一轮异步使用却可能还在进行；前一项契约见 [`IGraphicBufferProducer.h`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/include/gui/IGraphicBufferProducer.h#233)。
 
 `queueBuffer()` 成功只说明生产者把缓冲区置为可消费状态；SurfaceFlinger 有没有 latch、显示设备有没有呈现，要沿下游的 transaction 和 fence 继续看。
 
@@ -557,7 +559,7 @@ BufferQueue 中常见的槽位状态为：
 <!-- gracker-diagram: ch02-01-bufferqueue-slot-cycle -->
 ![BufferQueue 槽位流转与两次安全使用条件](../../assets/diagrams/ch02/ch02-01-bufferqueue-slot-cycle.png)
 
-图：常见流转是 FREE→DEQUEUED→QUEUED→ACQUIRED→FREE。dequeue 返回的 fence 保护生产者再次写入，queue 携带的 fence 则保护消费者读取；槽位回到可流转状态不代表此前异步工作已结束。
+图：常见流转是 FREE→DEQUEUED→QUEUED→ACQUIRED→FREE。dequeue 返回的 fence 保护生产者再次写入，queue 携带的 fence 则保护消费者读取；槽位回到可流转状态时，此前的异步工作可能仍在收尾。
 
 #### 5.3 “三缓冲”要按队列状态理解
 
@@ -573,7 +575,7 @@ BufferQueue 中常见的槽位状态为：
 
 #### 5.4 队列背压的表现
 
-背压（backpressure）表示 Consumer 的处理或释放速度反过来限制 Producer；它通常体现为 Producer 等待可用槽位，而不是队列可以无限增长。
+背压（backpressure）指 Consumer 的处理或释放速度反过来限制 Producer，通常就体现为 Producer 等待可用槽位：队列有上限，压力以等待的形式传回生产侧。
 
 应用生产速度超过消费者处理速度时，常见结果包括：
 
@@ -604,7 +606,7 @@ HWUI Producer
 SurfaceFlinger 中对应 Layer 的待处理事务
 ```
 
-这里有两个容易踩的坑：
+这里我们提两个容易踩的坑：
 
 - 事务传递的是缓冲区句柄、同步对象和元数据，SurfaceFlinger 并不通过 Binder 接收整帧像素副本。
 - BLAST acquire 到缓冲区之后，还要经过事务应用、Layer 状态更新、latch、合成与 present，BLAST 事件离显示完成还有一段距离。
@@ -613,7 +615,7 @@ SurfaceFlinger 中对应 Layer 的待处理事务
 
 SurfaceFlinger 的 Layer 追踪中可看到形如 `BufferTX - <layerName>` 的计数器，命名定义位于 `frameworks/native/services/surfaceflinger/Layer.h`。
 
-它表达 SurfaceFlinger 侧待处理的 buffer transaction 数量：buffer 到达服务端时递增，被 latch 或丢弃时递减。计数下降时，仍需结合 `latchBuffer`、`setBuffer` 等事件判断，不能直接当作已经显示。普通应用 BufferQueue 的槽位状态计数、排队等待扫描输出的显示帧数各有自己的含义，混用会看错对象。
+它表达 SurfaceFlinger 侧待处理的 buffer transaction 数量：buffer 到达服务端时递增，被 latch 或丢弃时递减。计数下降时，仍需结合 `latchBuffer`、`setBuffer` 等事件判断，画面到没到屏幕，要看后续的 present 记录。普通应用 BufferQueue 的槽位状态计数、排队等待扫描输出的显示帧数各有自己的含义，混用会看错对象。
 
 分析时应把下面几类指标分开：
 
@@ -640,7 +642,7 @@ SurfaceFlinger 的 Layer 追踪中可看到形如 `BufferTX - <layerName>` 的�
 
 [`hwcomposer2.h` 的 `presentDisplay` 契约](https://android.googlesource.com/platform/hardware/libhardware/+/android-17.0.0_r1/include_all/hardware/hwcomposer2.h#1805) 区分了三种情况：物理显示的视频模式面板在本帧开始出现的 VSync 发出信号；命令模式面板在开始向面板内存传输时发出信号；虚拟显示在输出 buffer 写入完成、可以安全读取时发出信号。物理显示的 present fence 不表示整屏扫描或所有像素的光学响应已经完成。
 
-HWC 返回的某个 Layer release fence 则约束该 Layer 上一帧 buffer 的读取结束时机。SurfaceFlinger 还可能合并客户端合成的 GPU 读取依赖，见 [`Output::presentFrameAndReleaseLayers()`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp#1726)。排查复用阻塞时，要核对 release fence 对应的 Layer、buffer 和帧号，不能把本帧 present fence 当成本帧 buffer 已可覆写的依据。
+HWC 返回的某个 Layer release fence 则约束该 Layer 上一帧 buffer 的读取结束时机。SurfaceFlinger 还可能合并客户端合成的 GPU 读取依赖，见 [`Output::presentFrameAndReleaseLayers()`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/CompositionEngine/src/Output.cpp#1726)。排查复用阻塞时，要核对 release fence 对应的 Layer、buffer 和帧号；本帧 buffer 何时可覆写，以对应的 release fence 为准。
 
 Android 17 的 Composer3 还允许特定 TV 图像处理路径返回 `LayerPresentFence`，记录某层相对 Display present 的额外延迟；[`PresentFence.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/PresentFence.aidl#31) 明确注明，这种行为偏离 `SurfaceControl.Transaction` 的通常契约，仅允许用于需要该功能的 TV 设备。分析这类设备时，还需区分 Display 与 Layer 的呈现时刻。
 
@@ -692,7 +694,7 @@ Android 13 引入 `AutoSingleLayer`，允许在受限条件下 latch acquire fen
 - 当前处理的是首个事务（`firstTransaction`）；
 - 调度器未处于 early VSync 配置，避免 RenderEngine 等待未完成的 buffer 等情况造成卡顿。
 
-这些判断位于 [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp#5543)，fence 检查处还会联合判断 `isSimpleBufferUpdate()`。[官方文档](https://source.android.com/docs/core/graphics/unsignaled-buffer-latch) 对旧 `Always` 模式提示了显示冻结等风险，并注明该模式可能弃用；Android 17 的 `getLatchUnsignaledConfig()` 只返回 `AutoSingleLayer` 或 `Disabled`，不能照搬旧 `debug.sf.latch_unsignaled` 配置。Perfetto 中可搜索 `fence unsignaled try allowLatchUnsignaled`，再结合 Layer、事务与 fence 时间确认实际命中的路径。
+这些判断位于 [`SurfaceFlinger.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp#5543)，fence 检查处还会联合判断 `isSimpleBufferUpdate()`。[官方文档](https://source.android.com/docs/core/graphics/unsignaled-buffer-latch) 对旧 `Always` 模式提示了显示冻结等风险，并注明该模式可能弃用；Android 17 的 `getLatchUnsignaledConfig()` 只返回 `AutoSingleLayer` 或 `Disabled`，配置要按这两个取值来读，旧 `debug.sf.latch_unsignaled` 的用法已经对不上当前实现。Perfetto 中可搜索 `fence unsignaled try allowLatchUnsignaled`，再结合 Layer、事务与 fence 时间确认实际命中的路径。
 
 #### 8.2 SurfaceFlinger VSync 与应用 VSync
 
@@ -706,7 +708,7 @@ Android 13 引入 `AutoSingleLayer`，允许在受限条件下 latch acquire fen
 
 Hardware Composer HAL 连接 SurfaceFlinger 与设备显示合成能力。SurfaceFlinger 为 Layer 提供候选 composition type（合成方式），HWC 在 validate 阶段可以接受或要求调整。
 
-独立的 validate 调用并非每帧都有。Android 17 的 [`HWComposer::getDeviceCompositionChanges()`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp#537) 在没有客户端合成、且满足最早呈现时间约束时，会尝试 `presentOrValidate()`；HWC 若接受跳过 validate，便直接完成 present 提交，否则返回需要验证的结果。常规客户端合成路径则要先准备 client target，再提交 present；GPU 写入是否完成由传给 HWC 的 acquire fence 约束。分析 trace 时，应结合这两条路径判断，缺少单独的 validate slice 不能直接判为少执行了合成步骤。
+独立的 validate 调用不一定每帧出现，是否跳过取决于合成路径、时间条件和 HWC 返回结果。Android 17 的 [`HWComposer::getDeviceCompositionChanges()`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp#537) 在没有客户端合成、且满足最早呈现时间约束时，会尝试 `presentOrValidate()`；HWC 若接受跳过 validate，便直接完成 present 提交，否则返回需要验证的结果。常规客户端合成路径则要先准备 client target，再提交 present；GPU 写入是否完成由传给 HWC 的 acquire fence 约束。分析 trace 时，应结合这两条路径判断；缺了单独的 validate slice，先看这帧是否走了 `presentOrValidate()` 直通路径。
 
 合成决策可能受以下因素影响：
 
@@ -750,7 +752,7 @@ Hardware Composer HAL 连接 SurfaceFlinger 与设备显示合成能力。Surfac
 
 ### 10. 从应用缓冲区到显示输出的各段缓冲区
 
-普通窗口的 App BufferQueue 保存应用生成的窗口缓冲区。SurfaceFlinger 若执行 client composition，还会生成 client target。显示控制器和面板扫描又可能有各自的内部缓冲与流水结构。
+把前面各阶段放到一起看，链路上同时存在好几份缓冲区：普通窗口的 App BufferQueue 保存应用生成的窗口缓冲区，SurfaceFlinger 若执行 client composition，还会生成 client target。显示控制器和面板扫描又可能有各自的内部缓冲与流水结构。
 
 这些对象属于不同阶段：
 
@@ -1119,9 +1121,9 @@ Skia 项目中的 Graphite 是新一代 GPU 后端研发方向。`android-17.0.0
 - Android 13：Vulkan 1.3；
 - Android 16：Vulkan 1.4。
 
-上面列的是实现文档的 API 版本对应关系，不能逐行当作同期设备的最低兼容要求。该文档的 `Choose Vulkan support` 又要求 64 位、非 low-memory（低内存设备）的 Android 16 launch device 支持 Vulkan 1.4，但这一表述与 Android 16/17 CDD 没有对齐，具体条款差异见下文。不能据此认定所有新机或 OTA 升级设备具备 Vulkan 1.4。
+上面列的是实现文档的 API 版本对应关系，同期设备的最低兼容要求要看 CDD 条款和设备上报的能力。该文档的 `Choose Vulkan support` 又要求 64 位、非 low-memory（低内存设备）的 Android 16 launch device 支持 Vulkan 1.4，但这一表述与 Android 16/17 CDD 没有对齐，具体条款差异见下文。新机或 OTA 升级设备是否具备 Vulkan 1.4，仍要按设备各自上报的版本来确认。
 
-应用应查询 `FEATURE_VULKAN_HARDWARE_VERSION`、extension（扩展能力）、profile（成组定义的一套 Vulkan 能力）与 dEQP level（图形兼容性测试覆盖级别）。实现文档还注明：Android 14 及以上支持 Vulkan 的设备需要 Vulkan 1.1 驱动，并满足 Android Baseline 2021 profile；不能把较新版本的 launch-device 条件误读成升级设备完全没有兼容要求。
+应用应查询 `FEATURE_VULKAN_HARDWARE_VERSION`、extension（扩展能力）、profile（成组定义的一套 Vulkan 能力）与 dEQP level（图形兼容性测试覆盖级别）。实现文档还注明：Android 14 及以上支持 Vulkan 的设备需要 Vulkan 1.1 驱动，并满足 Android Baseline 2021 profile；较新版本的 launch-device 条件面向新机，升级设备的兼容要求依旧适用。
 
 `VP_ANDROID_16_minimums`、Android Vulkan Baseline Profile 和 Compatibility Definition 解决的问题不同：前两者描述成组的 Vulkan 能力，CDD（兼容性定义文档）规定设备兼容要求，应用的最低 Vulkan version/extension 则由自己的渲染器决定。这里的 Vulkan Baseline Profile 与用于优化应用启动的 ART Baseline Profile 不是同一个概念。
 
@@ -1201,7 +1203,7 @@ GLES 应用、原生 Vulkan 应用和 HWUI 页面是三类对象，要分开对�
 
 [`Implement Vulkan`](https://source.android.com/docs/core/graphics/implement-vulkan#choose-vulkan-support) 写有 Android 16 及以上 launch device 的 Vulkan 1.4 要求，但截至 2026-10-22，[Android 16 CDD §7.1.4.2](https://source.android.com/docs/compatibility/16/android-16-cdd#7142_vulkan) 和 [Android 17 CDD 的同一节](https://source.android.com/docs/compatibility/17/android-17-cdd#7142_vulkan) 都要求支持 Vulkan 的设备为每个枚举出的 `VkPhysicalDevice` 完整实现 Vulkan 1.1（`C-1-3`）；对支持 GLES 3.1 或带屏幕/视频输出的设备，Vulkan 1.3 是 STRONGLY RECOMMENDED（强烈推荐，`C-SR-1` / `C-SR-2`）。这两节没有把 Vulkan 1.4 写成 MUST（强制要求）。
 
-两版 CDD 的 §2.2.1 还对支持任一 64 位 ABI、且 `ActivityManager.isLowRamDevice()` 返回 false 的手持设备规定 Vulkan 1.1 要求（`7.1.4.2/H-2-1`），Android 17 的措辞为“1.1 或更高”。因此不能把实现文档的 1.4 表述直接视为 CDD 已确认的统一最低版本。GPU 驱动由 SoC 厂商或 IHV（独立硬件供应商）提供，OTA 也不会自动改变硬件能力；应用要根据设备上报的 Vulkan 版本、扩展和所需 Vulkan feature set（功能与限制的能力集）决定能否启用渲染器。
+两版 CDD 的 §2.2.1 还对支持任一 64 位 ABI、且 `ActivityManager.isLowRamDevice()` 返回 false 的手持设备规定 Vulkan 1.1 要求（`7.1.4.2/H-2-1`），Android 17 的措辞为“1.1 或更高”。因此，实现文档的 1.4 表述与 CDD 已确认的统一最低版本，应当分开看待。GPU 驱动由 SoC 厂商或 IHV（独立硬件供应商）提供，OTA 也不会自动改变硬件能力；应用要根据设备上报的 Vulkan 版本、扩展和所需 Vulkan feature set（功能与限制的能力集）决定能否启用渲染器。
 
 ### Android 17：WebGPU、ANGLE 偏好与滚动帧率映射
 
@@ -1209,7 +1211,7 @@ GLES 应用、原生 Vulkan 应用和 HWUI 页面是三类对象，要分开对�
 
 Android 17 的发布说明把 WebGPU 列为图形新能力。公开接口来自独立发布的 Jetpack `androidx.webgpu:webgpu`，不属于 `android.*` framework API。截至 2026-10-20，发布页列出的版本为 2026-10-07 发布的 `1.0.0-alpha06`；alpha 表示仍在早期预览阶段，接口可能变化。
 
-独立库的适用范围要按依赖版本确认。`alpha06` 将最低 SDK 从 API 24 提高到 API 26（Android 8.0），不能把 Android 17 的发布归类当作该库的最低系统要求。该版本还移除了描述符和配置结构构造函数上的 `@JvmOverloads`；依赖旧构造函数重载的 Java 代码需按迁移说明改用嵌套 `Builder`。升级前应先检查应用的 `minSdk` 与这些调用点。
+独立库的适用范围要按依赖版本确认。`alpha06` 将最低 SDK 从 API 24 提高到 API 26（Android 8.0）；该库的最低系统要求按依赖版本确认，与 Android 17 的发布归类是两回事。该版本还移除了描述符和配置结构构造函数上的 `@JvmOverloads`；依赖旧构造函数重载的 Java 代码需按迁移说明改用嵌套 `Builder`。升级前应先检查应用的 `minSdk` 与这些调用点。
 
 [`alpha05` 与 `alpha06` 的发布说明](https://developer.android.com/jetpack/androidx/releases/webgpu#1.0.0-alpha06) 均提示：库文档由 Google Gemini 生成，可能有误。涉及具体 API 时，应同时核对所用版本的源码与官方 WebGPU 规范；`alpha06` 的 `GPUSurface` 源文件也保留了这条提示。
 
@@ -1367,7 +1369,7 @@ Android 17 AOSP 提供 SkiaOpenGL 与 SkiaVulkan pipeline，产品选择与设�
 
 ### “Vulkan 1.4 要求适用于所有升级设备”
 
-实现文档的 launch-device 表述不能直接替代 CDD 条款。Android 16/17 CDD 的 Vulkan 1.1 强制要求和 Vulkan 1.3 强烈推荐，与实现文档中的 1.4 要求没有对齐；新机和 OTA 升级设备都应按自身上报的版本与扩展判断，不能由系统版本号推定 Vulkan 1.4。
+实现文档的 launch-device 表述与 CDD 条款要分开引用。Android 16/17 CDD 的 Vulkan 1.1 强制要求和 Vulkan 1.3 强烈推荐，与实现文档中的 1.4 要求没有对齐；新机和 OTA 升级设备是否支持 Vulkan 1.4，以各自上报的版本与扩展为准，系统版本号推不出来。
 
 ### “ARR 让 VSync 随意变化”
 

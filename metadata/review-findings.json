@@ -9062,6 +9062,9 @@
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "close_note": "已将（file descriptor，文件描述符）从 heapprofd 移至进程 fd，保留括注信息。Android 17 external/perfetto/docs/data-sources/native-heap-profiler.md L3-L17、L215-L246 证实 heapprofd 的堆分析用途、Android 10 起可用与 user 构建目标限制；android17-6.18-2026-06_r6 Documentation/filesystems/proc.rst L128-L139、L2005-L2028 证实 fd/fdinfo 含义。均于 2026-10-23 从固定 tag 重新获取。metadata、SUMMARY 链接、全仓 git diff --check 及新增行中文硬门均通过。文章置 ready-for-review，未直接 finalized。证据见 logs/rework/2026-10-23-20261023-133520-rework-d627b6c1-rework.md。",
+      "closed_by": "aiw-polish-rework",
+      "closed_run_id": "20261023-133520-rework-d627b6c1",
       "created_at": "2026-10-23T12:17:45.953110+08:00",
       "created_by": "aiw-chinese-rewrite",
       "created_run_id": "20261023-120020-cn-rewrite-d627b6c1f107dd73",
@@ -9072,10 +9075,10 @@
       "source_paths": [
         "run 20261023-120020-cn-rewrite-d627b6c1f107dd73 preflight + scripts/style_lint.py gloss_pairs 保真逻辑"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "heapprofd 的括注（file descriptor，文件描述符）属误插：heapprofd 是 Perfetto 的 native heap profiler，注释内容应属于后文“进程 fd、/proc/<pid>/fdinfo”处的 fd",
       "type": "wrong-gloss",
-      "updated_at": "2026-10-23T12:17:45.953110+08:00"
+      "updated_at": "2026-10-23T13:39:01.843779+08:00"
     }
   ],
   "schema_version": 1

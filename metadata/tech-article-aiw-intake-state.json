@@ -6308,6 +6308,150 @@
       "status": "appended",
       "title": "记账 App 我装了删、删了装，最后自己写了一个：本地语音识别 + R8 踩坑复盘记账 App 我装了删、删了装，最后自"
     },
+    "source/juejin-android/2026-10-24-76573848-自己动手写了一个Android虚拟定位AppGPS.md": {
+      "chapter": "待分类",
+      "entry_id": "03c10693ad394393",
+      "last_appended": "2026-10-24T05:25:20.127166+08:00",
+      "last_seen": "2026-10-24T05:25:20.127166+08:00",
+      "mtime": 1792786819.364222,
+      "score": 14,
+      "sha256": "ae3bd63543ada0cb0a79d8a9192d35f7fb11d59a413040eea08242b8a1c8136f",
+      "size": 14942,
+      "status": "appended",
+      "title": "自己动手写了一个 Android 虚拟定位 App：GPSSimulate 技术实自己动手写了一个 Android 虚拟"
+    },
+    "source/juejin-android/2026-10-24-76574953-腾讯XLog日志框架Android端接入.md": {
+      "chapter": "待分类",
+      "entry_id": "1f9ac3a7e9c6bd12",
+      "last_appended": "2026-10-24T05:25:20.127166+08:00",
+      "last_seen": "2026-10-24T05:25:20.127166+08:00",
+      "mtime": 1792786819.3678393,
+      "score": 9,
+      "sha256": "0fb9ca4129b387ea10b23ed7a86d6f9f813b9d6e92eacf4c522c04b61caf1dde",
+      "size": 11425,
+      "status": "appended",
+      "title": "腾讯 XLog 日志框架 Android 端接入mars 是微信官方的终端基础组件，是一个使用 C++ 编写的业务性无关"
+    },
+    "source/juejin-android/2026-10-24-76604358-Android架构这些年其实一直在消灭碎片化.md": {
+      "chapter": "ch01-architecture",
+      "entry_id": "f96054b3d063fb54",
+      "last_appended": "2026-10-24T05:25:20.127166+08:00",
+      "last_seen": "2026-10-24T05:25:20.127166+08:00",
+      "mtime": 1792786819.365058,
+      "score": 12,
+      "sha256": "490ec48aecdef7b5f4e755d6041a6c33c36c5fba4a1f5ac04666fc62ca45b726",
+      "size": 10248,
+      "status": "appended",
+      "title": "Android 架构这些年，其实一直在消灭碎片化异步很多 Android 开发者刚入行的时候都会觉得： 后来工作几年才"
+    },
+    "source/juejin-android/2026-10-24-76610856-AndroidStudio新版Logcat键值对过滤语法.md": {
+      "chapter": "ch14-other-tools",
+      "entry_id": "bab943099e083b1c",
+      "last_appended": "2026-10-24T05:25:20.127166+08:00",
+      "last_seen": "2026-10-24T05:25:20.127166+08:00",
+      "mtime": 1792786819.3657558,
+      "score": 8,
+      "sha256": "b84cef9b78300787a1a0ac529e85643ebd7861404c2ace3e8f61e29edaf474e8",
+      "size": 7229,
+      "status": "appended",
+      "title": "Android Studio 新版 Logcat 一、新版核心变化（和旧版区别） 采用 字段:值 键值对语法，支持精确匹"
+    },
+    "source/juejin-android/2026-10-24-76648798-你是不是还没用过select实战Kotlinsele.md": {
+      "chapter": "待分类",
+      "entry_id": "4984d5e958cb8f1d",
+      "last_appended": "2026-10-24T05:25:20.127166+08:00",
+      "last_seen": "2026-10-24T05:25:20.127166+08:00",
+      "mtime": 1792786819.3668292,
+      "score": 9,
+      "sha256": "8adeea1908faa60a4b420e28a1e6031d906a5764d4f9f2ce510b1bb11b534412",
+      "size": 17805,
+      "status": "appended",
+      "title": "你是不是还没用过 select？实战 Kotlin select 在 Kotlin 协程中，select 算是一个有点尴"
+    },
+    "source/juejin-android/2026-10-24-76655745-LiveData的缺陷为什么我现在越来越少使.md": {
+      "chapter": "ch04-memory",
+      "entry_id": "7998e945660ce850",
+      "last_appended": "2026-10-24T05:25:20.127166+08:00",
+      "last_seen": "2026-10-24T05:25:20.127166+08:00",
+      "mtime": 1792786819.3653972,
+      "score": 11,
+      "sha256": "a0dfe598c116c779006d8a48e0dee972a458838f5a5927e93da701d341bb01d2",
+      "size": 10257,
+      "status": "appended",
+      "title": "LiveData 的缺陷：为什么我现在越来越少使用 LiveData？ > 我第一次接触 LiveData 的时候，觉得"
+    },
+    "source/juejin-android/2026-10-24-76678955-别再只用LoadingSuccessError表示所有页.md": {
+      "chapter": "待分类",
+      "entry_id": "9f3df14786c0641f",
+      "last_appended": "2026-10-24T05:25:20.127166+08:00",
+      "last_seen": "2026-10-24T05:25:20.127166+08:00",
+      "mtime": 1792786819.3646936,
+      "score": 9,
+      "sha256": "a48a93f59c24b9d359aee1b177a9fcb4fc02179c227a9a8ac2aa0d7550fd8c86",
+      "size": 33267,
+      "status": "appended",
+      "title": "别再只用 Loading、Success、Error 表示所有页面状态了各位 Compose 开发者，周五好。趁着这个愉"
+    },
+    "source/juejin-android/2026-10-24-76696126-同样是跨端KMP跟RN居然差这么多共享层.md": {
+      "chapter": "待分类",
+      "entry_id": "c459bcede51e9925",
+      "last_appended": "2026-10-24T05:25:20.127166+08:00",
+      "last_seen": "2026-10-24T05:25:20.127166+08:00",
+      "mtime": 1792786819.3661757,
+      "score": 8,
+      "sha256": "469210056f96241f9cc241f78b7a1bf402b352fa3a79184c8520853520f15bd7",
+      "size": 6905,
+      "status": "appended",
+      "title": "你敢信吗？同样是跨端，KMP 跟 RN 居然差这么多！不知道你们在做跨平台混合开发即原生Android+原生iOS+跨平"
+    },
+    "source/juejin-android/2026-10-24-76782605-我常用的5个Kotlin优化小技巧.md": {
+      "chapter": "待分类",
+      "entry_id": "ca97a7ad96bf3d11",
+      "last_appended": "2026-10-24T05:25:20.127166+08:00",
+      "last_seen": "2026-10-24T05:25:20.127166+08:00",
+      "mtime": 1792786819.3673556,
+      "score": 13,
+      "sha256": "0ac36dc7a907fa1e89cc94e6e79911142d1c35fd2894193be7b449d9927acf68",
+      "size": 10837,
+      "status": "appended",
+      "title": "我常用的 5 个 Kotlin 优化小技巧今天我先来分享一下最近几年常用的一些 Kotlin 代码优化小技巧，与君共享。"
+    },
+    "source/juejin-android/2026-10-24-76800243-曾经安卓开发人手一个EventBus为什么现在.md": {
+      "chapter": "待分类",
+      "entry_id": "1b828953969769b0",
+      "last_appended": "2026-10-24T05:25:20.127166+08:00",
+      "last_seen": "2026-10-24T05:25:20.127166+08:00",
+      "mtime": 1792786819.3638062,
+      "score": 9,
+      "sha256": "1498c09e74933648dda46d4a2c6cc4a9dbe47a7eb49a95a199dffe10661c677e",
+      "size": 9372,
+      "status": "appended",
+      "title": "曾经安卓开发人手一个的 EventBus，为什么现在没人爱用了？EventBus 的崛起，是因为它解决了当年安卓组件通信"
+    },
+    "source/juejin-android/2026-10-24-76826281-AI时代下Android的边界正在消失.md": {
+      "chapter": "待分类",
+      "entry_id": "b738ba4e26c9c2ea",
+      "last_appended": "2026-10-24T05:25:20.127166+08:00",
+      "last_seen": "2026-10-24T05:25:20.127166+08:00",
+      "mtime": 1792786819.3689966,
+      "score": 16,
+      "sha256": "41a428e2d11acc878835ba7c4a6a85128feb62904284b6e4525613c6613f2d12",
+      "size": 20506,
+      "status": "appended",
+      "title": "AI时代下，Android的边界正在消失写在前面 好久没发文章了，难得有空闲时间，那就坐下来好好和各位小伙伴聊聊天，聊聊"
+    },
+    "source/juejin-android/2026-10-24-76933584-AI时代我们都将成为通才型开发者只懂An.md": {
+      "chapter": "待分类",
+      "entry_id": "74d2f315af889546",
+      "last_appended": "2026-10-24T05:25:20.127166+08:00",
+      "last_seen": "2026-10-24T05:25:20.127166+08:00",
+      "mtime": 1792786819.3684168,
+      "score": 13,
+      "sha256": "0c170f246df73814b1fd3dd53c85e4990d41fc35c4224d48c1db4c5916bc8f94",
+      "size": 8003,
+      "status": "appended",
+      "title": "AI 时代，我们都将成为通才型开发者：只懂 Android，已经不够了AI 时代，我们都将成为通才 大家好，今天分享的主"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -8693,24 +8837,24 @@
     }
   },
   "last_report": {
-    "appended": 15,
-    "considered": 19,
-    "cutoff": "2026-10-22T05:20:20.307884+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-23.md",
+    "appended": 12,
+    "considered": 12,
+    "cutoff": "2026-10-23T05:20:20.466807+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-24.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2239,
+    "scanned": 2251,
     "skipped": {
       "existing_link": 0,
-      "low_score": 4,
+      "low_score": 0,
       "max_files": 0,
       "old_unseen": 1414,
       "path": 31,
-      "unchanged": 775
+      "unchanged": 794
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-23T05:25:20.466807+08:00",
+  "last_run_at": "2026-10-24T05:25:20.127166+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

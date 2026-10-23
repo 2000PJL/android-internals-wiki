@@ -112,10 +112,10 @@ ANR（Application Not Responding，应用无响应）机制因此负责三项工
 2. 期限耗尽时，从系统进程侧记录原因并采集现场。
 3. 依据进程重要性、可见性和系统策略，终止进程或安排系统无响应界面。
 
-这里有两个容易混淆的地方。
+这里有两个容易混淆的地方，我们先把它说清楚。
 
-- ANR 约束的是系统正在等待完成的工作。应用里某项操作哪怕耗再长时间，只要没有超过任何受监控期限，系统就不会仅凭时长生成 ANR。
-- 主线程阻塞是最常见的原因，但系统检测的对象不限于主线程：广播可以交给指定的 `Handler`，服务问题可能牵涉 Binder 线程、锁持有者或远端进程。判定标准只有一条：对应的工作有没有按协议按时完成。
+- ANR 只约束系统正在等待的工作。应用里某项操作耗时再长，只要一直处在受监控期限之外，时长本身触发不了 ANR。
+- 主线程阻塞是最常见的原因，但系统检测的对象覆盖主线程之外：广播可以交给指定的 `Handler`，服务问题可能牵涉 Binder 线程、锁持有者或远端进程。判定标准只有一条：对应的工作有没有按协议按时完成。
 
 所以我们分析 ANR 时，先问“是哪个系统期限耗尽、系统在等什么完成信号”，再问“哪条线程挡住了这个完成信号”。直接从主线程栈猜业务根因，很容易把采样瞬间看到的一幕，误当成此前几秒的完整过程。
 
@@ -184,12 +184,12 @@ public static TimeoutRecord forContentProvider(String reason) {
 }
 ```
 
-`mEndUptimeMillis` 记录构造记录时取得的 uptime 时间；`endingNow()` 表示较准确的超时结束点，Provider 等使用的 `endingApproximatelyNow()` 明确只能给出近似结束点。`mEndTakenBeforeLocks` 标明是否在可能耗时的锁之前取时，不能把所有路径都当作精确的 detector 到期时间戳。有了这两个字段，即使 ANR 处理在后面排队，我们仍能区分“超时发生时间”和“报告开始处理时间”。平台还会把内部类型映射为公开的 `AnrTypes`，供结构化退出记录和预警信息使用。
+`mEndUptimeMillis` 记录构造 `TimeoutRecord` 时取得的 uptime 时间；`endingNow()` 给出较准确的超时结束点，Provider 等使用的 `endingApproximatelyNow()` 则明确是近似结束点。`mEndTakenBeforeLocks` 标明取时点是否位于可能耗时的锁之前；精度仍要结合 `endingNow()` / `endingApproximatelyNow()` 和具体 detector 的调用点判断，不能只凭这个布尔值认定它等于计时器的精确到期点。有了这两个字段，即使 ANR 处理在后面排队，我们仍能区分“超时发生时间”和“报告开始处理时间”。平台还会把内部类型映射为公开的 `AnrTypes`，供结构化退出记录和预警信息使用。
 
 <!-- gracker-diagram: ch09-01-04-timeout-timestamps -->
 ![超时点与排队处理点分开解释](../../assets/diagrams/ch09/ch09-01-04-timeout-timestamps.png)
 
-图：轨道仅表达先后；mEndUptimeMillis 是 uptime，不应直接当作 UTC 时间戳。
+图：轨道仅表达先后；mEndUptimeMillis 是 uptime，与 UTC 时间戳属于两套计时。
 
 ### 四阶段流程：注册、执行、超时、处置
 
@@ -206,12 +206,12 @@ public static TimeoutRecord forContentProvider(String reason) {
 - 期限开始时间和时长；
 - 到期时可写入报告的原因文本。
 
-这也解释了应用自建的“主线程卡顿监控”为什么替代不了系统 ANR 统计：应用监控看得到 Looper 消息延迟，却不知道 `system_server` 正在等哪一项协议完成，也复现不出系统对窗口、进程和用户可见性的归因策略。
+这也解释了应用自建的“主线程卡顿监控”为什么替代不了系统 ANR 统计：应用监控看得到 Looper 消息延迟，而 `system_server` 正在等哪一项协议完成、系统按窗口、进程和用户可见性怎样归因，都在它的视野之外。
 
 <!-- gracker-diagram: ch09-01-05-complete-or-expire -->
 ![完成取消与超时重核是不同路径](../../assets/diagrams/ch09/ch09-01-05-complete-or-expire.png)
 
-图：Handler 消息和检测对象可能发生竞态；到期回调不意味着每次都会生成报告。
+图：Handler 消息和检测对象可能发生竞态；到期回调还要过重新核实这一关，才轮到生成报告。
 
 #### 阶段二：应用执行并报告完成
 
@@ -220,7 +220,7 @@ public static TimeoutRecord forContentProvider(String reason) {
 <!-- gracker-diagram: ch09-01-06-dependency-responsibility -->
 ![等待完成信号的线程不一定是根因线程](../../assets/diagrams/ch09/ch09-01-06-dependency-responsibility.png)
 
-图：这是诊断顺序；不能从被归因 PID 直接推断根因只在本进程。
+图：这是诊断顺序；被归因 PID 只是排查入口，根因线程可能在别的进程。
 
 - 主线程可能正在等待工作线程释放锁；
 - 同步 Binder 的耗时由服务端线程和调度状态决定；
@@ -239,7 +239,7 @@ public static TimeoutRecord forContentProvider(String reason) {
 <!-- gracker-diagram: ch09-01-07-input-attribution -->
 ![Input 超时如何归因到应用进程](../../assets/diagrams/ch09/ch09-01-07-input-attribution.png)
 
-图：Input connection 与 no-focused-window 有不同的归因入口，不能只按当前顶层包名猜测。
+图：Input connection 与 no-focused-window 有不同的归因入口，责任进程以归因路径给出的结果为准。
 
 这段路由告诉我们：日志里的责任进程由窗口和输入状态共同决定，未必是用户当时看到的前台 Activity 所在的进程。
 
@@ -252,7 +252,7 @@ public static TimeoutRecord forContentProvider(String reason) {
 - Window/Activity 控制器提前处理或要求终止；
 - 调试、Instrumentation（测试框架控制）、关机或进程已死等状态下，跳过报告或改变处置。
 
-所以超时之后未必弹窗，也未必立刻杀进程：对话框只是处置分支之一，厂商系统、调试状态、后台 ANR 设置和当前用户状态都会影响用户最终看到什么。没有对话框，同样可能发生过 ANR。
+所以超时之后的处置有多种走向，弹窗只是其中一条分支，厂商系统、调试状态、后台 ANR 设置和当前用户状态都会影响用户最终看到什么。反过来说，设备上从没弹过对话框，也可能已经发生过 ANR。
 
 ### AMS 主路径：`AnrHelper`
 
@@ -272,7 +272,7 @@ public static TimeoutRecord forContentProvider(String reason) {
 <!-- gracker-diagram: ch09-01-08-helper-dedup -->
 ![AnrHelper 按 PID 拒绝重复报告](../../assets/diagrams/ch09/ch09-01-08-helper-dedup.png)
 
-图：去重限制高成本报告数量；业务卡顿次数与系统 ANR 报告次数不能直接等同。
+图：去重限制高成本报告数量；业务卡顿次数与系统 ANR 报告次数是两套计数。
 
 #### 尽早保存目标进程栈
 
@@ -294,23 +294,23 @@ mAnrRecords.add(new AnrRecord(
         timeoutRecord, isContinuousAnr, firstPidDumpPromise));
 ```
 
-`Future<File>` 代表还在执行或已完成的异步文件任务，会跟着 `AnrRecord` 进入消费线程。生成正式 trace 时，`StackTracesDumpHelper` 优先复制这份 early dump；临时采集或复制未成功时，会在剩余 dump 时间预算允许的情况下重新抓目标 PID。等待临时任务本身也会消耗预算，不能保证总能完成补采。
+`Future<File>` 代表还在执行或已完成的异步文件任务，会跟着 `AnrRecord` 进入消费线程。生成正式 trace 时，`StackTracesDumpHelper` 优先复制这份 early dump；临时采集或复制未成功时，会在剩余 dump 时间预算允许的情况下重新抓目标 PID。等待临时任务本身也会消耗预算，预算耗尽时补采就停在这一步。
 
 <!-- gracker-diagram: ch09-01-09-early-dump -->
 ![早期抓栈与报告消费可以并行](../../assets/diagrams/ch09/ch09-01-09-early-dump.png)
 
-图：早期抓栈缩短现场变化的机会；并行顺序不是等待早期采集结束再入队。
+图：先提交早期抓栈任务，再把记录入队；任务可与入队及报告消费并行，实际完成先后取决于调度。
 
 #### 队列拥塞时缩小采集范围
 
 `AnrConsumer` 逐条处理队列里的记录。若报告排队已超过 10 秒，或系统启动还不足 10 分钟，`onlyDumpSelf` 会被设为 `true`，系统只抓被归因的那个进程——大量并发 ANR 报告继续占用 CPU 和 I/O，只会把设备拖得更慢。
 
-两次 ANR 间隔不足 2 分钟时，`AnrHelper` 会安排 Binder heavy-hitter（高频 Binder 调用方）自动采样，给报告补上调用热点线索。这个 2 分钟常量只管采样调度，系统既不会把两次 ANR 合成一条，也不会落下后一次。
+两次 ANR 间隔不足 2 分钟时，`AnrHelper` 会安排 Binder heavy-hitter（高频 Binder 调用方）自动采样，给报告补上调用热点线索。这个 2 分钟常量只管采样调度，不会自行合并两次事件；能否各自入队成报，仍受同 PID 去重、进程存活和后续处置条件约束。
 
 <!-- gracker-diagram: ch09-01-10-report-load-controls -->
 ![三种时间常量控制不同报告行为](../../assets/diagrams/ch09/ch09-01-10-report-load-controls.png)
 
-图：这些是报告采集和采样调度条件，不能把它们解释成新的应用响应期限。
+图：这些是报告采集和采样调度条件，与应用响应期限是两回事。
 
 单条 ANR 处理结束后，系统还可以发送 `ProfilingTrigger.TRIGGER_TYPE_ANR`。应用事先注册过系统触发式 profiling（性能剖析）的话，可能拿到覆盖一段时间的额外产物，注册方式与数据范围见 [15.7 ProfilingManager](../../part3-tools/ch15-other-tools/07-profiling-manager.md)。这类产物是补充材料，替代不了 ANR trace。
 
@@ -365,7 +365,7 @@ mService.addErrorToDropBox("anr", mApp, mApp.processName,
         volatileDropboxEntriyStates);
 ```
 
-三者各管一段：EventLog 提供事件索引，trace 保存线程现场，DropBox 汇总更完整的上下文。代码里的 `"anr"` 只是错误类型参数，AMS 会结合进程类别生成具体的 DropBox tag（条目分类名），所以排查时先看设备上实际的 tag，别假定只有固定的 `data_app_anr`。
+三者各管一段：EventLog 提供事件索引，trace 保存线程现场，DropBox 汇总更完整的上下文。代码里的 `"anr"` 只是错误类型参数，AMS 会结合进程类别生成具体的 DropBox tag（条目分类名），所以排查时先看设备上实际的 tag，`data_app_anr` 只是常见取值之一。
 
 #### 决定杀进程或展示界面
 
@@ -376,7 +376,7 @@ mService.addErrorToDropBox("anr", mApp, mApp.processName,
 <!-- gracker-diagram: ch09-01-13-silent-or-ui -->
 ![后台 silent ANR 与 UI 安排分支](../../assets/diagrams/ch09/ch09-01-13-silent-or-ui.png)
 
-图：发送 UI 消息尚不保证用户最终看到弹窗；当前用户、延迟、控制器与设备策略仍可能改变结果。
+图：发送 UI 消息之后，用户未必看得到弹窗；当前用户、延迟、控制器与设备策略仍可能改变结果。
 
 ### 应用 ANR 与 `system_server` Watchdog
 
@@ -400,12 +400,12 @@ Watchdog 把检查任务投递到 `system_server` 的关键 Looper，并执行�
 
 Watchdog 报告用 `pre_watchdog` 或 `watchdog` DropBox tag，并生成 `system_server` 及关键原生进程的堆栈。完整超时后，若没有调试器附着、系统允许重启、控制器也没有要求继续等待，Watchdog 就调用 `Process.killProcess(Process.myPid())` 终止 `system_server`，剩下的交给系统重启恢复。
 
-应用 ANR 也可能由 `system_server` 卡顿间接引起。比如应用主线程在同步 Binder 里等 `system_server`，输入期限先耗尽，这时先记录的是应用 ANR；要等 `system_server` 的受监控线程也持续没有进展，Watchdog 才会独立触发。两份报告要放到同一条时间线上看：前一份报告归在应用进程名下，未必说明问题出在应用自身。
+应用 ANR 也可能由 `system_server` 卡顿间接引起。比如应用主线程在同步 Binder 里等 `system_server`，输入期限先耗尽，这时先记录的是应用 ANR；要等 `system_server` 的受监控线程也持续没有进展，Watchdog 才会独立触发。这两份报告我们要放到同一条时间线上看：前一份报告归在应用进程名下，问题也可能出在 `system_server` 一侧。
 
 <!-- gracker-diagram: ch09-01-15-app-system-dependency -->
 ![应用 ANR 与 Watchdog 可由同一依赖关联](../../assets/diagrams/ch09/ch09-01-15-app-system-dependency.png)
 
-图：这是可能的依赖示例，不表示每次应用 ANR 都伴随 Watchdog，也不保证两份报告的固定先后间隔。
+图：这是可能的依赖示例；应用 ANR 是否伴随 Watchdog、两份报告间隔多久，都因场景而异。
 
 ### 三类基础产物怎么配合
 
@@ -428,7 +428,7 @@ events 缓冲区会循环覆盖旧记录，所以线上问题要尽早保存带�
 
 普通第三方应用拿不到 `/data/anr` 的遍历权限。开发阶段可以从 bugreport 里取系统收集的 ANR 段；Android 11 / API 30 起，应用还能通过 `ActivityManager.getHistoricalProcessExitReasons()` 查询自己的历史退出记录，用 `ApplicationExitInfo.getTraceInputStream()` 读取系统保留的 trace。trace 放在容量有限的全局循环缓冲区里，可能已被后续记录覆盖，所以这个输入流允许返回 `null`。
 
-下面的 Kotlin 片段应在后台执行器中运行，查找当前应用最近一次 ANR 退出记录，并在 trace 仍可用时读取文本内容。它只展示查询和关闭流的顺序；生产实现要在读取时就限制大小，并处理 `getTraceInputStream()` 可能抛出的 `IOException`，不要在主线程直接执行 `readText()`：
+下面的 Kotlin 片段应在后台执行器中运行，我们用它查找当前应用最近一次 ANR 退出记录，并在 trace 仍可用时读取文本内容。它只展示查询和关闭流的顺序；生产实现要在读取时就限制大小，并处理 `getTraceInputStream()` 可能抛出的 `IOException`，不要在主线程直接执行 `readText()`：
 
 ```kotlin
 val activityManager = getSystemService(ActivityManager::class.java)
@@ -453,9 +453,9 @@ latestAnr?.traceInputStream?.bufferedReader()?.use { reader ->
 <!-- gracker-diagram: ch09-01-17-historical-trace -->
 ![应用从历史退出记录读取仍被保留的 trace](../../assets/diagrams/ch09/ch09-01-17-historical-trace.png)
 
-图：示例只筛选 REASON_ANR，并不覆盖所有携带过往 ANR trace 的其他退出原因；缓冲区覆盖可导致 null。
+图：示例只筛选 REASON_ANR；携带过往 ANR trace 的退出原因还有别的，缓冲区覆盖可导致 null。
 
-Android 17 / API 37 又为 `ApplicationExitInfo` 增加了 `getAnrInfo()`。返回的 `ApplicationExitInfo.AnrInfo` 里有 ANR ID、`AnrTypes` 类型、系统等待时长和用户可感知标志，且只出现在 `REASON_ANR` 记录中；输入派发这类没有 `AnrTimer.ExpiredTimer` 的路径，或 timer 回退实现没有提供该对象时，仍可能拿不到 `AnrInfo`，所以兼容代码要同时判断系统版本和空值。AOSP 在报告前用 `!isSilentAnr` 填充可感知标志；后续 UI 策略仍可能阻止弹窗，因此它不等于用户最终确实看到了对话框。
+Android 17 / API 37 又为 `ApplicationExitInfo` 增加了 `getAnrInfo()`。返回的 `ApplicationExitInfo.AnrInfo` 里有 ANR ID、`AnrTypes` 类型、系统等待时长和用户可感知标志，且只出现在 `REASON_ANR` 记录中。它有两条局限：输入派发这类路径没有 `AnrTimer.ExpiredTimer` 对象，timer 回退实现也可能缺这个对象，此时仍可能拿不到 `AnrInfo`，所以兼容代码要同时判断系统版本和空值。AOSP 在报告前用 `!isSilentAnr` 填充可感知标志，这只代表报告走了可感知路径，用户最终是否看到对话框，还要看后续 UI 策略。
 
 <!-- gracker-diagram: ch09-01-18-structured-anr-info -->
 ![AnrInfo 补充元数据但仍需原始原因](../../assets/diagrams/ch09/ch09-01-18-structured-anr-info.png)
@@ -497,12 +497,12 @@ PID 会被后来的进程复用，应用进程也可能在 ANR 后重启。只�
 - 主线程在期限耗尽前执行了长任务，dump 时任务刚刚结束，堆栈已经回到 `nativePollOnce()` 等待下一条消息；
 - 主线程 dump 时等待某把锁，持锁线程稍后释放，后续采样只留下普通业务帧。
 
-所以主线程栈停在 `nativePollOnce()`，说明不了它此前一直空闲；主线程停在某个普通方法里，也说明不了这个方法耗掉了整个超时时间。官方 ANR 诊断文档同样把“采样过晚而显示 idle 的主线程聚类”列为难以直接采取行动的线索。
+所以主线程栈停在 `nativePollOnce()`，只说明采样那一刻在等消息；超时发生时它在做什么，要靠时间线还原。停在某个普通方法里，也只说明采样时在那里，整个超时时间未必都耗在这个方法上。官方 ANR 诊断文档同样把“采样过晚而显示 idle 的主线程聚类”列为难以直接采取行动的线索。
 
 <!-- gracker-diagram: ch09-01-19-late-snapshot -->
 ![空闲栈可能出现在此前阻塞已经结束之后](../../assets/diagrams/ch09/ch09-01-19-late-snapshot.png)
 
-图：轨道为解释采样滞后的可能情形，没有实测刻度；任何一个普通栈顶也不能独自承担全部超时时间。
+图：轨道为解释采样滞后的可能情形，非实测刻度；单个栈顶只对应一个采样时刻，整段超时过程要另找材料。
 
 排查时可以按下面的顺序推进：
 
@@ -530,7 +530,7 @@ PID 会被后来的进程复用，应用进程也可能在 ANR 后重启。只�
 <!-- gracker-diagram: ch09-01-20-diagnostics-evolution -->
 ![诊断从退出记录扩展到时间段与结构信息](../../assets/diagrams/ch09/ch09-01-20-diagnostics-evolution.png)
 
-图：版本新增能力不能保证每次 ANR 都有预警、profiling 文件或 AnrInfo。
+图：版本新增能力按条件生效；每次 ANR 是否伴随预警、profiling 文件或 AnrInfo，取决于具体路径。
 
 ### Google Play Console 的统计范围
 
@@ -549,12 +549,12 @@ PID 会被后来的进程复用，应用进程也可能在 ANR 后重启。只�
 
 超过全局阈值，可能影响应用在所有设备上的可发现性；只在部分机型超过单机型阈值，也可能影响对应设备上的曝光并触发商店警告。阈值本身是可能调整的平台运营规则，发布准入检查要以 Play Console 和最新官方文档为准，别把表里的数值永久写死在监控代码里。
 
-还要留意两边的统计分母：本地 APM（应用性能监控）常按会话、事件数或进程启动次数计算，Android vitals 按每日活跃用户计算，还要受来源设备、用户共享设置和隐私门槛影响。两边数值对不上是正常的，比较前先统一分母、时间窗口和“用户可感知”的定义。
+我们还要留意两边的统计分母：本地 APM（应用性能监控）常按会话、事件数或进程启动次数计算，Android vitals 按每日活跃用户计算，还要受来源设备、用户共享设置和隐私门槛影响。两边数值对不上是正常的，比较前先统一分母、时间窗口和“用户可感知”的定义。
 
 <!-- gracker-diagram: ch09-01-21-vitals-denominator -->
 ![Android vitals 按每日活跃用户计算](../../assets/diagrams/ch09/ch09-01-21-vitals-denominator.png)
 
-图：2026-10-23 核对：可感知率全局阈值0.47%、单机型8%。活跃用户按用户与设备计，不能与按事件或会话计算的 APM 直接对比。
+图：2026-10-23 核对：可感知率全局阈值0.47%、单机型8%。活跃用户按用户与设备计，与按事件或会话计算的 APM 分母不同。
 
 ### 工程检查表
 
@@ -574,7 +574,7 @@ PID 会被后来的进程复用，应用进程也可能在 ANR 后重启。只�
 
 ## Input、Broadcast、Service 与 Provider 超时
 
-处置流程是统一的，但各类 ANR 的计时入口和责任线程各不相同。拿到报告就套另一类型的阈值，分析会直接走偏。
+处置流程是统一的，但各类 ANR 的计时入口和责任线程各不相同。拿到报告就套另一类型的阈值，分析会直接走偏，所以我们按类型把计时入口逐个过一遍。
 
 ### 先认超时契约，再看线程栈
 
@@ -591,7 +591,7 @@ ANR 报告里的 `Reason`，说的就是系统在等哪一个完成信号：Inpu
 <!-- gracker-diagram: ch09-01-22-read-contract-first -->
 ![拿到 Reason 后先识别超时契约](../../assets/diagrams/ch09/ch09-01-22-read-contract-first.png)
 
-图：默认常量只帮助定位，不是所有版本、设备和组件的统一 SDK 保证。
+图：默认常量用于初步定位；版本、设备和组件配置都可能改变实际等待值。
 
 常用类型可以先按下表定位。表里的数值是 AOSP 源码默认值，`Build.HW_TIMEOUT_MULTIPLIER`、DeviceConfig、广播 CPU 饥饿补偿和 OEM 配置都可能改变具体设备上的等待时长。
 
@@ -612,7 +612,7 @@ ANR 报告里的 `Reason`，说的就是系统在等哪一个完成信号：Inpu
 
 #### 默认 5 秒从哪里来
 
-`InputDispatcher` 位于 native inputflinger（原生输入系统服务）。事件写入应用的 InputChannel（输入通道） 后，待确认的 `DispatchEntry` 会留在 connection 的 `waitQueue` 里；应用完成输入处理，通过 `InputEventReceiver.finishInputEvent()` 发回确认，这条条目才离开等待队列。普通 View 事件通常由主线程处理，所以主线程阻塞是常见根因；不过检测器直接盯着的，是输入连接有没有按时确认事件。
+这只 5 秒计时器由 `InputDispatcher` 维护，它位于 native inputflinger（原生输入系统服务）。事件写入应用的 InputChannel（输入通道） 后，待确认的 `DispatchEntry` 会留在 connection 的 `waitQueue` 里；应用完成输入处理，通过 `InputEventReceiver.finishInputEvent()` 发回确认，该条目才离开等待队列。普通 View 事件通常由主线程处理，所以主线程阻塞是常见根因；不过检测器直接盯着的，是输入连接有没有按时确认事件。
 
 下面的源码展示系统怎样从 5 秒基础值、硬件超时倍率和窗口级配置算出实际超时：
 
@@ -646,7 +646,7 @@ std::chrono::nanoseconds InputDispatcher::getDispatchingTimeoutLocked(
 
 `processAnrsLocked()` 从 `mAnrTracker` 取出已到期的 connection。进入 `onAnrLocked(connection)` 后，源码取 `waitQueue.front()`——队首最早的那条待确认事件——作为诊断线索，再用 `now() - oldestEntry.deliveryTime` 算它已经等了多久，其中 `deliveryTime`（投递时间）记录该事件的投递时刻。
 
-源码注释还说明一个限制：oldest entry 最适合帮助排查，却不一定是触发计时器到期的那一个事件——窗口超时配置在等待期间变化过的话，较新的事件反而可能更早到自己的期限。所以报告里的事件描述是重要线索，单靠它下因果结论还不够。
+源码注释还说明一个限制：oldest entry 是最好的排查线索，触发计时器到期的却可能是另一条事件——窗口超时配置在等待期间变化过的话，较新的事件反而可能更早到自己的期限。所以报告里的事件描述要当线索看，因果结论还要对照其他材料。
 
 生成的 native reason 形如：
 
@@ -673,12 +673,12 @@ InputDispatcher 已经知道 focused application（当前应获得焦点的应�
 
 `<application> does not have a focused window`
 
-这条记录指向窗口建立或焦点交接。常见的检查项包括：Activity 启动是否卡在 `bindApplication` / `Application.onCreate()`，首个窗口是否迟迟没加入 WMS，窗口切换期间 token 是否对应错误，显示切换或多窗口状态是否异常。no-focused-window 说明系统还没有合适的窗口接收输入，直接按“点击事件处理超过 5 秒”去分析，往往会漏掉启动链上的问题。
+这条记录指向窗口建立或焦点交接。常见的检查项包括：Activity 启动是否卡在 `bindApplication` / `Application.onCreate()`，首个窗口是否迟迟没加入 WMS，窗口切换期间 token 是否对应错误，显示切换或多窗口状态是否异常。no-focused-window 的意思是系统还在等一个能接收输入的窗口；按“点击事件处理超过 5 秒”去分析，往往会漏掉启动链上的问题。
 
 <!-- gracker-diagram: ch09-01-25-no-focused-window -->
 ![没有焦点窗口与输入 ACK 超时分开](../../assets/diagrams/ch09/ch09-01-25-no-focused-window.png)
 
-图：这里系统尚未把该输入交给合适窗口；不能把 reason 翻译为某个点击回调已经执行五秒。
+图：这里系统尚未把该输入交给合适窗口；reason 说的是焦点窗口缺位，与“点击回调已经执行五秒”是两回事。
 
 ### Broadcast ANR：判断依据是广播标志和完成回执
 
@@ -689,14 +689,14 @@ InputDispatcher 已经知道 focused application（当前应获得焦点的应�
 - 带 `Intent.FLAG_RECEIVER_FOREGROUND` 的广播使用 10 秒软超时；
 - 其余受跟踪广播使用 60 秒软超时。
 
-这里的“前台广播”指 Intent 带有前台接收标志，和接收进程当时在不在前台无关。Android 14 起，官方诊断范围写成 10–20 秒和 60–120 秒，取决于 CPU 饥饿。Android 17 的 `BroadcastAnrTimer` 允许延期；native timer 首次到期时读取目标 PID 的 `/proc/<pid>/schedstat` 调度等待增量，最多补偿一次、上限等于原期限。这个计数不能代表全部 Binder 工作线程的等待总和；native timer 不可用而回退到 Handler 定时消息时，也没有这项延期计算。
+这里的“前台广播”指 Intent 带有前台接收标志，和接收进程当时处于前台还是后台是两回事。Android 14 起，官方诊断范围写成 10–20 秒和 60–120 秒，取决于 CPU 饥饿。Android 17 的 `BroadcastAnrTimer` 允许延期：native timer 首次到期时读取目标 PID 的 `/proc/<pid>/schedstat` 调度等待增量，最多补偿一次、上限等于原期限。这个计数只覆盖目标 PID 自身的调度等待，全部 Binder 工作线程的等待总和还在它的范围之外；native timer 不可用时回退到 Handler 定时消息，那条路径上同样没有这项延期计算。
 
 下面的源码片段展示哪些广播会启动计时器，以及确认超时后怎样进入 ANR：
 
 <!-- gracker-diagram: ch09-01-27-broadcast-cpu-extension -->
 ![广播基准期限与单次饥饿补偿](../../assets/diagrams/ch09/ch09-01-27-broadcast-cpu-extension.png)
 
-图：官方范围为10–20或60–120秒；概念长度非比例。Handler 回退没有 native 延期计算，不能从进程前台状态决定10秒。
+图：官方范围为10–20或60–120秒；概念长度非比例。Handler 回退路径缺少 native 延期计算；10秒档由前台广播标志决定，与进程前台状态无关。
 
 ```java
 // frameworks/base/services/core/java/com/android/server/am/BroadcastQueueImpl.java
@@ -715,7 +715,7 @@ mAnrTimer.accept(queue, tr);
 mService.appNotResponding(queue.app, tr);
 ```
 
-系统尚未完成启动，或广播带有 `timeoutExempt`（豁免超时）标记时，这只计时器不会启动；带 `assumeDelivered`（系统无需等待明确回执）标记的广播同样不启动。动态注册的无序 receiver 可能走 assumed-delivered 路径，所以不是每个 BroadcastReceiver 都有 10/60 秒 ANR 计时器。
+系统尚未完成启动，或广播带有 `timeoutExempt`（豁免超时）标记时，这只计时器不会启动；带 `assumeDelivered`（系统无需等待明确回执）标记的广播同样不启动。动态注册的无序 receiver 可能走 assumed-delivered 路径，所以一个 BroadcastReceiver 有没有 10/60 秒 ANR 计时器，要看它属于哪条路径。
 
 <!-- gracker-diagram: ch09-01-26-broadcast-timer-gates -->
 ![哪些广播需要显式完成回执](../../assets/diagrams/ch09/ch09-01-26-broadcast-timer-gates.png)
@@ -731,14 +731,14 @@ mService.appNotResponding(queue.app, tr);
 
 图：示意正常 finish 先于到期；遗漏或迟到 finish 都可能导致同一广播超时。
 
-进程冷启动也要分析，但要先确认广播计时实际何时启动。Android 17 的 `scheduleReceiverColdLocked()` 先请求拉起进程，`onApplicationAttachedLocked()` 再交给 warm dispatch，`dispatchReceivers()` 才启动接收计时。默认 `enable_wait_for_finish_attach_application=true` 时，AMS 要等应用执行完 Provider 初始化、`Application.onCreate()` 并回报 `finishAttachApplication()` 后，才进入这次广播交付；fork 和这些初始化步骤不能全部加进该 receiver 的 10/60 秒窗口。关闭该配置时，交付可提前到初始化结束之前，剩余的主线程初始化与排队才会消耗广播期限。
+进程冷启动也要分析，但要先确认广播计时实际何时启动。Android 17 的 `scheduleReceiverColdLocked()` 先请求拉起进程，`onApplicationAttachedLocked()` 再交给 warm dispatch，`dispatchReceivers()` 才启动接收计时。默认 `enable_wait_for_finish_attach_application=true` 时，AMS 要等应用执行完 Provider 初始化、`Application.onCreate()` 并回报 `finishAttachApplication()` 后，才进入这次广播交付；fork 和这些初始化步骤是否计入该 receiver 的 10/60 秒窗口，要看计时起点在哪里。关闭该配置时，交付可提前到初始化结束之前，剩余的主线程初始化与排队才会消耗广播期限。
 
-⚠️ 矛盾：[官方诊断指南](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs#broadcast-receiver) 通用表述为“冷启动也计入广播超时”；[Android 17 固定源码](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 的默认 finish-attach 等待和现代队列计时点更细。诊断特定设备时，以其源码、配置和实际派发时间为准，不能套通用描述画一根覆盖全部启动阶段的 timer。启动本身另有进程启动、Provider 发布和 bind-application 保护，可能产生其他失败或应用启动 ANR。
+⚠️ 矛盾：[官方诊断指南](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs#broadcast-receiver) 通用表述为“冷启动也计入广播超时”；[Android 17 固定源码](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java) 的默认 finish-attach 等待和现代队列计时点更细。诊断特定设备时，以其源码、配置和实际派发时间为准；照通用表述画一根覆盖全部启动阶段的 timer，会把计时范围画错。启动本身另有进程启动、Provider 发布和 bind-application 保护，可能产生其他失败或应用启动 ANR。
 
 <!-- gracker-diagram: ch09-01-29-android17-finish-attach -->
 ![Android 17 默认初始化结束后才交付待处理组件](../../assets/diagrams/ch09/ch09-01-29-android17-finish-attach.png)
 
-图：概念顺序以 android-17.0.0_r1 默认配置为基线；图不推广为旧版本或修改配置设备的统一行为。
+图：概念顺序以 android-17.0.0_r1 默认配置为基线；旧版本或改过配置的设备要另行确认。
 
 常见 `Reason` 以 `Broadcast of Intent` 开头，并携带 action、component（组件） 或 receiver 包名。诊断时同时记录：
 
@@ -769,7 +769,7 @@ long SERVICE_BACKGROUND_TIMEOUT = DEFAULT_SERVICE_BACKGROUND_TIMEOUT;
 
 源码只是把默认值写进运行时字段，设备配置和硬件倍率仍可能改变实际数值。所以报告里的 `waited ...ms`，比我们记忆里的固定秒数更可靠。
 
-计时覆盖 `onCreate()`、`onBind()`、`onStartCommand()` 等生命周期调用的投递、主线程排队和执行，起点在系统登记 executing 状态处，早于回调真正开始。Android 17 默认等 `finishAttachApplication()` 后才启动待处理服务，所以 fork、Provider 初始化和 `Application.onCreate()` 通常位于这只执行 timer 之前；关闭等待配置时，尚未结束的初始化可能进入排队等待。不能把整个冷启动时长机械地算进 20/200 秒。`TimeoutRecord.forServiceExec()` 生成的 reason 形如：
+计时覆盖 `onCreate()`、`onBind()`、`onStartCommand()` 等生命周期调用的投递、主线程排队和执行，起点在系统登记 executing 状态处，早于回调真正开始。Android 17 默认等 `finishAttachApplication()` 后才启动待处理服务，所以 fork、Provider 初始化和 `Application.onCreate()` 通常位于这只执行 timer 之前；关闭等待配置时，尚未结束的初始化可能进入排队等待。整个冷启动时长机械地算进 20/200 秒，得到的窗口是错的。`TimeoutRecord.forServiceExec()` 生成的 reason 形如：
 
 <!-- gracker-diagram: ch09-01-30-service-execution -->
 ![Service 执行 timer 覆盖投递、排队和回调](../../assets/diagrams/ch09/ch09-01-30-service-execution.png)
@@ -787,7 +787,7 @@ long SERVICE_BACKGROUND_TIMEOUT = DEFAULT_SERVICE_BACKGROUND_TIMEOUT;
 <!-- gracker-diagram: ch09-01-31-fgs-outcomes -->
 ![FGS 三类期限与结果分别解释](../../assets/diagrams/ch09/ch09-01-31-fgs-outcomes.png)
 
-图：公开数秒契约与内部默认常量分开；限时 FGS 的崩溃路径不能记作 ANR。
+图：公开数秒契约与内部默认常量分开；限时 FGS 走崩溃路径，要单独归类。
 
 #### `startForegroundService()` 后没有及时晋升
 
@@ -796,7 +796,7 @@ long SERVICE_BACKGROUND_TIMEOUT = DEFAULT_SERVICE_BACKGROUND_TIMEOUT;
 - `DEFAULT_SERVICE_START_FOREGROUND_TIMEOUT_MS = 30 * 1000`；
 - `DEFAULT_SERVICE_START_FOREGROUND_ANR_DELAY_MS = 10 * 1000`。
 
-这两个内部值可以被 DeviceConfig 改写，应用侧计时要以公开的数秒契约为准，别依赖内部值，也别拿 30 秒去替代数秒契约。`serviceForegroundTimeout()` 生成：
+这两个内部值可以被 DeviceConfig 改写，应用侧计时要以公开的数秒契约为准，内部值用来解释设备日志里看到的行为。`serviceForegroundTimeout()` 生成：
 
 `Context.startForegroundService() did not then call Service.startForeground(): <ServiceRecord>`
 
@@ -805,7 +805,7 @@ long SERVICE_BACKGROUND_TIMEOUT = DEFAULT_SERVICE_BACKGROUND_TIMEOUT;
 <!-- gracker-diagram: ch09-01-32-fgs-promotion -->
 ![前台服务晋升要求有两种诊断出口](../../assets/diagrams/ch09/ch09-01-32-fgs-promotion.png)
 
-图：内部默认晋升timer30秒、ANR消息延迟10秒均可配置；公开要求数秒内晋升，不能据内部值延迟调用。
+图：内部默认晋升timer30秒、ANR消息延迟10秒均可配置；公开契约仍是数秒内晋升，应用侧按公开要求安排调用时机。
 
 应用应该在 `onCreate()` 或 `onStartCommand()` 的早期，把最小可用的通知准备好并调用 `startForeground()`；数据库迁移、网络请求、账号刷新和大文件扫描放到晋升之后。等异步结果回来才晋升，服务就更容易压过期限。
 
@@ -828,12 +828,12 @@ Android 14 引入 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE`，给约三分钟内�
 
 对 targetSdk 35+，Android 15 开始限制这两类前台服务在应用处于后台时的累计运行时间；到 Android 17，默认值各为 6 小时。统计按 UID 和 FGS 类型分别维护，两个类型各有自己的 `TimeLimitedFgsInfo`，互不共享 6 小时额度；24 小时统计窗口到期会重置用量，用户把应用带到前台也会刷新可用时间的计算起点。
 
-额度耗尽时，系统向应用投递 `Service.onTimeout(int startId, int fgsType)`，并从系统安排超时回调后开始默认 10 秒清理窗口；主线程排队和回调本身也会消耗这段时间，不能等回调返回后再起算。服务仍未停止，`onFgsCrashTimeout()` 就通过 `ForegroundServiceDidNotStopInTimeException` 让进程崩溃。这条路径不调用 `appNotResponding()`，所以别把它计入 ANR 类型统计。
+额度耗尽时，系统向应用投递 `Service.onTimeout(int startId, int fgsType)`，并从系统安排超时回调后开始默认 10 秒清理窗口；主线程排队和回调本身也会消耗这段时间，起算点在系统安排回调那一刻，而非回调返回。服务仍未停止，`onFgsCrashTimeout()` 就通过 `ForegroundServiceDidNotStopInTimeException` 让进程崩溃。这条路径绕开了 `appNotResponding()`，ANR 类型统计里应当排除它。
 
 <!-- gracker-diagram: ch09-01-34-limited-fgs-runtime -->
 ![限时 FGS 额度与回调后的处置](../../assets/diagrams/ch09/ch09-01-34-limited-fgs-runtime.png)
 
-图：24小时窗口及用户前台交互会影响额度重置；图不表示每个 Service 各自拥有独立六小时，也不把 crash 画成 ANR。
+图：24小时窗口及用户前台交互会影响额度重置；额度按 UID 和 FGS 类型统计，crash 与 ANR 在图中分开呈现。
 
 | FGS 场景 | 到期回调 | 未在宽限期内处理的 Android 17 结果 |
 |---|---|---|
@@ -846,7 +846,7 @@ Android 14 引入 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE`，给约三分钟内�
 
 #### 10 秒 publish timeout 属于初始化失败保护
 
-应用启动且存在正在等待发布的 Provider 时，AMS 会在 attach 阶段、发送 `bindApplication()` 前安排发布保护，等待应用发布相应 Provider；并非每个声明了 Provider 的进程每次启动都无条件挂这只 timer。`ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` 默认为 10 秒再乘硬件超时倍率。`android-17.0.0_r1` 的 `ActivityThread.handleBindApplication()` 先创建 `Application`，再安装并发布 Provider，最后调用 `Application.onCreate()`。发布前的应用创建、类加载和 Provider `onCreate()` 会消耗这段等待时间；正常启动顺序中的 `Application.onCreate()` 在发布之后执行，不占用 Provider 发布期限。
+应用启动且存在正在等待发布的 Provider 时，AMS 会在 attach 阶段、发送 `bindApplication()` 前安排发布保护，等待应用发布相应 Provider；没有 Provider 在等发布的启动，就与这只 timer 无关。`ContentResolver.CONTENT_PROVIDER_PUBLISH_TIMEOUT_MILLIS` 默认为 10 秒再乘硬件超时倍率。`android-17.0.0_r1` 的 `ActivityThread.handleBindApplication()` 先创建 `Application`，再安装并发布 Provider，最后调用 `Application.onCreate()`。发布前的应用创建、类加载和 Provider `onCreate()` 会消耗这段等待时间；正常启动顺序中的 `Application.onCreate()` 在发布之后执行，落在发布期限之外。
 
 下面两段源码分别给出默认超时值，以及超时后以初始化失败原因移除进程的动作：
 
@@ -865,7 +865,7 @@ void processContentProviderPublishTimedOutLocked(ProcessRecord app) {
 }
 ```
 
-处理函数既没有创建 `TimeoutRecord`，也没有调用 `AnrHelper.appNotResponding()`，而是清理掉 launching provider（仍在等待发布的 Provider），以 `REASON_INITIALIZATION_FAILURE` 移除进程。所以 Provider 在 10 秒内没有 publish，走的是初始化失败，和 ContentProvider ANR 是两条路径。
+处理函数清理掉 launching provider（仍在等待发布的 Provider），以 `REASON_INITIALIZATION_FAILURE` 移除进程，全程绕开 `TimeoutRecord` 和 `AnrHelper.appNotResponding()`。所以 Provider 在 10 秒内没有 publish，走的是初始化失败，和 ContentProvider ANR 是两条路径。
 
 <!-- gracker-diagram: ch09-01-35-provider-publish -->
 ![Provider 发布保护的顺序与失败结果](../../assets/diagrams/ch09/ch09-01-35-provider-publish.png)
@@ -914,24 +914,24 @@ private static final long NOTIFICATION_TIMEOUT_MILLIS =
 static final long ANR_PRE_UDC_APIS_ON_SLOW_RESPONSES = 258236856L;
 ```
 
-`@EnabledAfter(TIRAMISU)` 表示这项兼容性变更对 targetSdk 34+ 的应用启用，慢 `onStartJob()` / `onStopJob()` 会进入显式 ANR。`handleOpTimeoutLocked()` 生成 `No response to onStartJob` 或 `No response to onStopJob`，再通过 `ActivityManagerInternal.appNotResponding()` 上报。18 秒 bind timeout 走的是服务绑定失败和重新调度，别把它当成 JobService ANR 阈值。
+`@EnabledAfter(TIRAMISU)` 表示这项兼容性变更对 targetSdk 34+ 的应用启用，慢 `onStartJob()` / `onStopJob()` 会进入显式 ANR。`handleOpTimeoutLocked()` 生成 `No response to onStartJob` 或 `No response to onStopJob`，再通过 `ActivityManagerInternal.appNotResponding()` 上报。18 秒 bind timeout 走的是服务绑定失败和重新调度，属于另一条路径，与 JobService ANR 阈值分开记。
 
 三条时间线应分别阅读：
 
 <!-- gracker-diagram: ch09-01-37-job-timeout-contracts -->
 ![JobService 的回调、运行与通知窗口分开](../../assets/diagrams/ch09/ch09-01-37-job-timeout-contracts.png)
 
-图：绑定默认18秒超时走失败重调度。通知契约不能解释成回调八秒加返回后再等十秒。
+图：绑定默认18秒超时走失败重调度；通知窗口从 `onStartJob()` 被调用起算，与回调 8 秒是两段独立期限。
 
 - **回调 ANR**：`onStartJob()` 或 `onStopJob()` 超过默认 8 秒仍未返回；
 - **job 运行超时**：`onStartJob()` 已返回 `true`，JobScheduler 之后因配额或执行时限停止 job 并调用 `onStopJob()`；停止 job 本身不构成 ANR，但 `onStopJob()` 仍要在回调期限内返回；
-- **通知超时**：公开 API 要求 `JobParameters.isUserInitiatedJob()` 为 `true` 且继续运行的 job，从 `onStartJob()` 被调用起 10 秒内调用 `setNotification()`，不能先用满回调的 8 秒再从返回处重新起算公开期限；Android 17 内部以 `JobStatus.isUserVisibleJob()` 设置 `mAwaitingNotification`。超时 reason 为 `required notification not provided`，并触发 ANR。
+- **通知超时**：公开 API 要求 `JobParameters.isUserInitiatedJob()` 为 `true` 且继续运行的 job，从 `onStartJob()` 被调用起 10 秒内调用 `setNotification()`，这 10 秒从调用那一刻连续计时，用满回调的 8 秒后再重新起算属于误读；Android 17 内部以 `JobStatus.isUserVisibleJob()` 设置 `mAwaitingNotification`。超时 reason 为 `required notification not provided`，并触发 ANR。
 
 耗时工作应该在 `onStartJob()` 里迅速交给有并发上限的执行器，然后返回 `true`；任务完成时调用 `jobFinished()`，收到 `onStopJob()` 后快速取消或标记后台工作，再返回要不要重新调度。在回调里等 Future、执行线程 `join` 或同步 Binder，都是在直接消耗 8 秒窗口。
 
 ### 公开分类 `AnrTypes`
 
-平台在 `frameworks/base/core/java/android/app/AnrTypes.java` 里给出公开分类常量。这项能力受 feature flag（功能开关）控制，OEM 也可能保留额外的私有 detector（检测器）。`AnrTypes` 适合统一平台分类，但信息比原始 `Reason` 和 `TimeoutRecord` 粗，替代不了这两者。
+平台在 `frameworks/base/core/java/android/app/AnrTypes.java` 里给出公开分类常量。这项能力受 feature flag（功能开关）控制，OEM 也可能保留额外的私有 detector（检测器）。`AnrTypes` 适合统一平台分类，信息比原始 `Reason` 和 `TimeoutRecord` 粗，逐案分析仍以后两者为准。
 
 | 值 | 常量 | 含义 |
 |---:|---|---|
@@ -987,7 +987,7 @@ adb pull /data/anr ./anr-traces
 | `No response to onStartJob/onStopJob` | JobService 主线程回调 |
 | `required notification not provided` | user-initiated job 的公开通知契约、内部 user-visible 状态 |
 
-Logcat 文案可能被 AMS 再次包装，别要求整行文字和表格里的片段逐字对上。把 `TimeoutRecord` kind、`ApplicationExitInfo` 子原因和原始 reason 放在一起用，分类会更可靠。
+Logcat 文案可能被 AMS 再次包装，整行文字与表格片段之间允许有包装差异，按片段对照即可。把 `TimeoutRecord` kind、`ApplicationExitInfo` 子原因和原始 reason 放在一起用，分类会更可靠。
 
 <!-- gracker-diagram: ch09-01-39-reason-to-evidence -->
 ![Reason 将后续证据引向不同等待对象](../../assets/diagrams/ch09/ch09-01-39-reason-to-evidence.png)
@@ -996,18 +996,18 @@ Logcat 文案可能被 AMS 再次包装，别要求整行文字和表格里的�
 
 ### Perfetto 中能确认什么
 
-Perfetto 回答的是“超时窗口内线程和 CPU 在做什么”；单靠一张 trace 定不出 ANR 类型，类型仍由系统 detector 和 `Reason` 决定。
+Perfetto 回答的是“超时窗口内线程和 CPU 在做什么”；ANR 类型仍由系统 detector 和 `Reason` 决定，trace 负责把窗口内的行为还原出来。
 
 对 Input ANR，我们检查主线程从事件 delivery 到 timeout 之间处于 Running、Runnable、Sleeping 还是 Binder 等待，再关联 input、sched、binder 和 frame timeline。主线程长时间 Runnable，说明有工作可运行却得不到 CPU；长时间 Sleeping，就继续查 futex（用户空间锁的内核等待点）、Binder 或 I/O 的唤醒来源。
 
-对 Broadcast、Service 和 JobService，要围绕系统调度 transaction 和应用回调开始点对齐时间；冷启动样本则把 process start、`bindApplication`、Provider 初始化、finish-attach 与回调执行放到同一条时间线上，再用真实 timer 起点裁出受监控窗口；端到端启动延迟不等于单个组件的超时时长。只看 ANR 时刻的栈，容易漏掉此前已经结束的启动耗时。
+对 Broadcast、Service 和 JobService，要围绕系统调度 transaction 和应用回调开始点对齐时间；冷启动样本则把 process start、`bindApplication`、Provider 初始化、finish-attach 与回调执行放到同一条时间线上，再用真实 timer 起点裁出受监控窗口；端到端启动延迟和单个组件的超时时长是两个量。只看 ANR 时刻的栈，容易漏掉此前已经结束的启动耗时。
 
-对 Provider 远程调用，要关联 caller（调用方） 的 Binder transaction、Provider 进程的 binder thread 和主线程。caller 在等的时候，Provider 可能正在主线程干活、在 Binder 线程池排队、等锁，或发起下游 Binder 调用——单看一个线程的状态，还原不出完整调用链。
+对 Provider 远程调用，要关联 caller（调用方） 的 Binder transaction、Provider 进程的 binder thread 和主线程。caller 在等的时候，Provider 可能正在主线程干活、在 Binder 线程池排队、等锁，或发起下游 Binder 调用——完整调用链要把多条线程的状态拼在一起看。
 
 <!-- gracker-diagram: ch09-01-40-perfetto-dependency -->
 ![Perfetto 沿依赖解释窗口内的调度状态](../../assets/diagrams/ch09/ch09-01-40-perfetto-dependency.png)
 
-图：这是可能的因果链示意；Perfetto 状态本身不能决定 ANR 类型，类型由 detector 与 reason 确定。
+图：这是可能的因果链示意；ANR 类型由 detector 与 reason 确定，Perfetto 负责解释窗口内的状态。
 
 ### 版本演进：只保留会影响判断的变化
 
@@ -1024,7 +1024,7 @@ Perfetto 回答的是“超时窗口内线程和 CPU 在做什么”；单靠一
 <!-- gracker-diagram: ch09-01-41-investigation-loop -->
 ![按系统契约闭合 ANR 排查与修复](../../assets/diagrams/ch09/ch09-01-41-investigation-loop.png)
 
-图：这是一套诊断次序，不替代设备证据；避免只把采样时的栈顶换掉却没有缩短受监控等待。
+图：这是一套诊断次序，设备记录仍是依据；修复有没有效，看受监控等待是否缩短，采样栈顶换位置说明不了。
 
 ### 排查清单
 

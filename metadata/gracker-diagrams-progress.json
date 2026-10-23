@@ -1383,7 +1383,7 @@
     {
       "path": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
       "sha256_before": "a9afd3bdc8c183f1fd0dab25dced088ba11fe677be044de18f7042a406f4873d",
-      "status": "in_progress",
+      "status": "illustrated",
       "diagrams": [
         "ch06-03-process-cache",
         "ch06-03-load-wait-timeline",
@@ -1416,17 +1416,51 @@
         "ch06-03-split-files-cost",
         "ch06-03-async-trace-pairing"
       ],
-      "source_audit": "全文与r1平台/DataStore1.2.1源码包复核完成，累计29项修正；逐节配图与验收中。",
+      "source_audit": "passed-2026-10-23:全文与固定r1及DataStore1.2.1源码包/官方文档核对，29项修正；30图逐图与正文对应检查，Activity/Service/Broadcast及MP概览位置修正后复核；不声称真机测试。",
       "validation_artifacts": [
         "/tmp/gracker-android-wiki-diagrams-20261023/evidence/datastore-1.2.1/SpDataStoreAar/AndroidManifest.xml",
-        "/tmp/gracker-android-wiki-diagrams-20261023/evidence/datastore-1.2.1/SpDataStoreAar/jni-list.json"
-      ]
+        "/tmp/gracker-android-wiki-diagrams-20261023/evidence/datastore-1.2.1/SpDataStoreAar/jni-list.json",
+        "/tmp/gracker-android-wiki-diagrams-20261023/sp-source-audit.json"
+      ],
+      "sha256_current": "dceebea8925099530f15cbb84aa18c7f886f84105d93812ee3307d690b63c2f4",
+      "sha256_after": "dceebea8925099530f15cbb84aa18c7f886f84105d93812ee3307d690b63c2f4"
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
       "sha256_before": "628891384fc67cef65ab88ca5f15cc6475d4afd28985073859f2a72659a128b1",
-      "status": "pending",
-      "diagrams": []
+      "status": "in_progress",
+      "diagrams": [
+        "ch06-04-three-planes",
+        "ch06-04-mount-session",
+        "ch06-04-provider-two-roles",
+        "ch06-04-direct-path",
+        "ch06-04-uri-open-fd",
+        "ch06-04-directory-paths",
+        "ch06-04-cost-amplification",
+        "ch06-04-four-io-modes",
+        "ch06-04-passthrough-capabilities",
+        "ch06-04-passthrough-open-gate",
+        "ch06-04-backing-lifetime",
+        "ch06-04-passthrough-cache-coordination",
+        "ch06-04-open-flags-operation",
+        "ch06-04-iomode-consistency",
+        "ch06-04-bpf-runtime-gates",
+        "ch06-04-bpf-path-actions",
+        "ch06-04-read-transform-redaction",
+        "ch06-04-album-query-open",
+        "ch06-04-publish-pending",
+        "ch06-04-saf-grant-seek",
+        "ch06-04-batch-resume",
+        "ch06-04-diagnostic-alignment",
+        "ch06-04-fuse-send-end",
+        "ch06-04-missing-data-events",
+        "ch06-04-vold-triage",
+        "ch06-04-fuse-fbe-layers",
+        "ch06-04-page-size-read-limit",
+        "ch06-04-version-device-evidence"
+      ],
+      "source_audit": "395行原文已全文核对；AOSP r1、ACK r6与官方文档已审读，19项修正；28张图已渲染，视觉验收与整书验证进行中。",
+      "mermaid_source_preserved": "正文details折叠区 + /tmp原文基线；新展示图ch06-04-direct-path"
     },
     {
       "path": "src/part1-fundamentals/ch06-storage/README.md",
@@ -13256,7 +13290,7 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ContextImpl.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-load-wait-timeline",
@@ -13271,7 +13305,7 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-commit-memory",
@@ -13286,7 +13320,7 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-apply-finisher-listener",
@@ -13302,7 +13336,7 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-enqueue-write-thread",
@@ -13318,7 +13352,7 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-generation-skip",
@@ -13333,7 +13367,7 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-xml-backup-sync-result",
@@ -13349,7 +13383,7 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/FileUtils.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-queuedwork-finish",
@@ -13365,7 +13399,7 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-anr-stack-types",
@@ -13383,7 +13417,7 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
         "https://perfetto.dev/docs/data-sources/cpu-scheduling"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-load-failure",
@@ -13398,7 +13432,7 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-logging-thresholds",
@@ -13414,7 +13448,7 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-datastore-contexts",
@@ -13431,7 +13465,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar",
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-preferences-core-android/1.2.1/datastore-preferences-core-android-1.2.1-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-datastore-update-decision",
@@ -13446,7 +13480,7 @@
       "sources": [
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-datastore-storage-backends",
@@ -13464,7 +13498,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-android/1.2.1/datastore-android-1.2.1-sources.jar",
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-okio-jvm/1.2.1/datastore-core-okio-jvm-1.2.1-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-filestorage-write-protocol",
@@ -13480,7 +13514,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-file-singleton-immutability",
@@ -13497,7 +13531,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-okio-jvm/1.2.1/datastore-core-okio-jvm-1.2.1-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-read-error-policy",
@@ -13513,7 +13547,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
         "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/catch.html"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-migration-initialization",
@@ -13529,7 +13563,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-android/1.2.1/datastore-android-1.2.1-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-migration-key-selection",
@@ -13546,7 +13580,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-android/1.2.1/datastore-android-1.2.1-sources.jar",
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-migration-data-ownership",
@@ -13562,7 +13596,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-android/1.2.1/datastore-android-1.2.1-sources.jar",
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-preferences-android/1.2.1/datastore-preferences-android-1.2.1-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-version-before-file",
@@ -13578,7 +13612,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-multiprocess-read-cache",
@@ -13594,7 +13628,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-observer-lifecycle",
@@ -13610,7 +13644,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-shared-counter-runtime",
@@ -13626,7 +13660,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar",
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1.aar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-direct-boot-storage",
@@ -13644,7 +13678,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1.aar",
         "https://developer.android.com/privacy-and-security/direct-boot"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-split-files-cost",
@@ -13659,7 +13693,7 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/SharedPreferencesImpl.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-async-trace-pairing",
@@ -13676,7 +13710,7 @@
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar",
         "https://developer.android.com/reference/kotlin/androidx/tracing/Trace"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-component-wait-points",
@@ -13692,7 +13726,7 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-broadcast-finish-gates",
@@ -13708,7 +13742,7 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/BroadcastReceiver.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/QueuedWork.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
     },
     {
       "id": "ch06-03-multiprocess-three-mechanisms",
@@ -13723,6 +13757,476 @@
       "sources": [
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar",
         "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core/1.2.1/datastore-core-1.2.1-sources.jar"
+      ],
+      "visual_review": "passed-2026-10-23:全部contact逐图检查；6个mdbook位置复核，3个重定位图片像素一致性已验证"
+    },
+    {
+      "id": "ch06-04-three-planes",
+      "title": "共享存储的三个职责层",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-three-planes.svg",
+        "src/assets/diagrams/ch06/ch06-04-three-planes.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-three-planes",
+      "sources": [
+        "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-17.0.0_r1/model/EmulatedVolume.cpp",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/MediaProvider.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-mount-session",
+      "title": "FUSE 会话的 fd 交接链路",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-mount-session.svg",
+        "src/assets/diagrams/ch06/ch06-04-mount-session.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-mount-session",
+      "sources": [
+        "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-17.0.0_r1/model/EmulatedVolume.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/StorageManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/storage/StorageSessionController.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/storage/StorageUserConnection.java",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/fuse/ExternalStorageServiceImpl.java",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/fuse/FuseDaemon.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-provider-two-roles",
+      "title": "MediaProvider 的两种入口",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-provider-two-roles.svg",
+        "src/assets/diagrams/ch06/ch06-04-provider-two-roles.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-provider-two-roles",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/MediaProvider.java",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-directory-paths",
+      "title": "三类目录的策略边界",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-directory-paths.svg",
+        "src/assets/diagrams/ch06/ch06-04-directory-paths.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-directory-paths",
+      "sources": [
+        "https://source.android.com/docs/core/storage/scoped",
+        "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-17.0.0_r1/model/EmulatedVolume.cpp",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-cost-amplification",
+      "title": "文件数与字节量放大的不同成本",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-cost-amplification.svg",
+        "src/assets/diagrams/ch06/ch06-04-cost-amplification.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-cost-amplification",
+      "sources": [
+        "https://source.android.com/docs/core/storage/scoped",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/file.c"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-four-io-modes",
+      "title": "四种 FUSE I/O 机制",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-four-io-modes.svg",
+        "src/assets/diagrams/ch06/ch06-04-four-io-modes.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-four-io-modes",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/file.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/passthrough.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/fuse_bpf_backing.c"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-passthrough-capabilities",
+      "title": "passthrough 的会话启用条件",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-passthrough-capabilities.svg",
+        "src/assets/diagrams/ch06/ch06-04-passthrough-capabilities.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-passthrough-capabilities",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://source.android.com/docs/core/storage/fuse-passthrough"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-passthrough-open-gate",
+      "title": "passthrough 的逐次 open 决策",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-passthrough-open-gate.svg",
+        "src/assets/diagrams/ch06/ch06-04-passthrough-open-gate.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-passthrough-open-gate",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-backing-lifetime",
+      "title": "backing ID 登记与每次打开的引用",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-backing-lifetime.svg",
+        "src/assets/diagrams/ch06/ch06-04-backing-lifetime.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-backing-lifetime",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/backing.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/passthrough.c"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-passthrough-cache-coordination",
+      "title": "passthrough 仍需缓存与锁协调",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-passthrough-cache-coordination.svg",
+        "src/assets/diagrams/ch06/ch06-04-passthrough-cache-coordination.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-passthrough-cache-coordination",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/passthrough.c"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-open-flags-operation",
+      "title": "组合 flags 后按操作判断去向",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-open-flags-operation.svg",
+        "src/assets/diagrams/ch06/ch06-04-open-flags-operation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-open-flags-operation",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/file.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/iomode.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/passthrough.c"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-iomode-consistency",
+      "title": "iomode 的一致性保护",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-iomode-consistency.svg",
+        "src/assets/diagrams/ch06/ch06-04-iomode-consistency.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-iomode-consistency",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/iomode.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/file.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/passthrough.c"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-bpf-path-actions",
+      "title": "BPF/backing 的目录范围与安装动作",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-bpf-path-actions.svg",
+        "src/assets/diagrams/ch06/ch06-04-bpf-path-actions.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-bpf-path-actions",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/uapi/linux/android_fuse.h",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/fuse_bpf_backing.c"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-read-transform-redaction",
+      "title": "脱敏与转换可能延续到 read",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-read-transform-redaction.svg",
+        "src/assets/diagrams/ch06/ch06-04-read-transform-redaction.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-read-transform-redaction",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-album-query-open",
+      "title": "相册列表与媒体内容分开访问",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-album-query-open.svg",
+        "src/assets/diagrams/ch06/ch06-04-album-query-open.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-album-query-open",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/MediaProvider.java",
+        "https://developer.android.com/training/data-storage/shared/media",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/ParcelFileDescriptor.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-publish-pending",
+      "title": "媒体处理与待发布状态",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-publish-pending.svg",
+        "src/assets/diagrams/ch06/ch06-04-publish-pending.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-publish-pending",
+      "sources": [
+        "https://developer.android.com/training/data-storage/shared/media#toggle-pending-status",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/MediaProvider.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-saf-grant-seek",
+      "title": "SAF 的授权与随机访问能力",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-saf-grant-seek.svg",
+        "src/assets/diagrams/ch06/ch06-04-saf-grant-seek.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-saf-grant-seek",
+      "sources": [
+        "https://developer.android.com/training/data-storage/shared/documents-files#persist-permissions",
+        "https://developer.android.com/reference/android/content/ContentResolver#openFileDescriptor(android.net.Uri,%20java.lang.String)"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-batch-resume",
+      "title": "迁移与批量媒体操作的恢复流程",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-batch-resume.svg",
+        "src/assets/diagrams/ch06/ch06-04-batch-resume.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-batch-resume",
+      "sources": [
+        "https://developer.android.com/training/data-storage/shared/media#manage-groups-media-files",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/MediaProvider.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-diagnostic-alignment",
+      "title": "用同一时间轴对齐 I/O 证据",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-diagnostic-alignment.svg",
+        "src/assets/diagrams/ch06/ch06-04-diagnostic-alignment.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-diagnostic-alignment",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/fuse_trace.h",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-fuse-send-end",
+      "title": "FUSE send/end 事件的证明边界",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-fuse-send-end.svg",
+        "src/assets/diagrams/ch06/ch06-04-fuse-send-end.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-fuse-send-end",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/dev.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/fuse_trace.h"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-missing-data-events",
+      "title": "没有 FUSE_READ/WRITE 时怎样继续取证",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-missing-data-events.svg",
+        "src/assets/diagrams/ch06/ch06-04-missing-data-events.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-missing-data-events",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/file.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/fuse_trace.h"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-vold-triage",
+      "title": "何时优先调查 vold",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-vold-triage.svg",
+        "src/assets/diagrams/ch06/ch06-04-vold-triage.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-vold-triage",
+      "sources": [
+        "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-17.0.0_r1/model/EmulatedVolume.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/StorageManagerService.java",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-page-size-read-limit",
+      "title": "页大小改变读取上限而非固定请求",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-page-size-read-limit.svg",
+        "src/assets/diagrams/ch06/ch06-04-page-size-read-limit.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-page-size-read-limit",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/inode.c"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-version-device-evidence",
+      "title": "版本信息与运行时证据一起记录",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-version-device-evidence.svg",
+        "src/assets/diagrams/ch06/ch06-04-version-device-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-version-device-evidence",
+      "sources": [
+        "https://source.android.com/docs/core/storage/scoped",
+        "https://source.android.com/docs/core/storage/fuse-passthrough",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://developer.android.com/about/versions/14/changes/partial-photo-video-access"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-direct-path",
+      "title": "直接路径的打开与数据读写",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-direct-path.svg",
+        "src/assets/diagrams/ch06/ch06-04-direct-path.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-direct-path",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/file.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/passthrough.c"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-uri-open-fd",
+      "title": "MediaStore URI 打开的 fd 分流",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-uri-open-fd.svg",
+        "src/assets/diagrams/ch06/ch06-04-uri-open-fd.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-uri-open-fd",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/MediaProvider.java",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-bpf-runtime-gates",
+      "title": "BPF 从编译配置到运行时",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-bpf-runtime-gates.svg",
+        "src/assets/diagrams/ch06/ch06-04-bpf-runtime-gates.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-bpf-runtime-gates",
+      "sources": [
+        "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-17.0.0_r1/Utils.cpp",
+        "https://android.googlesource.com/platform/system/vold/+/refs/tags/android-17.0.0_r1/model/EmulatedVolume.cpp",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "ch06-04-fuse-fbe-layers",
+      "title": "FUSE、FBE 与底层 I/O 的层次",
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "assets": [
+        "src/assets/diagrams/ch06/ch06-04-fuse-fbe-layers.svg",
+        "src/assets/diagrams/ch06/ch06-04-fuse-fbe-layers.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261023/packs/ch06-04-fuse-fbe-layers",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/passthrough.c",
+        "https://developer.android.com/training/articles/direct-boot",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/fscrypt.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig"
       ],
       "visual_review": "pending"
     }
@@ -16592,29 +17096,162 @@
       "after": "同一进程、同一路径应只有一个活跃 DataStore 实例。标准 FileStorage 在首次建立读写连接时，按 canonical path 的 activeFiles 登记检查重复并抛出 IllegalStateException；自定义或不同 Storage 也必须遵守唯一实例约束，不能把某个后端的检查当作跨后端全局文件锁。",
       "reason": "FileStorage和OkioStorage各有自己的activeFiles集合；唯一实例是使用契约，不能把单个后端的重复检查画成所有Storage共享的全局锁。",
       "source": "https://dl.google.com/dl/android/maven2/androidx/datastore/datastore-core-android/1.2.1/datastore-core-android-1.2.1-sources.jar"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "第一步是确认这次请求实际走的是直接文件、FUSE 还是 `ContentResolver` 路径，",
+      "after": "第一步是确认调用入口是文件路径还是 ContentResolver URI，再核对返回的 fd 或文件操作是否经过 FUSE；这些不是互斥分类，",
+      "reason": "文件路径可走FUSE，ContentResolver返回的fd也可回到FUSE，不能画成互斥三选一。",
+      "source": "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "卷挂好之后，单个 `open()`、`read()`、`write()` 请求里的媒体权限判断，就落到了会话另一端的 MediaProvider 身上。",
+      "after": "卷挂好之后，需要经 daemon 处理的 lookup、open 等策略判断由会话另一端的 MediaProvider 负责；缓存命中、passthrough 或 BPF/backing 已处理的操作不一定逐次进入用户态。",
+      "reason": "避免把每次read/write都画成必须执行一次MediaProvider用户态权限判断。",
+      "source": "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "`native（本地代码）_start()`",
+      "after": "`native_start()`",
+      "reason": "修复被中文释义打断的真实JNI方法标识符。",
+      "source": "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/fuse/FuseDaemon.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "ContentProvider 这一侧先经过 Binder（Android 进程间通信机制） 查询，再由 Provider 打开文件；",
+      "after": "ContentProvider 这一侧通过 Binder（Android 进程间通信机制）进入查询或打开等操作，已知 URI 可以直接请求打开，不要求调用方先发一次 query；",
+      "reason": "Provider的query和open是不同入口，不能给所有URI打开额外加一次客户端查询步骤。",
+      "source": "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/MediaProvider.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "文件级的决策浓缩在下面两行里：",
+      "after": "下面两行位于 create_handle_for_node() 的 fuse->passthrough && allow_passthrough 分支内；它们不是完整的 open 条件表。pf_open() 在 fd 来自 Java 时还会禁止 passthrough，避免把可能指回 FUSE 的 fd 注册成 backing。",
+      "reason": "补上原本省略的运行期开关与allow_passthrough门槛，Java来源fd有递归/来源限制。",
+      "source": "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "MediaProvider 源码同时兼容 Android 早期 passthrough 接口与 upstream FUSE passthrough。",
+      "after": "当 handle 已选择 passthrough，但 do_passthrough_enable() 注册或绑定失败时，这个 r1 的 pf_open() 会回复 EFAULT，并非总会自动回退到普通 daemon 读写。\n\nMediaProvider 源码同时兼容 Android 早期 passthrough 接口与 upstream FUSE passthrough。",
+      "reason": "区分不满足候选条件时走常规路径与已选择后启用失败直接返回错误。",
+      "source": "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "上游协议的建立顺序是：daemon 先打开 lower-fs 文件，向 FUSE connection（连接会话） 注册并取得 `backing_id`，再在 open 回复中携带 `FOPEN_PASSTHROUGH` 与该 ID；内核随后为这次 FUSE open 创建独立的 backing file，文件关闭后绑定关系结束。",
+      "after": "上游协议中，daemon 把 lower-fs fd 注册到 FUSE connection（连接会话）并取得 backing_id，再在 open 回复中携带 FOPEN_PASSTHROUGH 与该 ID。r1 MediaProvider 将 ID 缓存在 node 上，可供后续打开复用；内核仍为每次 FUSE open 创建独立 backing file。关闭某次 open 会释放其引用，但不等于立即撤销 connection 的 ID 登记；node 的 forget 清理等路径才关闭相应登记。",
+      "reason": "区分connection级ID登记、MediaProvider node缓存和per-open backing file引用三个生命周期。",
+      "source": "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "passthrough 写还要拿 inode lock（文件对象锁）、更新 FUSE inode 属性和缓存状态；",
+      "after": "r6 的 passthrough read 还会先调用 write_inode_now(..., 1) 处理 FUSE 脏缓存；passthrough 写要拿 inode lock（文件对象锁），并更新 FUSE inode 属性、失效相应缓存范围。因此它缩短主数据路径，也不等于完全没有缓存协调或附带 FUSE 工作；",
+      "reason": "r6为混合缓存模式在直通读前刷新FUSE脏缓存、写后更新和失效状态，图不能宣称零缓存协调。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/passthrough.c"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "受控 I/O 窗口里出现 `FUSE_READ` 或 `FUSE_WRITE` 的 send 事件，我们就能确认相应请求进了 daemon。",
+      "after": "受控窗口出现 FUSE_READ / FUSE_WRITE 的 send 事件，可以确认请求进入了 FUSE 发送/排队路径。r6 在分配请求 unique 时记录这个事件，随后才入待处理队列，因此单凭 send 不能证明 daemon 已经读取、处理或成功完成。可按 connection + unique 配对 send/end，并检查 end.error；这个区间还含排队和等待，不能直接当成 daemon CPU 时间或设备服务时间。",
+      "reason": "trace_fuse_request_send在分配unique时、加入pending前触发；end也可记录错误结束，需区分提交与用户态处理证据。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/fuse/dev.c"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "Scoped Storage（分区存储）的规则原样生效——归属、权限、redaction 和转码的判断都发生在 `open` 阶段。",
+      "after": "Scoped Storage（分区存储）的规则仍然生效：open 会检查身份、访问权与脱敏/转码条件，并决定本次打开能否直通；需要 daemon 的读取仍可能在 pf_read() 执行转码和按区间脱敏，不能把全部处理都归到 open。",
+      "reason": "pf_read对未完成transforms调用Transform，再根据redaction_info逐范围处理，open准入不等于全部策略与转换工作已经结束。",
+      "source": "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "通过 backing fd 把符合规则的请求交给底层文件系统。",
+      "after": "通过 backing fd 把符合规则的请求交给底层文件系统。r1 的 fuse_bpf_install() 还限定 PRIMARY_VOLUME_PREFIX；不能把它推广到任意可移除卷或所有外部目录。",
+      "reason": "检查fuse_bpf_install的primary-volume门槛，原范围描述漏掉主卷限制。",
+      "source": "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "这套机制服务的是受保护的 App 专属目录，`DCIM`、`Pictures` 或 `Download` 拿不到这份加速。",
+      "after": "这套机制服务的是受保护的 App 专属目录；DCIM、Pictures、Download 不在该 BPF/backing 优化范围，但仍可能使用独立的 passthrough 数据路径。",
+      "reason": "区分BPF目录优化和按文件passthrough，避免将后半句读成共享媒体没有任何加速。",
+      "source": "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "主线程进入 `D`（不可中断睡眠）状态，说明它在等内核资源，但这一条还定不到 FUSE 头上：Binder、块 I/O、文件系统锁和驱动等待都可能出现相似表现，要结合调用栈、目标线程活动和块事件再下判断。",
+      "after": "主线程进入 D（不可中断睡眠）状态，说明它在等内核资源；块 I/O、部分文件系统锁和驱动等待都可能如此，单凭 D 还定不到 FUSE。普通 Binder 回复等待通常走 TASK_INTERRUPTIBLE，与 D 不是同一种线程状态；远端 Binder 服务自身也可能卡在 I/O。要结合调用栈、Binder 对端、调度与块事件判断等待链。",
+      "reason": "r6 binder_wait_for_work使用TASK_INTERRUPTIBLE|TASK_FREEZABLE，不能把普通Binder回复等待当成D-state例子。",
+      "source": "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "找某个用户文件时也别递归扫描整个下载目录——持久化 URI 权限后直接访问目标就好。",
+      "after": "查找用户选中的文件时直接保存 URI；若 ACTION_OPEN_DOCUMENT 等返回可持久化授权，再按实际授予的读写 flags 调用 takePersistableUriPermission()。ACTION_GET_CONTENT 的临时授权不能一概持久化，文档被移动、删除或授权失效后仍需重新选择。",
+      "reason": "持久化授权取决于intent契约和返回flags，不是任意SAF/Provider URI都能持久化。",
+      "source": "https://developer.android.com/training/data-storage/shared/documents-files#persist-permissions"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "可以用 `ParcelFileDescriptor.detachFd()` 明确移交 fd 所有权；",
+      "after": "可以用 ParcelFileDescriptor.detachFd() 明确移交 fd 所有权，并由接收方在不再使用时 close；",
+      "reason": "detachFd解除ParcelFileDescriptor所有权，接收方必须负责close，避免流程图只移交不释放。",
+      "source": "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/ParcelFileDescriptor.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "写完并完成必要的同步处理后再发布。崩溃恢复时除了进程内状态，还要把未完成的 URI 记下来。",
+      "after": "写完并按业务要求同步、关闭 fd 后，将 IS_PENDING 改为 0。这个标志控制待发布可见性，不构成跨数据库与文件内容的完整事务或断电持久性保证；崩溃恢复应持久记录未完成 URI，并设计继续写入、删除或重新发布流程。",
+      "reason": "IS_PENDING不是文件原子提交或断电同步协议，需区分可见性与持久性。",
+      "source": "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/MediaProvider.java"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "批量删除、回收、收藏或写入其他 App 创建的媒体时，走平台提供的用户确认与批量请求 API。",
+      "after": "Android 11+ 对批量删除、移入回收站、收藏或请求修改其他 App 媒体提供 createDeleteRequest/createTrashRequest/createFavoriteRequest/createWriteRequest。write request 授予写权限后，App 仍需执行实际修改；系统图库、媒体管理特权等例外应按当前 API 与授权判断。",
+      "reason": "明确API版本与grant后应用实际写入，避免把createWriteRequest画成已完成批量写入。",
+      "source": "https://developer.android.com/training/data-storage/shared/media#manage-groups-media-files"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "| Android 14 | Selected Photos Access（精选照片访问权限） | 用户可见集合可能动态变化，不应在后台遍历未授权媒体 |",
+      "after": "| Android 14 | Selected Photos Access（精选照片访问权限）；行为还受 target SDK 与 READ_MEDIA_VISUAL_USER_SELECTED 声明影响 | 用户可见集合可能动态变化，查询/打开时按当前授权处理 |",
+      "reason": "Android14功能受targetSDK和权限声明/兼容模式影响，不能只按系统版本推断所有App行为。",
+      "source": "https://developer.android.com/about/versions/14/changes/partial-photo-video-access"
+    },
+    {
+      "article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+      "before": "local ch24.9/ch24.12 frontmatter",
+      "after": "local ch24.4 related chapter",
+      "reason": "related_chapters与正文引用24.4，元数据仍指向过时24.9/24.12，统一实际关联。",
+      "source": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md"
     }
   ],
   "validation": {
-    "content_links": "passed:2034 relative Markdown links + 8 local/aiw sources",
-    "mdbook": "passed: latest whole-book preview includes all6.2 figures and6.3 initial23 corrections/source references; pre-existing large search-index warning",
+    "content_links": "passed:2064 relative Markdown links +8 local/aiw sources",
+    "mdbook": "passed: latest preview at 08:33 UTC includes completed6.3 and6.4 initial9 corrections; current6.4 second audit pending rebuild",
     "temporary_files": "outside repository in /tmp/gracker-android-wiki-diagrams-20261023",
     "checked_at": "2026-10-23",
-    "svg_canvas_bounds": "627 SVG text bounds checked, no overflow; all PNG decode",
-    "embed_integrity": "627 records,657 images across78 mdbook pages +1 existing standalone alternate; all loaded",
+    "svg_canvas_bounds": "657 SVG text bounds checked, no overflow;all PNG decode;relocated diagrams pixel-identical",
+    "embed_integrity": "657 records,687 images across79 mdbook pages +1 existing standalone alternate;all loaded",
     "through_chapter": "ch05-cpu-power",
-    "illustrated_articles": 79,
-    "diagram_count": 627,
-    "relative_markdown_links": 2034,
+    "illustrated_articles": 80,
+    "diagram_count": 657,
+    "relative_markdown_links": 2064,
     "local_frontmatter_sources": 8,
     "mdbook_build": "passed; pre-existing large search-index warning",
     "asset_report": {
-      "checked": 627,
+      "checked": 657,
       "errors": [],
       "kind": "SVG text canvas bounds + PNG decode"
     },
     "embed_report": {
-      "checked_records": 627,
-      "checked_articles": 79,
+      "checked_records": 657,
+      "checked_articles": 80,
       "errors": [],
       "built_pages": [
         {
@@ -17090,18 +17727,24 @@
           "images": 36,
           "all_loaded": true,
           "preview_mode": "mdbook"
+        },
+        {
+          "article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+          "images": 30,
+          "all_loaded": true,
+          "preview_mode": "mdbook"
         }
       ]
     },
-    "through_article": "src/part1-fundamentals/ch06-storage/02-filesystem-io-scheduling.md",
-    "diagram_placements": 657,
-    "skill_prompt_packs": "627/627 required four-file skill packs exist; all visual reviews passed",
-    "in_page_visual_review": "6.2 NAT mapping, AOSP blkio profiles, time-weighted depth and App sync workflow passed; earlier checks retained",
-    "working_article": "6.3 in progress:全文已读，23项初轮修正；已缓存r1平台、AndroidX1.2.1源码包和AAR manifest/ABI清单；未配图，不标记完成。"
+    "through_article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
+    "diagram_placements": 687,
+    "skill_prompt_packs": "657/657 required four-file skill packs exist;all visual reviews passed",
+    "in_page_visual_review": "6.3 component gates,callerContext,MP read cache,migration andANR shapes checked;earlier checks retained",
+    "working_article": "6.4:19 source-backed corrections; figures pending"
   },
   "last_checkpoint": {
-    "illustrated_articles": 79,
-    "diagrams": 627,
+    "illustrated_articles": 80,
+    "diagrams": 657,
     "completed_chapters": [
       "ch01-architecture",
       "ch02-rendering",
@@ -17109,9 +17752,9 @@
       "ch04-memory",
       "ch05-cpu-power"
     ],
-    "next_article": "src/part1-fundamentals/ch06-storage/03-sharedpreferences-datastore.md",
-    "note": "第1–5章及6.1–6.2完成：79/301篇、627图、657处嵌入；6.2总计24项修正，6.3初轮23项修正、尚未配图；goal active。",
-    "diagram_placements": 657
+    "next_article": "src/part1-fundamentals/ch06-storage/04-vold-mediaprovider-fuse.md",
+    "note": "第1–5章及6.1–6.3完成：80/301篇、657图、687处嵌入。6.4初轮9项修正，源码核对与配图仍在进行；goal active。",
+    "diagram_placements": 687
   },
   "replaced_inline_diagrams": [
     {

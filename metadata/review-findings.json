@@ -9059,6 +9059,23 @@
       "summary": "check-metadata 全线 rc=1：并行逐章配图任务把输出写进 src/assets/diagrams，该顶层目录不在 AUXILIARY_SRC_DIRS，check_layout 无条件扫描导致所有 AIW 车道 completer 元数据门禁失败",
       "type": "metadata-gate-blocked",
       "updated_at": "2026-10-23T09:10:36.122061+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "created_at": "2026-10-23T12:17:45.953110+08:00",
+      "created_by": "aiw-chinese-rewrite",
+      "created_run_id": "20261023-120020-cn-rewrite-d627b6c1f107dd73",
+      "details": "原文：“heapprofd（file descriptor，文件描述符） 是 Perfetto 的 native heap profiler，malloc debug 与 LeakSanitizer（LSan）则依赖不同程度的调试或插桩条件。”（内存压力与分配异常小节）。2026-10-20 run 20261020-083020 的 evidence 已记录为 known_preexisting_defect 但未开 finding。本车道括注受 style_lint compare 的 (term,inner) 对保全校验锁定（term “heapprofd” 仍以明文出现于选择顺序一节时删除括注即 fail），且 heapprofd 全文无反引号形式、无法用行内代码规避，车道内不可安全修复；修复需在括注保全规则或该行措辞上人工处理，建议把该括注移到“进程 fd”处。",
+      "id": "finding-d5319328f919",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "run 20261023-120020-cn-rewrite-d627b6c1f107dd73 preflight + scripts/style_lint.py gloss_pairs 保真逻辑"
+      ],
+      "status": "open",
+      "summary": "heapprofd 的括注（file descriptor，文件描述符）属误插：heapprofd 是 Perfetto 的 native heap profiler，注释内容应属于后文“进程 fd、/proc/<pid>/fdinfo”处的 fd",
+      "type": "wrong-gloss",
+      "updated_at": "2026-10-23T12:17:45.953110+08:00"
     }
   ],
   "schema_version": 1

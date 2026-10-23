@@ -4,7 +4,7 @@ chapter: '8.7'
 section: '8.7'
 status: finalized
 applicable_versions: Android 12 (API 31) - Android 17 (API 37)
-last_verified: '2026-08-25'
+last_verified: '2026-10-23'
 last_verified_against: Android Developers Play Integrity overview, Standard/Classic request docs, verdicts/setup/error/remediation docs, SafetyNet deprecation notice, Play Integrity Android reference
 confidence: medium
 sources:
@@ -46,15 +46,35 @@ last_idle_audit_at: '2026-08-25T22:35:51+08:00'
 
 登录、支付提交、兑换、排行榜上报这类动作需要服务端处理，Play Integrity API 帮我们把好这一关：它向服务端提供应用完整性、Play 账号授权、设备环境和可选风险信号。API 返回的是一组 verdict（风险判定字段），“允许或拒绝”仍由服务端结合账号、交易和行为信息来决定。
 
-这套校验也会拉长交互路径：客户端先向 Google Play 申请加密 token（完整性令牌），业务服务端再把 token 交给 Google 解密和验证。其中 Standard 请求的 token provider 可以在受保护动作发生前先准备好，把这一段移出交互路径；其余阶段只能各自记录耗时。如果全程只记一个“Play Integrity 总耗时”，慢请求发生时，我们分不清问题出在客户端、接入网络、Google 解密接口还是业务服务端。
+<!-- gracker-diagram: ch08-07-01-signals-and-policy -->
+![完整性信号进入服务端业务策略](../../assets/diagrams/ch08/ch08-07-01-signals-and-policy.png)
 
-> 源码基线：AOSP `android-17.0.0_r1`，覆盖 Android 17 / API 37。
+图：API 给出判定信号；服务端仍须验证请求并作业务决定，不能让客户端自行宣布已授权。
+
+这套校验也会拉长交互路径：客户端先向 Google Play 申请加密 token（完整性令牌），本文采用的常规路径是业务服务端再把 token 交给 Google 解密和验证；Classic 还有在安全服务端自行管理密钥并解密验证的选项，Standard 不支持该选项。其中 Standard 请求的 token provider 可以在受保护动作发生前先准备好，把这一段移出交互路径；其余阶段只能各自记录耗时。如果全程只记一个“Play Integrity 总耗时”，慢请求发生时，我们分不清问题出在客户端、接入网络、Google 解密接口还是业务服务端。
+
+<!-- gracker-diagram: ch08-07-02-success-endpoints -->
+![token 到手、解密成功与业务通过分开](../../assets/diagrams/ch08/ch08-07-02-success-endpoints.png)
+
+图：各阶段成功只证明本阶段完成。本文主路径用 Google decode，Classic 可选安全服务端本地解密。
+
+> 平台基线为 AOSP `android-17.0.0_r1`，通用 Binder 驱动按 `android17-6.18-2026-06_r6` 核对；公开客户端类型以 Play Integrity Android 库 `1.6.0` 为本次编译基线。库、Play Store / Play services 和服务端分别演进，不能只用 Android API level 推导行为。
 
 还有一个前提要先交代：Play Integrity 的判定实现在闭源的 Google Play 组件和 Google 服务端里，后文引用的 AOSP 与 kernel 源码位置，只用来解释这条路径上的 IPC、调度和网络承载；闭源组件的内部步骤，从这些源码里读不出来。
 
+<!-- gracker-diagram: ch08-07-03-open-and-closed -->
+![公开契约、通用承载与闭源内部](../../assets/diagrams/ch08/ch08-07-03-open-and-closed.png)
+
+图：公开文档和通用系统源码能支持不同层次的结论；它们没有公开 Google 判定内部的固定步骤。
+
 ## 1. 接口定位
 
-很多团队接触到 Play Integrity，是从 SafetyNet Attestation API 的弃用开始的：官方指定的替代接口就是 Play Integrity API。两者的客户端类型、token 格式、服务端验证接口和响应字段都不同，所以迁移时 SafetyNet 的 JWS（JSON Web Signature，带签名的 JSON 结构）解析器要一并换掉——新 token 对应的是另一套格式。
+很多团队接触到 Play Integrity，是从 SafetyNet Attestation API 的弃用开始的：官方指定的替代接口就是 Play Integrity API。两者的客户端类型、token 格式、服务端验证接口和响应字段都不同，所以迁移时 SafetyNet 的 JWS（JSON Web Signature，带签名的 JSON 结构）解析器要一并换掉——Standard token 按不透明的加密结果交给 Google decode；Classic 的文档格式仍是 JWE 包裹 JWS，不能把整个新 token 直接交给旧的单层 JWS 解析流程。
+
+<!-- gracker-diagram: ch08-07-04-safetynet-migration -->
+![SafetyNet 迁移包含服务端格式与接口](../../assets/diagrams/ch08/ch08-07-04-safetynet-migration.png)
+
+图：迁移同时核对客户端、token 格式、服务端验证入口和字段；Classic 仍包含内层 JWS。
 
 它和 Key Attestation（密钥证明）解决的问题也不同，我们按各自负责的事情分开看：
 
@@ -63,9 +83,19 @@ last_idle_audit_at: '2026-08-25T22:35:51+08:00'
 
 两类信号是否叠加，取决于威胁模型，也就是业务需要防范哪些攻击；组合使用会增加客户端集成与服务端校验成本，按场景评估即可。
 
+<!-- gracker-diagram: ch08-07-05-integrity-versus-key -->
+![Play 分发信号与密钥属性证明](../../assets/diagrams/ch08/ch08-07-05-integrity-versus-key.png)
+
+图：Key Attestation 不能替代 PLAY_RECOGNIZED 或 LICENSED；是否组合应按所需信号决定。
+
 ### 1.1 服务端会看到哪些主要判定
 
 拿到解密后的 payload，我们先分开读两个独立字段：应用授权 `appLicensingVerdict` 与应用完整性 `appRecognitionVerdict`。两者独立取值，同一个请求可能一个字段已有明确结果，另一个仍是 `UNEVALUATED`（未评估）。
+
+<!-- gracker-diagram: ch08-07-06-independent-verdicts -->
+![应用识别与账号授权分别读取](../../assets/diagrams/ch08/ch08-07-06-independent-verdicts.png)
+
+图：账号授权和应用识别是独立字段；业务账号登录状态也需要单独验证。
 
 先看 `appLicensingVerdict`，它有下面三个值。这里的“授权”问的是当前 Play 账号是否拥有这款应用，与业务账号登录状态是两回事：
 
@@ -79,27 +109,56 @@ last_idle_audit_at: '2026-08-25T22:35:51+08:00'
 
 | 值 | 官方语义 |
 |---|---|
-| `PLAY_RECOGNIZED` | 包名和证书与 Google Play 分发记录匹配 |
+| `PLAY_RECOGNIZED` | 应用及签名证书与 Google Play 分发的版本匹配 |
 | `UNRECOGNIZED_VERSION` | 证书或包名与 Google Play 记录不匹配 |
 | `UNEVALUATED` | 应用完整性没有得到评估 |
 
-`PLAY_RETAIL` 不在 `appLicensingVerdict` 的有效值里。
+`PLAY_RETAIL` 不在 `appLicensingVerdict` 的有效值里。`LICENSED` 表示账号的应用授权，并不保证当前安装包一定来自本次 Play 下载；官方注明部分旧设备会在卸载后保留授权，之后从其他渠道获得同一应用仍可能是 `LICENSED`。应结合应用识别和版本字段判断。[来源](https://developer.android.com/google/play/integrity/verdicts)
+
+<!-- gracker-diagram: ch08-07-07-licensed-history -->
+![授权记录与当前安装包分开判断](../../assets/diagrams/ch08/ch08-07-07-licensed-history.png)
+
+图：LICENSED 不是当前这份 APK 必定刚由 Play 下载的证明；按官方旧设备例外解释授权历史。
 
 ### 1.2 设备标签的分级与读取
 
-设备完整性这一层读的是 `deviceRecognitionVerdict`：它是一个标签数组，设备同时满足多级条件时可以返回多个标签。默认配置返回 `MEETS_DEVICE_INTEGRITY`；业务还需要 `MEETS_BASIC_INTEGRITY` 或 `MEETS_STRONG_INTEGRITY` 时，要先在 Play Console 中选择接收。
+设备完整性这一层读的是 `deviceRecognitionVerdict`：它是一个标签数组，设备同时满足多级条件时可以返回多个标签。默认配置可返回 `MEETS_DEVICE_INTEGRITY`，设备符合相应条件时才会带上；业务还需要 `MEETS_BASIC_INTEGRITY` 或 `MEETS_STRONG_INTEGRITY` 时，要先在 Play Console 中选择接收。
 
 | 标签 | Android 17 范围内的官方语义 |
 |---|---|
-| `MEETS_BASIC_INTEGRITY` | 通过基础系统完整性检查。bootloader（引导加载程序）可以锁定或解锁，启动状态可以是 verified 或 unverified，设备也可能没有通过 Google Play 认证 |
+| `MEETS_BASIC_INTEGRITY` | 通过基础系统完整性检查。bootloader（引导加载程序）可以锁定或解锁，启动状态可以是 verified 或 unverified，设备也可能没有通过 Google Play 认证；Android 13+ 仍要求证明的 root of trust 由 Google 提供 |
 | `MEETS_DEVICE_INTEGRITY` | 运行于真实、通过认证的 Android 设备；Android 13 及以上还要求硬件支持的证据表明 bootloader 已锁定，并加载认证厂商镜像 |
 | `MEETS_STRONG_INTEGRITY` | Android 13 及以上要求满足 `MEETS_DEVICE_INTEGRITY`，且 Android OS、vendor 等设备分区的安全更新都在最近一年内 |
 
+<!-- gracker-diagram: ch08-07-08-device-label-levels -->
+![设备标签的条件按系统版本解释](../../assets/diagrams/ch08/ch08-07-08-device-label-levels.png)
+
+图：标签是可同时存在的数组。STRONG 的安全更新要求有版本分界，不能直接套到 Android 12 及以下。
+
 这张表里有一条版本分界要注意：“近一年安全更新”是 Android 13 起才有的要求，Android 12 及以下的 `MEETS_STRONG_INTEGRITY` 只要求硬件支持的启动完整性证据。所以策略若覆盖旧系统，我们应同时读取可选的 `deviceAttributes.sdkVersion`，按设备 Android 版本解释这个标签的含义——把 Android 13 及以上的更新要求直接套到旧系统上，会得出错误结论。
 
-标签数组为空时，诊断要留余地：API hooking（运行时拦截或替换 API）、系统受损、未通过检查的模拟环境或技术故障都可能是原因，“设备已 root”只是其中一种解释。面向用户时应提供修复路径或较宽泛的环境提示；内部风险信号在对外文案里应停留在风险提示，避免写成已确认的入侵结论。
+Android 13+ 的可选 `MEETS_BASIC_INTEGRITY` / `MEETS_STRONG_INTEGRITY` 还要求请求应用具有 Play 授权；未授权时这两个标签会被省略，其他满足条件的标签仍可返回。没有任何标签时，`deviceRecognitionVerdict` 字段本身可被省略。`deviceAttributes.sdkVersion` 也可能未评估而缺失，不能把缺值当作旧 Android 版本。[来源](https://developer.android.com/google/play/integrity/verdicts)
+
+<!-- gracker-diagram: ch08-07-09-optional-label-gates -->
+![可选标签和 sdkVersion 都有返回前提](../../assets/diagrams/ch08/ch08-07-09-optional-label-gates.png)
+
+图：配置、授权与设备条件共同影响返回内容，必须区分未评估、字段缺失和实际策略不满足。
+
+标签为空或字段缺失时，先区分未选择、前置条件不足和设备判定路径，再留出诊断余地：API hooking（运行时拦截或替换 API）、系统受损、未通过检查的模拟环境或技术故障都可能是原因，“设备已 root”只是其中一种解释。面向用户时应提供修复路径或较宽泛的环境提示；内部风险信号在对外文案里应停留在风险提示，避免写成已确认的入侵结论。
+
+<!-- gracker-diagram: ch08-07-10-missing-field-diagnosis -->
+![先解释字段缺失再做风险归因](../../assets/diagrams/ch08/ch08-07-10-missing-field-diagnosis.png)
+
+图：同一个缺失结果可能有多种原因；策略可保守处理，但对外诊断需保留证据边界。
 
 ## 2. Standard 与 Classic 是两套调用方式
+
+本次按 Android 库 `1.6.0` 核对类型；该系列从 1.5.0 起的 `minSdk` 为 23，本文讨论的 API 31–37 均在其范围内。官方 Standard 页面仍写 API 21+，应结合具体库发布说明，不能脱离依赖版本套用最低平台值。[发布说明](https://developer.android.com/google/play/integrity/reference/com/google/android/play/core/release-notes)
+
+<!-- gracker-diagram: ch08-07-12-platform-and-library -->
+![Android API、SDK 与 Play 组件分别演进](../../assets/diagrams/ch08/ch08-07-12-platform-and-library.png)
+
+图：本文用发布制品 1.6.0 核对类型；最低 API 和新增方法按依赖发布说明核对。
 
 两条路线怎么选，先看官方的当前建议：大多数应用使用 Standard 请求——先准备好一个可复用的 token provider，再为每个业务动作申请新 token。Classic 走的是另一条路，没有预先准备这一步，每次请求都现场重新计算判定，成本因此更高，适合少量、高价值、且强调本次计算新鲜度的动作。
 
@@ -116,7 +175,20 @@ last_idle_audit_at: '2026-08-25T22:35:51+08:00'
 
 表中的时间只是官方给出的量级，我们直接拿来当业务 SLA（服务等级目标）并不稳妥：设备负载、Play 组件版本、网络、Google 服务状态和业务服务部署位置都会影响尾延迟。“Standard 50–150 ms”“Classic 慢 3–5 倍”这类固定说法，也缺乏跨设备、跨地区成立的依据。
 
+<!-- gracker-diagram: ch08-07-11-standard-classic-choice -->
+![Standard 与 Classic 按动作成本选择](../../assets/diagrams/ch08/ch08-07-11-standard-classic-choice.png)
+
+图：官方建议多数应用选 Standard；Classic 的新鲜计算成本较高，两者都需要业务绑定和验证。
+
 我们先把 Standard 请求拆成可单独测量的阶段，时序图里同时标出 provider 准备所在的非交互路径：
+
+<!-- gracker-diagram: ch08-07-13-standard-sequence -->
+![Standard 从预热到业务决定的完整路径](../../assets/diagrams/ch08/ch08-07-13-standard-sequence.png)
+
+图：预热可移出交互等待；token、请求验证和业务决定仍属于各自阶段。原 Mermaid 源码保留。
+
+<details>
+<summary>查看 Mermaid 源码</summary>
 
 ```mermaid
 sequenceDiagram
@@ -144,7 +216,14 @@ sequenceDiagram
     end
 ```
 
-prepare 因为要访问服务端，通常需要数秒，多数请求在 10 秒内完成，所以适合在应用打开后异步启动。这里的“异步”只表示当前线程照常执行，首页或登录流程继续往下走就好；若等 prepare 完成再放行，这段等待就又回到了交互路径上。
+</details>
+
+prepare 因为要访问服务端，通常需要数秒，多数请求在 10 秒内完成，所以适合在应用打开后异步启动。“异步”表示调用后无需在当前线程等结果，并不保证 CPU、Binder、网络与回调对启动毫无影响；首页先绘制、避免把完成结果设成放行条件，再用设备数据确认资源竞争。若等 prepare 完成再放行，这段等待就回到了交互路径上。
+
+<!-- gracker-diagram: ch08-07-14-prewarm-and-interaction -->
+![异步预热只有不被等待才移出交互路径](../../assets/diagrams/ch08/ch08-07-14-prewarm-and-interaction.png)
+
+图：轨道仅说明安排顺序，没有实测时间；异步预热仍可能与启动争用 CPU、Binder 或网络。
 
 ## 3. Standard API 的集成
 
@@ -155,7 +234,17 @@ prepare 因为要访问服务端，通常需要数秒，多数请求在 10 秒�
 1. 用 Cloud project number（Google Cloud 项目编号）调用 `prepareIntegrityToken()`，得到保存在进程内存中的 `StandardIntegrityTokenProvider`。
 2. 用户执行受保护动作时，计算该动作的 `requestHash`，再通过 provider 为这次动作申请一个新 token。
 
-下面这段 Kotlin 代码展示两个阶段各自的类型分工：`prepare()` 更新 provider，`requestToken()` 只从已经准备好的 provider 申请 token。生产代码还要在应用数据层补充错误处理、并发保护和生命周期管理。
+<!-- gracker-diagram: ch08-07-15-provider-target-lifecycle -->
+![生产组件应有明确 provider 状态迁移](../../assets/diagrams/ch08/ch08-07-15-provider-target-lifecycle.png)
+
+图：这是生产组件的目标流程；正文的短类仅示意类型分工，没有实现完整并发状态机。
+
+下面这段 Kotlin 代码展示两个阶段各自的类型分工：`prepare()` 更新 provider，`requestToken()` 只从已经准备好的 provider 申请 token。这是类型与调用分工示意。`@Volatile` 只保证引用的可见性，默认 success listener 在主线程排队；prepare 的底层 Task 完成时，`provider` 缓存可能尚未写回。并发 prepare 的乱序回调，以及 `clearProvider()` 后旧回调重新写入缓存，也都未被这个示例解决。生产组件应合并在途 prepare、串行化状态迁移并检查请求代次；给调用方的“已准备”信号应在当前代次缓存就绪后发出。[Task 契约](https://developers.google.com/android/reference/com/google/android/gms/tasks/Task)
+
+<!-- gracker-diagram: ch08-07-16-provider-example-races -->
+![volatile 示例的三种未解决竞态](../../assets/diagrams/ch08/ch08-07-16-provider-example-races.png)
+
+图：@Volatile 仅保证引用可见性；要解决竞态还需在途合并、状态串行化与代次检查。
 
 ```kotlin
 class IntegrityTokenSource(
@@ -202,18 +291,33 @@ class IntegrityTokenSource(
 }
 ```
 
-从这段代码的结构也能看出使用约束：`IntegrityTokenSource` 长期保存的只有 provider，token 每次动作都要重新申请。若请求返回 `INTEGRITY_TOKEN_PROVIDER_INVALID`，说明 provider 可能已经过期，或 Play Store 数据已被清除，此时应丢弃旧引用并重新 prepare。反过来，每个业务动作前都调一次 prepare，既增加延迟，也可能触及单个应用实例每分钟 5 次的 prepare 上限。
+从这段代码的结构也能看出使用约束：`IntegrityTokenSource` 长期保存的只有 provider，token 每次动作都要重新申请。若请求返回 `INTEGRITY_TOKEN_PROVIDER_INVALID`，说明 provider 可能已经过期，或 Play Store 数据已被清除，此时应丢弃对应代次的旧引用并重新 prepare；晚到的旧请求错误不能清掉已经换新的 provider。反过来，每个业务动作前都调一次 prepare，既增加延迟，也可能触及单个应用实例每分钟 5 次的 prepare 上限。
+
+<!-- gracker-diagram: ch08-07-17-provider-invalid-recovery -->
+![provider 失效恢复按代次隔离](../../assets/diagrams/ch08/ch08-07-17-provider-invalid-recovery.png)
+
+图：公开错误说明包含过期和 Play Store 数据清除；具体失效时间未公开，恢复需避免旧错误清新引用。
 
 ### 3.2 `requestHash` 与当前动作的绑定
 
-`requestHash` 是业务请求内容的摘要，服务端靠它确认 token 对应当前处理的那次动作。我们建议按下面的流程构造：
+`requestHash` 是业务请求内容的摘要，服务端靠它确认 token 对应当前处理的那次动作。公开 builder 将它列为推荐的可选字段；本文保护业务动作的流程要求提供并验证它，不能把“API 允许省略”当作已经完成内容绑定。[API 契约](https://developer.android.com/google/play/integrity/reference/com/google/android/play/core/integrity/StandardIntegrityManager.StandardIntegrityTokenRequest.Builder)我们建议按下面的流程构造：
 
 1. 定义稳定的请求规范化格式，使相同业务数据总能产生相同字节序列；明确字段顺序、空值、字符编码、金额单位和版本号。
 2. 纳入所有会改变安全决定的字段，例如账号 ID、服务端下发的 action ID、订单 ID、金额、币种和动作类型。
 3. 对规范化后的字节计算 SHA-256，再用约定的编码生成 `requestHash`。
 4. 业务服务端按相同规则重新计算摘要，并与解密 payload 中的 `requestDetails.requestHash` 比较。比较要用常量时间实现，避免根据第一个不同字节的位置提前返回，减少时序侧信道。
 
-下面的示例只演示如何先得到无歧义的固定格式，再计算哈希：字符串长度也写入输入，用来标记每个字段的起止，避免简单拼接让不同字段组合产生相同文本。
+<!-- gracker-diagram: ch08-07-18-hash-binding-pipeline -->
+![请求绑定从稳定字节到服务端重算](../../assets/diagrams/ch08/ch08-07-18-hash-binding-pipeline.png)
+
+图：摘要把 token 绑定到一份请求；它不会代替请求合法性和业务权限检查。
+
+下面的示例定义一份固定 `v1` 输入再计算哈希。这里 `String.length` 指 UTF-16 code unit 数：普通汉字通常为 1，补充平面字符如多数 emoji 为 2；它不是 UTF-8 字节数。服务端必须采用同一单位，输入限定为合法 Unicode，且双方明确是否做 Unicode 归一化。长度前缀只用于区分字段边界，不提供防重放能力。[String 契约](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/String.html)
+
+<!-- gracker-diagram: ch08-07-19-utf16-canonicalization -->
+![现有 v1 长度前缀使用 UTF-16 单元](../../assets/diagrams/ch08/ch08-07-19-utf16-canonicalization.png)
+
+图：当前示例按 UTF-16 单元写长度，再整体编码 UTF-8。跨语言实现不能改用字符数或 UTF-8 字节数。
 
 ```kotlin
 fun integrityRequestHash(
@@ -238,7 +342,12 @@ fun integrityRequestHash(
 }
 ```
 
-服务端必须实现同一份 `v1` 规范，并把版本号纳入哈希输入。示例里没有放姓名、手机号或原始 token 这类敏感数据，官方要求不要把敏感信息以明文写进 `requestHash`。还有一点容易漏掉：即使两个动作得到相同摘要，每次受保护动作也都要申请并提交自己的 token。
+服务端必须实现同一份 `v1` 规范，并把版本号纳入哈希输入。示例仅覆盖 action ID、账号、金额与币种；真实请求还须纳入所有影响授权的字段。计算后固定这份业务快照，token 必须和同一份请求一起提交；`requestHash` 一致不证明金额正确或账号有权操作，服务端仍须按可信订单与会话校验。示例里没有放姓名、手机号或原始 token 这类敏感数据，官方要求不要把敏感信息以明文写进 `requestHash`。还有一点容易漏掉：即使两个动作得到相同摘要，每次受保护动作也都要申请并提交自己的 token。
+
+<!-- gracker-diagram: ch08-07-20-frozen-payload-and-authority -->
+![同一 token 只能绑定对应业务快照](../../assets/diagrams/ch08/ch08-07-20-frozen-payload-and-authority.png)
+
+图：API 可选的 requestHash 在本业务流程中必须提供和验证；拿到 token 不代表内容已经安全绑定。
 
 ### 3.3 服务端校验顺序
 
@@ -250,20 +359,35 @@ POST https://playintegrity.googleapis.com/v1/{packageName}:decodeIntegrityToken
 
 这个端点返回已经由 Google 解密并验证的 payload。到这里只完成了 token 这一层的校验，接下来服务端还要依次检查：
 
-- `requestDetails.requestPackageName` 等于预期包名；
+- 先检查 `requestDetails.requestPackageName` 等于预期包名，再继续读各项判定；
 - `requestHash` 或 Classic 的 `nonce` 与当前业务动作匹配；
-- `timestampMillis` 位于业务定义的有效窗口内；
+- `timestampMillis` 位于服务端可信时钟定义的有效窗口内，同时处理允许的时钟偏差与异常未来时间；
 - `appRecognitionVerdict`、`appLicensingVerdict` 和所需设备标签符合该动作的规则；
 - 可选的 `deviceAttributes`、近期设备活动、应用访问风险或 Play Protect 信号是否参与本次策略；
 - 该 action ID、订单或会话没有被业务系统重复消费，也就是业务操作具备幂等保护。
 
-Standard token 自带 Google Play 的重放缓解：同一个 token 被反复解密时，后续结果会被清空或降为 `UNEVALUATED`。这层保护只覆盖“同一 token 重复解密”；“同一笔订单换不同 token 提交两次”属于业务重放，幂等性和新鲜度仍要靠服务端自己把关。
+<!-- gracker-diagram: ch08-07-21-backend-validation -->
+![服务端按请求、时效、判定和幂等验证](../../assets/diagrams/ch08/ch08-07-21-backend-validation.png)
+
+图：Google decode 成功只完成 token 层验证；请求内容、业务授权、时效与原子幂等仍由业务服务端完成。
+
+Standard token 自带 Google Play 的重放缓解：反复解密同一个 token 会导致设备及可选判定清空、应用识别和授权降为 `UNEVALUATED`；公开文档没有给出“恰好第二次”或固定计数阈值。这层保护只覆盖“同一 token 重复解密”；“同一笔订单换不同 token 提交两次”属于业务重放，幂等性和新鲜度仍要靠服务端自己把关。action ID 的消费检查与业务提交应有原子性，避免两个新 token 并发提交同一订单时都先查到“未消费”。
+
+<!-- gracker-diagram: ch08-07-22-two-replay-scopes -->
+![token 重用与业务重放是两层问题](../../assets/diagrams/ch08/ch08-07-22-two-replay-scopes.png)
+
+图：自动缓解覆盖 token 重用；不同 token 的同一笔业务动作仍需服务端防重放。
 
 服务账号密钥、Cloud access token 和 verdict 解析逻辑都要留在服务端。道理很直接：客户端进程本身就是被评估对象，攻击者可以篡改客户端输出，最终授权决定必须由服务端作出。
 
 ## 4. Classic 请求与 nonce
 
 看完 Standard，再看 Classic 的入口：`IntegrityManagerFactory.create()`、`IntegrityTokenRequest` 和 `nonce`。nonce 是每次动作唯一、不可预测的值，负责把 token 绑定到这次请求并防止重放。Classic 没有 prepare 阶段，每次请求都重新计算 verdict，因此官方建议只用于偶发的高价值动作。
+
+<!-- gracker-diagram: ch08-07-23-classic-request-flow -->
+![Classic 用一次性 nonce 绑定当前动作](../../assets/diagrams/ch08/ch08-07-23-classic-request-flow.png)
+
+图：Classic 不做 provider 预热。一次性值与内容摘要共同覆盖重放和篡改，不能复用旧 token。
 
 对照 Classic 的入口和返回类型，我们更容易把它与 Standard 的 prepare + request 两阶段调用区分开：
 
@@ -287,15 +411,37 @@ integrityManager.requestIntegrityToken(request)
 
 通过 Google Play 分发的应用，只要 Cloud project 已在 Play Console 关联，请求中通常无需再设置 project number；只有官方列出的站外分发应用或 SDK 场景才需要按文档设置。`serverBoundNonce` 必须每次变化，硬编码常量直接违背这一要求。
 
+<!-- gracker-diagram: ch08-07-24-classic-project-configuration -->
+![Classic 的 project number 按分发场景设置](../../assets/diagrams/ch08/ch08-07-24-classic-project-configuration.png)
+
+图：API 入口、nonce 与 project number 各有作用；项目是否需显式传入按当前分发与 SDK 契约核对。
+
 Classic 的 nonce 身兼两职：防止业务字段被篡改，也防止旧请求被重放。构造时按下面的要求做：
 
-- 由服务端生成至少 128 bit、不可预测的唯一值，或使用具有同等唯一性的服务端 action ID；
+- 优先由服务端安全随机生成至少 128 bit 的唯一值；复用 action / session ID 时，还须满足不可预测性、与当前动作绑定及服务端可验证，不能仅凭“不重复”就视为同等保护；
 - 把唯一值与当前业务字段放入规范化消息，再计算摘要；
-- 按 URL-safe、no-wrap Base64 编码，满足官方长度限制；
+- 按 URL-safe、no-wrap Base64 编码；推荐组合后的 SHA-256 摘要为 32 字节，无填充 Base64url 为 43 个 ASCII 字符，避免触碰长度边界；
 - 服务端解密后重新计算摘要，并确认这个唯一值从未被消费；
 - nonce 中不要直接或间接携带个人信息。
 
+<!-- gracker-diagram: ch08-07-25-nonce-two-properties -->
+![唯一值与内容摘要承担不同保护](../../assets/diagrams/ch08/ch08-07-25-nonce-two-properties.png)
+
+图：nonce 同时需要动作绑定和防重放设计；Base64 只是编码，不能增加随机性或授权强度。
+
+⚠️ 矛盾：当前 [Classic 指南](https://developer.android.com/google/play/integrity/classic) 用编码后 16–500 个字符描述 nonce，而[错误码文档](https://developer.android.com/google/play/integrity/error-codes) 用 Base64 前至少 16、少于 500 字节描述边界。两者不是同一单位；上面的 32 字节摘要 / 43 字符编码同时避开这两套边界，不能根据其中一处文字推导极限输入必定被接受。
+
+<!-- gracker-diagram: ch08-07-26-nonce-limit-disagreement -->
+![nonce 的两套官方长度单位要区分](../../assets/diagrams/ch08/ch08-07-26-nonce-limit-disagreement.png)
+
+图：官方两处单位不同，不能互相替换来推断边界输入必过。32 字节摘要及其 43 字符编码避开两套边界。
+
 缓存 Classic verdict 或 token 会放大凭据被窃取和重放的风险。调用频率高到想复用结果时，就该重新评估是否改用 Standard；改用之后，每次动作仍单独申请 token。
+
+<!-- gracker-diagram: ch08-07-27-classic-no-cache -->
+![频繁使用应切换调用模式而非复用旧 token](../../assets/diagrams/ch08/ch08-07-27-classic-no-cache.png)
+
+图：两种模式都不能跨动作复用旧业务 token；Standard 的平台内部缓存与应用缓存判定是不同层次。
 
 ## 5. 延迟该怎样拆
 
@@ -310,6 +456,11 @@ Classic 的 nonce 身兼两职：防止业务字段被篡改，也防止旧请�
 
 这些数字够我们做初始容量估算；要刻画本应用在目标国家、网络、机型和 Play 组件版本上的真实延迟，还得靠实测分位值。它们也证明不了 Standard token 请求“完全不访问网络”——官方只说明设备侧会缓存部分证明材料，并明确指出 prepare 包含服务端访问；具体何时刷新、怎样刷新并未公开。
 
+<!-- gracker-diagram: ch08-07-28-latency-not-sla -->
+![官方延迟量级用于初始规划](../../assets/diagrams/ch08/ch08-07-28-latency-not-sla.png)
+
+图：官方量级与超时示例不能直接变成业务 SLA；Standard 不应被推断为每次绝不访问网络。
+
 ### 5.2 一次业务请求至少记录五段
 
 一次业务请求的时间至少拆成下面五段，分别记录：
@@ -322,7 +473,19 @@ Classic 的 nonce 身兼两职：防止业务字段被篡改，也防止旧请�
 | `google_decode` | 服务端调用 decode 到收到 payload | 服务端出口网络、连接复用、Google 服务 |
 | `policy_and_business` | payload 到达到业务响应 | JSON 处理、账号或交易查询、策略服务 |
 
+客户端的单调时钟（如 `elapsedRealtime`）与服务端时钟没有共同起点，不能直接相减求单程上行。`app_to_backend` 若缺少跨端时钟对齐证据，应分别记各端时间和客户端往返等待，并注明单程值不可得；request ID 只能关联请求，不能校准时钟。[时钟契约](https://developer.android.com/reference/android/os/SystemClock)
+
+<!-- gracker-diagram: ch08-07-29-five-measurement-scopes -->
+![五段时间分别记录并独立量总耗时](../../assets/diagrams/ch08/ch08-07-29-five-measurement-scopes.png)
+
+图：轨道只表示阶段安排；客户端业务条包含等待和返回。单程上行需先解决跨端时钟对齐，总耗时与分位数也不能由各段直接相加。
+
 客户端看到的总时间混着多个阶段，想定位 `google_decode` 这一段，我们要靠服务端自己的记录：分别记下 DNS 查询、建立连接、是否复用连接、请求等待和 HTTP 状态，并把一次请求的 trace ID（链路关联 ID）回传给客户端。
+
+<!-- gracker-diagram: ch08-07-30-backend-http-stages -->
+![Google decode 延迟需要服务端观测](../../assets/diagrams/ch08/ch08-07-30-backend-http-stages.png)
+
+图：服务端测量自身 HTTP 过程；连接已复用时不应凭空填入一次 DNS 或握手时长。
 
 ### 5.3 关键路径优化
 
@@ -336,7 +499,17 @@ Classic 的 nonce 身兼两职：防止业务字段被篡改，也防止旧请�
 - 服务端访问 Google 时应复用 HTTP 客户端和连接，并设置连接池容量、超时及熔断监控；熔断是在依赖持续失败时暂时停止继续请求，防止故障扩散。HTTP 客户端要全程复用。
 - 分开观察冷启动后第一次 prepare、provider 重建、普通 Standard 请求与 Classic 请求。
 
+<!-- gracker-diagram: ch08-07-31-critical-path-arrangement -->
+![预热与本地工作按数据依赖安排](../../assets/diagrams/ch08/ch08-07-31-critical-path-arrangement.png)
+
+图：只有与最终绑定参数相容、且安全规则允许的独立工作才能并行；业务请求与 token 合并上行，不表示跳过验证。
+
 具体时机随场景调整：用户在支付页一般会停留一段时间，进入页面后就可以 prepare provider，订单金额和 action ID 等用户确认后再写入 `requestHash`；游戏可以在首个可交互界面出现后准备 provider，到匹配、兑换或成绩上报等受保护动作发生时再申请 token。
+
+<!-- gracker-diagram: ch08-07-32-scene-timing -->
+![支付与游戏把预热安排在动作之前](../../assets/diagrams/ch08/ch08-07-32-scene-timing.png)
+
+图：图表示可选集成时机；不能在金额尚可变化时把旧 token 绑定到最终交易。
 
 ## 6. 超时、重试与业务处置
 
@@ -345,8 +518,13 @@ Classic 的 nonce 身兼两职：防止业务字段被篡改，也防止旧请�
 服务端策略至少区分：
 
 1. **API 调用失败**：客户端没有拿到 token，或服务端调用 decode 接口失败。
-2. **未评估**：token 有效，但某个 verdict 字段为 `UNEVALUATED` 或标签缺失。
-3. **明确的风险结果**：例如 `UNRECOGNIZED_VERSION`、`UNLICENSED`，或业务要求的设备标签没有出现。
+2. **未评估或信息缺失**：decode 成功，但字段为 `UNEVALUATED`，或因配置、授权前提等没有返回所需信息；缺失原因需单独记录。
+3. **不符合当前动作策略**：例如 `UNRECOGNIZED_VERSION`、`UNLICENSED`，或在核对模式、配置与前置条件后仍未满足所需设备标签。策略可以拒绝，但标签缺失本身不能诊断出某一种攻击。
+
+<!-- gracker-diagram: ch08-07-33-outcome-versus-policy -->
+![观测状态与业务处置分别记录](../../assets/diagrams/ch08/ch08-07-33-outcome-versus-policy.png)
+
+图：三类结果支持不同处置；对高价值动作不能因网络超时自动放行，也不能把未知结果写成通过。
 
 三类结果各说各的事：网络错误说的是链路问题，设备完整性此时没有信息；`UNEVALUATED` 停在“未知”，与明确失败之间还有距离。反过来，支付、转账、密钥恢复等高价值动作，不应因网络超时就自动放行。
 
@@ -364,17 +542,42 @@ Classic 的 nonce 身兼两职：防止业务字段被篡改，也防止旧请�
 | 可疑调用环境 | `APP_NOT_INSTALLED`、`APP_UID_MISMATCH` | 按完整性检查失败处理 |
 | 参数错误 | nonce 长度、编码或 Cloud project number 错误 | 修复输入或发布配置；原样重试相同错误参数不会成功 |
 
+<!-- gracker-diagram: ch08-07-34-retry-classification -->
+![按错误原因选择重试或修复](../../assets/diagrams/ch08/ch08-07-34-retry-classification.png)
+
+图：CLIENT_TRANSIENT_ERROR 在 Classic 为 -17、Standard 为 -18；错误码必须与请求模式一并解释。
+
 后台动作可以参考官方示例，从 5 秒开始指数退避，并以最大次数作为退出条件。前台交互则另有一套节奏，照搬 5、10、20 秒的等待序列会让用户在界面上空等；当前 UI 请求可以直接结束，重试交给下一次用户动作或后台任务。
 
-连续三次仍失败时，官方建议按客户端未通过完整性检查处置。
+初次失败后的三次重试仍报错时，官方建议按客户端未通过完整性检查处置；这是风险处置口径，不是已确认设备受攻击的诊断。
 
-超时值应依据本应用的延迟分布和风险预算设定。Standard prepare 与 Classic 请求的官方示例都允许约 1 分钟覆盖长尾，但前台等待用足这 1 分钟并无必要。我们应把三件事分开配置：UI 愿意等待多久、底层网络调用何时停止、服务端在无判定结果时怎样处置；塞进同一个硬编码的 `withTimeout(3000)`，会一起失去调整空间。
+<!-- gracker-diagram: ch08-07-35-retry-sequence -->
+![初次失败后的三次重试与风险处置](../../assets/diagrams/ch08/ch08-07-35-retry-sequence.png)
+
+图：5、10、20 秒是后台退避示例，不是前台必须等待的节奏；三次重试后仍失败按风险失败处置，不诊断具体攻击。
+
+超时值应依据本应用的延迟分布和风险预算设定。Standard prepare 与 Classic 请求的官方示例都允许约 1 分钟覆盖长尾，但前台等待用足这 1 分钟并无必要。我们应把三件事分开配置：UI 愿意等待多久、底层网络调用何时停止、服务端在无判定结果时怎样处置；塞进同一个硬编码的 `withTimeout(3000)`，会一起失去调整空间。`Task` 没有通用的公开 `cancel()`，Standard provider 的 `request()` 也不接收取消 token；结束 UI 等待或取消协程不能据此证明 Play 请求已经停止。应用应隔离晚结果，仍统计实际完成或未完成状态。[Task 契约](https://developers.google.com/android/reference/com/google/android/gms/tasks/Task)
+
+<!-- gracker-diagram: ch08-07-36-ui-deadline-versus-task -->
+![UI 截止时间与 Play 请求完成分开](../../assets/diagrams/ch08/ch08-07-36-ui-deadline-versus-task.png)
+
+图：结束 UI 等待或协程取消不等于底层请求停止；当前 provider.request 没有 CancellationToken 参数，晚结果按业务代次隔离。
 
 ### 6.3 给用户可修复的出口
 
-对用户侧可修复的问题，Play Integrity 提供 `GET_INTEGRITY`、`GET_STRONG_INTEGRITY`、`GET_LICENSED` 等 remediation dialog（修复对话框），可处理 Play 服务缺失或过旧、网络连接、应用未授权等部分问题。版本上有门槛：`GET_INTEGRITY` 和 `GET_STRONG_INTEGRITY` 需要 Play Integrity Android 库 1.5.0 或更高版本，`GET_LICENSED` 等 integrity dialogs 需要 1.3.0 或更高版本。流程是服务端先解析 verdict，再指示客户端展示对应类型的对话框；修复流程完成后，客户端重新申请 token。
+对用户侧可修复的问题，Play Integrity 提供 `GET_INTEGRITY`、`GET_STRONG_INTEGRITY`、`GET_LICENSED` 等 remediation dialog（修复对话框），可处理 Play 服务缺失或过旧、网络连接、应用未授权等部分问题。版本上有门槛：`GET_INTEGRITY` 和 `GET_STRONG_INTEGRITY` 需要 Play Integrity Android 库 1.5.0 或更高版本，`GET_LICENSED` 等 integrity dialogs 需要 1.3.0 或更高版本。verdict 问题通常由服务端解析后指示客户端展示；1.5.0+ 还支持用可修复的客户端异常作为 manager `showDialog()` 的输入，无 token 时也有适用路径。1.5.0 起应优先查 manager 上的新方法，token response 上的旧 `showDialog()` 已弃用。对话框关闭或返回响应码并不证明问题已解决，仍需重新校验；Standard 要先重新 warm up provider，再申请新 token。[来源](https://developer.android.com/google/play/integrity/remediation)
+
+<!-- gracker-diagram: ch08-07-37-remediation-and-rewarm -->
+![修复有 verdict 与客户端异常两个入口](../../assets/diagrams/ch08/ch08-07-37-remediation-and-rewarm.png)
+
+图：1.5.0 的 manager 新方法支持异常入口；token response 的旧 showDialog 已弃用，修复不自动产生通过判定。
 
 没有官方 Play Store 或 Play 服务的设备走不了这套 Google Play 判定。产品要明确各分发渠道支持哪些能力，并为相应用户设计独立的账号和风险策略；Key Attestation 能给出的只有密钥属性层面的证明，Play 授权或应用识别字段则超出它的能力范围。
+
+<!-- gracker-diagram: ch08-07-38-ecosystem-and-fallback -->
+![分发渠道与可用判定能力要先确认](../../assets/diagrams/ch08/ch08-07-38-ecosystem-and-fallback.png)
+
+图：通用密钥证明能补充密钥属性证据，但不能伪造 Play 授权或应用识别结果。
 
 ## 7. 配额与流量模型
 
@@ -386,13 +589,28 @@ Classic 的 nonce 身兼两职：防止业务字段被篡改，也防止旧请�
 - Classic 单实例 token 最多 5 次/分钟；
 - Standard token 请求没有公开的低频上限，但高流量仍会受到未公开的防滥用限制。
 
-有一个容易忽略的细节：普通 Standard token 请求不计入文档所说的“Classic + prepare”每日 token 生成配额，但每个送到 Google 解密的 token 仍会消耗服务端解密配额。上线前，我们按日活用户数、每人受保护动作次数、重试率和峰值放大系数，分别估算客户端与服务端用量，并在 Cloud Console 设置告警。申请提额前，先确认 Play Console 与 Cloud project 已关联，再提交官方申请，并逐步增加流量——突然放量容易触发限流。
+<!-- gracker-diagram: ch08-07-39-separate-quota-buckets -->
+![默认每日配额分成生成与解密两桶](../../assets/diagrams/ch08/ch08-07-39-separate-quota-buckets.png)
+
+图：两桶独立估算，不能把普通 Standard token 的生成量直接加进 Classic + prepare 桶。
+
+有一个容易忽略的细节：普通 Standard token 请求不计入文档所说的“Classic + prepare”每日 token 生成配额，但每个送到 Google 解密的 token 仍会消耗服务端解密配额。上线前，我们按日活用户数、每人受保护动作次数、重试率和峰值放大系数，分别估算客户端与服务端用量，并在 Cloud Console 设置告警。应用在 Play 分发时，申请提额还要求应用已在 Google Play 上架且 Cloud project 已关联；SDK 提供方走符合资格的 Play SDK Console 关联与申请路径。仅启用 Cloud API 不保证有提额或额外配置资格。再按对应流程提交申请，并逐步增加流量——突然放量容易触发限流。
+
+<!-- gracker-diagram: ch08-07-40-capacity-and-rollout -->
+![提额、重试与峰值流量分别估算](../../assets/diagrams/ch08/ch08-07-40-capacity-and-rollout.png)
+
+图：日均动作量不足以描述峰值和重试放大；配额资格与上线节奏按当前应用或 SDK 场景核对。
 
 ## 8. 可观测性：应用侧的 Perfetto 视角
 
-在 Perfetto 里，我们能看到的基本只有应用这一侧：Play Integrity 库和 Google Play 内部并未向应用公开稳定的 Perfetto slice。应用可以用异步 trace 标记 token 请求的端到端等待，服务端阶段则依赖后端 tracing（分布式链路追踪）。
+在 Perfetto 里，我们能看到的基本只有应用这一侧：Play Integrity 库和 Google Play 内部并未向应用公开稳定的 Perfetto slice。应用可以用异步 trace 标记 token 请求到完成观察点的等待，服务端阶段则依赖后端 tracing（分布式链路追踪）。
 
 下面的代码为一次跨回调、可能跨线程的 Standard token 请求增加 Perfetto async slice，并用 `traceCookie` 配对开始和结束事件：
+
+<!-- gracker-diagram: ch08-07-41-trace-balanced-lifecycle -->
+![异步 trace 在完成与同步抛错时配对](../../assets/diagrams/ch08/ch08-07-41-trace-balanced-lifecycle.png)
+
+图：traceCookie 由调用方保证在途唯一；闭合标记不是底层取消或完整性通过的证明。
 
 ```kotlin
 fun requestWithTrace(
@@ -400,33 +618,66 @@ fun requestWithTrace(
     requestHash: String,
     traceCookie: Int,
 ): Task<StandardIntegrityManager.StandardIntegrityToken> {
-    val section = "play_integrity_standard_token"
-    Trace.beginAsyncSection(section, traceCookie)
-
     val request =
         StandardIntegrityManager.StandardIntegrityTokenRequest.builder()
             .setRequestHash(requestHash)
             .build()
-
-    return provider.request(request)
-        .addOnCompleteListener {
+    val section = "play_integrity_standard_token"
+    val ended = AtomicBoolean(false)
+    fun endOnce() {
+        if (ended.compareAndSet(false, true)) {
             Trace.endAsyncSection(section, traceCookie)
         }
+    }
+
+    Trace.beginAsyncSection(section, traceCookie)
+    try {
+        val task = provider.request(request)
+        task.addOnCompleteListener(Executor { it.run() }) {
+            endOnce()
+        }
+        return task
+    } catch (error: Throwable) {
+        endOnce()
+        throw error
+    }
 }
 ```
 
-async slice 可以跨线程覆盖 `Task` 的整个等待区间，显示从应用发起请求到收到完成回调的 wall time（墙上时钟时间），其中包含运行与等待。它能回答的也就到这里：Google Play 内部用了哪个线程、Binder 或网络往返发生了几次，都超出它的测量范围。
+示例需要导入 `java.util.concurrent.Executor` 与 `java.util.concurrent.atomic.AtomicBoolean`。`traceCookie` 由调用方分配，同名在途事件必须使用不同 cookie，结束时不能提前复用。[Trace 契约](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Trace.java)
+
+<!-- gracker-diagram: ch08-07-43-async-cookie-pairing -->
+![同名并发事件用不同 cookie 配对](../../assets/diagrams/ch08/ch08-07-43-async-cookie-pairing.png)
+
+图：async 事件可跨线程、非嵌套，但必须以同一 name 和 cookie 恰好结束一次；cookie 不用敏感 token 生成。
+
+async slice 可以跨线程，覆盖从 `provider.request()` 调用前到完成监听器执行的单调时间区间，包含同步发起、运行与等待。默认 Task listener 在主线程排队；本例使用仅做闭合工作的 inline executor，减少这段排队，但它仍是“应用观察到完成”的时刻，不是闭源组件内部完成的精确时间。成功、失败和取消的 Task 都会触发 complete listener；同步抛错路径也会闭合并原样抛出，监听注册失败时的闭合不证明底层请求已停。它能回答的也就到这里：Google Play 内部用了哪个线程、Binder 或网络往返发生了几次，都超出它的测量范围。
+
+<!-- gracker-diagram: ch08-07-42-completion-observation -->
+![主线程排队会延后默认完成观察点](../../assets/diagrams/ch08/ch08-07-42-completion-observation.png)
+
+图：示意轨道无实测刻度；inline listener 减少一次主线程分派等待，但终点仍是应用观察到完成的时刻。
 
 客户端和服务端建议记录：
 
 - 请求模式、库版本、Android SDK、应用版本和 Play 组件错误码；
-- prepare、token、业务上行、decode、策略各阶段的成功率与 P50/P90/P99；
+- prepare、token、业务上行、decode、策略各阶段的成功率与 P50/P90/P99；重叠阶段独立记总耗时，不能把各阶段 P95 直接相加当总 P95；
 - provider 失效及重建比例；
 - 超时、主动取消、退避重试和限流次数；
 - verdict 各类别占比；token、nonce、`requestHash` 原文和用户敏感数据要留在日志之外；
 - 从 token 申请到服务端消费的年龄，以及 action ID 重复消费次数。
 
+<!-- gracker-diagram: ch08-07-44-observability-fields -->
+![分阶段记录结果和分布](../../assets/diagrams/ch08/ch08-07-44-observability-fields.png)
+
+图：记录可关联且低风险的维度，并单独测总时长；分位数相加不能得到端到端分位数。
+
 按网络类型、地区、机型和应用冷暖状态拆分数据，通常比一条总体 P95 更容易定位问题。再留一组对照——“不调用 Play Integrity 时的业务耗时”：数据库或账号服务变慢时，我们才有依据把责任从 Play Integrity 身上分清楚，避免误归因。
+
+<!-- gracker-diagram: ch08-07-45-controlled-comparison -->
+![同业务对照帮助排除其他慢依赖](../../assets/diagrams/ch08/ch08-07-45-controlled-comparison.png)
+
+图：总体 P95 不能定位责任方；对照实验仍需控制业务条件，不能把数据库变慢归到 Integrity。
 
 ## 9. 源码边界与排查锚点
 
@@ -434,11 +685,21 @@ async slice 可以跨线程覆盖 `Task` 的整个等待区间，显示从应用
 
 排查通用机制时，我们可用的源码锚点是这三个：
 
+<!-- gracker-diagram: ch08-07-46-generic-binder-boundary -->
+![通用 Binder 源码只解释承载机制](../../assets/diagrams/ch08/ch08-07-46-generic-binder-boundary.png)
+
+图：图分层表示通用承载，不声称某次 Integrity 请求一定调用其中某个方法若干次。
+
 - AOSP `android-17.0.0_r1` [`android.os.Binder`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Binder.java)：应用侧 Binder API、调用身份与阻塞调用语义。
 - AOSP `android-17.0.0_r1` [`IPCThreadState.cpp`](https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/binder/IPCThreadState.cpp)：native Binder 命令写入、等待和响应处理。
 - kernel `android17-6.18-2026-06_r6` [`drivers/android/binder.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c)：Binder 驱动中的事务、等待队列与线程调度承载。
 
-这些锚点能帮我们解释应用线程为何在同步 IPC 上等待、系统负载为何放大 IPC 尾延迟；某次 Integrity 请求固定发生两次 Binder 事务、Google Play 是否访问网络这类问题，则超出了它们的说明范围。排查设备上的异常时，用同一个 request ID 把应用 trace、Play Integrity 错误码、网络记录和服务端 decode trace 串起来看。
+这些锚点能帮我们解释应用线程为何在同步 IPC 上等待、系统负载为何放大 IPC 尾延迟；某次 Integrity 请求固定发生两次 Binder 事务、Google Play 是否访问网络这类问题，则超出了它们的说明范围。排查设备上的异常时，用短期业务 request ID 把应用 trace、Play Integrity 错误码、网络记录和服务端 decode trace 串起来看；它是应用侧关联证据，不能让应用自动看见 Play 组件的加密内部流量，也不应把 token 或 requestHash 原文当日志关联键。
+
+<!-- gracker-diagram: ch08-07-47-correlation-not-internals -->
+![短期 request ID 关联可见证据](../../assets/diagrams/ch08/ch08-07-47-correlation-not-internals.png)
+
+图：应用和服务端可按业务请求对齐；关联记录不等于解密 Play 内部通信或得到其私有线程信息。
 
 ## 10. 检查清单
 
@@ -453,6 +714,11 @@ async slice 可以跨线程覆盖 `Task` 的整个等待区间，显示从应用
 - 客户端、业务服务端、Google decode 是否拥有可关联的分段耗时？
 - 结论是否限制在公开文档和可观察数据范围内，没有猜测闭源 Play 组件的缓存时长或内部调用次数？
 
+<!-- gracker-diagram: ch08-07-48-integration-review-flow -->
+![按动作检查集成链路是否闭合](../../assets/diagrams/ch08/ch08-07-48-integration-review-flow.png)
+
+图：检查清单串起动作保护的关键步骤；某一项成功不能代替全链路验证。
+
 ## 交叉引用
 
 - [8.5 Keystore、Biometric 与 Credential 登录性能](05-keystore-biometric-credential-login.md)：设备密钥、Key Attestation、登录 UI 与服务端认证的职责划分。
@@ -460,6 +726,9 @@ async slice 可以跨线程覆盖 `Task` 的整个等待区间，显示从应用
 - [12.1 Android 网络与 TLS 性能优化](../ch12-apk-network/01-android-network-tls-performance.md)：移动网络、连接复用、业务上行与 TLS 尾延迟。
 
 ## 参考资料
+
+- [Android 库发布说明](https://developer.android.com/google/play/integrity/reference/com/google/android/play/core/release-notes)
+- [Task 回调、执行器与完成语义](https://developers.google.com/android/reference/com/google/android/gms/tasks/Task)
 
 - [Play Integrity API 概览](https://developer.android.com/google/play/integrity/overview)
 - [发起 Standard API 请求](https://developer.android.com/google/play/integrity/standard)

@@ -4,10 +4,20 @@ chapter: '2.10'
 section: '2.10'
 status: finalized
 applicable_versions: Android 7 (API 24) - Android 17 (API 37)
-last_verified: '2026-08-24'
+last_verified: '2026-10-23'
 last_verified_against: AOSP android-17.0.0_r1 + Android Developers display/HDR/Compose API documentation
+last_source_verified_at: '2026-10-23T18:39:17+08:00'
+last_idle_audit_at: '2026-10-23T18:39:17+08:00'
 confidence: high
 sources:
+- type: aosp
+  path: frameworks/base/core/java/android/view/Window.java
+- type: aosp
+  path: frameworks/base/core/java/android/view/SurfaceView.java
+- type: aosp
+  path: packages/modules/adb/docs/user/adb.1.md
+- type: official
+  path: developer.android.com/reference/android/view/Display.HdrCapabilities
 - type: aosp
   path: frameworks/native/services/surfaceflinger/CompositionEngine/src/Output.cpp
 - type: aosp
@@ -215,7 +225,7 @@ Android 17 源码中没有名为 `LinearTube` 的组件，实际类型是 `shade
 
 这段 SkSL（Skia Shading Language，Skia 着色语言）由 `libs/shaders/shaders.cpp` 生成，`RuntimeEffectManager::createLinearEffectShader()` 注入显示峰值、当前亮度、内容峰值和 render intent 等 uniform（着色器参数）。Skia 用线性工作色彩空间包装 shader，以便正确连接输入和输出色彩空间。
 
-`SkiaRenderEngine::needsToneMapping()` 主要比较源与目标的 transfer。PQ、HLG、sRGB 与 linear（线性传递函数）之间需要不同处理；代码对不支持的 transfer 按 sRGB 处理。需要 tone mapping、Layer color transform（颜色变换）、线性域 dimming（调暗）或特定 gamma（伽马）修正时，`requiresLinearEffect` 才成立。
+`SkiaRenderEngine.cpp` 中的文件级静态函数 `needsToneMapping()` 主要比较源与目标的 transfer。PQ、HLG、sRGB 与 linear（线性传递函数）之间需要不同处理；代码对不支持的 transfer 按 sRGB 处理。需要 tone mapping、Layer color transform（颜色变换）、线性域 dimming（调暗）或特定 gamma（伽马）修正时，`requiresLinearEffect` 才成立。
 
 有两个容易混淆的现象：
 
@@ -473,7 +483,7 @@ if (Build.VERSION.SDK_INT >= 35) {
 }
 ```
 
-`0.0f` 让系统根据显示、环境和内容选择 headroom。若产品需要限制高光范围，可设置大于等于 1 的比值，并用 `Display.getHdrSdrRatio()` 观察实际值。
+`0.0f` 让系统根据显示、环境和内容选择 headroom。若产品需要限制高光范围，可设置 `[1.0f, 10000.0f]` 闭区间内的有限比值，并用 `Display.getHdrSdrRatio()` 观察实际值。
 
 ### 8.3 独立 SurfaceView
 
@@ -593,11 +603,11 @@ GPU 时间较低并不说明整机成本低。高亮 HDR 内容的主要功耗�
 完整 dump（状态转储）比 `grep -A 5 Layer` 更可靠，因为一个 Layer 的 composition state、output state 和 HDR 信息可能分散在不同段落：
 
 ```bash
-adb shell dumpsys SurfaceFlinger > /data/local/tmp/sf-hdr.txt
-adb pull /data/local/tmp/sf-hdr.txt
+adb shell 'dumpsys SurfaceFlinger > /data/local/tmp/sf-hdr.txt'
+adb pull /data/local/tmp/sf-hdr.txt ./sf-hdr.txt
 ```
 
-第一条命令把完整状态写到设备文件，第二条拉到本机；后面的搜索都基于这同一份状态。随后在文件中搜索：
+单引号让 `>` 由设备端 shell 执行，完整状态先写入设备的 `/data/local/tmp/sf-hdr.txt`，再拉到本机的 `./sf-hdr.txt`；省略引号会让主机 shell 尝试写入主机上的 `/data/local/tmp/sf-hdr.txt`。后面的搜索都基于拉回的同一份状态。随后在文件中搜索：
 
 ```text
 composition type
@@ -737,6 +747,7 @@ Android 17 的 local tone mapper 主要用于这类非高频输出，结果也�
 - [AOSP HDR 播放](https://source.android.com/docs/core/display/hdr)
 - [AOSP tone mapping 与 libtonemap/LUT](https://source.android.com/docs/core/display/tone-mapping)
 - [Window desired HDR headroom](https://developer.android.com/reference/android/view/Window#setDesiredHdrHeadroom(float))
+- [ADB 命令行参考（android-17.0.0_r1）](https://android.googlesource.com/platform/packages/modules/adb/+/refs/tags/android-17.0.0_r1/docs/user/adb.1.md)
 - [Display.HdrCapabilities](https://developer.android.com/reference/android/view/Display.HdrCapabilities)
 - [Compose Color API](https://developer.android.com/reference/kotlin/androidx/compose/ui/graphics/Color)
 - [Compose ColorSpaces API](https://developer.android.com/reference/kotlin/androidx/compose/ui/graphics/colorspace/ColorSpaces)

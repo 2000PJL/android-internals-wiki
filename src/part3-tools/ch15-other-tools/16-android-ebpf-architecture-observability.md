@@ -2,19 +2,31 @@
 title: Android eBPF 架构与性能观测
 chapter: '15.16'
 section: '15.16'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 9 (API 28) - Android 17 (API 37)
 last_verified: '2026-10-23'
 last_rework_at: '2026-10-23T13:36:37+08:00'
 last_source_verified_at: '2026-10-23'
-verification_scope_note: 2026-10-23 仅复核 heapprofd 的用途、Android 10 起可用与 user 构建的目标限制，以及 fd/fdinfo 释义；其余平台实现的来源核验日期为 2026-08-14。
-last_verified_against: AOSP android-17.0.0_r1 (system/bpf, system/bpfprogs, system/memory/libmeminfo, packages/modules/UprobeStats, frameworks/native/services/gpuservice); Android common kernel android17-6.18-2026-06_r6 (include/trace/events/syscalls.h, kernel/sched/ext.c, Documentation/filesystems/proc.rst); external/perfetto android-17.0.0_r1 (data_source_config.proto, docs/data-sources/native-heap-profiler.md)
+verification_scope_note: 2026-10-23 按固定 tag 复核加载链、descriptor 与错误策略、timeInState 和 GPU 消费端、UprobeStats、四组扩展程序、Perfetto 配置、heapprofd 及内核事件定义；历史迁移仅对照 Android 15/16 tag。sched_ext ABI、bpffs 读取和锁竞争配对边界已与同一内核 tag 核对，未进行设备侧加载、权限或开销实测。
+last_verified_against: AOSP android-17.0.0_r1 (system/bpf, system/bpfprogs, system/memory/libmeminfo, packages/modules/UprobeStats, frameworks/native, external/perfetto); Android common kernel android17-6.18-2026-06_r6 (include/trace/events, kernel/bpf, kernel/locking/mutex.c, kernel/sched/ext.c, drivers/base/power/wakeup.c, Documentation/bpf/ringbuf.rst, Documentation/scheduler/sched-ext.rst, Documentation/filesystems/proc.rst); historical comparison only android-15.0.0_r1 / android-16.0.0_r1 / android-16.0.0_r4
 confidence: high
 sources:
 - type: aosp
   path: external/perfetto/docs/data-sources/native-heap-profiler.md (android-17.0.0_r1)
 - type: kernel
   path: Documentation/filesystems/proc.rst (android17-6.18-2026-06_r6)
+- type: kernel
+  path: kernel/bpf/inode.c (android17-6.18-2026-06_r6)
+- type: kernel
+  path: Documentation/scheduler/sched-ext.rst (android17-6.18-2026-06_r6)
+- type: kernel
+  path: kernel/locking/mutex.c (android17-6.18-2026-06_r6)
+- type: aosp
+  path: packages/modules/UprobeStats/src/Android.bp (android-15.0.0_r1)
+- type: aosp
+  path: packages/modules/UprobeStats/apex/Android.bp (android-16.0.0_r1)
+- type: aosp
+  path: packages/modules/adb/client/commandline.cpp (android-17.0.0_r1)
 - type: aosp
   path: system/bpf/loader/bpfloader.rs
 - type: aosp
@@ -195,7 +207,7 @@ flowchart LR
 
 #### bpfloader 做了什么
 
-先看平台侧的入口：`platform/system/bpf` 以 Rust 入口加载平台 libbpf 对象。libbpf 是 Linux 的 BPF 用户态加载库；Android 这里通过 Rust 绑定 `libbpf_rs` 使用它。`load_libbpf_progs()` 遍历内置文件描述，逐个打开对象、复用或创建 map、加载程序，并按元数据设置 pin 路径、所有者和权限；对象还可以声明内核版本范围、构建类型限制以及是否自动附加。Rust 路径执行完成后，入口会创建 vendor pin 目录并调用 `vendorBpfLoader()`，这个函数来自旧 C++ loader，负责为兼容旧接入方式而保留的 vendor BPF 对象。
+先看平台侧的入口：`platform/system/bpf` 以 Rust 入口加载平台 libbpf 对象。libbpf 是 Linux 的 BPF 用户态加载库；Android 这里通过 Rust 绑定 `libbpf_rs` 使用它。`load_libbpf_progs()` 遍历内置文件描述，逐个打开对象、创建 map、加载程序，并按元数据设置 pin 路径、所有者和权限；对象还可以声明内核版本范围、构建类型限制以及是否自动附加。Rust 路径执行完成后，入口会创建 vendor pin 目录并调用 `vendorBpfLoader()`，这个函数来自旧 C++ loader，负责为兼容旧接入方式而保留的 vendor BPF 对象。
 
 两条路径都属于启动期的特权加载流程，`/sys/fs/bpf` 下的名称由对象前缀和元数据决定，各版本的命名格式未必一致。进程划分、对象清单和权限规则的完整展开放在后文《bpfloader、对象组织与权限》。把一个 `.o` 文件 push 到设备后通常还加载不起来，系统侧还要准备构建规则、SELinux 规则、loader 清单、map 权限和兼容性声明。
 
@@ -366,7 +378,7 @@ Android 的网络 BPF 由 Connectivity 与 netd 体系管理。netd 是系统网
 | dma-buf 或图形缓冲增长 | dma-buf 统计、GPU memory、SurfaceFlinger/BufferQueue |
 | 某个内核函数疑似泄漏 | 受控设备上的 tracepoint；没有稳定事件时再评估 kprobe |
 
-heap dump 是某一时刻堆对象与引用关系的快照，allocation track（时间线轨道）上的 tracking/sampling 记录对象分配；heapprofd 是 Perfetto 的 native heap profiler，要求 Android 10 及以上；量产 `user` 构建仅能分析声明了 `debuggable` 或 `profileable` 的应用。malloc debug 与 LeakSanitizer（LSan）则依赖不同程度的调试或插桩条件。
+heap dump 是某一时刻堆对象与引用关系的快照，allocation tracking/sampling（分配跟踪/采样）记录对象分配；heapprofd 是 Perfetto 的 native heap profiler，要求 Android 10 及以上；量产 `user` 构建仅能分析声明了 `debuggable` 或 `profileable` 的应用。malloc debug 与 LeakSanitizer（LSan）则依赖不同程度的调试或插桩条件。
 
 eBPF 擅长在事件发生时按条件计数，但不会自动理解对象所有权。泄漏结论仍要靠分配与释放配对、进程生命周期和上层资源语义证明。
 
@@ -461,6 +473,8 @@ BPF ring buffer 在空间不足时，reserve（预留写入空间） 会直接�
 
 节点存在只说明内核编译了相应接口；要判断采集时是否有 sched_ext 调度器在活动，还要结合 `state`、当前 ops 名称和系统行为一起看。Android 的 `system/bpf` bpfloader 负责清单中的平台和 vendor BPF 对象；它的存在也说明不了产品加载了 sched_ext scheduler。
 
+sched_ext 的接口也有版本限制。该内核 tag 的官方文档明确说明，`sched_ext_ops` 回调、常量和 `scx_bpf_*` kfunc（供 BPF 调用的内核函数）均无跨内核版本的稳定性保证，可能不经预告改变。迁移调度器时，需要按目标内核重新核对这些接口，不能只确认 `CONFIG_SCHED_CLASS_EXT` 已开启。
+
 ### 版本演进的三条时间线
 
 版本历史能帮我们找到对应版本的源码，但平台、Mainline 和内核是三条时间线，要分开看。
@@ -469,7 +483,7 @@ BPF ring buffer 在空间不足时，reserve（预留写入空间） 会直接�
 |---|---|---|
 | Android 9–11 | 网络统计和策略逐步迁移到 BPF | 具体 hook 和旧的 qtaguid 内核流量记账接口随版本、内核而变 |
 | Android 12–13 | CPU time-in-state、GPU memory 等系统记账场景扩展 | map 是否加载取决于设备内核与产品配置 |
-| Android 15–16 | 正式 tag 中可见 UprobeStats Mainline 模块，平台 BPF 程序继续扩展，Rust loader 路径逐步引入 | 模块版本与整个平台版本不是同一条发布线 |
+| Android 15–16 | Android 15 tag 中可见 UprobeStats 系统二进制；Android 16 tag 中可见独立的 UprobeStats APEX，以及 Rust 平台 loader；平台 BPF 程序继续扩展 | Android 16 的 APEX 由 `RELEASE_UPROBESTATS_MODULE` 构建开关控制；模块版本与平台发布分开核对，不能据源码存在推断产品已启用 |
 | Android 17 / API 37 | 正式 tag 中可见 Rust 平台 loader、legacy vendor loader、lazy Binder UprobeStats，以及 CPU time-in-state、GPU memory/work、memory events 等对象 | 结论锚定 `android-17.0.0_r1`，不拿 main 分支代替 release tag |
 | Android common 6.18 | sched_ext、ring buffer、BTF/CO-RE 等内核能力继续演进 | 内核 tag 不能代替设备 Kconfig 和 vendor kernel 验证 |
 
@@ -602,7 +616,9 @@ netbpfload done
 
 `exec_start bpfloader` 是同步动作，init 会等它结束。加载链末端的 `netbpfload done` 设置 `bpf.progs_loaded=1`，init 随后才启动 netd。
 
-加载器异常退出时，等待条件不会满足；service 的 `reboot_on_failure` 还会让设备以 `bpfloader-failed` 原因重启。这类故障会阻断关键启动序列，处理时要按启动失败对待，而不是普通后台服务崩溃。
+加载进程异常退出时，等待条件不会满足；service 的 `reboot_on_failure` 还会让设备以 `bpfloader-failed` 原因重启。这类故障会阻断关键启动序列。
+
+单个 Rust 对象加载失败却未必终止整个进程。`load_libbpf_progs()` 只在该对象的 `critical=true` 时触发 panic；`critical=false` 时记录错误并继续加载后续对象。因此，`bpf.progs_loaded=1` 表示加载链执行到了完成阶段，不能证明清单里的每个对象都加载成功。核对某项能力时，还要检查对应对象的错误日志、pin 路径和 attach 状态。
 
 #### 三类对象由谁装载
 
@@ -643,7 +659,7 @@ Android 16 的双构建用于迁移 libbpf/CO-RE 路径，CO-RE 利用 BTF 重�
 3. 用 `ObjectBuilder::open_file()` 打开 ELF 对象，再按运行内核版本关闭不适用的 map 或 program；
 4. 调用 `load()` 让内核 verifier 校验并创建对象；
 5. 按 descriptor 逐一 pin map 和 program，设置 Unix mode、owner、group；
-6. descriptor 少写了一个 ELF 中的 map 或 program 时返回错误，避免静默留下无权限定义的对象。
+6. ELF 中的一般 map 或 program 缺少对应 descriptor 时返回错误，避免静默留下无权限定义的对象；名称包含 `.data`、`.kconfig` 或 `.rodata` 的内部 map 属于例外，可以不声明 pin descriptor。
 
 map 的 pin 路径遵循：
 
@@ -817,7 +833,7 @@ adb shell bpftool map show pinned \
   /sys/fs/bpf/cputimeinstate/map_timeInState_uid_time_in_state_map
 ```
 
-`bpftool map dump pinned <path>` 能按内核中的 raw key/value 布局导出内容，但 `timeInState` 的 key、PERCPU value 和 frequency bucket 要结合 `bpf_timeinstate.h` 解码。对 pin 文件执行 `cat` 得不到有意义的 map 内容——bpffs pin 是内核对象句柄，普通数据文件的读法在这里不适用。
+`bpftool map dump pinned <path>` 能按内核中的 raw key/value 布局导出内容，但 `timeInState` 的 key、PERCPU value 和 frequency bucket 要结合 `bpf_timeinstate.h` 解码。pin 文件保留的是内核对象引用，不是普通数据文件。支持 `seq_show` 的 map 也可能通过 `cat` 返回调试文本，但内核明确警告这种输出格式会变化，不能把它当成稳定采集接口。结构化读取应使用 BPF map API 或 `bpftool`，再按对应版本的字段布局解析。
 
 #### 3. 确认消费者已经附着
 
@@ -897,18 +913,20 @@ Rust `bpfloader` 先执行 `load_libbpf_progs()`，再进入 legacy（为兼容�
 在 userdebug、eng 或 root 调试设备上，下面的命令用于检查加载结果；它只读取 bpffs，不会改写 map：
 
 ```bash
-adb shell su root sh -c '
-  for name in cpucycleperuid dmabuf kernelwakelockduration lock_contention; do
-    dir=/sys/fs/bpf/$name
-    if [ -d "$dir" ]; then
-      echo "[$name]"
-      ls -l "$dir"
-    else
-      echo "[$name] not loaded"
-    fi
-  done
-'
+adb shell -T su root sh -s <<'ANDROID_SH'
+for name in cpucycleperuid dmabuf kernelwakelockduration lock_contention; do
+  dir=/sys/fs/bpf/$name
+  if [ -d "$dir" ]; then
+    echo "[$name]"
+    ls -l "$dir"
+  else
+    echo "[$name] not loaded"
+  fi
+done
+ANDROID_SH
 ```
+
+这里用带引号的 here-document（标准输入脚本块）把脚本原样交给设备上的 `sh -s`，`-T` 禁用伪终端，避免多层 `sh -c` 引号在宿主与设备之间丢失。设备需要提供可用的 `su root`；若已用 `adb root` 启动 adbd，可去掉 `su root`。
 
 命令会逐个列出四个 bpffs 目录；不存在时打印 `not loaded`。目录缺失可能来自架构不符、flag 关闭、对象未安装、BTF 或 hook 不兼容，也可能是加载失败。排查时我们还要查看 `bpfloader` 日志，只看 `/system/etc/bpf/` 中有无对象文件是下不了结论的。
 
@@ -1024,11 +1042,11 @@ active 数量从 0 变为 1 时，程序从 `timer_state_ns` 中减去 `bpf_ktim
 `bpftool` 是 Linux 内核配套的 BPF 对象查看与管理工具。在装有它的 root 调试设备上，下面的命令用于确认 map 和两个持久 link 是否存在：
 
 ```bash
-adb shell su root sh -c '
-  ls -l /sys/fs/bpf/kernelwakelockduration
-  bpftool map dump pinned \
-    /sys/fs/bpf/kernelwakelockduration/map_kernelWakelockDuration_program_state
-'
+adb shell -T su root sh -s <<'ANDROID_SH'
+ls -l /sys/fs/bpf/kernelwakelockduration
+bpftool map dump pinned \
+  /sys/fs/bpf/kernelwakelockduration/map_kernelWakelockDuration_program_state
+ANDROID_SH
 ```
 
 `ls` 用于确认一张 map 和两个持久 link，`bpftool` 则展示原始 key/value。共享 ABI 头 `system/bpf/progs/include/bpf_kernelwakelockduration.h` 定义了上述 `uint64_t` 与 `int64_t` 字段及固定路径；用户态解析时必须采用相同字段顺序、大小和符号类型。这个头只提供二进制布局约定，负值到累计时长的换算仍要我们自己在用户态完成。
@@ -1038,11 +1056,11 @@ adb shell su root sh -c '
 Android 17 的程序附加到 `lock/contention_begin` 与 `lock/contention_end`。这两个 tracepoint 位于多类锁进入等待的慢路径，覆盖 mutex（可睡眠互斥锁）、rwsem（读写信号量）、queued spinlock（排队自旋锁） 和 RT mutex（支持优先级继承的实时互斥锁） 等锁类型。它们与 `lock_acquire` / `lock_release` 属于不同事件；后两者依赖 `CONFIG_LOCKDEP`，即内核锁依赖检查器的编译开关。目标设备仍应从 tracefs 核对事件是否存在：
 
 ```bash
-adb shell su root sh -c '
-  test -e /sys/kernel/tracing/events/lock/contention_begin/id &&
-  test -e /sys/kernel/tracing/events/lock/contention_end/id &&
-  echo "lock contention tracepoints available"
-'
+adb shell -T su root sh -s <<'ANDROID_SH'
+test -e /sys/kernel/tracing/events/lock/contention_begin/id &&
+test -e /sys/kernel/tracing/events/lock/contention_end/id &&
+echo "lock contention tracepoints available"
+ANDROID_SH
 ```
 
 命令只在两个事件目录都存在时打印成功提示。只要有一个目录缺失，装进 system image 的 BPF 对象也完成不了对应 attach。`bpfloader` 对这组 program 和 map 还设置了 Linux 6.1 的最低版本。
@@ -1060,12 +1078,14 @@ program 收到发生竞争的锁地址后，`get_lock_id()` 只匹配 `bpf_lock_
 
 `contention_start_map` 用 `{tgid, tid, lock_name}` 保存等待开始时间，容量为 4096 条，用于配对同一线程的 begin/end。TGID 是线程组 ID，通常就是用户看到的进程 ID；TID 是具体线程 ID。`contention_latency_map` 再用 `{tgid, lock_name}` 聚合：
 
-- `sum`：等待时长总和，单位 ns。
-- `count`：竞争次数。
+- `sum`：已记录的配对区间时长之和，单位 ns。
+- `count`：已记录的配对事件数。
 - `max` / `min`：观察到的最大、最小时长。
 - `comm`：该聚合项首次创建时读取的任务名，长度和含义受内核 task comm 字段限制。
 
-`sum` 与 `count` 使用原子累加，多个 CPU 并发更新时不会互相覆盖。源码对 `min` / `max` 采用允许竞态的简化更新，因此平均值 `sum / count` 可用于排序，`min` 和 `max` 在高并发下只能看作近似值。map 也没有 owner、持有时间、调用栈或等待者列表，单靠它重建不出“哪把锁等待哪把锁”的依赖关系。
+已有聚合项的 `sum` 与 `count` 分别使用原子累加，`min` / `max` 则采用允许竞态的简化更新。原子累加不保证样本完整：开始时间 map 或聚合 map 满时会漏记，同一聚合键首次并发插入也可能因 `BPF_NOEXIST` 冲突丢掉一次样本，源码没有为这些失败提供计数。`sum / count` 只能表示已记录样本的平均时长，`min` 和 `max` 在高并发下也只能看作近似值。
+
+配对区间也有语义限制。程序既不读取 `contention_begin` 的 `flags`，也不区分 `contention_end` 的 `ret`，所以无法分开统计自旋、睡眠或获锁失败。该内核的 mutex 慢路径可能在一次等待中多次发出 begin；程序会覆盖同一键的开始时间，最终只保留最后一次 begin 到 end 的区间。这里的数值不能当成每次获锁的完整等待时长。map 也没有 owner、持有时间、调用栈或等待者列表，单靠它重建不出锁依赖关系。
 
 下面的命令用于读取聚合 map。读取后是否清空，应由采集规则预先确定，包括开始时间、结束时间以及是否在每个窗口前后删除条目；没有基线时先别清空累计数据：
 
@@ -1126,6 +1146,12 @@ adb shell su root bpftool map dump pinned \
 
 - [Android 17 Perfetto heapprofd：用途、Android 10 起可用与目标应用限制](https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/docs/data-sources/native-heap-profiler.md#3)
 - [Android common 6.18 proc 文档：进程文件描述符与 fdinfo](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst#2005)
+- [Android common 6.18 bpffs：map 调试读取、格式警告与 iterator link](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/bpf/inode.c#250)
+- [Android common 6.18 sched_ext 文档：ABI 不稳定性](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-ext.rst#357)
+- [Android common 6.18 mutex：重复 contention begin 与带返回值的 end](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/locking/mutex.c#622)
+- [Android 15 UprobeStats 系统二进制构建](https://android.googlesource.com/platform/packages/modules/UprobeStats/+/refs/tags/android-15.0.0_r1/src/Android.bp#45)
+- [Android 16 UprobeStats APEX 及构建开关](https://android.googlesource.com/platform/packages/modules/UprobeStats/+/refs/tags/android-16.0.0_r1/apex/Android.bp#37)
+- [Android 17 adb shell：参数拼接、标准输入与伪终端选项](https://android.googlesource.com/platform/packages/modules/adb/+/refs/tags/android-17.0.0_r1/client/commandline.cpp#698)
 - [Android 17 platform manifest](https://android.googlesource.com/platform/manifest/+/refs/tags/android-17.0.0_r1/default.xml)
 - [Android 17 init.rc](https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/rootdir/init.rc)
 - [Android 17 netbpfload.rc](https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/bpf/loader/netbpfload.rc)

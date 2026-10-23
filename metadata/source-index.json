@@ -6030,6 +6030,40 @@
         "observed_at": "2026-10-23T15:18:37+08:00",
         "storage_note": "路由 finding 保存在本条允许修改的 source-index 记录内；metadata/review-findings.json 不在本次允许路径中，未写入该文件。"
       }
+    },
+    {
+      "path": "https://github.com/oosexgang/hackios-xnu-kernel",
+      "title": "[ClawFeed] Run full iOS 16.5 firmware on Android Devices",
+      "summary": "OOSEX GANG 10 月 22 日开源 hackios-xnu-kernel，把苹果 XNU 内核 xnu-8796.121.2（即 iOS 16.5 内核）跑在安卓硬件上，并运行未经修改的 iOS 16.5 用户态（launchd → backboardd → SpringBoard → apps）。实现方式是自写 EFI loader、UEFI port、给苹果闭源驱动写的替身，以及一层 Linux Wi-Fi 驱动兼容层。POCO X5 Pro 5G（骁龙 778G）上用 fastboot boot 启动，系统全部驻留内存，重启即回到安卓；QEMU aarch64 亦可跑。可用部分：锁屏与两页桌面、系统手势、设置/相册/Safari 等应用、8 核 2.4 GHz 大核、约 20 秒进锁屏、Adreno 642L 经 Mesa/freedreno 为 CoreAnimation 提供 OpenGL ES、ath11k 驱动的 Wi-Fi 55–90 Mbit/s、相机拍照与 HEIC、Sileo/Procursus（dpkg/apt）与 SSH。不可用：蜂窝、蓝牙、内核下充电、App Store 与 Apple ID 登录（无 Secure Enclave）、Metal for apps（456 个系统 shader 已完成 293 个）。定位是研究台，一次会话跑完就把控制权交回 loader 并交出日志。",
+      "chapter": "ch04",
+      "processed_at": "2026-10-24T06:20:20.249746+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 15,
+      "target_path": "src/part1-fundamentals/ch04-memory/05-16kb-page-size.md",
+      "route_confidence": 14,
+      "route_terms": [
+        "devices",
+        "apps",
+        "port"
+      ],
+      "route_status": "existing-chapter-routed"
+    },
+    {
+      "path": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章/source/juejin-android/2026-10-24-76655745-LiveData的缺陷为什么我现在越来越少使.md",
+      "title": "[技术文章] LiveData 的缺陷：为什么我现在越来越少使用 LiveData？ > 我第一次接触 LiveData 的时候，觉得",
+      "summary": "> 发布时间: 2026-07-23T23:59:55.000Z > 原文链接: https://juejin.cn/post/7665574563510140979 2026-07-24 2,059 阅读5分钟 > 我第一次接触 LiveData 的时候，觉得它非常惊艳。 > 在那个时代，Android 开发充满了 Callback、生命周期问题、内存泄漏风险。 > L...",
+      "chapter": "ch04",
+      "processed_at": "2026-10-24T06:20:20.249746+08:00",
+      "action": "indexed-only-chapter-freeze",
+      "score": 19,
+      "target_path": "src/part1-fundamentals/ch04-memory/07-memory-compaction-direct-reclaim.md",
+      "route_confidence": 14,
+      "route_terms": [
+        "callback",
+        "juejin-android",
+        "ch04-memory"
+      ],
+      "route_status": "existing-chapter-routed"
     }
   ],
   "mapping_note": "chapter/chapters retain the route label recorded at ingestion; canonical_target_chapter is authoritative when target_path exists",

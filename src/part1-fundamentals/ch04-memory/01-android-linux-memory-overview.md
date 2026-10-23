@@ -560,6 +560,11 @@ adb shell am memory-limiter manual 12345 none
 
 `ignore` 在 r1 接受 UID、`none` 或 `all`；单 UID 设置会覆盖先前值，`ignore none` 清除忽略设置。它让 Java 消息处理跳过该 UID 后续的启动与限制配置请求，`manual` 请求也会被跳过；已写入的 cgroup 限制、已有 JNI 监控和已排队的终止消息都不会因此撤销。排查时应核对 PID 的实际节点，不能把 `ignore` 当作现有进程的立即豁免或复位。 [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` 的 `MESSAGE_START`、`MESSAGE_CONFIG`、`MESSAGE_IGNORE`、`MESSAGE_KILL`、`ControllerEnabled.setManualLimit()` 与 `shouldIgnore()`]
 
+<!-- gracker-diagram: ch04-01-ignore-future-not-reset -->
+![ignore 影响后续配置，不复位现有限制](../../assets/diagrams/ch04/ch04-01-ignore-future-not-reset.png)
+
+图：ignore消息覆盖被忽略UID设置，影响后续START/CONFIG（含manual）检查；既有cgroup限制和JNI监控不会自动撤销，已排队KILL只按其开关判断。
+
 `manual` 接受 PID 和一个整数或 `none`，Java 层把整数按 MiB 转换，帮助文本仍写成 `PERCENT|none`。但 `manual ... none` 在这份实现中先变为 `-1`，再被乘成 `-1048576`，JNI 对这种值跳过节点写入，因此想撤销已写入的手动限制，靠它靠不住；测试后应重启目标进程，并重新读取该进程的 cgroup 节点确认。 [已验证: AOSP android-17.0.0_r1 `ActivityManagerShellCommand.runMemoryLimiter()`、`MemoryLimiter.setManualLimit()`、JNI `Process::setLimit()`]
 
 公开二手材料可能把命令写成 `<limit>|max|none`，当前官方文档也给出字节数及 `MB`/`GB` 后缀写法；r1 的 shell 解析不接受 `max` 或这些后缀。使用前核对目标构建源码和运行结果，`am help` 里 r1 的单位与复位说明，单独当不了依据。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android Memory Limiter 官方文档；AOSP android-17.0.0_r1 `ActivityManagerShellCommand.java` 与 `MemoryLimiter.java`]

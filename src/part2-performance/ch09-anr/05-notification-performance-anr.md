@@ -110,7 +110,7 @@ last_idle_audit_at: '2026-08-29T18:35:04+08:00'
 3. NMS 校验调用 UID、包名、用户、受限类别、通知渠道和前台服务策略。
 4. NMS 修正通知、创建 `StatusBarNotification` / `NotificationRecord`，再检查通知数量和更新速率。
 5. NMS 为 PendingIntent 设置临时 allowlist（允许后台启动等受限操作的名单）等状态，然后把 `EnqueueNotificationRunnable` post（投递）到 handler。
-6. 发布调用到这一步就返回了，handler 后续的入队、正式发布、listener 回调与 SystemUI 呈现都不在等待范围内；这些工作与 Binder 返回可以交叠，我们画链路图时按交叠关系画，别画成严格串行。
+6. 允许的发布路径在投递后进入返回流程，不再等待 handler 后续的入队、正式发布、listener 回调与 SystemUI 呈现；这些工作与 Binder 返回可以交叠，我们画链路图时按交叠关系画，别画成严格串行。
 
 下面的源码片段标出同步 Binder 入口和异步分界：
 
@@ -170,7 +170,7 @@ backgroundExecutor.execute(() -> {
 });
 ```
 
-前台转换、通知校验和屏幕呈现是三个不同阶段。AMS 在转换路径上清除 `fgRequired/fgWaiting` 并取消前台转换 timer；`ServiceRecord.postNotification()` 则向 AMS handler 投递通知处理，之后仍可能因渠道或图标等错误走 `CannotPostForegroundServiceNotificationException` 崩溃路径。所以 `startForeground()` 正常返回只说明转换完成；通知有没有通过全部校验、有没有上屏，要另行确认。增强通知也要检查任务代次和 Service 生命周期，避免停止后补发过期内容。
+前台转换、通知校验和屏幕呈现是三个不同阶段。AMS 在转换路径上清除 `fgRequired/fgWaiting` 并取消前台转换 timer；`ServiceRecord.postNotification()` 则向 AMS handler 投递通知处理，之后仍可能因渠道或图标等错误走 `CannotPostForegroundServiceNotificationException` 崩溃路径。所以不能只凭 `startForeground()` 正常返回断言前台状态已经接受、全部校验通过或通知已上屏；转换状态、等待标志和后续通知结果要分别确认。增强通知也要检查任务代次和 Service 生命周期，避免停止后补发过期内容。
 
 <!-- gracker-diagram: ch09-05-06-fgs-async-outcome -->
 ![转换等待取消与通知结果分开看](../../assets/diagrams/ch09/ch09-05-06-fgs-async-outcome.png)
@@ -308,7 +308,7 @@ SystemUI 会先检查复用条件，通过后才调用 `reapply()` / `reapplyAsy
 
 图：固定canReapplyRemoteView还有双方皆null的判等分支；可尝试复用只到预检查为止，成功与否与action成本另算。
 
-`reapply()` 跳过的是根布局 inflate，新对象中的 action 仍要逐个执行。频繁更新进度时，把模板和布局标识保持不变，复用概率就高；`setText`、`setImageViewBitmap` 等 action 的成本照样发生。我们在目标 build（系统构建版本）的 SystemUI trace 里，对 inflate、async apply、reapply 和主线程提交分别测量。
+`reapply()` 跳过的是根布局 inflate，新对象中的 action 仍要逐个执行。频繁更新进度时，把模板和布局标识保持不变，有助于满足复用预检查；是否实际复用仍取决于其余条件和执行结果。`setText`、`setImageViewBitmap` 等 action 的成本照样发生。我们在目标 build（系统构建版本）的 SystemUI trace 里，对 inflate、async apply、reapply 和主线程提交分别测量。
 
 ### 图片通知的开销落在三段
 
@@ -380,7 +380,7 @@ public class MyNotificationListener extends NotificationListenerService {
 
 ### 回调中的快照与转交
 
-NLS 回调的参数来自系统状态，转给后台任务前应复制所需字段，定义好队列容量、覆盖和去重策略。下面的示例用一个 worker 按接受顺序处理允许丢弃的分析样本，并设置有界等待队列；容量 64 是教学参数，Android 侧没有这个阈值。示例需要导入 `java.util.concurrent` 中的对应类型和 `android.util.Log`，业务 DTO 与分析方法由应用自己提供：
+NLS 回调的参数来自系统状态，转给后台任务前应复制所需字段，定义好队列容量、覆盖和去重策略。下面的示例用一个 worker 按接受顺序处理允许丢弃的分析样本，并设置有界等待队列；这里的容量 64 由示例选择，不是本章核对的 Android 通知机制给出的系统阈值。示例需要导入 `java.util.concurrent` 中的对应类型和 `android.util.Log`，业务 DTO 与分析方法由应用自己提供：
 
 ```java
 public class MyNotificationListener extends NotificationListenerService {
@@ -449,7 +449,7 @@ public class MyNotificationListener extends NotificationListenerService {
 
 图：它只覆盖listener可见通知；可见条目和listener数量增加分发工作机会，耗时要用实测，固定条数推不出来。
 
-- map 只覆盖该 listener 可见的通知，系统其余通知与它无关；
+- map 只包含该 listener 可见的通知，其他记录不进入这份 map；不能据此把它当作系统全部通知；
 - 不同 listener 的条目数和内容可能不同；
 - 构造和 Parcel 成本随可见通知数量与 listener 数量增长；
 - 应用缓存旧 map，会拖住整批 ranking 对象的释放。
@@ -756,7 +756,7 @@ adb logcat -b system -d | grep -E \
   'Package enqueue rate|Shedding .* package='
 ```
 
-`dumpsys` 适合确认当前活跃记录、listener、channel 与策略状态；某次超速更新有没有被丢弃，以 NMS 日志和 trace 时间线为准。快照若采在故障之后，已经移除的通知和短暂积压可能已经看不到了；Shedding 日志还受输出节流与日志保留限制，搜索结果为空时，丢弃与否仍要靠 trace 时间线判断。
+`dumpsys` 适合确认当前活跃记录、listener、channel 与策略状态；某次超速更新有没有被丢弃，以 NMS 日志和 trace 时间线为准。快照若采在故障之后，已经移除的通知和短暂积压可能已经看不到了；Shedding 日志还受输出节流与日志保留限制；搜索结果为空时，继续结合 trace、状态和可用统计核对。若所采数据没有覆盖拒绝分支，结论应保留缺口，不能保证仅凭 trace 就能判明每次丢弃。
 
 <!-- gracker-diagram: ch09-05-42-dumpsys-limits -->
 ![状态快照与日志的证据边界](../../assets/diagrams/ch09/ch09-05-42-dumpsys-limits.png)
@@ -783,7 +783,7 @@ adb logcat -b system -d | grep -E \
 
 ### 「更新被限流时会抛异常」
 
-超速 update 在 NMS 内部返回 `false` 并写系统日志，外部 `enqueueNotificationWithTag()` 的返回值里看不到这次拒绝，应用通常只会看到某次进度没有展示。要可靠发布最终状态，靠的是降低更新频率、并在状态转换时明确发出终态通知；异常重试这条路在这里并不存在。
+超速 update 在 NMS 内部返回 `false` 并写系统日志，外部 `enqueueNotificationWithTag()` 的返回值里看不到这次拒绝，应用通常只会看到某次进度没有展示。要可靠发布最终状态，靠的是降低更新频率、并在状态转换时明确发出终态通知；不能把捕获异常重试当作识别这次速率拒绝的机制；其他权限、参数或策略错误仍可能有自己的异常路径。
 
 ### 「自定义通知布局比标准模板性能更好」
 

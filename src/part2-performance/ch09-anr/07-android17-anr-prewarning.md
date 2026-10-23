@@ -389,7 +389,7 @@ AMS 的 callback 表按 UID 分组。一个包的主进程和 `:remote` 进程�
     └── deadline 到期：进入对应 timeout/ANR 处理
 ```
 
-图中的 app executor 任务可能晚于 Binder 回调执行。`getConsumedMillis()` 表示系统生成 warning 时的计时进度，`callbackUptimeMs` 才是应用代码开始处理的本地时间；两者各自有用途，混写会互相污染。
+图中的 app executor 任务可能晚于 Binder 回调执行。`getConsumedMillis()` 来自 producer 计时回报的采样值，可能早于 Java 构造载荷的时刻；`callbackUptimeMs` 是应用代码开始处理的本地时间。consumed 是时长，callbackUptime 是绝对 uptime，二者不能直接相减得到投递延迟或 warning 的绝对生成时间。
 
 #### 6.1 Service timer
 
@@ -655,10 +655,10 @@ API 37 把 ANR 类型、预警载荷和 listener 注册放进了公开 API：它
 
 InputDispatcher 处理的两类超时都表现为“输入没有按期完成”，但计时对象不同。
 
-| 路径 | 开始条件 | 计时状态 | 到期对象 | Android 17 pre-ANR |
-|---|---|---|---|---|
-| no focused window | 有 focused application（当前应获得焦点的应用），没有 focused window，并出现需要焦点目标的事件 | `mNoFocusedWindowAnrState` | `InputApplicationHandle` | 有，flag 开启时生效 |
-| window unresponsive | 事件已发给窗口或 input monitor（输入事件观察者），连接 wait queue（已派发、待完成的事件队列）长时间没有完成 | `mAnrTracker` + `Connection.waitQueue` | window/input monitor connection | 当前实现没有 |
+| 路径 | 计时对象与条件 | r1 pre-ANR |
+|---|---|---|
+| no focused window | 有 focused application、无 focused window，并出现需要焦点目标的事件；状态为 `mNoFocusedWindowAnrState`，到期对象是 InputApplicationHandle | 有，需开启 producer flag |
+| window unresponsive | 窗口或 input monitor 的 connection 已派发事件，wait queue 长时间未完成；`mAnrTracker` 记录 deadline，连接保存 `Connection.waitQueue` | 当前这条 helper 没有覆盖 |
 
 <!-- gracker-diagram: ch09-07-29-two-input-detectors -->
 ![两种输入等待的计时对象](../../assets/diagrams/ch09/ch09-07-29-two-input-detectors.png)
@@ -1096,6 +1096,8 @@ Perfetto 不会自动生成固定的 `/data/anr` 产物。需要预先配置持�
 
 输入 timeout、WMS 归因和 ANR 主路径在更早版本已经存在；Android 17 的 pre-warning 行为，倒推回 Android 14—16 是套不上的。
 
+> ⚠️ 矛盾：r1 个别源码注释把 callback 复用写成进程级、把保存的 eventTime 写成等待起点，并用“持有焦点时长”概括候选判断。实际执行分别是 ActivityManager 实例字段、输入事件时间赋值，以及 `uptime - mInputFocusRequestTimeMillis`。`AnrInfo.isUserPerceptible()` 的注释提到对话框，但此处构造值来自 `!isSilentAnr`，不能倒推 UI 必已展示。本文按具体字段和赋值解释，保留这些注释与实现的差异。
+
 ## 结论
 
 Android 17 为 no-focused-window 输入 ANR 增加了一次 deadline 前的观测机会：
@@ -1159,3 +1161,6 @@ window-unresponsive pre-warning 仍在这套机制之外，callback 领先 deadl
 - [AOSP 14 r1 InputDispatcher 对照](https://android.googlesource.com/platform/frameworks/native/+/android-14.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
 - [AOSP 15 r1 InputDispatcher 对照](https://android.googlesource.com/platform/frameworks/native/+/android-15.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
 - [AOSP 16 r1 InputDispatcher 对照](https://android.googlesource.com/platform/frameworks/native/+/android-16.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp)
+
+- [JDK 11 ThreadPoolExecutor：示例队列与关闭语义](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/ThreadPoolExecutor.html)
+- [JDK 11 ExecutorService：示例队列与关闭语义](https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/concurrent/ExecutorService.html)

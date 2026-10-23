@@ -48,7 +48,7 @@ Android 动态性能框架（Android Dynamic Performance Framework，ADPF）是�
 
 ## 为什么需要 ADPF
 
-移动设备的峰值性能同时受 SoC、供电和散热限制，应用负载却一直在变：游戏可能在多人对战、粒子效果集中出现或资源流式加载时突然变重，地图、相机和视频编辑也有类似的周期性负载。内核已有利用率估计、UClamp 等需求信号，不能把它概括成只会被动回看历史；但这些信号仍不了解应用下一周期的完整工作量与业务期限，ADPF 可以补上应用侧信息。
+移动设备的峰值性能同时受 SoC、供电和散热限制，而应用负载一直在变：游戏可能在多人对战、粒子效果集中出现或资源流式加载时突然变重，地图、相机和视频编辑也有类似的周期性负载。内核侧已经有利用率估计、UClamp 这些需求信号，它们做的事也比被动回看历史要多；只是应用下一周期的完整工作量与业务期限，只有应用自己清楚，ADPF 补上的正是这块应用侧信息。
 
 高刷新率会放大这段响应延迟。120 Hz（每秒 120 次） 的显示周期约为 8.33 ms，而这一段要分给输入处理、应用逻辑、RenderThread（渲染线程）、GPU、SurfaceFlinger（系统合成服务） 和最终的显示提交，一次渲染独占不了整个周期。某个线程组突然多出几毫秒工作，当前帧可能就已经错过显示时限。
 
@@ -59,14 +59,14 @@ ADPF 在应用与系统之间增加了两类信号：
 
 应用持续报告结果，系统调整后续周期，新的结果再继续修正策略，这就是 ADPF 的反馈回路。Game Mode 和 Game State 在这之上补充用户偏好与当前游戏阶段。
 
-这些信号表达的是应用侧需求：系统并不承诺给出某个运行频率、某颗 CPU 核，也不承诺在固定时间内提频——Android 17 的电源 AIDL 契约就明确允许平台按自身策略实现，框架通过 Power HAL 这个硬件抽象层访问到的，是设备自己的电源策略实现。
+这些信号表达的是应用侧需求，系统这边的承诺很有限：具体的运行频率、哪颗 CPU 核、多快提频，都留给平台自己决定——Android 17 的电源 AIDL 契约就明确允许平台按自身策略实现，框架通过 Power HAL 这个硬件抽象层访问到的，是设备自己的电源策略实现。
 
 所以接入时我们要留好退路：设备可能不支持 ADPF、只支持其中部分能力，热约束也可能优先于性能请求。
 
 <!-- gracker-diagram: ch05-04-application-system-two-feedback-loops -->
 ![ADPF 连接资源策略与应用减载两个反馈回路](../../assets/diagrams/ch05/ch05-04-application-system-two-feedback-loops.png)
 
-图：应用向 HintSession 提交线程集合、目标和实际工作时长，系统尝试为后续周期调整资源；应用同时读取容量与热约束，决定减少哪些工作。前者反馈实际结果，后者改变工作需求，两者需要共同验证。公开契约不保证频点、CPU 核或响应时间，也不能恢复已经错过的帧。
+图：应用向 HintSession 提交线程集合、目标和实际工作时长，系统尝试为后续周期调整资源；应用同时读取容量与热约束，决定减少哪些工作。前者反馈实际结果，后者改变工作需求，两者需要共同验证。公开契约里没有频点、CPU 核或响应时间的保证，已经错过的帧也补不回来。
 
 ## Performance Hint API：周期性工作的反馈回路
 
@@ -74,7 +74,7 @@ ADPF 在应用与系统之间增加了两类信号：
 
 ### HintSession、target duration 与 actual duration
 
-Java 入口是 `PerformanceHintManager.Session`：一个 session（会话）绑定一组线程，替它们保存周期性的性能目标。创建 session 时要传入这组线程的 Linux 线程 ID（TID）和初始目标工作时长（target work duration）；返回 `null` 可能表示设备不支持 HintSession、TID 校验失败或创建链路失败；还要结合参数和系统日志定位。空数组和非正 target 会在 Java 层抛出 `IllegalArgumentException`。放进 session 的线程应当关系紧密、生命周期较长、周期性执行。
+Java 入口是 `PerformanceHintManager.Session`：一个 session（会话）绑定一组线程，替它们保存周期性的性能目标。我们先看创建：传入这组线程的 Linux 线程 ID（TID）和初始目标工作时长（target work duration），返回 `null` 可能表示设备不支持 HintSession、TID 校验失败或创建链路失败，要结合参数和系统日志定位；参数错误则更直接，空数组和非正 target 会在 Java 层抛出 `IllegalArgumentException`。放进 session 的线程，应当关系紧密、生命周期较长、周期性执行。
 
 target work duration 表示这组线程希望在每个周期内完成工作的时长，通常小于完整显示周期。我们拿 60 Hz 渲染算一下：显示周期约 16.67 ms，如果 session 里的线程只负责其中 6 ms 的 CPU 工作，target 就应接近 6 ms；直接填 16.67 ms，系统会高估这组线程的时间余量。Android 17 的 `IPower.createHintSession*()` 注释用的也是“60 Hz 渲染、目标工作时长 6 ms”这个例子。
 
@@ -116,7 +116,7 @@ try {
 <!-- gracker-diagram: ch05-04-session-scope-fallback-and-close -->
 ![会话作用于场景，失败回退仍执行工作，结束后显式关闭](../../assets/diagrams/ch05/ch05-04-session-scope-fallback-and-close.png)
 
-图：在场景开始时用实际执行线程的 Linux TID 和正 target 创建 session，成功后在多个周期中复用。无服务、无能力或创建失败时仍执行业务，只省略提示上报；参数错误要记录并修正。结束时显式 close，更新、上报与关闭由同一受控序列处理，不能一帧建一个会话或关闭后继续使用。
+图：在场景开始时用实际执行线程的 Linux TID 和正 target 创建 session，成功后在多个周期中复用。无服务、无能力或创建失败时仍执行业务，只省略提示上报；参数错误要记录并修正。结束时显式 close，更新、上报与关闭由同一受控序列处理，会话按场景复用，逐帧新建或关闭后继续使用都属于误用。
 
 事后上报救不回已经超时的工作。负载突增如果可以预测，应用要提前调整自身策略；用 NDK 的应用还可以发送 Android 16 新增的工作负载提示（workload hint）。
 
@@ -132,12 +132,12 @@ HintSession 绑定的是 Linux TID（Thread ID，线程 ID），协程 ID、Java
 - Android 14（API 34）以后用 `Session#setThreads(int[])` 替换线程集合。
 - API 31—33 上线程集合已经失真时，关闭旧 session，再用当前 TID 创建新 session。
 
-`setThreads()` 同步执行 `IHintManager.setHintSessionThreads()`，校验 TID 并替换线程集合；API 文档列出了空数组、TID 归属和前后台状态等异常边界。r1 服务端在 UID 不允许更新时会暂存新 TID，等恢复后再提交，因此调用返回也不证明 HAL 已立即更新。只在线程组成或场景变化时更新，不要每次协程调度都调用。Session 的更新、上报和 `close()` 还必须由应用串行化；Java 与 NDK 文档都没有承诺会话方法线程安全。
+`setThreads()` 同步执行 `IHintManager.setHintSessionThreads()`，校验 TID 并替换线程集合；API 文档列出了空数组、TID 归属和前后台状态这些异常情况。r1 服务端在 UID 不允许更新时会暂存新 TID，等恢复后再提交，因此调用返回也不证明 HAL 已立即更新。只在线程组成或场景变化时更新，不要每次协程调度都调用。Session 的更新、上报和 `close()` 还必须由应用串行化；Java 与 NDK 文档都没有承诺会话方法线程安全。
 
 <!-- gracker-diagram: ch05-04-linux-tid-coroutines-and-thread-update -->
 ![会话跟踪 Linux 线程，不跟踪协程或业务任务](../../assets/diagrams/ch05/ch05-04-linux-tid-coroutines-and-thread-update.png)
 
-图：协程可能迁移，session 内的 Linux TID 集合不会自动变化。尽量使用可控制的长生命周期线程，线程组成变化时 API 34+ 用 setThreads，旧版则关闭并重建。r1 服务端可能在后台暂存新集合，恢复后才提交；调用返回不等于已即时改变 HAL。所有会话操作由应用保证线程安全。
+图：协程可能迁移，session 内的 Linux TID 集合不会自动变化。尽量使用可控制的长生命周期线程，线程组成变化时 API 34+ 用 setThreads，旧版则关闭并重建。r1 服务端可能在后台暂存新集合，恢复后才提交，调用返回只说明请求已受理。所有会话操作由应用保证线程安全。
 
 ### 从 Java API 到 Power HAL 的调用链
 
@@ -169,7 +169,7 @@ PerformanceHintManager.Session
 无论上报路径走 FMQ 还是 `oneway` Binder，应用侧代码都要经过 JNI、锁、参数校验和客户端批处理。合适的调用频率是“每帧或每个任务周期一次”，为每个很小的子任务单独创建 session 或反复上报并不划算。
 
 <!-- gracker-diagram: ch05-04-per-cycle-report-client-batching-and-transport -->
-![每周期上报一次，不代表每周期都有一次 HAL Binder 事务](../../assets/diagrams/ch05/ch05-04-per-cycle-report-client-batching-and-transport.png)
+![每周期上报一次，未必对应一次 HAL Binder 事务](../../assets/diagrams/ch05/ch05-04-per-cycle-report-client-batching-and-transport.png)
 
 图：应用每个周期测量并调用 report，native 客户端可按目标是否达到及 preferred rate 缓存样本，再批量发送。符合条件时使用 FMQ，否则退回 IHintSession 的异步 Binder 路径。通道减少跨层成本，但参数校验、锁和批处理仍在；oneway 也不保证无阻塞、无开销或立即执行。
 
@@ -189,7 +189,7 @@ duration.setActualGpuDurationNanos(gpuWallTimeNanos);
 session.reportActualWorkDuration(duration);
 ```
 
-这段代码要求调用方先测得同一工作周期的开始时间和各项时长。GPU 工作边界测不准的应用，继续使用 `reportActualWorkDuration(long)`，比填写猜测值更可靠。
+这段代码要求调用方先测得同一工作周期的开始时间和各项时长。GPU 工作段的起止点测不准的应用，继续使用 `reportActualWorkDuration(long)`，比填写猜测值更可靠。
 
 <!-- gracker-diagram: ch05-04-workduration-cpu-gpu-overlap-and-clock -->
 ![WorkDuration 拆分 wall time，CPU 与 GPU 可重叠](../../assets/diagrams/ch05/ch05-04-workduration-cpu-gpu-overlap-and-clock.png)
@@ -234,7 +234,7 @@ Java `sendHint()` 及 `CPU_LOAD_*`、`GPU_LOAD_*` 常量属于测试 API（`@Tes
 
 ### Thermal Status 的语义
 
-Headroom 读的是余量，Thermal API 给的是系统当前的热状态。应用侧 Java 入口位于 `PowerManager`：`getCurrentThermalStatus()` 直接返回当前等级，`addThermalStatusListener()` 在等级变化时回调。等级描述平台报告的热严重程度；r1 的普通应用整体 status 主要取 SKIN 传感器的最严重状态，不能当作所有 CPU/GPU 域限制的完整汇总。`NONE` 也不排除某个芯片域已经受限。源码里这些等级的定义如下：
+Headroom 读的是余量，Thermal API 给的是系统当前的热状态。应用侧 Java 入口位于 `PowerManager`：`getCurrentThermalStatus()` 直接返回当前等级，`addThermalStatusListener()` 在等级变化时回调。等级描述平台报告的热严重程度；r1 的普通应用整体 status 主要取 SKIN 传感器的最严重状态，各 CPU/GPU 域的限制情况，未必都完整反映在这一个等级里；`NONE` 之下某个芯片域也可能已经受限。源码里这些等级的定义如下：
 
 | 状态 | 平台语义 | 应用侧常见处理 |
 |---|---|---|
@@ -278,7 +278,7 @@ thermalWorker.scheduleWithFixedDelay(() -> {
 <!-- gracker-diagram: ch05-04-thermal-status-valid-forecast-and-hysteresis -->
 ![预测无效时仍看当前状态，恢复时使用更低门槛](../../assets/diagrams/ch05/ch05-04-thermal-status-valid-forecast-and-hysteresis.png)
 
-图：采样时始终处理当前 thermal status。预测为 NaN 时保留未知状态，不能跳过 SEVERE 等等级，也不能把 NaN 填成零。有效预测可辅助提前减载；恢复应使用更低阈值、冷却确认和逐档策略。10 秒轮询只是指南起点，listener 也不保证为每次预测变化回调，策略动作需交给所属工作线程执行。
+图：采样时始终处理当前 thermal status。预测为 NaN 时保留未知状态，SEVERE 等当前等级照常处理，NaN 也保持未知而非填成零。有效预测可辅助提前减载；恢复应使用更低阈值、冷却确认和逐档策略。10 秒轮询只是指南起点，策略动作需交给所属工作线程执行。
 
 API 35 的 `getThermalHeadroomThresholds()` 返回设备定义的状态阈值。Android 16 起，这张阈值表可能在运行期间变化；Java `addThermalHeadroomListener()` 与 NDK `AThermal_registerThermalHeadroomListener()` 可以接收 headroom 或阈值的显著变化。不过监听器（listener）不会仅因预测值变化就持续回调，主动预测还是要靠低频轮询。
 
@@ -295,7 +295,7 @@ CPU 频率没有上升，未必是 HintSession 失效：当前资源可能已经
 <!-- gracker-diagram: ch05-04-three-signals-capacity-thermal-and-work-demand -->
 ![性能需求、计算容量与热严重程度，数值方向各不同](../../assets/diagrams/ch05/ch05-04-three-signals-capacity-thermal-and-work-demand.png)
 
-图：Performance Hint 表达完成期限，CPU/GPU Headroom 表达所选计算窗口与参数下的容量余量，Thermal Headroom 表达接近严重热限制的程度。CPU/GPU 值低意味着容量更紧，thermal 值高意味着更接近限制。热状态正常不等于 GPU 空闲，计算尚有余量也不等于机身适合继续升温，应结合实际周期表现判断。
+图：Performance Hint 表达完成期限，CPU/GPU Headroom 表达所选计算窗口与参数下的容量余量，Thermal Headroom 表达接近严重热限制的程度。CPU/GPU 值低意味着容量更紧，thermal 值高意味着更接近限制。热状态正常时 GPU 仍可能满载，计算尚有余量时机身也可能已接近继续升温的上限，应结合实际周期表现判断。
 
 ## Game Mode 与 Game State
 
@@ -337,12 +337,12 @@ protected void onResume() {
 }
 ```
 
-这段代码处理了设备不提供 `GameManager` 的情况，API 31 以下仍应直接使用默认配置。游戏声明支持 Performance / Battery Game Mode 时，要自行实现相应调整，平台会优先采用游戏优化。把 `supportsPerformanceGameMode` / `supportsBatteryGameMode` 设为 false，是不自行实现该模式，可让平台评估 OEM 干预；这与显式禁用某项 intervention 的配置不同，不能混成一个“退出”开关。FPS throttling、backbuffer resize 等动作仍应按设备和配置分别验证。
+这段代码处理了设备不提供 `GameManager` 的情况，API 31 以下仍应直接使用默认配置。游戏声明支持 Performance / Battery Game Mode 时，要自行实现相应调整，平台会优先采用游戏优化。把 `supportsPerformanceGameMode` / `supportsBatteryGameMode` 设为 false，含义是本游戏不自行实现该模式，平台可以评估 OEM 干预；它和显式禁用某项 intervention 的配置是两回事，别当成同一个“退出”开关。FPS throttling、backbuffer resize 等动作仍应按设备和配置分别验证。
 
 <!-- gracker-diagram: ch05-04-game-owned-profiles-and-oem-intervention-flags -->
 ![游戏自行优化与允许 OEM 干预，是不同配置分支](../../assets/diagrams/ch05/ch05-04-game-owned-profiles-and-oem-intervention-flags.png)
 
-图：声明支持某 Game Mode 时，游戏应实现该模式优化，平台优先采用游戏策略。supportsPerformanceGameMode 或 supportsBatteryGameMode 为 false，表示未自行实现，可让平台评估 OEM 干预；它与 allowGameDownscaling、allowGameFpsOverride 等具体允许项不同。最终效果要在目标设备核对，不能把所有开关统称为“退出模式”。
+图：声明支持某 Game Mode 时，游戏应实现该模式优化，平台优先采用游戏策略。supportsPerformanceGameMode 或 supportsBatteryGameMode 为 false，表示未自行实现，可让平台评估 OEM 干预；它与 allowGameDownscaling、allowGameFpsOverride 等具体允许项不同。最终效果要在目标设备核对，各开关含义不同，统称“退出模式”会掩盖差异。
 
 ### Game State 表达当前阶段
 
@@ -411,7 +411,7 @@ ADPF 没有向所有设备承诺提供固定名为 `power.hint_session` 或 `pow
 <!-- gracker-diagram: ch05-04-perfetto-evidence-and-controlled-ab -->
 ![用同窗证据找瓶颈，再做同机 A/B 验证收益](../../assets/diagrams/ch05/ch05-04-perfetto-evidence-and-controlled-ab.png)
 
-图：先对齐 target、actual 与帧 deadline，再区分线程 Running、Runnable 等待和依赖阻塞，核对频率、容量与热状态。提示上报、策略兑现和业务结果不是一个时间点；低频也可能代表需求已经满足。用同机交错 A/B 比较相同体验目标下的掉帧、完成时间、能量和持续稳定性，不能只看峰值 GHz。
+图：先对齐 target、actual 与帧 deadline，再区分线程 Running、Runnable 等待和依赖阻塞，核对频率、容量与热状态。提示上报、策略兑现和业务结果不是一个时间点；低频也可能代表需求已经满足。用同机交错 A/B 比较相同体验目标下的掉帧、完成时间、能量和持续稳定性，单看峰值 GHz 容易得出错误结论。
 
 ## 版本演进与 Android 17 的公开能力
 
@@ -431,7 +431,7 @@ API 37 的 `core/api/current.txt` 以及 NDK `performance_hint.h` 都没有 `set
 <!-- gracker-diagram: ch05-04-public-api-milestones-and-internal-boundaries -->
 ![先检查公开版本与设备能力，再选择会话功能](../../assets/diagrams/ch05/ch05-04-public-api-milestones-and-internal-boundaries.png)
 
-图：Java HintSession 从 API 31 起提供，NDK Session 从 API 33 起公开；API 35 增加 WorkDuration 和能效偏好，API 36 提供 workload hint、会话配置及更多余量能力。版本可用不等于每台设备都支持。r1 的 Java/NDK 公共接口没有 setPreferIdle，内部 Binder、HAL 和测试常量也不能当作普通应用 SDK。
+图：Java HintSession 从 API 31 起提供，NDK Session 从 API 33 起公开；API 35 增加 WorkDuration 和能效偏好，API 36 提供 workload hint、会话配置及更多余量能力。版本可用与每台设备实际支持是两回事。r1 的 Java/NDK 公共接口没有 setPreferIdle，内部 Binder、HAL 和测试常量对普通应用都算不上 SDK 能力。
 
 ## 常见误区
 
@@ -459,15 +459,17 @@ Performance Hint API 可服务相机预览、视频编辑、AR、地图和周期
 
 ## 游戏引擎接入
 
+Unity 和 Unreal 都有官方接入件，我们先看它们各自提供什么。
+
 Unity 官方 Android provider（平台适配组件） 支持 Unity 2021.3 及以上、Adaptive Performance 5.0 及以上；Unity 2021 / 2022 的包管理器可能默认安装 4.0，需要手动升级。官方还建议使用较新的 Android provider 1.2；1.0 只在 Pixel 设备上启用。provider 会逐帧上报 target 和 CPU / GPU actual duration；项目仍要根据自身内容调校分辨率、细节层级（LOD）、阴影和帧率调节器（scaler）。
 
 Android Developers 提供 Unreal ADPF 插件（plugin）；当前引擎支持表列出 Unreal Engine 4.25 及以上。插件分别为游戏线程（game thread）与渲染 / RHI 线程建立 hint session，并结合 thermal 信号调整 Unreal 的可扩展画质系统（Scalability）。默认设置只适合作为起点，项目应保留同机基线和自定义质量档位。
 
-引擎自动接入之后，TID、target、热策略和 trace 验证仍要自己做。引擎升级、渲染线程模型变化后，应重新核对 session 覆盖范围。
+引擎自动接入之后，TID、target、热策略和 trace 验证仍要我们自己来。引擎升级、渲染线程模型变化后，应重新核对 session 覆盖范围。
 
 ## OEM 差异应怎样验证
 
-到 Android 17 为止，普通应用依赖的公共约定是 Java / NDK API；`IHintManager` 是 Framework 内部 Binder 接口，`android.hardware.power` AIDL 是系统与设备 HAL 之间的契约，不能把它们当作普通应用可直接调用的公共 API。`IPowerHintSession` 提供 target、actual、线程集合、会话模式（session mode）等接口，但这些信号如何映射到调度器、CPU / GPU 策略或厂商控制器，公共 API 不作保证。
+到 Android 17 为止，普通应用能依赖的公共约定是 Java / NDK API；`IHintManager` 是 Framework 内部 Binder 接口，`android.hardware.power` AIDL 是系统与设备 HAL 之间的契约，两者都在普通应用的调用范围之外。`IPowerHintSession` 提供 target、actual、线程集合、会话模式（session mode）等接口，这些信号如何映射到调度器、CPU / GPU 策略或厂商控制器，公共 API 没有给出保证。
 
 单看 SoC 品牌，推断不出设备会用 PerfLock（部分厂商的私有性能锁机制）、某个私有服务还是固定的响应时间。我们跨设备测试时至少记录：
 
@@ -482,7 +484,7 @@ Android Developers 提供 Unreal ADPF 插件（plugin）；当前引擎支持表
 <!-- gracker-diagram: ch05-04-engine-provider-and-device-policy-validation -->
 ![引擎处理接入，项目仍要确认预算和设备效果](../../assets/diagrams/ch05/ch05-04-engine-provider-and-device-policy-validation.png)
 
-图：Unity Android provider 与 Unreal ADPF 插件可连接周期提示和质量调节，但线程模型、target 与计时口径仍要随引擎版本核对。项目应先建立基线，再标定自己的 scaler 或 Scalability 档位；设备 HAL 如何兑现提示仍由实现决定。跨设备记录创建结果、实际线程、生命周期、热条件与 A/B 数据，不能从插件启用或 SoC 品牌直接推出收益。
+图：Unity Android provider 与 Unreal ADPF 插件可连接周期提示和质量调节，但线程模型、target 与计时方式仍要随引擎版本核对。项目应先建立基线，再标定自己的 scaler 或 Scalability 档位；设备 HAL 如何兑现提示仍由实现决定。跨设备记录创建结果、实际线程、生命周期、热条件与 A/B 数据，插件启用与否或 SoC 品牌本身都推不出收益。
 
 ## 与其他章节的关系
 

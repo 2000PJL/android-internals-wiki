@@ -130,7 +130,7 @@ last_consolidated_at: '2026-08-24'
 
 # AOSP（Android Open Source Project，Android 开源平台） 性能优化与 Android 版本变更
 
-AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆盖整台设备，回归也可能让原本正常的兼容性、稳定性、功耗或安全行为退步。本文先讨论怎样界定、验证和交付一项 AOSP 性能改动，再梳理 Android 12—17 的版本变化与 Android 17 应用适配；ART（Android Runtime，Android 运行时）、Binder（Android 的进程间通信机制）、图形和内核的具体机制由各专项正文承载。
+AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆盖整台设备，回归也可能让原本正常的兼容性、稳定性、功耗或安全行为退步。本文我们先讨论怎样界定、验证和交付一项 AOSP 性能改动，再梳理 Android 12—17 的版本变化与 Android 17 应用适配；ART（Android Runtime，Android 运行时）、Binder（Android 的进程间通信机制）、图形和内核的具体机制由各专项正文承载。
 
 > 源码基线：AOSP `android-17.0.0_r1`；内核 `android17-6.18-2026-06_r6`。
 
@@ -138,7 +138,7 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 ## 从现象到源码层级和责任模块
 
-这一节处理排查最前面的两个问题：现象该归应用还是归平台，改动面落在哪一层。我们先看一个判断标准，再套五层模型定位改动面，然后用三类证据约束结论，最后过一遍验证、交付和设备选样。
+排查走到最前面，有两个问题要先解决：现象该归应用还是归平台，改动面落在哪一层。我们先看一个判断标准，再套五层模型定位改动面，然后用三类证据约束结论，最后过一遍验证、交付和设备选样。
 
 ### 先判断问题是否属于平台
 
@@ -158,7 +158,7 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 ### 用五层模型定位改动面
 
-判断归到平台之后，还需要一个稳定的阅读顺序。平台性能路径可以按五层来看，这五层帮我们确认成本和对外行为落在哪里；它们描述的是技术分层，与团队组织架构并无对应关系。
+判断归到平台之后，我们要按一个稳定的顺序往下读。平台性能路径可以分成五层，每一层帮我们确认成本和对外行为落在哪里；这五层是纯技术分层，团队的组织架构是另一回事。
 
 1. **应用与公开 API**：调用频率、参数规模、target（AOSP 编译所选的设备产品目标） SDK（App 声明适配到的 API 级别） 和公开行为约定。
 2. **Framework 与 system service**：Java/Kotlin 状态机、Binder 服务、锁和生命周期。
@@ -166,7 +166,7 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 4. **Kernel 与驱动**：调度、内存、Binder driver（Binder 的内核驱动）、文件系统、block I/O（面向存储块设备的读写） 和设备驱动。
 5. **硬件与产品策略**：SoC（System on Chip，片上系统）、固件、Power/Thermal HAL（电源与温控的硬件抽象层）、显示和厂商配置。
 
-一次等待可能跨越多层。比如同步 Binder 的调用方在 trace 里处于 `Sleeping`，这只说明它在等回复；真正耗时的地方，可能是目标线程的 runnable delay（线程已可运行、却仍在调度队列等待的时间），也可能是服务端锁、TEE（Trusted Execution Environment，可信执行环境）、块设备或驱动。所以我们分析时要同时保留调用方、目标进程、内核等待和硬件状态，把等待定位到具体一层，再决定修改落在哪层。
+一次等待还可能跨越多层。比如同步 Binder 的调用方在 trace 里处于 `Sleeping`，这只说明它在等回复；真正耗时的地方，可能是目标线程的 runnable delay（线程已可运行、却仍在调度队列等待的时间），也可能是服务端锁、TEE（Trusted Execution Environment，可信执行环境）、块设备或驱动。所以我们分析时要同时保留调用方、目标进程、内核等待和硬件状态，把等待定位到具体一层，再决定修改落在哪层。
 
 ### 三类证据共同约束结论
 
@@ -174,21 +174,21 @@ AOSP 的性能改动会改变多个 App 共用的执行路径，收益可能覆�
 
 #### 公开接口与行为约定
 
-release notes（版本说明）、behavior changes（行为变更文档）、SDK 文档和 source.android.com 说明外部可以依赖什么，这些公开约定划出兼容性和迁移的范围；目标设备上的实际启用状态，还要靠后面的源码和设备运行证据补齐。
+第一类材料是公开约定。release notes（版本说明）、behavior changes（行为变更文档）、SDK 文档和 source.android.com 说明外部可以依赖什么，这些约定同时划出兼容性和迁移的范围；目标设备上的实际启用状态，则要靠后面两类证据来补齐。
 
 #### 固定版本源码
 
-源码回答的是实现、gate（决定代码路径是否启用的开关）、默认值和失败路径这类问题。平台结论我们固定到 `android-17.0.0_r1`，内核结论固定到 `android17-6.18-2026-06_r6`：tag 是可复查的固定源码版本，main 是持续变化的开发分支。GKI（Generic Kernel Image，通用内核镜像）还有多条受支持的分支，读其他分支可以看出机制如何演进，但设备行为还是要以固定 tag 为准。
+第二类材料是固定版本的源码，它回答实现、gate（决定代码路径是否启用的开关）、默认值和失败路径这类问题。平台结论我们固定到 `android-17.0.0_r1`，内核结论固定到 `android17-6.18-2026-06_r6`：tag 是可复查的固定源码版本，main 是持续变化的开发分支。GKI（Generic Kernel Image，通用内核镜像）还有多条受支持的分支，读其他分支可以看出机制如何演进，但设备行为还是要以固定 tag 为准。
 
 #### 设备运行证据
 
-最终产品还会受到 aconfig、DeviceConfig、Mainline（可独立更新的系统模块）模块、vendor（设备或芯片厂商）配置、kernel config、boot 参数和硬件能力的影响。aconfig 与 DeviceConfig 都能承载平台功能开关，只是生效阶段和更新方式不同。所以做设备结论时，我们至少要拿到 build fingerprint（唯一标识系统构建的一组属性）、target SDK、ART/APEX（系统模块容器）版本、kernel release 和相关功能状态，再用 trace、dump（状态或内存转储）与实验结果说明这次受测的工作负载实际走到了哪条路径。
+第三类材料来自设备本身。最终产品还会受到 aconfig、DeviceConfig、Mainline（可独立更新的系统模块）模块、vendor（设备或芯片厂商）配置、kernel config、boot 参数和硬件能力的影响；aconfig 与 DeviceConfig 都能承载平台功能开关，只是生效阶段和更新方式不同。所以做设备结论时，我们至少要拿到 build fingerprint（唯一标识系统构建的一组属性）、target SDK、ART/APEX（系统模块容器）版本、kernel release 和相关功能状态，再用 trace、dump（状态或内存转储）与实验结果说明这次受测的工作负载实际走到了哪条路径。
 
-源码里有某个函数、内核配置项默认 `y`，或系统版本号满足要求，都不足以证明目标设备真的启用了该功能——产品配置、模块版本或运行时开关都可能改变最终状态。
+反过来也一样：源码里有某个函数、内核配置项默认 `y`，或系统版本号满足要求，都还证明不了目标设备真的启用了该功能，产品配置、模块版本或运行时开关都可能改变最终状态。
 
 ### 把版本与交付路径拆开
 
-层级和证据都固定之后，还剩一个容易漏掉的维度：交付路径。Android 大版本不是唯一版本轴，同一项优化走哪条路径交付，决定它能覆盖哪些设备以及如何回滚。我们按交付对象把这条轴拆开：
+层级和证据都固定之后，还剩一个容易漏掉的维度：交付路径。Android 大版本之外还有好几条版本轴，同一项优化走哪条路径交付，决定它能覆盖哪些设备、以及怎么回滚。我们按交付对象把这条轴拆开：
 
 | 交付对象 | 常见载体 | 需要额外记录 |
 | --- | --- | --- |
@@ -204,7 +204,7 @@ release notes（版本说明）、behavior changes（行为变更文档）、SDK
 
 ### 一轮平台优化怎样完成验证与交付
 
-下面按一轮平台优化的推进顺序，把验证与交付拆成六步，从定义用户动作一直走到回滚路径。
+下面我们按一轮平台优化的推进顺序，把验证与交付拆成六步，从定义用户动作一直走到回滚路径。
 
 #### 1. 定义用户动作和完成边界
 
@@ -242,7 +242,7 @@ release notes（版本说明）、behavior changes（行为变更文档）、SDK
 
 #### 删除不必要的工作
 
-优先消除重复扫描、重复序列化、无用唤醒、过早初始化和失效产物。删除工作通常比把同一工作换线程更容易得到稳定收益，但仍要证明被删除的步骤不承担正确性或安全职责。
+先消除重复扫描、重复序列化、无用唤醒、过早初始化和失效产物。删除工作通常比把同一工作换线程更容易拿到稳定收益；删之前，要确认这些步骤没有承担正确性或安全职责。
 
 #### 把工作移出关键路径
 
@@ -254,7 +254,7 @@ release notes（版本说明）、behavior changes（行为变更文档）、SDK
 
 #### 用反馈信号代替固定策略
 
-另一类思路是用反馈信号代替固定策略：ADPF（Android Dynamic Performance Framework）让应用向系统提示性能需求，PSI（Pressure Stall Information）统计 CPU、内存或 I/O 压力造成的停顿，thermal（温度与热节流状态）和 headroom（距离温度或资源上限的余量）提供热状态与余量读数，profile-guided optimization（根据真实执行热点指导编译优化）则把真实热点用于指导编译。反馈信号可能延迟、缺失，也会受产品实现影响，所以控制逻辑要有静态回退、滞回和频率限制；滞回指进入和退出某状态使用不同阈值，能避免读数在阈值附近反复切换。
+另一类思路是用反馈信号代替固定策略：ADPF（Android Dynamic Performance Framework）让应用向系统提示性能需求，PSI（Pressure Stall Information）统计 CPU、内存或 I/O 压力造成的停顿，thermal（温度与热节流状态）和 headroom（距离温度或资源上限的余量）提供热状态与余量读数，profile-guided optimization（根据真实执行热点指导编译优化）则把真实热点用于指导编译。这些反馈信号可能延迟、缺失，也会受产品实现影响，所以控制逻辑要有静态回退、滞回和频率限制；滞回指进入和退出某状态使用不同阈值，能避免读数在阈值附近反复切换。
 
 ### 设备样本按瓶颈维度选择
 
@@ -317,6 +317,8 @@ Android Go 能代表一类低资源配置，覆盖不了所有低性能或特殊
 
 ### Android 12（API 31）：后台执行边界收窄
 
+Android 12 的性能相关变化集中在后台执行的可达性上，我们先看前台服务的启动限制。
+
 #### 后台启动前台服务
 
 运行在 Android 12 及以上且 target 31 的 App，从后台启动前台服务时会受到限制，未命中官方豁免条件时 `startForegroundService()` 会抛出 `ForegroundService（无界面组件）StartNotAllowedException`。它改变的是后台采集、上传和周期维护任务的可达性，仅用“变慢”来描述会漏掉这层变化。
@@ -328,33 +330,35 @@ Android Go 能代表一类低资源配置，覆盖不了所有低性能或特殊
 - 用户明确发起的大文件传输应评估相应系统版本提供的用户发起数据传输机制。
 - 需要持续感知的设备类场景还要评估 Companion Device Manager 等专用 API。
 
-expedited work 是 WorkManager 中希望尽快执行、但会消耗系统配额的加急任务。WorkManager 替代不了所有 foreground service（前台服务）——持续导航、媒体播放、通话等场景仍各有前台服务类型和运行条件，前台服务运行时要以持续通知表明正在执行用户可感知的工作。
+expedited work 是 WorkManager 中希望尽快执行、但会消耗系统配额的加急任务。持续导航、媒体播放、通话这些场景各有前台服务类型和运行条件，前台服务运行时要以持续通知表明正在执行用户可感知的工作，WorkManager 替代不了所有 foreground service（前台服务）。
 
 #### 精确闹钟
 
-target 31 的 App 使用精确闹钟时，需要声明 `SCHEDULE_EXACT_ALARM` 并检查特殊应用访问状态。周期遥测通常允许时间窗口，优先采用非精确闹钟或 WorkManager。只有业务语义要求精确触发时，才接受权限、配额和省电策略带来的成本。
+target 31 的 App 使用精确闹钟时，需要声明 `SCHEDULE_EXACT_ALARM` 并检查特殊应用访问状态。周期遥测通常允许时间窗口，我们优先采用非精确闹钟或 WorkManager。只有业务语义要求精确触发时，才接受权限、配额和省电策略带来的成本。
 
-Android 14 又调整了新安装 App 的默认授权状态。排查闹钟延迟时，要同时记录安装来源、授权状态和目标版本。
+Android 14 又调整了新安装 App 的默认授权状态。所以我们排查闹钟延迟时，要同时记录安装来源、授权状态和目标版本。
 
 #### 通知跳板
 
-对 target 31 的 App，通过通知启动 BroadcastReceiver（广播接收器） 或 Service、再由中间组件转启 Activity（界面组件） 的跳板路径已经失效。通知点击应直接使用指向 Activity（界面） 的 `PendingIntent`——交给系统稍后代表 App 执行的封装操作。迁移后冷启动链路会少一个中间组件；收益大小取决于原有实现，事先预设一个固定时延并不可靠。
+对 target 31 的 App，通过通知启动 BroadcastReceiver（广播接收器） 或 Service、再由中间组件转启 Activity（界面组件） 的跳板路径已经失效；通知点击应直接使用指向 Activity（界面） 的 `PendingIntent`，也就是交给系统稍后代表 App 执行的封装操作。迁移后冷启动链路会少一个中间组件，收益大小取决于原有实现，事先预设一个固定时延并不可靠。
 
 #### Stretch Overscroll 与性能提示
 
-Android 12 为所有 App 引入 stretch overscroll（滚动到边界后拉伸内容的过度滚动效果）。自定义滚动容器若自行处理边缘效果，需要检查重复拉伸、额外绘制和触摸反馈一致性。
+Android 12 为所有 App 引入 stretch overscroll（滚动到边界后拉伸内容的过度滚动效果）。自行处理边缘效果的自定义滚动容器，要检查重复拉伸、额外绘制和触摸反馈是否一致。
 
 `PerformanceHintManager` 也在 API 31 提供公开入口，App 可用线程组、目标工作时长和实际工作时长向系统表达持续负载。它属于 ADPF（Android Dynamic Performance Framework，应用与系统协同提示性能需求） 的 CPU 性能提示路径，与 Game Mode 是两套 API：Game Mode 描述游戏偏好的性能或省电模式，替代不了每帧工作时长反馈。
 
 ### Android 13（API 33）：权限与帧标识能力扩展
 
+Android 13 的变化一头连着通知权限，一头连着帧标识能力，两边都会改变我们做性能测量和卡顿排查的方式。
+
 #### 运行时通知权限
 
-Android 13 引入 `POST_NOTIFICATIONS` 运行时权限。通知是前台服务可见性和后台任务反馈的一部分，用户即使拒绝了权限，前台服务的通知义务也依然存在。性能测试要覆盖首次授权、拒绝、升级安装和重新授权，避免把通知流程差异计入启动或任务耗时。
+Android 13 引入 `POST_NOTIFICATIONS` 运行时权限。通知是前台服务可见性和后台任务反馈的一部分，用户即使拒绝了权限，前台服务的通知义务也依然存在。我们做性能测试时要覆盖首次授权、拒绝、升级安装和重新授权，避免把通知流程差异计入启动或任务耗时。
 
 #### ART Mainline（可独立更新的 ART 系统模块） 更新
 
-ART 可作为 Mainline 模块通过 Google Play 系统更新变化，设备的 Android 大版本相同，ART 构建也未必相同。比较启动、编译或 GC 时应记录 ART 模块版本，一次设备观测只说明那一台设备的情况，写全平台结论就越界了。
+ART 可以作为 Mainline 模块通过 Google Play 系统更新变化，设备的 Android 大版本相同，ART 构建也未必相同。所以我们比较启动、编译或 GC 时要记录 ART 模块版本；一次设备观测只说明那一台设备的情况，据此写全平台结论就越界了。
 
 #### 文本断字与 FrameTimeline（描述一帧预期与实际显示时序）
 
@@ -364,11 +368,13 @@ Choreographer（协调 UI 帧回调的系统类） 和 NDK（Native Development 
 
 ### Android 14（API 34）：缓存进程和前台服务约束
 
+到了 Android 14，约束收紧到缓存进程和前台服务两个方向；排查后台任务延迟时，要先把这两个因素排除。
+
 #### 缓存进程的资源限制
 
 Android 14 对所有 App 加强缓存进程管理。进程进入 cached 状态后，系统会在较短时间内限制其后台工作，动态注册的广播也可能等进程离开 cached 状态后再投递。因此缓存进程里的线程、网络循环或定时器，都算不上可靠的执行机制。
 
-cached、frozen、killed 是三个不同状态：cached 表示进程当前没有活跃组件、可在内存压力下被终止，frozen 表示系统暂停其线程执行，killed 表示进程已经结束。线程暂时拿不到 CPU 时间，单凭这一点还判定不了进程已 frozen，要结合 ActivityManager 状态、freezer 信息和进程存活与否来判断。
+cached、frozen、killed 是三个不同状态：cached 表示进程当前没有活跃组件、可在内存压力下被终止，frozen 表示系统暂停其线程执行，killed 表示进程已经结束。线程暂时拿不到 CPU 时间时，我们还判定不了进程已经 frozen，要结合 ActivityManager 状态、freezer 信息和进程存活与否一起判断。
 
 #### 前台服务类型
 
@@ -386,11 +392,13 @@ Android 14 将字体最大缩放提高到 200%，并采用非线性缩放：大�
 
 ### Android 15（API 35）：进程内 Profiling 与 16 KB 页支持
 
+Android 15 交到我们手里的东西有两件：进程内 Profiling 把取数入口搬进了应用，16 KB 页支持则改变了运行环境本身。
+
 #### ProfilingManager
 
 `ProfilingManager` 在 API 35 加入公开 SDK，App 通过 `requestProfiling()` 可以请求四种产物：Java heap dump（Java 堆中对象与引用的快照）、heap profile（按时间或调用栈统计分配）、stack sampling（定期抽样线程调用栈）和 system trace（系统运行轨迹），结果经监听器返回。要注意，只注册监听器并不会开始采集，调用方还必须显式调用 `requestProfiling()`，否则会一直等一个从未发起的结果。
 
-它适合在用户同意和产品采样策略允许的场景中取得现场数据。系统仍会执行速率限制，并可能拒绝请求。调用方应把“请求成功提交”“收到结果”“超时或失败”记录为不同状态。
+它适合在用户同意、产品采样策略也允许的场景里取现场数据。系统仍会做速率限制，也可能拒绝请求，所以调用方要把“请求成功提交”“收到结果”“超时或失败”记成三种不同的状态。
 
 #### ApplicationStartInfo
 
@@ -410,9 +418,11 @@ target 35 的 App 在后台运行 `dataSync` 和 `mediaProcessing` 前台服务�
 
 Android 15 开始支持 16 KB 页大小的 arm64（64 位 ARM 架构） 设备，但它在 Android 15 还没有成为所有设备的默认配置。含原生代码的 APK 要检查 ELF（Executable and Linkable Format，原生可执行文件与共享库格式）段对齐、打包对齐、预编译依赖和运行期页大小假设。
 
-页大小变化会影响页表、缺页、映射粒度和小对象驻留开销，方向取决于工作负载。系统版本说明不了设备页大小，应用要通过运行期 API 或系统信息识别，并在 4 KB 与 16 KB 环境分别测量。
+页大小变化会影响页表、缺页、映射粒度和小对象驻留开销，方向取决于工作负载。系统版本说明不了设备页大小，我们要通过运行期 API 或系统信息识别，再在 4 KB 与 16 KB 环境分别测量。
 
 ### Android 16（API 36）：触发式 Profiling 与诊断 API
+
+Android 16 的主题是补全诊断信息：触发式 Profiling、启动组件、帧标识和作业约束都变得可查。
 
 #### 触发式 Profiling
 
@@ -422,7 +432,7 @@ Android 15 开始支持 16 KB 页大小的 arm64（64 位 ARM 架构） 设备�
 
 #### 启动、帧与作业诊断
 
-`ApplicationStartInfo.getStartComponent()` 在 API 36 加入，用于标识触发进程启动的组件类型。启动性能数据可以按 Activity、Service、BroadcastReceiver、ContentProvider（数据提供组件） 等入口分组，避免把不同启动原因混进同一组分位数。
+`ApplicationStartInfo.getStartComponent()` 在 API 36 加入，用于标识触发进程启动的组件类型。启动性能数据我们按 Activity、Service、BroadcastReceiver、ContentProvider（数据提供组件） 等入口分组，避免把不同启动原因混进同一组分位数。
 
 `FrameMetrics.FRAME_TIME（输入法）LINE_VSYNC_ID` 也在 API 36 提供，返回当前帧 timeline 的 Vsync ID，用来关联 HWUI（Android 的硬件加速 UI 渲染管线）、SurfaceFlinger（系统图形合成服务） 和 Perfetto（Android 系统性能追踪工具） 里的帧记录。设备或窗口条件不支持时，分析工具要保留缺失值。
 
@@ -449,6 +459,8 @@ target 36 的 App 运行在 Android 16 及以上时，系统默认启用 back-to
 对运行在 Android 16 且 target 36 的 App，系统不再接受 `windowOptOutEdgeToEdgeEnforcement` 退出配置。edge-to-edge 表示内容可以绘制到状态栏和导航栏所在区域，页面要正确处理 system bar（系统栏）、display cutout（刘海或挖孔区域） 和 IME 提供的 insets（需要避让的边缘距离）。布局区域变化会影响测量、绘制和滚动范围，基准测试必须用迁移后的最终布局。
 
 ### Android 17（API 37）：消息队列、GC 与现场诊断
+
+Android 17 的变化深入平台内部：消息队列换了实现，ART 加了分代回收，现场诊断的触发类型也扩了一圈。
 
 #### target 37 的无锁 MessageQueue
 
@@ -797,7 +809,7 @@ API 36 已能查到当前 pending reasons（任务暂时执行不了的原因）
 
 返回值把 `PENDING_JOB_REASON_*` 映射到该 job 从调度到结束的生命周期内，因该原因 pending 的累计时长。多个原因可能同时成立，各项 `Duration` 之和常会超过总等待时间。
 
-这些统计不跨重启持久化；job 成功完成或取消时也会清空。传入的 ID 若不是当前 pending job，API 会抛出 `IllegalArgumentException`。诊断顺序可按“当前 reasons → history → stats”推进：
+这些统计不跨重启持久化；job 成功完成或取消时也会清空。传入的 ID 若不是当前 pending job，API 会抛出 `IllegalArgumentException`。诊断顺序我们按“当前 reasons → history → stats”推进：
 
 - current reasons 回答此刻卡在哪里。
 - history 回答约束在何时变化。
@@ -1000,7 +1012,7 @@ userfaultfd 是 Concurrent Mark-Compact 的一条实现路径，分代是对象�
 
 ## 小结
 
-AOSP 性能改动必须从公共路径证据出发，把平台、Mainline、kernel、vendor 与 target SDK 分成独立变量，并用统计确认收益、用 trace 和源码解释原因。Android 12—17 的行为变化既包含面向所有应用的系统规则，也包含 target 触发的兼容变化和设备可选能力；迁移与性能回归只有在这些触发条件被分别记录和验证后，才能归因到正确责任层。
+回到整条链路：我们做 AOSP 性能改动，要从公共路径证据出发，把平台、Mainline、kernel、vendor 与 target SDK 分成独立变量，用统计确认收益，用 trace 和源码解释原因。Android 12—17 的行为变化既包含面向所有应用的系统规则，也包含 target 触发的兼容变化和设备可选能力；迁移与性能回归只有把这些触发条件分别记录、分别验证，才能归因到正确的责任层。
 
 
 ## 参考资料

@@ -2,11 +2,11 @@
 title: Android 与 Linux 内存管理全景
 chapter: '4.1'
 section: '4.1'
-status: ready-for-review
+status: finalized
 applicable_versions: Android 8 (API 26) - Android 17 (API 37)
-last_verified: '2026-10-22'
-verification_scope_note: '2026-10-22 定点核对 tmpfs/shmem 的 Cached/file 重叠、VmSwap 与 smaps Swap/SwapPss 覆盖范围、cgroup 层级及共享页记账、Swap/noswap 回收条件；抽查 Android 17 r1 MemoryLimiter、Debug.MemoryInfo 与 Perfetto 统计配置，未扩大其余段落的来源核验范围；2026-10-20 定点复核 ZRAM mm_stat 的同值页、难压缩页、回写与内存池成本边界，以及 bd_stat 的固定 4 KiB 单位；限定 DMA-BUF 跨进程重复计算的共享条件；2026-10-19 定点复核 THP/mTHP 映射、按尺寸策略、defrag 与 MADV_COLLAPSE 边界、迁移类型及 onTrimMemory 的 API 34/35 生命周期说明；2026-10-18 定点复核 RSS/fault-around、Scudo/COW、ART 栈函数、保存状态、Perfetto 堆图及 MGLRU/SLUB；2026-10-17 的 ART 页释放、文件预取、MADV_COLD、匿名缺页/rmap 与 Debug.MemoryInfo 核验范围保留，其余来源沿用各段已有核验范围。'
-last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article / source-index material juejin-android 2026-10-09 Memory Limiter exemption article / Android common kernel android17-6.18-2026-06_r6 THP transhuge.rst+huge_memory.c+mmzone.h+compaction.c (retrieved 2026-10-19) / Android common kernel android17-6.18-2026-06_r6 ZRAM zram.rst+zram_drv.c and DMA-BUF sharing docs (retrieved 2026-10-20) / Android common kernel android17-6.18-2026-06_r6 proc.rst+tmpfs.rst+cgroup-v2.rst+fs/proc/meminfo.c (retrieved 2026-10-22)
+last_verified: '2026-10-23'
+verification_scope_note: '2026-10-23 核对 MemoryLimiter ignore 的单 UID 覆盖、后续配置屏蔽与既有约束/监控/待终止消息边界，补明 ION 迁移页的 Deprecated 与 5.4 适用范围；通读全文并复核主要统计、回收机制、Perfetto 配置与 API 生命周期说明，未执行目标设备实验；2026-10-22 定点核对 tmpfs/shmem 的 Cached/file 重叠、VmSwap 与 smaps Swap/SwapPss 覆盖范围、cgroup 层级及共享页记账、Swap/noswap 回收条件；抽查 Android 17 r1 MemoryLimiter、Debug.MemoryInfo 与 Perfetto 统计配置，未扩大其余段落的来源核验范围；2026-10-20 定点复核 ZRAM mm_stat 的同值页、难压缩页、回写与内存池成本边界，以及 bd_stat 的固定 4 KiB 单位；限定 DMA-BUF 跨进程重复计算的共享条件；2026-10-19 定点复核 THP/mTHP 映射、按尺寸策略、defrag 与 MADV_COLLAPSE 边界、迁移类型及 onTrimMemory 的 API 34/35 生命周期说明；2026-10-18 定点复核 RSS/fault-around、Scudo/COW、ART 栈函数、保存状态、Perfetto 堆图及 MGLRU/SLUB；2026-10-17 的 ART 页释放、文件预取、MADV_COLD、匿名缺页/rmap 与 Debug.MemoryInfo 核验范围保留，其余来源沿用各段已有核验范围。'
+last_verified_against: AOSP android-17.0.0_r1 Debug.MemoryInfo / MemoryLimiter.java+JNI / ActivityManagerShellCommand+ActivityManagerService / ComponentCallbacks2.java / Perfetto ProcessStatsConfig+SysStatsConfig+JavaHprofConfig / Android common kernel android17-6.18-2026-06_r6 page_alloc+vmscan+compaction+gki_defconfig+MGLRU+DMA-BUF/ZRAM docs / Android 16 KB page size and memory docs / Tencent OOMDetector material / official Android 17 Memory Limiter+PMGD docs (retrieved 2026-09-15; current docs diverge from r1 source on Memory Limiter config path/manual units) / Android Developers ProfilingManager+ProfilingTrigger docs (API 35/36/37) / source-index material juejin-android 2026-09-11 Memory Limiter article / source-index material juejin-android 2026-09-15 low-memory APK list case / source-index material juejin-android 2026-09-23 Android 17 MemoryLimiter kill R8+onTrimMemory+ProfilingManager article / source-index material juejin-android 2026-10-09 Memory Limiter exemption article / Android common kernel android17-6.18-2026-06_r6 THP transhuge.rst+huge_memory.c+mmzone.h+compaction.c (retrieved 2026-10-19) / Android common kernel android17-6.18-2026-06_r6 ZRAM zram.rst+zram_drv.c and DMA-BUF sharing docs (retrieved 2026-10-20) / Android common kernel android17-6.18-2026-06_r6 proc.rst+tmpfs.rst+cgroup-v2.rst+fs/proc/meminfo.c (retrieved 2026-10-22) / AOSP android-17.0.0_r1 MemoryLimiter MESSAGE_START+MESSAGE_CONFIG+MESSAGE_IGNORE+MESSAGE_KILL+setManualLimit and AOSP ION migration Deprecated notice / android17-6.18-2026-06_r6 DMA-BUF Heaps docs (retrieved 2026-10-23)
 confidence: medium-high
 sources:
 - type: official
@@ -177,7 +177,7 @@ sources:
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst
 - type: kernel
   path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/fs/proc/meminfo.c
-last_source_verified_at: '2026-10-22'
+last_source_verified_at: '2026-10-23'
 last_deep_review_at: '2026-10-19T08:37:07+08:00'
 tags:
   - android-memory
@@ -194,7 +194,7 @@ related_chapters:
 - '4.4'
 - '4.5'
 - '2.9'
-last_review_finalize_at: '2026-09-15T12:09:44+08:00'
+last_review_finalize_at: '2026-10-23T22:18:56+08:00'
 last_consolidated_at: '2026-08-24'
 consolidated_from:
 - src/part1-fundamentals/ch04-memory/13-anon-vma-lazy-memory-optimization.md
@@ -547,7 +547,7 @@ Android 17 r1 源码中的关键流程如下：
 4. 联合判断会比较 `anon + shmem + swapCurrent` 与 `memHigh + swapMax`。 [已验证: AOSP android-17.0.0_r1 `com_android_server_am_MemoryLimiter.cpp`]
 5. 联合上限越界后，服务解除该进程的限制；相关系统开关启用时触发异常分析事件 `ProfilingTrigger.TRIGGER_TYPE_ANOMALY`，并安排在 30 秒后终止进程。 [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java`]
 
-应用侧可用 `ApplicationExitInfo` 区分这类退出：原因字段（reason）为 `REASON_OTHER`，描述字段（description）包含 `MemoryLimiter:AnonSwap`。以下命令中，只有 `status` 是查询；其余命令会改变限制，应仅用于可重启的测试进程。r1 的 `manual 12345 10` 会按 10 MiB 向 JNI 传递内存和 Swap 两项限制，Swap 项是否写入还受开关控制；这个数值可能导致回收停顿或进程退出，别当成 10% 用。 [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` 与 `ActivityManagerShellCommand.java`]
+应用侧可用 `ApplicationExitInfo` 区分这类退出：原因字段（reason）为 `REASON_OTHER`，描述字段（description）包含 `MemoryLimiter:AnonSwap`。以下命令中，`status` 查询状态，`ignore` 修改忽略设置，`manual` 请求写入手动限制；后两者应仅用于可重启的测试进程。r1 的 `manual 12345 10` 会按 10 MiB 向 JNI 传递内存和 Swap 两项限制，Swap 项是否写入还受开关控制；这个数值可能导致回收停顿或进程退出，别当成 10% 用。 [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` 与 `ActivityManagerShellCommand.java`]
 
 ```bash
 adb shell am memory-limiter status
@@ -558,7 +558,9 @@ adb shell am memory-limiter manual 12345 10
 adb shell am memory-limiter manual 12345 none
 ```
 
-`ignore` 在 r1 接受 UID、`none` 或 `all`，其中 `ignore none` 清除忽略设置。`manual` 接受 PID 和一个整数或 `none`，Java 层把整数按 MiB 转换，帮助文本仍写成 `PERCENT|none`。但 `manual ... none` 在这份实现中先变为 `-1`，再被乘成 `-1048576`，JNI 对这种值跳过节点写入，因此想撤销已写入的手动限制，靠它靠不住；测试后应重启目标进程，并重新读取该进程的 cgroup 节点确认。 [已验证: AOSP android-17.0.0_r1 `ActivityManagerShellCommand.runMemoryLimiter()`、`MemoryLimiter.setManualLimit()`、JNI `Process::setLimit()`]
+`ignore` 在 r1 接受 UID、`none` 或 `all`；单 UID 设置会覆盖先前值，`ignore none` 清除忽略设置。它让 Java 消息处理跳过该 UID 后续的启动与限制配置请求，`manual` 请求也会被跳过；已写入的 cgroup 限制、已有 JNI 监控和已排队的终止消息都不会因此撤销。排查时应核对 PID 的实际节点，不能把 `ignore` 当作现有进程的立即豁免或复位。 [已验证: AOSP android-17.0.0_r1 `MemoryLimiter.java` 的 `MESSAGE_START`、`MESSAGE_CONFIG`、`MESSAGE_IGNORE`、`MESSAGE_KILL`、`ControllerEnabled.setManualLimit()` 与 `shouldIgnore()`]
+
+`manual` 接受 PID 和一个整数或 `none`，Java 层把整数按 MiB 转换，帮助文本仍写成 `PERCENT|none`。但 `manual ... none` 在这份实现中先变为 `-1`，再被乘成 `-1048576`，JNI 对这种值跳过节点写入，因此想撤销已写入的手动限制，靠它靠不住；测试后应重启目标进程，并重新读取该进程的 cgroup 节点确认。 [已验证: AOSP android-17.0.0_r1 `ActivityManagerShellCommand.runMemoryLimiter()`、`MemoryLimiter.setManualLimit()`、JNI `Process::setLimit()`]
 
 公开二手材料可能把命令写成 `<limit>|max|none`，当前官方文档也给出字节数及 `MB`/`GB` 后缀写法；r1 的 shell 解析不接受 `max` 或这些后缀。使用前核对目标构建源码和运行结果，`am help` 里 r1 的单位与复位说明，单独当不了依据。 [来源: 技术文章/source/juejin-android/2026-09-11-76535333-解读 Android 17 全新内存限制，有没有.md] [已验证: Android Memory Limiter 官方文档；AOSP android-17.0.0_r1 `ActivityManagerShellCommand.java` 与 `MemoryLimiter.java`]
 
@@ -1123,7 +1125,7 @@ flowchart LR
 
 旧的 ION 分配器和 DMA-BUF Heaps 都能当 dma-buf 的导出方（exporter）：ION 靠 `/dev/ion`、heap mask 和私有标志选择分配器；DMA-BUF Heaps 则为不同内存堆暴露独立字符设备 `/dev/dma_heap/<heap_name>`，换来稳定的 UAPI、测试和 SELinux 强制访问控制。
 
-Android 12 的 GKI 2.0 以 DMA-BUF Heaps 替换 ION；AOSP 迁移页的页面标题限定为 “5.4 kernel only”，因此 Android 17 分析还要以当前内核文档和设备节点为准。`android12-5.10` 通用内核已关闭 `CONFIG_ION`。升级设备仍可能通过 `libdmabufheap` 的兼容映射访问旧 ION 内存堆，因此历史代码和旧内核仍能看到 `/dev/ion`。
+Android 12 的 GKI 2.0 以 DMA-BUF Heaps 替换 ION；AOSP 迁移页已标记为废弃，标题限定为 “5.4 kernel only”，只能用于理解历史迁移。Android 17 的接口和行为应以当前内核文档和设备节点为准。`android12-5.10` 通用内核已关闭 `CONFIG_ION`。升级设备仍可能通过 `libdmabufheap` 的兼容映射访问旧 ION 内存堆，因此历史代码和旧内核仍能看到 `/dev/ion`。 [已验证: AOSP ION 迁移页的 `Deprecated` 提示与版本说明；android17-6.18-2026-06_r6 `Documentation/userspace-api/dma-buf-heaps.rst`]
 
 Android 17 新设备应从 DMA-BUF Heaps 视角分析，同时确认厂商提供的内存堆：
 

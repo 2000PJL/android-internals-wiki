@@ -154,7 +154,7 @@ private void awaitLoadedLocked() {
 
 ### 第一步：`commitToMemory()` 修改内存状态
 
-无论 `apply()` 还是 `commit()`，第一步都是 `commitToMemory()`：在锁内把 Editor（编辑器对象）的修改合入 `mMap`。有实际变化时，才递增内存状态版本号、记录受影响的 key 和监听器，并把在途写入计数 `mDiskWritesInFlight` 加一。
+无论 `apply()` 还是 `commit()`，第一步都是 `commitToMemory()`：在锁内把 Editor（编辑器对象）的修改合入 `mMap`。`mDiskWritesInFlight` 在提交路径中加一，不以实际值变化为条件；只有发生实际变化时才递增内存状态版本号。受影响的 key 和监听器按本次修改及监听注册状态记录。
 
 如果已有写盘正在使用旧 map，代码会先复制一份再修改，避免写盘序列化期间改动同一个对象。这里的“提交”只覆盖进程内状态；文件有没有落盘，要等写盘结束才知道。
 

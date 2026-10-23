@@ -9082,6 +9082,9 @@
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "close_note": "按 android-17.0.0_r1 bpfloader.rs 631-636、724-736 改写 descriptor 例外、critical 分支和完成属性含义；移除未由 Rust 路径证明的 map 复用表述。源码静态检查与本地 gate 已通过。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261023-140520-73d03fa5",
       "created_at": "2026-10-23T14:13:45.045704+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261023-140520-73d03fa5",
@@ -9092,13 +9095,16 @@
       "source_paths": [
         "system/bpf/loader/bpfloader.rs@android-17.0.0_r1#724-736"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "补齐 Rust loader 非关键对象失败与全局完成属性的边界",
       "type": "loader-error-boundary",
-      "updated_at": "2026-10-23T14:13:45.045704+08:00"
+      "updated_at": "2026-10-23T14:27:34.891982+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "close_note": "按 android17-6.18 inode.c 250-367 区分 map 调试 seq_show、普通对象和 iterator link；正文保留调试输出格式会改变的警告，并给出结构化读取建议。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261023-140520-73d03fa5",
       "created_at": "2026-10-23T14:13:45.102188+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261023-140520-73d03fa5",
@@ -9109,13 +9115,16 @@
       "source_paths": [
         "kernel/common/kernel/bpf/inode.c@android17-6.18-2026-06_r6#250-367"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "修正 pinned map 不能 cat 的过强结论并保留调试格式警告",
       "type": "pinned-map-read-semantics",
-      "updated_at": "2026-10-23T14:13:45.102188+08:00"
+      "updated_at": "2026-10-23T14:27:34.952086+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "close_note": "补入固定内核 tag sched-ext.rst 357-367 的完整 ABI 范围：ops 回调、常量与 scx_bpf_* kfunc；说明迁移时需按目标内核重新核对接口。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261023-140520-73d03fa5",
       "created_at": "2026-10-23T14:13:45.156672+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261023-140520-73d03fa5",
@@ -9126,13 +9135,16 @@
       "source_paths": [
         "kernel/common/Documentation/scheduler/sched-ext.rst@android17-6.18-2026-06_r6#357-367"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "补充 sched_ext 不保证跨内核版本 ABI 稳定的官方警告",
       "type": "missing-abi-lifecycle-boundary",
-      "updated_at": "2026-10-23T14:13:45.156672+08:00"
+      "updated_at": "2026-10-23T14:27:35.010984+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "close_note": "按 BPF 程序与 mutex.c 622-793 收窄 sum/count 含义；补入 map 满、BPF_NOEXIST 并发插入、未读取 flags/ret 与重复 begin 覆盖起点的限制。撤去不会互相覆盖和完整获锁等待的过强暗示。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261023-140520-73d03fa5",
       "created_at": "2026-10-23T14:13:45.211588+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261023-140520-73d03fa5",
@@ -9144,13 +9156,16 @@
         "system/bpfprogs/locks/bpfLockContention.c@android-17.0.0_r1#28-119",
         "kernel/common/kernel/locking/mutex.c@android17-6.18-2026-06_r6#689-793"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "补齐 bpfLockContention 配对丢数与等待结果不区分的限制",
       "type": "aggregation-completeness-boundary",
-      "updated_at": "2026-10-23T14:13:45.211588+08:00"
+      "updated_at": "2026-10-23T14:27:35.068313+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "close_note": "版本表改为 Android 15 系统二进制、Android 16 独立 APEX；保留模块与平台分开发版的边界，并补入 RELEASE_UPROBESTATS_MODULE 构建开关与两份已查源码。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261023-140520-73d03fa5",
       "created_at": "2026-10-23T14:13:45.267076+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261023-140520-73d03fa5",
@@ -9162,13 +9177,16 @@
         "packages/modules/UprobeStats/src/Android.bp@android-15.0.0_r1#5-72",
         "packages/modules/UprobeStats/apex/Android.bp@android-16.0.0_r1#37-68"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "区分 Android 15 UprobeStats 源码与 Android 16 APEX 模块",
       "type": "historical-packaging-boundary",
-      "updated_at": "2026-10-23T14:13:45.267076+08:00"
+      "updated_at": "2026-10-23T14:27:35.125863+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/16-android-ebpf-architecture-observability.md",
+      "close_note": "三段脚本改为 adb shell -T su root sh -s 与引用 heredoc；已执行 8 段 Bash 语法检查、3 段本地 adb 参数与标准输入保真测试。仅验证传递语义，未连接 Android 设备。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261023-140520-73d03fa5",
       "created_at": "2026-10-23T14:18:50.940414+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261023-140520-73d03fa5",
@@ -9179,10 +9197,31 @@
       "source_paths": [
         "packages/modules/adb/client/commandline.cpp@android-17.0.0_r1#698-796"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "修正三段 adb shell su root sh -c 多行脚本的引号传递",
       "type": "adb-remote-shell-quoting",
-      "updated_at": "2026-10-23T14:18:50.940414+08:00"
+      "updated_at": "2026-10-23T14:27:35.187544+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch05-cpu-power/08-cpu-cache-friendly-code-data-layout.md",
+      "close_note": "已依官方 Requirements/Create a Startup Profile 和 Confirm optimization 补入库规则来源限制、AGP 8.2 variant 合并及插件 1.2.3+ 边界、desugared 最后 DEX 例外、Linux 测试范围，并把 startup 条目与 DEX checksum 核对落入验证步骤。元数据、SUMMARY 链接、git diff --check 及新增中文硬门均通过；未执行 Android 设备采集或 AAB 构建。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261023-143520-idle-audit-b7df5fa7",
+      "created_at": "2026-10-23T14:39:34.864840+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261023-143520-idle-audit-b7df5fa7",
+      "details": "当前构建要求覆盖 AGP 8.1–8.3，却未说明 AGP 8.2 不支持按 variant 独立的 Startup Profile、须用 Baseline Profile Gradle 插件 1.2.3+ 合并或升级 8.3；还遗漏库不能贡献 Startup Profile。核验步骤未说明 desugared API 兼容实现所在的最后一个 DEX 不参与布局优化，以及官方 AAB 元数据流程仅在 Linux 上测试过。需要补足边界，避免跨 variant、库规则来源和最后一个 DEX 的误判。",
+      "id": "finding-32a793e6bd04",
+      "log_path": "logs/audit/2026-10-23-20261023-143520-idle-audit-b7df5fa7-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations",
+        "https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles"
+      ],
+      "status": "verified",
+      "summary": "Startup Profile 构建与核验遗漏官方适用边界",
+      "type": "source-boundary-omission",
+      "updated_at": "2026-10-23T14:42:53.338271+08:00"
     }
   ],
   "schema_version": 1

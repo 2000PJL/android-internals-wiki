@@ -39,7 +39,7 @@ CANONICAL_PARTS = {
         "ch26-observability",
     },
 }
-AUXILIARY_SRC_DIRS = {"preface", "appendix"}
+AUXILIARY_SRC_DIRS = {"preface", "appendix", "assets"}
 
 
 class DuplicateKeyError(yaml.YAMLError):

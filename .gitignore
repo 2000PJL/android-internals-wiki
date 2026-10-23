@@ -78,4 +78,6 @@ node_modules/
 /metadata/queue_backup.json
 /metadata/queue.json.backup
 /metadata/queue.backup.*
+# Codex illustration cursor; PNG/SVG under src/assets/diagrams are publishable.
+/metadata/gracker-diagrams-progress.json
 src_filtered/

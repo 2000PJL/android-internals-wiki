@@ -94,7 +94,7 @@ ANR 的判定信息本身很薄：系统认定某项关键响应超过了期限�
 4. **系统当时能否及时调度它**：CPU 调度、频率、内存和 I/O 压力会影响代码从开始到结束的 wall time（墙上时钟时间）。
 5. **证据采集晚了多久、缺了哪些进程**：采样延迟和 dump 范围决定结论能有多大把握。
 
-`nativePollOnce`、高 Load、某个 `D` 状态，每一条都只是线索，责任要等它们和调用链、时间线、资源证据相互对应之后才能落定。所以报告先记事实，再写这些事实支持或排除哪些解释，最后才把某项解释升级成根因。
+`nativePollOnce`、高 Load、某个 `D` 状态，每一条都只是线索。我们把这些线索和调用链、时间线、资源证据对应起来之后，责任才能落定；所以报告先记事实，再写这些事实支持或排除哪些解释，最后才把某项解释升级成根因。
 
 ### ANR trace 是怎样生成的
 
@@ -171,9 +171,11 @@ ANR 的判定信息本身很薄：系统认定某项关键响应超过了期限�
 | Linux 状态 | `state=R/S/D` | 内核在采样点看到的 task state（任务状态） |
 | Java/native 栈 | `Object.wait`、`futex_wait`、`nativePollOnce` | 当前调用路径或正在使用的等待机制 |
 
-ART 状态 `Native` 表示线程正在原生代码中，是否在消耗 CPU 要回到调度轨迹上确认；主线程在 epoll 中等待消息时也显示 `Native`。`sCount` 度量的是当前挂起的 suspend count（暂停请求计数），线程历史上被 GC 或调试器暂停过几次，它并不记录。
+ART 状态 `Native` 表示线程正在原生代码中，至于有没有在消耗 CPU，要回到调度轨迹上确认——主线程在 epoll 中等待消息时，显示的同样是 `Native`。`sCount` 度量的是当前挂起的 suspend count（暂停请求计数）；线程历史上被 GC 或调试器暂停过几次，这个字段里查不到。
 
-6.18 内核里，`D` 对应 `TASK_UNINTERRUPTIBLE` 一类不可中断等待，I/O、direct reclaim（线程同步参与内存回收）、驱动 completion、内核锁等待等路径都可能落到这一状态；状态字母本身不带等待原因，归因要靠后面的内核轨迹。普通 futex（快速用户态互斥锁） 等待在该内核源码中设置为 `TASK_INTERRUPTIBLE|TASK_FREEZABLE`，通常按 `S` 等待分析；要把 D-state 归到用户态锁头上，光有 `futex_wait` 还不够。
+6.18 内核里，`D` 对应 `TASK_UNINTERRUPTIBLE` 一类不可中断等待，I/O、direct reclaim（线程同步参与内存回收）、驱动 completion、内核锁等待等路径都可能落到这一状态；状态字母本身不带等待原因，归因要靠后面的内核轨迹。
+
+普通 futex（快速用户态互斥锁） 等待在该内核源码中设置为 `TASK_INTERRUPTIBLE|TASK_FREEZABLE`，通常按 `S` 等待分析。所以要把 D-state 归到用户态锁头上，光有 `futex_wait` 还不够。
 
 Freezer 还有独立的 `TASK_FROZEN` 状态；cgroup v2 通过 `cgroup.freeze` 请求冻结，并在完成后将 `cgroup.events` 中的 `frozen` 更新为 `1`。只有冻结控制状态、freeze/unfreeze 事件和调度证据能够相互对应时，才能把停顿归因给 freezer。
 
@@ -232,7 +234,7 @@ Binder 分析应闭合四段证据：
 | `T_dump_main` | 目标进程线程栈完成采样 |
 | `T_log` | `ANR in` 等报告写入日志 |
 
-若 `T_dump_main` 时主线程已经进入 `nativePollOnce`，但 Perfetto 显示它在 `T_deadline`（完成期限） 前连续执行同一条耗时消息，时间线就补回了栈中已经消失的现场。若采样时主线程仍停在同一路径，点状快照与连续时间线会互相印证。若两者冲突且采集窗口不完整，结论应降级为“疑似”，并列出缺失证据。
+若 `T_dump_main` 时主线程已经进入 `nativePollOnce`，但 Perfetto 显示它在 `T_deadline`（完成期限） 前连续执行同一条耗时消息，时间线就补回了栈中已经消失的现场。若采样时主线程仍停在同一路径，点状快照与连续时间线会互相印证。若两者冲突且采集窗口不完整，我们就把结论降级为“疑似”，并列出缺失证据。
 
 ### 从 Perfetto 还原超时窗口
 
@@ -309,7 +311,7 @@ WHERE process.name = 'com.example.app'
 ORDER BY thread_state.ts;
 ```
 
-`ts` 和 `dur` 使用 Trace Processor 的纳秒时间基准。不同 Perfetto 版本的状态字符串和可选列可能有差异，批处理前先通过 `.schema thread_state` 查当前表结构，再按 `T_deadline` 的时间范围过滤和聚合。SQL 结果给出的是状态时长；原因还要靠调用栈、flow 和系统计数器来解释。
+`ts` 和 `dur` 使用 Trace Processor 的纳秒时间基准。不同 Perfetto 版本的状态字符串和可选列可能有差异，批处理前先通过 `.schema thread_state` 查当前表结构，再按 `T_deadline` 的时间范围过滤和聚合。SQL 结果给出的是状态时长；至于原因，我们还要回到调用栈、flow 和系统计数器上解释。
 
 ### 常见根因的证据链
 
@@ -638,7 +640,7 @@ Java 或 Native 栈给出线程停留位置，内核轨迹解释它为什么长�
 - 同一份转储中已采集进程的瞬时状态；
 - trace header（文件头）、ANR reason（超时原因） 和进程调度摘要。
 
-单凭一份转储，下面这些问题还回答不了：
+单凭一份转储，我们还回答不了下面这些问题：
 
 - 某个栈帧是否持续了整个超时窗口；
 - `RUNNABLE` 线程一直占用 CPU；Java/ART 栈中的该状态区分不了线程正在运行还是等待调度，也给不出整个窗口的 CPU 占用；
@@ -816,7 +818,7 @@ Perfetto SQL 的 `ts` 使用 trace 内部时钟，EventLog 和日志文件常带
 | `X` / `Z` | 退出或 zombie（进程已结束但退出状态尚未被父进程回收） |
 | `NULL` | trace 在该片段结束前停止 |
 
-`end_state` 不会用 `Running` 表示当前片段；行本身就是 Running 区间。需要统计等待时间时应查询 `thread_state`，该表会提供 `Running`、`R`、`S`、`D` 等状态区间。
+`end_state` 不会用 `Running` 表示当前片段；行本身就是 Running 区间。要统计等待时间，我们查询 `thread_state`，它会给出 `Running`、`R`、`S`、`D` 等状态区间。
 
 下面的 SQL 用于列出目标进程主线程在分析窗口内的状态，并把跨越窗口边界的 slice 裁剪到窗口以内：
 
@@ -892,7 +894,7 @@ GROUP BY state
 ORDER BY duration_ms DESC;
 ```
 
-运行占比没有通用的 30% 分界线。10 秒窗口里主线程只运行 50 ms，可能是在等待一个正常的异步结果，也可能遭遇调度饥饿；必须结合它在等待什么、何时被唤醒，以及完成期限是否已经到期。
+运行占比没有通用的 30% 分界线。10 秒窗口里主线程只运行 50 ms，可能是在等待一个正常的异步结果，也可能遭遇调度饥饿；我们还要看它在等待什么、何时被唤醒，以及完成期限是否已经到期。
 
 #### 5.2 Runnable 时间
 
@@ -946,7 +948,7 @@ Perfetto 会把可解析结果放入 `thread_state.blocked_function` 和 `io_wai
 
 #### 5.4 CPU 频率与 thermal
 
-低频本身证明不了 thermal throttling（温控限频）。线程休眠或负载很低时，DVFS（动态电压频率调节）主动降频是正常行为。认定 thermal 影响至少需要同时满足：
+低频本身证明不了 thermal throttling（温控限频）：线程休眠或负载很低时，DVFS（动态电压频率调节）主动降频是正常行为。我们认定 thermal 影响，至少要同时满足：
 
 - 目标线程存在持续 Runnable 等待或业务工作量；
 - `cpu_frequency` 与 `cpu_frequency_limits` 显示可用上限下降；
@@ -1047,7 +1049,7 @@ WHERE event.name IN (
 ORDER BY event.ts, args.key;
 ```
 
-字段键名受 trace processor 版本影响，先查看 `args.key`，再编写 `EXTRACT_ARG()` 查询更稳妥。要把 `code` 解释为具体方法，还需结合正确的 AIDL interface（接口） 和该 build 生成的 transaction 常量。
+字段键名受 trace processor 版本影响，我们先查看 `args.key`，再编写 `EXTRACT_ARG()` 查询更稳妥。要把 `code` 解释为具体方法，还需结合正确的 AIDL interface（接口） 和该 build 生成的 transaction 常量。
 
 #### 6.3 判断路径
 
@@ -1217,6 +1219,8 @@ BPF 程序仍会在事件路径上执行，事件频率、map（BPF 键值存储
 
 ## 常见误区
 
+ANR 分析里有几个反复出现的误判，把它们集中列出来，方便对照检查。
+
 ### 看到 `nativePollOnce` 就排除应用责任
 
 `nativePollOnce` 表示 Looper 在采样时正通过 native poll 等待新事件，只能证明该采样点空闲。回看 `T_deadline` 前的主线程消息、输入流和 ANR 类型，才能判断耗尽期限的工作是否已经结束。
@@ -1227,7 +1231,7 @@ BPF 程序仍会在事件路径上执行，事件频率、map（BPF 键值存储
 
 ### `D` 状态等于磁盘慢或被冻结
 
-`D` 只表示线程处于不可中断等待。需要结合 kernel callstack（内核调用栈）、block I/O（块设备读写）、驱动事件或 cgroup 冻结证据判断具体原因。
+`D` 只表示线程处于不可中断等待。要判断具体原因，我们需要结合 kernel callstack（内核调用栈）、block I/O（块设备读写）、驱动事件或 cgroup 冻结证据。
 
 ### 高 Load 足以证明系统问题
 

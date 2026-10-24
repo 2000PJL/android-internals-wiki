@@ -8185,7 +8185,7 @@
       "created_at": "2026-10-22T10:11:31.229497+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261022-100520-e286d5fa",
-      "details": "已于 20261022-123520-deep-review-f805dc05 核对并在正文补齐 SurfaceView.setSurfaceLifecycle API 34、setDesiredHdrHeadroom API 35、setCompositionOrder API 36、setBlurRegions API 37 的官方入口；android-17.0.0_r1 确认当前合成顺序与模糊区域的 FlaggedApi 注解。2026-03-03 Android Developers Blog 明确 Connected Display 随 Android 16 QPR3 达到 GA，并限定受支持设备，正文已补发布出处。剩余缺口：Android 12—13 演进、其余历史 flag 与 ARR 适用性、Activity 转场历史分界以及第三方框架拓扑未逐项按版本复核。保持原 id 和 open，不以部分核验替代整章证据覆盖。",
+      "details": "保留既有核验：SurfaceView 四项 API 首引、Android 17 当前 flag、alpha 作用范围和 Connected Display Desktop 的 Android 16 QPR3 GA。20261024-080520-dc2d5001 已补核并修订：Android 12 BLAST 与 FrameTimeline 的版本及 SurfaceView 覆盖限制；Android 13 AutoSingleLayer 默认值、Composer AIDL 引入及 HIDL 弃用但不强制迁移；Android 17 已不读取旧 latch_unsignaled/Always 强制配置；ARR 的 Android 15 QPR1、composer3 接口版本 3、vrrConfig 条件，以及 API 36 hasArrSupport 和当前 FlaggedApi；Shell Transitions 在 Android 12/13/14/15/17 固定 r1 标签的默认值、属性改名、Automotive 例外和 Android 17 player/fallback 判定。剩余缺口：其余历史 HDR/SurfaceView flag，以及 WebView、Flutter、React Native、游戏引擎等第三方拓扑仍未按具体组件版本逐项复核。原 id 保持 open，章节保持 ready-for-review；不以部分核验替代整章证据覆盖。",
       "id": "finding-1f0df2d48025",
       "log_path": "logs/deep-review/2026-10-22-20261022-123520-deep-review-f805dc05-deep-review.md",
       "severity": "P2",
@@ -8193,12 +8193,20 @@
         "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/api/current.txt",
         "https://developer.android.com/reference/android/view/SurfaceView",
         "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
-        "https://android-developers.googleblog.com/2026/03/android-devices-extend-seamlessly-to.html"
+        "https://android-developers.googleblog.com/2026/03/android-devices-extend-seamlessly-to.html",
+        "https://source.android.com/docs/core/graphics/unsignaled-buffer-latch",
+        "https://source.android.com/docs/core/graphics/aidl-hwc",
+        "https://source.android.com/docs/core/graphics/arr",
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate",
+        "https://developer.android.com/reference/android/view/Display#hasArrSupport()",
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/transition/Transitions.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/wm/TransitionController.java"
       ],
       "status": "open",
-      "summary": "版本演进与第三方拓扑尚缺逐项证据（SurfaceView API 首引与桌面 GA 已核验）",
+      "summary": "历史 flag 与第三方拓扑仍缺逐项证据（Android 12—13、ARR 与 Shell 启用逻辑已补核）",
       "type": "source-coverage",
-      "updated_at": "2026-10-22T12:41:50+08:00"
+      "updated_at": "2026-10-24T08:13:59.300241+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch01-architecture/19-display-windowmanager-architecture.md",

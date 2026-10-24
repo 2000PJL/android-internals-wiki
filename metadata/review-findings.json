@@ -9442,6 +9442,87 @@
       "summary": "Benchmark 1.4.1 的 TTFD 与编译模式边界表述不完整",
       "type": "inaccurate-api-boundary",
       "updated_at": "2026-10-23T22:48:35.306611+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
+      "close_note": "已改表格与相邻解释，分开外部 Producer 的 buffer 生产、宿主 HWUI GPU 采样与 SurfaceView 独立提交；保留 TextureView 仅在硬件加速窗口工作的边界。依据 android-17.0.0_r1 TextureView.java 40-96、157-160 及官方 TextureView/SurfaceView 文档。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261024-100520-0378bd6d",
+      "created_at": "2026-10-24T10:10:48.599402+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261024-100520-0378bd6d",
+      "details": "画面的生产者表把 TextureView 外部生产一次列在 GPU 工作列，容易把 MediaCodec/Camera 生产与宿主 HWUI 采样计成两次 GPU 渲染；SurfaceView 的独立 Producer 也不必使用通用 GPU。需明确实际 GPU 工作由 Producer 实现决定，并给出独立观察入口。",
+      "id": "finding-ch02-07-producer-gpu-attribution",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://source.android.com/docs/core/graphics/arch-tv"
+      ],
+      "status": "fixed",
+      "summary": "TextureView 与 SurfaceView 表格未区分内容生产和 GPU 渲染",
+      "type": "gpu-work-attribution",
+      "updated_at": "2026-10-24T10:13:23.607833+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
+      "close_note": "已补占位零、无后继尾行与有效零值的边界，给出按 track_id 的 LEAD(ts) 区间构造及 next_ts IS NOT NULL 过滤。Android 17 PushGpuCounterValue 325-340 为直接依据；实际执行 Perfetto v58.2 合成 protobuf 回归测试，解析得到 75、0、25、末尾占位0，保留3个有效区间和真实零值；不是设备性能实测。章节两段 SQL 均执行成功。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261024-100520-0378bd6d",
+      "created_at": "2026-10-24T10:10:48.657442+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261024-100520-0378bd6d",
+      "details": "PushGpuCounterValue 在当前时间戳写入占位 0，仅在下一样本到达后回填；最后一行没有后继样本时不能延展成 GPU 空闲。现有加权统计说明未显式排除末尾占位，也未区分有效零值。需按后继时间形成有效区间，排除无后继尾行，同时保留真实零值。",
+      "id": "finding-ch02-07-gpu-counter-terminal-placeholder",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/importers/proto/gpu_event_parser.cc#325"
+      ],
+      "status": "fixed",
+      "summary": "GPU 硬件 counter 回填说明缺少末尾占位零的统计边界",
+      "type": "measurement-boundary",
+      "updated_at": "2026-10-24T10:13:23.662566+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
+      "close_note": "已补官方 OpenGL ES 继续受支持、但不再积极开发新特性的声明，明确不等于弃用或移除；保留已有项目按性能、覆盖和维护成本决定迁移的边界。官方 Vulkan overview 已于 2026-10-24 重新抓取并核对。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261024-100520-0378bd6d",
+      "created_at": "2026-10-24T10:10:48.712534+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261024-100520-0378bd6d",
+      "details": "正文已引用 Vulkan 官方概览并讨论长期 API 选型，但省略该页 OpenGL ES 仍受支持、已不再积极开发新特性的声明。需保留继续支持与特性发展方向两个不同状态，不能把不再开发新特性写成弃用或移除。",
+      "id": "finding-ch02-07-gles-feature-lifecycle",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://developer.android.com/games/develop/vulkan/overview"
+      ],
+      "status": "fixed",
+      "summary": "GLES 选型未交代继续受支持但不再积极开发新特性的边界",
+      "type": "source-lifecycle-boundary",
+      "updated_at": "2026-10-24T10:13:23.720123+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
+      "close_note": "已将和改为或，与当日获取的 Android 17 CDD 7.1.4.1 C-1-1 include a screen or video output 一致；GLES 1.1/2.0/3.0/3.1 MUST 与 3.2 SHOULD 层级保持不变。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261024-100520-0378bd6d",
+      "created_at": "2026-10-24T10:12:55.027355+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261024-100520-0378bd6d",
+      "details": "Android 17 CDD 7.1.4.1 C-1-1 原文是 include a screen or video output，正文写成带屏幕和视频输出，可能被读成必须同时具备两者；应恢复或条件，避免缩小 GLES 兼容要求适用设备范围。",
+      "id": "finding-ch02-07-cdd-gles-display-scope",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://source.android.com/docs/compatibility/17/android-17-cdd#7_1_4_1_opengl_es"
+      ],
+      "status": "fixed",
+      "summary": "CDD GLES 要求的屏幕或视频输出条件被写成和",
+      "type": "applicability-condition",
+      "updated_at": "2026-10-24T10:13:23.778339+08:00"
     }
   ],
   "schema_version": 1

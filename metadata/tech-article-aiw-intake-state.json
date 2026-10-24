@@ -6452,6 +6452,54 @@
       "status": "appended",
       "title": "AI 时代，我们都将成为通才型开发者：只懂 Android，已经不够了AI 时代，我们都将成为通才 大家好，今天分享的主"
     },
+    "source/juejin-android/2026-10-25-76466747-彦火APP-Flutter包体分析.md": {
+      "chapter": "待分类",
+      "entry_id": "40a19ce2649594dc",
+      "last_appended": "2026-10-25T05:25:20.337855+08:00",
+      "last_seen": "2026-10-25T05:25:20.337855+08:00",
+      "mtime": 1792873298.4436853,
+      "score": 13,
+      "sha256": "2c43d6c5b111807b7aadb719a136ea135d796f0e6ddad470c51b8806937ee76e",
+      "size": 16789,
+      "status": "appended",
+      "title": "彦火APP-Flutter包体分析拆了胡彦斌「彦火」APK：它确实是 Flutter App，为什么体积还能这么小？ 最"
+    },
+    "source/juejin-android/2026-10-25-76573848-自己动手写了一个Android虚拟定位.md": {
+      "chapter": "待分类",
+      "entry_id": "c09e8b988885b87c",
+      "last_appended": "2026-10-25T05:25:20.337855+08:00",
+      "last_seen": "2026-10-25T05:25:20.337855+08:00",
+      "mtime": 1792873298.444078,
+      "score": 14,
+      "sha256": "91fb1b0a718c17296cccdf16d28ad2946c5037b182d6a5d866b69df27cfd2258",
+      "size": 14942,
+      "status": "appended",
+      "title": "自己动手写了一个 Android 虚拟定位 App：GPSSimulate 技术实自己动手写了一个 Android 虚拟"
+    },
+    "source/juejin-android/2026-10-25-76648798-你是不是还没用过select？实战Kotlin.md": {
+      "chapter": "待分类",
+      "entry_id": "8865ba3fad5bede8",
+      "last_appended": "2026-10-25T05:25:20.337855+08:00",
+      "last_seen": "2026-10-25T05:25:20.337855+08:00",
+      "mtime": 1792873298.443257,
+      "score": 9,
+      "sha256": "c575173ffe06c7113742e9f5b09e1be860996f94d8f8f54f160f551eab8edb44",
+      "size": 18533,
+      "status": "appended",
+      "title": "你是不是还没用过 select？实战 Kotlin select 在 Kotlin 协程中，select 算是一个有点尴"
+    },
+    "source/juejin-android/2026-10-25-76756264-三星安卓系统BUG排查记录：云闪付、铁路.md": {
+      "chapter": "待分类",
+      "entry_id": "5dcb42aca01cbdaf",
+      "last_appended": "2026-10-25T05:25:20.337855+08:00",
+      "last_seen": "2026-10-25T05:25:20.337855+08:00",
+      "mtime": 1792873298.4425104,
+      "score": 24,
+      "sha256": "b3c3f7661ccd65e70b677d99967ddd6835ee27b6da33e8f8ce3be66275382fe0",
+      "size": 33470,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -8837,24 +8885,24 @@
     }
   },
   "last_report": {
-    "appended": 12,
-    "considered": 12,
-    "cutoff": "2026-10-23T05:20:20.466807+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-24.md",
+    "appended": 4,
+    "considered": 4,
+    "cutoff": "2026-10-24T05:20:20.127166+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-25.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2251,
+    "scanned": 2255,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1414,
       "path": 31,
-      "unchanged": 794
+      "unchanged": 806
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-24T05:25:20.127166+08:00",
+  "last_run_at": "2026-10-25T05:25:20.337855+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

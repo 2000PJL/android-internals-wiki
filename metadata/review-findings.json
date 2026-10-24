@@ -9792,6 +9792,110 @@
       "summary": "把未见 activityRestart 轨迹误作 Activity 未重建的充分证据",
       "type": "trace-negative-evidence",
       "updated_at": "2026-10-24T18:44:29.146774+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/11-frame-pacing.md",
+      "close_note": "已按固定 Android 17 / AGDK / Vulkan 1.4.335 证据修正文内对应陈述，并通过来源条件检查、全文边界检查、中文新增行 gate 及 metadata/summary/diff 本地验证；未宣称设备性能实测。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261024-223520-idle-audit-7aa3daab",
+      "created_at": "2026-10-24T22:39:25.077790+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261024-223520-idle-audit-7aa3daab",
+      "details": "原文将 50 ms 等待阈值描述成对观测帧耗时的直接比较，并将 mSupportedRefreshPeriods 遍历写成通用刷新率选择步骤。固定提交 SwappyCommon.cpp:335-351 实际比较 refreshPeriod * mAutoSwapInterval；822-875 仅在 native frame-rate vote 分支不可用时遍历 DisplayManager 支持周期。",
+      "id": "finding-f509f726001d",
+      "log_path": "logs/audit/2026-10-24-20261024-223520-idle-audit-7aa3daab-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/f81f888fe11e9540dd580edf5993232172ed3cbe/games-frame-pacing/common/SwappyCommon.cpp",
+        "https://android.googlesource.com/platform/frameworks/opt/gamesdk/+/f81f888fe11e9540dd580edf5993232172ed3cbe/games-frame-pacing/common/SwappyCommon.h"
+      ],
+      "status": "verified",
+      "summary": "Swappy Auto 等待阈值与刷新率选择分支描述不符源码",
+      "type": "source-mismatch",
+      "updated_at": "2026-10-24T22:45:06.330229+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/11-frame-pacing.md",
+      "close_note": "已按固定 Android 17 / AGDK / Vulkan 1.4.335 证据修正文内对应陈述，并通过来源条件检查、全文边界检查、中文新增行 gate 及 metadata/summary/diff 本地验证；未宣称设备性能实测。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261024-223520-idle-audit-7aa3daab",
+      "created_at": "2026-10-24T22:39:25.154338+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261024-223520-idle-audit-7aa3daab",
+      "details": "原文把真实开关 bq_producer_backpressure_control 拆成带中文括注的无效标识符。android-17.0.0_r1 BufferQueueProducer.cpp:1224-1232 还表明关闭请求在 mAsyncMode 或 mDequeueBufferCannotBlock 为 true 时仍保留 CPU throttling；原文仅保留异步模式例外。",
+      "id": "finding-0d942779850f",
+      "log_path": "logs/audit/2026-10-24-20261024-223520-idle-audit-7aa3daab-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BufferQueueProducer.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/nativewindow/include/android/native_window.h"
+      ],
+      "status": "verified",
+      "summary": "producer throttling 开关名被括注拆断且遗漏不可阻塞 dequeue 例外",
+      "type": "identifier-and-availability",
+      "updated_at": "2026-10-24T22:45:06.386119+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/11-frame-pacing.md",
+      "close_note": "已按固定 Android 17 / AGDK / Vulkan 1.4.335 证据修正文内对应陈述，并通过来源条件检查、全文边界检查、中文新增行 gate 及 metadata/summary/diff 本地验证；未宣称设备性能实测。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261024-223520-idle-audit-7aa3daab",
+      "created_at": "2026-10-24T22:39:25.213600+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261024-223520-idle-audit-7aa3daab",
+      "details": "原文 GPU Render Stag（日志标签）es 既破坏轨道名称，又将 GPU render-stage 时间线混同日志标签。Perfetto GPU 文档区分 gpu.renderstages 与 gpu.log；GPU 阶段观测依赖设备提供对应数据源。",
+      "id": "finding-1ad99c013274",
+      "log_path": "logs/audit/2026-10-24-20261024-223520-idle-audit-7aa3daab-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfetto.dev/docs/data-sources/gpu"
+      ],
+      "status": "verified",
+      "summary": "GPU Render Stages 观测名称被错误日志标签括注拆断",
+      "type": "observation-identifier-corruption",
+      "updated_at": "2026-10-24T22:45:06.442075+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/11-frame-pacing.md",
+      "close_note": "已按固定 Android 17 / AGDK / Vulkan 1.4.335 证据修正文内对应陈述，并通过来源条件检查、全文边界检查、中文新增行 gate 及 metadata/summary/diff 本地验证；未宣称设备性能实测。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261024-223520-idle-audit-7aa3daab",
+      "created_at": "2026-10-24T22:43:41.165334+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261024-223520-idle-audit-7aa3daab",
+      "details": "原文声称 Android 17 android_frame_timeline_metric.sql 按 upid + name 关联 expected 与 actual。所核 metric 只读取 actual_frame_timeline_slice 并以 upid + vsync 聚合，没有 expected_frame_timeline_slice 关联；查询可作为本文查询保留，但须删除错误来源归因。",
+      "id": "finding-3cdfb4307f40",
+      "log_path": "logs/audit/2026-10-24-20261024-223520-idle-audit-7aa3daab-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/trace_processor/metrics/sql/android/android_frame_timeline_metric.sql",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "status": "verified",
+      "summary": "FrameTimeline SQL 的 expected/actual 关联被误归因于平台 metric",
+      "type": "source-attribution",
+      "updated_at": "2026-10-24T22:45:06.498717+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/11-frame-pacing.md",
+      "close_note": "已按固定 Android 17 / AGDK / Vulkan 1.4.335 证据修正文内对应陈述，并通过来源条件检查、全文边界检查、中文新增行 gate 及 metadata/summary/diff 本地验证；未宣称设备性能实测。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261024-223520-idle-audit-7aa3daab",
+      "created_at": "2026-10-24T22:43:41.221206+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261024-223520-idle-audit-7aa3daab",
+      "details": "原文把 Profile 范围概括为 Android 17 首发设备和新芯片，遗漏 description 指定的 launch 或 renew Google Requirements Freeze 的芯片组范围；EXT 接入说明仅列 device feature 与反馈队列配置，遗漏规范要求的 VK_SWAPCHAIN_CREATE_PRESENT_TIMING_BIT_EXT。",
+      "id": "finding-de10b920ca84",
+      "log_path": "logs/audit/2026-10-24-20261024-223520-idle-audit-7aa3daab-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/vulkan/vkprofiles/profiles/VP_ANDROID_17_requirements.json",
+        "https://github.com/KhronosGroup/Vulkan-Docs/blob/v1.4.335/proposals/VK_EXT_present_timing.adoc"
+      ],
+      "status": "verified",
+      "summary": "Vulkan present timing 的 Profile 范围和交换链启用前提不完整",
+      "type": "availability-scope",
+      "updated_at": "2026-10-24T22:45:06.554373+08:00"
     }
   ],
   "schema_version": 1

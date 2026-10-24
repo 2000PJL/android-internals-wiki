@@ -8927,6 +8927,9 @@
     },
     {
       "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "close_note": "重新读取 DOI 官方摘要及第 667–668 页预览，确认未含方法学第 3 节。删除无法定位来源的 32 MB/2 MB/4 KiB/三轮平均和 A1 模式清单，改为有摘要依据的测试范围、按固定 APK 核对协议及历史数据比较条件；未将参数标为已验证。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261024-120520-a1a4cfe3",
       "created_at": "2026-10-22T22:22:56.211115+08:00",
       "created_by": "aiw-review-finalize-apply",
       "created_run_id": "20261022-220520-5121b662",
@@ -8938,10 +8941,10 @@
         "https://doi.org/10.1007/978-3-642-27552-4_89",
         "https://page-one.springer.com/pdf/preview/10.1007/978-3-642-27552-4_89"
       ],
-      "status": "open",
+      "status": "fixed",
       "summary": "AndroBench 历史协议参数及 A1 SD Bench 功能清单仍缺可定位原始证据",
       "type": "missing-source",
-      "updated_at": "2026-10-22T22:22:56.211115+08:00"
+      "updated_at": "2026-10-24T12:19:59.639771+08:00"
     },
     {
       "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
@@ -9565,6 +9568,88 @@
       "summary": "BoringLayout 资格说明混用原始文本与单行转换后的显示文本",
       "type": "missing-transformation-boundary",
       "updated_at": "2026-10-24T10:41:37.501336+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "close_note": "自动化规则现明确要求正常、异常、超时路径均调用 stopTest，保留继续计费警告；检查 saveData 或缓存保存成功再开始下一轮，并说明新测试清空上一轮缓存。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261024-120520-a1a4cfe3",
+      "created_at": "2026-10-24T12:14:28.030737+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261024-120520-a1a4cfe3",
+      "details": "Service 官方说明书明确警告测试结束必须调用 stopTest 防止继续扣费；getDeviceCacheData 与 Packed 说明新测试会清空缓存。正文仅要求停止后等待写完，没有把异常和超时清理纳入，也未说明下一轮清缓存的边界。",
+      "id": "finding-17-7-service-stoptest-cleanup",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://perfdog.qq.com/article_detail?id=10143&issue_id=0&plat_id=2"
+      ],
+      "status": "fixed",
+      "summary": "PerfDog 自动化缺少 stopTest 计费终止与缓存生命周期约束",
+      "type": "lifecycle-boundary",
+      "updated_at": "2026-10-24T12:19:59.712225+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "close_note": "按 3DMark Android 官方发布说明补充 Wild Life 与 Sling Shot 的 Maxed out 状态，不记零、不补分、不误记为有效 60 FPS；依据 Wild Life 概览解释 Unlimited 离屏固定时间步及垂直同步/分辨率缩放边界，模式单独建序列。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261024-120520-a1a4cfe3",
+      "created_at": "2026-10-24T12:14:28.088797+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261024-120520-a1a4cfe3",
+      "details": "3DMark Android 2.2.4809 说明 Wild Life 任一区间超过 60 FPS 时显示 Maxed out；2.1.4723 对 Sling Shot 同样说明。正文未解释该状态，Unlimited 仅概括为不受分辨率限制，缺少固定时间步与垂直同步边界，容易把满量程状态当作有效分数或同模式结果。",
+      "id": "finding-17-7-3dmark-maxed-out",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://support.benchmarks.ul.com/support/solutions/articles/44002142020-3dmark-android-application-release-notes",
+        "https://support.benchmarks.ul.com/support/solutions/articles/44002135593"
+      ],
+      "status": "fixed",
+      "summary": "3DMark 设备基线缺少 Maxed out 读数与离屏模式边界",
+      "type": "lifecycle-boundary",
+      "updated_at": "2026-10-24T12:19:59.780123+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "close_note": "将虚构 Pixel 8 事件改为同字段占位模板，要求设备身份来自采集、能力来自可追溯字典、缺失为 unknown；删除无实测来源的三组启动 P95 和样本量，保留混杂因素及控制变量的分析方法。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261024-120520-a1a4cfe3",
+      "created_at": "2026-10-24T12:14:28.148859+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261024-120520-a1a4cfe3",
+      "details": "设备字典事件给 Pixel 8/Tensor G3 指定 high/medium 和 MPC 35，后续相关性表列出三组启动 P95 与样本量。虽然标为虚构，仍不是实测证据；可用同字段的占位模板和混杂变量说明保留方法，删除虚构设备性能取值和统计数值。",
+      "id": "finding-17-7-synthetic-device-results",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md#把设备字典连接到线上数据"
+      ],
+      "status": "fixed",
+      "summary": "设备关联示例含无实测来源的启动分位数与设备能力取值",
+      "type": "unsupported-data",
+      "updated_at": "2026-10-24T12:19:59.848149+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch17-apm/07-lab-tools-device-benchmarks.md",
+      "close_note": "在版本表后补充 3DMark 免费版仅限非商业用途及专业用户许可要求；补充 PCMark Professional Edition、Single-Seat 与多台并行所需 Site License 的区别，未给出未核验的价格或授权保证。",
+      "closed_by": "aiw-review-finalize-apply",
+      "closed_run_id": "20261024-120520-a1a4cfe3",
+      "created_at": "2026-10-24T12:23:02.720050+08:00",
+      "created_by": "aiw-review-finalize-apply",
+      "created_run_id": "20261024-120520-a1a4cfe3",
+      "details": "3DMark Android 官方下载页声明免费应用仅限非商业用途，专业用户须商用或适用的媒体许可；PCMark Android 官网为商业、政府和企业用户单列 Professional Edition，单席许可每次仅一台设备，并行多台需 Site License。章节直接给团队设备实验室使用建议，未交代这些准入边界。",
+      "id": "finding-17-7-benchmark-commercial-licenses",
+      "log_path": "",
+      "severity": "P2",
+      "source_paths": [
+        "https://benchmarks.ul.com/3dmark-android",
+        "https://benchmarks.ul.com/pcmark-android"
+      ],
+      "status": "fixed",
+      "summary": "实验室使用建议遗漏 3DMark 与 PCMark 的商业许可边界",
+      "type": "availability-boundary",
+      "updated_at": "2026-10-24T12:23:53.378301+08:00"
     }
   ],
   "schema_version": 1

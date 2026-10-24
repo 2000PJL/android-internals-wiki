@@ -9523,6 +9523,48 @@
       "summary": "CDD GLES 要求的屏幕或视频输出条件被写成和",
       "type": "applicability-condition",
       "updated_at": "2026-10-24T10:13:23.778339+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/06-text-rendering-performance.md",
+      "close_note": "已把 text blob 构造移到主线程绘制录制层，补充 SkiaCanvas::drawGlyphs 与 SkiaRecordingCanvas 源码解释；源码断言与章节本地门禁通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261024-103520-idle-audit-fd3b018b",
+      "created_at": "2026-10-24T10:39:04.346878+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261024-103520-idle-audit-fd3b018b",
+      "details": "android-17.0.0_r1 的 SkiaCanvas::drawGlyphs 在调用线程通过 SkTextBlobBuilder 构造 text blob；SkiaRecordingCanvas 继承此方法，并将底层 Canvas 指向 recorder。标准 View 绘制录制在主线程，因此 text blob 构造属于录制侧，需与回放侧 strike/glyph 资源准备分开。",
+      "id": "finding-f9dd1d86cd4c",
+      "log_path": "logs/audit/2026-10-24-20261024-103520-idle-audit-fd3b018b-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/SkiaCanvas.cpp#820",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaRecordingCanvas.cpp#59"
+      ],
+      "status": "verified",
+      "summary": "文字工作分层把 SkTextBlob 构造误归入 RenderThread 绘制执行",
+      "type": "wrong-thread-attribution",
+      "updated_at": "2026-10-24T10:41:37.445538+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch02-rendering/06-text-rendering-performance.md",
+      "close_note": "已按 mTransformed 说明 BoringLayout 资格，区分 maxLines=1 与 setSingleLine(true) 的转换和横向滚动，并同步修正常见误区；源码断言与章节本地门禁通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261024-103520-idle-audit-fd3b018b",
+      "created_at": "2026-10-24T10:39:04.402944+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261024-103520-idle-audit-fd3b018b",
+      "details": "TextView.makeSingleLayout 对 mTransformed 调用 BoringLayout.isBoring。setSingleLine(true) 安装 SingleLineTransformationMethod，把换行符转换为空格、回车转换为 U+FEFF；maxLines=1 不安装此转换。原文把两种设置并列后直接以原文含换行推断路径，会误导 Layout 排查。",
+      "id": "finding-3707181acb79",
+      "log_path": "logs/audit/2026-10-24-20261024-103520-idle-audit-fd3b018b-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/TextView.java#11177",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/text/method/SingleLineTransformationMethod.java#19"
+      ],
+      "status": "verified",
+      "summary": "BoringLayout 资格说明混用原始文本与单行转换后的显示文本",
+      "type": "missing-transformation-boundary",
+      "updated_at": "2026-10-24T10:41:37.501336+08:00"
     }
   ],
   "schema_version": 1

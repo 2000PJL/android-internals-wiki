@@ -9650,6 +9650,68 @@
       "summary": "实验室使用建议遗漏 3DMark 与 PCMark 的商业许可边界",
       "type": "availability-boundary",
       "updated_at": "2026-10-24T12:23:53.378301+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch18-aosp/04-autofdo-feedback-directed-optimization.md",
+      "close_note": "已按 cmd_inject.cpp 和 dso.cpp 修正名称过滤、独立压缩开关以及 AutoFDO 文本输入与 LLVM 源码归因的阶段；源码断言和本地 gates 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261024-143520-idle-audit-2e024dba",
+      "created_at": "2026-10-24T14:39:11.185925+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261024-143520-idle-audit-2e024dba",
+      "details": "android-17.0.0_r1 cmd_inject.cpp:1060 将 --binary 定义为二进制名称正则过滤器，dso.cpp:224-227 将 [kernel.kallsyms] 对应到 vmlinux。record -z 不会压缩随后 inject 生成的 branch-list；inject 的压缩由独立 -z 控制。WriteAutoFDO 输出文件偏移和计数，源码位置归因在后续转换阶段完成。",
+      "id": "finding-97db6f2c2cad",
+      "log_path": "logs/audit/2026-10-24-20261024-143520-idle-audit-2e024dba-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "system/extras/simpleperf/cmd_inject.cpp @ android-17.0.0_r1",
+        "system/extras/simpleperf/dso.cpp @ android-17.0.0_r1"
+      ],
+      "status": "verified",
+      "summary": "AutoFDO 中间数据说明误解 --binary 过滤参数、分支列表压缩及源码归因阶段",
+      "type": "tool-semantics",
+      "updated_at": "2026-10-24T14:44:02.438510+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch18-aosp/04-autofdo-feedback-directed-optimization.md",
+      "close_note": "已明确 CUJ 须另外运行、stat 是事件计数、--app 的进程范围和 -a 的系统级范围；非 root 权限按 environment.cpp 保留 debuggable/profileable 两条路径，未照搬过窄的帮助文本。源码断言和本地 gates 通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261024-143520-idle-audit-2e024dba",
+      "created_at": "2026-10-24T14:43:49.720337+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261024-143520-idle-audit-2e024dba",
+      "details": "cmd_stat.cpp:474-489、658-681 证明 --app 配合 --duration 等待并监测应用进程，不负责启动应用或执行 CUJ；没有 -a 时不计入其他服务进程及独立内核线程。权限边界以 environment.cpp:812-859 的 RunInAppContext 实现为准：同时支持 debuggable/profileable，stat 帮助仅写 debuggable 的说明不完整。",
+      "id": "finding-20d4eb65314d",
+      "log_path": "logs/audit/2026-10-24-20261024-143520-idle-audit-2e024dba-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "system/extras/simpleperf/cmd_stat.cpp @ android-17.0.0_r1",
+        "system/extras/simpleperf/environment.cpp @ android-17.0.0_r1"
+      ],
+      "status": "verified",
+      "summary": "simpleperf stat --app 示例被描述为执行工作负载且未限定进程计数范围",
+      "type": "measurement-scope",
+      "updated_at": "2026-10-24T14:44:02.493661+08:00"
+    },
+    {
+      "chapter": "src/part4-system/ch18-aosp/04-autofdo-feedback-directed-optimization.md",
+      "close_note": "已补 ARMv8 量产跟踪接口限制、Pixel 8 TRBE 勘误与 ETE+ETR，以及 .ko 的调试行表、build ID、转换器补丁和 DDK 前置条件；与 Android 17 固定标签文档逐项核对通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261024-143520-idle-audit-2e024dba",
+      "created_at": "2026-10-24T14:39:11.297376+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261024-143520-idle-audit-2e024dba",
+      "details": "已列 simpleperf 文档明确 ARMv8 量产设备通常禁用外部跟踪调试接口，Pixel 8 因 TRBE 已知勘误采用 ETE+ETR；模块转换示例要求 .debug_line、匹配 build ID，并为缺少程序头的可重定位 .ko 修补 create_llvm_prof。原文未交代这些限制。",
+      "id": "finding-10b040258f0c",
+      "log_path": "logs/audit/2026-10-24-20261024-143520-idle-audit-2e024dba-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "system/extras/simpleperf/doc/collect_etm_data_for_autofdo.md @ android-17.0.0_r1"
+      ],
+      "status": "verified",
+      "summary": "遗漏 ETM 采集和可重定位内核模块转换的官方适用限制",
+      "type": "missing-applicability-boundary",
+      "updated_at": "2026-10-24T14:44:02.549186+08:00"
     }
   ],
   "schema_version": 1

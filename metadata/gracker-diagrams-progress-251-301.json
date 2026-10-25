@@ -1359,26 +1359,94 @@
     {
       "path": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
       "sha256_before": "648c16ad855674f9be29a64327fdbd2027307603748bc6b5948d3fdd3d46d7df",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a297-01-class-to-release-evidence-pipeline",
+        "a297-02-core-tree-and-scoped-artifacts",
+        "a297-03-scope-and-frame-recomputation",
+        "a297-04-factory-parallelism-and-gradle-inputs",
+        "a297-05-normal-return-and-propagating-exception",
+        "a297-06-tree-emission-marker-and-scope",
+        "a297-07-trace-tag-unicode-and-id-mapping",
+        "a297-08-r8-release-shape-and-mapping",
+        "a297-09-library-extension-versus-framework-boundary",
+        "a297-10-coroutine-logical-and-thread-segments",
+        "a297-11-multi-module-idempotence-and-reproducibility",
+        "a297-12-semantic-build-and-device-validation",
+        "a297-13-runtime-bridge-budgets-and-business-semantics"
+      ],
       "article_index": 297,
-      "sha256_at_assignment": "648c16ad855674f9be29a64327fdbd2027307603748bc6b5948d3fdd3d46d7df"
+      "sha256_at_assignment": "648c16ad855674f9be29a64327fdbd2027307603748bc6b5948d3fdd3d46d7df",
+      "sha256_current": "572cafb49498509e5c52bd82f40035d34035a080958acbdcb73be115a1045763",
+      "sha256_after": "572cafb49498509e5c52bd82f40035d34035a080958acbdcb73be115a1045763",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "Full 556-line frozen source read; 24 primary captures/artifacts checked (obsolete asm-instrumentation URL unavailable). 14 corrections include actual POST_COMPILATION_CLASSES added-in 9.3.3, fixed compatible AGP baseline, current stable metadata filtering and ASM 9.11.1. Real CheckClassAdapter reproduced original late exception-table registration; complete MethodNode visitor now preserves original catch/finally order, normal and implicit exception cleanup and version-marker idempotence. Exact published visitor compiled and executed with real ASM/JVM; two transform passes, multi/wide returns, exception identity/cause/suppressed, synchronized/finally/loop and UTF16 boundary tests pass. All 13 figure assets and 13 rendered positions actually inspected; isolated build, exact reconstruction, asset/link checks pass. Trace is a host stub; no AGP/D8/R8/DEX/device or overhead tests claimed.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "648c16ad855674f9be29a64327fdbd2027307603748bc6b5948d3fdd3d46d7df"
     },
     {
       "path": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
       "sha256_before": "97e6f2bbd30cd54c9c447262be41390a16d7a1e69122ba1bb7539e1d03097518",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a298-01-evidence-objects-and-permission-scopes",
+        "a298-02-native-heap-visibility-and-residency",
+        "a298-03-running-process-attach-and-buffer",
+        "a298-04-profileable-session-and-uid-authorization",
+        "a298-05-native-name-matching-and-process-lifetimes",
+        "a298-06-manager-shell-and-platform-collection",
+        "a298-07-sampling-buffer-and-daemon-guardrails",
+        "a298-08-delta-table-to-cumulative-live-estimate",
+        "a298-09-art-allocation-only-and-leak-confounders",
+        "a298-10-profile-failure-symbols-and-safe-archive",
+        "a298-11-procfs-access-and-dynamic-snapshot",
+        "a298-12-cpu-denominators-and-sleep-clocks",
+        "a298-13-proc-stat-parsing-and-counter-validation",
+        "a298-14-framework-cpu-tracker-private-semantics",
+        "a298-15-load-average-pressure-and-real-runtime",
+        "a298-16-cpu-running-runnable-and-wait-tracks",
+        "a298-17-arm64-fault-branches-and-failure",
+        "a298-18-fault-counters-and-counting-boundaries",
+        "a298-19-minor-cow-pagecache-and-swap-sources",
+        "a298-20-fault-parser-page-size-and-allocation",
+        "a298-21-fault-count-to-critical-path-causality",
+        "a298-22-art-userfaultfd-negotiation-and-fallback"
+      ],
       "article_index": 298,
-      "sha256_at_assignment": "97e6f2bbd30cd54c9c447262be41390a16d7a1e69122ba1bb7539e1d03097518"
+      "sha256_at_assignment": "97e6f2bbd30cd54c9c447262be41390a16d7a1e69122ba1bb7539e1d03097518",
+      "sha256_current": "01340c9939bf1cd15c38b69304af497fd624e3d43d86851f4f6c33192cf3a970",
+      "sha256_after": "01340c9939bf1cd15c38b69304af497fd624e3d43d86851f4f6c33192cf3a970",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "Full 1395-line frozen consolidated article read; 64 successful primary captures/artifacts checked, exploratory missing paths retained separately. 25 corrections include pinned trace-processor delta versus cumulative SQL, ART allocation-only exclusion, missing-zero-dump metadata/full-prefix requirements, CLOCK_PROCESS_CPUTIME_ID zero failure baseline, safe proc/fault parsing and CLK_TCK guards, GUP/perf and swap-cache distinctions, and process_stats record_process_runtime CPU-counter support. Twenty pinned assertions and exact published Kotlin host-stub/SQLite synthetic fixtures pass, including malformed/overflow/failed reads, clock/reset guards and cumulative100-40+30 semantics. All 22 final figures and 22 rendered positions actually viewed, including refined fault branches and CPU tracks. Build, exact reconstruction, unchanged shell bash syntax, local links and assets pass. No Android/SDK/NDK/device profiling or real leak/CPU/fault measurement performed.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "97e6f2bbd30cd54c9c447262be41390a16d7a1e69122ba1bb7539e1d03097518"
     },
     {
       "path": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
       "sha256_before": "d0da9f55f08e30b82caef120c69cae41fa301cfa8a8448544ad0b068608317a3",
-      "status": "pending",
-      "diagrams": [],
+      "status": "in_progress",
+      "diagrams": [
+        "a299-01-kernel-and-process-evidence-scopes",
+        "a299-02-wd-sys-filter-tail-call-reader",
+        "a299-03-buffer-loss-and-observation-health",
+        "a299-04-binder-user-memory-to-signatures",
+        "a299-05-binder-rpc-observation-tracks",
+        "a299-06-unique-event-rate-union-denominator",
+        "a299-07-version-bound-semantic-decoding",
+        "a299-08-profilo-controller-to-private-files",
+        "a299-09-profilo-ring-concurrency-and-wrap",
+        "a299-10-android17-trace-backend-branches",
+        "a299-11-profilo-hook-parse-and-swallow",
+        "a299-12-thread-lifetime-stack-and-partial",
+        "a299-13-sampling-provider-thread-timers",
+        "a299-14-fixed-artifacts-and-hook-capabilities",
+        "a299-15-stable-tracing-driver-and-system-scopes"
+      ],
       "article_index": 299,
-      "sha256_at_assignment": "d0da9f55f08e30b82caef120c69cae41fa301cfa8a8448544ad0b068608317a3"
+      "sha256_at_assignment": "d0da9f55f08e30b82caef120c69cae41fa301cfa8a8448544ad0b068608317a3",
+      "sha256_current": "639fdd1b0539508997efd667f78c45f6286c7272e13c6130a1d3e62aabdf3232"
     },
     {
       "path": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
@@ -2629,7 +2697,7 @@
         "src/assets/diagrams/ch23/a255-15-hsc-eligibility.svg",
         "src/assets/diagrams/ch23/a255-15-hsc-eligibility.png"
       ],
-      "layout": "linear-progression",
+      "layout": "structural-breakdown",
       "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-15-hsc-eligibility",
       "sources": [
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc"
@@ -13758,7 +13826,7 @@
         "src/assets/diagrams/ch26/a294-03-strictmode-and-resource-signals.svg",
         "src/assets/diagrams/ch26/a294-03-strictmode-and-resource-signals.png"
       ],
-      "layout": "flow-and-contract-boundaries",
+      "layout": "independent-policy-scopes",
       "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a294-03-strictmode-and-resource-signals",
       "sources": [
         "https://developer.android.com/reference/android/os/StrictMode",
@@ -14503,6 +14571,1108 @@
         "src/assets/diagrams/ch26/a296-12-apm-scopes-selection-and-device-health.svg": "4e042e721a9d5c2bc378abfaf0b03d715c0f21409630219f4730cdbfeb2d30d9",
         "src/assets/diagrams/ch26/a296-12-apm-scopes-selection-and-device-health.png": "f2b245f4e1e09838c89dad92fdcd8ebe59d6550e007a23c7d404d176f7a057ed"
       }
+    },
+    {
+      "id": "a297-01-class-to-release-evidence-pipeline",
+      "title": "插桩改变 JVM class，发布结果仍须经过 D8/R8 和设备验证",
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a297-01-class-to-release-evidence-pipeline.svg",
+        "src/assets/diagrams/ch26/a297-01-class-to-release-evidence-pipeline.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a297-01-class-to-release-evidence-pipeline",
+      "sources": [
+        "https://developer.android.com/build/releases/gradle-plugin-api-updates",
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/artifact/ScopedArtifact.CLASSES"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a297-01-class-to-release-evidence-pipeline.svg": "fb9700e6baa8e5ae9e72e9c83d46da11fa9d5de4af6ca5018e2a9f4a2f57858f",
+        "src/assets/diagrams/ch26/a297-01-class-to-release-evidence-pipeline.png": "ac76be3d1dbe82eaf3d462af172c92b55c51f75b010a4fb6c8e6cacf2c59f2c7"
+      }
+    },
+    {
+      "id": "a297-02-core-tree-and-scoped-artifacts",
+      "title": "变换需要的信息决定 Core、Tree 或整组产物入口",
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a297-02-core-tree-and-scoped-artifacts.svg",
+        "src/assets/diagrams/ch26/a297-02-core-tree-and-scoped-artifacts.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a297-02-core-tree-and-scoped-artifacts",
+      "sources": [
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/tree/MethodNode.html",
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/artifact/ScopedArtifact.POST_COMPILATION_CLASSES",
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/artifact/ScopedArtifact.CLASSES"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a297-02-core-tree-and-scoped-artifacts.svg": "18c3a77ef47bcb0f2d06abc9da90bb19206f3d1aa0d1b0b34c960bcea2b2efb9",
+        "src/assets/diagrams/ch26/a297-02-core-tree-and-scoped-artifacts.png": "228962192b905f7b7d6230536f006ccd1d4425d42eb33d1ae66b0576ff848c4b"
+      }
+    },
+    {
+      "id": "a297-03-scope-and-frame-recomputation",
+      "title": "模块范围和 frame 计算模式分别配置",
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a297-03-scope-and-frame-recomputation.svg",
+        "src/assets/diagrams/ch26/a297-03-scope-and-frame-recomputation.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a297-03-scope-and-frame-recomputation",
+      "sources": [
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/instrumentation/InstrumentationScope",
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/instrumentation/FramesComputationMode",
+        "https://developer.android.com/build/releases/gradle-plugin-api-updates"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a297-03-scope-and-frame-recomputation.svg": "02210722978170b21b4ed2fecc067d548c9ab9b2952e100495484921280ac70a",
+        "src/assets/diagrams/ch26/a297-03-scope-and-frame-recomputation.png": "20da404ecd39154d8489ff8d2bdb873a23216ced156896e28ddd809d917f70a5"
+      }
+    },
+    {
+      "id": "a297-04-factory-parallelism-and-gradle-inputs",
+      "title": "factory 可并发，规则必须是声明式 Gradle 输入",
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a297-04-factory-parallelism-and-gradle-inputs.svg",
+        "src/assets/diagrams/ch26/a297-04-factory-parallelism-and-gradle-inputs.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a297-04-factory-parallelism-and-gradle-inputs",
+      "sources": [
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/instrumentation/AsmClassVisitorFactory",
+        "https://asm.ow2.io/versions.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a297-04-factory-parallelism-and-gradle-inputs.svg": "78f3d319af26ab386ddf22b1fb606c319735fea910b0264f58ff9d0b9cdac789",
+        "src/assets/diagrams/ch26/a297-04-factory-parallelism-and-gradle-inputs.png": "e4e4e46a0d296b5fe3ebd1cf34bc521a7d41d56fd88688546dd7a921d985ce06"
+      }
+    },
+    {
+      "id": "a297-05-normal-return-and-propagating-exception",
+      "title": "先保留原 catch/finally，最后的 catch-all 才清理逃逸异常",
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a297-05-normal-return-and-propagating-exception.svg",
+        "src/assets/diagrams/ch26/a297-05-normal-return-and-propagating-exception.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a297-05-normal-return-and-propagating-exception",
+      "sources": [
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/MethodVisitor.html",
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/tree/MethodNode.html",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a297-05-normal-return-and-propagating-exception.svg": "8e6068e982548890f0edc2e089d32afe0373eb8acc4ee1cdaad25343e31605d1",
+        "src/assets/diagrams/ch26/a297-05-normal-return-and-propagating-exception.png": "c1d60012c828f1fc951c223ae9bd61db54a0caba216e9de256ab4a668a81b886"
+      }
+    },
+    {
+      "id": "a297-06-tree-emission-marker-and-scope",
+      "title": "MethodNode 同时解决输出顺序、handler 优先级与重复处理",
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a297-06-tree-emission-marker-and-scope.svg",
+        "src/assets/diagrams/ch26/a297-06-tree-emission-marker-and-scope.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a297-06-tree-emission-marker-and-scope",
+      "sources": [
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/tree/MethodNode.html",
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/MethodVisitor.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a297-06-tree-emission-marker-and-scope.svg": "bf99ceed0d58ea981098e6f0e1d80552b3498f7cecdc859925011ea6f696d32e",
+        "src/assets/diagrams/ch26/a297-06-tree-emission-marker-and-scope.png": "3a9ebd77276095fad6873f333bfa4c263ea5902db297658fe35678a41b51f20e"
+      }
+    },
+    {
+      "id": "a297-07-trace-tag-unicode-and-id-mapping",
+      "title": "Trace tag 在构建期生成并按 UTF-16 限长",
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a297-07-trace-tag-unicode-and-id-mapping.svg",
+        "src/assets/diagrams/ch26/a297-07-trace-tag-unicode-and-id-mapping.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a297-07-trace-tag-unicode-and-id-mapping",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java",
+        "https://developer.android.com/reference/android/os/Trace"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a297-07-trace-tag-unicode-and-id-mapping.svg": "8029e9c706fdd179a37bbcd7027a1b7c26e262a0bcb836b536ebcf136c7d8abe",
+        "src/assets/diagrams/ch26/a297-07-trace-tag-unicode-and-id-mapping.png": "d8ff6a33d2069d55086c5c866445cecf2ff49d4b41b9ba87c082d1a54bd5cf7b"
+      }
+    },
+    {
+      "id": "a297-08-r8-release-shape-and-mapping",
+      "title": "R8 后执行形态与源码方法不能假定一一对应",
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a297-08-r8-release-shape-and-mapping.svg",
+        "src/assets/diagrams/ch26/a297-08-r8-release-shape-and-mapping.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a297-08-r8-release-shape-and-mapping",
+      "sources": [
+        "https://developer.android.com/build/releases/gradle-plugin-api-updates",
+        "https://developer.android.com/reference/android/os/Trace"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a297-08-r8-release-shape-and-mapping.svg": "c783cb3cb7bd296c52340b2adab390bc19039dfc9723e639851c90da6f00ead2",
+        "src/assets/diagrams/ch26/a297-08-r8-release-shape-and-mapping.png": "6ee627e4916ae4d95f0112abb42558ff28fac84842410303f3c30cb1a2cc2dd5"
+      }
+    },
+    {
+      "id": "a297-09-library-extension-versus-framework-boundary",
+      "title": "网络和帧监控使用稳定扩展点补业务上下文",
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a297-09-library-extension-versus-framework-boundary.svg",
+        "src/assets/diagrams/ch26/a297-09-library-extension-versus-framework-boundary.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a297-09-library-extension-versus-framework-boundary",
+      "sources": [
+        "https://developer.android.com/topic/performance/jankstats",
+        "https://developer.android.com/reference/android/os/Looper",
+        "https://developer.android.com/build/releases/gradle-plugin-api-updates"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a297-09-library-extension-versus-framework-boundary.svg": "7ab4dc8523360e7ffd5463c69d3b3740b2583dc3cf32e47fb5a3d4480797716a",
+        "src/assets/diagrams/ch26/a297-09-library-extension-versus-framework-boundary.png": "c4bc57cb41191e98f4cbdc789ab98b0e877080ff5cbb62435505c35e8429e706"
+      }
+    },
+    {
+      "id": "a297-10-coroutine-logical-and-thread-segments",
+      "title": "协程逻辑生命周期与每次线程执行片段分开记录",
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a297-10-coroutine-logical-and-thread-segments.svg",
+        "src/assets/diagrams/ch26/a297-10-coroutine-logical-and-thread-segments.png"
+      ],
+      "layout": "perfetto-tracks",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a297-10-coroutine-logical-and-thread-segments",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Trace",
+        "https://developer.android.com/develop/ui/compose/tooling/tracing"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a297-10-coroutine-logical-and-thread-segments.svg": "c28945aefddf1b710911f7cf2602d1e1ad2296b5558470fcc89e6a24c700f364",
+        "src/assets/diagrams/ch26/a297-10-coroutine-logical-and-thread-segments.png": "29b869268eed29c152dfb894d2550c278a9af2ccad80a139670b1102e796c01b"
+      }
+    },
+    {
+      "id": "a297-11-multi-module-idempotence-and-reproducibility",
+      "title": "每个模块 variant 独立注册，依赖发布边界也要验证",
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a297-11-multi-module-idempotence-and-reproducibility.svg",
+        "src/assets/diagrams/ch26/a297-11-multi-module-idempotence-and-reproducibility.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a297-11-multi-module-idempotence-and-reproducibility",
+      "sources": [
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/instrumentation/InstrumentationScope",
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/artifact/ScopedArtifact.CLASSES"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a297-11-multi-module-idempotence-and-reproducibility.svg": "415762958bab077e6a4efb9945ced3c96f0676480f823b64909c281f6e18a02c",
+        "src/assets/diagrams/ch26/a297-11-multi-module-idempotence-and-reproducibility.png": "75c37ced5da536ecfd172feadc443ef4db8ff02d8580c9b06ed0d7fb51ba98eb"
+      }
+    },
+    {
+      "id": "a297-12-semantic-build-and-device-validation",
+      "title": "插桩验收从业务语义到 Android 发布产物逐层推进",
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a297-12-semantic-build-and-device-validation.svg",
+        "src/assets/diagrams/ch26/a297-12-semantic-build-and-device-validation.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a297-12-semantic-build-and-device-validation",
+      "sources": [
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/MethodVisitor.html",
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/instrumentation/FramesComputationMode",
+        "https://developer.android.com/reference/android/os/Trace"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a297-12-semantic-build-and-device-validation.svg": "f4ddc90bb6b80fa9f10cfc523b8f641d5767c811fd8d28164781347c6ec0a780",
+        "src/assets/diagrams/ch26/a297-12-semantic-build-and-device-validation.png": "d3eb94cfaea71865096e3a4dc0dae20f48bce1eb246e558afae99dad4571c36f"
+      }
+    },
+    {
+      "id": "a297-13-runtime-bridge-budgets-and-business-semantics",
+      "title": "运行桥接控制自身成本，保留业务失败和配对语义",
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a297-13-runtime-bridge-budgets-and-business-semantics.svg",
+        "src/assets/diagrams/ch26/a297-13-runtime-bridge-budgets-and-business-semantics.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a297-13-runtime-bridge-budgets-and-business-semantics",
+      "sources": [
+        "https://developer.android.com/reference/android/os/ProfilingManager",
+        "https://developer.android.com/reference/android/os/Trace"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a297-13-runtime-bridge-budgets-and-business-semantics.svg": "7778d81b1858073b5abfe5f50a7e5fd678a2f848331d8478bcf4fc74c9876b22",
+        "src/assets/diagrams/ch26/a297-13-runtime-bridge-budgets-and-business-semantics.png": "d9c66d17fe926a62183bf8ccb2cd8da10a4d827e843a1e54b835d3be1e3f4d18"
+      }
+    },
+    {
+      "id": "a298-01-evidence-objects-and-permission-scopes",
+      "title": "分配、CPU 与缺页分别观察不同对象",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-01-evidence-objects-and-permission-scopes.svg",
+        "src/assets/diagrams/ch26/a298-01-evidence-objects-and-permission-scopes.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-01-evidence-objects-and-permission-scopes",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler",
+        "https://developer.android.com/guide/topics/manifest/profileable-element",
+        "https://developer.android.com/reference/android/os/ProfilingManager"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-01-evidence-objects-and-permission-scopes.svg": "7c4568338311754058128ddb1fca8012d1b697171491708e5eac3cbb3db2db5f",
+        "src/assets/diagrams/ch26/a298-01-evidence-objects-and-permission-scopes.png": "4feaf734791452ba30ea3adafd32b4a580034340fb8067e50667ad0a7b2c65ff"
+      }
+    },
+    {
+      "id": "a298-02-native-heap-visibility-and-residency",
+      "title": "libc.malloc 存活估计与 RSS/PSS 保持不同口径",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-02-native-heap-visibility-and-residency.svg",
+        "src/assets/diagrams/ch26/a298-02-native-heap-visibility-and-residency.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-02-native-heap-visibility-and-residency",
+      "sources": [
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/malloc_heapprofd.cpp",
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-02-native-heap-visibility-and-residency.svg": "17892b294652d9eb59b0713e7c5cea38c9d5ecb61ab4c6799185278bef5371fc",
+        "src/assets/diagrams/ch26/a298-02-native-heap-visibility-and-residency.png": "4e7959981c02480afb2b281c43933b5ed2a3bc24bc7bebab0dcbbb432bdd5927"
+      }
+    },
+    {
+      "id": "a298-03-running-process-attach-and-buffer",
+      "title": "运行期 attach：信号触发安装，分配事件进入共享缓冲",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-03-running-process-attach-and-buffer.svg",
+        "src/assets/diagrams/ch26/a298-03-running-process-attach-and-buffer.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-03-running-process-attach-and-buffer",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/memory/heapprofd_producer.cc",
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/malloc_heapprofd.cpp",
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/profile_packet_sequence_state.cc?format=TEXT"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-03-running-process-attach-and-buffer.svg": "db48cdfde13e4239c4f2f126d6952795aa43e4171f469a384ddc09a4494fcc68",
+        "src/assets/diagrams/ch26/a298-03-running-process-attach-and-buffer.png": "fa3a83bdce3aeec3e0471cf8c668bf5188e3b22915dc206325877ac07eb0be4d"
+      }
+    },
+    {
+      "id": "a298-04-profileable-session-and-uid-authorization",
+      "title": "user build 的 profileable 与可信发起者是不同权限维度",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-04-profileable-session-and-uid-authorization.svg",
+        "src/assets/diagrams/ch26/a298-04-profileable-session-and-uid-authorization.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-04-profileable-session-and-uid-authorization",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/common/producer_support.cc",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java",
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/heapprofd.rc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-04-profileable-session-and-uid-authorization.svg": "7134f300de966d370de942c28bdd83c54c53085e4f136903f982196aed19d342",
+        "src/assets/diagrams/ch26/a298-04-profileable-session-and-uid-authorization.png": "c975abda20e14378e9d53ae5559e259db628233bd524d153946087344024e9c1"
+      }
+    },
+    {
+      "id": "a298-05-native-name-matching-and-process-lifetimes",
+      "title": "native 进程名精确匹配，分析保留独立进程生命周期",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-05-native-name-matching-and-process-lifetimes.svg",
+        "src/assets/diagrams/ch26/a298-05-native-name-matching-and-process-lifetimes.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-05-native-name-matching-and-process-lifetimes",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/common/producer_support.cc",
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/memory/heapprofd_producer.cc",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-05-native-name-matching-and-process-lifetimes.svg": "a4f50fdff78cf92fb7b4d61d11aa1f55a3ef3d89afbf382b7c84721a79df2b4d",
+        "src/assets/diagrams/ch26/a298-05-native-name-matching-and-process-lifetimes.png": "51887fd973efef9d1ff8c4a5ec7ae142c649e9599953e8d6542c3dd8b2037ea3"
+      }
+    },
+    {
+      "id": "a298-06-manager-shell-and-platform-collection",
+      "title": "三种采集主体决定可配置范围与可验证路径",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-06-manager-shell-and-platform-collection.svg",
+        "src/assets/diagrams/ch26/a298-06-manager-shell-and-platform-collection.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-06-manager-shell-and-platform-collection",
+      "sources": [
+        "https://developer.android.com/reference/androidx/core/os/HeapProfileRequestBuilder",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java",
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-06-manager-shell-and-platform-collection.svg": "a80375304f9d0dc8f297506cc0e0ca17902c96d385ad544145ce5ba7c092873c",
+        "src/assets/diagrams/ch26/a298-06-manager-shell-and-platform-collection.png": "925e8f7e672275cf3f6600a3e821d802cdb8f7e02c1f8d05786d294bbcf157e2"
+      }
+    },
+    {
+      "id": "a298-07-sampling-buffer-and-daemon-guardrails",
+      "title": "采样、共享缓冲和 daemon guardrail 分别控制不同成本",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-07-sampling-buffer-and-daemon-guardrails.svg",
+        "src/assets/diagrams/ch26/a298-07-sampling-buffer-and-daemon-guardrails.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-07-sampling-buffer-and-daemon-guardrails",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/memory/heapprofd_producer.cc",
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/profiling/heapprofd_config.proto",
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/tools/heap_profile"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-07-sampling-buffer-and-daemon-guardrails.svg": "2b25ef1e96bfb7fee80394112f110e9543ad23db71c3c71baa2cc6da966f8ab7",
+        "src/assets/diagrams/ch26/a298-07-sampling-buffer-and-daemon-guardrails.png": "ab5b23163818012786d8bc1efa3d9543f59b0f109740c395bfd8276e472ff350"
+      }
+    },
+    {
+      "id": "a298-08-delta-table-to-cumulative-live-estimate",
+      "title": "分配表是 dump 间 delta，当前净存活估计需要完整前缀",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-08-delta-table-to-cumulative-live-estimate.svg",
+        "src/assets/diagrams/ch26/a298-08-delta-table-to-cumulative-live-estimate.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-08-delta-table-to-cumulative-live-estimate",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/profile_packet_sequence_state.cc?format=TEXT",
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/profile_module.cc?format=TEXT",
+        "https://perfetto.dev/docs/analysis/sql-tables#heap_profile_allocation"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-08-delta-table-to-cumulative-live-estimate.svg": "2453cd0bfc974429396e58bea3b77c4610d126782e537124c4fc6be9153003a5",
+        "src/assets/diagrams/ch26/a298-08-delta-table-to-cumulative-live-estimate.png": "10ff4ad2ed452f0c86938239bb497dc22a78bffaf63007937b16d6c7f31c9520"
+      }
+    },
+    {
+      "id": "a298-09-art-allocation-only-and-leak-confounders",
+      "title": "分配增长、存活增长与物理驻留增长分别查证",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-09-art-allocation-only-and-leak-confounders.svg",
+        "src/assets/diagrams/ch26/a298-09-art-allocation-only-and-leak-confounders.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-09-art-allocation-only-and-leak-confounders",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/profile_packet_sequence_state.cc?format=TEXT",
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-09-art-allocation-only-and-leak-confounders.svg": "6d51fb12c59e72efbebf039af208e994ee0ba882f952520afa15efde0539669e",
+        "src/assets/diagrams/ch26/a298-09-art-allocation-only-and-leak-confounders.png": "cffb3f05408d8594b0b7f003d71e1fb305e3cb16a7fddcd1e2d183243b67ded3"
+      }
+    },
+    {
+      "id": "a298-10-profile-failure-symbols-and-safe-archive",
+      "title": "先核采集完整性，再看符号与增长来源",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-10-profile-failure-symbols-and-safe-archive.svg",
+        "src/assets/diagrams/ch26/a298-10-profile-failure-symbols-and-safe-archive.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-10-profile-failure-symbols-and-safe-archive",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java",
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler",
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/profiling/memory/heapprofd_producer.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-10-profile-failure-symbols-and-safe-archive.svg": "4ed01001a319b3742d91711dde304304ed09927a194cd52fea7d4836ff39bd29",
+        "src/assets/diagrams/ch26/a298-10-profile-failure-symbols-and-safe-archive.png": "4561ebf184e9586111ac47e2eb5f088c987dad05ddfa69f7a88cb5001e6ebbc9"
+      }
+    },
+    {
+      "id": "a298-11-procfs-access-and-dynamic-snapshot",
+      "title": "procfs 是动态接口，自身与全机读取有不同权限",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-11-procfs-access-and-dynamic-snapshot.svg",
+        "src/assets/diagrams/ch26/a298-11-procfs-access-and-dynamic-snapshot.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-11-procfs-access-and-dynamic-snapshot",
+      "sources": [
+        "https://android.googlesource.com/platform/system/sepolicy/+/refs/tags/android-17.0.0_r1/private/app_neverallows.te",
+        "https://android.googlesource.com/platform/system/sepolicy/+/refs/tags/android-17.0.0_r1/private/untrusted_app_all.te",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/init/first_stage_init.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/Documentation/filesystems/proc.rst"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-11-procfs-access-and-dynamic-snapshot.svg": "eac8933f0559f551bd7c3b0f689fe1cf91936ba06c25e239cb9a2826fe55773f",
+        "src/assets/diagrams/ch26/a298-11-procfs-access-and-dynamic-snapshot.png": "a1b4e7c78462f78dd65b0045ce1163d6c4fe300d9fa356337818cb3d26bf8cdf"
+      }
+    },
+    {
+      "id": "a298-12-cpu-denominators-and-sleep-clocks",
+      "title": "CPU 百分比必须连同分母、睡眠与归一化次数解释",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-12-cpu-denominators-and-sleep-clocks.svg",
+        "src/assets/diagrams/ch26/a298-12-cpu-denominators-and-sleep-clocks.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-12-cpu-denominators-and-sleep-clocks",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_util_Process.cpp?format=TEXT",
+        "https://developer.android.com/reference/android/os/SystemClock",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/kernel/sched/cputime.c"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-12-cpu-denominators-and-sleep-clocks.svg": "4e710217f11955227af2d0c82400bf14edbc81a123c212d4c542fd62e072d9f3",
+        "src/assets/diagrams/ch26/a298-12-cpu-denominators-and-sleep-clocks.png": "982a76e13dac39a2c2d5671c1d3b3cda50fca137b7327dc066533095c6b904b1"
+      }
+    },
+    {
+      "id": "a298-13-proc-stat-parsing-and-counter-validation",
+      "title": "stat 先界定 comm，再解析稳定字段前缀",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-13-proc-stat-parsing-and-counter-validation.svg",
+        "src/assets/diagrams/ch26/a298-13-proc-stat-parsing-and-counter-validation.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-13-proc-stat-parsing-and-counter-validation",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/fs/proc/array.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/Documentation/filesystems/proc.rst"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-13-proc-stat-parsing-and-counter-validation.svg": "c3e31b316dd3e705df3eda2454c36ddc3d515824f98de9be1bbe033d025dda22",
+        "src/assets/diagrams/ch26/a298-13-proc-stat-parsing-and-counter-validation.png": "24898f092907dcddb0f284d0ccfcab2622dcbe6d72d4c58273466f389c481e9a"
+      }
+    },
+    {
+      "id": "a298-14-framework-cpu-tracker-private-semantics",
+      "title": "ProcessCpuTracker 的内部实现不能当公开通用 CPU 公式",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-14-framework-cpu-tracker-private-semantics.svg",
+        "src/assets/diagrams/ch26/a298-14-framework-cpu-tracker-private-semantics.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-14-framework-cpu-tracker-private-semantics",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ProcessCpuTracker.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppProfiler.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-14-framework-cpu-tracker-private-semantics.svg": "75b56fddbe45655bcc97d84949e4478505b136f844c2d9d9e77d2bea89ee4321",
+        "src/assets/diagrams/ch26/a298-14-framework-cpu-tracker-private-semantics.png": "379fbc3d373b5fd4a1374ac370e95bb3ac88a01c0986c87efdf6620068661491"
+      }
+    },
+    {
+      "id": "a298-15-load-average-pressure-and-real-runtime",
+      "title": "load average 是活跃任务负载，不能当 CPU 利用率",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-15-load-average-pressure-and-real-runtime.svg",
+        "src/assets/diagrams/ch26/a298-15-load-average-pressure-and-real-runtime.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-15-load-average-pressure-and-real-runtime",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/kernel/sched/loadavg.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/fs/proc/loadavg.c"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-15-load-average-pressure-and-real-runtime.svg": "aa2eaa9c8208a2620afbe94349a1a830f01cc7c6db6b4ba62d47c2a537512ad8",
+        "src/assets/diagrams/ch26/a298-15-load-average-pressure-and-real-runtime.png": "b281fe392ee8d1de2b5b6713401aefff4bfad029b2d9cdd702577952e964ece9"
+      }
+    },
+    {
+      "id": "a298-16-cpu-running-runnable-and-wait-tracks",
+      "title": "累计 CPU 不能重建线程在何时运行或等待",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-16-cpu-running-runnable-and-wait-tracks.svg",
+        "src/assets/diagrams/ch26/a298-16-cpu-running-runnable-and-wait-tracks.png"
+      ],
+      "layout": "perfetto-tracks",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-16-cpu-running-runnable-and-wait-tracks",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/cpu-scheduling",
+        "https://perfetto.dev/docs/data-sources/memory-counters",
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/process_stats/process_stats_config.proto?format=TEXT",
+        "https://perfetto.dev/docs/reference/trace-config-proto"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-16-cpu-running-runnable-and-wait-tracks.svg": "54ebbd8669bebf1230260b01dc66109073b7bffdda1026eed9398dfd8897af50",
+        "src/assets/diagrams/ch26/a298-16-cpu-running-runnable-and-wait-tracks.png": "1c48ab178616230367769c8d36cf2333d6c30ad5c59743588953f6fe0fc824ed"
+      }
+    },
+    {
+      "id": "a298-17-arm64-fault-branches-and-failure",
+      "title": "arm64 fault 先校验映射，再按页面来源修复或返回信号",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-17-arm64-fault-branches-and-failure.svg",
+        "src/assets/diagrams/ch26/a298-17-arm64-fault-branches-and-failure.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-17-arm64-fault-branches-and-failure",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/arch/arm64/mm/fault.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/mm/memory.c"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-17-arm64-fault-branches-and-failure.svg": "78c284d03ad99b3f4f38e195fa8be6433b0e65d2e76dceb2343570765a17ee69",
+        "src/assets/diagrams/ch26/a298-17-arm64-fault-branches-and-failure.png": "64525045569f14715adc391bfa4b5366e13c097ff5be8cdd26e7261f3e271163"
+      }
+    },
+    {
+      "id": "a298-18-fault-counters-and-counting-boundaries",
+      "title": "page-faults、PGFAULT 与 min/maj 的计数边界不同",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-18-fault-counters-and-counting-boundaries.svg",
+        "src/assets/diagrams/ch26/a298-18-fault-counters-and-counting-boundaries.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-18-fault-counters-and-counting-boundaries",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/mm/memory.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/arch/arm64/mm/fault.c"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-18-fault-counters-and-counting-boundaries.svg": "9abf4681b5ea087b73b2d2ccccec9abc6b42994df5565bcdfd3b4e3479f6ee8f",
+        "src/assets/diagrams/ch26/a298-18-fault-counters-and-counting-boundaries.png": "20eb4c2ee4758b209f6d0638ff0d90ba83e5c3ce09a71b7aa3388a2a94063882"
+      }
+    },
+    {
+      "id": "a298-19-minor-cow-pagecache-and-swap-sources",
+      "title": "按页来源与缓存状态解释 minor / major",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-19-minor-cow-pagecache-and-swap-sources.svg",
+        "src/assets/diagrams/ch26/a298-19-minor-cow-pagecache-and-swap-sources.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-19-minor-cow-pagecache-and-swap-sources",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/mm/memory.c",
+        "https://source.android.com/docs/core/perf/mmd"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-19-minor-cow-pagecache-and-swap-sources.svg": "5431c1c853908058d477ce89400e395378c68ee42f0faf2c938cdfe8834ff02f",
+        "src/assets/diagrams/ch26/a298-19-minor-cow-pagecache-and-swap-sources.png": "7219eb15e24e809b2681bde9b22812a470081d42d13a2da5839e515d3be06697"
+      }
+    },
+    {
+      "id": "a298-20-fault-parser-page-size-and-allocation",
+      "title": "fault 差值先验身份与时间，页大小也换算不出对象分配",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-20-fault-parser-page-size-and-allocation.svg",
+        "src/assets/diagrams/ch26/a298-20-fault-parser-page-size-and-allocation.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-20-fault-parser-page-size-and-allocation",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/fs/proc/array.c",
+        "https://source.android.com/docs/core/architecture/16kb-page-size/getting-page-size",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/mm/memory.c"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-20-fault-parser-page-size-and-allocation.svg": "a443fc5a8beb41f2ae593dd2bcaafa00a304c1825a1be50dd21e824bdddd553c",
+        "src/assets/diagrams/ch26/a298-20-fault-parser-page-size-and-allocation.png": "8d905f2ed36be02354469ed13954113cee5dcf4d260160064fe9d69cfa7e7122"
+      }
+    },
+    {
+      "id": "a298-21-fault-count-to-critical-path-causality",
+      "title": "从计数到关键路径因果，需要时间线、对象和对照",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-21-fault-count-to-critical-path-causality.svg",
+        "src/assets/diagrams/ch26/a298-21-fault-count-to-critical-path-causality.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-21-fault-count-to-critical-path-causality",
+      "sources": [
+        "https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/event_table_generator.py",
+        "https://android.googlesource.com/platform/system/extras/+/refs/tags/android-17.0.0_r1/simpleperf/doc/android_application_profiling.md",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/mm/memory.c"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-21-fault-count-to-critical-path-causality.svg": "46d1398d0363ff045e64a5e5738f35cbf2f56adc710a9545f3c567813d07de7d",
+        "src/assets/diagrams/ch26/a298-21-fault-count-to-critical-path-causality.png": "2df1a297b62ae4618c253de3c9d2fbec0e22da8c766a7615f5f3b87352dddba7"
+      }
+    },
+    {
+      "id": "a298-22-art-userfaultfd-negotiation-and-fallback",
+      "title": "userfaultfd 是主动内存管理，不是低干扰 fault 计数器",
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a298-22-art-userfaultfd-negotiation-and-fallback.svg",
+        "src/assets/diagrams/ch26/a298-22-art-userfaultfd-negotiation-and-fallback.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a298-22-art-userfaultfd-negotiation-and-fallback",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/collector/mark_compact.cc",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/Documentation/admin-guide/mm/userfaultfd.rst"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a298-22-art-userfaultfd-negotiation-and-fallback.svg": "e4f88def611416624466e6e46fb4178ea371ec13c0f5133afff3c79cb803eecb",
+        "src/assets/diagrams/ch26/a298-22-art-userfaultfd-negotiation-and-fallback.png": "967bbfea79f7b585ddabd2905b8be9e13decde9e4d060c0e8030a9cc94dfbdbd"
+      }
+    },
+    {
+      "id": "a299-01-kernel-and-process-evidence-scopes",
+      "title": "内核审计与应用内轨迹有不同的权限和证据范围",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-01-kernel-and-process-evidence-scopes.svg",
+        "src/assets/diagrams/ch26/a299-01-kernel-and-process-evidence-scopes.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-01-kernel-and-process-evidence-scopes",
+      "sources": [
+        "https://source.android.com/docs/core/architecture/kernel/bpf",
+        "https://developer.android.com/reference/android/os/ProfilingManager",
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/docs/architecture.md"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-02-wd-sys-filter-tail-call-reader",
+      "title": "WDSys：内核筛选、分段逻辑、传输与持久化分开验收",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-02-wd-sys-filter-tail-call-reader.svg",
+        "src/assets/diagrams/ch26/a299-02-wd-sys-filter-tail-call-reader.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-02-wd-sys-filter-tail-call-reader",
+      "sources": [
+        "https://arxiv.org/html/2604.27830v1",
+        "https://android.googlesource.com/platform/system/bpf/+/refs/tags/android-17.0.0_r1/loader/bpfloader.rs"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-03-buffer-loss-and-observation-health",
+      "title": "未观察到事件，先排除过滤、权限与丢失",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-03-buffer-loss-and-observation-health.svg",
+        "src/assets/diagrams/ch26/a299-03-buffer-loss-and-observation-health.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-03-buffer-loss-and-observation-health",
+      "sources": [
+        "https://arxiv.org/html/2604.27830v1",
+        "https://source.android.com/docs/core/architecture/kernel/bpf"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-04-binder-user-memory-to-signatures",
+      "title": "Binder 语义：用户内存快照不等于驱动接受的事务",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-04-binder-user-memory-to-signatures.svg",
+        "src/assets/diagrams/ch26/a299-04-binder-user-memory-to-signatures.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-04-binder-user-memory-to-signatures",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/include/uapi/linux/android/binder.h",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/drivers/android/binder.c",
+        "https://arxiv.org/html/2604.27830v1"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-05-binder-rpc-observation-tracks",
+      "title": "Binder RPC 要拼多侧区间，单次 ioctl 不代表往返时长",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-05-binder-rpc-observation-tracks.svg",
+        "src/assets/diagrams/ch26/a299-05-binder-rpc-observation-tracks.png"
+      ],
+      "layout": "perfetto-tracks",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-05-binder-rpc-observation-tracks",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/drivers/android/binder.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/drivers/android/binder_trace.h",
+        "https://arxiv.org/html/2604.27830v1"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-06-unique-event-rate-union-denominator",
+      "title": "UER 是两份日志并集中的独有比例，独立真值仍缺失",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-06-unique-event-rate-union-denominator.svg",
+        "src/assets/diagrams/ch26/a299-06-unique-event-rate-union-denominator.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-06-unique-event-rate-union-denominator",
+      "sources": [
+        "https://arxiv.org/html/2604.27830v1"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-07-version-bound-semantic-decoding",
+      "title": "语义与参数策略作为同一版本配置发布",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-07-version-bound-semantic-decoding.svg",
+        "src/assets/diagrams/ch26/a299-07-version-bound-semantic-decoding.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-07-version-bound-semantic-decoding",
+      "sources": [
+        "https://arxiv.org/html/2604.27830v1",
+        "https://developer.android.com/privacy-and-security/risks/log-info-disclosure"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-08-profilo-controller-to-private-files",
+      "title": "Profilo：控制、provider、缓冲和文件职责分开",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-08-profilo-controller-to-private-files.svg",
+        "src/assets/diagrams/ch26/a299-08-profilo-controller-to-private-files.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-08-profilo-controller-to-private-files",
+      "sources": [
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/docs/architecture.md",
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/docs/trace-processing.md"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-09-profilo-ring-concurrency-and-wrap",
+      "title": "固定容量环形缓冲：读落后、写绕回各有不同后果",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-09-profilo-ring-concurrency-and-wrap.svg",
+        "src/assets/diagrams/ch26/a299-09-profilo-ring-concurrency-and-wrap.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-09-profilo-ring-concurrency-and-wrap",
+      "sources": [
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/logger/lfrb/LockFreeRingBuffer.h"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-10-android17-trace-backend-branches",
+      "title": "Android 17：公共 Trace 调用不能一概视为 trace_marker 写入",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-10-android17-trace-backend-branches.svg",
+        "src/assets/diagrams/ch26/a299-10-android17-trace-backend-branches.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-10-android17-trace-backend-branches",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/tracing_perfetto/tracing_perfetto.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.cpp",
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-11-profilo-hook-parse-and-swallow",
+      "title": "命中 Profilo hook 后：B/E 转写，其他前缀也不再下送",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-11-profilo-hook-parse-and-swallow.svg",
+        "src/assets/diagrams/ch26/a299-11-profilo-hook-parse-and-swallow.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-11-profilo-hook-parse-and-swallow",
+      "sources": [
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp",
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/java/main/com/facebook/profilo/provider/atrace/SystraceProvider.java"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-12-thread-lifetime-stack-and-partial",
+      "title": "B/E 栈按线程生命周期隔离，缺事件就保留不完整",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-12-thread-lifetime-stack-and-partial.svg",
+        "src/assets/diagrams/ch26/a299-12-thread-lifetime-stack-and-partial.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-12-thread-lifetime-stack-and-partial",
+      "sources": [
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp",
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/logger/lfrb/LockFreeRingBuffer.h"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-13-sampling-provider-thread-timers",
+      "title": "stack provider：线程定时器、采样信号与 unwind 是另一数据源",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-13-sampling-provider-thread-timers.svg",
+        "src/assets/diagrams/ch26/a299-13-sampling-provider-thread-timers.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-13-sampling-provider-thread-timers",
+      "sources": [
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/profiler/SamplingProfiler.cpp",
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/profiler/TimerManager.cpp",
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/java/main/com/facebook/profilo/provider/stacktrace/CPUProfiler.java"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-14-fixed-artifacts-and-hook-capabilities",
+      "title": "私有 hook 验收：源码、构建产物和运行结果逐层对应",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-14-fixed-artifacts-and-hook-capabilities.svg",
+        "src/assets/diagrams/ch26/a299-14-fixed-artifacts-and-hook-capabilities.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-14-fixed-artifacts-and-hook-capabilities",
+      "sources": [
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.inc",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a299-15-stable-tracing-driver-and-system-scopes",
+      "title": "Tracing 2.0.5 应用内输出与系统 trace 保持独立",
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a299-15-stable-tracing-driver-and-system-scopes.svg",
+        "src/assets/diagrams/ch26/a299-15-stable-tracing-driver-and-system-scopes.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a299-15-stable-tracing-driver-and-system-scopes",
+      "sources": [
+        "https://developer.android.com/topic/performance/tracing/in-process-tracing",
+        "https://developer.android.com/jetpack/androidx/releases/tracing",
+        "https://perfetto.dev/docs/instrumentation/tracing-sdk",
+        "https://developer.android.com/reference/android/os/ProfilingManager"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
     }
   ],
   "corrections": [
@@ -20297,6 +21467,628 @@
       ],
       "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
       "why": "累计差值不保留瞬时形状，文章峰值章节应说明可辨认分辨率。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "全文及当前AGP/ASM文档复核，另对完整visitor执行主机字节码fixture，不声称Android构建。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/maven-metadata.xml",
+        "https://asm.ow2.io/versions.html"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "全文及当前AGP/ASM文档复核，另对完整visitor执行主机字节码fixture，不声称Android构建。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "全文及当前AGP/ASM文档复核，另对完整visitor执行主机字节码fixture，不声称Android构建。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/maven-metadata.xml",
+        "https://asm.ow2.io/versions.html"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "全文及当前AGP/ASM文档复核，另对完整visitor执行主机字节码fixture，不声称Android构建。"
+    },
+    {
+      "before": "AGP 9.3.1 artifact metadata, release notes, and Gradle API references; AOSP android-17.0.0_r1 Trace source; Android Trace, JankStats, Compose tracing, and ProfilingManager docs; ASM 9.10.1 release record, retrieved 2026-08-15",
+      "after": "fixed AGP 9.3.3 API baseline including POST_COMPILATION_CLASSES; current metadata (latest stable 9.4.1), ASM 9.11.1 and visitor contracts; android-17.0.0_r1 Trace and current official UI/profiling docs; reviewed 2026-10-25 with host JVM visitor fixture verification only",
+      "reason": "POST_COMPILATION_CLASSES当前官方实际标9.3.3，原固定9.3.1无法覆盖；新版metadata含预览不能直接当稳定版。",
+      "sources": [
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/artifact/ScopedArtifact.POST_COMPILATION_CLASSES",
+        "https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/maven-metadata.xml",
+        "https://asm.ow2.io/versions.html"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "POST_COMPILATION_CLASSES当前官方实际标9.3.3，原固定9.3.1无法覆盖；新版metadata含预览不能直接当稳定版。"
+    },
+    {
+      "before": "本文的构建入口以 2026 年 8 月稳定版 AGP 9.3.1 的 Instrumentation API（AGP 在构建期为单个 class 注册字节码变换的接口）为准；AGP 9.3 系列支持的最高 API 为 37，并要求 Gradle 9.5 和 JDK 17。",
+      "after": "本文固定AGP9.3.3的Instrumentation API基线，以覆盖本页使用的POST_COMPILATION_CLASSES。2026年10月25日metadata中最新无预览后缀的稳定版是9.4.1，release标签则可能指向9.6.0-alpha01，不能据该标签选择生产稳定版。本文9.3系列支持最高API37，要求Gradle9.5.0和JDK17；升级版本应另核兼容表。",
+      "reason": "原文使用9.3.1但依赖9.3.3新增API，固定最小一致基线，并区分当前稳定与预览metadata。",
+      "sources": [
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/artifact/ScopedArtifact.POST_COMPILATION_CLASSES",
+        "https://developer.android.com/build/releases/agp-9-3-0-release-notes",
+        "https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/maven-metadata.xml"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "原文使用9.3.1但依赖9.3.3新增API，固定最小一致基线，并区分当前稳定与预览metadata。"
+    },
+    {
+      "before": "## AGP 9.3.1 的插桩入口",
+      "after": "## AGP 9.3.3 的插桩入口",
+      "reason": "标题与实际所需API固定基线一致。",
+      "sources": [
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/artifact/ScopedArtifact.POST_COMPILATION_CLASSES"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "标题与实际所需API固定基线一致。"
+    },
+    {
+      "before": "`POST_COMPILATION_CLASSES` 在 9.3.1 才加入",
+      "after": "`POST_COMPILATION_CLASSES`在9.3.3才加入",
+      "reason": "当前官方API明确Added in 9.3.3，原版本号错误。",
+      "sources": [
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/artifact/ScopedArtifact.POST_COMPILATION_CLASSES"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "当前官方API明确Added in 9.3.3，原版本号错误。"
+    },
+    {
+      "before": "截至 2026-08-15，上游 ASM 最新版是 9.10.1",
+      "after": "截至2026年10月25日，上游ASM最新版本为9.11.1（10月17日发布）",
+      "reason": "按当前上游发布记录更新，仍服从AGP提供的API版本。",
+      "sources": [
+        "https://asm.ow2.io/versions.html"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "按当前上游发布记录更新，仍服从AGP提供的API版本。"
+    },
+    {
+      "before": "构造方法必须等父类构造调用完成，才能执行通用入口代码。ASM `AdviceAdapter` 是专门在方法进入与退出位置插入指令的辅助类，已经处理这项限制。",
+      "after": "构造器涉及未初始化this及this()/super()构造链，不能照搬普通方法入口。AdviceAdapter能协助处理入口位置，但捕获所有异常时还必须保留原异常表优先级并遵守visitTryCatchBlock先于相关label的访问契约。",
+      "reason": "不仅父类构造，也有同类委托构造；提前注册catch-all还可能抢先捕获本来应由原handler处理的异常。",
+      "sources": [
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/commons/AdviceAdapter.html",
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/MethodVisitor.html"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "不仅父类构造，也有同类委托构造；提前注册catch-all还可能抢先捕获本来应由原handler处理的异常。"
+    },
+    {
+      "before": "下面的 visitor 用于演示这一控制流。它跳过抽象、native、synthetic 方法以及构造器，避免示例同时引入构造器语义和编译器生成方法。",
+      "after": "下面采用逐方法MethodNode缓冲：先读取完整指令与原异常表，把catch-all追加为最后一项，再由MethodNode按合法顺序输出。这样同时保留原catch/finally优先级和label访问约束，代价是该方法树的内存。示例跳过abstract、native、synthetic和构造器，加入不可见版本标记，使同规则二次处理不重复注入。",
+      "reason": "仅将原visitMaxs注册移到onMethodEnter会让catch-all先于原handler，实际fixture证明会改变业务catch语义；改为完整方法树再输出。",
+      "sources": [
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/tree/MethodNode.html",
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/MethodVisitor.html"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "仅将原visitMaxs注册移到onMethodEnter会让catch-all先于原handler，实际fixture证明会改变业务catch语义；改为完整方法树再输出。"
+    },
+    {
+      "before": "import org.objectweb.asm.ClassVisitor\nimport org.objectweb.asm.Label\nimport org.objectweb.asm.MethodVisitor\nimport org.objectweb.asm.Opcodes\nimport org.objectweb.asm.Type\nimport org.objectweb.asm.commons.AdviceAdapter\nimport org.objectweb.asm.commons.Method\nimport java.nio.charset.StandardCharsets\nimport java.security.MessageDigest\n\nclass TraceClassVisitor(\n    api: Int,\n    next: ClassVisitor\n) : ClassVisitor(api, next) {\n    private var ownerInternalName: String = \"\"\n\n    override fun visit(\n        version: Int,\n        access: Int,\n        name: String,\n        signature: String?,\n        superName: String?,\n        interfaces: Array<out String>?\n    ) {\n        ownerInternalName = name\n        super.visit(version, access, name, signature, superName, interfaces)\n    }\n\n    override fun visitMethod(\n        access: Int,\n        name: String,\n        descriptor: String,\n        signature: String?,\n        exceptions: Array<out String>?\n    ): MethodVisitor {\n        val next = super.visitMethod(\n            access, name, descriptor, signature, exceptions\n        )\n        val unsupported = access and (\n            Opcodes.ACC_ABSTRACT or\n                Opcodes.ACC_NATIVE or\n                Opcodes.ACC_SYNTHETIC\n            ) != 0\n\n        if (unsupported || name == \"<init>\" || name == \"<clinit>\") {\n            return next\n        }\n\n        return TraceMethodVisitor(\n            api = api,\n            next = next,\n            access = access,\n            name = name,\n            descriptor = descriptor,\n            traceTag = buildTraceTag(ownerInternalName, name, descriptor)\n        )\n    }\n}\n\nprivate class TraceMethodVisitor(\n    api: Int,\n    next: MethodVisitor,\n    access: Int,\n    name: String,\n    descriptor: String,\n    private val traceTag: String\n) : AdviceAdapter(api, next, access, name, descriptor) {\n    private val bodyStart = Label()\n    private val bodyEnd = Label()\n\n    override fun onMethodEnter() {\n        visitLdcInsn(traceTag)\n        invokeStatic(TRACE_TYPE, BEGIN_SECTION)\n        visitLabel(bodyStart)\n    }\n\n    override fun onMethodExit(opcode: Int) {\n        if (opcode != ATHROW) {\n            invokeStatic(TRACE_TYPE, END_SECTION)\n        }\n    }\n\n    override fun visitMaxs(maxStack: Int, maxLocals: Int) {\n        val handler = Label()\n        visitTryCatchBlock(bodyStart, bodyEnd, handler, null)\n        visitLabel(bodyEnd)\n        visitLabel(handler)\n        invokeStatic(TRACE_TYPE, END_SECTION)\n        throwException()\n        super.visitMaxs(maxStack, maxLocals)\n    }\n\n    companion object {\n        private val TRACE_TYPE = Type.getObjectType(\"android/os/Trace\")\n        private val BEGIN_SECTION =\n            Method(\"beginSection\", \"(Ljava/lang/String;)V\")\n        private val END_SECTION = Method(\"endSection\", \"()V\")\n    }\n}\n\nprivate fun buildTraceTag(\n    ownerInternalName: String,\n    methodName: String,\n    descriptor: String\n): String {\n    val key = \"$ownerInternalName#$methodName$descriptor\"\n    val digest = MessageDigest.getInstance(\"SHA-256\")\n        .digest(key.toByteArray(StandardCharsets.UTF_8))\n        .take(6)\n        .joinToString(\"\") { \"%02x\".format(it) }\n    val readable = \"${ownerInternalName.substringAfterLast('/')}#$methodName\"\n        .replace('|', ' ')\n        .replace('\\n', ' ')\n        .replace('\\u0000', ' ')\n    return \"${readable.takeUtf16Safely(110)}@$digest\"\n}\n\nprivate fun String.takeUtf16Safely(maxCodeUnits: Int): String {\n    if (length <= maxCodeUnits) return this\n    val end = if (\n        Character.isHighSurrogate(this[maxCodeUnits - 1]) &&\n        Character.isLowSurrogate(this[maxCodeUnits])\n    ) {\n        maxCodeUnits - 1\n    } else {\n        maxCodeUnits\n    }\n    return substring(0, end)\n}",
+      "after": "import org.objectweb.asm.ClassVisitor\nimport org.objectweb.asm.MethodVisitor\nimport org.objectweb.asm.Opcodes\nimport org.objectweb.asm.tree.AnnotationNode\nimport org.objectweb.asm.tree.InsnList\nimport org.objectweb.asm.tree.InsnNode\nimport org.objectweb.asm.tree.LabelNode\nimport org.objectweb.asm.tree.LdcInsnNode\nimport org.objectweb.asm.tree.MethodInsnNode\nimport org.objectweb.asm.tree.MethodNode\nimport org.objectweb.asm.tree.TryCatchBlockNode\nimport java.nio.charset.StandardCharsets\nimport java.security.MessageDigest\n\nclass TraceClassVisitor(api: Int, next: ClassVisitor) : ClassVisitor(api, next) {\n    private var ownerInternalName = \"\"\n\n    override fun visit(\n        version: Int,\n        access: Int,\n        name: String,\n        signature: String?,\n        superName: String?,\n        interfaces: Array<out String>?\n    ) {\n        ownerInternalName = name\n        super.visit(version, access, name, signature, superName, interfaces)\n    }\n\n    override fun visitMethod(\n        access: Int,\n        name: String,\n        descriptor: String,\n        signature: String?,\n        exceptions: Array<out String>?\n    ): MethodVisitor? {\n        val next = super.visitMethod(access, name, descriptor, signature, exceptions)\n            ?: return null\n        val excluded = access and (\n            Opcodes.ACC_ABSTRACT or Opcodes.ACC_NATIVE or Opcodes.ACC_SYNTHETIC\n        ) != 0\n        if (excluded || name == \"<init>\" || name == \"<clinit>\") return next\n\n        val traceTag = buildTraceTag(ownerInternalName, name, descriptor)\n        // Buffer one method so existing exception handlers keep their priority.\n        return object : MethodNode(api, access, name, descriptor, signature, exceptions) {\n            override fun visitEnd() {\n                super.visitEnd()\n                val marked = invisibleAnnotations.orEmpty().any {\n                    it.desc == MARKER_DESCRIPTOR\n                }\n                if (!marked) instrumentMethod(this, traceTag)\n                // MethodNode emits the full exception table before its labels.\n                accept(next)\n            }\n        }\n    }\n\n    companion object {\n        private const val MARKER_DESCRIPTOR =\n            \"Lcom/example/monitor/TraceInstrumentedV1;\"\n        private const val TRACE_OWNER = \"android/os/Trace\"\n\n        private fun endSection() = MethodInsnNode(\n            Opcodes.INVOKESTATIC, TRACE_OWNER, \"endSection\", \"()V\", false\n        )\n\n        private fun instrumentMethod(method: MethodNode, tag: String) {\n            val bodyStart = LabelNode()\n            val bodyEnd = LabelNode()\n            val handler = LabelNode()\n            // Insert cleanup only before normal returns. ATHROW is handled once\n            // by the catch-all, including exceptions thrown by callees.\n            for (instruction in method.instructions.toArray()) {\n                if (instruction.opcode in Opcodes.IRETURN..Opcodes.RETURN) {\n                    method.instructions.insertBefore(instruction, endSection())\n                }\n            }\n            method.instructions.insert(InsnList().apply {\n                add(LdcInsnNode(tag))\n                add(MethodInsnNode(\n                    Opcodes.INVOKESTATIC, TRACE_OWNER, \"beginSection\",\n                    \"(Ljava/lang/String;)V\", false\n                ))\n                add(bodyStart)\n            })\n            method.instructions.add(bodyEnd)\n            method.instructions.add(handler)\n            method.instructions.add(endSection())\n            method.instructions.add(InsnNode(Opcodes.ATHROW))\n            // Existing handlers stay first; only otherwise-escaping Throwable\n            // reaches this last handler.\n            method.tryCatchBlocks.add(TryCatchBlockNode(bodyStart, bodyEnd, handler, null))\n            val annotations = method.invisibleAnnotations ?: mutableListOf()\n            annotations.add(AnnotationNode(MARKER_DESCRIPTOR))\n            method.invisibleAnnotations = annotations\n        }\n    }\n}\n\nprivate fun buildTraceTag(\n    ownerInternalName: String,\n    methodName: String,\n    descriptor: String\n): String {\n    val key = \"$ownerInternalName#$methodName$descriptor\"\n    val digest = MessageDigest.getInstance(\"SHA-256\")\n        .digest(key.toByteArray(StandardCharsets.UTF_8))\n        .take(6)\n        .joinToString(\"\") { \"%02x\".format(it) }\n    val readable = \"${ownerInternalName.substringAfterLast('/')}#$methodName\"\n        .replace('|', ' ')\n        .replace('\\n', ' ')\n        .replace('\\u0000', ' ')\n    return \"${readable.takeUtf16Safely(110)}@$digest\"\n}\n\nprivate fun String.takeUtf16Safely(maxCodeUnits: Int): String {\n    if (length <= maxCodeUnits) return this\n    val end = if (\n        Character.isHighSurrogate(this[maxCodeUnits - 1]) &&\n        Character.isLowSurrogate(this[maxCodeUnits])\n    ) {\n        maxCodeUnits - 1\n    } else {\n        maxCodeUnits\n    }\n    return substring(0, end)\n}",
+      "reason": "真实ASM CheckClassAdapter复现原例Try catch blocks must be visited before their labels；Tree输出保证注册顺序与原handler优先级，补同规则幂等标记。",
+      "sources": [
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/MethodVisitor.html",
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/tree/MethodNode.html",
+        "https://repo.maven.apache.org/maven2/org/ow2/asm/asm/9.11.1/asm-9.11.1.jar"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "真实ASM CheckClassAdapter复现原例Try catch blocks must be visited before their labels；Tree输出保证注册顺序与原handler优先级，补同规则幂等标记。"
+    },
+    {
+      "before": "正常返回路径由 `onMethodExit()` 写入 `endSection()`；显式与隐式异常由新增 handler 处理，所以同一个异常不会结束两次。`visitMaxs()` 增加了一条异常控制流边，注册阶段必须选择能重新计算 frame 的模式。",
+      "after": "正常return前插入endSection，显式与隐式传播异常由排在原异常表之后的catch-all处理。MethodNode先输出异常表再输出label，新增控制流后仍需注册重新计算frame。此例假定Trace调用正常；生产桥接必须独立隔离自身故障，不能因诊断失败替换业务返回或异常。同步方法的自动monitor获取发生在方法体之前，本例section也不包含那段锁等待。",
+      "reason": "与改写Tree实现一致，并声明方法体范围和监控自身故障假设。",
+      "sources": [
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/tree/MethodNode.html",
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/MethodVisitor.html",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "与改写Tree实现一致，并声明方法体范围和监控自身故障假设。"
+    },
+    {
+      "before": "生产 visitor 还要根据注解、方法大小、访问标志和业务规则缩小范围，并为 trace tag（section 名称）截断、UTF-16 代理对和哈希冲突编写测试。",
+      "after": "生产visitor还需按注解、大小、访问标志和业务规则缩小范围。示例V1标记只保证同规则重复处理；规则升级应从未插桩输入重建或明确拒绝旧标记，不能累叠。tag截断/UTF-16代理对需测试，短哈希也不是无冲突证明；构建产出的完整ID映射须检查重复ID，不同方法冲突则失败或扩展ID。",
+      "reason": "补幂等版本边界；单元测试不能证明所有实际输入短哈希无碰撞，构建映射应显式检测。",
+      "sources": [
+        "https://asm.ow2.io/javadoc/org/objectweb/asm/tree/MethodNode.html",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "补幂等版本边界；单元测试不能证明所有实际输入短哈希无碰撞，构建映射应显式检测。"
+    },
+    {
+      "before": "按 `Window` 提供帧时长、jank 判断和 App UI 状态；jank 指一帧未在设备当时的时间预算内完成而出现的卡顿",
+      "after": "按Window提供帧时长、库自身的jank启发式判断和App UI状态；该标记不直接等于SurfaceFlinger实际呈现deadline miss",
+      "reason": "JankStats估计与系统呈现deadline是不同观测来源，避免把库分类当硬件呈现事实。",
+      "sources": [
+        "https://developer.android.com/topic/performance/jankstats"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "JankStats估计与系统呈现deadline是不同观测来源，避免把库分类当硬件呈现事实。"
+    },
+    {
+      "before": "协程需要异步 trace，或使用支持关联信息传播的 tracing API。",
+      "after": "要描述跨挂起/跨线程的逻辑协程生命周期时，用异步trace或能传播关联信息的tracing API；同步section仍可记录每次物理线程执行片段，但多个片段不能当成一个连续生命周期。",
+      "reason": "同步物理片段有效，只有跨线程逻辑生命周期不能用单个线程section表达。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Trace",
+        "https://developer.android.com/develop/ui/compose/tooling/tracing"
+      ],
+      "article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "why": "同步物理片段有效，只有跨线程逻辑生命周期不能用单个线程section表达。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮1395行全文与17r1/r39源码、当前文档复核；完整Kotlin主机桩和合成SQL测试另存，未执行Android采集。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/profile_packet_sequence_state.cc?format=TEXT",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/mm/memory.c"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "本轮1395行全文与17r1/r39源码、当前文档复核；完整Kotlin主机桩和合成SQL测试另存，未执行Android采集。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮1395行全文与17r1/r39源码、当前文档复核；完整Kotlin主机桩和合成SQL测试另存，未执行Android采集。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/profile_packet_sequence_state.cc?format=TEXT",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/mm/memory.c"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "本轮1395行全文与17r1/r39源码、当前文档复核；完整Kotlin主机桩和合成SQL测试另存，未执行Android采集。"
+    },
+    {
+      "before": "retrieved 2026-08-15",
+      "after": "reviewed 2026-10-25; fixed trace-processor delta import/ART allocation-only semantics, native process CPU clock and safe parsers additionally audited; host Kotlin/synthetic SQL verification only",
+      "reason": "更新本轮实际核验边界，不把主机验证等同设备profiling。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/profile_packet_sequence_state.cc?format=TEXT",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_util_Process.cpp?format=TEXT",
+        "https://dl.google.com/dl/android/maven2/androidx/core/core/1.15.0/core-1.15.0-sources.jar"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "更新本轮实际核验边界，不把主机验证等同设备profiling。"
+    },
+    {
+      "before": "覆盖 Bionic（Android 的 C 标准库实现）的 `malloc`、`free`、`calloc`、`realloc` 以及 C++ `new`、`delete` 等路径。",
+      "after": "覆盖Bionic的malloc/free/calloc/realloc，以及最终经过这些入口的C++ new/delete；自定义allocator或重载new若绕过该dispatch，不会自动进入默认heap。",
+      "reason": "默认libc.malloc采样不能保证捕获任意自定义C++分配路径。",
+      "sources": [
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/malloc_heapprofd.cpp",
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "默认libc.malloc采样不能保证捕获任意自定义C++分配路径。"
+    },
+    {
+      "before": "这段 Kotlin 代码用于启动 native allocation profile，并把停止时机交给调用方：",
+      "after": "这段完整导入的Kotlin示例请求native allocation profile，调用方可用CancellationSignal请求提前结束；系统最大时长、限流与异步启动仍然有效，调用函数返回不代表采集器已经接入。AndroidX core1.15.0已提供setTrackJavaAllocations，false可用于API35，不需凭新版平台常量推断不可用。",
+      "reason": "补齐导入与固定AndroidX版本证据，澄清异步接入和系统时长仍限制调用方。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/core/core/1.15.0/core-1.15.0-sources.jar",
+        "https://developer.android.com/reference/androidx/core/os/HeapProfileRequestBuilder",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "补齐导入与固定AndroidX版本证据，澄清异步接入和系统时长仍限制调用方。"
+    },
+    {
+      "before": "@RequiresApi(35)\nfun requestNativeHeapProfile(\n    context: Context,\n    executor: Executor,\n    listener: Consumer<ProfilingResult>,\n): CancellationSignal {\n    val stopSignal = CancellationSignal()\n    val request = HeapProfileRequestBuilder()\n        .setTrackJavaAllocations(false)\n        .setTag(\"native-heap\")\n        .setCancellationSignal(stopSignal)\n        .build()\n\n    requestProfiling(context, request, executor, listener)\n    return stopSignal\n}",
+      "after": "import android.content.Context\nimport android.os.CancellationSignal\nimport android.os.ProfilingResult\nimport androidx.annotation.RequiresApi\nimport androidx.core.os.HeapProfileRequestBuilder\nimport androidx.core.os.requestProfiling\nimport java.util.concurrent.Executor\nimport java.util.function.Consumer\n\n@RequiresApi(35)\nfun requestNativeHeapProfile(\n    context: Context,\n    executor: Executor,\n    listener: Consumer<ProfilingResult>,\n): CancellationSignal {\n    val stopSignal = CancellationSignal()\n    val request = HeapProfileRequestBuilder()\n        .setTrackJavaAllocations(false)\n        .setTag(\"native-heap\")\n        .setCancellationSignal(stopSignal)\n        .build()\n\n    requestProfiling(context, request, executor, listener)\n    return stopSignal\n}",
+      "reason": "补齐公开AndroidX请求函数与类型导入，保持API35已支持的Java开关false。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_util_Process.cpp?format=TEXT",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/fs/proc/array.c",
+        "https://developer.android.com/reference/android/os/SystemClock",
+        "https://dl.google.com/dl/android/maven2/androidx/core/core/1.15.0/core-1.15.0-sources.jar"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "补齐公开AndroidX请求函数与类型导入，保持API35已支持的Java开关false。"
+    },
+    {
+      "before": "import android.os.Process\nimport android.os.SystemClock\n\ndata class CpuPoint(\n    val processCpuMs: Long,\n    val uptimeMs: Long,\n    val realtimeMs: Long,\n)\n\ndata class CpuUsage(\n    val awakeCorePercent: Double,\n    val windowCorePercent: Double,\n)\n\nclass SelfCpuSampler {\n    private var previous: CpuPoint? = null\n\n    fun sample(): CpuUsage? {\n        val current = CpuPoint(\n            processCpuMs = Process.getElapsedCpuTime(),\n            uptimeMs = SystemClock.uptimeMillis(),\n            realtimeMs = SystemClock.elapsedRealtime(),\n        )\n        val old = previous\n        previous = current\n        if (old == null) return null\n\n        val cpuDelta = current.processCpuMs - old.processCpuMs\n        val uptimeDelta = current.uptimeMs - old.uptimeMs\n        val realtimeDelta = current.realtimeMs - old.realtimeMs\n        if (cpuDelta < 0 || uptimeDelta <= 0 || realtimeDelta <= 0) return null\n\n        return CpuUsage(\n            awakeCorePercent = cpuDelta * 100.0 / uptimeDelta,\n            windowCorePercent = cpuDelta * 100.0 / realtimeDelta,\n        )\n    }\n}",
+      "after": "import android.os.Process\nimport android.os.SystemClock\n\ndata class CpuPoint(\n    val processCpuMs: Long,\n    val uptimeMs: Long,\n    val realtimeMs: Long,\n)\n\ndata class CpuUsage(\n    val awakeCorePercent: Double,\n    val windowCorePercent: Double,\n)\n\n// Confine this mutable sampler to one sampling thread.\nclass SelfCpuSampler {\n    private var previous: CpuPoint? = null\n\n    fun sample(): CpuUsage? {\n        val current = CpuPoint(\n            processCpuMs = Process.getElapsedCpuTime(),\n            uptimeMs = SystemClock.uptimeMillis(),\n            realtimeMs = SystemClock.elapsedRealtime(),\n        )\n        // The pinned native implementation returns zero on clock failure;\n        // zero may also be a valid early reading, so do not rebaseline to it.\n        if (current.processCpuMs <= 0) {\n            previous = null\n            return null\n        }\n        val old = previous\n        previous = current\n        if (old == null) return null\n\n        val cpuDelta = current.processCpuMs - old.processCpuMs\n        val uptimeDelta = current.uptimeMs - old.uptimeMs\n        val realtimeDelta = current.realtimeMs - old.realtimeMs\n        if (cpuDelta < 0 || uptimeDelta <= 0 || realtimeDelta <= 0) return null\n\n        return CpuUsage(\n            awakeCorePercent = cpuDelta * 100.0 / uptimeDelta,\n            windowCorePercent = cpuDelta * 100.0 / realtimeDelta,\n        )\n    }\n}",
+      "reason": "固定native实现clock_gettime失败返回0，保守拒绝零值且清空基线，避免下一有效读数产生伪尖峰；要求采样器单线程约束。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_util_Process.cpp?format=TEXT",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/fs/proc/array.c",
+        "https://developer.android.com/reference/android/os/SystemClock",
+        "https://dl.google.com/dl/android/maven2/androidx/core/core/1.15.0/core-1.15.0-sources.jar"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "固定native实现clock_gettime失败返回0，保守拒绝零值且清空基线，避免下一有效读数产生伪尖峰；要求采样器单线程约束。"
+    },
+    {
+      "before": "import android.system.Os\nimport android.system.OsConstants\nimport java.io.File\n\ndata class ProcCpuTicks(\n    val cpuTicks: Long,\n    val startTicks: Long,\n)\n\nprivate val whitespace = Regex(\"\\\\s+\")\n\nfun readSelfCpuTicks(): ProcCpuTicks? {\n    return try {\n        val line = File(\"/proc/self/stat\").readText()\n        val closingParen = line.lastIndexOf(')')\n        require(closingParen > 0)\n\n        // tail[0] 对应字段 3；utime、stime、starttime 分别对应 11、12、19。\n        val tail = line.substring(closingParen + 1).trim().split(whitespace)\n        require(tail.size > 19)\n        ProcCpuTicks(\n            cpuTicks = tail[11].toLong() + tail[12].toLong(),\n            startTicks = tail[19].toLong(),\n        )\n    } catch (_: Exception) {\n        null\n    }\n}\n\nfun clockTicksPerSecond(): Long =\n    Os.sysconf(OsConstants._SC_CLK_TCK)",
+      "after": "import android.system.Os\nimport android.system.OsConstants\nimport java.io.File\n\ndata class ProcCpuTicks(val cpuTicks: Long, val startTicks: Long)\nprivate val whitespace = Regex(\"\\\\s+\")\n\nfun parseProcCpuTicks(line: String): ProcCpuTicks? = runCatching {\n    val openingParen = line.indexOf('(')\n    val closingParen = line.lastIndexOf(')')\n    require(openingParen > 0 && closingParen > openingParen)\n    require(line.substring(0, openingParen).trim().toInt() > 0)\n    val tail = line.substring(closingParen + 1).trim().split(whitespace)\n    require(tail.size > 19 && tail[0].length == 1)\n    // tail[0] is field 3; 11/12/19 are utime/stime/starttime.\n    val user = tail[11].toLong()\n    val system = tail[12].toLong()\n    val start = tail[19].toLong()\n    require(user >= 0 && system >= 0 && start >= 0)\n    ProcCpuTicks(Math.addExact(user, system), start)\n}.getOrNull()\n\nfun readSelfCpuTicks(): ProcCpuTicks? = runCatching {\n    parseProcCpuTicks(File(\"/proc/self/stat\").readText())\n}.getOrNull()\n\nfun clockTicksPerSecond(): Long? = runCatching {\n    Os.sysconf(OsConstants._SC_CLK_TCK).takeIf { it > 0 }\n}.getOrNull()",
+      "reason": "抽出纯解析器，校验非负与加法溢出，文件失败和无效sysconf均返回null。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_util_Process.cpp?format=TEXT",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/fs/proc/array.c",
+        "https://developer.android.com/reference/android/os/SystemClock",
+        "https://dl.google.com/dl/android/maven2/androidx/core/core/1.15.0/core-1.15.0-sources.jar"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "抽出纯解析器，校验非负与加法溢出，文件失败和无效sysconf均返回null。"
+    },
+    {
+      "before": "import android.os.SystemClock\nimport java.io.File\n\ndata class FaultSnapshot(\n    val startTimeTicks: Long,\n    val minor: Long,\n    val major: Long,\n    val elapsedRealtimeNanos: Long,\n)\n\ndata class FaultDelta(\n    val minor: Long,\n    val major: Long,\n    val durationNanos: Long,\n)\n\nfun readSelfFaults(): FaultSnapshot {\n    val line = File(\"/proc/self/stat\").readText().trim()\n    val commEnd = line.lastIndexOf(')')\n    require(commEnd >= 0 && commEnd + 2 < line.length) {\n        \"Malformed /proc/self/stat\"\n    }\n\n    // fields[0] 对应内核文档中的字段 3（state）。\n    val fields = line\n        .substring(commEnd + 2)\n        .trim()\n        .split(Regex(\"\\\\s+\"))\n    require(fields.size > 19) { \"Incomplete /proc/self/stat\" }\n\n    return FaultSnapshot(\n        startTimeTicks = fields[19].toLong(), // 字段 22\n        minor = fields[7].toLong(),           // 字段 10\n        major = fields[9].toLong(),           // 字段 12\n        elapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos(),\n    )\n}\n\nfun delta(\n    previous: FaultSnapshot,\n    current: FaultSnapshot,\n): FaultDelta? {\n    if (current.startTimeTicks != previous.startTimeTicks) return null\n    if (current.minor < previous.minor || current.major < previous.major) return null\n    if (current.elapsedRealtimeNanos <= previous.elapsedRealtimeNanos) return null\n\n    return FaultDelta(\n        minor = current.minor - previous.minor,\n        major = current.major - previous.major,\n        durationNanos = current.elapsedRealtimeNanos - previous.elapsedRealtimeNanos,\n    )\n}",
+      "after": "import android.os.SystemClock\nimport java.io.File\n\ndata class FaultSnapshot(\n    val startTimeTicks: Long,\n    val minor: Long,\n    val major: Long,\n    val elapsedRealtimeNanos: Long,\n)\n\ndata class FaultDelta(val minor: Long, val major: Long, val durationNanos: Long)\n\nfun parseSelfFaults(line: String, sampleTimeNanos: Long): FaultSnapshot? = runCatching {\n    val commStart = line.indexOf('(')\n    val commEnd = line.lastIndexOf(')')\n    require(commStart > 0 && commEnd > commStart)\n    require(line.substring(0, commStart).trim().toInt() > 0)\n    val fields = line.substring(commEnd + 1).trim().split(Regex(\"\\\\s+\"))\n    require(fields.size > 19 && fields[0].length == 1)\n    val start = fields[19].toLong() // field 22\n    val minor = fields[7].toLong() // field 10\n    val major = fields[9].toLong() // field 12\n    require(start >= 0 && minor >= 0 && major >= 0 && sampleTimeNanos >= 0)\n    FaultSnapshot(start, minor, major, sampleTimeNanos)\n}.getOrNull()\n\nfun readSelfFaults(): FaultSnapshot? = runCatching {\n    val line = File(\"/proc/self/stat\").readText()\n    parseSelfFaults(line, SystemClock.elapsedRealtimeNanos())\n}.getOrNull()\n\nfun delta(previous: FaultSnapshot, current: FaultSnapshot): FaultDelta? {\n    if (previous.startTimeTicks < 0 || current.startTimeTicks != previous.startTimeTicks) return null\n    if (previous.minor < 0 || previous.major < 0) return null\n    if (current.minor < previous.minor || current.major < previous.major) return null\n    if (previous.elapsedRealtimeNanos < 0 ||\n        current.elapsedRealtimeNanos <= previous.elapsedRealtimeNanos) return null\n    return FaultDelta(\n        current.minor - previous.minor,\n        current.major - previous.major,\n        current.elapsedRealtimeNanos - previous.elapsedRealtimeNanos,\n    )\n}",
+      "reason": "原例readSelfFaults会向外抛IO/格式异常，却声称已处理；改为可空安全读取和纯解析器，补负值、身份与时间guard。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_util_Process.cpp?format=TEXT",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/fs/proc/array.c",
+        "https://developer.android.com/reference/android/os/SystemClock",
+        "https://dl.google.com/dl/android/maven2/androidx/core/core/1.15.0/core-1.15.0-sources.jar"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "原例readSelfFaults会向外抛IO/格式异常，却声称已处理；改为可空安全读取和纯解析器，补负值、身份与时间guard。"
+    },
+    {
+      "before": "调用方应在目标场景前发起请求，并在场景结束后执行 `stopSignal.cancel()`。",
+      "after": "调用方应在场景前发起请求，在场景结束后stopSignal.cancel()请求提前结束，并按实际结果/首尾样本核对覆盖窗口。公开入口没有“已安装采样器”的同步保证，不能把请求返回到cancel之间直接当成完整场景采样。",
+      "reason": "异步接入与结束处理存在延迟，场景覆盖不能由调用函数边界直接证明。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/ProfilingService.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "异步接入与结束处理存在延迟，场景覆盖不能由调用函数边界直接证明。"
+    },
+    {
+      "before": "记录 Java 分配调用栈和大小。这种 allocation profile 不提供对象引用关系，引用关系的证据要另找 Java heap dump。",
+      "after": "记录Java分配调用栈和大小；固定17r1 trace processor对com.android.art只导入allocation，不导入free，因此其累计分配量不是当前存活Java堆。它也不提供对象引用关系，存活与引用应另用适当heap dump/对象工具。",
+      "reason": "源码明确ART only reports allocations and not frees，通用净存活SQL不能用于ART heap。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/profile_packet_sequence_state.cc?format=TEXT",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/service/java/com/android/os/profiling/Configs.java"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "源码明确ART only reports allocations and not frees，通用净存活SQL不能用于ART heap。"
+    },
+    {
+      "before": "每个 dump 中由样本折算出的存活字节数（sampled bytes）",
+      "after": "完整会话前缀截至各dump的分配/释放累计净字节估计（不含ART仅分配模式）",
+      "reason": "dump表中的delta不是瞬时存活，且采样值不是完整堆扫描。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/profile_packet_sequence_state.cc?format=TEXT",
+        "https://perfetto.dev/docs/analysis/sql-tables#heap_profile_allocation"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "dump表中的delta不是瞬时存活，且采样值不是完整堆扫描。"
+    },
+    {
+      "before": "`heap_profile_allocation` 中的正数表示分配，负数表示已经释放的样本。callsite 是把一次分配归因到的调用栈位置，下面的 SQL 按 dump、进程、heap 和 callsite 汇总净存活量：",
+      "after": "heap_profile_allocation的正/负行分别是该dump相对上一dump新增的分配/释放delta；按单个ts求和只得到该段净变化。要估计截至某dump仍未释放的本次会话分配，应从完整会话前缀累计。下例将每个已出现的dump时间与其之前的行关联，保留没有新事件的旧callsite；按upid、heap、callsite隔离，并排除仅有allocation的com.android.art。只适用于已确认有alloc/free语义的单一连续会话；dump_at_max应按其单独语义分析。",
+      "reason": "固定导入器从累计self_allocated/self_freed扣除prev再写表，原SQL误把delta当存活且会丢负值释放段。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/profile_packet_sequence_state.cc?format=TEXT",
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/profile_module.cc?format=TEXT",
+        "https://perfetto.dev/docs/analysis/sql-tables#heap_profile_allocation",
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "固定导入器从累计self_allocated/self_freed扣除prev再写表，原SQL误把delta当存活且会丢负值释放段。"
+    },
+    {
+      "before": "SELECT\n  ts,\n  upid,\n  heap_name,\n  callsite_id,\n  SUM(size) AS net_live_bytes,\n  SUM(count) AS net_live_count\nFROM heap_profile_allocation\nGROUP BY ts, upid, heap_name, callsite_id\nHAVING SUM(size) > 0\nORDER BY ts, net_live_bytes DESC;",
+      "after": "-- Analyze one continuous, complete heap-profiling session.\n-- Limit the selected trace/process/heap before running this range join.\nWITH samples AS (\n  SELECT * FROM heap_profile_allocation\n  WHERE heap_name IS NOT 'com.android.art'\n), dump_times AS (\n  SELECT DISTINCT ts, upid, heap_name FROM samples\n)\nSELECT\n  d.ts AS dump_ts,\n  d.upid,\n  d.heap_name,\n  a.callsite_id,\n  SUM(a.size) AS net_live_bytes,\n  SUM(a.count) AS net_reported_count\nFROM dump_times AS d\nJOIN samples AS a\n  ON a.upid = d.upid\n AND a.heap_name IS d.heap_name\n AND a.ts <= d.ts\nGROUP BY d.ts, d.upid, d.heap_name, a.callsite_id\nHAVING SUM(a.size) > 0\nORDER BY dump_ts, net_live_bytes DESC;",
+      "reason": "改成截至dump时间累计前缀，携带未变callsite并按upid/heap分组；合成分配100、释放40、新增30验证100→60→90。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/profile_packet_sequence_state.cc?format=TEXT",
+        "https://perfetto.dev/docs/analysis/sql-tables#heap_profile_allocation"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "改成截至dump时间累计前缀，携带未变callsite并按upid/heap分组；合成分配100、释放40、新增30验证100→60→90。"
+    },
+    {
+      "before": "查询结果仍是采样估计。相同调用栈跨 dump 增长",
+      "after": "该范围JOIN可能随dump数增大而变贵，先限制选定进程/heap/单一会话并保留其完整前缀，再查看目标窗口。表只为非零delta写行；完全无变化的dump可能没有时间戳，需从完整ProfilePacket/支持版本的heap_profile元数据补时间，不能写成零存活。丢失前缀、buffer错误或会话边界不明时累计结果不可靠；count也是采样报告口径，不当成全堆精确对象数。相同调用栈跨dump的累计估计增长",
+      "reason": "补范围JOIN成本、无delta时间缺失、完整前缀与count解释边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/src/trace_processor/importers/proto/profile_packet_sequence_state.cc?format=TEXT",
+        "https://perfetto.dev/docs/analysis/sql-tables#heap_profile_allocation"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "补范围JOIN成本、无delta时间缺失、完整前缀与count解释边界。"
+    },
+    {
+      "before": "在分配器调用处自行记录的 allocator instrumentation（在分配器调用处自行记录）",
+      "after": "应用内allocator instrumentation（在分配器入口自行记录）",
+      "reason": "删除重复解释。",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "删除重复解释。"
+    },
+    {
+      "before": "它通过 `dlopen` 加载私有系统库并硬编码 C++ 符号，而 linker namespace",
+      "after": "应用若试图用dlopen加载该私有系统库并硬编码C++符号，还会受linker namespace影响；namespace",
+      "reason": "原文把应用私有调用技巧写成libmemunreachable自身实现，改明确主语。",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "原文把应用私有调用技巧写成libmemunreachable自身实现，改明确主语。"
+    },
+    {
+      "before": "它的方案建立在平台权限上，普通应用照搬不了。",
+      "after": "它的方案建立在平台权限上，普通应用照搬不了。普通App的Process.getElapsedCpuTime固定17r1 JNI使用CLOCK_PROCESS_CPUTIME_ID，失败返回0；该0与真实极早零耗时不能由接口区分，下面采样器保守将其视为无效并重建基线，不把它当明确错误码。",
+      "reason": "补native实际返回契约，解释CPU示例为什么不能把0作为新基线继续做差。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_util_Process.cpp?format=TEXT",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ProcessCpuTracker.java"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "补native实际返回契约，解释CPU示例为什么不能把0作为新基线继续做差。"
+    },
+    {
+      "before": "`uptimeMillis()` 在深度睡眠期间停止",
+      "after": "示例是单线程持有的可变采样器；跨线程同时sample需外部串行化。三次时钟读取不原子，短窗口须评估读取时差，并保留采样耗时。uptimeMillis()在深度睡眠期间停止",
+      "reason": "防止示例并发基线竞争，并说明CPU与两个时间分母非同一原子快照。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_util_Process.cpp?format=TEXT",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "防止示例并发基线竞争，并说明CPU与两个时间分母非同一原子快照。"
+    },
+    {
+      "before": "解析失败返回 `null`，调用方应丢弃这一轮样本。",
+      "after": "解析、读取失败或CLK_TCK不可用均返回null，调用方分别记录原因并丢弃该区间；只有取得正CLK_TCK后才换算tick。",
+      "reason": "与修正后的可空sysconf和解析契约保持一致。",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/fs/proc/array.c",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/ProcessCpuTracker.java"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "与修正后的可空sysconf和解析契约保持一致。"
+    },
+    {
+      "before": "进程或线程退出、读取失败及计数回退都按无效样本处理，我们在示例里逐项判断了这些条件。",
+      "after": "读取/格式失败返回null；差值另检查starttime、非负计数与正时间窗。示例只在当前开机与当前进程生命周期内使用，若跨进程/持久化保存还须纳入boot身份；调用方不得用0替代失败样本。",
+      "reason": "原文声称示例处理了读取失败但实际会抛出，改为可验证的真实契约。",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/fs/proc/array.c",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "原文声称示例处理了读取失败但实际会抛出，改为可验证的真实契约。"
+    },
+    {
+      "before": "统计结果中 `page-faults` 与 minor、major 之和的差值，应按三类事件各自的计数时机解释。",
+      "after": "统计结果中的page-faults、proc min/maj与perf minor/major不保证机械相等：除区间/失败路径差异，固定mm_account_fault在regs为null的GUP场景更新task计数后跳过perf事件。应按具体入口和计数时机解释差值。",
+      "reason": "源码还有regs为null的GUP差异，不应把proc和perf成功计数当成完全同源。",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/mm/memory.c"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "源码还有regs为null的GUP差异，不应把proc和perf成功计数当成完全同源。"
+    },
+    {
+      "before": "从 zRAM 读回并解压页面仍会走 swap-in 路径并记作 major。",
+      "after": "实际需要从zRAM读回解压、且成功完成的swap-in会按相应major/retry规则记账；若页已在swap cache且未发生重试，也可能是minor。major不是“闪存读了一页”的同义词。",
+      "reason": "补swap-cache命中分支，避免将所有swap映射恢复一律叫major。",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/mm/memory.c"
+      ],
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "why": "补swap-cache命中分支，避免将所有swap映射恢复一律叫major。"
+    },
+    {
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "before": "它不提供进程 CPU 时间样本。",
+      "after": "固定17r1的process_stats_config.proto支持record_process_runtime（Perfetto v44引入）；它与proc_stats_poll_ms同时启用时可输出进程utime/stime累计快照。因此它能提供CPU计数样本，但不能重建sched级执行/等待片段；下面仅scan_all配置也未启用这项采样。",
+      "reason": "原文笼统否认process_stats CPU计数能力，与固定tag proto明确字段相矛盾；区分累计轮询与调度事件。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/process_stats/process_stats_config.proto?format=TEXT",
+        "https://perfetto.dev/docs/reference/trace-config-proto"
+      ],
+      "why": "原文笼统否认process_stats CPU计数能力，与固定tag proto明确字段相矛盾；区分累计轮询与调度事件。"
+    },
+    {
+      "article": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "before": "若要周期采集进程内存，再显式配置 `proc_stats_poll_ms`；它是进程统计的轮询周期，与 CPU 采样频率是两个参数。",
+      "after": "周期内存统计需proc_stats_poll_ms；若要同时采进程CPU累计值，还需record_process_runtime=true。poll是状态计数轮询周期，不是sched事件采样率；调用栈采样又由linux.perf等数据源单独配置。",
+      "reason": "proc_stats_poll_ms也控制启用runtime后的CPU计数轮询，原表述容易错误分成两个独立频率。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/refs/tags/android-17.0.0_r1/protos/perfetto/config/process_stats/process_stats_config.proto?format=TEXT",
+        "https://perfetto.dev/docs/reference/trace-config-proto"
+      ],
+      "why": "proc_stats_poll_ms也控制启用runtime后的CPU计数轮询，原表述容易错误分成两个独立频率。"
+    },
+    {
+      "before": "last_verified: '2026-08-16'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "全文复核WOOTdroid v1、固定Profilo提交、Android17与当前Tracing稳定版；未执行root/OEM/Android设备采集。",
+      "sources": [
+        "https://arxiv.org/html/2604.27830v1",
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp",
+        "https://developer.android.com/jetpack/androidx/releases/tracing"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "全文复核WOOTdroid v1、固定Profilo提交、Android17与当前Tracing稳定版；未执行root/OEM/Android设备采集。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "全文复核WOOTdroid v1、固定Profilo提交、Android17与当前Tracing稳定版；未执行root/OEM/Android设备采集。",
+      "sources": [
+        "https://arxiv.org/html/2604.27830v1",
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp",
+        "https://developer.android.com/jetpack/androidx/releases/tracing"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "全文复核WOOTdroid v1、固定Profilo提交、Android17与当前Tracing稳定版；未执行root/OEM/Android设备采集。"
+    },
+    {
+      "before": "retrieved 2026-08-15; the cited r6 Binder files are byte-identical to r39",
+      "after": "reviewed 2026-10-25; Profilo fixed at 5a66b9372c137be036403d9c6f89a57ce4111d0a; AndroidX Tracing 2.0.5 release and in-process auto-initialization audited; r6/r39 Binder bytes independently matched; source/host checks only",
+      "reason": "声明实际可复查的输入与验证范围，避免移动main和过期预发布状态。",
+      "sources": [
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp",
+        "https://developer.android.com/jetpack/androidx/releases/tracing"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "声明实际可复查的输入与验证范围，避免移动main和过期预发布状态。"
+    },
+    {
+      "before": "过滤器按 UID（应用或系统主体标识）、TGID（Linux 线程组标识，通常对应进程）、syscall id 和项目规则筛掉无关事件。",
+      "after": "过滤器按UID、TGID（线程组/通常为进程）、syscall id与项目规则筛选；TGID只是筛选维度，不能单独作为enter/exit配对键。实现还须保留线程TID、进程/线程生命周期与调用实例，防止同进程并发线程覆盖状态或TID复用串线。",
+      "reason": "补明确过滤粒度与事件关联粒度，同TGID线程可并发执行系统调用。",
+      "sources": [
+        "https://arxiv.org/html/2604.27830v1",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/drivers/android/binder.c"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "补明确过滤粒度与事件关联粒度，同TGID线程可并发执行系统调用。"
+    },
+    {
+      "before": "ATrace 事件最终写入内核 ftrace 的 `trace_marker`——用户态向 ftrace 提交文本事件的接口文件；这一段的平台源码是 AOSP `android-17.0.0_r1`。",
+      "after": "先看libcutils的ATrace兼容写入路径：它向内核ftrace的trace_marker提交文本事件；这不代表Android17所有公共Trace调用最终都会写这个文件，后面的tracing_perfetto还可能走Track Event。平台基线为android-17.0.0_r1。",
+      "reason": "原文先把全部ATrace断言为trace_marker，与随后正确说明的双后端相矛盾，需限定libcutils路径。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/tracing_perfetto/tracing_perfetto.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "原文先把全部ATrace断言为trace_marker，与随后正确说明的双后端相矛盾，需限定libcutils路径。"
+    },
+    {
+      "before": "`fd` 是进程标识已打开文件的整数句柄",
+      "after": "`fd`是进程内标识已打开文件的整数句柄",
+      "reason": "修正漏字并明确文件描述符属于进程的描述符表。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.inc"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "修正漏字并明确文件描述符属于进程的描述符表。"
+    },
+    {
+      "before": "native 捕获逻辑位于 [`cpp/atrace/Atrace.cpp`](https://github.com/facebookarchive/profilo/blob/main/cpp/atrace/Atrace.cpp)。",
+      "after": "下述上游行为固定在Profilo提交`5a66b9372c137be036403d9c6f89a57ce4111d0a`，native逻辑见[该提交Atrace.cpp](https://github.com/facebookarchive/profilo/blob/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp)；移动main链接仅用于导航。",
+      "reason": "归档不代替固定可重放输入；明确后续hook行为对应真实提交。",
+      "sources": [
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "归档不代替固定可重放输入；明确后续hook行为对应真实提交。"
+    },
+    {
+      "before": "把 tag mask 设为全 1，放行的也只是当前进程内 framework、ART、HWUI 或 native library 执行到的 ATrace 点；",
+      "after": "tag mask全1也只改变本进程状态；framework、ART、HWUI或native事件还必须实际经过被hook的libcutils入口才可能捕获，直接Track Event或其他写入路径不会自动被拦截；",
+      "reason": "原文可能使读者误以为本进程所有ATrace类别都保证覆盖；单库PLT入口有明确路径边界。",
+      "sources": [
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/libs/tracing_perfetto/tracing_perfetto.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "原文可能使读者误以为本进程所有ATrace类别都保证覆盖；单库PLT入口有明确路径边界。"
+    },
+    {
+      "before": "所以 Profilo ATrace trace 只是一份“当前进程同步 slice 的应用内副本”。",
+      "after": "所以这只是“本进程、命中hook路径、被保存的B/E同步slice记录”；还须核对名称记录完整性与缓冲覆盖，不能承诺覆盖本进程所有同步slice。",
+      "reason": "即使是B/E，绕开入口或丢失名称/记录也不完整。",
+      "sources": [
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp",
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/logger/lfrb/LockFreeRingBuffer.h"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "即使是B/E，绕开入口或丢失名称/记录也不完整。"
+    },
+    {
+      "before": "解析器按 TID 分别维护调用栈，无需借助 `sched_switch` 推断事件属于哪个线程：",
+      "after": "解析器按进程实例和线程生命周期中的TID分别维护调用栈；TID来自写入记录，无需借sched_switch猜归属。长窗口若不能识别TID复用，应在生命周期/缺失边界截断，避免与旧线程栈拼接：",
+      "reason": "TID在长窗口可复用，单一数字分组会误配；区分记录已有TID和解析器所需生命周期。",
+      "sources": [
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp",
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/profiler/TimerManager.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "TID在长窗口可复用，单一数字分组会误配；区分记录已有TID和解析器所需生命周期。"
+    },
+    {
+      "before": "每个 TID 的 `PUSH` 与 `POP` 独立配对。",
+      "after": "每个进程/线程生命周期内的PUSH与POP按嵌套独立配对。",
+      "reason": "保持生命周期校正与后续缺失分析一致。",
+      "sources": [
+        "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "保持生命周期校正与后续缺失分析一致。"
+    },
+    {
+      "before": "Java/Kotlin 可使用 `android.os.Trace` 或 AndroidX Tracing，native 可使用 NDK ATrace。这些 API 负责发出标记，不会自行启动或保存一份 trace；采集端启用对应类别后，标记才会出现在 Perfetto system trace 中。",
+      "after": "只写系统轨迹标记时，Java/Kotlin可用android.os.Trace或AndroidX旧Trace兼容API，native用NDK ATrace；它们本身不启动保存system trace，需采集端启用对应类别。AndroidX 2.0的Tracer/tracing-wire应用内链路另有自动初始化，不能把“不自动采集”一概套给它。",
+      "reason": "Tracing2.0与旧Trace包装的初始化/输出契约不同，原先泛称AndroidX会误导。",
+      "sources": [
+        "https://developer.android.com/topic/performance/tracing/in-process-tracing",
+        "https://developer.android.com/jetpack/androidx/releases/tracing",
+        "https://perfetto.dev/docs/getting-started/atrace"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "Tracing2.0与旧Trace包装的初始化/输出契约不同，原先泛称AndroidX会误导。"
+    },
+    {
+      "before": "截至 2026-08-16，[AndroidX Tracing release notes](https://developer.android.com/jetpack/androidx/releases/tracing)列出的稳定版是 `1.3.0`。它适合通过公共 API 写系统 trace 标记，维护范围比私有变量与 PLT hook 清晰。",
+      "after": "截至2026-10-25，[AndroidX Tracing release notes](https://developer.android.com/jetpack/androidx/releases/tracing)列出的最新稳定版为2.0.5（2026-10-21）；2.0.0已于2026-08-12稳定发布。1.3.0保留为旧Trace兼容路径的版本背景，不再称当前最新稳定版。",
+      "reason": "官方2.0.0稳定日期早于原复核日期，旧结论本身已错；当前补丁版为2.0.5。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/tracing"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "官方2.0.0稳定日期早于原复核日期，旧结论本身已错；当前补丁版为2.0.5。"
+    },
+    {
+      "before": "`2.0.0-beta01` 提供可插拔 backend 与 sink，并可把应用内事件写成 Perfetto trace packet。",
+      "after": "稳定版2.0.5提供可插拔backend与sink，可把应用内事件写成Perfetto trace packet。",
+      "reason": "以当前稳定2.0.5替换beta01。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/tracing",
+        "https://developer.android.com/topic/performance/tracing/in-process-tracing"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "以当前稳定2.0.5替换beta01。"
+    },
+    {
+      "before": "它目前仍是预发布版本。采用方要把 API 变更、依赖升级和回归测试纳入计划。",
+      "after": "Android应用若加入tracing-wire，默认通过AndroidX Startup自动建立TraceDriver与全局Tracer，把文件写到noBackupFilesDir/perfetto_traces；可用AbstractTraceDriver.Factory定制。仅引入轻量tracing API不等于已经配置输出；部署时核对实际初始化、sink路径、flush与关闭行为。2.0.5修复并发flush/release包池潜在死锁，升级仍需回归。",
+      "reason": "官方初始化文档明确wire默认输出；不能停留于“可自行控制”却漏掉自动写文件和补丁修复。",
+      "sources": [
+        "https://developer.android.com/topic/performance/tracing/in-process-tracing",
+        "https://developer.android.com/jetpack/androidx/releases/tracing"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "官方初始化文档明确wire默认输出；不能停留于“可自行控制”却漏掉自动写文件和补丁修复。"
+    },
+    {
+      "before": "新建 Java/Kotlin 应用内 trace | 评估 AndroidX Tracing `2.0.0-beta01`，并接受预发布 API 风险",
+      "after": "新建 Java/Kotlin 应用内 trace | 评估稳定版AndroidX Tracing 2.0.5；核对tracing-wire初始化、sink、flush与应用预算",
+      "reason": "决策表与已稳定发布状态及真实默认初始化一致。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/tracing",
+        "https://developer.android.com/topic/performance/tracing/in-process-tracing"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "决策表与已稳定发布状态及真实默认初始化一致。"
+    },
+    {
+      "before": "[WOOTdroid v1](https://arxiv.org/abs/2604.27830)",
+      "after": "[WOOTdroid v1](https://arxiv.org/html/2604.27830v1)",
+      "reason": "固定论文明确版本，避免abs默认指向后续版本。",
+      "sources": [
+        "https://arxiv.org/html/2604.27830v1"
+      ],
+      "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "why": "固定论文明确版本，避免abs默认指向后续版本。"
     }
   ],
   "validation": {
@@ -20713,15 +22505,33 @@
       "article_positions": "passed",
       "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a296",
       "source_audit": "Full 370-line frozen article read; 29 successful primary captures reviewed (two exploratory outdated BatteryStatsImpl paths failed; actual 17r1 power/stats path captured). 10 corrections: positive per-monitor sample time, unavailable/reset windows, overlapping channels, since-charged HealthStats counters, correct units, failed/retried work in energy denominator and average-versus-instantaneous limits. Ten source/synthetic arithmetic guard checks pass. All 12 final figures and 12 rendered positions actually viewed; isolated build, exact reconstruction, local links and asset decoding pass; original shell fence unchanged and bash -n valid. No device reset, bugreport collection or energy/performance measurement performed."
+    },
+    "a297": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a297",
+      "source_audit": "Full 556-line frozen source read; 24 primary captures/artifacts checked (obsolete asm-instrumentation URL unavailable). 14 corrections include actual POST_COMPILATION_CLASSES added-in 9.3.3, fixed compatible AGP baseline, current stable metadata filtering and ASM 9.11.1. Real CheckClassAdapter reproduced original late exception-table registration; complete MethodNode visitor now preserves original catch/finally order, normal and implicit exception cleanup and version-marker idempotence. Exact published visitor compiled and executed with real ASM/JVM; two transform passes, multi/wide returns, exception identity/cause/suppressed, synchronized/finally/loop and UTF16 boundary tests pass. All 13 figure assets and 13 rendered positions actually inspected; isolated build, exact reconstruction, asset/link checks pass. Trace is a host stub; no AGP/D8/R8/DEX/device or overhead tests claimed."
+    },
+    "a298": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a298",
+      "source_audit": "Full 1395-line frozen consolidated article read; 64 successful primary captures/artifacts checked, exploratory missing paths retained separately. 25 corrections include pinned trace-processor delta versus cumulative SQL, ART allocation-only exclusion, missing-zero-dump metadata/full-prefix requirements, CLOCK_PROCESS_CPUTIME_ID zero failure baseline, safe proc/fault parsing and CLK_TCK guards, GUP/perf and swap-cache distinctions, and process_stats record_process_runtime CPU-counter support. Twenty pinned assertions and exact published Kotlin host-stub/SQLite synthetic fixtures pass, including malformed/overflow/failed reads, clock/reset guards and cumulative100-40+30 semantics. All 22 final figures and 22 rendered positions actually viewed, including refined fault branches and CPU tracks. Build, exact reconstruction, unchanged shell bash syntax, local links and assets pass. No Android/SDK/NDK/device profiling or real leak/CPU/fault measurement performed."
     }
   },
   "last_checkpoint": {
-    "completed": 46,
+    "completed": 48,
     "total": 51,
-    "diagrams": 555,
-    "next_article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
-    "next_article_index": 297,
-    "updated_at": "2026-10-25T17:19:12.034268+08:00"
+    "diagrams": 590,
+    "next_article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+    "next_article_index": 299,
+    "updated_at": "2026-10-25T17:46:38.440011+08:00"
   },
   "replaced_inline_diagrams": []
 }

@@ -1602,18 +1602,107 @@
     {
       "path": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
       "sha256_before": "80526219dc0a6315bff6575200e28bf10ca49bf0d34ab7c12b020586de200f46",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a236-01-protocol",
+        "a236-02-visible-record",
+        "a236-03-read-write",
+        "a236-04-persistent-list",
+        "a236-05-readonly-pinning",
+        "a236-06-apply-locks",
+        "a236-07-three-way-merge",
+        "a236-08-write-skew",
+        "a236-09-nested-visibility",
+        "a236-10-read-domains",
+        "a236-11-recompose-notify",
+        "a236-12-observer-thread",
+        "a236-13-derived-cache",
+        "a236-14-remember-flow",
+        "a236-15-atomic-view",
+        "a236-16-writer-protocol",
+        "a236-17-coroutine-context",
+        "a236-18-initial-record",
+        "a236-19-window-sharing",
+        "a236-20-flow-effects",
+        "a236-21-cost-model",
+        "a236-22-tool-evidence",
+        "a236-23-probe-counts",
+        "a236-24-consistency-tests",
+        "a236-25-present-boundary"
+      ],
       "article_index": 236,
-      "sha256_at_assignment": "80526219dc0a6315bff6575200e28bf10ca49bf0d34ab7c12b020586de200f46"
+      "sha256_at_assignment": "80526219dc0a6315bff6575200e28bf10ca49bf0d34ab7c12b020586de200f46",
+      "sha256_current": "80378d1a6e30909a8ae413191cc4132d19752d3c1315703e8379fff28ad38d1c",
+      "sha256_after": "80378d1a6e30909a8ae413191cc4132d19752d3c1315703e8379fff28ad38d1c",
+      "source_audit": "23原始URL：22直接200，1历史源码SSL失败重试200；新增固定WindowRecomposer官方源码200，1.11.4→1.12三份真实源码diff留存；8段Kotlin实际Compiler2.4.10/API37编译、真实Runtime1.12宿主协议探针和9源码契约通过。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a236/retry-and-window-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a236/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a236/version-diff-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
       "sha256_before": "0c71c05cf00189b622e93e16870bef44bf4f18b83163aef31a032f7eabbb6989",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a237-01-interop-directions",
+        "a237-02-migration-scope",
+        "a237-03-androidview-bridge",
+        "a237-04-measure-spec",
+        "a237-05-parent-context",
+        "a237-06-output-topology",
+        "a237-07-callbacks",
+        "a237-08-update-observation",
+        "a237-09-binding-fragments",
+        "a237-10-invalidations",
+        "a237-11-feedback-loop",
+        "a237-12-reuse-deactivate",
+        "a237-13-reuse-evidence",
+        "a237-14-disposal-strategy",
+        "a237-15-holder-item-identity",
+        "a237-16-root-memory",
+        "a237-17-viewcontext-sharing",
+        "a237-18-precompose-lifetime",
+        "a237-19-frame-deadline",
+        "a237-20-nested-scroll",
+        "a237-21-tool-work",
+        "a237-22-perfetto-triage",
+        "a237-23-pausable-boundary",
+        "a237-24-surface-clip",
+        "a237-25-arr-votes",
+        "a237-26-test-directions",
+        "a237-27-test-clock-idle",
+        "a237-28-migration-validation"
+      ],
       "article_index": 237,
-      "sha256_at_assignment": "0c71c05cf00189b622e93e16870bef44bf4f18b83163aef31a032f7eabbb6989"
+      "sha256_at_assignment": "0c71c05cf00189b622e93e16870bef44bf4f18b83163aef31a032f7eabbb6989",
+      "sha256_current": "28421de8214cbea0e0fd4d9049110810d960dfa728ba343773778de4e93d9c09",
+      "sha256_after": "28421de8214cbea0e0fd4d9049110810d960dfa728ba343773778de4e93d9c09",
+      "source_audit": "36原始URL：35直接200，1历史源码SSL失败重试200。真实UI1.12 AAR元数据minCompileSdk37/minAGP9.1.0，8原始Kotlin段和稳定ComposeViewContext/实验onRootWithViewInteraction额外API均实际Compiler2.4.10/API37编译；18源码/构件契约通过。没有执行Android仪器化或伪造生命周期/性能测量。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a237/additional-compile-artifacts-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a237/artifact-and-retry-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a237/extracted-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a237/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a237/test-artifact-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
@@ -22920,6 +23009,1735 @@
           ]
         }
       ]
+    },
+    {
+      "id": "a236-01-protocol",
+      "title": "Snapshot 的四层协议",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-01-protocol.svg",
+        "src/assets/diagrams/ch22/a236-01-protocol.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-01-protocol",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-01-protocol.svg",
+          "sha256": "8904530efdc5d370b92adb01d79c00077f2e9f1b97f5d39b7766526e76351fd5",
+          "bytes": 19968
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-01-protocol.png",
+          "sha256": "9475cc159a9b5578455c25091bd62d566bb9c1580829da75824ca66b31ddadf3",
+          "bytes": 70351,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-02-visible-record",
+      "title": "选择最高的可见状态记录",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-02-visible-record.svg",
+        "src/assets/diagrams/ch22/a236-02-visible-record.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-02-visible-record",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-02-visible-record.svg",
+          "sha256": "d2a7d37c2d670493212dc66e893444c53b9639fd7129fbcaffc7fe001a50947d",
+          "bytes": 32533
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-02-visible-record.png",
+          "sha256": "fe3586ba0942444add05c571764f24f4f02727f45e3adaf8a3447d42be10772f",
+          "bytes": 135885,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-03-read-write",
+      "title": "MutableState 的读写入口",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-03-read-write.svg",
+        "src/assets/diagrams/ch22/a236-03-read-write.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-03-read-write",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-03-read-write.svg",
+          "sha256": "6cd7c8a4179e21f0f30d6d1455f34f4f49259d7ddc889d152faee36b1772a50e",
+          "bytes": 20287
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-03-read-write.png",
+          "sha256": "674b47198d70ee03522eb4190d756c7eb0cd14a142b9d35d5816fbeafb2b3c97",
+          "bytes": 71770,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-04-persistent-list",
+      "title": "Snapshot 列表的结构快照",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-04-persistent-list.svg",
+        "src/assets/diagrams/ch22/a236-04-persistent-list.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-04-persistent-list",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-04-persistent-list.svg",
+          "sha256": "b7a15f3ac06c9ba7e4f56c30781c8c763d7757cc2f5c782f47bdc679778e4985",
+          "bytes": 32100
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-04-persistent-list.png",
+          "sha256": "ca9f88ba2ba24ce6822bbc3f46a367848f75fc8aa835aed93b474b036a654a40",
+          "bytes": 142814,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-05-readonly-pinning",
+      "title": "只读视图与状态记录保留",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-05-readonly-pinning.svg",
+        "src/assets/diagrams/ch22/a236-05-readonly-pinning.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-05-readonly-pinning",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-05-readonly-pinning.svg",
+          "sha256": "8be290dc6dab1524e231499fb5e749256989ebf749469ca5cf64d3e9af5408ac",
+          "bytes": 27058
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-05-readonly-pinning.png",
+          "sha256": "beed5139eab201300d7cc6e1b62e858fb04a3313488c7d4ffb4d3a60ce79ba4e",
+          "bytes": 125453,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-06-apply-locks",
+      "title": "根 MutableSnapshot 的 apply 阶段",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-06-apply-locks.svg",
+        "src/assets/diagrams/ch22/a236-06-apply-locks.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-06-apply-locks",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-06-apply-locks.svg",
+          "sha256": "5f0eaa3f9a665cae67b7697d732c3acd40b67c1ad58c919525b6ed09f5dd2be2",
+          "bytes": 26726
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-06-apply-locks.png",
+          "sha256": "e5c622cf5ee74b0b707cd5b648c646f70eb310115a0e069a95d1e092b956d066",
+          "bytes": 136489,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-07-three-way-merge",
+      "title": "三方合并与计数溢出",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-07-three-way-merge.svg",
+        "src/assets/diagrams/ch22/a236-07-three-way-merge.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-07-three-way-merge",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/runtime/SnapshotMutationPolicy"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-07-three-way-merge.svg",
+          "sha256": "ac5e25c7e2195583b461b4b985b0d6bd968a3085b80be2af63557b5b01b0040e",
+          "bytes": 33587
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-07-three-way-merge.png",
+          "sha256": "d867f7446c5abf7902aa7affd58ed6004bf986e860a94fad13dcb1a0c8b97869",
+          "bytes": 134864,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-08-write-skew",
+      "title": "不同对象写入也会破坏业务不变量",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-08-write-skew.svg",
+        "src/assets/diagrams/ch22/a236-08-write-skew.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-08-write-skew",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-08-write-skew.svg",
+          "sha256": "4fa7d04609934c62d16741c92bc91e2fe7a34fab232bcd34c47f3eae3adf9674",
+          "bytes": 32439
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-08-write-skew.png",
+          "sha256": "348eb68225c16601a57e9e3f882b33c27b70cac6f972e58b453a11692cd14a5c",
+          "bytes": 186948,
+          "dimensions": [
+            2100,
+            1545
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-09-nested-visibility",
+      "title": "嵌套 Snapshot 的应用边界",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-09-nested-visibility.svg",
+        "src/assets/diagrams/ch22/a236-09-nested-visibility.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-09-nested-visibility",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-09-nested-visibility.svg",
+          "sha256": "53f3d5b75a0bb7de854fc904c4e9e482b169240e93ffd9adbe41207f7e5730d0",
+          "bytes": 22123
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-09-nested-visibility.png",
+          "sha256": "06598e50822e035f0469a84296d987e26922f601ce7d8af3ab08e5558343d39c",
+          "bytes": 124455,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-10-read-domains",
+      "title": "State 到观察域的依赖索引",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-10-read-domains.svg",
+        "src/assets/diagrams/ch22/a236-10-read-domains.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-10-read-domains",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-10-read-domains.svg",
+          "sha256": "0083010ff19a495556259eaab49fbf6f903fc288c7da15ef235b6da3354c3366",
+          "bytes": 30869
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-10-read-domains.png",
+          "sha256": "8bfe2dd75f09647051913c4bbeacfa5a2b816900f57ca777cb827e4aa973cb15",
+          "bytes": 145695,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-11-recompose-notify",
+      "title": "从有效写入到重组调度",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-11-recompose-notify.svg",
+        "src/assets/diagrams/ch22/a236-11-recompose-notify.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-11-recompose-notify",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-11-recompose-notify.svg",
+          "sha256": "fbd7e79a4736d538626aa1524fdab2cfbd3436d6b626e02d5fe496bc26af969e",
+          "bytes": 21731
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-11-recompose-notify.png",
+          "sha256": "0cd0b94142703fda8f50876676bb5aed8a518781304fe51bf0b70b5e7a01c9cb",
+          "bytes": 82016,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-12-observer-thread",
+      "title": "SnapshotStateObserver 的并发边界",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-12-observer-thread.svg",
+        "src/assets/diagrams/ch22/a236-12-observer-thread.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-12-observer-thread",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-12-observer-thread.svg",
+          "sha256": "0ab407781b9944673cf20052fe17e5c779ff650ebb2118bfd107d7c9c5520e2e",
+          "bytes": 28913
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-12-observer-thread.png",
+          "sha256": "b33863506c3eed7978853842b2543dd9e3b27d9953aff3494e2f3060cfee2def",
+          "bytes": 143291,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-13-derived-cache",
+      "title": "derivedStateOf 的缓存与条件失效",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-13-derived-cache.svg",
+        "src/assets/diagrams/ch22/a236-13-derived-cache.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-13-derived-cache",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-13-derived-cache.svg",
+          "sha256": "483fb5a2310da9949cba6e82e16bd431375e305bda962cc9ad77687b41362b9e",
+          "bytes": 24167
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-13-derived-cache.png",
+          "sha256": "fd4fc052e71a7f0e1e16c4294db085b5fcb080151335d29400a75a71cda7a709",
+          "bytes": 83148,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-14-remember-flow",
+      "title": "remember、派生状态和冷流",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-14-remember-flow.svg",
+        "src/assets/diagrams/ch22/a236-14-remember-flow.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-14-remember-flow",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://developer.android.com/develop/ui/compose/side-effects"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-14-remember-flow.svg",
+          "sha256": "f98167fc6e7e94ac53c785c8596d7e1b0ee155cc268abd42073b5459ad8356c1",
+          "bytes": 28876
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-14-remember-flow.png",
+          "sha256": "018e5352cebaea1139d0d85e4027ef4571b293ca90647c62886349b424b7fe20",
+          "bytes": 134381,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-15-atomic-view",
+      "title": "一次提交与固定读取视图",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-15-atomic-view.svg",
+        "src/assets/diagrams/ch22/a236-15-atomic-view.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-15-atomic-view",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-15-atomic-view.svg",
+          "sha256": "e9e2d51af9c66046630d53447d5e6a87472328a65bb6f90cc12fb09ef1e041bd",
+          "bytes": 30001
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-15-atomic-view.png",
+          "sha256": "9af0c021325ad72b89a8fcc96b0c7b4d01e9256fafc5d527919bc48be27e5a62",
+          "bytes": 140163,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-16-writer-protocol",
+      "title": "跨线程状态与业务写者协议",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-16-writer-protocol.svg",
+        "src/assets/diagrams/ch22/a236-16-writer-protocol.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-16-writer-protocol",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-16-writer-protocol.svg",
+          "sha256": "58cb386bd6af217e7e9bc67176d2d2ecac7204c748404049c312dff9eaf7706c",
+          "bytes": 31882
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-16-writer-protocol.png",
+          "sha256": "03fcae66de9c9a72a97d0c542171ecea4801151aadf41cc586becead2f5c069e",
+          "bytes": 145415,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-17-coroutine-context",
+      "title": "Snapshot 随协程恢复与挂起",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-17-coroutine-context.svg",
+        "src/assets/diagrams/ch22/a236-17-coroutine-context.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-17-coroutine-context",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-17-coroutine-context.svg",
+          "sha256": "fb6003200e65fff9929a56e4396fed8eb93eea6bf2d411da5554c32f434cc883",
+          "bytes": 19622
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-17-coroutine-context.png",
+          "sha256": "ad76dc4087dba842ca8721b9aeeaf64aa7db703822e178c342ee1bd7125d3753",
+          "bytes": 74052,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-18-initial-record",
+      "title": "新建 MutableState 的初始记录例外",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-18-initial-record.svg",
+        "src/assets/diagrams/ch22/a236-18-initial-record.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-18-initial-record",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-18-initial-record.svg",
+          "sha256": "7a182109297e74cc7667823a9b9e48732cae5233ed739def4cfd13a5529a88e2",
+          "bytes": 27283
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-18-initial-record.png",
+          "sha256": "25388c036d7e0d72d642f96cde0f9a4934534ce63342a7a02c2c99a1757971e7",
+          "bytes": 130162,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-19-window-sharing",
+      "title": "Composition 与窗口 Recomposer",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-19-window-sharing.svg",
+        "src/assets/diagrams/ch22/a236-19-window-sharing.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-19-window-sharing",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/WindowRecomposer.android.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-19-window-sharing.svg",
+          "sha256": "37272166ba367a1d1fcca4f8ab08ceda2fab729285ee768f817ac3386013b840",
+          "bytes": 28907
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-19-window-sharing.png",
+          "sha256": "c7e1ad873a3c219c3f96ff37d94d7fc21f28fff7645f5df515be36a01ea139b1",
+          "bytes": 136848,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-20-flow-effects",
+      "title": "外部流、状态生产与事件",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-20-flow-effects.svg",
+        "src/assets/diagrams/ch22/a236-20-flow-effects.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-20-flow-effects",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://developer.android.com/develop/ui/compose/side-effects"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-20-flow-effects.svg",
+          "sha256": "1f21452056077f96189849f1824604c859a9cd6ed5b142fec6f6765a6aac1858",
+          "bytes": 30577
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-20-flow-effects.png",
+          "sha256": "d697ed656fa050c652c4ecdfb5fb5a9cb8d168df6133e9433b93ef509816d922",
+          "bytes": 136802,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-21-cost-model",
+      "title": "Snapshot 成本要按实际工作拆分",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-21-cost-model.svg",
+        "src/assets/diagrams/ch22/a236-21-cost-model.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-21-cost-model",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-21-cost-model.svg",
+          "sha256": "142f4b5bee18b319b85cf73245076ff89fbbdbb3af01abedc1336510732bea4b",
+          "bytes": 36046
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-21-cost-model.png",
+          "sha256": "5459f98d3f924a216b734e4e3321f2db40c9614ff85774f8f5e1b3d7a485b416",
+          "bytes": 142756,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-22-tool-evidence",
+      "title": "编译器、跟踪与工具探针的证据边界",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-22-tool-evidence.svg",
+        "src/assets/diagrams/ch22/a236-22-tool-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-22-tool-evidence",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/tooling/SnapshotObserver"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-22-tool-evidence.svg",
+          "sha256": "c544bfef36bbdb2fbc5e206c56ee7a721ad5b738ecf6ad3ffec1d208857e88c5",
+          "bytes": 30056
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-22-tool-evidence.png",
+          "sha256": "51131a01cd0fec9ac7c8497dd64e769159db7897c27f183d78ff77204cbd8d18",
+          "bytes": 138224,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-23-probe-counts",
+      "title": "工具观察器计数的单位",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-23-probe-counts.svg",
+        "src/assets/diagrams/ch22/a236-23-probe-counts.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-23-probe-counts",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/tooling/SnapshotObserver"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-23-probe-counts.svg",
+          "sha256": "62a3e1961e8937f7eae1d0dd02732827bcc698d5a0d133e22b56216267424086",
+          "bytes": 27878
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-23-probe-counts.png",
+          "sha256": "f7d79da3b1068df8d2d904141f956a6f172f00317778f4a27f19937781ea01e1",
+          "bytes": 140135,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-24-consistency-tests",
+      "title": "一致性测试按不同性质断言",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-24-consistency-tests.svg",
+        "src/assets/diagrams/ch22/a236-24-consistency-tests.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-24-consistency-tests",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-24-consistency-tests.svg",
+          "sha256": "ad640fc7095baab1362899e7dc3c53fec7bd33fed494614478033cc5d5ddd862",
+          "bytes": 36606
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-24-consistency-tests.png",
+          "sha256": "05e64dbbcbc1d0a7ec5a5e1f56e58ec8fc63ea4ae153fe9c57ea400964037e5e",
+          "bytes": 145000,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a236-25-present-boundary",
+      "title": "Snapshot 提交到实际显示的责任链",
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a236-25-present-boundary.svg",
+        "src/assets/diagrams/ch22/a236-25-present-boundary.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a236-25-present-boundary",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a236-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a236-25-present-boundary.svg",
+          "sha256": "9cf87c56510f78b2b364ccd4a5e613ebedd8bb08d74c4acf6229d6d06e1590cf",
+          "bytes": 19325
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a236-25-present-boundary.png",
+          "sha256": "af4e76fe1db05f418bbb4de7b9c8571ef4fb53bb68937d70aae7998e1d3d8dff",
+          "bytes": 75100,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-01-interop-directions",
+      "title": "两个方向的宿主与成本",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-01-interop-directions.svg",
+        "src/assets/diagrams/ch22/a237-01-interop-directions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-01-interop-directions",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-01-interop-directions.svg",
+          "sha256": "e335715056575eead7f9126afb3b2125f50de96fb8d345926ef1891b2d013440",
+          "bytes": 22940
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-01-interop-directions.png",
+          "sha256": "50adf59eb3a329550b8b17df0e180e33c4a03c172fc08cb7457f25e308db5e67",
+          "bytes": 99190,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-02-migration-scope",
+      "title": "Compose First 的迁移边界",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-02-migration-scope.svg",
+        "src/assets/diagrams/ch22/a237-02-migration-scope.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-02-migration-scope",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/first",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-02-migration-scope.svg",
+          "sha256": "914c2c07ffa84fdebb81566c2f664e1d100ec2132345d80ad49927ba1c23a587",
+          "bytes": 40530
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-02-migration-scope.png",
+          "sha256": "b1e57a79a261d05fe83ec6cb37398e2d06529a90de7c981f5cb132425330a728",
+          "bytes": 155397,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-03-androidview-bridge",
+      "title": "AndroidView 的布局与绘制桥",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-03-androidview-bridge.svg",
+        "src/assets/diagrams/ch22/a237-03-androidview-bridge.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-03-androidview-bridge",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-03-androidview-bridge.svg",
+          "sha256": "73dde8e634e91e8472edd585a697b08c7bee86b53cf9360d1b6f1dbfe734334b",
+          "bytes": 17525
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-03-androidview-bridge.png",
+          "sha256": "7abc1a697c22a2fca5790e414550d1d501448635c739c5991c42ed566be863d5",
+          "bytes": 73818,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-04-measure-spec",
+      "title": "Constraints 与 LayoutParams 如何得到 MeasureSpec",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-04-measure-spec.svg",
+        "src/assets/diagrams/ch22/a237-04-measure-spec.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-04-measure-spec",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-04-measure-spec.svg",
+          "sha256": "80489fdd3714648c1bc79d103834f82bedad05c0903d5b2d6975606d3aeb0f62",
+          "bytes": 21442
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-04-measure-spec.png",
+          "sha256": "25c35737a1890fee6e4c1b970aacbfb26bd50fcc548169b57aa691625c15ea55",
+          "bytes": 119611,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-05-parent-context",
+      "title": "ComposeView 解析父级 CompositionContext",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-05-parent-context.svg",
+        "src/assets/diagrams/ch22/a237-05-parent-context.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-05-parent-context",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-05-parent-context.svg",
+          "sha256": "8e946f5547bffae23aaef9d548eb2c95700a59f82d6df3a8355e01f03dbe7edc",
+          "bytes": 21380
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-05-parent-context.png",
+          "sha256": "605af9b696a77eb9afa42f3e562f2808b803e248883754b9f674e7d65e6656e1",
+          "bytes": 76346,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-06-output-topology",
+      "title": "普通 View、纹理与独立 Surface 的缓冲去向",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-06-output-topology.svg",
+        "src/assets/diagrams/ch22/a237-06-output-topology.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-06-output-topology",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-06-output-topology.svg",
+          "sha256": "94e0bff32a81828b1e9dcf279db55b760303c53d2e7f408f0b6286df926beb4f",
+          "bytes": 25925
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-06-output-topology.png",
+          "sha256": "93c4d554af78bdd0ea0743ef0a7a4d97741c64255a18e1c53769dc4cd3d864c9",
+          "bytes": 138177,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-07-callbacks",
+      "title": "AndroidView 的四个生命周期回调",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-07-callbacks.svg",
+        "src/assets/diagrams/ch22/a237-07-callbacks.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-07-callbacks",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-07-callbacks.svg",
+          "sha256": "b572dc67f14895272528a4ef7b61af3618b882be3a1516167a8112013b1d0856",
+          "bytes": 24786
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-07-callbacks.png",
+          "sha256": "6fcaa7f36e26a334693e1601149faaf282da54f80ee03953dcd2e32152bdedf6",
+          "bytes": 100516,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-08-update-observation",
+      "title": "update 的两种触发来源与执行门禁",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-08-update-observation.svg",
+        "src/assets/diagrams/ch22/a237-08-update-observation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-08-update-observation",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-08-update-observation.svg",
+          "sha256": "0d5ec1a1b03d7dfd42b1e6954dca0563a0398f86fe73e1c83158ce320ed6d4d3",
+          "bytes": 29428
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-08-update-observation.png",
+          "sha256": "88918043d19056cdf855e7070d90947812c8752e7b0ecc7fc06464ccc80055f3",
+          "bytes": 139948,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-09-binding-fragments",
+      "title": "ViewBinding 复用与 Fragment 清理",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-09-binding-fragments.svg",
+        "src/assets/diagrams/ch22/a237-09-binding-fragments.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-09-binding-fragments",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-viewbinding/1.12.0/ui-viewbinding-1.12.0-sources.jar",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-09-binding-fragments.svg",
+          "sha256": "418bc6c1779d89e285e4617234533f9f23eec1aa1461e9b2a5fcc5f22cf15810",
+          "bytes": 34534
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-09-binding-fragments.png",
+          "sha256": "fb886e4e6d1b6d49682437f36d030a29efff5386f011b28d263ce013a4f17ef1",
+          "bytes": 156369,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-10-invalidations",
+      "title": "状态变化怎样变成 View 工作",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-10-invalidations.svg",
+        "src/assets/diagrams/ch22/a237-10-invalidations.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-10-invalidations",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-10-invalidations.svg",
+          "sha256": "34ded70fb45da8e620d466baa41c6c61ab938b9159b42bfaa99533b8fd254fa9",
+          "bytes": 28631
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-10-invalidations.png",
+          "sha256": "488820b8c536e3f6a086302f100bd63fe39ef411e2dcffdc7f3baf6da4657bdc",
+          "bytes": 138182,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-11-feedback-loop",
+      "title": "双向控件的状态反馈环",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-11-feedback-loop.svg",
+        "src/assets/diagrams/ch22/a237-11-feedback-loop.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-11-feedback-loop",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-11-feedback-loop.svg",
+          "sha256": "cd42c96f3c91bed1be2dab230987a05f62881dc2a02abe017bb5688389f70957",
+          "bytes": 26182
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-11-feedback-loop.png",
+          "sha256": "40a260adc2e0f642582d5c41fb4f95efa378900d5ed19a47991a14b0a0a7f3f6",
+          "bytes": 110704,
+          "dimensions": [
+            2100,
+            930
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-12-reuse-deactivate",
+      "title": "复用、停用与永久释放的时序",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-12-reuse-deactivate.svg",
+        "src/assets/diagrams/ch22/a237-12-reuse-deactivate.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-12-reuse-deactivate",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-12-reuse-deactivate.svg",
+          "sha256": "9f1adf706f647c17bf61644e840121abbc18301643a5ec613ef655c2a885c1f1",
+          "bytes": 29227
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-12-reuse-deactivate.png",
+          "sha256": "eb95ac4599938ace1808170e5c3bcef16502f8b38973fe7e932ae61f54cf51c1",
+          "bytes": 129933,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-13-reuse-evidence",
+      "title": "用计数和尾部样本判断复用",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-13-reuse-evidence.svg",
+        "src/assets/diagrams/ch22/a237-13-reuse-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-13-reuse-evidence",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-13-reuse-evidence.svg",
+          "sha256": "2d28f54a8a770f5b7beac460047a7ccd23b64841f72fceca2aa0815ce1218b3c",
+          "bytes": 30304
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-13-reuse-evidence.png",
+          "sha256": "ded0f310c37b2f99bae051cfdd601177476926c42b92f9fc811b573faa65cded",
+          "bytes": 142752,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-14-disposal-strategy",
+      "title": "ComposeView 的销毁策略边界",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-14-disposal-strategy.svg",
+        "src/assets/diagrams/ch22/a237-14-disposal-strategy.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-14-disposal-strategy",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ViewCompositionStrategy",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-14-disposal-strategy.svg",
+          "sha256": "570807f064cc46584f3974e8bc5768ae1a8f1077e966a6e739fdc5f929920d91",
+          "bytes": 28475
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-14-disposal-strategy.png",
+          "sha256": "b9b585403371cb3c9ad7ae80f80289083d35f260b26b438d400be3a425a89069",
+          "bytes": 139044,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-15-holder-item-identity",
+      "title": "ViewHolder 复用与业务项的组合身份",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-15-holder-item-identity.svg",
+        "src/assets/diagrams/ch22/a237-15-holder-item-identity.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-15-holder-item-identity",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-15-holder-item-identity.svg",
+          "sha256": "5ddb351ea1a4fa69ab58723b93be607474d6f16d60d92417a1f5977ac95de9f9",
+          "bytes": 35133
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-15-holder-item-identity.png",
+          "sha256": "769f579eeda1131e26d59a22ced1907d0d4385adc4d378e70e3715a66513af50",
+          "bytes": 147438,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-16-root-memory",
+      "title": "共享 Recomposer 仍有多个实例根",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-16-root-memory.svg",
+        "src/assets/diagrams/ch22/a237-16-root-memory.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-16-root-memory",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-16-root-memory.svg",
+          "sha256": "9146f63a700818e55e00de21147dbf355abaa48515a6728e3ae415c7782db0a8",
+          "bytes": 31769
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-16-root-memory.png",
+          "sha256": "f87cdc401b2362afb2fcd73d7e82002ff9ec363a8cbe042c30f60e4cde176b48",
+          "bytes": 153281,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-17-viewcontext-sharing",
+      "title": "ComposeViewContext 的共享范围",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-17-viewcontext-sharing.svg",
+        "src/assets/diagrams/ch22/a237-17-viewcontext-sharing.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-17-viewcontext-sharing",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ComposeViewContext"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-17-viewcontext-sharing.svg",
+          "sha256": "62fde83a8b0899f1bd99548ac6321df868311d8b553f5698f05fbdc4b6257463",
+          "bytes": 33654
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-17-viewcontext-sharing.png",
+          "sha256": "ef76593b4ac7939ec17d6843da7ec5770560bb9123a130394583d689025891ea",
+          "bytes": 152331,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-18-precompose-lifetime",
+      "title": "离树预组合的资源寿命",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-18-precompose-lifetime.svg",
+        "src/assets/diagrams/ch22/a237-18-precompose-lifetime.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-18-precompose-lifetime",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ComposeViewContext"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-18-precompose-lifetime.svg",
+          "sha256": "b0fb98a00ec330c459dfeafb03339ca9a516a2d77d04ed16554f86a9a1857e86",
+          "bytes": 19250
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-18-precompose-lifetime.png",
+          "sha256": "34e792ccbc9156ccd203a6f2bc3365dce612ac4238a2fd3c77cbd562db99b3e9",
+          "bytes": 95291,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-19-frame-deadline",
+      "title": "刷新周期与实际帧期限",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-19-frame-deadline.svg",
+        "src/assets/diagrams/ch22/a237-19-frame-deadline.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-19-frame-deadline",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-19-frame-deadline.svg",
+          "sha256": "59e970509ffdd84142301b494f2ac6c5ab9246add9ebdccf5e70271f73b9fba4",
+          "bytes": 35096
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-19-frame-deadline.png",
+          "sha256": "1bb8a919360c504cb6619dcb0b5735adb4dae3d8a86d8bc7d8e37ddc60dd8f70",
+          "bytes": 137840,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-20-nested-scroll",
+      "title": "滚动桥转发不代替控制权设计",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-20-nested-scroll.svg",
+        "src/assets/diagrams/ch22/a237-20-nested-scroll.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-20-nested-scroll",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-20-nested-scroll.svg",
+          "sha256": "7716b85b411b237a48cdba142c46cfc048e52e168caffebfb59d3308ef08ab19",
+          "bytes": 33802
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-20-nested-scroll.png",
+          "sha256": "19bf2cc7f2adafdf5265bdab77d790422f033620e63b847119d1a6a4ab17704b",
+          "bytes": 142748,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-21-tool-work",
+      "title": "结构、编译器与动态跟踪各自回答什么",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-21-tool-work.svg",
+        "src/assets/diagrams/ch22/a237-21-tool-work.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-21-tool-work",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://developer.android.com/develop/ui/compose/tooling/tracing"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-21-tool-work.svg",
+          "sha256": "54211cb5f4f69fd927ca6a6b410d25d3ac0a8e22a3e5655ccf9c868d0f3ee8a8",
+          "bytes": 31749
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-21-tool-work.png",
+          "sha256": "28b86e9479948f6a40d275216121b5b28e7b83d966ba4f582ccac8c8f895b3b4",
+          "bytes": 142343,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-22-perfetto-triage",
+      "title": "从目标帧回到桥接成本",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-22-perfetto-triage.svg",
+        "src/assets/diagrams/ch22/a237-22-perfetto-triage.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-22-perfetto-triage",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-22-perfetto-triage.svg",
+          "sha256": "a417f4a4db6f1c4d2331f3cb9392a133ad180c0a640f34338494f322e1ce13ed",
+          "bytes": 24719
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-22-perfetto-triage.png",
+          "sha256": "339256120d6c8a6fbecfe2587275a784fd20256e87ae2c964508359f0698fa3b",
+          "bytes": 84309,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-23-pausable-boundary",
+      "title": "预组合暂停与传统 View 成本",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-23-pausable-boundary.svg",
+        "src/assets/diagrams/ch22/a237-23-pausable-boundary.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-23-pausable-boundary",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.12.0/foundation-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-23-pausable-boundary.svg",
+          "sha256": "dbbf5624f027f0976bf485a0368c787fe314cfc73ef8a97350d89f92e6641ee3",
+          "bytes": 33994
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-23-pausable-boundary.png",
+          "sha256": "cf6980d10b0502a170ca04657774dcbfb027bd9a3c8a3232040c923064286741",
+          "bytes": 146835,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-24-surface-clip",
+      "title": "宿主布局、内容 Surface 与裁剪",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-24-surface-clip.svg",
+        "src/assets/diagrams/ch22/a237-24-surface-clip.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-24-surface-clip",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-24-surface-clip.svg",
+          "sha256": "591db6d2a09e0dc47f41f192c45298311d67b399f991282498788c2ecb0ba358",
+          "bytes": 31167
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-24-surface-clip.png",
+          "sha256": "e9ff96203286b8829f24d7e9e20e0d3b6fe6b5cb5f250ce528f52e09e539ba84",
+          "bytes": 144363,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-25-arr-votes",
+      "title": "混合树与独立 Surface 的帧率请求",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-25-arr-votes.svg",
+        "src/assets/diagrams/ch22/a237-25-arr-votes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-25-arr-votes",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-25-arr-votes.svg",
+          "sha256": "58dd91f80e20b550b0cf50e529f8c3387d55e479842e3f7206e3eaf89c685c16",
+          "bytes": 33565
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-25-arr-votes.png",
+          "sha256": "fa71c508289e6cd18a6e5b4ced263cfe0ceee8fb4aae85916b20008a3dcb0a49",
+          "bytes": 150280,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-26-test-directions",
+      "title": "互操作测试的查询与宿主范围",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-26-test-directions.svg",
+        "src/assets/diagrams/ch22/a237-26-test-directions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-26-test-directions",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/testing/interoperability",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-test-android/1.12.0/ui-test-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-26-test-directions.svg",
+          "sha256": "a67952e1801fb99c59e941a68004c34cab3d591152052f0e9b183bb5d93a7b42",
+          "bytes": 28523
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-26-test-directions.png",
+          "sha256": "4a4ddaa2b18a21a4b2aea01f102d27df194f2a69b1c10f5e89c24e75f2e87699",
+          "bytes": 138771,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-27-test-clock-idle",
+      "title": "虚拟时钟与等待空闲的边界",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-27-test-clock-idle.svg",
+        "src/assets/diagrams/ch22/a237-27-test-clock-idle.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-27-test-clock-idle",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/testing/synchronization",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-test-android/1.12.0/ui-test-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-27-test-clock-idle.svg",
+          "sha256": "1363527272d3d9c29d95605a019fe921d4c45a2a00ecc096978b8a55ee064d60",
+          "bytes": 30580
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-27-test-clock-idle.png",
+          "sha256": "ff739ef610226fd493410756ec282dd356e1003e29cc4692e00405e9c880e903",
+          "bytes": 144616,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a237-28-migration-validation",
+      "title": "每批迁移的可复现验收",
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a237-28-migration-validation.svg",
+        "src/assets/diagrams/ch22/a237-28-migration-validation.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a237-28-migration-validation",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/first",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a237-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a237-28-migration-validation.svg",
+          "sha256": "6286f828138d892c7ba50877bca3979c32dd69d3e3c0caeb173527030c6cafea",
+          "bytes": 28164
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a237-28-migration-validation.png",
+          "sha256": "2f37ccecb04f2aae296e097fa76580331504e29062179a1257a5d3c5c3b88d6c",
+          "bytes": 90645,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     }
   ],
   "corrections": [
@@ -28222,14 +30040,328 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/TextStringSimpleNode.kt",
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/TextAnnotatedStringNode.kt"
       ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "本轮按固定发行源码及实际Runtime测试重核。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/Snapshot"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "当前稳定版 Compose BOM `2026.08.00` 的 POM 将这两个 Runtime 构件约束为 1.12.0。",
+      "after": "本文固定的 Compose BOM `2026.08.00` POM 将这两个 Runtime 构件约束为 1.12.0。截至 2026-10-25，Runtime 发行页已列出 1.12.1，并说明相对 1.12.0 无改动；以下仍以 1.12.0 构件逐项核查，不把固定 BOM 称作最新稳定版。",
+      "why": "固定分析基线与当前发行版本分开，避免时态错误。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/compose-runtime",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom/2026.08.00/compose-bom-2026.08.00.pom"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "Runtime 1.12.0 为当前稳定版；BOM 2026.08.00 映射 Runtime 1.12.0",
+      "after": "固定 Runtime 1.12.0；BOM 2026.08.00 映射 Runtime 1.12.0；1.12.1 发行说明称无改动",
+      "why": "索引同步限定固定基线。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/compose-runtime",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom/2026.08.00/compose-bom-2026.08.00.pom"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "Snapshot 创建后，晚于它产生的状态记录不会进入这份视图；创建时仍未应用的其他 Snapshot 也会被列入 `invalid` 集合。",
+      "after": "Snapshot 创建后，晚于它产生且没有其他可见初始记录的版本不会进入这份视图；创建时仍未应用的其他 Snapshot 也会被列入 `invalid` 集合。注意普通 `MutableState` 在非全局 Snapshot 内创建时还会带一条 `PreexistingSnapshotId = 1` 的初始记录，旧视图仍可读取该初始值，后续修改则继续隔离（见 §9.3）。",
+      "why": "1.12实际构造函数含Preexisting初始记录，版本规则不能推导新建对象一律不可读。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "在只读 Snapshot 内写 State 会抛出 `IllegalStateException`。",
+      "after": "在只读 Snapshot 内尝试改变已有 State 的值会抛出 `IllegalStateException`；结构相等策略下赋相同值会提前返回，不构成有效写入。",
+      "why": "setter等价过滤早于readonly写校验；明确已有State避免初始化例外。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "        ): Int = current + (applied - previous)",
+      "after": "        ): Int? {\n            val merged = current.toLong() + (applied.toLong() - previous.toLong())\n            return merged.takeIf { it in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong() }\n                ?.toInt()\n        }",
+      "why": "Int中间减加会溢出；Long完整计算并以null拒绝超出业务计数范围的合并。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/runtime/SnapshotMutationPolicy"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "这个策略只适合增量计数；业务若允许“把计数设置为 0”，同一公式会给出错误语义。",
+      "after": "这个策略只适合增量计数；业务若允许“把计数设置为 0”，同一公式会给出错误语义。示例用 Long 计算差量与总和，超出 Int 范围返回 `null`，使 apply 明确冲突；普通业务更新本身也要单独检查溢出。",
+      "why": "说明拒绝溢出的冲突行为，不误称日常加法也已安全。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/runtime/SnapshotMutationPolicy"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "其他 Snapshot 在 apply 前看不到这三项修改，apply 成功后看到全部修改。",
+      "after": "apply 前，外部 Snapshot 看不到这三项修改；apply 成功后，新取得且能看见这次提交的 Snapshot 会同时包含它们，提交前冻结的只读 Snapshot 仍保持旧版本。若在不断推进的全局上下文中分别读取多个字段，提交可能插在两次读取之间；需要一致组合时，应在同一只读 Snapshot 中读取或改用单个不可变状态。",
+      "why": "原子发布不代表既有冻结视图改变，也不保证无固定读视图的多次读取不会跨提交。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/Snapshot"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "在未应用的 MutableSnapshot 内创建的 State 若提前泄露，较早的 Snapshot 可能找不到合法状态记录，并报告：",
+      "after": "Runtime 1.12.0 的普通 `mutableStateOf` 在非全局 Snapshot 中构造时，会同时创建当前 Snapshot ID 的记录与 `PreexistingSnapshotId = 1` 的初始记录。因此，即使创建者尚未 apply，其他 Snapshot 也能读取该初始值；创建后在事务内写出的新值仍受隔离。不能仅凭“State 在未应用事务中创建”就断言普通 MutableState 必然报错。\n\n自定义 `StateObject` 若没有对读者可见的初始记录，或使用缺少这种初始化保障的旧实现，才可能在找不到可见记录时报告：",
+      "why": "纠正新建State可见性；实际SnapshotMutableStateImpl保留preexisting记录。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/Snapshot"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "长期状态容器宜在全局上下文创建。需要在事务中创建并初始化时，应在 apply 成功后再发布引用。",
+      "after": "初始记录可见不等于完成业务初始化。事务内创建后又赋值的 State 若提前泄露，其他读者可能只看到初始值；需要发布完整初始化结果时，仍在 apply 成功后发布引用，并遵守应用的线程安全发布协议。",
+      "why": "把建议理由改为业务完整初始化与安全发布，避免依赖过时异常模型。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "`SnapshotStateObserver.observeReads` 也要求同一个 Owner 的观察保持同线程。",
+      "after": "`SnapshotStateObserver.observeReads` 会拒绝同一个实例同时在不同线程嵌套观察；AndroidComposeView 的测量、布局和绘制仍应由同一 UI 线程执行。",
+      "why": "准确限定线程检测范围，单实例非通用线程安全且不等于永久绑定首次线程。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "回调可能从任意线程到达，探针自身必须线程安全。",
+      "after": "同一 StateObject 可以出现在子 Snapshot 和外层 Snapshot 的多次 `onApplied` 回调中；示例统计的是各次 changed 集合大小之和，不是唯一对象数、setter 次数或全局提交次数。回调可能从任意线程到达，探针自身必须线程安全。",
+      "why": "工具回调包含嵌套应用且对象可重复，需限定计数口径。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/tooling/SnapshotObserver"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "`Snapshot.observe { ... }` 会添加观察者而不引入新的隔离版本；",
+      "after": "`Snapshot.observe(readObserver = { /* 记录对象 */ }, writeObserver = null) { /* 被观察计算 */ }` 会添加观察器而不引入新的隔离版本；",
+      "why": "原简写省略必填read/write参数，补可编译的公开签名。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/runtime/snapshots/Snapshot"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "**原子可见**：多状态提交后观察者只接受合法组合；",
+      "after": "**原子可见**：在同一个固定读视图内检查多状态组合，提交前后分别保持完整旧值或完整新值；",
+      "why": "一致性测试需要固定读视图，不能把裸全局多次读取当事务。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "- [ ] 未应用 Snapshot 中创建的 State 不会提前泄露。",
+      "after": "- [ ] 新建 State 的初始记录可见性与业务初始化分开验证；需要完整初始化时在 apply 后安全发布。",
+      "why": "同步修正清单的1.12初始值语义。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "Android 内核 `android17-6.18-2026-06_r6` 调度应用主线程、RenderThread、Binder 与系统服务线程。",
+      "after": "本文使用的 Android 公共内核参考标签为 `android17-6.18-2026-06_r6`；具体设备仍须记录其实际内核、厂商补丁与调度配置。内核调度应用主线程、RenderThread、Binder 与系统服务线程。",
+      "why": "Android平台版本不唯一决定设备内核标签。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/core.c"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "before": "返回当前底层不可变列表；内容变化前通常还是同一实例。",
+      "after": "返回当前底层不可变列表；内容变化前通常还是同一实例。这是列表结构的快照，不会深复制元素；元素若持有普通可变字段，其内部变化仍需独立的状态与并发协议。",
+      "why": "toList只固定持久化列表结构，防止误读为任意元素的深拷贝。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "本轮按真实1.12构件、平台标签与API编译重新核查。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0.aar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "Compose 1.12.0 还要求 `compileSdk 37` 和 Android Gradle Plugin 9。",
+      "after": "本文固定的 `ui-android:1.12.0` AAR 元数据明确要求 `minCompileSdk=37`、`minAndroidGradlePluginVersion=9.1.0`；不能把任意 AGP 9.x 都当作满足要求。",
+      "why": "实际AAR元数据minAGP为9.1.0而非笼统9。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0.aar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "Android View 工具包，以及 Fragment、RecyclerView 等官方列出的基于 View 的库已进入维护模式，继续接收关键修复，但不再有显著功能更新。",
+      "after": "以 `android.widget` 控件为代表的 View 工具包，以及 Fragment、RecyclerView 等官方列出的基于 View 的库已进入维护模式，继续接收关键修复，但不再有显著功能更新；`android.view` 仍作为 Compose 等 UI 工具包的底层设施受到支持。",
+      "why": "官方路线明确区分控件工具包与android.view底层设施。",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/first"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "如果 `title` 与 `image` 是两个状态属性，而某段代码只读取 `model.title`，那么 `model.image` 变化就不会触发这次观察。",
+      "after": "如果 `model.title` 与 `model.image` 分别由独立的 Snapshot State 支撑，而 `update` 只读取前者，那么后者变化不会直接命中这次读集。若两字段来自同一个整体 `State<Model>`，读取这个 State 就会观察整个对象；普通可变字段也不会凭字段名自动获得 Snapshot 观察能力。",
+      "why": "读依赖以StateObject而非任意业务字段为粒度。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "普通参数捕获走另一条路径：宿主可组合函数重组并提供新的 `update` 函数时，承载器也会执行新函数。",
+      "after": "普通参数捕获走另一条路径：宿主可组合函数重组并提供新的 `update` 函数时，承载器会尝试运行新函数。1.12.0 的 `runUpdate` 还要求 holder 已附着窗口、内部 View 的父节点仍是该 holder，且已安装 update block；未附着或停用时会延后到附着或重新激活后执行。",
+      "why": "补实际runUpdate附着和parent门禁，避免把赋值视作无条件立即执行。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "避免同一帧重复绘制同一内容。",
+      "after": "让本次绘制中发生的失效请求能在后续动画回调重新请求图层绘制；这不是保证每帧只调用一次 draw 的全局去重机制。",
+      "why": "postOnAnimation用于不丢失绘制期间的新失效，不应宣称严格同帧去重。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "                    model?.let { FeedRow(it) }",
+      "after": "                    model?.let { item ->\n                        key(item.id) {\n                            FeedRow(item)\n                        }\n                    }",
+      "why": "池化ViewHolder切换业务实体时，需要key防止普通remember沿同一组位置串项。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "`clearBinding` 清除旧列表项引用，Composition 继续留在池中。",
+      "after": "适配器应在合适的 `onViewRecycled(holder)` 路径调用 `clearBinding()`；它把 holder 的 model 引用置空，Composition 继续留在池中。示例假定 `ItemUiModel.id` 是稳定唯一的业务 ID，`key(item.id)` 使不同实体的组合身份分开；普通 `remember` 在实体切换时重建，但跨回收或进程重建保留的业务状态仍应提升。清空状态需要经过后续组合才会移除旧子树，不能代替资源组件立即停止旧会话的生命周期协议。",
+      "why": "明确clearBinding调用方、稳定key契约及异步重组不能充当同步资源释放。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "构造 `ComposeViewContext` 时，用来创建它的那个 View 必须已经附着，并在这个上下文有效期间保持附着。",
+      "after": "`ComposeViewContext` 会延迟解析部分宿主值，不能把要求简化成“构造函数调用瞬间一律检查附着”。公开契约要求参考 View 在使用该上下文的 `ComposeView.setContent` 前已附着；`createComposition(context)` 还会明确检查参考 View 的 `isAttachedToWindow`，且该 View 必须在上下文有效期间保持附着。",
+      "why": "区分构造、延迟解析和createComposition实际校验时点。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ComposeViewContext"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "这些时间由输入、动画、Compose、View 树遍历、RenderThread、GPU、SurfaceFlinger 和显示阶段共同使用，我们做预算时就要按整帧来算：给 Compose 8 ms、View 8 ms 再把两者相加，在 60 Hz 上并不安全，当前帧的系统约束以 FrameTimeline 给出的帧期限为准。",
+      "after": "这些周期只提供刷新节奏参考，不是给每一阶段各发一份预算。Compose 与 View 的同帧 UI 工作通常共享主线程；RenderThread、GPU、SurfaceFlinger 之间则可能流水或重叠，不能把所有阶段墙钟简单相加。应从 FrameTimeline 的目标帧与期限，沿实际依赖、调度等待和同步栅栏判断关键路径；“Compose 8 ms + View 8 ms”本身不足以证明 60 Hz 下按时。",
+      "why": "区分共享UI线程与渲染流水重叠，避免按全链路简单串行求和。",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "守住“只创建可见列表项”的虚拟化收益。",
+      "after": "保留按需创建、有限预取与复用缓存的虚拟化收益；离屏缓存、预取或固定项目仍可能存在。",
+      "why": "Lazy与RecyclerView并不承诺只创建当前可见项目。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.12.0/foundation-android-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "宿主界面每帧重组，视频缓冲区仍由视频自己的节奏产生；",
+      "after": "宿主动画按需触发布局或绘制，不必每帧重组；视频缓冲区仍由视频自己的节奏产生；",
+      "why": "动画读取阶段决定失效范围，帧率请求不意味着每帧组合。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "Compose 测试规则只会同步它能够观察的 Compose 工作，虚拟测试时钟管到的也只有 Compose 一侧；Android View 的测量、绘制、外部线程或播放器回调要另行等待。",
+      "after": "Compose 的虚拟 `MainTestClock` 驱动组合、动画与手势，不控制 Android 平台的 measure/draw 时钟；但这不等于测试规则完全不等布局绘制：`waitForIdle()` 也会等待待处理的布局与绘制。规则无法自动识别未注册的后台请求、播放器回调等外部工作，这些才需要额外的明确空闲条件。",
+      "why": "官方同步文档明确waitForIdle等待pending draw/layout，不能与MainTestClock驱动范围混淆。",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/testing/synchronization"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "`AndroidView` 只描述 UI 宿主方式；出图类型要看内嵌内容本身——包装普通 TextView 与包装视频 SurfaceView 的性能模型相差很大。",
+      "after": "`AndroidView` 只描述 UI 宿主方式；出图类型要看内嵌内容本身——包装普通 TextView 与包装视频 SurfaceView 的性能模型相差很大。另一个独立边界是裁剪：`AndroidView` 不会自动把内容裁到 Compose 布局边界；需要时应按官方契约在子 View 设置 `clipToOutline` 并确认有效 outline，SurfaceView 子类尤其要验证实际内容是否越界。",
+      "why": "补官方AndroidView不自动裁剪的明确契约，避免Surface拓扑图暗示天然裁剪。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "两套体系可以混用。",
+      "after": "两套体系可以混用。若多个 RecyclerView 行或 Fragment 中有相同 Compose 文案，UI 1.12.0 的实验性 `onRootWithViewInteraction` 可先用 Espresso 唯一定位宿主 View，再把 Compose 查询限定到其后代根；需显式采用 `ExperimentalTestApi`。该 API 用于 Views 内的 Compose，Compose 内的传统 View 仍用 Espresso 查询。",
+      "why": "补1.12实际实验API以解决多Compose根同文案查询歧义，限定方向。",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/testing/interoperability",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-test-android/1.12.0/ui-test-android-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "before": "Android 内核 | `android17-6.18-2026-06_r6` |",
+      "after": "Android 公共内核参考 | `android17-6.18-2026-06_r6`；设备记录实际内核及厂商配置 |",
+      "why": "设备内核版本不由Android平台标签唯一决定。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+      ]
     }
   ],
   "validation": {},
   "last_checkpoint": {
-    "completed": 36,
+    "completed": 38,
     "total": 51,
-    "next_article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
-    "updated_at": "2026-10-25T09:23:15.623676+00:00"
+    "next_article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+    "updated_at": "2026-10-25T09:51:42.862214+00:00"
   },
   "replaced_inline_diagrams": []
 }

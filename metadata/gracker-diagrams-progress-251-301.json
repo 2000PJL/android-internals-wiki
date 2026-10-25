@@ -663,37 +663,115 @@
     {
       "path": "src/part5-app/ch24-io-network/README.md",
       "sha256_before": "9b26804d5ef5d75b9cce52636d486cc0cad897c57fdd413c42313ec38f77a4ae",
-      "status": "in_progress",
+      "status": "illustrated",
       "diagrams": [
         "a273-01-ch24-problem-reading-map"
       ],
       "article_index": 273,
       "sha256_at_assignment": "9b26804d5ef5d75b9cce52636d486cc0cad897c57fdd413c42313ec38f77a4ae",
-      "sha256_current": "61c981037e16231a3fe95a2dd2338bec5a1729c095900b0dd9dc07b9825a4b9d"
+      "sha256_current": "61c981037e16231a3fe95a2dd2338bec5a1729c095900b0dd9dc07b9825a4b9d",
+      "sha256_after": "61c981037e16231a3fe95a2dd2338bec5a1729c095900b0dd9dc07b9825a4b9d",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文37行和全部章节入口核读，一张针对本章问题入口的导航图及正文位置实际视觉通过；2条术语校勘与已完成24.7/24.10正文一致，复用刚核对的官方DNS安全和DataSaver来源且sha256保持。修正HTTPDNS可使用HTTPS和接口quota范围/AndroidTV速率例外。mdbook/全部本地链接/SVGPNG通过；没有代码块或性能测量。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "9b26804d5ef5d75b9cce52636d486cc0cad897c57fdd413c42313ec38f77a4ae"
     },
     {
       "path": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
       "sha256_before": "a5671a4a80851549ed5defb7894fa09cad1964de1212e13bdc6fbe9a06227888",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a274-01-three-evidence-layers",
+        "a274-02-controlled-measurement-window",
+        "a274-03-power-metric-capability-gates",
+        "a274-04-activity-to-code-ownership",
+        "a274-05-wake-lock-kernel-and-vitals",
+        "a274-06-lock-timeout-versus-business-cancellation",
+        "a274-07-platform-attribution-pipeline",
+        "a274-08-public-power-readings-delta",
+        "a274-09-aggregation-store-format",
+        "a274-10-wakeup-evidence-delivery",
+        "a274-11-background-control-planes",
+        "a274-12-restriction-candidate-and-uid-query",
+        "a274-13-background-exemption-sources",
+        "a274-14-uid-exemption-union-interval",
+        "a274-15-oem-evidence-localization"
+      ],
       "article_index": 274,
-      "sha256_at_assignment": "a5671a4a80851549ed5defb7894fa09cad1964de1212e13bdc6fbe9a06227888"
+      "sha256_at_assignment": "a5671a4a80851549ed5defb7894fa09cad1964de1212e13bdc6fbe9a06227888",
+      "sha256_current": "f4532398a967ec7a9eb7f2a2c459d53c4693a83f27aa17c1a971b5e5291d3354",
+      "sha256_after": "f4532398a967ec7a9eb7f2a2c459d53c4693a83f27aa17c1a971b5e5291d3354",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "840行全文校勘；46份当前官方文档/固定Android17r1及对照15/16源码证据已获取。核对PowerMetric能力、Vitals累计与连续口径、组件采集和归因、20秒缓存/扰动、BinaryXML存储、原生唤醒共同时间点及后台限制入口。补充持锁timeout不取消业务、tracker最大候选与共享UID查询最宽松值，细化NEVER/flag例外。15图与全部正文位置实际视觉检查通过；隔离mdBook构建、链接、SVG/PNG验证通过。14段非Mermaid代码保持基线不变，bash -n/XML解析通过；未编译Kotlin、未执行ADB或OEM设备实验。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "a5671a4a80851549ed5defb7894fa09cad1964de1212e13bdc6fbe9a06227888"
     },
     {
       "path": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
       "sha256_before": "c2c0677c1072f868b826569fcc2a00fe133442aa00f49baaabea92d7010b446f",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a275-01-background-five-independent-states",
+        "a275-02-framework-scheduling-controls",
+        "a275-03-persistent-work-constraints-and-intent",
+        "a275-04-passive-location-and-health-permissions",
+        "a275-05-fgs-start-promotion-runtime",
+        "a275-06-promotion-before-heavy-initialization",
+        "a275-07-type-and-permission-validation",
+        "a275-08-start-id-is-not-task-reference-count",
+        "a275-09-temporary-start-wiu-bal-separate",
+        "a275-10-three-timeout-classes",
+        "a275-11-fgs-and-job-independent-budgets",
+        "a275-12-checkpoint-recovery-single-owner",
+        "a275-13-process-priority-bounds",
+        "a275-14-bal-creator-sender-opt-in",
+        "a275-15-audio-default-versus-forced-mode"
+      ],
       "article_index": 275,
-      "sha256_at_assignment": "c2c0677c1072f868b826569fcc2a00fe133442aa00f49baaabea92d7010b446f"
+      "sha256_at_assignment": "c2c0677c1072f868b826569fcc2a00fe133442aa00f49baaabea92d7010b446f",
+      "sha256_current": "a98fe564f0e47cdb902ffa113eb9753d75627d139acb8ddcb669e6a108355a71",
+      "sha256_after": "a98fe564f0e47cdb902ffa113eb9753d75627d139acb8ddcb669e6a108355a71",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "876行全文、47份官方及固定源码核对；原15图/19校勘验收后，a277交叉核验补上health细分权限迁移target36条件，正文三项与图4一致更新。图4成图及新正文位置再次实际视觉检查通过，其余14图此前已逐图和位置检查；重新隔离mdBook构建/本地链接/SVG+PNG通过。共20条校勘，13段非Mermaid代码中4段必要修正，shell语法/XML解析通过；Kotlin未编译、ADB未执行，无设备时延或存活实测。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "c2c0677c1072f868b826569fcc2a00fe133442aa00f49baaabea92d7010b446f"
     },
     {
       "path": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
       "sha256_before": "6fd9d164fc3207cc0df486488a9ecfd6700740564b95b343816730edd8e103a1",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a276-01-wake-alarm-work-roles",
+        "a276-02-framework-wake-alarm-boundaries",
+        "a276-03-synchronous-lock-ownership",
+        "a276-04-alarm-shared-lock-delivery",
+        "a276-05-alarm-clock-base-and-wakeup",
+        "a276-06-alarm-pending-intent-identity",
+        "a276-07-listener-alive-and-timeout",
+        "a276-08-exact-alarm-permission-transition",
+        "a276-09-wake-lock-metrics-not-tag-exemption",
+        "a276-10-workmanager-durable-and-opportunistic",
+        "a276-11-constraints-and-network-binding",
+        "a276-12-regular-expedited-long-work-budgets",
+        "a276-13-retry-business-operation-key",
+        "a276-14-work-chain-fan-in",
+        "a276-15-unique-periodic-state-semantics",
+        "a276-16-pending-reasons-overlap",
+        "a276-17-custom-initialization-and-executor",
+        "a276-18-remote-scheduling-versus-worker-process"
+      ],
       "article_index": 276,
-      "sha256_at_assignment": "6fd9d164fc3207cc0df486488a9ecfd6700740564b95b343816730edd8e103a1"
+      "sha256_at_assignment": "6fd9d164fc3207cc0df486488a9ecfd6700740564b95b343816730edd8e103a1",
+      "sha256_current": "2b1bed0bf4829b46522bfa6e88fa7e47d986355545c15cd3cb6691a0e866108b",
+      "sha256_after": "2b1bed0bf4829b46522bfa6e88fa7e47d986355545c15cd3cb6691a0e866108b",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "1018行阅读全文；43份官方/固定17r1和内核源码、Google Maven WorkManager2.11.2 runtime/multiprocess原始源码包交叉核对。修正goAsync完成语义、共享锁in-flight和Listener默认5秒可配超时、RTC与时区、elapsed计时、精确Alarm资格竞态、周期UUID幂等键、5次上限的0基计数、自定义Provider生效前提及系统中断退避。明确当前稳定2.12.0/minSdk24与固定2.11.2示例的边界。18张成图及全部正文位置实际视觉检查通过；隔离mdBook构建/链接/SVG+PNG通过，原文+20条校勘+18插图精确重建一致。27段非Mermaid代码中2段Kotlin必要修正，shell语法与XML解析通过；未编译Kotlin或设备执行，无性能数字。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "6fd9d164fc3207cc0df486488a9ecfd6700740564b95b343816730edd8e103a1"
     },
     {
       "path": "src/part5-app/ch25-power-size/04-location-sensor.md",
@@ -6629,9 +6707,1163 @@
         "https://developer.android.com/develop/connectivity/network-ops/data-saver",
         "https://developer.android.com/privacy-and-security/risks/bad-dns"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a273-01-ch24-problem-reading-map.svg": "ad3e1be0f543b77af14a12aee6c4feb540f8093aa91f78bd152d571bf139ba9c",
+        "src/assets/diagrams/ch24/a273-01-ch24-problem-reading-map.png": "cbe57e1b831f7a0d382f0ed71a45a03fafd7465c2ffd9fcedbe1716763e8b08d"
+      }
+    },
+    {
+      "id": "a274-01-three-evidence-layers",
+      "title": "设备能量、UID归因与执行行为相互印证",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-01-three-evidence-layers.svg",
+        "src/assets/diagrams/ch25/a274-01-three-evidence-layers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-01-three-evidence-layers",
+      "sources": [
+        "https://developer.android.com/topic/performance/power/battery-historian",
+        "https://perfetto.dev/docs/data-sources/battery-counters",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-01-three-evidence-layers.svg": "1aa57f47f85f64abbc65f2dd89db58ee76481ad6459df44a72d92e7e81e66c92",
+        "src/assets/diagrams/ch25/a274-01-three-evidence-layers.png": "52ddc571418a9fecc020104fe342c6b5a5579c185fe6cfce65ec622efc7dd58b"
+      }
+    },
+    {
+      "id": "a274-02-controlled-measurement-window",
+      "title": "预热、正式测量与冷却分开",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-02-controlled-measurement-window.svg",
+        "src/assets/diagrams/ch25/a274-02-controlled-measurement-window.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-02-controlled-measurement-window",
+      "sources": [
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics",
+        "https://developer.android.com/studio/profile/power-profiler",
+        "https://perfetto.dev/docs/data-sources/battery-counters"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-02-controlled-measurement-window.svg": "37c331aa8e179b612d10a5c1460844765841b18ef1210646a9da50f2ef00eaee",
+        "src/assets/diagrams/ch25/a274-02-controlled-measurement-window.png": "d8edc752f19f2fcf5d55f903cb86592ceb28213a4170c7d878a56b6fa21e26e8"
+      }
+    },
+    {
+      "id": "a274-03-power-metric-capability-gates",
+      "title": "PowerMetric先检查版本、能力和电量",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-03-power-metric-capability-gates.svg",
+        "src/assets/diagrams/ch25/a274-03-power-metric-capability-gates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-03-power-metric-capability-gates",
+      "sources": [
+        "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/PowerMetric",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-03-power-metric-capability-gates.svg": "4be2e1fe1a5a4b329b6d34dd403b4c22084b094af4a6c68e3e10576979d05d62",
+        "src/assets/diagrams/ch25/a274-03-power-metric-capability-gates.png": "fa1c37dbf8739de4e0881297c1402a505a89ac20d48f7376e21d0e5ded1ae34a"
+      }
+    },
+    {
+      "id": "a274-04-activity-to-code-ownership",
+      "title": "资源活动分别回到责任入口",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-04-activity-to-code-ownership.svg",
+        "src/assets/diagrams/ch25/a274-04-activity-to-code-ownership.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-04-activity-to-code-ownership",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryStatsImpl.java",
+        "https://perfetto.dev/docs/data-sources/battery-counters",
+        "https://developer.android.com/google/play/vitals/excessive-wakelock"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-04-activity-to-code-ownership.svg": "d9fe40311501b41fd1d3b19372f1b401d52d601c6ea933ee4bb5bd5a70835fd0",
+        "src/assets/diagrams/ch25/a274-04-activity-to-code-ownership.png": "6ecbaded452a3764a4e76047a7e3e37251bac577d27a89cfa9e49c2afbc891fa"
+      }
+    },
+    {
+      "id": "a274-05-wake-lock-kernel-and-vitals",
+      "title": "应用锁、内核唤醒源和唤醒原因不能一一对应",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-05-wake-lock-kernel-and-vitals.svg",
+        "src/assets/diagrams/ch25/a274-05-wake-lock-kernel-and-vitals.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-05-wake-lock-kernel-and-vitals",
+      "sources": [
+        "https://developer.android.com/google/play/vitals/excessive-wakelock",
+        "https://developer.android.com/google/play/vitals/stuck-wakelock",
+        "https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/drivers/base/power/wakeup.c",
+        "https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/kernel/power/wakeup_reason.c"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-05-wake-lock-kernel-and-vitals.svg": "a56613eff376d9129c676d9366fb9f48d29207f05f7b35502ea1495282859e81",
+        "src/assets/diagrams/ch25/a274-05-wake-lock-kernel-and-vitals.png": "4c634d38edfb66eb98dc3837fd8da68bb8f3885499807a8cd77a6ea7c4838dbe"
+      }
+    },
+    {
+      "id": "a274-06-lock-timeout-versus-business-cancellation",
+      "title": "WakeLock超时释放与业务取消分开",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-06-lock-timeout-versus-business-cancellation.svg",
+        "src/assets/diagrams/ch25/a274-06-lock-timeout-versus-business-cancellation.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-06-lock-timeout-versus-business-cancellation",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerManager.WakeLock",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-06-lock-timeout-versus-business-cancellation.svg": "c9b3b1eaaf7f9696cca1ca26f5b25d7874ba450bc6673353ea1620c1023fb344",
+        "src/assets/diagrams/ch25/a274-06-lock-timeout-versus-business-cancellation.png": "aee65e5b68dab3041a96994970fda429c96e58685f460e814ca0ed3d36defb22"
+      }
+    },
+    {
+      "id": "a274-07-platform-attribution-pipeline",
+      "title": "活动历史经聚合归因生成系统查询结果",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-07-platform-attribution-pipeline.svg",
+        "src/assets/diagrams/ch25/a274-07-platform-attribution-pipeline.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-07-platform-attribution-pipeline",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/PowerStatsScheduler.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/MultiStatePowerAttributor.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-07-platform-attribution-pipeline.svg": "e723bca48a96863dbc17406dbe1a7d12ed148d7d654e00c84dc6e9bccab8ee3f",
+        "src/assets/diagrams/ch25/a274-07-platform-attribution-pipeline.png": "d810ab17879d352ab19889b738b7b8d826f1d9e45a2c13a774e9637dc24c0cd0"
+      }
+    },
+    {
+      "id": "a274-08-public-power-readings-delta",
+      "title": "三类接口与PowerMonitor窗口差值的条件",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-08-public-power-readings-delta.svg",
+        "src/assets/diagrams/ch25/a274-08-public-power-readings-delta.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-08-public-power-readings-delta",
+      "sources": [
+        "https://developer.android.com/reference/android/os/health/SystemHealthManager",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerMonitorReadings.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-08-public-power-readings-delta.svg": "bdd09efc811cae44bdad07aeae5685f026b83b2248fbd86bcd5879798b072cb5",
+        "src/assets/diagrams/ch25/a274-08-public-power-readings-delta.png": "97cb33b45dbf0763acfb8c00cc7f28b0ed2e64042fe9ca69aa4985ed6312e3ad"
+      }
+    },
+    {
+      "id": "a274-09-aggregation-store-format",
+      "title": "非唤醒调度聚合后写入二进制XML",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-09-aggregation-store-format.svg",
+        "src/assets/diagrams/ch25/a274-09-aggregation-store-format.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-09-aggregation-store-format",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/PowerStatsScheduler.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/stats/PowerStatsStore.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-09-aggregation-store-format.svg": "50a77b641713f2b250a7b3a4ced5e7264255081570125d21bb6a470c6071c0ee",
+        "src/assets/diagrams/ch25/a274-09-aggregation-store-format.png": "1f9a7fc6700b46208c1017a3690011d1cd82b48840b3c875f0529c7cca09e9c8"
+      }
+    },
+    {
+      "id": "a274-10-wakeup-evidence-delivery",
+      "title": "一次唤醒记录进入Trace与功耗统计",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-10-wakeup-evidence-delivery.svg",
+        "src/assets/diagrams/ch25/a274-10-wakeup-evidence-delivery.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-10-wakeup-evidence-delivery",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/jni/com_android_server_am_BatteryStatsService.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java",
+        "https://android.googlesource.com/kernel/common/+/android17-6.18-2026-06_r6/kernel/power/wakeup_reason.c"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-10-wakeup-evidence-delivery.svg": "c5731059693dc2df9f8d825e59be6cf6d36d1d29c1914424b6629b61a4eb8aa7",
+        "src/assets/diagrams/ch25/a274-10-wakeup-evidence-delivery.png": "13ac9fe149489bc4b2946b1847801879bad5419828702bd59495b709df2f3d38"
+      }
+    },
+    {
+      "id": "a274-11-background-control-planes",
+      "title": "后台任务失败先定位到具体机制",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-11-background-control-planes.svg",
+        "src/assets/diagrams/ch25/a274-11-background-control-planes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-11-background-control-planes",
+      "sources": [
+        "https://developer.android.com/topic/performance/background-optimization",
+        "https://developer.android.com/topic/performance/appstandby",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppRestrictionController.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-11-background-control-planes.svg": "a911b1f937bc6a61f050e181b1c31ee544c3c04cd6999dae8cc4a4eec8fcffbd",
+        "src/assets/diagrams/ch25/a274-11-background-control-planes.png": "2a7f34c2ca33188518a2a34eb827fab3bb792cdea2817f45f1cb913991844d02"
+      }
+    },
+    {
+      "id": "a274-12-restriction-candidate-and-uid-query",
+      "title": "tracker候选最大值与共享UID查询最小值分开",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-12-restriction-candidate-and-uid-query.svg",
+        "src/assets/diagrams/ch25/a274-12-restriction-candidate-and-uid-query.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-12-restriction-candidate-and-uid-query",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppRestrictionController.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-12-restriction-candidate-and-uid-query.svg": "06a239e62acd3dcfa8e4ac1529af580dfda19f5fc164b52002aeac7fae767559",
+        "src/assets/diagrams/ch25/a274-12-restriction-candidate-and-uid-query.png": "7506b3a7ba6cd02e0bea086136d3bfd81b0642ecc2204fc60ad1ce287228c8d4"
+      }
+    },
+    {
+      "id": "a274-13-background-exemption-sources",
+      "title": "豁免来源分开读取并核对作用范围",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-13-background-exemption-sources.svg",
+        "src/assets/diagrams/ch25/a274-13-background-exemption-sources.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-13-background-exemption-sources",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/SystemConfig.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppRestrictionController.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/AppOpsManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-13-background-exemption-sources.svg": "73d9f3f146f0a3031c0908bca846558ded59b1ea488a929e4aba9e8c0cede664",
+        "src/assets/diagrams/ch25/a274-13-background-exemption-sources.png": "30b70b6ecda6b32d22347d0bb3ec807c7160e67b78ccf2c6cca0ceb75cfe860b"
+      }
+    },
+    {
+      "id": "a274-14-uid-exemption-union-interval",
+      "title": "同UID多个package的豁免状态区间取并集",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-14-uid-exemption-union-interval.svg",
+        "src/assets/diagrams/ch25/a274-14-uid-exemption-union-interval.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-14-uid-exemption-union-interval",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppBatteryExemptionTracker.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppRestrictionController.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-14-uid-exemption-union-interval.svg": "efff8aa5977d61aa0010b789ae0c2f63eff6b5aa5a73a36f0c6dfa7a26e8b407",
+        "src/assets/diagrams/ch25/a274-14-uid-exemption-union-interval.png": "5fec918d5fc9c1be2824cf5e6009201e02a74c0e22cabb671fec8e884dd4aa11"
+      }
+    },
+    {
+      "id": "a274-15-oem-evidence-localization",
+      "title": "OEM差异按状态、任务和退出证据逐层定位",
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a274-15-oem-evidence-localization.svg",
+        "src/assets/diagrams/ch25/a274-15-oem-evidence-localization.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a274-15-oem-evidence-localization",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://developer.android.com/topic/performance/background-optimization"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a274-15-oem-evidence-localization.svg": "2e88ffd722074bebb6f5a9cfdb72be7b6c9f06316ee213866bfcb89e1cfce746",
+        "src/assets/diagrams/ch25/a274-15-oem-evidence-localization.png": "3842bc0b399ee9bb689e6e9230c1da815cbde66a06066b8e6a8bafc2a56bec04"
+      }
+    },
+    {
+      "id": "a275-01-background-five-independent-states",
+      "title": "进程存活与后台执行资格分开记录",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-01-background-five-independent-states.svg",
+        "src/assets/diagrams/ch25/a275-01-background-five-independent-states.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-01-background-five-independent-states",
+      "sources": [
+        "https://developer.android.com/training/monitoring-device-state/doze-standby",
+        "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-01-background-five-independent-states.svg": "7932f5fcf00b4b1fa46255c39326a9dd13100b0a14916143ddc474fe8b1db927",
+        "src/assets/diagrams/ch25/a275-01-background-five-independent-states.png": "4d486f74b1323557b230695fb188e23b0ff99453284ab74338ea12a5a640841f"
+      }
+    },
+    {
+      "id": "a275-02-framework-scheduling-controls",
+      "title": "设备空闲与待机分组分别约束Job",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-02-framework-scheduling-controls.svg",
+        "src/assets/diagrams/ch25/a275-02-framework-scheduling-controls.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-02-framework-scheduling-controls",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/usage/AppStandbyController.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-02-framework-scheduling-controls.svg": "4e0514d74e3333dbcc1ebb71058eb7e80f3ce55d78a4457485456ce16fa524db",
+        "src/assets/diagrams/ch25/a275-02-framework-scheduling-controls.png": "df9d452f69f03ee4e485abbfaabecb84524428d42eb2bb01386d0f788d122159"
+      }
+    },
+    {
+      "id": "a275-03-persistent-work-constraints-and-intent",
+      "title": "唯一工作合并与取消按业务意图设计",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-03-persistent-work-constraints-and-intent.svg",
+        "src/assets/diagrams/ch25/a275-03-persistent-work-constraints-and-intent.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-03-persistent-work-constraints-and-intent",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/optimize-battery",
+        "https://developer.android.com/reference/kotlin/androidx/work/WorkRequest.Builder",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/job/JobScheduler.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-03-persistent-work-constraints-and-intent.svg": "3419391bc3304ef0d2d5ca0a1a4c540ae01830558f225d7cf6a3c6539f7c7a45",
+        "src/assets/diagrams/ch25/a275-03-persistent-work-constraints-and-intent.png": "0a6cad1e454a09b58f1b1776e154902c3982a8318cf224a6713c0dbb42cc730f"
+      }
+    },
+    {
+      "id": "a275-04-passive-location-and-health-permissions",
+      "title": "被动定位无交付期限，健康传感器按版本授权",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-04-passive-location-and-health-permissions.svg",
+        "src/assets/diagrams/ch25/a275-04-passive-location-and-health-permissions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-04-passive-location-and-health-permissions",
+      "sources": [
+        "https://developers.google.com/android/reference/com/google/android/gms/location/Priority",
+        "https://developer.android.com/develop/background-work/services/fgs/service-types",
+        "https://developer.android.com/about/versions/oreo/background-location-limits",
+        "https://developer.android.com/about/versions/16/behavior-changes-16"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-04-passive-location-and-health-permissions.svg": "f1b5370c8d1789542400b7359346d2dbc67e1c4316309334745a32fec14aecb3",
+        "src/assets/diagrams/ch25/a275-04-passive-location-and-health-permissions.png": "f620c9af94d154c5a8ddbe3306178bc08ae30578bd07ff405762714a5268b0d2"
+      }
+    },
+    {
+      "id": "a275-05-fgs-start-promotion-runtime",
+      "title": "FGS启动、晋升与持续运行是三次检查",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-05-fgs-start-promotion-runtime.svg",
+        "src/assets/diagrams/ch25/a275-05-fgs-start-promotion-runtime.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-05-fgs-start-promotion-runtime",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java",
+        "https://developer.android.com/develop/background-work/services/fgs/service-types",
+        "https://developer.android.com/develop/background-work/services/fgs/timeout"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-05-fgs-start-promotion-runtime.svg": "82dcabb55969260e4e9583de93151eb1dd0c8357bae21ec2c51c2bc6f78830b4",
+        "src/assets/diagrams/ch25/a275-05-fgs-start-promotion-runtime.png": "838f4929b6bdd8b679d0bcc8d39581d29f7b02dc25ae0dbeeb95cfd2a6bc3e07"
+      }
+    },
+    {
+      "id": "a275-06-promotion-before-heavy-initialization",
+      "title": "先轻量晋升，再启动可取消业务",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-06-promotion-before-heavy-initialization.svg",
+        "src/assets/diagrams/ch25/a275-06-promotion-before-heavy-initialization.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-06-promotion-before-heavy-initialization",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Service.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-06-promotion-before-heavy-initialization.svg": "aba76499d6d4a9377ace34ffc7d7c520ce71e6faf0cb8cb2ec3fe2a73bbe2116",
+        "src/assets/diagrams/ch25/a275-06-promotion-before-heavy-initialization.png": "9686bebf704229440310b050e61cf9015ee97928968bbb703cb92a20f4add192"
+      }
+    },
+    {
+      "id": "a275-07-type-and-permission-validation",
+      "title": "运行类型必须是Manifest类型的子集",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-07-type-and-permission-validation.svg",
+        "src/assets/diagrams/ch25/a275-07-type-and-permission-validation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-07-type-and-permission-validation",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ForegroundServiceTypePolicy.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/ServiceInfo.java",
+        "https://developer.android.com/develop/background-work/services/fgs/service-types"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-07-type-and-permission-validation.svg": "4d2ae996adbf8c0d1720200953f6b45d5b08780d2d8e5de2ae543efb18d77ad1",
+        "src/assets/diagrams/ch25/a275-07-type-and-permission-validation.png": "430088f88dc11a72e9aca69d17d1e5ef4043bd090b9f5fb92b6c40e85b9d9f58"
+      }
+    },
+    {
+      "id": "a275-08-start-id-is-not-task-reference-count",
+      "title": "最新startId先完成仍会停止整个Service",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-08-start-id-is-not-task-reference-count.svg",
+        "src/assets/diagrams/ch25/a275-08-start-id-is-not-task-reference-count.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-08-start-id-is-not-task-reference-count",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Service.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-08-start-id-is-not-task-reference-count.svg": "3263ae3dc7a06c57d91dc4a1f41d1f3fc0d737e9036e28b65af65b77913a66e9",
+        "src/assets/diagrams/ch25/a275-08-start-id-is-not-task-reference-count.png": "c9f3181945989b0c78c22f0254b83b919a5b7530c67d639e12d7cf0be13af892"
+      }
+    },
+    {
+      "id": "a275-09-temporary-start-wiu-bal-separate",
+      "title": "临时FGS启动、WIU和BAL各有资格",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-09-temporary-start-wiu-bal-separate.svg",
+        "src/assets/diagrams/ch25/a275-09-temporary-start-wiu-bal-separate.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-09-temporary-start-wiu-bal-separate",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java",
+        "https://developer.android.com/guide/components/activities/secure-bal"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-09-temporary-start-wiu-bal-separate.svg": "17e9c540236f3e851d40892eab734da4a253a7e501e345be860ba30892ba4da1",
+        "src/assets/diagrams/ch25/a275-09-temporary-start-wiu-bal-separate.png": "4c4ac9efe4e722e2225b956091e06db3510351a47c3ef2fae38493123f3f24e3"
+      }
+    },
+    {
+      "id": "a275-10-three-timeout-classes",
+      "title": "晋升、shortService与累计额度三种超时",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-10-three-timeout-classes.svg",
+        "src/assets/diagrams/ch25/a275-10-three-timeout-classes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-10-three-timeout-classes",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Service.java",
+        "https://developer.android.com/develop/background-work/services/fgs/timeout"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-10-three-timeout-classes.svg": "ca5a4e1e3f0ece3656a430264ea1d7f67a2951f00d458429b9631c460ba0e11b",
+        "src/assets/diagrams/ch25/a275-10-three-timeout-classes.png": "a28ccceb29dbf2e48998b598aaa53a03583c099ecbcc88ed6e7776575e98eb76"
+      }
+    },
+    {
+      "id": "a275-11-fgs-and-job-independent-budgets",
+      "title": "限时FGS与Job配额分别记账",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-11-fgs-and-job-independent-budgets.svg",
+        "src/assets/diagrams/ch25/a275-11-fgs-and-job-independent-budgets.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-11-fgs-and-job-independent-budgets",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java",
+        "https://developer.android.com/develop/background-work/services/fgs/timeout",
+        "https://developer.android.com/about/versions/16/behavior-changes-all"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-11-fgs-and-job-independent-budgets.svg": "e231faa2d5e70766e0d1ec6a53aa28b684d036149c8dd3b8960533a4c6417bf5",
+        "src/assets/diagrams/ch25/a275-11-fgs-and-job-independent-budgets.png": "c953eeecf54e5bae32275dabcac22076bc2f93be2d7dc963ccb25d8bf8eac52d"
+      }
+    },
+    {
+      "id": "a275-12-checkpoint-recovery-single-owner",
+      "title": "检查点、幂等与执行权共同保障恢复",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-12-checkpoint-recovery-single-owner.svg",
+        "src/assets/diagrams/ch25/a275-12-checkpoint-recovery-single-owner.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-12-checkpoint-recovery-single-owner",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/fgs/timeout",
+        "https://developer.android.com/develop/background-work/background-tasks/optimize-battery",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Service.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-12-checkpoint-recovery-single-owner.svg": "ff54ca0a7737a758fe314175c82869ef48f59ce63705392e57f311dc4d8b7df7",
+        "src/assets/diagrams/ch25/a275-12-checkpoint-recovery-single-owner.png": "c50ed834a063f61aaf00a848c710da14b2ed937d105b62b6cd4b6930c2a7757c"
+      }
+    },
+    {
+      "id": "a275-13-process-priority-bounds",
+      "title": "FGS提升回收优先级，不提供性能资源保证",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-13-process-priority-bounds.svg",
+        "src/assets/diagrams/ch25/a275-13-process-priority-bounds.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-13-process-priority-bounds",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/psc/OomAdjusterImpl.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-13-process-priority-bounds.svg": "1673e915e97075a0f076645cead93e920fd96358fddf883e7692cbceb6b7eb8b",
+        "src/assets/diagrams/ch25/a275-13-process-priority-bounds.png": "35c25cf3a870103d5dbd37267ea8f2cc9f865835cda6043bdcaf80ac0d3244a9"
+      }
+    },
+    {
+      "id": "a275-14-bal-creator-sender-opt-in",
+      "title": "BAL授权看创建方、发送方与实际可见性",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-14-bal-creator-sender-opt-in.svg",
+        "src/assets/diagrams/ch25/a275-14-bal-creator-sender-opt-in.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-14-bal-creator-sender-opt-in",
+      "sources": [
+        "https://developer.android.com/guide/components/activities/secure-bal",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/IntentSender.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BackgroundActivityStartController.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-14-bal-creator-sender-opt-in.svg": "ba80908969f277ed9b4221d54a4c6b479b15a7d00f986586ffb1a7b46adf6722",
+        "src/assets/diagrams/ch25/a275-14-bal-creator-sender-opt-in.png": "e0850b1a8ee8e16569304d8bcf7f939f7bc8d7d1f452ef36f465a695bc314199"
+      }
+    },
+    {
+      "id": "a275-15-audio-default-versus-forced-mode",
+      "title": "音频默认资格与强制调试模式分开验收",
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a275-15-audio-default-versus-forced-mode.svg",
+        "src/assets/diagrams/ch25/a275-15-audio-default-versus-forced-mode.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a275-15-audio-default-versus-forced-mode",
+      "sources": [
+        "https://developer.android.com/about/versions/17/changes/bg-audio",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/AudioManagerShellCommand.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/HardeningEnforcer.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a275-15-audio-default-versus-forced-mode.svg": "c9486d34dd3d88da45251e6808985942b1154784bd76c540f8e7f18883ada2d9",
+        "src/assets/diagrams/ch25/a275-15-audio-default-versus-forced-mode.png": "ff1952ae6d8db8b6834dc71ddc82c2e8ff20475dfa6c41cd1ffe0113c8090fd1"
+      }
+    },
+    {
+      "id": "a276-01-wake-alarm-work-roles",
+      "title": "WakeLock、Alarm与WorkManager按阶段分工",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-01-wake-alarm-work-roles.svg",
+        "src/assets/diagrams/ch25/a276-01-wake-alarm-work-roles.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-01-wake-alarm-work-roles",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/set",
+        "https://developer.android.com/develop/background-work/services/alarms",
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-01-wake-alarm-work-roles.svg": "161f317e2a264aa6b0e5e1defc6b76e0df1f2653f02236b7bf28561bd64df97c",
+        "src/assets/diagrams/ch25/a276-01-wake-alarm-work-roles.png": "614266c5b0222fd4f6463c5c72ebf2310006a0243ae6591171f0b1ba319e2e52"
+      }
+    },
+    {
+      "id": "a276-02-framework-wake-alarm-boundaries",
+      "title": "两条系统路径分别管理休眠阻止与未来投递",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-02-framework-wake-alarm-boundaries.svg",
+        "src/assets/diagrams/ch25/a276-02-framework-wake-alarm-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-02-framework-wake-alarm-boundaries",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/time/alarmtimer.c"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-02-framework-wake-alarm-boundaries.svg": "33be62a68516a880d304113d513c3052e970838dae1218bcfb953d34125ebd72",
+        "src/assets/diagrams/ch25/a276-02-framework-wake-alarm-boundaries.png": "84a047e465fbcae9c191ef46ebb0f3f15b5ce4b4001b04755ad1f3ca7100861a"
+      }
+    },
+    {
+      "id": "a276-03-synchronous-lock-ownership",
+      "title": "持锁范围必须覆盖实际同步工作",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-03-synchronous-lock-ownership.svg",
+        "src/assets/diagrams/ch25/a276-03-synchronous-lock-ownership.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-03-synchronous-lock-ownership",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java",
+        "https://developer.android.com/reference/android/os/PowerManager.WakeLock",
+        "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/best-practices"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-03-synchronous-lock-ownership.svg": "5b7366724aea2375112b622e56e57228e0837dc97a40b6805dc243e67054cc0a",
+        "src/assets/diagrams/ch25/a276-03-synchronous-lock-ownership.png": "23bb902cce6a670cbbd453332536cc1231d0e86bb171bd91df65332acb0334d4"
+      }
+    },
+    {
+      "id": "a276-04-alarm-shared-lock-delivery",
+      "title": "Alarm投递完成与共享锁释放分别记账",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-04-alarm-shared-lock-delivery.svg",
+        "src/assets/diagrams/ch25/a276-04-alarm-shared-lock-delivery.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-04-alarm-shared-lock-delivery",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/BroadcastReceiver.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/PendingIntentRecord.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-04-alarm-shared-lock-delivery.svg": "0e83b70b8a0cb57e43911e3dfe0582378c8d5d9ab9670096881567048644cad4",
+        "src/assets/diagrams/ch25/a276-04-alarm-shared-lock-delivery.png": "0ff166cfbe0a9cb68fc56da62bcedad87ad0c9880d823f75adc3f87890d13eb8"
+      }
+    },
+    {
+      "id": "a276-05-alarm-clock-base-and-wakeup",
+      "title": "先选时间基准，再选是否唤醒",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-05-alarm-clock-base-and-wakeup.svg",
+        "src/assets/diagrams/ch25/a276-05-alarm-clock-base-and-wakeup.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-05-alarm-clock-base-and-wakeup",
+      "sources": [
+        "https://developer.android.com/reference/android/app/AlarmManager",
+        "https://developer.android.com/develop/background-work/services/alarms",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-05-alarm-clock-base-and-wakeup.svg": "4aa0b46c4523660a5a637ac9ce85c4e588920bc3e0956fd8305fc9eafcb5c4da",
+        "src/assets/diagrams/ch25/a276-05-alarm-clock-base-and-wakeup.png": "1b5b64e40181192f17a32d317f36638c7ac0d5000b366d3f4f580d47344f6fb7"
+      }
+    },
+    {
+      "id": "a276-06-alarm-pending-intent-identity",
+      "title": "提醒身份独立于Intent附加字段",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-06-alarm-pending-intent-identity.svg",
+        "src/assets/diagrams/ch25/a276-06-alarm-pending-intent-identity.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-06-alarm-pending-intent-identity",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/alarms",
+        "https://developer.android.com/reference/android/app/AlarmManager"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-06-alarm-pending-intent-identity.svg": "771a03fc0c5b82c5a2dcd6728e79192737fe7ae05960259702ca532f7718c4ff",
+        "src/assets/diagrams/ch25/a276-06-alarm-pending-intent-identity.png": "8e68c731cce16c9e9c13925834bf88727e45b95a93637bf36687d7831c1ff58c"
+      }
+    },
+    {
+      "id": "a276-07-listener-alive-and-timeout",
+      "title": "API37 Listener只适合当前组件内的有界等待",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-07-listener-alive-and-timeout.svg",
+        "src/assets/diagrams/ch25/a276-07-listener-alive-and-timeout.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-07-listener-alive-and-timeout",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-07-listener-alive-and-timeout.svg": "2f24fe1829980ffd2e558baaf5fdda2a2a088d138fe8f9b122ab6364f4676058",
+        "src/assets/diagrams/ch25/a276-07-listener-alive-and-timeout.png": "5b66152fce7b834adb34fc96edc2a951c31c225042daa48564236437be71d119"
+      }
+    },
+    {
+      "id": "a276-08-exact-alarm-permission-transition",
+      "title": "精确Alarm资格、安排与重建处理竞态",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-08-exact-alarm-permission-transition.svg",
+        "src/assets/diagrams/ch25/a276-08-exact-alarm-permission-transition.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-08-exact-alarm-permission-transition",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/alarms",
+        "https://developer.android.com/about/versions/14/changes/schedule-exact-alarms",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-08-exact-alarm-permission-transition.svg": "28385ee6cdf5664c44dd7cf215246e4353f27bbfceaee98792c22c973f508326",
+        "src/assets/diagrams/ch25/a276-08-exact-alarm-permission-transition.png": "c68f7564840f5c58e7d20ceb91e9518550e70de58b163603212cf976e9f75ccf"
+      }
+    },
+    {
+      "id": "a276-09-wake-lock-metrics-not-tag-exemption",
+      "title": "Vitals累计、连续与系统API豁免分开治理",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-09-wake-lock-metrics-not-tag-exemption.svg",
+        "src/assets/diagrams/ch25/a276-09-wake-lock-metrics-not-tag-exemption.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-09-wake-lock-metrics-not-tag-exemption",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals/excessive-wakelock",
+        "https://developer.android.com/topic/performance/vitals/stuck-wakelock",
+        "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-09-wake-lock-metrics-not-tag-exemption.svg": "8c2f4153298801fd549854301e2e1fac1849a872705209cc297784d8d7713838",
+        "src/assets/diagrams/ch25/a276-09-wake-lock-metrics-not-tag-exemption.png": "d4a0f12ca211c98fdde042a3ec56fd1246c99120b10ddb93ce0f4b430eedd75e"
+      }
+    },
+    {
+      "id": "a276-10-workmanager-durable-and-opportunistic",
+      "title": "WorkManager持久数据库与两种调度路径",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-10-workmanager-durable-and-opportunistic.svg",
+        "src/assets/diagrams/ch25/a276-10-workmanager-durable-and-opportunistic.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-10-workmanager-durable-and-opportunistic",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.11.2/work-runtime-2.11.2-sources.jar",
+        "https://developer.android.com/reference/androidx/work/package-summary",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-10-workmanager-durable-and-opportunistic.svg": "8df56f7dbca6701da7c67782708a36a5ac9feb4717728084c3e495b750ff31f3",
+        "src/assets/diagrams/ch25/a276-10-workmanager-durable-and-opportunistic.png": "c2e6b18649e84ec8b7f6e2446e7fcf1ecb6443cf2db37a70d825757989182811"
+      }
+    },
+    {
+      "id": "a276-11-constraints-and-network-binding",
+      "title": "约束AND满足只是执行资格",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-11-constraints-and-network-binding.svg",
+        "src/assets/diagrams/ch25/a276-11-constraints-and-network-binding.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-11-constraints-and-network-binding",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.11.2/work-runtime-2.11.2-sources.jar",
+        "https://developer.android.com/reference/androidx/work/WorkerParameters",
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-11-constraints-and-network-binding.svg": "2680edcbf7a23a87a04e43a97b9a1c18e954e998979b77d0638888e667483b7a",
+        "src/assets/diagrams/ch25/a276-11-constraints-and-network-binding.png": "d8d04ebf2be0a02a6979f1907f222047db33b6df75c530954d59e6c9764d1ca9"
+      }
+    },
+    {
+      "id": "a276-12-regular-expedited-long-work-budgets",
+      "title": "普通、加急与长时Worker分别检查预算",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-12-regular-expedited-long-work-budgets.svg",
+        "src/assets/diagrams/ch25/a276-12-regular-expedited-long-work-budgets.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-12-regular-expedited-long-work-budgets",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running",
+        "https://developer.android.com/develop/background-work/services/fgs/timeout",
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work",
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.11.2/work-runtime-2.11.2-sources.jar"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-12-regular-expedited-long-work-budgets.svg": "8e3047e7907ea7a4a91a340cdf442e025e7a6915e0c3ed021eda6e62485aa51d",
+        "src/assets/diagrams/ch25/a276-12-regular-expedited-long-work-budgets.png": "2a68fb29916a31020214c062ad4f74e538e0e2842616339f1d5c6ce68a0ef624"
+      }
+    },
+    {
+      "id": "a276-13-retry-business-operation-key",
+      "title": "幂等键绑定业务操作而非所有周期轮次",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-13-retry-business-operation-key.svg",
+        "src/assets/diagrams/ch25/a276-13-retry-business-operation-key.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-13-retry-business-operation-key",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.11.2/work-runtime-2.11.2-sources.jar",
+        "https://developer.android.com/reference/androidx/work/PeriodicWorkRequest",
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-13-retry-business-operation-key.svg": "0fa7147dd75947b1dcb1572898d34d8bfcb6079fe17504ce9fa4cc75541e9263",
+        "src/assets/diagrams/ch25/a276-13-retry-business-operation-key.png": "7ab486a746a990f884b85c64b4e2c4d03dbcf3f20aca3a09a78f4170d7760b3a"
+      }
+    },
+    {
+      "id": "a276-14-work-chain-fan-in",
+      "title": "并行前置全部成功后才运行汇聚节点",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-14-work-chain-fan-in.svg",
+        "src/assets/diagrams/ch25/a276-14-work-chain-fan-in.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-14-work-chain-fan-in",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/chain-work",
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.11.2/work-runtime-2.11.2-sources.jar"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-14-work-chain-fan-in.svg": "f82fbfa4ca4185c4e725cbf4c77f16ac17ee1ae94669bda4428a57df13e179ab",
+        "src/assets/diagrams/ch25/a276-14-work-chain-fan-in.png": "4c473cdba4e23a9ccc5a591aaed524594f71ab02a0a2c10cabc9dc5feedf84c0"
+      }
+    },
+    {
+      "id": "a276-15-unique-periodic-state-semantics",
+      "title": "唯一工作、周期更新与WorkInfo状态分开",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-15-unique-periodic-state-semantics.svg",
+        "src/assets/diagrams/ch25/a276-15-unique-periodic-state-semantics.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-15-unique-periodic-state-semantics",
+      "sources": [
+        "https://developer.android.com/reference/androidx/work/ExistingWorkPolicy",
+        "https://developer.android.com/reference/androidx/work/PeriodicWorkRequest",
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.11.2/work-runtime-2.11.2-sources.jar"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-15-unique-periodic-state-semantics.svg": "13921280f99dcfe93e3ad30eb44e8c2ac6c4fe53a3ee122d69caafeac1cba81a",
+        "src/assets/diagrams/ch25/a276-15-unique-periodic-state-semantics.png": "7f3e4964ec95a7d7370d8bda7d066207f50e780170c1b58fb222d0a2f32c5997"
+      }
+    },
+    {
+      "id": "a276-16-pending-reasons-overlap",
+      "title": "待执行原因可同时计时，累计和超过实际等待",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-16-pending-reasons-overlap.svg",
+        "src/assets/diagrams/ch25/a276-16-pending-reasons-overlap.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-16-pending-reasons-overlap",
+      "sources": [
+        "https://developer.android.com/reference/android/app/job/JobScheduler",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/JobSchedulerService.java",
+        "https://developer.android.com/reference/android/app/job/PendingJobReasonsInfo"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-16-pending-reasons-overlap.svg": "00a296a30fa776dcd6a3d7737981af9897401738098563d8e45c33a3ab1908d1",
+        "src/assets/diagrams/ch25/a276-16-pending-reasons-overlap.png": "c29789e0a7b2612225be96ff6f1ca7807c5ce6705309eb16f7c12125c38dd1e1"
+      }
+    },
+    {
+      "id": "a276-17-custom-initialization-and-executor",
+      "title": "移除默认初始化后Provider配置才生效",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-17-custom-initialization-and-executor.svg",
+        "src/assets/diagrams/ch25/a276-17-custom-initialization-and-executor.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-17-custom-initialization-and-executor",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/configuration/custom-configuration",
+        "https://developer.android.com/reference/androidx/work/Configuration.Builder",
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.11.2/work-runtime-2.11.2-sources.jar"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-17-custom-initialization-and-executor.svg": "894ee0157f84fb0a6070987ed6bbbcc2563ffb20cc1bc8de3aed7dac8b8efed4",
+        "src/assets/diagrams/ch25/a276-17-custom-initialization-and-executor.png": "69804cd6f403b8f3e2c3b5a6062e14606648c685969fe0d55fc68490ec0499b4"
+      }
+    },
+    {
+      "id": "a276-18-remote-scheduling-versus-worker-process",
+      "title": "远端调度客户端与远端Worker执行是两件事",
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a276-18-remote-scheduling-versus-worker-process.svg",
+        "src/assets/diagrams/ch25/a276-18-remote-scheduling-versus-worker-process.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a276-18-remote-scheduling-versus-worker-process",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-multiprocess/2.11.2/work-multiprocess-2.11.2-sources.jar",
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/threading/coroutineworker",
+        "https://developer.android.com/reference/androidx/work/Configuration.Builder"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a276-18-remote-scheduling-versus-worker-process.svg": "c9c68a995826507885763f95db2bd7dc5564fb4a45f50d08a447fe475db42fde",
+        "src/assets/diagrams/ch25/a276-18-remote-scheduling-versus-worker-process.png": "15ff8d18c4900081e7c6f886ff11995138951ab28bfa6728fc8ee0342bc05cd3"
+      }
     }
   ],
   "corrections": [
@@ -8934,6 +10166,504 @@
       ],
       "article": "src/part5-app/ch24-io-network/README.md",
       "why": "与刚完成24.10正文一致，机会型quota范围不同，且正文明确讨论TV速率例外，不能概括全篇不涉及限速。"
+    },
+    {
+      "before": "last_verified: '2026-10-21'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮按当前官方文档及固定Android17r1源码复核；不添加设备实验结论。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppRestrictionController.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "why": "本轮按当前官方文档及固定Android17r1源码复核；不添加设备实验结论。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-10-21'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "记录本轮来源获取日期，保留既有主锚点。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppRestrictionController.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "why": "记录本轮来源获取日期，保留既有主锚点。"
+    },
+    {
+      "before": "GNSS（全球卫星导航系统）、WakeLock（唤醒锁）等证据；WakeLock（唤醒锁；本文主要关注在屏幕关闭后仍让 CPU 运行的 Partial WakeLock），我们重点看这一类。",
+      "after": "GNSS（全球卫星导航系统）、WakeLock（唤醒锁）等证据；本文主要关注在屏幕关闭后仍让 CPU 运行的 Partial WakeLock。",
+      "reason": "消除重复术语定义，保留Partial WakeLock范围。",
+      "sources": [
+        "https://developer.android.com/google/play/vitals/excessive-wakelock"
+      ],
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "why": "消除重复术语定义，保留Partial WakeLock范围。"
+    },
+    {
+      "before": "`timeoutMs` 应来自该操作的业务时限，而非随意复制的常量。超时只是额外保护；正常路径和异常路径仍要在 `finally` 中释放。",
+      "after": "`timeoutMs` 应按业务需求限定持锁时间，而非随意复制常量。[`acquire(timeoutMs)`](https://developer.android.com/reference/android/os/PowerManager.WakeLock) 超时只会释放 WakeLock，不会取消 `block()` 或给业务设置完成期限。需要业务超时时，应另行采用可协作取消的 [`withTimeout`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html) 或相应 I/O 超时与取消机制；正常和异常路径仍在 `finally` 释放锁。",
+      "reason": "持锁超时不等于业务取消，避免把示例误当完整超时封装。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerManager.WakeLock",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html"
+      ],
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "why": "持锁超时不等于业务取消，避免把示例误当完整超时封装。"
+    },
+    {
+      "before": "这是 tracker 汇总阶段的规则，完整决策还要先过休眠、force-stop（强制停止）、系统豁免、用户后台限制和当前 standby bucket；`BACKGROUND_RESTRICTED` 这一级源码明确要求用户同意，仅凭 tracker 走不到那里。",
+      "after": "这是 tracker 汇总阶段的规则。`calcAppRestrictionLevel()` 先检查应用休眠并返回 `FORCE_STOPPED`，再按 standby bucket、用户后台限制及是否计算 tracker 分支处理；系统豁免等输入由对应状态与 policy 参与计算。tracker 提出 `BACKGROUND_RESTRICTED` 时，只能按条件请求用户确认，并重新计算较低候选，不能直接进入该级。还要保留功能开关边界：`STANDBY_BUCKET_NEVER` 在 `appRestrictionsApi` 未开启的旧分支会直接映射为 `BACKGROUND_RESTRICTED`，不能把 tracker 分支的用户确认规则推广到所有入口。",
+      "reason": "按固定源码细化真实入口顺序及NEVER/flag例外，不将force-stop或系统豁免臆造为同一个函数的额外前置分支。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppRestrictionController.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "why": "按固定源码细化真实入口顺序及NEVER/flag例外，不将force-stop或系统豁免臆造为同一个函数的额外前置分支。"
+    },
+    {
+      "before": "这些数值用来对照源码中的 `Math.max()`，诊断报告仍要记录名称、变更时间，以及能够取得的 reason、subReason（细分原因） 和 source 字段。",
+      "after": "这些数值用来对照同一 package 的 tracker 候选汇总 `Math.max()`。另一个方向的查询不能混用：`getRestrictionLevel(uid)` 对共享 UID 的多个 package 取已知等级中的最宽松值（`Math.min()`）；带 package 的查询才返回该包状态。诊断报告仍要记录包名、UID、名称、变更时间，以及能够取得的 reason、subReason（细分原因）和 source 字段。",
+      "reason": "候选策略最大值与跨package的UID查询最小值是不同操作，修正容易外推的含混表达。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppRestrictionController.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "why": "候选策略最大值与跨package的UID查询最小值是不同操作，修正容易外推的含混表达。"
+    },
+    {
+      "before": "```mermaid\nflowchart LR\n    A[\"应用与系统服务事件\"] --> B[\"BatteryStatsImpl history / UID 统计\"]\n    C[\"内核、控制器与 PowerStats HAL\"] --> D[\"PowerStats collectors\"]\n    D --> B\n    B --> E[\"PowerStatsScheduler\"]\n    E --> F[\"MultiStatePowerAttributor\"]\n    F --> G[\"PowerStatsStore\"]\n    B --> H[\"BatteryUsageStatsProvider\"]\n    G --> H\n    H --> I[\"BatteryUsageStats / dumpsys\"]\n    B --> J[\"bugreport\"]\n    J --> K[\"Battery Historian\"]\n```",
+      "after": "活动记录进入聚合、存储与结果查询；Battery Historian 位于诊断报告的消费端。",
+      "reason": "用可直接渲染的最终SVG/PNG机制图替换Mermaid，同时保留原始快照便于审计。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "why": "用可直接渲染的最终SVG/PNG机制图替换Mermaid，同时保留原始快照便于审计。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "更新本轮全文与官方/固定源码校勘日期。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "更新本轮全文与官方/固定源码校勘日期。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "来源在本轮重新获取并保存证据。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "来源在本轮重新获取并保存证据。"
+    },
+    {
+      "before": "前台服务（Foreground Service，FGS）超时和 Android 16 Job 配额的专题分析见 §25.2。",
+      "after": "前台服务（Foreground Service，FGS）超时和 Android 16 Job 配额由本文后半部分集中说明。",
+      "reason": "修正合并文章遗留自指章节引用。",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/fgs/timeout"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "修正合并文章遗留自指章节引用。"
+    },
+    {
+      "before": "每天可在一次十分钟批处理时段内运行 Job，可用的 expedited Job",
+      "after": "每天可在一次十分钟批处理时段内运行 Job；该批次还要求至少有另一个正在运行或待执行的 Job（可以来自其他应用），受限 Job 不会单独运行。可用的 expedited Job",
+      "reason": "补全restricted批处理的并发/待执行其他Job前提，不承诺每天独立运行机会。",
+      "sources": [
+        "https://developer.android.com/topic/performance/appstandby"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "补全restricted批处理的并发/待执行其他Job前提，不承诺每天独立运行机会。"
+    },
+    {
+      "before": "退避只处理 Worker（WorkManager 的任务执行单元）返回 `Result.retry()` 的情况；网络请求自身的超时和幂等，仍要单独设计。",
+      "after": "这里的普通重试退避针对 Worker（WorkManager 的任务执行单元）返回 `Result.retry()` 的情况。WorkManager 2.11.0 起还提供实验性的 [`setBackoffForSystemInterruptions()`](https://developer.android.com/reference/kotlin/androidx/work/WorkRequest.Builder)，显式启用后，系统造成的中断也使用该退避策略；不能概括成所有版本都只处理 `Result.retry()`。网络请求自身的超时和幂等仍要单独设计。",
+      "reason": "当前官方API包含系统中断退避选项，收窄原绝对描述并标注2.11.0实验性边界。",
+      "sources": [
+        "https://developer.android.com/reference/kotlin/androidx/work/WorkRequest.Builder"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "当前官方API包含系统中断退避选项，收窄原绝对描述并标注2.11.0实验性边界。"
+    },
+    {
+      "before": "WorkManager 可读取 `WorkInfo.getStopReason()`；直接使用 JobScheduler 时，可读取 `JobParameters.getStopReason()`。",
+      "after": "WorkManager 2.9.0 起可读取 `WorkInfo.getStopReason()`；`JobParameters.getStopReason()` 要求 API 31 及以上，旧平台不能假定获得相同系统停止原因。",
+      "reason": "正文适用API29起，补齐停止原因的库/平台版本边界。",
+      "sources": [
+        "https://developer.android.com/reference/androidx/work/WorkInfo",
+        "https://developer.android.com/reference/android/app/job/JobParameters"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "正文适用API29起，补齐停止原因的库/平台版本边界。"
+    },
+    {
+      "before": "末尾两条命令将待机分组和电池服务恢复到测试前的常用状态。",
+      "after": "末尾两条命令把分组明确设为 `active`，并让电池服务恢复读取真实设备状态；它们不能恢复任意测试前分组。测试前先保存原始分组和电池状态，结束时按原值恢复并复核，不把 `active` 当作每台设备的原始值。",
+      "reason": "将显式设active与恢复原分组区别，避免故障注入污染后续实验。",
+      "sources": [
+        "https://developer.android.com/topic/performance/appstandby",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "将显式设active与恢复原分组区别，避免故障注入污染后续实验。"
+    },
+    {
+      "before": "    <application ...>",
+      "after": "    <application>",
+      "reason": "移除使Manifest片段不能解析的省略号，保留可扩展的应用属性位置。",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/fgs/service-types"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "移除使Manifest片段不能解析的省略号，保留可扩展的应用属性位置。"
+    },
+    {
+      "before": "        scope.cancel(\"FGS time limit reached\")\n        stopSelf(startId)",
+      "after": "        scope.cancel(\"FGS time limit reached\")\n        stopSelf()",
+      "reason": "超时要求停止该服务；避免回调排队期间新startId使stopSelf(oldId)无效。正常单请求完成仍用编号条件停止。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Service.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "超时要求停止该服务；避免回调排队期间新startId使stopSelf(oldId)无效。正常单请求完成仍用编号条件停止。"
+    },
+    {
+      "before": "可避免旧请求结束时误停新请求。真实项目还要让 `runSync()` 支持协作式取消",
+      "after": "可避免旧请求结束时误停更新的启动请求，但不会等待更早的异步任务完成：最新请求先结束时，仍会停止整个 Service，触发 `onDestroy()` 取消旧工作。并发请求需要业务队列、合并规则或任务计数；超时路径取消全部工作后直接 `stopSelf()`，避免依赖可能过时的 startId。真实项目还要让 `runSync()` 支持协作式取消",
+      "reason": "补充stopSelf(startId)对并发异步工作不提供引用计数，及超时停止的服务级边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Service.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "补充stopSelf(startId)对并发异步工作不提供引用计数，及超时停止的服务级边界。"
+    },
+    {
+      "before": "fun startUserRequestedSync(context: Context) {\n    val intent = Intent(context, SyncService::class.java)\n    try {\n        ContextCompat.startForegroundService(context, intent)\n    } catch (e: ForegroundServiceStartNotAllowedException) {\n        enqueueConstrainedWork(context)\n    }\n}",
+      "after": "fun startUserRequestedSync(context: Context) {\n    val intent = Intent(context, SyncService::class.java)\n    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {\n        startSyncOnApi31(context, intent)\n    } else {\n        ContextCompat.startForegroundService(context, intent)\n    }\n}\n\n@androidx.annotation.RequiresApi(31)\nprivate fun startSyncOnApi31(context: Context, intent: Intent) {\n    try {\n        ContextCompat.startForegroundService(context, intent)\n    } catch (e: ForegroundServiceStartNotAllowedException) {\n        enqueueConstrainedWork(context)\n    }\n}",
+      "reason": "异常类API31才有，按平台分支隔离新API；保持旧平台启动路径和新平台降级行为。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ForegroundServiceStartNotAllowedException.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "异常类API31才有，按平台分支隔离新API；保持旧平台启动路径和新平台降级行为。"
+    },
+    {
+      "before": "Android 14 起，发送 `PendingIntent` 的一方需要",
+      "after": "在 Android 14 及以上且发送方 target ≥34 时，发送 `PendingIntent` 的一方需要",
+      "reason": "补齐发送方BAL显式授权的target条件。",
+      "sources": [
+        "https://developer.android.com/guide/components/activities/secure-bal"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "补齐发送方BAL显式授权的target条件。"
+    },
+    {
+      "before": "Android 15 起，创建方若要委托自身权限，也要显式设置创建方模式",
+      "after": "在 Android 15 及以上且创建方 target ≥35 时，创建方若要委托自身权限，也要显式设置创建方模式",
+      "reason": "补齐创建方BAL显式授权的target条件。",
+      "sources": [
+        "https://developer.android.com/guide/components/activities/secure-bal"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "补齐创建方BAL显式授权的target条件。"
+    },
+    {
+      "before": "这组命令用于在测试设备上切换后台音频限制并查看相关记录。这里的 hardening 指平台新增的后台音频访问限制：\n\n```bash\nadb shell cmd audio set-enable-hardening enable\nadb shell dumpsys audio\nadb logcat | grep AudioHardening\n```\n\n测试结束后可用 `set-enable-hardening disable` 恢复默认测试设置。",
+      "after": "音频调试命令要先用 `adb shell cmd audio help` 核对设备镜像。固定 `android-17.0.0_r1` 的 [`AudioManagerShellCommand`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/AudioManagerShellCommand.java) 使用下面的覆盖和恢复命令：\n\n```bash\nadb shell cmd audio help\nadb shell cmd audio set-hardening enable\nadb shell dumpsys audio\nadb logcat | grep AudioHardening\n# 测试结束：清除覆盖，恢复平台默认策略\nadb shell cmd audio clear-hardening\n```\n\n当前[官网音频页面](https://developer.android.com/about/versions/17/changes/bg-audio)则使用 `set-enable-hardening <enable|disable|throw>`。其中 `enable` 会对所有 target 强制完整 WIU 检查，并取消默认策略中的精确闹钟豁免；`throw` 进一步改为可见失败，不能把这类强制模式的结果当作默认兼容策略。`disable` 是关闭全部限制，不能称为恢复默认。r1 的 `clear-hardening`（或 `set-hardening default`）才清除覆盖；其他镜像按其帮助与源码恢复原模式。",
+      "reason": "核对固定17r1和当前官网的命令差异；修正disable被称为默认，以及enable强制覆盖target/闹钟豁免的测试边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/AudioManagerShellCommand.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/HardeningEnforcer.java",
+        "https://developer.android.com/about/versions/17/changes/bg-audio"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "核对固定17r1和当前官网的命令差异；修正disable被称为默认，以及enable强制覆盖target/闹钟豁免的测试边界。"
+    },
+    {
+      "before": "```mermaid\nflowchart LR\n    A[\"设备空闲状态\"] --> B[\"DeviceIdleController\"]\n    C[\"用户与应用交互\"] --> D[\"AppStandbyController\"]\n    B --> E[\"JobScheduler 约束判断\"]\n    D --> F[\"QuotaController 配额判断\"]\n    F --> E\n    G[\"WorkManager / JobScheduler 请求\"] --> E\n    E --> H[\"允许、延后或停止 Job\"]\n    I[\"内核 suspend 与 wakeup source\"] --> B\n```",
+      "after": "设备空闲、应用使用状态与任务请求共同参与框架调度；内核提供独立的休眠与唤醒事实。",
+      "reason": "替换源码关系Mermaid为最终机制图，避免内核唤醒源被画成控制待机分组的框架输入。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/DeviceIdleController.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/controllers/QuotaController.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "替换源码关系Mermaid为最终机制图，避免内核唤醒源被画成控制待机分组的框架输入。"
+    },
+    {
+      "before": "```mermaid\nflowchart TD\n    A[\"业务产生持续任务\"] --> B{\"当前允许启动 FGS？\"}\n    B -- \"否\" --> X[\"抛出 ForegroundServiceStartNotAllowedException\"]\n    B -- \"是\" --> C[\"Context.startForegroundService\"]\n    C --> D[\"AMS 创建或启动 ServiceRecord\"]\n    D --> E[\"Service.onCreate / onStartCommand\"]\n    E --> F{\"及时调用 startForeground？\"}\n    F -- \"否\" --> Y[\"停止服务并进入超时失败路径\"]\n    F -- \"是\" --> G{\"类型是 Manifest 子集？\"}\n    G -- \"否\" --> Z[\"IllegalArgumentException\"]\n    G -- \"是\" --> H{\"类型权限与运行前提满足？\"}\n    H -- \"否\" --> W[\"SecurityException 或类型异常\"]\n    H -- \"是\" --> I[\"FGS 运行并展示通知\"]\n    I --> J{\"类型有运行时限？\"}\n    J -- \"否\" --> K[\"业务完成后主动停止\"]\n    J -- \"是\" --> L[\"系统累计该 UID 和类型的后台时长\"]\n    L --> M{\"额度耗尽或 shortService 到期？\"}\n    M -- \"否\" --> K\n    M -- \"是\" --> N[\"Service.onTimeout\"]\n    N --> O{\"宽限期内停止？\"}\n    O -- \"是\" --> K\n    O -- \"否\" --> P[\"shortService 触发 ANR；限时类型触发崩溃\"]\n```",
+      "after": "启动资格、服务回调中的及时晋升、类型校验和后续运行约束分别记录；失败路径各自取证。",
+      "reason": "替换过长Mermaid为可直接渲染的主生命周期图；各类超时另在对应位置细化。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java",
+        "https://developer.android.com/develop/background-work/services/fgs/timeout"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "替换过长Mermaid为可直接渲染的主生命周期图；各类超时另在对应位置细化。"
+    },
+    {
+      "before": "FGS 也替 Job 解除不了 App Standby 或调度额度。",
+      "after": "FGS 会影响应用活跃状态和待机分组，例如长期 FGS 属于进入 active bucket 的官方条件；这仍不等于 Job 获得无限运行额度。",
+      "reason": "FGS确会影响App Standby活跃判断，修正“毫无影响”式绝对表达，同时保留Android16配额边界。",
+      "sources": [
+        "https://developer.android.com/training/monitoring-device-state/doze-standby",
+        "https://developer.android.com/topic/performance/appstandby",
+        "https://developer.android.com/topic/performance/power/power-details"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "FGS确会影响App Standby活跃判断，修正“毫无影响”式绝对表达，同时保留Android16配额边界。"
+    },
+    {
+      "before": "- Doze、App Standby、JobScheduler 配额豁免。",
+      "after": "- Doze 的通用豁免或 Android 16 起的 JobScheduler 无限配额。FGS 可以影响 App Standby 的活跃判断和 bucket，但不能据此忽略具体 Job、Alarm 与设备状态限制。",
+      "reason": "区分FGS改变App Standby使用状态与豁免全部后台/Job限制。",
+      "sources": [
+        "https://developer.android.com/training/monitoring-device-state/doze-standby",
+        "https://developer.android.com/topic/performance/appstandby",
+        "https://developer.android.com/topic/performance/power/power-details"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "区分FGS改变App Standby使用状态与豁免全部后台/Job限制。"
+    },
+    {
+      "before": "Android 17 把相同规则扩展到 `IntentSender.sendIntent()`。",
+      "after": "Android 17 把相同规则扩展到 `IntentSender.sendIntent()`。固定 r1 中，旧默认行为还取决于 `balCoverIntentSender` 与 `COVER_INTENT_SENDER` 兼容变更；后者默认只对 target >36 启用，不能把新目标行为直接套到所有旧 target。",
+      "reason": "核对IntentSender默认options路径和target兼容变更，补齐17r1开关边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/IntentSender.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "核对IntentSender默认options路径和target兼容变更，补齐17r1开关边界。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "更新本轮全文校勘日期。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "更新本轮全文校勘日期。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮重新获取当前官方及固定源码并保存证据。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "本轮重新获取当前官方及固定源码并保存证据。"
+    },
+    {
+      "before": "Alarm 决定未来的唤醒时刻",
+      "after": "Alarm 安排未来的时间通知，只有唤醒型 Alarm 才请求唤醒设备",
+      "reason": "纠正把所有Alarm都等同设备唤醒的概括。",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/alarms"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "纠正把所有Alarm都等同设备唤醒的概括。"
+    },
+    {
+      "before": "该锁只覆盖 `BroadcastReceiver.onReceive()`，方法返回后系统就可以释放锁。接收器里要启动异步工作时，先把输入持久化，交给 WorkManager 或其他合适的接口——`*alarm*` 的保护到此为止。",
+      "after": "对普通同步接收器，`onReceive()` 返回会完成该次接收；源码实际通过 `onSendFinished()`、in-flight 计数及最后一笔投递完成来释放共享锁。使用 `goAsync()` 时，广播完成改由有界异步处理后的 `PendingResult.finish()` 表达，不能简单按方法返回时刻判断；它仍受广播超时约束，不是长任务窗口。耗时工作应先持久化输入，再交给 WorkManager 等接口，不依赖接收器外的任意线程继续受保护。",
+      "reason": "补足goAsync及共享投递计数的完成语义，避免官方入门概述被读成所有广播一返回就物理释放。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/BroadcastReceiver.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/PendingIntentRecord.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "补足goAsync及共享投递计数的完成语义，避免官方入门概述被读成所有广播一返回就物理释放。"
+    },
+    {
+      "before": "| `acquire_uptime_ms` / `release_uptime_ms` | 计算持锁时长，不受系统时间调整影响 |",
+      "after": "| `acquire_elapsed_realtime_ms` / `release_elapsed_realtime_ms` | 计算经过时间，包含深度睡眠且不受墙钟调整影响；另记 uptime 可分析实际清醒区间 |",
+      "reason": "锁在Doze等状态下未必阻止深睡，uptime相减会遗漏睡眠经过时间；采用含睡眠单调时钟。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/SystemClock",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "锁在Doze等状态下未必阻止深睡，uptime相减会遗漏睡眠经过时间；采用含睡眠单调时钟。"
+    },
+    {
+      "before": "`RTC` / `RTC_WAKEUP` 使用墙上时钟，也就是用户可见且会受校时、时区和夏令时影响的系统时间，适合按当地时间提醒。用户修改时间、时区或夏令时规则时，应用要重新核对下一次触发。",
+      "after": "`RTC` / `RTC_WAKEUP` 使用基于 Unix epoch 的墙钟毫秒，可能受用户改时间或系统校时影响。时区与夏令时不会直接改写 epoch 数值，但会改变“当地几点”的换算；按当地时间提醒时，要在时间、时区或相关规则变化后重新计算下一次触发。",
+      "reason": "区分UTC epoch时钟与本地日历换算，避免将改时区写成直接修改RTC毫秒。",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/alarms",
+        "https://developer.android.com/reference/android/app/AlarmManager"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "区分UTC epoch时钟与本地日历换算，避免将改时区写成直接修改RTC毫秒。"
+    },
+    {
+      "before": "Android 17 的 AlarmManager 会在投递回调前获取共享 WakeLock，`onAlarm()` 返回后完成投递并释放，所以回调里通常不必再取应用 WakeLock。把工作另起异步线程后立即返回，会失去这段系统保护。",
+      "after": "Android 17 的 AlarmManager 会在投递前获取共享 WakeLock；`ListenerWrapper` 在 `onAlarm()` 返回后的 `finally` 中报告完成，系统再按 in-flight 计数释放。但保护有上限：r1 的 `listener_timeout` 默认 5 秒且可配置，从系统投递起计，Executor 排队也会占用；超时后即使回调尚未结束，系统仍可完成这笔投递的持锁统计。因此回调必须短小，不能把保护理解为覆盖任意长回调，更不能另起线程后立即返回并假定仍受保护。",
+      "reason": "源码有listener超时兜底，保护可能先于回调结束；共享锁最后释放还受其他在途投递影响。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "源码有listener超时兜底，保护可能先于回调结束；共享锁最后释放还受其他在途投递影响。"
+    },
+    {
+      "before": "精确 Alarm 到达属于 FGS 后台启动限制的豁免场景",
+      "after": "用户请求的操作所触发的精确 Alarm，才属于官方列举的 FGS 后台启动豁免场景",
+      "reason": "补齐官方豁免的用户请求语义，避免普通后台轮询借精确Alarm获得通用启动资格。",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "补齐官方豁免的用户请求语义，避免普通后台轮询借精确Alarm获得通用启动资格。"
+    },
+    {
+      "before": "    alarmManager.setExactAndAllowWhileIdle(\n        AlarmManager.RTC_WAKEUP,\n        triggerAtMillis,\n        pendingIntent,\n    )\n    return ExactAlarmScheduleResult.SCHEDULED",
+      "after": "    try {\n        alarmManager.setExactAndAllowWhileIdle(\n            AlarmManager.RTC_WAKEUP,\n            triggerAtMillis,\n            pendingIntent,\n        )\n    } catch (e: SecurityException) {\n        // 查询与安排之间资格可能变化；只将确认的权限缺失转成降级结果。\n        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&\n            !alarmManager.canScheduleExactAlarms()\n        ) {\n            return ExactAlarmScheduleResult.PERMISSION_REQUIRED\n        }\n        throw e\n    }\n    return ExactAlarmScheduleResult.SCHEDULED",
+      "reason": "资格查询不是与set原子执行，补上权限变化兜底并重查；其他SecurityException继续抛出避免吞错。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "资格查询不是与set原子执行，补上权限变化兜底并重查；其他SecurityException继续抛出避免吞错。"
+    },
+    {
+      "before": "权限分支要靠前面的资格检查来判定，把 `SecurityException` 当作权限分支属于误用。",
+      "after": "前置资格检查决定正常权限分支；查询与安排之间仍可能变化，调用处按示例捕获后重查。只有确认资格缺失时才降级，其他 `SecurityException` 应保留给诊断，不把所有安全异常一概当成未授权。",
+      "reason": "修正禁止兜底捕获的绝对说法，与调用点的竞态保护一致。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java",
+        "https://developer.android.com/reference/android/app/AlarmManager"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "修正禁止兜底捕获的绝对说法，与调用点的竞态保护一致。"
+    },
+    {
+      "before": "> 源码基线：Android 17 / API 37 / `android-17.0.0_r1`；WorkManager 2.11.2 稳定版。",
+      "after": "> 平台源码基线：Android 17 / API 37 / `android-17.0.0_r1`；WorkManager 示例固定为 2.11.2（2026-03-25 发布的稳定版）。截至 2026-10-25，官方当前稳定版已是 2.12.0（2026-09-23），其 minSdk 升至 24；下文保留 2.11.x 的 API 23 兼容说明，不把它外推到 2.12。",
+      "reason": "官方发布页已更新2.12.0；保留明确版本的示例，避免无审查升级带入minSdk和新实验API变化。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/work"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "官方发布页已更新2.12.0；保留明确版本的示例，避免无审查升级带入minSdk和新实验API变化。"
+    },
+    {
+      "before": "对持久化调度，我们的预期要放准。它承诺的是「进程退出后任务还在」，完成仍要满足条件：用户强行停止应用、应用被卸载、业务主动取消任务，任务都会停下；依赖的网络、账户或权限长期不可用时，它会一直等待或失败。",
+      "after": "对持久化调度，我们的预期要放准。普通进程退出不会自动删除持久工作；force-stop 会阻止执行，用户再次启动应用后才可能恢复调度，这与卸载清除数据、业务取消工作不同。依赖的网络、账户或权限长期不可用时，也不能保证任务最终完成。",
+      "reason": "区分force-stop暂停调度与卸载/取消，不把持久性写成无条件完成或任务永久丢失。",
+      "sources": [
+        "https://developer.android.com/reference/androidx/work/package-summary",
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.11.2/work-runtime-2.11.2-sources.jar"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "区分force-stop暂停调度与卸载/取消，不把持久性写成无条件完成或任务永久丢失。"
+    },
+    {
+      "before": "            profileRepository.sync(\n                accountId = accountId,\n                idempotencyKey = id.toString(),\n            )\n            Result.success()",
+      "after": "            val operation = profileRepository.loadPendingSyncOperation(accountId)\n                ?: return@withContext Result.success()\n            profileRepository.sync(\n                accountId = accountId,\n                idempotencyKey = operation.id,\n            )\n            profileRepository.markSyncOperationComplete(operation.id)\n            Result.success()",
+      "reason": "周期WorkRequest跨轮次保留UUID，不能把它永久复用成每轮业务幂等键。使用业务持久操作ID让同操作重试稳定、新操作新键。",
+      "sources": [
+        "https://developer.android.com/reference/androidx/work/PeriodicWorkRequest",
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.11.2/work-runtime-2.11.2-sources.jar"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "周期WorkRequest跨轮次保留UUID，不能把它永久复用成每轮业务幂等键。使用业务持久操作ID让同操作重试稳定、新操作新键。"
+    },
+    {
+      "before": "代码只捕获能分类处理的异常；`CancellationException` 会继续传播，使 WorkManager 的停止信号可以取消协程。",
+      "after": "`profileRepository` 是应用自有接口骨架：业务先持久化待同步操作和唯一 ID，`loadPendingSyncOperation()` 读取同一未确认操作；`sync()` 使用该 ID 向服务端去重，确认后才标记完成。下轮新的业务操作分配新 ID。尤其是周期任务，WorkRequest UUID 跨轮次不变，不能把 `id.toString()` 当成所有轮次共用的业务幂等键。代码只捕获可分类异常；`CancellationException` 继续传播，底层阻塞 I/O 仍需支持取消。",
+      "reason": "解释新增应用仓库接口契约和周期ID边界，不伪装成WorkManager公开API。",
+      "sources": [
+        "https://developer.android.com/reference/androidx/work/PeriodicWorkRequest",
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.11.2/work-runtime-2.11.2-sources.jar"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "解释新增应用仓库接口契约和周期ID边界，不伪装成WorkManager公开API。"
+    },
+    {
+      "before": "各自在滚动 24 小时窗口内共享六小时额度",
+      "after": "各自在后台的 24 小时额度窗口内共享六小时运行时间（用户回到前台会重置；固定源码也有窗口重置规则）",
+      "reason": "官方不是精确滑动日志式rolling统计，源码记录firstStart与重置；收紧滑动窗口用词。",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/fgs/timeout",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActiveServices.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "官方不是精确滑动日志式rolling统计，源码记录firstStart与重置；收紧滑动窗口用词。"
+    },
+    {
+      "before": "Worker 返回 `Result.retry()` 后才会使用这项配置。",
+      "after": "普通主动重试在 Worker 返回 `Result.retry()` 后使用这项配置；2.11.0 起的实验性 `setBackoffForSystemInterruptions()` 显式启用后，也会将同一策略应用于系统中断。",
+      "reason": "补足本文固定2.11.2已支持的系统中断退避选项，避免“只会retry”绝对描述。",
+      "sources": [
+        "https://developer.android.com/reference/kotlin/androidx/work/WorkRequest.Builder",
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.11.2/work-runtime-2.11.2-sources.jar"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "补足本文固定2.11.2已支持的系统中断退避选项，避免“只会retry”绝对描述。"
+    },
+    {
+      "before": "优先让 `Application` 实现 `Configuration.Provider`，不要在自动初始化仍启用时再次调用 `WorkManager.initialize()`。",
+      "after": "应先移除 WorkManager 的默认初始化项，再让 `Application` 实现 `Configuration.Provider`；仅实现 Provider 而保留默认 `WorkManagerInitializer`，自定义配置不会生效。也不要在自动初始化仍启用时再次调用 `WorkManager.initialize()`。",
+      "reason": "Provider生效前提不是可选按需优化，默认initializer直接用默认Configuration初始化。",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/configuration/custom-configuration",
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.11.2/work-runtime-2.11.2-sources.jar"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "Provider生效前提不是可选按需优化，默认initializer直接用默认Configuration初始化。"
+    },
+    {
+      "before": "如果采用按需初始化，必须从清单中移除 AndroidX Startup 下的 WorkManager 初始化项。",
+      "after": "采用这里的 `Configuration.Provider` 自定义/按需初始化时，必须从清单中移除 AndroidX Startup 下的 WorkManager 初始化项。",
+      "reason": "与前文统一自定义配置前提，而非暗示仅性能按需路径才需移除。",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/configuration/custom-configuration"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "与前文统一自定义配置前提，而非暗示仅性能按需路径才需移除。"
+    },
+    {
+      "before": "```mermaid\nflowchart LR\n    A[\"PowerManager.WakeLock\"] --> B[\"PowerManagerService\"]\n    B --> C[\"kernel wakeup source\"]\n    D[\"AlarmManager\"] --> E[\"AlarmManagerService\"]\n    E --> F[\"kernel alarmtimer\"]\n    E --> G[\"分发 Alarm 回调\"]\n    G --> H[\"系统持有 *alarm* WakeLock\"]\n    H --> B\n```",
+      "after": "WakeLock 的休眠阻止与 Alarm 的未来投递经不同系统路径管理；系统共享锁只保护有界投递。",
+      "reason": "用最终SVG/PNG替换关系图，按实际投递前持锁/完成计数释放与底层边界绘制。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "用最终SVG/PNG替换关系图，按实际投递前持锁/完成计数释放与底层边界绘制。"
+    },
+    {
+      "before": "if (runAttemptCount < MAX_ATTEMPTS) Result.retry() else Result.failure()",
+      "after": "if (runAttemptCount < MAX_ATTEMPTS - 1) Result.retry() else Result.failure()",
+      "reason": "runAttemptCount首次为0，MAX_ATTEMPTS=5应允许共5次调用，原比较会执行6次。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.11.2/work-runtime-2.11.2-sources.jar"
+      ],
+      "article": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "why": "runAttemptCount首次为0，MAX_ATTEMPTS=5应允许共5次调用，原比较会执行6次。"
+    },
+    {
+      "before": "- API 35 及以下使用 `BODY_SENSORS`。\n- API 36 及以上使用相应的传感器读取权限，例如 `READ_HEART_RATE`、`READ_SKIN_TEMPERATURE`、`READ_OXYGEN_SATURATION`。\n- API 33～35 的后台身体传感器访问需要 `BODY_SENSORS_BACKGROUND`；API 36 及以上对应 `READ_HEALTH_DATA_IN_BACKGROUND`。",
+      "after": "- API 35 及以下的身体传感器使用 `BODY_SENSORS`。\n- 在 API 36 及以上且 target ≥36 时，改用相应的细分读取权限，例如 `READ_HEART_RATE`、`READ_SKIN_TEMPERATURE`、`READ_OXYGEN_SATURATION`；旧 target 还需按兼容授权路径核对，不能只按设备版本切换。\n- API 33～35 的后台身体传感器访问需要 `BODY_SENSORS_BACKGROUND`；在 API 36 及以上且 target ≥36 时改用 `READ_HEALTH_DATA_IN_BACKGROUND`。",
+      "reason": "后续定位传感器章节交叉核验发现权限迁移还有target36条件，补齐旧target兼容边界。",
+      "sources": [
+        "https://developer.android.com/about/versions/16/behavior-changes-16"
+      ],
+      "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "why": "后续定位传感器章节交叉核验发现权限迁移还有target36条件，补齐旧target兼容边界。"
     }
   ],
   "validation": {
@@ -9134,15 +10864,51 @@
       "article_positions": "passed",
       "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a272",
       "source_audit": "全文517行核读，19份有效来源全部成功，固定17r1 NFC模块与当前SDK/指南及官方协程文档核对；内核标签只作边界页，不推导设备驱动。11图与全部正文位置实际视觉检查，mdbook/链接/资产通过。14条校勘：以图资产替换Mermaid；stopped限定target37、停用只对链路结束/另服务切换；Reader任务close；HCE提交前主线程+命令代次并明确sendResponseApdu再次排队且无公开撤回/交易ID（静态交错推断，保存证据）；Observe先检查NFC开启；跨端时钟校准及射频/排队区间。只修改HCE Kotlin骨架，XML解析/shell语法通过，其余代码原样；未编译Kotlin、未运行设备/支付终端，无实测性能数字。"
+    },
+    "a273": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a273",
+      "source_audit": "全文37行和全部章节入口核读，一张针对本章问题入口的导航图及正文位置实际视觉通过；2条术语校勘与已完成24.7/24.10正文一致，复用刚核对的官方DNS安全和DataSaver来源且sha256保持。修正HTTPDNS可使用HTTPS和接口quota范围/AndroidTV速率例外。mdbook/全部本地链接/SVGPNG通过；没有代码块或性能测量。"
+    },
+    "a274": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a274",
+      "source_audit": "840行全文校勘；46份当前官方文档/固定Android17r1及对照15/16源码证据已获取。核对PowerMetric能力、Vitals累计与连续口径、组件采集和归因、20秒缓存/扰动、BinaryXML存储、原生唤醒共同时间点及后台限制入口。补充持锁timeout不取消业务、tracker最大候选与共享UID查询最宽松值，细化NEVER/flag例外。15图与全部正文位置实际视觉检查通过；隔离mdBook构建、链接、SVG/PNG验证通过。14段非Mermaid代码保持基线不变，bash -n/XML解析通过；未编译Kotlin、未执行ADB或OEM设备实验。"
+    },
+    "a275": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a275",
+      "source_audit": "876行全文、47份官方及固定源码核对；原15图/19校勘验收后，a277交叉核验补上health细分权限迁移target36条件，正文三项与图4一致更新。图4成图及新正文位置再次实际视觉检查通过，其余14图此前已逐图和位置检查；重新隔离mdBook构建/本地链接/SVG+PNG通过。共20条校勘，13段非Mermaid代码中4段必要修正，shell语法/XML解析通过；Kotlin未编译、ADB未执行，无设备时延或存活实测。"
+    },
+    "a276": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a276",
+      "source_audit": "1018行阅读全文；43份官方/固定17r1和内核源码、Google Maven WorkManager2.11.2 runtime/multiprocess原始源码包交叉核对。修正goAsync完成语义、共享锁in-flight和Listener默认5秒可配超时、RTC与时区、elapsed计时、精确Alarm资格竞态、周期UUID幂等键、5次上限的0基计数、自定义Provider生效前提及系统中断退避。明确当前稳定2.12.0/minSdk24与固定2.11.2示例的边界。18张成图及全部正文位置实际视觉检查通过；隔离mdBook构建/链接/SVG+PNG通过，原文+20条校勘+18插图精确重建一致。27段非Mermaid代码中2段Kotlin必要修正，shell语法与XML解析通过；未编译Kotlin或设备执行，无性能数字。"
     }
   },
   "last_checkpoint": {
-    "completed": 22,
+    "completed": 26,
     "total": 51,
-    "diagrams": 243,
-    "next_article": "src/part5-app/ch24-io-network/README.md",
-    "next_article_index": 273,
-    "updated_at": "2026-10-25T14:23:09.173740+08:00"
+    "diagrams": 292,
+    "next_article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+    "next_article_index": 277,
+    "updated_at": "2026-10-25T14:52:44.864792+08:00"
   },
   "replaced_inline_diagrams": []
 }

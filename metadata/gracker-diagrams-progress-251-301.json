@@ -1251,34 +1251,110 @@
     {
       "path": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
       "sha256_before": "204d9efbeb77e10bff1302bfda3fcc8de4648e1d9508df9fa23ff81a43aff1ca",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a293-01-vitals-apm-and-platform-contracts",
+        "a293-02-threshold-operators-device-scopes",
+        "a293-03-partial-wake-lock-session-classification",
+        "a293-04-denominators-dau-session-and-watch-factors",
+        "a293-05-crash-anr-source-association",
+        "a293-06-startup-rendering-slow-session-and-lmk",
+        "a293-07-memory-and-code-optimization-metric-scope",
+        "a293-08-release-harm-versus-data-insufficiency",
+        "a293-09-reporting-query-completeness-and-upsert",
+        "a293-10-aggregation-rounded-users-and-quality-incidents"
+      ],
       "article_index": 293,
-      "sha256_at_assignment": "204d9efbeb77e10bff1302bfda3fcc8de4648e1d9508df9fa23ff81a43aff1ca"
+      "sha256_at_assignment": "204d9efbeb77e10bff1302bfda3fcc8de4648e1d9508df9fa23ff81a43aff1ca",
+      "sha256_current": "e7b1609b1e33af0031817674567d939bb57b600913dc15f16f0f6b4fd8363640",
+      "sha256_after": "e7b1609b1e33af0031817674567d939bb57b600913dc15f16f0f6b4fd8363640",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "Full 322-line frozen source read; 27 captured primary sources checked. Core threshold operators and device scopes, watch/session versus DAU denominators, 2027 memory/DEX effective date, Reporting API cohort/granularity/time-zone, rounded-user and freshness limitations verified; 9 audited corrections. All 10 final figure images and 10 rendered article positions actually reviewed. Isolated mdBook build, SVG/PNG decoding, local links and exact baseline-ledger reconstruction passed. No Android/device measurements or execution claimed.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "204d9efbeb77e10bff1302bfda3fcc8de4648e1d9508df9fa23ff81a43aff1ca"
     },
     {
       "path": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
       "sha256_before": "f8c2be01716fd2ff06ef9b78ad52d9cefc57b92e97e7a6f226240f60ec77b4b8",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a294-01-measurement-clocks-and-thread-scopes",
+        "a294-02-collector-coverage-and-build-scope",
+        "a294-03-strictmode-and-resource-signals",
+        "a294-04-io-rules-and-confounders",
+        "a294-05-dao-transaction-driver-callback",
+        "a294-06-room-285-driver-and-callback-boundary",
+        "a294-07-sql-fingerprint-and-parser-failure",
+        "a294-08-framework-diagnostics-and-cache-layers",
+        "a294-09-eqp-consistency-and-versioned-analysis",
+        "a294-10-error-recovery-and-file-atomicity",
+        "a294-11-library-version-driver-and-legacy-rules",
+        "a294-12-io-and-block-trace-tracks"
+      ],
       "article_index": 294,
-      "sha256_at_assignment": "f8c2be01716fd2ff06ef9b78ad52d9cefc57b92e97e7a6f226240f60ec77b4b8"
+      "sha256_at_assignment": "f8c2be01716fd2ff06ef9b78ad52d9cefc57b92e97e7a6f226240f60ec77b4b8",
+      "sha256_current": "03ad2ee06ff87d51780b57aebac34bf23d80c41b6e1a1d0b8ee6bf4927f01b1c",
+      "sha256_after": "03ad2ee06ff87d51780b57aebac34bf23d80c41b6e1a1d0b8ee6bf4927f01b1c",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "Full 370-line frozen article read; 34 primary documentation/source/artifact captures checked. Fixed Room 2.8.5 Android source establishes fun interface validity, SQLiteDriver/query callback build rejection and asynchronous original-value retention; AGP ALL dependency scope, thread CPU boundaries, SQL comments/literals, consistent backup/EQP format and AtomicFile/fsync semantics corrected. 17 audited corrections; 16 pinned source assertions pass. All 12 final figures and rendered positions actually inspected, including refined independent StrictMode scopes and pixel-based cache/block tracks. Isolated mdBook build, local links, XML/PNG assets and exact reconstruction passed; all four code fences unchanged. No Android/SDK/device measurement claimed.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "f8c2be01716fd2ff06ef9b78ad52d9cefc57b92e97e7a6f226240f60ec77b4b8"
     },
     {
       "path": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
       "sha256_before": "1846f99170ce15f0fcd366b8580b46ff127a984567d849942ba3da7151c800e1",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a295-01-client-edge-and-network-evidence",
+        "a295-02-trace-call-route-and-exchange",
+        "a295-03-fast-fallback-and-exchange-tracks",
+        "a295-04-cronet-clock-time-and-byte-boundaries",
+        "a295-05-protocol-neutral-stages-and-unknowns",
+        "a295-06-trafficstats-valid-difference-window",
+        "a295-07-network-callback-snapshot-and-selected-network",
+        "a295-08-hook-boundaries-and-fail-open",
+        "a295-09-exchange-reconciliation-and-missing-samples",
+        "a295-10-alerting-coverage-and-tail-evidence"
+      ],
       "article_index": 295,
-      "sha256_at_assignment": "1846f99170ce15f0fcd366b8580b46ff127a984567d849942ba3da7151c800e1"
+      "sha256_at_assignment": "1846f99170ce15f0fcd366b8580b46ff127a984567d849942ba3da7151c800e1",
+      "sha256_current": "695ce8c44df56b51556bc7ac982796935ddee8a1e1d61174bd5193e7f8220aba",
+      "sha256_after": "695ce8c44df56b51556bc7ac982796935ddee8a1e1d61174bd5193e7f8220aba",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "Full 240-line frozen article read. 24 primary captures plus fixed Cronet 143.7445.0 API AAR/javap and three matching OkHttp EventListener tag hashes checked; obsolete 5.x reference/changelog URLs unavailable, critical facts verified against fixed raw source. 12 corrections cover current release 5.5.1, local route-attempt versus transmitted exchange IDs, concurrent pairing ambiguity, protocol/clock/TTFB and absence states, Handler callback threading. 13 source/API assertions pass. All 10 final figures and article contexts visually inspected, with Fast Fallback figure placed beside OkHttp discussion; isolated mdBook build, exact reconstruction, assets and local links passed. No client/server integration, network measurement or device command claimed.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "1846f99170ce15f0fcd366b8580b46ff127a984567d849942ba3da7151c800e1"
     },
     {
       "path": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
       "sha256_before": "ed24a0ffa54268e437c242d7825c9c8e7d7543a9113b98bfd7fdf7f9ebf7c38b",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a296-01-four-power-evidence-scopes",
+        "a296-02-battery-services-and-hardware",
+        "a296-03-activity-samples-to-uid-attribution",
+        "a296-04-logger-versus-historian-cadence",
+        "a296-05-controlled-bugreport-capture",
+        "a296-06-energy-power-and-work-denominators",
+        "a296-07-power-monitor-valid-window",
+        "a296-08-uid-health-battery-state-and-privileges",
+        "a296-09-wakelock-overlap-and-task-tracks",
+        "a296-10-network-activity-and-radio-energy",
+        "a296-11-rail-samples-noise-and-app-attribution",
+        "a296-12-apm-scopes-selection-and-device-health"
+      ],
       "article_index": 296,
-      "sha256_at_assignment": "ed24a0ffa54268e437c242d7825c9c8e7d7543a9113b98bfd7fdf7f9ebf7c38b"
+      "sha256_at_assignment": "ed24a0ffa54268e437c242d7825c9c8e7d7543a9113b98bfd7fdf7f9ebf7c38b",
+      "sha256_current": "68575ecfe9e7f0b89a25e0fdaa8b15c3115082a6ffed7734f4b6edadcd70fd0f",
+      "sha256_after": "68575ecfe9e7f0b89a25e0fdaa8b15c3115082a6ffed7734f4b6edadcd70fd0f",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "Full 370-line frozen article read; 29 successful primary captures reviewed (two exploratory outdated BatteryStatsImpl paths failed; actual 17r1 power/stats path captured). 10 corrections: positive per-monitor sample time, unavailable/reset windows, overlapping channels, since-charged HealthStats counters, correct units, failed/retried work in energy denominator and average-versus-instantaneous limits. Ten source/synthetic arithmetic guard checks pass. All 12 final figures and 12 rendered positions actually viewed; isolated build, exact reconstruction, local links and asset decoding pass; original shell fence unchanged and bash -n valid. No device reset, bugreport collection or energy/performance measurement performed.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "ed24a0ffa54268e437c242d7825c9c8e7d7543a9113b98bfd7fdf7f9ebf7c38b"
     },
     {
       "path": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
@@ -13389,6 +13465,1044 @@
         "src/assets/diagrams/ch26/a292-09-ci-field-distribution-and-coverage.svg": "3ec17ef26b88723edb61cf9a5eca8021288bdfcef1271a974854bc59d094924e",
         "src/assets/diagrams/ch26/a292-09-ci-field-distribution-and-coverage.png": "e848f1f38f1b6702d16c6babbde2a472ec49d9896e74cbe129e897c914d88b40"
       }
+    },
+    {
+      "id": "a293-01-vitals-apm-and-platform-contracts",
+      "title": "Play 政策、平台事实与内部监控保留三套口径",
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a293-01-vitals-apm-and-platform-contracts.svg",
+        "src/assets/diagrams/ch26/a293-01-vitals-apm-and-platform-contracts.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a293-01-vitals-apm-and-platform-contracts",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals",
+        "https://developers.google.com/play/developer/reporting/metricset-intro"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a293-01-vitals-apm-and-platform-contracts.svg": "28faaaa54b6ed0ad78b4983e2f4038653d3d22e7ba85f09683cbd150e9fa1bb2",
+        "src/assets/diagrams/ch26/a293-01-vitals-apm-and-platform-contracts.png": "1dfb5516794591429b236c1491bd18ecd864537939dfa3b3d030f4ed08e63404"
+      }
+    },
+    {
+      "id": "a293-02-threshold-operators-device-scopes",
+      "title": "Crash / ANR 阈值同时绑定设备形态和比较符号",
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a293-02-threshold-operators-device-scopes.svg",
+        "src/assets/diagrams/ch26/a293-02-threshold-operators-device-scopes.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a293-02-threshold-operators-device-scopes",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals",
+        "https://developer.android.com/google/play/vitals/crash",
+        "https://developer.android.com/google/play/vitals/anr",
+        "https://developer.android.com/topic/performance/vitals/excessive-wakelock"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a293-02-threshold-operators-device-scopes.svg": "9a900cceab1a2e101d236c4659ef91f73cd1220a1bfe80e020cd72f628477f50",
+        "src/assets/diagrams/ch26/a293-02-threshold-operators-device-scopes.png": "ca558b1a9deaea87698afd2283891c2d09626ec2d9b9c46f9a7c9ffbc2793bed"
+      }
+    },
+    {
+      "id": "a293-03-partial-wake-lock-session-classification",
+      "title": "Wake lock：先算合格持有时长，再算受影响会话率",
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a293-03-partial-wake-lock-session-classification.svg",
+        "src/assets/diagrams/ch26/a293-03-partial-wake-lock-session-classification.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a293-03-partial-wake-lock-session-classification",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals/excessive-wakelock",
+        "https://developer.android.com/blog/posts/battery-technical-quality-enforcement-is-here-how-to-optimize-common-wake-lock-use-cases"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a293-03-partial-wake-lock-session-classification.svg": "ea795e99e78efde2e5906925e3b4546ce264b6032a72b09faad525626ce357a2",
+        "src/assets/diagrams/ch26/a293-03-partial-wake-lock-session-classification.png": "04531f339f1a909fd20ab95172d284789103e13091db1ed2e35884b2f5f85ff2"
+      }
+    },
+    {
+      "id": "a293-04-denominators-dau-session-and-watch-factors",
+      "title": "用户、日会话、表盘贡献因素不是同一个分母",
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a293-04-denominators-dau-session-and-watch-factors.svg",
+        "src/assets/diagrams/ch26/a293-04-denominators-dau-session-and-watch-factors.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a293-04-denominators-dau-session-and-watch-factors",
+      "sources": [
+        "https://developer.android.com/google/play/vitals/excessive-battery-usage",
+        "https://developer.android.com/google/play/vitals/crash"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a293-04-denominators-dau-session-and-watch-factors.svg": "473f5986987d5b14bd9c3baa31df3560b5cdeb317c77d7daaf1136b7f1d5bfa2",
+        "src/assets/diagrams/ch26/a293-04-denominators-dau-session-and-watch-factors.png": "4f74b4b6ab17661a1edc9da7a5a0413910c697cbaf4041452490e0a03cd19ab1"
+      }
+    },
+    {
+      "id": "a293-05-crash-anr-source-association",
+      "title": "Play、系统和应用三层证据用弱关联协作",
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a293-05-crash-anr-source-association.svg",
+        "src/assets/diagrams/ch26/a293-05-crash-anr-source-association.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a293-05-crash-anr-source-association",
+      "sources": [
+        "https://developer.android.com/google/play/vitals/crash",
+        "https://developer.android.com/google/play/vitals/anr"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a293-05-crash-anr-source-association.svg": "a48bdbf94b50cb4bbd46b3a862ea4ab8611be84e575bc39e9534008954d3b071",
+        "src/assets/diagrams/ch26/a293-05-crash-anr-source-association.png": "3993aa1da1230c353a74debd2d4a3cab70909a01dbbbb8259c1f2557a79b396d"
+      }
+    },
+    {
+      "id": "a293-06-startup-rendering-slow-session-and-lmk",
+      "title": "严重症状阈值与根因证据分层解释",
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a293-06-startup-rendering-slow-session-and-lmk.svg",
+        "src/assets/diagrams/ch26/a293-06-startup-rendering-slow-session-and-lmk.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a293-06-startup-rendering-slow-session-and-lmk",
+      "sources": [
+        "https://developer.android.com/google/play/vitals/launch-time",
+        "https://developer.android.com/topic/performance/vitals/render",
+        "https://developer.android.com/google/play/vitals/slow-session",
+        "https://developer.android.com/topic/performance/vitals/lmk"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a293-06-startup-rendering-slow-session-and-lmk.svg": "6581551307d5773a91c672a1b2ad70967bef62b86738f151f3e8580d5dbcb03c",
+        "src/assets/diagrams/ch26/a293-06-startup-rendering-slow-session-and-lmk.png": "0b84069752aee17481fd763b86b1f6c0376e3b66c420cc4211b0fb0ff4fd7a8c"
+      }
+    },
+    {
+      "id": "a293-07-memory-and-code-optimization-metric-scope",
+      "title": "内存分位数、DEX 优化比例与坏会话率分别存储",
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a293-07-memory-and-code-optimization-metric-scope.svg",
+        "src/assets/diagrams/ch26/a293-07-memory-and-code-optimization-metric-scope.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a293-07-memory-and-code-optimization-metric-scope",
+      "sources": [
+        "https://developer.android.com/google/play/vitals/memory-usage",
+        "https://developer.android.com/google/play/vitals/bitmap-memory-usage",
+        "https://developer.android.com/google/play/vitals/code-optimization"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a293-07-memory-and-code-optimization-metric-scope.svg": "1b8acbaf1383f11d8d1eccb6c7921068534bfb5aca7e59e7a7bfe7da3af56986",
+        "src/assets/diagrams/ch26/a293-07-memory-and-code-optimization-metric-scope.png": "fe13c4c2f718d2a4ccb1cf6f15e3a3488d8dd6feccb7227e2b1230e56e5e7f3f"
+      }
+    },
+    {
+      "id": "a293-08-release-harm-versus-data-insufficiency",
+      "title": "发布动作由伤害证据和数据完整性共同决定",
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a293-08-release-harm-versus-data-insufficiency.svg",
+        "src/assets/diagrams/ch26/a293-08-release-harm-versus-data-insufficiency.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a293-08-release-harm-versus-data-insufficiency",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals",
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate/query"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a293-08-release-harm-versus-data-insufficiency.svg": "16166838dd306bfbf72184442910f114f819e535efa689602a577d81a6e989a6",
+        "src/assets/diagrams/ch26/a293-08-release-harm-versus-data-insufficiency.png": "3cd8ea2dafb873cddc67cc2fa06cdbb11234b9972bf8d218eb5f89cdc8970e92"
+      }
+    },
+    {
+      "id": "a293-09-reporting-query-completeness-and-upsert",
+      "title": "Reporting API 入仓：冻结查询身份，完整分页后提交",
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a293-09-reporting-query-completeness-and-upsert.svg",
+        "src/assets/diagrams/ch26/a293-09-reporting-query-completeness-and-upsert.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a293-09-reporting-query-completeness-and-upsert",
+      "sources": [
+        "https://developers.google.com/play/developer/reporting/metricset-intro",
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate/query",
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.slowstartrate/query",
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.slowrenderingrate/query"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a293-09-reporting-query-completeness-and-upsert.svg": "f8a57b0c36f683581c0d32356b38ac2893815bafac1c060d9704110fb6d70e6a",
+        "src/assets/diagrams/ch26/a293-09-reporting-query-completeness-and-upsert.png": "a3b61b9f9ee3ac3b1a8fe4031ad8112cf6960f3a567b0a2e0599a5fb58a8bdf7"
+      }
+    },
+    {
+      "id": "a293-10-aggregation-rounded-users-and-quality-incidents",
+      "title": "入仓聚合值、内部事实与质量事件分开关联",
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a293-10-aggregation-rounded-users-and-quality-incidents.svg",
+        "src/assets/diagrams/ch26/a293-10-aggregation-rounded-users-and-quality-incidents.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a293-10-aggregation-rounded-users-and-quality-incidents",
+      "sources": [
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate/query",
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.anrrate/query",
+        "https://developers.google.com/play/developer/reporting/metricset-intro"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a293-10-aggregation-rounded-users-and-quality-incidents.svg": "b3c874ca4ca5f7e74e8ff20df7735504434f1dfaa7e90b8f4b316f24e03c0d24",
+        "src/assets/diagrams/ch26/a293-10-aggregation-rounded-users-and-quality-incidents.png": "8b32cd928c82bd74faaf5c96e7fced1935fd12b3d4f116bffc591c5bb05eb8c3"
+      }
+    },
+    {
+      "id": "a294-01-measurement-clocks-and-thread-scopes",
+      "title": "同一耗时区间，先固定时钟与线程范围",
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a294-01-measurement-clocks-and-thread-scopes.svg",
+        "src/assets/diagrams/ch26/a294-01-measurement-clocks-and-thread-scopes.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a294-01-measurement-clocks-and-thread-scopes",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Debug",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a294-01-measurement-clocks-and-thread-scopes.svg": "ac5c9106e347e53a87c857b898501fae96709157a2d1303b778f91e30f1e88ec",
+        "src/assets/diagrams/ch26/a294-01-measurement-clocks-and-thread-scopes.png": "2cd2efb422a832a991cd4ba3c058087fb83cf2faa1815778fccaff447cb1baec"
+      }
+    },
+    {
+      "id": "a294-02-collector-coverage-and-build-scope",
+      "title": "采集覆盖取决于调用路径与实际构建范围",
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a294-02-collector-coverage-and-build-scope.svg",
+        "src/assets/diagrams/ch26/a294-02-collector-coverage-and-build-scope.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a294-02-collector-coverage-and-build-scope",
+      "sources": [
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/instrumentation/InstrumentationScope",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/luni/src/main/java/libcore/io/BlockGuardOs.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a294-02-collector-coverage-and-build-scope.svg": "569773ce9c728fc6aa3a7ad4b630ce7e674149504e8afbf38f2e8d27f422ec9d",
+        "src/assets/diagrams/ch26/a294-02-collector-coverage-and-build-scope.png": "b525485401c9fce337c7645080e2d4b5e5535f451ab71f58f39301640808a9b1"
+      }
+    },
+    {
+      "id": "a294-03-strictmode-and-resource-signals",
+      "title": "StrictMode 的“发生”信号通向受控复现",
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a294-03-strictmode-and-resource-signals.svg",
+        "src/assets/diagrams/ch26/a294-03-strictmode-and-resource-signals.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a294-03-strictmode-and-resource-signals",
+      "sources": [
+        "https://developer.android.com/reference/android/os/StrictMode",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/luni/src/main/java/libcore/io/BlockGuardOs.java",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/dalvik/src/main/java/dalvik/system/CloseGuard.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a294-03-strictmode-and-resource-signals.svg": "75d5e8b0a9bef233ef1f2a91af034f566799984c077379b48d69f32fa9bd21b7",
+        "src/assets/diagrams/ch26/a294-03-strictmode-and-resource-signals.png": "521fc18b1043ba04feac38593944ec16708eaff66cc8b811296a6c1821d3208e"
+      }
+    },
+    {
+      "id": "a294-04-io-rules-and-confounders",
+      "title": "不良 I/O 规则按场景建立可比较分母",
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a294-04-io-rules-and-confounders.svg",
+        "src/assets/diagrams/ch26/a294-04-io-rules-and-confounders.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a294-04-io-rules-and-confounders",
+      "sources": [
+        "https://developer.android.com/topic/performance/sqlite-performance-best-practices",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/luni/src/main/java/libcore/io/BlockGuardOs.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a294-04-io-rules-and-confounders.svg": "dde01ae2a9046f672076325c5a63c906afa5ba8938074cd47580a5348db7f550",
+        "src/assets/diagrams/ch26/a294-04-io-rules-and-confounders.png": "7795abe6a1c24240e09f935f3f46d534d369f4eaa417204981d68b640ad03d85"
+      }
+    },
+    {
+      "id": "a294-05-dao-transaction-driver-callback",
+      "title": "DAO、事务、driver 与回调分别回答不同问题",
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a294-05-dao-transaction-driver-callback.svg",
+        "src/assets/diagrams/ch26/a294-05-dao-transaction-driver-callback.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a294-05-dao-transaction-driver-callback",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/room/room-runtime-android/2.8.5/room-runtime-android-2.8.5-sources.jar",
+        "https://developer.android.com/reference/androidx/room/RoomDatabase.QueryCallback"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a294-05-dao-transaction-driver-callback.svg": "50e93fd40b960ca9578913028ccc90b18f3be520368aaa2c6d6c8dd98fa8cc88",
+        "src/assets/diagrams/ch26/a294-05-dao-transaction-driver-callback.png": "cede47e813a54ad1da062fd69f569dbdbb85f5abefdff69e5d1b3b8cbe520f59"
+      }
+    },
+    {
+      "id": "a294-06-room-285-driver-and-callback-boundary",
+      "title": "Room 2.8.5：先检查 driver 与回调是否可组合",
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a294-06-room-285-driver-and-callback-boundary.svg",
+        "src/assets/diagrams/ch26/a294-06-room-285-driver-and-callback-boundary.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a294-06-room-285-driver-and-callback-boundary",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/room/room-runtime-android/2.8.5/room-runtime-android-2.8.5-sources.jar"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a294-06-room-285-driver-and-callback-boundary.svg": "de0a9934daa31c44a5b34be94ca37ec73966f726f60b673b0433fe38f1878f4f",
+        "src/assets/diagrams/ch26/a294-06-room-285-driver-and-callback-boundary.png": "cf9bf777b5a6d7f4b8f58ccbbcc7d6c4b9c4399824f4214b1aad07cd94330c72"
+      }
+    },
+    {
+      "id": "a294-07-sql-fingerprint-and-parser-failure",
+      "title": "SQL 指纹先去数据，再保留受控结构",
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a294-07-sql-fingerprint-and-parser-failure.svg",
+        "src/assets/diagrams/ch26/a294-07-sql-fingerprint-and-parser-failure.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a294-07-sql-fingerprint-and-parser-failure",
+      "sources": [
+        "https://www.sqlite.org/lang_comment.html",
+        "https://www.sqlite.org/lang_expr.html",
+        "https://dl.google.com/dl/android/maven2/androidx/room/room-runtime-android/2.8.5/room-runtime-android-2.8.5-sources.jar"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a294-07-sql-fingerprint-and-parser-failure.svg": "27ac4a1d0266ea0610c58c4ed10ea291424f1637f4774f2cdf655d678cb4185a",
+        "src/assets/diagrams/ch26/a294-07-sql-fingerprint-and-parser-failure.png": "f11b71829ced5db649e7f11cdbd5ccfd49ae3ad6481ab734ea30f53f5cf060a6"
+      }
+    },
+    {
+      "id": "a294-08-framework-diagnostics-and-cache-layers",
+      "title": "框架诊断常量不是业务门槛，也不是生产公开 API",
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a294-08-framework-diagnostics-and-cache-layers.svg",
+        "src/assets/diagrams/ch26/a294-08-framework-diagnostics-and-cache-layers.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a294-08-framework-diagnostics-and-cache-layers",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteConnection.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteConnectionPool.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteDatabaseConfiguration.java",
+        "https://developer.android.com/jetpack/androidx/releases/room"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a294-08-framework-diagnostics-and-cache-layers.svg": "b753a85ca433617edf5dffa993f4853295c474eeec98b21238952fcd844d30ef",
+        "src/assets/diagrams/ch26/a294-08-framework-diagnostics-and-cache-layers.png": "015ffd7e73a2d637fc34476080ea4243d40467f8381e346729bd1352bd331cd2"
+      }
+    },
+    {
+      "id": "a294-09-eqp-consistency-and-versioned-analysis",
+      "title": "执行计划复现依赖一致副本与同一 SQLite 实现",
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a294-09-eqp-consistency-and-versioned-analysis.svg",
+        "src/assets/diagrams/ch26/a294-09-eqp-consistency-and-versioned-analysis.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a294-09-eqp-consistency-and-versioned-analysis",
+      "sources": [
+        "https://www.sqlite.org/backup.html",
+        "https://www.sqlite.org/eqp.html",
+        "https://developer.android.com/topic/performance/sqlite-performance-best-practices"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a294-09-eqp-consistency-and-versioned-analysis.svg": "d908847baae7f96f0c66886231915685ad255163aa317ac570034b280a5ea795",
+        "src/assets/diagrams/ch26/a294-09-eqp-consistency-and-versioned-analysis.png": "d2288d8809022744ae21570f69765ae98de9f5b01c8f931f844c3b10f90fb15c"
+      }
+    },
+    {
+      "id": "a294-10-error-recovery-and-file-atomicity",
+      "title": "错误恢复与文件替换不能掩盖数据丢失",
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a294-10-error-recovery-and-file-atomicity.svg",
+        "src/assets/diagrams/ch26/a294-10-error-recovery-and-file-atomicity.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a294-10-error-recovery-and-file-atomicity",
+      "sources": [
+        "https://developer.android.com/reference/android/util/AtomicFile",
+        "https://man7.org/linux/man-pages/man2/fsync.2.html",
+        "https://developer.android.com/jetpack/androidx/releases/sqlite"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a294-10-error-recovery-and-file-atomicity.svg": "6d062ee5b9501ef33a72ccba0263262ce6691bb8ae8fe93e57a579a99bc541b8",
+        "src/assets/diagrams/ch26/a294-10-error-recovery-and-file-atomicity.png": "4a77e7349072df0d109c19bf168b5b92de1804081a8f5c3267d9f8b94574fd44"
+      }
+    },
+    {
+      "id": "a294-11-library-version-driver-and-legacy-rules",
+      "title": "库版本独立于系统版本，旧 Hook 规则重新验证",
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a294-11-library-version-driver-and-legacy-rules.svg",
+        "src/assets/diagrams/ch26/a294-11-library-version-driver-and-legacy-rules.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a294-11-library-version-driver-and-legacy-rules",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/sqlite",
+        "https://developer.android.com/jetpack/androidx/releases/room",
+        "https://github.com/Tencent/matrix/wiki/Matrix-Android-SQLiteLint"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a294-11-library-version-driver-and-legacy-rules.svg": "50989720a4755826dbc55fc76e4e48938585e501a6bf63693d82fa7a6314b230",
+        "src/assets/diagrams/ch26/a294-11-library-version-driver-and-legacy-rules.png": "ab6798f6b9e8834dc302a6c34d22e14d7b8a1392b0924a36cf8b22636c940e5f"
+      }
+    },
+    {
+      "id": "a294-12-io-and-block-trace-tracks",
+      "title": "应用 I/O、页缓存与块设备请求在时间轴上建立候选关系",
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a294-12-io-and-block-trace-tracks.svg",
+        "src/assets/diagrams/ch26/a294-12-io-and-block-trace-tracks.png"
+      ],
+      "layout": "perfetto-tracks",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a294-12-io-and-block-trace-tracks",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/block.h",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/filemap.h",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/trace/events/writeback.h"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a294-12-io-and-block-trace-tracks.svg": "f7475063aa40233b05f4eef337e3c412326ae5a5394bfd7cd7a02aad917ebcc8",
+        "src/assets/diagrams/ch26/a294-12-io-and-block-trace-tracks.png": "8891fd23713e754d84d5872177ca115e58636f09b5868936408b50787c79a55a"
+      }
+    },
+    {
+      "id": "a295-01-client-edge-and-network-evidence",
+      "title": "客户端、入口与系统状态各自留下不同的盲区",
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a295-01-client-edge-and-network-evidence.svg",
+        "src/assets/diagrams/ch26/a295-01-client-edge-and-network-evidence.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a295-01-client-edge-and-network-evidence",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/network-ops/reading-network-state",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.1/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a295-01-client-edge-and-network-evidence.svg": "a4488f5cfb28681816551c7e5d47805dab15ec69b9566357231803321f533fd3",
+        "src/assets/diagrams/ch26/a295-01-client-edge-and-network-evidence.png": "628ab8752ff56814d0d417316d60ea45ada424a16a6ae610e68da4eed2d85f2a"
+      }
+    },
+    {
+      "id": "a295-02-trace-call-route-and-exchange",
+      "title": "四层身份中，连接尝试与 HTTP 交换不是一对一",
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a295-02-trace-call-route-and-exchange.svg",
+        "src/assets/diagrams/ch26/a295-02-trace-call-route-and-exchange.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a295-02-trace-call-route-and-exchange",
+      "sources": [
+        "https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a295-02-trace-call-route-and-exchange.svg": "f1b4ea5908091b3dad13f90ee8c3a77a4f64317a2904074237a269e7d0e69de0",
+        "src/assets/diagrams/ch26/a295-02-trace-call-route-and-exchange.png": "3bd9ad218395c0611ee914ec5b00f5f0e4195fed04afd1f845a3fe45135a82a4"
+      }
+    },
+    {
+      "id": "a295-03-fast-fallback-and-exchange-tracks",
+      "title": "Fast Fallback、胜出连接与后续交换保留各自时间范围",
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a295-03-fast-fallback-and-exchange-tracks.svg",
+        "src/assets/diagrams/ch26/a295-03-fast-fallback-and-exchange-tracks.png"
+      ],
+      "layout": "perfetto-tracks",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a295-03-fast-fallback-and-exchange-tracks",
+      "sources": [
+        "https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.1/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a295-03-fast-fallback-and-exchange-tracks.svg": "029f0c9b42cfa8561c9524ef774949796e385637d9ff6ce22798c5dc73e04095",
+        "src/assets/diagrams/ch26/a295-03-fast-fallback-and-exchange-tracks.png": "1776a76800932eaa4f80c542308b850579fcf1919560ccc4482c18662d0cb54b"
+      }
+    },
+    {
+      "id": "a295-04-cronet-clock-time-and-byte-boundaries",
+      "title": "Cronet 143 API：同名时间和字节字段仍有不同边界",
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a295-04-cronet-clock-time-and-byte-boundaries.svg",
+        "src/assets/diagrams/ch26/a295-04-cronet-clock-time-and-byte-boundaries.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a295-04-cronet-clock-time-and-byte-boundaries",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics",
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlResponseInfo",
+        "https://dl.google.com/dl/android/maven2/org/chromium/net/cronet-api/143.7445.0/cronet-api-143.7445.0.aar"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a295-04-cronet-clock-time-and-byte-boundaries.svg": "a5ebb238785a67d2c33bddf08846cccbfec320cb5460143035509fe102b61d4b",
+        "src/assets/diagrams/ch26/a295-04-cronet-clock-time-and-byte-boundaries.png": "1b3027e816ca03924268869d272fc46aeb1b52d9abb5d8ea4cf3c15a287802e2"
+      }
+    },
+    {
+      "id": "a295-05-protocol-neutral-stages-and-unknowns",
+      "title": "QUIC、连接复用与缺测状态不能套 TCP 固定阶段",
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a295-05-protocol-neutral-stages-and-unknowns.svg",
+        "src/assets/diagrams/ch26/a295-05-protocol-neutral-stages-and-unknowns.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a295-05-protocol-neutral-stages-and-unknowns",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics",
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/UrlResponseInfo"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a295-05-protocol-neutral-stages-and-unknowns.svg": "d6f8ec9f702217e7da6d21f1e91e6ae9e353119f4ae66e322f1c6dd368f47153",
+        "src/assets/diagrams/ch26/a295-05-protocol-neutral-stages-and-unknowns.png": "7db5e9953c9be34ea0c4b31d9c129f51eb355eace68b69bbaf91ef40107a0b4d"
+      }
+    },
+    {
+      "id": "a295-06-trafficstats-valid-difference-window",
+      "title": "TrafficStats 差值先验证计数器身份和区间有效性",
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a295-06-trafficstats-valid-difference-window.svg",
+        "src/assets/diagrams/ch26/a295-06-trafficstats-valid-difference-window.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a295-06-trafficstats-valid-difference-window",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework-t/src/android/net/TrafficStats.java",
+        "https://developer.android.com/reference/android/net/TrafficStats"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a295-06-trafficstats-valid-difference-window.svg": "46482de73bcfc47cdf8d6c2e36cbd81a5413fd4dc1c75d14b4b5ffdc57678e4a",
+        "src/assets/diagrams/ch26/a295-06-trafficstats-valid-difference-window.png": "40e9ea729e99f9f81dd1f0ebb3ddf637d683d7552a48667a2e25b421af2840d1"
+      }
+    },
+    {
+      "id": "a295-07-network-callback-snapshot-and-selected-network",
+      "title": "网络快照绑定请求所选网络，不把默认变化当断网",
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a295-07-network-callback-snapshot-and-selected-network.svg",
+        "src/assets/diagrams/ch26/a295-07-network-callback-snapshot-and-selected-network.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a295-07-network-callback-snapshot-and-selected-network",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java",
+        "https://developer.android.com/develop/connectivity/network-ops/reading-network-state"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a295-07-network-callback-snapshot-and-selected-network.svg": "74df991d44143ff1c490e4eafa01e7c30797d7609c5fb159b693869697b81b96",
+        "src/assets/diagrams/ch26/a295-07-network-callback-snapshot-and-selected-network.png": "2e16b3361342cb88f2bb69f4f510c4660a8a6aa71bfe45aac3863a8bd8aa1e0c"
+      }
+    },
+    {
+      "id": "a295-08-hook-boundaries-and-fail-open",
+      "title": "统一库与官方事件为主，Hook 仅补命中路径",
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a295-08-hook-boundaries-and-fail-open.svg",
+        "src/assets/diagrams/ch26/a295-08-hook-boundaries-and-fail-open.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a295-08-hook-boundaries-and-fail-open",
+      "sources": [
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.1/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt",
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a295-08-hook-boundaries-and-fail-open.svg": "18c8d2086cdf44920f958f568b1d10cd9a2ad66afef8fcc4ff095a507eb69467",
+        "src/assets/diagrams/ch26/a295-08-hook-boundaries-and-fail-open.png": "6f86f7df83471a0858a3dfd006f5163680700e05ec17c75b90d5d4e70352266d"
+      }
+    },
+    {
+      "id": "a295-09-exchange-reconciliation-and-missing-samples",
+      "title": "交换对账同时保留入口前失败与遥测缺口",
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a295-09-exchange-reconciliation-and-missing-samples.svg",
+        "src/assets/diagrams/ch26/a295-09-exchange-reconciliation-and-missing-samples.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a295-09-exchange-reconciliation-and-missing-samples",
+      "sources": [
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a295-09-exchange-reconciliation-and-missing-samples.svg": "f2909a4ce4cc548ac7ab79ce83ebaca6e3e3f72117244b0d3cbb9783124c1719",
+        "src/assets/diagrams/ch26/a295-09-exchange-reconciliation-and-missing-samples.png": "91a5049197d64a9d7cd17af75256a03cc154587c22dfe1667de2d0bbd6f0bde3"
+      }
+    },
+    {
+      "id": "a295-10-alerting-coverage-and-tail-evidence",
+      "title": "告警同时判断用户伤害、分布与数据健康",
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a295-10-alerting-coverage-and-tail-evidence.svg",
+        "src/assets/diagrams/ch26/a295-10-alerting-coverage-and-tail-evidence.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a295-10-alerting-coverage-and-tail-evidence",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.1/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a295-10-alerting-coverage-and-tail-evidence.svg": "c96497901bc422314c2ca19ad511ff59121b6777b1e104a01267eea2389ef407",
+        "src/assets/diagrams/ch26/a295-10-alerting-coverage-and-tail-evidence.png": "d085e9ecaf46399c42960cd33138ce6cc8fab02f32caa2f01635b73f95e99c1e"
+      }
+    },
+    {
+      "id": "a296-01-four-power-evidence-scopes",
+      "title": "状态、UID 活动、模型归因与设备能量分别回答问题",
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a296-01-four-power-evidence-scopes.svg",
+        "src/assets/diagrams/ch26/a296-01-four-power-evidence-scopes.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a296-01-four-power-evidence-scopes",
+      "sources": [
+        "https://developer.android.com/topic/performance/power/battery-historian",
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings",
+        "https://developer.android.com/reference/android/os/health/UidHealthStats"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a296-01-four-power-evidence-scopes.svg": "66e2451f07f7a2b0c4fc146c7810080479418903374cea1282217e2f0fa16aac",
+        "src/assets/diagrams/ch26/a296-01-four-power-evidence-scopes.png": "d3567c15c948039eaf21d4aaf0baf3c1c3db4ddb22d2eacf42dca5530f45a40f"
+      }
+    },
+    {
+      "id": "a296-02-battery-services-and-hardware",
+      "title": "活动统计与硬件功耗通过系统内部接口协作",
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a296-02-battery-services-and-hardware.svg",
+        "src/assets/diagrams/ch26/a296-02-battery-services-and-hardware.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a296-02-battery-services-and-hardware",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/PowerAttributor.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a296-02-battery-services-and-hardware.svg": "b7738fd918c25774070458951c569911f1966326f7da2860911ae177715df452",
+        "src/assets/diagrams/ch26/a296-02-battery-services-and-hardware.png": "fa0259cf8e991eb90238fb1027dbca323a7ad0f2c48ce2edb3da1ebdadf4e1e0"
+      }
+    },
+    {
+      "id": "a296-03-activity-samples-to-uid-attribution",
+      "title": "组件样本进入有界历史，再按状态处理并组装查询",
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a296-03-activity-samples-to-uid-attribution.svg",
+        "src/assets/diagrams/ch26/a296-03-activity-samples-to-uid-attribution.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a296-03-activity-samples-to-uid-attribution",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/PowerAttributor.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/BatteryUsageStatsProvider.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/stats/processor/CpuPowerStatsProcessor.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a296-03-activity-samples-to-uid-attribution.svg": "0c112adac9171fb7ab7400d951ee816ab339725769aa4c12d6711eeab1b7ab8b",
+        "src/assets/diagrams/ch26/a296-03-activity-samples-to-uid-attribution.png": "79b20ba51ba479ec76505dc08ac6cd46c9f7027b8c3778e0230a55ca3e549f95"
+      }
+    },
+    {
+      "id": "a296-04-logger-versus-historian-cadence",
+      "title": "内部 logger 周期不能推导 Historian 的“实时采样率”",
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a296-04-logger-versus-historian-cadence.svg",
+        "src/assets/diagrams/ch26/a296-04-logger-versus-historian-cadence.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a296-04-logger-versus-historian-cadence",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/TimerTrigger.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/BatteryTrigger.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsLogger.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a296-04-logger-versus-historian-cadence.svg": "aec4f97dc2564170471d4ebf9500ea215d6b1327f002fdac70cfaa2712aeb441",
+        "src/assets/diagrams/ch26/a296-04-logger-versus-historian-cadence.png": "db3d5af4118aa7ed99d09bcb2bb07229568510d6c8bd860c9de5a851b5a5eafc"
+      }
+    },
+    {
+      "id": "a296-05-controlled-bugreport-capture",
+      "title": "专用测试设备的受控证据采集流程",
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a296-05-controlled-bugreport-capture.svg",
+        "src/assets/diagrams/ch26/a296-05-controlled-bugreport-capture.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a296-05-controlled-bugreport-capture",
+      "sources": [
+        "https://developer.android.com/topic/performance/power/setup-battery-historian",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a296-05-controlled-bugreport-capture.svg": "f9740b0b616b490d5d933146fd93e0e28018f8fdb5898d473e1d3a366f419f5f",
+        "src/assets/diagrams/ch26/a296-05-controlled-bugreport-capture.png": "195a848d8bd915900644a06bf4a253a7761dc252924658a89391d34e0a9c1a39"
+      }
+    },
+    {
+      "id": "a296-06-energy-power-and-work-denominators",
+      "title": "能量、平均功率与工作产出放在同一有效窗口",
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a296-06-energy-power-and-work-denominators.svg",
+        "src/assets/diagrams/ch26/a296-06-energy-power-and-work-denominators.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a296-06-energy-power-and-work-denominators",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics#power-metric"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a296-06-energy-power-and-work-denominators.svg": "5a7a606b6f0d2f7868b726dfa3fba3dab613874f1802de6c43f740129eff7c8c",
+        "src/assets/diagrams/ch26/a296-06-energy-power-and-work-denominators.png": "8493d193dab6adcd9a2b3ba056e3981fc6ebf4e2c2e8a408c0cef9a8c313ab37"
+      }
+    },
+    {
+      "id": "a296-07-power-monitor-valid-window",
+      "title": "PowerMonitor：按每个通道的样本时间验证差分",
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a296-07-power-monitor-valid-window.svg",
+        "src/assets/diagrams/ch26/a296-07-power-monitor-valid-window.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a296-07-power-monitor-valid-window",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java",
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a296-07-power-monitor-valid-window.svg": "de4759cdd03540d9ce5d371521fcff6d8e9679b0f518868ce5dc6e2be19812a3",
+        "src/assets/diagrams/ch26/a296-07-power-monitor-valid-window.png": "96f35d216fba71c4f5fc56a78481e8a8b8669aa3e3ca7e7f27137d65af2249f8"
+      }
+    },
+    {
+      "id": "a296-08-uid-health-battery-state-and-privileges",
+      "title": "普通 App 的三条公开读取路径保持不同单位与重置语义",
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a296-08-uid-health-battery-state-and-privileges.svg",
+        "src/assets/diagrams/ch26/a296-08-uid-health-battery-state-and-privileges.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a296-08-uid-health-battery-state-and-privileges",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/HealthStatsBatteryStatsWriter.java?format=TEXT",
+        "https://developer.android.com/reference/android/os/BatteryManager",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/BatteryStatsManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a296-08-uid-health-battery-state-and-privileges.svg": "95d435825bfaa47ab3ad47da0c9ab90981cf663968d8c06053eca5b178bc9a3c",
+        "src/assets/diagrams/ch26/a296-08-uid-health-battery-state-and-privileges.png": "1be456f2b5c7a7205da6bd0b9751786d65d1aab3447caa19de6339e142da4a52"
+      }
+    },
+    {
+      "id": "a296-09-wakelock-overlap-and-task-tracks",
+      "title": "WakeLock 重叠时长不是 CPU awake 时间，也不是任务能量",
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a296-09-wakelock-overlap-and-task-tracks.svg",
+        "src/assets/diagrams/ch26/a296-09-wakelock-overlap-and-task-tracks.png"
+      ],
+      "layout": "perfetto-tracks",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a296-09-wakelock-overlap-and-task-tracks",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls",
+        "https://developer.android.com/develop/background-work/background-tasks/awake/wakelock/identify-wls"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a296-09-wakelock-overlap-and-task-tracks.svg": "db7a3d7fd5418677279e52c797a011f23736551d40a6eb84204449db53cde013",
+        "src/assets/diagrams/ch26/a296-09-wakelock-overlap-and-task-tracks.png": "c23336cae13435c195bfc4a36d350947210b639565da91b64aeefcba90fc453a"
+      }
+    },
+    {
+      "id": "a296-10-network-activity-and-radio-energy",
+      "title": "网络字节是活动量，能耗还受无线状态与完成方式影响",
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a296-10-network-activity-and-radio-energy.svg",
+        "src/assets/diagrams/ch26/a296-10-network-activity-and-radio-energy.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a296-10-network-activity-and-radio-energy",
+      "sources": [
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics#power-metric",
+        "https://developer.android.com/reference/android/os/health/UidHealthStats",
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a296-10-network-activity-and-radio-energy.svg": "77a6e9f4f737eab09319112b7c1b03e9917237a9bf40891bebf6d46bda54959e",
+        "src/assets/diagrams/ch26/a296-10-network-activity-and-radio-energy.png": "90997828a44f6e9beb7ea938cdebda76830fc6934aa54639241e4cea854043e4"
+      }
+    },
+    {
+      "id": "a296-11-rail-samples-noise-and-app-attribution",
+      "title": "轨读数的分辨率和覆盖先于“峰值归因”",
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a296-11-rail-samples-noise-and-app-attribution.svg",
+        "src/assets/diagrams/ch26/a296-11-rail-samples-noise-and-app-attribution.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a296-11-rail-samples-noise-and-app-attribution",
+      "sources": [
+        "https://developer.android.com/studio/profile/power-profiler",
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a296-11-rail-samples-noise-and-app-attribution.svg": "bf588f2075806ac6b996c12148e3907bf6899d28907a3042bf6e4cc1414c1eea",
+        "src/assets/diagrams/ch26/a296-11-rail-samples-noise-and-app-attribution.png": "c533a9809eba7f410c1b6ec5f4b08ef16d0f69a397aa314ba32265e817adfb72"
+      }
+    },
+    {
+      "id": "a296-12-apm-scopes-selection-and-device-health",
+      "title": "线上留存来源与支持状态，跨设备按成功工作量比较",
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a296-12-apm-scopes-selection-and-device-health.svg",
+        "src/assets/diagrams/ch26/a296-12-apm-scopes-selection-and-device-health.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a296-12-apm-scopes-selection-and-device-health",
+      "sources": [
+        "https://developer.android.com/reference/android/os/BatteryManager",
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings",
+        "https://developer.android.com/reference/android/os/health/UidHealthStats"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a296-12-apm-scopes-selection-and-device-health.svg": "4e042e721a9d5c2bc378abfaf0b03d715c0f21409630219f4730cdbfeb2d30d9",
+        "src/assets/diagrams/ch26/a296-12-apm-scopes-selection-and-device-health.png": "f2b245f4e1e09838c89dad92fdcd8ebe59d6550e007a23c7d404d176f7a057ed"
+      }
     }
   ],
   "corrections": [
@@ -18653,6 +19767,536 @@
       ],
       "article": "src/part5-app/ch26-observability/07-application-start-info.md",
       "why": "数据字段约束同步修正时基。"
+    },
+    {
+      "before": "last_verified: '2026-10-22'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮全文/当前官方指标与Reporting schema复核，不声称读取用户Play控制台或调用带凭据API。",
+      "sources": [
+        "https://developers.google.com/play/developer/reporting/metricset-intro",
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "why": "本轮全文/当前官方指标与Reporting schema复核，不声称读取用户Play控制台或调用带凭据API。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-10-22'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮全文/当前官方指标与Reporting schema复核，不声称读取用户Play控制台或调用带凭据API。",
+      "sources": [
+        "https://developers.google.com/play/developer/reporting/metricset-intro",
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "why": "本轮全文/当前官方指标与Reporting schema复核，不声称读取用户Play控制台或调用带凭据API。"
+    },
+    {
+      "before": "verified 2026-10-22",
+      "after": "reviewed 2026-10-25; threshold operators, game/watch scope, request cohort/granularity, distinctUsers and freshness ingestion boundaries rechecked; documentation only, no authenticated API queries",
+      "reason": "更新本轮实际核验范围和执行边界。",
+      "sources": [
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate/query",
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.slowstartrate/query"
+      ],
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "why": "更新本轮实际核验范围和执行边界。"
+    },
+    {
+      "before": "指标口径以 2026 年 10 月 22 日可见的公开文档为准",
+      "after": "指标口径以2026年10月25日本轮可见的公开文档为准",
+      "reason": "更新正文核对日；保留Play政策与平台源码分界。",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "why": "更新正文核对日；保留Play政策与平台源码分界。"
+    },
+    {
+      "before": "截至 2026 年 10 月 22 日",
+      "after": "截至2026年10月25日",
+      "reason": "本轮核验时2027年2月仍未到来，保持未来政策语态。",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "why": "本轮核验时2027年2月仍未到来，保持未来政策语态。"
+    },
+    {
+      "before": "Slow Sessions 的 present-to-present 指相邻两帧送达屏幕合成端的时间间隔；thermal status 是设备因温度变化进入的性能限制状态。",
+      "after": "Slow Sessions的present-to-present是按SurfaceFlinger采集的应用surface相邻帧呈现时间估计出帧间隔，不是应用提交BufferQueue的时刻差。thermal status表示系统报告的热压力等级，不能单靠该整数断言CPU/GPU已降到某个频率。",
+      "reason": "区分呈现与应用提交时点，热压力等级也不直接等于具体频率限制状态。",
+      "sources": [
+        "https://developer.android.com/google/play/vitals/slow-session",
+        "https://developer.android.com/topic/performance/vitals/render",
+        "https://developer.android.com/reference/android/os/PowerManager"
+      ],
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "why": "区分呈现与应用提交时点，热压力等级也不直接等于具体频率限制状态。"
+    },
+    {
+      "before": "置信区间（估计值可能落入的范围）",
+      "after": "置信区间（按预设方法刻画效应估计不确定性的区间）",
+      "reason": "避免将已得到的点估计误称为随机待落入区间的目标。",
+      "sources": [
+        "https://developers.google.com/play/developer/reporting/metricset-intro"
+      ],
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "why": "避免将已得到的点估计误称为随机待落入区间的目标。"
+    },
+    {
+      "before": "定时任务应先读 freshness，只在数据推进后拉取新增区间，并记录服务端 freshness、抓取时间、API 版本和请求维度。",
+      "after": "入仓任务先按粒度读取freshness，以最新可用点限制查询终点，并保存抓取时刻、API版本、cohort及完整维度。freshness不是历史点永不修订的承诺：增量回读允许重叠，按事实键upsert，并配置有界历史复核；分页未完整或API失败时不推进完成水位，不把失败批次写成零。",
+      "reason": "freshness只描述最新可用点，严格只拉新增区间会缺少重试补洞与历史复核；工程协议按API契约补完整状态。",
+      "sources": [
+        "https://developers.google.com/play/developer/reporting/metricset-intro",
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate/query"
+      ],
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "why": "freshness只描述最新可用点，严格只拉新增区间会缺少重试补洞与历史复核；工程协议按API契约补完整状态。"
+    },
+    {
+      "before": "| Play metric fact（Play 指标事实表） | package（包名）、metric set、metric、aggregation period（聚合周期）、start time、维度集合、rate、`distinctUsers`、freshness | 保留官方聚合值和查询条件 |",
+      "after": "| Play metric fact（Play指标事实表） | package、API版本、metric set、metric、cohort、聚合粒度、时区、start time、维度集合、value与单位、distinctUsers、freshness | 保留官方值及完整查询身份；value可为率、计数或内存分位数，不一律命名rate |",
+      "reason": "正文已经引入内存分位数，事实表不该只有rate；缺cohort/时区可能在同键下覆盖不同查询。",
+      "sources": [
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.crashrate/query",
+        "https://developers.google.com/play/developer/reporting/metricset-intro",
+        "https://developer.android.com/google/play/vitals/memory-usage"
+      ],
+      "article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "why": "正文已经引入内存分位数，事实表不该只有rate；缺cohort/时区可能在同键下覆盖不同查询。"
+    },
+    {
+      "before": "last_verified: '2026-09-30'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮阅读全文并核对17r1/AndroidX固定版本源码及当前官方说明；未执行设备或数据库测量。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/room",
+        "https://developer.android.com/jetpack/androidx/releases/sqlite"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "本轮阅读全文并核对17r1/AndroidX固定版本源码及当前官方说明；未执行设备或数据库测量。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-09-30'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮阅读全文并核对17r1/AndroidX固定版本源码及当前官方说明；未执行设备或数据库测量。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/room",
+        "https://developer.android.com/jetpack/androidx/releases/sqlite"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "本轮阅读全文并核对17r1/AndroidX固定版本源码及当前官方说明；未执行设备或数据库测量。"
+    },
+    {
+      "before": "retrieved 2026-09-30",
+      "after": "reviewed 2026-10-25; fixed Room 2.8.5 Android sources, instrumentation scope, clocks, AtomicFile and EQP boundaries also verified; documentation/source review only",
+      "reason": "如实更新本轮源码核验范围。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/room/room-runtime-android/2.8.5/room-runtime-android-2.8.5-sources.jar",
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/instrumentation/InstrumentationScope"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "如实更新本轮源码核验范围。"
+    },
+    {
+      "before": "截至 2026 年 9 月 30 日",
+      "after": "截至2026年10月25日",
+      "reason": "复核当前稳定线：SQLite2.7.1、Room2.8.5仍正确，预览版本不替换稳定基线。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/sqlite",
+        "https://developer.android.com/jetpack/androidx/releases/room"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "复核当前稳定线：SQLite2.7.1、Room2.8.5仍正确，预览版本不替换稳定基线。"
+    },
+    {
+      "before": "两种时间要分开记。wall time 很长而当前线程 CPU time 很短，可能是调度、锁或 I/O 等待；两者都高，更像应用代码在计算。我们用这个对比选下一步排查方向；要认定内核 I/O 是原因，还要靠开发设备上的 trace。",
+      "after": "两种时间分开记：区间耗时用同一单调时钟，不用可校准的日历时间；并记录是否包含设备深睡。只有同步操作的首尾位于同一OS线程时，当前线程CPU时间差才可与该区间比较。DAO协程跨线程或把工作交给其他线程时，首尾当前线程CPU差不代表整个操作；应另采分线程运行片段或明确范围的进程CPU指标。在线程范围成立时，wall高而CPU低可能来自调度、锁或I/O等待，仍不能单独证明磁盘慢，需trace补证据。",
+      "reason": "跨线程首尾CPU差可无意义；耗时也不应使用可跳变日历时钟。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Debug",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "跨线程首尾CPU差可无意义；耗时也不应使用可跳变日历时钟。"
+    },
+    {
+      "before": "默认只采集稳定类别、受控指纹（用于聚合同类对象）和应用调用点，受控指纹用来把同类对象聚合到一起",
+      "after": "默认只采集稳定类别、用于聚合同类对象的受控指纹和应用调用点",
+      "reason": "删除重复解释，保持隐私字段边界。",
+      "sources": [
+        "https://developer.android.com/reference/androidx/room/RoomDatabase.QueryCallback"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "删除重复解释，保持隐私字段边界。"
+    },
+    {
+      "before": "| 编译期插桩（构建时在字节码中加入观测代码） | 自有字节码中的文件入口、DAO 调用、事务方法 | Native、反射调用、已编译三方库和系统内部 I/O | 可控模块的低采样观测；升级 Android Gradle Plugin（AGP）时做字节码回归 |",
+      "after": "| 编译期插桩（构建时在字节码中加入观测代码） | 被选中并实际转换的文件入口、DAO和事务字节码；应用变体用AGP InstrumentationScope.ALL还可含库依赖 | Native、系统内部I/O、未转换或运行时生成的代码；反射是否可见取决于目标方法/调用点是否被插桩 | PROJECT仅本项目；ALL含依赖但不适用于library项目；记录实际scope/排除项并回归AGP与打包 |",
+      "reason": "AGP明确ALL包含依赖类，原文把已编译三方库整体排除不成立；反射本身也不必然绕过目标方法插桩。",
+      "sources": [
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/instrumentation/InstrumentationScope"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "AGP明确ALL包含依赖类，原文把已编译三方库整体排除不成立；反射本身也不必然绕过目标方法插桩。"
+    },
+    {
+      "before": "`coverage（本次覆盖范围）_version`",
+      "after": "`coverage_version`（本次覆盖范围的版本）",
+      "reason": "修复机器字段名中插入自然语言解释。",
+      "sources": [
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/instrumentation/InstrumentationScope"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "修复机器字段名中插入自然语言解释。"
+    },
+    {
+      "before": "这段代码只用来生成 SQL 指纹和参数类型，不保存参数值；实际工程还要限制队列长度，并对回调自身做采样。",
+      "after": "下面的lambda对当前fun interface有效，示例采用未配置SQLiteDriver的SupportSQLiteOpenHelper路径。固定Room2.8.5源码在配置SQLiteDriver后会拒绝QueryCallback，不能直接把该回调接到BundledSQLiteDriver；需要在自有driver/DAO封装上观测。拦截器会复制或缓存bind参数，并在调用delegate前派发协程：回调到达不表示SQL执行成功，也不保证早于SQL完成。只记录参数类型并不消除Room内部暂时持有原始SQL/参数的事实。\n\n示例依赖项目提供的normalizer、queryObserver和queryCallbackExecutor。生产实现应让归一化/记录失败止于诊断路径，记录丢弃原因；限制上游启用范围和派发积压并测量参数保留成本。仅在回调内采样，不能避免此前拦截、复制和派发成本。",
+      "reason": "固定版本源码揭示driver组合拒绝、异步派发与敏感参数保留；不能声称仅看参数类型即完全不接触原值。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/room/room-runtime-android/2.8.5/room-runtime-android-2.8.5-sources.jar",
+        "https://developer.android.com/reference/androidx/room/RoomDatabase.QueryCallback"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "固定版本源码揭示driver组合拒绝、异步派发与敏感参数保留；不能声称仅看参数类型即完全不接触原值。"
+    },
+    {
+      "before": "`normalizer`（归一化器） 要先把 SQL 的等价写法归一、删掉敏感字面量，再算受控指纹。",
+      "after": "`normalizer`应使用与目标SQLite语法匹配的词法/解析器，先去除可能带数据的注释，并替换字符串、数值和BLOB字面量，再做受控归一化指纹；不能靠简单正则覆盖引号与转义。解析失败时只记unknown/错误类别，不回退上传原始SQL。",
+      "reason": "SQL注释与各种字面量均可携带数据，归一化失败不能泄露原SQL。",
+      "sources": [
+        "https://www.sqlite.org/lang_comment.html",
+        "https://www.sqlite.org/lang_expr.html"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "SQL注释与各种字面量均可携带数据，归一化失败不能泄露原SQL。"
+    },
+    {
+      "before": "算出 miss rate（未命中率），也就是未命中率",
+      "after": "算出miss rate（未命中率）",
+      "reason": "去掉重复释义，保留仅可用连接与隐藏接口边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/database/sqlite/SQLiteConnectionPool.java"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "去掉重复释义，保留仅可用连接与隐藏接口边界。"
+    },
+    {
+      "before": "占位符要在同一 schema（数据库结构定义）、有代表性数据量的副本上绑定。",
+      "after": "占位符应在同一SQLite实现、同一schema且有代表性数据与统计信息的一致副本上绑定。使用引擎支持的备份/受控快照流程；WAL数据库不能只复制正在写入的.db而漏掉已提交的WAL内容。",
+      "reason": "执行计划需要一致数据环境，裸拷活动.db可能不含WAL中已提交内容。",
+      "sources": [
+        "https://www.sqlite.org/backup.html",
+        "https://www.sqlite.org/eqp.html"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "执行计划需要一致数据环境，裸拷活动.db可能不含WAL中已提交内容。"
+    },
+    {
+      "before": "用 `BundledSQLiteDriver`（例如 `BundledSQLiteDriver`） 时",
+      "after": "用`BundledSQLiteDriver`时",
+      "reason": "删除重复驱动名称。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/sqlite"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "删除重复驱动名称。"
+    },
+    {
+      "before": "driver 提供时的主/扩展错误码（driver 提供时）",
+      "after": "driver可提供的主/扩展错误码",
+      "reason": "删除重复条件。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/sqlite"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "删除重复条件。"
+    },
+    {
+      "before": "应用私有的可替换文件可以用 `AtomicFile`，或者采用“先写临时文件，成功后以 rename 替换目标”的协议；数据库文件交给 SQLite 的事务与 journal/WAL 日志机制，我们不自行拼装，也不远程删除 `.db`、`-wal`、`-shm` 文件。",
+      "after": "应用私有可替换文件可按AtomicFile的startWrite/finishWrite/failWrite协议处理；finishWrite会关闭、sync并提交，但AtomicFile不提供线程或进程间锁，调用者须串行化访问。自行实现临时文件+rename时，rename只提供命名替换边界，不能单独承诺断电持久化；按需求处理写入/同步失败、文件fsync和父目录fsync，并验证目标文件系统。数据库交给SQLite事务与journal/WAL，不自行拼装或远程删除.db、-wal、-shm。",
+      "reason": "原文简单rename协议易被误解为持久化保证，AtomicFile也不等于并发控制。",
+      "sources": [
+        "https://developer.android.com/reference/android/util/AtomicFile",
+        "https://man7.org/linux/man-pages/man2/fsync.2.html"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "原文简单rename协议易被误解为持久化保证，AtomicFile也不等于并发控制。"
+    },
+    {
+      "before": "规则输出应包含 schema 版本、表行数范围、计划文本和人工处置状态。",
+      "after": "EQP输出格式不是稳定的机器接口，SQLite官方明确警告其可能随版本改变；自动规则应固定SQLite版本、维护解析兼容性，未知格式输出unknown，不能当“无问题”。规则还应保留schema版本、表行数范围、计划文本和人工处置状态。",
+      "reason": "增加官方明确的EQP输出不稳定契约，避免自动分析静默误判。",
+      "sources": [
+        "https://www.sqlite.org/eqp.html"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "增加官方明确的EQP输出不稳定契约，避免自动分析静默误判。"
+    },
+    {
+      "before": "- `RoomDatabase.QueryCallback` 仍会为每条执行的查询触发回调，官方继续提示它的运行成本；开启前我们先按实际查询量测一遍。",
+      "after": "- Room2.8.5的QueryCallback用于SupportSQLiteOpenHelper路径，不能与已配置的SQLiteDriver组合；它通知SQL调用，不提供成功状态或执行区间。官方仍提示成本，启用前应核对版本、覆盖、派发积压与参数保留。",
+      "reason": "与上文固定版本源码核验一致，删除跨driver普适的错误表述。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/room/room-runtime-android/2.8.5/room-runtime-android-2.8.5-sources.jar",
+        "https://developer.android.com/reference/androidx/room/RoomDatabase.QueryCallback"
+      ],
+      "article": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "why": "与上文固定版本源码核验一致，删除跨driver普适的错误表述。"
+    },
+    {
+      "before": "last_verified: '2026-10-04'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮全文、固定库源码/API工件和当前metadata复核；未发起带用户凭据请求或设备采集。",
+      "sources": [
+        "https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/maven-metadata.xml",
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics"
+      ],
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "why": "本轮全文、固定库源码/API工件和当前metadata复核；未发起带用户凭据请求或设备采集。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-10-04'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮全文、固定库源码/API工件和当前metadata复核；未发起带用户凭据请求或设备采集。",
+      "sources": [
+        "https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/maven-metadata.xml",
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics"
+      ],
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "why": "本轮全文、固定库源码/API工件和当前metadata复核；未发起带用户凭据请求或设备采集。"
+    },
+    {
+      "before": "retrieved 2026-10-04",
+      "after": "reviewed 2026-10-25; OkHttp metadata now release 5.5.1, pinned 5.5.1 EventListener also compared; route/exchange pairing and clock/TTFB boundaries audited; documentation/artifact review only",
+      "reason": "更新实际核验范围与新稳定版本，旧固定基线仍保留。",
+      "sources": [
+        "https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/maven-metadata.xml",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.1/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "why": "更新实际核验范围与新稳定版本，旧固定基线仍保留。"
+    },
+    {
+      "before": "我们把它们关联（四层请求 ID 的定义见下文「客户端阶段耗时采集」）起来，靠的是 `trace_id`、`request_id` 和 `attempt_id`，四层请求 ID 的定义见下文「客户端阶段耗时采集」。",
+      "after": "三层记录通过trace_id、request_id和实际发出的exchange_id候选关联，端侧再保留attempt与所选连接的关系；四层ID定义见下文。",
+      "reason": "删除重复解释并与HTTP交换对账范围保持一致。",
+      "sources": [
+        "https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt"
+      ],
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "why": "删除重复解释并与HTTP交换对账范围保持一致。"
+    },
+    {
+      "before": "截至 2026 年 10 月 4 日，`com.squareup.okhttp3:okhttp` 的 Maven metadata 标记 release 为 5.5.0；其",
+      "after": "截至2026年10月25日，com.squareup.okhttp3:okhttp的Maven metadata标记release为5.5.1；本轮还核对了固定tag parent-5.5.1的EventListener，其内容与下述5.5.0/5.4.0文件相同。既有固定基线的",
+      "reason": "当前metadata已5.5.1；三个tag的EventListener文件实际SHA一致，不能仅更新版本后假设相同。",
+      "sources": [
+        "https://repo1.maven.org/maven2/com/squareup/okhttp3/okhttp/maven-metadata.xml",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.1/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "why": "当前metadata已5.5.1；三个tag的EventListener文件实际SHA一致，不能仅更新版本后假设相同。"
+    },
+    {
+      "before": "所以采集器要保存有序事件和对应的 attempt/exchange，序列长什么样，就按什么样子记。",
+      "after": "采集器应保存带单调时间与序号的原始事件，按回调提供的地址/代理等公共参数配对。Fast Fallback可能并发，只有Call参数的回调未必足以唯一归属某次建连；这种情况保留unknown或候选关联，不靠“最后一次开始”硬配。各阶段可嵌套/重叠，不能直接相加推导总耗时；复用连接没有本次建连attempt也属正常。",
+      "reason": "公开回调不为所有并发事件提供独立attempt句柄，简单顺序归属和阶段求和可能错。",
+      "sources": [
+        "https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.1/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "why": "公开回调不为所有并发事件提供独立attempt句柄，简单顺序归属和阶段求和可能错。"
+    },
+    {
+      "before": "还有一个容易误读的点：DNS 命中本地缓存但没有复用 socket 时",
+      "after": "Metrics的Date时间戳按请求开始时的系统时钟锚定，内部保证相对差值不倒退；请求中途校准系统时间后，后续Date不必等于当时的日历时钟，不能与其他时钟域直接相减。另须区分getTtfbMs（请求开始至响应头首字节）和getResponseStart（响应头全部收完）；后者减requestStart不是精确TTFB。DNS命中本地缓存但没有复用socket时",
+      "reason": "补齐官方时钟与首字节/响应头结束边界，避免同名TTFB混聚合。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics"
+      ],
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "why": "补齐官方时钟与首字节/响应头结束边界，避免同名TTFB混聚合。"
+    },
+    {
+      "before": "下表用 `observed` 表示采集器看到了该阶段，`not_observed` 表示该阶段未发生或未被回调覆盖，`unsupported` 表示当前库不提供该字段。",
+      "after": "下表用observed表示看到了阶段，not_applicable表示已知无需发生（如确定复用连接而无建连），not_observed表示没拿到事件且原因未知，unsupported表示库无此能力；需要时另记采集失败/丢弃，不把这些状态混成0ms。",
+      "reason": "已知不适用与未知缺测应分开，才能判断覆盖回归。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.1/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "why": "已知不适用与未知缺测应分开，才能判断覆盖回归。"
+    },
+    {
+      "before": "每个阶段同时记录 `observed`、`not_observed` 或 `unsupported`；连接复用时阶段未发生，不能记成 0 ms",
+      "after": "每阶段保存observed/not_applicable/not_observed/unsupported等可用性；复用时已知未发生的建连不记0ms",
+      "reason": "字段表与新增可用性协议保持一致。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/RequestFinishedInfo.Metrics"
+      ],
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "why": "字段表与新增可用性协议保持一致。"
+    },
+    {
+      "before": "默认网络回调运行在 App 的 `ConnectivityManager` 专用线程",
+      "after": "无Handler重载的默认网络回调通常在应用的ConnectivityManager连接线程派发；传入Handler的重载则在指定Handler线程派发。两种情况下",
+      "reason": "公开接口存在Handler重载，不能一概指定线程。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "why": "公开接口存在Handler重载，不能一概指定线程。"
+    },
+    {
+      "before": "对账 ID 必须在客户端发起请求前生成：`trace_id` 描述完整业务请求路径，`request_id` 描述网络库调用，`attempt_id` 描述客户端路由或重试。两边各记各的账：只有请求头成功发到入口时，服务端才可能读到这些 ID，DNS、connect、TLS 阶段失败的 attempt 只存在于客户端；接入层记录收到的 ID、入口节点、协商协议、状态码、服务端处理耗时和响应字节数，客户端记录相同 ID 对应的阶段与 attempt 结局。",
+      "after": "trace_id/request_id在逻辑请求前建立；route attempt_id在端侧建立，exchange_id对应真正发送的HTTP交换。并发建连的失败候选不会发送HTTP头，复用连接的exchange也没有本次新建连attempt；因此不要假设每个attempt_id都能被写入请求头。对支持的请求路径，交换发送前注入受控request/exchange标识，客户端保存exchange到所选连接/候选attempt的关联；无法唯一关联时保留unknown。接入层只记录实际收到的标识及入口节点、协议、状态、耗时、字节；入口前失败继续留在客户端账本。",
+      "reason": "route attempt与HTTP exchange非一对一；原文要求全部attempt跨端对账不可普遍实现。",
+      "sources": [
+        "https://github.com/square/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt"
+      ],
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "why": "route attempt与HTTP exchange非一对一；原文要求全部attempt跨端对账不可普遍实现。"
+    },
+    {
+      "before": "对账的第一步，我们先把两边记录按 `request_id + attempt_id` 对起来",
+      "after": "对账先按实际透传的request_id + exchange_id（或约定的入口span）关联；attempt_id用于端侧路由账本，只有明确传输与映射契约时才作为额外键。再在相同采样、时间窗和入口覆盖下",
+      "reason": "修正默认跨端关联键，避免连接复用/并发候选/重定向造成错误配对。",
+      "sources": [
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt"
+      ],
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "why": "修正默认跨端关联键，避免连接复用/并发候选/重定向造成错误配对。"
+    },
+    {
+      "before": "三侧记录用 `trace_id`/`request_id`/`attempt_id` 对账",
+      "after": "三侧按实际透传的trace_id/request_id/exchange_id及候选attempt关系对账",
+      "reason": "摘要与修正后的对账模型一致。",
+      "sources": [
+        "https://raw.githubusercontent.com/square/okhttp/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt"
+      ],
+      "article": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "why": "摘要与修正后的对账模型一致。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "阅读全文并复核当前公开API和17r1源码；未重置设备统计或采集功耗。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java"
+      ],
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "why": "阅读全文并复核当前公开API和17r1源码；未重置设备统计或采集功耗。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "阅读全文并复核当前公开API和17r1源码；未重置设备统计或采集功耗。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/BatteryStatsService.java"
+      ],
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "why": "阅读全文并复核当前公开API和17r1源码；未重置设备统计或采集功耗。"
+    },
+    {
+      "before": "retrieved 2026-08-15",
+      "after": "reviewed 2026-10-25; PowerMonitor sample timestamps/cache, HealthStats since-charged counters and energy/work denominators additionally audited; source/documentation review only",
+      "reason": "更新核验范围，区分文档与未执行的设备实验。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/HealthStatsBatteryStatsWriter.java?format=TEXT",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+      ],
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "why": "更新核验范围，区分文档与未执行的设备实验。"
+    },
+    {
+      "before": "平均功率等于能量增量除以时间增量。",
+      "after": "平均功率等于能量增量除以时间增量：ΔE以微瓦秒、Δt以毫秒记录时，P[mW]=ΔE[μWs]/Δt[ms]；必须先确认Δt>0且读数有效，不能用请求回调耗时替代硬件样本时间。",
+      "reason": "补可审计单位换算与零时间戳防护，缓存重复读数不构成新测量。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+      ],
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "why": "补可审计单位换算与零时间戳防护，缓存重复读数不构成新测量。"
+    },
+    {
+      "before": "单次累计值要在场景前后配对读取才有意义：用同一组 `PowerMonitor` 各读一次，按各自 `timestamp` 计算非负增量，该时间戳来自 `SystemClock.elapsedRealtime()`。跨重启、计数回退或 `ENERGY_UNAVAILABLE` 的样本直接丢弃。",
+      "after": "单次累计值需在场景前后配对：同一开机周期、同一monitor身份/类型各读一次，用其getTimestampMillis（elapsedRealtime时基）验证后样本时间严格大于前样本时间，再算非负能量增量。相同timestamp可能是缓存命中，不能算0ms窗口或除出功率；记录实际样本窗口与场景边界偏差。跨重启、回退、ENERGY_UNAVAILABLE、查询失败或通道变化的区间不参与有效增量，分别保留原因。",
+      "reason": "原文未排除缓存相同时间戳/查询失败，可能得到无效功率；实际读数时间也未必精确贴合场景。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java",
+        "https://developer.android.com/reference/android/os/health/SystemHealthManager"
+      ],
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "why": "原文未排除缓存相同时间戳/查询失败，可能得到无效功率；实际读数时间也未必精确贴合场景。"
+    },
+    {
+      "before": "设备级窗口差分 |",
+      "after": "设备级窗口差分；同timestamp不算新窗口，通道重叠不重复求和 |",
+      "reason": "APM表与新增样本时间/通道范围校验保持一致。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings",
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings"
+      ],
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "why": "APM表与新增样本时间/通道范围校验保持一致。"
+    },
+    {
+      "before": "硬件通道名称可能暴露机型或硬件组合",
+      "after": "通道集合需按硬件定义核对是否互斥：电源轨、总量与modeled consumer可能覆盖相同组件，不能把所有monitor无条件求和为整机总能量。硬件通道名称可能暴露机型或硬件组合",
+      "reason": "不同计量与模型通道未承诺不重叠，直接求和可能双计。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+      ],
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "why": "不同计量与模型通道未承诺不重叠，直接求和可能双计。"
+    },
+    {
+      "before": "这些值适合作为资源代理指标，用资源活动量提示可能的能耗变化；真要落到能量，还得回到实验框架里的能量增量。",
+      "after": "这些值适合作为资源代理，不是本App焦耳数。固定17r1的HealthStatsBatteryStatsWriter有多项按STATS_SINCE_CHARGED读取，不能假设所有键都是永不重置的开机计数。前后差值须核同UID/键/单位、统计周期与reset状态；出现计数回退或周期不明时使该差值失效。资源差值与能量仍需在受控窗口关联。",
+      "reason": "HealthStats累计值不等于稳定开机累计，电池统计重置会破坏直接差值。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/HealthStatsBatteryStatsWriter.java?format=TEXT",
+        "https://developer.android.com/reference/android/os/health/HealthStats"
+      ],
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "why": "HealthStats累计值不等于稳定开机累计，电池统计重置会破坏直接差值。"
+    },
+    {
+      "before": "以每次成功同步的能量与耗时比较两组，并验证同步后的数据仍满足时效要求。",
+      "after": "按同一完整实验窗口的总观测能量/成功同步数报告每成功任务能量，失败与重试的消耗不能从分子删掉；成功数为0则该比值未定义。另报尝试数、失败率、成功耗时与数据时效，避免只挑成功样本。",
+      "reason": "仅比较成功任务选中子集可能把失败重试能耗藏掉；分母零不能输出零成本。",
+      "sources": [
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics#power-metric",
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings"
+      ],
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "why": "仅比较成功任务选中子集可能把失败重试能耗藏掉；分母零不能输出零成本。"
+    },
+    {
+      "before": "在 Power Profiler 或 PowerMonitor 里看到 `CPU`、`display`、`cellular` 等电源轨出现增量时，我们先确认这是系统范围数据，再往下解释：",
+      "after": "Power Profiler或PowerMonitor的CPU/display/cellular等轨都先按系统范围解释。两次累计读数只能给该有效窗口的能量与平均功率，不能据此重建窗口内瞬时峰值；峰值还受实际采样分辨率限制。接着检查：",
+      "reason": "累计差值不保留瞬时形状，文章峰值章节应说明可辨认分辨率。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings",
+        "https://developer.android.com/studio/profile/power-profiler"
+      ],
+      "article": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "why": "累计差值不保留瞬时形状，文章峰值章节应说明可辨认分辨率。"
     }
   ],
   "validation": {
@@ -19033,15 +20677,51 @@
       "article_positions": "passed",
       "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a292",
       "source_audit": "9 final figures and every article position actually visually reviewed. Exact Kotlin host-stub compile/run validated incomplete start/type and API35/component guards, UID fields, Map copy, maxNum cases, query failure vs empty and HOME_READY clock. Primary-source assertions verify uptimeNanos onCreate/first-frame timebase, SystemClock deep-sleep semantics, 17r1 listener list/duplicate behavior and online source-event37.2 separation. Exact reconstruction, mdbook build, local links, prompt packs and asset checks passed; no Android SDK/device startup or profiling execution."
+    },
+    "a293": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a293",
+      "source_audit": "Full 322-line frozen source read; 27 captured primary sources checked. Core threshold operators and device scopes, watch/session versus DAU denominators, 2027 memory/DEX effective date, Reporting API cohort/granularity/time-zone, rounded-user and freshness limitations verified; 9 audited corrections. All 10 final figure images and 10 rendered article positions actually reviewed. Isolated mdBook build, SVG/PNG decoding, local links and exact baseline-ledger reconstruction passed. No Android/device measurements or execution claimed."
+    },
+    "a294": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a294",
+      "source_audit": "Full 370-line frozen article read; 34 primary documentation/source/artifact captures checked. Fixed Room 2.8.5 Android source establishes fun interface validity, SQLiteDriver/query callback build rejection and asynchronous original-value retention; AGP ALL dependency scope, thread CPU boundaries, SQL comments/literals, consistent backup/EQP format and AtomicFile/fsync semantics corrected. 17 audited corrections; 16 pinned source assertions pass. All 12 final figures and rendered positions actually inspected, including refined independent StrictMode scopes and pixel-based cache/block tracks. Isolated mdBook build, local links, XML/PNG assets and exact reconstruction passed; all four code fences unchanged. No Android/SDK/device measurement claimed."
+    },
+    "a295": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a295",
+      "source_audit": "Full 240-line frozen article read. 24 primary captures plus fixed Cronet 143.7445.0 API AAR/javap and three matching OkHttp EventListener tag hashes checked; obsolete 5.x reference/changelog URLs unavailable, critical facts verified against fixed raw source. 12 corrections cover current release 5.5.1, local route-attempt versus transmitted exchange IDs, concurrent pairing ambiguity, protocol/clock/TTFB and absence states, Handler callback threading. 13 source/API assertions pass. All 10 final figures and article contexts visually inspected, with Fast Fallback figure placed beside OkHttp discussion; isolated mdBook build, exact reconstruction, assets and local links passed. No client/server integration, network measurement or device command claimed."
+    },
+    "a296": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a296",
+      "source_audit": "Full 370-line frozen article read; 29 successful primary captures reviewed (two exploratory outdated BatteryStatsImpl paths failed; actual 17r1 power/stats path captured). 10 corrections: positive per-monitor sample time, unavailable/reset windows, overlapping channels, since-charged HealthStats counters, correct units, failed/retried work in energy denominator and average-versus-instantaneous limits. Ten source/synthetic arithmetic guard checks pass. All 12 final figures and 12 rendered positions actually viewed; isolated build, exact reconstruction, local links and asset decoding pass; original shell fence unchanged and bash -n valid. No device reset, bugreport collection or energy/performance measurement performed."
     }
   },
   "last_checkpoint": {
-    "completed": 42,
+    "completed": 46,
     "total": 51,
-    "diagrams": 511,
-    "next_article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
-    "next_article_index": 293,
-    "updated_at": "2026-10-25T16:50:32.286005+08:00"
+    "diagrams": 555,
+    "next_article": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+    "next_article_index": 297,
+    "updated_at": "2026-10-25T17:19:12.034268+08:00"
   },
   "replaced_inline_diagrams": []
 }

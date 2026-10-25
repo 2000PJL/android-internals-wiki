@@ -1489,7 +1489,7 @@
     {
       "path": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
       "sha256_before": "0f3bf3c9a1fdf8ecc4672acccb7967fdc3d103c7e87d5de8396c8f919e8722e5",
-      "status": "in_progress",
+      "status": "illustrated",
       "diagrams": [
         "a234-01-window-pipeline",
         "a234-02-read-phases",
@@ -1524,19 +1524,80 @@
         "a234-31-pointer-passes",
         "a234-32-layer-read",
         "a234-33-migration-ownership",
-        "a234-34-migration-evidence"
+        "a234-34-migration-evidence",
+        "a234-35-report-version-diff"
       ],
       "article_index": 234,
       "sha256_at_assignment": "0f3bf3c9a1fdf8ecc4672acccb7967fdc3d103c7e87d5de8396c8f919e8722e5",
-      "sha256_current": "f43b9aab5b50e1635a447645c54ef54dc5207c180c3c8c4067e49ad7d3e4afab"
+      "sha256_current": "31510c3ea59e6d215dbb92bb7c2f8e974fdc71b4ffc5c325effb77ef67591629",
+      "sha256_after": "31510c3ea59e6d215dbb92bb7c2f8e974fdc71b4ffc5c325effb77ef67591629",
+      "source_audit": "62 original reference URLs audited:60direct200 and2SSL retries200. Fixed1.12 runtime/UI sources and2.3.20/2.4.10 BuildMetrics downloaded; actual compilers rerun minimal sample, retained report differences and bytecode runtime comparison gate. Firebase Auth24.2.0 actualAAR5 annotation-signature classes and missing checker POM dependency verified. Additional primary docs/artifacts200.6Gradle DSL fragments inspected/source-contract checked, no AGP project build, device benchmark or full FlutterFire matrix claimed.",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a234/added-primary-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a234/extra-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a234/retry-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a234/source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
       "sha256_before": "9406733308f25ee42953418622c49b558f06b67c0f1c7225cb8b47637ac255b4",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a235-01-phase-dependencies",
+        "a235-02-host-entries",
+        "a235-03-one-pass",
+        "a235-04-measurement-reuse",
+        "a235-05-intrinsics",
+        "a235-06-modifier-structure",
+        "a235-07-modifier-order",
+        "a235-08-subcompose-slots",
+        "a235-09-lookahead",
+        "a235-10-force-remeasure",
+        "a235-11-tracing-config",
+        "a235-12-sql-metrics",
+        "a235-13-layout-triage",
+        "a235-14-text-node-gates",
+        "a235-15-platform-text",
+        "a235-16-text-invalidation",
+        "a235-17-paragraph-reuse",
+        "a235-18-font-resolution",
+        "a235-19-background-metrics",
+        "a235-20-auto-size",
+        "a235-21-text-callback",
+        "a235-22-identity-stability",
+        "a235-23-rich-text",
+        "a235-24-measurer-key",
+        "a235-25-draw-cache-geometry",
+        "a235-26-cache-lookup-retention",
+        "a235-27-text-tracing"
+      ],
       "article_index": 235,
-      "sha256_at_assignment": "9406733308f25ee42953418622c49b558f06b67c0f1c7225cb8b47637ac255b4"
+      "sha256_at_assignment": "9406733308f25ee42953418622c49b558f06b67c0f1c7225cb8b47637ac255b4",
+      "sha256_current": "47e82aceb566d993e24828c83e135e5201743dcde02218e8a8fa32b643a55498",
+      "sha256_after": "47e82aceb566d993e24828c83e135e5201743dcde02218e8a8fa32b643a55498",
+      "source_audit": "61原始URL：59直接200，2个SSL失败经官方原源重试200；固定Compose1.12、Benchmark1.5源码契约12项；6段Kotlin实际Compiler2.4.10/API37编译、整数边界与首次0×0回调标量、2 SQL合成与真实Perfetto schema通过。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a235/retry-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a235/reused-immutable-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a235/source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
@@ -20807,7 +20868,24 @@
         "https://perfetto.dev/docs/data-sources/frametimeline",
         "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-01-window-pipeline.svg",
+          "sha256": "327a94dbc6f376c175ecef502fd2c762197c53e2a2e1967724a75655e3accdfb",
+          "bytes": 21059
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-01-window-pipeline.png",
+          "sha256": "bf990904f5fbb0bb04d3b6580d0c6e718c8efa2afbcf984a43ba47b85de12bf3",
+          "bytes": 77156,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a234-02-read-phases",
@@ -20823,7 +20901,24 @@
         "https://developer.android.com/develop/ui/compose/phases",
         "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-02-read-phases.svg",
+          "sha256": "3974efd99b6635ceae16c0c61d7e373631d6610122bab1bc233e36dc0306720d",
+          "bytes": 31247
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-02-read-phases.png",
+          "sha256": "bf53d0a4bf5ef70f37ddec45d36c481c7346b25e6d33e1b49a3b136a554b8760",
+          "bytes": 141104,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-03-skipping-rules",
@@ -20839,7 +20934,24 @@
         "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping",
         "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-03-skipping-rules.svg",
+          "sha256": "477393addd7a8045145f218c205a1083f5f61ebc186b595d94851ee55347c55c",
+          "bytes": 27518
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-03-skipping-rules.png",
+          "sha256": "f1a9dbbd70258791f2ef02c7b5dfd8d45461c03504f55612aa3bde700c088fa1",
+          "bytes": 127504,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-04-remember-derived",
@@ -20855,7 +20967,24 @@
         "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
         "https://developer.android.com/develop/ui/compose/side-effects"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-04-remember-derived.svg",
+          "sha256": "c94eeda12e74b6a020f7d62c65a3afd98f2a1187c71cb7d8cec58448a8d8bbfe",
+          "bytes": 36620
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-04-remember-derived.png",
+          "sha256": "a050128375e2572de0f32539fa5e0674c38a73a5069144984f46c5d51dacebf6",
+          "bytes": 140256,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-05-producer",
@@ -20871,7 +21000,24 @@
         "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
         "https://developer.android.com/develop/ui/compose/side-effects"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-05-producer.svg",
+          "sha256": "a5ba20e4b0fe2ee6d4c67654a86b66395a3d75f20f7a5f463ebc5989585ceb3b",
+          "bytes": 31512
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-05-producer.png",
+          "sha256": "5405717728d4cddac7a9c592168974b7cf8509f64c9eb55905b18154c12712f9",
+          "bytes": 139341,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-06-lazy-library",
@@ -20888,7 +21034,24 @@
         "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
         "https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.10.6"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-06-lazy-library.svg",
+          "sha256": "632ef09420701b63512105d800915d3245b80f8c7934b82d6cc58d0e43d33284",
+          "bytes": 25683
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-06-lazy-library.png",
+          "sha256": "99975e1557c1d46407501e3ab6d9e36e65edd8a5f0f4e9d812f45f94aff3e118",
+          "bytes": 119287,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-07-interop",
@@ -20904,7 +21067,24 @@
         "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
         "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-07-interop.svg",
+          "sha256": "7b4688e8be0b6537858dcfb966433ab9ea0d81bcd6d0ab2addb38cd1e35c2f02",
+          "bytes": 25076
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-07-interop.png",
+          "sha256": "f4a1e03f2ac6f86850f87b7735857c020ce4aec541be75952d29c373c9f97894",
+          "bytes": 132371,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-08-effect-ownership",
@@ -20920,7 +21100,24 @@
         "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
         "https://developer.android.com/develop/ui/compose/side-effects"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-08-effect-ownership.svg",
+          "sha256": "02e496f12368e85e363756841d6908aa9ba8ba894ee0b2008d0abd42db67200b",
+          "bytes": 31112
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-08-effect-ownership.png",
+          "sha256": "149406f2f8533f5a7a3aaf59cac66061963c23d40d582ac515ea029564067f30",
+          "bytes": 138297,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-09-artifact-classpath",
@@ -20936,7 +21133,24 @@
         "https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.pom",
         "https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.aar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-09-artifact-classpath.svg",
+          "sha256": "32813c3c9074e0291f7b232b3f78e5e24d5dadb82a2d41267997b80c81dde4b1",
+          "bytes": 32886
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-09-artifact-classpath.png",
+          "sha256": "b3e13fd89a848e1642f7ce8ddde38a40421f69ca48d01e2e563edbc2c1185cb7",
+          "bytes": 132575,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-10-evidence",
@@ -20953,7 +21167,24 @@
         "https://developer.android.com/develop/ui/compose/tooling/tracing",
         "https://perfetto.dev/docs/data-sources/frametimeline"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-10-evidence.svg",
+          "sha256": "912507296003d9a75aab0e2b728405e9cd3ea131b75373d92f891e2231beb003",
+          "bytes": 40189
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-10-evidence.png",
+          "sha256": "412d9fdf525e547520ce2c121fa9ef33972072e983a35d5f86cda7c8c0fd83ee",
+          "bytes": 178444,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
     },
     {
       "id": "a234-11-report-generation",
@@ -20969,7 +21200,24 @@
         "https://kotlinlang.org/docs/compose-compiler-options.html",
         "https://raw.githubusercontent.com/JetBrains/kotlin/v2.4.10/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-11-report-generation.svg",
+          "sha256": "9d6325c51ebe2e9b712f002183b8204ff2d8a594098426a34976fd4b769dbf00",
+          "bytes": 24328
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-11-report-generation.png",
+          "sha256": "3076fc3da518b4404a9d131ea06b8705fb564e565866d19c4bd42ef42c27c5c3",
+          "bytes": 85148,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a234-12-report-tags",
@@ -20985,7 +21233,24 @@
         "https://raw.githubusercontent.com/JetBrains/kotlin/v2.4.10/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt",
         "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-12-report-tags.svg",
+          "sha256": "7d6442d2053338074f1e7784f46598ac0a24b8bc2bc5eba1b118c056f4c22541",
+          "bytes": 27024
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-12-report-tags.png",
+          "sha256": "7e980b5d48a52608a75452084cb1bfef2d06b82be0a222eb820148ada8652162",
+          "bytes": 160133,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
     },
     {
       "id": "a234-13-lambda-captures",
@@ -21001,7 +21266,24 @@
         "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping",
         "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-13-lambda-captures.svg",
+          "sha256": "6d06041aac294a08a4c1f641ab9a73ab24d764b89f71b66d66026bf2042b6aa0",
+          "bytes": 25864
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-13-lambda-captures.png",
+          "sha256": "bb8c767785794561f42f4759a9bc72d87e3d49e8be4fbe2ccc11f57a8a09860f",
+          "bytes": 127447,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-14-stable-contract",
@@ -21018,7 +21300,24 @@
         "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping",
         "https://kotlinlang.org/docs/compose-compiler-options.html"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-14-stable-contract.svg",
+          "sha256": "38b37bfb1b1097e6fb8429454866078a15a3983eb860c09977e09502cdbd6797",
+          "bytes": 33784
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-14-stable-contract.png",
+          "sha256": "7b84d41f62287fa00e76d9405455cf202fa9eeaef9589e7bf79a0d2ea3c9cb2d",
+          "bytes": 134104,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-15-inspector-cost",
@@ -21034,7 +21333,24 @@
         "https://developer.android.com/develop/ui/compose/tooling/tracing",
         "https://developer.android.com/develop/ui/compose/phases"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-15-inspector-cost.svg",
+          "sha256": "6ca539d698ae242253195cf53933c995168af757e96f38555583744ffcc7b7a2",
+          "bytes": 31983
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-15-inspector-cost.png",
+          "sha256": "1476ff7f5ebf87724170b03b4a8681fe071b270f7dbd081e2c7b5c5f073000d3",
+          "bytes": 129567,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-16-trace-install",
@@ -21050,7 +21366,24 @@
         "https://developer.android.com/develop/ui/compose/tooling/tracing",
         "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-16-trace-install.svg",
+          "sha256": "3864bed03f9f098f04d60d96bb2bf5045e4a549fc39c507fc1c79e96cb053331",
+          "bytes": 20273
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-16-trace-install.png",
+          "sha256": "61d2e1723ffae7f9f6489a93981860fe9b4cacbd833acc96de49a7afa20b3178",
+          "bytes": 81748,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a234-17-trace-duration",
@@ -21066,7 +21399,24 @@
         "https://developer.android.com/develop/ui/compose/tooling/tracing",
         "https://perfetto.dev/docs/data-sources/frametimeline"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-17-trace-duration.svg",
+          "sha256": "0d8826912dc43c3dd110c64f82d7eb4c72d673cb2ab6feda0ad60e18bebb50bc",
+          "bytes": 29593
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-17-trace-duration.png",
+          "sha256": "820a38f8449b770f98321db4c6ba3af2de765fe711b857c479962931025fc3ca",
+          "bytes": 130384,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-18-snapshot-invalidation",
@@ -21082,7 +21432,24 @@
         "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
         "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-18-snapshot-invalidation.svg",
+          "sha256": "ae7194d6b7a652a2a8d0528d44f4bd387e10a29136f1b5ba581471246302aaaa",
+          "bytes": 23046
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-18-snapshot-invalidation.png",
+          "sha256": "6f6e7fe5a6d6bdc3236f702ee5b905635defa232dab7d26a13ac6418c26c0c5a",
+          "bytes": 84275,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a234-19-ci-schema",
@@ -21098,7 +21465,24 @@
         "https://raw.githubusercontent.com/JetBrains/kotlin/v2.4.10/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt",
         "https://kotlinlang.org/docs/compose-compiler-options.html"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-19-ci-schema.svg",
+          "sha256": "dfc878b23e1008b0ca1892b03203a9b090ffc472b76acd2b00cccb4ce978667f",
+          "bytes": 35297
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-19-ci-schema.png",
+          "sha256": "d06291af8425d1518422bf3325253ead084c7841a317ff14272aace891716845",
+          "bytes": 149418,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-20-migration-split",
@@ -21114,7 +21498,24 @@
         "https://kotlinlang.org/docs/compose-compiler-options.html",
         "https://kotlinlang.org/docs/releases.html"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-20-migration-split.svg",
+          "sha256": "0db5016d72eeecdd9d79a35e0b9bff67a5180fac076b5c8ad86a3bcc2f082bf2",
+          "bytes": 27618
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-20-migration-split.png",
+          "sha256": "e94b310e68ad4e64477f4d1105205028ab193dd6a3a9a293ab260140df231b7d",
+          "bytes": 105437,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
     },
     {
       "id": "a234-21-node-choice",
@@ -21130,7 +21531,24 @@
         "https://developer.android.com/develop/ui/compose/custom-modifiers",
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/Modifier.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-21-node-choice.svg",
+          "sha256": "16a869764f9dd185138028f2c09307e7c0e527b79efdfaff9ac9c9577f66b28f",
+          "bytes": 30817
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-21-node-choice.png",
+          "sha256": "154503919abe30bd6a2706e4be1fabbf9e937efce1c4a538cc7079ba77e89dbc",
+          "bytes": 135189,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-22-element-node",
@@ -21148,7 +21566,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeChain.kt",
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeKind.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-22-element-node.svg",
+          "sha256": "e14e97d3925db0e457e0df29bde8b850f93910214059a2283dfd81a7ada0c932",
+          "bytes": 31616
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-22-element-node.png",
+          "sha256": "231d0aaf47d24223120f3f7e47c411f9b399623b66b1581e5efdee1d6e11363e",
+          "bytes": 139901,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-23-node-reuse",
@@ -21164,7 +21599,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeChain.kt",
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/ModifierNodeElement.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-23-node-reuse.svg",
+          "sha256": "5f368251b1f6fcf109623380eeebc24057cc6ab7b72c94cbba05cfa7203c64ab",
+          "bytes": 22535
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-23-node-reuse.png",
+          "sha256": "473e98ce8118885cf5beafd0bac48566b08893de80e235d0abc6df293385be38",
+          "bytes": 119418,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-24-invalidate",
@@ -21181,7 +21633,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeKind.kt",
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutModifierNode.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-24-invalidate.svg",
+          "sha256": "c7505bd3363f228aa7920e319f75c0db8dd892ff6b02b67c30239d2c3c94e0c6",
+          "bytes": 28270
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-24-invalidate.png",
+          "sha256": "d154c77a00b79d0df4818d4ccfb8fdb51bfe9c26a78fc61db1ab3fea7d105ebb",
+          "bytes": 132125,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-25-node-lifecycle",
@@ -21196,7 +21665,24 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/Modifier.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-25-node-lifecycle.svg",
+          "sha256": "45aa78bbe8dc8ab40d5940215e49f44680e297bc3fc5eaf810a7285da2fd8524",
+          "bytes": 19814
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-25-node-lifecycle.png",
+          "sha256": "aa71e960dd478717c3390661ef18cecd7cdb57cbd9ca9d87efa21b34d70a5f60",
+          "bytes": 76499,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a234-26-node-coroutine",
@@ -21212,7 +21698,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/Modifier.kt",
         "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-26-node-coroutine.svg",
+          "sha256": "517c38db064237e41a1ee8f7f019dc2d995d4328a8ea5f8cc7772e07b0b44ed7",
+          "bytes": 31649
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-26-node-coroutine.png",
+          "sha256": "cb9766e4230e57f140c33285377b3c4b24593dd396107c628419900ac7bf69ff",
+          "bytes": 145583,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-27-factory-local",
@@ -21229,7 +21732,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/CompositionLocalConsumerModifierNode.kt",
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/ComposedModifier.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-27-factory-local.svg",
+          "sha256": "25f3a796ebabee5c8c5c950e0c8c94472cdc6d1163fbf92c1263c33b5587c687",
+          "bytes": 33888
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-27-factory-local.png",
+          "sha256": "33a8b10fb2c93eaed308f103a1a5c4e7984eabb0c8f8c174263c2b8f5b9d8f8b",
+          "bytes": 145202,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-28-local-observation",
@@ -21245,7 +21765,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/CompositionLocalConsumerModifierNode.kt",
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/Modifier.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-28-local-observation.svg",
+          "sha256": "6ba9c02aa404347cb24d8506060ac6d3516319355b6f3d6335dfe251f79dab07",
+          "bytes": 32076
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-28-local-observation.png",
+          "sha256": "8fa336fd46d129e19d2dbc66efdf5b6351a14f67c7c705f88b5a72959af97d80",
+          "bytes": 144537,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-29-layout-constraints",
@@ -21261,7 +21798,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutModifierNode.kt",
         "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-29-layout-constraints.svg",
+          "sha256": "c22989977208373edfc60f104b019a4ddace7e94e189b327414cd7ebbde12a99",
+          "bytes": 21887
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-29-layout-constraints.png",
+          "sha256": "5e086879aa3b98ccd978a173fb4cd58b5d27aff787a7b8fb84494fb88745a771",
+          "bytes": 81176,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a234-30-intrinsics",
@@ -21276,7 +21830,24 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutModifierNode.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-30-intrinsics.svg",
+          "sha256": "c103a8b6250bec7fea65ecc1a8cf52afb15584df25d616c09a822d42473a9a1f",
+          "bytes": 26655
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-30-intrinsics.png",
+          "sha256": "d9d132e5be7532289553a66f18d3eb0cdc9cd79776cfdc958330e761e94fdf7d",
+          "bytes": 97886,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
     },
     {
       "id": "a234-31-pointer-passes",
@@ -21292,7 +21863,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/PointerInputModifierNode.kt",
         "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-31-pointer-passes.svg",
+          "sha256": "e08decf1c28c1358c854b601620cb84de413f29c7ec94284adcfd1751b093e00",
+          "bytes": 15231
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-31-pointer-passes.png",
+          "sha256": "840e135e72f6aa0513a282b5a638c27ae434ace99990b76be5ff503e4bd3635d",
+          "bytes": 58203,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a234-32-layer-read",
@@ -21309,7 +21897,24 @@
         "https://developer.android.com/develop/ui/compose/custom-modifiers",
         "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-32-layer-read.svg",
+          "sha256": "0f7842938121108c7baa893e3ef2e5a591748a449aa0f6e348969464f857cfeb",
+          "bytes": 31794
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-32-layer-read.png",
+          "sha256": "1a95ad5a575dc5ca62a22c9cedb82bc1ad7b36b2ce22acf02821a1f09a2c85b4",
+          "bytes": 142593,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-33-migration-ownership",
@@ -21326,7 +21931,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/Modifier.kt",
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/CompositionLocalConsumerModifierNode.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-33-migration-ownership.svg",
+          "sha256": "2dccf86ec004421e13ee008fd76c6f36ecc4f4a4b6fadc448c0f884f6b9509ec",
+          "bytes": 32131
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-33-migration-ownership.png",
+          "sha256": "731a4b6b6133dd6618741a9f227cc9821658aa4ecd0136314b4f6d81fb603b98",
+          "bytes": 131958,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a234-34-migration-evidence",
@@ -21343,7 +21965,961 @@
         "https://perfetto.dev/docs/data-sources/frametimeline",
         "https://developer.android.com/develop/ui/compose/custom-modifiers"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-34-migration-evidence.svg",
+          "sha256": "d0f589226313d799be8cb24c01b569407da5bf0a5590426a89f4499b2632ea1b",
+          "bytes": 31288
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-34-migration-evidence.png",
+          "sha256": "fa5eb0902a8e0ad48e74df55c419471413e10df553da939d38f275d7374dca97",
+          "bytes": 135858,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a234-35-report-version-diff",
+      "title": "同一源码在两个编译器中的稳定性报告不同",
+      "article": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a234-35-report-version-diff.svg",
+        "src/assets/diagrams/ch22/a234-35-report-version-diff.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a234-35-report-version-diff",
+      "sources": [
+        "https://raw.githubusercontent.com/JetBrains/kotlin/v2.4.10/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a234-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a234-35-report-version-diff.svg",
+          "sha256": "a931bd368f2573682d584bd37d80fd248f7e47e59b819eec7c1e71cb1d828a5d",
+          "bytes": 27390
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a234-35-report-version-diff.png",
+          "sha256": "01346b2e7355b485d2afdee94981121070f87f878d2fe2bc8561b259e2fcd179",
+          "bytes": 120365,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-01-phase-dependencies",
+      "title": "读取依赖分别连接到组合、测量、放置与绘制",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-01-phase-dependencies.svg",
+        "src/assets/diagrams/ch22/a235-01-phase-dependencies.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-01-phase-dependencies",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/phases",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-01-phase-dependencies.svg",
+          "sha256": "a6e441e549851d8bfd55e4b7536d7cea005639c906394cb545adbee7dcd8095b",
+          "bytes": 19071
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-01-phase-dependencies.png",
+          "sha256": "4325d92ed71526fd645814e588f0243f231fbc3539ef5fd3c02556ea6828d08a",
+          "bytes": 77172,
+          "dimensions": [
+            2100,
+            855
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-02-host-entries",
+      "title": "宿主入口消费各自待处理的布局工作",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-02-host-entries.svg",
+        "src/assets/diagrams/ch22/a235-02-host-entries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-02-host-entries",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasureAndLayoutDelegate.kt",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-02-host-entries.svg",
+          "sha256": "b1bc673eb32c4cecb3ef5eb4f7da60d126cf687e11acdd107fd0dfdc7ac27bd2",
+          "bytes": 26062
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-02-host-entries.png",
+          "sha256": "a26201d634142fd7315a0d2f23f020700c993b3e5aacb624215acdc71cdef9ff",
+          "bytes": 120854,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-03-one-pass",
+      "title": "先保存一次测量结果，再按顺序放置",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-03-one-pass.svg",
+        "src/assets/diagrams/ch22/a235-03-one-pass.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-03-one-pass",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasurePassDelegate.kt",
+        "https://developer.android.com/develop/ui/compose/layouts/custom"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-03-one-pass.svg",
+          "sha256": "2d9ca66f1c21a3fc0a9326dab985624c5f19fc2af40b47c7fe73acb7835ae2d0",
+          "bytes": 29790
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-03-one-pass.png",
+          "sha256": "e67a47034f15c9d43c781637158fa12263c98de08905d0aa5bd5174c64b65adb",
+          "bytes": 134154,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-04-measurement-reuse",
+      "title": "相同约束还需没有待测量标记",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-04-measurement-reuse.svg",
+        "src/assets/diagrams/ch22/a235-04-measurement-reuse.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-04-measurement-reuse",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasurePassDelegate.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasureAndLayoutDelegate.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-04-measurement-reuse.svg",
+          "sha256": "166dcb506e8a3292d211892aeb74610b7e691d443558c1b918bd9c8ed746632a",
+          "bytes": 30412
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-04-measurement-reuse.png",
+          "sha256": "4840bec8bcb963261c744ea97cc11a2e02f8e7fdf876515c8a11a108687b9dd5",
+          "bytes": 134902,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-05-intrinsics",
+      "title": "固有尺寸查询不是第二次正式测量",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-05-intrinsics.svg",
+        "src/assets/diagrams/ch22/a235-05-intrinsics.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-05-intrinsics",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/SubcomposeLayout.kt",
+        "https://developer.android.com/develop/ui/compose/layouts/intrinsic-measurements"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-05-intrinsics.svg",
+          "sha256": "7e5a20e989f3b4e14e142357720e9b2bfb653395a0657cbb1d23de0fd2cbe929",
+          "bytes": 32601
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-05-intrinsics.png",
+          "sha256": "2423ecadea407c4d128a27e192589101d13b257471aab686994ee9acb931a37a",
+          "bytes": 135774,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-06-modifier-structure",
+      "title": "布局树与 Modifier 节点是两层结构",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-06-modifier-structure.svg",
+        "src/assets/diagrams/ch22/a235-06-modifier-structure.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-06-modifier-structure",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeChain.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-06-modifier-structure.svg",
+          "sha256": "108014c93b3a864a1f295e198591bd784678167b5fda088f9dfce32f310a127a",
+          "bytes": 23670
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-06-modifier-structure.png",
+          "sha256": "1104d9af34fefe30356918f7cca5b52e205dcd45b0fd7dd5143962e2dc6a78dd",
+          "bytes": 120084,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-07-modifier-order",
+      "title": "外到内的顺序改变约束与绘制范围",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-07-modifier-order.svg",
+        "src/assets/diagrams/ch22/a235-07-modifier-order.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-07-modifier-order",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/NodeChain.kt",
+        "https://developer.android.com/develop/ui/compose/modifiers"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-07-modifier-order.svg",
+          "sha256": "2538c69b9949d5141a354bfe575bb318e669b4fa25141688cfc77fa8f910aa3a",
+          "bytes": 23285
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-07-modifier-order.png",
+          "sha256": "c15194eda0eb19dd1870354166eb98fdad544bb842fac16ec8e0f87195ca9828",
+          "bytes": 102612,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-08-subcompose-slots",
+      "title": "槽位身份与离场复用策略分开",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-08-subcompose-slots.svg",
+        "src/assets/diagrams/ch22/a235-08-subcompose-slots.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-08-subcompose-slots",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/SubcomposeLayout.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/lazy/layout/LazyLayoutMeasureScope.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-08-subcompose-slots.svg",
+          "sha256": "531e513d0977484174ad9a217ee4509697c0c0c0a2425a58ddb3012cf4241c68",
+          "bytes": 32418
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-08-subcompose-slots.png",
+          "sha256": "a60601c7d2f7db23b24d58a0ab500d33d34a46d2b70aed031d194bba1bf436bb",
+          "bytes": 142150,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-09-lookahead",
+      "title": "目标布局与接近阶段有独立状态",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-09-lookahead.svg",
+        "src/assets/diagrams/ch22/a235-09-lookahead.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-09-lookahead",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/LookaheadScope.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-09-lookahead.svg",
+          "sha256": "c8d059a32530486020e6517c2c303a41472b873b13f88f84911c68c794b26305",
+          "bytes": 31896
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-09-lookahead.png",
+          "sha256": "4f4d9232da0ef531f8215f258f47431dc9df5a77ba4accac1c903bb3321a5b78",
+          "bytes": 140975,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-10-force-remeasure",
+      "title": "强制重测走附着 Owner 的同步入口",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-10-force-remeasure.svg",
+        "src/assets/diagrams/ch22/a235-10-force-remeasure.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-10-force-remeasure",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/RemeasurementModifier.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-10-force-remeasure.svg",
+          "sha256": "98725ee28bcecded2d8298e8e89c90abe29f49b1a417a06f0ffc6b2dc30457d1",
+          "bytes": 21437
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-10-force-remeasure.png",
+          "sha256": "489352cd2d8816248e31ec648e6b1ef0826855ff0afc751a3e163ce49fe49a01",
+          "bytes": 83164,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-11-tracing-config",
+      "title": "组合事件与详细布局事件各自配置",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-11-tracing-config.svg",
+        "src/assets/diagrams/ch22/a235-11-tracing-config.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-11-tracing-config",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/tooling/ComposeToolingFlags.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt",
+        "https://developer.android.com/develop/ui/compose/tooling/tracing"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-11-tracing-config.svg",
+          "sha256": "d295657515c59a349b3b2fb5e70bc5192a7e02e1c7c97c691796e43a51714e4a",
+          "bytes": 28950
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-11-tracing-config.png",
+          "sha256": "f8d872349088a9e1e159e2f3e69e5d15f3992f5e3546028ca7ef8de14241dcdf",
+          "bytes": 130275,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-12-sql-metrics",
+      "title": "布局聚合保留线程身份和墙钟含义",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-12-sql-metrics.svg",
+        "src/assets/diagrams/ch22/a235-12-sql-metrics.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-12-sql-metrics",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar",
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://perfetto.dev/docs/analysis/sql-tables"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-12-sql-metrics.svg",
+          "sha256": "4e362cc1782d9eff8d3c8c8eb219e23ab968f5d687be37825218be9188c55bbc",
+          "bytes": 29036
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-12-sql-metrics.png",
+          "sha256": "68b540218feef0909735c4cbb3caa52eb58206c53da29ea184aa34250215ea28",
+          "bytes": 138571,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-13-layout-triage",
+      "title": "从同一异常帧区分三种布局问题",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-13-layout-triage.svg",
+        "src/assets/diagrams/ch22/a235-13-layout-triage.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-13-layout-triage",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/MeasurePassDelegate.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/LookaheadScope.kt",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-13-layout-triage.svg",
+          "sha256": "56cb3918963898c5e09960d9f14d23a7be07be5e48aef17e62b9c5e566e82798",
+          "bytes": 35044
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-13-layout-triage.png",
+          "sha256": "a6c7e0209e980114ecd0c5a9fe6e5cf5386cc2cd1146e2399ab7da5a66c83963",
+          "bytes": 144831,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-14-text-node-gates",
+      "title": "String 简化节点有三个同时满足的条件",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-14-text-node-gates.svg",
+        "src/assets/diagrams/ch22/a235-14-text-node-gates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-14-text-node-gates",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/BasicText.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/TextStringSimpleNode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/TextAnnotatedStringNode.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-14-text-node-gates.svg",
+          "sha256": "b6218d36706fde85f1a06cc0c7dd2433fbf2b9c8b90ab196f68aada317e41422",
+          "bytes": 19418
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-14-text-node-gates.png",
+          "sha256": "9858f4c606049ad02011f0275f385930c51cf03e327670d3149951f7bb9304b1",
+          "bytes": 120356,
+          "dimensions": [
+            2100,
+            1185
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-15-platform-text",
+      "title": "BoringLayout 是带前置条件的简化路径",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-15-platform-text.svg",
+        "src/assets/diagrams/ch22/a235-15-platform-text.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-15-platform-text",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-text/src/androidMain/kotlin/androidx/compose/ui/text/android/TextLayout.android.kt",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-15-platform-text.svg",
+          "sha256": "3fd571f0aaf2af4699b8a9d13c89e65fc655dc63051b71e735f330ba8213b240",
+          "bytes": 27655
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-15-platform-text.png",
+          "sha256": "928112a07f48b361c96b2a3b439c867df60f50515cafb5e01eaa6712679b06e2",
+          "bytes": 138762,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-16-text-invalidation",
+      "title": "布局输入与纯绘制输入使用不同失效范围",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-16-text-invalidation.svg",
+        "src/assets/diagrams/ch22/a235-16-text-invalidation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-16-text-invalidation",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/TextStringSimpleNode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/TextAnnotatedStringNode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/ParagraphLayoutCache.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/MultiParagraphLayoutCache.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-16-text-invalidation.svg",
+          "sha256": "3afd3558f76e1f9d0df6d12a5cfc9cc48d2d0e0ca8736e43f2c99a7091784c9b",
+          "bytes": 35473
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-16-text-invalidation.png",
+          "sha256": "355c8dbf7c9375b236d759afe46f18215c54c7475cc4a04488c7a5851959c8bb",
+          "bytes": 150144,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-17-paragraph-reuse",
+      "title": "同宽度与有效字体是段落复用的关键输入",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-17-paragraph-reuse.svg",
+        "src/assets/diagrams/ch22/a235-17-paragraph-reuse.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-17-paragraph-reuse",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/ParagraphLayoutCache.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/MultiParagraphLayoutCache.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-17-paragraph-reuse.svg",
+          "sha256": "c0d17d72a7bd3c12c92f06848f597d5c91669d97e2649e483c8753e2909b674a",
+          "bytes": 33227
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-17-paragraph-reuse.png",
+          "sha256": "18837dc0417f557e48f2bbc8f0acfefaf38be09ab1ac50ce0567535b9c7377e6",
+          "bytes": 138195,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-18-font-resolution",
+      "title": "异步字体返回会让旧排版过期",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-18-font-resolution.svg",
+        "src/assets/diagrams/ch22/a235-18-font-resolution.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-18-font-resolution",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/ParagraphLayoutCache.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/MultiParagraphLayoutCache.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/TextMeasurer.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-18-font-resolution.svg",
+          "sha256": "d0ce33e0ed3b717debf63027ea989f0c9faa5147d44a65d79ebc205837c05c9f",
+          "bytes": 23690
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-18-font-resolution.png",
+          "sha256": "ce91a15e241874cd22892798073091a01951beae2ebea2fe681b376fb4791d9e",
+          "bytes": 79906,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-19-background-metrics",
+      "title": "可选后台预热只准备度量缓存",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-19-background-metrics.svg",
+        "src/assets/diagrams/ch22/a235-19-background-metrics.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-19-background-metrics",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.12.0/foundation-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-19-background-metrics.svg",
+          "sha256": "e2ba2831fba2663426784f58fce2ffd3d82ee9b46eb082bbe557da32b6787be8",
+          "bytes": 34933
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-19-background-metrics.png",
+          "sha256": "175d8fc9243fe67288ba25ab871281ec7f78c497454f04ca811ced652f775a4e",
+          "bytes": 144961,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-20-auto-size",
+      "title": "自动字号对多个候选执行试排",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-20-auto-size.svg",
+        "src/assets/diagrams/ch22/a235-20-auto-size.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-20-auto-size",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/TextAutoSize.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/MultiParagraphLayoutCache.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-20-auto-size.svg",
+          "sha256": "b270e61b522c43ea59057688c3701321281f41adddc5eac9096a89ab1b74a031",
+          "bytes": 23927
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-20-auto-size.png",
+          "sha256": "6b5c18ae69f1d9a2871d833975593143f0eecf7013bd15bf015a2ebcb4f9bab4",
+          "bytes": 90476,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-21-text-callback",
+      "title": "稳定回调与首次尺寸哨兵分别保证语义",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-21-text-callback.svg",
+        "src/assets/diagrams/ch22/a235-21-text-callback.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-21-text-callback",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/BasicText.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/TextAnnotatedStringNode.kt",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-21-text-callback.svg",
+          "sha256": "138560d83f9fe83f264e42e0a8a48fe0e998c3fc0a364c61da6153dcef64cd88",
+          "bytes": 36753
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-21-text-callback.png",
+          "sha256": "bea0538141fa50c38418c673c65cf8291a5ad2bc144bd17566c19ece104929b4",
+          "bytes": 148779,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-22-identity-stability",
+      "title": "业务键、可跳过性与文本排版各管一件事",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-22-identity-stability.svg",
+        "src/assets/diagrams/ch22/a235-22-identity-stability.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-22-identity-stability",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/BasicText.kt",
+        "https://developer.android.com/develop/ui/compose/lists"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-22-identity-stability.svg",
+          "sha256": "cbf6823b428069d8eaec4816df5f3ca82c4c93b7e50b4b7965525da50aa14388",
+          "bytes": 36558
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-22-identity-stability.png",
+          "sha256": "88d50cbb364afdc8071ed7ea41d2a4a43a53de96b731e77290a478a5fe17b69d",
+          "bytes": 150807,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-23-rich-text",
+      "title": "按不可变输入缓存昂贵富文本构造",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-23-rich-text.svg",
+        "src/assets/diagrams/ch22/a235-23-rich-text.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-23-rich-text",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/AnnotatedString.kt",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/TextAnnotatedStringNode.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-23-rich-text.svg",
+          "sha256": "ea64df0d91f78b16cac973541bdd4d5ac7dc91d95fb1b8bef4e4380960e2286d",
+          "bytes": 26495
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-23-rich-text.png",
+          "sha256": "6f22660e1257aaa989a3aba6821219be8070703677b4b1c0b6806e531f06fff3",
+          "bytes": 103004,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-24-measurer-key",
+      "title": "TextMeasurer 缓存布局输入，不缓存全文业务",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-24-measurer-key.svg",
+        "src/assets/diagrams/ch22/a235-24-measurer-key.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-24-measurer-key",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/TextMeasurer.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/ParagraphLayoutCache.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/MultiParagraphLayoutCache.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-24-measurer-key.svg",
+          "sha256": "61b6c9094f3b47c17df2e468d3b70437fe77b72a948eb4ee9d32c7e6ab740170",
+          "bytes": 33833
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-24-measurer-key.png",
+          "sha256": "12fb82dd7c40207e08ae82e82d879c94061bdcdf3638214c507ce23f049c87c6",
+          "bytes": 146685,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-25-draw-cache-geometry",
+      "title": "绘制文字的可用空间先扣除内边距",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-25-draw-cache-geometry.svg",
+        "src/assets/diagrams/ch22/a235-25-draw-cache-geometry.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-25-draw-cache-geometry",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/TextMeasurer.kt",
+        "https://developer.android.com/develop/ui/compose/graphics/draw/overview"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-25-draw-cache-geometry.svg",
+          "sha256": "25c65e09a5c27a660105040b6a920faa9afc192a350d74d2273a9afa30100776",
+          "bytes": 23019
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-25-draw-cache-geometry.png",
+          "sha256": "fe567399a3dfbe57f709161e15ec37b1b0a082a7624c1b85f52435a24191956b",
+          "bytes": 82547,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-26-cache-lookup-retention",
+      "title": "跳过查找和不保留缓存是两个选项",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-26-cache-lookup-retention.svg",
+        "src/assets/diagrams/ch22/a235-26-cache-lookup-retention.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-26-cache-lookup-retention",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/TextMeasurer.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-26-cache-lookup-retention.svg",
+          "sha256": "7991bce660e3b7e9a2551412219a778ffad30945f99b361910029d3990f6762a",
+          "bytes": 26565
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-26-cache-lookup-retention.png",
+          "sha256": "98819a6805079940a7daf29fd5810b0b264fb55dfc1e89a8cccf308715d90a9d",
+          "bytes": 117823,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a235-27-text-tracing",
+      "title": "文本节点时间片与组合切片分开收集",
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a235-27-text-tracing.svg",
+        "src/assets/diagrams/ch22/a235-27-text-tracing.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a235-27-text-tracing",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/TextStringSimpleNode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/TextAnnotatedStringNode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-text/src/androidMain/kotlin/androidx/compose/ui/text/android/TextLayout.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/tooling/ComposeToolingFlags.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a235-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a235-27-text-tracing.svg",
+          "sha256": "32fc340aa7a05fd5306c5eee85ba85eab10fd44e3356e45326cb835f438b08ab",
+          "bytes": 29795
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a235-27-text-tracing.png",
+          "sha256": "bd68459ab4a607f3712334c0abe1ff081f24d3e8d924801e64ef71ab7f8766b0",
+          "bytes": 139727,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     }
   ],
   "corrections": [
@@ -26362,14 +27938,298 @@
         "https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.pom",
         "https://dl.google.com/dl/android/maven2/com/google/firebase/firebase-auth/24.2.0/firebase-auth-24.2.0.aar"
       ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "before": "普通 `List`、`Set`、`Map` 接口仍被编译器视为 unstable。",
+      "after": "普通 `List`、`Set`、`Map` 接口并不能保证底层不可变。本文 2.3.20 样例被判为已知 unstable，而 2.4.10 新产物中的集合与 `Snack` 出现 runtime / `Uncertain` 分类；应区分已知不稳定与运行时不确定，不能把旧报告标签直接套到当前编译器。",
+      "why": "Actual2.4.10 rerun changes Snack to runtime/Uncertain(Set), List param no known-unstable label; do not universalize2.3.20 known-unstable reporting.",
+      "sources": [
+        "https://raw.githubusercontent.com/JetBrains/kotlin/v2.4.10/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "before": "`Set` 和 `List` 的声明类型说明不了底层实现不可变，因此 `Snack` 和 `snacks` 会进入不稳定路径。函数类型由编译器按稳定类型处理。",
+      "after": "`Set` 和 `List` 的声明类型说明不了底层实现不可变。下列输出固定来自 2.3.20，其中 `Snack` 和 `snacks` 被判为已知不稳定；2.4.10 的运行时不确定分类见后面的实际对照。函数类型由编译器按稳定类型处理。",
+      "why": "Scope quoted known-unstable reports to actual2.3.20; newer sample differs.",
+      "sources": [
+        "https://raw.githubusercontent.com/JetBrains/kotlin/v2.4.10/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "before": "同一编译任务对 `Snack` 产生以下记录。",
+      "after": "同一 Kotlin 2.3.20 编译任务对 `Snack` 产生以下记录。",
+      "why": "Explicit version for historical class report.",
+      "sources": [
+        "https://raw.githubusercontent.com/JetBrains/kotlin/v2.4.10/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "before": "`val` 固定的是引用本身，引用指向的对象仍可能被修改。`Set<String>` 是接口，运行时对象仍可能是可变集合，所以编译器证明不了它不可变。",
+      "after": "`val` 固定的是引用本身，引用指向的对象仍可能被修改。`Set<String>` 是接口，运行时对象仍可能是可变集合，所以编译器证明不了它不可变。\n\n2026-10-25 以同一最小源码、默认功能开关和各自同版本标准库重新编译，Kotlin 2.4.10 的实际类报告为：\n\n```text\nruntime class lab.Snack {\n  stable val id: Long\n  runtime val tags: Set<String>\n  <runtime stability> = Uncertain(Set)\n}\n```\n\n函数报告中的 `snacks` 行变成 `snacks: List<Snack>`，没有静态 `stable` / `unstable` 前缀；`UnstableList` 这个示例函数名不代表当前推断结果。模块的 `inferredUnstableClasses` 从 1 变为 0，`inferredUncertainClasses` 从 0 变为 1。CSV 表头、模块字段和四项默认 `featureFlags` 保持一致，四个函数的 restartable / skippable 标签也保持不变。生成字节码对该参数包含按稳定性位选择 `changed()` 或 `changedInstance()` 的分支，因此不应对所有 2.4.10 集合统一声称“必定引用比较”。分类变了也不代表普通可变集合突然具有 Snapshot 通知能力。",
+      "why": "Preserve actual new2.4.10 reports and bytecode evidence; distinguish identical schema/feature flags from changed stability classifications.",
+      "sources": [
+        "https://raw.githubusercontent.com/JetBrains/kotlin/v2.4.10/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt",
+        "https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-compose-compiler-plugin-embeddable/2.4.10/kotlin-compose-compiler-plugin-embeddable-2.4.10.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "before": "传入一个内容相同但新创建的 `List`，引用不同，`UnstableList` 仍会重组。",
+      "after": "在 2.3.20 这个已知不稳定参数样例中，传入内容相同但新创建的 `List`，引用不同，`UnstableList` 仍会重组。2.4.10 的运行时不确定参数还需结合稳定性位与生成代码判断，不能只由集合接口名推断比较分支。",
+      "why": "Actual2.4.10 emits runtime-dependent equals/identity path for this collection param.",
+      "sources": [
+        "https://raw.githubusercontent.com/JetBrains/kotlin/v2.4.10/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "before": "标准库的 `List`、`Set`、`Map` 都是接口，Compose 编译器按不稳定类型处理。",
+      "after": "标准库的 `List`、`Set`、`Map` 都是接口，不能证明底层不可变；精确报告可能是已知不稳定，也可能像本篇 2.4.10 样例一样标为运行时不确定，具体按该编译器的产物核对。",
+      "why": "Correct second blanket known-unstable claim after real version comparison.",
+      "sources": [
+        "https://raw.githubusercontent.com/JetBrains/kotlin/v2.4.10/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "Recheck all61bodyreferences, fixed1.12 source and actualAPI examples.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/TextMeasurer.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/BasicText.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "path: frameworks/support/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt",
+      "after": "path: https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt",
+      "why": "Pin formerly unversioned metadata source to actual body baseline.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "内核 `android17-6.18-2026-06_r6`；Compose UI、Runtime 与 Foundation 1.12.0",
+      "after": "内核参考标签 `android17-6.18-2026-06_r6`（不代表所有设备的内核）；Compose UI、Runtime 与 Foundation 1.12.0",
+      "why": "Keep source reference distinct from universal Android17 OEM kernel requirement.",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "宿主侧仍是一次视图树遍历：`ViewRootImpl` 组织宿主 View 的测量、布局和绘制，再由 `ThreadedRenderer` 进入 HWUI。Compose 自己的三个阶段就嵌在这次平台遍历里，只是两边使用不同的 API 名称。",
+      "after": "`ViewRootImpl` 组织宿主 View 的测量、布局和绘制，再由 `ThreadedRenderer` 进入 HWUI；Compose 测量、放置与绘制通过这些宿主入口执行。组合还可由 Recomposer 的帧时钟驱动，也可在 Subcompose 测量中按需发生，不能理解成所有 Composition 都被固定包在一次 View 遍历内。",
+      "why": "Distinguish Recomposer composition scheduling from host traversal callbacks and measurement-time subcomposition.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/SubcomposeLayout.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "        val desiredHeight = placeables\n            .sumOf { it.height.toLong() }\n            .coerceAtMost(Int.MAX_VALUE.toLong())\n            .toInt()\n",
+      "after": "        val totalHeight = placeables.sumOf { it.height.toLong() }\n        require(totalHeight <= Int.MAX_VALUE) { \"Column height exceeds Int coordinates\" }\n        val desiredHeight = totalHeight.toInt()\n",
+      "why": "Clamping total height while Int placement y keeps growing allowed coordinate overflow; reject unrepresentable sum before placement so all nonnegative prefixes fit Int.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/layouts/custom"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "测量代码必须保存 `Placeable`，以便放置阶段使用；",
+      "after": "示例拒绝无法由 Int 表示的总高度；父约束仍可能限制外框尺寸，内容溢出是否裁剪由调用者决定。测量代码必须保存 `Placeable`，以便放置阶段使用；",
+      "why": "Document supported arithmetic and parent bounds rather than implying a clipping or scrolling layout.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/layouts/custom"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "强制重测量会把同步工作放到调用线程，即使节点此前没有标记为需要重测量也会执行。",
+      "after": "附着到 Owner 的节点会把同步测量请求放到调用线程，调用方应在 UI 线程进入；节点没有 Owner 时，源码的安全调用不会立即执行宿主布局。它不是后台测量入口，也不能在任意生命周期状态下保证已同步重测。",
+      "why": "forceRemeasure delegates via nullable owner and does not marshal thread; state owner precondition.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/node/LayoutNode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/layout/RemeasurementModifier.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "`frameDurationCpuMs`（应用界面线程与 RenderThread 生成一帧的 CPU 时间）",
+      "after": "`frameDurationCpuMs`（产帧区间时长；Benchmark 1.5.0 从 UI 帧开始量到对应 RenderThread 区间结束，不是两线程 Running CPU 时间之和）",
+      "why": "Fixed1.5 FrameTimingQuery computes rtSlice.endTs-uiSlice.ts, including wall-clock gaps/waits.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "SELECT\n  p.name AS process_name,\n  t.name AS thread_name,\n  s.name AS slice_name,\n  COUNT(*) AS occurrences,\n  ROUND(SUM(s.dur) / 1e6, 3) AS total_ms,\n  ROUND(MAX(s.dur) / 1e6, 3) AS max_ms\nFROM slice AS s\nJOIN thread_track AS tt ON s.track_id = tt.id\nJOIN thread AS t ON tt.utid = t.utid\nLEFT JOIN process AS p ON t.upid = p.upid\nWHERE s.dur > 0\n  AND s.name IN (\n    'AndroidOwner:onMeasure',\n    'AndroidOwner:onLayout',\n    'AndroidOwner:measureAndLayout',\n    'Compose:measure',\n    'Compose:layout',\n    'Compose:lookaheadMeasure',\n    'Compose:lookaheadLayout',\n    'Compose:remeasure',\n    'Compose:lookaheadRemeasure'\n  )\nGROUP BY p.name, t.name, s.name\nORDER BY total_ms DESC;\n",
+      "after": "SELECT\n  p.upid,\n  p.name AS process_name,\n  t.utid,\n  t.tid,\n  t.name AS thread_name,\n  s.name AS slice_name,\n  COUNT(*) AS occurrences,\n  ROUND(SUM(s.dur) / 1e6, 3) AS total_ms,\n  ROUND(MAX(s.dur) / 1e6, 3) AS max_ms\nFROM slice AS s\nJOIN thread_track AS tt ON s.track_id = tt.id\nJOIN thread AS t ON tt.utid = t.utid\nLEFT JOIN process AS p ON t.upid = p.upid\nWHERE s.dur >= 0\n  AND s.name IN (\n    'AndroidOwner:onMeasure',\n    'AndroidOwner:onLayout',\n    'AndroidOwner:measureAndLayout',\n    'Compose:measure',\n    'Compose:layout',\n    'Compose:lookaheadMeasure',\n    'Compose:lookaheadLayout',\n    'Compose:remeasure',\n    'Compose:lookaheadRemeasure'\n  )\nGROUP BY p.upid, p.name, t.utid, t.tid, t.name, s.name\nORDER BY total_ms DESC;\n",
+      "why": "Names alone merged separate process lifetimes and same-name threads; preserve upid/utid/tid and completed zero-duration events while excluding unknown negative duration.",
+      "sources": [
+        "https://perfetto.dev/docs/analysis/sql-tables"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "SELECT\n  p.name AS process_name,\n  t.name AS thread_name,\n  s.name AS slice_name,\n  COUNT(*) AS occurrences,\n  ROUND(SUM(s.dur) / 1e6, 3) AS total_ms,\n  ROUND(MAX(s.dur) / 1e6, 3) AS max_ms\nFROM slice AS s\nJOIN thread_track AS tt ON s.track_id = tt.id\nJOIN thread AS t ON tt.utid = t.utid\nLEFT JOIN process AS p ON t.upid = p.upid\nWHERE s.dur > 0\n  AND s.name IN (\n    'TextStringSimpleNode::measure',\n    'TextAnnotatedStringNode:measure',\n    'TextLayout:initLayout'\n  )\nGROUP BY p.name, t.name, s.name\nORDER BY total_ms DESC;\n",
+      "after": "SELECT\n  p.upid,\n  p.name AS process_name,\n  t.utid,\n  t.tid,\n  t.name AS thread_name,\n  s.name AS slice_name,\n  COUNT(*) AS occurrences,\n  ROUND(SUM(s.dur) / 1e6, 3) AS total_ms,\n  ROUND(MAX(s.dur) / 1e6, 3) AS max_ms\nFROM slice AS s\nJOIN thread_track AS tt ON s.track_id = tt.id\nJOIN thread AS t ON tt.utid = t.utid\nLEFT JOIN process AS p ON t.upid = p.upid\nWHERE s.dur >= 0\n  AND s.name IN (\n    'TextStringSimpleNode::measure',\n    'TextAnnotatedStringNode:measure',\n    'TextLayout:initLayout'\n  )\nGROUP BY p.upid, p.name, t.utid, t.tid, t.name, s.name\nORDER BY total_ms DESC;\n",
+      "why": "Names alone merged separate process lifetimes and same-name threads; preserve upid/utid/tid and completed zero-duration events while excluding unknown negative duration.",
+      "sources": [
+        "https://perfetto.dev/docs/analysis/sql-tables"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "`slice.dur` 的单位是纳秒，查询把总时长和最大值换算成毫秒。",
+      "after": "`slice.dur` 的单位是纳秒，查询把总时长和最大值换算成毫秒，并以 `upid/utid` 区分同名进程生命周期和线程。这是全条跟踪中已完成、非负区间的 inclusive 墙钟时长聚合，包含等待；宿主与内部阶段可能嵌套，父子区间不能直接相加。分析特定交互时还要限定目标 `upid` 与时间窗口。",
+      "why": "Explain whole-trace identity and inclusive wall-clock aggregation, not CPU/self-time totals.",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://perfetto.dev/docs/analysis/sql-tables"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "`slice.dur` 使用纳秒，查询换算为毫秒。",
+      "after": "`slice.dur` 使用纳秒，查询换算为毫秒；同样保留 `upid/utid`，不会把同名线程或进程重启前后的记录混成一组。它汇总全条跟踪的 inclusive 墙钟区间；不同文本阶段也可能嵌套，不能把父子总时长直接相加当作 CPU 时间。",
+      "why": "Apply same attribution and nested-duration limits to second text query.",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://perfetto.dev/docs/analysis/sql-tables"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "val lastSize = remember { mutableStateOf(IntSize.Zero) }",
+      "after": "val lastSize = remember { mutableStateOf<IntSize?>(null) }",
+      "why": "Use absence sentinel so initial0x0 size is emitted rather than mistaken for previously delivered value.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "长文章使用 Lazy 布局只组合可见项，",
+      "after": "长文章使用 Lazy 布局按当前需要组合内容，其中还可能包括预取、复用缓存、固定和动画保留项；",
+      "why": "Avoid visible-only claim inconsistent with Lazy prefetch/retention semantics.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/lists"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "范围来自业务解析结果，不在组合中重新执行正则表达式。",
+      "after": "范围来自业务解析结果，不在组合中重新执行正则表达式；`highlights` 及其条目须作为不可变快照传入，变化时提交新列表，不能原地修改同一个普通集合后期待 `remember` 自动重建。",
+      "why": "remember key equality does not detect in-place mutable list edits.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "下面的示例在绘制区域尺寸或文本输入变化时测量一次，随后用已有 `TextLayoutResult` 绘制颜色。",
+      "after": "下面的示例绘制单行标签：在绘制区域尺寸或文本输入变化时建立测量结果，再用它绘制颜色。调用者必须给 Spacer 有限且非零的尺寸，例如通过 Modifier 设置宽度和高度；绘制代码不会按文字内容反向撑大 Spacer。测量范围扣除两侧内边距，超出时按单行省略处理。",
+      "why": "Declare draw-only Spacer sizing contract and avoid measuring full width then offsetting text beyond bounds.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/TextMeasurer.kt",
+        "https://developer.android.com/develop/ui/compose/graphics/draw/overview"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "            modifier.drawWithCache {\n                val layoutResult =\n                    textMeasurer.measure(\n                        text = label,\n                        style = TextStyle(fontSize = 16.sp),\n                        constraints = Constraints(maxWidth = size.width.toInt()),\n                    )\n",
+      "after": "            modifier.drawWithCache {\n                val horizontalPadding = 12.dp.toPx()\n                val verticalPadding = 8.dp.toPx()\n                val layoutResult =\n                    textMeasurer.measure(\n                        text = label,\n                        style = TextStyle(fontSize = 16.sp),\n                        maxLines = 1,\n                        overflow = TextOverflow.Ellipsis,\n                        constraints = Constraints(\n                            maxWidth = (size.width - 2 * horizontalPadding).coerceAtLeast(0f).toInt(),\n                            maxHeight = (size.height - 2 * verticalPadding).coerceAtLeast(0f).toInt(),\n                        ),\n                    )\n",
+      "why": "Subtract horizontal/vertical padding from finite measured area and state single-line ellipsis contract; clamp undersized areas to zero.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/TextMeasurer.kt",
+        "https://developer.android.com/develop/ui/compose/graphics/draw/overview"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "topLeft = Offset(12.dp.toPx(), 8.dp.toPx()),",
+      "after": "topLeft = Offset(horizontalPadding, verticalPadding),",
+      "why": "Use exact same padding in measurement bounds and drawing origin.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/TextMeasurer.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "- 输入几乎每次都不同：评估 `skipCache = true`，同时确认没有其他重复调用；",
+      "after": "- 输入几乎每次都不同：可评估 `skipCache = true`。1.12.0 的实现只跳过缓存查找，新的布局仍会写入已存在的缓存；若目标是完全不保留测量缓存，应使用 `cacheSize = 0`，并核对目标版本实现。",
+      "why": "Actual1.12 skipCache bypasses get but always puts computed result into allocated cache; zero capacity avoids cache construction.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-text/src/commonMain/kotlin/androidx/compose/ui/text/TextMeasurer.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "不稳定参数通常按对象身份比较，稳定参数按相等性比较。",
+      "after": "已知不稳定参数按对象身份比较，稳定参数按相等性比较；若像 22.3 的 Kotlin 2.4.10 样例那样被判为 runtime / `Uncertain`，还要结合运行时稳定性位和生成代码判断，不能仅凭集合接口名决定比较分支。",
+      "why": "Carry actual compiler version boundary verified in234 into generic collection advice.",
+      "sources": [
+        "https://raw.githubusercontent.com/JetBrains/kotlin/v2.4.10/plugins/compose/compiler-hosted/src/main/java/androidx/compose/compiler/plugins/kotlin/BuildMetrics.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "本部分涉及调度、缺页（访问尚未驻留内存页时由内核处理）或内存回收时，内核侧行为统一按文首基线里的内核标签核对；",
+      "after": "本部分涉及调度、缺页（访问尚未驻留内存页时由内核处理）或内存回收时，应核对被测设备实际内核与跟踪配置，文首标签只作源码参考；",
+      "why": "Do not force one reference kernel tag onto all device trace interpretation.",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "一次下载等待属于字体获取环节的成本，要与 Compose 布局成本分开记录。",
+      "after": "一次下载等待属于字体获取环节的成本，要与 Compose 布局成本分开记录。\n\nFoundation Android 1.12.0 另有可选的文本度量预热：`LocalBackgroundTextMeasurementExecutor` 默认是 `null`；应用提供 Executor 后，`BasicText` 只对满足该版本内部条件的文本安排后台任务。实现要求 API 28+、文本长度至少 8 且小于 1000 个 UTF-16 code unit、运行时报告至少 4 个处理器，处理器条件会缓存。这些是固定实现的入选门禁，不是通用性能阈值。任务按顺序求 `maxIntrinsicWidth` 与 `minIntrinsicWidth`，预热平台文字度量与断词相关缓存；主线程仍需按最终约束完成排版、布局与绘制。任务可能被 Executor 拒绝，预热也不保证命中或净收益，应连同竞争、分配与目标帧一起测量。源码见 [Foundation Android 1.12.0 归档](https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.12.0/foundation-android-1.12.0-sources.jar) 中的 `BasicText.android.kt`。",
+      "why": "Document optional actual1.12 background metric warmup separately from UI measurement; preserve default-null and fixed internal gating without quoting unmeasured performance percentages.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation-android/1.12.0/foundation-android-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "```mermaid\nflowchart LR\n    S[\"Snapshot 状态变化\"]\n    C[\"组合<br/>更新 UI 树\"]\n    M[\"测量<br/>约束 → 尺寸\"]\n    P[\"放置<br/>坐标与层级\"]\n    D[\"绘制<br/>Canvas 操作\"]\n    ACV[\"AndroidComposeView\"]\n    HWUI[\"ViewRootImpl / HWUI\"]\n    RT[\"RenderThread\"]\n    BQ[\"App Window BLAST BufferQueue\"]\n    SF[\"SurfaceFlinger / HWC\"]\n\n    S -->|\"组合阶段读取\"| C\n    S -->|\"测量阶段读取\"| M\n    S -->|\"放置阶段读取\"| P\n    S -->|\"绘制阶段读取\"| D\n    C -->|\"树或测量输入变化\"| M\n    M --> P\n    P --> D\n    D --> ACV --> HWUI --> RT --> BQ --> SF\n```",
+      "after": "状态读取连接到对应的失效阶段；后续阶段是否需要执行由输出、约束和依赖共同决定。",
+      "why": "Replace existing Mermaid with editable SVG+PNG stage dependency diagram; keep separate host path.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/phases",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "before": "```mermaid\nflowchart LR\n    A[\"Text / BasicText\"] --> B{\"是否需要 AnnotatedString 能力\"}\n    B -->|\"否\"| C[\"TextStringSimpleNode\"]\n    B -->|\"是\"| D[\"TextAnnotatedStringNode\"]\n    C --> E[\"ParagraphLayoutCache\"]\n    D --> F[\"MultiParagraphLayoutCache\"]\n    E --> G[\"Paragraph / AndroidParagraph\"]\n    F --> H[\"MultiParagraph / AndroidParagraph\"]\n    G --> I[\"BoringLayout 或 StaticLayout\"]\n    H --> I\n    I --> J[\"Compose Canvas 记录绘制\"]\n    J -.-> K[\"HWUI / RenderThread\"]\n    K -.-> L[\"BLASTBufferQueue\"]\n    L -.-> M[\"SurfaceFlinger / HWC / 显示器\"]\n```",
+      "after": "节点选择先看输入与所需能力；段落缓存之后才进入平台文本布局和宿主显示链。",
+      "why": "Replace broad AnnotatedString decision with exact String fast-path gates and both paragraph caches in SVG+PNG.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/BasicText.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/TextStringSimpleNode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/text/modifiers/TextAnnotatedStringNode.kt"
+      ]
     }
   ],
   "validation": {},
   "last_checkpoint": {
-    "completed": 34,
+    "completed": 36,
     "total": 51,
-    "next_article": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
-    "updated_at": "2026-10-25T08:45:18.867405+00:00"
+    "next_article": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+    "updated_at": "2026-10-25T09:23:15.623676+00:00"
   },
   "replaced_inline_diagrams": []
 }

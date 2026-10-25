@@ -994,26 +994,156 @@
     {
       "path": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
       "sha256_before": "1d380229c6ecf746d935312b0c6dba6cf76435e99e88af95021ec39d0ac9e24e",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a223-01-phase-contract",
+        "a223-02-dependency-results",
+        "a223-03-validate-before-run",
+        "a223-04-critical-path-model",
+        "a223-05-priority-layers",
+        "a223-06-timeout-late-result",
+        "a223-07-startup-discovery",
+        "a223-08-remaining-eager-roots",
+        "a223-09-process-local-graphs",
+        "a223-10-alpha-completion-gap",
+        "a223-11-scheduler-contract",
+        "a223-12-safe-config",
+        "a223-13-early-failure-safe-graph",
+        "a223-14-task-time-boundaries",
+        "a223-15-trigger-and-cost",
+        "a223-16-commit-gate",
+        "a223-17-feature-gate-state",
+        "a223-18-idle-is-signal",
+        "a223-19-deli-idle-boundaries",
+        "a223-20-on-demand-install",
+        "a223-21-base-exported-proxy",
+        "a223-22-workmanager-defaults",
+        "a223-23-executor-admission",
+        "a223-24-queue-rejection",
+        "a223-25-same-pool-starvation",
+        "a223-26-java-nice-inheritance",
+        "a223-27-affinity-and-policy",
+        "a223-28-thread-memory-lifetime",
+        "a223-29-dispatcher-vs-inflight",
+        "a223-30-structured-inputs",
+        "a223-31-executor-vs-cpu-wait",
+        "a223-32-legacy-version-edges"
+      ],
       "article_index": 223,
-      "sha256_at_assignment": "c77a248fe2ba01f104f202cdc117388bcca6981ff04d1102b53f19e950e2a1c2"
+      "sha256_at_assignment": "c77a248fe2ba01f104f202cdc117388bcca6981ff04d1102b53f19e950e2a1c2",
+      "sha256_current": "c1a406cb8288b681942fb52216fbb9398a9782eeec664a43d8c6e733b144aa83",
+      "sha256_after": "c1a406cb8288b681942fb52216fbb9398a9782eeec664a43d8c6e733b144aa83",
+      "source_audit": "All1413 original lines read;36 original primarylinks archived,4TLSretried successfully, actualStartup1.2.0 source+binary, fixedAlpha04fe7f2 Task/Manager/Project/Config andHEAD, fixedAndroid17 Thread/ART/MessageQueue/libcore/flags, currentWorkManager2.12.0 sources andpublicdocs, Linuxaffinity andKotlin1.11.0 contracts.20 auditedcorrections. All9 originalKotlinblocks compileAPI37+actualStartup1.2.0/coroutines1.11 with explicitprojectscaffolds; originalFeatureGate andloadStartupInputs hostvirtualtime cases pass;XMLparse andsourcecontracts pass. NoAndroiddeviceperformance orfullappUIexecution claimed; originalJavaAlphausage signatures/source-reviewed, notcompiledcompleteapp.",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a223/alpha-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a223/art-flags-actual-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a223/compile-extra-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a223/extra-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a223/source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
       "sha256_before": "25264bf4121fea70a546306f8704e687395e7895735ff904fc52b67998de2daf",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a224-01-bind-install-order",
+        "a224-02-batch-publish",
+        "a224-03-provider-cost-layers",
+        "a224-04-manifest-provenance",
+        "a224-05-equivalent-provider-ab",
+        "a224-06-remote-provider-wait",
+        "a224-07-necessity-and-owner",
+        "a224-08-remove-entry-verify",
+        "a224-09-explicit-init-results",
+        "a224-10-commit-and-fallback",
+        "a224-11-startup-synchronous-deps",
+        "a224-12-direct-boot-storage",
+        "a224-13-local-provider-eligibility",
+        "a224-14-provider-security-surface",
+        "a224-15-process-isolation-cost",
+        "a224-16-component-process-start",
+        "a224-17-role-before-class-use",
+        "a224-18-prewarm-tradeoff",
+        "a224-19-binder-generation-race",
+        "a224-20-blocking-binder-timeout",
+        "a224-21-single-state-owner",
+        "a224-22-death-and-recovery",
+        "a224-23-memory-and-readiness-metrics"
+      ],
       "article_index": 224,
-      "sha256_at_assignment": "25264bf4121fea70a546306f8704e687395e7895735ff904fc52b67998de2daf"
+      "sha256_at_assignment": "25264bf4121fea70a546306f8704e687395e7895735ff904fc52b67998de2daf",
+      "sha256_current": "ccc068487b8bde2cb2dca7c50ac7f93372b4692ff559b65857cb397ef70e045d",
+      "sha256_after": "ccc068487b8bde2cb2dca7c50ac7f93372b4692ff559b65857cb397ef70e045d",
+      "source_audit": "Full826line baseline read;21 original primaryreferences archived,2TLSfailures retried successfully, extraBinderThreading/JLS/ActivityManager/Context contract references; actualStartup1.2.0/Core+CoreKtx1.17.0/Tracing1.3.0 jars used forcompile.18 auditable corrections.7 exact finalKotlinblocks compileAPI37+coroutines1.11 with explicit project/AIDL scaffolds.OriginalWorkerConnection tested withcontrolledBinder/Main doubles for generationrace,old/currentdeath,deathduringlink,unlink,release,suppressedlatecallbacks,terminalfailedawait,invalidlimit/Maincontract.OriginalPythonmanifestextraction on2providerXML fixture,3XMLsnippets andfixedsourcecontracts pass. No actualAndroidbind/unbind,driver,frame,SDKinitialization ordeviceperformance execution claim.",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a224/compile-extra-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a224/extra-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a224/source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
       "sha256_before": "95a69dc5b17d0f7acb69e482638d124e797592bc4472e6e7e2301346eaa57b6d",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a225-01-optimization-consumers",
+        "a225-02-hrf-to-art",
+        "a225-03-profile-producers",
+        "a225-04-generator-path",
+        "a225-05-generation-artifacts",
+        "a225-06-delivery-branches",
+        "a225-07-verifier-evidence",
+        "a225-08-compilation-modes",
+        "a225-09-dex-layout",
+        "a225-10-layout-proof",
+        "a225-11-layout-ab",
+        "a225-12-cold-protocol",
+        "a225-13-dm-inputs",
+        "a225-14-validation-stages",
+        "a225-15-art-service-chain",
+        "a225-16-filter-and-reason",
+        "a225-17-shared-private",
+        "a225-18-background-window",
+        "a225-19-profile-reset-controls",
+        "a225-20-experiment-groups",
+        "a225-21-split-release-audit",
+        "a225-22-evidence-chain"
+      ],
       "article_index": 225,
-      "sha256_at_assignment": "95a69dc5b17d0f7acb69e482638d124e797592bc4472e6e7e2301346eaa57b6d"
+      "sha256_at_assignment": "95a69dc5b17d0f7acb69e482638d124e797592bc4472e6e7e2301346eaa57b6d",
+      "sha256_current": "7341679e35af9cacdc63d957366f56c738e27f71cf37321329fa29f4d3fb07d0",
+      "sha256_after": "7341679e35af9cacdc63d957366f56c738e27f71cf37321329fa29f4d3fb07d0",
+      "source_audit": "20 original primary references200; real ProfileInstaller1.4.1/Macrobenchmark1.5/UIAutomator2.4 source+AAR artifacts; fixed17 Dexopter and import-confirmed utils/Utils.java; source/test/review records under sources/a225 and a225-example-validation.json.",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a225/extra-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a225/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a225/utils-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch21-startup/05-splash-screen.md",
@@ -13198,6 +13328,2576 @@
           ]
         }
       ]
+    },
+    {
+      "id": "a223-01-phase-contract",
+      "title": "任务按必须完成的边界分级，提前不代表更快",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-01-phase-contract.svg",
+        "src/assets/diagrams/ch21/a223-01-phase-contract.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-01-phase-contract",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://developer.android.com/topic/libraries/app-startup",
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-01-phase-contract.svg",
+          "sha256": "ea6cd25f9348a42ae0374e138dda55ce5479f813cb7d86f5132ce83a8ecf8808",
+          "bytes": 25661
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-01-phase-contract.png",
+          "sha256": "ad6941241d5ce1708d5472fcdfacc202d88a4ae855768b93adcfde2a5eec510a",
+          "bytes": 105815,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-02-dependency-results",
+      "title": "有向边表示后继等待，结果语义决定能否继续",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-02-dependency-results.svg",
+        "src/assets/diagrams/ch21/a223-02-dependency-results.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-02-dependency-results",
+      "sources": [
+        "https://developer.android.com/topic/libraries/app-startup",
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-02-dependency-results.svg",
+          "sha256": "53b2d2c7f741f3396e6ceb4669e42e5b93fe5e5e215f55314be366e9e10b4281",
+          "bytes": 28868
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-02-dependency-results.png",
+          "sha256": "a0f29cb0c2900020c9431d15120ce8e30e20c00100002d00533195d1a713dc1f",
+          "bytes": 106254,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-03-validate-before-run",
+      "title": "任务运行前检查结构、进程、阶段和资源等待",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-03-validate-before-run.svg",
+        "src/assets/diagrams/ch21/a223-03-validate-before-run.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-03-validate-before-run",
+      "sources": [
+        "https://developer.android.com/topic/libraries/app-startup",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-03-validate-before-run.svg",
+          "sha256": "89410c372da09c117733a286bd5bab275b618269106ae31e8f501e0a23831281",
+          "bytes": 28110
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-03-validate-before-run.png",
+          "sha256": "304a78197e391cc247dc0776a23c7e76bbbecf2b1f9427b20fce1b779b84084f",
+          "bytes": 90488,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-04-critical-path-model",
+      "title": "最长依赖链给出理论下界，非关键分支变快未必缩短结束时间",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-04-critical-path-model.svg",
+        "src/assets/diagrams/ch21/a223-04-critical-path-model.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-04-critical-path-model",
+      "sources": [
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-04-critical-path-model.svg",
+          "sha256": "f2d03599a4451443c5f9c669d3c73a6e1525f78701ece17b2a51a31a1b41f802",
+          "bytes": 19806
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-04-critical-path-model.png",
+          "sha256": "3c04cd8aff917c8614e89f2dd159e05604e7b583bd59d4c899ede4358036c7b5",
+          "bytes": 86599,
+          "dimensions": [
+            2100,
+            930
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-05-priority-layers",
+      "title": "阶段、队列顺序和 Linux nice 分别建模",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-05-priority-layers.svg",
+        "src/assets/diagrams/ch21/a223-05-priority-layers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-05-priority-layers",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Process",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-05-priority-layers.svg",
+          "sha256": "75b22119a3fbddfd1fcfa9dfc15887f01bdca5e64810781bb235302ba79a2739",
+          "bytes": 25705
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-05-priority-layers.png",
+          "sha256": "ae35b2c403f23a05d73de0ac3b66b4a9d3ed67507ead38a1343b70852494de92",
+          "bytes": 98192,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-06-timeout-late-result",
+      "title": "超时结束等待不等于底层工作已经停止",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-06-timeout-late-result.svg",
+        "src/assets/diagrams/ch21/a223-06-timeout-late-result.png"
+      ],
+      "layout": "temporal-sequence",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-06-timeout-late-result",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-06-timeout-late-result.svg",
+          "sha256": "74f2634e4535371b7dc552580c8f77bfe51c6ce0bb195b99b6300f7084ba3f88",
+          "bytes": 21837
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-06-timeout-late-result.png",
+          "sha256": "750860147d61175a5504b6fd684eaa5326bbe1c3ae8b49ecfa82c0c3015ab437",
+          "bytes": 82768,
+          "dimensions": [
+            2100,
+            915
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-07-startup-discovery",
+      "title": "App Startup 同步发现、递归依赖、创建并缓存",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-07-startup-discovery.svg",
+        "src/assets/diagrams/ch21/a223-07-startup-discovery.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-07-startup-discovery",
+      "sources": [
+        "https://developer.android.com/topic/libraries/app-startup",
+        "https://dl.google.com/dl/android/maven2/androidx/startup/startup-runtime/1.2.0/startup-runtime-1.2.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-07-startup-discovery.svg",
+          "sha256": "47e6b6bb6b9419d2ae99c9f4a6280a1c44a6e7a5fd50257a160dbb71cc456aed",
+          "bytes": 24720
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-07-startup-discovery.png",
+          "sha256": "3b3b39387d1ea20e4f8a3c47b1fe944bf11e50ba51e02e0373a631d348e1dedf",
+          "bytes": 84120,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-08-remaining-eager-roots",
+      "title": "移除一个入口不等于全局禁用该类及其依赖",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-08-remaining-eager-roots.svg",
+        "src/assets/diagrams/ch21/a223-08-remaining-eager-roots.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-08-remaining-eager-roots",
+      "sources": [
+        "https://developer.android.com/topic/libraries/app-startup",
+        "https://dl.google.com/dl/android/maven2/androidx/startup/startup-runtime/1.2.0/startup-runtime-1.2.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-08-remaining-eager-roots.svg",
+          "sha256": "dfc596e2733e88917ad9ee2e8c0773960cbe4fea05224b574543e633a91823d8",
+          "bytes": 25516
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-08-remaining-eager-roots.png",
+          "sha256": "1fd6d24d48e7686281e5f9556a3b3e6c89e1c9ff22dd27107b435c73c645e50f",
+          "bytes": 94878,
+          "dimensions": [
+            2100,
+            870
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-09-process-local-graphs",
+      "title": "每个进程有独立任务图和单例，内存依赖边不能跨进程",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-09-process-local-graphs.svg",
+        "src/assets/diagrams/ch21/a223-09-process-local-graphs.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-09-process-local-graphs",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/startup/startup-runtime/1.2.0/startup-runtime-1.2.0-sources.jar",
+        "https://developer.android.com/guide/components/processes-and-threads"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-09-process-local-graphs.svg",
+          "sha256": "bf2f53b0b258a383e6408262df6d611839549b4218de2c27322011b1f7b32b9a",
+          "bytes": 20149
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-09-process-local-graphs.png",
+          "sha256": "07ae146f2042dc25ba154cb532079c85e69000920ef9ad86317d0eb42ebb258c",
+          "bytes": 96987,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-10-alpha-completion-gap",
+      "title": "Alpha 的 run 返回立即完成，抛异常会中断后继通知",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-10-alpha-completion-gap.svg",
+        "src/assets/diagrams/ch21/a223-10-alpha-completion-gap.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-10-alpha-completion-gap",
+      "sources": [
+        "https://github.com/alibaba/alpha/tree/04fe7f22c469de66fed98c341334c954dfabafb2"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-10-alpha-completion-gap.svg",
+          "sha256": "32a199eb98bf1e53962e4534985a82dfa0a5deb39319431c23f836a1234dc48c",
+          "bytes": 24574
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-10-alpha-completion-gap.png",
+          "sha256": "a73246f547451bb2ee7d661caed6dafd0db95076fe3ba80b3c65f90ba1e174cb",
+          "bytes": 86031,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-11-scheduler-contract",
+      "title": "调度器统一拥有状态、资源选择与观测",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-11-scheduler-contract.svg",
+        "src/assets/diagrams/ch21/a223-11-scheduler-contract.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-11-scheduler-contract",
+      "sources": [
+        "https://developer.android.com/topic/libraries/app-startup",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-11-scheduler-contract.svg",
+          "sha256": "e2d09fcb393f8fe55e70158786ae4bed2a7e9171fcea5fdb7fe339fc307a72b4",
+          "bytes": 25638
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-11-scheduler-contract.png",
+          "sha256": "d3a944b126ec7e11d2941b0268cb4ed16d0e5afda3a034a8e08cd27b3ce13679",
+          "bytes": 87137,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-12-safe-config",
+      "title": "远程配置只能选择本地已验证的安全空间",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-12-safe-config.svg",
+        "src/assets/diagrams/ch21/a223-12-safe-config.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-12-safe-config",
+      "sources": [
+        "https://developer.android.com/topic/libraries/app-startup",
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-12-safe-config.svg",
+          "sha256": "7d88366f62d1620229c15fb0f3e8c6fd863c7e18e1a5a4dd863bfcb5fe89ebf3",
+          "bytes": 26815
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-12-safe-config.png",
+          "sha256": "1e67ac74a10845b516d4036a704cd7c8a620357f5a764a333bd3201ee878599d",
+          "bytes": 89302,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-13-early-failure-safe-graph",
+      "title": "早期失败需要独立状态，下一次启动按条件切安全图",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-13-early-failure-safe-graph.svg",
+        "src/assets/diagrams/ch21/a223-13-early-failure-safe-graph.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-13-early-failure-safe-graph",
+      "sources": [
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-13-early-failure-safe-graph.svg",
+          "sha256": "73dfcd8be62bfd564852517e3a16962ce9bee09cbf1551cffd33b2890ecb3fd8",
+          "bytes": 31800
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-13-early-failure-safe-graph.png",
+          "sha256": "829e1619fc35cfea5bbb49d6feb0cd2ae3bc241643228dc06e6e043530b35dbc",
+          "bytes": 138345,
+          "dimensions": [
+            2100,
+            1200
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-14-task-time-boundaries",
+      "title": "依赖就绪、入队、开始和逻辑完成需要分别打点",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-14-task-time-boundaries.svg",
+        "src/assets/diagrams/ch21/a223-14-task-time-boundaries.png"
+      ],
+      "layout": "temporal-sequence",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-14-task-time-boundaries",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java",
+        "https://developer.android.com/topic/performance/tracing",
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-14-task-time-boundaries.svg",
+          "sha256": "48de22689d32f440f3ee14f365eeab9c76a58c58837754b231f0adf7e9246d81",
+          "bytes": 24189
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-14-task-time-boundaries.png",
+          "sha256": "be26fc16c5a10c5f5a3fc60cde8521e10572808568f979205c3c7ce1edcf0339",
+          "bytes": 83332,
+          "dimensions": [
+            2100,
+            915
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-15-trigger-and-cost",
+      "title": "异步、延后、首次使用与持久调度改变不同条件",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-15-trigger-and-cost.svg",
+        "src/assets/diagrams/ch21/a223-15-trigger-and-cost.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-15-trigger-and-cost",
+      "sources": [
+        "https://developer.android.com/guide/playcore/feature-delivery",
+        "https://developer.android.com/develop/background-work/background-tasks/persistent",
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-15-trigger-and-cost.svg",
+          "sha256": "cc19714b987cc598f034adf208952437aafbf2884cffedc0ed11ad45288887e5",
+          "bytes": 30711
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-15-trigger-and-cost.png",
+          "sha256": "b3c9ab434d1c40a54c4220016df18caa9ca50b677231d0fabc0b9d5c847199a8",
+          "bytes": 109409,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-16-commit-gate",
+      "title": "frame commit 只打开调度门，后续工作仍需资源预算",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-16-commit-gate.svg",
+        "src/assets/diagrams/ch21/a223-16-commit-gate.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-16-commit-gate",
+      "sources": [
+        "https://developer.android.com/reference/android/view/ViewTreeObserver#registerFrameCommitCallback%28java.lang.Runnable%29",
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-16-commit-gate.svg",
+          "sha256": "851900d257ced8797cf2311f698e8484b048b2b6ef5f389cf0a29454b939bd07",
+          "bytes": 22584
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-16-commit-gate.png",
+          "sha256": "706227ce26999265847a938a9e8f55d9649288918bc0a82a31dece6efd4205f4",
+          "bytes": 84125,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-17-feature-gate-state",
+      "title": "FeatureGate 共享成功，普通失败与取消走不同路径",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-17-feature-gate-state.svg",
+        "src/assets/diagrams/ch21/a223-17-feature-gate-state.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-17-feature-gate-state",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-17-feature-gate-state.svg",
+          "sha256": "dfb85bdfa9463577fd719b71684bb5bda9ee933e115290661d20236de66158b3",
+          "bytes": 21683
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-17-feature-gate-state.png",
+          "sha256": "94628810652633d0673eaff0da7a8cdd33cabdd4ee8395aba4bab490726cae62",
+          "bytes": 88738,
+          "dimensions": [
+            2100,
+            915
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-18-idle-is-signal",
+      "title": "IdleHandler 说明所属队列暂时没有到期消息",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-18-idle-is-signal.svg",
+        "src/assets/diagrams/ch21/a223-18-idle-is-signal.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-18-idle-is-signal",
+      "sources": [
+        "https://developer.android.com/reference/android/os/MessageQueue.IdleHandler",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/LegacyMessageQueue/MessageQueue.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-18-idle-is-signal.svg",
+          "sha256": "45fc08ae6a2f2a23f05932e7e67e1db43cc5d9a1b8d5e70cfda7877fedfa7b82",
+          "bytes": 27643
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-18-idle-is-signal.png",
+          "sha256": "e1dad6aa2ba922193fb68ab08d5b6767fc3feb78adbc614544b2330635f7e83c",
+          "bytes": 91771,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-19-deli-idle-boundaries",
+      "title": "Android 17 DeliQueue 的核心并发不等于所有操作无锁",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-19-deli-idle-boundaries.svg",
+        "src/assets/diagrams/ch21/a223-19-deli-idle-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-19-deli-idle-boundaries",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/CombinedDeliMessageQueue/MessageQueue.java",
+        "https://developer.android.com/about/versions/17/changes/messagequeue",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/LegacyMessageQueue/MessageQueue.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-19-deli-idle-boundaries.svg",
+          "sha256": "d59395440e1a8baa12f76f4a66476edaa177603e570d457eaa4052d544073c90",
+          "bytes": 28400
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-19-deli-idle-boundaries.png",
+          "sha256": "595771f2f77e3b4209a384c4fc32422a93a483472ca58265b5afd47c668f85af",
+          "bytes": 114163,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-20-on-demand-install",
+      "title": "收到 session ID 不代表模块已安装和可访问",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-20-on-demand-install.svg",
+        "src/assets/diagrams/ch21/a223-20-on-demand-install.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-20-on-demand-install",
+      "sources": [
+        "https://developer.android.com/guide/playcore/feature-delivery",
+        "https://developer.android.com/guide/playcore/feature-delivery/on-demand"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-20-on-demand-install.svg",
+          "sha256": "240ca36bc85ce35af13116e5503bb3ca0f1d67706c53d6f3e80536133e21264c",
+          "bytes": 25470
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-20-on-demand-install.png",
+          "sha256": "56fee89c416d7b463e96e00e5fbf5d236d939fc2b37355153bb107b60f33053f",
+          "bytes": 97669,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-21-base-exported-proxy",
+      "title": "外部入口留在 base，模块安装检查后再转内部能力",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-21-base-exported-proxy.svg",
+        "src/assets/diagrams/ch21/a223-21-base-exported-proxy.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-21-base-exported-proxy",
+      "sources": [
+        "https://developer.android.com/guide/playcore/feature-delivery",
+        "https://developer.android.com/guide/playcore/feature-delivery/on-demand"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-21-base-exported-proxy.svg",
+          "sha256": "89ad971763116a4e0d8f0e83313320cc757cde114a929688e764dfecf7de802a",
+          "bytes": 27486
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-21-base-exported-proxy.png",
+          "sha256": "208cdb451b54f3529b639fad1f9525c6ad10e7cc9dbceeff1d4ef33c291cd44e",
+          "bytes": 92846,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-22-workmanager-defaults",
+      "title": "WorkManager 2.12.0 负责持久任务，默认执行资源仍有区别",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-22-workmanager-defaults.svg",
+        "src/assets/diagrams/ch21/a223-22-workmanager-defaults.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-22-workmanager-defaults",
+      "sources": [
+        "https://developer.android.com/reference/androidx/work/Configuration.Builder",
+        "https://developer.android.com/jetpack/androidx/releases/work",
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.12.0/work-runtime-2.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-22-workmanager-defaults.svg",
+          "sha256": "b3ccc36548cc64dbc5ba6cbdf4e1a0fc6a8eea24d8c10ceb654fd665feee3bd3",
+          "bytes": 25340
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-22-workmanager-defaults.png",
+          "sha256": "a5cb713c1a91a9af5b5c9a4d91a3dfd353cc0a8ee0a442f7d53a48b670e25338",
+          "bytes": 115427,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-23-executor-admission",
+      "title": "ThreadPoolExecutor 先入队，队列拒收后才尝试扩到最大数",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-23-executor-admission.svg",
+        "src/assets/diagrams/ch21/a223-23-executor-admission.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-23-executor-admission",
+      "sources": [
+        "https://developer.android.com/reference/java/util/concurrent/ThreadPoolExecutor",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-23-executor-admission.svg",
+          "sha256": "c87945586a5ee412fc21231381a1df9d86151fbb7562c9163a0f6b7c5e0d8c22",
+          "bytes": 25138
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-23-executor-admission.png",
+          "sha256": "fe2f3d3842b66b115032d2fed57f041fe9256c099116d12d4898ab332f0ab843",
+          "bytes": 115517,
+          "dimensions": [
+            2100,
+            915
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-24-queue-rejection",
+      "title": "队列与拒绝策略同时决定延迟、内存和正确性",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-24-queue-rejection.svg",
+        "src/assets/diagrams/ch21/a223-24-queue-rejection.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-24-queue-rejection",
+      "sources": [
+        "https://developer.android.com/reference/java/util/concurrent/ThreadPoolExecutor",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-24-queue-rejection.svg",
+          "sha256": "8669612d7cf7bceea4f47bb7ee9c5db4d43bf722341aee3aa1f2c2de6e4a981f",
+          "bytes": 27969
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-24-queue-rejection.png",
+          "sha256": "f49719ef43ef37990db0b63f0fcaeac5e371bc0436941c940931fee4f856feeb",
+          "bytes": 110445,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-25-same-pool-starvation",
+      "title": "同池父任务占满线程后等待子任务，会形成线程饥饿",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-25-same-pool-starvation.svg",
+        "src/assets/diagrams/ch21/a223-25-same-pool-starvation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-25-same-pool-starvation",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-25-same-pool-starvation.svg",
+          "sha256": "c63c4a794c59981329bce6c862df06c7590f0ead85a93f7e201b06baf880e1bb",
+          "bytes": 21537
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-25-same-pool-starvation.png",
+          "sha256": "fd5fd498b4116b61e5bddcdc86a8798f1818df081ec1a7036d0fc8323b16171b",
+          "bytes": 101549,
+          "dimensions": [
+            2100,
+            1035
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-26-java-nice-inheritance",
+      "title": "Java priority 的继承与 Process nice 的修改不能混同",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-26-java-nice-inheritance.svg",
+        "src/assets/diagrams/ch21/a223-26-java-nice-inheritance.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-26-java-nice-inheritance",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Process",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-26-java-nice-inheritance.svg",
+          "sha256": "48152b5842b44a6af63a337b7220b679ce45e0b22c559ae07b25a7f50d5ffe14",
+          "bytes": 26222
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-26-java-nice-inheritance.png",
+          "sha256": "d58cd23a184edbc0139724f5439ef01e50398f7f5b1fe82b8d02c1a358e9a6fa",
+          "bytes": 119725,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-27-affinity-and-policy",
+      "title": "CPU 选择由多项策略共同约束，硬绑核必须检查结果",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-27-affinity-and-policy.svg",
+        "src/assets/diagrams/ch21/a223-27-affinity-and-policy.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-27-affinity-and-policy",
+      "sources": [
+        "https://man7.org/linux/man-pages/man2/sched_setaffinity.2.html",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c",
+        "https://source.android.com/docs/core/perf/cgroups"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-27-affinity-and-policy.svg",
+          "sha256": "de78e036272fa75eeac1b38f2e04438fc3be9bea9d058d9ab8f43f5fb04514b0",
+          "bytes": 29226
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-27-affinity-and-policy.png",
+          "sha256": "6001939899bd9b5636744fe09c242bb40631b8b7e08fd8b3cc5ab7ef3332438c",
+          "bytes": 112735,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-28-thread-memory-lifetime",
+      "title": "栈地址空间、驻留内存与线程生命周期分别核对",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-28-thread-memory-lifetime.svg",
+        "src/assets/diagrams/ch21/a223-28-thread-memory-lifetime.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-28-thread-memory-lifetime",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-28-thread-memory-lifetime.svg",
+          "sha256": "23993049fe405ec979a8b8e1c45d1e7e60e7939d2865db17072b8dae3154d319",
+          "bytes": 32368
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-28-thread-memory-lifetime.png",
+          "sha256": "d5cdbca4d4459f4e586947b5111d221457c0d438aeea36f35056fe0d50d611dc",
+          "bytes": 123442,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-29-dispatcher-vs-inflight",
+      "title": "limitedParallelism 控制执行片段，不锁住整个挂起任务",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-29-dispatcher-vs-inflight.svg",
+        "src/assets/diagrams/ch21/a223-29-dispatcher-vs-inflight.png"
+      ],
+      "layout": "temporal-sequence",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-29-dispatcher-vs-inflight",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-29-dispatcher-vs-inflight.svg",
+          "sha256": "56e77c0830528e3c685cc15bb0a60a1a625db358834f468bd46db40146beb697",
+          "bytes": 24179
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-29-dispatcher-vs-inflight.png",
+          "sha256": "deb4530d8cda407ce2e2a8d2cde2c248848117fea7d269a1c5766107c6e7947a",
+          "bytes": 88282,
+          "dimensions": [
+            2100,
+            915
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-30-structured-inputs",
+      "title": "结构化并发管理两个独立输入的完成与取消",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-30-structured-inputs.svg",
+        "src/assets/diagrams/ch21/a223-30-structured-inputs.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-30-structured-inputs",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-30-structured-inputs.svg",
+          "sha256": "97ed8fd37ab349a8e3105873376f94c893bb222e4a0e8687a6f6e4444add2471",
+          "bytes": 21116
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-30-structured-inputs.png",
+          "sha256": "cdbb2db47894e68d2089dfa8887b6e07c9b9816418c147744386162c65008baa",
+          "bytes": 102602,
+          "dimensions": [
+            2100,
+            1140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-31-executor-vs-cpu-wait",
+      "title": "排在执行器队列与 Runnable 等 CPU 是不同等待",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-31-executor-vs-cpu-wait.svg",
+        "src/assets/diagrams/ch21/a223-31-executor-vs-cpu-wait.png"
+      ],
+      "layout": "temporal-sequence",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-31-executor-vs-cpu-wait",
+      "sources": [
+        "https://developer.android.com/topic/performance/tracing",
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-31-executor-vs-cpu-wait.svg",
+          "sha256": "68ab0d23e2cc37c6849cac94d15f02bcb7dab95da85e86411e9b635e0fec530e",
+          "bytes": 26092
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-31-executor-vs-cpu-wait.png",
+          "sha256": "67163ee137f722905755a48d9894ac35c3856e3d33dc48daa2d53ece6fcb04a0",
+          "bytes": 93136,
+          "dimensions": [
+            2100,
+            915
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a223-32-legacy-version-edges",
+      "title": "遗留 executor 和 flagged 虚拟线程不能当新启动框架基线",
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a223-32-legacy-version-edges.svg",
+        "src/assets/diagrams/ch21/a223-32-legacy-version-edges.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a223-32-legacy-version-edges",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/AsyncTask.java",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt",
+        "https://developer.android.com/reference/java/lang/Thread"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a223-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a223-32-legacy-version-edges.svg",
+          "sha256": "2cc6b9de94f58f4cf81a1f8a1b9980d6d8a4f895c00b0e455bad6b398b7d6807",
+          "bytes": 31715
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a223-32-legacy-version-edges.png",
+          "sha256": "692651cfb50bd00cc2b4be442d9c4eb201017f7ea67e448d5bffcf8f27b1e06c",
+          "bytes": 127312,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-01-bind-install-order",
+      "title": "Application 先创建，普通 Provider 安装早于 Application.onCreate",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-01-bind-install-order.svg",
+        "src/assets/diagrams/ch21/a224-01-bind-install-order.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-01-bind-install-order",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentProvider.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-01-bind-install-order.svg",
+          "sha256": "19136be8f1194403f373e3573b4742e5fe9d497fc7b721845cbba0bc83f8256f",
+          "bytes": 15787
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-01-bind-install-order.png",
+          "sha256": "a6b39e7ab939161f92dab02f5121316f15d4011df09b891c31848c2977af5a58",
+          "bytes": 69025,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-02-batch-publish",
+      "title": "逐个实例化与初始化，当前批次 holder 一次发布",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-02-batch-publish.svg",
+        "src/assets/diagrams/ch21/a224-02-batch-publish.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-02-batch-publish",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentProvider.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-02-batch-publish.svg",
+          "sha256": "c0d08d1215cdaf10d6bbecd3a7cf7c997ec5c6539953b859f7059a2c20f473dd",
+          "bytes": 21145
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-02-batch-publish.png",
+          "sha256": "c226a1cae20cd9762d0b152595d5ebcefc0c8723048f1b11f12e216bbde8fd89",
+          "bytes": 87859,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-03-provider-cost-layers",
+      "title": "固定组件入口、业务工作、后台竞争和进程创建分层取证",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-03-provider-cost-layers.svg",
+        "src/assets/diagrams/ch21/a224-03-provider-cost-layers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-03-provider-cost-layers",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-03-provider-cost-layers.svg",
+          "sha256": "71c5b71b6441ae3ef481e3958af73f9d2882019536d4b1315cee13d487115764",
+          "bytes": 27562
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-03-provider-cost-layers.png",
+          "sha256": "50528248b51f9eb9e507ca19b15443d508ed42f0252803c51b53360aa31f57b5",
+          "bytes": 106082,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-04-manifest-provenance",
+      "title": "发布 APK 的合并结果决定 Provider 身份和进程",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-04-manifest-provenance.svg",
+        "src/assets/diagrams/ch21/a224-04-manifest-provenance.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-04-manifest-provenance",
+      "sources": [
+        "https://developer.android.com/guide/topics/manifest/provider-element",
+        "https://developer.android.com/build/manage-manifests"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-04-manifest-provenance.svg",
+          "sha256": "773ae0d88672f84ebe77e1e1f61a0b0e11433d62998c781d1b92cc276913e159",
+          "bytes": 25600
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-04-manifest-provenance.png",
+          "sha256": "6395a60e1fa4f86aa4d06fe41561f554426b93028f3a2353dedcbd869e3ed579",
+          "bytes": 91140,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-05-equivalent-provider-ab",
+      "title": "A/B 同时保留等价业务能力，才能分开入口与 SDK 成本",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-05-equivalent-provider-ab.svg",
+        "src/assets/diagrams/ch21/a224-05-equivalent-provider-ab.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-05-equivalent-provider-ab",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-05-equivalent-provider-ab.svg",
+          "sha256": "1daaa8ef176a00fa0766a66ff26287610338b3d6ec2b6c35765a18787d8773a6",
+          "bytes": 33863
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-05-equivalent-provider-ab.png",
+          "sha256": "da5586ee1703008f4dee2b76e991680b226b510975f62f8932bdc17f6903eab5",
+          "bytes": 118548,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-06-remote-provider-wait",
+      "title": "同步获取远端 Provider 可能把进程冷启动串回调用方",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-06-remote-provider-wait.svg",
+        "src/assets/diagrams/ch21/a224-06-remote-provider-wait.png"
+      ],
+      "layout": "temporal-sequence",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-06-remote-provider-wait",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/ZygoteProcess.java",
+        "https://developer.android.com/reference/android/os/IBinder"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-06-remote-provider-wait.svg",
+          "sha256": "b0f62a819ff34565ac37a5dca55ce28056445916160a204ae00d819f6657368a",
+          "bytes": 24068
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-06-remote-provider-wait.png",
+          "sha256": "e72b6e2ee5e5f7a8e068cb518e38f07d5e43c33cf34cc650c485ac7997d47ee9",
+          "bytes": 87229,
+          "dimensions": [
+            2100,
+            915
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-07-necessity-and-owner",
+      "title": "按用户可见完成条件分阶段，预算来自目标与余量",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-07-necessity-and-owner.svg",
+        "src/assets/diagrams/ch21/a224-07-necessity-and-owner.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-07-necessity-and-owner",
+      "sources": [
+        "https://developer.android.com/topic/libraries/app-startup",
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-07-necessity-and-owner.svg",
+          "sha256": "6316279010f8b85683df698557c38e802da3af695efe8e8feca8b0cd66694d62",
+          "bytes": 27748
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-07-necessity-and-owner.png",
+          "sha256": "8915e17ea612182575973f66e5269182f8a774f73df5d6a02a95cb58ea90b6cf",
+          "bytes": 105070,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-08-remove-entry-verify",
+      "title": "删除合并节点后，显式能力和所有入口都要回归",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-08-remove-entry-verify.svg",
+        "src/assets/diagrams/ch21/a224-08-remove-entry-verify.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-08-remove-entry-verify",
+      "sources": [
+        "https://developer.android.com/guide/topics/manifest/provider-element",
+        "https://developer.android.com/build/manage-manifests"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-08-remove-entry-verify.svg",
+          "sha256": "0d8e68006029a18470bd5daa1eb96d5e9901b9acab8b171d6d34ee2e7a41d489",
+          "bytes": 29240
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-08-remove-entry-verify.png",
+          "sha256": "b40fc5661480b01a0eb96644f9c1adcab0ef3bd4e8b1bab46c243c3b9cee910f",
+          "bytes": 101066,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-09-explicit-init-results",
+      "title": "移除 Provider 的隐式时序后，用结果状态机表达完成",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-09-explicit-init-results.svg",
+        "src/assets/diagrams/ch21/a224-09-explicit-init-results.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-09-explicit-init-results",
+      "sources": [
+        "https://developer.android.com/topic/libraries/app-startup",
+        "https://developer.android.com/develop/background-work/services/bound-services"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-09-explicit-init-results.svg",
+          "sha256": "434af094dac3c440e90792801659a8ae2ff5b0d566bbeee4d7ddb9330af495ac",
+          "bytes": 21786
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-09-explicit-init-results.png",
+          "sha256": "52bfc5ff62f78103a7e9552d8eda74d587522960b7c23c20e7c577f9c6ff97d3",
+          "bytes": 87937,
+          "dimensions": [
+            2100,
+            930
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-10-commit-and-fallback",
+      "title": "硬件提交信号与软件 post 兜底的证据强度不同",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-10-commit-and-fallback.svg",
+        "src/assets/diagrams/ch21/a224-10-commit-and-fallback.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-10-commit-and-fallback",
+      "sources": [
+        "https://developer.android.com/reference/android/view/ViewTreeObserver"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-10-commit-and-fallback.svg",
+          "sha256": "2621c2054cad68343d658360435da0bf910f148b1743019cdd4ee97a8c03e93f",
+          "bytes": 27681
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-10-commit-and-fallback.png",
+          "sha256": "eb9caf7603c1ff51e9d654df3e83a40312d3f9c8ecfef7f974b235cbba6398b6",
+          "bytes": 109757,
+          "dimensions": [
+            2100,
+            1155
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-11-startup-synchronous-deps",
+      "title": "共享一个 InitializationProvider，依赖同步执行后才创建根",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-11-startup-synchronous-deps.svg",
+        "src/assets/diagrams/ch21/a224-11-startup-synchronous-deps.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-11-startup-synchronous-deps",
+      "sources": [
+        "https://developer.android.com/topic/libraries/app-startup",
+        "https://dl.google.com/dl/android/maven2/androidx/startup/startup-runtime/1.2.0/startup-runtime-1.2.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-11-startup-synchronous-deps.svg",
+          "sha256": "9fb014fc5cdb4b6964d557e7cec4c48eca4eb30d4ea0b312c4d910af27d7d910",
+          "bytes": 20042
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-11-startup-synchronous-deps.png",
+          "sha256": "886b83f4405d06355f2f607c0f53644932eb44038376efed9e0e19869d143757",
+          "bytes": 93740,
+          "dimensions": [
+            2100,
+            930
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-12-direct-boot-storage",
+      "title": "Direct Boot 能力按用户解锁状态与存储域划分",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-12-direct-boot-storage.svg",
+        "src/assets/diagrams/ch21/a224-12-direct-boot-storage.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-12-direct-boot-storage",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/direct-boot",
+        "https://developer.android.com/guide/topics/manifest/provider-element"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-12-direct-boot-storage.svg",
+          "sha256": "65f3ac087d72b998098de59fe3500fe74c67a15f7ddcbd6a2b79b90be4245074",
+          "bytes": 24561
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-12-direct-boot-storage.png",
+          "sha256": "47f23f2e995e0da50252e31f8691bd587fa90b7de11b1d7a1d00309159637a6e",
+          "bytes": 129500,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-13-local-provider-eligibility",
+      "title": "canRunHere 同时检查进程条件与 UID 身份",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-13-local-provider-eligibility.svg",
+        "src/assets/diagrams/ch21/a224-13-local-provider-eligibility.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-13-local-provider-eligibility",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderRecord.java",
+        "https://developer.android.com/guide/topics/manifest/provider-element"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-13-local-provider-eligibility.svg",
+          "sha256": "d2d27b1c01ea10b30157ec618937a4bbd118ed44f49bec8e1c7c0061f2c9a111",
+          "bytes": 25996
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-13-local-provider-eligibility.png",
+          "sha256": "38a3c371f18cd494d184fcf7ca0a34887f9c528c0f82fac36fb17fdce503d273",
+          "bytes": 109284,
+          "dimensions": [
+            2100,
+            1200
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-14-provider-security-surface",
+      "title": "入口移动也会改变暴露面和权限执行位置",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-14-provider-security-surface.svg",
+        "src/assets/diagrams/ch21/a224-14-provider-security-surface.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-14-provider-security-surface",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentProvider.java",
+        "https://developer.android.com/guide/topics/manifest/provider-element"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-14-provider-security-surface.svg",
+          "sha256": "d28e5eb271c6500b799ecff6c82ccd72e0f1e3c9780f7fa1696101ecaad7aafc",
+          "bytes": 27879
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-14-provider-security-surface.png",
+          "sha256": "be18109c47e2bcdc22429727d1813442d404c86a57c4df04911c4a09095e0c3b",
+          "bytes": 113576,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-15-process-isolation-cost",
+      "title": "普通私有进程隔离内存，isolated service 还改变 UID",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-15-process-isolation-cost.svg",
+        "src/assets/diagrams/ch21/a224-15-process-isolation-cost.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-15-process-isolation-cost",
+      "sources": [
+        "https://developer.android.com/guide/components/processes-and-threads",
+        "https://developer.android.com/develop/ui/views/layout/webapps/handle-termination"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-15-process-isolation-cost.svg",
+          "sha256": "f6fbbb797129332bb22c8c80efc544717a3ba33da78680d85ac94cd23aba0d6b",
+          "bytes": 28301
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-15-process-isolation-cost.png",
+          "sha256": "567f4662045f851a0c119d8ae863774525e3d2442e44afa9ee10f20dcde911fb",
+          "bytes": 121475,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-16-component-process-start",
+      "title": "组件请求可触发新进程，Application 分支晚于 Provider",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-16-component-process-start.svg",
+        "src/assets/diagrams/ch21/a224-16-component-process-start.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-16-component-process-start",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/ZygoteProcess.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-16-component-process-start.svg",
+          "sha256": "44c3c9160b371a1680033dd3fdcafa997cda8fbdfb6c9a76eb707ec51ea02865",
+          "bytes": 22603
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-16-component-process-start.png",
+          "sha256": "cab639c5b42e13d947d926f3c5d7e8afe92c906c33e8f40be378413c61b633e3",
+          "bytes": 99314,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-17-role-before-class-use",
+      "title": "先按进程角色选择最小图，再主动使用 SDK 和类",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-17-role-before-class-use.svg",
+        "src/assets/diagrams/ch21/a224-17-role-before-class-use.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-17-role-before-class-use",
+      "sources": [
+        "https://developer.android.com/guide/components/processes-and-threads",
+        "https://developer.android.com/reference/android/app/Application",
+        "https://docs.oracle.com/javase/specs/jls/se21/html/jls-12.html#jls-12.4"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-17-role-before-class-use.svg",
+          "sha256": "49b7b3ea2f9e2bace703069351c28fc54a705c75096cc9c8885b945069c4dffe",
+          "bytes": 29076
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-17-role-before-class-use.png",
+          "sha256": "1d8ab962cf4ba1fb421b9a8c50ea116aaf3e1aa34fc297cf6366e2759bfb9849",
+          "bytes": 114515,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-18-prewarm-tradeoff",
+      "title": "远程预热同时比较入口等待、UI竞争和常驻资源",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-18-prewarm-tradeoff.svg",
+        "src/assets/diagrams/ch21/a224-18-prewarm-tradeoff.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-18-prewarm-tradeoff",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/bound-services",
+        "https://developer.android.com/topic/performance/memory-management",
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-18-prewarm-tradeoff.svg",
+          "sha256": "f156efb8c76d0cd0862cc3a3d41428b961e2a05b5d602a4730b28a4ad7dd3da4",
+          "bytes": 29950
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-18-prewarm-tradeoff.png",
+          "sha256": "ff78c9a8b10be710e0a4a42905c5188f49c37cebafde934c4a9dd9d03adf082f",
+          "bytes": 111515,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-19-binder-generation-race",
+      "title": "旧 Binder 的晚到死亡通知不能覆盖新一代 Ready",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-19-binder-generation-race.svg",
+        "src/assets/diagrams/ch21/a224-19-binder-generation-race.png"
+      ],
+      "layout": "temporal-sequence",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-19-binder-generation-race",
+      "sources": [
+        "https://developer.android.com/reference/android/content/ServiceConnection",
+        "https://developer.android.com/reference/android/os/IBinder"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-19-binder-generation-race.svg",
+          "sha256": "fd3da9ca13042bb2ae922f45e46c3ba17b6b227394dc5931e8475333735b00ad",
+          "bytes": 23778
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-19-binder-generation-race.png",
+          "sha256": "fb3fa31894256273448352bb34869860bcc24e7f84a3f8f2c848befe87939ccb",
+          "bytes": 85936,
+          "dimensions": [
+            2100,
+            915
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-20-blocking-binder-timeout",
+      "title": "协程 deadline 不会强行终止已经阻塞的同步 Binder",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-20-blocking-binder-timeout.svg",
+        "src/assets/diagrams/ch21/a224-20-blocking-binder-timeout.png"
+      ],
+      "layout": "temporal-sequence",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-20-blocking-binder-timeout",
+      "sources": [
+        "https://developer.android.com/reference/android/os/IBinder",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-20-blocking-binder-timeout.svg",
+          "sha256": "7f62ff13c6abee707e171a1efb3e593e6aba4f28d41181f341ae90f9ba15b245",
+          "bytes": 24164
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-20-blocking-binder-timeout.png",
+          "sha256": "3ab906d39690a7b234954825d9509f4f36ea00707b7fcae651599e0c2da2a4fd",
+          "bytes": 89211,
+          "dimensions": [
+            2100,
+            915
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-21-single-state-owner",
+      "title": "跨进程静态变量不共享，状态需要唯一写入者与版本协议",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-21-single-state-owner.svg",
+        "src/assets/diagrams/ch21/a224-21-single-state-owner.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-21-single-state-owner",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/Context.java",
+        "https://developer.android.com/guide/components/processes-and-threads",
+        "https://developer.android.com/develop/background-work/services/bound-services"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-21-single-state-owner.svg",
+          "sha256": "4e6d6fb944de7b75b9227f21048a92e1d54c2d96942aa75b7a1f7483695ad02d",
+          "bytes": 25871
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-21-single-state-owner.png",
+          "sha256": "d1c966cbfc4483e88cd9a595e01a9f5211cea5390828297f85a2d8df70d01286",
+          "bytes": 110806,
+          "dimensions": [
+            2100,
+            1035
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-22-death-and-recovery",
+      "title": "远端会消失，恢复依赖请求描述与持久检查点",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-22-death-and-recovery.svg",
+        "src/assets/diagrams/ch21/a224-22-death-and-recovery.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-22-death-and-recovery",
+      "sources": [
+        "https://developer.android.com/reference/android/app/Application",
+        "https://developer.android.com/reference/android/content/ServiceConnection",
+        "https://developer.android.com/reference/android/os/IBinder"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-22-death-and-recovery.svg",
+          "sha256": "5485ae42a4c2bda9d48904c40c6ef19ea4f75ffb847660133cfe1688c272d829",
+          "bytes": 31220
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-22-death-and-recovery.png",
+          "sha256": "7438ff28ffbe1d2a945b7f5df7f532e9979abb6d0869db23b57fb1b5a6f2424f",
+          "bytes": 95464,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a224-23-memory-and-readiness-metrics",
+      "title": "主进程看首帧，远程看协议 ready，内存按同口径聚合",
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a224-23-memory-and-readiness-metrics.svg",
+        "src/assets/diagrams/ch21/a224-23-memory-and-readiness-metrics.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a224-23-memory-and-readiness-metrics",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationStartInfo",
+        "https://developer.android.com/topic/performance/memory-management",
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a224-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a224-23-memory-and-readiness-metrics.svg",
+          "sha256": "16163eea403e220d75c4a6f295c1edca253d3612766375fda1ba3f07af5f4549",
+          "bytes": 25379
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a224-23-memory-and-readiness-metrics.png",
+          "sha256": "928c07ff086165ccb840df97c50da3c77860adeeeabc6219fe9079230ddeb5c2",
+          "bytes": 109164,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-01-optimization-consumers",
+      "title": "三类 Profile 优化由不同工具消费",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-01-optimization-consumers.svg",
+        "src/assets/diagrams/ch21/a225-01-optimization-consumers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-01-optimization-consumers",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations",
+        "https://source.android.com/docs/core/runtime/configure/art-service"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-01-optimization-consumers.svg",
+          "sha256": "23fbfcbc097b91f5b3454d386d7cf7ddcc46c6c75aeb9fa81d3cff1afc9e8691",
+          "bytes": 26912
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-01-optimization-consumers.png",
+          "sha256": "d1f663def4cbe6742743dd179fc1092278af6f000fb6cef1aa7842f95152b4cd",
+          "bytes": 118397,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-02-hrf-to-art",
+      "title": "从可读规则到 ART 编译产物",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-02-hrf-to-art.svg",
+        "src/assets/diagrams/ch21/a225-02-hrf-to-art.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-02-hrf-to-art",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/profman/profman.cc",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-02-hrf-to-art.svg",
+          "sha256": "510582375871788046f418f7f096d2bd23cec5313fe81d63a9a1c1aae5fe1dcd",
+          "bytes": 20890
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-02-hrf-to-art.png",
+          "sha256": "1ca75ee15976121e3a321e02f37bb0e46a7b674cc27255ed72e8f96cd9926d07",
+          "bytes": 69087,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-03-profile-producers",
+      "title": "四种 Profile 的生产与消费位置",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-03-profile-producers.svg",
+        "src/assets/diagrams/ch21/a225-03-profile-producers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-03-profile-producers",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-03-profile-producers.svg",
+          "sha256": "008f266c595ce9a62d6a8e03d5aa8f8af4f852dbf6c5dff88dc2e8af6a06992a",
+          "bytes": 29422
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-03-profile-producers.png",
+          "sha256": "f7872b3f1cafa6e7c655b52d114b0703617556cf2fef9343112d17d798bdd148",
+          "bytes": 149851,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-04-generator-path",
+      "title": "采集场景同时校验页面与启动范围",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-04-generator-path.svg",
+        "src/assets/diagrams/ch21/a225-04-generator-path.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-04-generator-path",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile",
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro-junit4/1.5.0/benchmark-macro-junit4-1.5.0-sources.jar",
+        "https://developer.android.com/topic/performance/baselineprofiles/configure-baselineprofiles"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-04-generator-path.svg",
+          "sha256": "a974d4e12fbba348a202166f429fe2804524f8f02c6d30a4fe1ea19d679dd596",
+          "bytes": 21373
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-04-generator-path.png",
+          "sha256": "788d0dc914db44989386d7864eb99570b31c8983e239e91aea82cae5a6a3cd9f",
+          "bytes": 91336,
+          "dimensions": [
+            2100,
+            885
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-05-generation-artifacts",
+      "title": "生成变体与最终发布产物分工",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-05-generation-artifacts.svg",
+        "src/assets/diagrams/ch21/a225-05-generation-artifacts.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-05-generation-artifacts",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile",
+        "https://developer.android.com/topic/performance/baselineprofiles/configure-baselineprofiles",
+        "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles",
+        "https://developer.android.com/topic/performance/baselineprofiles/overview"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-05-generation-artifacts.svg",
+          "sha256": "7aa932c8bd1fee95636fbab101e92718b7d295d9d91f20feca443fca0a6a0adf",
+          "bytes": 32037
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-05-generation-artifacts.png",
+          "sha256": "4b81ef3e6643b99e79f962e81e816b7271e134818ed1591035a1dad1e06a533d",
+          "bytes": 132362,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-06-delivery-branches",
+      "title": "安装渠道决定 Profile 到达哪个阶段",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-06-delivery-branches.svg",
+        "src/assets/diagrams/ch21/a225-06-delivery-branches.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-06-delivery-branches",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles",
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://dl.google.com/dl/android/maven2/androidx/profileinstaller/profileinstaller/1.4.1/profileinstaller-1.4.1-sources.jar",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/utils/Utils.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-06-delivery-branches.svg",
+          "sha256": "539dfe03b9dc9ff9c3472511b9e9f21b2791e5d8989c48242ab767f5186151ed",
+          "bytes": 25163
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-06-delivery-branches.png",
+          "sha256": "a86f15f793d19445af69385d02e511f3650a2c89362f18ef67bb28bc24266d18",
+          "bytes": 108153,
+          "dimensions": [
+            2100,
+            885
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-07-verifier-evidence",
+      "title": "ProfileVerifier 1.4.1 的证据边界",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-07-verifier-evidence.svg",
+        "src/assets/diagrams/ch21/a225-07-verifier-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-07-verifier-evidence",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/profileinstaller/profileinstaller/1.4.1/profileinstaller-1.4.1-sources.jar",
+        "https://developer.android.com/reference/androidx/profileinstaller/ProfileVerifier"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-07-verifier-evidence.svg",
+          "sha256": "6a911e370e62c1092feb76c8f44938cb70807cfdc9243dbad757c62ab2099914",
+          "bytes": 31264
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-07-verifier-evidence.png",
+          "sha256": "43f7ae2be8178da84c6273a3085926e95d7ee367d16478c6813bb473d98c9202",
+          "bytes": 128526,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-08-compilation-modes",
+      "title": "Macrobenchmark 编译模式的实验含义",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-08-compilation-modes.svg",
+        "src/assets/diagrams/ch21/a225-08-compilation-modes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-08-compilation-modes",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-08-compilation-modes.svg",
+          "sha256": "206192f9fb08644263d3ecf03825f5c33c7b07db02fbf7b0e346080d8f31da16",
+          "bytes": 29078
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-08-compilation-modes.png",
+          "sha256": "653aaf2e6c1b59d994b2e27e369928aa159e449d9feda36737d6ed558806373d",
+          "bytes": 127259,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-09-dex-layout",
+      "title": "Startup Profile 把启动代码集中到合适布局",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-09-dex-layout.svg",
+        "src/assets/diagrams/ch21/a225-09-dex-layout.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-09-dex-layout",
+      "sources": [
+        "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations",
+        "https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-09-dex-layout.svg",
+          "sha256": "000028ef8c562c75465cc68cded0d1bd4cbf7193e2acb97dba68a6c867cf8feb",
+          "bytes": 23861
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-09-dex-layout.png",
+          "sha256": "2cfd8c6c430544ceffb3394ac8497862a878b81eb1c857bb9b47a3dd79992cf3",
+          "bytes": 106835,
+          "dimensions": [
+            2100,
+            975
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-10-layout-proof",
+      "title": "验证最终发布 DEX 保留布局",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-10-layout-proof.svg",
+        "src/assets/diagrams/ch21/a225-10-layout-proof.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-10-layout-proof",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles",
+        "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-10-layout-proof.svg",
+          "sha256": "b58c50210810956f65b2cae6f20f3a9d77ee52c52a7ae1c8bc14f61533e11f82",
+          "bytes": 21030
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-10-layout-proof.png",
+          "sha256": "90039fb58b46b834fb4c01f0d82a1cc1d9521bb3f9bea443f9f8722f98cf16ed",
+          "bytes": 76523,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-11-layout-ab",
+      "title": "隔离 DEX 布局收益的单变量实验",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-11-layout-ab.svg",
+        "src/assets/diagrams/ch21/a225-11-layout-ab.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-11-layout-ab",
+      "sources": [
+        "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations",
+        "https://developer.android.com/topic/performance/baselineprofiles/confirm-startup-profiles",
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-11-layout-ab.svg",
+          "sha256": "3fadbaca1e7831e14dc9b5b1f469e3edaff7b4ffa9a844d0d2434f8d919a9fbe",
+          "bytes": 31617
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-11-layout-ab.png",
+          "sha256": "173a28ff9128c79f5eb0abd5f26d98f2bc02cfe3bfdb6d4c7702b4f4f9efac0d",
+          "bytes": 138141,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-12-cold-protocol",
+      "title": "Macrobenchmark 1.5.0 的 COLD 准备顺序",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-12-cold-protocol.svg",
+        "src/assets/diagrams/ch21/a225-12-cold-protocol.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-12-cold-protocol",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-12-cold-protocol.svg",
+          "sha256": "e52f4f3201eeae52c31addac8c93b879042fb6a1df5eb965abe1ad73d77bdc53",
+          "bytes": 22826
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-12-cold-protocol.png",
+          "sha256": "b55b3aaba7b5395e309bb81fc70b625839dede2cad2ef833c116e3b4e4176241",
+          "bytes": 78509,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-13-dm-inputs",
+      "title": "每个 APK 的外部 Profile 与 DM 输入",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-13-dm-inputs.svg",
+        "src/assets/diagrams/ch21/a225-13-dm-inputs.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-13-dm-inputs",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/PrimaryDexUtils.java",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/DexMetadataHelper.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-13-dm-inputs.svg",
+          "sha256": "ff0eeee75d9a989a15ea23d0aa52bd42201a0ab3f80d1f338fe6ebf7764e7e41",
+          "bytes": 24061
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-13-dm-inputs.png",
+          "sha256": "8fdde8e0e3770b98e6a90db7af805610f3a0e9fae50fdce0e05b7a53c58df115",
+          "bytes": 123574,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-14-validation-stages",
+      "title": "安装接受 DM 与 ART 接受 Profile 是两道检查",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-14-validation-stages.svg",
+        "src/assets/diagrams/ch21/a225-14-validation-stages.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-14-validation-stages",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/DexMetadataHelper.java",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/pm/dex/DexMetadataHelper.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-14-validation-stages.svg",
+          "sha256": "4149f52d12b00574063947e334a205c0021386bf7ae6d6b4a9c86617bc33ab73",
+          "bytes": 29540
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-14-validation-stages.png",
+          "sha256": "43b139af3b33d6df3981c852d61c5c4d3b86ae068f015a5bd3eb7271b3e807d5",
+          "bytes": 146258,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-15-art-service-chain",
+      "title": "Android 14+ 的设备端 AOT 执行链路",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-15-art-service-chain.svg",
+        "src/assets/diagrams/ch21/a225-15-art-service-chain.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-15-art-service-chain",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/configure/art-service",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/dex2oat/dex2oat.cc"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-15-art-service-chain.svg",
+          "sha256": "fb5093c1f9bb3ffa33b4b74315cf3d3fe3766e8026225904da3d15af237fdfa3",
+          "bytes": 19902
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-15-art-service-chain.png",
+          "sha256": "78daf8f9c8b4eda89d0fc1cc948c0c5e52c701d6e3c39405f8234e5e76de52f0",
+          "bytes": 68527,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-16-filter-and-reason",
+      "title": "请求策略、实际策略与触发原因分别记录",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-16-filter-and-reason.svg",
+        "src/assets/diagrams/ch21/a225-16-filter-and-reason.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-16-filter-and-reason",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtShellCommand.java",
+        "https://source.android.com/docs/core/runtime/configure/art-service"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-16-filter-and-reason.svg",
+          "sha256": "1d54272aa95c951172c26de08f85032bc6bf741dfb711bd18c58951bd1a12e80",
+          "bytes": 25038
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-16-filter-and-reason.png",
+          "sha256": "7915a35765add52d252d9d23a1d3cac2c011554350c46eedd93caf12a1be8f48",
+          "bytes": 127356,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-17-shared-private",
+      "title": "Android 17 共享代码的 Profile 与产物权限",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-17-shared-private.svg",
+        "src/assets/diagrams/ch21/a225-17-shared-private.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-17-shared-private",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-17-shared-private.svg",
+          "sha256": "dcc3270c15d7ef361b9e95a7fbf5742e6362a74eee75bc4d4f427de9168c5156",
+          "bytes": 21155
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-17-shared-private.png",
+          "sha256": "9e68b87787f7c08802561b80c30d60b65d3c92b1e5dc1531be0fba01ce46cd68",
+          "bytes": 104410,
+          "dimensions": [
+            2100,
+            900
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-18-background-window",
+      "title": "后台 dexopt 的条件与时机",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-18-background-window.svg",
+        "src/assets/diagrams/ch21/a225-18-background-window.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-18-background-window",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/configure/art-service",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-18-background-window.svg",
+          "sha256": "f9c91d49443667aca98f695e6397362c131af7ffd0564dcb85ee152efe9137c6",
+          "bytes": 31245
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-18-background-window.png",
+          "sha256": "55418e3b2313b8d86c9f01aaffc74c48b88b9d4e455fe863eb3074a78864136e",
+          "bytes": 134281,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-19-profile-reset-controls",
+      "title": "三类 shell 操作改变的状态不同",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-19-profile-reset-controls.svg",
+        "src/assets/diagrams/ch21/a225-19-profile-reset-controls.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-19-profile-reset-controls",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtShellCommand.java",
+        "https://source.android.com/docs/core/runtime/configure/art-service"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-19-profile-reset-controls.svg",
+          "sha256": "cc2f109f57e052342fff7516e96219e87671defe7c4e3cd4ce4f12c28759a6eb",
+          "bytes": 25371
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-19-profile-reset-controls.png",
+          "sha256": "8ddc1e24b728c6d7a96225a08c3721a613781c52467a4f247176b8dbee6cd914",
+          "bytes": 132753,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-20-experiment-groups",
+      "title": "无 AOT、目标 Profile 与设备稳态三组比较",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-20-experiment-groups.svg",
+        "src/assets/diagrams/ch21/a225-20-experiment-groups.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-20-experiment-groups",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar",
+        "https://source.android.com/docs/core/runtime/configure/art-service",
+        "https://developer.android.com/topic/performance/baselineprofiles/manually-create-measure"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-20-experiment-groups.svg",
+          "sha256": "e6392b04fd2f59639b2275de5a304e34c99649b5e31437c04626c9c91851eb54",
+          "bytes": 32851
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-20-experiment-groups.png",
+          "sha256": "d5ed4cdbb3049573987a4ae856ab874c0f1bd20f82da0e08998f3ae6634d9194",
+          "bytes": 132927,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-21-split-release-audit",
+      "title": "发布与动态模块逐 APK 验收",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-21-split-release-audit.svg",
+        "src/assets/diagrams/ch21/a225-21-split-release-audit.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-21-split-release-audit",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/PrimaryDexUtils.java",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java",
+        "https://source.android.com/docs/core/runtime/configure/art-service"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-21-split-release-audit.svg",
+          "sha256": "ae6d9b9b0c26671d8a82711621b12d8300699e9b9df816830af0aaf5e8c60d08",
+          "bytes": 29806
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-21-split-release-audit.png",
+          "sha256": "c044cbae554557cd54b14b56bfdc4549797250c83d118ec626df76c4124947ed",
+          "bytes": 140128,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a225-22-evidence-chain",
+      "title": "Profile 优化的最终证据链",
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a225-22-evidence-chain.svg",
+        "src/assets/diagrams/ch21/a225-22-evidence-chain.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a225-22-evidence-chain",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles",
+        "https://source.android.com/docs/core/runtime/configure/art-service",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a225-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a225-22-evidence-chain.svg",
+          "sha256": "df64e14a576b033be4b9925c6fbfad4773710a37a87283ad6446f2ca7ee4f9d4",
+          "bytes": 23666
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a225-22-evidence-chain.png",
+          "sha256": "2344d5e9d00508596ab64fb7b6dfae83c25d623c61d7d3db99794391ec9b7cb8",
+          "bytes": 76362,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     }
   ],
   "corrections": [
@@ -16290,14 +18990,609 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java",
         "https://developer.android.com/google/play/vitals/launch-time"
       ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "last_verified: '2026-08-14'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "本轮阅读全文并按固定源码和当前官方发布记录复核。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/startup/startup-runtime/1.2.0/startup-runtime-1.2.0-sources.jar",
+        "https://developer.android.com/jetpack/androidx/releases/work"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "截至 2026-08-14，",
+      "after": "截至 2026-10-25，",
+      "why": "当前 Startup 发布页仍列1.2.0稳定版。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/startup"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "`PRE_APP` 是被组件生命周期强制出来的阶段，拿来追求“更早”只会把重活提前。[`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)先安装 Provider，再调用 `Application.onCreate()`；放进 Provider 的重活会直接进入更早的主线程关键路径。",
+      "after": "`PRE_APP` 是被组件生命周期强制出来的阶段，拿来追求“更早”只会把重活提前。[`ActivityThread.handleBindApplication()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java)在普通应用绑定且存在待安装 Provider 时，先安装 Provider，再调用 `Application.onCreate()`；放进 Provider 的重活会直接进入更早的主线程关键路径。 `restrictedBackupMode` 会跳过这段 Provider 安装；空 Provider 列表也不安装，不能把普通顺序写成所有入口都执行的强制流程。",
+      "why": "固定ActivityThread显式restrictedBackupMode和列表检查；保留普通路径顺序。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "这里用 `suspend` 表达逻辑完成点：函数挂起时不占住调用线程，只有成功、降级或失败结果产生后才算结束。框架也可以用 Guava `ListenableFuture`、Java `CompletionStage` 或带完成回调的接口实现同一契约。所以后继的等待条件，是前驱产生允许传播的最终状态。某个 SDK 的 `startAsync()` 返回，多半只说明异步请求提交了出去，它是否已可供后继使用还是未知数。",
+      "after": "这里用 `suspend` 表达逻辑完成点：真正挂起时可释放承载线程，但 `suspend` 关键字不会自动切线程，内部阻塞调用仍占用线程；只有成功、降级或失败结果产生后才算结束。框架也可以用 Guava `ListenableFuture`、Java `CompletionStage` 或带完成回调的接口实现同一契约。所以后继的等待条件，是前驱产生允许传播的最终状态。某个 SDK 的 `startAsync()` 返回，多半只说明异步请求提交了出去，它是否已可供后继使用还是未知数。",
+      "why": "挂起函数声明不保证内部API非阻塞或切后台。",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "上例两条前驱路径分别是 28 ms 和 22 ms，汇合后的理论关键路径是 43 ms。",
+      "after": "这些时长仅为教学假设，不是设备测量。上例两条前驱路径分别是 28 ms 和 22 ms，忽略资源竞争且 FirstFrame 节点额外成本按零计算时，汇合后的理论关键路径是 43 ms。",
+      "why": "将理想DAG加权示例和真机观测分开，说明遗漏结束节点成本的假设。",
+      "sources": [
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "需要惰性初始化时，从最终 Manifest 删除对应 `<meta-data>`，再在需要处调用 `AppInitializer.initializeComponent()`。官方文档明确指出：关闭一个组件的自动初始化，会连同关闭由它带入的依赖；反过来，手动初始化时依赖会一并初始化。",
+      "after": "需要惰性初始化时，从最终 Manifest 删除对应 `<meta-data>`，再在需要处调用 `AppInitializer.initializeComponent()`。删除某个根 initializer 只会去掉从该根触发的自动遍历：若其依赖自身仍有 metadata，或仍被其他 eager initializer 依赖，该依赖仍会提前初始化。手动初始化会同步初始化尚未完成的依赖。要移出启动路径，必须检查所有剩余入口和依赖路径。",
+      "why": "官方简述依赖随根关闭应限定唯一触发路径；源码mDiscovered遍历所有剩余根。",
+      "sources": [
+        "https://developer.android.com/topic/libraries/app-startup",
+        "https://dl.google.com/dl/android/maven2/androidx/startup/startup-runtime/1.2.0/startup-runtime-1.2.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "这会在 `:worker`（线程池中的工作线程） 进程形成独立的",
+      "after": "这会在 `:worker` 命名的私有应用进程形成独立的",
+      "why": "android:process=:worker是进程名后缀，不是线程池worker。",
+      "sources": [
+        "https://developer.android.com/guide/components/processes-and-threads",
+        "https://dl.google.com/dl/android/maven2/androidx/startup/startup-runtime/1.2.0/startup-runtime-1.2.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "Alpha 的选定提交 `04fe7f2` 日期为 2018-12-14，当前仓库默认分支也仍停在这一提交，",
+      "after": "Alpha 的选定提交 `04fe7f2` 日期为 2018-12-14；本轮 2026-10-25 核对仓库 HEAD 仍指向这一提交，",
+      "why": "将可能变化的HEAD判断固定核对日期，并已读取GitHub commits/HEAD。",
+      "sources": [
+        "https://github.com/alibaba/alpha/tree/04fe7f22c469de66fed98c341334c954dfabafb2",
+        "https://api.github.com/repos/alibaba/alpha/commits/HEAD"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "- Alpha 的 execute priority 只在通知后继任务时排序；后台任务一旦提交到普通先入先出的 executor，全局优先队列就没有保证了。",
+      "after": "- Alpha 的 execute priority 用于后继通知列表，也用于 Manager 的附加任务列表排序；它不等于全局 executor 优先队列，普通 FIFO 队列里已经提交的任务不会因此重新排序。\n- `Task` 耗时用 `System.currentTimeMillis()` 相减，可能受墙钟校时影响；新维护分支应以同一单调时基记录区间，并分别记录排队与执行阶段。",
+      "why": "固定Manager也排序两类附加任务；Task计时明确用墙钟。",
+      "sources": [
+        "https://github.com/alibaba/alpha/tree/04fe7f22c469de66fed98c341334c954dfabafb2"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "Android 10+ 可用 `Application.getProcessName()` 获取当前进程。推荐先选择进程配置，再实例化任务，避免子进程加载主进程 initializer 类及其静态依赖。",
+      "after": "`Application.getProcessName()` 从 API 28 已公开，本文 Android 10+ 范围均可用。应先获取当前进程名并选择进程配置，再实例化任务，避免子进程加载主进程 initializer 类及其静态依赖。",
+      "why": "明确方法始于API28；修复替换形成的语句在下方统一。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/Application#getProcessName()"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "`task start - task ready` 是排队时间，`task finish - task start` 是运行时间。",
+      "after": "`task start - task ready` 是从依赖就绪到实际开始的调度等待（若还需门控，也包含门控等待）；`task finish - task start` 是任务逻辑区间的墙钟时长，可能包含挂起、阻塞与再次等待 CPU，并不等于线程实际 CPU 时间。若要单独量 executor 排队，应另记 submit/enqueue 时间。",
+      "why": "ready未必即提交，逻辑运行区间含等待，不是CPUtime。",
+      "sources": [
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "这个示例在调用者的协程里执行 loader。页面级初始化可以随页面取消；进程级初始化应由 application scope（与应用进程同寿命的作用域）——与 App 进程同生命周期的 `CoroutineScope`——发起，避免第一个 Activity 销毁时把所有等待者一起取消。失败会被缓存，只有显式调用 `retry()` 才会再执行 loader；生产实现还要加入逐步延长等待时间的退避策略和重试次数上限。",
+      "after": "这个示例在调用者的协程里执行 loader。页面级初始化可以随页面取消；进程级初始化应由 application scope（与应用进程同寿命的作用域）——与 App 进程同生命周期的 `CoroutineScope`——发起，避免第一个 Activity 销毁时把所有等待者一起取消。普通 `Exception` 会缓存为 `Failed`，只有显式 `retry()` 才重新尝试；`withTimeout` 的 `TimeoutCancellationException` 属于 `CancellationException`，和外部取消一样会恢复 `NotLoaded`，后续 `getOrLoad()` 可以再次执行 loader，并不要求先 `retry()`。loader 不得递归调用同一个 gate（Mutex 不可重入），资源需在取消/超时路径清理，尤其不能丢失刚创建的 Closeable；生产实现还要加入逐步延长等待时间的退避策略和重试次数上限。",
+      "why": "准确说明原FeatureGate超时分支和Mutex重入边界，保留已有代码并验证实际行为。",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "调用前要确认该组件没有通过另一个 Manifest initializer 的依赖关系提前运行。关闭某个 initializer 的自动初始化，也会关闭它所声明依赖的自动初始化，需要重新检查整张初始化图和首次使用路径。",
+      "after": "调用前要确认该组件没有通过另一个 Manifest initializer 的依赖关系提前运行。移除一个 metadata 不会屏蔽该类本身或它的依赖：其他剩余根、依赖边或直接调用仍可触发它们；需要检查整张图，确认所有启动期路径均已移除。",
+      "why": "mDiscovered剩余根和递归依赖均能继续初始化，关闭并非全局禁用。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/startup/startup-runtime/1.2.0/startup-runtime-1.2.0-sources.jar",
+        "https://developer.android.com/topic/libraries/app-startup"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "从进程创建走到首帧或 fully drawn 的最长依赖路径，就是当前指标下的关键路径——",
+      "after": "完整启动指标从系统启动请求开始；应用内部 DAG 只能覆盖其中可观测的任务段。沿任务依赖走到首帧或 fully drawn 的最长路径，是这张任务图对相应指标的关键路径——",
+      "why": "TTID起点早于进程创建，应用图不覆盖全部系统启动成本。",
+      "sources": [
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization",
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "`完成时间 = 提交时刻 + 队列等待 + 获得 CPU 后的执行 + 依赖或资源等待`",
+      "after": "`完成时刻 = 提交时刻 + executor 排队 + 执行期间的 CPU 时间 + 执行期间的 Runnable 等待 + 阻塞/挂起等非 CPU 等待`\n\n这是互不重叠区间的归因示意，不是直接相加嵌套 trace 或不同线程的 CPU 时间。提交前的依赖等待另从 task ready/依赖完成点记录。",
+      "why": "原式未明确Runnable等待且将依赖前后边界混合，改为提交后的互斥归因说明。",
+      "sources": [
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "- `CallerRunsPolicy` 在提交线程执行任务，借此减慢生产者；若提交者是主线程，它会把后台工作搬回启动关键路径。",
+      "after": "- `CallerRunsPolicy` 在 executor 尚未关闭时由提交线程执行任务，借此减慢生产者；若提交者是主线程，后台工作会回到启动关键路径。executor 已关闭时，该策略直接丢弃任务，不会抛异常。",
+      "why": "实际CallerRunsPolicy关闭分支静默丢弃，影响正确性。",
+      "sources": [
+        "https://developer.android.com/reference/java/util/concurrent/ThreadPoolExecutor",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "新线程创建时会继承创建线程的初始优先级和内核调度分组，所以工作线程应在自己的入口处设置 Android nice 值，别带着一个不符合任务用途的继承状态跑下去。",
+      "after": "这里要区分 Java 优先级与 Android nice：固定 libcore `Thread` 构造器继承父线程缓存的 Java `priority`，再据此生成新线程的 niceness；它不会直接继承父线程经 `Process.setThreadPriority()` 改过的 nice。原生创建线程的继承另受平台路径影响，调度组也应按实际策略核对。因此 worker 仍应在自己的入口设置允许的 Android nice，不能把两套数值和继承语义混用。",
+      "why": "消除与前文及Process API文档的直接矛盾；固定Thread构造器priority=parent.priority，nicenessForPriority。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Process",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Thread.java",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "应用退到后台后若还保留着错误亲和性，可能增加功耗，甚至让线程无核可用。",
+      "after": "应用退到后台后仍保留不合适的亲和性，可能限制系统迁移与能耗优化。实际可运行集合还受在线 CPU 与 cpuset 约束；请求集合与允许集合没有交集时，`sched_setaffinity()` 可返回 `EINVAL`，不能描述成调用成功后必然留下一个“无核可用”的线程。实验代码也必须检查返回值与实际 mask。",
+      "why": "Linux接口对不允许的空交集报告EINVAL，不应虚构成功后无CPU的普遍行为。",
+      "sources": [
+        "https://man7.org/linux/man-pages/man2/sched_setaffinity.2.html",
+        "https://source.android.com/docs/core/perf/cgroups"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "当前稳定版 WorkManager 2.11.2 也不是一个固定“最多 16 个线程”的池。`Worker.doWork()` 跑在 `Configuration.Builder.setExecutor()` 指定的 executor 上；task executor 处理 WorkManager 自身的记账与调度，和业务 worker 是两回事。`CoroutineWorker.doWork()` 默认使用 `Dispatchers.Default`，WorkManager 2.10.0 起可以用 `setWorkerCoroutineContext()` 配置其协程上下文；按当前 `Configuration.Builder` 契约，只要没设置 worker coroutine context，`setExecutor()` 提供的 executor 也会转换成 dispatcher 供 `CoroutineWorker` 使用。方法内部仍可用 `withContext()` 为某一段阻塞调用挑更合适的 dispatcher。",
+      "after": "截至 2026-10-25，稳定版为 WorkManager 2.12.0；它也不是一个固定“最多 16 个线程”的池。`Worker.doWork()` 跑在 `Configuration.Builder.setExecutor()` 指定的 executor 上；task executor 处理 WorkManager 自身的记账与调度，和业务 worker 是两回事。`CoroutineWorker.doWork()` 默认使用 `Dispatchers.Default`，WorkManager 2.10.0 起可以用 `setWorkerCoroutineContext()` 配置其协程上下文；按当前 `Configuration.Builder` 契约，只要没设置 worker coroutine context，`setExecutor()` 提供的 executor 也会转换成 dispatcher 供 `CoroutineWorker` 使用。方法内部仍可用 `withContext()` 为某一段阻塞调用挑更合适的 dispatcher。 2.12.0 固定源码在两项配置都未提供时，把普通 Worker executor 设为 `Dispatchers.Default.limitedParallelism(max(1, min(availableProcessors() - 1, 4))).asExecutor()`，内部 task executor 默认也来自 Default；这些是共享调度器视图，不是各自独占线程池。它们仍不同于默认直接使用 Default 的 CoroutineWorker。",
+      "why": "发布页2026-09-23稳定2.12.0，真实sources.jar默认执行器已改用Default视图。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/work",
+        "https://developer.android.com/reference/androidx/work/Configuration.Builder",
+        "https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.12.0/work-runtime-2.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "before": "- [§21.1 启动性能监控](01-app-startup-path-monitoring.md)",
+      "after": "- [§21.1 启动性能监控](01-app-startup-path-monitoring.md)\n- [Linux sched_setaffinity：允许集合与 EINVAL](https://man7.org/linux/man-pages/man2/sched_setaffinity.2.html)\n- [Kotlin withTimeout：协作取消、超时异常与资源归还](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html)\n- [WorkManager 2.12.0 固定源码包](https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/2.12.0/work-runtime-2.12.0-sources.jar)",
+      "why": "加入直接支撑新增实质校勘的原始来源。",
+      "sources": [
+        "https://man7.org/linux/man-pages/man2/sched_setaffinity.2.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-timeout.html",
+        "https://developer.android.com/jetpack/androidx/releases/work"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "last_verified: '2026-08-14'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "本轮完整826行与21原始引用核对。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://developer.android.com/jetpack/androidx/releases/startup"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "即 2026-08-14 查证时的最新稳定版",
+      "after": "即 2026-10-25 查证时的最新稳定版",
+      "why": "官方发布页当前仍为1.2.0。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/startup"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "显示它截至 2026-08-14 仍是最新稳定版",
+      "after": "显示它截至 2026-10-25 仍是最新稳定版",
+      "why": "更新当前来源核对日期。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/startup"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "图中的 attach，指把新建的 `Application` 绑定到进程 `Context` 等运行环境；`bindApplication` 则是系统把应用信息、组件和 `Application` 绑定到新进程的整个启动阶段。`data.providers` 是 `system_server`（运行 Android 核心系统服务的进程）为当前进程准备的 Provider 列表，ActivityManager 等核心服务就运行在这个进程里。至于 Provider 属于哪个进程，由最终 Manifest 中的 `android:process` 决定，未声明时属于应用默认进程。",
+      "after": "图中的 attach，指把新建的 `Application` 绑定到进程 `Context` 等运行环境；`bindApplication` 则是系统把应用信息、组件和 `Application` 绑定到新进程的整个启动阶段。`data.providers` 是 `system_server`（运行 Android 核心系统服务的进程）为当前进程准备的 Provider 列表，ActivityManager 等核心服务就运行在这个进程里。至于 Provider 属于哪个进程，由最终 Manifest 中的 `android:process` 决定，未声明时属于应用默认进程。 这是普通绑定且存在 Provider 列表时的路径：`restrictedBackupMode` 会跳过安装，空列表也不安装；后续动态获取 Provider 还可能发生额外安装，不能说应用全部 Provider 永远只在这个时点创建。",
+      "why": "固定ActivityThread restrictedBackupMode/ArrayUtils判定及后续安装路径。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "class AppInitProvider : ContentProvider() {\n    override fun onCreate(): Boolean {\n        return trace(\"startup/AppInitProvider\") {\n            installMinimalState(requireNotNull(context))\n            true\n        }\n    }\n}\n",
+      "after": "class AppInitProvider : ContentProvider() {\n    override fun onCreate(): Boolean {\n        return trace(\"startup/AppInitProvider\") {\n            installMinimalState(requireNotNull(context))\n            true\n        }\n    }\n\n    // 本例仅作初始化入口，不对外提供数据接口。\n    override fun query(\n        uri: Uri, projection: Array<out String>?,\n        selection: String?, selectionArgs: Array<out String>?,\n        sortOrder: String?,\n    ): Cursor? = throw UnsupportedOperationException()\n\n    override fun getType(uri: Uri): String? = null\n    override fun insert(uri: Uri, values: ContentValues?): Uri? =\n        throw UnsupportedOperationException()\n    override fun delete(\n        uri: Uri, selection: String?, selectionArgs: Array<out String>?,\n    ): Int = throw UnsupportedOperationException()\n    override fun update(\n        uri: Uri, values: ContentValues?, selection: String?,\n        selectionArgs: Array<out String>?,\n    ): Int = throw UnsupportedOperationException()\n}\n",
+      "why": "ContentProvider有五个抽象数据方法，原具体类仅实现onCreate无法编译；补齐初始化专用入口的明确行为。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/ContentProvider.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "软件渲染的备用分支只保证工作排在当前 traversal 之后",
+      "after": "软件渲染的备用分支在本轮 onPreDraw 返回且 traversal 正常继续的前提下，将工作入队到当前遍历调用栈之后，但不证明该帧成功提交或显示",
+      "why": "其他OnPreDraw可取消本轮绘制，普通post不是提交证明；明确保守触发范围。",
+      "sources": [
+        "https://developer.android.com/reference/android/view/ViewTreeObserver"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "[`ContentProviderRecord.canRunHere()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderRecord.java) 同时检查 `multiprocess` 和 UID；",
+      "after": "[`ContentProviderRecord.canRunHere()`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderRecord.java) 的条件是“`multiprocess` 为真或声明进程名与当前进程相同”，并且 Provider UID 等于当前进程 UID；",
+      "why": "固定布尔表达式含声明同进程的OR分支，不能简化成multiprocess AND UID。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ContentProviderRecord.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "静态初始化同样受进程隔离影响。Kotlin `object`、Java 静态字段和 JNI（Java 与 native 代码的调用接口） 全局状态都是“每个进程一份”；类第一次加载时触发的重工作，`Application` 分支拦不住，应通过懒加载或显式入口控制。",
+      "after": "静态状态同样受进程隔离影响。Kotlin `object`、Java 静态字段和 JNI 全局状态都是每进程独立；类加载与类初始化是两个阶段，通常是首次主动使用触发静态初始化（例如 `<clinit>`），不能把所有加载都当作已执行初始化。JNI 全局状态还与相应 native 库的装载/初始化路径有关。进程分支前若已主动使用这些类，重工作就可能提前发生，应通过懒加载或显式入口控制。",
+      "why": "Java加载不必立即初始化；Kotlinobject和JNI状态触发点不能混作类首次加载。",
+      "sources": [
+        "https://docs.oracle.com/javase/specs/jls/se21/html/jls-12.html#jls-12.4",
+        "https://developer.android.com/guide/components/processes-and-threads"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "下面的代码用于把进程名映射成稳定的角色，并让每个进程只初始化自己的能力：",
+      "after": "下面的代码假设 `<application>` 的默认进程名就是包名；若自定义了 application 级 `android:process`，主角色映射也要使用解析后的默认进程名。它把当前进程映射成稳定角色，让每个进程只初始化自己的能力：",
+      "why": "原代码packageName主角色判断只适用默认包名进程，需明确application级process继承。",
+      "sources": [
+        "https://developer.android.com/guide/topics/manifest/provider-element",
+        "https://developer.android.com/reference/android/app/Application"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "`oneway` 只让跨进程调用方立即返回，同一 Binder 对象的多次 oneway 调用仍按发送顺序逐个分发，而且“已返回”不表示业务已经完成",
+      "after": "跨进程 `oneway` 不等待服务端业务完成；同一 Binder 节点的异步事务串行分发，但多个发送线程仍须由协议定义业务顺序，不同节点也可并行。本地 AIDL 调用仍可能直接在调用线程同步执行，`oneway` 不会自动把它排到后台；“已返回”也不表示业务已经完成",
+      "why": "区分跨进程异步事务、多个发送线程顺序与本地AIDL直调。",
+      "sources": [
+        "https://source.android.com/docs/core/architecture/ipc/binder-threading",
+        "https://developer.android.com/reference/android/os/IBinder"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "sealed interface RemoteState {\n    data object Disconnected : RemoteState\n    data object Connecting : RemoteState\n    data class Ready(\n        val service: IWorkerService,\n        val binder: IBinder,\n    ) : RemoteState\n    data class Failed(val cause: Throwable?) : RemoteState\n}\n\nclass WorkerConnection :\n    ServiceConnection,\n    IBinder.DeathRecipient {\n\n    private val _state =\n        MutableStateFlow<RemoteState>(RemoteState.Disconnected)\n    val state: StateFlow<RemoteState> = _state.asStateFlow()\n\n    fun markConnecting() {\n        _state.value = RemoteState.Connecting\n    }\n\n    override fun onServiceConnected(\n        name: ComponentName,\n        binder: IBinder,\n    ) {\n        try {\n            binder.linkToDeath(this, 0)\n            _state.value = RemoteState.Ready(\n                service = IWorkerService.Stub.asInterface(binder),\n                binder = binder,\n            )\n        } catch (error: RemoteException) {\n            _state.value = RemoteState.Disconnected\n        }\n    }\n\n    override fun onServiceDisconnected(name: ComponentName) {\n        _state.value = RemoteState.Disconnected\n    }\n\n    override fun onBindingDied(name: ComponentName) {\n        _state.value = RemoteState.Disconnected\n    }\n\n    override fun onNullBinding(name: ComponentName) {\n        _state.value = RemoteState.Failed(null)\n    }\n\n    override fun binderDied() {\n        _state.value = RemoteState.Disconnected\n    }\n\n    suspend fun awaitReady(timeoutMillis: Long): IWorkerService =\n        withTimeout(timeoutMillis) {\n            state\n                .filterIsInstance<RemoteState.Ready>()\n                .first()\n                .service\n        }\n}\n",
+      "after": "sealed interface RemoteState {\n    data object Disconnected : RemoteState\n    data object Connecting : RemoteState\n    data class Ready(\n        val service: IWorkerService,\n        val binder: IBinder,\n    ) : RemoteState\n    data class Failed(val cause: Throwable?) : RemoteState\n}\n\n// 每次 bind 生命周期创建一个实例；使用默认 Main ServiceConnection 回调。\nclass WorkerConnection : ServiceConnection {\n    private data class Registration(\n        val generation: Long,\n        val binder: IBinder,\n        val recipient: IBinder.DeathRecipient,\n    )\n\n    private val lock = Any()\n    private var generation = 0L\n    private var registration: Registration? = null\n    private var closed = false\n    private val _state =\n        MutableStateFlow<RemoteState>(RemoteState.Disconnected)\n    val state: StateFlow<RemoteState> = _state.asStateFlow()\n\n    private fun requireMain() = check(\n        Looper.myLooper() === Looper.getMainLooper(),\n    )\n\n    fun markConnecting() {\n        requireMain()\n        synchronized(lock) {\n            check(!closed)\n            _state.value = RemoteState.Connecting\n        }\n    }\n\n    private fun unlinkCurrentLocked() {\n        val old = registration ?: return\n        registration = null\n        old.binder.unlinkToDeath(old.recipient, 0)\n    }\n\n    override fun onServiceConnected(name: ComponentName, binder: IBinder) {\n        requireMain()\n        synchronized(lock) {\n            if (closed) return\n            unlinkCurrentLocked()\n            val nextGeneration = ++generation\n            val recipient = IBinder.DeathRecipient {\n                synchronized(lock) {\n                    val current = registration\n                    if (!closed && current?.generation == nextGeneration &&\n                        current.binder === binder\n                    ) {\n                        registration = null // 已死亡，不需再 unlink。\n                        _state.value = RemoteState.Disconnected\n                    }\n                }\n            }\n            val next = Registration(nextGeneration, binder, recipient)\n            registration = next\n            try {\n                binder.linkToDeath(recipient, 0)\n                if (registration === next) {\n                    _state.value = RemoteState.Ready(\n                        IWorkerService.Stub.asInterface(binder), binder,\n                    )\n                }\n            } catch (error: RemoteException) {\n                if (registration === next) {\n                    registration = null\n                    _state.value = RemoteState.Disconnected\n                }\n            }\n        }\n    }\n\n    private fun updateFromMain(next: RemoteState, retire: Boolean = false) {\n        requireMain()\n        synchronized(lock) {\n            if (closed) return\n            if (retire) closed = true\n            unlinkCurrentLocked()\n            _state.value = next\n        }\n    }\n\n    override fun onServiceDisconnected(name: ComponentName) =\n        updateFromMain(RemoteState.Disconnected)\n\n    override fun onBindingDied(name: ComponentName) = updateFromMain(\n        RemoteState.Failed(IllegalStateException(\"Binding died; rebind required\")),\n        retire = true,\n    )\n\n    override fun onNullBinding(name: ComponentName) =\n        updateFromMain(RemoteState.Failed(null), retire = true)\n\n    fun markBindFailed(cause: Throwable) =\n        updateFromMain(RemoteState.Failed(cause), retire = true)\n\n    // 调用方在 Main 上先 release，再按绑定契约 unbind；新绑定用新实例。\n    fun release() = updateFromMain(\n        RemoteState.Failed(CancellationException(\"Connection released\")),\n        retire = true,\n    )\n\n    suspend fun awaitReady(timeoutMillis: Long): IWorkerService {\n        require(timeoutMillis > 0)\n        return withTimeout(timeoutMillis) {\n            when (val next = state.first {\n                it is RemoteState.Ready || it is RemoteState.Failed\n            }) {\n                is RemoteState.Ready -> next.service\n                is RemoteState.Failed -> throw (next.cause\n                    ?: IllegalStateException(\"Service returned a null binding\"))\n                else -> error(\"Unexpected state\")\n            }\n        }\n    }\n}\n",
+      "why": "原共享DeathRecipient的旧死亡回调可覆盖新Ready，link成功至发布Ready也有竞态，且Failed只被过滤到超时。改为每次绑定实例、锁内generation+Binder身份、独立死亡监听、关闭后忽略回调、对终止失败立即结束等待；清理监听由owner显式调用。",
+      "sources": [
+        "https://developer.android.com/reference/android/content/ServiceConnection",
+        "https://developer.android.com/reference/android/os/IBinder"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "这段代码只展示连接骨架，调用方仍需成对执行 bind/unbind。三个回调要分清：`onServiceDisconnected()` 表示连接意外丢失，原绑定仍然有效，服务重新运行后可能再次收到 `onServiceConnected()`；`onBindingDied()` 表示这条绑定不会自动恢复，必须先解绑再按业务需要重绑；`onNullBinding()` 也要解绑以释放跟踪资源。旧 Binder 仍然存活但不再使用时，还要解除 `linkToDeath()` 注册。",
+      "after": "这个示例只管理连接状态，不代办 Context 的绑定资源：调用者在 Main 上调用 `markConnecting()` 并执行 bind，拒绝或异常时调用 `markBindFailed()`；结束时先 `release()`，再按 Context 契约解绑，下一次 bind 创建新实例。这里固定使用默认的 Main 回调；若选择自定义 Executor，应先把 ServiceConnection 回调串行化并相应调整线程契约。`onServiceDisconnected()` 后原绑定仍有效，系统可再次连接；`onBindingDied()` 不会自动恢复，必须解绑后按需重绑；`onNullBinding()` 也要解绑。更换或结束一个仍存活 Binder 时解除旧死亡监听；Binder 已死亡时无需再 unlink。",
+      "why": "将完整示例所有者/解绑和Main回调契约明确，防止读者把状态清理误作Context资源解绑。",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/bound-services",
+        "https://developer.android.com/reference/android/content/ServiceConnection",
+        "https://developer.android.com/reference/android/os/IBinder"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "还有一个并发细节：`binderDied()` 可能在 Binder 线程执行，并与新连接回调并发。生产实现应给每次连接分配代次，忽略旧代次回调，避免旧死亡通知覆盖新的 `Ready` 状态。",
+      "after": "死亡回调可能在 Binder 线程到达。示例同时比较捕获的 generation 和 Binder 身份，发布 Ready 与死亡检查共用同一把短锁，旧 Binder 的晚到通知不会清掉新连接。锁内不执行业务 AIDL；即使 `awaitReady()` 返回，远端仍可能下一刻死亡，实际请求也要处理 RemoteException、取消和幂等重试。",
+      "why": "修复已经落实到代码，说明其范围；Ready不是后续调用存活保证。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/IBinder"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "内层超时约束连接等待，外层超时为调用方协程设置业务 deadline。",
+      "after": "这里的 1秒/3秒仅是代码示例策略，不是平台预算或性能测量。内层超时约束连接等待，外层超时为调用方协程设置业务 deadline。",
+      "why": "标明示例常数含义，防止当通用预算。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/IBinder"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "Android 17 上还可通过 `ActivityManager.getHistoricalProcessStartReasons()` 读取按时间倒序保存的近期记录，其中可能包含仍在启动的未完整记录。",
+      "after": "`ActivityManager.getHistoricalProcessStartReasons()` 从 API 35 已公开，Android 17 继续支持；它读取按时间倒序保存的近期记录，可能含未完成启动，也可能因数量上限或历史淘汰而缺失。候选记录还需核对 PID、processName、LAUNCH 与本地启动代次，不能把第一条直接当本次请求。",
+      "why": "区分API35引入与17继续支持，历史快照/身份边界见222源码审计。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationStartInfo",
+        "https://developer.android.com/reference/android/app/ActivityManager"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "适合观察单进程分配趋势，但直接相加",
+      "after": "适合观察单进程驻留趋势，并不等于对象分配量；直接相加",
+      "why": "RSS驻留量不等于allocation，且共享页聚合需分开解释。",
+      "sources": [
+        "https://developer.android.com/topic/performance/memory-management"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "- [App startup time](https://developer.android.com/topic/performance/vitals/launch-time)：TTID、TTFD 与启动测量边界。",
+      "after": "- [App startup time](https://developer.android.com/topic/performance/vitals/launch-time)：TTID、TTFD 与启动测量边界。\n- [Binder threading](https://source.android.com/docs/core/architecture/ipc/binder-threading)：异步节点串行、并发与本地调用边界。\n- [Java 类初始化边界](https://docs.oracle.com/javase/specs/jls/se21/html/jls-12.html#jls-12.4)：加载与首次主动使用并非同一步骤。",
+      "why": "新增实质校勘的原始引用。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/IBinder",
+        "https://docs.oracle.com/javase/specs/jls/se21/html/jls-12.html#jls-12.4"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "before": "这也解释了同步 IPC 对首屏的影响：主进程在首帧前访问远程 Provider，或调用异步 `bindService()` 后又同步等待连接结果，都可能触发远程进程冷启动。等待方会把进程创建、Provider 安装、`Application.onCreate()` 和目标服务准备时间计入自己的启动路径。",
+      "after": "这也解释了同步等待对首屏的影响：访问远程 Provider，或调用异步 `bindService()` 后再同步等连接，都可能触发远程进程冷启动。等待成本要按返回边界拆开：Provider 获取可等待进程创建、安装与发布，但该批次发布发生在 `Application.onCreate()` 之前，不能说每次 Provider 获取都必须等它完成；Service 连接还可能包含 Application 与目标 Service 的创建和绑定准备。",
+      "why": "固定ActivityThread的Provider批量发布在Application.onCreate之前，Provider获取与Service连接的返回边界不同。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "last_verified: '2026-09-29'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "Recheck official docs and pinned Android17/AndroidX source artifacts.",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java",
+        "https://dl.google.com/dl/android/maven2/androidx/profileinstaller/profileinstaller/1.4.1/profileinstaller-1.4.1-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "截至 2026-09-29，官方列出的最低推荐稳定组合",
+      "after": "截至 2026-10-25，官方列出的最低推荐稳定组合",
+      "why": "Date and minimum recommended versions independently rechecked; not a claim these are newest releases.",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/overview"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "二进制规则会关联具体 APK 中的 DEX 标识与校验信息，所以旧版本 profile 套不进新 APK。",
+      "after": "二进制规则会关联具体 DEX 的标识与校验信息；应用版本号本身不是匹配依据。重新构建、混淆或优化改变 DEX 后，旧规则可能失配，应重新生成、重写并对最终发布 DEX 验证；未改变的 DEX 不能仅因应用版本号变化就判定失配。",
+      "why": "Match is DEX identity/checksum, not universally package version inequality.",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/profman/profman.cc",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "rg 'assets/dexopt/baseline\\\\.prof$'",
+      "after": "rg 'assets/dexopt/baseline\\.prof$'",
+      "why": "Single-quoted shell regex needs one backslash to escape a dot; double backslash looked for a literal backslash.",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "rg 'BUNDLE-METADATA/com\\\\.android\\\\.tools\\\\.build\\\\.profiles/baseline\\\\.prof$'",
+      "after": "rg 'BUNDLE-METADATA/com\\.android\\.tools\\.build\\.profiles/baseline\\.prof$'",
+      "why": "Fix executable shell filter for actual AAB entry names.",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "`RESULT_CODE_COMPILED_WITH_PROFILE` 说明应用已有可用的 profile 引导编译状态，不说明全部代码已经 AOT。",
+      "after": "`RESULT_CODE_COMPILED_WITH_PROFILE` 是检查器推断出的 profile 编译状态，不说明全部代码已经 AOT。固定到 [ProfileInstaller 1.4.1 源码](https://dl.google.com/dl/android/maven2/androidx/profileinstaller/profileinstaller/1.4.1/profileinstaller-1.4.1-sources.jar)，它主要根据 current/reference profile 是否存在、文件大小与缓存状态判断，并未逐方法检查 AOT 产物；`COMPILED_WITH_PROFILE_NON_MATCHING` 也使用文件大小变化的启发式，源码明确指出可能误判。需要确认当前产物和 filter 时，还应结合 `pm art dump`；DEX checksum、方法覆盖率和性能收益要分别验证。",
+      "why": "Verifier file/cache heuristic is not direct per-method or checksum validation; preserve limitations explicitly.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/profileinstaller/profileinstaller/1.4.1/profileinstaller-1.4.1-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "`ProfileVerifier` 支持 Android 9 / API 28 及以上；更低 API 会返回 `RESULT_CODE_ERROR_UNSUPPORTED_API_VERSION`。",
+      "after": "ProfileInstaller 1.4.1 的 `ProfileVerifier` 支持范围有一个例外：API 28、29 及 API 31+ 可检查，API 28 以下和 Android 11 / API 30 都返回 `RESULT_CODE_ERROR_UNSUPPORTED_API_VERSION`。",
+      "why": "Real1.4.1 implementation explicitly excludes AndroidR, unlike broad API28+ claim.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/profileinstaller/profileinstaller/1.4.1/profileinstaller-1.4.1-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "rg -A 4 'com\\\\.example\\\\.app'",
+      "after": "rg -A 4 'com\\.example\\.app'",
+      "why": "Fix double-escaped package regex in single-quoted shell.",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/configure/art-service"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "官方 API 还要求测试 APK 包含 ProfileInstaller，并由 AGP 7.0+ 打包 Baseline Profile。",
+      "after": "官方 API 还要求被测应用 APK 包含 ProfileInstaller，并由 AGP 7.0+ 打包 Baseline Profile；这里指目标 App，不是承载测试代码的 instrumentation APK。",
+      "why": "CompilationMode.Partial contract targets target application APK.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "`CompilationMode.None()` 构造无预编译的受控状态，适合测量 profile 能提供的本地差值。",
+      "after": "`CompilationMode.None()` 构造无预编译的受控状态，适合测量 profile 能提供的本地差值，但运行期间仍允许 JIT；它不是禁用 JIT 的纯解释执行模式。",
+      "why": "None allows JIT; distinguish interpreted-only mode.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "`CompilationMode.Full()` 可作为全部代码编译后的实验上界，代表不了生产安装常态。",
+      "after": "`CompilationMode.Full()` 可作为全面方法 AOT 编译的对照；它不保证耗时最短，也不预先执行类的静态初始化。全面编译的状态代表不了生产安装常态。",
+      "why": "Full documents all methods not classes, and can be slower than partial; not speed upper bound.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "page fault 表示所需内存页尚未驻留，系统需要把对应文件页载入内存；",
+      "after": "文件映射的 page fault 表示当前访问需要建立或补齐页映射，其中 minor fault 可能直接使用已有页缓存，并不一定触发存储 I/O；",
+      "why": "Page fault count is not synonymous with physical disk read or absent page cache.",
+      "sources": [
+        "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "杀进程只重建进程状态，设备 page cache 未必跟着变冷——page cache 是内核缓存的文件页，应用进程退出后仍可能保留。除非实验能重复控制存储冷态，否则首轮结果算不上稳定的 DEX I/O 收益。",
+      "after": "手动杀进程只重建进程状态，设备 page cache 未必跟着变冷——page cache 是内核缓存的文件页，应用进程退出后仍可能保留。Macrobenchmark 1.5.0 的 `StartupMode.COLD` 会依次清 shader cache、杀目标进程、调用 `dropKernelPageCache()`；API 31+ 的后者走不需要 root 的平台入口，旧设备按 root 能力处理或记录未清缓存的警告。应归档实际成功与否和版本；这些步骤仍不能证明存储控制器的所有缓存都处于冷态。",
+      "why": "Separate manual kill from real1.5.0 COLD protocol and distinguish page cache from physical storage cache.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "- `pm.dexopt.cmdline=verify`\n- `pm.dexopt.shared=speed`，共享代码用不上本地 profile 时的备用 filter",
+      "after": "- `pm.dexopt.cmdline=verify`",
+      "why": "Pinned Android17 Dexopter shared path does not universally fall back to pm.dexopt.shared=speed; describe actual branch below.",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java",
+        "https://source.android.com/docs/core/runtime/configure/art-service"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "共享代码的规则需要额外说明。某个包的代码被其他 App 通过 `<uses-library>` 共享库声明或动态加载方式使用时，ART Service 不会把只反映单个用户行为的本地 profile 用到公共编译产物上，以免泄露使用特征。系统会先尝试 Cloud Profile；缺失时才使用 `pm.dexopt.shared` 指定的 filter。",
+      "after": "共享代码的规则需要按版本核对。某个包的代码被其他 App 使用时，本地用户 profile 不能进入对其他应用公开的优化产物。固定到 Android 17 r1 的 [`Dexopter`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java)，profile-guided 编译先尝试外部 profile，以便生成可共享产物；没有可用外部输入时，仍可使用本地 profile，但优化产物只供本 App 使用，公开的 VDEX 可让其他 App 走 `verify`。最终连本地 profile 也没有才退为 `verify`。当前 ART Service 配置文档还描述 `pm.dexopt.shared` 的历史回退策略，不能直接把那条概述当成本版本的实现分支；设备实际 filter 和文件权限仍应实测。",
+      "why": "Pinned17source explicitly allows private local-profile compilation while publicVDEX remains shareable; no universal Cloud-only or speed fallback.",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java",
+        "https://source.android.com/docs/core/runtime/configure/art-service"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "设备退出 idle（无人操作的空闲状态），或温度达到 `THERMAL_STATUS_MODERATE` 阈值时，任务会立即取消。",
+      "after": "设备退出 idle（无人操作的空闲状态），或温度达到取消阈值时，任务会取消；官方文档给出的默认温度阈值为 `THERMAL_STATUS_MODERATE`，系统配置可以调整。",
+      "why": "Default thermal threshold is tunable, not immutable every ROM.",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/configure/art-service"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "adb shell getprop | grep -E 'pm\\.dexopt|dex2oat'",
+      "after": "adb shell getprop | rg 'pm\\.dexopt|dex2oat'",
+      "why": "Use preferred rg equivalent for property evidence.",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/configure/art-service"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "unzip -l app-release.apk | grep 'assets/dexopt/baseline.prof'\nunzip -l app-release.aab | grep 'BUNDLE-METADATA/com.android.tools.build.profiles/baseline.prof'",
+      "after": "unzip -l app-release.apk | rg 'assets/dexopt/baseline\\.prof$'\nunzip -l app-release.aab | rg 'BUNDLE-METADATA/com\\.android\\.tools\\.build\\.profiles/baseline\\.prof$'",
+      "why": "Anchor exact profile paths and escape dots in repeated artifact commands.",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "| 无 AOT 编译组 | `pm compile --reset` 后立即测量 | 解释器/JIT 工作较多时的近似最慢基线 |",
+      "after": "| 无 AOT 编译组 | `pm compile --reset` 后立即测量 | 观察缺少 AOT 时的受控对照；不保证它是所有条件下最慢的一组 |",
+      "why": "Absent AOT not a universal performance worst-case guarantee.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/ArtShellCommand.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "“冷进程”与“冷文件页缓存”是两个条件。杀进程只能重建进程状态，系统仍可能把 APK、DEX 和资源文件内容保留在内核页缓存中；常规 App 启动基准也用不着依赖需要 root 权限的全局 cache drop（清空页缓存）。",
+      "after": "“冷进程”与“冷文件页缓存”是两个条件。手动杀进程后，APK、DEX 和资源仍可能留在内核页缓存中；采用 Macrobenchmark 时应按前述固定版本的 COLD 协议记录清缓存结果。API 31+ 的平台页缓存清理入口不要求 root，不能把所有 cache drop 都归为 root 操作；线上启动分布还应覆盖真实缓存状态。",
+      "why": "Correct blanket root claim and align repeated COLD guidance.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "用当前 release（发布）产物生成并检查规则",
+      "after": "由匹配当前源码与工具链的受控生成变体采集，再对最终 release 重写、打包并检查规则",
+      "why": "Do not contradict unoptimized unobfuscated generation variant contract by requiring generation on optimized release.",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile",
+        "https://developer.android.com/topic/performance/baselineprofiles/configure-baselineprofiles"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "1. 前半篇用当前 release 构建生成规则，并通过 Macrobenchmark 验证代表性场景。",
+      "after": "1. 前半篇用匹配当前源码的受控生成变体采集规则，由工具链按最终 release 重写打包，再对 release 类产物用 Macrobenchmark 验证代表性场景。",
+      "why": "Distinguish producer generation variant from measured final release.",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/create-baselineprofile",
+        "https://developer.android.com/topic/performance/baselineprofiles/configure-baselineprofiles"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "`BaselineProfileMode.Require` 在产物缺少 profile 时让测试失败，避免 `Partial()` 静默换成没有 Baseline Profile 的条件。",
+      "after": "`BaselineProfileMode.Require` 在产物缺少或无法安装 profile 时让测试失败。固定到 Macrobenchmark 1.5.0，`Partial()` 的默认参数本来就是 `Require`；这里显式写出以固定实验意图。只有主动选择 `UseIfAvailable` 时，安装失败才允许继续无 Baseline Profile 的条件。",
+      "why": "Real1.5.0 Partial defaults to Require; silence only applies UseIfAvailable, not default Partial().",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "before": "该命令不会从 APK 中主动取出一份尚未写入设备 profile 目录的规则。Macrobenchmark 会按 `CompilationMode` 准备 profile 和编译状态，自动化性能实验优先使用它。",
+      "after": "固定到 Android 17 r1，ART Service 在配置允许时会尝试 APK 内嵌 profile，也会检查相邻 `.prof` 与 `.dm`；不应断言必须先由 ProfileInstaller 写入 current profile，手工编译才能使用包内规则。[`Utils.initReferenceProfile()`](https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/utils/Utils.java) 中嵌入式输入还受 API 35+ 与 DM 配置约束，非嵌入式外部输入优先。较低系统版本不能直接套用这条行为。Macrobenchmark 会按 `CompilationMode` 准备 profile 和编译状态，自动化性能实验优先使用它。",
+      "why": "Android17 ARTService Utils reads APK embedded profile when API>=35 and DM configuration allows; nonembedded external inputs are preferred. Original unconditional denial contradicted later paragraph and pinned source.",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/utils/Utils.java",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libartservice/service/java/com/android/server/art/Dexopter.java"
+      ]
     }
   ],
   "validation": {},
   "last_checkpoint": {
-    "completed": 23,
+    "completed": 26,
     "total": 51,
-    "next_article": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
-    "updated_at": "2026-10-25T06:49:08.486724+00:00"
+    "next_article": "src/part5-app/ch21-startup/05-splash-screen.md",
+    "updated_at": "2026-10-25T07:23:30.595652+00:00"
   },
   "replaced_inline_diagrams": []
 }

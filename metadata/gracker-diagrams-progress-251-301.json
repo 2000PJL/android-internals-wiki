@@ -776,42 +776,144 @@
     {
       "path": "src/part5-app/ch25-power-size/04-location-sensor.md",
       "sha256_before": "1de1f8977ac7bac64ba5139bdef977dcaf3538514de0fca06704b6751fcbc19c",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a277-01-location-shape-by-freshness",
+        "a277-02-flp-lifetime-and-two-stop-paths",
+        "a277-03-location-batching-event-time",
+        "a277-04-geofence-versus-passive",
+        "a277-05-sensor-hardware-to-app",
+        "a277-06-wakeup-nonwakeup-fifo",
+        "a277-07-flush-per-sensor-completion",
+        "a277-08-high-rate-sensor-gates",
+        "a277-09-location-health-resource-gates",
+        "a277-10-gnss-rtt-ble-measurement-bounds"
+      ],
       "article_index": 277,
-      "sha256_at_assignment": "1de1f8977ac7bac64ba5139bdef977dcaf3538514de0fca06704b6751fcbc19c"
+      "sha256_at_assignment": "1de1f8977ac7bac64ba5139bdef977dcaf3538514de0fca06704b6751fcbc19c",
+      "sha256_current": "ccb78a1575ab78b68a3825e930ec4992ddbce9f42e13f950466e417766041fbc",
+      "sha256_after": "ccb78a1575ab78b68a3825e930ec4992ddbce9f42e13f950466e417766041fbc",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "424行全文与32份官方/固定17r1来源核对，含LocationProviderManager实际路径。修复中文污染URL、时区与epoch及同次开机年龄比较、采样周期/频率方向、非one-shot注册范围、多传感器flush逐项完成、target36健康权限迁移说明Activity、WiFi RTT可见性与neverForLocation边界。10张成图与全部正文位置实际视觉检查通过，修整图9业务分支说明避免连接线重叠；隔离mdBook构建/链接/SVG+PNG通过。8段非Mermaid示例代码保持原样，shell语法通过；Kotlin未编译、未做设备定位精度或功耗实验。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "1de1f8977ac7bac64ba5139bdef977dcaf3538514de0fca06704b6751fcbc19c"
     },
     {
       "path": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
       "sha256_before": "2ed897ec9e3c1d291b2b3b3ccc24b370ccd2b255fb9622941884e815505fa5c3",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a278-01-background-audio-contract-gates",
+        "a278-02-player-state-versus-audible-output",
+        "a278-03-playback-intent-and-resource-lifetime",
+        "a278-04-hardening-three-platform-entrypoints",
+        "a278-05-async-appops-and-thread-wakeup",
+        "a278-06-hardening-default-and-test-override",
+        "a278-07-bluetooth-codec-route-versus-authorization",
+        "a278-08-offload-versus-low-latency",
+        "a278-09-aaudio-probe-request-and-actual-mode",
+        "a278-10-flush-result-before-coordinate-update",
+        "a278-11-written-flushed-and-presented-positions",
+        "a278-12-media3-preference-offload-and-sleep",
+        "a278-13-energy-experience-and-release-gates"
+      ],
       "article_index": 278,
-      "sha256_at_assignment": "2ed897ec9e3c1d291b2b3b3ccc24b370ccd2b255fb9622941884e815505fa5c3"
+      "sha256_at_assignment": "2ed897ec9e3c1d291b2b3b3ccc24b370ccd2b255fb9622941884e815505fa5c3",
+      "sha256_current": "62b7862abdbcbd8046aabc4bcb7422f7b9bd093deae04c8d437b774da0b2dcfc",
+      "sha256_after": "62b7862abdbcbd8046aabc4bcb7422f7b9bd093deae04c8d437b774da0b2dcfc",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文634行已读，24份官方及固定android-17.0.0_r1来源核对；13图及13处正文实际视觉检查通过，独立mdBook构建、本地链接、SVG XML、PNG解码通过；9条可审计校勘。代码段与原文一致，shell仅语法验证，无Kotlin/NDK编译或设备功耗测试。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "2ed897ec9e3c1d291b2b3b3ccc24b370ccd2b255fb9622941884e815505fa5c3"
     },
     {
       "path": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
       "sha256_before": "9da847520c1a6fa56e77f3b14723b217b442adefd794b495259055e1b717ada1",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a279-01-provider-code-host-and-renderer",
+        "a279-02-device-energy-uid-and-process",
+        "a279-03-paper-sample-and-generalization",
+        "a279-04-virtual-reservation-not-resident-memory",
+        "a279-05-visibility-script-and-destruction",
+        "a279-06-benchmark-cache-and-process-matrix",
+        "a279-07-benchmark-time-window-and-coverage",
+        "a279-08-optimization-versus-native-migration",
+        "a279-09-renderer-unresponsive-exit-and-recovery",
+        "a279-10-webview-twa-browser-responsibility"
+      ],
       "article_index": 279,
-      "sha256_at_assignment": "9da847520c1a6fa56e77f3b14723b217b442adefd794b495259055e1b717ada1"
+      "sha256_at_assignment": "9da847520c1a6fa56e77f3b14723b217b442adefd794b495259055e1b717ada1",
+      "sha256_current": "fe4d4fea0f5bfc1adcdbca5d7601f09f4406f26e0082bcc91e6430cc669fc4fb",
+      "sha256_after": "fe4d4fea0f5bfc1adcdbca5d7601f09f4406f26e0082bcc91e6430cc669fc4fb",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文244行已读，19份论文/官方/17r1来源核对，PDF方法与结果检查；10图及10处正文实际视觉检查通过，独立mdBook构建、本地链接、SVG XML、PNG解码通过；9条可审计校勘。唯一shell示例不变且bash -n通过，未执行设备采样或功耗测量。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "9da847520c1a6fa56e77f3b14723b217b442adefd794b495259055e1b717ada1"
     },
     {
       "path": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
       "sha256_before": "173fb64258ddec8d368602f524abba3cb84aa9b792d58c1c25569e5324fa5382",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a280-01-wall-cpu-and-scheduler-time",
+        "a280-02-executor-three-step-decision",
+        "a280-03-configured-cpus-versus-work-budget",
+        "a280-04-bounded-pool-rejection-and-lifecycle",
+        "a280-05-cpu-denominator-and-sleep-clock",
+        "a280-06-proc-counters-without-double-counting",
+        "a280-07-times-ticks-and-process-cpu",
+        "a280-08-preload-budget-not-idle-percent",
+        "a280-09-fixed-rate-catchup-and-delay",
+        "a280-10-excessive-cpu-kill-versus-profiling",
+        "a280-11-lock-wait-versus-cas-work",
+        "a280-12-coroutine-parallelism-versus-inflight",
+        "a280-13-nice-versus-hint-session-control",
+        "a280-14-pool-task-observability"
+      ],
       "article_index": 280,
-      "sha256_at_assignment": "173fb64258ddec8d368602f524abba3cb84aa9b792d58c1c25569e5324fa5382"
+      "sha256_at_assignment": "173fb64258ddec8d368602f524abba3cb84aa9b792d58c1c25569e5324fa5382",
+      "sha256_current": "2ab1c0b5ee35baaae5cd606b3f1e97be2adc7ed84ffa4d024cea0f1ef21676ac",
+      "sha256_after": "2ab1c0b5ee35baaae5cd606b3f1e97be2adc7ed84ffa4d024cea0f1ef21676ac",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文536行已读，37份官方/固定17r1和android17-6.18来源核对；14图及14处正文实际视觉检查通过，独立mdBook构建、本地链接、SVG XML、PNG解码通过；7条可审计校勘。5个代码围栏与原文一致；保留原文2026-10-22历史主机验证记录，本轮未重跑主机编译、Android构建或设备测试。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "173fb64258ddec8d368602f524abba3cb84aa9b792d58c1c25569e5324fa5382"
     },
     {
       "path": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
       "sha256_before": "b000770e8005d06cba0000ff2351b72c5c614213576cb8b1080cd6e82e91d618",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a281-01-hint-client-fmq-binder-and-hal",
+        "a281-02-session-cycle-and-close-order",
+        "a281-03-coroutine-tid-migration-versus-fixed-worker",
+        "a281-04-uid-state-pauses-session",
+        "a281-05-deadline-slack-and-power-efficiency",
+        "a281-06-monitor-consumer-versus-measurement",
+        "a281-07-coarse-cache-versus-fine-cache",
+        "a281-08-uid-stable-energy-noise-interval",
+        "a281-09-async-readings-delta-validation",
+        "a281-10-perfetto-control-behavior-energy",
+        "a281-11-ab-unit-energy-and-tail-latency",
+        "a281-12-thermal-feedback-and-rollout-control",
+        "a281-13-session-tag-mode-and-boost",
+        "a281-14-powerstats-public-pull-and-local-paths",
+        "a281-15-powerstats-log-rotation-and-metadata"
+      ],
       "article_index": 281,
-      "sha256_at_assignment": "b000770e8005d06cba0000ff2351b72c5c614213576cb8b1080cd6e82e91d618"
+      "sha256_at_assignment": "b000770e8005d06cba0000ff2351b72c5c614213576cb8b1080cd6e82e91d618",
+      "sha256_current": "037dad2fb049bc66e9b8e20dcab7fcba0e85f88c420c639c1ae546aec2b9b222",
+      "sha256_after": "037dad2fb049bc66e9b8e20dcab7fcba0e85f88c420c639c1ae546aec2b9b222",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文578行已读，31份官方/固定17r1及冻结HAL V4-V7来源核对；15图及15处正文实际视觉检查通过，独立mdBook构建、本地链接、SVG XML、PNG解码通过；20条可审计校勘及原文+校勘+插图精确重建通过。修改2段Kotlin并用Kotlin2.2.20/协程1.11.0/JDK21主机适配器验证周期与关闭顺序、主异常、零时长、取消清理、7种差值边界；不是Android SDK/NDK构建，无设备/HAL或功耗实测。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "b000770e8005d06cba0000ff2351b72c5c614213576cb8b1080cd6e82e91d618"
     },
     {
       "path": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
@@ -7864,6 +7966,1473 @@
         "src/assets/diagrams/ch25/a276-18-remote-scheduling-versus-worker-process.svg": "c9c68a995826507885763f95db2bd7dc5564fb4a45f50d08a447fe475db42fde",
         "src/assets/diagrams/ch25/a276-18-remote-scheduling-versus-worker-process.png": "15ff8d18c4900081e7c6f886ff11995138951ab28bfa6728fc8ee0342bc05cd3"
       }
+    },
+    {
+      "id": "a277-01-location-shape-by-freshness",
+      "title": "按精度、新鲜度与持续时间选择位置形态",
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a277-01-location-shape-by-freshness.svg",
+        "src/assets/diagrams/ch25/a277-01-location-shape-by-freshness.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a277-01-location-shape-by-freshness",
+      "sources": [
+        "https://developer.android.com/develop/sensors-and-location/location/battery",
+        "https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest",
+        "https://developer.android.com/reference/android/location/Location"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a277-01-location-shape-by-freshness.svg": "39de9d1a4e1cd4e49383eeb9008866147830634f93cf2becdbf3b8214692449e",
+        "src/assets/diagrams/ch25/a277-01-location-shape-by-freshness.png": "a666bb21e93fd6f53e0dcc3abf9665c60bbbe0a1186073ef15c899c85e2ec87f"
+      }
+    },
+    {
+      "id": "a277-02-flp-lifetime-and-two-stop-paths",
+      "title": "连续FLP同时设置主动停止和请求寿命",
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a277-02-flp-lifetime-and-two-stop-paths.svg",
+        "src/assets/diagrams/ch25/a277-02-flp-lifetime-and-two-stop-paths.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a277-02-flp-lifetime-and-two-stop-paths",
+      "sources": [
+        "https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest.Builder",
+        "https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest",
+        "https://developer.android.com/develop/sensors-and-location/location/permissions/background"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a277-02-flp-lifetime-and-two-stop-paths.svg": "847cc8d84d49c21a0287f00e60e700122e631afe7bcdf403f3451d0ad9c2ed2c",
+        "src/assets/diagrams/ch25/a277-02-flp-lifetime-and-two-stop-paths.png": "e5db5f5466f324d0e40a1813a6909caf0cf868110c3f47351b4b1b6b0925c579"
+      }
+    },
+    {
+      "id": "a277-03-location-batching-event-time",
+      "title": "位置计算时间与批量到达时间分开处理",
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a277-03-location-batching-event-time.svg",
+        "src/assets/diagrams/ch25/a277-03-location-batching-event-time.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a277-03-location-batching-event-time",
+      "sources": [
+        "https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest.Builder",
+        "https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a277-03-location-batching-event-time.svg": "66541d4f2d83d6cce14ebb4f54e0f47d9d85a5a56ca912e25bc094fbcfeb19de",
+        "src/assets/diagrams/ch25/a277-03-location-batching-event-time.png": "8032cdadcef2db9ce1abf3f760e7a02ee498d6019245081e1b310a5828ef79fb"
+      }
+    },
+    {
+      "id": "a277-04-geofence-versus-passive",
+      "title": "围栏事件与被动位置都不是秒级交付承诺",
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a277-04-geofence-versus-passive.svg",
+        "src/assets/diagrams/ch25/a277-04-geofence-versus-passive.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a277-04-geofence-versus-passive",
+      "sources": [
+        "https://developer.android.com/develop/sensors-and-location/location/geofencing",
+        "https://developers.google.com/android/reference/com/google/android/gms/location/Priority",
+        "https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest.Builder"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a277-04-geofence-versus-passive.svg": "768bbaf6783dc4cf56714baf5243097d7c1e7721bd1501bc15a9751be29d4325",
+        "src/assets/diagrams/ch25/a277-04-geofence-versus-passive.png": "0c102d0f6c8de1023f8a04fea969845d4baf5eaf8e7bdd6bc653b0f1dfa1ce40"
+      }
+    },
+    {
+      "id": "a277-05-sensor-hardware-to-app",
+      "title": "传感器采样、FIFO批交付与应用计算分开预算",
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a277-05-sensor-hardware-to-app.svg",
+        "src/assets/diagrams/ch25/a277-05-sensor-hardware-to-app.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a277-05-sensor-hardware-to-app",
+      "sources": [
+        "https://source.android.com/devices/sensors/batching",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/sensorservice/SensorService.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/SystemSensorManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a277-05-sensor-hardware-to-app.svg": "d929cde1a12e9ad85372d4ae87d66888c7b74ee6ff59a1d453ef140fc13dd24f",
+        "src/assets/diagrams/ch25/a277-05-sensor-hardware-to-app.png": "0112144e7dc01ff5e3f6ffe31627543473b0598d72bf7c8fcce31744ef410882"
+      }
+    },
+    {
+      "id": "a277-06-wakeup-nonwakeup-fifo",
+      "title": "FIFO批处理与能否唤醒处理器是两个维度",
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a277-06-wakeup-nonwakeup-fifo.svg",
+        "src/assets/diagrams/ch25/a277-06-wakeup-nonwakeup-fifo.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a277-06-wakeup-nonwakeup-fifo",
+      "sources": [
+        "https://source.android.com/devices/sensors/batching",
+        "https://developer.android.com/reference/android/hardware/SensorManager"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a277-06-wakeup-nonwakeup-fifo.svg": "8f24970dbdf4227d0cdf972e962e81547dd377dbb14de21751fc03d468a755e5",
+        "src/assets/diagrams/ch25/a277-06-wakeup-nonwakeup-fifo.png": "aafe5a772bd03afc81289d57c4466268dad9f6316d7baebf8b055601eb794f23"
+      }
+    },
+    {
+      "id": "a277-07-flush-per-sensor-completion",
+      "title": "同一listener的flush必须逐传感器等待",
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a277-07-flush-per-sensor-completion.svg",
+        "src/assets/diagrams/ch25/a277-07-flush-per-sensor-completion.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a277-07-flush-per-sensor-completion",
+      "sources": [
+        "https://developer.android.com/reference/android/hardware/SensorManager",
+        "https://developer.android.com/reference/android/hardware/SensorEventListener2",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/sensorservice/SensorEventConnection.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a277-07-flush-per-sensor-completion.svg": "87ce19305c8cd4bf8cff80a1ad868f0be1f3ac50794182f672e7c389faec38bb",
+        "src/assets/diagrams/ch25/a277-07-flush-per-sensor-completion.png": "22a8dc9c5c05d7ec11b381bbc4ce08cab766b72b5ddc5ed16b44f3ad0ab2d621"
+      }
+    },
+    {
+      "id": "a277-08-high-rate-sensor-gates",
+      "title": "200Hz权限限制与后台资格分开检查",
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a277-08-high-rate-sensor-gates.svg",
+        "src/assets/diagrams/ch25/a277-08-high-rate-sensor-gates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a277-08-high-rate-sensor-gates",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/SystemSensorManager.java",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/sensorservice/SensorService.cpp",
+        "https://developer.android.com/develop/sensors-and-location/sensors/sensors_overview"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a277-08-high-rate-sensor-gates.svg": "18f89538718d34bb47ea4a431c5c0f312a3f8efbb5a69f5340658b2a35a0f52c",
+        "src/assets/diagrams/ch25/a277-08-high-rate-sensor-gates.png": "cac3fec326649e042cdc98f5cd012bfac79f644bf3817343fa56e913bb5543c7"
+      }
+    },
+    {
+      "id": "a277-09-location-health-resource-gates",
+      "title": "运行身份、资源权限与生命周期共同决定采样",
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a277-09-location-health-resource-gates.svg",
+        "src/assets/diagrams/ch25/a277-09-location-health-resource-gates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a277-09-location-health-resource-gates",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/fgs/service-types",
+        "https://developer.android.com/about/versions/16/behavior-changes-16",
+        "https://developer.android.com/develop/sensors-and-location/location/permissions/background"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a277-09-location-health-resource-gates.svg": "0e16f7ca98d99ef569c4742b84a183107751a657c6690cb16e7a8d24c2acce99",
+        "src/assets/diagrams/ch25/a277-09-location-health-resource-gates.png": "c1667c922046bde8e81cc5b74bdb212cc7c72b870f5fed3bc4ef493bcd4ecb35"
+      }
+    },
+    {
+      "id": "a277-10-gnss-rtt-ble-measurement-bounds",
+      "title": "GNSS、RTT与BLE测量分别设置能力与结束条件",
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a277-10-gnss-rtt-ble-measurement-bounds.svg",
+        "src/assets/diagrams/ch25/a277-10-gnss-rtt-ble-measurement-bounds.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a277-10-gnss-rtt-ble-measurement-bounds",
+      "sources": [
+        "https://developer.android.com/reference/android/location/GnssMeasurementRequest.Builder",
+        "https://developer.android.com/develop/connectivity/wifi/wifi-rtt",
+        "https://developer.android.com/reference/android/net/wifi/rtt/RangingResult",
+        "https://developer.android.com/reference/android/bluetooth/le/BluetoothLeScanner",
+        "https://developer.android.com/develop/connectivity/bluetooth/ble/background"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a277-10-gnss-rtt-ble-measurement-bounds.svg": "8f13a3c1901a3f4ce4101a79d983873d0252d2f56a2050f5930a3f47656e4f04",
+        "src/assets/diagrams/ch25/a277-10-gnss-rtt-ble-measurement-bounds.png": "e924424a45b7c89a900ee72fe794711a0467e6bab8c38faa98ae078cc1bf8771"
+      }
+    },
+    {
+      "id": "a278-01-background-audio-contract-gates",
+      "title": "Android17后台音频先过基础FGS和目标37WIU门槛",
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a278-01-background-audio-contract-gates.svg",
+        "src/assets/diagrams/ch25/a278-01-background-audio-contract-gates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a278-01-background-audio-contract-gates",
+      "sources": [
+        "https://developer.android.com/about/versions/17/changes/bg-audio",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/HardeningEnforcer.java",
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/audioflinger/Tracks.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a278-01-background-audio-contract-gates.svg": "6f087851f62dc451e1d5ff5fbd53d0ff596bfd1ec8d15f53e85188ae851c7b48",
+        "src/assets/diagrams/ch25/a278-01-background-audio-contract-gates.png": "c16fed370441b80674d04568fd4f93f35da79d2326e59a01fbdd0940330deca7"
+      }
+    },
+    {
+      "id": "a278-02-player-state-versus-audible-output",
+      "title": "播放器正在播放不等于设备正在出声",
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a278-02-player-state-versus-audible-output.svg",
+        "src/assets/diagrams/ch25/a278-02-player-state-versus-audible-output.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a278-02-player-state-versus-audible-output",
+      "sources": [
+        "https://developer.android.com/about/versions/17/changes/bg-audio",
+        "https://developer.android.com/media/media3/session/background-playback",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/AudioTrack.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a278-02-player-state-versus-audible-output.svg": "10742e8e97ea330dcbe186fb4433f7ed5120744f67d0903e2c605267c84ed301",
+        "src/assets/diagrams/ch25/a278-02-player-state-versus-audible-output.png": "05506da9bcf1399140b899ee99b33154d08cfcb7a1692d6718f7116313c627b6"
+      }
+    },
+    {
+      "id": "a278-03-playback-intent-and-resource-lifetime",
+      "title": "播放意图决定临时保留还是完整停止",
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a278-03-playback-intent-and-resource-lifetime.svg",
+        "src/assets/diagrams/ch25/a278-03-playback-intent-and-resource-lifetime.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a278-03-playback-intent-and-resource-lifetime",
+      "sources": [
+        "https://developer.android.com/about/versions/17/changes/bg-audio",
+        "https://developer.android.com/media/media3/session/background-playback"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a278-03-playback-intent-and-resource-lifetime.svg": "acb7272b378a2934eebdbedc8282b9a4442c13e36db880aafb162b5b63358b1c",
+        "src/assets/diagrams/ch25/a278-03-playback-intent-and-resource-lifetime.png": "8064137b34f0ba4788b686526c067fc2c9bcdb7b16613b3c8c0a8ffa7adcf79c"
+      }
+    },
+    {
+      "id": "a278-04-hardening-three-platform-entrypoints",
+      "title": "焦点、音量与播放在不同平台入口检查",
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a278-04-hardening-three-platform-entrypoints.svg",
+        "src/assets/diagrams/ch25/a278-04-hardening-three-platform-entrypoints.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a278-04-hardening-three-platform-entrypoints",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/HardeningEnforcer.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/AudioService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/MediaFocusControl.java",
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/audioflinger/Tracks.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a278-04-hardening-three-platform-entrypoints.svg": "270eb9314e13141d1a15bbbcac19a60df01985dcf75f2418afadfc524fe913a2",
+        "src/assets/diagrams/ch25/a278-04-hardening-three-platform-entrypoints.png": "0e289ae00a0139aa8a1360d8ae960b065ba8e4ce8a8ad45a0de553821523b37c"
+      }
+    },
+    {
+      "id": "a278-05-async-appops-and-thread-wakeup",
+      "title": "Offload与MMAP也持续受权限状态控制",
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a278-05-async-appops-and-thread-wakeup.svg",
+        "src/assets/diagrams/ch25/a278-05-async-appops-and-thread-wakeup.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a278-05-async-appops-and-thread-wakeup",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/audioflinger/Tracks.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a278-05-async-appops-and-thread-wakeup.svg": "a154210b34c23302cfff1d2264b713cc280304a755d3c9e7d3144c3f6dbb81e3",
+        "src/assets/diagrams/ch25/a278-05-async-appops-and-thread-wakeup.png": "adb09a84e17b71f59e67ed3b6bbd39a9944bf0dc29c17a3de1b71645ecabe2d2"
+      }
+    },
+    {
+      "id": "a278-06-hardening-default-and-test-override",
+      "title": "默认兼容策略与强制测试模式分开解释",
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a278-06-hardening-default-and-test-override.svg",
+        "src/assets/diagrams/ch25/a278-06-hardening-default-and-test-override.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a278-06-hardening-default-and-test-override",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/AudioManagerShellCommand.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/HardeningEnforcer.java",
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/audioflinger/Tracks.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a278-06-hardening-default-and-test-override.svg": "3ca30a5920ec8dfd4f55b807242398f3453012f3a88918bcdae43133e1d81524",
+        "src/assets/diagrams/ch25/a278-06-hardening-default-and-test-override.png": "055b53aebc741334a6e2458e358bcb0e90488085178de1212e0a0a947d9a72b4"
+      }
+    },
+    {
+      "id": "a278-07-bluetooth-codec-route-versus-authorization",
+      "title": "蓝牙编解码路径与后台发声资格分别取证",
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a278-07-bluetooth-codec-route-versus-authorization.svg",
+        "src/assets/diagrams/ch25/a278-07-bluetooth-codec-route-versus-authorization.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a278-07-bluetooth-codec-route-versus-authorization",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/codec_manager.cc",
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/android/app/src/com/android/bluetooth/le_audio/LeAudioService.java",
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/audioflinger/Tracks.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a278-07-bluetooth-codec-route-versus-authorization.svg": "9e9ab420735d540893b5a554f1d234ade96bd52114ed7f3422c56da57f3d7d6c",
+        "src/assets/diagrams/ch25/a278-07-bluetooth-codec-route-versus-authorization.png": "8596f39a2bf0ca3831419e8975a73eb07cf51b9c514ed5b60a515ef350260da2"
+      }
+    },
+    {
+      "id": "a278-08-offload-versus-low-latency",
+      "title": "长时省电路径与实时低延迟路径按需求选择",
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a278-08-offload-versus-low-latency.svg",
+        "src/assets/diagrams/ch25/a278-08-offload-versus-low-latency.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a278-08-offload-versus-low-latency",
+      "sources": [
+        "https://developer.android.com/media/media3/exoplayer/battery-consumption",
+        "https://source.android.com/docs/compatibility/17/android-17-cdd#5_5_4_audio_offload",
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libaaudio/include/aaudio/AAudio.h"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a278-08-offload-versus-low-latency.svg": "9a0f8774492e8ac3031e4e97f323eb45b781bb3726af63ee729f5936a68d8478",
+        "src/assets/diagrams/ch25/a278-08-offload-versus-low-latency.png": "76111e00f57f04f9b49362d18093a5962970241140a8f68a9d5d6156ad69dd79"
+      }
+    },
+    {
+      "id": "a278-09-aaudio-probe-request-and-actual-mode",
+      "title": "AAudio请求Offload后读取实际performance mode",
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a278-09-aaudio-probe-request-and-actual-mode.svg",
+        "src/assets/diagrams/ch25/a278-09-aaudio-probe-request-and-actual-mode.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a278-09-aaudio-probe-request-and-actual-mode",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libaaudio/include/aaudio/AAudio.h",
+        "https://developer.android.com/ndk/reference/group/audio",
+        "https://developer.android.com/ndk/guides/using-newer-apis"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a278-09-aaudio-probe-request-and-actual-mode.svg": "a55aa86d5b7d865a9299508dbd7bd28f0d125153f46334db8d3229f428281d2c",
+        "src/assets/diagrams/ch25/a278-09-aaudio-probe-request-and-actual-mode.png": "5554812d2592bd03e82803e2106083fd339c243c6666170af968031e74a431bd"
+      }
+    },
+    {
+      "id": "a278-10-flush-result-before-coordinate-update",
+      "title": "按位置flush先验能力并串行，再看结果码",
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a278-10-flush-result-before-coordinate-update.svg",
+        "src/assets/diagrams/ch25/a278-10-flush-result-before-coordinate-update.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a278-10-flush-result-before-coordinate-update",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libaaudio/include/aaudio/AAudio.h",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/AudioTrack.java",
+        "https://developer.android.com/ndk/reference/group/audio"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a278-10-flush-result-before-coordinate-update.svg": "9990b58f9bf7e9c4c281a11ef1526ad31be871d71bf954cb438ce1ffc3b129fc",
+        "src/assets/diagrams/ch25/a278-10-flush-result-before-coordinate-update.png": "118960cc91b8cdcf8ef1a9b1ea0c7a7a262bb17a3f656f03f6305184e664add2"
+      }
+    },
+    {
+      "id": "a278-11-written-flushed-and-presented-positions",
+      "title": "写入、实际flush与已呈现是三种坐标",
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a278-11-written-flushed-and-presented-positions.svg",
+        "src/assets/diagrams/ch25/a278-11-written-flushed-and-presented-positions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a278-11-written-flushed-and-presented-positions",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/AudioTrack.java",
+        "https://developer.android.com/reference/android/media/AudioTrack"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a278-11-written-flushed-and-presented-positions.svg": "e145aa69472091627e16d6677e0b40a6c054184d3a00a5b84ed09ec8dff38c99",
+        "src/assets/diagrams/ch25/a278-11-written-flushed-and-presented-positions.png": "f6cf81d0f4d9afcf0cc457aeb447aaf60b02f5072afaddc26b61b0fd3d20eb0b"
+      }
+    },
+    {
+      "id": "a278-12-media3-preference-offload-and-sleep",
+      "title": "Media3偏好、实际Offload与主循环休眠分别观察",
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a278-12-media3-preference-offload-and-sleep.svg",
+        "src/assets/diagrams/ch25/a278-12-media3-preference-offload-and-sleep.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a278-12-media3-preference-offload-and-sleep",
+      "sources": [
+        "https://developer.android.com/media/media3/exoplayer/track-selection",
+        "https://developer.android.com/reference/androidx/media3/exoplayer/ExoPlayer.AudioOffloadListener",
+        "https://developer.android.com/media/media3/exoplayer/battery-consumption"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a278-12-media3-preference-offload-and-sleep.svg": "ae2169be0a5aecb4e83c2632c3ca3312de7cb9c459dc3b468b70d7a2dd75db4c",
+        "src/assets/diagrams/ch25/a278-12-media3-preference-offload-and-sleep.png": "e5b453dc9eaadb1abf03b8888e24ad47ac380d2a3ac8fbf35e9879ea3c6ea9d0"
+      }
+    },
+    {
+      "id": "a278-13-energy-experience-and-release-gates",
+      "title": "同机A/B同时验收能量与播放体验",
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a278-13-energy-experience-and-release-gates.svg",
+        "src/assets/diagrams/ch25/a278-13-energy-experience-and-release-gates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a278-13-energy-experience-and-release-gates",
+      "sources": [
+        "https://developer.android.com/media/media3/exoplayer/battery-consumption",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/media/java/android/media/AudioTrack.java",
+        "https://developer.android.com/about/versions/17/features",
+        "https://source.android.com/docs/compatibility/17/android-17-cdd#5_5_4_audio_offload"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a278-13-energy-experience-and-release-gates.svg": "823a84e6ef3ccf1adbc415bbbc6dffbe1ab4ef45e8dd28ac82485c58022ce721",
+        "src/assets/diagrams/ch25/a278-13-energy-experience-and-release-gates.png": "70cfe170ed82705a359071231d94a098b2f9c85b9bbc86d37d34b7903a7988d5"
+      }
+    },
+    {
+      "id": "a279-01-provider-code-host-and-renderer",
+      "title": "WebView provider是实现包，不能按包名数进程",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a279-01-provider-code-host-and-renderer.svg",
+        "src/assets/diagrams/ch25/a279-01-provider-code-host-and-renderer.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a279-01-provider-code-host-and-renderer",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview",
+        "https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/native/webview/loader/loader.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a279-01-provider-code-host-and-renderer.svg": "4513c106083309b0902f75ec613e53625640c1b6b0390d7978d2b92e37a620d0",
+        "src/assets/diagrams/ch25/a279-01-provider-code-host-and-renderer.png": "fdd9b1dc5b395a920f0ab98c640c7ef0fe5594e43fa43f2ce5a724c6b1378c46"
+      }
+    },
+    {
+      "id": "a279-02-device-energy-uid-and-process",
+      "title": "整机能量、UID归因、进程资源回答不同问题",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a279-02-device-energy-uid-and-process.svg",
+        "src/assets/diagrams/ch25/a279-02-device-energy-uid-and-process.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a279-02-device-energy-uid-and-process",
+      "sources": [
+        "https://source.android.com/docs/core/power/power-stats-hal",
+        "https://developer.android.com/studio/profile/power-profiler",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics#powermetric"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a279-02-device-energy-uid-and-process.svg": "9c5fbac36b2d83570d3d22baffca656e548b491ef11fdb9bfcdac7d106aaaef8",
+        "src/assets/diagrams/ch25/a279-02-device-energy-uid-and-process.png": "a9a02e2518462ac0bcace48cfccfb7fc403fcee5b62d3cd87f91dd5307951c83"
+      }
+    },
+    {
+      "id": "a279-03-paper-sample-and-generalization",
+      "title": "论文验证的是Native与Chrome Web的有限样本",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a279-03-paper-sample-and-generalization.svg",
+        "src/assets/diagrams/ch25/a279-03-paper-sample-and-generalization.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a279-03-paper-sample-and-generalization",
+      "sources": [
+        "https://arxiv.org/pdf/2308.16734"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a279-03-paper-sample-and-generalization.svg": "6252231934a6597465362feec8003a4f43c5a1573d929648136b2969146a97ad",
+        "src/assets/diagrams/ch25/a279-03-paper-sample-and-generalization.png": "8a10936ccabab6248a88b7f5a1f02794e0a09fa491c7b2804945027e68187b71"
+      }
+    },
+    {
+      "id": "a279-04-virtual-reservation-not-resident-memory",
+      "title": "WebView地址预留与物理常驻内存分开诊断",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a279-04-virtual-reservation-not-resident-memory.svg",
+        "src/assets/diagrams/ch25/a279-04-virtual-reservation-not-resident-memory.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a279-04-virtual-reservation-not-resident-memory",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/native/webview/loader/loader.cpp",
+        "https://developer.android.com/reference/android/webkit/WebView"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a279-04-virtual-reservation-not-resident-memory.svg": "8b0681f6089d47ee1637cfc965d30dfbe29be759807d88f9f5bf04cbbe50c7c8",
+        "src/assets/diagrams/ch25/a279-04-virtual-reservation-not-resident-memory.png": "5f49c8fd748661b8d4f167bf0e2c4e5ca1883aec8fa8306fa4cd59a0be2e0d04"
+      }
+    },
+    {
+      "id": "a279-05-visibility-script-and-destruction",
+      "title": "页面离屏后按生命周期停止持续工作",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a279-05-visibility-script-and-destruction.svg",
+        "src/assets/diagrams/ch25/a279-05-visibility-script-and-destruction.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a279-05-visibility-script-and-destruction",
+      "sources": [
+        "https://developer.android.com/reference/android/webkit/WebView",
+        "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a279-05-visibility-script-and-destruction.svg": "671192784e322a872f2978d4cde6ba1e019dff9f15cd399af69f3e7d268031f6",
+        "src/assets/diagrams/ch25/a279-05-visibility-script-and-destruction.png": "28bf153345d9649db98b3010683345c103710275b1c7cdc981f7a0db28d8e247"
+      }
+    },
+    {
+      "id": "a279-06-benchmark-cache-and-process-matrix",
+      "title": "冷暖进程与缓存命中是两个独立实验维度",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a279-06-benchmark-cache-and-process-matrix.svg",
+        "src/assets/diagrams/ch25/a279-06-benchmark-cache-and-process-matrix.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a279-06-benchmark-cache-and-process-matrix",
+      "sources": [
+        "https://arxiv.org/pdf/2308.16734",
+        "https://developer.android.com/studio/profile/power-profiler",
+        "https://developer.android.com/develop/ui/views/layout/webapps/webview"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a279-06-benchmark-cache-and-process-matrix.svg": "739538fcb6648125d21174370208f5a404733f8e8b060718ee13b53f6daed775",
+        "src/assets/diagrams/ch25/a279-06-benchmark-cache-and-process-matrix.png": "ff7e44b1352bffd518ecadba6522e040107adb27eb1e86a4bc9c86d1ab6078b1"
+      }
+    },
+    {
+      "id": "a279-07-benchmark-time-window-and-coverage",
+      "title": "先统一采样窗口，再关联能量与进程活动",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a279-07-benchmark-time-window-and-coverage.svg",
+        "src/assets/diagrams/ch25/a279-07-benchmark-time-window-and-coverage.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a279-07-benchmark-time-window-and-coverage",
+      "sources": [
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics#powermetric",
+        "https://developer.android.com/studio/profile/power-profiler",
+        "https://developer.android.com/topic/performance/power/setup-battery-historian"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a279-07-benchmark-time-window-and-coverage.svg": "22349dfd59f61059a52d34c46f075d3d1eefd214fd74129fd29eeaa3452ea424",
+        "src/assets/diagrams/ch25/a279-07-benchmark-time-window-and-coverage.png": "9c21139da6a558ca2589ca086e0946484642591551c5578e9caa6aead6e1957c"
+      }
+    },
+    {
+      "id": "a279-08-optimization-versus-native-migration",
+      "title": "选型由已测瓶颈与局部改造收益决定",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a279-08-optimization-versus-native-migration.svg",
+        "src/assets/diagrams/ch25/a279-08-optimization-versus-native-migration.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a279-08-optimization-versus-native-migration",
+      "sources": [
+        "https://arxiv.org/pdf/2308.16734",
+        "https://developer.android.com/studio/profile/power-profiler",
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a279-08-optimization-versus-native-migration.svg": "75ba58675378a9ca9b4545f557103c44cc3301ebbdaea7e14688bbe9e3da6bcb",
+        "src/assets/diagrams/ch25/a279-08-optimization-versus-native-migration.png": "75776d535286933b4a21bce7e67cc35a33d1a5c85ce2389a4077213b4261a244"
+      }
+    },
+    {
+      "id": "a279-09-renderer-unresponsive-exit-and-recovery",
+      "title": "renderer无响应通知与退出清理不是同一个事件",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a279-09-renderer-unresponsive-exit-and-recovery.svg",
+        "src/assets/diagrams/ch25/a279-09-renderer-unresponsive-exit-and-recovery.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a279-09-renderer-unresponsive-exit-and-recovery",
+      "sources": [
+        "https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient",
+        "https://developer.android.com/reference/android/webkit/WebViewClient",
+        "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a279-09-renderer-unresponsive-exit-and-recovery.svg": "1459f840e65e0c83142705636fc5d1d9932cef6928891b70ce2ecd414b7d697a",
+        "src/assets/diagrams/ch25/a279-09-renderer-unresponsive-exit-and-recovery.png": "ba8b17abe96796391db79eeeeb756a9920cc1f562c47af8e4c87ed37e12c8934"
+      }
+    },
+    {
+      "id": "a279-10-webview-twa-browser-responsibility",
+      "title": "WebView与TWA改变容器责任，页面成本仍需测量",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a279-10-webview-twa-browser-responsibility.svg",
+        "src/assets/diagrams/ch25/a279-10-webview-twa-browser-responsibility.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a279-10-webview-twa-browser-responsibility",
+      "sources": [
+        "https://developer.chrome.com/docs/android/trusted-web-activity",
+        "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a279-10-webview-twa-browser-responsibility.svg": "849d191869e85ac271fbf0ed57f30e0b370af31a9006e8bb367ab61a229c4b68",
+        "src/assets/diagrams/ch25/a279-10-webview-twa-browser-responsibility.png": "ad834e4df6dce1b697528fa9eaaebee8a62185a26fdd85ebfdb6adfe19178ec3"
+      }
+    },
+    {
+      "id": "a280-01-wall-cpu-and-scheduler-time",
+      "title": "用户墙钟等待由运行、排队与阻塞共同组成",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-01-wall-cpu-and-scheduler-time.svg",
+        "src/assets/diagrams/ch25/a280-01-wall-cpu-and-scheduler-time.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-01-wall-cpu-and-scheduler-time",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-01-wall-cpu-and-scheduler-time.svg": "cefa91f7dfa5fffedfd463055c4be2549bcf9a81f054a7474fbd0b10554c6c73",
+        "src/assets/diagrams/ch25/a280-01-wall-cpu-and-scheduler-time.png": "aebadf32a5cfca1452cbbf17151eb7d2679110ceb56857ca1bdaafb49c3121eb"
+      }
+    },
+    {
+      "id": "a280-02-executor-three-step-decision",
+      "title": "execute先尝试核心worker，再入队，再扩非核心",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-02-executor-three-step-decision.svg",
+        "src/assets/diagrams/ch25/a280-02-executor-three-step-decision.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-02-executor-three-step-decision",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-02-executor-three-step-decision.svg": "298d0779f647652fd6712498e9035dab759eb6ecce106d96dad7733abd08d0b5",
+        "src/assets/diagrams/ch25/a280-02-executor-three-step-decision.png": "7fe0e87719b5d1a16a0d69f4f98b0b14023ac06a73238c680799dd8da163b0e1"
+      }
+    },
+    {
+      "id": "a280-03-configured-cpus-versus-work-budget",
+      "title": "availableProcessors是配置数量，不能代替并行预算",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-03-configured-cpus-versus-work-budget.svg",
+        "src/assets/diagrams/ch25/a280-03-configured-cpus-versus-work-budget.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-03-configured-cpus-versus-work-budget",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Runtime.java",
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/sysconf.cpp",
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/sysinfo.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-03-configured-cpus-versus-work-budget.svg": "a66d95e5804f99c6c4e64f1fe96b97b4aa7d22911bfa3ad31665b9576c2a021c",
+        "src/assets/diagrams/ch25/a280-03-configured-cpus-versus-work-budget.png": "c4a7caacd6711f2d9476c33c56aa0d340bd94d8020cf0e8241268b2f4d9be742"
+      }
+    },
+    {
+      "id": "a280-04-bounded-pool-rejection-and-lifecycle",
+      "title": "并发、积压与拒绝要一起设计",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-04-bounded-pool-rejection-and-lifecycle.svg",
+        "src/assets/diagrams/ch25/a280-04-bounded-pool-rejection-and-lifecycle.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-04-bounded-pool-rejection-and-lifecycle",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-04-bounded-pool-rejection-and-lifecycle.svg": "9afa2703b845b2b6eb5cf2d1098e4254cd59a3451c2074bd4b7b0271aaddd645",
+        "src/assets/diagrams/ch25/a280-04-bounded-pool-rejection-and-lifecycle.png": "01288497302f0d1782010122599e0c34538d8c02b2da25d417e876f0e1e44e50"
+      }
+    },
+    {
+      "id": "a280-05-cpu-denominator-and-sleep-clock",
+      "title": "CPU占比先声明分子、分母和睡眠时钟",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-05-cpu-denominator-and-sleep-clock.svg",
+        "src/assets/diagrams/ch25/a280-05-cpu-denominator-and-sleep-clock.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-05-cpu-denominator-and-sleep-clock",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-05-cpu-denominator-and-sleep-clock.svg": "d0114cb3e140eb694fe0dba7cbc426faebf4ad5cd80062ec87ddf297333e89c2",
+        "src/assets/diagrams/ch25/a280-05-cpu-denominator-and-sleep-clock.png": "89de9fbe5688da330719b200258ae9098883270ee64a9c64a8e0fea4286f47c4"
+      }
+    },
+    {
+      "id": "a280-06-proc-counters-without-double-counting",
+      "title": "proc统计不要重复guest，也不要错拆comm",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-06-proc-counters-without-double-counting.svg",
+        "src/assets/diagrams/ch25/a280-06-proc-counters-without-double-counting.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-06-proc-counters-without-double-counting",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cputime.c"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-06-proc-counters-without-double-counting.svg": "518652a5d207e975254e2f33fbe9c00bde7e878e316e75208db0c7bc9db20a23",
+        "src/assets/diagrams/ch25/a280-06-proc-counters-without-double-counting.png": "de85dd15ac34b17c70882eb6fecb6311f2b05f62126fb840b89c68df9d8a233f"
+      }
+    },
+    {
+      "id": "a280-07-times-ticks-and-process-cpu",
+      "title": "times的USER_HZ来自sysconf，不来自CONFIG_HZ",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-07-times-ticks-and-process-cpu.svg",
+        "src/assets/diagrams/ch25/a280-07-times-ticks-and-process-cpu.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-07-times-ticks-and-process-cpu",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sys.c",
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/bionic/sysconf.cpp",
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/libc/include/time.h"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-07-times-ticks-and-process-cpu.svg": "6225701329817f97b2dcd74256c6e1e6393ed512c4f67ef94b71c6c4b1e917cc",
+        "src/assets/diagrams/ch25/a280-07-times-ticks-and-process-cpu.png": "da6edae7bfbdf0462cceee995f1025d7454dca78fa8c2d597d86266ea0d9958c"
+      }
+    },
+    {
+      "id": "a280-08-preload-budget-not-idle-percent",
+      "title": "预加载先看命中收益，再支付有界成本",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-08-preload-budget-not-idle-percent.svg",
+        "src/assets/diagrams/ch25/a280-08-preload-budget-not-idle-percent.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-08-preload-budget-not-idle-percent",
+      "sources": [
+        "https://developer.android.com/reference/android/os/MessageQueue.IdleHandler",
+        "https://developer.android.com/arch/work"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-08-preload-budget-not-idle-percent.svg": "fe77b414cb316c4568b155cba36bb5d5a161c380cf8cb89842be689da9808cb0",
+        "src/assets/diagrams/ch25/a280-08-preload-budget-not-idle-percent.png": "62995bbecae9bbcd29c6453f611ae531003a4a256e5c1bd05f15142c9d7ed82a"
+      }
+    },
+    {
+      "id": "a280-09-fixed-rate-catchup-and-delay",
+      "title": "固定频率漏期校正与固定延迟从结束起算不同",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-09-fixed-rate-catchup-and-delay.svg",
+        "src/assets/diagrams/ch25/a280-09-fixed-rate-catchup-and-delay.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-09-fixed-rate-catchup-and-delay",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ScheduledThreadPoolExecutor.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java",
+        "https://developer.android.com/about/versions/16/behavior-changes-16"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-09-fixed-rate-catchup-and-delay.svg": "5b69216fa12767c87d740ed60e5238b2ad9b8cb02598a260d5701cf16f559ff8",
+        "src/assets/diagrams/ch25/a280-09-fixed-rate-catchup-and-delay.png": "cb2770f8c0b50163638c1c9bd8505cac4db633564ae15d3182f4f3b82313f971"
+      }
+    },
+    {
+      "id": "a280-10-excessive-cpu-kill-versus-profiling",
+      "title": "过量CPU终止条件与Profiling取证是两条职责",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-10-excessive-cpu-kill-versus-profiling.svg",
+        "src/assets/diagrams/ch25/a280-10-excessive-cpu-kill-versus-profiling.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-10-excessive-cpu-kill-versus-profiling",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerConstants.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java",
+        "https://developer.android.com/about/versions/17/features",
+        "https://developer.android.com/reference/android/os/ProfilingResult"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-10-excessive-cpu-kill-versus-profiling.svg": "c58ad165376320d0fab9950bc52e50912eefd1bb71d9490497615dd2b34c07e0",
+        "src/assets/diagrams/ch25/a280-10-excessive-cpu-kill-versus-profiling.png": "22ce6594844144f7f77475cf720a69276c9e225e33c845ed8f5a30310e961cb5"
+      }
+    },
+    {
+      "id": "a280-11-lock-wait-versus-cas-work",
+      "title": "锁等待与CAS重试可能给出相反CPU表象",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-11-lock-wait-versus-cas-work.svg",
+        "src/assets/diagrams/ch25/a280-11-lock-wait-versus-cas-work.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-11-lock-wait-versus-cas-work",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/monitor.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-11-lock-wait-versus-cas-work.svg": "2f22c0fe33a36f3c56cc12612bd8cb1970ab9b49f3ed55b048a05df53dafa28a",
+        "src/assets/diagrams/ch25/a280-11-lock-wait-versus-cas-work.png": "e49e9aa16a3b74d1047a2d9040e1488c70de3e98cb301303e2085c23e1620d6f"
+      }
+    },
+    {
+      "id": "a280-12-coroutine-parallelism-versus-inflight",
+      "title": "limitedParallelism限制执行片段，不限制在途请求",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-12-coroutine-parallelism-versus-inflight.svg",
+        "src/assets/diagrams/ch25/a280-12-coroutine-parallelism-versus-inflight.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-12-coroutine-parallelism-versus-inflight",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-dispatchers/-i-o.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-12-coroutine-parallelism-versus-inflight.svg": "ce4771bfd608b6c40b306da7da1221c32a1f6ad0fb89fd5ba8248e8eed542577",
+        "src/assets/diagrams/ch25/a280-12-coroutine-parallelism-versus-inflight.png": "ae620b86c4d2711d273f536a013484da994217917e7f40223087eea4d8e97013"
+      }
+    },
+    {
+      "id": "a280-13-nice-versus-hint-session-control",
+      "title": "nice表达竞争机会，ADPF反馈工作目标",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-13-nice-versus-hint-session-control.svg",
+        "src/assets/diagrams/ch25/a280-13-nice-versus-hint-session-control.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-13-nice-versus-hint-session-control",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-eevdf.rst",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Process.java",
+        "https://developer.android.com/reference/android/os/PerformanceHintManager"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-13-nice-versus-hint-session-control.svg": "be0aee7a3f547cd5876291eede888ba22902de2bc0cb42936acb08ad4c5bbaf5",
+        "src/assets/diagrams/ch25/a280-13-nice-versus-hint-session-control.png": "a0aa534e1d4a5efd06b5334751ab62490aa5507bda123676bbadae793a5b7aae"
+      }
+    },
+    {
+      "id": "a280-14-pool-task-observability",
+      "title": "把排队时间与CPU时间绑定到低基数任务类型",
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a280-14-pool-task-observability.svg",
+        "src/assets/diagrams/ch25/a280-14-pool-task-observability.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a280-14-pool-task-observability",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a280-14-pool-task-observability.svg": "89257e8379f5ac75e8f2bf008fe8a8fa31b181a5faa418c944638efaed0f9603",
+        "src/assets/diagrams/ch25/a280-14-pool-task-observability.png": "ecd38143270f5470670b20891557e1dc300a7bedb69041487588cb7a04cb5647"
+      }
+    },
+    {
+      "id": "a281-01-hint-client-fmq-binder-and-hal",
+      "title": "ADPF上报是协作通道，不保证每帧一次Binder",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-01-hint-client-fmq-binder-and-hal.svg",
+        "src/assets/diagrams/ch25/a281-01-hint-client-fmq-binder-and-hal.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-01-hint-client-fmq-binder-and-hal",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/performance_hint.h"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-01-hint-client-fmq-binder-and-hal.svg": "5c9fd561c470ddead00306f723a384163031d8bcb80e017bef8aa4a684effeef",
+        "src/assets/diagrams/ch25/a281-01-hint-client-fmq-binder-and-hal.png": "789ac40185115f4367c8fda9e87451311a6fe664fd09bebd248038bf3a7fff76"
+      }
+    },
+    {
+      "id": "a281-02-session-cycle-and-close-order",
+      "title": "固定线程上创建、完整执行周期，再上报并关闭",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-02-session-cycle-and-close-order.svg",
+        "src/assets/diagrams/ch25/a281-02-session-cycle-and-close-order.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-02-session-cycle-and-close-order",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java",
+        "https://developer.android.com/reference/android/os/PerformanceHintManager.Session",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-02-session-cycle-and-close-order.svg": "101652a53fd5371e93be8a3690a48055091952881d80c26705e60d5cdd213548",
+        "src/assets/diagrams/ch25/a281-02-session-cycle-and-close-order.png": "d05d931faf4d3be35b9690ff57c31821241cc3237f28877c427fe5c20a655016"
+      }
+    },
+    {
+      "id": "a281-03-coroutine-tid-migration-versus-fixed-worker",
+      "title": "Session绑定Linux TID，协程身份不能替代线程身份",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-03-coroutine-tid-migration-versus-fixed-worker.svg",
+        "src/assets/diagrams/ch25/a281-03-coroutine-tid-migration-versus-fixed-worker.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-03-coroutine-tid-migration-versus-fixed-worker",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-03-coroutine-tid-migration-versus-fixed-worker.svg": "703912705bebe572aa01149cc8ed151bb0f4bfb220ba3d88c72c00f7b58868e0",
+        "src/assets/diagrams/ch25/a281-03-coroutine-tid-migration-versus-fixed-worker.png": "0e12431d85aa7fde8cd1345312594906b55788e3127cdce5f4757cee615da661"
+      }
+    },
+    {
+      "id": "a281-04-uid-state-pauses-session",
+      "title": "业务后台任务不等于后台UID一定能使用ADPF",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-04-uid-state-pauses-session.svg",
+        "src/assets/diagrams/ch25/a281-04-uid-state-pauses-session.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-04-uid-state-pauses-session",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-04-uid-state-pauses-session.svg": "a5165beb5efca907fe69f5afe56f1ac138236974f3ea795752a3e30262400b2d",
+        "src/assets/diagrams/ch25/a281-04-uid-state-pauses-session.png": "391f75945abc5f5aa0261a222901838a1232af6066484aeaa5b90c5e7f7b8e8f"
+      }
+    },
+    {
+      "id": "a281-05-deadline-slack-and-power-efficiency",
+      "title": "能效优先利用deadline余量，不承诺固定频率",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-05-deadline-slack-and-power-efficiency.svg",
+        "src/assets/diagrams/ch25/a281-05-deadline-slack-and-power-efficiency.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-05-deadline-slack-and-power-efficiency",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PerformanceHintManager.Session",
+        "https://developer.android.com/games/optimize/adpf"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-05-deadline-slack-and-power-efficiency.svg": "5bab551637f25eaee3a2e79cc26aa649bb7a048012521a21eb06802a8db5e794",
+        "src/assets/diagrams/ch25/a281-05-deadline-slack-and-power-efficiency.png": "b796fd444f6a7f15f1fb4442ca4acd88676b02d9c7af2265ef289e9d37853f08"
+      }
+    },
+    {
+      "id": "a281-06-monitor-consumer-versus-measurement",
+      "title": "PowerMonitor提供监测项，不是应用独立电表",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-06-monitor-consumer-versus-measurement.svg",
+        "src/assets/diagrams/ch25/a281-06-monitor-consumer-versus-measurement.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-06-monitor-consumer-versus-measurement",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerMonitor.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerMonitorReadings.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-06-monitor-consumer-versus-measurement.svg": "190ff1749acfc88f79f4faaccc32b0fa280159a84aec399306bd70425c857ad5",
+        "src/assets/diagrams/ch25/a281-06-monitor-consumer-versus-measurement.png": "cb16b4f8697fdd5f9a86793ada69621ce5baa591216de57da56d2c4a0b27eb1f"
+      }
+    },
+    {
+      "id": "a281-07-coarse-cache-versus-fine-cache",
+      "title": "高频调用PowerMonitor通常只是重复取缓存",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-07-coarse-cache-versus-fine-cache.svg",
+        "src/assets/diagrams/ch25/a281-07-coarse-cache-versus-fine-cache.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-07-coarse-cache-versus-fine-cache",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-07-coarse-cache-versus-fine-cache.svg": "e12cc6bdfd73bace001a2d1cc520a7f04427cad3e23325f2ae279baa5e36e7aa",
+        "src/assets/diagrams/ch25/a281-07-coarse-cache-versus-fine-cache.png": "df23b683cb925944f903deb144337e6bea0f44b79a7331aece7a6a7f97f93952"
+      }
+    },
+    {
+      "id": "a281-08-uid-stable-energy-noise-interval",
+      "title": "公开累计值在有界区间内加入按UID稳定的扰动",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-08-uid-stable-energy-noise-interval.svg",
+        "src/assets/diagrams/ch25/a281-08-uid-stable-energy-noise-interval.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-08-uid-stable-energy-noise-interval",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/IntervalRandomNoiseGenerator.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-08-uid-stable-energy-noise-interval.svg": "8382b1fe00a76995e75b91830f1454fc40c5a46730afa5b3beafb9f3ef10e42c",
+        "src/assets/diagrams/ch25/a281-08-uid-stable-energy-noise-interval.png": "3364480e1f18abeea6ab4f5c395a0c007e20c4fa62d0321b8f553147bec10c2e"
+      }
+    },
+    {
+      "id": "a281-09-async-readings-delta-validation",
+      "title": "异步快照做差前先排除缺失、缓存与回退",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-09-async-readings-delta-validation.svg",
+        "src/assets/diagrams/ch25/a281-09-async-readings-delta-validation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-09-async-readings-delta-validation",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerMonitorReadings.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-09-async-readings-delta-validation.svg": "11b6829b36e40ebbbbb166ccf5f4a7bd3483afe17e168b8351f28c68a7d59ebe",
+        "src/assets/diagrams/ch25/a281-09-async-readings-delta-validation.png": "a3cbf675f87af708d9abc863b8bc883c53bdf899a0b92e2c5114a5ddcd2b7f1e"
+      }
+    },
+    {
+      "id": "a281-10-perfetto-control-behavior-energy",
+      "title": "把提示、调度、任务和能量放进同一实验窗口",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-10-perfetto-control-behavior-energy.svg",
+        "src/assets/diagrams/ch25/a281-10-perfetto-control-behavior-energy.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-10-perfetto-control-behavior-energy",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/battery-counters",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-10-perfetto-control-behavior-energy.svg": "b8b88d6d4c8e8e6fceaa07aec2242ed01b870ed493c67b72dc1879e4ac6f0f73",
+        "src/assets/diagrams/ch25/a281-10-perfetto-control-behavior-energy.png": "51659a036890203c9e0575da1e38bf05da8f1cc435fff1aafc85a411111d51de"
+      }
+    },
+    {
+      "id": "a281-11-ab-unit-energy-and-tail-latency",
+      "title": "能效模式按相同任务数量同时验收能量与尾延迟",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-11-ab-unit-energy-and-tail-latency.svg",
+        "src/assets/diagrams/ch25/a281-11-ab-unit-energy-and-tail-latency.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-11-ab-unit-energy-and-tail-latency",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/battery-counters",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java",
+        "https://developer.android.com/reference/android/os/PerformanceHintManager.Session"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-11-ab-unit-energy-and-tail-latency.svg": "215a27fafdc7c7d5fea11e8404cc1ecbbe043391a57e92dd769fe3c97e253d42",
+        "src/assets/diagrams/ch25/a281-11-ab-unit-energy-and-tail-latency.png": "de50db60123bc1c2b26e121d64e97d99a77ff46a7432ad98e2f147427953ed44"
+      }
+    },
+    {
+      "id": "a281-12-thermal-feedback-and-rollout-control",
+      "title": "热状态反馈调节工作量，异常设备及时关闭偏好",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-12-thermal-feedback-and-rollout-control.svg",
+        "src/assets/diagrams/ch25/a281-12-thermal-feedback-and-rollout-control.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-12-thermal-feedback-and-rollout-control",
+      "sources": [
+        "https://developer.android.com/games/optimize/adpf",
+        "https://developer.android.com/reference/android/os/PerformanceHintManager.Session"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-12-thermal-feedback-and-rollout-control.svg": "734a27e1124896cf026d36e3a4cf90d9790d4df9eedd410c66fc274e61281911",
+        "src/assets/diagrams/ch25/a281-12-thermal-feedback-and-rollout-control.png": "418ea66ae0e0a46188658ff43e49e3b984f06e3e39039b15a9076b733f017bbe"
+      }
+    },
+    {
+      "id": "a281-13-session-tag-mode-and-boost",
+      "title": "HAL的来源标签、模式与boost是三种不同概念",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-13-session-tag-mode-and-boost.svg",
+        "src/assets/diagrams/ch25/a281-13-session-tag-mode-and-boost.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-13-session-tag-mode-and-boost",
+      "sources": [
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/aidl/android/hardware/power/SessionTag.aidl",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/aidl/android/hardware/power/SessionMode.aidl",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/aidl/android/hardware/power/Boost.aidl",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/aidl/aidl_api/android.hardware.power/7/android/hardware/power/SessionMode.aidl",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/performance_hint.h"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-13-session-tag-mode-and-boost.svg": "d9dc212e7e7da64600eb19ae4e1226ead3934b47f1d5540bd2ea7786fb2186b2",
+        "src/assets/diagrams/ch25/a281-13-session-tag-mode-and-boost.png": "7b43bd9ddf6ac28faf0144402e5886fbf36fc3a5bc59f157683791c28bef2664"
+      }
+    },
+    {
+      "id": "a281-14-powerstats-public-pull-and-local-paths",
+      "title": "PowerStats同源数据有公开读数、系统异步和statsd路径",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-14-powerstats-public-pull-and-local-paths.svg",
+        "src/assets/diagrams/ch25/a281-14-powerstats-public-pull-and-local-paths.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-14-powerstats-public-pull-and-local-paths",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/StatsPullAtomCallbackImpl.java",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-14-powerstats-public-pull-and-local-paths.svg": "26a8353f63b0ed14ed5f9ae161cc906b19c711e24a798ef04d3c6f5da375ce6f",
+        "src/assets/diagrams/ch25/a281-14-powerstats-public-pull-and-local-paths.png": "b0645080ebc34f87335bb7c10e53683246a0670f45b3c2946388edda0fc088eb"
+      }
+    },
+    {
+      "id": "a281-15-powerstats-log-rotation-and-metadata",
+      "title": "系统PowerStats日志按类型轮转，元信息变化使旧日志失效",
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a281-15-powerstats-log-rotation-and-metadata.svg",
+        "src/assets/diagrams/ch25/a281-15-powerstats-log-rotation-and-metadata.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a281-15-powerstats-log-rotation-and-metadata",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsLogger.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsDataStorage.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/EnergyMeasurement.aidl"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a281-15-powerstats-log-rotation-and-metadata.svg": "9f5e5f3de99e35f30ed2ee063e1c6f7119e72cb4bf6ded65d860afbbe57626b1",
+        "src/assets/diagrams/ch25/a281-15-powerstats-log-rotation-and-metadata.png": "b545614d8761536590c977fb1f405f72d3dd1eb85a49fdc6d7fd5dbf1778b0cd"
+      }
     }
   ],
   "corrections": [
@@ -10664,6 +12233,580 @@
       ],
       "article": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
       "why": "后续定位传感器章节交叉核验发现权限迁移还有target36条件，补齐旧target兼容边界。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮全文校勘及当前官方/固定平台来源核验日期。",
+      "sources": [
+        "https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest.Builder"
+      ],
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "why": "本轮全文校勘及当前官方/固定平台来源核验日期。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮重新获取来源并保存证据。",
+      "sources": [
+        "https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest.Builder"
+      ],
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "why": "本轮重新获取来源并保存证据。"
+    },
+    {
+      "before": "墙上时钟会被用户、网络校时或时区改变，不用它做这类判断。",
+      "after": "墙钟可能被用户改时间或系统校时调整，时区只改变本地时间展示而不直接改写 epoch；单机位置年龄不依赖墙钟，应确认位置与当前 elapsed realtime 属于同次开机。",
+      "reason": "纠正时区直接改变epoch的说法，明确单调时间年龄比较的同次开机边界。",
+      "sources": [
+        "https://developers.google.com/android/reference/com/google/android/gms/location/LocationRequest",
+        "https://developer.android.com/develop/sensors-and-location/location/permissions/background",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "why": "纠正时区直接改变epoch的说法，明确单调时间年龄比较的同次开机边界。"
+    },
+    {
+      "before": "/provider（位置数据提供器）/LocationProviderManager.java",
+      "after": "/provider/LocationProviderManager.java",
+      "reason": "修复中文术语污染源码URL，指向实际固定17r1文件。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/location/provider/LocationProviderManager.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "why": "修复中文术语污染源码URL，指向实际固定17r1文件。"
+    },
+    {
+      "before": "得调低 `samplingPeriodUs` 对应的采样频率。",
+      "after": "应增大 `samplingPeriodUs`（降低采样频率）。",
+      "reason": "明确周期和频率反向关系，避免按字面调低周期而提高采样。",
+      "sources": [
+        "https://developer.android.com/reference/android/hardware/SensorManager",
+        "https://source.android.com/devices/sensors/batching"
+      ],
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "why": "明确周期和频率反向关系，避免按字面调低周期而提高采样。"
+    },
+    {
+      "before": "它注册可批处理的 continuous（连续上报型） 或 on-change（数值变化时上报型） 传感器",
+      "after": "它注册使用普通监听接口的非 one-shot 传感器，包括 continuous（连续上报型）或 on-change（数值变化时上报型）；具体报告模式仍按该传感器契约处理",
+      "reason": "与代码仅排除one-shot及SensorManager通用注册契约一致，不错误排除special-trigger普通监听传感器。",
+      "sources": [
+        "https://developer.android.com/reference/android/hardware/SensorManager",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/hardware/SystemSensorManager.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "why": "与代码仅排除one-shot及SensorManager通用注册契约一致，不错误排除special-trigger普通监听传感器。"
+    },
+    {
+      "before": "我们要保存尾部事件时，应在 flush 成功后等完成回调、再注销 listener，还要准备超时退出。",
+      "after": "要保存尾部事件时，先固定本次需要 flush 的已注册传感器集合；同一个 listener 注册多个传感器时，`onFlushCompleted(sensor)` 按传感器分别到达，不能收到第一项就注销整个 listener。应等待目标集合全部完成，或在失败/超时路径按已定义的数据丢弃策略清理，所有路径最终注销监听。",
+      "reason": "flush作用于listener全部注册传感器，回调逐传感器，补齐多传感器尾部交付与清理边界。",
+      "sources": [
+        "https://developer.android.com/reference/android/hardware/SensorManager",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/sensorservice/SensorEventConnection.cpp"
+      ],
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "why": "flush作用于listener全部注册传感器，回调逐传感器，补齐多传感器尾部交付与清理边界。"
+    },
+    {
+      "before": "这套规则延续到 Android 17（API 37）。前台服务解决的是长时运行的合规问题",
+      "after": "这套规则延续到 Android 17（API 37）。手机应用迁移到细分健康权限时，还要按 Android 16 官方要求声明展示隐私政策/权限说明的 Activity，缺少说明可能导致权限撤销。前台服务解决的是长时运行的合规问题",
+      "reason": "补足官方target36健康权限迁移中的手机应用隐私说明Activity要求。",
+      "sources": [
+        "https://developer.android.com/about/versions/16/behavior-changes-16"
+      ],
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "why": "补足官方target36健康权限迁移中的手机应用隐私说明Activity要求。"
+    },
+    {
+      "before": "目标版本 33 及以上使用 `NEARBY_WIFI_DEVICES`，回调按 MAC（媒体访问控制） 地址关联；",
+      "after": "目标版本 33 及以上使用 `NEARBY_WIFI_DEVICES`；测距需应用可见或运行 FGS，并核对设备RTT能力、位置/Wi-Fi扫描开关与权限。若应用从 Wi-Fi API 推导实际位置，不能声明 `neverForLocation`，精确位置功能仍要按用途保留相应授权。回调按 MAC（媒体访问控制）地址关联；",
+      "reason": "补齐WiFi RTT可见性、能力与neverForLocation断言边界，避免附近设备权限被视为全部定位资格。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/wifi/wifi-rtt"
+      ],
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "why": "补齐WiFi RTT可见性、能力与neverForLocation断言边界，避免附近设备权限被视为全部定位资格。"
+    },
+    {
+      "before": "```mermaid\nflowchart LR\n    A[\"传感器硬件\"] --> B[\"sensor hub / 硬件 FIFO\"]\n    B --> C[\"Sensors HAL\"]\n    C --> D[\"Android 17 SensorService\"]\n    D --> E[\"SystemSensorManager / JNI\"]\n    E --> F[\"SensorEventListener2\"]\n    F --> G[\"应用计算、存储、网络\"]\n```",
+      "after": "事件在 sensor hub/FIFO 暂存后经 HAL 和 SensorService 分发；采样与交付分别设预算。",
+      "reason": "替换Mermaid为最终机制图，显式区分事件采样、批量交付和应用后续处理。",
+      "sources": [
+        "https://source.android.com/devices/sensors/batching",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/sensorservice/SensorService.cpp"
+      ],
+      "article": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "why": "替换Mermaid为最终机制图，显式区分事件采样、批量交付和应用后续处理。"
+    },
+    {
+      "before": "last_verified: '2026-09-30'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮阅读全文并按当前官方及固定17r1源码重新核验。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/audioflinger/Tracks.cpp"
+      ],
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "why": "本轮阅读全文并按当前官方及固定17r1源码重新核验。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-09-30'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "记录本轮来源重新获取日期。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/audioflinger/Tracks.cpp"
+      ],
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "why": "记录本轮来源重新获取日期。"
+    },
+    {
+      "before": "Android 17 官方页面在 2026-08-13 的当前版本中使用",
+      "after": "Android 17 官方页面在本轮 2026-10-25 核验时仍使用",
+      "reason": "当前官网命令已重新获取，避免用旧日期称当前页面。",
+      "sources": [
+        "https://developer.android.com/about/versions/17/changes/bg-audio"
+      ],
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "why": "当前官网命令已重新获取，避免用旧日期称当前页面。"
+    },
+    {
+      "before": "严格模式下，r1 的 C++ 决策对三类调用者按 partial 级别处理——target 小于 37 的应用、符合条件的闹钟，以及持有 `BLUETOOTH_CONNECT` 的调用者；系统音频用途和具有路由或电话特权的调用者可以豁免。",
+      "after": "在默认策略且 `hardening_strict` 功能开关开启时，r1 的 C++ 决策会将旧 target、符合条件的闹钟及 `BLUETOOTH_CONNECT` 等兼容情形降为 partial；`hardening_usage` 关闭时，闹钟和辅助功能 usage 还有旧分支。系统 usage、路由或电话特权则可免于检查。强制 `ENABLE` / `THROW` 在这些分支前就返回 full，不能把默认兼容分支套到强制测试模式。Java 焦点、音量入口的条件也不完全相同，不能互相外推。",
+      "reason": "补齐功能开关及辅助功能旧分支，区分默认策略和先行强制override，避免穷举三类造成遗漏。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/audioflinger/Tracks.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/audio/HardeningEnforcer.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "why": "补齐功能开关及辅助功能旧分支，区分默认策略和先行强制override，避免穷举三类造成遗漏。"
+    },
+    {
+      "before": "下面的函数展示能力探测所需的关键字段，调用方传入从媒体轨道读取的真实配置：",
+      "after": "下面的函数是 API 36 及以上路径的探测骨架，调用方传入媒体轨道的真实配置。本文最低覆盖 API 31，接入时还必须做运行时可用性分支；NDK 库若面向较低 minSdk 构建，新函数符号不能仅靠 Java 层版本判断保护，应按 [NDK 新 API 指南](https://developer.android.com/ndk/guides/using-newer-apis)选择受支持的弱符号与 `__builtin_available` 防护，或动态查找并回退。API 37 的 flush 扩展同样需要构建和运行时边界。",
+      "reason": "代码涉及API32 channelMask及API36/37能力；补齐低minSdk原生符号装载与调用守卫前提，不把运行API检查误当链接兼容。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libaaudio/include/aaudio/AAudio.h",
+        "https://developer.android.com/ndk/guides/using-newer-apis"
+      ],
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "why": "代码涉及API32 channelMask及API36/37能力；补齐低minSdk原生符号装载与调用守卫前提，不把运行API检查误当链接兼容。"
+    },
+    {
+      "before": "前者必须在打开流前查询，并要求 builder 已设置 offloaded 性能模式、格式、采样率与声道掩码，后者通过 `inOutPosition` 传入目标 frame，并在成功时写回实际 flush 位置。",
+      "after": "前者必须在打开流前查询，并要求 builder 已设置 offloaded 性能模式、格式、采样率与声道掩码。后者用 `inOutPosition` 传入目标 frame；成功时写回实际位置，准确 flush 无法满足时也可能回写一个建议位置。必须先检查返回码，失败时的位置不是“已经执行成功”的证明，不能直接覆盖业务播放断点。",
+      "reason": "AAudio.h的in/out契约包含失败时建议位置；补齐结果码优先和业务坐标更新边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/media/libaaudio/include/aaudio/AAudio.h",
+        "https://developer.android.com/ndk/reference/group/audio"
+      ],
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "why": "AAudio.h的in/out契约包含失败时建议位置；补齐结果码优先和业务坐标更新边界。"
+    },
+    {
+      "before": "若声音消失后 CPU、网络或 WakeLock 仍活跃，说明声音停止后的资源清理不足。",
+      "after": "声音消失而 CPU、网络或 WakeLock 仍活跃时，先区分暂时缓冲、路由切换、静默限制与永久停止；只有确认播放意图已结束或恢复已无价值后，残留工作才构成清理问题。不能把合法的短暂恢复窗口直接判为泄漏。",
+      "reason": "与前文官方暂时性失败保留FGS规则一致，避免仅凭无声+活动就认定清理不足。",
+      "sources": [
+        "https://developer.android.com/about/versions/17/changes/bg-audio",
+        "https://developer.android.com/media/media3/session/background-playback"
+      ],
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "why": "与前文官方暂时性失败保留FGS规则一致，避免仅凭无声+活动就认定清理不足。"
+    },
+    {
+      "before": "| 可见页面播放 | 页面可见时开始播放 | 焦点成功，正常出声 |",
+      "after": "| 可见页面播放 | 页面可见时开始播放 | 无其他焦点阻碍、权限与路由满足时，焦点成功并正常出声 |",
+      "reason": "可见只通过hardening前提，不能保证焦点竞争及输出路由成功。",
+      "sources": [
+        "https://developer.android.com/media/optimize/audio-focus",
+        "https://developer.android.com/about/versions/17/changes/bg-audio"
+      ],
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "why": "可见只通过hardening前提，不能保证焦点竞争及输出路由成功。"
+    },
+    {
+      "before": "这里的 ADSP（Digital Signal Processor，数字信号处理器） 指音频数字信号处理器，LC3 即低复杂度通信编解码器。",
+      "after": "这里的 ADSP 指音频数字信号处理器。",
+      "reason": "消除重复定义及将ADSP展开成泛化DSP的术语不一致；保留前文Audio Digital Signal Processor。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/system/bta/le_audio/codec_manager.cc"
+      ],
+      "article": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "why": "消除重复定义及将ADSP展开成泛化DSP的术语不一致；保留前文Audio Digital Signal Processor。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "逐篇核对当前官方页面及固定17r1源码，更新本次核验日期。",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/native/webview/loader/loader.cpp"
+      ],
+      "reason": "逐篇核对当前官方页面及固定17r1源码，更新本次核验日期。",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "why": "逐篇核对当前官方页面及固定17r1源码，更新本次核验日期。",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/native/webview/loader/loader.cpp"
+      ],
+      "reason": "逐篇核对当前官方页面及固定17r1源码，更新本次核验日期。",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md"
+    },
+    {
+      "before": "docs retrieved 2026-08-15",
+      "after": "docs retrieved 2026-10-25",
+      "why": "保留固定源码版本，区分官方页面本次检索日期。",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview"
+      ],
+      "reason": "保留固定源码版本，区分官方页面本次检索日期。",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md"
+    },
+    {
+      "before": "同一次用户操作会经过应用进程、提供 WebView 实现的 provider 包、执行网页代码的 Chromium renderer（渲染进程）以及 JavaScript。",
+      "after": "WebView provider 是提供实现代码的安装包，不能把包名当作一个独立进程：容器及其加载的实现代码运行在宿主应用进程；多进程模式下，网页代码、JavaScript 等在 Chromium renderer（渲染进程）中执行。单进程配置没有独立 renderer 进程。",
+      "why": "区分包、代码和进程边界，并保留WebView公共API支持的单进程配置。",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/layout/webapps/managing-webview",
+        "https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient"
+      ],
+      "reason": "区分包、代码和进程边界，并保留WebView公共API支持的单进程配置。",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md"
+    },
+    {
+      "before": "容器要把可见性映射到 `WebView.onPause()` / `onResume()`，不再复用时从 View 树（界面节点层级）移除并调用 `destroy()`。",
+      "after": "容器要把可见性映射到 `WebView.onPause()` / `onResume()`；`onPause()` 只是尽力暂停可安全暂停的处理，不会暂停 JavaScript，也不能据此推断音视频、网络或桥接任务均已停止。页面和原生侧仍须按业务生命周期显式停止持续工作，不再复用时从 View 树（界面节点层级）移除并调用 `destroy()`。",
+      "why": "官方onPause契约明确不暂停JavaScript，防止误以为调用即完整后台静默。",
+      "sources": [
+        "https://developer.android.com/reference/android/webkit/WebView#onPause()"
+      ],
+      "reason": "官方onPause契约明确不暂停JavaScript，防止误以为调用即完整后台静默。",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md"
+    },
+    {
+      "before": "外部浏览器对照组要替换被测包名和启动入口，并记录浏览器主进程与 renderer；不能把 `com.example.app` 的统计当作浏览器结果。",
+      "after": "这组 `meminfo --package` 只提供对应包的内存快照，不能假定它已经覆盖全部独立 renderer；要用本地进程关联补齐 renderer，并避免共享 renderer 重复计数。外部浏览器对照组要替换被测包名和启动入口，并记录浏览器主进程与 renderer；不能把 `com.example.app` 的统计当作浏览器结果。UID 网络统计、宿主内存快照与整机能量也不能直接相加或相互替代。",
+      "why": "将采样命令的覆盖边界写清，避免宿主快照误作全部WebView成本。",
+      "sources": [
+        "https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient",
+        "https://developer.android.com/studio/profile/power-profiler"
+      ],
+      "reason": "将采样命令的覆盖边界写清，避免宿主快照误作全部WebView成本。",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md"
+    },
+    {
+      "before": "当前核心指标包括用户可感知崩溃、用户可感知 ANR 和过量部分唤醒锁；",
+      "after": "截至本次核对，官网核心指标还列出内存用量与 Bitmap 内存用量，以及用户可感知崩溃、用户可感知 ANR 和过量部分唤醒锁；",
+      "why": "当前Android vitals核心指标列表已包含memory usage与bitmap memory usage，按官方现状补齐。",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "reason": "当前Android vitals核心指标列表已包含memory usage与bitmap memory usage，按官方现状补齐。",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md"
+    },
+    {
+      "before": "失去 renderer 的 WebView 必须从 View 树移除并销毁，不能复用。",
+      "after": "失去 renderer 的 WebView 必须从 View 树移除并销毁，不能复用；清理回调参数指定的实例及其引用，处理完成后返回 `true`，否则应用可能崩溃或被终止。共享 renderer 时每个受影响实例都会收到回调，不要据单个回调盲目销毁其他实例。",
+      "why": "补全onRenderProcessGone的逐实例清理和返回值契约。",
+      "sources": [
+        "https://developer.android.com/reference/android/webkit/WebViewClient"
+      ],
+      "reason": "补全onRenderProcessGone的逐实例清理和返回值契约。",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md"
+    },
+    {
+      "before": "若主动终止 renderer，必须能处理共享该 renderer 的所有 WebView。",
+      "after": "若多进程模式下主动终止 renderer，必须能处理共享该 renderer 的所有 WebView 的退出回调；单进程模式传入的 `renderer` 可为 `null`，不能直接调用终止方法。",
+      "why": "公共回调参数明确单进程可为null，终止影响所有共享实例。",
+      "sources": [
+        "https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient"
+      ],
+      "reason": "公共回调参数明确单进程可为null，终止影响所有共享实例。",
+      "article": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md"
+    },
+    {
+      "before": "last_verified: '2026-10-22'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮逐篇源码和官方API重新核对，记录本次日期。",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "why": "本轮逐篇源码和官方API重新核对，记录本次日期。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-10-22'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮逐篇源码和官方API重新核对，记录本次日期。",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "why": "本轮逐篇源码和官方API重新核对，记录本次日期。"
+    },
+    {
+      "before": "docs retrieved 2026-10-22",
+      "after": "docs retrieved 2026-10-25",
+      "reason": "区分本轮官方文档检索与固定源码版本。",
+      "sources": [
+        "https://developer.android.com/about/versions/17/features"
+      ],
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "why": "区分本轮官方文档检索与固定源码版本。"
+    },
+    {
+      "before": "verification_scope_note: 2026-10-22 已通读全文并核验关键机制与官方 API 级别、异常及限频边界；线程池与协程边界经 JDK 21 / kotlinx.coroutines 1.8.0 主机复现，原样 C++17 示例经主机编译与 UBSan 检查。Android API 使用显式故障注入或编译适配器，未执行 Android SDK/NDK 构建或设备测试；Profiling 产物类型的官方说明差异保留于正文。",
+      "after": "verification_scope_note: 2026-10-22 已通读全文并核验关键机制与官方 API 级别、异常及限频边界；线程池与协程边界经 JDK 21 / kotlinx.coroutines 1.8.0 主机复现，原样 C++17 示例经主机编译与 UBSan 检查。Android API 使用显式故障注入或编译适配器，未执行 Android SDK/NDK 构建或设备测试；Profiling 产物类型的官方说明差异保留于正文。 2026-10-25 配图校勘重新通读并对照官方/固定源码；前述主机复现属于2026-10-22历史验证，本轮未重新执行这些编译与故障注入，也未做Android设备实测。",
+      "reason": "保留既有历史验证，但防止更新日期被误解为本轮重跑所有历史测试。",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ThreadPoolExecutor.java",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Runtime.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "why": "保留既有历史验证，但防止更新日期被误解为本轮重跑所有历史测试。"
+    },
+    {
+      "before": "设备不支持 hint session，或线程不属于本应用时，创建调用可以返回 `null`。",
+      "after": "设备不支持 hint session，或线程不属于本应用时，创建调用可以返回 `null`；线程列表为空或初始目标时长不为正则会抛 `IllegalArgumentException`，不能都按“不支持”处理。",
+      "reason": "补齐PerformanceHintManager.createHintSession空列表和非正时长的异常契约。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PerformanceHintManager"
+      ],
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "why": "补齐PerformanceHintManager.createHintSession空列表和非正时长的异常契约。"
+    },
+    {
+      "before": "回到可执行的进程生命周期后最多立即补一次，",
+      "after": "回到可执行的进程生命周期后跳过中间漏期，官方概括为“最多立即补一次”，",
+      "reason": "区分官方补跑概括与当前到期项、长耗时任务边界；17r1在每项执行后校正下一到期时刻，不保证恢复窗口只调用一次。",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ScheduledThreadPoolExecutor.java",
+        "https://developer.android.com/about/versions/16/behavior-changes-16"
+      ],
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "why": "区分官方补跑概括与当前到期项、长耗时任务边界；17r1在每项执行后校正下一到期时刻，不保证恢复窗口只调用一次。"
+    },
+    {
+      "before": "不再保留按 target SDK 分支选择旧行为的代码。",
+      "after": "不再保留按 target SDK 分支选择旧行为的代码。 当前已到期的调用仍会执行；如果单次工作持续超过周期，后续项仍可能连续处于到期状态。跳过历史漏期不能保证恢复后只调用一次，也不能替代业务限流与取消。",
+      "reason": "按setNextRunTime和run执行顺序补足长于周期的任务仍可紧接运行，避免承诺消除恢复尖峰。",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/util/concurrent/ScheduledThreadPoolExecutor.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "why": "按setNextRunTime和run执行顺序补足长于周期的任务仍可紧接运行，避免承诺消除恢复尖峰。"
+    },
+    {
+      "before": "last_verified: '2026-08-25'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮逐篇官方与固定17r1源码核验日期。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "本轮逐篇官方与固定17r1源码核验日期。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-25'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮逐篇官方与固定17r1源码核验日期。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "本轮逐篇官方与固定17r1源码核验日期。"
+    },
+    {
+      "before": "按源码锚点复核 2026-08-25",
+      "after": "按源码锚点复核 2026-10-25",
+      "reason": "记录本轮源码核验日期，保留r1限定。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "记录本轮源码核验日期，保留r1限定。"
+    },
+    {
+      "before": "系统据此调整这些线程所在的 CPU 核与频率。",
+      "after": "系统据此尝试调整线程的CPU资源与调度策略；是否采用提示以及实际资源分配仍由平台和厂商决定。",
+      "reason": "会话只是性能提示，不保证每条数据都产生选核或调频动作。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "会话只是性能提示，不保证每条数据都产生选核或调频动作。"
+    },
+    {
+      "before": "三项全部成立，再考虑 Power Efficiency Mode；缺任何一项，通常先别急着选它。",
+      "after": "三项全部成立，还要确认当前UID状态允许Session生效，再考虑 Power Efficiency Mode。r1 的 `isUidForeground()` 以 `procState <= PROCESS_STATE_IMPORTANT_FOREGROUND` 判断，进入更低重要级会暂停Session；这里的“后台批处理”是业务任务性质，不等于普通缓存/后台进程必然能使用提示，WorkManager也不会因此获得额外后台额度。",
+      "reason": "适用场景的后台工作须同时满足服务端进程状态门槛，避免与源码暂停策略矛盾。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "适用场景的后台工作须同时满足服务端进程状态门槛，避免与源码暂停策略矛盾。"
+    },
+    {
+      "before": "目标耗时必须为正，设备不支持时可能返回 `null`。",
+      "after": "目标耗时必须为正；设备不支持或TID不属于应用时可返回 `null`，空线程列表或非正目标时长则抛 `IllegalArgumentException`。",
+      "reason": "补齐创建Session不支持、无效参数和TID边界的不同结果。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "补齐创建Session不支持、无效参数和TID边界的不同结果。"
+    },
+    {
+      "before": "```kotlin\n@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)\nclass PowerEfficientBatchWorker(\n    context: Context,\n    private val targetDurationNanos: Long,\n) {\n    private val appContext = context.applicationContext\n    private val executor = Executors.newSingleThreadExecutor { runnable ->\n        Thread(runnable, \"pe-batch-worker\")\n    }\n    private val dispatcher = executor.asCoroutineDispatcher()\n    private var session: PerformanceHintManager.Session? = null\n\n    init {\n        require(targetDurationNanos > 0L)\n    }\n\n    suspend fun start(): Boolean = withContext(dispatcher) {\n        check(session == null) { \"Session has already started\" }\n        val manager = appContext.getSystemService(PerformanceHintManager::class.java)\n        val tid = Process.myTid()\n        session = manager?.createHintSession(intArrayOf(tid), targetDurationNanos)\n        session?.setPreferPowerEfficiency(true)\n        session != null\n    }\n\n    suspend fun runCycle(block: suspend () -> Unit) = withContext(dispatcher) {\n        checkNotNull(session) { \"Call start() before runCycle()\" }\n        val start = SystemClock.uptimeNanos()\n        try {\n            block()\n        } finally {\n            val actual = SystemClock.uptimeNanos() - start\n            session?.reportActualWorkDuration(actual)\n        }\n    }\n\n    suspend fun close() {\n        withContext(dispatcher) {\n            session?.close()\n            session = null\n        }\n        dispatcher.close()\n        executor.shutdown()\n    }\n}\n```",
+      "after": "```kotlin\n@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)\nclass PowerEfficientBatchWorker(\n    context: Context,\n    private val targetDurationNanos: Long,\n) {\n    private val appContext = context.applicationContext\n    private val executor = Executors.newSingleThreadExecutor { runnable ->\n        Thread(runnable, \"pe-batch-worker\")\n    }\n    private val dispatcher = executor.asCoroutineDispatcher()\n    private var session: PerformanceHintManager.Session? = null\n\n    init {\n        require(targetDurationNanos > 0L)\n    }\n\n    suspend fun start(): Boolean = withContext(dispatcher) {\n        check(session == null) { \"Session has already started\" }\n        val manager = appContext.getSystemService(PerformanceHintManager::class.java)\n        val tid = Process.myTid()\n        session = manager?.createHintSession(intArrayOf(tid), targetDurationNanos)\n        session?.setPreferPowerEfficiency(true)\n        session != null\n    }\n\n    suspend fun runCycle(block: () -> Unit) = withContext(dispatcher) {\n        val activeSession = checkNotNull(session) { \"Call start() before runCycle()\" }\n        val start = SystemClock.uptimeNanos()\n        var workFailure: Throwable? = null\n        try {\n            block() // 单个周期不挂起、不切换调度器、不把工作移交给其他线程。\n        } catch (error: Throwable) {\n            workFailure = error\n            throw error\n        } finally {\n            val actual = SystemClock.uptimeNanos() - start\n            if (actual > 0L) {\n                try {\n                    activeSession.reportActualWorkDuration(actual)\n                } catch (hintError: RuntimeException) {\n                    val original = workFailure\n                    if (original != null) original.addSuppressed(hintError)\n                    else throw hintError\n                }\n            }\n        }\n    }\n\n    suspend fun close() = withContext(NonCancellable) {\n        try {\n            withContext(dispatcher) {\n                session?.close()\n                session = null\n            }\n        } finally {\n            dispatcher.close()\n            executor.shutdown()\n        }\n    }\n}\n```",
+      "reason": "将周期block收紧为不可挂起的同步块，避免单线程上的协程挂起期间发生周期/close交错；只上报正的实际时长，上报异常不覆盖已有业务异常，取消时close仍完成资源释放。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "将周期block收紧为不可挂起的同步块，避免单线程上的协程挂起期间发生周期/close交错；只上报正的实际时长，上报异常不覆盖已有业务异常，取消时close仍完成资源释放。"
+    },
+    {
+      "before": "`PerformanceHintManager.Session` 不是线程安全对象，所以示例把创建、上报与关闭都收进同一个协程调度器；`finally` 保证失败周期也会上报已经消耗的时间，异常结果由业务另行记录。",
+      "after": "`PerformanceHintManager.Session` 不是线程安全对象。示例的单周期 `block` 特意为不可挂起的同步块，在固定线程上完整执行，防止协程挂起时其他周期或 `close()` 穿插；单线程调度器本身并不提供跨挂起点互斥。调用方在生命周期结束时停止提交新周期，并在 `finally` 中调用 `close()`，关闭后不再调用该实例；清理使用 `kotlinx.coroutines.NonCancellable`。长期循环仍须自行检查取消并拆成有界周期，不能把工作转交到其他线程后提前返回。`finally` 仅上报正的已耗时，上报失败保留原业务异常为主异常；失败/取消/上报失败均需业务记录。",
+      "reason": "说明新示例的调用契约、取消边界与非挂起约束，避免宣称单线程即能串行整个挂起请求。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-dispatcher/limited-parallelism.html"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "说明新示例的调用契约、取消边界与非挂起约束，避免宣称单线程即能串行整个挂起请求。"
+    },
+    {
+      "before": "关闭操作留在 Java 侧，Java 对象关闭后，这个指针也随之作废。",
+      "after": "关闭操作留在 Java 侧，禁止用 `APerformanceHint_closeSession()` 关闭借用指针；在JNI调用期间保持Java对象存活，用完立即丢弃指针，Java会话关闭或对象死亡后不得再访问。",
+      "reason": "补齐NDK借用所有权、对象生命周期与立即丢弃指针的契约。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/include/android/performance_hint.h"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "补齐NDK借用所有权、对象生命周期与立即丢弃指针的契约。"
+    },
+    {
+      "before": "即通过模型估算的子系统能耗。",
+      "after": "这类consumer可能由模型推导或组合硬件读数，不能仅凭类型认定全部为独立实测。",
+      "reason": "删除重复解释并保留consumer并非独立电源轨的边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "删除重复解释并保留consumer并非独立电源轨的边界。"
+    },
+    {
+      "before": "单位是微瓦秒（μWs，数值上等于微焦耳 μJ） μWs，数值上等于微焦耳 μJ；",
+      "after": "单位是微瓦秒（μWs，数值上等于微焦耳 μJ）；",
+      "reason": "去除重复单位展开。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerMonitorReadings.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "去除重复单位展开。"
+    },
+    {
+      "before": "找不到对应监测项时，AOSP `android-17.0.0_r1` 返回 `ENERGY_UNAVAILABLE = -1`。",
+      "after": "找不到对应监测项时，r1 的 `getConsumedEnergy()` 返回 `ENERGY_UNAVAILABLE = -1`，`getTimestampMillis()` 则返回 `0`，两种哨兵值不能混同。",
+      "reason": "准确区分能量值和时间戳在缺失监测项时的不同返回。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerMonitorReadings.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "准确区分能量值和时间戳在缺失监测项时的不同返回。"
+    },
+    {
+      "before": "startEnergy != PowerMonitorReadings.ENERGY_UNAVAILABLE.toLong() &&\n            endEnergy >= startEnergy &&\n            endTime > startTime",
+      "after": "startEnergy >= 0L &&\n            endEnergy >= startEnergy &&\n            startTime > 0L &&\n            endTime > startTime",
+      "reason": "差值计算排除所有负能量及缺失/未初始化时间戳，不把0起点当有效快照。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerMonitorReadings.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "差值计算排除所有负能量及缺失/未初始化时间戳，不把0起点当有效快照。"
+    },
+    {
+      "before": "电源轨计数器（随时间记录累计能量的序列）——随时间记录累计能量的序列——",
+      "after": "电源轨计数器（随时间记录累计能量的序列）",
+      "reason": "删去重复解释。",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/battery-counters"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "删去重复解释。"
+    },
+    {
+      "before": "`HintManagerService` 的内部实现细节（如状态映射结构、清理间隔），比如状态映射结构、清理间隔，",
+      "after": "`HintManagerService` 的内部实现细节（如状态映射结构、清理间隔）",
+      "reason": "删去重复示例。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "删去重复示例。"
+    },
+    {
+      "before": "等 statsd pull atom（由 statsd 主动拉取的结构化统计记录）——statsd 主动拉取的结构化统计记录。",
+      "after": "等 statsd pull atom（由 statsd 主动拉取的结构化统计记录）。",
+      "reason": "删去重复定义。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "删去重复定义。"
+    },
+    {
+      "before": "返回 `CompletableFuture`（稍后完成的异步结果） 异步结果。",
+      "after": "返回 `CompletableFuture`（稍后完成的异步结果）。",
+      "reason": "删去重复词组。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "删去重复词组。"
+    },
+    {
+      "before": "（例如 Channel、EnergyConsumer、PowerEntity 的 proto bytes）——`Channel`、EnergyConsumer、PowerEntity 的 proto bytes——",
+      "after": "（例如 Channel、EnergyConsumer、PowerEntity 的 proto bytes）",
+      "reason": "删去重复字段说明。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsLogger.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "删去重复字段说明。"
+    },
+    {
+      "before": "Java API 返回 0–100 或 `Float.NaN`，0 表示没有更多可分配资源。",
+      "after": "Java API 在支持时返回0–100的有效值，暂时无数据可返回 `Float.NaN`，0表示没有更多可分配资源；设备不支持则抛 `UnsupportedOperationException`，CPU参数、TID归属或亲和性不符合契约也有相应异常，不能全部归入NaN。",
+      "reason": "补齐headroom不支持与暂时无数据的不同路径。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "why": "补齐headroom不支持与暂时无数据的不同路径。"
+    },
+    {
+      "article": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "before": "这个纯函数先检查两次异步快照是否来自不同采样时刻，再计算累计值差；同一缓存快照、不可用读数或累计值回退都会返回空结果。",
+      "after": "调用方先保证两次快照来自同一次开机、同一组监测项；这个纯函数本身不能可靠识别所有跨重启组合。它再检查采样时刻、有效值和单调性后计算累计值差；同一缓存快照、不可用读数或累计值回退都会返回空结果。",
+      "reason": "明确同次开机是调用方前提，计数仍增长的跨重启组合不能靠纯函数可靠识别。",
+      "why": "明确同次开机是调用方前提，计数仍增长的跨重启组合不能靠纯函数可靠识别。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerMonitorReadings"
+      ]
     }
   ],
   "validation": {
@@ -10900,15 +13043,60 @@
       "article_positions": "passed",
       "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a276",
       "source_audit": "1018行阅读全文；43份官方/固定17r1和内核源码、Google Maven WorkManager2.11.2 runtime/multiprocess原始源码包交叉核对。修正goAsync完成语义、共享锁in-flight和Listener默认5秒可配超时、RTC与时区、elapsed计时、精确Alarm资格竞态、周期UUID幂等键、5次上限的0基计数、自定义Provider生效前提及系统中断退避。明确当前稳定2.12.0/minSdk24与固定2.11.2示例的边界。18张成图及全部正文位置实际视觉检查通过；隔离mdBook构建/链接/SVG+PNG通过，原文+20条校勘+18插图精确重建一致。27段非Mermaid代码中2段Kotlin必要修正，shell语法与XML解析通过；未编译Kotlin或设备执行，无性能数字。"
+    },
+    "a277": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a277",
+      "source_audit": "424行全文与32份官方/固定17r1来源核对，含LocationProviderManager实际路径。修复中文污染URL、时区与epoch及同次开机年龄比较、采样周期/频率方向、非one-shot注册范围、多传感器flush逐项完成、target36健康权限迁移说明Activity、WiFi RTT可见性与neverForLocation边界。10张成图与全部正文位置实际视觉检查通过，修整图9业务分支说明避免连接线重叠；隔离mdBook构建/链接/SVG+PNG通过。8段非Mermaid示例代码保持原样，shell语法通过；Kotlin未编译、未做设备定位精度或功耗实验。"
+    },
+    "a278": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a278",
+      "source_audit": "全文634行已读，24份官方及固定android-17.0.0_r1来源核对；13图及13处正文实际视觉检查通过，独立mdBook构建、本地链接、SVG XML、PNG解码通过；9条可审计校勘。代码段与原文一致，shell仅语法验证，无Kotlin/NDK编译或设备功耗测试。"
+    },
+    "a279": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a279",
+      "source_audit": "全文244行已读，19份论文/官方/17r1来源核对，PDF方法与结果检查；10图及10处正文实际视觉检查通过，独立mdBook构建、本地链接、SVG XML、PNG解码通过；9条可审计校勘。唯一shell示例不变且bash -n通过，未执行设备采样或功耗测量。"
+    },
+    "a280": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a280",
+      "source_audit": "全文536行已读，37份官方/固定17r1和android17-6.18来源核对；14图及14处正文实际视觉检查通过，独立mdBook构建、本地链接、SVG XML、PNG解码通过；7条可审计校勘。5个代码围栏与原文一致；保留原文2026-10-22历史主机验证记录，本轮未重跑主机编译、Android构建或设备测试。"
+    },
+    "a281": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a281",
+      "source_audit": "全文578行已读，31份官方/固定17r1及冻结HAL V4-V7来源核对；15图及15处正文实际视觉检查通过，独立mdBook构建、本地链接、SVG XML、PNG解码通过；20条可审计校勘及原文+校勘+插图精确重建通过。修改2段Kotlin并用Kotlin2.2.20/协程1.11.0/JDK21主机适配器验证周期与关闭顺序、主异常、零时长、取消清理、7种差值边界；不是Android SDK/NDK构建，无设备/HAL或功耗实测。"
     }
   },
   "last_checkpoint": {
-    "completed": 26,
+    "completed": 31,
     "total": 51,
-    "diagrams": 292,
-    "next_article": "src/part5-app/ch25-power-size/04-location-sensor.md",
-    "next_article_index": 277,
-    "updated_at": "2026-10-25T14:52:44.864792+08:00"
+    "diagrams": 354,
+    "next_article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+    "next_article_index": 282,
+    "updated_at": "2026-10-25T15:24:18.685053+08:00"
   },
   "replaced_inline_diagrams": []
 }

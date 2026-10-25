@@ -1934,18 +1934,118 @@
     {
       "path": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
       "sha256_before": "cb5d919d8339699e3bf5a94a0946cf98ccc073d6486cb1a1680e63de0ed397f3",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a242-01-transaction-queue",
+        "a242-02-commit-api-choices",
+        "a242-03-batch-loop",
+        "a242-04-message-before-frame",
+        "a242-05-render-milestones",
+        "a242-06-runoncommit-boundary",
+        "a242-07-reordering-lifecycles",
+        "a242-08-three-transition-budgets",
+        "a242-09-async-inflate-boundaries",
+        "a242-10-composition-ownership",
+        "a242-11-version-domains",
+        "a242-12-back-api-capabilities",
+        "a242-13-back-state-machine",
+        "a242-14-progress-input-boundaries",
+        "a242-15-view-property-progress",
+        "a242-16-fragment-back-compatibility",
+        "a242-17-seek-controller-session",
+        "a242-18-compose-progress-phase",
+        "a242-19-mixed-back-owner",
+        "a242-20-back-window-geometry",
+        "a242-21-navigation-stage-chain",
+        "a242-22-minimal-route",
+        "a242-23-entry-read-scope",
+        "a242-24-destination-hierarchy",
+        "a242-25-entry-lifecycle-transition",
+        "a242-26-multiple-visible-states",
+        "a242-27-navhost-predictive-return",
+        "a242-28-saved-stack-lifetime",
+        "a242-29-single-top-not-idempotence",
+        "a242-30-viewmodel-scope",
+        "a242-31-list-scroll-click",
+        "a242-32-deeplink-cold-running",
+        "a242-33-adaptive-pane-focus",
+        "a242-34-navigation-measurements",
+        "a242-35-source-to-device-evidence",
+        "a242-36-navigation-validation-loop"
+      ],
       "article_index": 242,
-      "sha256_at_assignment": "cb5d919d8339699e3bf5a94a0946cf98ccc073d6486cb1a1680e63de0ed397f3"
+      "sha256_at_assignment": "cb5d919d8339699e3bf5a94a0946cf98ccc073d6486cb1a1680e63de0ed397f3",
+      "sha256_current": "d4eeb72a579500ff3b3b476f0a5bc103cace1209ee53359f940fc6db1525b2da",
+      "sha256_after": "d4eeb72a579500ff3b3b476f0a5bc103cace1209ee53359f940fc6db1525b2da",
+      "source_audit": "57 original URLs:54 directHTTP200;3 SSL failures all successfully retried. Fixed Fragment commit, real Fragment1.9.1/Activity1.13/Transition1.7/Nav2.9.8/Hilt1.4 source artifacts fetched and inspected; current stable versions derived by filtering Maven versions, crosschecked official release pages. AOSP17 back APIs and ComposeUI1.12/AsyncInflater1.1 source audited. All10 Kotlin snippets compiled actual APIs with Kotlin2.4.10/Compose+serialization plugins and Lifecycle2.11; actual progress guards and typed-route roundtrips executed.25 source contracts plus actual-article snippet identity/pending-predraw checks passed. Host checks do not claim Android Transition execution or device performance; no full Gradle/Hilt annotation-processing build run.",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a242/additional-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a242/composeview-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a242/hilt-central-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a242/lifecycle-dependency-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a242/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a242/supplemental-source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
       "sha256_before": "1a3eba3d7e4692299df00066b362d3e0f69604e837f06af0471b68a1621a25aa",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a243-01-runtime-window-inputs",
+        "a243-02-width-height-breakpoints",
+        "a243-03-discrete-mode-continuous-size",
+        "a243-04-coordinate-insets",
+        "a243-05-single-layout-directive",
+        "a243-06-pane-maxima",
+        "a243-07-component-subcomposition",
+        "a243-08-content-layout-owners",
+        "a243-09-folding-feature-fields",
+        "a243-10-window-tracker-lifecycle",
+        "a243-11-hwui-to-display",
+        "a243-12-multiwindow-topology",
+        "a243-13-three-resize-milestones",
+        "a243-14-per-display-results",
+        "a243-15-target-sdk-rotation",
+        "a243-16-actual-pixel-work",
+        "a243-17-resize-image-requests",
+        "a243-18-pane-working-set",
+        "a243-19-lifecycle-focus-policy",
+        "a243-20-multi-instance-state",
+        "a243-21-cross-window-drag",
+        "a243-22-resource-runtime-boundaries",
+        "a243-23-validation-scope",
+        "a243-24-sql-frame-identity",
+        "a243-25-resize-attribution-order",
+        "a243-26-adaptive-validation-loop"
+      ],
       "article_index": 243,
-      "sha256_at_assignment": "1a3eba3d7e4692299df00066b362d3e0f69604e837f06af0471b68a1621a25aa"
+      "sha256_at_assignment": "1a3eba3d7e4692299df00066b362d3e0f69604e837f06af0471b68a1621a25aa",
+      "sha256_current": "0e7e9fcac32d0d2109f57c235ad2938ea4df50e7182df37cfbd7944978d44f7d",
+      "sha256_after": "0e7e9fcac32d0d2109f57c235ad2938ea4df50e7182df37cfbd7944978d44f7d",
+      "source_audit": "29 baseline URLs, 15 added pinned/current sources, 5 supplemental dependency sources and 5 diagram sources HTTP 200. Two actual Kotlin examples compiled with Kotlin 2.4.10/Compose, Adaptive 1.2.0 and Window 1.5.1; directive boundary cases executed. Revised SQL ran on controlled missing/duplicate/unfinished fixtures and 71 actual Perfetto rows; 15 source contracts passed. No device performance measurement claimed.",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a243/additional-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a243/figure-supplemental-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a243/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a243/supplemental-source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
@@ -28796,6 +28896,2080 @@
           ]
         }
       ]
+    },
+    {
+      "id": "a242-01-transaction-queue",
+      "title": "Fragment commit 返回只完成排队这一站",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-01-transaction-queue.svg",
+        "src/assets/diagrams/ch22/a242-01-transaction-queue.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-01-transaction-queue",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-01-transaction-queue.svg",
+          "sha256": "ac5f719351c004726ac9880358d8a845b044da07e2f4e21055f8a3e7d6d1c673",
+          "bytes": 17712
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-01-transaction-queue.png",
+          "sha256": "4c74d9f33b091aa3aa4027b803373506e6e6e6fd00f057564c37c5a0d51c8b9c",
+          "bytes": 72041,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-02-commit-api-choices",
+      "title": "提交 API 按同步范围与恢复风险选择",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-02-commit-api-choices.svg",
+        "src/assets/diagrams/ch22/a242-02-commit-api-choices.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-02-commit-api-choices",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentTransaction.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-02-commit-api-choices.svg",
+          "sha256": "2ab93e059cea95ec8deadbb621a553433f930d542bbb13931ba8b17f165718b8",
+          "bytes": 27578
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-02-commit-api-choices.png",
+          "sha256": "3a633137dfb98d3ec3db8135dcc6008039330eba8c24ca9d830732f61c00119c",
+          "bytes": 128038,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-03-batch-loop",
+      "title": "同一主线程消息可批处理多笔事务",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-03-batch-loop.svg",
+        "src/assets/diagrams/ch22/a242-03-batch-loop.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-03-batch-loop",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-03-batch-loop.svg",
+          "sha256": "41a5e4dc6e50414fbd318cccdd160b546a3aa1b63816493937b171e7f3c267c8",
+          "bytes": 24242
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-03-batch-loop.png",
+          "sha256": "e5b8fd0ec89f60a2bfaa965988d26b826bd93def682951b42821550e87b4bca3",
+          "bytes": 85723,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-04-message-before-frame",
+      "title": "Fragment 消息可在 doFrame 前推迟渲染",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-04-message-before-frame.svg",
+        "src/assets/diagrams/ch22/a242-04-message-before-frame.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-04-message-before-frame",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-04-message-before-frame.svg",
+          "sha256": "4dbda1675aa813677dce153ca02bb0612a8ba757e88caa9ca889b3bc40a40612",
+          "bytes": 15687
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-04-message-before-frame.png",
+          "sha256": "8fb0a01496fb9fb8b139722f0696c72da77f47224743451c661c19df27d50e06",
+          "bytes": 69842,
+          "dimensions": [
+            2100,
+            885
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-05-render-milestones",
+      "title": "入队、事务、锁存与显示是四个不同里程碑",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-05-render-milestones.svg",
+        "src/assets/diagrams/ch22/a242-05-render-milestones.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-05-render-milestones",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-05-render-milestones.svg",
+          "sha256": "b3422939d03831b834d124be1dd995bc7de60f5a4c9d2364a7a332f471da5455",
+          "bytes": 24874
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-05-render-milestones.png",
+          "sha256": "25ce6ec31708199b344dda59b00e5d3ac5e7daff494b74ba6bd2db6ea63d29e7",
+          "bytes": 108854,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-06-runoncommit-boundary",
+      "title": "runOnCommit 保证事务执行，不保证首帧",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-06-runoncommit-boundary.svg",
+        "src/assets/diagrams/ch22/a242-06-runoncommit-boundary.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-06-runoncommit-boundary",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentTransaction.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/BackStackRecord.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-06-runoncommit-boundary.svg",
+          "sha256": "384007ef746b64ab946db10c6fc69b84e12169bf275a9e2e8b82b358ae90d64b",
+          "bytes": 27477
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-06-runoncommit-boundary.png",
+          "sha256": "2b218546efd12c5f2a1ea2487a8af177e7473c9943b9270e60c72178c510b3c8",
+          "bytes": 122623,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-07-reordering-lifecycles",
+      "title": "重排优化冗余操作，也改变生命周期顺序",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-07-reordering-lifecycles.svg",
+        "src/assets/diagrams/ch22/a242-07-reordering-lifecycles.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-07-reordering-lifecycles",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentTransaction.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-07-reordering-lifecycles.svg",
+          "sha256": "829a7d89822a64c30542845b9d1480947ba01f5c70950309016a6bf05c2190f4",
+          "bytes": 29422
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-07-reordering-lifecycles.png",
+          "sha256": "6979a2009277703bee16428283db88e53f5f09fd3698c82792e00b3bacd6427c",
+          "bytes": 121197,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-08-three-transition-budgets",
+      "title": "页面切换分段验收，首帧只做最小可见工作",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-08-three-transition-budgets.svg",
+        "src/assets/diagrams/ch22/a242-08-three-transition-budgets.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-08-three-transition-budgets",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-08-three-transition-budgets.svg",
+          "sha256": "5919e9c35accb7f4f5fa5b2225c4c67f1f9e81f303f622f42ee34effd1435f09",
+          "bytes": 25425
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-08-three-transition-budgets.png",
+          "sha256": "455f020ca8daa79aa4724ffcbbabcb69eb216c96cdbaa3f50a4b48cbc4641c40",
+          "bytes": 80702,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-09-async-inflate-boundaries",
+      "title": "AsyncLayoutInflater 的后台尝试与回退",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-09-async-inflate-boundaries.svg",
+        "src/assets/diagrams/ch22/a242-09-async-inflate-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-09-async-inflate-boundaries",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-09-async-inflate-boundaries.svg",
+          "sha256": "c6a9a2967acf31de061b1810669be601d7c5dd7b5031ce9f64217fd2e45d0345",
+          "bytes": 25804
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-09-async-inflate-boundaries.png",
+          "sha256": "b21bdbc8cc196f58da120472aeaed8a4ffd848384fd0a29b3113a124b1eeeb19",
+          "bytes": 121328,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-10-composition-ownership",
+      "title": "Fragment、ComposeView 与池化容器的所有者",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-10-composition-ownership.svg",
+        "src/assets/diagrams/ch22/a242-10-composition-ownership.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-10-composition-ownership",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-10-composition-ownership.svg",
+          "sha256": "f1e055ec2961eb8334a79794f3885b130fa659a05ab25ec150bc74f3695dbbd8",
+          "bytes": 24729
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-10-composition-ownership.png",
+          "sha256": "89cbbbf433c10ec4c38b3d2d8aca77d184f52268c058e84a9683788e0d7d5bce",
+          "bytes": 132373,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-11-version-domains",
+      "title": "平台、固定库源码与当前版本是不同基线",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-11-version-domains.svg",
+        "src/assets/diagrams/ch22/a242-11-version-domains.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-11-version-domains",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java",
+        "https://developer.android.com/jetpack/androidx/releases/navigation",
+        "https://developer.android.com/jetpack/androidx/releases/fragment"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-11-version-domains.svg",
+          "sha256": "d33fa7277f20872ef405a9222ce26506d82d5fd659877fb6ecce3c1c4010f132",
+          "bytes": 29074
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-11-version-domains.png",
+          "sha256": "2c1fae7f5708e08d8534715eb8ae8355d050e35478acc81aafb474e5af937a8c",
+          "bytes": 111494,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-12-back-api-capabilities",
+      "title": "预测返回接口按平台与库能力分层",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-12-back-api-capabilities.svg",
+        "src/assets/diagrams/ch22/a242-12-back-api-capabilities.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-12-back-api-capabilities",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/OnBackAnimationCallback.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/OnBackInvokedDispatcher.java",
+        "https://developer.android.com/jetpack/androidx/releases/activity"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-12-back-api-capabilities.svg",
+          "sha256": "7b0af702526d89d7a5ee63959e40a3710b252ced65900614db5814ffbe964b53",
+          "bytes": 25119
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-12-back-api-capabilities.png",
+          "sha256": "ff54f216432b225e3a2ad4f118564b7e02dc61a266e385d9b5e386cda270b448",
+          "bytes": 120220,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-13-back-state-machine",
+      "title": "开始后只预览，取消与完成走不同分支",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-13-back-state-machine.svg",
+        "src/assets/diagrams/ch22/a242-13-back-state-machine.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-13-back-state-machine",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/OnBackAnimationCallback.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/BackEvent.java",
+        "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-13-back-state-machine.svg",
+          "sha256": "89ea0b17e264aa6f2196ae01c2c019c81a6aa468dd64c4b0e7f7d106ccfa646e",
+          "bytes": 23257
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-13-back-state-machine.png",
+          "sha256": "3a088d606bc621e59f0c6c003739cc657f5c06dfbce2377d76da839722fbec3d",
+          "bytes": 106624,
+          "dimensions": [
+            2100,
+            840
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-14-progress-input-boundaries",
+      "title": "进度、边缘与时间字段不要混用",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-14-progress-input-boundaries.svg",
+        "src/assets/diagrams/ch22/a242-14-progress-input-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-14-progress-input-boundaries",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/BackEvent.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/OnBackAnimationCallback.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-14-progress-input-boundaries.svg",
+          "sha256": "e7938375cb7d3567f4bfc4e904696c739e5146e9acb9c3ad7c752ba10e98a5ad",
+          "bytes": 33168
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-14-progress-input-boundaries.png",
+          "sha256": "52f768f6a62da780fe0dbb655c506388624a3b02561b347d3fa1dc844d1b2d60",
+          "bytes": 130027,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-15-view-property-progress",
+      "title": "View 进度回调只改独占预览容器的属性",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-15-view-property-progress.svg",
+        "src/assets/diagrams/ch22/a242-15-view-property-progress.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-15-view-property-progress",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/OnBackAnimationCallback.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/BackEvent.java",
+        "https://developer.android.com/jetpack/androidx/releases/activity"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-15-view-property-progress.svg",
+          "sha256": "2a863e063957534dc2d2fd18e729905715710c28c37ec14976c4548be1113b9a",
+          "bytes": 25196
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-15-view-property-progress.png",
+          "sha256": "1d9ab065fbe4ae0d52f12db24a492af6c31cee59c1685cf085849d64a258d9bc",
+          "bytes": 78392,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-16-fragment-back-compatibility",
+      "title": "Fragment 预测返回需要一致的动画栈",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-16-fragment-back-compatibility.svg",
+        "src/assets/diagrams/ch22/a242-16-fragment-back-compatibility.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-16-fragment-back-compatibility",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/fragment",
+        "https://developer.android.com/jetpack/androidx/releases/transition",
+        "https://developer.android.com/guide/navigation/custom-back/support-animations-views"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-16-fragment-back-compatibility.svg",
+          "sha256": "12d82ffdd212d75d8086769a09e1fb971d180d037947b61783541b8324fae3b5",
+          "bytes": 22596
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-16-fragment-back-compatibility.png",
+          "sha256": "47b821e898f12a0a5d03c277bf800a3eeea4c2651fa2608fe290361944ac9696",
+          "bytes": 103314,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-17-seek-controller-session",
+      "title": "Transition 单次预览与 owner 串行化边界",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-17-seek-controller-session.svg",
+        "src/assets/diagrams/ch22/a242-17-seek-controller-session.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-17-seek-controller-session",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/transition/transition/1.7.0/transition-1.7.0-sources.jar",
+        "https://developer.android.com/guide/navigation/custom-back/support-animations-views"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-17-seek-controller-session.svg",
+          "sha256": "aefd41966c07c8e58f5ef556b47bca8672b2d9af7c8ad16d5547878acfc6bca0",
+          "bytes": 26630
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-17-seek-controller-session.png",
+          "sha256": "a33c549f739f3e1f555d75652971ada51464dd5e67bad35c0d43712acb9c0ec4",
+          "bytes": 88769,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-18-compose-progress-phase",
+      "title": "Compose 状态读取位置决定失效范围",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-18-compose-progress-phase.svg",
+        "src/assets/diagrams/ch22/a242-18-compose-progress-phase.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-18-compose-progress-phase",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-18-compose-progress-phase.svg",
+          "sha256": "56cf9e455e640f2aceb0cab15281e3f6c7b5ed5f2ff7a4c59cc629e0ca9ff214",
+          "bytes": 30487
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-18-compose-progress-phase.png",
+          "sha256": "f9b3c00e2b5fa17c652b74ae9a81015ff82d6382925f04c2c560a3fecffc8ead",
+          "bytes": 138569,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-19-mixed-back-owner",
+      "title": "混合页面按状态提前确定唯一返回所有者",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-19-mixed-back-owner.svg",
+        "src/assets/diagrams/ch22/a242-19-mixed-back-owner.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-19-mixed-back-owner",
+      "sources": [
+        "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture",
+        "https://developer.android.com/guide/navigation/custom-back/support-animations",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/OnBackInvokedDispatcher.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-19-mixed-back-owner.svg",
+          "sha256": "f9df61e078061d15b09ad0f171413779f10adc819d8aec02893c2d84407d1eb9",
+          "bytes": 27310
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-19-mixed-back-owner.png",
+          "sha256": "3ec227715bdafafb495d569be0397a7541cacaccbdc83e99c93fc41ef1cb0a56",
+          "bytes": 114532,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-20-back-window-geometry",
+      "title": "跨 Activity 与多窗口返回各有准备成本",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-20-back-window-geometry.svg",
+        "src/assets/diagrams/ch22/a242-20-back-window-geometry.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-20-back-window-geometry",
+      "sources": [
+        "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/OnBackInvokedDispatcher.java",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-20-back-window-geometry.svg",
+          "sha256": "1824eac2d749a81906b152026ec6f1f0c72d84c2947739970e514e8c060b1e86",
+          "bytes": 26035
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-20-back-window-geometry.png",
+          "sha256": "890cc7651270c9b6e5b73e5c8cf37f612e793c704058e538e4cc283798442151",
+          "bytes": 95893,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-21-navigation-stage-chain",
+      "title": "navigate 返回后还有内容、转场与出图",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-21-navigation-stage-chain.svg",
+        "src/assets/diagrams/ch22/a242-21-navigation-stage-chain.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-21-navigation-stage-chain",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-runtime/2.9.8/navigation-runtime-2.9.8-sources.jar",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-21-navigation-stage-chain.svg",
+          "sha256": "1a2754b12f27ccf023ad9043e813a25eeee37875790bd0d2fbc40281a51ae9ca",
+          "bytes": 23673
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-21-navigation-stage-chain.png",
+          "sha256": "12ad2bb9cf2c9969c732fcb81f0a47a154474492e51605ab995735463430be06",
+          "bytes": 83021,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-22-minimal-route",
+      "title": "类型安全路由只携带定位业务数据的轻量键",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-22-minimal-route.svg",
+        "src/assets/diagrams/ch22/a242-22-minimal-route.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-22-minimal-route",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-common/2.9.8/navigation-common-2.9.8-sources.jar",
+        "https://developer.android.com/guide/navigation/design/type-safety"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-22-minimal-route.svg",
+          "sha256": "eb954d2d17dd7e2e44a25ed785799989c2581f3d7dc103b3e4f154de13babf90",
+          "bytes": 27071
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-22-minimal-route.png",
+          "sha256": "46a85688716ebaff302b3ea5586937cc20bfac2852019ef03dcfce63dd525471",
+          "bytes": 117500,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-23-entry-read-scope",
+      "title": "Flow 发值、State 变化与子节点跳过分开看",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-23-entry-read-scope.svg",
+        "src/assets/diagrams/ch22/a242-23-entry-read-scope.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-23-entry-read-scope",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-23-entry-read-scope.svg",
+          "sha256": "645c5bf181d04eedf5db8594dd8dd524604eb9bf26bc43f2ba7409dd8ec16db8",
+          "bytes": 28827
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-23-entry-read-scope.png",
+          "sha256": "8a92074786aa49085aa04e4525ee989e685f3ace8bfd493709a6e8904f39021c",
+          "bytes": 134580,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-24-destination-hierarchy",
+      "title": "底栏选中态按目标层级判断嵌套归属",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-24-destination-hierarchy.svg",
+        "src/assets/diagrams/ch22/a242-24-destination-hierarchy.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-24-destination-hierarchy",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-common/2.9.8/navigation-common-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-24-destination-hierarchy.svg",
+          "sha256": "de4bd5ecf5a6c8cc75b76a8f39d3854582c47ee982cb75b66f719697a89b1d26",
+          "bytes": 22334
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-24-destination-hierarchy.png",
+          "sha256": "3b88d04a1da8c560ad758440d3036440cdd260e3913bf89a6ba8476bb1bd1140",
+          "bytes": 92156,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-25-entry-lifecycle-transition",
+      "title": "转场期 entry、Composition 与 ViewModel 寿命不同",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-25-entry-lifecycle-transition.svg",
+        "src/assets/diagrams/ch22/a242-25-entry-lifecycle-transition.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-25-entry-lifecycle-transition",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-runtime/2.9.8/navigation-runtime-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-common/2.9.8/navigation-common-2.9.8-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-25-entry-lifecycle-transition.svg",
+          "sha256": "5ade0a97b9df3b52f9484813248ba858601aaddb9ae807d8de0bc56cb2fc7f45",
+          "bytes": 32449
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-25-entry-lifecycle-transition.png",
+          "sha256": "1c9e049047f9e784d5e68e6679ce5d6cf96011e2a4bd3846102ebfb5fd8e1ef3",
+          "bytes": 137006,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-26-multiple-visible-states",
+      "title": "visibleEntries 按生命周期排序并受宿主限制",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-26-multiple-visible-states.svg",
+        "src/assets/diagrams/ch22/a242-26-multiple-visible-states.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-26-multiple-visible-states",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-runtime/2.9.8/navigation-runtime-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-common/2.9.8/navigation-common-2.9.8-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-26-multiple-visible-states.svg",
+          "sha256": "ea08174f5da63eae1488399d4b3d2bf29c45af16183f252c909a3dde5c708dbb",
+          "bytes": 26375
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-26-multiple-visible-states.png",
+          "sha256": "b38005dd56928618b9c6429ee84bec362e30ea5d387e15d3dc59ccd36d395f17",
+          "bytes": 107750,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-27-navhost-predictive-return",
+      "title": "NavHost 预测返回从预览到提交或恢复",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-27-navhost-predictive-return.svg",
+        "src/assets/diagrams/ch22/a242-27-navhost-predictive-return.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-27-navhost-predictive-return",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://developer.android.com/jetpack/androidx/releases/activity",
+        "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-27-navhost-predictive-return.svg",
+          "sha256": "6cbb26479013c9b8e89a46011e9701af2d9156b5021bc861597e7a773445dfea",
+          "bytes": 21194
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-27-navhost-predictive-return.png",
+          "sha256": "6827dbf91c11352aebd3f4a6c2ad5b7438eac7eb9272bdbf91c65baa3fe1f456",
+          "bytes": 88842,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-28-saved-stack-lifetime",
+      "title": "保存返回栈会延长状态寿命，但不保活组合",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-28-saved-stack-lifetime.svg",
+        "src/assets/diagrams/ch22/a242-28-saved-stack-lifetime.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-28-saved-stack-lifetime",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-runtime/2.9.8/navigation-runtime-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-common/2.9.8/navigation-common-2.9.8-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-28-saved-stack-lifetime.svg",
+          "sha256": "4f694e677963263a4b81f021ceb70c807ed3748a384f5711c5eb046068e3f6fd",
+          "bytes": 24249
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-28-saved-stack-lifetime.png",
+          "sha256": "ad3c73189d27f56dcb7c5e585a75ce43a8339dc1f8f0719b10fb9200abc332fb",
+          "bytes": 121898,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-29-single-top-not-idempotence",
+      "title": "launchSingleTop 与业务幂等解决不同问题",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-29-single-top-not-idempotence.svg",
+        "src/assets/diagrams/ch22/a242-29-single-top-not-idempotence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-29-single-top-not-idempotence",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-runtime/2.9.8/navigation-runtime-2.9.8-sources.jar",
+        "https://developer.android.com/guide/navigation/backstack/multi-back-stacks"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-29-single-top-not-idempotence.svg",
+          "sha256": "4e17fdd202a0bd2dbecf40d4dd2297647f50f7ba1e5f22e18b1d1a462d8046e9",
+          "bytes": 30236
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-29-single-top-not-idempotence.png",
+          "sha256": "224fd5fe2406816191af3576a094be6693cad16929259fb79b0aa0d338e5ba7c",
+          "bytes": 120487,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-30-viewmodel-scope",
+      "title": "目的地与父图 entry 决定 ViewModel 所有者",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-30-viewmodel-scope.svg",
+        "src/assets/diagrams/ch22/a242-30-viewmodel-scope.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-30-viewmodel-scope",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-runtime/2.9.8/navigation-runtime-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/hilt/hilt-lifecycle-viewmodel-compose/1.4.0/hilt-lifecycle-viewmodel-compose-1.4.0.aar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-30-viewmodel-scope.svg",
+          "sha256": "a04c72c6bbe3552ab130a2e0f82b60c786dd27d5f2d620fcd01a91bc5112cfc0",
+          "bytes": 23679
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-30-viewmodel-scope.png",
+          "sha256": "e038f8ad1c10cb06f2503e576bf6f46bb8d27d7b0239581408a2e76207bd49a8",
+          "bytes": 107634,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-31-list-scroll-click",
+      "title": "滚动与导航点击分成不同测量窗口",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-31-list-scroll-click.svg",
+        "src/assets/diagrams/ch22/a242-31-list-scroll-click.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-31-list-scroll-click",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-31-list-scroll-click.svg",
+          "sha256": "ff8cf548812eec79db4f9cbbf414bed466b92b9badd82a955fd0f7238d187981",
+          "bytes": 24571
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-31-list-scroll-click.png",
+          "sha256": "a664596b647b42fdd0535eb8a895e873d35c583692e6b66b415a200d38581103",
+          "bytes": 94808,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-32-deeplink-cold-running",
+      "title": "冷启动深链与运行中深链分别测量",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-32-deeplink-cold-running.svg",
+        "src/assets/diagrams/ch22/a242-32-deeplink-cold-running.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-32-deeplink-cold-running",
+      "sources": [
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-runtime/2.9.8/navigation-runtime-2.9.8-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-32-deeplink-cold-running.svg",
+          "sha256": "2406bf1bdfb15b42d973c5c74841b930c0507283dc18f9191a1a44b802812d32",
+          "bytes": 24997
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-32-deeplink-cold-running.png",
+          "sha256": "a31bed05a95e8d308bce58f50a479efbb82ddc330cc6f3fe03e21d01f766a649",
+          "bytes": 117318,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-33-adaptive-pane-focus",
+      "title": "多窗格同时运行时也要维护返回与焦点",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-33-adaptive-pane-focus.svg",
+        "src/assets/diagrams/ch22/a242-33-adaptive-pane-focus.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-33-adaptive-pane-focus",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-runtime/2.9.8/navigation-runtime-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-common/2.9.8/navigation-common-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-33-adaptive-pane-focus.svg",
+          "sha256": "cc2b13164fbbb5d9d322726b72a747360bd01d327342edf2bbd41029327c52fa",
+          "bytes": 32004
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-33-adaptive-pane-focus.png",
+          "sha256": "c94d76ed2ddca1ea0befc731ddb676a901636d89436cc230ec3071bee073d736",
+          "bytes": 130063,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-34-navigation-measurements",
+      "title": "工具覆盖正确性、窗口出图与线上分布不同层",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-34-navigation-measurements.svg",
+        "src/assets/diagrams/ch22/a242-34-navigation-measurements.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-34-navigation-measurements",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://developer.android.com/topic/performance/jankstats",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-34-navigation-measurements.svg",
+          "sha256": "7301126b9b285eb2fb7b69ca081929bdb61ce63fcc956378fa60e9e74ebf8e4a",
+          "bytes": 30085
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-34-navigation-measurements.png",
+          "sha256": "9165e693b94ea200d9b44faea5658b804652bb0f216de43e6d9801d1fa157872",
+          "bytes": 133069,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-35-source-to-device-evidence",
+      "title": "源码解释机制，目标设备轨迹解释本次迟到",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-35-source-to-device-evidence.svg",
+        "src/assets/diagrams/ch22/a242-35-source-to-device-evidence.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-35-source-to-device-evidence",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-runtime/2.9.8/navigation-runtime-2.9.8-sources.jar",
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-35-source-to-device-evidence.svg",
+          "sha256": "b9d3cd23bf8382981cfdcf425271ea7631c0d895fafe609038cc02854b8f203b",
+          "bytes": 27564
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-35-source-to-device-evidence.png",
+          "sha256": "ee635c35028df35fbcbe3d1b93f7a9de3cd88bc9395f8f5f9f8e21b58cf9a970",
+          "bytes": 88933,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a242-36-navigation-validation-loop",
+      "title": "导航验收覆盖语义、生命周期与实际显示",
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a242-36-navigation-validation-loop.svg",
+        "src/assets/diagrams/ch22/a242-36-navigation-validation-loop.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a242-36-navigation-validation-loop",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a242-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a242-36-navigation-validation-loop.svg",
+          "sha256": "fb4612bf87e6881fb4131a492c274961c412150eadf4bfa9b73b07f5172ed51e",
+          "bytes": 29357
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a242-36-navigation-validation-loop.png",
+          "sha256": "c9d0c0b29631968ac2ad4e2d1ab9272a5f3785fa2267a67dde4cf36727e2253b",
+          "bytes": 88170,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-01-runtime-window-inputs",
+      "title": "自适应输入来自当前窗口与姿态",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-01-runtime-window-inputs.svg",
+        "src/assets/diagrams/ch22/a243-01-runtime-window-inputs.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-01-runtime-window-inputs",
+      "sources": [
+        "https://developer.android.com/develop/adaptive-apps/guides/use-window-size-classes",
+        "https://developer.android.com/jetpack/androidx/releases/compose-material3-adaptive",
+        "https://developer.android.com/jetpack/androidx/releases/window"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-01-runtime-window-inputs.svg",
+          "sha256": "1b6bb2f9695d03a0e2c7088b56f5f6b29dec5092840aef83cbe43143e5290636",
+          "bytes": 25785
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-01-runtime-window-inputs.png",
+          "sha256": "e87171f23941df078e8b964d2b1fd2bcac663c907e9b9a4444a61869a5999ae8",
+          "bytes": 96473,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-02-width-height-breakpoints",
+      "title": "宽度五档与高度三档要一起判断",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-02-width-height-breakpoints.svg",
+        "src/assets/diagrams/ch22/a243-02-width-height-breakpoints.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-02-width-height-breakpoints",
+      "sources": [
+        "https://developer.android.com/develop/adaptive-apps/guides/use-window-size-classes",
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-android/1.2.0/adaptive-android-1.2.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-02-width-height-breakpoints.svg",
+          "sha256": "99f26b6adfaed5fb400e4014c58b131fec74d6dd5f8a2f4e1aa009ba60df5f4b",
+          "bytes": 13376
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-02-width-height-breakpoints.png",
+          "sha256": "272c5c7b6ae8d53f52875fdcaac45068b24aee3c4bc909f6d5a0408d7ff47052",
+          "bytes": 75958,
+          "dimensions": [
+            2100,
+            705
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-03-discrete-mode-continuous-size",
+      "title": "尺寸档不变仍可能持续重新测量",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-03-discrete-mode-continuous-size.svg",
+        "src/assets/diagrams/ch22/a243-03-discrete-mode-continuous-size.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-03-discrete-mode-continuous-size",
+      "sources": [
+        "https://developer.android.com/develop/adaptive-apps/guides/use-window-size-classes",
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-android/1.2.0/adaptive-android-1.2.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-03-discrete-mode-continuous-size.svg",
+          "sha256": "03f482c7da472596a843f771d1a3c6f917a07926cd66e3a629046b30978c2b64",
+          "bytes": 32221
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-03-discrete-mode-continuous-size.png",
+          "sha256": "ca62dbd2f724868841a027a6e92871270a8dd23dd1bd7772a3e34f777c88e783",
+          "bytes": 130252,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-04-coordinate-insets",
+      "title": "窗口尺寸、内容尺寸与局部约束分层处理",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-04-coordinate-insets.svg",
+        "src/assets/diagrams/ch22/a243-04-coordinate-insets.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-04-coordinate-insets",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-android/1.2.0/adaptive-android-1.2.0-sources.jar",
+        "https://developer.android.com/develop/adaptive-apps/guides/support-desktop-windowing"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-04-coordinate-insets.svg",
+          "sha256": "587d244fc819a43b0f786f736f18b7af8eeb93a04e8b7d2af262a010d9e0b9c1",
+          "bytes": 28754
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-04-coordinate-insets.png",
+          "sha256": "447c2cc761b089899e0a5788536b373fff672a1aa7414035abbfe855e9d0c803",
+          "bytes": 122116,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-05-single-layout-directive",
+      "title": "页面入口计算同一份布局指令",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-05-single-layout-directive.svg",
+        "src/assets/diagrams/ch22/a243-05-single-layout-directive.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-05-single-layout-directive",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-android/1.2.0/adaptive-android-1.2.0-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-layout-android/1.2.0/adaptive-layout-android-1.2.0-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-navigation-android/1.2.0/adaptive-navigation-android-1.2.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-05-single-layout-directive.svg",
+          "sha256": "8e82e5651b0b714bca4d5ca1f07647cd7a99edfaa04a43d8eb6f44ab6c8baba8",
+          "bytes": 23884
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-05-single-layout-directive.png",
+          "sha256": "2895a64ead65a569de2b114be480c36a7b9ba6ad2e46a91d9ed9bf18afaafee5",
+          "bytes": 79916,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-06-pane-maxima",
+      "title": "横向分区上限不等于可见窗格总数",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-06-pane-maxima.svg",
+        "src/assets/diagrams/ch22/a243-06-pane-maxima.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-06-pane-maxima",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-layout-android/1.2.0/adaptive-layout-android-1.2.0-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-navigation-android/1.2.0/adaptive-navigation-android-1.2.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-06-pane-maxima.svg",
+          "sha256": "bb6ba78d9d3500ffe0628bef9dc0221c22a2088db2385bb84d4be7a882bbc3b5",
+          "bytes": 26077
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-06-pane-maxima.png",
+          "sha256": "a6fbb2091a1bc6253244e779e014ca7f4ee52a558033b0ada43dbf4c44a3e05f",
+          "bytes": 116456,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-07-component-subcomposition",
+      "title": "BoxWithConstraints 只在局部确有需要时使用",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-07-component-subcomposition.svg",
+        "src/assets/diagrams/ch22/a243-07-component-subcomposition.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-07-component-subcomposition",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/layouts/constraints-modifiers"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-07-component-subcomposition.svg",
+          "sha256": "a0763ab0aa89e46021a5f68a4a307be200a54c64fc552ebb1e76befd308b1311",
+          "bytes": 31450
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-07-component-subcomposition.png",
+          "sha256": "764db28d28a9de4d94c3cfbdf96cdef7f0b58834b41a131ef662ce6c77a96ca2",
+          "bytes": 130936,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-08-content-layout-owners",
+      "title": "内容状态独立于窗格位置与姿态",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-08-content-layout-owners.svg",
+        "src/assets/diagrams/ch22/a243-08-content-layout-owners.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-08-content-layout-owners",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-navigation-android/1.2.0/adaptive-navigation-android-1.2.0-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-android/1.2.0/adaptive-android-1.2.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-08-content-layout-owners.svg",
+          "sha256": "ea8aea516db89d02e6a5d6d5233076685702e185f3aa61a11b0af92b9d4f5187",
+          "bytes": 28379
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-08-content-layout-owners.png",
+          "sha256": "d147643b6d38856b0abf68494bf09d9fb33c082d1050ecfdd19fe598d8053784",
+          "bytes": 113840,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-09-folding-feature-fields",
+      "title": "FoldingFeature 描述姿态和区域，不提供角度",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-09-folding-feature-fields.svg",
+        "src/assets/diagrams/ch22/a243-09-folding-feature-fields.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-09-folding-feature-fields",
+      "sources": [
+        "https://developer.android.com/reference/androidx/window/layout/FoldingFeature",
+        "https://dl.google.com/android/maven2/androidx/window/window/1.5.1/window-1.5.1-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-android/1.2.0/adaptive-android-1.2.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-09-folding-feature-fields.svg",
+          "sha256": "a2f95aed449056c0aba0cad3ca95116ab59d872cf2832e31b1f512825eaf2405",
+          "bytes": 24877
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-09-folding-feature-fields.png",
+          "sha256": "5fe6268daede5f814c2a72bf9a0f3c482556b5ffaa404ff3c5ec206f3e762716",
+          "bytes": 95016,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-10-window-tracker-lifecycle",
+      "title": "折叠特征订阅跟随当前 Activity 实例",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-10-window-tracker-lifecycle.svg",
+        "src/assets/diagrams/ch22/a243-10-window-tracker-lifecycle.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-10-window-tracker-lifecycle",
+      "sources": [
+        "https://developer.android.com/reference/androidx/window/layout/WindowInfoTracker",
+        "https://dl.google.com/android/maven2/androidx/window/window/1.5.1/window-1.5.1-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-10-window-tracker-lifecycle.svg",
+          "sha256": "9bed13e2e1c6caed757aa5294aac1f86c56eea002bac576d58d0f7b4397ca51c",
+          "bytes": 24242
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-10-window-tracker-lifecycle.png",
+          "sha256": "11fcc1d9f6dd450d309b029cd81fda15f560edd476ffcfc2b8023e8271ea8fd6",
+          "bytes": 84216,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-11-hwui-to-display",
+      "title": "标准窗口出图仍沿应用到显示链路",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-11-hwui-to-display.svg",
+        "src/assets/diagrams/ch22/a243-11-hwui-to-display.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-11-hwui-to-display",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-11-hwui-to-display.svg",
+          "sha256": "39cdca57d303cdf9254599dbe61867d2c89221e17d3e0e585c014ed5c1274440",
+          "bytes": 20748
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-11-hwui-to-display.png",
+          "sha256": "7de97f0a990732ccdcae56e24e94d481ebf9b78a4bf8de0192fbc7d5f28975a7",
+          "bytes": 76554,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-12-multiwindow-topology",
+      "title": "多窗口、进程与显示设备是三层拓扑",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-12-multiwindow-topology.svg",
+        "src/assets/diagrams/ch22/a243-12-multiwindow-topology.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-12-multiwindow-topology",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-12-multiwindow-topology.svg",
+          "sha256": "c9ce3d40306e3bc7ae7137119b709b9a00c04a4a84b34829b556fd1065d472ea",
+          "bytes": 26370
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-12-multiwindow-topology.png",
+          "sha256": "c8c89cd5cc3e0d185e72aa89470e3c971f52c82182561089e5f0332dc16f922e",
+          "bytes": 150157,
+          "dimensions": [
+            2100,
+            1305
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-13-three-resize-milestones",
+      "title": "窗口几何、内容缓冲与实际呈现分别取证",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-13-three-resize-milestones.svg",
+        "src/assets/diagrams/ch22/a243-13-three-resize-milestones.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-13-three-resize-milestones",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/BLASTSyncEngine.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-13-three-resize-milestones.svg",
+          "sha256": "49ea20eff5e0850f777a2c937dd53a12965f968109ee8bb064dd4d64666c72ac",
+          "bytes": 28026
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-13-three-resize-milestones.png",
+          "sha256": "fc12f59a97c43e58f2be7fcfdac965eab2cfbf7c03761878beeb2f00afe622c3",
+          "bytes": 118826,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-14-per-display-results",
+      "title": "内屏正常不能证明外接屏正常",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-14-per-display-results.svg",
+        "src/assets/diagrams/ch22/a243-14-per-display-results.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-14-per-display-results",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://developer.android.com/develop/adaptive-apps/guides/support-desktop-windowing"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-14-per-display-results.svg",
+          "sha256": "68fbd5bb68901abeeeaad685ce7415980044d309af2f105370475b15325e5265",
+          "bytes": 29257
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-14-per-display-results.png",
+          "sha256": "00efad02f7afa20c7f4d181d4376cc26d9889b7a58aba843e950fb8fbdbba3e7",
+          "bytes": 109428,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-15-target-sdk-rotation",
+      "title": "Android16 临时 opt-out 到 Android17 取消",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-15-target-sdk-rotation.svg",
+        "src/assets/diagrams/ch22/a243-15-target-sdk-rotation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-15-target-sdk-rotation",
+      "sources": [
+        "https://developer.android.com/about/versions/16/behavior-changes-16",
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Activity.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-15-target-sdk-rotation.svg",
+          "sha256": "03336f408539432e1ba04edbd96385e48ab4909e60801aa5dfa44f3ee03a94f2",
+          "bytes": 32365
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-15-target-sdk-rotation.png",
+          "sha256": "95ca7df18656ce4028668432cac84f0aa8a6894141d2621540bdc0f3324e6b36",
+          "bytes": 141679,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-16-actual-pixel-work",
+      "title": "面板像素数不等于应用帧成本倍数",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-16-actual-pixel-work.svg",
+        "src/assets/diagrams/ch22/a243-16-actual-pixel-work.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-16-actual-pixel-work",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-16-actual-pixel-work.svg",
+          "sha256": "45bc26af261f4346ca99fa00f7203bbcbaf18d413078ef5ae9044d195b976672",
+          "bytes": 32068
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-16-actual-pixel-work.png",
+          "sha256": "13c88534dc9c099fc953d4dd82d0076d0da8e1ed4559d10f24061751b638337d",
+          "bytes": 125870,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-17-resize-image-requests",
+      "title": "按展示尺寸合并图片请求并守住缓存容量",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-17-resize-image-requests.svg",
+        "src/assets/diagrams/ch22/a243-17-resize-image-requests.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-17-resize-image-requests",
+      "sources": [
+        "https://developer.android.com/topic/performance/graphics/load-bitmap",
+        "https://developer.android.com/develop/adaptive-apps/guides/support-desktop-windowing"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-17-resize-image-requests.svg",
+          "sha256": "a343e0cfc42fd40a28d53c298d98906567c346d6509ee84806a3e2f603a193b8",
+          "bytes": 28856
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-17-resize-image-requests.png",
+          "sha256": "92253ccf40dbb03b7c39df2dd396d786be68493996a40adfcd5e68d005f14d1b",
+          "bytes": 90352,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-18-pane-working-set",
+      "title": "更多窗格扩大活跃工作集，也可能重复工作",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-18-pane-working-set.svg",
+        "src/assets/diagrams/ch22/a243-18-pane-working-set.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-18-pane-working-set",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-navigation-android/1.2.0/adaptive-navigation-android-1.2.0-sources.jar",
+        "https://developer.android.com/develop/ui/compose/lists"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-18-pane-working-set.svg",
+          "sha256": "ec9c1753bac42da287c7105a026e0ec1031ddca26eed31f14564fc5216bd65c4",
+          "bytes": 30122
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-18-pane-working-set.png",
+          "sha256": "a90bed92a967db07e50416147e505a9a75227143b17c9c09619ffdd425f1b7ad",
+          "bytes": 118719,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-19-lifecycle-focus-policy",
+      "title": "生命周期、可见性与焦点是不同信号",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-19-lifecycle-focus-policy.svg",
+        "src/assets/diagrams/ch22/a243-19-lifecycle-focus-policy.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-19-lifecycle-focus-policy",
+      "sources": [
+        "https://developer.android.com/develop/adaptive-apps/guides/support-desktop-windowing",
+        "https://developer.android.com/develop/ui/views/layout/support-multi-window-mode"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-19-lifecycle-focus-policy.svg",
+          "sha256": "d399f8a6301f512d069b533590ab5f1ff2b6d4c9f2927a74975aba4761d7eb31",
+          "bytes": 29241
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-19-lifecycle-focus-policy.png",
+          "sha256": "16b2e3b7682fe355441c06a4c8b58411d6cabd0dfdfdc63da915334917f38835",
+          "bytes": 119219,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-20-multi-instance-state",
+      "title": "多实例状态分层，缓存不隐含当前窗口",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-20-multi-instance-state.svg",
+        "src/assets/diagrams/ch22/a243-20-multi-instance-state.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-20-multi-instance-state",
+      "sources": [
+        "https://developer.android.com/develop/adaptive-apps/guides/support-desktop-windowing"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-20-multi-instance-state.svg",
+          "sha256": "61f8c16cd026b556e724e44dbdcbdd79ffd336f6193fec04eabe7abffd5f3b64",
+          "bytes": 25084
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-20-multi-instance-state.png",
+          "sha256": "6eb599f9247a98265bcc3e5f05d49ae05c213b9b30d86bdbf68180710f80ccd7",
+          "bytes": 95730,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-21-cross-window-drag",
+      "title": "拖放授权、导入工作与未处理降级分开",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-21-cross-window-drag.svg",
+        "src/assets/diagrams/ch22/a243-21-cross-window-drag.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-21-cross-window-drag",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://developer.android.com/develop/adaptive-apps/guides/support-desktop-windowing"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-21-cross-window-drag.svg",
+          "sha256": "9154d687ea64d00ebdab806230131e88c4abc9a5fd8c172556e2dd35ee45c330",
+          "bytes": 32344
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-21-cross-window-drag.png",
+          "sha256": "05b2081b04b7c59958e6a157957fdee7d52b9257049da693e643226e1817c662",
+          "bytes": 131663,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-22-resource-runtime-boundaries",
+      "title": "资源限定符与窗口分类各处理自己的层级",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-22-resource-runtime-boundaries.svg",
+        "src/assets/diagrams/ch22/a243-22-resource-runtime-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-22-resource-runtime-boundaries",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TaskFragment.java",
+        "https://developer.android.com/develop/adaptive-apps/guides/use-window-size-classes"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-22-resource-runtime-boundaries.svg",
+          "sha256": "a70e3c26ef51713a54ce603059caebae8392809cd8d19d18b669735e1acc778d",
+          "bytes": 28922
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-22-resource-runtime-boundaries.png",
+          "sha256": "cf409de72f77f2c163df5229959b983df31f1313a0a00d568cc47088c6e3e9ee",
+          "bytes": 109202,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-23-validation-scope",
+      "title": "视觉布局与真实帧性能分别验证",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-23-validation-scope.svg",
+        "src/assets/diagrams/ch22/a243-23-validation-scope.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-23-validation-scope",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://developer.android.com/develop/adaptive-apps/guides/support-desktop-windowing"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-23-validation-scope.svg",
+          "sha256": "2c14455513b7e5f37ff6703327bd7951754014ddd8bddabceee584c9bebc46ed",
+          "bytes": 34713
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-23-validation-scope.png",
+          "sha256": "8a78f99c211598dfa2bf79f69123bd9f68d3092a74d4a5266008cc545cd43c22",
+          "bytes": 134690,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-24-sql-frame-identity",
+      "title": "SQL 按进程实例、帧 token 与目标图层关联",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-24-sql-frame-identity.svg",
+        "src/assets/diagrams/ch22/a243-24-sql-frame-identity.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-24-sql-frame-identity",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://perfetto.dev/docs/analysis/sql-tables#process"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-24-sql-frame-identity.svg",
+          "sha256": "6de91493ed69c5c872dc6a067fbf85727803205c4e0e8f6c69ddcf1f3523587d",
+          "bytes": 20519
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-24-sql-frame-identity.png",
+          "sha256": "081832b00b931cd4128d8ccc6cdec1e0b14167744f26d6d4b74980d990c9f733",
+          "bytes": 77682,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-25-resize-attribution-order",
+      "title": "窗口调整从对象身份追到最早偏离的时间线",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-25-resize-attribution-order.svg",
+        "src/assets/diagrams/ch22/a243-25-resize-attribution-order.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-25-resize-attribution-order",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-25-resize-attribution-order.svg",
+          "sha256": "a09c789dfe07e4f3f62f625dc22861a64a96bac3bad667d5cbf61582a7e4ee36",
+          "bytes": 26161
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-25-resize-attribution-order.png",
+          "sha256": "5e6d6256ece4ef0bd43ac041c378d56c3ad6264605936f7bcf697d95b1e5f915",
+          "bytes": 86007,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a243-26-adaptive-validation-loop",
+      "title": "运行时适配和性能证据共同闭合验收",
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a243-26-adaptive-validation-loop.svg",
+        "src/assets/diagrams/ch22/a243-26-adaptive-validation-loop.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a243-26-adaptive-validation-loop",
+      "sources": [
+        "https://developer.android.com/develop/adaptive-apps/guides/use-window-size-classes",
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-android/1.2.0/adaptive-android-1.2.0-sources.jar",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a243-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a243-26-adaptive-validation-loop.svg",
+          "sha256": "15ec15d38293f852a4491e64f69c6e30d2f18f6e16f01e6043160c21284d26e8",
+          "bytes": 27061
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a243-26-adaptive-validation-loop.png",
+          "sha256": "1c33c40da5091979df70c0e161708262b0125c2fa1f7db11f2e28460e1166d6b",
+          "bytes": 88079,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     }
   ],
   "corrections": [
@@ -35251,14 +37425,519 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_view_SurfaceControl.cpp",
         "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar"
       ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "重新复核固定提交、发布源码与当前官方版本表。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentManager.java",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://developer.android.com/jetpack/androidx/releases/fragment",
+        "https://developer.android.com/jetpack/androidx/releases/navigation",
+        "https://developer.android.com/jetpack/androidx/releases/navigation3"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "AndroidX Fragment 1.4 - 1.8 stable; 1.9 RC",
+      "after": "AndroidX Fragment 1.4 - 1.9 stable; fixed implementation commit as noted",
+      "why": "Fragment1.9已稳定，frontmatter不能仍标RC。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/fragment"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "AndroidX Fragment 1.8.9/1.9.0-rc01 + Navigation 3 1.1.5",
+      "after": "AndroidX Fragment 1.9.1 + Navigation Compose 2.9.8 fixed sources; current Navigation 2 2.10.2 / Navigation 3 1.2.0",
+      "why": "区分固定行为基线与当前版本现状。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/fragment",
+        "https://developer.android.com/jetpack/androidx/releases/navigation",
+        "https://developer.android.com/jetpack/androidx/releases/navigation3"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "不要组合（Composition） `commit()` 与 `executePendingTransactions()`",
+      "after": "不要组合使用 `commit()` 与 `executePendingTransactions()`",
+      "why": "普通汉语组合不应误标Compose Composition术语。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/f39ca3510efb2347ebfef231e25a3e804922450d/fragment/fragment/src/main/java/androidx/fragment/app/FragmentTransaction.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "要用 trace 确认目标 View 的构造工作是否在线程池执行。",
+      "after": "要用 trace 确认目标 View 的构造工作是否在 inflate 后台线程执行；1.1.0 的构造队列由共享 `InflateThread` 处理，回调 Executor 只控制完成回调。其有界队列使用阻塞 `put()`，大量集中预创建仍可能让调用方等待，不能把它当作无限容量的后台线程池。",
+      "why": "实际1.1.0是共享InflateThread与有界阻塞队列，非任意工作线程池。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "| Fragment 1.9.0-rc01 | 1.9 线为 `AndroidFragment` 增加 `maxLifecycle` 参数，并支持通过 Jetpack Tracing 把 Fragment 生命周期事件写入 system trace（系统性能轨迹） | RC 仍不是稳定版；生产诊断基线继续按项目锁定的版本判断，不能因 trace 中出现生命周期时间片就假定事务已完成或帧已显示 |",
+      "after": "| Fragment 1.9 稳定线 | `AndroidFragment` 增加 `maxLifecycle`，并支持通过 Jetpack Tracing 写入生命周期 system trace；1.9.0 于 2026-08-12 稳定发布 | 2026-10-25 稳定版为 1.9.1；生命周期时间片仍不能证明事务已完成或帧已显示 |",
+      "why": "当前1.9稳定，不再沿用候选版状态。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/fragment"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "截至 2026-08-15，Fragment 稳定版是 1.8.9，1.9.0-rc01 是候选版；",
+      "after": "2026-10-25 复核，Fragment 稳定版为 1.9.1；",
+      "why": "官方发布表和Maven稳定版本一致。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/fragment"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "`ComposeView.setContent {}` 先保存内容；初次 Composition 在 View 接入窗口或显式调用 `createComposition()` 时发生，以较早者为准。",
+      "after": "`ComposeView.setContent {}` 保存内容；若 View 已接入窗口，或 UI 1.12.0 已提供可用 `ComposeViewContext`，它会当场请求创建 Composition。首次 attach、显式 `createComposition()` 和 `onMeasure()` 也会尝试确保 Composition 已建立；提前创建必须满足父 CompositionContext / 已 attach 的 context 等前置条件。",
+      "why": "实际ComposeView1.12setContent有同步创建分支，onMeasure也确保Composition，不能一概先保存后attach。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "截至 2026-08-15，稳定版为 1.1.5。",
+      "after": "2026-10-25 的 Navigation 3 稳定版为 1.2.0；本文后半仍固定分析 Navigation 2.9.8，两套实现不能混用结论。",
+      "why": "Navigation3当前稳定1.2.0，早先1.1.5且与后文1.1.6矛盾。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/navigation3",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "截至 2026-08-15，Activity 稳定版为 1.13.0，NavigationEvent 稳定版为 1.1.2。",
+      "after": "2026-10-25 复核，Activity 稳定版仍为 1.13.0，NavigationEvent 稳定版为 1.2.0。",
+      "why": "重新验证当前稳定版，Mavenrelease可能含alpha不能直接当stable。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/activity",
+        "https://developer.android.com/jetpack/androidx/releases/navigationevent"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "应用可以用观察型回调记录根 Activity 离开",
+      "after": "应用可以观察未被其他消费型回调接管的系统返回，包括系统结束当前 Activity 或返回主屏幕",
+      "why": "观察者范围不仅根Activity；固定平台接口说明包括finishcurrentActivity。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/OnBackInvokedDispatcher.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "val p = backEvent.progress.coerceIn(0f, 1f)",
+      "after": "val p = backEvent.progress.let {\n            if (it.isFinite()) it.coerceIn(0f, 1f) else 0f\n        }",
+      "why": "coerceIn不会消除NaN，示例防止异常自定义进度污染View或图层属性。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/BackEvent.java",
+        "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.ranges/coerce-in.html"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "val p = progress.floatValue.coerceIn(0f, 1f)",
+      "after": "val p = progress.floatValue.let {\n                    if (it.isFinite()) it.coerceIn(0f, 1f) else 0f\n                }",
+      "why": "coerceIn不会消除NaN，示例防止异常自定义进度污染View或图层属性。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/BackEvent.java",
+        "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.ranges/coerce-in.html"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "contentView.animate().cancel()",
+      "after": "contentView.animate().cancel()\n        contentView.translationX = 0f\n        contentView.alpha = 1f\n        contentView.scaleX = 1f\n        contentView.scaleY = 1f",
+      "why": "快速取消再开始时先复位示例独占容器，避免沿用中途回弹属性。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/OnBackAnimationCallback.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "`onBackCommitted` 应由 FragmentManager、NavController、Navigation 3 返回栈或页面自己的状态机提供。",
+      "after": "示例独占一个初始 translation=0、alpha=1、scale=1 的预览容器，其他动画不要同时修改它；若容器原本有变换，需要快照并恢复原值，而不是套用这里的常量。回弹的 120 ms 只是演示参数，须按产品动画与取消测试调整；绑定 Fragment 时用 `viewLifecycleOwner` 注册回调，销毁 View 时取消属性动画并恢复预览。\n\n`onBackCommitted` 应由 FragmentManager、NavController、Navigation 3 返回栈或页面自己的状态机提供。",
+      "why": "明确身份变换前置条件、动画所有权、取消时序及View生命周期，示例常量不是通用性能阈值。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/OnBackAnimationCallback.java",
+        "https://developer.android.com/jetpack/androidx/releases/activity"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "截至 2026-08-15，Activity 稳定版是 1.13.0，Fragment 稳定版是 1.8.9、候选发布版是 1.9.0-rc01，Transition 稳定版是 1.7.0，NavigationEvent 稳定版是 1.1.2，Navigation 3 稳定版是 1.1.5。Activity 1.12.2 修复了能感知生命周期的回调在 `isEnabled` 状态上的问题；Fragment 与 Transition 已进入仅维护、不再积极扩展功能的阶段。新工程应优先评估当前稳定版——表中的最低版本只表示功能入口已经出现，后续的取消、预测式返回和生命周期修复都未必包含在内。",
+      "after": "2026-10-25 复核，稳定版为 Activity 1.13.0、Fragment 1.9.1、Transition 1.7.2、NavigationEvent 1.2.0、Navigation 3 1.2.0。本文 Transition 行为示例固定复核 1.7.0 源码，Navigation Compose 固定复核 2.9.8；最低版本表仅表示功能入口出现，后续修复要另查。Activity 1.12.2 曾修复生命周期回调的 `isEnabled` 问题；Fragment 与 Transition 已进入仅维护阶段。项目升级后应重新验证快速取消、连续返回和生命周期变化。",
+      "why": "统一全文互相矛盾及过期的当前版本，同时保留固定代码依据。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/activity",
+        "https://developer.android.com/jetpack/androidx/releases/fragment",
+        "https://developer.android.com/jetpack/androidx/releases/transition",
+        "https://developer.android.com/jetpack/androidx/releases/navigationevent",
+        "https://developer.android.com/jetpack/androidx/releases/navigation3",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/transition/transition/1.7.0/transition-1.7.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "private val backTransition = TransitionSet()\n    .addTransition(Fade(Fade.MODE_OUT))\n    .addTransition(ChangeBounds())\n    .addTransition(Fade(Fade.MODE_IN))\n\nprivate var seekController: TransitionSeekController? = null\n\nprivate fun resetPreview() {\n    restoreCurrentState()\n    seekController = null\n}\n\nval callback = object : OnBackPressedCallback(true) {\n    override fun handleOnBackStarted(backEvent: BackEventCompat) {\n        seekController =\n            TransitionManager.controlDelayedTransition(container, backTransition)\n        showPreviousStateForPreview()\n    }\n\n    override fun handleOnBackProgressed(backEvent: BackEventCompat) {\n        seekController\n            ?.takeIf { it.isReady }\n            ?.currentFraction = backEvent.progress.coerceIn(0f, 1f)\n    }\n\n    override fun handleOnBackCancelled() {\n        val controller = seekController\n        if (controller?.isReady == true) {\n            controller.animateToStart { resetPreview() }\n        } else {\n            resetPreview()\n        }\n    }\n\n    override fun handleOnBackPressed() {\n        seekController?.animateToEnd()\n    }\n}\n",
+      "after": "@RequiresApi(34)\n@MainThread\nclass SingleTransitionBackPreview(\n    container: ViewGroup,\n    private val restoreCurrentState: () -> Unit,\n    showPreviousStateForPreview: () -> Unit,\n    private val commitPreviousState: () -> Unit,\n    private val onSettled: () -> Unit,\n) {\n    private var terminal = false\n    private var settled = false\n    private var latestProgress = 0f\n    private var controller: TransitionSeekController? = null\n\n    init {\n        val transition = TransitionSet()\n            .addTransition(Fade(Fade.MODE_OUT))\n            .addTransition(ChangeBounds())\n            .addTransition(Fade(Fade.MODE_IN))\n            .addListener(object : TransitionListenerAdapter() {\n                override fun onTransitionEnd(transition: Transition) {\n                    settle()\n                }\n            })\n        val active = TransitionManager.controlDelayedTransition(container, transition)\n        controller = active\n        if (active != null) {\n            showPreviousStateForPreview()\n            active.addOnReadyListener { ready ->\n                if (!terminal) ready.currentFraction = latestProgress\n            }\n        }\n    }\n\n    fun progress(value: Float) {\n        if (terminal) return\n        latestProgress = value.let {\n            if (it.isFinite()) it.coerceIn(0f, 1f) else 0f\n        }\n        controller?.takeIf { it.isReady }?.currentFraction = latestProgress\n    }\n\n    fun cancel() {\n        if (terminal) return\n        terminal = true\n        val active = controller\n        if (active != null) {\n            active.animateToStart { restoreCurrentState() }\n        } else {\n            restoreCurrentState()\n            settle()\n        }\n    }\n\n    fun commit() {\n        if (terminal) return\n        terminal = true\n        commitPreviousState()\n        val active = controller\n        if (active != null) active.animateToEnd() else settle()\n    }\n\n    private fun settle() {\n        if (settled) return\n        settled = true\n        controller = null\n        onSettled()\n    }\n}\n",
+      "why": "原未ready取消会遗留pending捕获，完成不提交语义且null时吞返回。改为单次preview会话、terminal幂等、ready进度重放、未ready也animateToStart、结束通知及null降级提交。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/transition/transition/1.7.0/transition-1.7.0-sources.jar",
+        "https://developer.android.com/guide/navigation/custom-back/support-animations-views"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "Fragment 1.5+ 已自行控制返回栈动画时",
+      "after": "Fragment 1.7+ 已自行控制预测式返回栈动画时",
+      "why": "此处应与前文Fragment1.7predictive条件一致，1.5不是连续手势seek入口。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/fragment",
+        "https://developer.android.com/jetpack/androidx/releases/transition"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "这里要重点排查 `showPreviousStateForPreview()`：",
+      "after": "这是单次手势预览会话，不是完整的返回分发器：导航 owner 必须独占容器，把本轮开始、进度、取消、完成映射到同一个实例，并在 `onSettled` 之后的安全 UI 时点才允许下一轮捕获；更快的新手势需要由 owner 等待或整轮采用无预览路径。不要用 `endTransitions()` 后立刻同容器重新 `controlDelayedTransition()` 代替串行化：固定 1.7.0 中，旧 pending pre-draw 监听器可能尚未移除。`animateToStart()` 可在尚未 ready 时排队等待，不能仅清空引用。`commitPreviousState()` 只提交当前容器的语义状态，容器须存活到动画结束；若提交会销毁容器，应改为动画结束后提交。View 销毁时 owner 结束过渡、废弃会话并按生命周期忽略迟到回调；示例不实现 owner 的完整调度。状态回调须轻量、可重复调用。\n\n这里要重点排查 `showPreviousStateForPreview()`：",
+      "why": "说明单次会话契约、ready排队与owner串行化边界；明确endTransitions清pending集合不等于旧pre-draw监听器已移除。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/transition/transition/1.7.0/transition-1.7.0-sources.jar",
+        "https://developer.android.com/guide/navigation/custom-back/support-animations-views"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "(backEvent.progress.coerceIn(0f, 1f) * 100).toLong()",
+      "after": "(backEvent.progress.let {\n            if (it.isFinite()) it.coerceIn(0f, 1f) else 0f\n        } * 100).toLong()",
+      "why": "跟踪计数器同样消除NaN/Infinity，保留固定section名。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/window/BackEvent.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "Navigation 3 已有稳定版 1.1.6",
+      "after": "Navigation 3 在 2026-10-25 已有稳定版 1.2.0",
+      "why": "纠正另一处重复版本陈述，固定Nav2源码分析不随版本现状自动更新。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/navigation3"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "截至 2026 年 8 月 15 日，它仍是 2.x 稳定版；该版本于 2026 年 4 月 22 日发布",
+      "after": "它是本文固定的行为基线；2026-10-25 当前 2.x 稳定版已为 2.10.2。2.9.8 于 2026 年 4 月 22 日发布",
+      "why": "不能将固定旧基线称作当前2.x稳定版。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/navigation",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "引用它的模块至少需要 AGP 9.2.0；",
+      "after": "官方发布说明要求 Compose 场景至少使用 AGP 9.2.0；本次下载的 1.4.0 AAR 元数据实际声明 minAGP=9.1.0、minCompileSdk=37，两份依据不同，工程配置按文档更严格的要求并由完整依赖解析验收；",
+      "why": "实际发布物与文档门槛有差异须如实区分，不能把某一方推测为另一方。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/hilt",
+        "https://dl.google.com/android/maven2/androidx/hilt/hilt-lifecycle-viewmodel-compose/1.4.0/hilt-lifecycle-viewmodel-compose-1.4.0.aar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "当前 entry 或其参数变化时，读取这份 `State` 的重组作用域会被标记为需要重新检查。",
+      "after": "上游 Flow 发出的 entry 只有在 `collectAsState` 产出的 State 值发生不等变化时，才使读取作用域失效；相等值可能被 State 的等值策略抑制，不能把每次 Flow 发值都当作一次重组。",
+      "why": "Flow发值不必然触发SnapshotState变化，State等值策略与后续skip分开。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "### 5. NavHost 转场期间有两份可见内容",
+      "after": "### 5. NavHost 转场期间会保留多份可见内容",
+      "why": "连续转场与多个退出动画可以暂存多于两份内容，不应绝对限定两份。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-runtime/2.9.8/navigation-runtime-2.9.8-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "离开页与进入页会暂时共存；二者的布局、绘制、副作用与状态观察都值得检查。",
+      "after": "离开页与进入页会暂时共存；快速连续转场还可能同时保留多个正在退出的 entry，不能把内存预算固定按两页计算。各份内容的布局、绘制、副作用与状态观察都值得检查。",
+      "why": "NavHost/AnimatedContent可保留多份退出内容。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-runtime/2.9.8/navigation-runtime-2.9.8-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "用 `PerformanceMetricsState` 给帧附加当前 route、交互类型和转场阶段",
+      "after": "用 `PerformanceMetricsState` 给帧附加归一化目的地类型、交互类型和转场阶段（如 `profile`，不使用含 userId 的完整 route）",
+      "why": "前文倡导route最小ID但线上不应把完整route/userID当高基数标签。",
+      "sources": [
+        "https://developer.android.com/topic/performance/jankstats"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "`NavRequest(route)` 表示请求发出，`DestinationChanged(route)` 表示控制器完成目的地分发，`ContentReady(route)` 表示页面得到可展示状态。",
+      "after": "固定 section 名 `NavRequest`、`DestinationChanged`、`ContentReady` 分别表示请求发出、控制器目的地分发、页面得到可展示状态；目的地类型作为受控低基数状态另存，完整 route / ID 不拼进 section 名。",
+      "why": "原动态NavRequest(route)与本章固定trace名要求冲突，可能暴露ID并破坏聚合。",
+      "sources": [
+        "https://developer.android.com/topic/performance/jankstats",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "先确定由谁处理导航。",
+      "after": "先确定由谁处理导航，并在手势开始前固定处理器的启用状态；不要等首个进度事件才选择返回目标。",
+      "why": "ahead-of-time处理器选择在开始前确定，和预览状态机一致。",
+      "sources": [
+        "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture",
+        "https://developer.android.com/jetpack/androidx/releases/activity"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "- [Compose in Views](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)、[`ComposeView` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ComposeView)、[Navigation 3](https://developer.android.com/guide/navigation/navigation-3) 与 [Navigation 3 release notes](https://developer.android.com/jetpack/androidx/releases/navigation3)：核对 Fragment View 中 Composition 的创建/销毁时机及纯 Compose 导航的适用条件。",
+      "after": "- [Compose in Views](https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views)、[`ComposeView` API](https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ComposeView)、[Navigation 3](https://developer.android.com/guide/navigation/navigation-3) 与 [Navigation 3 release notes](https://developer.android.com/jetpack/androidx/releases/navigation3)：核对 Fragment View 中 Composition 的创建/销毁时机及纯 Compose 导航的适用条件。\n- [UI 1.12.0 ComposeView 源码](https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar)、[AsyncLayoutInflater 1.1.0 源码](https://dl.google.com/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar) 与 [Transition 1.7.0 源码](https://dl.google.com/android/maven2/androidx/transition/transition/1.7.0/transition-1.7.0-sources.jar)：创建时机、共享构造线程与有界队列，以及 ready / pending pre-draw 的单次会话边界。\n- [Hilt Compose 1.4.0 AAR](https://dl.google.com/android/maven2/androidx/hilt/hilt-lifecycle-viewmodel-compose/1.4.0/hilt-lifecycle-viewmodel-compose-1.4.0.aar)：元数据 minCompileSdk=37、minAGP=9.1.0；与发布说明的 Compose AGP9.2.0 要求分别记录。",
+      "why": "为新增的创建时机、线程队列、Transition会话和AAR元数据结论补直接固定发布物来源。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/transition/transition/1.7.0/transition-1.7.0-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/hilt/hilt-lifecycle-viewmodel-compose/1.4.0/hilt-lifecycle-viewmodel-compose-1.4.0.aar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "path: developer.android.com/jetpack/androidx/releases/navigation3#1.1.6",
+      "after": "path: developer.android.com/jetpack/androidx/releases/navigation3#1.2.0",
+      "why": "元数据版本入口同步当前Navigation3稳定1.2.0。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/navigation3"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "[Navigation 3 发布说明](https://developer.android.com/jetpack/androidx/releases/navigation3#1.1.6)",
+      "after": "[Navigation 3 发布说明](https://developer.android.com/jetpack/androidx/releases/navigation3#1.2.0)",
+      "why": "当前1.2.0版本结论应直接指向1.2.0发布说明。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/navigation3"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "| Navigation 3 边界 | [Navigation 3 1.1.6 release notes](https://developer.android.com/jetpack/androidx/releases/navigation3#1.1.6) | 当前稳定版本、与 Navigation 2 分界 |",
+      "after": "| Navigation 3 边界 | [Navigation 3 1.2.0 release notes](https://developer.android.com/jetpack/androidx/releases/navigation3#1.2.0) | 2026-10-25 当前稳定版；与固定 Navigation 2 基线分界 |",
+      "why": "修正来源表残留1.1.6当前稳定结论。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/navigation3"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "before": "| Navigation 版本 | [Navigation 2.9.8 release notes](https://developer.android.com/jetpack/androidx/releases/navigation#2.9.8) | 稳定版本、预测返回竞态修复 |",
+      "after": "| Navigation 固定基线 | [Navigation 2.9.8 release notes](https://developer.android.com/jetpack/androidx/releases/navigation#2.9.8) | 固定行为基线及预测返回竞态修复；当前2.x稳定版另查2.10.2 |",
+      "why": "将固定基线与当前稳定版标签区分。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/navigation",
+        "https://dl.google.com/android/maven2/androidx/navigation/navigation-compose/2.9.8/navigation-compose-2.9.8-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "重取固定发布物、平台源码和当前版本元数据。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-android/1.2.0/adaptive-android-1.2.0-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/window/window/1.5.1/window-1.5.1-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://developer.android.com/jetpack/androidx/releases/compose-material3-adaptive",
+        "https://developer.android.com/jetpack/androidx/releases/window"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "| Compose UI | 1.11.4 稳定版 | Compose 独立发布，不随 API 37 一起定版 |",
+      "after": "| Compose UI | 示例沿用兼容 API；2026-10-25 当前稳定版为 1.12.1 | Compose 独立发布，运行时 API 编译复核使用 1.12.0，不由 API 37 推导 |",
+      "why": "原1.11.4不是当前稳定版，区分实际API验证与版本现状。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/ui/ui/maven-metadata.xml"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "| Material 3 Adaptive | 1.2.0 稳定版 | 示例代码使用这一版公开 API；Large / Extra-large 分类需要显式开启 |",
+      "after": "| Material 3 Adaptive | 本文固定基线 1.2.0；当前稳定版 1.3.0 | 示例和源码结论仍按 1.2.0；Large / Extra-large 需要显式开启 |",
+      "why": "固定旧行为基线不应冒充当前稳定版本。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/compose-material3-adaptive",
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-android/1.2.0/adaptive-android-1.2.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "Material 3 Adaptive 1.3.0-rc01 是候选发布版（release candidate，RC），部分窗口信息 API 已经调整。",
+      "after": "2026-10-25 复核，Material 3 Adaptive 1.3.0 已是稳定版，1.3.0-rc01 只是此前的候选发布物；部分窗口信息 API 已调整。",
+      "why": "当前1.3.0稳定，不能仍声明只有RC。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/compose-material3-adaptive"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "- `calculatePaneScaffoldDirectiveWithTwoPanesOnMediumWidth()` 会让 Medium 使用双窗格，但源码文档也提醒，这可能使内容过密，只适合确有需求的页面。",
+      "after": "- `calculatePaneScaffoldDirectiveWithTwoPanesOnMediumWidth()` 会让 Medium 使用双窗格，但源码文档也提醒，这可能使内容过密，只适合确有需求的页面。\n- 上述横向分区数是最大布局指令，不保证窗格都可见；目的地历史、适配策略、铰链和局部约束还会参与实际选择。1.2.0 在 tabletop 姿态，或单横向分区且 Expanded 高度时，也会允许两个纵向分区，不能把“一个横向分区”直接当成“总共一个窗格”。",
+      "why": "源码横向max分区不是实际窗格数，纵向分区逻辑不可省略。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-layout-android/1.2.0/adaptive-layout-android-1.2.0-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/compose/material3/adaptive/adaptive-navigation-android/1.2.0/adaptive-navigation-android-1.2.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "合成交给 HWC——硬件合成器（Hardware Composer）；",
+      "after": "SurfaceFlinger 决定 DEVICE / CLIENT 分工，CLIENT 部分可由 RenderEngine 在 GPU 上合成，再交 HWC（硬件合成器）参与最终呈现；",
+      "why": "并非所有图层都由硬件平面直接合成，必须包括客户端合成路径。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/surfaceflinger/SurfaceFlinger.cpp",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "Lazy 容器只组合可见项，其余窗格的状态、图片和订阅未必会随之自动暂停。",
+      "after": "Lazy 容器按需组合和测量，但预取、缓存窗口、动画或 beyond-bounds 等路径也可能保留 / 处理视口外项目；其余窗格的状态、图片和订阅更不会因此自动暂停。",
+      "why": "Lazy并非严格只组合可见项，预取和缓存语义已在固定Foundation1.12源码验证。",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/lists"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "- `sw<N>dp` 描述配置中的最小宽度，不随每次自由窗口宽度变化；",
+      "after": "- `sw<N>dp` 匹配当前 Configuration 的 `smallestScreenWidthDp`，不等于不可变的设备类别。Android 17 对浮动任务可按任务边界的较短边 / 密度重算它，嵌入式窗口也有更新路径，因此自由窗口调整时资源可能重选；",
+      "why": "TaskFragment固定源码浮动任务/嵌入窗口会更新smallestScreenWidthDp。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TaskFragment.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/content/res/Configuration.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "`$target_upid` 是 Perfetto 中的目标进程编号（pid）",
+      "after": "`$target_upid` 是 Perfetto `process.upid` 的唯一进程实例标识，不能直接填操作系统 pid；可先查询 `process` 表核对 pid、名称与生命周期",
+      "why": "UPID与OSPID不同，PID复用会混淆进程实例。",
+      "sources": [
+        "https://perfetto.dev/docs/analysis/sql-tables#process"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "- `setRequestedOrientation()` 和 `getRequestedOrientation()` 对应的固定方向值；",
+      "after": "- `setRequestedOrientation()` 请求的固定方向值；",
+      "why": "getter不施加方向限制，应与发出请求的API区分。",
+      "sources": [
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Activity.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "例外也要记全：游戏类别",
+      "after": "`getRequestedOrientation()` 读取请求值，不代表当前窗口已经按该方向显示；实际布局仍以当前窗口和配置为准。\n\n例外也要记全：游戏类别",
+      "why": "固定方向请求可能被系统忽略，getter结果不能代替实际方向测量。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Activity.java",
+        "https://developer.android.com/about/versions/17/behavior-changes-17"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "`DRAG_FLAG_START_INTENT_SENDER_ON_UNHANDLED_DRAG` 则在没有窗口接收放下动作时启动 `IntentSender`。",
+      "after": "`DRAG_FLAG_START_INTENT_SENDER_ON_UNHANDLED_DRAG` 会在没有窗口处理 drop 时请求系统启动提供的 `IntentSender`，但系统可按屏幕尺寸或窗口模式拒绝。`ClipData.Item` 必须包含指向 Activity 的不可变 `IntentSender`，不能拿 service / broadcast 目标代替。",
+      "why": "View公开源码要求immutable activityIntentSender且系统可决定不启动。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "允许拖放跨越同一应用的窗口；",
+      "after": "允许拖放送到同 UID 且 targetSdk≥24 的可见应用窗口；",
+      "why": "同应用的判定是UID及可见性/target要求，不能理解为任意进程名相同。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "WITH actual_app AS (\n  SELECT\n    upid,\n    surface_frame_token,\n    display_frame_token,\n    layer_name,\n    ts AS actual_start_ns,\n    ts + dur AS actual_end_ns,\n    jank_type,\n    present_type\n  FROM actual_frame_timeline_slice\n  WHERE upid = $target_upid\n    AND surface_frame_token != 0\n    AND layer_name GLOB $layer_glob\n),\nexpected_app AS (\n  SELECT\n    upid,\n    surface_frame_token,\n    ts AS expected_start_ns,\n    ts + dur AS expected_end_ns\n  FROM expected_frame_timeline_slice\n  WHERE upid = $target_upid\n    AND surface_frame_token != 0\n)\nSELECT\n  a.surface_frame_token,\n  a.display_frame_token,\n  a.layer_name,\n  e.expected_start_ns,\n  e.expected_end_ns,\n  a.actual_start_ns,\n  a.actual_end_ns,\n  a.actual_end_ns - e.expected_end_ns AS overrun_ns,\n  a.jank_type,\n  a.present_type\nFROM actual_app AS a\nJOIN expected_app AS e\n  USING (upid, surface_frame_token)\nORDER BY a.actual_start_ns;\n",
+      "after": "WITH actual_app AS (\n  SELECT\n    id AS actual_slice_id,\n    upid,\n    surface_frame_token,\n    display_frame_token,\n    layer_name,\n    ts AS actual_start_ns,\n    ts + dur AS actual_end_ns,\n    jank_type,\n    present_type\n  FROM actual_frame_timeline_slice\n  WHERE upid = $target_upid\n    AND surface_frame_token > 0\n    AND layer_name GLOB $layer_glob\n    AND dur >= 0\n),\nexpected_app AS (\n  SELECT\n    id AS expected_slice_id,\n    upid,\n    surface_frame_token,\n    layer_name,\n    ts AS expected_start_ns,\n    ts + dur AS expected_end_ns\n  FROM expected_frame_timeline_slice\n  WHERE upid = $target_upid\n    AND surface_frame_token > 0\n    AND layer_name GLOB $layer_glob\n    AND dur >= 0\n)\nSELECT\n  a.actual_slice_id,\n  e.expected_slice_id,\n  a.surface_frame_token,\n  a.display_frame_token,\n  a.layer_name,\n  e.expected_start_ns,\n  e.expected_end_ns,\n  a.actual_start_ns,\n  a.actual_end_ns,\n  a.actual_end_ns - e.expected_end_ns AS overrun_ns,\n  a.jank_type,\n  a.present_type\nFROM actual_app AS a\nLEFT JOIN expected_app AS e\n  USING (upid, surface_frame_token, layer_name)\nORDER BY a.actual_start_ns;\n",
+      "why": "原查询只按进程/帧token关联未限定layer，INNER JOIN静默丢失缺失expected，且未过滤dur=-1未闭合片段。补layer身份、LEFT JOIN与slice ID审计。",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://perfetto.dev/docs/analysis/sql-tables#process"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "查询结果里，`overrun_ns > 0` 表示 Actual 结束时间晚于 Expected 截止时间，差值单位是纳秒；数值本身不说明原因。",
+      "after": "查询先筛掉 `dur < 0` 的未闭合记录；这些记录的数量应另计作采集质量。Expected 关联键 `(upid, surface_frame_token, layer_name)` 应先核查唯一性，重复键不能直接聚合。`expected_slice_id` / `overrun_ns` 为 NULL 表示未找到同层完整 Expected，不能补成按时或零超期。`overrun_ns > 0` 才表示该已匹配 Actual 的结束时间晚于 Expected 截止时间，单位是纳秒，数值本身仍不说明原因。",
+      "why": "区分真实超期、未闭合与缺失/重复关联，防止SQL丢失样本和伪造0值。",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://perfetto.dev/docs/analysis/sql-tables#process"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "`surface_frame_token` 与 `display_frame_token` 是关联应用帧和显示帧的标识；",
+      "after": "`surface_frame_token` 与 `display_frame_token` 是关联应用帧和显示帧的标识；显示帧 token 的值可能为 0 或暂不可关联，也不能直接当作某块屏幕的实际呈现时间；",
+      "why": "token不是present时间且未显示/丢弃路径可能没有有效display关联。",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "before": "- [`ViewRootImpl.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)",
+      "after": "- [`ViewRootImpl.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)\n- [`TaskFragment.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TaskFragment.java)：浮动与嵌入窗口重算 smallestScreenWidthDp 的配置路径。\n- [`View.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java) 与 [`Activity.java`（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Activity.java)：拖放 flag 前提、系统选择与 requested orientation 读取边界。\n- [Perfetto process 表](https://perfetto.dev/docs/analysis/sql-tables#process)：upid 与操作系统 pid 的区分。",
+      "why": "新增关键事实保留直接原始来源。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/TaskFragment.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Activity.java",
+        "https://perfetto.dev/docs/analysis/sql-tables#process"
+      ]
     }
   ],
   "validation": {},
   "last_checkpoint": {
-    "completed": 42,
+    "completed": 44,
     "total": 51,
-    "next_article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
-    "updated_at": "2026-10-25T10:51:29.012058+00:00"
+    "next_article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+    "updated_at": "2026-10-25T11:21:03.333239+00:00"
   },
   "replaced_inline_diagrams": []
 }

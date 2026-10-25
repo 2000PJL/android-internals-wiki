@@ -9340,15 +9340,15 @@
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
-      "close_note": "已统一正文和脚本：位置参数、显式设备、deprecated/no-op、glob、前台启动和当前 run 构建行为；保留工具版本记录及性能测量边界。未执行 Android 设备测试。",
+      "close_note": "已统一位置参数、glob、run 构建引用、layout 弃用/no-op、多设备显式绑定、skills update、Studio 前提及前台启动示例。 已检查官方来源、正文和示例；未执行 Android 设备测试。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261025-143520-idle-audit-8c917916",
-      "created_at": "2026-10-25T14:39:46.331837+08:00",
+      "closed_run_id": "20261025-183520-idle-audit-8c917916",
+      "created_at": "2026-10-25T18:41:47.929510+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261025-143520-idle-audit-8c917916",
-      "details": "当前正文再次使用失效的 emulator create --profile、skills add/remove --skill，误称 layout --diff 提供增量及 layout/screen capture 不支持 --device；run 已支持构建引用，Studio 当前要求 Quail 2+，SDK list 按 glob 过滤，emulator start 会等待启动完成。复现问题沿用原 finding id；只按本次重新读取的官方参考修复。",
+      "created_run_id": "20261025-183520-idle-audit-8c917916",
+      "details": "重新读取官方命令参考确认：emulator create 使用位置参数；sdk list 使用 glob；run 可接收构建引用；layout --diff 已 deprecated/no-op；layout 和 screen capture 均支持 --device；skills add/remove 使用位置参数且提供 update；emulator start 等待启动完成；Studio 当前要求 Quail 2+。本次目标仍包含这些旧说明，沿用原 finding id 重新打开并修复。",
       "id": "finding-ch15-6-cli-command-drift",
-      "log_path": "logs/audit/2026-10-25-20261025-143520-idle-audit-8c917916-idle-audit.md",
+      "log_path": "logs/audit/2026-10-25-20261025-183520-idle-audit-8c917916-idle-audit.md",
       "severity": "P1",
       "source_paths": [
         "https://developer.android.com/tools/agents/android-cli/commands/run",
@@ -9356,27 +9356,28 @@
         "https://developer.android.com/tools/agents/android-cli/commands/screen_capture",
         "https://developer.android.com/tools/agents/android-cli/commands/emulator_create",
         "https://developer.android.com/tools/agents/android-cli/commands/emulator_start",
+        "https://developer.android.com/tools/agents/android-cli/commands/sdk_list",
         "https://developer.android.com/tools/agents/android-cli/commands/skills_add",
         "https://developer.android.com/tools/agents/android-cli/commands/skills_remove",
-        "https://developer.android.com/tools/agents/android-cli/commands/sdk_list",
+        "https://developer.android.com/tools/agents/android-cli/commands/skills_update",
         "https://developer.android.com/tools/agents/android-cli/commands/studio"
       ],
       "status": "fixed",
       "summary": "Android CLI 命令参数与当前官方参考不一致",
       "type": "outdated-command-contract",
-      "updated_at": "2026-10-25T14:47:07.559348+08:00"
+      "updated_at": "2026-10-25T18:49:36.283343+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
-      "close_note": "已在首次介绍、工具表、采集选择及示例说明补齐游戏/Vulkan、设备验证、GPU 可用性与构建配置分离的边界；一般应用指向 Android Studio Profiler/Perfetto。",
+      "close_note": "已在首次介绍、工具表、采集选择及脚本说明中限定游戏/Vulkan，补齐 Android 12+ 受支持设备、设备验证、GPU 数据可用性及 debuggable 配置分离。 已检查官方来源、正文和示例；未执行 Android 设备测试。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261025-143520-idle-audit-8c917916",
-      "created_at": "2026-10-25T14:39:46.404125+08:00",
+      "closed_run_id": "20261025-183520-idle-audit-8c917916",
+      "created_at": "2026-10-25T18:41:47.987594+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261025-143520-idle-audit-8c917916",
-      "details": "正文再次把 APA 无条件用于通用应用。当前官方首页与 Quickstart 均警告其面向游戏/Vulkan；系统录制需受支持 Android 12+ 设备并通过验证，GPU 数据随设备变化。Vulkan 数据采集的 debuggable 建议不能移入非 debuggable Benchmark 基线。",
+      "created_run_id": "20261025-183520-idle-audit-8c917916",
+      "details": "官方首页与 Quickstart 均明确警告 APA 当前面向游戏及 Vulkan 图形；System Profiler 需受支持的 Android 12+ 设备并通过验证，GPU 数据因设备而异。Vulkan 数据采集的 debuggable 建议须与非 debuggable 的 Java/Kotlin 性能基线区分。目标正文仍把 APA 无条件用于通用应用，沿用原 finding id。",
       "id": "finding-ch15-6-apa-availability-boundary",
-      "log_path": "logs/audit/2026-10-25-20261025-143520-idle-audit-8c917916-idle-audit.md",
+      "log_path": "logs/audit/2026-10-25-20261025-183520-idle-audit-8c917916-idle-audit.md",
       "severity": "P1",
       "source_paths": [
         "https://developer.android.com/android-performance-analyzer",
@@ -9385,19 +9386,19 @@
       "status": "fixed",
       "summary": "APA 选型说明遗漏游戏/Vulkan 适用范围与设备验证要求",
       "type": "missing-availability-warning",
-      "updated_at": "2026-10-25T14:47:07.610536+08:00"
+      "updated_at": "2026-10-25T18:49:36.339885+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
-      "close_note": "已改为编号框中心 x、y 坐标括注，保留 PNG 元数据与仅输出字符串、不执行输入的边界。",
+      "close_note": "已改为 PNG 编号框元数据与中心 x、y 坐标；保留仅输出字符串的边界，依赖标识括注移回 Maven 坐标。 已检查官方来源、正文和示例；未执行 Android 设备测试。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261025-143520-idle-audit-8c917916",
-      "created_at": "2026-10-25T14:39:46.457634+08:00",
+      "closed_run_id": "20261025-183520-idle-audit-8c917916",
+      "created_at": "2026-10-25T18:41:48.045325+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261025-143520-idle-audit-8c917916",
-      "details": "当前正文再次把屏幕坐标解释为 group/artifact/version。官方 capture 将编号框元数据嵌入 PNG，resolve 输出相应框的中心 x、y 坐标字符串。",
+      "created_run_id": "20261025-183520-idle-audit-8c917916",
+      "details": "screen capture 官方说明将编号框元数据嵌入 PNG，resolve 将编号替换为中心 x、y 坐标字符串。目标错误地将 group/artifact/version 写作坐标解释；保留括注信息并移回 Maven 对象旁。",
       "id": "finding-ch15-6-screen-resolve-coordinate-metadata",
-      "log_path": "logs/audit/2026-10-25-20261025-143520-idle-audit-8c917916-idle-audit.md",
+      "log_path": "logs/audit/2026-10-25-20261025-183520-idle-audit-8c917916-idle-audit.md",
       "severity": "P2",
       "source_paths": [
         "https://developer.android.com/tools/agents/android-cli/commands/screen_capture",
@@ -9406,19 +9407,19 @@
       "status": "fixed",
       "summary": "screen resolve 坐标说明误混入 Maven 依赖标识括注",
       "type": "incorrect-technical-explanation",
-      "updated_at": "2026-10-25T14:47:07.664132+08:00"
+      "updated_at": "2026-10-25T18:49:36.395436+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
-      "close_note": "已在全局输出目录说明补齐测试 APK Manifest 声明与官方来源，保留 scoped storage 独立测试要求。",
+      "close_note": "已补齐测试 APK application 的 requestLegacyExternalStorage 声明和官方 CI 来源，保留 scoped storage 独立测试要求。 已检查官方来源、正文和示例；未执行 Android 设备测试。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261025-143520-idle-audit-8c917916",
-      "created_at": "2026-10-25T14:39:46.510170+08:00",
+      "closed_run_id": "20261025-183520-idle-audit-8c917916",
+      "created_at": "2026-10-25T18:41:48.102202+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261025-143520-idle-audit-8c917916",
-      "details": "当前示例再次省略官方 CI 指南同时要求的测试 APK application android:requestLegacyExternalStorage=\"true\"；no-isolated-storage 与全局输出目录不足以交代完整配置。",
+      "created_run_id": "20261025-183520-idle-audit-8c917916",
+      "details": "重新读取 CI 官方指南确认，在 additionalTestOutputDir=/sdcard/Download 与 no-isolated-storage 之外，还要求测试 APK 的 application 显式配置 android:requestLegacyExternalStorage=\"true\"。目标正文再次省略这项前提，沿用原 finding id。",
       "id": "finding-ch15-6-ftl-global-output-manifest",
-      "log_path": "logs/audit/2026-10-25-20261025-143520-idle-audit-8c917916-idle-audit.md",
+      "log_path": "logs/audit/2026-10-25-20261025-183520-idle-audit-8c917916-idle-audit.md",
       "severity": "P2",
       "source_paths": [
         "https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci"
@@ -9426,27 +9427,28 @@
       "status": "fixed",
       "summary": "FTL 全局产物目录方案遗漏测试 APK 的 legacy storage 声明",
       "type": "missing-configuration-prerequisite",
-      "updated_at": "2026-10-25T14:47:07.716385+08:00"
+      "updated_at": "2026-10-25T18:49:36.450825+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
-      "close_note": "已统一 TTFD 为 API 28 及以下可能不可用；启动和滚动示例、编译模式和 A/B 比较说明限定 API 24+；API 23 使用 DEFAULT/Full，撤销 Full 性能上限的暗示。",
+      "close_note": "已统一 TTFD 为 API 28 及以下可能不可用；Partial 示例以 SdkSuppress 限定 API 24+，API 23 使用 DEFAULT/Full，并说明 Full 可能慢于 Partial。 已检查官方来源、正文和示例；未执行 Android 设备测试。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261025-143520-idle-audit-8c917916",
-      "created_at": "2026-10-25T14:39:46.560461+08:00",
+      "closed_run_id": "20261025-183520-idle-audit-8c917916",
+      "created_at": "2026-10-25T18:41:48.158733+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261025-143520-idle-audit-8c917916",
-      "details": "本次重新下载 Benchmark 1.4.1 sources.jar：Metric.kt 写 prior to API 29，正文仍写 API 29 及以下；CompilationMode.kt 明示 None/Partial API 24+、API 23 仅 Full，且 Full 可能因代码体积与指令缓存成本慢于 Partial。",
+      "created_run_id": "20261025-183520-idle-audit-8c917916",
+      "details": "本次下载 1.4.1 sources.jar，Metric.kt 明示 TTFD prior to API 29 可能不可用，不能包含 API 29。CompilationMode.kt 明示 API 23 仅 Full，None/Partial 适用 API 24+，Full 还可能因代码体积慢于 Partial，不能称为性能上限。",
       "id": "finding-ch15-6-benchmark-api-boundaries",
-      "log_path": "logs/audit/2026-10-25-20261025-143520-idle-audit-8c917916-idle-audit.md",
+      "log_path": "logs/audit/2026-10-25-20261025-183520-idle-audit-8c917916-idle-audit.md",
       "severity": "P2",
       "source_paths": [
-        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.4.1/benchmark-macro-1.4.1-sources.jar"
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.4.1/benchmark-macro-1.4.1-sources.jar",
+        "https://developer.android.com/reference/androidx/benchmark/macro/CompilationMode"
       ],
       "status": "fixed",
       "summary": "Benchmark 1.4.1 的 TTFD 与编译模式边界表述不完整",
       "type": "inaccurate-api-boundary",
-      "updated_at": "2026-10-25T14:47:07.765993+08:00"
+      "updated_at": "2026-10-25T18:49:36.506006+08:00"
     },
     {
       "chapter": "src/part1-fundamentals/ch02-rendering/07-gpu-rendering-graphics-api.md",
@@ -9901,15 +9903,15 @@
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
-      "close_note": "已按固定官方提交改为 android-profiler skill 及其内部 SQL/Trace 分析工作流路径，保留 testing-setup 和 r8-analyzer 的用途。",
+      "close_note": "已按本次获取的固定官方提交改为 android-profiler skill 及其内部 SQL/Trace 分析工作流。 已检查官方来源、正文和示例；未执行 Android 设备测试。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261025-143520-idle-audit-8c917916",
-      "created_at": "2026-10-25T14:42:50.843158+08:00",
+      "closed_run_id": "20261025-183520-idle-audit-8c917916",
+      "created_at": "2026-10-25T18:41:48.214678+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261025-143520-idle-audit-8c917916",
-      "details": "本次读取 android/skills 提交 4ebabf2b0fd6c04b7150023c8b612f80592a6226，原文列出的 profilers/perfetto-sql 和 profilers/perfetto-trace-analysis 已不再是独立 skill；对应内容位于 profilers/android-profiler 的 analysis/workflows 下。",
+      "created_run_id": "20261025-183520-idle-audit-8c917916",
+      "details": "本次通过 GitHub API 读取 android/skills 提交 4ebabf2b0fd6c04b7150023c8b612f80592a6226 的完整树，确认独立 profilers/perfetto-sql 和 profilers/perfetto-trace-analysis 已合并到 profilers/android-profiler/analysis/workflows，目标仍列旧目录。",
       "id": "finding-ch15-6-profiler-skill-layout",
-      "log_path": "logs/audit/2026-10-25-20261025-143520-idle-audit-8c917916-idle-audit.md",
+      "log_path": "logs/audit/2026-10-25-20261025-183520-idle-audit-8c917916-idle-audit.md",
       "severity": "P2",
       "source_paths": [
         "https://github.com/android/skills/tree/4ebabf2b0fd6c04b7150023c8b612f80592a6226/profilers/android-profiler"
@@ -9917,27 +9919,49 @@
       "status": "fixed",
       "summary": "Perfetto 分析能力的官方 skill 目录已合并",
       "type": "outdated-source-path",
-      "updated_at": "2026-10-25T14:47:07.869648+08:00"
+      "updated_at": "2026-10-25T18:49:36.564784+08:00"
     },
     {
       "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
-      "close_note": "已按 Benchmark 1.4.1 Metric.kt 将默认模式改为 Mode.Sum，明确 SumMs 与 Count 输出，首次匹配必须显式指定 Mode.First。",
+      "close_note": "已按 Benchmark 1.4.1 固定源码改为默认 Mode.Sum 汇总时长并报告次数，首次匹配需显式 Mode.First。 已检查官方来源、正文和示例；未执行 Android 设备测试。",
       "closed_by": "aiw-polish-idle-audit",
-      "closed_run_id": "20261025-143520-idle-audit-8c917916",
-      "created_at": "2026-10-25T14:44:50.048345+08:00",
+      "closed_run_id": "20261025-183520-idle-audit-8c917916",
+      "created_at": "2026-10-25T18:41:48.269875+08:00",
       "created_by": "aiw-polish-idle-audit",
-      "created_run_id": "20261025-143520-idle-audit-8c917916",
-      "details": "本次下载 Benchmark 1.4.1 固定源码 Metric.kt，第 514 行默认 mode=Mode.Sum，默认 targetPackageOnly=true；原文表格称默认仅取首次匹配，会误导回归指标解释。Mode.Sum 生成总时长与次数，Mode.First 需显式指定。",
+      "created_run_id": "20261025-183520-idle-audit-8c917916",
+      "details": "本次下载 Benchmark 1.4.1 固定源码 Metric.kt，构造参数 mode=Mode.Sum、targetPackageOnly=true，默认输出 SumMs 与 Count；首次匹配必须显式指定 Mode.First。目标表格仍写默认首次，沿用原 finding id。",
       "id": "finding-ch15-6-trace-section-default",
-      "log_path": "logs/audit/2026-10-25-20261025-143520-idle-audit-8c917916-idle-audit.md",
+      "log_path": "logs/audit/2026-10-25-20261025-183520-idle-audit-8c917916-idle-audit.md",
       "severity": "P2",
       "source_paths": [
-        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.4.1/benchmark-macro-1.4.1-sources.jar"
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.4.1/benchmark-macro-1.4.1-sources.jar",
+        "https://developer.android.com/jetpack/androidx/releases/benchmark#1.3.0"
       ],
       "status": "fixed",
       "summary": "TraceSectionMetric 默认聚合模式误写为首次匹配",
       "type": "incorrect-metric-default",
-      "updated_at": "2026-10-25T14:47:07.925274+08:00"
+      "updated_at": "2026-10-25T18:49:36.622811+08:00"
+    },
+    {
+      "chapter": "src/part3-tools/ch15-other-tools/06-automation-cli-agent-workflow.md",
+      "close_note": "已将 frameDurationCpuMs 定义为 UI 帧开始到对应 RenderThread 帧结束的墙钟耗时，说明等待/抢占可计入且不等同于线程 CPU 执行时间。 已检查官方来源、正文和示例；未执行 Android 设备测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261025-183520-idle-audit-8c917916",
+      "created_at": "2026-10-25T18:41:48.325694+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261025-183520-idle-audit-8c917916",
+      "details": "Benchmark 1.4.1 FrameTimingQuery.kt 第 102 行将 FrameDurationCpuNs 定义为 rtSlice.endTs - uiSlice.ts，属于 UI 帧开始到对应 RenderThread 帧结束的墙钟耗时，包含区间内等待与抢占，不能表述为线程 CPU 执行时间之和或推断不含等待。",
+      "id": "finding-ch15-6-frame-cpu-wall-duration",
+      "log_path": "logs/audit/2026-10-25-20261025-183520-idle-audit-8c917916-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.4.1/benchmark-macro-1.4.1-sources.jar",
+        "https://developer.android.com/reference/androidx/benchmark/macro/FrameTimingMetric"
+      ],
+      "status": "fixed",
+      "summary": "frameDurationCpuMs 被误解为线程实际占用 CPU 的时间",
+      "type": "incorrect-metric-semantics",
+      "updated_at": "2026-10-25T18:49:36.680185+08:00"
     }
   ],
   "schema_version": 1

@@ -1770,7 +1770,7 @@
     {
       "path": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
       "sha256_before": "eadb1b97c4485eb96993e8928c6075664dfd050815fd5b5a44f2b82d00915fa9",
-      "status": "in_progress",
+      "status": "illustrated",
       "diagrams": [
         "a239-01-effect-offscreen",
         "a239-02-blur-boundaries",
@@ -1805,23 +1805,131 @@
       ],
       "article_index": 239,
       "sha256_at_assignment": "eadb1b97c4485eb96993e8928c6075664dfd050815fd5b5a44f2b82d00915fa9",
-      "sha256_current": "bf2b86a73264e006b86de5cbc26b6674e21ee24f02b79c90c006791c6446da5f"
+      "sha256_current": "bf2b86a73264e006b86de5cbc26b6674e21ee24f02b79c90c006791c6446da5f",
+      "sha256_after": "bf2b86a73264e006b86de5cbc26b6674e21ee24f02b79c90c006791c6446da5f",
+      "source_audit": "51 original URLs:48 direct200, two transport failures retried200, one Canvas URL corrupted by Chinese annotation corrected and200. Read fixed Android17 RuntimeShader/RenderEffect/RuntimeColorFilter/Xfermode, Paint and RenderNode plus pinned Compose1.12 Canvas/DrawModifier/GraphicsLayer sources. Added5 audited AOSP/Skia originals proving immutable filter builder copy and uniform copy-on-write, platform Paint refresh and Headroom API.6 exact Kotlin snippets compiled Compiler2.4.10/API37/Compose1.12; actual API36/37 setters compiled. Exact scalar normalization, nonfinite guards and SDR premultiplication arithmetic executed;16 source/content contracts passed. Embedded AGSL manually source-reviewed, no GPU/native execution or device performance claimed. APA/current UI patch and Kotlin docs checked; all audit files preserved under sources/a239.",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a239/additional-platform-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a239/retry-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a239/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a239/supplemental-doc-source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
       "sha256_before": "ee4f1716af87ef7aa8e9a710f2d6df716ef7132ce489bf8e141711519bc046eb",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a240-01-request-to-present",
+        "a240-02-glide-engine-jobs",
+        "a240-03-coil-size-network",
+        "a240-04-decoded-pixel-budget",
+        "a240-05-hardware-cpu-contract",
+        "a240-06-bitmapfactory-sampling",
+        "a240-07-imagedecoder-header",
+        "a240-08-software-mutability",
+        "a240-09-tile-viewport",
+        "a240-10-region-format-versions",
+        "a240-11-cache-work-saved",
+        "a240-12-cache-identity",
+        "a240-13-peak-memory",
+        "a240-14-format-evaluation",
+        "a240-15-source-io",
+        "a240-16-hardware-decode-allocation",
+        "a240-17-allocator-modes",
+        "a240-18-gainmap-gates",
+        "a240-19-gainmap-memory",
+        "a240-20-bounded-decoding",
+        "a240-21-cancellation-generation",
+        "a240-22-inbitmap-ownership",
+        "a240-23-storage-observation",
+        "a240-24-request-trace-boundaries",
+        "a240-25-framemetrics-limits",
+        "a240-26-decode-default-listeners",
+        "a240-27-rendernode-retention",
+        "a240-28-prepare-to-draw",
+        "a240-29-list-scheduling"
+      ],
       "article_index": 240,
-      "sha256_at_assignment": "ee4f1716af87ef7aa8e9a710f2d6df716ef7132ce489bf8e141711519bc046eb"
+      "sha256_at_assignment": "ee4f1716af87ef7aa8e9a710f2d6df716ef7132ce489bf8e141711519bc046eb",
+      "sha256_current": "a55f80550ed00b34c68743f6e04a0120c3829b73031f0748ea25df40b7bc641c",
+      "sha256_after": "a55f80550ed00b34c68743f6e04a0120c3829b73031f0748ea25df40b7bc641c",
+      "source_audit": "42 original Markdown URLs:41 direct HTTP200; Picasso SSL retry HTTP200. Additional fixed AOSP17/Glide5.0.9/Coil3.5.0 sources fetched and inspected. Initial discovery404s preserved separately; corrected HardwareBitmapUploader.cpp, RenderProxy.cpp, SkiaGpuPipeline.cpp and Bitmap JNI all HTTP200. Kotlin inline and HardwareBuffer docs supplemental audit saved. 6 exact Kotlin snippets/API37 listeners compiled, scalar boundaries executed,19 source contracts passed. No Android native/GPU performance claims.",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a240/additional-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a240/bitmap-native-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a240/preparation-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a240/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a240/supplemental-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a240/upload-preparation-source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
       "sha256_before": "13191f54c74f66fe3c3c746788ec133caf6030928487d474419d6c7c41eecbdb",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a241-01-frame-ownership",
+        "a241-02-surface-topology",
+        "a241-03-callback-probe",
+        "a241-04-timeline-scalars",
+        "a241-05-jankstats-api-buckets",
+        "a241-06-duration-not-cpu",
+        "a241-07-volatile-frame-copy",
+        "a241-08-state-time-intersection",
+        "a241-09-three-rate-definitions",
+        "a241-10-metrics-capability",
+        "a241-11-parallel-stage-tracks",
+        "a241-12-gpu-version-boundaries",
+        "a241-13-window-coverage",
+        "a241-14-session-cleanup",
+        "a241-15-compositor-join",
+        "a241-16-public-jank-mask",
+        "a241-17-listener-stop",
+        "a241-18-stuffing-recovery",
+        "a241-19-stack-trigger-evidence",
+        "a241-20-sampler-lifecycle",
+        "a241-21-attribution-branches",
+        "a241-22-report-completeness",
+        "a241-23-alert-constraints",
+        "a241-24-review-evidence-loop"
+      ],
       "article_index": 241,
-      "sha256_at_assignment": "13191f54c74f66fe3c3c746788ec133caf6030928487d474419d6c7c41eecbdb"
+      "sha256_at_assignment": "13191f54c74f66fe3c3c746788ec133caf6030928487d474419d6c7c41eecbdb",
+      "sha256_current": "59b194ac2298421ba0472c201d43e66f141c6d64d9d6b2977f147929329ce176",
+      "sha256_after": "59b194ac2298421ba0472c201d43e66f141c6d64d9d6b2977f147929329ce176",
+      "source_audit": "20 original URLs:19 directHTTP200, kernel scheduler SSL failure retried successfully. Metrics1.0.0 actual AAR/sources re-fetched with exact original hashes, minSdk23 and runtime implementation verified. AOSP17 Java/JNI/ViewRoot, AOSP12/13 GPU boundary definitions, actual AndroidX dependencies and official docs fetched. All6 exact Kotlin snippets compiled realAPI37/Kotlin2.4.10; sampler lifecycle executed host JVM with explicit SystemClock report-stamp adapter;18 contracts passed. No Android frame delivery/native/device performance run.",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a241/additional-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a241/historic-gpu-boundary-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a241/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a241/supplemental-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a241/viewroot-source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
@@ -25930,7 +26038,24 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-01-effect-offscreen.svg",
+          "sha256": "d8057b3a7f60b54f0144cbcf81008f4a1dc0145e0c79a2d35f2ec68584183029",
+          "bytes": 25989
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-01-effect-offscreen.png",
+          "sha256": "f4e9926378084e77276e4ce1364c46ac71a49f7ab47f602031cfbb1bc8911e58",
+          "bytes": 82137,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a239-02-blur-boundaries",
@@ -25946,7 +26071,24 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
         "https://source.android.com/docs/core/display/window-blurs"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-02-blur-boundaries.svg",
+          "sha256": "1008b431df40a33fc1b1e58da4b2a6e86bfd8760ab92eac76bca95c90f2243a6",
+          "bytes": 30235
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-02-blur-boundaries.png",
+          "sha256": "499c858add788f8ff472f33ab08325dfc05cfb6ace8c00818765d4eda48e7681",
+          "bytes": 131278,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a239-03-blur-api-guard",
@@ -25956,13 +26098,30 @@
         "src/assets/diagrams/ch22/a239-03-blur-api-guard.svg",
         "src/assets/diagrams/ch22/a239-03-blur-api-guard.png"
       ],
-      "layout": "linear-progression",
+      "layout": "structural-breakdown",
       "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-03-blur-api-guard",
       "sources": [
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-03-blur-api-guard.svg",
+          "sha256": "0ef1d7516f2257da0e9f71b94e1591329c895a2a894f4c60f244ddd9a9121083",
+          "bytes": 25501
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-03-blur-api-guard.png",
+          "sha256": "89413a2c6e5421073d64f92f66a5f33ca883a39fccc28b99394bc467bc93b1a7",
+          "bytes": 111259,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a239-04-pixel-area",
@@ -25977,7 +26136,24 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-04-pixel-area.svg",
+          "sha256": "dd94d816cfaf6d1f69c495750c3fde3a0b77ebf658570598c8ff2e4b6468a12f",
+          "bytes": 23352
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-04-pixel-area.png",
+          "sha256": "bfb0c4f82dc6509050db2f5cf7aff783d7943c034f525d9d66c4aa3672107407",
+          "bytes": 72020,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a239-05-cost-dimensions",
@@ -25993,7 +26169,24 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-05-cost-dimensions.svg",
+          "sha256": "bc68a9419f674420c340135b012d749b179f95126c9318418742af818a73191a",
+          "bytes": 28100
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-05-cost-dimensions.png",
+          "sha256": "8f36ef07986bfded015eb1fbc89cb71b193dd5d8e5a88a975270a4c55aea9fa1",
+          "bytes": 118155,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a239-06-agsl-input-binding",
@@ -26009,7 +26202,24 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-06-agsl-input-binding.svg",
+          "sha256": "5c0aef18498d73c727b58ae6e681244c57d2729d9ab5748c2d1005c1bd7f239a",
+          "bytes": 22849
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-06-agsl-input-binding.png",
+          "sha256": "d7210841ea24607b782552df2f9a2c9b193f7120e3fe37c892a5a013692fe473",
+          "bytes": 80615,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a239-07-uniform-effect-copy",
@@ -26027,7 +26237,24 @@
         "https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/include/effects/SkRuntimeEffect.h",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-07-uniform-effect-copy.svg",
+          "sha256": "1370cd1050c3652256352935ebba0245978f8638b3ca241c98225929eada488f",
+          "bytes": 21555
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-07-uniform-effect-copy.png",
+          "sha256": "f0a912f492b3bceb18cbc481a284e5e1bbad0c606efabbc7f15b7e24f4221d42",
+          "bytes": 106162,
+          "dimensions": [
+            2100,
+            833
+          ]
+        }
+      ]
     },
     {
       "id": "a239-08-premultiplied-highlight",
@@ -26042,7 +26269,24 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-08-premultiplied-highlight.svg",
+          "sha256": "7fad9d79f696f211b72dac396d159123b83bb5fe5efded1c2474fcbb397646cf",
+          "bytes": 23160
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-08-premultiplied-highlight.png",
+          "sha256": "cd0a218019bf715f703f381d5d17627c9466c11df041138192a9140fdbd23159",
+          "bytes": 79862,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a239-09-compile-first-use",
@@ -26057,7 +26301,24 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-09-compile-first-use.svg",
+          "sha256": "491c64d98ab0792a1dc62c161f4c6e48a805d80db5ea49b15fbceb4325a68e71",
+          "bytes": 32734
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-09-compile-first-use.png",
+          "sha256": "94b0251087be0e491a4470214135cd8211342d93a7cda91ae61dbd0bf7fe9251",
+          "bytes": 128284,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a239-10-runtime-paint-scope",
@@ -26074,7 +26335,24 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeColorFilter.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeXfermode.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-10-runtime-paint-scope.svg",
+          "sha256": "9b313c57875643aa5512d44cb1132742a40a5268d6ea373bb70ab5388e8d0ae8",
+          "bytes": 21964
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-10-runtime-paint-scope.png",
+          "sha256": "f7c27135471121ab71ffbb15bd73db7b107e9be13c680af59d8a9b6681f5a83d",
+          "bytes": 129377,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a239-11-paint-uniform-refresh",
@@ -26091,7 +26369,24 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeColorFilter.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeXfermode.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-11-paint-uniform-refresh.svg",
+          "sha256": "24a3eac1de75ab8668800805cf9fa1fbecd44469ba417698246f72f5bdeda0c5",
+          "bytes": 25118
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-11-paint-uniform-refresh.png",
+          "sha256": "5d02fec961e90b656da12136ba9a473255177c385b0c863d03411621af628e48",
+          "bytes": 83604,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a239-12-diagnostic-frame",
@@ -26107,7 +26402,24 @@
         "https://perfetto.dev/docs/data-sources/frametimeline",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-12-diagnostic-frame.svg",
+          "sha256": "b14fc873630a9addab791980b52f40fb7ff5d9578e4cdb383acacfe91b75c1b4",
+          "bytes": 19944
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-12-diagnostic-frame.png",
+          "sha256": "6a64cf6046ad64d3b1a569a8f4bedb0b03d54dd25583c2822b44683d88117845",
+          "bytes": 74452,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a239-13-tools-headroom",
@@ -26124,7 +26436,24 @@
         "https://developer.android.com/android-performance-analyzer",
         "https://developer.android.com/agi/frame-trace/frame-profiler"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-13-tools-headroom.svg",
+          "sha256": "1165e03e3611f300299ad0f68cda0410a9bf8c0184631b0dd34254e3ad19041a",
+          "bytes": 28144
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-13-tools-headroom.png",
+          "sha256": "91658b92a4e6096970d7bb286101221574f149334df71454675a2ac880fd6c93",
+          "bytes": 122964,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a239-14-canvas-identity",
@@ -26140,7 +26469,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt",
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-14-canvas-identity.svg",
+          "sha256": "84575ff93d6363f8f9d1341010bd761aa70d16cf64b9bd74d0c5034226aedde9",
+          "bytes": 21228
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-14-canvas-identity.png",
+          "sha256": "a8c5f124e3182b3f6644b469ea422ee1dba1b5b68be1578ae36473532da71127",
+          "bytes": 82512,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a239-15-canvas-recording",
@@ -26157,7 +26503,24 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-15-canvas-recording.svg",
+          "sha256": "c3b7cb660e459e658f11236301f35108ac9af72819589c62cdf3da157580e279",
+          "bytes": 20784
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-15-canvas-recording.png",
+          "sha256": "fabe8d74f6f1a678a218f8252ac2f29bf451159c7c26e40362e9248d544b42d5",
+          "bytes": 73610,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a239-16-draw-targets",
@@ -26174,7 +26537,24 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java",
         "https://developer.android.com/topic/performance/hardware-accel"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-16-draw-targets.svg",
+          "sha256": "2c61c73a262440737360b0a9a09f5042e51f5449a7c55ceb367f1f4e93170111",
+          "bytes": 25315
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-16-draw-targets.png",
+          "sha256": "ed10bdbe530f89d7a143732963dc61adf9638da801db953385dc1ccbda004936",
+          "bytes": 117423,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a239-17-draw-order",
@@ -26189,7 +26569,24 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-17-draw-order.svg",
+          "sha256": "64e294f184374c3fa469c0c58b5b64dad0a71324dafb062b7f0d242d25099f07",
+          "bytes": 24577
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-17-draw-order.png",
+          "sha256": "94d491a16b0a629ccdebbdd12fcbd94c4bd9e169697ccd156f158d275cbe9e7b",
+          "bytes": 116931,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a239-18-cache-draw-invalidation",
@@ -26205,7 +26602,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt",
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/drawscope/CanvasDrawScope.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-18-cache-draw-invalidation.svg",
+          "sha256": "f429e3e9e2f23f47605acaca1948973ebe07077e2f1ddb602d2fcc5c44d7823f",
+          "bytes": 24397
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-18-cache-draw-invalidation.png",
+          "sha256": "c8f6ba488b65430b6ff5aaf4dee9578f2a6cfacddb00c0eb1896e8e41af3da44",
+          "bytes": 102591,
+          "dimensions": [
+            2100,
+            825
+          ]
+        }
+      ]
     },
     {
       "id": "a239-19-restart-phases",
@@ -26221,7 +26635,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt",
         "https://developer.android.com/develop/ui/compose/phases"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-19-restart-phases.svg",
+          "sha256": "2482043b8689e6857628b4d08928668251166b52aaca932e428a3af4711c0197",
+          "bytes": 28030
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-19-restart-phases.png",
+          "sha256": "03e3c4241818f37b951b0d71c3fbfc90253ed7a2618c627ec56da44ddcebd1c4",
+          "bytes": 128627,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a239-20-paint-and-resources",
@@ -26237,7 +26668,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/drawscope/CanvasDrawScope.kt",
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-20-paint-and-resources.svg",
+          "sha256": "86481d1dc9229a1bdf3efe5fc497ad85ea2b7dcd4adfc815e4b52a8e5a05e165",
+          "bytes": 26906
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-20-paint-and-resources.png",
+          "sha256": "c37847b97a90d6299768f0ad9f9b3ae069b4795c5b2385b5348e1b1627fe3d20",
+          "bytes": 129548,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a239-21-layer-recording",
@@ -26253,7 +26701,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-21-layer-recording.svg",
+          "sha256": "6618a20a7e14133fe011ae5c2836ef7595659de5862a6977cf493c588f433f69",
+          "bytes": 21877
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-21-layer-recording.png",
+          "sha256": "9e16fee3ddeca5828d8387d259c2408304e60aef3b4bf40c59a19e3bb71a743a",
+          "bytes": 82790,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a239-22-compositing-decision",
@@ -26269,7 +26734,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt",
         "https://developer.android.com/develop/ui/compose/graphics/draw/modifiers"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-22-compositing-decision.svg",
+          "sha256": "02991b832edd36da1a985d38aa53703b6e3f84e00b31c4c1cb8803052c8c1f5a",
+          "bytes": 36060
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-22-compositing-decision.png",
+          "sha256": "c0b113b606df7e5d565449864d996acfdbd735a25eb7db604d80bb2e1683fdf6",
+          "bytes": 152846,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
     },
     {
       "id": "a239-23-outsets-alpha",
@@ -26285,7 +26767,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt",
         "https://developer.android.com/reference/kotlin/androidx/compose/ui/graphics/LayerOutsets"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-23-outsets-alpha.svg",
+          "sha256": "ceac7053893fbe3de63efa8a685c9655cca1ee79921b16216df6c3afc3166b32",
+          "bytes": 24176
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-23-outsets-alpha.png",
+          "sha256": "2c933fa6d3248b6895afe1e6a143a6a7e46c1c223a5feac6b529e8dfc494e70f",
+          "bytes": 103776,
+          "dimensions": [
+            2100,
+            848
+          ]
+        }
+      ]
     },
     {
       "id": "a239-24-blend-scope",
@@ -26301,7 +26800,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt",
         "https://developer.android.com/develop/ui/compose/graphics/draw/modifiers"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-24-blend-scope.svg",
+          "sha256": "3b6f377e5a3802f2f1b58d84c3e01137fd8e388acaa62f8ef2c5914b512b88e6",
+          "bytes": 24453
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-24-blend-scope.png",
+          "sha256": "1db138dfb898d32fedb436801bd9ac4b6703ad5148b48f118639142e24f98fd6",
+          "bytes": 82866,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a239-25-brush-uniform",
@@ -26318,7 +26834,24 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/Paint.java",
         "https://developer.android.com/develop/ui/compose/graphics/draw/brush"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-25-brush-uniform.svg",
+          "sha256": "1b9563dc35963336ca68c24aa17c172e859b683e4af9a12d1b5a6091fb5d9899",
+          "bytes": 22172
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-25-brush-uniform.png",
+          "sha256": "929e14d0ae68aaf63cda13c124ee33e0a7539434822ed8093c6891e6a9292445",
+          "bytes": 81289,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a239-26-bitmap-contract",
@@ -26334,7 +26867,24 @@
         "https://developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE",
         "https://developer.android.com/topic/performance/hardware-accel"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-26-bitmap-contract.svg",
+          "sha256": "e36f799dd9701d94e12113018df61860d6bf38da92405c6637bcf1c8fc1469fb",
+          "bytes": 28372
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-26-bitmap-contract.png",
+          "sha256": "b6c16198bdea9782fd3e6dbe2d53279a12ae59949873abe680940a15fbddf3a7",
+          "bytes": 122838,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a239-27-charts-particles",
@@ -26351,7 +26901,24 @@
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt",
         "https://developer.android.com/develop/ui/compose/graphics/draw/overview"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-27-charts-particles.svg",
+          "sha256": "032a9fee63d55a482dfa3a087174402df15cddf14494bde10789bf59161c4b91",
+          "bytes": 25792
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-27-charts-particles.png",
+          "sha256": "6c4cfcd48ffdb95a80e3fdb5f60ad6856c1efb36d673d3c2aa2429ae48a3ad04",
+          "bytes": 85858,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a239-28-surface-choice",
@@ -26367,7 +26934,24 @@
         "https://developer.android.com/reference/androidx/graphics/lowlatency/CanvasFrontBufferedRenderer",
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-28-surface-choice.svg",
+          "sha256": "351eb4ecbf8b80aa244dae88ba8422f037dbb9867467eb8c5a3be507d8cc5ffc",
+          "bytes": 32715
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-28-surface-choice.png",
+          "sha256": "80a52fa39d7c7c5eec241554881f409139143cb3163c8b86d6edcbc96be3a502",
+          "bytes": 127861,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a239-29-measurement-boundaries",
@@ -26384,7 +26968,24 @@
         "https://perfetto.dev/docs/data-sources/frametimeline",
         "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-29-measurement-boundaries.svg",
+          "sha256": "1912b10ef2ce78f06db86d4237b138fd0a7a482cc9f3ab2c17c7829863a63752",
+          "bytes": 24993
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-29-measurement-boundaries.png",
+          "sha256": "8e5b2c166840a2366f13542dae295a7f318b66ff042db95c919e92685c22645d",
+          "bytes": 85899,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a239-30-versions-and-profile",
@@ -26404,7 +27005,1797 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp",
         "https://developer.android.com/topic/performance/baselineprofiles/overview"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a239-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a239-30-versions-and-profile.svg",
+          "sha256": "45a4dc877ab32b2ee570ee11a771b2a5998f28433ccbe8756165af7bd63b431c",
+          "bytes": 29094
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a239-30-versions-and-profile.png",
+          "sha256": "e254cf1239227d930b2a74c060b3506d649f9feb0130979bf5f6c1e2ffeddaa9",
+          "bytes": 123265,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-01-request-to-present",
+      "title": "图片请求成功后仍要进入窗口显示",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-01-request-to-present.svg",
+        "src/assets/diagrams/ch22/a240-01-request-to-present.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-01-request-to-present",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java",
+        "https://github.com/bumptech/glide/blob/v5.0.9/library/src/main/java/com/bumptech/glide/load/engine/Engine.java",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-01-request-to-present.svg",
+          "sha256": "08a37eb87ac57a4255f321e650c4966a0a530e05970fa405ffdbe3c0b43164f8",
+          "bytes": 26902
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-01-request-to-present.png",
+          "sha256": "46354dac44ba1c8a590e9bf3790deab820a5e4f8cb509d9284a2abdf3e9725fe",
+          "bytes": 80806,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-02-glide-engine-jobs",
+      "title": "Glide 5.0.9 的内存查询与任务复用条件",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-02-glide-engine-jobs.svg",
+        "src/assets/diagrams/ch22/a240-02-glide-engine-jobs.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-02-glide-engine-jobs",
+      "sources": [
+        "https://github.com/bumptech/glide/blob/v5.0.9/library/src/main/java/com/bumptech/glide/load/engine/Engine.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-02-glide-engine-jobs.svg",
+          "sha256": "9678084b7d46df7876110361e2b8adc97ec13a07dfb971fc9df6e6c51f34336f",
+          "bytes": 24859
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-02-glide-engine-jobs.png",
+          "sha256": "c936a667b8352bd6ef3e3e0ecdb50a36afe8499e138c9bd4ac80331f87752601",
+          "bytes": 116703,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-03-coil-size-network",
+      "title": "Coil 的尺寸解析与网络策略分别配置",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-03-coil-size-network.svg",
+        "src/assets/diagrams/ch22/a240-03-coil-size-network.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-03-coil-size-network",
+      "sources": [
+        "https://github.com/coil-kt/coil/blob/3.5.0/coil-compose-core/src/commonMain/kotlin/coil3/compose/AsyncImagePainter.kt",
+        "https://github.com/coil-kt/coil/blob/3.5.0/coil-compose-core/src/commonMain/kotlin/coil3/compose/AsyncImage.kt",
+        "https://github.com/coil-kt/coil/blob/3.5.0/coil-network-core/src/commonMain/kotlin/coil3/network/NetworkFetcher.kt",
+        "https://github.com/coil-kt/coil/blob/3.5.0/coil-network-core/src/commonMain/kotlin/coil3/network/CacheStrategy.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-03-coil-size-network.svg",
+          "sha256": "ee3e5409a10723337f89d8e10df86d72f959e3c1e16f34042efa76a86c5c4589",
+          "bytes": 31120
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-03-coil-size-network.png",
+          "sha256": "ed8bb3d53f6dc1737664a381b69b8b0c336a8327f67b2e1cb339d587badcef63",
+          "bytes": 156289,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-04-decoded-pixel-budget",
+      "title": "下载字节与解码像素是两种预算",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-04-decoded-pixel-budget.svg",
+        "src/assets/diagrams/ch22/a240-04-decoded-pixel-budget.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-04-decoded-pixel-budget",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-04-decoded-pixel-budget.svg",
+          "sha256": "a142b4adbeda1957247db43f96c9ae1219c391124d75e334d9928f31959d7f38",
+          "bytes": 21297
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-04-decoded-pixel-budget.png",
+          "sha256": "fa41c69c6e038cc8a5d201f23cc8b3feee2f1663cac402482190067254b786f2",
+          "bytes": 75276,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-05-hardware-cpu-contract",
+      "title": "Hardware Bitmap 是图形存储，不是硬件解码器",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-05-hardware-cpu-contract.svg",
+        "src/assets/diagrams/ch22/a240-05-hardware-cpu-contract.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-05-hardware-cpu-contract",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-05-hardware-cpu-contract.svg",
+          "sha256": "1e8c95cc06996d566d6c7ef8345b8ea0cfe111f338274131eed3489636233781",
+          "bytes": 26139
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-05-hardware-cpu-contract.png",
+          "sha256": "a301baf4526c9962b7f0d2e58899ea810dee9a049108b485f482a2dd8cc6634b",
+          "bytes": 129863,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-06-bitmapfactory-sampling",
+      "title": "BitmapFactory 先读边界再确定粗采样",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-06-bitmapfactory-sampling.svg",
+        "src/assets/diagrams/ch22/a240-06-bitmapfactory-sampling.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-06-bitmapfactory-sampling",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/BitmapFactory.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/BitmapFactory.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-06-bitmapfactory-sampling.svg",
+          "sha256": "5f718d0d49b9e2f3bab3914a6d068a0cfa2fa73cd0ecefb9a5cb37d1915b1f9e",
+          "bytes": 26839
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-06-bitmapfactory-sampling.png",
+          "sha256": "76f93ead266ee7ec2cd01045e5fcfb445bacdeaf1c07b0b0b2f23cf9aed7eab9",
+          "bytes": 86245,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-07-imagedecoder-header",
+      "title": "ImageDecoder 的头信息回调仍在同步调用内",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-07-imagedecoder-header.svg",
+        "src/assets/diagrams/ch22/a240-07-imagedecoder-header.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-07-imagedecoder-header",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-07-imagedecoder-header.svg",
+          "sha256": "d3b83421150b3d1c4a370ef479e15bd1225a27b567af7e3bcd6a9fb659eaf06e",
+          "bytes": 27014
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-07-imagedecoder-header.png",
+          "sha256": "9aed0d639cdea040cc9ca96d65e8b0dae3fc16375223a904a4abd36514889694",
+          "bytes": 89493,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-08-software-mutability",
+      "title": "软件存储与可写结果是两个配置维度",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-08-software-mutability.svg",
+        "src/assets/diagrams/ch22/a240-08-software-mutability.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-08-software-mutability",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-08-software-mutability.svg",
+          "sha256": "0da3b1a1b1ee1bcddb79ac07df320f4d5cc881f530d3e46070a5cf450c95c962",
+          "bytes": 30755
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-08-software-mutability.png",
+          "sha256": "65cabb1062cbf64da5dcababedaa037c2415aeada9f2d2a0259997db1c1a3233",
+          "bytes": 161923,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-09-tile-viewport",
+      "title": "超大图以视口、层级和有界分块管理",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-09-tile-viewport.svg",
+        "src/assets/diagrams/ch22/a240-09-tile-viewport.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-09-tile-viewport",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/BitmapRegionDecoder.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-09-tile-viewport.svg",
+          "sha256": "c23eac158f27777e820e7b7f2058b14734611e35001eb8feb86f6719ff918e02",
+          "bytes": 26303
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-09-tile-viewport.png",
+          "sha256": "0667fc5ab1fcf9a8230370327a83965655e902f81ac7f93d44b48ff0ac53cb25",
+          "bytes": 83824,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-10-region-format-versions",
+      "title": "区域解码的格式范围按平台区间核对",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-10-region-format-versions.svg",
+        "src/assets/diagrams/ch22/a240-10-region-format-versions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-10-region-format-versions",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/BitmapRegionDecoder.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-12.0.0_r1/graphics/java/android/graphics/BitmapRegionDecoder.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-10-region-format-versions.svg",
+          "sha256": "40bbb562948c976e3c6c84ad6205a6868842b8e3a5b551ea8ba5be5b44d0a2e2",
+          "bytes": 28826
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-10-region-format-versions.png",
+          "sha256": "47096518905465cdd5363facf4bbddf5689d3f1a7e810c2986f25c1173fb9061",
+          "bytes": 112924,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-11-cache-work-saved",
+      "title": "缓存命中省掉哪一段工作",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-11-cache-work-saved.svg",
+        "src/assets/diagrams/ch22/a240-11-cache-work-saved.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-11-cache-work-saved",
+      "sources": [
+        "https://github.com/bumptech/glide/blob/v5.0.9/library/src/main/java/com/bumptech/glide/load/engine/ResourceCacheGenerator.java",
+        "https://github.com/bumptech/glide/blob/v5.0.9/library/src/main/java/com/bumptech/glide/load/engine/Engine.java",
+        "https://bumptech.github.io/glide/doc/caching.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-11-cache-work-saved.svg",
+          "sha256": "76b25cb72ba5b7212f9de0e05815d9d449c324dbd5328ba2376a79fbd5709703",
+          "bytes": 32302
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-11-cache-work-saved.png",
+          "sha256": "3891e78762ca2bba9171a3b5820ea2a7875b53806e87261867462ae327d2503c",
+          "bytes": 160773,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-12-cache-identity",
+      "title": "缓存键包含内容身份与输出条件",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-12-cache-identity.svg",
+        "src/assets/diagrams/ch22/a240-12-cache-identity.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-12-cache-identity",
+      "sources": [
+        "https://github.com/bumptech/glide/blob/v5.0.9/library/src/main/java/com/bumptech/glide/load/engine/Engine.java",
+        "https://github.com/coil-kt/coil/blob/3.5.0/coil-network-core/src/commonMain/kotlin/coil3/network/NetworkFetcher.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-12-cache-identity.svg",
+          "sha256": "d2bf635e26f1862eb4d4adf2753338ee69938dd083d9c10174e94647de9970ed",
+          "bytes": 28301
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-12-cache-identity.png",
+          "sha256": "9db6857c0478224408757c1ca3affaaf212e12400e956c0c73a67c0808e0dd78",
+          "bytes": 91961,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-13-peak-memory",
+      "title": "图片峰值来自同时存活的多类结果",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-13-peak-memory.svg",
+        "src/assets/diagrams/ch22/a240-13-peak-memory.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-13-peak-memory",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp",
+        "https://github.com/coil-kt/coil/blob/3.5.0/coil-compose-core/src/commonMain/kotlin/coil3/compose/AsyncImagePainter.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-13-peak-memory.svg",
+          "sha256": "a09316ba53e5c75236b8e97d443d81d4fabfff1384e935575e74143293288448",
+          "bytes": 25118
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-13-peak-memory.png",
+          "sha256": "eb06b889e871e9ad089d04d70c75d425aba542f9d82cdb824b5f67a7df59c8d0",
+          "bytes": 83642,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-14-format-evaluation",
+      "title": "格式选型同时核对传输与首次可见帧",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-14-format-evaluation.svg",
+        "src/assets/diagrams/ch22/a240-14-format-evaluation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-14-format-evaluation",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/BitmapFactory.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://developer.android.com/develop/ui/views/graphics/reduce-image-sizes"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-14-format-evaluation.svg",
+          "sha256": "bcdb0314dba66cc8498439d55439e0634850ce03b0ebb76d8b8bcc31aef794b1",
+          "bytes": 29896
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-14-format-evaluation.png",
+          "sha256": "ddf0e6743be9f78e99ed4ab4b9f444f19c1d19ececf0198b9bbcccef07820aa3",
+          "bytes": 110599,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-15-source-io",
+      "title": "Source 描述来源，真正读取发生在解码时",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-15-source-io.svg",
+        "src/assets/diagrams/ch22/a240-15-source-io.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-15-source-io",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-15-source-io.svg",
+          "sha256": "518c02ddf950437add2c0ad58234161376dfce2b57d60cd68ae3b408ea2d19aa",
+          "bytes": 25066
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-15-source-io.png",
+          "sha256": "13a98aa98194a4725856d33afdaf27978d8ce05dc1728cd8e9f405653f11871a",
+          "bytes": 84433,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-16-hardware-decode-allocation",
+      "title": "硬件位图把图形分配与上传前移到结果构建",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-16-hardware-decode-allocation.svg",
+        "src/assets/diagrams/ch22/a240-16-hardware-decode-allocation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-16-hardware-decode-allocation",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/HardwareBitmapUploader.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-16-hardware-decode-allocation.svg",
+          "sha256": "519f9d2dd452ed8847285011da313e499c3e88fd63cc5c710a30f7d82be253ce",
+          "bytes": 23847
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-16-hardware-decode-allocation.png",
+          "sha256": "8fb672b5dadf4349db7978563bb86414adfa4915cdf2e92350c9bcd11aad1fad",
+          "bytes": 107885,
+          "dimensions": [
+            2100,
+            818
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-17-allocator-modes",
+      "title": "四种 allocator 描述最终像素存储",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-17-allocator-modes.svg",
+        "src/assets/diagrams/ch22/a240-17-allocator-modes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-17-allocator-modes",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-17-allocator-modes.svg",
+          "sha256": "7f0e74cc3bf743ee5beca49ec58d7063c5b31989b8b0a5f67cba8bde02d4bcaa",
+          "bytes": 31774
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-17-allocator-modes.png",
+          "sha256": "9ad2451a6de305c0a94c21624574d6ac08861a8e086f517343f1e53f117f8934",
+          "bytes": 138773,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-18-gainmap-gates",
+      "title": "Ultra HDR 增益图有独立的提取与存储条件",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-18-gainmap-gates.svg",
+        "src/assets/diagrams/ch22/a240-18-gainmap-gates.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-18-gainmap-gates",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/BitmapFactory.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Gainmap.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-18-gainmap-gates.svg",
+          "sha256": "99d1afb8b752abc151764ae0b639f955dee85ee21b999d32405eb66a7f78426a",
+          "bytes": 27257
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-18-gainmap-gates.png",
+          "sha256": "f6b8817bdc279269e60fba7e26869aac845fd40d04c98ce14b661f07e80d5858",
+          "bytes": 89079,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-19-gainmap-memory",
+      "title": "基础图、增益图与临时像素分别记账",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-19-gainmap-memory.svg",
+        "src/assets/diagrams/ch22/a240-19-gainmap-memory.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-19-gainmap-memory",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Gainmap.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-19-gainmap-memory.svg",
+          "sha256": "d0441356fd6b48c177d00bb7cd48306c65e3bdd11a081f05e0c2d5203fdb898c",
+          "bytes": 29050
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-19-gainmap-memory.png",
+          "sha256": "065ae038c51e1768d0b7ddbe9fc933f276041211d0431346e749203059944599",
+          "bytes": 120299,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-20-bounded-decoding",
+      "title": "解码并发同时受 CPU 调度与内存约束",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-20-bounded-decoding.svg",
+        "src/assets/diagrams/ch22/a240-20-bounded-decoding.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-20-bounded-decoding",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-20-bounded-decoding.svg",
+          "sha256": "68a4a4d9f181827d678ddbbaa651d0e1afd78c0c6a1402244c0587fae13a9e00",
+          "bytes": 29029
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-20-bounded-decoding.png",
+          "sha256": "cd4091fe2d2d3818f48c5c035bfc70dd60a2e916ae2994ceabe5f8a53748d6e5",
+          "bytes": 87337,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-21-cancellation-generation",
+      "title": "取消任务与拒绝过期结果是两道防线",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-21-cancellation-generation.svg",
+        "src/assets/diagrams/ch22/a240-21-cancellation-generation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-21-cancellation-generation",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://github.com/coil-kt/coil/blob/3.5.0/coil-compose-core/src/commonMain/kotlin/coil3/compose/AsyncImagePainter.kt",
+        "https://github.com/bumptech/glide/blob/v5.0.9/library/src/main/java/com/bumptech/glide/load/engine/Engine.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-21-cancellation-generation.svg",
+          "sha256": "674aa17262ba76d7ebd6e78b79c8bff9d5d2a00aa912826ed90d3b07c953ab2b",
+          "bytes": 29015
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-21-cancellation-generation.png",
+          "sha256": "47d8c774cb2dd60e539f4a03e28b14ac960e66588685ba742eee9dcce8105c93",
+          "bytes": 118948,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-22-inbitmap-ownership",
+      "title": "inBitmap 复用容量需要先证明可变与独占",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-22-inbitmap-ownership.svg",
+        "src/assets/diagrams/ch22/a240-22-inbitmap-ownership.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-22-inbitmap-ownership",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/BitmapFactory.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/BitmapFactory.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-22-inbitmap-ownership.svg",
+          "sha256": "daea2d75ade97fe6e47860e85adcc4251ab6eaee5df23f69b9fec8cfe58c6b65",
+          "bytes": 34148
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-22-inbitmap-ownership.png",
+          "sha256": "8aa500d618e0d2c30805df7a6ff63100b0e247ebf875c535a97527ef50e8019a",
+          "bytes": 149667,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-23-storage-observation",
+      "title": "像素存储、共享句柄与内存统计不能混为一项",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-23-storage-observation.svg",
+        "src/assets/diagrams/ch22/a240-23-storage-observation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-23-storage-observation",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp",
+        "https://developer.android.com/reference/android/hardware/HardwareBuffer"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-23-storage-observation.svg",
+          "sha256": "c9aa3d6cde04f43f179486ce5e0186328dce4a1585a7d85262e30b2539fc40b3",
+          "bytes": 33823
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-23-storage-observation.png",
+          "sha256": "44165cd3074aa4974f4dfe05f6ec4e6f0b4cdfe29a6633762387568360125fdb",
+          "bytes": 143355,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-24-request-trace-boundaries",
+      "title": "同步解码切片与异步请求区间分别标记",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-24-request-trace-boundaries.svg",
+        "src/assets/diagrams/ch22/a240-24-request-trace-boundaries.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-24-request-trace-boundaries",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Trace.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-24-request-trace-boundaries.svg",
+          "sha256": "7fa2666f8442f17614aa3f2326720fe38bd364ef1606551eaf753b8d8fdab268",
+          "bytes": 23327
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-24-request-trace-boundaries.png",
+          "sha256": "a649b80786c6cdab9fcfafad6405bc22fc8b17b9e81d7b9ae5dcafe95f5231da",
+          "bytes": 78832,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-25-framemetrics-limits",
+      "title": "窗口帧指标与后台解码耗时各看一处",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-25-framemetrics-limits.svg",
+        "src/assets/diagrams/ch22/a240-25-framemetrics-limits.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-25-framemetrics-limits",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-25-framemetrics-limits.svg",
+          "sha256": "2305d39ca21cc8cf8d38ca500a80c39a917106bf2f0d157a33cf9fc18503ce72",
+          "bytes": 29350
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-25-framemetrics-limits.png",
+          "sha256": "0a5fba41a9da7123ee9e2c8662d71ff5eedf4f505d98aa2c1fcf721b1367d139",
+          "bytes": 125787,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-26-decode-default-listeners",
+      "title": "API 37 默认监听器与显式监听器的优先级",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-26-decode-default-listeners.svg",
+        "src/assets/diagrams/ch22/a240-26-decode-default-listeners.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-26-decode-default-listeners",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://developer.android.com/sdk/api_diff/37/changes/android.graphics.ImageDecoder"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-26-decode-default-listeners.svg",
+          "sha256": "6021405ff15a062e4a2d4e150be7a74b3fee7c3065868182801b4edf49181870",
+          "bytes": 21051
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-26-decode-default-listeners.png",
+          "sha256": "dab1753542cecd1340468139741a8dd9f9e94be2a67236544e5bb9c473e2a70e",
+          "bytes": 121473,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-27-rendernode-retention",
+      "title": "图片引用与录制命令可能比业务缓存活得更久",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-27-rendernode-retention.svg",
+        "src/assets/diagrams/ch22/a240-27-rendernode-retention.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-27-rendernode-retention",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RecordingCanvas.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-27-rendernode-retention.svg",
+          "sha256": "71af15d20e985189c39a2521fbc7e4b00594cc573f0c83c63498df89302331e9",
+          "bytes": 21511
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-27-rendernode-retention.png",
+          "sha256": "e515758c556bb2c3736b7f2fb84077997ac85f8bee5a3991df1311f18aad95c2",
+          "bytes": 86983,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-28-prepare-to-draw",
+      "title": "显式纹理准备改变成本发生时机",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-28-prepare-to-draw.svg",
+        "src/assets/diagrams/ch22/a240-28-prepare-to-draw.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-28-prepare-to-draw",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/Bitmap.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/HardwareBitmapUploader.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderProxy.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-28-prepare-to-draw.svg",
+          "sha256": "e12dd460a676de9687cd8b86cc525cf5f182e27163e5ee12f230ffcdbc69a9ff",
+          "bytes": 31010
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-28-prepare-to-draw.png",
+          "sha256": "4e66c59789bae2c399d0bd16ee409fec2387d514ba0b0cfcf8bac4e0ab1fa69a",
+          "bytes": 131963,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a240-29-list-scheduling",
+      "title": "列表当前视口、预取与错误恢复一起设计",
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a240-29-list-scheduling.svg",
+        "src/assets/diagrams/ch22/a240-29-list-scheduling.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a240-29-list-scheduling",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://github.com/bumptech/glide/blob/v5.0.9/library/src/main/java/com/bumptech/glide/load/engine/Engine.java",
+        "https://github.com/coil-kt/coil/blob/3.5.0/coil-compose-core/src/commonMain/kotlin/coil3/compose/AsyncImagePainter.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a240-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a240-29-list-scheduling.svg",
+          "sha256": "984784f177314c1e26ec89766b563c84be592c2b891f90a53c7074f44f855cd1",
+          "bytes": 34982
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a240-29-list-scheduling.png",
+          "sha256": "dc688aaaf4c9fb70ce0bd943e8f866f97d09841d7d430696c37a1bf0c1d6f106",
+          "bytes": 135836,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-01-frame-ownership",
+      "title": "帧监控沿应用到显示逐段取证",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-01-frame-ownership.svg",
+        "src/assets/diagrams/ch22/a241-01-frame-ownership.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-01-frame-ownership",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-01-frame-ownership.svg",
+          "sha256": "37402ee3cb2a2f7267c6d531404d2ea5f6cbc5bbd2e103931c96c76d2cd67eef",
+          "bytes": 19642
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-01-frame-ownership.png",
+          "sha256": "b91bc6857e54f703cebba5653ab795fc64363983b01f00ba26be453ac047b9df",
+          "bytes": 71673,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-02-surface-topology",
+      "title": "宿主窗口正常仍可能有独立内容停顿",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-02-surface-topology.svg",
+        "src/assets/diagrams/ch22/a241-02-surface-topology.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-02-surface-topology",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-02-surface-topology.svg",
+          "sha256": "42e207bab2a459ca34cbab6e920a0d846f7b4a9b8e8d48ba42b8240d6d539c99",
+          "bytes": 20066
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-02-surface-topology.png",
+          "sha256": "d200d300637a6c03b38508264d0acbcafd3ee84412ad8025a1d3b1ef788b63fa",
+          "bytes": 89233,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-03-callback-probe",
+      "title": "FrameCallback 探针参与了被观察的调度",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-03-callback-probe.svg",
+        "src/assets/diagrams/ch22/a241-03-callback-probe.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-03-callback-probe",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-03-callback-probe.svg",
+          "sha256": "e9967d138096b928bbf7516ada0816c74df22ed5e2d4ee9103fbab1051896851",
+          "bytes": 26396
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-03-callback-probe.png",
+          "sha256": "664d812cc999d90f272b173540fb54afcece518034bd6c80cbf8a4d5a2dd9e61",
+          "bytes": 80292,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-04-timeline-scalars",
+      "title": "候选帧时间线中的时间戳与时长",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-04-timeline-scalars.svg",
+        "src/assets/diagrams/ch22/a241-04-timeline-scalars.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-04-timeline-scalars",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-04-timeline-scalars.svg",
+          "sha256": "302785e7538040fb0c4c3c094492fa100906460c68da4b2db0e27f41f18665b6",
+          "bytes": 18583
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-04-timeline-scalars.png",
+          "sha256": "d0e847700ad1f00ca0c2495e1e06a4e5c64600dfa36fc9153e11e01c29c1ad55",
+          "bytes": 91617,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-05-jankstats-api-buckets",
+      "title": "JankStats 1.0.0 按平台能力分桶",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-05-jankstats-api-buckets.svg",
+        "src/assets/diagrams/ch22/a241-05-jankstats-api-buckets.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-05-jankstats-api-buckets",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0.aar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-05-jankstats-api-buckets.svg",
+          "sha256": "a6932e521422654e765bdc9b45468a09b0e763b21f18c8a9b9506c575708faa7",
+          "bytes": 21856
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-05-jankstats-api-buckets.png",
+          "sha256": "1cb9c77dd0bace163563311687e2b1e9a1b3eb2d4ed98b21ab94a8691b67e26c",
+          "bytes": 81385,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-06-duration-not-cpu",
+      "title": "时长字段是区间测量，不是 CPU 执行量",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-06-duration-not-cpu.svg",
+        "src/assets/diagrams/ch22/a241-06-duration-not-cpu.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-06-duration-not-cpu",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-06-duration-not-cpu.svg",
+          "sha256": "55891c9dbdc776522935b7958ad9ef9924fcea6e3792325a698c2ec3cf9bd9c4",
+          "bytes": 23253
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-06-duration-not-cpu.png",
+          "sha256": "e37a7ec36bc024a98c3d5be1cd55a6587fb9a7acbbcb0492220078460caabaef",
+          "bytes": 116888,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-07-volatile-frame-copy",
+      "title": "回调里复制帧数据，再交给有界消费者",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-07-volatile-frame-copy.svg",
+        "src/assets/diagrams/ch22/a241-07-volatile-frame-copy.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-07-volatile-frame-copy",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar",
+        "https://developer.android.com/topic/performance/jankstats"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-07-volatile-frame-copy.svg",
+          "sha256": "48939d355a22065d6fd60576bbeb3365ac45cd530e0c5d2dbee476569db572d2",
+          "bytes": 21720
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-07-volatile-frame-copy.png",
+          "sha256": "7abd29a30c393fd40b9a942ff7eaa77700f695d5102a8dde193d76e183e177bf",
+          "bytes": 77187,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-08-state-time-intersection",
+      "title": "状态按帧时间区间关联，而非回调到达时读取",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-08-state-time-intersection.svg",
+        "src/assets/diagrams/ch22/a241-08-state-time-intersection.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-08-state-time-intersection",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-08-state-time-intersection.svg",
+          "sha256": "7d03d5e61bcfabc924b5d045859a0684b6d74bc5ae5e6fbfbd330f6a51077bd3",
+          "bytes": 12707
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-08-state-time-intersection.png",
+          "sha256": "4332f7cb4a63dc726df265af7906fbde61534670f7afb14782b11298834e040e",
+          "bytes": 56002,
+          "dimensions": [
+            2100,
+            795
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-09-three-rate-definitions",
+      "title": "同一帧的三种判定必须分别保存",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-09-three-rate-definitions.svg",
+        "src/assets/diagrams/ch22/a241-09-three-rate-definitions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-09-three-rate-definitions",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://firebase.google.com/docs/perf-mon/screen-traces?platform=android"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-09-three-rate-definitions.svg",
+          "sha256": "c44d69b8322e3d96cdd56cec959894aedfc44739542000abb60e392657761668",
+          "bytes": 27448
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-09-three-rate-definitions.png",
+          "sha256": "e7262b4bf8e9b7a03b9106edb5cccd07dc7652b2506e2d524b7bbcaef56fcab9",
+          "bytes": 119918,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-10-metrics-capability",
+      "title": "FrameMetrics 字段按 API 层级启用",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-10-metrics-capability.svg",
+        "src/assets/diagrams/ch22/a241-10-metrics-capability.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-10-metrics-capability",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-10-metrics-capability.svg",
+          "sha256": "5479d6f70b37700b0cdf6a6c9f0e7d34442acc11bc2990892cc51f2ded95edfc",
+          "bytes": 14034
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-10-metrics-capability.png",
+          "sha256": "40f29a77bfaf4545880cb7df3830d5077423577ad14556afbd7226790c29aa27",
+          "bytes": 62044,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-11-parallel-stage-tracks",
+      "title": "TOTAL、GPU 与 swap 的边界不能简单相加",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-11-parallel-stage-tracks.svg",
+        "src/assets/diagrams/ch22/a241-11-parallel-stage-tracks.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-11-parallel-stage-tracks",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetricsObserver.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-11-parallel-stage-tracks.svg",
+          "sha256": "8b43f7f505bb1c281e490a6bf8688f85c92a2a83890759ed7e69ba698a2b7cfd",
+          "bytes": 13090
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-11-parallel-stage-tracks.png",
+          "sha256": "f0af9f3c46f354f4ac835e0c62c6dc7ea54e18f1c2550d160e7a001eb165c240",
+          "bytes": 67192,
+          "dimensions": [
+            2100,
+            975
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-12-gpu-version-boundaries",
+      "title": "GPU 时长定义变化需要单独分桶",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-12-gpu-version-boundaries.svg",
+        "src/assets/diagrams/ch22/a241-12-gpu-version-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-12-gpu-version-boundaries",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-12.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-13.0.0_r1/core/java/android/view/FrameMetrics.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-12-gpu-version-boundaries.svg",
+          "sha256": "823b01b0fe729cf92f17c80c7dd3926978d61293135fffc68f6eb31463b75c4e",
+          "bytes": 19235
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-12-gpu-version-boundaries.png",
+          "sha256": "f00dc17e8a696c020c6e908aaa179eabb44d70d0706d4462d0a81dcc97765a9d",
+          "bytes": 79971,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-13-window-coverage",
+      "title": "不同渲染拓扑的观测缺口",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-13-window-coverage.svg",
+        "src/assets/diagrams/ch22/a241-13-window-coverage.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-13-window-coverage",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://developer.android.com/topic/performance/jankstats",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-13-window-coverage.svg",
+          "sha256": "c39ba0cba141eabfd393104f6b2fd97d9f444b7b854055b2951f1235623d812a",
+          "bytes": 25771
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-13-window-coverage.png",
+          "sha256": "1e476b83b52a1a23d5a4dc9c58f729ecef1e487099ec94410cd35a91f81a14ad",
+          "bytes": 116783,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-14-session-cleanup",
+      "title": "诊断会话的启动与清理保证",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-14-session-cleanup.svg",
+        "src/assets/diagrams/ch22/a241-14-session-cleanup.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-14-session-cleanup",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetricsObserver.java",
+        "https://developer.android.com/reference/android/os/HandlerThread"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-14-session-cleanup.svg",
+          "sha256": "f47e4024ef5f91e8e35eceeeba05608a621e64d7448ea973008cf9f26bb857e4",
+          "bytes": 21600
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-14-session-cleanup.png",
+          "sha256": "14b2d53d8135393c0b43c11ce915cede5e49f1eeecc5014a1e2210210fba3274",
+          "bytes": 79326,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-15-compositor-join",
+      "title": "按会话与 VSync ID 关联应用帧和合成器记录",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-15-compositor-join.svg",
+        "src/assets/diagrams/ch22/a241-15-compositor-join.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-15-compositor-join",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-15-compositor-join.svg",
+          "sha256": "0281ec807661258125cbea0eacc04e19800021d48f9c9039f250d10f6e671e26",
+          "bytes": 22828
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-15-compositor-join.png",
+          "sha256": "186aff4945d7c5be6dad926c091f132b5b97ff1da35531c7faf455f014e919f6",
+          "bytes": 99081,
+          "dimensions": [
+            2100,
+            885
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-16-public-jank-mask",
+      "title": "公开 JankData 位掩码省略了部分原因",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-16-public-jank-mask.svg",
+        "src/assets/diagrams/ch22/a241-16-public-jank-mask.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-16-public-jank-mask",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_view_SurfaceControl.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-16-public-jank-mask.svg",
+          "sha256": "f67d275ecd8c19a31f031b9ce5eeeeb42c2efcad0e174c2ce464a5b293dc2f6b",
+          "bytes": 17907
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-16-public-jank-mask.png",
+          "sha256": "b3f4b23660854f3bc5459809104e98758cad270996e8617300ff9ffd2ab07281",
+          "bytes": 94415,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-17-listener-stop",
+      "title": "停止监听请求与业务队列收尾分开处理",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-17-listener-stop.svg",
+        "src/assets/diagrams/ch22/a241-17-listener-stop.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-17-listener-stop",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-17-listener-stop.svg",
+          "sha256": "8c8b66d5b778d262941fe3aadff50ba75d96c5590457e234c7c191387cffb37b",
+          "bytes": 24993
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-17-listener-stop.png",
+          "sha256": "a9485a5d2cfad0bd3585dc0a7e5d5fb14f7c0f0cb6d31c9070b460dca1ffe766",
+          "bytes": 109416,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-18-stuffing-recovery",
+      "title": "队列积压后的主动恢复因果链",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-18-stuffing-recovery.svg",
+        "src/assets/diagrams/ch22/a241-18-stuffing-recovery.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-18-stuffing-recovery",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-18-stuffing-recovery.svg",
+          "sha256": "3e227938a115128cc3f3468a24149d98f92e2621b9922d0e7a335b6b6af27e76",
+          "bytes": 24548
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-18-stuffing-recovery.png",
+          "sha256": "c9a1680750601c4748a282b0f77b0a2cd4d63549c0fa5e538e3d8b440ba4c080",
+          "bytes": 83461,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-19-stack-trigger-evidence",
+      "title": "Java 抓栈为异常窗口补充现场",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-19-stack-trigger-evidence.svg",
+        "src/assets/diagrams/ch22/a241-19-stack-trigger-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-19-stack-trigger-evidence",
+      "sources": [
+        "https://developer.android.com/topic/performance/jankstats",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-19-stack-trigger-evidence.svg",
+          "sha256": "127484100c231722b926becb296fd3fa37cec5db9110bb0218b3fb64b94acd87",
+          "bytes": 31410
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-19-stack-trigger-evidence.png",
+          "sha256": "dc200535b789bca92c7599647b849732a42073cff9ab8beda11a912b545e73aa",
+          "bytes": 121563,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-20-sampler-lifecycle",
+      "title": "采样器状态在拒绝、完成与关闭时恢复",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-20-sampler-lifecycle.svg",
+        "src/assets/diagrams/ch22/a241-20-sampler-lifecycle.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-20-sampler-lifecycle",
+      "sources": [
+        "https://raw.githubusercontent.com/openjdk/jdk/jdk-21-ga/src/java.base/share/classes/java/util/concurrent/ThreadPoolExecutor.java",
+        "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ExecutorService.html",
+        "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/System.html#nanoTime()"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-20-sampler-lifecycle.svg",
+          "sha256": "eede5095889e72e3792a7789c72687ccdd2e9f15465089760eefcc73ef22c52b",
+          "bytes": 25680
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-20-sampler-lifecycle.png",
+          "sha256": "7b46788cde83b8d29e67a29cdc076e314adad7641d2674fdfead565de2d7a99d",
+          "bytes": 87000,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-21-attribution-branches",
+      "title": "指标指向候选方向，补证据才能归因",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-21-attribution-branches.svg",
+        "src/assets/diagrams/ch22/a241-21-attribution-branches.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-21-attribution-branches",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-21-attribution-branches.svg",
+          "sha256": "9a18b155d5cd75742c00df15364a0e2f635242c86317590213cba6e28c3214cf",
+          "bytes": 24173
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-21-attribution-branches.png",
+          "sha256": "d56d5687a076c590268c59a5b19bcdb5ed7d6e87a135a9ad4e06246ad616c35c",
+          "bytes": 113156,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-22-report-completeness",
+      "title": "先确认监控报告完整，再比较卡顿率",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-22-report-completeness.svg",
+        "src/assets/diagrams/ch22/a241-22-report-completeness.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-22-report-completeness",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetricsObserver.java",
+        "https://developer.android.com/topic/performance/jankstats"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-22-report-completeness.svg",
+          "sha256": "ddaf1506897587cfb2b83daa4ded0d9ce9da1e2c5331e60bfe05b9d8c25c7ffc",
+          "bytes": 28674
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-22-report-completeness.png",
+          "sha256": "c1d61311a1a5d254c351db9f14ea1302e6aa06b7c45c8483b1c4276aaa3dde60",
+          "bytes": 120854,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-23-alert-constraints",
+      "title": "告警同时约束样本、质量与回归幅度",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-23-alert-constraints.svg",
+        "src/assets/diagrams/ch22/a241-23-alert-constraints.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-23-alert-constraints",
+      "sources": [
+        "https://developer.android.com/topic/performance/jankstats",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-23-alert-constraints.svg",
+          "sha256": "09bd5779171057fcb5abb20d65f0d00ef3b4f8b05f576ae12c9781bfb7276650",
+          "bytes": 28266
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-23-alert-constraints.png",
+          "sha256": "6263dddc8679b8377ca59446b296a9bd29fa27d1fab12262dbbfd8fb68fc8c3b",
+          "bytes": 88490,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a241-24-review-evidence-loop",
+      "title": "线上分布与可重复线下复盘形成验证闭环",
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a241-24-review-evidence-loop.svg",
+        "src/assets/diagrams/ch22/a241-24-review-evidence-loop.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a241-24-review-evidence-loop",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://developer.android.com/topic/performance/jankstats"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a241-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a241-24-review-evidence-loop.svg",
+          "sha256": "2d6c476dc7ce2e94094a34b18e46cecd65d3c1f2a62b4cd686bb2ad88f716d9b",
+          "bytes": 24650
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a241-24-review-evidence-loop.png",
+          "sha256": "874ba6389db7d4825cb23c30ea7f3d48858517d67e77c8a8002e8b9e9e82eb0c",
+          "bytes": 82811,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     }
   ],
   "corrections": [
@@ -32437,14 +34828,437 @@
       "sources": [
         "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
       ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "本轮逐段核对固定Android17与Glide5.0.9/Coil3.5.0基线，不把固定依赖称为当前最新版。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://github.com/bumptech/glide/blob/v5.0.9/library/src/main/java/com/bumptech/glide/load/engine/Engine.java",
+        "https://github.com/coil-kt/coil/blob/3.5.0/coil-compose-core/src/commonMain/kotlin/coil3/compose/AsyncImagePainter.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "Glide 5.0.9 的 `Engine` 先查正在使用的资源和内存缓存；未命中时，同一缓存键对应的 `EngineJob`（进行中的加载任务） 还在进行，就直接复用这个加载任务，否则启动新的解码任务 `DecodeJob`（解码任务）。",
+      "after": "Glide 5.0.9 的 `Engine` 在请求允许内存缓存时，先查正在使用的资源和内存缓存；未命中或跳过内存时，再查进行中的 `EngineJob`。任务去重除了相同缓存键，还区分 `onlyRetrieveFromCache`（只允许从缓存取）；同组已有任务则加入回调，否则启动新的 `DecodeJob`。",
+      "why": "Engine.loadFromMemory受isMemoryCacheable门禁；jobs.get(key,onlyRetrieveFromCache)不是无条件同key共享。",
+      "sources": [
+        "https://github.com/bumptech/glide/blob/v5.0.9/library/src/main/java/com/bumptech/glide/load/engine/Engine.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "它会先读取文件头得到边界尺寸，并选择不会把两个维度都采样到目标值以下的最大 2 的幂。",
+      "after": "它会先读取文件头得到边界尺寸，并在原图足够大的前提下，选择让宽、高各自都不小于请求尺寸的最大 2 的幂。原图任一维已小于请求值时保留采样 1，不在这里补做放大。",
+      "why": "示例在任一维下采样将低于请求时停止，不是两个维度都低于才停止；同时明确不放大。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/BitmapFactory.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "requestedWidth.toFloat() / sourceWidth,\n            requestedHeight.toFloat() / sourceHeight,\n            1f,",
+      "after": "requestedWidth.toDouble() / sourceWidth,\n            requestedHeight.toDouble() / sourceHeight,\n            1.0,",
+      "why": "用Double计算目标比例，避免大尺寸Float舍入把结果推过请求边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "            maxOf(1, (sourceWidth * scale).roundToInt()),\n            maxOf(1, (sourceHeight * scale).roundToInt()),",
+      "after": "            (sourceWidth * scale).toInt().coerceIn(1, minOf(sourceWidth, requestedWidth)),\n            (sourceHeight * scale).toInt().coerceIn(1, minOf(sourceHeight, requestedHeight)),",
+      "why": "正尺寸按截断得到fit-inside整数结果，并限制在源尺寸和目标界限内；最小1像素。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "            1f,\n            targetWidth.toFloat() / sourceWidth,\n            targetHeight.toFloat() / sourceHeight,",
+      "after": "            1.0,\n            targetWidth.toDouble() / sourceWidth,\n            targetHeight.toDouble() / sourceHeight,",
+      "why": "第二处显示解码示例同样使用Double比例避免尺寸精度不一致。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "            (sourceWidth * scale).toInt().coerceAtLeast(1),\n            (sourceHeight * scale).toInt().coerceAtLeast(1),",
+      "after": "            (sourceWidth * scale).toInt().coerceIn(1, minOf(sourceWidth, targetWidth)),\n            (sourceHeight * scale).toInt().coerceIn(1, minOf(sourceHeight, targetHeight)),",
+      "why": "补齐目标上界与不放大的约束，尺寸范围对正整数边界可验证。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "若输出需要 `getPixel()`、`copyPixelsToBuffer()`、软件 `Canvas` 或后续原地修改，应显式选择 `ALLOCATOR_SOFTWARE`。",
+      "after": "若输出需要 `getPixel()`、`copyPixelsToBuffer()` 或作为软件 Canvas 的图片源，应选择 `ALLOCATOR_SOFTWARE`；如果还要在返回后原地修改像素或把结果作为可写 Canvas 目标，必须再设置 `setMutableRequired(true)`。软件分配本身不改变默认不可变契约。",
+      "why": "ImageDecoder默认immutable，选择software只改变存储，不自动允许修改。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "fun decodeSampledFile(\n    path: String,\n    requestedWidth: Int,\n    requestedHeight: Int,\n): Bitmap? {",
+      "after": "@WorkerThread\nfun decodeSampledFileOrNull(\n    path: String,\n    requestedWidth: Int,\n    requestedHeight: Int,\n): Bitmap? {",
+      "why": "避免两段相同签名仅靠返回值重载的不可编译组合，并给可空版本补工作线程标记。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/BitmapFactory.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "    while (\n        bounds.outWidth / (sampleSize * 2) >= requestedWidth &&",
+      "after": "    while (\n        sampleSize <= Int.MAX_VALUE / 2 &&\n        bounds.outWidth / (sampleSize * 2) >= requestedWidth &&",
+      "why": "先界定乘2不会溢出，避免依赖负除数意外终止循环。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/BitmapFactory.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "| 变换结果磁盘缓存 | 已缩放或变换的输出 | 网络、解码和部分变换 |",
+      "after": "| 变换结果磁盘缓存 | 已缩放或变换后重新编码的输出 | 网络、原图解码与部分变换；缓存输出仍需解码 |",
+      "why": "Glide ResourceCacheGenerator取缓存文件后仍走解码链，不能把磁盘结果缓存当成已驻留像素。",
+      "sources": [
+        "https://github.com/bumptech/glide/blob/v5.0.9/library/src/main/java/com/bumptech/glide/load/engine/ResourceCacheGenerator.java",
+        "https://github.com/bumptech/glide/blob/v5.0.9/library/src/main/java/com/bumptech/glide/load/engine/Engine.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "- CDN 输出字节、TTFB（首字节到达时间） 首字节时间与完整下载时间；",
+      "after": "- CDN 输出字节、TTFB（首字节到达时间）与完整下载时间；",
+      "why": "去除重复词语。",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/graphics/reduce-image-sizes"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "- RecyclerView 回收、Fragment `onDestroyView()`、Compose 列表项离屏和页面停止时，请求与结果引用按框架契约释放。",
+      "after": "- RecyclerView 回收、Fragment `onDestroyView()`、Compose 项离开组合和页面停止时，按各自请求管理契约处理暂停、取消与引用释放；像素离屏不等于项已离开组合，也不保证缓存立即释放。",
+      "why": "惰性缓存/保留项可以离屏但继续在组合，区分请求生命周期与像素可见性。",
+      "sources": [
+        "https://github.com/coil-kt/coil/blob/3.5.0/coil-compose-core/src/commonMain/kotlin/coil3/compose/AsyncImagePainter.kt",
+        "https://bumptech.github.io/glide/doc/resourcereuse.html"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "`ImageDecoder.cpp` 在设置 `PostProcessor` 时会跳过自动增益图提取，因为平台推断不出任意 Canvas 处理应怎样等价作用于增益图。",
+      "after": "`ImageDecoder.cpp` 只在主图解码成功、未设置 `PostProcessor` 且未选择优先节省 RAM 的内存策略时自动提取增益图。后处理会跳过提取，因为平台推断不出任意 Canvas 处理应怎样等价作用于增益图；`MEMORY_POLICY_LOW_RAM` 也会跳过自动提取。",
+      "why": "补全extractGainmap实际if的三个门禁，低RAM策略会影响HDR结果。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/ImageDecoder.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "Hardware Bitmap 可以通过 `Bitmap.getHardwareBuffer()` 取得 `HardwareBuffer`。",
+      "after": "Hardware Bitmap 可以通过 `Bitmap.getHardwareBuffer()` 取得 `HardwareBuffer`；该句柄不附带颜色空间，要同时保留 `Bitmap.getColorSpace()`，且在 Bitmap 使用期间不能修改底层缓冲。应用直接管理的 `HardwareBuffer` 包装对象还要按所有权关闭，不能在其他使用者仍依赖同一个包装对象时提前 `close()`。",
+      "why": "补充getHardwareBuffer颜色空间与不可并发修改契约，明确close所有权避免缓冲句柄生命周期遗漏。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java",
+        "https://developer.android.com/reference/android/hardware/HardwareBuffer"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "    block: () -> T,\n): T {\n    Trace.beginSection(\"Image:$stage:$requestId\")",
+      "after": "    crossinline block: () -> T,\n): T {\n    val sectionName = \"Image:$stage:$requestId\"\n    require(sectionName.length <= 127)\n    Trace.beginSection(sectionName)",
+      "why": "同步trace helper的inline普通lambda可容纳挂起调用；crossinline在编译期阻止挂起，且提前校验公开127 UTF-16长度限制。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Trace.java",
+        "https://kotlinlang.org/docs/inline-functions.html"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "`beginSection()` 与 `endSection()` 必须在同一线程成对执行，切片名称还应控制长度并避免写入用户隐私。使用这层标记后，可以在 Perfetto 中把应用排队、系统解码和结果绑定关联到同一个请求。",
+      "after": "`beginSection()` 与 `endSection()` 必须在同一线程成对执行，本例用 `crossinline` 限定同步 block，不能跨挂起点或把它当作跨线程请求总时长。名称上限是 127 个 UTF-16 code unit，`requestId` 只用短的不透明关联号，不写 URL、令牌或用户数据；`stage` 使用固定枚举值。异步或挂起请求的端到端区间可另用 API 29+ 的 `beginAsyncSection` / `endAsyncSection`，按相同名称与 cookie 配对。各同步切片仍可用关联号串到同一个请求。",
+      "why": "明确同步slice与跨线程异步span，防止协程恢复到其他线程破坏trace栈。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/Trace.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "| Glide 4 | 请求生命周期、内存/磁盘缓存、`BitmapPool`、可配置 Hardware Bitmap |",
+      "after": "| Glide 5.0.9（本文基线） | 请求生命周期、内存/磁盘缓存、`BitmapPool`、可配置 Hardware Bitmap |",
+      "why": "合并章节后统一正文Glide版本基线；文档沿用v4站点标题不代表实现回退到Glide4。",
+      "sources": [
+        "https://github.com/bumptech/glide/blob/v5.0.9/library/src/main/java/com/bumptech/glide/load/engine/Engine.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "源码中的调用顺序是：",
+      "after": "在 `imageDecoderDefaultListener` 功能开关启用的源码分支中，调用顺序是：",
+      "why": "callHeaderDecoded读取线程/进程监听器受功能开关保护；显式监听器仍独立执行。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/ImageDecoder.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "HWUI 对非 Hardware Bitmap 可进入 `prepareToDraw()` / `PinAsTexture()` 的显式纹理准备分支；",
+      "after": "`Bitmap.prepareToDraw()` 可让非 Hardware Bitmap 提前进入 HWUI 的显式纹理准备分支（原生 `Bitmap_prepareToDraw` / `PinAsTexture`）；",
+      "why": "区分Java公开入口与native内部函数，避免写成默认绘制一定调用公开prepareToDraw。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/Bitmap.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/jni/Bitmap.cpp"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "before": "Hardware Bitmap 已在创建阶段完成主要图形缓冲上传，所以跳过这段路径。收益是移动工作发生的时间和存储形态，不是让上传消失：格式转换、AHardwareBuffer 分配、GL/Vulkan 提交和驱动延迟仍可能落在解码完成前或首次使用时。",
+      "after": "Hardware Bitmap 已在创建阶段完成主要图形缓冲上传，所以跳过这段路径。收益是移动工作发生的时间和存储形态，不是让上传消失：格式转换、AHardwareBuffer 分配、GL/Vulkan 提交和驱动延迟仍可能落在解码完成前或首次使用时。 `prepareToDraw()` 是提前发起准备：`RenderProxy` 没有现成 RenderThread 时会直接返回，有线程时把工作投递给它；GPU context 可用且 Bitmap 非硬件时才执行 pin/unpin 与提交。方法返回不保证 GPU 已完成，也不等于图片已经上屏。参见 [RenderProxy](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderProxy.cpp) 与 [SkiaGpuPipeline](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp)。",
+      "why": "补充prepareToDraw投递RT、无RT时直接返回和GPU context门禁；API调用返回不保证上传完成。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/RenderProxy.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaGpuPipeline.cpp"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "last_verified: '2026-08-14'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "重取固定发布物、AOSP17与当前官方文档复核。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0.aar",
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar",
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/maven-metadata.xml",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "截至 2026-08-14，AndroidX Metrics 的稳定版是 1.0.0。",
+      "after": "2026-10-25 重取 Maven 元数据，AndroidX Metrics 的 release 仍为 1.0.0；本文固定复核这一版。",
+      "why": "当前版本敏感判断须以新获取元数据复核。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/maven-metadata.xml"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "2026-08-14 复核发布物校验和：",
+      "after": "2026-10-25 重取并复核发布物校验和：",
+      "why": "重新下载实际发布物哈希与原值一致。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0.aar",
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "| `FrameData` | `frameDurationUiNanos` | UI 线程部分，不能代表 RenderThread 或 GPU 总时长 |",
+      "after": "| `FrameData` | `frameDurationUiNanos` | API 24+ 为 unknown delay、input、animation、layout、draw 与 sync 六项之和；含等待和同步，不等于 UI 线程 Running 时间，也不是 GPU 总时长 |",
+      "why": "实际Api24/31Impl六字段求和含UNKNOWN_DELAY和SYNC。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "| `FrameDataApi24` | `frameDurationCpuNanos` | API 24—30 直接取 `TOTAL_DURATION`；API 31+ 才用 `TOTAL_DURATION - GPU_DURATION + SWAP_BUFFERS_DURATION` 计算非 GPU 部分 |",
+      "after": "| `FrameDataApi24` | `frameDurationCpuNanos` | API 24—30 直接取 `TOTAL_DURATION`；API 31+ 用 `TOTAL_DURATION - GPU_DURATION + SWAP_BUFFERS_DURATION`。是版本相关的墙钟区间组合，含等待，不是 UI 与 RenderThread 的 CPU Running 时间之和 |",
+      "why": "字段名称不能当实际CPU线程执行量。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "| `FrameDataApi31` | `frameDurationTotalNanos` | CPU 与 GPU 合计的帧时长 |",
+      "after": "| `FrameDataApi31` | `frameDurationTotalNanos` | 直接取 `TOTAL_DURATION` 的应用帧墙钟跨度；CPU/GPU 可以并行，不能理解为二者时长相加 |",
+      "why": "total是FrameMetrics总区间而非CPU/GPU加和。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "每个 `StateInfo` 的起止时间",
+      "after": "内部 `StateData` 的起止时间",
+      "why": "StateInfo仅key/value；时间戳保存于StateData。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "JankStats 拿一帧的 `[frameStart, frameEnd]` 与这些区间求交集",
+      "after": "JankStats 拿一帧的 `[frameStart, frameEnd]` 与这些区间求交集；API 24+ 的 frameEnd 在这里由 start 加上上述六项 uiDuration 得到，同一 key 在区间内多次更新时只保留最近加入的一项",
+      "why": "源码状态关联按UI求和区间且同key去重，不是所有历史状态。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "Window listener 创建 observer 时用 `wait（获取可用缓冲区的等待）ForPresentTime=false`",
+      "after": "Window listener 创建 observer 时用 `waitForPresentTime=false`（不等待显示时间）",
+      "why": "原误把标识符内部wait翻译成取缓冲区等待，损坏代码名称和含义。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetricsObserver.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/FrameMetricsObserver.h"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "@RequiresApi(24)\nclass WindowFrameMetricsSession(\n    private val aggregator: FrameMetricsAggregator\n) : Closeable {\n    private val thread = HandlerThread(\"window-frame-metrics\").apply { start() }\n    private val handler = Handler(thread.looper)\n    private var window: Window? = null\n\n    private val listener = Window.OnFrameMetricsAvailableListener {\n            _, volatileMetrics, droppedReports ->\n        val snapshot = FrameMetrics(volatileMetrics)\n        aggregator.add(\n            metrics = snapshot,\n            telemetryReportsDropped = droppedReports\n        )\n    }\n\n    fun start(target: Window) {\n        check(window == null)\n        window = target\n        target.addOnFrameMetricsAvailableListener(listener, handler)\n    }\n\n    override fun close() {\n        val target = window ?: return\n        window = null\n        target.removeOnFrameMetricsAvailableListener(listener)\n        handler.post {\n            aggregator.flush()\n            thread.quitSafely()\n        }\n    }\n}\n",
+      "after": "@RequiresApi(24)\n@MainThread\nclass WindowFrameMetricsSession(\n    private val aggregator: FrameMetricsAggregator\n) : Closeable {\n    private val thread = HandlerThread(\"window-frame-metrics\").apply { start() }\n    private val handler = Handler(thread.looper)\n    private var window: Window? = null\n    @Volatile private var closed = false\n\n    private val listener = Window.OnFrameMetricsAvailableListener {\n            _, volatileMetrics, droppedReports ->\n        if (!closed) {\n            val snapshot = FrameMetrics(volatileMetrics)\n            aggregator.add(\n                metrics = snapshot,\n                telemetryReportsDropped = droppedReports\n            )\n        }\n    }\n\n    fun start(target: Window) {\n        check(!closed && window == null)\n        try {\n            target.addOnFrameMetricsAvailableListener(listener, handler)\n            window = target\n        } catch (failure: Throwable) {\n            close()\n            throw failure\n        }\n    }\n\n    override fun close() {\n        if (closed) return\n        closed = true\n        try {\n            window?.removeOnFrameMetricsAvailableListener(listener)\n        } finally {\n            window = null\n            handler.post {\n                try {\n                    aggregator.flush()\n                } finally {\n                    thread.quitSafely()\n                }\n            }\n        }\n    }\n}\n",
+      "why": "原close未start直接return泄漏已启动HandlerThread，关闭后又可start到退出线程；flush异常也会漏quit。补主线程单次会话/幂等close/异常清理/可见性。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://developer.android.com/reference/android/os/HandlerThread",
+        "https://developer.android.com/reference/android/view/Window.OnFrameMetricsAvailableListener"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "这份数据能回答的，是调整后的帧时间序列出现了空档。",
+      "after": "这份数据能回答的，是调整后的帧时间序列出现了空档。探针应在主 Looper 上构造，`start()` / `stop()` 也只由该线程调用；`@MainThread` 是静态检查约束，不会自动切线程。",
+      "why": "getInstance取调用线程Choreographer，不是任意线程自动绑定主线程。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "`telemetryReportsDropped` 要独立上报，并进入 coverage（监控报告完整率）计算。",
+      "after": "会话由主线程创建、启动和关闭；`close()` 也必须覆盖从未成功 `start()` 的路径。它会停止接受新报告，并在工作线程上完成 flush / quit；返回不代表工作线程已经退出。`FrameMetricsAggregator` 是业务接口（`add(metrics, telemetryReportsDropped)` / `flush()`），并非 AndroidX Core 同名类；它只能在该 HandlerThread 上执行，处理必须有界，关闭边界舍弃的报告另记作 session cutoff。\n\n`telemetryReportsDropped` 要独立上报，并进入 coverage（监控报告完整率）计算。",
+      "why": "明确示例接口、线程归属、close异步结束和主动舍弃不能混计系统丢报告。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetricsObserver.java",
+        "https://developer.android.com/reference/android/os/HandlerThread"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "- `JANK_NONE`：按期完成。",
+      "after": "- `JANK_NONE`：公开应用 / 合成器 / 其他原因位均未设置，值为 0。",
+      "why": "JNI将BufferStuffing、Dropped等排除于公开映射，0不能证明按期显示。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_view_SurfaceControl.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "`JankData.getVsyncId()` 用来与 `FrameMetrics.FRAME_TIMELINE_VSYNC_ID` 关联。",
+      "after": "公开位掩码是精简分类，不是 Perfetto FrameTimeline 原因的完整镜像：AOSP 17 JNI 明确把 `BufferStuffing`、`Dropped`、`NonAnimating`、显示关闭或模式切换等排除在公开原因位外。因此 `JANK_NONE` 不能单独证明内容流畅；还要核对目标图层实际时间线。\n\n`JankData.getVsyncId()` 用来与 `FrameMetrics.FRAME_TIMELINE_VSYNC_ID` 关联。",
+      "why": "增加实际JNI简化映射证据，防止0掩码当无卡顿。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_view_SurfaceControl.cpp",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "若无需等待，`removeAfter(0)` 会立即移除监听器，并保证不再收到后续回调。",
+      "after": "若无需等待，`removeAfter(0)` 请求立即移除，平台契约是停止后续回调；但 `ViewRootImpl` 会先把数据提交给指定 Executor，调用前已排队或已执行中的业务任务仍需按会话 ID / 串行队列收尾，不能把它当作 Executor 排空屏障。",
+      "why": "结合公开契约与固定源码Executor封装说明在途任务边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "注册对象由页面或诊断会话强引用，直到停止完成。",
+      "after": "注册对象由页面或诊断会话强引用，直到目标帧分类到达；`removeAfter(lastVsyncId)` 是“不早于目标帧”的停止请求，批次还可能包含更晚的帧。关联表按同一 Window / Surface 会话和有效 VSync ID 建有界、带过期时间的缓存，允许任意先后顺序，超时未匹配保留为缺失，不能补成 `JANK_NONE`。",
+      "why": "异步批量join不能假定回调顺序、精确停在最后ID或把缺失当正常。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "data class StackSamplingPolicy(\n    val windowMillis: Long,\n    val intervalMillis: Long,\n    val maxSamples: Int,\n    val maxDepth: Int\n) {\n    init {\n        require(windowMillis > 0)\n        require(intervalMillis > 0)\n        require(maxSamples > 0)\n        require(maxDepth > 0)\n    }\n}\n\nclass MainThreadStackSampler(\n    private val mainThread: Thread,\n    private val reporter: (StackSampleBatch) -> Unit\n) : Closeable {\n    private val executor = Executors.newSingleThreadExecutor()\n    private val sampling = AtomicBoolean(false)\n\n    fun sampleWindow(reason: String, policy: StackSamplingPolicy) {\n        if (!sampling.compareAndSet(false, true)) return\n\n        executor.execute {\n            try {\n                val deadline = SystemClock.uptimeMillis() + policy.windowMillis\n                val samples = ArrayList<StackSample>(policy.maxSamples)\n\n                while (\n                    samples.size < policy.maxSamples &&\n                    SystemClock.uptimeMillis() < deadline\n                ) {\n                    val frames = mainThread.stackTrace\n                        .asSequence()\n                        .take(policy.maxDepth)\n                        .map(StackTraceElement::toString)\n                        .toList()\n\n                    samples += StackSample(\n                        uptimeMillis = SystemClock.uptimeMillis(),\n                        frames = frames\n                    )\n                    SystemClock.sleep(policy.intervalMillis)\n                }\n\n                reporter(StackSampleBatch(reason, samples))\n            } finally {\n                sampling.set(false)\n            }\n        }\n    }\n\n    override fun close() {\n        executor.shutdown()\n    }\n}\n",
+      "after": "data class StackSamplingPolicy(\n    val windowMillis: Long,\n    val intervalMillis: Long,\n    val maxSamples: Int,\n    val maxDepth: Int\n) {\n    init {\n        require(windowMillis > 0)\n        require(intervalMillis > 0)\n        require(maxSamples > 0)\n        require(maxDepth > 0)\n    }\n}\n\nclass MainThreadStackSampler(\n    private val mainThread: Thread,\n    private val reporter: (StackSampleBatch) -> Unit,\n    private val executor: ExecutorService = Executors.newSingleThreadExecutor()\n) : Closeable {\n    private val lock = Any()\n    private var sampling = false\n    private var closed = false\n\n    fun sampleWindow(reason: String, policy: StackSamplingPolicy) {\n        synchronized(lock) {\n            if (closed || sampling) return\n            sampling = true\n            try {\n                executor.execute {\n                    try {\n                        val startNanos = System.nanoTime()\n                        val samples = ArrayList<StackSample>(policy.maxSamples)\n                        while (samples.size < policy.maxSamples) {\n                            val elapsedMillis = TimeUnit.NANOSECONDS.toMillis(\n                                System.nanoTime() - startNanos\n                            )\n                            if (elapsedMillis >= policy.windowMillis ||\n                                Thread.currentThread().isInterrupted) break\n\n                            val frames = mainThread.stackTrace\n                                .asSequence()\n                                .take(policy.maxDepth)\n                                .map(StackTraceElement::toString)\n                                .toList()\n                            samples += StackSample(\n                                uptimeMillis = SystemClock.uptimeMillis(),\n                                frames = frames\n                            )\n                            if (samples.size >= policy.maxSamples) break\n                            val remainingMillis = policy.windowMillis -\n                                TimeUnit.NANOSECONDS.toMillis(\n                                    System.nanoTime() - startNanos\n                                )\n                            if (remainingMillis <= 0L) break\n                            Thread.sleep(minOf(policy.intervalMillis, remainingMillis))\n                        }\n                        if (!Thread.currentThread().isInterrupted) {\n                            reporter(StackSampleBatch(reason, samples))\n                        }\n                    } catch (_: InterruptedException) {\n                        Thread.currentThread().interrupt()\n                    } finally {\n                        synchronized(lock) { sampling = false }\n                    }\n                }\n            } catch (rejected: RejectedExecutionException) {\n                sampling = false\n                throw rejected\n            }\n        }\n    }\n\n    override fun close() {\n        synchronized(lock) {\n            if (closed) return\n            closed = true\n            executor.shutdownNow()\n            sampling = false\n        }\n    }\n}\n",
+      "why": "原截止时间加法可Long溢出、提交被拒后sampling永久true、shutdown不打断sleep。改elapsed计时、拒绝恢复状态、串行关闭与可中断有界sleep。",
+      "sources": [
+        "https://raw.githubusercontent.com/openjdk/jdk/jdk-21-ga/src/java.base/share/classes/java/util/concurrent/ThreadPoolExecutor.java",
+        "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ExecutorService.html",
+        "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/System.html#nanoTime()",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "所有上限都来自带版本号的远程策略，并在 `finally` 中恢复状态；`close()` 负责结束会话持有的执行器。",
+      "after": "所有上限都来自带版本号的远程策略，并须受客户端硬上限约束后再构造策略，防止超大预分配与抓栈深度。调用方另行落实会话命中、冷却时间和字节 / 每日配额；示例本身只限制单次窗口、样本数与深度。采样使用单调时钟的经过时长，提交被拒和任务结束都会恢复状态，`close()` 幂等地拒绝后续请求并中断执行器；已进入 reporter 的工作仍须自行有界，不能把中断当作强制停止任意代码。`StackSample` / `StackSampleBatch` 是业务数据类型。",
+      "why": "区分示例真正执行的限制与调用方职责，拒绝和中断不提供强杀保障。",
+      "sources": [
+        "https://raw.githubusercontent.com/openjdk/jdk/jdk-21-ga/src/java.base/share/classes/java/util/concurrent/ThreadPoolExecutor.java",
+        "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ExecutorService.html",
+        "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/System.html#nanoTime()"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "| UI 时长低，`frameDurationCpuNanos` 高 | RenderThread、原生代码或其他 CPU 阶段可疑 |",
+      "after": "| UI 时长低，`frameDurationCpuNanos` 高 | RenderThread / 非 GPU 路径的执行或等待可疑；该字段本身不能证明 CPU 忙 |",
+      "why": "墙钟区间可能包含等待，需调度证据确认忙还是阻塞。",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetrics.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "relative_jank_rate >= baseline_jank_rate * policy.min_relative_regression",
+      "after": "jank_rate >= baseline_jank_rate * policy.min_relative_regression",
+      "why": "左边relative_jank_rate与右边绝对rate量纲不一致，统一为当前rate和基线倍数比较。",
+      "sources": [
+        "https://developer.android.com/topic/performance/jankstats"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "这条规则同时约束样本量、监控覆盖、绝对退化、相对退化和尾部分布变化。",
+      "after": "这条规则同时约束样本量、监控覆盖、绝对退化、相对退化和尾部分布变化。`policy.min_relative_regression` 是大于 1 的倍数门槛；基线卡顿率为 0 时，该条件不提供保护，必须保留绝对差及置信区间条件。coverage 要注明分母：`received / (received + dropped)` 只是已报告链路的完整率，队列拒绝和会话关闭舍弃另计，不能由此推算屏幕实际帧数或未上报用户的覆盖率。",
+      "why": "明确相对阈值/零基线和报告完整率分母边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/FrameMetricsObserver.java",
+        "https://developer.android.com/topic/performance/jankstats"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "before": "- [`SurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java) 与 [`AttachedSurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/AttachedSurfaceControl.java)：系统合成器卡顿分类与注册接口。",
+      "after": "- [`SurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/SurfaceControl.java) 与 [`AttachedSurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/AttachedSurfaceControl.java)：系统合成器卡顿分类与注册接口。\n- [`ViewRootImpl.java`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java)：系统合成器监听器的 Executor 投递封装与在途业务任务边界。\n- [`android_view_SurfaceControl.cpp`](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_view_SurfaceControl.cpp)：公开 JANK_* 位掩码的精简映射，以及 BufferStuffing / Dropped 等未映射原因。\n- [metrics-performance:1.0.0 sources JAR](https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar)：实际发布版的六项 UI duration、CPU 公式、状态区间去重与 copy 子类型。",
+      "why": "为新增的重要源码结论提供直接正文原始来源，读者无需仅依赖平台公开字段命名。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_view_SurfaceControl.cpp",
+        "https://dl.google.com/android/maven2/androidx/metrics/metrics-performance/1.0.0/metrics-performance-1.0.0-sources.jar"
+      ]
     }
   ],
   "validation": {},
   "last_checkpoint": {
-    "completed": 39,
+    "completed": 42,
     "total": 51,
-    "next_article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
-    "updated_at": "2026-10-25T10:09:06.711095+00:00"
+    "next_article": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+    "updated_at": "2026-10-25T10:51:29.012058+00:00"
   },
   "replaced_inline_diagrams": []
 }

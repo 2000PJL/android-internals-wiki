@@ -403,34 +403,125 @@
     {
       "path": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
       "sha256_before": "1e3148999fa3713f0d64b5433053b5bc77362d9737faa99864412b6d63cd03b5",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a264-01-index-and-content",
+        "a264-02-volume-and-visibility",
+        "a264-03-keyset-pagination",
+        "a264-04-pending-publish",
+        "a264-05-generation-checkpoint",
+        "a264-06-fuse-and-provider",
+        "a264-07-batch-user-requests",
+        "a264-08-thumbnail-budget",
+        "a264-09-capabilities-at-open",
+        "a264-10-observable-media-phases",
+        "a264-11-picker-uri-lifetime",
+        "a264-12-embedded-selection-state",
+        "a264-13-two-transcoding-entries",
+        "a264-14-three-cache-owners",
+        "a264-15-recoverable-private-copy",
+        "a264-16-bounded-media-work"
+      ],
       "article_index": 264,
-      "sha256_at_assignment": "1e3148999fa3713f0d64b5433053b5bc77362d9737faa99864412b6d63cd03b5"
+      "sha256_at_assignment": "1e3148999fa3713f0d64b5433053b5bc77362d9737faa99864412b6d63cd03b5",
+      "sha256_current": "72c00c489a5e972f730d0ba8cd0766f324711f8d3ccc24fb7cb4985f6963c3a4",
+      "sha256_after": "72c00c489a5e972f730d0ba8cd0766f324711f8d3ccc24fb7cb4985f6963c3a4",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "完整阅读1139行原文；26份官方文档及固定AOSP来源均下载成功；16图及16正文位置实际视觉验收、构建/链接/资产/冻结基线通过。XML解析清单核对完整Provider组件，bash围栏语法检查通过；19围栏仅改错误消息与两处命令组件名，未运行adb设备操作或编译Kotlin。补充API30边界、alpha03迁移、文件与数据库恢复窗口。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "1e3148999fa3713f0d64b5433053b5bc77362d9737faa99864412b6d63cd03b5"
     },
     {
       "path": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
       "sha256_before": "6b23876c48a7df75784bdbc26e14d0366568839266c1d133828eabe38a04d829",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a265-01-connection-reuse-eligibility",
+        "a265-02-response-ownership",
+        "a265-03-queue-and-call-timeouts",
+        "a265-04-metric-parentage",
+        "a265-05-dns-network-boundaries",
+        "a265-06-network-callback-state",
+        "a265-07-dispatcher-scope",
+        "a265-08-background-transfer-choice",
+        "a265-09-range-download-recovery",
+        "a265-10-retry-admission",
+        "a265-11-baseline-environments",
+        "a265-12-missing-and-overlapping-stages",
+        "a265-13-h2-h3-blocking",
+        "a265-14-quic-fallback-experiment",
+        "a265-15-representation-byte-boundaries",
+        "a265-16-release-gate-denominators",
+        "a265-17-tls-baseline-conditions"
+      ],
       "article_index": 265,
-      "sha256_at_assignment": "6b23876c48a7df75784bdbc26e14d0366568839266c1d133828eabe38a04d829"
+      "sha256_at_assignment": "6b23876c48a7df75784bdbc26e14d0366568839266c1d133828eabe38a04d829",
+      "sha256_current": "bcb670d89d6d2709fc45f0de8dac3182eac0b024499b51d3bc06ebe85530680b",
+      "sha256_after": "bcb670d89d6d2709fc45f0de8dac3182eac0b024499b51d3bc06ebe85530680b",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "完整阅读959行；56份来源记录全部成功，包括固定OkHttp5.4.0十份raw源码、Android17固定平台源码和RFC9000/9114。17图与17正文位置实际视觉检查，构建/链接/资产/冻结基线通过；代码围栏保持原文。静态核对异步callTimeout不含排队、Dispatcher资源计数、connect包含TLS、FastFallback先竞速TCP和可重放POST恢复；未编译Kotlin或声称Android网络故障执行。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "6b23876c48a7df75784bdbc26e14d0366568839266c1d133828eabe38a04d829"
     },
     {
       "path": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
       "sha256_before": "a829bb39921240ed923c9b529cc1627e4034c39c8a4480290b1afbbf99ebe8df",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a266-01-protocol-layers",
+        "a266-02-h2-flow-backpressure",
+        "a266-03-quic-path-migration",
+        "a266-04-zero-rtt-and-discovery",
+        "a266-05-engine-lifecycle-metrics",
+        "a266-06-grpc-channel-deadline",
+        "a266-07-grpc-flow-recovery",
+        "a266-08-grpc-retry-commit",
+        "a266-09-transport-and-contract-fallback",
+        "a266-10-ech-visible-boundary",
+        "a266-11-ech-api-integration",
+        "a266-12-domain-policy-modes",
+        "a266-13-ech-mismatch-authentication",
+        "a266-14-https-dns-wait",
+        "a266-15-ech-rollout-evidence"
+      ],
       "article_index": 266,
-      "sha256_at_assignment": "a829bb39921240ed923c9b529cc1627e4034c39c8a4480290b1afbbf99ebe8df"
+      "sha256_at_assignment": "a829bb39921240ed923c9b529cc1627e4034c39c8a4480290b1afbbf99ebe8df",
+      "sha256_current": "7e3d382ff00a0f504c95d6e8a990ccb5dbe853399f2605df173b6d308e905a7d",
+      "sha256_after": "7e3d382ff00a0f504c95d6e8a990ccb5dbe853399f2605df173b6d308e905a7d",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "完整阅读688行；60条来源记录59成功，额外XmlConfigSource旧路径404保留审计并以官方XML文档替代；固定r1 ProxyOptions、OkHttp5.4五份raw、5.5.1固定发布记录与Maven元数据已核对。15图/15正文位置实际视觉检查，构建/链接/资产/冻结基线通过；补充段落与图注分离已复查，251至265逐篇重构比对无同类插入问题。代码围栏未改，XML解析和bash语法通过，未编译Kotlin或声称设备握手执行。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "a829bb39921240ed923c9b529cc1627e4034c39c8a4480290b1afbbf99ebe8df"
     },
     {
       "path": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
       "sha256_before": "328442df5d86e217a13295bd869b497677156826356f133c2728672ee47cfdf0",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a267-01-synchronous-route-boundary",
+        "a267-02-nested-dns-wait",
+        "a267-03-refresh-and-read-paths",
+        "a267-04-ttl-refresh-expiry",
+        "a267-05-network-paired-dns-sockets",
+        "a267-06-network-generation-fence",
+        "a267-07-attributable-address-failures",
+        "a267-08-hostname-and-policy",
+        "a267-09-dns-before-tcp-race",
+        "a267-10-dns-ttl-versus-connection",
+        "a267-11-dns-evidence-and-tests"
+      ],
       "article_index": 267,
-      "sha256_at_assignment": "328442df5d86e217a13295bd869b497677156826356f133c2728672ee47cfdf0"
+      "sha256_at_assignment": "328442df5d86e217a13295bd869b497677156826356f133c2728672ee47cfdf0",
+      "sha256_current": "319c7ba58e83e1d8ef7289601184df729c52be68279cc696e3c1f32e9a58a271",
+      "sha256_after": "319c7ba58e83e1d8ef7289601184df729c52be68279cc696e3c1f32e9a58a271",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "完整阅读452行；22份有效原始来源全部成功，文档示例example.com和TEST-NET-3地址不列为证据。固定5.4九份路由/DNS/调度/连接池源码及4.12 ExchangeFinder、5.5.1发布记录已核对。11图及11正文位置实际视觉检查，构建/链接/资产/冻结基线通过；竞速图候选取消边界对齐获胜时刻。21条校勘，代码围栏保持原文；嵌套队列饥饿为标注的源码结构推断，未编译Kotlin或声称设备复现。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "328442df5d86e217a13295bd869b497677156826356f133c2728672ee47cfdf0"
     },
     {
       "path": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
@@ -3666,6 +3757,1416 @@
         "src/assets/diagrams/ch24/a263-11-late-ack-account-fence.svg": "cf7e6db834814ec94d630bb6cd2beb47ed21e15759eda91806af951308fad5c0",
         "src/assets/diagrams/ch24/a263-11-late-ack-account-fence.png": "07c180e1fb284501650e1c5d7e85063eca4000c9ef3f5491cb860db736c729f2"
       }
+    },
+    {
+      "id": "a264-01-index-and-content",
+      "title": "媒体索引查询与内容读取分段",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-01-index-and-content.svg",
+        "src/assets/diagrams/ch24/a264-01-index-and-content.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-01-index-and-content",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/MediaProvider.java",
+        "https://developer.android.com/training/data-storage/shared/media",
+        "https://source.android.com/docs/core/media/media-provider"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-01-index-and-content.svg": "9e1e7a1f8252dff44388648c71243cfe8d742f585a96e7195bcfa3d425ec08c3",
+        "src/assets/diagrams/ch24/a264-01-index-and-content.png": "6cfed0e0dfa668b819522bc33fb7c047edfc88c3ac47c3e1d57cc16fd083b27d"
+      }
+    },
+    {
+      "id": "a264-02-volume-and-visibility",
+      "title": "可见集合由卷与授权共同决定",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-02-volume-and-visibility.svg",
+        "src/assets/diagrams/ch24/a264-02-volume-and-visibility.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-02-volume-and-visibility",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/apex/framework/java/android/provider/MediaStore.java",
+        "https://developer.android.com/training/data-storage/shared/media"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-02-volume-and-visibility.svg": "a3ef2702196c915eede2763e181dfe83e083a24ae9c74eec09c3af57ee70b1dd",
+        "src/assets/diagrams/ch24/a264-02-volume-and-visibility.png": "bd1903851b8c147d72a199d18736f89f0bc3582681d0464039f10d8b4604ab96"
+      }
+    },
+    {
+      "id": "a264-03-keyset-pagination",
+      "title": "媒体分页用排序值与ID定位",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-03-keyset-pagination.svg",
+        "src/assets/diagrams/ch24/a264-03-keyset-pagination.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-03-keyset-pagination",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/apex/framework/java/android/provider/MediaStore.java",
+        "https://developer.android.com/reference/android/content/ContentResolver"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-03-keyset-pagination.svg": "7cbad834ca087fd3fd6157295fb569f39fa6e541c90fb55ffe5236e3293c0e9a",
+        "src/assets/diagrams/ch24/a264-03-keyset-pagination.png": "65cbbac0b1b25b1fca110696610d9ff3eacee8f63db50ed6d8e9f8c00450f108"
+      }
+    },
+    {
+      "id": "a264-04-pending-publish",
+      "title": "IS_PENDING 的发布与失败补偿",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-04-pending-publish.svg",
+        "src/assets/diagrams/ch24/a264-04-pending-publish.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-04-pending-publish",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/apex/framework/java/android/provider/MediaStore.java",
+        "https://developer.android.com/training/data-storage/shared/media"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-04-pending-publish.svg": "9521751ee4708445fdd493800692576fc5ed3ed97345d2f370ad3e94b69ea36b",
+        "src/assets/diagrams/ch24/a264-04-pending-publish.png": "da6920011b24c72951ac8bc8ccb4c1022107f3e656786c71f45ea8096520b28d"
+      }
+    },
+    {
+      "id": "a264-05-generation-checkpoint",
+      "title": "版本、增量与删除补偿共同恢复同步",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-05-generation-checkpoint.svg",
+        "src/assets/diagrams/ch24/a264-05-generation-checkpoint.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-05-generation-checkpoint",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/apex/framework/java/android/provider/MediaStore.java",
+        "https://developer.android.com/reference/android/provider/MediaStore",
+        "https://developer.android.com/reference/android/database/ContentObserver"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-05-generation-checkpoint.svg": "ff523cb8ac9adf51447f6fef85558925510118c90611be557399e42596c72cf7",
+        "src/assets/diagrams/ch24/a264-05-generation-checkpoint.png": "eac350609b5e93c183a3aa638889946f1ddcc1433d1e5c3b855c3be8154ce435"
+      }
+    },
+    {
+      "id": "a264-06-fuse-and-provider",
+      "title": "直接路径仍受 FUSE 访问规则约束",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-06-fuse-and-provider.svg",
+        "src/assets/diagrams/ch24/a264-06-fuse-and-provider.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-06-fuse-and-provider",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/jni/FuseDaemon.cpp",
+        "https://source.android.com/docs/core/storage/scoped",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/MediaProvider.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-06-fuse-and-provider.svg": "93961839917755efb8c371032b554d321549c2a7abc16069c7514e43004b71cb",
+        "src/assets/diagrams/ch24/a264-06-fuse-and-provider.png": "87aa90335065d8099905e8fe9a7577e456d0460c248fb71b7fd608b8d752cfe0"
+      }
+    },
+    {
+      "id": "a264-07-batch-user-requests",
+      "title": "系统确认请求的写权限与已执行操作",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-07-batch-user-requests.svg",
+        "src/assets/diagrams/ch24/a264-07-batch-user-requests.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-07-batch-user-requests",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/apex/framework/java/android/provider/MediaStore.java",
+        "https://developer.android.com/reference/android/provider/MediaStore"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-07-batch-user-requests.svg": "f330aa75b779df5d6430a82f8a898f64bf51dc92bfe8adefff7c333dc5c36b7c",
+        "src/assets/diagrams/ch24/a264-07-batch-user-requests.png": "a7eb57c7ad57483ab5fb716a596bd443089cc0a2f940c10a61cea01430f5e381"
+      }
+    },
+    {
+      "id": "a264-08-thumbnail-budget",
+      "title": "缩略图按像素尺寸、内容版本与窗口调度",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-08-thumbnail-budget.svg",
+        "src/assets/diagrams/ch24/a264-08-thumbnail-budget.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-08-thumbnail-budget",
+      "sources": [
+        "https://developer.android.com/reference/android/content/ContentResolver",
+        "https://developer.android.com/social-and-messaging/guides/media-thumbnails",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/apex/framework/java/android/provider/MediaStore.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-08-thumbnail-budget.svg": "d8a87376634a7ca1591969f2d828fb0535592520709d66fb5ac3e77510ebc89c",
+        "src/assets/diagrams/ch24/a264-08-thumbnail-budget.png": "a0ea5b391f8189f2b213ce15fd95719e7d23e6e663b4682fe953efac1aa49134"
+      }
+    },
+    {
+      "id": "a264-09-capabilities-at-open",
+      "title": "每条媒体访问路径声明自己的能力",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-09-capabilities-at-open.svg",
+        "src/assets/diagrams/ch24/a264-09-capabilities-at-open.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-09-capabilities-at-open",
+      "sources": [
+        "https://developer.android.com/reference/android/media/ApplicationMediaCapabilities",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/TranscodeHelperImpl.java",
+        "https://developer.android.com/media/platform/transcoding"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-09-capabilities-at-open.svg": "3e60444103676335e091081fd17f64ef48a9741b6107607cbf42402eba81a107",
+        "src/assets/diagrams/ch24/a264-09-capabilities-at-open.png": "449c922bfdf76f92345564604701adcfd11973bd427b8732d33a655feec7690e"
+      }
+    },
+    {
+      "id": "a264-10-observable-media-phases",
+      "title": "应用可观测的阶段与系统内部工作",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-10-observable-media-phases.svg",
+        "src/assets/diagrams/ch24/a264-10-observable-media-phases.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-10-observable-media-phases",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/photopicker/PhotoPickerActivity.java",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/AndroidManifest.xml",
+        "https://developer.android.com/training/data-storage/shared/photo-picker"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-10-observable-media-phases.svg": "0228a2a3e333ed633818a94aebfb6639f352ba1c100930976adbf40764e05bb7",
+        "src/assets/diagrams/ch24/a264-10-observable-media-phases.png": "77ef562d03aa21c1ed9bb804ad4cd951fe14f5b469d6baa6fca14e14732b3c80"
+      }
+    },
+    {
+      "id": "a264-11-picker-uri-lifetime",
+      "title": "选择授权与后台内容准备分离",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-11-picker-uri-lifetime.svg",
+        "src/assets/diagrams/ch24/a264-11-picker-uri-lifetime.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-11-picker-uri-lifetime",
+      "sources": [
+        "https://developer.android.com/training/data-storage/shared/photo-picker",
+        "https://developer.android.com/reference/android/provider/MediaStore"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-11-picker-uri-lifetime.svg": "91efaef89d70e89050fd6ce51e9b6ce89fbb249414f7d005668e00d544837399",
+        "src/assets/diagrams/ch24/a264-11-picker-uri-lifetime.png": "14dc7d72b49c3e8170e434f295aeb87f59082d7288a1ea745823e6b068cae834"
+      }
+    },
+    {
+      "id": "a264-12-embedded-selection-state",
+      "title": "嵌入式 Picker 双向维护选择与图形会话",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-12-embedded-selection-state.svg",
+        "src/assets/diagrams/ch24/a264-12-embedded-selection-state.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-12-embedded-selection-state",
+      "sources": [
+        "https://developer.android.com/training/data-storage/shared/photo-picker/embedded",
+        "https://developer.android.com/jetpack/androidx/releases/photopicker"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-12-embedded-selection-state.svg": "ebe55bdd2fc23124af92c18cc4a67d1e3ff1593edf8960e80807983c484e766a",
+        "src/assets/diagrams/ch24/a264-12-embedded-selection-state.png": "52927cf70cd0b0d495941dbc66dd764c300ee35fff0c7233c0705394f4626b10"
+      }
+    },
+    {
+      "id": "a264-13-two-transcoding-entries",
+      "title": "Picker 与 MediaProvider 的两条转码入口",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-13-two-transcoding-entries.svg",
+        "src/assets/diagrams/ch24/a264-13-two-transcoding-entries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-13-two-transcoding-entries",
+      "sources": [
+        "https://developer.android.com/training/data-storage/shared/photo-picker",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/TranscodeHelperImpl.java",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/PhotoPickerTranscodeHelper.java",
+        "https://source.android.com/docs/core/media/media-transcoding"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-13-two-transcoding-entries.svg": "41a1b0264f2c8d95faa0c84cbece44d0001e56738863595ff1e2afa9da06fdca",
+        "src/assets/diagrams/ch24/a264-13-two-transcoding-entries.png": "101cfccf947508f082d21d969b08f603b07e434289c03af0c02b70f2890cb073"
+      }
+    },
+    {
+      "id": "a264-14-three-cache-owners",
+      "title": "系统两种转码缓存与应用副本分别管理",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-14-three-cache-owners.svg",
+        "src/assets/diagrams/ch24/a264-14-three-cache-owners.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-14-three-cache-owners",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/TranscodeHelperImpl.java",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/PhotoPickerTranscodeHelper.java",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/MediaProvider.java",
+        "https://developer.android.com/training/data-storage/shared/photo-picker"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-14-three-cache-owners.svg": "17a5833238ae59ace9dda63b8ab108923c91b1effb82420faa77e8ee7e0c9a4f",
+        "src/assets/diagrams/ch24/a264-14-three-cache-owners.png": "7764a5b20bdab840ba5864afeda19b73508d6c28d84fa496b63239661c47ead3"
+      }
+    },
+    {
+      "id": "a264-15-recoverable-private-copy",
+      "title": "媒体准备以持久状态恢复文件窗口",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-15-recoverable-private-copy.svg",
+        "src/assets/diagrams/ch24/a264-15-recoverable-private-copy.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-15-recoverable-private-copy",
+      "sources": [
+        "https://developer.android.com/training/data-storage/shared/photo-picker",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/MediaProvider.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-15-recoverable-private-copy.svg": "92d50d3ce9ef567f12beae7108d9c63b32c1d99bb124000f8e3037b07e43b954",
+        "src/assets/diagrams/ch24/a264-15-recoverable-private-copy.png": "f038b079c5403b438c6763213e1665e76d51e1a15e3c0be434736c548265b0b3"
+      }
+    },
+    {
+      "id": "a264-16-bounded-media-work",
+      "title": "多选工作按资源分队列并逐项取消",
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a264-16-bounded-media-work.svg",
+        "src/assets/diagrams/ch24/a264-16-bounded-media-work.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a264-16-bounded-media-work",
+      "sources": [
+        "https://developer.android.com/training/data-storage/shared/photo-picker",
+        "https://developer.android.com/reference/android/content/ContentResolver",
+        "https://developer.android.com/social-and-messaging/guides/media-thumbnails"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a264-16-bounded-media-work.svg": "1a2cde7452cdc2f2ca8165c318844769542b027a12135065ae7258c71c124411",
+        "src/assets/diagrams/ch24/a264-16-bounded-media-work.png": "f79d2f83727e2144d2af8dd89508fb5fbdd7819a2473bc165e1f0a4a7ebee06a"
+      }
+    },
+    {
+      "id": "a265-01-connection-reuse-eligibility",
+      "title": "连接共享由传输配置和实际路径共同决定",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-01-connection-reuse-eligibility.svg",
+        "src/assets/diagrams/ch24/a265-01-connection-reuse-eligibility.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-01-connection-reuse-eligibility",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnection.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-01-connection-reuse-eligibility.svg": "325f95487e46d7ea6b56e0a66e64732fb4a1709484a5008ae36d58ce51b51363",
+        "src/assets/diagrams/ch24/a265-01-connection-reuse-eligibility.png": "4496220b1e327b891b5d9152eb756fdb2e2c07c5d39314fcf0645ff3e26c843e"
+      }
+    },
+    {
+      "id": "a265-02-response-ownership",
+      "title": "响应体消费和关闭控制连接占用",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-02-response-ownership.svg",
+        "src/assets/diagrams/ch24/a265-02-response-ownership.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-02-response-ownership",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/ResponseBody.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-02-response-ownership.svg": "f32a824a6a8483063f76ee437a7e4a8b5ffd50fc5b544953756b3f7c312a81ca",
+        "src/assets/diagrams/ch24/a265-02-response-ownership.png": "f7cf4a3c28e75d75e1d190ea0df2bc8265556aecf6767e328d282a63464bcf86"
+      }
+    },
+    {
+      "id": "a265-03-queue-and-call-timeouts",
+      "title": "异步排队与Call执行预算分开计时",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-03-queue-and-call-timeouts.svg",
+        "src/assets/diagrams/ch24/a265-03-queue-and-call-timeouts.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-03-queue-and-call-timeouts",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-03-queue-and-call-timeouts.svg": "33b62721af273293779424d88f336f1dbec53c1ee49f302c6250eb19b4bdf794",
+        "src/assets/diagrams/ch24/a265-03-queue-and-call-timeouts.png": "4c5acac84a5a8e27c8b53872ee520467e3418bfc9dca7f99d85a081ddc295243"
+      }
+    },
+    {
+      "id": "a265-04-metric-parentage",
+      "title": "操作、调用、连接尝试与交换分别计数",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-04-metric-parentage.svg",
+        "src/assets/diagrams/ch24/a265-04-metric-parentage.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-04-metric-parentage",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-04-metric-parentage.svg": "b45b629473936ef8c6383dee9917eb556d0675eec9a4f6e73228593ebfe5b9ce",
+        "src/assets/diagrams/ch24/a265-04-metric-parentage.png": "3333d6882c0f19fd8caf0d040415146aba5dfb5ee69ea810a0be904a81b3d455"
+      }
+    },
+    {
+      "id": "a265-05-dns-network-boundaries",
+      "title": "HTTPDNS 缓存与连接必须对齐Network",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-05-dns-network-boundaries.svg",
+        "src/assets/diagrams/ch24/a265-05-dns-network-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-05-dns-network-boundaries",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/DnsResolver.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-05-dns-network-boundaries.svg": "0cc4f67abafe30266e055a6ac313568febb313ad7cea85c0e29fd8756ae35077",
+        "src/assets/diagrams/ch24/a265-05-dns-network-boundaries.png": "363fbaeff062fb09b44f23b04cfbcc805ee88a469f7d1f8fffc39e68ea2a93bf"
+      }
+    },
+    {
+      "id": "a265-06-network-callback-state",
+      "title": "默认网络回调按身份更新状态",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-06-network-callback-state.svg",
+        "src/assets/diagrams/ch24/a265-06-network-callback-state.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-06-network-callback-state",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java",
+        "https://developer.android.com/develop/connectivity/network-ops/reading-network-state"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-06-network-callback-state.svg": "e29918c41ccdf1597872127e6aaa24edb9798e0ecb860c53e24ad110ba5cc001",
+        "src/assets/diagrams/ch24/a265-06-network-callback-state.png": "9ad2277902f4d4a5424556412799d8c137c41d803eb7f0bf3c4c8c0a211e2ea9"
+      }
+    },
+    {
+      "id": "a265-07-dispatcher-scope",
+      "title": "Dispatcher 限制异步而非所有在途工作",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-07-dispatcher-scope.svg",
+        "src/assets/diagrams/ch24/a265-07-dispatcher-scope.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-07-dispatcher-scope",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dispatcher.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-07-dispatcher-scope.svg": "5ae23f141f32502df631b7930f04abed1c02cab4b0fe0829b716358c9c59e6be",
+        "src/assets/diagrams/ch24/a265-07-dispatcher-scope.png": "a538637f8f752cd77a6156d7513c6715051199a518fe778db4139d1ddb7be920"
+      }
+    },
+    {
+      "id": "a265-08-background-transfer-choice",
+      "title": "后台传输按用户意图与可延迟性分流",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-08-background-transfer-choice.svg",
+        "src/assets/diagrams/ch24/a265-08-background-transfer-choice.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-08-background-transfer-choice",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/data-transfer-options",
+        "https://developer.android.com/develop/background-work/background-tasks/uidt",
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-08-background-transfer-choice.svg": "6fb6a38c4bd77f3d1ed8d5897e507ce07e0cfd50f079786522a441824d018b5b",
+        "src/assets/diagrams/ch24/a265-08-background-transfer-choice.png": "6c47093a8df3a2b9ccd90e504998a44ceecb0c16cf08d7278feb13e823b41636"
+      }
+    },
+    {
+      "id": "a265-09-range-download-recovery",
+      "title": "断点下载按响应与表示版本决定追加",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-09-range-download-recovery.svg",
+        "src/assets/diagrams/ch24/a265-09-range-download-recovery.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-09-range-download-recovery",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9110.html",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/RequestBody.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-09-range-download-recovery.svg": "24547b0172f62ee382ac883df790c4ce81fbb9e3852add777034cbf28ea23a44",
+        "src/assets/diagrams/ch24/a265-09-range-download-recovery.png": "c0d27b8eb7a075885b3e631ebababf3dcdb3694e902052c565d0f0d3e0f805ee"
+      }
+    },
+    {
+      "id": "a265-10-retry-admission",
+      "title": "重试先核对语义、请求体和剩余预算",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-10-retry-admission.svg",
+        "src/assets/diagrams/ch24/a265-10-retry-admission.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-10-retry-admission",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/RequestBody.kt",
+        "https://www.rfc-editor.org/rfc/rfc9110.html",
+        "https://www.rfc-editor.org/rfc/rfc6585.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-10-retry-admission.svg": "9ceb3644b9251dcc40166b238eadb54dd10311a5ffe5c6664e3db97ade3b9b9c",
+        "src/assets/diagrams/ch24/a265-10-retry-admission.png": "83d5bb5902ec58ca1a2b64b8d2308a9d35c44eb4966a94f90826edb4af0f87e2"
+      }
+    },
+    {
+      "id": "a265-11-baseline-environments",
+      "title": "三类基线保留各自样本与门槛",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-11-baseline-environments.svg",
+        "src/assets/diagrams/ch24/a265-11-baseline-environments.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-11-baseline-environments",
+      "sources": [
+        "https://developer.android.com/topic/performance/measuring-performance",
+        "https://developer.android.com/topic/performance/benchmarking/benchmarking-overview"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-11-baseline-environments.svg": "931ee99cd701c605178ad4eeacbaf6b58642511c785d76ca903bdc3fa225805e",
+        "src/assets/diagrams/ch24/a265-11-baseline-environments.png": "2862a330fb9b77922d632d3ccbb15d654d4c2a76111c8003f8d62498f10b3b92"
+      }
+    },
+    {
+      "id": "a265-12-missing-and-overlapping-stages",
+      "title": "未发生、不可观测与重叠阶段区别表达",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-12-missing-and-overlapping-stages.svg",
+        "src/assets/diagrams/ch24/a265-12-missing-and-overlapping-stages.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-12-missing-and-overlapping-stages",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt",
+        "https://chromium.googlesource.com/chromium/src/+/lkgr/components/cronet/android/api/src/org/chromium/net/RequestFinishedInfo.java",
+        "https://developer.android.com/reference/android/net/http/FinishedRequestTimings"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-12-missing-and-overlapping-stages.svg": "28b3bf1c0e778d65f5326080a10c9493511875e587707221baf080b2e784dfff",
+        "src/assets/diagrams/ch24/a265-12-missing-and-overlapping-stages.png": "ef15679c89a05222cd67700044cceaddcd062e71111046d54a5801dea0a64eb2"
+      }
+    },
+    {
+      "id": "a265-13-h2-h3-blocking",
+      "title": "HTTP2与HTTP3的交付和共享资源边界",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-13-h2-h3-blocking.svg",
+        "src/assets/diagrams/ch24/a265-13-h2-h3-blocking.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-13-h2-h3-blocking",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9000.html",
+        "https://www.rfc-editor.org/rfc/rfc9114.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-13-h2-h3-blocking.svg": "5413b5c4db7d11678fcfb82ffb47d093669e879f57c27690f543b7f0103e9a66",
+        "src/assets/diagrams/ch24/a265-13-h2-h3-blocking.png": "e08dcdee835b7509e310820e2044194428ebed4d4f6ef2930f180dc3c6222c47"
+      }
+    },
+    {
+      "id": "a265-14-quic-fallback-experiment",
+      "title": "协议实验固定实现并计入失败回退",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-14-quic-fallback-experiment.svg",
+        "src/assets/diagrams/ch24/a265-14-quic-fallback-experiment.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-14-quic-fallback-experiment",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/CronetEngine.Builder",
+        "https://developer.android.com/reference/android/net/http/HttpEngine",
+        "https://chromium.googlesource.com/chromium/src/+/lkgr/components/cronet/android/api/src/org/chromium/net/RequestFinishedInfo.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-14-quic-fallback-experiment.svg": "e5ddb4ec44ae27a6c2e11def0c4ff8c22d341c542e1b602a98f84d0ab8ab1908",
+        "src/assets/diagrams/ch24/a265-14-quic-fallback-experiment.png": "f20661918acb6cf0d060ffd7d27d42cc6b5216debd0cae4c7e620edb400ed3a2"
+      }
+    },
+    {
+      "id": "a265-15-representation-byte-boundaries",
+      "title": "数据表示、压缩与计数字节分层比较",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-15-representation-byte-boundaries.svg",
+        "src/assets/diagrams/ch24/a265-15-representation-byte-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-15-representation-byte-boundaries",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9659.html",
+        "https://developer.android.com/reference/android/net/TrafficStats",
+        "https://developer.android.com/develop/connectivity/cronet/reference/org/chromium/net/CronetEngine.Builder"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-15-representation-byte-boundaries.svg": "14a062b70fab4c94cfe0b5391b2cf559b55b4f72e8df9a82be89cee38933bd3d",
+        "src/assets/diagrams/ch24/a265-15-representation-byte-boundaries.png": "be5a01ec544c8759d554b508b2d97c752d45c4090053369c505e1f042579da83"
+      }
+    },
+    {
+      "id": "a265-16-release-gate-denominators",
+      "title": "发布判断先看全样本构成再看成功延迟",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-16-release-gate-denominators.svg",
+        "src/assets/diagrams/ch24/a265-16-release-gate-denominators.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-16-release-gate-denominators",
+      "sources": [
+        "https://developer.android.com/topic/performance/measuring-performance",
+        "https://developer.android.com/topic/performance/benchmarking/benchmarking-overview",
+        "https://developer.android.com/topic/performance/vitals/bg-network-usage"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-16-release-gate-denominators.svg": "93ad1c25360fbbce89b69b2cf74b12c275369dc33150fc5770e56b72752f5100",
+        "src/assets/diagrams/ch24/a265-16-release-gate-denominators.png": "ef7303f2a95e36979a2afaae0a0f094a8eccdc9794bc44f0c9231838705ad6bc"
+      }
+    },
+    {
+      "id": "a265-17-tls-baseline-conditions",
+      "title": "安全配置与协商结果分别进入实验记录",
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a265-17-tls-baseline-conditions.svg",
+        "src/assets/diagrams/ch24/a265-17-tls-baseline-conditions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a265-17-tls-baseline-conditions",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/security-config",
+        "https://developer.android.com/privacy-and-security/security-ssl",
+        "https://developer.android.com/about/versions/17/behavior-changes-17"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a265-17-tls-baseline-conditions.svg": "0ae9371bcd2a367ffa2892cbf9d7d37b5f4fb764aee437917d5ffe0ea4c54819",
+        "src/assets/diagrams/ch24/a265-17-tls-baseline-conditions.png": "3256f37556e66c3dbfca628518ce2eecd9d33697e54ac79c641ae993c1a319d4"
+      }
+    },
+    {
+      "id": "a266-01-protocol-layers",
+      "title": "RPC契约、HTTP语义与传输层分开",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-01-protocol-layers.svg",
+        "src/assets/diagrams/ch24/a266-01-protocol-layers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-01-protocol-layers",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9113.html",
+        "https://www.rfc-editor.org/rfc/rfc9000.html",
+        "https://www.rfc-editor.org/rfc/rfc9114.html",
+        "https://grpc.io/docs/platforms/android/java/basics/"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-01-protocol-layers.svg": "5e6c2e48d09b5231e7b06d1f898d92b19eba4df1e5d2baa46db0d9e3d14803eb",
+        "src/assets/diagrams/ch24/a266-01-protocol-layers.png": "ee4eaf2a7697f8c87b833a6f5d708218bfa3c5e2a6d21bab016a440895f3eb71"
+      }
+    },
+    {
+      "id": "a266-02-h2-flow-backpressure",
+      "title": "HTTP2流复用仍受窗口和消费速度约束",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-02-h2-flow-backpressure.svg",
+        "src/assets/diagrams/ch24/a266-02-h2-flow-backpressure.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-02-h2-flow-backpressure",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9113.html",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http2/Http2Connection.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http2/PushObserver.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http2/Hpack.kt",
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-02-h2-flow-backpressure.svg": "629b42789877332efcade964843a6f77a110288845c1d5fafe7d81c207cf2958",
+        "src/assets/diagrams/ch24/a266-02-h2-flow-backpressure.png": "e9c09c21ab9af00a6f9c6c0676aca5bc71d61478d9ccbce30b35335f9f23702b"
+      }
+    },
+    {
+      "id": "a266-03-quic-path-migration",
+      "title": "QUIC迁移先验证路径且保留业务恢复",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-03-quic-path-migration.svg",
+        "src/assets/diagrams/ch24/a266-03-quic-path-migration.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-03-quic-path-migration",
+      "sources": [
+        "https://android.googlesource.com/platform/external/cronet/+/android-17.0.0_r1/android/java/src/android/net/http/ConnectionMigrationOptions.java",
+        "https://android.googlesource.com/platform/external/cronet/+/android-17.0.0_r1/android/java/src/android/net/http/HttpEngine.java",
+        "https://www.rfc-editor.org/rfc/rfc9000.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-03-quic-path-migration.svg": "8c0783d1300209474aec17144b363e4cf4def13e5c2768973c8542f07d0b3513",
+        "src/assets/diagrams/ch24/a266-03-quic-path-migration.png": "60a0f70a1ad2bf4a81d06a36fd39e02889fa82b585d3d7b2c4ca569dd62ab4b2"
+      }
+    },
+    {
+      "id": "a266-04-zero-rtt-and-discovery",
+      "title": "QUIC发现、恢复与0RTT是不同状态",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-04-zero-rtt-and-discovery.svg",
+        "src/assets/diagrams/ch24/a266-04-zero-rtt-and-discovery.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-04-zero-rtt-and-discovery",
+      "sources": [
+        "https://android.googlesource.com/platform/external/cronet/+/android-17.0.0_r1/android/java/src/android/net/http/HttpEngine.java",
+        "https://www.rfc-editor.org/rfc/rfc9001.html",
+        "https://www.rfc-editor.org/rfc/rfc9114.html",
+        "https://developer.android.com/reference/android/net/http/ProxyOptions"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-04-zero-rtt-and-discovery.svg": "884a580856e1d92caa59950db83966ebf5ec6e0c363e35e70bfe240468d5430f",
+        "src/assets/diagrams/ch24/a266-04-zero-rtt-and-discovery.png": "3614d54dc86c272ad3fef2d2b22119ee59445333266d0cc3f4bfa4092980058e"
+      }
+    },
+    {
+      "id": "a266-05-engine-lifecycle-metrics",
+      "title": "引擎生命周期与终止回调指标分开",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-05-engine-lifecycle-metrics.svg",
+        "src/assets/diagrams/ch24/a266-05-engine-lifecycle-metrics.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-05-engine-lifecycle-metrics",
+      "sources": [
+        "https://android.googlesource.com/platform/external/cronet/+/android-17.0.0_r1/android/java/src/android/net/http/HttpEngine.java",
+        "https://android.googlesource.com/platform/external/cronet/+/android-17.0.0_r1/android/java/src/android/net/http/UrlResponseInfo.java",
+        "https://developer.android.com/reference/android/net/http/FinishedRequestTimings",
+        "https://developer.android.com/reference/android/net/http/UrlRequest"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-05-engine-lifecycle-metrics.svg": "1fca3d8e4bee2327fc1f8857ee752cf5cd8e2c091846675bc3b5941af3713537",
+        "src/assets/diagrams/ch24/a266-05-engine-lifecycle-metrics.png": "21841cf8aac105bcc994aa9ec5e30c317fb9f01c9d5ef75e1d82de704f0078e9"
+      }
+    },
+    {
+      "id": "a266-06-grpc-channel-deadline",
+      "title": "gRPC通道复用与每次调用的生命周期",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-06-grpc-channel-deadline.svg",
+        "src/assets/diagrams/ch24/a266-06-grpc-channel-deadline.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-06-grpc-channel-deadline",
+      "sources": [
+        "https://grpc.io/docs/guides/deadlines/",
+        "https://grpc.io/docs/guides/wait-for-ready/",
+        "https://grpc.io/docs/guides/performance/",
+        "https://grpc.io/docs/platforms/android/java/basics/"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-06-grpc-channel-deadline.svg": "d7acc18e09076d9473491b472551e74046129b09439b145f1e62928cd5cefeb6",
+        "src/assets/diagrams/ch24/a266-06-grpc-channel-deadline.png": "3762943b41963929665064ea3e003638b0c6d6fa4bf3bbe536973372487ff422"
+      }
+    },
+    {
+      "id": "a266-07-grpc-flow-recovery",
+      "title": "流式RPC用有界队列、确认和游标恢复",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-07-grpc-flow-recovery.svg",
+        "src/assets/diagrams/ch24/a266-07-grpc-flow-recovery.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-07-grpc-flow-recovery",
+      "sources": [
+        "https://grpc.io/docs/guides/flow-control/",
+        "https://grpc.io/docs/guides/performance/",
+        "https://grpc.io/docs/guides/keepalive/"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-07-grpc-flow-recovery.svg": "67291d98f2b8b4c4f3fdf47dc16b470de8c13119ab1e93d66ea6492e610ba782",
+        "src/assets/diagrams/ch24/a266-07-grpc-flow-recovery.png": "4fc45768bbac6bbaa4c322d9fda652c6c4d7d9063ce0051dca678cf97affdab5"
+      }
+    },
+    {
+      "id": "a266-08-grpc-retry-commit",
+      "title": "gRPC重试以提交边界与业务语义约束",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-08-grpc-retry-commit.svg",
+        "src/assets/diagrams/ch24/a266-08-grpc-retry-commit.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-08-grpc-retry-commit",
+      "sources": [
+        "https://grpc.io/docs/guides/retry/",
+        "https://grpc.io/docs/guides/deadlines/"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-08-grpc-retry-commit.svg": "1d48674599f6c27091037f291cfcb1bae69d26f6f2f39998238f01ff5fbb9b5d",
+        "src/assets/diagrams/ch24/a266-08-grpc-retry-commit.png": "19636960e0c40c7bba8c6bcf7fe7991b2130111cedc972336edc66f3e0d6f01b"
+      }
+    },
+    {
+      "id": "a266-09-transport-and-contract-fallback",
+      "title": "传输协商回退与双业务契约区别维护",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-09-transport-and-contract-fallback.svg",
+        "src/assets/diagrams/ch24/a266-09-transport-and-contract-fallback.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-09-transport-and-contract-fallback",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9114.html",
+        "https://grpc.io/docs/guides/retry/",
+        "https://developer.android.com/develop/connectivity/cronet/integration"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-09-transport-and-contract-fallback.svg": "caeb6d7f684a0b8b0492df8aff0136c2cce409d1dd3fd3ce0a8dbf520b19c7c5",
+        "src/assets/diagrams/ch24/a266-09-transport-and-contract-fallback.png": "d1245f9124fda65f969d853d9f8e42ab11b5af49648babb773d53136411613a5"
+      }
+    },
+    {
+      "id": "a266-10-ech-visible-boundary",
+      "title": "ECH内外层与仍可观测的信息",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-10-ech-visible-boundary.svg",
+        "src/assets/diagrams/ch24/a266-10-ech-visible-boundary.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-10-ech-visible-boundary",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9849",
+        "https://www.rfc-editor.org/rfc/rfc9460"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-10-ech-visible-boundary.svg": "af5f209263fe43ae8dd28b87a5e60975d2f67ba494dc363a90394ec188334bca",
+        "src/assets/diagrams/ch24/a266-10-ech-visible-boundary.png": "8658d0cd51c71f7f8e7594486dea87ebe7a133c0cac610c718b639489a69f94a"
+      }
+    },
+    {
+      "id": "a266-11-ech-api-integration",
+      "title": "平台ECH能力需网络库逐段集成",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-11-ech-api-integration.svg",
+        "src/assets/diagrams/ch24/a266-11-ech-api-integration.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-11-ech-api-integration",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/DnsResolver.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/dns/HttpsRecord.java",
+        "https://developer.android.com/reference/android/net/ssl/SSLSockets",
+        "https://developer.android.com/reference/android/net/ssl/SSLEngines"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-11-ech-api-integration.svg": "eb3436aa3c875d13d0502cc89261786ca5d78eb0ed1b3eb57eea427cc02dec4d",
+        "src/assets/diagrams/ch24/a266-11-ech-api-integration.png": "59d2241b1c31bc9e8b902271058cc8124326dad5df8dbfa1eca0cc82b44372f6"
+      }
+    },
+    {
+      "id": "a266-12-domain-policy-modes",
+      "title": "固定API37策略值与XML语法分层",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-12-domain-policy-modes.svg",
+        "src/assets/diagrams/ch24/a266-12-domain-policy-modes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-12-domain-policy-modes",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/security-config#domain-encryption",
+        "https://developer.android.com/reference/android/security/NetworkSecurityPolicy"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-12-domain-policy-modes.svg": "0544b696a86f9737bc9f06148df5f997e4e9797b6ca7a065067bb504d5889ecc",
+        "src/assets/diagrams/ch24/a266-12-domain-policy-modes.png": "d68658f6f034aa51cc388166dab9bedeae9039a7c0f27750e0f7b446aa7bd03c"
+      }
+    },
+    {
+      "id": "a266-13-ech-mismatch-authentication",
+      "title": "配置失配重试先验证公开名称",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-13-ech-mismatch-authentication.svg",
+        "src/assets/diagrams/ch24/a266-13-ech-mismatch-authentication.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-13-ech-mismatch-authentication",
+      "sources": [
+        "https://developer.android.com/reference/android/net/ssl/EchConfigMismatchException",
+        "https://www.rfc-editor.org/rfc/rfc9849",
+        "https://android.googlesource.com/platform/external/conscrypt/+/refs/tags/android-17.0.0_r1/platform/src/main/java/org/conscrypt/Platform.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-13-ech-mismatch-authentication.svg": "dc68ff975b264cd98305cff85f5ae95e6cb4cd73bd4330067c35612caf38573b",
+        "src/assets/diagrams/ch24/a266-13-ech-mismatch-authentication.png": "550a3e31ad0334b09f4e942bda6f3c7b56ec0c2404fdf225dbe81274430398b5"
+      }
+    },
+    {
+      "id": "a266-14-https-dns-wait",
+      "title": "A/AAAA与HTTPS查询的等待边界",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-14-https-dns-wait.svg",
+        "src/assets/diagrams/ch24/a266-14-https-dns-wait.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-14-https-dns-wait",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/DnsResolver.java",
+        "https://developer.android.com/reference/android/net/DnsResolver",
+        "https://www.rfc-editor.org/rfc/rfc9460"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-14-https-dns-wait.svg": "cf07f6bdf5649abb0ae504ceb7a86d167e1331986d12bdddbadd226a581f370e",
+        "src/assets/diagrams/ch24/a266-14-https-dns-wait.png": "2f60f24864168e00265fd87388149a9a27c4c7c61c18aa611601da8f1d89eeba"
+      }
+    },
+    {
+      "id": "a266-15-ech-rollout-evidence",
+      "title": "ECH发布按证据链与错误阶段回退",
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a266-15-ech-rollout-evidence.svg",
+        "src/assets/diagrams/ch24/a266-15-ech-rollout-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a266-15-ech-rollout-evidence",
+      "sources": [
+        "https://developer.android.com/about/versions/17/behavior-changes-17#ech",
+        "https://developer.android.com/privacy-and-security/security-config#domain-encryption",
+        "https://www.rfc-editor.org/rfc/rfc9849"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a266-15-ech-rollout-evidence.svg": "0f135cc105fb21f0b5991ade3a3a08193ffd9621a06abe81b2c109aee56c5cba",
+        "src/assets/diagrams/ch24/a266-15-ech-rollout-evidence.png": "d66fca4dc3b634221b5c630ddd1f5cebd91d63a5b75cf159db4a95a5f79bf6d5"
+      }
+    },
+    {
+      "id": "a267-01-synchronous-route-boundary",
+      "title": "5.4路由规划中的同步解析与旁路",
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a267-01-synchronous-route-boundary.svg",
+        "src/assets/diagrams/ch24/a267-01-synchronous-route-boundary.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a267-01-synchronous-route-boundary",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RouteSelector.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnection.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a267-01-synchronous-route-boundary.svg": "9c9b8251f02cfa4afccdb8d05bd4ac7baa8eed379f4b716ec2c81bd301606a26",
+        "src/assets/diagrams/ch24/a267-01-synchronous-route-boundary.png": "cacc425d7f8255402f71ea00b86ba69a36390ce32f7cb3cee6f24264a9fc1ce7"
+      }
+    },
+    {
+      "id": "a267-02-nested-dns-wait",
+      "title": "嵌套HTTPDNS的递归与队列饥饿分别分析",
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a267-02-nested-dns-wait.svg",
+        "src/assets/diagrams/ch24/a267-02-nested-dns-wait.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a267-02-nested-dns-wait",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp-dnsoverhttps/src/main/kotlin/okhttp3/dnsoverhttps/DnsOverHttps.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dispatcher.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a267-02-nested-dns-wait.svg": "dabd0d24dc214298af98e4ce931b02e173e6d7e0d099806a3e29147fe94879a0",
+        "src/assets/diagrams/ch24/a267-02-nested-dns-wait.png": "b6dc0b7b48f4b2e7e687cde40ad20a5143a2a76ebe89c8bba78a5f74258d7184"
+      }
+    },
+    {
+      "id": "a267-03-refresh-and-read-paths",
+      "title": "后台刷新与前台同步读取共享完整快照",
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a267-03-refresh-and-read-paths.svg",
+        "src/assets/diagrams/ch24/a267-03-refresh-and-read-paths.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a267-03-refresh-and-read-paths",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt",
+        "https://developer.android.com/reference/android/net/DnsResolver",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a267-03-refresh-and-read-paths.svg": "80e8ddd92c427cc08899edb5d9b2da8ca451889becef55d04be0400545a97804",
+        "src/assets/diagrams/ch24/a267-03-refresh-and-read-paths.png": "9e570b7e401975cea59e0b2172814cde66be439baf78b7e6f12c9571debfb4d8"
+      }
+    },
+    {
+      "id": "a267-04-ttl-refresh-expiry",
+      "title": "TTL内刷新与到期停止返回的时序",
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a267-04-ttl-refresh-expiry.svg",
+        "src/assets/diagrams/ch24/a267-04-ttl-refresh-expiry.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a267-04-ttl-refresh-expiry",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp-dnsoverhttps/src/main/kotlin/okhttp3/dnsoverhttps/DnsOverHttps.kt",
+        "https://www.rfc-editor.org/rfc/rfc2308.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a267-04-ttl-refresh-expiry.svg": "26351611ae04dede595f90091343357fca5755d0a93c0874ea4b8d5c8002d73b",
+        "src/assets/diagrams/ch24/a267-04-ttl-refresh-expiry.png": "5d2bdb78e1a5c8bd7dbfebb863f7ed298fdd90d9c439e25d03051a18c484e959"
+      }
+    },
+    {
+      "id": "a267-05-network-paired-dns-sockets",
+      "title": "指定Network时成对约束DNS与套接字",
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a267-05-network-paired-dns-sockets.svg",
+        "src/assets/diagrams/ch24/a267-05-network-paired-dns-sockets.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a267-05-network-paired-dns-sockets",
+      "sources": [
+        "https://developer.android.com/reference/android/net/Network",
+        "https://developer.android.com/reference/android/net/ConnectivityManager",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/net/InetAddress.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a267-05-network-paired-dns-sockets.svg": "19d03f6231bd49e1692f1d29de19aae61f2c656b0cdc56c6740b31172268c785",
+        "src/assets/diagrams/ch24/a267-05-network-paired-dns-sockets.png": "751763cc9ff9273dc1dc5e63e54c05bda48c38e7708ce3cbcc52496f5b6e4de9"
+      }
+    },
+    {
+      "id": "a267-06-network-generation-fence",
+      "title": "切网和迟到刷新以网络代次隔离",
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a267-06-network-generation-fence.svg",
+        "src/assets/diagrams/ch24/a267-06-network-generation-fence.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a267-06-network-generation-fence",
+      "sources": [
+        "https://developer.android.com/reference/android/net/ConnectivityManager",
+        "https://developer.android.com/reference/android/net/Network",
+        "https://developer.android.com/reference/android/net/LinkProperties"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a267-06-network-generation-fence.svg": "b3a318e63ac114634b4153428db8498c888a01139b1333ecabc8d2ea9594255f",
+        "src/assets/diagrams/ch24/a267-06-network-generation-fence.png": "dbb0145e0a84030d5878e5b4b7fbcc62037f03338c5bb3bd0a94f33a63ecc73a"
+      }
+    },
+    {
+      "id": "a267-07-attributable-address-failures",
+      "title": "地址隔离只采用可归因的连接证据",
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a267-07-attributable-address-failures.svg",
+        "src/assets/diagrams/ch24/a267-07-attributable-address-failures.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a267-07-attributable-address-failures",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RouteSelector.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnection.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a267-07-attributable-address-failures.svg": "95e6f5f315d97e041a71f7396bb507ebda1f9d98c7b3ff15320da2afc690ecf1",
+        "src/assets/diagrams/ch24/a267-07-attributable-address-failures.png": "ea7da73fc68f904e168d344630f755e5cd4ed1cc1a3dea04e962358eec64337c"
+      }
+    },
+    {
+      "id": "a267-08-hostname-and-policy",
+      "title": "替换候选地址仍保留HTTPS主机身份",
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a267-08-hostname-and-policy.svg",
+        "src/assets/diagrams/ch24/a267-08-hostname-and-policy.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a267-08-hostname-and-policy",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/risks/bad-dns",
+        "https://developer.android.com/reference/android/net/LinkProperties",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnection.kt",
+        "https://security.googleblog.com/2022/07/dns-over-http3-in-android.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a267-08-hostname-and-policy.svg": "5cc41bade2f2bb92b983e99f6d9b7c198099246abaa6e3b0f08010400567c321",
+        "src/assets/diagrams/ch24/a267-08-hostname-and-policy.png": "7603a6ff084c9daff636d1962a2d0eb281373464f855de7557bbb2e5942c9390"
+      }
+    },
+    {
+      "id": "a267-09-dns-before-tcp-race",
+      "title": "完整DNS结果先于TCP候选竞速",
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a267-09-dns-before-tcp-race.svg",
+        "src/assets/diagrams/ch24/a267-09-dns-before-tcp-race.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a267-09-dns-before-tcp-race",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/InetAddressOrder.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RouteSelector.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a267-09-dns-before-tcp-race.svg": "ff5f7b0fe7f2ce4a27b21453f099f09802c642e300e54ad92f5c9ad95b632fee",
+        "src/assets/diagrams/ch24/a267-09-dns-before-tcp-race.png": "110d2d4d0c6b1de5985f3d925e5029c3d0c987994270307764eaa7b1d4dac00c"
+      }
+    },
+    {
+      "id": "a267-10-dns-ttl-versus-connection",
+      "title": "DNS有效期不管理已复用连接的生存期",
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a267-10-dns-ttl-versus-connection.svg",
+        "src/assets/diagrams/ch24/a267-10-dns-ttl-versus-connection.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a267-10-dns-ttl-versus-connection",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnection.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnectionPool.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a267-10-dns-ttl-versus-connection.svg": "74d4bcb9df7dc3954563e7e3e360b2e9437984652a15508c1357b3c4303eb852",
+        "src/assets/diagrams/ch24/a267-10-dns-ttl-versus-connection.png": "ca2ae526f8aee695d8f9be521dee90e75dcc020eb33679b5e032c7010099cd9b"
+      }
+    },
+    {
+      "id": "a267-11-dns-evidence-and-tests",
+      "title": "解析决策、尝试结果与业务分母共同验收",
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a267-11-dns-evidence-and-tests.svg",
+        "src/assets/diagrams/ch24/a267-11-dns-evidence-and-tests.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a267-11-dns-evidence-and-tests",
+      "sources": [
+        "https://lysine.dev/okhttp/features/events/",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RouteSelector.kt",
+        "https://developer.android.com/reference/android/net/ConnectivityManager"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a267-11-dns-evidence-and-tests.svg": "3ff0b408113f0bb17fb27dabc172b932ea9c4bc02cd7d097121d9bc392f19a7c",
+        "src/assets/diagrams/ch24/a267-11-dns-evidence-and-tests.png": "6854cba6d4ec0dc656ac245d2f9262f39e564256ad020a968c17a5cfb4bef059"
+      }
     }
   ],
   "corrections": [
@@ -4602,6 +6103,660 @@
       ],
       "article": "src/part5-app/ch24-io-network/03-data-cache-offline-first.md",
       "why": "纪元毫秒不随单纯时区设置变化；区分时钟不可靠和本地无时区时间的表示歧义，保留服务端序列建议。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'\nlast_verified_against: Android and AOSP docs current through 2026-08-15; Android 17 / API 37 docs and android-17.0.0_r1 MediaProvider source; AndroidX Activity 1.11.0 Photo Picker docs; current Google Play All files access policy",
+      "after": "last_verified: '2026-10-25'\nlast_verified_against: Android and AOSP docs accessed 2026-10-25; fixed android-17.0.0_r1 MediaProvider source; examples retain Activity 1.11.0 and embedded PhotoPicker alpha02 baseline; checked Activity 1.13.0 and PhotoPicker alpha03 release notes; API 37.1 / S Extension 23; current Google Play All files access policy",
+      "reason": "区分固定示例基线与本轮在线核验日期，不把旧版本继续称为最新。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/activity",
+        "https://developer.android.com/jetpack/androidx/releases/photopicker"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "区分固定示例基线与本轮在线核验日期，不把旧版本继续称为最新。"
+    },
+    {
+      "before": "这是应用侧的分页方案，`_ID` 没有永久稳定的保证；媒体库 `version`（整体版本标识） 是整体版本标识，它一变化，旧页位置就应废弃并重新查询。界面销毁、筛选条件变化或新查询取代旧查询时，调用 `signal.cancel()`，`MediaProvider` 会在支持取消的位置尽快终止工作。",
+      "after": "这是应用侧的分页方案，`_ID` 没有永久稳定的保证；媒体库 `version` 是整体版本标识，它一变化，旧页位置就应废弃并重新查询。复合锚点也不构成跨多次查询的一致快照：正在插入、删除或修改的媒体仍需后续刷新或增量同步补偿。界面销毁、筛选条件变化或新查询取代旧查询时，调用 `signal.cancel()`，`MediaProvider` 会在支持取消的位置尽快终止工作。",
+      "reason": "删除重复定义，并明确keyset不能保证多页查询共享数据库快照。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/apex/framework/java/android/provider/MediaStore.java",
+        "https://developer.android.com/reference/android/content/ContentResolver"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "删除重复定义，并明确keyset不能保证多页查询共享数据库快照。"
+    },
+    {
+      "before": "大图库翻页不宜用不断增长的 `OFFSET`：它先跳过指定行数再返回，较早页面一旦发生插入或删除，按行数跳过就可能重复或遗漏，`MediaProvider` 也仍可能扫描这些行。更稳妥的做法是保存上一页末尾的“排序值 + `_ID`”，下一页从该位置继续查询。下面的代码按 `DATE_ADDED` 和 `_ID` 倒序读取图片，`_ID` 用于区分同一秒加入的多条记录：",
+      "after": "大图库翻页不宜用不断增长的 `OFFSET`：它先跳过指定行数再返回，较早页面一旦发生插入或删除，按行数跳过就可能重复或遗漏，`MediaProvider` 也仍可能扫描这些行。更稳妥的做法是保存上一页末尾的“排序值 + `_ID`”，下一页从该位置继续查询。下面的代码按 `DATE_ADDED` 和 `_ID` 倒序读取图片，`_ID` 用于区分同一秒加入的多条记录： 示例投影包含 API 30 起的 `GENERATION_MODIFIED`，应在 Android 11 及以上调用；Android 10 需移除此列，并使用全量或可见 ID 对账等降级同步方案。",
+      "reason": "适用版本含API29，代码却无条件查询API30列；补充调用边界。",
+      "sources": [
+        "https://developer.android.com/reference/android/provider/MediaStore"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "适用版本含API29，代码却无条件查询API30列；补充调用边界。"
+    },
+    {
+      "before": "这段代码先取得本轮结束序号，再把增量查询限制在“上次检查点之后、本轮结束序号之前”的区间：",
+      "after": "以下代码使用 API 30 起的 `getGeneration()` 与 generation 列，先取得本轮结束序号，再把增量查询限制在“上次检查点之后、本轮结束序号及其之前”的区间：",
+      "reason": "标明getGeneration版本，并使文字上界与SQL的<=一致。",
+      "sources": [
+        "https://developer.android.com/reference/android/provider/MediaStore"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "标明getGeneration版本，并使文字上界与SQL的<=一致。"
+    },
+    {
+      "before": "#### 批量用户请求有 2000 项输入上限",
+      "after": "#### targetSdk 36 起的批量请求有 2000 项输入上限",
+      "reason": "上限按targetSdk触发，不是所有Android版本无条件执行。",
+      "sources": [
+        "https://developer.android.com/reference/android/provider/MediaStore"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "上限按targetSdk触发，不是所有Android版本无条件执行。"
+    },
+    {
+      "before": "\"Android 17 allows at most 2000 item URIs per request\"",
+      "after": "\"This helper caps requests at 2000 item URIs (platform cap for targetSdk >= 36)\"",
+      "reason": "示例错误消息原本把target36门槛归到Android17，改为准确说明helper保守上限。",
+      "sources": [
+        "https://developer.android.com/reference/android/provider/MediaStore"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "示例错误消息原本把target36门槛归到Android17，改为准确说明helper保守上限。"
+    },
+    {
+      "before": "adb shell dumpsys activity providers \\\n  com.android.providers.media.module/.MediaProvider",
+      "after": "adb shell dumpsys activity providers \\\n  com.android.providers.media.module/com.android.providers.media.MediaProvider",
+      "reason": "AndroidManifest包为com.android.providers.media.module，Provider类为com.android.providers.media.MediaProvider；相对.MediaProvider会展开成不存在的同包类。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/AndroidManifest.xml"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "AndroidManifest包为com.android.providers.media.module，Provider类为com.android.providers.media.MediaProvider；相对.MediaProvider会展开成不存在的同包类。"
+    },
+    {
+      "before": "adb shell dumpsys activity provider \\\n  com.android.providers.media.module/.MediaProvider",
+      "after": "adb shell dumpsys activity provider \\\n  com.android.providers.media.module/com.android.providers.media.MediaProvider",
+      "reason": "AndroidManifest包为com.android.providers.media.module，Provider类为com.android.providers.media.MediaProvider；相对.MediaProvider会展开成不存在的同包类。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/AndroidManifest.xml"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "AndroidManifest包为com.android.providers.media.module，Provider类为com.android.providers.media.MediaProvider；相对.MediaProvider会展开成不存在的同包类。"
+    },
+    {
+      "before": "https://developer.android.com/reference/androidx/activity/result/contract/Activity（承载一个界面的 Android 组件）ResultContracts.PickVisualMedia.MediaCapabilities",
+      "after": "https://developer.android.com/reference/androidx/activity/result/contract/ActivityResultContracts.PickVisualMedia.MediaCapabilities",
+      "reason": "中文解释被插入URL，修复到已成功核验的官方API地址。",
+      "sources": [
+        "https://developer.android.com/reference/androidx/activity/result/contract/ActivityResultContracts.PickVisualMedia.MediaCapabilities"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "中文解释被插入URL，修复到已成功核验的官方API地址。"
+    },
+    {
+      "before": "该能力要求 Android 14 及以上，且 U SDK Extension 至少为 15。平台类从 API 36 公开，也通过扩展提供给 Android 14。当前 Jetpack `androidx.photopicker` 版本为 1.0.0-alpha02，API 仍标记 `ExperimentalPhotoPickerApi`；Alpha 阶段允许接口变化，升级依赖时应复核回调和生命周期行为。不满足条件或会话打开失败时，使用标准 Photo Picker。",
+      "after": "该能力要求 Android 14 及以上，且 U SDK Extension 至少为 15。平台类从 API 36 公开，也通过扩展提供给 Android 14。本文嵌入式 API 说明固定以 Jetpack `androidx.photopicker` 1.0.0-alpha02 为基线，API 标记 `ExperimentalPhotoPickerApi`；Alpha 阶段允许接口变化，升级依赖时应复核回调和生命周期行为。不满足条件或会话打开失败时，使用标准 Photo Picker。 截至 2026-10-25，版本说明已列出 1.0.0-alpha03：嵌入式 artifact/package 改名为 `photopicker-embedded` / `androidx.photopicker.embedded` 系列，选择合约迁入 `photopicker-activity`，并有会话状态接口调整。升级应以该版迁移记录与 API 为准，不要直接混用本篇旧基线签名。",
+      "reason": "alpha03已于10月21发布且含artifact/package和接口变更；保留可审计旧基线，同时指明迁移边界。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/photopicker"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "alpha03已于10月21发布且含artifact/package和接口变更；保留可审计旧基线，同时指明迁移边界。"
+    },
+    {
+      "before": "系统设备空闲维护不会处理应用的 `cacheDir`、草稿数据库和失败上传。应用应给每个私有临时文件记录：",
+      "after": "MediaProvider 的转码缓存维护不负责管理应用的草稿数据库、上传状态和私有副本；`cacheDir` 仍可能被系统其他存储回收机制清理。应用应给每个私有临时文件记录：",
+      "reason": "原句把MediaProvider清理范围扩大成所有系统空闲维护；明确所有权且不暗示cacheDir受保护。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/MediaProvider.java",
+        "https://android.googlesource.com/platform/packages/providers/MediaProvider/+/refs/tags/android-17.0.0_r1/src/com/android/providers/media/PhotoPickerTranscodeHelper.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "原句把MediaProvider清理范围扩大成所有系统空闲维护；明确所有权且不暗示cacheDir受保护。"
+    },
+    {
+      "before": "状态名依次表示已选择、已持久授权、正在打开、正在复制或转换、内容就绪、正在上传，以及三种终态：完成、可重试失败和放弃。保留这些英文短名，便于直接用作数据库枚举和日志字段。数据库事务是一组要么全部生效、要么全部回滚的状态写入；每次状态变化与文件重命名完成后再提交事务，恢复逻辑便能判断应继续任务还是删除不再被记录引用的文件。",
+      "after": "状态名依次表示已选择、已持久授权、正在打开、正在复制或转换、内容就绪、正在上传，以及完成、可重试失败和放弃。保留这些英文短名，便于直接用作数据库枚举和日志字段。数据库事务只保证数据库内状态写入一起提交或回滚，不能把文件重命名纳入同一个原子事务。应用可在文件写完校验并重命名后提交 `ready`，但两步之间仍可能进程终止；恢复逻辑须对账任务与文件，识别仍活跃的 partial、已完成但尚未标记 ready 的文件，以及没有任务引用的残留，分别继续、补记或删除。",
+      "reason": "文件系统重命名与数据库事务之间存在崩溃窗口，不能仅凭先后顺序声称原子恢复。该补充为应用恢复协议设计推断。",
+      "sources": [
+        "https://developer.android.com/training/data-storage/shared/photo-picker"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "文件系统重命名与数据库事务之间存在崩溃窗口，不能仅凭先后顺序声称原子恢复。该补充为应用恢复协议设计推断。"
+    },
+    {
+      "before": "HDR（High Dynamic Range，高动态范围）/SDR（Standard Dynamic Range，标准动态范围） 处理参数；HDR 是高动态范围，SDR 是标准动态范围。",
+      "after": "HDR（High Dynamic Range，高动态范围）/SDR（Standard Dynamic Range，标准动态范围）处理参数。",
+      "reason": "去除重复释义，保持技术含义与术语不变。",
+      "sources": [
+        "https://developer.android.com/training/data-storage/shared/media"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "去除重复释义，保持技术含义与术语不变。"
+    },
+    {
+      "before": "Storage Access Framework（由系统文件选择器和文档提供方组成的授权框架），也就是由系统文件选择器和文档提供方组成的那套授权框架。",
+      "after": "Storage Access Framework（由系统文件选择器和文档提供方组成的授权框架）。",
+      "reason": "去除重复释义，保持技术含义与术语不变。",
+      "sources": [
+        "https://developer.android.com/training/data-storage/shared/media"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "去除重复释义，保持技术含义与术语不变。"
+    },
+    {
+      "before": "MIME type（媒体类型标识，例如 `video/mp4`） 标识媒体类型，例如 `video/mp4`。",
+      "after": "MIME type 是媒体类型标识，例如 `video/mp4`。",
+      "reason": "去除重复释义，保持技术含义与术语不变。",
+      "sources": [
+        "https://developer.android.com/training/data-storage/shared/media"
+      ],
+      "article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "why": "去除重复释义，保持技术含义与术语不变。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'\nlast_verified_against: AOSP android-17.0.0_r1; Android Developers network state, background transfer, UIDT and long-running WorkManager docs; OkHttp 5.4.0 source and changelog; RFC 9110, RFC 6585 and RFC 7233",
+      "after": "last_verified: '2026-10-25'\nlast_verified_against: fixed AOSP android-17.0.0_r1 and OkHttp 5.4.0 sources including RealCall, Dispatcher and FastFallbackExchangeFinder; Android Developers network state, transfer, HttpEngine timing and security docs accessed 2026-10-25; RFC 9110, RFC 6585, RFC 7233, RFC 9000 and RFC 9114",
+      "reason": "明确本轮核验日期与固定源码基线，新增逐项核验计时和QUIC依据。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+        "https://www.rfc-editor.org/rfc/rfc9000.html",
+        "https://developer.android.com/reference/android/net/http/FinishedRequestTimings"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "明确本轮核验日期与固定源码基线，新增逐项核验计时和QUIC依据。"
+    },
+    {
+      "before": "`use` 在离开作用域时关闭响应体。响应体一旦漏关，套接字和 HTTP/2 逻辑流就一直被占着，连接池配置得再对也复用不起来。流式下载不要先调用 `string()`，消费结束、取消或异常时同样要关闭响应体。",
+      "after": "`use` 在离开作用域时关闭响应体。响应体未正确消费或关闭时，可能持续占用套接字、HTTP/2 流和其他资源，降低复用能力；是否仍能复用还取决于内容是否读完、协议和关闭方式，不能只靠池配置修复。流式下载不要先调用 `string()`，消费结束、取消或异常时同样要关闭响应体。",
+      "reason": "未显式close不必然永远占用连接，完整消费也可能释放；保留明确的响应体所有权要求。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/ResponseBody.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "未显式close不必然永远占用连接，完整消费也可能释放；保留明确的响应体所有权要求。"
+    },
+    {
+      "before": "一次请求在进入 DNS 之前，还可能先停在业务队列、OkHttp Dispatcher 或缓存判定里，所以端到端时间线要从业务入队开始，覆盖异步排队、直接或条件缓存命中、DNS、每次连接与 TLS 尝试、请求写入、TTFB（Time to First Byte，收到响应首字节的等待）、响应体消费以及解码入库。其中 TTFB（Time to First Byte，从请求发出到收到响应首部的等待）与“解析响应头所花的时间”是两个概念；流式上传、双工请求和长连接还要单独定义起止。",
+      "after": "一次请求在进入 DNS 之前，还可能先停在业务队列、OkHttp Dispatcher 或缓存判定里，所以端到端时间线要从业务入队开始，覆盖异步排队、直接或条件缓存命中、DNS、每次连接与 TLS 尝试、请求写入、响应首部等待、响应体消费以及解码入库。本文把请求发送完成到最终交换的 `responseHeadersStart` 定义为响应首部等待的代理指标；它不等同于完整响应头解析耗时，也不承诺精确观测网卡首字节。TTFB（Time to First Byte）若使用不同起点、网络栈原始时间或服务端时间，必须另列字段，不能混算。流式上传、双工请求和长连接另行定义起止。",
+      "reason": "删除相互冲突的TTFB重复定义，以具体EventListener边界命名代理指标，避免宣称真实网络首字节。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "删除相互冲突的TTFB重复定义，以具体EventListener边界命名代理指标，避免宣称真实网络首字节。"
+    },
+    {
+      "before": "示例适用于明确允许系统 DNS 回退的策略。严格解析策略应把回退实现作为依赖传入，并让失败显式返回。若客户端绑定到指定 Android `Network`，回退解析也应使用该网络的 `getAllByName()`，并与对应的套接字绑定策略保持一致。",
+      "after": "示例适用于明确允许系统 DNS 回退的策略。严格解析策略应把回退实现作为依赖传入，并让失败显式返回。若客户端绑定到指定 Android `Network`，回退解析也应使用该网络的 `getAllByName()`，并与对应的套接字绑定策略保持一致。 `Network` 参与缓存键并不会自动绑定后续连接；需要固定网络时，应捕获同一网络身份，统一配置解析与套接字，并处理捕获后网络失效的情况。示例的 `currentNetwork()` 只表示读取缓存时的当前值，不提供跨解析与建连的原子网络快照。",
+      "reason": "防止把缓存按Network分桶误认为底层套接字已绑定，补充示例的切网窗口。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/DnsResolver.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "防止把缓存按Network分桶误认为底层套接字已绑定，补充示例的切网窗口。"
+    },
+    {
+      "before": "OkHttp 5.4.0 的 `Dispatcher` 是异步调用调度器：`maxRequests` 和 `maxRequestsPerHost` 控制通过 `Call.enqueue()` 提交的调用，超过并发上限的调用留在内存队列，等待已有异步调用结束。通过 `Call.execute()` 发起的同步调用虽然会计入 `runningCalls()`，排队与放行的判断却都绕过这两个上限。",
+      "after": "OkHttp 5.4.0 的 `Dispatcher` 是异步调用调度器：`maxRequests` 和 `maxRequestsPerHost` 控制通过 `Call.enqueue()` 提交的调用，超过并发上限的调用留在内存队列，等待已有异步调用结束。通过 `Call.execute()` 发起的同步调用虽然会计入 `runningCalls()`，排队与放行的判断却都绕过这两个上限。 这里的“异步调用结束”按 Dispatcher 计数口径指 `onResponse` / `onFailure` 返回；同步调用在 `execute()` 返回时移出运行集合。响应体若被交给其他线程继续消费，仍可能占用连接、流和内存，因此 `runningCalls()` 不是所有活跃传输资源的完整清单，应用的端到端并发限制应覆盖实际资源生命周期。",
+      "reason": "Dispatcher计数在回调/execute返回时结束，不能当所有在途Body读取的统一限流。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dispatcher.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "Dispatcher计数在回调/execute返回时结束，不能当所有在途Body读取的统一限流。"
+    },
+    {
+      "before": "OkHttp 的超时是分阶段的预算：`connectTimeout` 约束套接字建连，`readTimeout` 和 `writeTimeout` 约束对应的读写操作，`callTimeout` 覆盖整次逻辑调用，包括 DNS、连接、写入、服务端处理和读取。也正因为分阶段，把读超时调大治不了 DNS 或 Dispatcher 排队的慢；只设阶段超时，也拦不住重定向与重试累积后的总等待。",
+      "after": "OkHttp 的超时是分阶段的预算：`connectTimeout` 约束套接字建连，`readTimeout` 和 `writeTimeout` 约束对应的读写操作；`callTimeout` 覆盖一次 `Call` 开始执行后的 DNS、连接、写入、服务端等待和响应体消费。固定 5.4.0 的 `RealCall` 在同步 `execute()` 进入时启动计时，异步调用则在 `AsyncCall.run()` 才启动，Dispatcher 队列等待不包含在内。业务总截止时间应在外层从用户动作开始计算，并覆盖队列等待、多次 Call、退避与恢复；超限时主动取消。延长读超时不能解决 DNS 或 Dispatcher 排队，单次 Call 的超时也不能替代整个用户路径的截止时间。",
+      "reason": "RealCall明确异步timeout.enter在run而不是enqueue，补齐排队不计入callTimeout的关键边界。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/OkHttpClient.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "RealCall明确异步timeout.enter在run而不是enqueue，补齐排队不计入callTimeout的关键边界。"
+    },
+    {
+      "before": "OkHttp 5.4.0 的 `retryOnConnectionFailure` 默认开启，用于从部分连接故障中恢复，例如失效的池连接或可替代连接路径。这里要分清：它恢复的是传输，业务操作要不要重新提交是另一个问题。一次 `Call` 内部发生传输恢复后，应用层拦截器若又执行重试，实际尝试次数可能高于业务代码表面上的计数。",
+      "after": "OkHttp 5.4.0 的 `retryOnConnectionFailure` 默认开启，用于从部分连接故障中恢复，例如失效的池连接或可替代连接路径。这里要分清：它恢复的是传输，业务操作要不要重新提交是另一个问题。一次 `Call` 内部发生传输恢复后，应用层拦截器若又执行重试，实际尝试次数可能高于业务代码表面上的计数。 `RetryAndFollowUpInterceptor.recover()` 主要按异常类别、请求是否开始发送、`isOneShot()` 与剩余连接路径判断，并不普遍替业务验证 HTTP 方法或服务端幂等性；可重放的 POST 也可能被传输层重发。因此结果未知的业务写必须先设计服务端幂等键或状态查询，不能把“库内恢复”视为不会重复副作用的保证。",
+      "reason": "固定源码recover未普遍检查method幂等，补充可重放POST的重复业务效果风险。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/RequestBody.kt",
+        "https://www.rfc-editor.org/rfc/rfc9110.html"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "固定源码recover未普遍检查method幂等，补充可重放POST的重复业务效果风险。"
+    },
+    {
+      "before": "归因先看进程级计数。`TrafficStats.getUidRxBytes()` 与 `getUidTxBytes()` 返回当前 UID 自开机以来、跨所有网络接口累计的网络层字节，适合做进程内前后差值与粗粒度异常发现；在 Android 7.0（API 24）及以上，应用只能查询调用方自身 UID 的这两个计数。",
+      "after": "归因先看 UID 级计数。`TrafficStats.getUidRxBytes()` 与 `getUidTxBytes()` 返回当前 UID 自开机以来、跨所有网络接口累计的网络层字节，适合做前后差值与粗粒度异常发现，统计会合并同一 UID 的多个进程，不能直接归因给当前进程；在 Android 7.0（API 24）及以上，应用只能查询调用方自身 UID 的这两个计数。",
+      "reason": "TrafficStats按UID聚合，不是单进程计数。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework-t/src/android/net/TrafficStats.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "TrafficStats按UID聚合，不是单进程计数。"
+    },
+    {
+      "before": "Cookie、认证头和业务拦截器属于请求策略；连接池里保存的是连接，某次请求带的这些 HTTP 头它一概不留。登录态和匿名态用不同的派生客户端或请求构造器表达即可，仅因为账号不同就创建全新的连接池没有必要。",
+      "after": "Cookie、认证头和业务拦截器属于请求策略；共享连接不会自动让后续请求继承上一次请求的 Cookie 或 Authorization，应用仍必须正确构造并隔离各请求的认证信息。对于按请求认证的普通 HTTP 业务，登录态和匿名态可用派生客户端或请求构造器表达，仅因为账号不同不必另建连接池；若采用与连接绑定的认证或其他隔离要求，应按该协议单独评估共享边界。",
+      "reason": "把“一概不留HTTP头”的绝对说法改为请求认证语义，避免混淆连接内部状态与后续请求的授权来源。",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9110.html",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnection.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "把“一概不留HTTP头”的绝对说法改为请求认证语义，避免混淆连接内部状态与后续请求的授权来源。"
+    },
+    {
+      "before": "| 建连（connect） | 每次地址尝试开始到成功或失败 | 复用连接时没有新建连 | TLS 与后续交换 |",
+      "after": "| 建连尝试（connect） | 每次 `connectStart` 到 `connectEnd` 或 `connectFailed` | 复用连接时没有新建连 | OkHttp HTTPS 的成功区间包含 TLS 子区间，不可再与 TLS 时长直接相加 |",
+      "reason": "EventListener.connectEnd在HTTPS secureConnectEnd之后，原表把connect和TLS当互斥阶段错误。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "EventListener.connectEnd在HTTPS secureConnectEnd之后，原表把connect和TLS当互斥阶段错误。"
+    },
+    {
+      "before": "| TTFB | 请求发送完成到最终响应的首字节开始 | TTFB 是 Time to First Byte；缓存命中与双工流要使用单独定义 | 响应体下载 |",
+      "after": "| 响应首部等待代理 | 请求发送完成到最终交换的 `responseHeadersStart` | 不等同网卡首字节；缓存与双工流另行定义 | 完整响应头解析与响应体下载 |",
+      "reason": "统一前后表格与正文的可观测代理计时口径。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "统一前后表格与正文的可观测代理计时口径。"
+    },
+    {
+      "before": "| 下载 | 响应体开始到读取或关闭 | 提前关闭要记录取消或截断 | 解压、反序列化与界面提交 |",
+      "after": "| 响应体消费 | 响应体开始到读取完成或关闭 | 提前关闭要记录取消或截断 | 可能包含内联解压与消费方等待，需额外埋点才能拆分 |",
+      "reason": "网络栈流式读取可内联解压并受消费方速度影响，不能把该区间误称纯下载。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/ResponseBody.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "网络栈流式读取可内联解压并受消费方速度影响，不能把该区间误称纯下载。"
+    },
+    {
+      "before": "阶段值允许为空，空表示这个阶段没有发生。连接复用时把 DNS、connect、TLS 填成零，就把“没有发生”误写成了“瞬间完成”；失败发生在 DNS 时，后续阶段同样应为空。聚合前，按缓存路径、连接复用、协议、成功/失败和取消分别统计。",
+      "after": "阶段值允许为空，但应同时记录原因：阶段未发生、请求提前失败，或所用网络栈没有暴露数据。复用连接时不能把缺失的 DNS、connect、TLS 强行填成零；实际计时起止相同才可按接口契约解释为未阻塞或零观测间隔。OkHttp HTTPS 的 connect 包含 TLS 子区间，流式响应体读取也可能与解压、本地消费重叠，只有边界互斥时才能把阶段相加。聚合前，按缓存路径、连接复用、协议、成功/失败和取消分别统计。",
+      "reason": "FinishedRequestTimings明确null也可能不可用；事件区间有嵌套重叠，不能盲目相加。",
+      "sources": [
+        "https://developer.android.com/reference/android/net/http/FinishedRequestTimings",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.3.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "FinishedRequestTimings明确null也可能不可用；事件区间有嵌套重叠，不能盲目相加。"
+    },
+    {
+      "before": "地址选择要保留候选数量、地址族、每次尝试的顺序、是否并行、失败类型和获胜尝试。OkHttp 5.4.0 默认启用 Fast Fallback：客户端按短间隔并发尝试多个候选地址，任一连接成功后采用该连接；这类算法也称 Happy Eyeballs，用少量额外连接，换掉单一地址族不可达造成的等待。只记录最终 IPv4 或 IPv6，另一组地址持续失败就被隐藏了。线上遥测不保存原始 IP，可使用地址族、匿名化边缘节点编号和服务端返回的区域标记。",
+      "after": "地址选择要保留候选数量、地址族、每次尝试的顺序、是否并行、失败类型和获胜尝试。OkHttp 5.4.0 默认启用 Fast Fallback：固定源码每隔 250 ms 启动候选 TCP 建连，较早成功的 TCP 路径胜出后取消并推迟其余竞速，再在获胜路径执行 TLS 等后续建立步骤；后续失败仍可继续尝试；这类算法也称 Happy Eyeballs，用少量额外连接，换掉单一地址族不可达造成的等待。只记录最终 IPv4 或 IPv6，另一组地址持续失败就被隐藏了。线上遥测不保存原始 IP，可使用地址族、匿名化边缘节点编号和服务端返回的区域标记。",
+      "reason": "FastFallback竞速TCP而非多个完整TLS握手，250ms为固定源码配置不是测量结论。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/FastFallbackExchangeFinder.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "FastFallback竞速TCP而非多个完整TLS握手，250ms为固定源码配置不是测量结论。"
+    },
+    {
+      "before": "- [Zstandard Content-Encoding：RFC 9659](https://www.rfc-editor.org/rfc/rfc9659.html)",
+      "after": "- [Zstandard Content-Encoding：RFC 9659](https://www.rfc-editor.org/rfc/rfc9659.html)\n- [QUIC 传输与流：RFC 9000](https://www.rfc-editor.org/rfc/rfc9000.html)\n- [HTTP/3：RFC 9114](https://www.rfc-editor.org/rfc/rfc9114.html)",
+      "reason": "为HTTP3流交付与迁移边界增加原始协议依据。",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9000.html",
+        "https://www.rfc-editor.org/rfc/rfc9114.html"
+      ],
+      "article": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "why": "为HTTP3流交付与迁移边界增加原始协议依据。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'\nlast_verified_against: AOSP android-17.0.0_r1 and Android common kernel android17-6.18-2026-06_r6; Android Developers HttpEngine, Cronet and API reference updated through 2026-08-03; OkHttp 5.4.0 source and changelog; IETF RFC 9000, 9001, 9113 and 9114; current gRPC guides",
+      "after": "last_verified: '2026-10-25'\nlast_verified_against: fixed AOSP android-17.0.0_r1 and Android common kernel android17-6.18-2026-06_r6; Android Developers and gRPC guides accessed 2026-10-25; fixed OkHttp 5.4.0 protocol source and 5.5.1 release changelog; Maven release metadata; IETF RFC 9000, 9001, 9113, 9114, 9849 and 9460; API37.2 ECH constant boundary noted",
+      "reason": "区分固定源码与新发布状态，日期反映本轮核验。",
+      "sources": [
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md",
+        "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/okhttp/maven-metadata.xml",
+        "https://developer.android.com/reference/android/security/NetworkSecurityPolicy"
+      ],
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "why": "区分固定源码与新发布状态，日期反映本轮核验。"
+    },
+    {
+      "before": "这一篇把四件事放在一起讲：HTTP/2 在 TCP 上复用流，HTTP/3 在 QUIC 上处理传输和拥塞，gRPC 在 HTTP/2 或 HTTP/3 上定义 RPC 语义，ECH 保护 ClientHello 中的目标信息。前三件主要是选型与验证问题，ECH 还依赖 DNS HTTPS 记录和服务端部署。",
+      "after": "这一篇把四件事放在一起讲：HTTP/2 在 TCP 上复用流，HTTP/3 在 QUIC 上处理传输和拥塞，gRPC 定义 RPC 语义，Android 常用 Java/Kotlin 传输基于 HTTP/2，其他传输能力取决于具体实现，ECH 保护 ClientHello 中的目标信息。前三件主要是选型与验证问题，ECH 还依赖 DNS HTTPS 记录和服务端部署。",
+      "reason": "避免引言暗示普通gRPC Android实现可直接选择HTTP3。",
+      "sources": [
+        "https://grpc.io/docs/platforms/android/java/basics/",
+        "https://grpc.io/docs/guides/performance/"
+      ],
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "why": "避免引言暗示普通gRPC Android实现可直接选择HTTP3。"
+    },
+    {
+      "before": "OkHttp 5.4.0 还给单个 HTTP/2 响应的首部总量设了上限：256 KiB（262,144 字节）；服务端真要发超大首部，超出部分会被客户端按这个上限拦下。",
+      "after": "OkHttp 5.4.0 为 HTTP/2 首部列表设置了 256 KiB（262,144 字节）的限制。固定源码的 HPACK 读取器累计首部名称与值的字节数，并在超限时抛出 `IOException`；它不是把超出部分静默截断后继续返回一个成功响应。服务端首部、Cookie 等数据增长要在兼容测试中覆盖。",
+      "reason": "Hpack.readByteString/addHeader明确超限抛IOException，纠正原句可能被读成部分截断的含义。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http2/Hpack.kt",
+        "https://github.com/lysine-dev/okhttp/blob/main/CHANGELOG.md"
+      ],
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "why": "Hpack.readByteString/addHeader明确超限抛IOException，纠正原句可能被读成部分截断的含义。"
+    },
+    {
+      "before": "Android 17 / API 37（同时属于 S Extensions 22）为 `HttpEngine.Builder` 增加了 `setProxyOptions()`。注意应用代理配置会覆盖系统代理配置：企业环境依赖系统代理时，一个错误的应用代理、或者代理列表末尾漏掉 `null` 回退，都可能让网络完全不可达。分批启用协议的实验，也要把企业代理和 VPN 场景包含进来。",
+      "after": "Android 17 / API 37（同时属于 S Extensions 22）为 `HttpEngine.Builder` 增加了 `setProxyOptions()`。应用代理配置会覆盖系统代理配置，企业环境依赖系统代理时必须单独验证。`ProxyOptions.fromProxyList()` 要求代理列表非空，且不能包含 `null`；所有代理失败后是否允许直接连接，由 `ALL_PROXIES_FAILED_BEHAVIOR_ALLOW_DIRECT` 或 `DISALLOW_DIRECT` 显式选择，不能靠列表末尾塞入 `null`。固定 r1 的 `HttpEngine` 注释仍提及旧式 null fallback，但同标签 `ProxyOptions` 的实际构造逻辑已拒绝 null，应以该类实现及公开 API 为准。只有业务和网络策略允许时才选择直连回退；企业代理、VPN 与无直连权限场景都要进入测试。",
+      "reason": "固定r1 HttpEngine过时注释与ProxyOptions实际实现冲突；当前API和同tag代码均要求显式failedBehavior，null会直接抛异常。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/cronet/+/android-17.0.0_r1/android/java/src/android/net/http/HttpEngine.java",
+        "https://android.googlesource.com/platform/external/cronet/+/refs/tags/android-17.0.0_r1/android/java/src/android/net/http/ProxyOptions.java",
+        "https://developer.android.com/reference/android/net/http/ProxyOptions"
+      ],
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "why": "固定r1 HttpEngine过时注释与ProxyOptions实际实现冲突；当前API和同tag代码均要求显式failedBehavior，null会直接抛异常。"
+    },
+    {
+      "before": "截至 2026-08-15，我们能把上游状态核实到这个程度：",
+      "after": "下表保留可追溯的提交与固定标签，同时补充截至 2026-10-25 已发布制品的状态；固定基线与最新依赖版本分别判断：",
+      "reason": "旧核验日期和“最新5.4”不能代表当前发布状态。",
+      "sources": [
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md",
+        "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/okhttp/maven-metadata.xml"
+      ],
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "why": "旧核验日期和“最新5.4”不能代表当前发布状态。"
+    },
+    {
+      "before": "| OkHttp | `square/okhttp` 现重定向到上游仓库 `lysine-dev/okhttp`。主分支于 2026-07-24 合并初始 Android API 37 ECH 支持的 [PR #9573](https://github.com/square/okhttp/pull/9573)，并于 2026-07-26 合并按 `NetworkSecurityPolicy` 选择模式的 [PR #9596](https://github.com/square/okhttp/pull/9596)；最新 [`parent-5.4.0`](https://github.com/square/okhttp/tree/parent-5.4.0) 标签创建于 2026-06-08，早于两次合并 | 主分支已经有接入代码，`parent-5.4.0` 尚未包含；核对依赖版本或提交号 |",
+      "after": "| OkHttp | 上游为 `lysine-dev/okhttp`；2026-07-24 的 [PR #9573](https://github.com/lysine-dev/okhttp/pull/9573) 和 2026-07-26 的 [PR #9596](https://github.com/lysine-dev/okhttp/pull/9596) 晚于本文固定的 `parent-5.4.0` 标签（2026-06-08）。[5.5.0 发布说明](https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md)已于 2026-08-16 引入 opt-in ECH；本轮 Maven 元数据最新发布为 5.5.1 | 5.4.0 不包含该接入；5.5.x 仍需主动选择能提供 HTTPS 记录的 DNS 路径（如 `AndroidDns` 或新版 `DnsOverHttps`），不能只更新 XML 就假定成功 |",
+      "reason": "固定5.5.1 changelog确认5.5.0已发布ECH并明确opt-in；Maven最新5.5.1。",
+      "sources": [
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md",
+        "https://repo.maven.apache.org/maven2/com/squareup/okhttp3/okhttp/maven-metadata.xml"
+      ],
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "why": "固定5.5.1 changelog确认5.5.0已发布ECH并明确opt-in；Maven最新5.5.1。"
+    },
+    {
+      "before": "`NetworkSecurityPolicy` 的公开常量里还有 `DOMAIN_ENCRYPTION_MODE_OPPORTUNISTIC` 和 `DOMAIN_ENCRYPTION_MODE_UNKNOWN`：`OPPORTUNISTIC` 表示有服务端配置时尝试 ECH、没有配置时不发送 GREASE；`UNKNOWN` 要求网络库退回普通 TLS。这两个值是网络库读策略时可能遇到的 API 值，XML 语法并不接受它们，`mode=\"opportunistic\"` 写进配置是无效的。",
+      "after": "`NetworkSecurityPolicy` 的公开常量里还有 `DOMAIN_ENCRYPTION_MODE_OPPORTUNISTIC` 和 `DOMAIN_ENCRYPTION_MODE_UNKNOWN`：`OPPORTUNISTIC` 表示有服务端配置时尝试 ECH、没有配置时不发送 GREASE；`UNKNOWN` 要求网络库退回普通 TLS。这两个值是网络库读策略时可能遇到的 API 值，XML 语法并不接受它们，`mode=\"opportunistic\"` 写进配置是无效的。 本段描述的是固定 API 37 / r1 的模式边界；当前 API 参考还列出了 37.2 / C Extension 24 新增的 `DOMAIN_ENCRYPTION_MODE_REQUIRED`（无法启用 ECH 时连接失败），并在 37.2 弃用 `OPPORTUNISTIC`。这些后续 API 不能反推 r1 XML 已支持新模式；需要强制加密的库还必须按实际版本适配新策略，不能把未知返回值自动当作普通 TLS 回退。下方诊断函数只打印策略，不执行握手策略。",
+      "reason": "区分当前API37.2新增required与固定r1/XML语法，防止旧枚举说明被误当完整现状。",
+      "sources": [
+        "https://developer.android.com/reference/android/security/NetworkSecurityPolicy",
+        "https://developer.android.com/privacy-and-security/security-config#domain-encryption"
+      ],
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "why": "区分当前API37.2新增required与固定r1/XML语法，防止旧枚举说明被误当完整现状。"
+    },
+    {
+      "before": "命令结果验证的是发布格式，代表不了 Android 设备在蜂窝网络、专用 DNS、VPN 或 HTTPDNS 下拿到的答案——专用 DNS 是 Android 的系统级加密 DNS 设置，VPN 还可能接管解析路径。所以客户端解析日志、服务端 DNS 日志和 TLS 服务端的 ECH 接受状态要放在一起核对。",
+      "after": "命令结果只说明当前电脑所用解析器返回了哪些 HTTPS 记录，不能独立证明权威发布正确，也代表不了 Android 设备在蜂窝网络、Private DNS、VPN 或 HTTPDNS 下拿到的答案。Private DNS 是 Android 的系统级加密 DNS 设置，VPN 也可能接管解析路径。因此权威 DNS 发布、设备解析日志与 TLS 服务端的 ECH 接受状态要分别核对，并关联缓存 TTL 与配置版本。",
+      "reason": "dig使用电脑当前递归解析器，缓存或解析路径可能不同，不能把一次答案等同权威发布验证。",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9460",
+        "https://developer.android.com/reference/android/net/DnsResolver"
+      ],
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "why": "dig使用电脑当前递归解析器，缓存或解析路径可能不同，不能把一次答案等同权威发布验证。"
+    },
+    {
+      "before": "24.9 处理 Android 17 `ACCESS_LOCAL_NETWORK`、局域网设备发现、Google Cast 投屏、物联网（IoT）设备与本地 HTTP 服务；ECH 与网络安全配置作用于公网 HTTPS 连接，两类问题的失败阶段不同。",
+      "after": "24.9 处理 Android 17 `ACCESS_LOCAL_NETWORK`、局域网设备发现、Google Cast、物联网设备与本地 HTTP 服务；本节主要讨论 ECH 与网络安全配置的公网 HTTPS 路径。ECH 并不天然排除私网域名，私网 HTTPS 也可能先受本地网络权限约束，再进入 DNS、证书与 ECH 协商，因此按实际失败阶段分层定位。",
+      "reason": "原文把ECH限定为公网，实际TLS/ECH并不按公网私网二分；权限与握手错误可能依次出现。",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc9849",
+        "https://developer.android.com/about/versions/17/behavior-changes-17"
+      ],
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "why": "原文把ECH限定为公网，实际TLS/ECH并不按公网私网二分；权限与握手错误可能依次出现。"
+    },
+    {
+      "before": "- DNS、连接、握手、TTFB（Time to First Byte，从请求发出到收到响应首部的等待）、响应体与逻辑调用总时长；只使用当前客户端实际公开的阶段。",
+      "after": "- DNS、连接、握手、响应首部等待代理、响应体消费与逻辑调用总时长；写明各客户端的事件边界与缺失原因，阶段包含或重叠时不直接相加，TTFB 使用统一的起止定义。",
+      "reason": "沿用相邻篇已核验的计时边界，避免不同网络栈把首部代理、下载和内联处理混为可相加阶段。",
+      "sources": [
+        "https://developer.android.com/reference/android/net/http/FinishedRequestTimings",
+        "https://developer.android.com/reference/android/net/http/UrlResponseInfo"
+      ],
+      "article": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "why": "沿用相邻篇已核验的计时边界，避免不同网络栈把首部代理、下载和内联处理混为可相加阶段。"
+    },
+    {
+      "before": "applicable_versions: Android 8 (API 26) - Android 17 (API 37) / OkHttp 4.x - 5.x",
+      "after": "applicable_versions: Android 8 (API 26) - Android 17 (API 37); synchronous Dns model pinned to OkHttp 5.4.0, 5.5+ DNS API requires separate review",
+      "reason": "5.5已新增异步流式DNS模型，不能把5.4同步接口外推全部5.x。",
+      "sources": [
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "5.5已新增异步流式DNS模型，不能把5.4同步接口外推全部5.x。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'\nlast_verified_against: AOSP android-17.0.0_r1 and Android API 37 DnsResolver, Network and LinkProperties docs current through 2026-08-15; OkHttp 5.4.0 source",
+      "after": "last_verified: '2026-10-25'\nlast_verified_against: fixed AOSP android-17.0.0_r1 and OkHttp 5.4.0 route, dispatcher, DNS and pool sources; OkHttp 4.12.0 ExchangeFinder and 5.5.1 changelog; Android API and DNS transport security docs accessed 2026-10-25; RFC2308",
+      "reason": "记录本轮固定版本、版本反例及官方系统解析文档核验。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-4.12.0/okhttp/src/main/kotlin/okhttp3/internal/connection/ExchangeFinder.kt",
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "记录本轮固定版本、版本反例及官方系统解析文档核验。"
+    },
+    {
+      "before": "平台基准是 Android 17 / API 37 / `android-17.0.0_r1`，OkHttp 源码基准是 5.4.0 的 `parent-5.4.0` 标签。OkHttp 4.x 的旧实现使用 `StreamAllocation` 等类；5.x 应按 `RealRoutePlanner`、`RouteSelector` 和 `FastFallbackExchangeFinder` 分析路由规划、地址选择与并发连接，不能套用旧调用路径。",
+      "after": "平台基准是 Android 17 / API 37 / `android-17.0.0_r1`，OkHttp 同步接口与源码基准固定为 5.4.0 的 `parent-5.4.0` 标签。不要把整个 4.x 都归为 `StreamAllocation`：例如 4.12.0 已使用 [`ExchangeFinder`](https://github.com/lysine-dev/okhttp/blob/parent-4.12.0/okhttp/src/main/kotlin/okhttp3/internal/connection/ExchangeFinder.kt)。本文按 5.4 的 `RealRoutePlanner`、`RouteSelector` 和 `FastFallbackExchangeFinder` 分析。另据[固定 5.5.1 发布记录](https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md)，5.5.0 已新增多记录类型、异步流式结果与缓存的 DNS API，并提供 opt-in ECH；迁移到 5.5+ 时须重新核对新模型、HTTPS记录和兼容适配，不能直接外推本篇旧接口结论。",
+      "reason": "4.12固定源码已用ExchangeFinder，原4.x概括错误；5.5改变DNS接口能力，需要明确5.4适用范围。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-4.12.0/okhttp/src/main/kotlin/okhttp3/internal/connection/ExchangeFinder.kt",
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "4.12固定源码已用ExchangeFinder，原4.x概括错误；5.5改变DNS接口能力，需要明确5.4适用范围。"
+    },
+    {
+      "before": "- 使用 HTTP 代理时，OkHttp 在这条路径中解析代理服务器的主机名；目标站点通常由代理解析。",
+      "after": "- 使用 HTTP 代理时，路线中的套接字目标是代理服务器；代理地址仍是未解析主机名时才调用 `Dns`，已携带数值地址时可跳过。目标站点通常由代理解析。",
+      "reason": "RouteSelector.socketHost对已有InetAddress返回数值地址，因此HTTP代理分支不保证再次调用Dns。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RouteSelector.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "RouteSelector.socketHost对已有InetAddress返回数值地址，因此HTTP代理分支不保证再次调用Dns。"
+    },
+    {
+      "before": "- HTTP/2 连接合并允许证书和路由条件相容的不同主机复用同一条连接，因此也可能没有新的 DNS 查询。",
+      "after": "- HTTP/2 跨主机合并还可能需要先解析目标主机，以候选路线验证同一 IP 等资格。5.4 的 `RealRoutePlanner` 在 `planConnect()` 得到路线后会再次查池，所以“最终复用已有连接”不能单独证明本次未执行 DNS；早期已经命中的合格连接才可跳过该轮新路线解析。",
+      "reason": "固定RealRoutePlanner在DNS路线枚举前后各查池，RealConnection跨主机资格检查需要routes。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnection.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "固定RealRoutePlanner在DNS路线枚举前后各查池，RealConnection跨主机资格检查需要routes。"
+    },
+    {
+      "before": "业务请求必须等待内层 HTTPDNS 请求完成。若 `client` 也安装了这个 `Dns`，解析 HTTPDNS 服务域名时会再次进入 `lookup()`，形成递归调用。即使通过固定地址避开递归，共用 `Dispatcher`（OkHttp 管理异步请求并发和排队的调度器）、连接池和请求并发配额，仍会让解析流量与业务流量相互影响。",
+      "after": "业务请求必须等待内层 HTTPDNS 请求完成。若 `client` 也安装了这个 `Dns`，解析 HTTPDNS 服务域名时会再次进入 `lookup()`，形成递归调用。内层使用同步 `execute()` 时不会被 Dispatcher 的异步并发上限阻塞，但会增加线程、套接字和带宽占用；不能把这个示例直接解释为异步队列配额死锁。反过来，若内层使用 `enqueue()` 后等待结果（下文的 5.4 DoH 就是这种结构），外层异步调用占满同一 Dispatcher 的放行配额时，内层查询可能一直排队，形成资源饥饿。两种故障应分开检查。",
+      "reason": "execute绕过异步配额；需要区分递归、资源争用和enqueue+latch的潜在队列饥饿。后者为源码结构推断，未声称设备复现。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dispatcher.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp-dnsoverhttps/src/main/kotlin/okhttp3/dnsoverhttps/DnsOverHttps.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "execute绕过异步配额；需要区分递归、资源争用和enqueue+latch的潜在队列饥饿。后者为源码结构推断，未声称设备复现。"
+    },
+    {
+      "before": "`connectTimeout` 只约束套接字连接，不是 DNS 超时。OkHttp 的 `callTimeout` 把 DNS 计入整次调用期限，但取消一个 `Call` 无法保证任意自定义阻塞代码立即返回。自定义 `lookup()` 应只执行耗时可控的本地操作，不能依赖外层超时终止网络查询。",
+      "after": "`connectTimeout` 只约束套接字连接，不是 DNS 超时。OkHttp 的 `callTimeout` 把 DNS 计入整次调用期限，但取消一个 `Call` 无法保证任意自定义阻塞代码立即返回。自定义 `lookup()` 应只执行耗时可控的本地操作，不能依赖外层超时终止网络查询。 固定 5.4 的异步 `callTimeout` 还不包含 Dispatcher 排队：它在 `AsyncCall.run()` 中才开始。业务总截止时间要从用户动作开始计算，并覆盖排队、解析、重试及取消传播。",
+      "reason": "补充已核验RealCall的异步超时起点，避免整次调用期限被误读为含队列的用户总预算。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "补充已核验RealCall的异步超时起点，避免整次调用期限被误读为含队列的用户总预算。"
+    },
+    {
+      "before": "- 查询跟随系统选出的默认网络；",
+      "after": "- 未做进程级网络绑定时跟随默认网络；`bindProcessToNetwork()` 等进程级设置也会影响默认解析与连接路径；",
+      "reason": "默认解析可受进程级网络绑定影响，不应无条件等同当前系统默认网络。",
+      "sources": [
+        "https://developer.android.com/reference/android/net/ConnectivityManager",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/net/InetAddress.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "默认解析可受进程级网络绑定影响，不应无条件等同当前系统默认网络。"
+    },
+    {
+      "before": "- Android 9 及以上的 Private DNS 配置由系统处理；Private DNS 是 Android 对 DNS-over-TLS 加密解析的系统设置；",
+      "after": "- Android 9 及以上的 Private DNS 配置由系统处理；它是系统级加密 DNS 策略，Android 9 引入 DoT，Android 11 及以上的受支持解析服务还可经模块更新使用 DoH3，不能把实际传输永远等同 DoT；",
+      "reason": "官方不安全DNS指南与Android团队说明确认DoH3模块路径。",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/risks/bad-dns",
+        "https://security.googleblog.com/2022/07/dns-over-http3-in-android.html"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "官方不安全DNS指南与Android团队说明确认DoH3模块路径。"
+    },
+    {
+      "before": "刷新线程完成全部校验后，一次性替换不可变快照。这里的“快照”是一份发布后不再修改的地址记录集合；“原子发布”保证读取方只能看到完整的旧集合或新集合，不会读到写了一半的状态。`lookup()` 不遍历正在修改的集合，也不等待磁盘或网络任务。流程图中的 `network` 指产生这份结果时使用的 Android `Network`。",
+      "after": "刷新线程完成全部校验后，一次性替换不可变快照。这里的“快照”是一份发布后不再修改的地址记录集合；“原子发布”保证读取方只能看到完整的旧集合或新集合，不会读到写了一半的状态。HTTPDNS 命中路径不遍历正在修改的集合，也不等待自建磁盘或刷新任务；未命中后调用系统 DNS 时仍可能等待网络。流程图中的 `network` 指产生这份结果时使用的 Android `Network`。",
+      "reason": "前台命中不等待刷新，不表示系统DNS回退无阻塞；纠正过宽的无网络等待描述。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealRoutePlanner.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "前台命中不等待刷新，不表示系统DNS回退无阻塞；纠正过宽的无网络等待描述。"
+    },
+    {
+      "before": "当前请求只读内存、检查时间并筛选地址。`scheduleRefresh()` 必须立即返回，并按 `CacheKey` 合并同时到来的刷新。缓存未命中、已到达强制过期时间或所有地址都不可用时，代码调用系统解析；它不会把空列表交给 OkHttp。",
+      "after": "HTTPDNS 命中路径只读内存、检查时间并筛选地址。`scheduleRefresh()` 必须立即返回，并按 `CacheKey` 合并同时到来的刷新。缓存未命中、强制过期或所有地址不可用时，示例会调用 `fallback.lookup()`；默认依赖是 `Dns.SYSTEM`，该同步回退仍可能等待网络，且需要匹配对应的 `Network`。严格解析策略应注入符合承诺的回退或明确失败，不能静默换解析服务；返回给 OkHttp 的成功结果仍须非空。",
+      "reason": "明确代码fallback是同步DNS调用，并不是整个lookup无网络等待；支持策略依赖注入。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RouteSelector.kt",
+        "https://developer.android.com/reference/android/net/LinkProperties"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "明确代码fallback是同步DNS调用，并不是整个lookup无网络等待；支持策略依赖注入。"
+    },
+    {
+      "before": "失败结果也不能无限缓存。NXDOMAIN 表示负责该域名最终记录的权威 DNS 服务器回答“该域名不存在”，它与空响应、服务端错误、响应签名失败和本地解析异常不是同一种结果。只有服务约定明确给出负缓存规则时，才缓存对应失败结果；其余情况记录失败并使用系统解析。",
+      "after": "失败结果不能无限缓存。NXDOMAIN 是 DNS 的名称错误响应，含义为查询名称不存在；应用通常从递归解析器收到它，单凭该响应码不能证明自己直接访问了权威服务器或已验证响应来源。它与 NODATA（名称存在但无所查类型）、空响应、服务错误、签名失败和本地解析异常应分开。只有服务契约明确给出负缓存与可信来源规则时才按规则缓存；其他失败按既定解析策略恢复，不自动承诺无条件系统回退。",
+      "reason": "RFC2308区分NXDOMAIN与NODATA，响应码不等同来源认证；补齐负缓存和回退策略边界。",
+      "sources": [
+        "https://www.rfc-editor.org/rfc/rfc2308.html"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "RFC2308区分NXDOMAIN与NODATA，响应码不等同来源认证；补齐负缓存和回退策略边界。"
+    },
+    {
+      "before": "- 使用独立 `Dispatcher` 和连接池，使解析服务拥塞不会占用业务请求配额；",
+      "after": "- 为刷新与业务建立独立的调度和并发预算，必要时使用独立 `Dispatcher`；连接池可在安全配置兼容时共享，需独立释放资源或隔离实测争用时再分池，不能仅凭池是否共享推断异步配额；",
+      "reason": "Dispatcher与池作用不同，5.5官方示例也可共享引导客户端池；物理分池应按安全和实测需求决定。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dispatcher.kt",
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "Dispatcher与池作用不同，5.5官方示例也可共享引导客户端池；物理分池应按安全和实测需求决定。"
+    },
+    {
+      "before": "DNS TTL 约束名称解析记录，不约束现有 TCP/TLS 会话的存活时间。若服务端需要紧急撤下节点，应配合负载均衡、连接排空、服务端关闭连接和客户端版本策略。连接排空是停止把新请求分配给待下线节点，同时等待已有请求结束。频繁执行 `connectionPool.evictAll()` 会损失连接复用，并影响共享同一客户端的无关域名。需要单独处置时，应让特殊业务使用独立客户端和连接池。",
+      "after": "DNS TTL 约束名称解析记录，不约束现有 TCP/TLS 会话的存活时间。若服务端需要紧急撤下节点，应配合负载均衡、连接排空、服务端关闭连接和客户端版本策略。连接排空是停止把新请求分配给待下线节点，同时等待已有请求结束。`connectionPool.evictAll()` 只驱逐空闲连接，不会立即关闭仍在用的连接；频繁执行会损失复用，并影响共享同一池的无关域名。需要单独处置时，应让特殊业务使用独立客户端和连接池。",
+      "reason": "固定RealConnectionPool.evictAll跳过calls非空连接，避免把它当节点强制切换工具。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealConnectionPool.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "固定RealConnectionPool.evictAll跳过calls非空连接，避免把它当节点强制切换工具。"
+    },
+    {
+      "before": "系统 DNS 应作为默认选择，也是自定义解析失败时的兼容路径。HTTPDNS 和 DoH 都不适合未经评估地覆盖所有域名。应用还要确认域名是否属于用户数据、解析请求会发送到哪个地区、服务方保留哪些日志，以及隐私政策是否已经披露这些处理方式。",
+      "after": "系统 DNS 通常作为默认选择；自定义解析故障时能否回退，必须服从用户、企业与产品已经声明的解析策略。严格指定解析服务时，故障应明确失败或进入已授权恢复路径，不能静默切到另一服务。HTTPDNS 和 DoH 不宜未经评估覆盖所有域名；应用还应确认查询目的地、日志保留与隐私说明。",
+      "reason": "与前文严格PrivateDNS和隐私承诺一致，取消无条件系统回退断言。",
+      "sources": [
+        "https://developer.android.com/reference/android/net/LinkProperties",
+        "https://developer.android.com/privacy-and-security/risks/bad-dns"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "与前文严格PrivateDNS和隐私承诺一致，取消无条件系统回退断言。"
+    },
+    {
+      "before": "| 网络阶段 | DNS、TCP、TLS、TTFB、整次调用耗时 | TTFB（time to first byte）是发出请求后等到首个响应字节的时间，用它区分解析与后续等待 |",
+      "after": "| 网络阶段 | DNS、连接尝试、TLS、响应首部等待代理、整次调用耗时 | 写明具体事件边界与缺失原因；OkHttp HTTPS connect 区间含 TLS，响应首部事件也不保证观测真实网卡首字节，不直接相加 |",
+      "reason": "分段口径沿用相邻篇已核对的EventListener事实，不能把嵌套区间当互斥时间。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+        "https://lysine.dev/okhttp/features/events/"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "分段口径沿用相邻篇已核对的EventListener事实，不能把嵌套区间当互斥时间。"
+    },
+    {
+      "before": "- 空响应、格式错误、服务端错误都改用系统解析；",
+      "after": "- 空响应、格式错误、服务端错误按既定策略系统回退或明确失败；",
+      "reason": "测试应验证所承诺策略，不强制所有产品绕回系统解析。",
+      "sources": [
+        "https://developer.android.com/reference/android/net/LinkProperties"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "测试应验证所承诺策略，不强制所有产品绕回系统解析。"
+    },
+    {
+      "before": "还要通过故障演练确认：HTTPDNS 服务完全不可用时，系统解析路径仍保持可用。这个结果比只看到平均 DNS 耗时下降更能说明方案可发布。",
+      "after": "还要通过故障演练确认解析服务完全不可用时的策略：允许系统回退的产品验证该路径能否继续服务，严格解析产品验证明确失败、用户提示与恢复入口。安全和业务恢复条件通过后，再判断平均 DNS 耗时是否改善。",
+      "reason": "故障验收保持严格解析例外，与上文统一。",
+      "sources": [
+        "https://developer.android.com/reference/android/net/LinkProperties",
+        "https://developer.android.com/privacy-and-security/risks/bad-dns"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "故障验收保持严格解析例外，与上文统一。"
+    },
+    {
+      "before": "- `Dns.lookup()` 是否只执行并发安全的内存读取和筛选；",
+      "after": "- HTTPDNS 命中路径是否只执行并发安全的内存读取和筛选，系统回退等待是否单独计时；",
+      "reason": "检查项必须允许正文中的同步系统DNS回退，避免前后矛盾。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dns.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "检查项必须允许正文中的同步系统DNS回退，避免前后矛盾。"
+    },
+    {
+      "before": "- HTTPDNS 是否使用独立客户端、调度器、连接池和引导解析；",
+      "after": "- HTTPDNS 是否有独立引导、调度与并发预算，连接池共享或隔离是否符合安全配置和实测需求；",
+      "reason": "检查项不再把独立连接池当普遍必要条件。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.4.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/Dispatcher.kt",
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "why": "检查项不再把独立连接池当普遍必要条件。"
+    },
+    {
+      "before": "- 故障演练是否证明 HTTPDNS 失效时业务仍能改用系统解析。",
+      "after": "- 故障演练是否验证 HTTPDNS 失效时按所选策略回退，或明确失败并提供恢复入口。",
+      "reason": "检查清单与严格解析不静默回退的正文策略保持一致。",
+      "why": "检查清单与严格解析不静默回退的正文策略保持一致。",
+      "sources": [
+        "https://developer.android.com/reference/android/net/LinkProperties"
+      ],
+      "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md"
     }
   ],
   "validation": {
@@ -4721,15 +6876,51 @@
       "article_positions": "passed",
       "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a263",
       "source_audit": "完整阅读729行原文；38条来源记录35成功，旧文档404已有有效原始来源替代，固定OkHttp5.4.0五个raw文件已核对；11图与11正文位置实际视觉检查，构建/链接/资产/冻结基线通过；代码围栏保持原文；KEEP竞态为明确标注的静态协议推断，未声称Android或WorkManager执行。"
+    },
+    "a264": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a264",
+      "source_audit": "完整阅读1139行原文；26份官方文档及固定AOSP来源均下载成功；16图及16正文位置实际视觉验收、构建/链接/资产/冻结基线通过。XML解析清单核对完整Provider组件，bash围栏语法检查通过；19围栏仅改错误消息与两处命令组件名，未运行adb设备操作或编译Kotlin。补充API30边界、alpha03迁移、文件与数据库恢复窗口。"
+    },
+    "a265": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a265",
+      "source_audit": "完整阅读959行；56份来源记录全部成功，包括固定OkHttp5.4.0十份raw源码、Android17固定平台源码和RFC9000/9114。17图与17正文位置实际视觉检查，构建/链接/资产/冻结基线通过；代码围栏保持原文。静态核对异步callTimeout不含排队、Dispatcher资源计数、connect包含TLS、FastFallback先竞速TCP和可重放POST恢复；未编译Kotlin或声称Android网络故障执行。"
+    },
+    "a266": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a266",
+      "source_audit": "完整阅读688行；60条来源记录59成功，额外XmlConfigSource旧路径404保留审计并以官方XML文档替代；固定r1 ProxyOptions、OkHttp5.4五份raw、5.5.1固定发布记录与Maven元数据已核对。15图/15正文位置实际视觉检查，构建/链接/资产/冻结基线通过；补充段落与图注分离已复查，251至265逐篇重构比对无同类插入问题。代码围栏未改，XML解析和bash语法通过，未编译Kotlin或声称设备握手执行。"
+    },
+    "a267": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a267",
+      "source_audit": "完整阅读452行；22份有效原始来源全部成功，文档示例example.com和TEST-NET-3地址不列为证据。固定5.4九份路由/DNS/调度/连接池源码及4.12 ExchangeFinder、5.5.1发布记录已核对。11图及11正文位置实际视觉检查，构建/链接/资产/冻结基线通过；竞速图候选取消边界对齐获胜时刻。21条校勘，代码围栏保持原文；嵌套队列饥饿为标注的源码结构推断，未编译Kotlin或声称设备复现。"
     }
   },
   "last_checkpoint": {
-    "completed": 13,
+    "completed": 17,
     "total": 51,
-    "diagrams": 127,
-    "next_article": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
-    "next_article_index": 264,
-    "updated_at": "2026-10-25T13:21:44.709119+08:00"
+    "diagrams": 186,
+    "next_article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+    "next_article_index": 268,
+    "updated_at": "2026-10-25T13:51:05.046300+08:00"
   },
   "replaced_inline_diagrams": []
 }

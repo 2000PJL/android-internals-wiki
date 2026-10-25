@@ -1106,7 +1106,7 @@
     {
       "path": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
       "sha256_before": "cd851c0ac301508d8244a207d80fb43e6026379718dad2d9ce714691cd9576ac",
-      "status": "in_progress",
+      "status": "illustrated",
       "diagrams": [
         "a288-01-incident-evidence-and-reversible-mitigation",
         "a288-02-dynamic-log-budget",
@@ -1129,39 +1129,124 @@
       ],
       "article_index": 288,
       "sha256_at_assignment": "cd851c0ac301508d8244a207d80fb43e6026379718dad2d9ce714691cd9576ac",
-      "sha256_current": "438eacc0d6028ff634685a0091aea91137deace8a4f52dd1c7c8f7d51bf4220d"
+      "sha256_current": "438eacc0d6028ff634685a0091aea91137deace8a4f52dd1c7c8f7d51bf4220d",
+      "sha256_after": "438eacc0d6028ff634685a0091aea91137deace8a4f52dd1c7c8f7d51bf4220d",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "18 SVG/PNG figures and all rendered article placements actually viewed; diagram9 success-only execution corrected; SDK36.1 minor API verified against full-version constants, trigger-specific products and POSIX file semantics; exact two Kotlin snippets compiled with host stubs and failure/null/history/dedup cases passed, no Android SDK/NDK/device or profiling performance run. Exact baseline+25corrections+18insertions reconstructed; mdbook build, local links, packs and assets passed.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "cd851c0ac301508d8244a207d80fb43e6026379718dad2d9ce714691cd9576ac"
     },
     {
       "path": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
       "sha256_before": "7115f8f40a476ea7728f0172b53a6a79d4d75bc321cfff72f527e8e23e4da766",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a289-01-assignment-exposure-and-reporting-funnel",
+        "a289-02-cluster-bootstrap-and-estimand-weight",
+        "a289-03-mixture-cdf-not-average-quantiles",
+        "a289-04-sequential-inspection-and-safety-stop",
+        "a289-05-benchmark-metric-version-contracts",
+        "a289-06-layered-ci-gates-and-pinned-baseline",
+        "a289-07-attribution-by-metric-and-evidence",
+        "a289-08-srm-before-outcome-and-attrition",
+        "a289-09-exit-evidence-and-experiment-membership"
+      ],
       "article_index": 289,
-      "sha256_at_assignment": "7115f8f40a476ea7728f0172b53a6a79d4d75bc321cfff72f527e8e23e4da766"
+      "sha256_at_assignment": "7115f8f40a476ea7728f0172b53a6a79d4d75bc321cfff72f527e8e23e4da766",
+      "sha256_current": "c5b917cbc5e5b2097dcbfb9bf3810728528c69ffc86ad5332e7c6404ae3fe30b",
+      "sha256_after": "c5b917cbc5e5b2097dcbfb9bf3810728528c69ffc86ad5332e7c6404ae3fe30b",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "9 SVG/PNG figures and all actual rendered article placements visually reviewed. Official Firebase optional activation event and Android metric/version contracts checked; source evidence includes AOSP bounded exit history and SRM/sequential inference original papers. Nearest-rank mixture counterexample computed from explicitly synthetic dimensionless values. Exact reconstruction, mdbook build, local links, font/prompt packs and assets passed; no CI, Android device or production A/B experiment executed.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "7115f8f40a476ea7728f0172b53a6a79d4d75bc321cfff72f527e8e23e4da766"
     },
     {
       "path": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
       "sha256_before": "776533fdefcc95e8435b2f6992dcbcd02124022d16160e59fe28ab45b7599efb",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a290-01-gate-evidence-contract",
+        "a290-02-android17-two-compatibility-paths",
+        "a290-03-vitals-current-core-and-window",
+        "a290-04-benchmark-contract-and-evidence-archive",
+        "a290-05-rollout-target-versus-effective-exposure",
+        "a290-06-rollout-state-and-idempotent-control",
+        "a290-07-three-mitigation-actions-installed-users",
+        "a290-08-static-dynamic-score-and-field-coverage",
+        "a290-09-profiles-build-time-and-art-time",
+        "a290-10-dynamic-ttfd-rendering-and-measurement",
+        "a290-11-score-to-action-queues",
+        "a290-12-tool-selection-and-representative-device-pool",
+        "a290-13-headroom-sample-versus-hint-session"
+      ],
       "article_index": 290,
-      "sha256_at_assignment": "776533fdefcc95e8435b2f6992dcbcd02124022d16160e59fe28ab45b7599efb"
+      "sha256_at_assignment": "776533fdefcc95e8435b2f6992dcbcd02124022d16160e59fe28ab45b7599efb",
+      "sha256_current": "1dd5a81a7b9bf264702fa6f1765888c5cc31d641107e062670d02ce67a0261db",
+      "sha256_after": "1dd5a81a7b9bf264702fa6f1765888c5cc31d641107e062670d02ce67a0261db",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "13 final SVG/PNG assets and every rendered article placement actually viewed; headroom figure moved into its source section before the summary and reviewed again. Current official core-vitals memory categories/FEB2027, 28day ANR user weighting, staged-cohort reuse and full-rollout halt constraints checked. Source assertions for API29 TTFD boundary, score categories and headroom passed; exact reconstruction, mdbook build, links, prompt packs and assets passed. No Play release mutation, Android device or performance benchmark executed.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "776533fdefcc95e8435b2f6992dcbcd02124022d16160e59fe28ab45b7599efb"
     },
     {
       "path": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
       "sha256_before": "221f538203e0eafc4c7876b0185d53b656cf4d270b157e99ebcfcc8f285f5e72",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a291-01-source-events-and-process-identities",
+        "a291-02-bounded-history-query-and-api37-guard",
+        "a291-03-exit-reason-versus-attachment-type",
+        "a291-04-legacy-markers-and-evidence-grade",
+        "a291-05-koom-fork-dump-versioned-mechanism",
+        "a291-06-metadata-and-attachment-independent-spools",
+        "a291-07-reason-version-and-system-facts",
+        "a291-08-native-safety-tool-and-tombstone-association",
+        "a291-09-passive-active-trigger-evidence",
+        "a291-10-full-sdk-minor-version-and-safe-fallback",
+        "a291-11-profiling-request-result-and-member-guard",
+        "a291-12-trigger-specific-artifacts-and-requirements",
+        "a291-13-memory-limiter-anomaly-versus-java-oom",
+        "a291-14-cold-start-discard-buffer-and-fully-drawn",
+        "a291-15-request-identity-artifact-hash-and-redelivery",
+        "a291-16-versioned-diagnostic-case-and-budget"
+      ],
       "article_index": 291,
-      "sha256_at_assignment": "221f538203e0eafc4c7876b0185d53b656cf4d270b157e99ebcfcc8f285f5e72"
+      "sha256_at_assignment": "221f538203e0eafc4c7876b0185d53b656cf4d270b157e99ebcfcc8f285f5e72",
+      "sha256_current": "8495ef7933cf42a51c3b3beb141f43d8e39e4d908b2c6a63f08d054afc45c291",
+      "sha256_after": "8495ef7933cf42a51c3b3beb141f43d8e39e4d908b2c6a63f08d054afc45c291",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "16 final SVG/PNG figures and all final rendered placements actually viewed, including corrected parallel fork branches and cold-start Perfetto-style tracks. Complete Kotlin DTO/snippet host-stub compile/run verified API30-36 guard, API37 optional ANR, UID fields, byte-copy, query limits and failure vs empty. Source assertions confirm 17r1 history16, reason37.2 separation, ProfilingResult triggerType API36, pinned KOOM2.2.2 and MemoryLimiter flags. Exact reconstruction, mdbook build, local links, prompt packs and assets passed; no real crash/ANR/profile injection, Android SDK/NDK build or device measurements.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "221f538203e0eafc4c7876b0185d53b656cf4d270b157e99ebcfcc8f285f5e72"
     },
     {
       "path": "src/part5-app/ch26-observability/07-application-start-info.md",
       "sha256_before": "99983630f25d6fcc1ecaac563a4d4c2d9196f11524a5886541771ece14178d2a",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a292-01-three-start-evidence-layers",
+        "a292-02-startup-state-controls-available-fields",
+        "a292-03-completion-listener-and-late-fully-drawn",
+        "a292-04-component-reason-and-start-type",
+        "a292-05-uptime-versus-elapsed-realtime",
+        "a292-06-developer-home-ready-and-fully-drawn-order",
+        "a292-07-cold-start-new-profile-versus-fully-drawn-snapshot",
+        "a292-08-previous-exit-current-start-confidence-edge",
+        "a292-09-ci-field-distribution-and-coverage"
+      ],
       "article_index": 292,
-      "sha256_at_assignment": "99983630f25d6fcc1ecaac563a4d4c2d9196f11524a5886541771ece14178d2a"
+      "sha256_at_assignment": "99983630f25d6fcc1ecaac563a4d4c2d9196f11524a5886541771ece14178d2a",
+      "sha256_current": "e1676b91dd598d496a2d01ec0626dd30abd9ac1e7d59d44d000e49ef2401cb37",
+      "sha256_after": "e1676b91dd598d496a2d01ec0626dd30abd9ac1e7d59d44d000e49ef2401cb37",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "9 final figures and every article position actually visually reviewed. Exact Kotlin host-stub compile/run validated incomplete start/type and API35/component guards, UID fields, Map copy, maxNum cases, query failure vs empty and HOME_READY clock. Primary-source assertions verify uptimeNanos onCreate/first-frame timebase, SystemClock deep-sleep semantics, 17r1 listener list/duplicate behavior and online source-event37.2 separation. Exact reconstruction, mdbook build, local links, prompt packs and asset checks passed; no Android SDK/device startup or profiling execution.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "99983630f25d6fcc1ecaac563a4d4c2d9196f11524a5886541771ece14178d2a"
     },
     {
       "path": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
@@ -11796,9 +11881,14 @@
         "https://developer.android.com/studio/debug/bug-report",
         "https://firebase.google.com/docs/remote-config/rollouts/about"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-01-incident-evidence-and-reversible-mitigation.svg": "5e99aad2bb0116ab744a5be2ed319faa1ff616ab9242ea81eacaa2aeec8dae43",
+        "src/assets/diagrams/ch26/a288-01-incident-evidence-and-reversible-mitigation.png": "bcf62bf8193a14f919a016f363615794fb426473bc6fbbf2da8bed6b5c79a86d"
+      }
     },
     {
       "id": "a288-02-dynamic-log-budget",
@@ -11814,9 +11904,14 @@
         "https://developer.android.com/privacy-and-security/risks/log-info-disclosure",
         "https://source.android.com/docs/core/tests/debug/understanding-logging"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-02-dynamic-log-budget.svg": "9ebfa886ef54475e9452da5e260bac97efc17be46139e7ccfd8057c0f33f25ae",
+        "src/assets/diagrams/ch26/a288-02-dynamic-log-budget.png": "20477c08cb57fe79de04ad296281db118d06b6cdde5476247ff52050eb965915"
+      }
     },
     {
       "id": "a288-03-profiling-sdk-major-and-minor-versions",
@@ -11833,9 +11928,14 @@
         "https://developer.android.com/reference/android/os/ProfilingTrigger",
         "https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-03-profiling-sdk-major-and-minor-versions.svg": "c9d05bb47eb15dd84cc0680c3482910663a6969a1a838b5f564691774ab3cd8f",
+        "src/assets/diagrams/ch26/a288-03-profiling-sdk-major-and-minor-versions.png": "21ebef2f2fbb5fae4439ca2cca847f63b9818dbd559796b6340f2c624dd3bb6c"
+      }
     },
     {
       "id": "a288-04-rollout-versus-remote-config",
@@ -11851,9 +11951,14 @@
         "https://support.google.com/googleplay/android-developer/answer/6346149",
         "https://firebase.google.com/docs/remote-config/rollouts/about"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-04-rollout-versus-remote-config.svg": "d41822f347f4ee4331f907bc1b0ac7ffa3243ade2535b802a1d1d302e699c0fa",
+        "src/assets/diagrams/ch26/a288-04-rollout-versus-remote-config.png": "dd5f6e3c9339dd800e84fafddc9717100636e9e3b2600c73cb819c3d32ed1de9"
+      }
     },
     {
       "id": "a288-05-statsd-control-and-permission",
@@ -11870,9 +11975,14 @@
         "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/util/StatsLog.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/AndroidManifest.xml"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-05-statsd-control-and-permission.svg": "fc8ab548cfb1c211bd6c57f353237a1216228067e2113ed1035a9476a1f9c028",
+        "src/assets/diagrams/ch26/a288-05-statsd-control-and-permission.png": "ae9bca7090941bd5c391209e1086f8a4d645b17afb26203f3779027e2bff853e"
+      }
     },
     {
       "id": "a288-06-sampling-storage-upload-budgets",
@@ -11888,9 +11998,14 @@
         "https://developer.android.com/privacy-and-security/risks/log-info-disclosure",
         "https://developer.android.com/reference/android/os/ProfilingManager"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-06-sampling-storage-upload-budgets.svg": "ad2a9956b7e9af2a1176eb4e8e28becaf66c406b9659d5da57902f3bccda7965",
+        "src/assets/diagrams/ch26/a288-06-sampling-storage-upload-budgets.png": "5e8197ddf544501de12eb468abd2ef145c29e83d152eb92cab6510bebba10bf0"
+      }
     },
     {
       "id": "a288-07-record-integrity-versus-durability",
@@ -11906,9 +12021,14 @@
         "https://pubs.opengroup.org/onlinepubs/9799919799/functions/fsync.html",
         "https://pubs.opengroup.org/onlinepubs/9799919799/functions/rename.html"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-07-record-integrity-versus-durability.svg": "8724681dcaf5bea7aa37e51d2d66b25befe56a4d98665a5af8e368a901244a19",
+        "src/assets/diagrams/ch26/a288-07-record-integrity-versus-durability.png": "7f004c5eb4aec7534b5ab325aa632bb0bc33ca1a6434815ada5e3d4a85406834"
+      }
     },
     {
       "id": "a288-08-multiprocess-writers-and-upload-lease",
@@ -11924,9 +12044,14 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
         "https://pubs.opengroup.org/onlinepubs/9799919799/functions/rename.html"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-08-multiprocess-writers-and-upload-lease.svg": "50245d35a1bf2a4581f00c718105e6f2169f18dd9a931151e3c2ebe79c540526",
+        "src/assets/diagrams/ch26/a288-08-multiprocess-writers-and-upload-lease.png": "441374fc9c1a2cc52303cb30cb8f92cc7d1c23f11e1261c4c264dccdca24c56f"
+      }
     },
     {
       "id": "a288-09-diagnostic-command-state-machine",
@@ -11942,9 +12067,14 @@
         "https://developer.android.com/reference/android/os/ProfilingManager",
         "https://developer.android.com/privacy-and-security/risks/log-info-disclosure"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-09-diagnostic-command-state-machine.svg": "f2693f6c89a253f284c4ab3806e314917cc279281248f50399a7ea6f2c0d7259",
+        "src/assets/diagrams/ch26/a288-09-diagnostic-command-state-machine.png": "c9ba87cfa31291c90a9fda2c10fcf279f297229dbc68f4c50eb1eb972cfef159"
+      }
     },
     {
       "id": "a288-10-profile-callback-and-result-file",
@@ -11961,9 +12091,14 @@
         "https://developer.android.com/reference/android/os/ProfilingTrigger",
         "https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-10-profile-callback-and-result-file.svg": "7cc0e5ba2a60b18765eb00023a0a8e277806d1157a019502ee84bde7f19a86f4",
+        "src/assets/diagrams/ch26/a288-10-profile-callback-and-result-file.png": "4a9bebfeb36d16ba3f2f7eb4ec17d446e65323a46d3ed024134ac875c394ccf3"
+      }
     },
     {
       "id": "a288-11-network-phases-and-trace-id",
@@ -11979,9 +12114,14 @@
         "https://developer.android.com/tools/perfetto",
         "https://developer.android.com/privacy-and-security/risks/log-info-disclosure"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-11-network-phases-and-trace-id.svg": "334146d2c793158b67cc5e96fdf189b0635f580a12424233996789b1bf21de26",
+        "src/assets/diagrams/ch26/a288-11-network-phases-and-trace-id.png": "9d5af322f1a5667507043c712511e51c1101b92b41bac7dcf2c461bdff0008f4"
+      }
     },
     {
       "id": "a288-12-separate-telemetry-streams-and-ack",
@@ -11997,9 +12137,14 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
         "https://developer.android.com/reference/android/os/ProfilingManager"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-12-separate-telemetry-streams-and-ack.svg": "fbf4df14e21bd652ec46517a8e4ccdfba6aafe2c62b56f9b128b7ef78058b021",
+        "src/assets/diagrams/ch26/a288-12-separate-telemetry-streams-and-ack.png": "08890cd3ecadd2a7cd9db1eb4e3a42516043e9079b97a3d127e5fa27c4436d80"
+      }
     },
     {
       "id": "a288-13-capability-snapshot-unknown-window",
@@ -12016,9 +12161,14 @@
         "https://developer.android.com/reference/android/os/SystemClock",
         "https://developer.android.com/reference/android/content/pm/InstallSourceInfo"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-13-capability-snapshot-unknown-window.svg": "23072dbd3c612714cede58d44d216554e83851cfcd126401131eb8588e7d677e",
+        "src/assets/diagrams/ch26/a288-13-capability-snapshot-unknown-window.png": "c18b1432f918ef78e04ff583c2537735e784c66806141f783d1b65dfcea9580a"
+      }
     },
     {
       "id": "a288-14-exit-history-dedup-before-batch-limit",
@@ -12034,9 +12184,14 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-14-exit-history-dedup-before-batch-limit.svg": "f0a3d323d954e85465ff6914edabaf0965e9b624dfef43bb49c819521d26cbc2",
+        "src/assets/diagrams/ch26/a288-14-exit-history-dedup-before-batch-limit.png": "812baec5d7c02eeb3b3f026732633db62fb9ee94e68ca33525c53a3d9e245c8b"
+      }
     },
     {
       "id": "a288-15-missing-telemetry-versus-process-death",
@@ -12052,9 +12207,14 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-15-missing-telemetry-versus-process-death.svg": "493be8fecef19cb0698a3c316019fe8e7de82d67066e45def4c1d7e86a829a71",
+        "src/assets/diagrams/ch26/a288-15-missing-telemetry-versus-process-death.png": "3df41a58a992813a7f2b0330876a9d9ea412b15d3f815d66041f94b9367b5669"
+      }
     },
     {
       "id": "a288-16-adpf-session-capability-and-measured-effect",
@@ -12069,9 +12229,14 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-16-adpf-session-capability-and-measured-effect.svg": "a766956c18b78cf9d1a3feab78ceaa419e03a0786b8fb64b6dd4f5203c4ce7eb",
+        "src/assets/diagrams/ch26/a288-16-adpf-session-capability-and-measured-effect.png": "f942e175130542500127c478173dfcb8a9da99a4f5b9fe03cda882a26680a505"
+      }
     },
     {
       "id": "a288-17-channel-comparison-confounding",
@@ -12087,9 +12252,14 @@
         "https://developer.android.com/topic/performance/vitals",
         "https://developer.android.com/reference/android/content/pm/InstallSourceInfo"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-17-channel-comparison-confounding.svg": "71adab647457ee4ae876b1ad7637012c9b89b100d010fba20159b4f588c290ef",
+        "src/assets/diagrams/ch26/a288-17-channel-comparison-confounding.png": "e02c611167b6adeff6a2edeaffb6e28a6d6c8ab942fa6e455d29ff765b09dea3"
+      }
     },
     {
       "id": "a288-18-rom-evidence-and-apm-selection",
@@ -12106,9 +12276,1119 @@
         "https://developer.android.com/topic/performance/vitals",
         "https://developer.android.com/reference/android/content/pm/InstallSourceInfo"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a288-18-rom-evidence-and-apm-selection.svg": "11e997815f90807d29cad064ebe069fb2d27365126c542728f6cf8caad8f50d3",
+        "src/assets/diagrams/ch26/a288-18-rom-evidence-and-apm-selection.png": "946589646874dd1560a87e88bdf4994ea1cee9a930f37552cb90886445119684"
+      }
+    },
+    {
+      "id": "a289-01-assignment-exposure-and-reporting-funnel",
+      "title": "从分桶到上报：随机分配与处理后选择分开记录",
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a289-01-assignment-exposure-and-reporting-funnel.svg",
+        "src/assets/diagrams/ch26/a289-01-assignment-exposure-and-reporting-funnel.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a289-01-assignment-exposure-and-reporting-funnel",
+      "sources": [
+        "https://firebase.google.com/docs/ab-testing/abtest-config",
+        "https://www.kdd.org/kdd2019/accepted-papers/view/diagnosing-sample-ratio-mismatch-in-online-controlled-experiments-a-taxonomy-and-rules-of-thumb-for-practitioners"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a289-01-assignment-exposure-and-reporting-funnel.svg": "b370acc6f9385912d822cd7e411c801b86706fe18b78bef8df461543ac138451",
+        "src/assets/diagrams/ch26/a289-01-assignment-exposure-and-reporting-funnel.png": "d2efe8023fcbc603d0393388f76056b36738f03c21ad4a3871378af3a471bca7"
+      }
+    },
+    {
+      "id": "a289-02-cluster-bootstrap-and-estimand-weight",
+      "title": "重复帧不是独立用户：相关性与权重是两个选择",
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a289-02-cluster-bootstrap-and-estimand-weight.svg",
+        "src/assets/diagrams/ch26/a289-02-cluster-bootstrap-and-estimand-weight.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a289-02-cluster-bootstrap-and-estimand-weight",
+      "sources": [
+        "https://www.kdd.org/kdd2019/accepted-papers/view/diagnosing-sample-ratio-mismatch-in-online-controlled-experiments-a-taxonomy-and-rules-of-thumb-for-practitioners",
+        "https://arxiv.org/abs/1512.04922"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a289-02-cluster-bootstrap-and-estimand-weight.svg": "fab366567c80a9b070803709cfb4027c12be23e97fecfd927a32bab679f76926",
+        "src/assets/diagrams/ch26/a289-02-cluster-bootstrap-and-estimand-weight.png": "4d3d459e79171647e24f38d778d90d2bc269df536361d079cda47ee379e12ddb"
+      }
+    },
+    {
+      "id": "a289-03-mixture-cdf-not-average-quantiles",
+      "title": "总体分位值来自混合 CDF，不能平均群体 P90",
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a289-03-mixture-cdf-not-average-quantiles.svg",
+        "src/assets/diagrams/ch26/a289-03-mixture-cdf-not-average-quantiles.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a289-03-mixture-cdf-not-average-quantiles",
+      "sources": [
+        "https://arxiv.org/abs/1512.04922",
+        "https://firebase.google.com/docs/ab-testing/ab-concepts"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a289-03-mixture-cdf-not-average-quantiles.svg": "f4640fe483375f4bdca9be1b484490105173ecd8c5999b782dd659097b777310",
+        "src/assets/diagrams/ch26/a289-03-mixture-cdf-not-average-quantiles.png": "43b5ca6692189385801949afdda000807a97e336535d9a9aec351337347d9f3d"
+      }
+    },
+    {
+      "id": "a289-04-sequential-inspection-and-safety-stop",
+      "title": "查看规则、统计结论与安全停止分别定义",
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a289-04-sequential-inspection-and-safety-stop.svg",
+        "src/assets/diagrams/ch26/a289-04-sequential-inspection-and-safety-stop.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a289-04-sequential-inspection-and-safety-stop",
+      "sources": [
+        "https://arxiv.org/abs/1512.04922",
+        "https://firebase.google.com/docs/ab-testing/ab-concepts"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a289-04-sequential-inspection-and-safety-stop.svg": "1329d349218a4ca018ce7cb904c1bee52e95835485047872079516627ed9be6f",
+        "src/assets/diagrams/ch26/a289-04-sequential-inspection-and-safety-stop.png": "b6b4d91679aa49f7cbd61b1be855c7c543c5c4a299d4a99813094c728b1618a4"
+      }
+    },
+    {
+      "id": "a289-05-benchmark-metric-version-contracts",
+      "title": "指标名称相似，也要分别记录版本与测量对象",
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a289-05-benchmark-metric-version-contracts.svg",
+        "src/assets/diagrams/ch26/a289-05-benchmark-metric-version-contracts.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a289-05-benchmark-metric-version-contracts",
+      "sources": [
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics",
+        "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/TraceSectionMetric",
+        "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/StartupTimingMetric"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a289-05-benchmark-metric-version-contracts.svg": "83229d8d50b60f4014c26dba6a9b3a49777aa154cf96755d631b6e1e826b5b94",
+        "src/assets/diagrams/ch26/a289-05-benchmark-metric-version-contracts.png": "36fc704c195b2aa6bef85ee2997b416a4519cb9f8123aca1ce3461d055021121"
+      }
+    },
+    {
+      "id": "a289-06-layered-ci-gates-and-pinned-baseline",
+      "title": "CI 三层门禁使用固定良好基线与可审计结果",
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a289-06-layered-ci-gates-and-pinned-baseline.svg",
+        "src/assets/diagrams/ch26/a289-06-layered-ci-gates-and-pinned-baseline.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a289-06-layered-ci-gates-and-pinned-baseline",
+      "sources": [
+        "https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a289-06-layered-ci-gates-and-pinned-baseline.svg": "cf8d255aeaf95599a652ecac9db1d360a7a6c68c704549d673ecfe4eb23ace73",
+        "src/assets/diagrams/ch26/a289-06-layered-ci-gates-and-pinned-baseline.png": "5e7e491559b9705870099011d085ae2c8836698f7b6eaf9e8a84da02cf9c024d"
+      }
+    },
+    {
+      "id": "a289-07-attribution-by-metric-and-evidence",
+      "title": "自动归因按指标类型输出可复核候选",
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a289-07-attribution-by-metric-and-evidence.svg",
+        "src/assets/diagrams/ch26/a289-07-attribution-by-metric-and-evidence.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a289-07-attribution-by-metric-and-evidence",
+      "sources": [
+        "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/TraceSectionMetric",
+        "https://firebase.google.com/docs/ab-testing/ab-concepts"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a289-07-attribution-by-metric-and-evidence.svg": "5db9e4ce35a772b9ee936c5a184adffc087b86285dee2bd986ac5b625ed81f2b",
+        "src/assets/diagrams/ch26/a289-07-attribution-by-metric-and-evidence.png": "b824404ec3f940ac8b9f55e52c1c08723fc1f7e4d318ab28e79632ff1c64c5ae"
+      }
+    },
+    {
+      "id": "a289-08-srm-before-outcome-and-attrition",
+      "title": "SRM 先检查分配，再定位处理后的缺失",
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a289-08-srm-before-outcome-and-attrition.svg",
+        "src/assets/diagrams/ch26/a289-08-srm-before-outcome-and-attrition.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a289-08-srm-before-outcome-and-attrition",
+      "sources": [
+        "https://www.kdd.org/kdd2019/accepted-papers/view/diagnosing-sample-ratio-mismatch-in-online-controlled-experiments-a-taxonomy-and-rules-of-thumb-for-practitioners",
+        "https://firebase.google.com/docs/ab-testing/abtest-config"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a289-08-srm-before-outcome-and-attrition.svg": "92a7a6464aad5af0f946f252b1e0dad7f8605bcda3f3311a89df8efe1479a34e",
+        "src/assets/diagrams/ch26/a289-08-srm-before-outcome-and-attrition.png": "c6537bca78f3d1b23ab68806250fb42044e6f010168976192f82b8782704f1d8"
+      }
+    },
+    {
+      "id": "a289-09-exit-evidence-and-experiment-membership",
+      "title": "退出证据补充分类，实验归属仍靠分配记录",
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a289-09-exit-evidence-and-experiment-membership.svg",
+        "src/assets/diagrams/ch26/a289-09-exit-evidence-and-experiment-membership.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a289-09-exit-evidence-and-experiment-membership",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ActivityManager",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a289-09-exit-evidence-and-experiment-membership.svg": "b2258b3245611fba95c77d3331ac21a46e601d7a55b7be2fa56eabde35fd5291",
+        "src/assets/diagrams/ch26/a289-09-exit-evidence-and-experiment-membership.png": "a829ea7002c57f3f26e5b1baab8e66297cd0b4fbaa9934f6c64bca81cb2d926c"
+      }
+    },
+    {
+      "id": "a290-01-gate-evidence-contract",
+      "title": "门禁先冻结身份和证据，再做发布判断",
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a290-01-gate-evidence-contract.svg",
+        "src/assets/diagrams/ch26/a290-01-gate-evidence-contract.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a290-01-gate-evidence-contract",
+      "sources": [
+        "https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci",
+        "https://developer.android.com/topic/performance/app-score"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a290-01-gate-evidence-contract.svg": "3500cc1fb7052a9ec4d3bc2bf6bfc7f0e7f705684b74b4805b0066a4340348fd",
+        "src/assets/diagrams/ch26/a290-01-gate-evidence-contract.png": "48dd42c01bc9a6fb48a00905d44ff963c7166db90a342ba06bec3cda9f72a25b"
+      }
+    },
+    {
+      "id": "a290-02-android17-two-compatibility-paths",
+      "title": "Android 17 兼容性分两条验证路径",
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a290-02-android17-two-compatibility-paths.svg",
+        "src/assets/diagrams/ch26/a290-02-android17-two-compatibility-paths.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a290-02-android17-two-compatibility-paths",
+      "sources": [
+        "https://developer.android.com/about/versions/17/migration",
+        "https://developer.android.com/about/versions/17/behavior-changes-all",
+        "https://developer.android.com/about/versions/17/behavior-changes-17"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a290-02-android17-two-compatibility-paths.svg": "179b4935bfcab4a7eed441058f966d0630a86087ec92bc3029fb6e21f126795b",
+        "src/assets/diagrams/ch26/a290-02-android17-two-compatibility-paths.png": "5e20acc4dcfc2132dfbb4f6bd887808ae964bb39b5505e7b219e99653d17eeb4"
+      }
+    },
+    {
+      "id": "a290-03-vitals-current-core-and-window",
+      "title": "外部 vitals：适用范围、窗口和生效日期缺一不可",
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a290-03-vitals-current-core-and-window.svg",
+        "src/assets/diagrams/ch26/a290-03-vitals-current-core-and-window.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a290-03-vitals-current-core-and-window",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals",
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.anrrate"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a290-03-vitals-current-core-and-window.svg": "4c9d99ca0d52cc9f2b65a0c06c900c5f20a17dd37861db4ca595190d24071bb6",
+        "src/assets/diagrams/ch26/a290-03-vitals-current-core-and-window.png": "e35763fafd4f9195ab68517f231188b3629f4198cb223e73bdb4aa43725aad97"
+      }
+    },
+    {
+      "id": "a290-04-benchmark-contract-and-evidence-archive",
+      "title": "自动化报告按指标契约归档，不只给红绿灯",
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a290-04-benchmark-contract-and-evidence-archive.svg",
+        "src/assets/diagrams/ch26/a290-04-benchmark-contract-and-evidence-archive.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a290-04-benchmark-contract-and-evidence-archive",
+      "sources": [
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics",
+        "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/TraceSectionMetric",
+        "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/StartupTimingMetric"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a290-04-benchmark-contract-and-evidence-archive.svg": "7a8fddeede5f5fbbc97c17ef5a2fd0855f4bd1826d44e2fe2a5e03e33a9f2b2d",
+        "src/assets/diagrams/ch26/a290-04-benchmark-contract-and-evidence-archive.png": "babc50a0cc31e8778d683c5bd887d527dc252c97fe1cf18a9f2a0d3e0783219b"
+      }
+    },
+    {
+      "id": "a290-05-rollout-target-versus-effective-exposure",
+      "title": "目标 userFraction 与有效暴露之间有一条漏斗",
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a290-05-rollout-target-versus-effective-exposure.svg",
+        "src/assets/diagrams/ch26/a290-05-rollout-target-versus-effective-exposure.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a290-05-rollout-target-versus-effective-exposure",
+      "sources": [
+        "https://support.google.com/googleplay/android-developer/answer/6346149",
+        "https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a290-05-rollout-target-versus-effective-exposure.svg": "b607726f7890fc9cc46162a3e98c01930107964c580f950e5572407a335a6d04",
+        "src/assets/diagrams/ch26/a290-05-rollout-target-versus-effective-exposure.png": "64b9a5a3956f708328327798749a3ebddc5fb3e53bb0be30d545c9264f6e0ca1"
+      }
+    },
+    {
+      "id": "a290-06-rollout-state-and-idempotent-control",
+      "title": "发布状态与控制请求都需要读取后确认",
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a290-06-rollout-state-and-idempotent-control.svg",
+        "src/assets/diagrams/ch26/a290-06-rollout-state-and-idempotent-control.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a290-06-rollout-state-and-idempotent-control",
+      "sources": [
+        "https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks",
+        "https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a290-06-rollout-state-and-idempotent-control.svg": "1b9ed227900deda139368e5b61e3847db1b41c75885acce59158718013a07691",
+        "src/assets/diagrams/ch26/a290-06-rollout-state-and-idempotent-control.png": "892e43cc5f3e75ca8f9b79eca249c441f4696f5413ebdca1a1d706c3c1ba167b"
+      }
+    },
+    {
+      "id": "a290-07-three-mitigation-actions-installed-users",
+      "title": "暂停、配置回退、修复 APK 作用范围不同",
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a290-07-three-mitigation-actions-installed-users.svg",
+        "src/assets/diagrams/ch26/a290-07-three-mitigation-actions-installed-users.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a290-07-three-mitigation-actions-installed-users",
+      "sources": [
+        "https://support.google.com/googleplay/android-developer/answer/16285429",
+        "https://support.google.com/googleplay/android-developer/answer/6346149",
+        "https://developers.google.com/android-publisher/api-ref/rest/v3/edits.tracks"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a290-07-three-mitigation-actions-installed-users.svg": "3c0cf2dbb13a9aa4bf95b41abb7a3c0a901687445653c634fc4b8f9088d19889",
+        "src/assets/diagrams/ch26/a290-07-three-mitigation-actions-installed-users.png": "dc60ce70f7dede3a08278ca92661fb4c0b1f18f6780101a64238933670aaab3f"
+      }
+    },
+    {
+      "id": "a290-08-static-dynamic-score-and-field-coverage",
+      "title": "App Performance Score 与线上质量各有数据范围",
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a290-08-static-dynamic-score-and-field-coverage.svg",
+        "src/assets/diagrams/ch26/a290-08-static-dynamic-score-and-field-coverage.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a290-08-static-dynamic-score-and-field-coverage",
+      "sources": [
+        "https://developer.android.com/topic/performance/app-score",
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a290-08-static-dynamic-score-and-field-coverage.svg": "dc6cb40e835a31179f7c130b2afbd8d509733b8d6bf5178fb294db05862b1962",
+        "src/assets/diagrams/ch26/a290-08-static-dynamic-score-and-field-coverage.png": "63bd793efe14f6f27957fe76b7fb830859215adb26d6f24c2c32dbfad21d475e"
+      }
+    },
+    {
+      "id": "a290-09-profiles-build-time-and-art-time",
+      "title": "Profile 进入产物与实际编译完成是两步",
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a290-09-profiles-build-time-and-art-time.svg",
+        "src/assets/diagrams/ch26/a290-09-profiles-build-time-and-art-time.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a290-09-profiles-build-time-and-art-time",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://developer.android.com/topic/performance/baselineprofiles/measure-baselineprofile"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a290-09-profiles-build-time-and-art-time.svg": "b16d3c1ed89294398d19682c7c37f2f43e493e5e11b394da87e910279a4a8246",
+        "src/assets/diagrams/ch26/a290-09-profiles-build-time-and-art-time.png": "6a7f1931134560cf0d189dfae3ec7ac93e065a68f271ee1f5564b5e91a81a027"
+      }
+    },
+    {
+      "id": "a290-10-dynamic-ttfd-rendering-and-measurement",
+      "title": "动态评分必须固定业务完成点和测量场景",
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a290-10-dynamic-ttfd-rendering-and-measurement.svg",
+        "src/assets/diagrams/ch26/a290-10-dynamic-ttfd-rendering-and-measurement.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a290-10-dynamic-ttfd-rendering-and-measurement",
+      "sources": [
+        "https://developer.android.com/topic/performance/app-score",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a290-10-dynamic-ttfd-rendering-and-measurement.svg": "2402391579240dc0d09a1e812db79ef50b815328ee18af52108f045c7e497656",
+        "src/assets/diagrams/ch26/a290-10-dynamic-ttfd-rendering-and-measurement.png": "3c67fc7a7e4d89e1ca4a80595568c5ea4ce5bcb761411ed135f5f27c5d1b2688"
+      }
+    },
+    {
+      "id": "a290-11-score-to-action-queues",
+      "title": "评分缺口拆到四类有交付物的工程任务",
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a290-11-score-to-action-queues.svg",
+        "src/assets/diagrams/ch26/a290-11-score-to-action-queues.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a290-11-score-to-action-queues",
+      "sources": [
+        "https://developer.android.com/topic/performance/app-score",
+        "https://developer.android.com/topic/performance/benchmarking/benchmarking-in-ci"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a290-11-score-to-action-queues.svg": "b947878c7131f5a18318fd9b47411154b10077058a53721fe4c6d2cb2e7ba8a9",
+        "src/assets/diagrams/ch26/a290-11-score-to-action-queues.png": "4add32bcae81f16a37600f3e530879f766ca32a6c414c73ce90c83b8a8749c11"
+      }
+    },
+    {
+      "id": "a290-12-tool-selection-and-representative-device-pool",
+      "title": "从异常类型选分析工具，再回到同设备复测",
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a290-12-tool-selection-and-representative-device-pool.svg",
+        "src/assets/diagrams/ch26/a290-12-tool-selection-and-representative-device-pool.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a290-12-tool-selection-and-representative-device-pool",
+      "sources": [
+        "https://developer.android.com/android-performance-analyzer",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a290-12-tool-selection-and-representative-device-pool.svg": "70c184084f56128a806e7effc61fa8e56c179afe57c1a931c7ae8b493b944b77",
+        "src/assets/diagrams/ch26/a290-12-tool-selection-and-representative-device-pool.png": "9edba20ced8ad8d2ae15f596d01e0e611e14686c5b79674b061dc1cace3c0b35"
+      }
+    },
+    {
+      "id": "a290-13-headroom-sample-versus-hint-session",
+      "title": "Headroom 是环境样本，Hint Session 是运行协作",
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a290-13-headroom-sample-versus-hint-session.svg",
+        "src/assets/diagrams/ch26/a290-13-headroom-sample-versus-hint-session.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a290-13-headroom-sample-versus-hint-session",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java",
+        "https://developer.android.com/reference/android/os/health/SystemHealthManager",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a290-13-headroom-sample-versus-hint-session.svg": "515b401b9f7b915b43c32be5fa3d2ec0bdd7bf650d92576720581f3801d21c0c",
+        "src/assets/diagrams/ch26/a290-13-headroom-sample-versus-hint-session.png": "f6b8af7b9496eec724e63a76122c392b8d6e4cfa851ef75d289d0274f12cecef"
+      }
+    },
+    {
+      "id": "a291-01-source-events-and-process-identities",
+      "title": "先保留来源，再按身份与时间建立候选关系",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-01-source-events-and-process-identities.svg",
+        "src/assets/diagrams/ch26/a291-01-source-events-and-process-identities.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-01-source-events-and-process-identities",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-01-source-events-and-process-identities.svg": "e62d52753e5ab03edfb559addbb2776d937f4af17869df55cc48edf35f7a0ea8",
+        "src/assets/diagrams/ch26/a291-01-source-events-and-process-identities.png": "4090f57b5cbcacc594ee1de66e3f09fc11ba0fb47b4211f3c673fddb0276464d"
+      }
+    },
+    {
+      "id": "a291-02-bounded-history-query-and-api37-guard",
+      "title": "退出历史读取：参数、容量与成员版本分别约束",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-02-bounded-history-query-and-api37-guard.svg",
+        "src/assets/diagrams/ch26/a291-02-bounded-history-query-and-api37-guard.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-02-bounded-history-query-and-api37-guard",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/res/values/config.xml",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-02-bounded-history-query-and-api37-guard.svg": "4133e64248d54affb4bcf7ee494cb967d8b6921826bcc698b8e1db2b21fb38e4",
+        "src/assets/diagrams/ch26/a291-02-bounded-history-query-and-api37-guard.png": "723bbbbf7e5b3383c5d082b404ca9d60da1dad552632e5e0f71d0a1e09461c62"
+      }
+    },
+    {
+      "id": "a291-03-exit-reason-versus-attachment-type",
+      "title": "退出 reason、ANR 栈与 Native protobuf 不能互相替代",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-03-exit-reason-versus-attachment-type.svg",
+        "src/assets/diagrams/ch26/a291-03-exit-reason-versus-attachment-type.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-03-exit-reason-versus-attachment-type",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/os/NativeTombstoneManager.java",
+        "https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/proto/tombstone.proto"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-03-exit-reason-versus-attachment-type.svg": "df2d05ab1a6e67d9baf76dbc809b957fb66210b93204176c07a36224ef632412",
+        "src/assets/diagrams/ch26/a291-03-exit-reason-versus-attachment-type.png": "e41665c87c3484685851ae532f518b0f7935667ae336fcdf20f24d17296d5f6c"
+      }
+    },
+    {
+      "id": "a291-04-legacy-markers-and-evidence-grade",
+      "title": "API21–29：残留启动标记只能生成候选",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-04-legacy-markers-and-evidence-grade.svg",
+        "src/assets/diagrams/ch26/a291-04-legacy-markers-and-evidence-grade.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-04-legacy-markers-and-evidence-grade",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://developer.android.com/topic/performance/vitals/anr"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-04-legacy-markers-and-evidence-grade.svg": "5f448ba104c735f2ec43f4a35e8de2cac8ec3081e97cf203d98fbfd74598af92",
+        "src/assets/diagrams/ch26/a291-04-legacy-markers-and-evidence-grade.png": "056fcf420c8d07a4dd9e523f2ec64447b4b997bfab2d5f0e154e01784af4596a"
+      }
+    },
+    {
+      "id": "a291-05-koom-fork-dump-versioned-mechanism",
+      "title": "KOOM 2.2.2：fork dump 的父子职责和私有依赖",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-05-koom-fork-dump-versioned-mechanism.svg",
+        "src/assets/diagrams/ch26/a291-05-koom-fork-dump-versioned-mechanism.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-05-koom-fork-dump-versioned-mechanism",
+      "sources": [
+        "https://raw.githubusercontent.com/KwaiAppTeam/KOOM/fe5f37e188a2a86dd477d7c3c9bc2b79e70bb7d5/koom-fast-dump/src/main/cpp/hprof_dump.cpp",
+        "https://raw.githubusercontent.com/KwaiAppTeam/KOOM/fe5f37e188a2a86dd477d7c3c9bc2b79e70bb7d5/koom-fast-dump/src/main/cpp/native_bridge.cpp",
+        "https://raw.githubusercontent.com/KwaiAppTeam/KOOM/fe5f37e188a2a86dd477d7c3c9bc2b79e70bb7d5/koom-fast-dump/src/main/java/com/kwai/koom/fastdump/ForkJvmHeapDumper.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-05-koom-fork-dump-versioned-mechanism.svg": "189e7991ee2abed254f622e06c622d0b1cffcff470b570ae8dc7063cbf766655",
+        "src/assets/diagrams/ch26/a291-05-koom-fork-dump-versioned-mechanism.png": "ab979fa762d6f2d036131d8272657d405d63d6cd3e957a4f1ad22fe13455c071"
+      }
+    },
+    {
+      "id": "a291-06-metadata-and-attachment-independent-spools",
+      "title": "摘要先入队，后补附件按来源身份独立更新",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-06-metadata-and-attachment-independent-spools.svg",
+        "src/assets/diagrams/ch26/a291-06-metadata-and-attachment-independent-spools.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-06-metadata-and-attachment-independent-spools",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-06-metadata-and-attachment-independent-spools.svg": "c2bcc679b7269c773c23e935a448cb785694ee28db766db66426bfbfa0258b7b",
+        "src/assets/diagrams/ch26/a291-06-metadata-and-attachment-independent-spools.png": "3a900d70e44e3d39cbec7dc7302dd0614916ca7cab3f681f0c0bf36b65245e13"
+      }
+    },
+    {
+      "id": "a291-07-reason-version-and-system-facts",
+      "title": "退出 reason 按版本解释，不由推断改写",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-07-reason-version-and-system-facts.svg",
+        "src/assets/diagrams/ch26/a291-07-reason-version-and-system-facts.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-07-reason-version-and-system-facts",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-07-reason-version-and-system-facts.svg": "a7cf21ae5408f89a1f2a486203a57d4bbc2723dce104544d313d26c69128e1b8",
+        "src/assets/diagrams/ch26/a291-07-reason-version-and-system-facts.png": "fcc5af34669344669d87cfe7d86d8f9bdc35d31ecfb8948b1348a7414b9c5ad3"
+      }
+    },
+    {
+      "id": "a291-08-native-safety-tool-and-tombstone-association",
+      "title": "Native 内存安全工具与系统转储各保留原始来源",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-08-native-safety-tool-and-tombstone-association.svg",
+        "src/assets/diagrams/ch26/a291-08-native-safety-tool-and-tombstone-association.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-08-native-safety-tool-and-tombstone-association",
+      "sources": [
+        "https://android.googlesource.com/platform/system/core/+/android-17.0.0_r1/debuggerd/proto/tombstone.proto",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/os/NativeTombstoneManager.java",
+        "https://developer.android.com/ndk/guides/debug"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-08-native-safety-tool-and-tombstone-association.svg": "27c5b7c7ded4528c53b2a602c2fb4c355ed6d3b4a8b74e0b60884f6b5e39707b",
+        "src/assets/diagrams/ch26/a291-08-native-safety-tool-and-tombstone-association.png": "ededfd47df4dd3324e6fc3d68203fea51d2a6c3b21a9c62c0660dbd21d07b8b2"
+      }
+    },
+    {
+      "id": "a291-09-passive-active-trigger-evidence",
+      "title": "三条路径分别保存退出、请求与系统触发证据",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-09-passive-active-trigger-evidence.svg",
+        "src/assets/diagrams/ch26/a291-09-passive-active-trigger-evidence.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-09-passive-active-trigger-evidence",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-09-passive-active-trigger-evidence.svg": "bc924defdbd36c078e3270a93320693c8e96bba1c1c45ba0eb25052257b6b13f",
+        "src/assets/diagrams/ch26/a291-09-passive-active-trigger-evidence.png": "3a128b8a040fb79775fb53e8fbbc4f7d7a5f93028e4ef01a017c0aa6e74da63f"
+      }
+    },
+    {
+      "id": "a291-10-full-sdk-minor-version-and-safe-fallback",
+      "title": "诊断 API 版本分支按成员检查，不只看类存在",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-10-full-sdk-minor-version-and-safe-fallback.svg",
+        "src/assets/diagrams/ch26/a291-10-full-sdk-minor-version-and-safe-fallback.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-10-full-sdk-minor-version-and-safe-fallback",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Build.VERSION",
+        "https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL",
+        "https://developer.android.com/reference/android/os/ProfilingResult"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-10-full-sdk-minor-version-and-safe-fallback.svg": "b6fd02253cee72ac7e0c749dd91d3568be67c738c16b076463b7222c3a253dec",
+        "src/assets/diagrams/ch26/a291-10-full-sdk-minor-version-and-safe-fallback.png": "d6fe389c543b4b9e157791162d50cfcaa4758c6239de59f27654f4a0f8edbff1"
+      }
+    },
+    {
+      "id": "a291-11-profiling-request-result-and-member-guard",
+      "title": "主动请求四类型，共用受限结果交付契约",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-11-profiling-request-result-and-member-guard.svg",
+        "src/assets/diagrams/ch26/a291-11-profiling-request-result-and-member-guard.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-11-profiling-request-result-and-member-guard",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java",
+        "https://developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-11-profiling-request-result-and-member-guard.svg": "da9cf95abf424975c9257680d0a6b3c5b71139df846de3a728ac69b92a28d694",
+        "src/assets/diagrams/ch26/a291-11-profiling-request-result-and-member-guard.png": "1d83603061bf23d4392c60b44f3c989894debc18e852da514a2936f63f365bb4"
+      }
+    },
+    {
+      "id": "a291-12-trigger-specific-artifacts-and-requirements",
+      "title": "Trigger 的产物决定它需要什么采集机制",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-12-trigger-specific-artifacts-and-requirements.svg",
+        "src/assets/diagrams/ch26/a291-12-trigger-specific-artifacts-and-requirements.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-12-trigger-specific-artifacts-and-requirements",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger",
+        "https://developer.android.com/about/versions/17/features"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-12-trigger-specific-artifacts-and-requirements.svg": "1cbd4c73843f1445c988932449cf7a595ac96339a547c8ab7bf7a4285130dd1c",
+        "src/assets/diagrams/ch26/a291-12-trigger-specific-artifacts-and-requirements.png": "d114c59098f35724c65e07856469bead66f22db4dd7d1b447f36ae649e648f7b"
+      }
+    },
+    {
+      "id": "a291-13-memory-limiter-anomaly-versus-java-oom",
+      "title": "MemoryLimiter 终止与 Java OOM 不是同一个事件",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-13-memory-limiter-anomaly-versus-java-oom.svg",
+        "src/assets/diagrams/ch26/a291-13-memory-limiter-anomaly-versus-java-oom.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-13-memory-limiter-anomaly-versus-java-oom",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java",
+        "https://developer.android.com/about/versions/17/behavior-changes-all",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-13-memory-limiter-anomaly-versus-java-oom.svg": "04c65c5b7c59dc5567e72a8805976ea5d9cd06363686c9ad00892de1edb3ff02",
+        "src/assets/diagrams/ch26/a291-13-memory-limiter-anomaly-versus-java-oom.png": "16743b8a21595517724d6608da1027d5e64cb1e5f4740e4bf850d262fc2ae711"
+      }
+    },
+    {
+      "id": "a291-14-cold-start-discard-buffer-and-fully-drawn",
+      "title": "冷启动触发新建采集，discard buffer 保留最早事件",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-14-cold-start-discard-buffer-and-fully-drawn.svg",
+        "src/assets/diagrams/ch26/a291-14-cold-start-discard-buffer-and-fully-drawn.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-14-cold-start-discard-buffer-and-fully-drawn",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-14-cold-start-discard-buffer-and-fully-drawn.svg": "a5f2aa059baf07ccdad0e732f9154ee04ce9408d61f365c1f7e6a09d8023fcd8",
+        "src/assets/diagrams/ch26/a291-14-cold-start-discard-buffer-and-fully-drawn.png": "620edf3e3a1e2118623608c4733dce6994df7b2e99b5892b61bac2fcf15e5940"
+      }
+    },
+    {
+      "id": "a291-15-request-identity-artifact-hash-and-redelivery",
+      "title": "请求身份、附件内容和每次接收时间分开存",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-15-request-identity-artifact-hash-and-redelivery.svg",
+        "src/assets/diagrams/ch26/a291-15-request-identity-artifact-hash-and-redelivery.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-15-request-identity-artifact-hash-and-redelivery",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-15-request-identity-artifact-hash-and-redelivery.svg": "75436b320e875667672161652729490b4de851379fe8d81f6fd70c43a6480df9",
+        "src/assets/diagrams/ch26/a291-15-request-identity-artifact-hash-and-redelivery.png": "56e2b4a2d85acc4b76b6c112d64b921d3314ff479c69bb881ceffaefdb9de01a"
+      }
+    },
+    {
+      "id": "a291-16-versioned-diagnostic-case-and-budget",
+      "title": "版本化证据包按问题选择产物与独立预算",
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a291-16-versioned-diagnostic-case-and-budget.svg",
+        "src/assets/diagrams/ch26/a291-16-versioned-diagnostic-case-and-budget.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a291-16-versioned-diagnostic-case-and-budget",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a291-16-versioned-diagnostic-case-and-budget.svg": "8359430941bda12f1c2bddabfc1db34529daba398bc74ceca5491d503209e3f8",
+        "src/assets/diagrams/ch26/a291-16-versioned-diagnostic-case-and-budget.png": "098da73c2b8a0e4c447c2c79404c7f1a54a93b07273aedfa6696cfa5c9ed86b8"
+      }
+    },
+    {
+      "id": "a292-01-three-start-evidence-layers",
+      "title": "启动归因由系统、业务和重型附件共同建立",
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a292-01-three-start-evidence-layers.svg",
+        "src/assets/diagrams/ch26/a292-01-three-start-evidence-layers.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a292-01-three-start-evidence-layers",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java",
+        "https://developer.android.com/topic/performance/vitals/launch-time",
+        "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/StartupTimingMetric"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a292-01-three-start-evidence-layers.svg": "893e655b7338657da0dd0a0f4da02b9833ebcd601d9d924b298372e3b7e02e10",
+        "src/assets/diagrams/ch26/a292-01-three-start-evidence-layers.png": "9b5c9344f5c0a8a39eb2a5c38145f4330e543001aac26f9ecc1a409d3bbdaa03"
+      }
+    },
+    {
+      "id": "a292-02-startup-state-controls-available-fields",
+      "title": "先看 startupState，再解释类型与阶段字段",
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a292-02-startup-state-controls-available-fields.svg",
+        "src/assets/diagrams/ch26/a292-02-startup-state-controls-available-fields.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a292-02-startup-state-controls-available-fields",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppStartInfoTracker.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a292-02-startup-state-controls-available-fields.svg": "66f7ea3f6a629a4ba23d9a7e7dd4bbec726f659e68bf291e1b9df1ea8dabe274",
+        "src/assets/diagrams/ch26/a292-02-startup-state-controls-available-fields.png": "8d753e2f3b9f2cec54d21fa9da34879874f4d9da2944ebfe2038a58710d7db15"
+      }
+    },
+    {
+      "id": "a292-03-completion-listener-and-late-fully-drawn",
+      "title": "首帧 listener 不等待 fully-drawn，副本不会自动更新",
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a292-03-completion-listener-and-late-fully-drawn.svg",
+        "src/assets/diagrams/ch26/a292-03-completion-listener-and-late-fully-drawn.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a292-03-completion-listener-and-late-fully-drawn",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppStartInfoTracker.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a292-03-completion-listener-and-late-fully-drawn.svg": "220194ac1dbbcb1434c438c0200a7962d02a800ab68b7609cb8a8cf5a65fbed2",
+        "src/assets/diagrams/ch26/a292-03-completion-listener-and-late-fully-drawn.png": "254fccfcf6b1eb87bcdae08239c3eba1accbd81522bdaae7557115392e544373"
+      }
+    },
+    {
+      "id": "a292-04-component-reason-and-start-type",
+      "title": "组件、原因、冷温热是三个独立维度",
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a292-04-component-reason-and-start-type.svg",
+        "src/assets/diagrams/ch26/a292-04-component-reason-and-start-type.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a292-04-component-reason-and-start-type",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://developer.android.com/reference/androidx/benchmark/macro/StartupMode"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a292-04-component-reason-and-start-type.svg": "61a75c62b8b37dbd94f7c1528d47d513150787dc33b77433a1992a367b6c6531",
+        "src/assets/diagrams/ch26/a292-04-component-reason-and-start-type.png": "935b162178cfbcad7b45e3a886bab6cfa3f05fb0bdcabc2cb652c0810e82f929"
+      }
+    },
+    {
+      "id": "a292-05-uptime-versus-elapsed-realtime",
+      "title": "都是纳秒单调时钟，也不能混用深睡规则",
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a292-05-uptime-versus-elapsed-realtime.svg",
+        "src/assets/diagrams/ch26/a292-05-uptime-versus-elapsed-realtime.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a292-05-uptime-versus-elapsed-realtime",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a292-05-uptime-versus-elapsed-realtime.svg": "8de107a67a4eeefa792aabb13b35ee5d99d40cbf49f54c78f6cf58f79d95b5d3",
+        "src/assets/diagrams/ch26/a292-05-uptime-versus-elapsed-realtime.png": "f27e8b0909817306b611a8c55fcc402f8951745e588d59e0ad22e407cc0e4893"
+      }
+    },
+    {
+      "id": "a292-06-developer-home-ready-and-fully-drawn-order",
+      "title": "业务 HOME_READY 使用固定 key，并在 fully-drawn 前写入",
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a292-06-developer-home-ready-and-fully-drawn-order.svg",
+        "src/assets/diagrams/ch26/a292-06-developer-home-ready-and-fully-drawn-order.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a292-06-developer-home-ready-and-fully-drawn-order",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppStartInfoTracker.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a292-06-developer-home-ready-and-fully-drawn-order.svg": "1d35fa3e776fb920a0ad8c2520f39f27abe51d5cdbf94e855fb0956a5a3ee062",
+        "src/assets/diagrams/ch26/a292-06-developer-home-ready-and-fully-drawn-order.png": "0c20bcd1f65238655ee8f5abf933b54f47751fb130a32f8a437bf65424dc0121"
+      }
+    },
+    {
+      "id": "a292-07-cold-start-new-profile-versus-fully-drawn-snapshot",
+      "title": "Cold-start 新建采集与 fully-drawn 保存快照不同",
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a292-07-cold-start-new-profile-versus-fully-drawn-snapshot.svg",
+        "src/assets/diagrams/ch26/a292-07-cold-start-new-profile-versus-fully-drawn-snapshot.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a292-07-cold-start-new-profile-versus-fully-drawn-snapshot",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a292-07-cold-start-new-profile-versus-fully-drawn-snapshot.svg": "fbc3a94cf8a94c80f5823b612940dcf3470f86160cb4df4db9c8fb7c5a16df8e",
+        "src/assets/diagrams/ch26/a292-07-cold-start-new-profile-versus-fully-drawn-snapshot.png": "487eed5d5f1c6bfdbdc1ef63716d3fd078986b30212c9e15c8589822ce424375"
+      }
+    },
+    {
+      "id": "a292-08-previous-exit-current-start-confidence-edge",
+      "title": "前序退出和本次启动保留两份记录，再建立关联边",
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a292-08-previous-exit-current-start-confidence-edge.svg",
+        "src/assets/diagrams/ch26/a292-08-previous-exit-current-start-confidence-edge.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a292-08-previous-exit-current-start-confidence-edge",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppStartInfoTracker.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a292-08-previous-exit-current-start-confidence-edge.svg": "55f5b851f29d7a6b6f80c912194436f40d39351f89f3b537ab23cfdd6dd7402d",
+        "src/assets/diagrams/ch26/a292-08-previous-exit-current-start-confidence-edge.png": "6b433bd7f410ab23483076d473ee472e3500b0daa4fe0d5dee68f4ad57997b0e"
+      }
+    },
+    {
+      "id": "a292-09-ci-field-distribution-and-coverage",
+      "title": "CI、灰度与线上复用名称，保留各自测量口径",
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a292-09-ci-field-distribution-and-coverage.svg",
+        "src/assets/diagrams/ch26/a292-09-ci-field-distribution-and-coverage.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a292-09-ci-field-distribution-and-coverage",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics",
+        "https://developer.android.com/reference/androidx/benchmark/macro/StartupMode"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a292-09-ci-field-distribution-and-coverage.svg": "3ec17ef26b88723edb61cf9a5eca8021288bdfcef1271a974854bc59d094924e",
+        "src/assets/diagrams/ch26/a292-09-ci-field-distribution-and-coverage.png": "e848f1f38f1b6702d16c6babbde2a472ec49d9896e74cbe129e897c914d88b40"
+      }
     }
   ],
   "corrections": [
@@ -16724,6 +18004,655 @@
       ],
       "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
       "why": "用带分支、ACK回收和独立存储类型的白板图替代ASCII概览。"
+    },
+    {
+      "before": "last_verified: '2026-10-04'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮全文与官方API/实验及平台源码核对日期，无真实生产实验或设备测量。",
+      "sources": [
+        "https://firebase.google.com/docs/ab-testing/abtest-config",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics"
+      ],
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "why": "本轮全文与官方API/实验及平台源码核对日期，无真实生产实验或设备测量。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-10-04'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮全文与官方API/实验及平台源码核对日期，无真实生产实验或设备测量。",
+      "sources": [
+        "https://firebase.google.com/docs/ab-testing/abtest-config",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics"
+      ],
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "why": "本轮全文与官方API/实验及平台源码核对日期，无真实生产实验或设备测量。"
+    },
+    {
+      "before": "retrieved 2026-10-04",
+      "after": "reviewed 2026-10-25; optional activation-event conditioning, cluster estimand weighting and exit fingerprint stability rechecked; no CI/device/production A/B run",
+      "reason": "更新实际校勘范围和验证边界。",
+      "sources": [
+        "https://firebase.google.com/docs/ab-testing/abtest-config",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java"
+      ],
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "why": "更新实际校勘范围和验证边界。"
+    },
+    {
+      "before": "进入实验结果的只有触发过激活事件 activation event 的目标用户，其他命中目标条件的用户仍可能收到实验值",
+      "after": "若配置了可选激活事件（activation event），结果只纳入触发该事件的目标用户；其他命中条件的用户仍可能收到实验值。不要把这个条件说成每个实验都必须配置激活事件",
+      "reason": "Firebase明确将activation event列为optional，原文漏条件导致以为总强制。",
+      "sources": [
+        "https://firebase.google.com/docs/ab-testing/abtest-config"
+      ],
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "why": "Firebase明确将activation event列为optional，原文漏条件导致以为总强制。"
+    },
+    {
+      "before": "改成按帧、启动或请求重采样，会破坏单元内相关性，还会让高活跃用户获得额外权重。",
+      "after": "改成独立按帧、启动或请求重采样会破坏单元内相关性。还要另定估计目标：合并全部事件的分位值本来就按事件数让高活跃单元贡献更多权重；若要等用户权重，应明确定义用户加权经验CDF等目标，并在每次单元重采样中保持同一权重规则。聚类重采样本身不会把事件分位值自动变成用户等权分位值。",
+      "reason": "把相关性导致方差失真与估计目标中的事件/用户权重分开，防止bootstrap自动等权的误解。",
+      "sources": [
+        "https://www.kdd.org/kdd2019/accepted-papers/view/diagnosing-sample-ratio-mismatch-in-online-controlled-experiments-a-taxonomy-and-rules-of-thumb-for-practitioners",
+        "https://arxiv.org/abs/1512.04922"
+      ],
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "why": "把相关性导致方差失真与估计目标中的事件/用户权重分开，防止bootstrap自动等权的误解。"
+    },
+    {
+      "before": "进程启动后在后台读取最近记录，用 `processName`、`timestamp`、`reason`、`status`、`processStateSummary` 和 trace 摘要生成去重键，PID 只作辅助字段。",
+      "after": "进程获得运行机会后在后台重扫当前仍保留的记录。对时间戳、PID/UID、进程名和原因/状态等身份字段作带版本的无歧义编码，建立尽力去重指纹；可缺失、稍后补充或失效的trace/状态摘要作为附件，不加入必须稳定的身份键。PID会复用，指纹也不是平台保证唯一的事件ID。",
+      "reason": "trace可被覆盖、附件处理时机不同，纳入主键会让同一退出再次入队；保留复合字段而非PID单独身份。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ActivityManager",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java"
+      ],
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "why": "trace可被覆盖、附件处理时机不同，纳入主键会让同一退出再次入队；保留复合字段而非PID单独身份。"
+    },
+    {
+      "before": "保存已消费的稳定游标或摘要，避免每次启动重复上报；系统保留窗口有限，不能依赖低频轮询找回全部退出事件。",
+      "after": "已落盘待传与已ACK项都参与去重，记录和索引以唯一约束原子提交；ACK后才推进可回收状态。重扫允许重叠，不以严格最大wall-clock时间戳作为唯一游标，避免漏同毫秒或校时后的记录。系统历史有界，低频轮询不能找回已被覆盖的事件。",
+      "reason": "读历史、写本地队列、ACK三阶段不同，补待传去重和重叠窗口避免纯时间游标漏失。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ActivityManager",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java"
+      ],
+      "article": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "why": "读历史、写本地队列、ACK三阶段不同，补待传去重和重叠窗口避免纯时间游标漏失。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮全文与官方当前门禁/Play/API及17r1来源核验；无真实发布或设备测试。",
+      "sources": [
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://developer.android.com/topic/performance/app-score"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "本轮全文与官方当前门禁/Play/API及17r1来源核验；无真实发布或设备测试。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮全文与官方当前门禁/Play/API及17r1来源核验；无真实发布或设备测试。",
+      "sources": [
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://developer.android.com/topic/performance/app-score"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "本轮全文与官方当前门禁/Play/API及17r1来源核验；无真实发布或设备测试。"
+    },
+    {
+      "before": "retrieved 2026-08-15",
+      "after": "reviewed 2026-10-25; current core vitals, optional/weighted metrics, staged-cohort reuse, App Performance Score categories and SDK headroom signatures checked; no Play mutation or device benchmark",
+      "reason": "更新实际来源和验证边界。",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals",
+        "https://support.google.com/googleplay/android-developer/answer/6346149",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "更新实际来源和验证边界。"
+    },
+    {
+      "before": "Performance Score 用加权模型把多个性能维度汇总成一个总分。",
+      "after": "性能评分汇总若干评估维度，便于查看改进空间；团队若采用加权总分，应另行公布权重和规则版本。官方App Performance Score的静态、动态评估仍需分别保留。",
+      "reason": "官方框架只说明0–100与静动态评估，不能无来源认定只有一个加权总分模型。",
+      "sources": [
+        "https://developer.android.com/topic/performance/app-score"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "官方框架只说明0–100与静动态评估，不能无来源认定只有一个加权总分模型。"
+    },
+    {
+      "before": "新的无锁 `MessageQueue` 实现可能破坏依赖其私有字段或方法的反射代码：通过反射修改 `static final` 字段会抛出",
+      "after": "新的无锁`MessageQueue`实现可能破坏依赖其私有字段或方法的反射代码。另一个独立变化是`static final`字段不可修改：通过反射修改会抛出",
+      "reason": "两项target37变化独立，原冒号可能暗示staticfinal限制仅限MessageQueue。",
+      "sources": [
+        "https://developer.android.com/about/versions/17/behavior-changes-17"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "两项target37变化独立，原冒号可能暗示staticfinal限制仅限MessageQueue。"
+    },
+    {
+      "before": "当前面向所有应用的 Core vitals（会影响应用在 Google Play 中曝光度的核心指标）包括用户感知崩溃率、用户感知 ANR 率和 excessive partial wake lock（过度持有局部唤醒锁）；Wear OS 表盘应用的 Core vital 还包含 excessive battery usage（过度耗电）。",
+      "after": "当前Core vitals按适用应用类型分列：稳定性包括用户感知崩溃率与ANR率；电池包括过度partial wake lock及表盘应用的过度耗电；移动应用还包括Memory usage（Anonymous RSS + Swap）与Bitmap memory usage。官方标明内存、位图内存或代码优化阈值的商店可见性影响可能从2027年2月开始；不要把内存指标读成PSS或只列旧版三项。",
+      "reason": "当前官方核心指标已新增两类移动应用内存指标，补适用范围与生效时间，不提前声称已影响曝光。",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "当前官方核心指标已新增两类移动应用内存指标，补适用范围与生效时间，不提前声称已影响曝光。"
+    },
+    {
+      "before": "Play 每天用最近 28 天的平均值检查关键指标。",
+      "after": "Play每天用最近28天窗口检查关键指标。ANR Reporting API中的28天率按每日`distinctUsers`加权滚动，不是简单平均每日百分比；其他指标按各自聚合规则解释。",
+      "reason": "28天平均口语不足以定义分母，补ANR已核实用户加权规则且不推广所有指标。",
+      "sources": [
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.anrrate",
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "28天平均口语不足以定义分母，补ANR已核实用户加权规则且不推广所有指标。"
+    },
+    {
+      "before": "Android vitals 每天更新最近 28 天的平均值",
+      "after": "Android vitals每日更新，使用最近28天窗口及各指标规定的聚合规则",
+      "reason": "与前文精确窗口/权重口径一致。",
+      "sources": [
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.anrrate",
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "与前文精确窗口/权重口径一致。"
+    },
+    {
+      "before": "在 Android 10 / API 29 及更早版本可能不可用",
+      "after": "在Android 10 / API29之前可能不可用",
+      "reason": "StartupTimingMetric API明确prior to API29，原文错误包含29。",
+      "sources": [
+        "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/StartupTimingMetric"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "StartupTimingMetric API明确prior to API29，原文错误包含29。"
+    },
+    {
+      "before": "Play 会为每个新版本随机挑一批符合条件的用户，暂停之后再恢复，影响的仍是同一组用户。",
+      "after": "Play按发布协议从符合条件的用户中选择群组；同一发布暂停后恢复仍是同一组。若前一版分阶段发布尚未完成就开始新版，新版会按扩量比例沿用前一版用户群，不能默认每版都独立重新随机。",
+      "reason": "补官方明确的未完成旧rollout时复用用户群条件。",
+      "sources": [
+        "https://support.google.com/googleplay/android-developer/answer/6346149"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "补官方明确的未完成旧rollout时复用用户群条件。"
+    },
+    {
+      "before": "Baseline Profiles 是随应用发布、供 ART 预编译关键代码路径的规则集",
+      "after": "Baseline Profiles是随应用发布、供ART进行配置引导AOT编译的热点规则集",
+      "reason": "ART既可安装时也可后台编译，规则本身不等于编译已完成。",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/overview"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "ART既可安装时也可后台编译，规则本身不等于编译已完成。"
+    },
+    {
+      "before": "让所含代码路径从首次运行起获得 AOT（安装时预编译）优化",
+      "after": "让所含路径具备配置引导AOT优化条件；首次运行是否已编译须核对分发、安装/编译状态",
+      "reason": "避免将文件存在等同任何渠道首次运行前必然完成AOT；AOT意为ahead-of-time并非只安装时。",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://developer.android.com/topic/performance/baselineprofiles/measure-baselineprofile"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "避免将文件存在等同任何渠道首次运行前必然完成AOT；AOT意为ahead-of-time并非只安装时。"
+    },
+    {
+      "before": "动态评分依赖运行时（ART）数据",
+      "after": "动态评分依赖应用运行期间的测量数据",
+      "reason": "官方runtime behavior不限ART内部数据，避免读作ART统一评分接口。",
+      "sources": [
+        "https://developer.android.com/topic/performance/app-score"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "官方runtime behavior不限ART内部数据，避免读作ART统一评分接口。"
+    },
+    {
+      "before": "当前动态评分覆盖两类指标：slow frame 与 frozen frame，即官方对超出渲染时限的帧和长时间停顿帧的分类。本文保留英文名称，免得和团队自行定义的卡顿阈值混为一谈。",
+      "after": "当前动态评分有启动和渲染两类评估：启动用TTFD；渲染统计滚动、动画和全屏路径的slow/frozen frames比例。后两个是渲染分项，不能当作动态评分仅有的两大类别；具体评分阈值以所保存规则版本为准。",
+      "reason": "与官方表和本文下表一致，修正将渲染子指标误当全部动态类别。",
+      "sources": [
+        "https://developer.android.com/topic/performance/app-score"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "与官方表和本文下表一致，修正将渲染子指标误当全部动态类别。"
+    },
+    {
+      "before": "暴露 `getCpuHeadroom()` 与 `getGpuHeadroom()`",
+      "after": "暴露`getCpuHeadroom(params)`与`getGpuHeadroom(params)`（参数可为null使用默认值）",
+      "reason": "17r1公开方法需要可空参数，并无此处暗示的零参重载。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java",
+        "https://developer.android.com/reference/android/os/health/SystemHealthManager"
+      ],
+      "article": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "why": "17r1公开方法需要可空参数，并无此处暗示的零参重载。"
+    },
+    {
+      "before": "last_verified: '2026-10-02'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "全文及官方当前API/17r1源码逐项核对，未执行真实退出/ANR/profile实验。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "全文及官方当前API/17r1源码逐项核对，未执行真实退出/ANR/profile实验。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-10-02'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "全文及官方当前API/17r1源码逐项核对，未执行真实退出/ANR/profile实验。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "全文及官方当前API/17r1源码逐项核对，未执行真实退出/ANR/profile实验。"
+    },
+    {
+      "before": "retrieved 2026-10-02",
+      "after": "reviewed 2026-10-25; API35/36 result members, 36.1 full-version guard, trigger-specific collection, delivery identity, reason37.2 boundary and pinned KOOM2.2.2 code checked; host stubs only",
+      "reason": "更新本轮来源与验证范围。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java",
+        "https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL",
+        "https://raw.githubusercontent.com/KwaiAppTeam/KOOM/fe5f37e188a2a86dd477d7c3c9bc2b79e70bb7d5/koom-fast-dump/src/main/cpp/hprof_dump.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "更新本轮来源与验证范围。"
+    },
+    {
+      "before": "表里的几种 UID（PID）要分清：package UID（多个包使用同一个系统身份）是安装时分配给这个包的身份",
+      "after": "表里的UID是Linux身份，PID是进程标识。package UID是安装时分配给包的身份，并不意味着多个包必然共享一个身份",
+      "reason": "修复UID/PID混淆和packageUID被误注释成sharedUID的定义。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "修复UID/PID混淆和packageUID被误注释成sharedUID的定义。"
+    },
+    {
+      "before": "恢复（resume）内部 subreason",
+      "after": "恢复内部subreason",
+      "reason": "移除无关生命周期术语括注。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "移除无关生命周期术语括注。"
+    },
+    {
+      "before": "去重交给服务端或本地处理游标（记录已处理位置），由它记住已经处理到哪一条。",
+      "after": "本地按版本化来源指纹持久化与upsert，并重扫重叠窗口；摘要已ACK不应阻止之后补到的附件更新。不能只按严格递增wall-clock时间戳跳过已处理记录，系统也没有公开唯一事件ID。",
+      "reason": "游标泛称容易落成最大时间戳导致同毫秒/校时/后补附件漏失，补明确协议。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "游标泛称容易落成最大时间戳导致同毫秒/校时/后补附件漏失，补明确协议。"
+    },
+    {
+      "before": "```kotlin\n@RequiresApi(Build.VERSION_CODES.R)\nfun readExitSummaries(\n    context: Context,\n    maxNum: Int = 0\n): List<ExitSummary> {\n    require(maxNum >= 0)\n\n    val activityManager = context.getSystemService(ActivityManager::class.java)\n    val records = activityManager.getHistoricalProcessExitReasons(\n        context.packageName,\n        0,\n        maxNum\n    )\n\n    return records.map { info ->\n        val anrInfo = if (Build.VERSION.SDK_INT >= 37) info.anrInfo else null\n        ExitSummary(\n            processName = info.processName,\n            pid = info.pid,\n            reason = info.reason,\n            status = info.status,\n            importance = info.importance,\n            timestampMs = info.timestamp,\n            pssKb = info.pss,\n            rssKb = info.rss,\n            description = info.description,\n            processStateSummary = info.processStateSummary,\n            anrId = anrInfo?.anrId,\n            anrType = anrInfo?.anrType,\n            anrTimeoutMs = anrInfo?.timeoutMillis,\n            anrUserPerceptible = anrInfo?.isUserPerceptible\n        )\n    }\n}\n```",
+      "after": "```kotlin\nimport android.app.ActivityManager\nimport android.content.Context\nimport android.os.Build\nimport androidx.annotation.RequiresApi\n\ndata class ExitSummary(\n    val processName: String?, val pid: Int,\n    val packageUid: Int, val realUid: Int, val definingUid: Int,\n    val reason: Int, val status: Int, val importance: Int,\n    val timestampMs: Long, val pssKb: Long, val rssKb: Long,\n    val description: String?, val processStateSummary: ByteArray?,\n    val anrId: Int?, val anrType: Int?, val anrTimeoutMs: Long?,\n    val anrUserPerceptible: Boolean?\n)\n\n@RequiresApi(Build.VERSION_CODES.R)\nfun readExitSummaries(context: Context, maxNum: Int = 0): List<ExitSummary> {\n    require(maxNum >= 0)\n    val am = requireNotNull(context.getSystemService(ActivityManager::class.java))\n    return am.getHistoricalProcessExitReasons(context.packageName, 0, maxNum)\n        .map { info ->\n            val anr = if (Build.VERSION.SDK_INT >= 37) info.anrInfo else null\n            ExitSummary(\n                processName = info.processName, pid = info.pid,\n                packageUid = info.packageUid, realUid = info.realUid,\n                definingUid = info.definingUid,\n                reason = info.reason, status = info.status,\n                importance = info.importance, timestampMs = info.timestamp,\n                pssKb = info.pss, rssKb = info.rss,\n                description = info.description,\n                processStateSummary = info.processStateSummary?.clone(),\n                anrId = anr?.anrId, anrType = anr?.anrType,\n                anrTimeoutMs = anr?.timeoutMillis,\n                anrUserPerceptible = anr?.isUserPerceptible\n            )\n        }\n}\n```",
+      "reason": "补完整DTO与imports、nullable服务检查和UID字段；API37访问保留guard，业务字节摘要防御性复制。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "补完整DTO与imports、nullable服务检查和UID字段；API37访问保留guard，业务字节摘要防御性复制。"
+    },
+    {
+      "before": "`ExitSummary` 是项目自定义的 DTO，只负责在层之间传递退出摘要。",
+      "after": "`ExitSummary`是本例自定义DTO。调用方先做API30+分支，再在受控后台executor里处理服务缺失、权限/远端异常，并记录`query_failed`；不要把失败转为空列表。该函数只读取元数据，不负责持久队列或去重。",
+      "reason": "完整示例不吞异常，明确调用侧失败契约与空历史区别。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "完整示例不吞异常，明确调用侧失败契约与空历史区别。"
+    },
+    {
+      "before": "先用应用记录的 wall/elapsed 校准点换算",
+      "after": "先确认同一设备、同一次开机区间，再用附近记录的wall/elapsed校准点换算",
+      "reason": "校时会让远处校准点失准，跨重启elapsed不可直接比较。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "校时会让远处校准点失准，跨重启elapsed不可直接比较。"
+    },
+    {
+      "before": "低版本状态机只能输出（I/O）带置信度的候选类别",
+      "after": "低版本状态机只能输出带置信度的候选类别",
+      "reason": "移除误插入I/O注释。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "移除误插入I/O注释。"
+    },
+    {
+      "before": "`coalesce()（返回第一个非空值的数据库函数）`",
+      "after": "`coalesce()`（返回第一个非空值的数据库函数）",
+      "reason": "修复代码标识与解释的边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "修复代码标识与解释的边界。"
+    },
+    {
+      "before": "开源内存监控库 KOOM 的一类 fork-dump（派生子进程执行转储）方案",
+      "after": "本轮固定核对KOOM 2.2.2（commit `fe5f37e188a2a86dd477d7c3c9bc2b79e70bb7d5`）的一类fork-dump方案",
+      "reason": "固定第三方实现版本，避免把主线变化当稳定SDK契约。",
+      "sources": [
+        "https://raw.githubusercontent.com/KwaiAppTeam/KOOM/fe5f37e188a2a86dd477d7c3c9bc2b79e70bb7d5/koom-fast-dump/src/main/cpp/hprof_dump.cpp",
+        "https://raw.githubusercontent.com/KwaiAppTeam/KOOM/fe5f37e188a2a86dd477d7c3c9bc2b79e70bb7d5/koom-fast-dump/src/main/java/com/kwai/koom/fastdump/ForkJvmHeapDumper.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "固定第三方实现版本，避免把主线变化当稳定SDK契约。"
+    },
+    {
+      "before": "单靠一条退出记录，说明不了某段业务代码就是退出原因。",
+      "after": "单靠一条退出记录，说明不了某段业务代码就是根因。",
+      "reason": "reason为系统分类证据，代码根因需额外因果验证。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "reason为系统分类证据，代码根因需额外因果验证。"
+    },
+    {
+      "before": "调用 36.1 新 API 前，应检查 `Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1`",
+      "after": "调用36.1新API前，先检查`Build.VERSION.SDK_INT >= 36`，再检查`Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1`",
+      "reason": "SDK_INT_FULL从API36才存在，旧系统需外层guard避免读取不存在字段。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Build.VERSION",
+        "https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "SDK_INT_FULL从API36才存在，旧系统需外层guard避免读取不存在字段。"
+    },
+    {
+      "before": "系统级与进程级 rate limiter（频率限制器）",
+      "after": "系统级与应用级rate limiter（频率限制器）",
+      "reason": "官方预算按应用与系统分类，不把每应用预算误当每进程独享。",
+      "sources": [
+        "https://developer.android.com/topic/performance/tracing/profiling-manager/will-my-profile-always-be-collected",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "官方预算按应用与系统分类，不把每应用预算误当每进程独享。"
+    },
+    {
+      "before": "`ProfilingResult` 可直接读取 error code、error message、结果路径、tag 和 trigger type，其中 tag 是调用方附加的短标识",
+      "after": "`ProfilingResult`在API35提供error code、error message、结果路径与tag；`getTriggerType()`从API36才加入，要单独做版本检查。仅`ERROR_NONE`才进入成功文件处理；tag是调用方附加的短标识",
+      "reason": "result类存在不代表所有后来成员都存在，防止API35直接访问36成员。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/ProfilingResult"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "result类存在不代表所有后来成员都存在，防止API35直接访问36成员。"
+    },
+    {
+      "before": "| `triggerType` | 从 `ProfilingResult#getTriggerType()` 读取；主动请求通常为 `TRIGGER_TYPE_NONE` |",
+      "after": "| `triggerType` | API36+才读`getTriggerType()`；API35按已保存的主动请求上下文标注来源，不调用新成员 |",
+      "reason": "版本化字段表与正文API36guard同步。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/ProfilingResult"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "版本化字段表与正文API36guard同步。"
+    },
+    {
+      "before": "系统事件触发采集依赖后台采样和限流，用来捕获难以预测的事件。",
+      "after": "系统事件触发采集按trigger各自契约运行且受限流；需要历史trace的类型依赖后台采样，OOM可请求heap dump，cold-start会新建采集，用来捕获难以预测的事件。",
+      "reason": "三类采集机制不同，不能将后台采样前提推广全部trigger。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "三类采集机制不同，不能将后台采样前提推广全部trigger。"
+    },
+    {
+      "before": "trigger 注册表达的是“应用希望接收某类系统事件对应的采集结果”。系统并不会一直运行后台 trace，只在系统设定的时间范围内随机启动采样；事件发生时，只有后台 trace 正在运行、应用已注册且限流允许，系统才可能保存结果。后台 trace 用的是 ring buffer（环形缓冲区），空间满后覆盖较早事件，所以附件通常保留触发前最近一段活动。",
+      "after": "trigger注册表达应用对某类事件结果的兴趣，不保证一定有产物。需要历史trace快照的类型，要求事件发生时系统抽样后台trace正在运行、注册有效且预算允许；其ring buffer满后覆盖旧事件。OOM heap dump与cold-start新建trace/stack采样按各自机制处理，不能套用同一后台trace前提。",
+      "reason": "替换所有trigger均依赖已有后台trace的笼统陈述。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "替换所有trigger均依赖已有后台trace的笼统陈述。"
+    },
+    {
+      "before": "但仍受设备覆盖、后台采样和限流约束。",
+      "after": "但仍受设备覆盖、相应功能flag与配置、资源及限流约束；这类heap dump不能简单套用“已有后台system trace”的前提。",
+      "reason": "MemoryLimiter anomaly heapdump不同于后台trace快照。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "MemoryLimiter anomaly heapdump不同于后台trace快照。"
+    },
+    {
+      "before": "回调发生在系统实施相应处置之前。",
+      "after": "采集和处置的先后安排不能当作“应用回调必在终止前执行”的保证。该tag的MemoryLimiter含触发、延迟和可禁用kill等配置；结果投递还可能跨进程重启，应独立记录触发、文件生成和回调交付。",
+      "reason": "文档采集发生在处置前不等于listener同步交付前置；源码有延迟/flag路径。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "文档采集发生在处置前不等于listener同步交付前置；源码有延迟/flag路径。"
+    },
+    {
+      "before": "退出记录的持久去重指纹可以由 `packageName + processName + packageUid + realUid + pid + timestampMs + reason + status` 生成。",
+      "after": "退出指纹可将包名、进程名、UID、PID、时间戳、reason与status做带版本的无歧义编码，再取摘要；null与空串也要区分。它是尽力身份而非SDK唯一事件ID。后补附件独立upsert；若平台后续修订分类导致指纹变化，保留候选关联与规则版本，不能声称从此绝不重复。",
+      "reason": "拼接分隔符可能歧义，元数据也非公开不变ID；明确附件和身份分别更新。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "拼接分隔符可能歧义，元数据也非公开不变ID；明确附件和身份分别更新。"
+    },
+    {
+      "before": "主动请求的去重指纹应包含 request ID、requested profiling type、tag 和文件 hash。系统 trigger 结果可使用 trigger type、tag、结果时间和文件 hash。若收到错误回调，应保存 error code；若应用通过其他来源确认事件发生，却没有收到 trigger callback，应另记“未收到 profiling 结果”。这两种状态要分开记录，别混成一个通用失败码，也别靠立即重复请求掩盖系统限流。",
+      "after": "主动请求按应用持久化的request ID建立请求身份；同一结果可能同时到专用与全局listener，文件hash作为附件去重键。系统trigger没有公开稳定结果ID或结果时间戳；相同非空产物可用trigger type、tag与内容hash尽力去重，首次接收时间另存，不能把每次重投递的接收时间放进稳定键。无文件的错误回调保留本地接收ID和error code；未收到回调另记未知。缺少稳定平台身份时保留重复/冲突计数和来源，不通过立即重复请求掩盖限流。",
+      "reason": "原“结果时间”非公开字段；接收时间每次变化会破坏重投递去重，错误无文件也无法强造hash。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingResult.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "原“结果时间”非公开字段；接收时间每次变化会破坏重投递去重，错误无文件也无法强造hash。"
+    },
+    {
+      "before": "```mermaid\nflowchart TD\n  A[应用完成首帧关键工作] --> B[后台查询退出历史]\n  B --> C[按来源指纹 upsert 摘要]\n  C --> D[摘要进入本地发送队列]\n  C --> E[符合策略时读取 trace]\n  E --> F[字节上限、格式和隐私检查]\n  F --> G[原子写入附件并关联摘要]\n  D --> H[上传摘要]\n  G --> I[按约束上传附件]\n  H --> J[服务端跨来源归并]\n  I --> J\n```",
+      "after": "退出元数据按来源指纹upsert后独立排队；符合采样和字节预算时再读取、校验并原子发布附件。摘要和附件各自ACK，服务端保存来源关系后再跨来源关联。",
+      "reason": "替换Mermaid为有明确双分支、ACK和后补附件语义的白板流程。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java"
+      ],
+      "article": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "why": "替换Mermaid为有明确双分支、ACK和后补附件语义的白板流程。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮全文及当前官方API与17r1源码核验，无设备启动或profiling实验。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "本轮全文及当前官方API与17r1源码核验，无设备启动或profiling实验。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮全文及当前官方API与17r1源码核验，无设备启动或profiling实验。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "本轮全文及当前官方API与17r1源码核验，无设备启动或profiling实验。"
+    },
+    {
+      "before": "docs updated 2026-08-14, current app startup/Macrobenchmark/ProfilingTrigger docs, and AOSP android-17.0.0_r1 sources retrieved 2026-08-15",
+      "after": "docs reviewed 2026-10-25, current startup/Macrobenchmark/ProfilingTrigger/SystemClock docs, and AOSP android-17.0.0_r1 start tracker/ActivityThread/ActivityMetricsLogger sources; clock, listener implementation and source-event37.2 boundaries checked; host stubs only",
+      "reason": "更新本轮实际核验范围，移除过时文档日期。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://developer.android.com/reference/android/app/ApplicationStartInfo"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "更新本轮实际核验范围，移除过时文档日期。"
+    },
+    {
+      "before": "每个 listener 最多调用一次，调用后自动移除；同一时刻已有 listener 时，新注册项会替换它。",
+      "after": "每个listener至多回调一次，之后移除。要区分公开说明和版本实现：`android-17.0.0_r1`的ActivityManager用列表保存不同listener，同一`equals`对象重复添加被忽略，经单一Binder回调分发后清空；源码/公开注释仍有“replace existing”措辞。接入层宜统一管理注册和移除，不依赖新listener会覆盖所有旧项。",
+      "reason": "17r1实际ArrayList支持不同listener，重复equals直接return；原文把注释泛化为全局单槽替换。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "17r1实际ArrayList支持不同listener，重复equals直接return；原文把注释泛化为全局单槽替换。"
+    },
+    {
+      "before": "首帧回调拿到的是当时的副本，稍后不会自行更新。",
+      "after": "首帧回调拿到的是当时副本，之后不会自行更新。`reportFullyDrawn()`之后立即重读也不应强制要求该key出现；允许系统处理/记录延迟，按有界策略后续upsert，仍缺失则保留未就绪状态，不忙等或补零。",
+      "reason": "首帧完成与fully-drawn记录更新非同一时点，补有界后读与缺失语义。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppStartInfoTracker.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "首帧完成与fully-drawn记录更新非同一时点，补有界后读与缺失语义。"
+    },
+    {
+      "before": "线上冷启动 SLA（服务等级目标）只纳入完成记录中的 `START_TYPE_COLD`。",
+      "after": "冷启动耗时分布只纳入满足该指标定义、已完成且`START_TYPE_COLD`的样本；ERROR、未完成和未上报项仍进入启动失败/完成率与数据健康护栏，不能从用户影响分母静默删除。",
+      "reason": "只看成功完成记录会隐藏失败启动，区分条件耗时分布与总体失败/覆盖率。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java",
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "只看成功完成记录会隐藏失败启动，区分条件耗时分布与总体失败/覆盖率。"
+    },
+    {
+      "before": "Map 中的 value 是纳秒单位的单调时钟时间戳；单调时钟只随设备运行向前递增，适合计算时长，不表示从 1970 年开始的 Unix epoch 日历时间。",
+      "after": "Map的value是CLOCK_MONOTONIC时基的纳秒数。该tag的ActivityMetricsLogger与ActivityThread用`SystemClock.uptimeNanos()`记录首帧和Application.onCreate等点，不计深睡；`elapsedRealtimeNanos()`计深睡，不能因都叫单调时钟就混算。详见[SystemClock契约](https://developer.android.com/reference/android/os/SystemClock)及[实际取时点](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java)。它不是Unix epoch时间。",
+      "reason": "核心时基校勘：原示例使用BOOTTIME而系统取MONOTONIC，累计深睡偏移会污染自定义阶段差值。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "核心时基校勘：原示例使用BOOTTIME而系统取MONOTONIC，累计深睡偏移会污染自定义阶段差值。"
+    },
+    {
+      "before": "当前 API reference 还展示了 API 10000 预览常量 `START_TIMESTAMP_SOURCE_EVENT`，用于记录触发 Activity 启动的源事件。它不属于稳定 API 37，本章的数据模型和门禁不使用该 key；待对应 SDK 正式发布后再单独验证时间基准和设备覆盖。",
+      "after": "截至本轮核对，在线API reference已将`START_TIMESTAMP_SOURCE_EVENT`标为Android17次要版本37.2，并明确使用`SystemClock.uptimeNanos()`时基、仅Activity组件设置；它不在`android-17.0.0_r1`源码中。本章API37.0基线仍不把它设为必填key。后续适配按正式完整SDK版本和实际字段可用性扩展，不再沿用“API10000预览”的旧标签。",
+      "reason": "官方该成员现为37.2，更新过时预览状态并保持17r1与在线后续API分界。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationStartInfo",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "官方该成员现为37.2，更新过时预览状态并保持17r1与在线后续API分界。"
+    },
+    {
+      "before": "`FULLY_DRAWN - LAUNCH` 只有 `reportFullyDrawn()` 的业务语义稳定时才可跨版本比较。",
+      "after": "`FULLY_DRAWN - LAUNCH`只在key齐全、非负且业务报告语义稳定时比较，并保留为系统原始阶段区间。Macrobenchmark的TTFD还以包含/紧随reportFullyDrawn的那一帧完成渲染为终点，不能不核对测量端点就把两个数直接混用。",
+      "reason": "区分AppStartInfo原始记录点与StartupTimingMetric结束帧渲染的口径。",
+      "sources": [
+        "https://developer.android.com/reference/kotlin/androidx/benchmark/macro/StartupTimingMetric",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "区分AppStartInfo原始记录点与StartupTimingMetric结束帧渲染的口径。"
+    },
+    {
+      "before": "应在采集瞬间同时保存日历时钟和单调时钟快照",
+      "after": "应在采集瞬间同时保存wall-clock与同一uptime时基的校准点；已有elapsedRealtime数据需另记录uptime/elapsed对应关系并保留换算误差",
+      "reason": "不能用不同单调时基做wall/mono校准，尤其设备已有深睡。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "不能用不同单调时基做wall/mono校准，尤其设备已有深睡。"
+    },
+    {
+      "before": "```kotlin\ndata class StartEvidence(\n    val pid: Int,\n    val processName: String,\n    val packageUid: Int,\n    val realUid: Int,\n    val reason: Int,\n    val startupState: Int,\n    val startType: Int?,\n    val startComponent: Int?,\n    val wasForceStopped: Boolean,\n    val timestampsNs: Map<Int, Long>,\n)\n\n@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)\nfun readRecentStarts(\n    context: Context,\n    maxRecords: Int,\n): List<StartEvidence> {\n    require(maxRecords > 0)\n    val activityManager = context.getSystemService(ActivityManager::class.java)\n\n    return activityManager.getHistoricalProcessStartReasons(maxRecords).map { info ->\n        val completed =\n            info.startupState == ApplicationStartInfo.STARTUP_STATE_FIRST_FRAME_DRAWN\n\n        StartEvidence(\n            pid = info.pid,\n            processName = info.processName,\n            packageUid = info.packageUid,\n            realUid = info.realUid,\n            reason = info.reason,\n            startupState = info.startupState,\n            startType = info.startType.takeIf {\n                completed && it != ApplicationStartInfo.START_TYPE_UNSET\n            },\n            startComponent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {\n                info.startComponent\n            } else {\n                null\n            },\n            wasForceStopped = info.wasForceStopped(),\n            timestampsNs = info.startupTimestamps.toMap(),\n        )\n    }\n}\n\n@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)\nfun markHomeReadyBeforeFullyDrawn(context: Context) {\n    val activityManager = context.getSystemService(ActivityManager::class.java)\n    activityManager.addStartInfoTimestamp(\n        ApplicationStartInfo.START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START,\n        SystemClock.elapsedRealtimeNanos(),\n    )\n}\n```",
+      "after": "```kotlin\nimport android.app.ActivityManager\nimport android.app.ApplicationStartInfo\nimport android.content.Context\nimport android.os.Build\nimport android.os.SystemClock\nimport androidx.annotation.RequiresApi\n\ndata class StartEvidence(\n    val pid: Int, val processName: String,\n    val packageUid: Int, val realUid: Int, val definingUid: Int,\n    val reason: Int, val startupState: Int,\n    val startType: Int?, val startComponent: Int?,\n    val wasForceStopped: Boolean,\n    val timestampsNs: Map<Int, Long>,\n)\n\n@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)\nfun readRecentStarts(context: Context, maxRecords: Int = 0): List<StartEvidence> {\n    require(maxRecords >= 0) // 0 仍只读取平台当前保留的有界历史。\n    val am = requireNotNull(context.getSystemService(ActivityManager::class.java))\n    return am.getHistoricalProcessStartReasons(maxRecords).map { info ->\n        val completed =\n            info.startupState == ApplicationStartInfo.STARTUP_STATE_FIRST_FRAME_DRAWN\n        StartEvidence(\n            pid = info.pid, processName = info.processName,\n            packageUid = info.packageUid, realUid = info.realUid,\n            definingUid = info.definingUid,\n            reason = info.reason, startupState = info.startupState,\n            startType = if (completed) {\n                info.startType.takeUnless { it == ApplicationStartInfo.START_TYPE_UNSET }\n            } else null,\n            startComponent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {\n                info.startComponent\n            } else null,\n            wasForceStopped = info.wasForceStopped(),\n            timestampsNs = info.startupTimestamps.toMap(),\n        )\n    }\n}\n\n@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)\nfun markHomeReadyBeforeFullyDrawn(context: Context) {\n    val am = requireNotNull(context.getSystemService(ActivityManager::class.java))\n    am.addStartInfoTimestamp(\n        ApplicationStartInfo.START_TIMESTAMP_RESERVED_RANGE_DEVELOPER_START,\n        SystemClock.uptimeNanos(),\n    )\n}\n```",
+      "reason": "修正业务ready使用uptimeNanos；先判断完成状态才取startType；补服务nullable检查、imports、definingUID及maxNum0语义，复制Map。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "修正业务ready使用uptimeNanos；先判断完成状态才取startType；补服务nullable检查、imports、definingUID及maxNum0语义，复制Map。"
+    },
+    {
+      "before": "写入后仍应重新读取完成记录；采集层不在字段缺失时补 0。",
+      "after": "标记函数须在业务定义的ready点、`reportFullyDrawn()`之前调用；写入失败与查询失败分别记状态。调用方先做API35+分支，在后台处理服务缺失/远端异常；不可把异常转为空列表。之后按有界策略重读并upsert完成记录，不把缺失补0。",
+      "reason": "补示例调用/失败契约与异步更新边界，避免写入函数名字被当作保证执行顺序。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppStartInfoTracker.java"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "补示例调用/失败契约与异步更新边界，避免写入函数名字被当作保证执行顺序。"
+    },
+    {
+      "before": "| 记录身份 | `start_record_key`、pid、processName、packageUid、realUid | key 包含多字段，处理 PID 复用 |",
+      "after": "| 记录身份 | `start_record_key`、开机区间、launch_ns、pid、processName、packageUid、realUid | 版本化无歧义编码尽力识别；startup_state、后补fully_drawn等可变字段不进入稳定身份，缺launch时保留本地接收ID与候选关联 |",
+      "reason": "历史记录会从未完成到首帧和后补fully-drawn，不能用可变状态/全Map作稳定key；仅UID+PID不够处理跨重启复用。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppStartInfoTracker.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationStartInfo.java"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "历史记录会从未完成到首帧和后补fully-drawn，不能用可变状态/全Map作稳定key；仅UID+PID不够处理跨重启复用。"
+    },
+    {
+      "before": "| 业务时间 | `home_ready_ns`、`first_interactive_ns`、`report_fully_drawn_policy` | 使用同一单调时钟；记录协议版本 |",
+      "after": "| 业务时间 | `home_ready_ns`、`first_interactive_ns`、`report_fully_drawn_policy` | 使用同一uptime/CLOCK_MONOTONIC时基；记录协议版本与开机区间 |",
+      "reason": "数据字段约束同步修正时基。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/ActivityMetricsLogger.java"
+      ],
+      "article": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "why": "数据字段约束同步修正时基。"
     }
   ],
   "validation": {
@@ -17059,15 +18988,60 @@
       "article_positions": "passed",
       "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a287",
       "source_audit": "Read all 641 original lines and 44 official/AOSP/Kotlin/POSIX/Play Reporting sources. Corrected helper stack versus alternate signal stack, crash_dump/tombstoned FD ownership, audited signal-safe persistence wording, reboot clock scope, history cursor overlaps, Native build identity versus cross-version grouping, ART sigwait routing, phone/watch ANR threshold and distinct-user weighted rolling rates, Java Thread.State versus kernel scheduling, and async component deadlines with responsive main thread. Both original Mermaid diagrams replaced by specific flows/tracks; 18 assets and every rendered position visually checked, refined FD flow rechecked. Isolated mdBook, links, SVG/PNG, exact reconstruction and targeted source assertions passed. No executable examples remained/changed; no Android/device crash or ANR injection, profiling, upload or benchmark run."
+    },
+    "a288": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a288",
+      "source_audit": "18 SVG/PNG figures and all rendered article placements actually viewed; diagram9 success-only execution corrected; SDK36.1 minor API verified against full-version constants, trigger-specific products and POSIX file semantics; exact two Kotlin snippets compiled with host stubs and failure/null/history/dedup cases passed, no Android SDK/NDK/device or profiling performance run. Exact baseline+25corrections+18insertions reconstructed; mdbook build, local links, packs and assets passed."
+    },
+    "a289": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a289",
+      "source_audit": "9 SVG/PNG figures and all actual rendered article placements visually reviewed. Official Firebase optional activation event and Android metric/version contracts checked; source evidence includes AOSP bounded exit history and SRM/sequential inference original papers. Nearest-rank mixture counterexample computed from explicitly synthetic dimensionless values. Exact reconstruction, mdbook build, local links, font/prompt packs and assets passed; no CI, Android device or production A/B experiment executed."
+    },
+    "a290": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a290",
+      "source_audit": "13 final SVG/PNG assets and every rendered article placement actually viewed; headroom figure moved into its source section before the summary and reviewed again. Current official core-vitals memory categories/FEB2027, 28day ANR user weighting, staged-cohort reuse and full-rollout halt constraints checked. Source assertions for API29 TTFD boundary, score categories and headroom passed; exact reconstruction, mdbook build, links, prompt packs and assets passed. No Play release mutation, Android device or performance benchmark executed."
+    },
+    "a291": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a291",
+      "source_audit": "16 final SVG/PNG figures and all final rendered placements actually viewed, including corrected parallel fork branches and cold-start Perfetto-style tracks. Complete Kotlin DTO/snippet host-stub compile/run verified API30-36 guard, API37 optional ANR, UID fields, byte-copy, query limits and failure vs empty. Source assertions confirm 17r1 history16, reason37.2 separation, ProfilingResult triggerType API36, pinned KOOM2.2.2 and MemoryLimiter flags. Exact reconstruction, mdbook build, local links, prompt packs and assets passed; no real crash/ANR/profile injection, Android SDK/NDK build or device measurements."
+    },
+    "a292": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a292",
+      "source_audit": "9 final figures and every article position actually visually reviewed. Exact Kotlin host-stub compile/run validated incomplete start/type and API35/component guards, UID fields, Map copy, maxNum cases, query failure vs empty and HOME_READY clock. Primary-source assertions verify uptimeNanos onCreate/first-frame timebase, SystemClock deep-sleep semantics, 17r1 listener list/duplicate behavior and online source-event37.2 separation. Exact reconstruction, mdbook build, local links, prompt packs and asset checks passed; no Android SDK/device startup or profiling execution."
     }
   },
   "last_checkpoint": {
-    "completed": 37,
+    "completed": 42,
     "total": 51,
-    "diagrams": 446,
-    "next_article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
-    "next_article_index": 288,
-    "updated_at": "2026-10-25T16:13:19.316542+08:00"
+    "diagrams": 511,
+    "next_article": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+    "next_article_index": 293,
+    "updated_at": "2026-10-25T16:50:32.286005+08:00"
   },
   "replaced_inline_diagrams": []
 }

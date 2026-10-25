@@ -1036,26 +1036,100 @@
     {
       "path": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
       "sha256_before": "3fe6c963097813a591db99353a6ec710cd9f1b7d8015cfc1fbf54e18fbb6f65a",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a286-01-metrics-logs-traces-and-play-baseline",
+        "a286-02-event-identity-clocks-and-schema",
+        "a286-03-profiling-public-request-and-trigger-versions",
+        "a286-04-bounded-client-data-and-control-plane",
+        "a286-05-server-query-alert-and-verification",
+        "a286-06-sampling-strata-and-inclusion-probability",
+        "a286-07-baseline-versus-authorized-diagnostics",
+        "a286-08-statsd-three-directions-and-permissions",
+        "a286-09-pull-provider-request-reply-and-cooldown",
+        "a286-10-memory-metric-attribution-and-version",
+        "a286-11-compaction-freezer-and-visible-gaps",
+        "a286-12-memory-limiter-kernel-throttle-system-kill",
+        "a286-13-native-memory-two-sources-and-read-failure",
+        "a286-14-online-apm-versus-offline-power-evidence",
+        "a286-15-network-stage-route-and-bytes",
+        "a286-16-jankstats-frame-data-ownership",
+        "a286-17-leakcanary-retained-dump-and-reference-path",
+        "a286-18-lifecycle-constraint-and-unobserved-intervals",
+        "a286-19-durable-batches-ack-retry-and-isolation",
+        "a286-20-monitor-the-monitor-and-release-budgets"
+      ],
       "article_index": 286,
-      "sha256_at_assignment": "3fe6c963097813a591db99353a6ec710cd9f1b7d8015cfc1fbf54e18fbb6f65a"
+      "sha256_at_assignment": "3fe6c963097813a591db99353a6ec710cd9f1b7d8015cfc1fbf54e18fbb6f65a",
+      "sha256_current": "7ff4818f0a10de1890989f0a8068d39b78029df3cffad41801edde0516d9ad04",
+      "sha256_after": "7ff4818f0a10de1890989f0a8068d39b78029df3cffad41801edde0516d9ad04",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "Read all 995 original lines; 52 successful official/AOSP/AndroidX/Firebase/OTel/Square source snapshots, with six failed historical/exploratory paths retained as audit attempts and not used as positive evidence. Verified 14/15/16/17 memtrack categories and pinned LeakCanary2.14 manifests/dependencies. Corrected core-vitals memory metrics, Firebase attributes, clock reboot scopes, StatsManager SystemApi, PULL constants and scheduling semantics, StatsCompanion versus StatsManagerService/socket roles, same-UID memory, conditional limiter profiling/kill, libmeminfo read failure and unverified libmemevents historical claims, default LeakCanary provider install, API34 trim delivery and unknown gaps. All 20 asset images and rendered positions visually inspected; build/links/SVG/PNG/exact reconstruction passed, four JSON examples parse, one bash-n and exact C++ fragment host adapter compile/run passed. No Android/NDK/StatsD/real profiling/benchmark or device measurement performed.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "3fe6c963097813a591db99353a6ec710cd9f1b7d8015cfc1fbf54e18fbb6f65a"
     },
     {
       "path": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
       "sha256_before": "5467671029b421a7a06ba6c4b407f11c442a99f4766236b081b5fe062aa218c3",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a287-01-crash-preservation-and-next-healthy-window",
+        "a287-02-java-versus-native-capture-environment",
+        "a287-03-debuggerd-crash-dump-and-tombstoned-fds",
+        "a287-04-envelope-persistence-and-attachments",
+        "a287-05-ordinary-isolated-and-renderer-processes",
+        "a287-06-renderer-gone-cleanup-all-affected-webviews",
+        "a287-07-exit-history-versus-rotating-traces",
+        "a287-08-release-symbols-and-exact-build-identity",
+        "a287-09-event-issue-and-release-gates",
+        "a287-10-crash-rate-user-session-and-exposure",
+        "a287-11-anr-authority-levels-and-api37-warning",
+        "a287-12-early-dump-serialized-anr-and-recording",
+        "a287-13-sigquit-signal-catcher-and-output",
+        "a287-14-anr-play-rate-type-and-weighted-window",
+        "a287-15-watchdog-lateness-and-bounded-snapshots",
+        "a287-16-raw-derived-transport-incident-and-issue",
+        "a287-17-thread-state-wait-peer-and-release-context",
+        "a287-18-coroutine-suspension-blocking-and-component-deadline"
+      ],
       "article_index": 287,
-      "sha256_at_assignment": "5467671029b421a7a06ba6c4b407f11c442a99f4766236b081b5fe062aa218c3"
+      "sha256_at_assignment": "5467671029b421a7a06ba6c4b407f11c442a99f4766236b081b5fe062aa218c3",
+      "sha256_current": "35e7f67e78c1c0bac805178e2bed0dbfaa1be59a3ff8e61aaeff95e8002bebb6",
+      "sha256_after": "35e7f67e78c1c0bac805178e2bed0dbfaa1be59a3ff8e61aaeff95e8002bebb6",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "Read all 641 original lines and 44 official/AOSP/Kotlin/POSIX/Play Reporting sources. Corrected helper stack versus alternate signal stack, crash_dump/tombstoned FD ownership, audited signal-safe persistence wording, reboot clock scope, history cursor overlaps, Native build identity versus cross-version grouping, ART sigwait routing, phone/watch ANR threshold and distinct-user weighted rolling rates, Java Thread.State versus kernel scheduling, and async component deadlines with responsive main thread. Both original Mermaid diagrams replaced by specific flows/tracks; 18 assets and every rendered position visually checked, refined FD flow rechecked. Isolated mdBook, links, SVG/PNG, exact reconstruction and targeted source assertions passed. No executable examples remained/changed; no Android/device crash or ANR injection, profiling, upload or benchmark run.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "5467671029b421a7a06ba6c4b407f11c442a99f4766236b081b5fe062aa218c3"
     },
     {
       "path": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
       "sha256_before": "cd851c0ac301508d8244a207d80fb43e6026379718dad2d9ce714691cd9576ac",
-      "status": "pending",
-      "diagrams": [],
+      "status": "in_progress",
+      "diagrams": [
+        "a288-01-incident-evidence-and-reversible-mitigation",
+        "a288-02-dynamic-log-budget",
+        "a288-03-profiling-sdk-major-and-minor-versions",
+        "a288-04-rollout-versus-remote-config",
+        "a288-05-statsd-control-and-permission",
+        "a288-06-sampling-storage-upload-budgets",
+        "a288-07-record-integrity-versus-durability",
+        "a288-08-multiprocess-writers-and-upload-lease",
+        "a288-09-diagnostic-command-state-machine",
+        "a288-10-profile-callback-and-result-file",
+        "a288-11-network-phases-and-trace-id",
+        "a288-12-separate-telemetry-streams-and-ack",
+        "a288-13-capability-snapshot-unknown-window",
+        "a288-14-exit-history-dedup-before-batch-limit",
+        "a288-15-missing-telemetry-versus-process-death",
+        "a288-16-adpf-session-capability-and-measured-effect",
+        "a288-17-channel-comparison-confounding",
+        "a288-18-rom-evidence-and-apm-selection"
+      ],
       "article_index": 288,
-      "sha256_at_assignment": "cd851c0ac301508d8244a207d80fb43e6026379718dad2d9ce714691cd9576ac"
+      "sha256_at_assignment": "cd851c0ac301508d8244a207d80fb43e6026379718dad2d9ce714691cd9576ac",
+      "sha256_current": "438eacc0d6028ff634685a0091aea91137deace8a4f52dd1c7c8f7d51bf4220d"
     },
     {
       "path": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
@@ -10798,6 +10872,1243 @@
         "src/assets/diagrams/ch25/a285-01-power-size-reading-and-validation-map.svg": "373a479cdec50cac5a5c044d6731cdeba016e0d7077a4c4bec41b9c0f70b1c4c",
         "src/assets/diagrams/ch25/a285-01-power-size-reading-and-validation-map.png": "7bd05f95b73f134f665118962a7a56246643f515e4aa1363fb173112f0549156"
       }
+    },
+    {
+      "id": "a286-01-metrics-logs-traces-and-play-baseline",
+      "title": "指标找群体回归，日志与追踪还原单次证据",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-01-metrics-logs-traces-and-play-baseline.svg",
+        "src/assets/diagrams/ch26/a286-01-metrics-logs-traces-and-play-baseline.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-01-metrics-logs-traces-and-play-baseline",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals",
+        "https://opentelemetry.io/docs/specs/otel/logs/",
+        "https://firebase.google.com/docs/perf-mon"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-01-metrics-logs-traces-and-play-baseline.svg": "c80aa8b0ba85a60b3ec8d1bdda786840359ac2618c4792a69a62dc1d7fedb222",
+        "src/assets/diagrams/ch26/a286-01-metrics-logs-traces-and-play-baseline.png": "c0d8a848ce0485cc6b41321d8b2c174141e34648ae94a4bd67d81b09e942554b"
+      }
+    },
+    {
+      "id": "a286-02-event-identity-clocks-and-schema",
+      "title": "公共信封分开管理身份、关联、时钟和版本",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-02-event-identity-clocks-and-schema.svg",
+        "src/assets/diagrams/ch26/a286-02-event-identity-clocks-and-schema.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-02-event-identity-clocks-and-schema",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java",
+        "https://opentelemetry.io/docs/specs/otel/logs/"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-02-event-identity-clocks-and-schema.svg": "9c5675fb2dba41edd3f4d067883ce714d4e195a4234b11df3cdb6881fcbce970",
+        "src/assets/diagrams/ch26/a286-02-event-identity-clocks-and-schema.png": "2e0772d47aec061a221054ae5e096cc7cc40c5f5a529bddecbc4d58eae3156c8"
+      }
+    },
+    {
+      "id": "a286-03-profiling-public-request-and-trigger-versions",
+      "title": "线上 Profiling 是受限补充证据，不是常态全设备追踪",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-03-profiling-public-request-and-trigger-versions.svg",
+        "src/assets/diagrams/ch26/a286-03-profiling-public-request-and-trigger-versions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-03-profiling-public-request-and-trigger-versions",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-03-profiling-public-request-and-trigger-versions.svg": "e2cd899d07844dec9d0218fba1135413c3bf80d0e9a9b115cde9a2198aa43345",
+        "src/assets/diagrams/ch26/a286-03-profiling-public-request-and-trigger-versions.png": "16a0a245fc0fda9c7c356619520789ddd5031707aa9e6e09f1cc09708c5aea62"
+      }
+    },
+    {
+      "id": "a286-04-bounded-client-data-and-control-plane",
+      "title": "端侧按数据流串联，配置与自监控另走控制面",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-04-bounded-client-data-and-control-plane.svg",
+        "src/assets/diagrams/ch26/a286-04-bounded-client-data-and-control-plane.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-04-bounded-client-data-and-control-plane",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#work-constraints",
+        "https://developer.android.com/reference/androidx/metrics/performance/JankStats",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-04-bounded-client-data-and-control-plane.svg": "397cc9f862439ae43cc3f654dfa7b16adf63ab2fdb6b2e05f2d566e870fb9bc7",
+        "src/assets/diagrams/ch26/a286-04-bounded-client-data-and-control-plane.png": "1704d17e8576ecfd23be7ebd9762995e89ff951ee81153a9bdf7e1617e2151bc"
+      }
+    },
+    {
+      "id": "a286-05-server-query-alert-and-verification",
+      "title": "从告警到修复，用同一关联键找回证据",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-05-server-query-alert-and-verification.svg",
+        "src/assets/diagrams/ch26/a286-05-server-query-alert-and-verification.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-05-server-query-alert-and-verification",
+      "sources": [
+        "https://developer.android.com/topic/performance/appstartup/analysis-optimization",
+        "https://developer.android.com/topic/performance/vitals/render",
+        "https://opentelemetry.io/docs/specs/otel/logs/"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-05-server-query-alert-and-verification.svg": "33463c9a0ddf372afb29b66f261b78955c8611af51c780b8de0c592b5f22203d",
+        "src/assets/diagrams/ch26/a286-05-server-query-alert-and-verification.png": "46cb7b0c5862c88b783fb7c39bd30ce2f17a25aa900389786906bae1b02a93a1"
+      }
+    },
+    {
+      "id": "a286-06-sampling-strata-and-inclusion-probability",
+      "title": "采样要保分母、概率和缺失原因",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-06-sampling-strata-and-inclusion-probability.svg",
+        "src/assets/diagrams/ch26/a286-06-sampling-strata-and-inclusion-probability.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-06-sampling-strata-and-inclusion-probability",
+      "sources": [
+        "https://firebase.google.com/docs/perf-mon",
+        "https://opentelemetry.io/docs/specs/otel/logs/"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-06-sampling-strata-and-inclusion-probability.svg": "0b7bf7cd5bd1fd29d2f63760c34776afd25098dcd31fb8d0959d8a53daf15426",
+        "src/assets/diagrams/ch26/a286-06-sampling-strata-and-inclusion-probability.png": "3243aaced614c7fcddba34b5c673fad64a62f583a72aa8a691fac0a2d2106927"
+      }
+    },
+    {
+      "id": "a286-07-baseline-versus-authorized-diagnostics",
+      "title": "低成本基线与目标诊断分别设预算和生命周期",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-07-baseline-versus-authorized-diagnostics.svg",
+        "src/assets/diagrams/ch26/a286-07-baseline-versus-authorized-diagnostics.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-07-baseline-versus-authorized-diagnostics",
+      "sources": [
+        "https://firebase.google.com/docs/perf-mon/#user_data",
+        "https://developer.android.com/privacy-and-security/about",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-07-baseline-versus-authorized-diagnostics.svg": "9997466fbae6835e5d74e1bbe00b5c4913cd4e04a88c1718a3ff423e517b055a",
+        "src/assets/diagrams/ch26/a286-07-baseline-versus-authorized-diagnostics.png": "84e1bc9c7a80a944bb95f33bc3fee7bf5ad11faf8f2fed2c4e871308f59f700e"
+      }
+    },
+    {
+      "id": "a286-08-statsd-three-directions-and-permissions",
+      "title": "StatsD 三条方向不同，普通 App 不获得系统报告",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-08-statsd-three-directions-and-permissions.svg",
+        "src/assets/diagrams/ch26/a286-08-statsd-three-directions-and-permissions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-08-statsd-three-directions-and-permissions",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/app/StatsManager.java",
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/util/StatsLog.java",
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/stats/StatsManagerService.java",
+        "https://cs.android.com/android/platform/superproject/+/android-17.0.0_r1:frameworks/proto_logging/stats/atoms.proto"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-08-statsd-three-directions-and-permissions.svg": "641f55e944b240c73daf05b9951459ba9fd8d1ac5ea9bb352e060de8b169e033",
+        "src/assets/diagrams/ch26/a286-08-statsd-three-directions-and-permissions.png": "dca94b85d6f3944d90e588aa89aa20a449f021d5d0c0a68f931f38617249a490"
+      }
+    },
+    {
+      "id": "a286-09-pull-provider-request-reply-and-cooldown",
+      "title": "Pull 是 statsd 请求提供方，不是提供方订阅读数",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-09-pull-provider-request-reply-and-cooldown.svg",
+        "src/assets/diagrams/ch26/a286-09-pull-provider-request-reply-and-cooldown.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-09-pull-provider-request-reply-and-cooldown",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/app/StatsManager.java",
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/stats/StatsCompanionService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-09-pull-provider-request-reply-and-cooldown.svg": "d2ff7fd48354176116fa7492b591dda71446be710e7cfe2b9a2d6e5a2ee762a9",
+        "src/assets/diagrams/ch26/a286-09-pull-provider-request-reply-and-cooldown.png": "6fe07310119efbfb12b45ce99f3067a088c6ce21c71a0856d402785e98fe7f5e"
+      }
+    },
+    {
+      "id": "a286-10-memory-metric-attribution-and-version",
+      "title": "PSS、Native allocator 和系统 RAM 是不同读数",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-10-memory-metric-attribution-and-version.svg",
+        "src/assets/diagrams/ch26/a286-10-memory-metric-attribution-and-version.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-10-memory-metric-attribution-and-version",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Debug",
+        "https://developer.android.com/reference/android/app/ActivityManager.MemoryInfo",
+        "https://developer.android.com/reference/android/app/ActivityManager"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-10-memory-metric-attribution-and-version.svg": "c477580d626f5bd22f9a4e93ce14f82bd89c2ee52da568d700e27723c4c7f1d7",
+        "src/assets/diagrams/ch26/a286-10-memory-metric-attribution-and-version.png": "d437e3c35a792aa2ee7b6eef007d81f670d99b1531d35489485194b956a39ab3"
+      }
+    },
+    {
+      "id": "a286-11-compaction-freezer-and-visible-gaps",
+      "title": "内存整理、冻结与限制器，不能只从 PSS 曲线反推",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-11-compaction-freezer-and-visible-gaps.svg",
+        "src/assets/diagrams/ch26/a286-11-compaction-freezer-and-visible-gaps.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-11-compaction-freezer-and-visible-gaps",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-11-compaction-freezer-and-visible-gaps.svg": "b957eae2bd9f66ed6029a518e3705d0bb4e99de7987b4441bd3b1ef6a317db75",
+        "src/assets/diagrams/ch26/a286-11-compaction-freezer-and-visible-gaps.png": "b3205c539a7a78e8dec28c04ba9008056bf7b2c78c3d035ed04627651b320d82"
+      }
+    },
+    {
+      "id": "a286-12-memory-limiter-kernel-throttle-system-kill",
+      "title": "memory.high 先由内核节流，anon+swap 终止由系统安排",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-12-memory-limiter-kernel-throttle-system-kill.svg",
+        "src/assets/diagrams/ch26/a286-12-memory-limiter-kernel-throttle-system-kill.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-12-memory-limiter-kernel-throttle-system-kill",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/jni/com_android_server_am_MemoryLimiter.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/admin-guide/cgroup-v2.rst",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-12-memory-limiter-kernel-throttle-system-kill.svg": "bc4578c2af22d3424d295a55b1a66ba33d12097cc66ff14fecbe44822b8ff13d",
+        "src/assets/diagrams/ch26/a286-12-memory-limiter-kernel-throttle-system-kill.png": "d0cde2d223f27dab736615d607c3d407c408786dbc63e83c9fcd4477190d29fb"
+      }
+    },
+    {
+      "id": "a286-13-native-memory-two-sources-and-read-failure",
+      "title": "图形 memtrack 与 smaps 页统计是两条路径",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-13-native-memory-two-sources-and-read-failure.svg",
+        "src/assets/diagrams/ch26/a286-13-native-memory-two-sources-and-read-failure.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-13-native-memory-two-sources-and-read-failure",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp",
+        "https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/procmeminfo.cpp",
+        "https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/libmemevents/memevents.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-13-native-memory-two-sources-and-read-failure.svg": "332c755d1097e65273ed7143093cda231faec8f4ba13387b4d372ec3696e851c",
+        "src/assets/diagrams/ch26/a286-13-native-memory-two-sources-and-read-failure.png": "1166a15e15882cd342118b71a5244d324f8a7b32fb1a949eb3682863df80ccb6"
+      }
+    },
+    {
+      "id": "a286-14-online-apm-versus-offline-power-evidence",
+      "title": "线上低成本趋势，离线系统证据做深入归因",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-14-online-apm-versus-offline-power-evidence.svg",
+        "src/assets/diagrams/ch26/a286-14-online-apm-versus-offline-power-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-14-online-apm-versus-offline-power-evidence",
+      "sources": [
+        "https://developer.android.com/topic/performance/power/setup-battery-historian",
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/app/StatsManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-14-online-apm-versus-offline-power-evidence.svg": "c73583bf28d0b3f7f5eecfb05651447af2bb3c762f0f2cd054ff30ffadfe2e87",
+        "src/assets/diagrams/ch26/a286-14-online-apm-versus-offline-power-evidence.png": "2a49e6ab666b80b3170b290d11e09966280c4297e2d982a43e03ae600d9e9a5c"
+      }
+    },
+    {
+      "id": "a286-15-network-stage-route-and-bytes",
+      "title": "网络观测分阶段、逻辑请求与实际尝试次数",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-15-network-stage-route-and-bytes.svg",
+        "src/assets/diagrams/ch26/a286-15-network-stage-route-and-bytes.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-15-network-stage-route-and-bytes",
+      "sources": [
+        "https://firebase.google.com/docs/perf-mon/custom-url-patterns",
+        "https://firebase.google.com/docs/perf-mon"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-15-network-stage-route-and-bytes.svg": "7ebb727bd180119ee41a621e03a7ce8f7bc7742cea9878fe91d714471768b902",
+        "src/assets/diagrams/ch26/a286-15-network-stage-route-and-bytes.png": "c16c62cd7c52b950b991298e44e5958cdc678ef9b1f245faf4903066ff531c9e"
+      }
+    },
+    {
+      "id": "a286-16-jankstats-frame-data-ownership",
+      "title": "JankStats 回调对象会复用，跨回调保存先复制",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-16-jankstats-frame-data-ownership.svg",
+        "src/assets/diagrams/ch26/a286-16-jankstats-frame-data-ownership.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-16-jankstats-frame-data-ownership",
+      "sources": [
+        "https://developer.android.com/reference/androidx/metrics/performance/JankStats",
+        "https://developer.android.com/topic/performance/jankstats",
+        "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/metrics/metrics-performance/src/main/java/androidx/metrics/performance/FrameData.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-16-jankstats-frame-data-ownership.svg": "012e9caf91c186a955823d7125f2a7f17349dbb7eba7b29e20257948c0ba4a27",
+        "src/assets/diagrams/ch26/a286-16-jankstats-frame-data-ownership.png": "8eb383e8031e365b538bb2b84d2201c7c9a6b2e92a899e3336842a73a5168e51"
+      }
+    },
+    {
+      "id": "a286-17-leakcanary-retained-dump-and-reference-path",
+      "title": "弱引用观察只是候选，堆转储与分析才找保留路径",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-17-leakcanary-retained-dump-and-reference-path.svg",
+        "src/assets/diagrams/ch26/a286-17-leakcanary-retained-dump-and-reference-path.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-17-leakcanary-retained-dump-and-reference-path",
+      "sources": [
+        "https://square.github.io/leakcanary/getting_started/",
+        "https://raw.githubusercontent.com/square/leakcanary/8d29638ccf25e15d84b0119b6617f0069bc0b2d8/leakcanary-object-watcher-android/src/main/AndroidManifest.xml"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-17-leakcanary-retained-dump-and-reference-path.svg": "fc689d5915f08d957458835f3c8ece5e8893adc9137d104dcc148e9ed7af6e9c",
+        "src/assets/diagrams/ch26/a286-17-leakcanary-retained-dump-and-reference-path.png": "c450efd49daf7ae292a88883a4ef6e70568110ac8e04315d30f9eb296bdd2db3"
+      }
+    },
+    {
+      "id": "a286-18-lifecycle-constraint-and-unobserved-intervals",
+      "title": "采集按真实执行机会降级，冻结间隔不补零",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-18-lifecycle-constraint-and-unobserved-intervals.svg",
+        "src/assets/diagrams/ch26/a286-18-lifecycle-constraint-and-unobserved-intervals.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-18-lifecycle-constraint-and-unobserved-intervals",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java",
+        "https://developer.android.com/reference/android/content/ComponentCallbacks2",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#work-constraints"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-18-lifecycle-constraint-and-unobserved-intervals.svg": "c47f7c30cd444cd4df51efa9df3d329f295e197f718ccd155598600436acdba4",
+        "src/assets/diagrams/ch26/a286-18-lifecycle-constraint-and-unobserved-intervals.png": "f6239b2421ea64e057491b6309679771e35edcc6750f8604d1f0ffe3778bb21c"
+      }
+    },
+    {
+      "id": "a286-19-durable-batches-ack-retry-and-isolation",
+      "title": "持久化批次按 ID 幂等确认，ACK 后回收",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-19-durable-batches-ack-retry-and-isolation.svg",
+        "src/assets/diagrams/ch26/a286-19-durable-batches-ack-retry-and-isolation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-19-durable-batches-ack-retry-and-isolation",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#work-constraints",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-19-durable-batches-ack-retry-and-isolation.svg": "8e7f70c003e93ca1e4c7213b58a77c762d63a91497908dae71f169e3b66a1e61",
+        "src/assets/diagrams/ch26/a286-19-durable-batches-ack-retry-and-isolation.png": "fc2a734277d7bc21cd237cbfd9835aebab2cbb80a8f604ef32a48b66d671434c"
+      }
+    },
+    {
+      "id": "a286-20-monitor-the-monitor-and-release-budgets",
+      "title": "SDK 自监控必须进入同设备与场景的发布预算",
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a286-20-monitor-the-monitor-and-release-budgets.svg",
+        "src/assets/diagrams/ch26/a286-20-monitor-the-monitor-and-release-budgets.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a286-20-monitor-the-monitor-and-release-budgets",
+      "sources": [
+        "https://developer.android.com/reference/androidx/metrics/performance/JankStats",
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#work-constraints",
+        "https://firebase.google.com/docs/perf-mon"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a286-20-monitor-the-monitor-and-release-budgets.svg": "3bed7e4d11c4038fcc492bbbc13699b3f2c8c8892b0dd0ee1cb195250c5cf27e",
+        "src/assets/diagrams/ch26/a286-20-monitor-the-monitor-and-release-budgets.png": "715bfa6558eb743727d16641a1bf2e77a86c54c4cfa5cc81a100cfc4af538074"
+      }
+    },
+    {
+      "id": "a287-01-crash-preservation-and-next-healthy-window",
+      "title": "崩溃现场保全与后续上报使用不同执行窗口",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-01-crash-preservation-and-next-healthy-window.svg",
+        "src/assets/diagrams/ch26/a287-01-crash-preservation-and-next-healthy-window.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-01-crash-preservation-and-next-healthy-window",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-01-crash-preservation-and-next-healthy-window.svg": "3ff90121342bd45a4efbb8145ff17795b1b5d1dcdecb31ea4667734deefe9992",
+        "src/assets/diagrams/ch26/a287-01-crash-preservation-and-next-healthy-window.png": "8441d25cf9acbee7f1bc11fe7a80835b38ac739c2947493935c948514509d00b"
+      }
+    },
+    {
+      "id": "a287-02-java-versus-native-capture-environment",
+      "title": "Java 默认退出链与 Native 信号安全分开处理",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-02-java-versus-native-capture-environment.svg",
+        "src/assets/diagrams/ch26/a287-02-java-versus-native-capture-environment.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-02-java-versus-native-capture-environment",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp",
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/V2_chap02.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-02-java-versus-native-capture-environment.svg": "7b63c460ba846aa82bf0598147492f945920512b7459845efbd752ff4736fb81",
+        "src/assets/diagrams/ch26/a287-02-java-versus-native-capture-environment.png": "a81fdbd4523b9ed6cae96b8f5247b495d93532bbdfac6e63613bd192413ee26d"
+      }
+    },
+    {
+      "id": "a287-03-debuggerd-crash-dump-and-tombstoned-fds",
+      "title": "crash_dump 负责抓取和写入，tombstoned 管理输出 FD",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-03-debuggerd-crash-dump-and-tombstoned-fds.svg",
+        "src/assets/diagrams/ch26/a287-03-debuggerd-crash-dump-and-tombstoned-fds.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-03-debuggerd-crash-dump-and-tombstoned-fds",
+      "sources": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/libdebuggerd/tombstone.cpp",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/proto/tombstone.proto"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-03-debuggerd-crash-dump-and-tombstoned-fds.svg": "517a2c9dbc1bdceae8e29364275969856d86a24ae137f4cb8a7168fea1c7f9aa",
+        "src/assets/diagrams/ch26/a287-03-debuggerd-crash-dump-and-tombstoned-fds.png": "6a90eed5443064e447d5d4dd0784813fdc84224e0139149e8f78c882c3bddd22"
+      }
+    },
+    {
+      "id": "a287-04-envelope-persistence-and-attachments",
+      "title": "事件摘要、诊断附件与提交状态分别演进",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-04-envelope-persistence-and-attachments.svg",
+        "src/assets/diagrams/ch26/a287-04-envelope-persistence-and-attachments.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-04-envelope-persistence-and-attachments",
+      "sources": [
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/V2_chap02.html",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-04-envelope-persistence-and-attachments.svg": "704b4add101050a717d3c7b5cad73af491888bb919515ba91c846503069eedaf",
+        "src/assets/diagrams/ch26/a287-04-envelope-persistence-and-attachments.png": "d29177a2c265c3ea659c11742db0ffcf4b9cf1bc741c3845e450f6466d55d783"
+      }
+    },
+    {
+      "id": "a287-05-ordinary-isolated-and-renderer-processes",
+      "title": "三类进程不能套同一 SDK 初始化与上传假设",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-05-ordinary-isolated-and-renderer-processes.svg",
+        "src/assets/diagrams/ch26/a287-05-ordinary-isolated-and-renderer-processes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-05-ordinary-isolated-and-renderer-processes",
+      "sources": [
+        "https://developer.android.com/guide/topics/manifest/service-element#isolated",
+        "https://developer.android.com/develop/ui/views/layout/webapps/handle-termination",
+        "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int)"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-05-ordinary-isolated-and-renderer-processes.svg": "6abd1315682e78f0fc7118ded9223bec98f9aa8caf3fa8943b0bd47a59dfdafb",
+        "src/assets/diagrams/ch26/a287-05-ordinary-isolated-and-renderer-processes.png": "a72f6505c726a6cfa99f4a44ceff52422240e94a393076e9e9da921f062f9f4f"
+      }
+    },
+    {
+      "id": "a287-06-renderer-gone-cleanup-all-affected-webviews",
+      "title": "renderer 退出后清理每个受影响 WebView，再决定重建",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-06-renderer-gone-cleanup-all-affected-webviews.svg",
+        "src/assets/diagrams/ch26/a287-06-renderer-gone-cleanup-all-affected-webviews.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-06-renderer-gone-cleanup-all-affected-webviews",
+      "sources": [
+        "https://developer.android.com/reference/android/webkit/WebViewClient",
+        "https://developer.android.com/reference/android/webkit/WebViewRenderProcessClient",
+        "https://developer.android.com/develop/ui/views/layout/webapps/handle-termination"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-06-renderer-gone-cleanup-all-affected-webviews.svg": "658c0147e8da4e953d7fa4f07b2a851bd691fa2aa48251c1ee1f8dbe33c809c9",
+        "src/assets/diagrams/ch26/a287-06-renderer-gone-cleanup-all-affected-webviews.png": "6fed6462016f3edfefdda60cfedbe54e3063cc071e2d5fb151465f3902b17708"
+      }
+    },
+    {
+      "id": "a287-07-exit-history-versus-rotating-traces",
+      "title": "退出记录有界，trace 是另一份可能被覆盖的证据",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-07-exit-history-versus-rotating-traces.svg",
+        "src/assets/diagrams/ch26/a287-07-exit-history-versus-rotating-traces.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-07-exit-history-versus-rotating-traces",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java",
+        "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int)"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-07-exit-history-versus-rotating-traces.svg": "b509c6006c28c433aeead47b7ed26fb7f1a639dcba516a34d28f2a26db869a6e",
+        "src/assets/diagrams/ch26/a287-07-exit-history-versus-rotating-traces.png": "6b2a3eaa1ee633d760273417aae4d67596c5a95bdb8042a4d6d1b4ad9e333971"
+      }
+    },
+    {
+      "id": "a287-08-release-symbols-and-exact-build-identity",
+      "title": "发布包、Java mapping 与 Native symbols 绑定同一构建",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-08-release-symbols-and-exact-build-identity.svg",
+        "src/assets/diagrams/ch26/a287-08-release-symbols-and-exact-build-identity.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-08-release-symbols-and-exact-build-identity",
+      "sources": [
+        "https://developer.android.com/tools/retrace",
+        "https://developer.android.com/build/include-native-symbols",
+        "https://developer.android.com/ndk/guides/ndk-stack",
+        "https://firebase.google.com/docs/crashlytics/ndk-reports"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-08-release-symbols-and-exact-build-identity.svg": "bf993c4662d32c5a455da3e53973d8d481629b1c637e119464333cf3c23ffc68",
+        "src/assets/diagrams/ch26/a287-08-release-symbols-and-exact-build-identity.png": "8f53ac73a5cceb8a2959d1b141914c26a872b2492860c4146e45270d1dac15f8"
+      }
+    },
+    {
+      "id": "a287-09-event-issue-and-release-gates",
+      "title": "稳定事件 ID 与可重算问题组分开保留",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-09-event-issue-and-release-gates.svg",
+        "src/assets/diagrams/ch26/a287-09-event-issue-and-release-gates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-09-event-issue-and-release-gates",
+      "sources": [
+        "https://developer.android.com/build/include-native-symbols",
+        "https://developer.android.com/topic/performance/vitals",
+        "https://firebase.google.com/docs/crashlytics/android/get-deobfuscated-reports"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-09-event-issue-and-release-gates.svg": "99cab91395384de81b69f922bd0108c5926577dd6a628039b0eb49f6b573f1bb",
+        "src/assets/diagrams/ch26/a287-09-event-issue-and-release-gates.png": "5692280a6f0a8aa320e78299c314004d6f5279a61728fd21b851454c653f42ed"
+      }
+    },
+    {
+      "id": "a287-10-crash-rate-user-session-and-exposure",
+      "title": "用户率、会话率和 issue 影响面不能混作分母",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-10-crash-rate-user-session-and-exposure.svg",
+        "src/assets/diagrams/ch26/a287-10-crash-rate-user-session-and-exposure.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-10-crash-rate-user-session-and-exposure",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals/crash",
+        "https://support.google.com/googleplay/android-developer/answer/9844486",
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-10-crash-rate-user-session-and-exposure.svg": "656c99422a333ee2379dd6c50de9f5d1ef29f75251fc687ccc5b37ed6d47d68e",
+        "src/assets/diagrams/ch26/a287-10-crash-rate-user-session-and-exposure.png": "e24d350ddb2c4f1fb88ea922301ed6dcbd65a79fffaf1a0263b41b6fe778d7f0"
+      }
+    },
+    {
+      "id": "a287-11-anr-authority-levels-and-api37-warning",
+      "title": "预警、疑似卡顿、系统退出与 Play 聚合分层记证据",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-11-anr-authority-levels-and-api37-warning.svg",
+        "src/assets/diagrams/ch26/a287-11-anr-authority-levels-and-api37-warning.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-11-anr-authority-levels-and-api37-warning",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ActivityManager#getHistoricalProcessExitReasons(java.lang.String,%20int,%20int)",
+        "https://developer.android.com/reference/android/app/AnrWarningResult",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo.AnrInfo"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-11-anr-authority-levels-and-api37-warning.svg": "cff3663a32166a4e4a6baeab0daadcc589653ad40f00000cbbc753a9b5ffe40b",
+        "src/assets/diagrams/ch26/a287-11-anr-authority-levels-and-api37-warning.png": "a071b5c241903ae2f5d1770073974dc2f9c1e0b914f835a3d75b0ded372d091c"
+      }
+    },
+    {
+      "id": "a287-12-early-dump-serialized-anr-and-recording",
+      "title": "early dump 抢现场，完整 ANR 处理由消费者串行执行",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-12-early-dump-serialized-anr-and-recording.svg",
+        "src/assets/diagrams/ch26/a287-12-early-dump-serialized-anr-and-recording.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-12-early-dump-serialized-anr-and-recording",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessErrorStateRecord.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/StackTracesDumpHelper.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-12-early-dump-serialized-anr-and-recording.svg": "387b0e9bbb858f3a40d27b53f03b3999d076370268a4fb6d2253c4bb47425e82",
+        "src/assets/diagrams/ch26/a287-12-early-dump-serialized-anr-and-recording.png": "f59360b2861531c0b8e3de0d39e9ecc06a4bffa59dd93dcaaf216ab05969b213"
+      }
+    },
+    {
+      "id": "a287-13-sigquit-signal-catcher-and-output",
+      "title": "SIGQUIT 由 ART 专用线程等待，不是主线程普通 handler",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-13-sigquit-signal-catcher-and-output.svg",
+        "src/assets/diagrams/ch26/a287-13-sigquit-signal-catcher-and-output.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-13-sigquit-signal-catcher-and-output",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/signal_catcher.cc",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/StackTracesDumpHelper.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-13-sigquit-signal-catcher-and-output.svg": "3e79867b45d110818ca7f8d381c4c268c236e840b1de79380aae2f4ef127c7dc",
+        "src/assets/diagrams/ch26/a287-13-sigquit-signal-catcher-and-output.png": "a1098adafaf4f1545df566a5aef7cec1144b5e9ca2f7d0767d990461f8c69424"
+      }
+    },
+    {
+      "id": "a287-14-anr-play-rate-type-and-weighted-window",
+      "title": "Play 用户感知 ANR 只取当前定义的输入派发类型",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-14-anr-play-rate-type-and-weighted-window.svg",
+        "src/assets/diagrams/ch26/a287-14-anr-play-rate-type-and-weighted-window.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-14-anr-play-rate-type-and-weighted-window",
+      "sources": [
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.anrrate",
+        "https://support.google.com/googleplay/android-developer/answer/9844486",
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-14-anr-play-rate-type-and-weighted-window.svg": "0bdb0f65e78ef74bacd5f39068af0c32dce9f1d020b8a65c654003ac74fc914f",
+        "src/assets/diagrams/ch26/a287-14-anr-play-rate-type-and-weighted-window.png": "960e319eac60ec2039124908178dfb8c8abe1d4ed6e082bffd358ca2f7a0f0bb"
+      }
+    },
+    {
+      "id": "a287-15-watchdog-lateness-and-bounded-snapshots",
+      "title": "哨兵观察的是任务迟到，系统 ANR 另按组件期限判定",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-15-watchdog-lateness-and-bounded-snapshots.svg",
+        "src/assets/diagrams/ch26/a287-15-watchdog-lateness-and-bounded-snapshots.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-15-watchdog-lateness-and-bounded-snapshots",
+      "sources": [
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-15-watchdog-lateness-and-bounded-snapshots.svg": "7efa8cab9d794ddceb21535c1d4c45b2d899a1a06fa0f474c6cded87f7e99ad7",
+        "src/assets/diagrams/ch26/a287-15-watchdog-lateness-and-bounded-snapshots.png": "dd3f5339ba0c1b551e69b153f8dd2f2bf7986b77a0cb2e9b0ac5f5144bbdbb8b"
+      }
+    },
+    {
+      "id": "a287-16-raw-derived-transport-incident-and-issue",
+      "title": "去重分三层，原始事实始终可追溯",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-16-raw-derived-transport-incident-and-issue.svg",
+        "src/assets/diagrams/ch26/a287-16-raw-derived-transport-incident-and-issue.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-16-raw-derived-transport-incident-and-issue",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo.AnrInfo",
+        "https://developer.android.com/reference/android/app/AnrWarningResult",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-16-raw-derived-transport-incident-and-issue.svg": "e50f3b421e1315d79f13f9e600231e650a95ca8b43418c825bb5fe91f2b574cd",
+        "src/assets/diagrams/ch26/a287-16-raw-derived-transport-incident-and-issue.png": "032ee85be4ab8ec2084eed7753ff2b9b9cd3cba691d2beca851e4f0498313ec4"
+      }
+    },
+    {
+      "id": "a287-17-thread-state-wait-peer-and-release-context",
+      "title": "从证据来源到等待对端，再回到发布影响面",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-17-thread-state-wait-peer-and-release-context.svg",
+        "src/assets/diagrams/ch26/a287-17-thread-state-wait-peer-and-release-context.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-17-thread-state-wait-peer-and-release-context",
+      "sources": [
+        "https://developer.android.com/reference/java/lang/Thread.State",
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-17-thread-state-wait-peer-and-release-context.svg": "489cf69a302c33b567a563912453388d69a01aada173c3fc9586801c4f64a20c",
+        "src/assets/diagrams/ch26/a287-17-thread-state-wait-peer-and-release-context.png": "0e95b1c354ddaabe8030d12629061acace42901f864f07bca9a4168141ca7724"
+      }
+    },
+    {
+      "id": "a287-18-coroutine-suspension-blocking-and-component-deadline",
+      "title": "协程挂起不阻塞线程，但组件 deadline 仍要完成",
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a287-18-coroutine-suspension-blocking-and-component-deadline.svg",
+        "src/assets/diagrams/ch26/a287-18-coroutine-suspension-blocking-and-component-deadline.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a287-18-coroutine-suspension-blocking-and-component-deadline",
+      "sources": [
+        "https://developer.android.com/kotlin/coroutines/coroutines-adv",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/await.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.sync/-mutex/lock.html",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/run-blocking.html",
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a287-18-coroutine-suspension-blocking-and-component-deadline.svg": "009bd4bcc6b7f600877cc6d07248134c2f0fcf1847be5b07170d545bea921873",
+        "src/assets/diagrams/ch26/a287-18-coroutine-suspension-blocking-and-component-deadline.png": "0c7e91318f790765eac304cb094020fda512d0ac4627fcb30c68bbdc43f3be1b"
+      }
+    },
+    {
+      "id": "a288-01-incident-evidence-and-reversible-mitigation",
+      "title": "线上事件：先止损和保存证据，再验证因果",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-01-incident-evidence-and-reversible-mitigation.svg",
+        "src/assets/diagrams/ch26/a288-01-incident-evidence-and-reversible-mitigation.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-01-incident-evidence-and-reversible-mitigation",
+      "sources": [
+        "https://developer.android.com/studio/debug/bug-report",
+        "https://firebase.google.com/docs/remote-config/rollouts/about"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-02-dynamic-log-budget",
+      "title": "动态日志开关管理的是受限增量证据",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-02-dynamic-log-budget.svg",
+        "src/assets/diagrams/ch26/a288-02-dynamic-log-budget.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-02-dynamic-log-budget",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/risks/log-info-disclosure",
+        "https://source.android.com/docs/core/tests/debug/understanding-logging"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-03-profiling-sdk-major-and-minor-versions",
+      "title": "ProfilingManager 必须区分 API 36、36.1 与 37",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-03-profiling-sdk-major-and-minor-versions.svg",
+        "src/assets/diagrams/ch26/a288-03-profiling-sdk-major-and-minor-versions.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-03-profiling-sdk-major-and-minor-versions",
+      "sources": [
+        "https://developer.android.com/reference/android/os/ProfilingManager",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger",
+        "https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-04-rollout-versus-remote-config",
+      "title": "停止发布、配置隔离与修复版本有不同作用",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-04-rollout-versus-remote-config.svg",
+        "src/assets/diagrams/ch26/a288-04-rollout-versus-remote-config.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-04-rollout-versus-remote-config",
+      "sources": [
+        "https://support.google.com/googleplay/android-developer/answer/6346149",
+        "https://firebase.google.com/docs/remote-config/rollouts/about"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-05-statsd-control-and-permission",
+      "title": "StatsD 配置控制链与事件写入链分开核对",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-05-statsd-control-and-permission.svg",
+        "src/assets/diagrams/ch26/a288-05-statsd-control-and-permission.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-05-statsd-control-and-permission",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/stats/StatsManagerService.java",
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/util/StatsLog.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/res/AndroidManifest.xml"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-06-sampling-storage-upload-budgets",
+      "title": "采样、存储、上传各有独立预算",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-06-sampling-storage-upload-budgets.svg",
+        "src/assets/diagrams/ch26/a288-06-sampling-storage-upload-budgets.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-06-sampling-storage-upload-budgets",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/risks/log-info-disclosure",
+        "https://developer.android.com/reference/android/os/ProfilingManager"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-07-record-integrity-versus-durability",
+      "title": "完整记录、名称提交与掉电持久性是三个问题",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-07-record-integrity-versus-durability.svg",
+        "src/assets/diagrams/ch26/a288-07-record-integrity-versus-durability.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-07-record-integrity-versus-durability",
+      "sources": [
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/fsync.html",
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/rename.html"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-08-multiprocess-writers-and-upload-lease",
+      "title": "多进程独立写入，上传者由可恢复租约决定",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-08-multiprocess-writers-and-upload-lease.svg",
+        "src/assets/diagrams/ch26/a288-08-multiprocess-writers-and-upload-lease.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-08-multiprocess-writers-and-upload-lease",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/rename.html"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-09-diagnostic-command-state-machine",
+      "title": "诊断命令：授权、持久执行和结果交付分别记状态",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-09-diagnostic-command-state-machine.svg",
+        "src/assets/diagrams/ch26/a288-09-diagnostic-command-state-machine.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-09-diagnostic-command-state-machine",
+      "sources": [
+        "https://developer.android.com/reference/android/os/ProfilingManager",
+        "https://developer.android.com/privacy-and-security/risks/log-info-disclosure"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-10-profile-callback-and-result-file",
+      "title": "请求、触发、回调、上传是四层结果",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-10-profile-callback-and-result-file.svg",
+        "src/assets/diagrams/ch26/a288-10-profile-callback-and-result-file.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-10-profile-callback-and-result-file",
+      "sources": [
+        "https://developer.android.com/reference/android/os/ProfilingManager",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger",
+        "https://developer.android.com/topic/performance/tracing/profiling-manager/retrieve-and-analyze"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-11-network-phases-and-trace-id",
+      "title": "网络故障按请求与阶段建立可关联证据",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-11-network-phases-and-trace-id.svg",
+        "src/assets/diagrams/ch26/a288-11-network-phases-and-trace-id.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-11-network-phases-and-trace-id",
+      "sources": [
+        "https://developer.android.com/tools/perfetto",
+        "https://developer.android.com/privacy-and-security/risks/log-info-disclosure"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-12-separate-telemetry-streams-and-ack",
+      "title": "非 Play 端云证据路径：分类型采集与持久 ACK",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-12-separate-telemetry-streams-and-ack.svg",
+        "src/assets/diagrams/ch26/a288-12-separate-telemetry-streams-and-ack.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-12-separate-telemetry-streams-and-ack",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://developer.android.com/reference/android/os/ProfilingManager"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-13-capability-snapshot-unknown-window",
+      "title": "能力快照是逐字段读取窗口，不是原子系统状态",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-13-capability-snapshot-unknown-window.svg",
+        "src/assets/diagrams/ch26/a288-13-capability-snapshot-unknown-window.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-13-capability-snapshot-unknown-window",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://developer.android.com/reference/android/os/SystemClock",
+        "https://developer.android.com/reference/android/content/pm/InstallSourceInfo"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-14-exit-history-dedup-before-batch-limit",
+      "title": "退出历史：先重扫与去重，再限制持久入队批次",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-14-exit-history-dedup-before-batch-limit.svg",
+        "src/assets/diagrams/ch26/a288-14-exit-history-dedup-before-batch-limit.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-14-exit-history-dedup-before-batch-limit",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-15-missing-telemetry-versus-process-death",
+      "title": "缺数保留未知，不能直接推断厂商杀进程",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-15-missing-telemetry-versus-process-death.svg",
+        "src/assets/diagrams/ch26/a288-15-missing-telemetry-versus-process-death.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-15-missing-telemetry-versus-process-death",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-16-adpf-session-capability-and-measured-effect",
+      "title": "ADPF 会话成立与性能获益需要分开验证",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-16-adpf-session-capability-and-measured-effect.svg",
+        "src/assets/diagrams/ch26/a288-16-adpf-session-capability-and-measured-effect.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-16-adpf-session-capability-and-measured-effect",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PerformanceHintManager.java"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-17-channel-comparison-confounding",
+      "title": "渠道比较：产物与设备结构变化必须进入分析",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-17-channel-comparison-confounding.svg",
+        "src/assets/diagrams/ch26/a288-17-channel-comparison-confounding.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-17-channel-comparison-confounding",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals",
+        "https://developer.android.com/reference/android/content/pm/InstallSourceInfo"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
+    },
+    {
+      "id": "a288-18-rom-evidence-and-apm-selection",
+      "title": "ROM 行为结论和 APM 选型都用可复验样本",
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a288-18-rom-evidence-and-apm-selection.svg",
+        "src/assets/diagrams/ch26/a288-18-rom-evidence-and-apm-selection.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a288-18-rom-evidence-and-apm-selection",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://developer.android.com/topic/performance/vitals",
+        "https://developer.android.com/reference/android/content/pm/InstallSourceInfo"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
     }
   ],
   "corrections": [
@@ -14697,6 +16008,722 @@
       ],
       "article": "src/part5-app/ch25-power-size/README.md",
       "why": "使索引术语与25.2–25.3的后台执行边界一致，避免把持久调度误读为准时或配额豁免。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮全文与官方/API/17r1源码复核日期；不声称实机采集。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/app/StatsManager.java",
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "本轮全文与官方/API/17r1源码复核日期；不声称实机采集。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮全文与官方/API/17r1源码复核日期；不声称实机采集。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/app/StatsManager.java",
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "本轮全文与官方/API/17r1源码复核日期；不声称实机采集。"
+    },
+    {
+      "before": "sources retrieved 2026-08-15",
+      "after": "sources reviewed 2026-10-25; StatsD SystemApi/pull direction, libmeminfo fallback, LeakCanary2.14 provider install and trim callback version boundaries rechecked; no device profiling or monitoring benchmark",
+      "reason": "准确记录本轮核验范围与测试限制。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/app/StatsManager.java",
+        "https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/procmeminfo.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "准确记录本轮核验范围与测试限制。"
+    },
+    {
+      "before": "和部分唤醒锁使用过量（excessive partial wake locks）。评估窗口",
+      "after": "、部分唤醒锁使用过量（excessive partial wake locks）、内存使用（Anonymous RSS + Swap）及位图内存使用；表盘应用另有电池使用过量指标。内存指标按RAM层和应用状态区分阈值，不能用PSS替代；相关内存与代码优化指标的商店可见性影响按当前官方说明从2027年2月开始。评估窗口",
+      "reason": "当前core vitals已包括两类内存；补充统计口径与生效边界，避免把PSS当Play内存值。",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "当前core vitals已包括两类内存；补充统计口径与生效边界，避免把PSS当Play内存值。"
+    },
+    {
+      "before": "attributes 可按国家、设备、应用版本和系统版本筛选数据。",
+      "after": "控制台可按国家、设备、应用版本和系统版本等内置维度筛选，自定义 trace 还可添加受限制的自定义 attributes；这两类属性不要混为一谈。",
+      "reason": "区分Firebase自动维度与开发者自定义trace属性。",
+      "sources": [
+        "https://firebase.google.com/docs/perf-mon"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "区分Firebase自动维度与开发者自定义trace属性。"
+    },
+    {
+      "before": "所以还要靠 `session_id`（会话标识）和 `scene_seq`（场景内顺序号）划定会话与场景的范围。",
+      "after": "所以还要靠 `session_id`（会话标识）和 `scene_seq`（场景内顺序号）划定范围，并在重启后开启新的时钟区间。持久化跨重启会话时另记录可重置的开机/进程序列；不同设备或不同开机区间的 elapsed 值不能直接相减。",
+      "reason": "把单调时间严格限定到同设备同次开机；普通业务会话ID本身未必能识别重启。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "把单调时间严格限定到同设备同次开机；普通业务会话ID本身未必能识别重启。"
+    },
+    {
+      "before": "与性能指标订阅、读取和 pull 数据提供相关的 `StatsManager` 公开 API 主要是三组方法",
+      "after": "`StatsManager` 类标记 `@hide` / `@SystemApi`；以下是源码中与配置、读取和 pull 数据提供相关的 public 方法子集，属于系统API，不是普通应用可编译使用的公共SDK API",
+      "reason": "Java public可见性不等于Android公共SDK可用性，原文把SystemApi误称公开。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/app/StatsManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "Java public可见性不等于Android公共SDK可用性，原文把SystemApi误称公开。"
+    },
+    {
+      "before": "// Android 17 公开 API 子集",
+      "after": "// Android 17 System API 源码子集（非普通App公共SDK）",
+      "reason": "同步代码注释的API边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/app/StatsManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "同步代码注释的API边界。"
+    },
+    {
+      "before": "`RESULT_SUCCESS` / `RESULT_SKIP`",
+      "after": "`StatsManager.PULL_SUCCESS` / `StatsManager.PULL_SKIP`",
+      "reason": "StatsPullAtomCallback返回常量实际名为PULL_SUCCESS/PULL_SKIP。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/app/StatsManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "StatsPullAtomCallback返回常量实际名为PULL_SUCCESS/PULL_SKIP。"
+    },
+    {
+      "before": "`PullAtomMetadata` 的默认冷却间隔为 1000 ms、超时为 1500 ms，用来限制按需拉取频率；回调由 statsd 按需触发，周期性定时回调这一形态并不存在。",
+      "after": "`PullAtomMetadata` 的默认冷却间隔为1000 ms、超时为1500 ms，分别控制拉取冷却和允许等待时间，并不是应用侧固定采样周期。回调由statsd依据配置、事件或定时拉取需要触发；配置可以导致周期性拉取，但不能把这两个默认值当成每秒或每1.5秒必定回调的承诺。",
+      "reason": "原文绝对否认周期性拉取，与StatsCompanionService.setPullingAlarm等配置触发路径冲突。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/app/StatsManager.java",
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/stats/StatsCompanionService.java"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "原文绝对否认周期性拉取，与StatsCompanionService.setPullingAlarm等配置触发路径冲突。"
+    },
+    {
+      "before": "**StatsCompanionService 的职责：**\n`StatsCompanionService` 运行在 system_server 中，是通过 `IStatsd` 接口与 statsd 守护进程交互的辅助服务，主要处理配置管理和数据拉取方注册。事件写入与它无关：`StatsLog` 通过 `libstatssocket` 直接连 statsd 的本地套接字（socket）；从 `/dev/socket/statsdw` 读取事件流的 JNI（Java Native Interface，Java 原生接口）桥接层同样另有其人。",
+      "after": "`StatsCompanionService` 运行在system_server，通过`IStatsd`辅助statsd设置/接收拉取和订阅告警、交换UID/包信息并处理连接与死亡重连。配置注册、报告读取和pull provider注册由`StatsManagerService`等桥接给statsd，不能把它们概括成StatsCompanionService的主要职责。事件写入经`StatsLog`的JNI/生成日志代码与`libstatssocket`进入本地socket；守护进程侧由`StatsSocketListener`或所选io_uring监听器读取并送入`LogEventQueue`，这不是system_server里一个读取`statsdw`的JNI桥。[已验证: StatsCompanionService.java、StatsManagerService.java、StatsD main.cpp @ android-17.0.0_r1]",
+      "reason": "纠正辅助服务与配置代理职责，并区分客户端JNI写入和statsd原生socket读取。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/stats/StatsCompanionService.java",
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/stats/StatsManagerService.java",
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/statsd/src/main.cpp",
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/util/StatsLog.java"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "纠正辅助服务与配置代理职责，并区分客户端JNI写入和statsd原生socket读取。"
+    },
+    {
+      "before": "返回值的 UID（用户标识）与频率限制详见 §3；这段代码只能读到自己的进程，轮询其他应用是做不到的。",
+      "after": "UID（用户标识）与频率限制详见§3；这段代码只请求当前PID，接口边界是同UID进程，而不是只能传自己的PID。普通应用不能借它轮询其他UID应用。",
+      "reason": "把示例的当前PID选择与API的同UID权限边界分开。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ActivityManager"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "把示例的当前PID选择与API的同UID权限边界分开。"
+    },
+    {
+      "before": "`LIMIT_TYPE_ANON_SWAP` 分支会触发异常性能剖析（anomaly profiling），并通过 `KILL_DELAY_MS` 延迟终止请求，为系统剖析器留出完成时间。",
+      "after": "`LIMIT_TYPE_ANON_SWAP` 分支在额外剖析开关开启且包信息可用时请求异常性能剖析（anomaly profiling），并通过`KILL_DELAY_MS`排队延迟终止请求；剖析不保证成功，真正终止还受disable-kill等控制，不能把延迟理解为已确认完成剖析。",
+      "reason": "固定r1请求剖析有额外flag/pkg条件，延迟终止也有disable-kill分支。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/MemoryLimiter.java"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "固定r1请求剖析有额外flag/pkg条件，延迟终止也有disable-kill分支。"
+    },
+    {
+      "before": "    int graphics;    // 图形内存（SurfaceFlinger 等）\n    int gl;          // GL 内存（OpenGL/Vulkan）\n    int other;       // 其他内存（Ashmem 等）",
+      "after": "    int graphics;    // memtrack GRAPHICS类别\n    int gl;          // memtrack GL类别\n    int other;       // memtrack OTHER类别，不等于全部Ashmem",
+      "reason": "HAL分类由驱动定义归属，不能把other简单等同所有Ashmem或graphics等同SurfaceFlinger总量。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "HAL分类由驱动定义归属，不能把other简单等同所有Ashmem或graphics等同SurfaceFlinger总量。"
+    },
+    {
+      "before": "下面的片段展示 `ProcMemInfo` 优先读取 `smaps_rollup` 并在不可用时回退到 `smaps` 的意图。",
+      "after": "下面的片段调用`ProcMemInfo::SmapsOrRollup()`。固定r1实现先在当前读取者的`/proc/self/smaps_rollup`探测支持并缓存结果，据此选择目标PID的`smaps_rollup`或`smaps`；选定文件读取失败时返回false，并不会在每次目标PID读取失败后自动重试另一文件。",
+      "reason": "实际代码是预先支持性探测后选路径，不是目标读取失败自动重试。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/procmeminfo.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "实际代码是预先支持性探测后选路径，不是目标读取失败自动重试。"
+    },
+    {
+      "before": "    // 失败时自动回退到传统 smaps\n}",
+      "after": "} else {\n    // 目标读取失败：标记本次不可用，不能用0伪造样本。\n}",
+      "reason": "修正代码注释并实际处理不可读结果。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/procmeminfo.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "修正代码注释并实际处理不可读结果。"
+    },
+    {
+      "before": "回退让旧读取方式继续可用，但各厂商图形内存分类的精度未必相同。",
+      "after": "支持性探测让不支持rollup的环境选择传统smaps；读取失败仍需单独处理。图形memtrack则是另一条统计路径，厂商分类精度和可用性不能由smaps选路推导。",
+      "reason": "解开CPU进程页统计路径与memtrack厂商精度，避免错误因果。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/procmeminfo.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "解开CPU进程页统计路径与memtrack厂商精度，避免错误因果。"
+    },
+    {
+      "before": "`ProcMemInfo::SmapsOrRollup()` 优先读取 `smaps_rollup`，不可用时退回逐 VMA 的 `smaps`",
+      "after": "`ProcMemInfo::SmapsOrRollup()` 根据缓存的支持性探测选择`smaps_rollup`或逐VMA的`smaps`，目标文件读取失败返回false",
+      "reason": "同步后文同一错误的fallback描述。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/procmeminfo.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "同步后文同一错误的fallback描述。"
+    },
+    {
+      "before": "库通过 AndroidX Startup 和应用清单（manifest）组件完成默认观察器安装",
+      "after": "以官方当前示例的LeakCanary 2.14为例，默认`leakcanary-object-watcher-android`通过清单中的`MainProcessAppWatcherInstaller` ContentProvider安装观察器；另有可选的AndroidX Startup集成artifact，不能把它说成默认依赖路径",
+      "reason": "固定2.14默认是ContentProvider，AndroidXStartup为单独集成形态。",
+      "sources": [
+        "https://raw.githubusercontent.com/square/leakcanary/8d29638ccf25e15d84b0119b6617f0069bc0b2d8/leakcanary-object-watcher-android/src/main/AndroidManifest.xml",
+        "https://raw.githubusercontent.com/square/leakcanary/8d29638ccf25e15d84b0119b6617f0069bc0b2d8/leakcanary-object-watcher-android-startup/src/main/AndroidManifest.xml"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "固定2.14默认是ContentProvider，AndroidXStartup为单独集成形态。"
+    },
+    {
+      "before": "记录 `unsupported`、`not_scheduled`、`frozen_gap`、`budget_exhausted` 等原因",
+      "after": "记录`unsupported`、`not_scheduled`、`unobserved_gap`、`budget_exhausted`等已知状态；只有关联到系统冻结证据时才进一步标记`frozen_gap`",
+      "reason": "无采样不能独立证明冻结，原文同时建议frozen_gap会让SDK把未知间隔误标确定原因。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/SystemClock.java"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "无采样不能独立证明冻结，原文同时建议frozen_gap会让SDK把未知间隔误标确定原因。"
+    },
+    {
+      "before": "`ComponentCallbacks2.onTrimMemory()` 是内存压力提示，每次回收或每次 compaction 都收到通知可指望不上。收到回调时记录 level 和业务状态，减少可回收缓存；运行时核心逻辑的决定权，留给明确的运行时状态而非高频 PSS 轮询。",
+      "after": "`ComponentCallbacks2.onTrimMemory()`应按版本和level解释。API34起，RUNNING_*、MODERATE、COMPLETE等若干旧内存压力等级不再通知，并在API35弃用；不能在Android14–17把最近一次旧trim level当作持续、实时压力信号。UI_HIDDEN等回调描述生命周期/可释放资源机会，也不证明每次回收或compaction发生。按实际收到的适用level和业务状态释放可重建缓存；运行策略依赖明确生命周期与可用公开信号，不靠高频PSS轮询推断系统事件。[已验证: https://developer.android.com/reference/android/content/ComponentCallbacks2]",
+      "reason": "补上旧trim压力等级自API34不下发的关键兼容边界。",
+      "sources": [
+        "https://developer.android.com/reference/android/content/ComponentCallbacks2"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "补上旧trim压力等级自API34不下发的关键兼容边界。"
+    },
+    {
+      "before": "path: https://developer.android.com/reference/android/os/Debug.MemoryInfo\n",
+      "after": "path: https://developer.android.com/reference/android/os/Debug.MemoryInfo\n- type: official\n  path: https://developer.android.com/reference/android/content/ComponentCallbacks2\n",
+      "reason": "新增trim兼容性直接来源，保留其他旧来源历史标记。",
+      "sources": [
+        "https://developer.android.com/reference/android/content/ComponentCallbacks2"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "新增trim兼容性直接来源，保留其他旧来源历史标记。"
+    },
+    {
+      "before": "```mermaid\ngraph TD\n  A[业务代码 / 系统回调] --> B[采集 API]\n  B --> C[轻量事件模型]\n  C --> D[有界内存队列]\n  D --> E[本地分片存储]\n  E --> F[批量上传 Worker]\n  F --> G[服务端接入]\n  H[远程配置与采样策略] --> B\n  H --> F\n  I[SDK 自监控] --> F\n```",
+      "after": "端侧数据主路径是轻量采集、有界队列、分级持久化与批量上传；远程配置和自监控分别控制预算与记录管道健康，Crash最小保全路径独立。",
+      "reason": "用明确数据流和控制流的白板图替换原Mermaid，保持独立崩溃路径说明。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java",
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work#work-constraints"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "用明确数据流和控制流的白板图替换原Mermaid，保持独立崩溃路径说明。"
+    },
+    {
+      "before": "Android 14 相关源码中的 `libmemevents` 用 eBPF 环形缓冲区接收",
+      "after": "本轮确认的`android-17.0.0_r1`源码中，`libmemevents`用eBPF环形缓冲区接收",
+      "reason": "本轮原始Android14标签路径没有可验证的该实现；将具体事件能力限定到实际核对的17r1，避免把源码新路径能力追溯给14。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/libmemevents/memevents.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "本轮原始Android14标签路径没有可验证的该实现；将具体事件能力限定到实际核对的17r1，避免把源码新路径能力追溯给14。"
+    },
+    {
+      "before": "等事件，Android 17 仍保留这条系统路径。",
+      "after": "等事件；这些是固定17r1系统路径的能力，不构成Android14–17所有设备都提供同一事件集合的保证。",
+      "reason": "不以17r1实现推断Android14–16设备能力，保留受信系统组件边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/libmemevents/memevents.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "why": "不以17r1实现推断Android14–16设备能力，保留受信系统组件边界。"
+    },
+    {
+      "before": "last_verified: '2026-10-19'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮全文与官方/API及17r1源码核对日期；不声称触发真实崩溃/ANR。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "本轮全文与官方/API及17r1源码核对日期；不声称触发真实崩溃/ANR。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-10-19'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮全文与官方/API及17r1源码核对日期；不声称触发真实崩溃/ANR。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "本轮全文与官方/API及17r1源码核对日期；不声称触发真实崩溃/ANR。"
+    },
+    {
+      "before": "retrieved 2026-10-19",
+      "after": "reviewed 2026-10-25; POSIX signal safety, ART SIGQUIT, tombstoned FD ownership, Java Thread.State and asynchronous component deadlines rechecked; no crash/ANR/device injection",
+      "reason": "更新实际来源核验范围与设备验证边界。",
+      "sources": [
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/V2_chap02.html",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/signal_catcher.cc",
+        "https://developer.android.com/reference/java/lang/Thread.State"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "更新实际来源核验范围与设备验证边界。"
+    },
+    {
+      "before": "会预先准备备用栈，并以 `SA_RESTART | SA_SIGINFO | SA_ONSTACK | SA_EXPOSE_TAGBITS` 标志注册信号处理。",
+      "after": "预先准备辅助伪线程所用栈，并以`SA_RESTART | SA_SIGINFO | SA_ONSTACK | SA_EXPOSE_TAGBITS`注册信号处理；`SA_ONSTACK`是在当前线程具备alternate signal stack时请求使用它，不能把这份辅助线程栈直接等同备用信号栈。",
+      "reason": "源码pseudothread_stack与SA_ONSTACK的备用信号栈承担不同职责，避免混为一份栈。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "源码pseudothread_stack与SA_ONSTACK的备用信号栈承担不同职责，避免混为一份栈。"
+    },
+    {
+      "before": "通过 Linux 进程追踪接口 `ptrace`（诊断追踪数据） 读取线程状态，把结果交给 tombstoned（系统转储存储服务）写出 tombstone",
+      "after": "通过Linux进程追踪接口`ptrace`读取线程状态，并使用tombstoned（系统转储存储服务）提供的输出文件描述符写出文本/protobuf tombstone，完成后通知tombstoned",
+      "reason": "crash_dump/engrave_tombstone是写入方，tombstoned提供FD并管理保存和完成，原文职责模糊。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/libdebuggerd/tombstone.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "crash_dump/engrave_tombstone是写入方，tombstoned提供FD并管理保存和完成，原文职责模糊。"
+    },
+    {
+      "before": "该值不能跨设备比较",
+      "after": "该值不能跨设备或跨开机区间直接相减；进程序列与开机区间应另作关联",
+      "reason": "elapsed单调时钟限同设备同次开机，启动后时长还需减进程起点。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "elapsed单调时钟限同设备同次开机，启动后时长还需减进程起点。"
+    },
+    {
+      "before": "“临时文件 → 把数据同步到存储（例如调用 `fsync`）→ 原子重命名（rename）”这条路适合健康执行环境或经过约束的 Java 崩溃记录，直接套到 Native 信号处理器上行不通。",
+      "after": "“临时文件→同步数据（例如`fsync`）→原子重命名”的提交协议适合健康执行环境或受约束的Java记录，但不能据此证明完整Native信号处理代码安全。POSIX把若干相关系统调用列为异步信号安全；路径构造、缓冲区、FD、分配/锁、errno保存和可能的阻塞仍要逐步审计。原子名称切换不保证整条处理路径有界完成，也不单独保证掉电持久化。",
+      "reason": "避免把POSIX允许的原子文件操作一律说成信号处理不能使用；强调完整路径和阻塞预算而非某个调用名字。",
+      "sources": [
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/V2_chap02.html",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "避免把POSIX允许的原子文件操作一律说成信号处理不能使用；强调完整路径和阻塞预算而非某个调用名字。"
+    },
+    {
+      "before": "调用方应保存上次处理到的时间戳，以及由进程名和退出原因等字段组成的记录指纹，并容忍旧记录被淘汰。",
+      "after": "调用方保存处理指纹与进度，但不能只用严格递增时间戳作唯一游标：同毫秒记录、日期校准和重试都可能重叠。每次重扫受限历史窗口并按多字段指纹幂等，持久化成功后再推进进度，同时容忍旧记录淘汰。",
+      "reason": "退出时间为wall clock，纯timestamp high-watermark可漏同时间或校时记录；补重叠重扫和幂等规则。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AppExitInfoTracker.java",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "退出时间为wall clock，纯timestamp high-watermark可漏同时间或校时记录；补重叠重扫和幂等规则。"
+    },
+    {
+      "before": "2. Native 候选签名：致命信号、模块 Build ID、符号化后的函数、模块内偏移区间、ABI。",
+      "after": "2. Native先用致命信号、ABI、模块Build ID与偏移定位同一构建内的候选组；跨构建再依据规范化符号帧、源码/模块语义和版本范围关联问题。Build ID用于选准符号文件，不是跨版本恒定的根因ID。",
+      "reason": "Build ID随链接产物变化，不能既用于精确制品匹配又默认作为跨构建稳定问题键。",
+      "sources": [
+        "https://developer.android.com/build/include-native-symbols",
+        "https://developer.android.com/ndk/guides/ndk-stack"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "Build ID随链接产物变化，不能既用于精确制品匹配又默认作为跨构建稳定问题键。"
+    },
+    {
+      "before": "第三方 SDK 对平台的 `SIGQUIT` 处理要保持克制：保留平台自己的处理器，让信号照常传递，也不要自行把该信号解释成“ANR 已确认”。",
+      "after": "第三方SDK应保持ART的SIGQUIT屏蔽、专用SignalCatcher/sigwait消费与tombstoned输出路径，不擅自改线程信号掩码或截断消费链。这里并非一个可简单“保存旧sigaction再转发”的主线程处理器；收到SIGQUIT也不能自行解释为“ANR已确认”。",
+      "reason": "ART明示SIGQUIT被线程组屏蔽，由专用线程等待而不调用普通handler，原文旧处理器链措辞易误导。",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/signal_catcher.cc"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "ART明示SIGQUIT被线程组屏蔽，由专用线程等待而不调用普通handler，原文旧处理器链措辞易误导。"
+    },
+    {
+      "before": "单机型维度至少 8%。Android vitals 每日更新",
+      "after": "手机型号维度至少8%（手表型号另为5%）。Android vitals每日更新",
+      "reason": "按当前官方表区分手机与手表型号阈值，避免把8%推广所有设备类型。",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "按当前官方表区分手机与手表型号阈值，避免把8%推广所有设备类型。"
+    },
+    {
+      "before": "Google Play 通常依据最近 28 天的数据评估应用质量，指标突增时可能提前采取措施。",
+      "after": "Google Play通常依据最近28天数据评估质量；Reporting API的28天率为按每日distinctUsers加权的滚动平均，不能先平均每日百分比或把28天distinctUsers简单相加。指标突增时可能提前采取措施。",
+      "reason": "补精确日用户加权聚合口径，避免样本量不同时平均每日率造成偏差。",
+      "sources": [
+        "https://developers.google.com/play/developer/reporting/reference/rest/v1beta1/vitals.anrrate",
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "补精确日用户加权聚合口径，避免样本量不同时平均每日率造成偏差。"
+    },
+    {
+      "before": "Java 栈里的 `RUNNABLE` 只表示线程具备运行条件，要确认它持续占用 CPU，还得结合 Perfetto 调度切片、CPU 计数或持续采样。",
+      "after": "Java栈里的`RUNNABLE`是虚拟机线程状态，不等于Linux当前running/runnable；线程也可能在等操作系统资源。要判断实际占用CPU、可运行排队或native等待，需结合Perfetto线程状态/调度切片、CPU计数与完整调用栈。",
+      "reason": "JavaThread.State不等价内核调度状态，原“具备运行条件”仍可能让native等待被误判CPU忙。",
+      "sources": [
+        "https://developer.android.com/reference/java/lang/Thread.State",
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "JavaThread.State不等价内核调度状态，原“具备运行条件”仍可能让native等待被误判CPU忙。"
+    },
+    {
+      "before": "`Dispatchers.IO` 或 `Default` 中的任务饱和不会直接触发系统 ANR；主线程同步阻塞等待任务结果、回调没被及时执行时，才形成与 ANR 相关的现场。",
+      "after": "`Dispatchers.IO`或`Default`饱和本身不是ANR类型；但它既可能让主线程同步等结果，也可能推迟广播`goAsync()`后的`PendingResult.finish()`、JobService回调或其他组件期限内必须完成的工作。后一类超时即使主线程仍能处理消息，也可能形成系统ANR；应按实际超时来源判断，不能只看主线程是否阻塞。",
+      "reason": "修正只有主线程阻塞才相关的排他表述，补后台异步组件deadline路径。",
+      "sources": [
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs",
+        "https://developer.android.com/kotlin/coroutines/coroutines-adv",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-deferred/await.html"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "修正只有主线程阻塞才相关的排他表述，补后台异步组件deadline路径。"
+    },
+    {
+      "before": "```mermaid\nflowchart TD\n  A[\"Java 未捕获异常 / Native 致命信号\"] --> B[\"受约束的捕获入口\"]\n  B --> C[\"写入最小记录\"]\n  C --> D[\"继续系统默认退出路径\"]\n  E[\"下次启动 / 健康的辅助进程\"] --> F[\"扫描已完成记录\"]\n  F --> G[\"补充版本与设备上下文\"]\n  G --> H[\"压缩、脱敏、限流\"]\n  H --> I[\"服务端接入与幂等去重\"]\n  I --> J[\"反混淆 / 符号化\"]\n  J --> K[\"Issue 聚合、告警、工单\"]\n```",
+      "after": "现场阶段只保存符合当前异常环境的最小记录并继续默认退出链；下一次健康执行窗口再扫描、补充、脱敏、上报和符号化。",
+      "reason": "替换为两执行窗口白板图，不承诺故障进程仍有后续执行能力。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "替换为两执行窗口白板图，不承诺故障进程仍有后续执行能力。"
+    },
+    {
+      "before": "`B → C` 对应崩溃现场，此刻运行环境是否健康是未知数；网络请求、数据库索引和复杂对象序列化，都放到后续的 `E → H` 阶段去做。",
+      "after": "图中现场保全阶段的堆、锁和线程是否健康未知；网络、数据库索引与复杂序列化都移到下一次健康执行窗口，不能依赖故障进程后台队列及时执行。",
+      "reason": "原Mermaid字母锚点移除后同步更新引用。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "原Mermaid字母锚点移除后同步更新引用。"
+    },
+    {
+      "before": "```mermaid\nsequenceDiagram\n    participant Trigger as 超时来源\n    participant AMS as ActivityManagerService\n    participant Anr as AnrHelper\n    participant PESR as ProcessErrorStateRecord\n    participant Dump as StackTracesDumpHelper\n    participant Store as DropBox / exit-info tracker\n\n    Trigger->>AMS: 上报 app not responding\n    AMS->>Anr: appNotResponding(process, reason)\n    Anr->>Dump: 提交目标 PID early dump\n    Anr->>PESR: AnrConsumer 串行处理记录\n    PESR->>Dump: dump firstPids / nativePids / extraPids\n    Dump-->>PESR: 返回 traces 文件与首进程范围\n    PESR->>Store: 写 DropBox、更新 ANR/退出信息\n```",
+      "after": "超时来源进入AnrHelper后先去重和提交目标PID的early dump，再由AnrConsumer串行执行完整ANR处理；线程转储、DropBox与退出历史更新各自保留边界。",
+      "reason": "用多轨图替换原时序图，准确分开提前抓栈与串行完整处理。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/AnrHelper.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/StackTracesDumpHelper.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ProcessErrorStateRecord.java"
+      ],
+      "article": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "why": "用多轨图替换原时序图，准确分开提前抓栈与串行完整处理。"
+    },
+    {
+      "before": "last_verified: '2026-08-16'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮全文和官方/17r1来源核对日期；无设备验证。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/ProfilingManager"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "本轮全文和官方/17r1来源核对日期；无设备验证。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "更新本轮实际来源核验日期。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "更新本轮实际来源核验日期。"
+    },
+    {
+      "before": "retrieved 2026-08-15",
+      "after": "reviewed 2026-10-25; SDK 36.1 minor release, profiling result types, failure-aware snapshots and bounded exit-history deduplication rechecked; host stubs only, no Android device test",
+      "reason": "写明本轮校勘与验证范围。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "写明本轮校勘与验证范围。"
+    },
+    {
+      "before": "ProfilingManager details include SDK extension 36.1",
+      "after": "ProfilingManager details include Android 16 minor API version 36.1",
+      "reason": "36.1属于SDK次要发布版本，不是SdkExtensions版本。",
+      "sources": [
+        "https://developer.android.com/about/versions/16/qpr2/setup-sdk",
+        "https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "36.1属于SDK次要发布版本，不是SdkExtensions版本。"
+    },
+    {
+      "before": "非 Play 渠道和国内 ROM 缺少部分标准平台能力，需要提前设计替代分发、权限和回传路径。",
+      "after": "非Play安装可能不进入Play质量报表；ROM是否提供某项公共API、系统服务或厂商报表，应按设备版本和实际能力检查。提前设计自己的证据回传与分发路径，不能从渠道名称推断平台API缺失。",
+      "reason": "拆开分发覆盖缺口与平台能力差异，避免按国内ROM整体断言缺能力。",
+      "sources": [
+        "https://support.google.com/googleplay/android-developer/answer/9844486?hl=en",
+        "https://developer.android.com/reference/android/os/ProfilingManager"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "拆开分发覆盖缺口与平台能力差异，避免按国内ROM整体断言缺能力。"
+    },
+    {
+      "before": "系统诊断包（bug report（系统错误报告））",
+      "after": "系统诊断包（bug report）",
+      "reason": "修复重复术语括注。",
+      "sources": [
+        "https://developer.android.com/studio/debug/bug-report"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "修复重复术语括注。"
+    },
+    {
+      "before": "表中 SDK extension 是可独立于 API level 更新的平台模块版本。",
+      "after": "表中的36.1是Android 16的次要API发布版本；它与独立更新模块使用的SDK Extensions不是同一编号体系。",
+      "reason": "官方SDK36.1与SDK_INT_FULL语义明确，纠正版本轴混淆。",
+      "sources": [
+        "https://developer.android.com/about/versions/16/qpr2/setup-sdk",
+        "https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "官方SDK36.1与SDK_INT_FULL语义明确，纠正版本轴混淆。"
+    },
+    {
+      "before": "| SDK extension 36.1 与 Android 17 / API 37 | `requestRunningSystemTrace()` 与扩展触发类型 | 仅在后台 trace 正在运行且 App 已注册对应触发器（trigger）时才可能得到快照 |",
+      "after": "| Android 16次要版本36.1 | `requestRunningSystemTrace()`、`addAllProfilingTriggers()` | 先注册对应触发器；后台trace快照还依赖系统当时正在录制 |\n| Android 17 / API 37 | OOM、冷启动、异常行为、兼容性等新增触发类型 | 各常量有不同采集产物；OOM为Java heap dump，不一律依赖后台trace快照 |",
+      "reason": "按实际added版本区分36.1和37，不把OOM等触发都套入后台trace前提。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/ProfilingManager",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "按实际added版本区分36.1和37，不把OOM等触发都套入后台trace前提。"
+    },
+    {
+      "before": "SDK extension 36.1 增加了",
+      "after": "Android 16次要版本36.1增加了",
+      "reason": "纠正正文次要版本术语。",
+      "sources": [
+        "https://developer.android.com/about/versions/16/qpr2/setup-sdk"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "纠正正文次要版本术语。"
+    },
+    {
+      "before": "客户端要同时检查运行时 API level 与 SDK extension 版本，只看 `targetSdk` 会漏掉扩展能力。",
+      "after": "客户端按成员的引入版本检查运行时能力：主API看`SDK_INT`，36.1成员应先确认API≥36，再用`SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1`判断。`targetSdk`不是能力探测；[完整版本常量](https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL)与[版本判断说明](https://developer.android.com/studio/publish/versioning)给出了次要版本规则。",
+      "reason": "给出正确完整SDK版本判断，防止SDK_INT=36的36.0系统误调用36.1API。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Build.VERSION_CODES_FULL",
+        "https://developer.android.com/studio/publish/versioning"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "给出正确完整SDK版本判断，防止SDK_INT=36的36.0系统误调用36.1API。"
+    },
+    {
+      "before": "Android 17 / API 37 又加入 `requestRunningSystemTrace()`",
+      "after": "Android 16次要版本36.1加入`requestRunningSystemTrace()`和`addAllProfilingTriggers()`",
+      "reason": "与官方成员added36.1及前文统一，消除本篇自相矛盾。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/ProfilingManager"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "与官方成员added36.1及前文统一，消除本篇自相矛盾。"
+    },
+    {
+      "before": "`version（配置键与版本）Code`",
+      "after": "`versionCode`",
+      "reason": "修复被术语说明切断的标识符。",
+      "sources": [
+        "https://support.google.com/googleplay/android-developer/answer/6346149"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "修复被术语说明切断的标识符。"
+    },
+    {
+      "before": "，全程不经过 Java Native Interface（JNI） 三层模型。",
+      "after": "；这段配置/报告控制链通过Binder，不应画成固定JNI三层。事件写入另有`StatsLog`等入口及native实现，不能据此断言StatsD所有路径都不经过JNI。",
+      "reason": "区分配置控制链与事件写入链，保留已核对Java FD辅助方法不是native的事实。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/stats/StatsManagerService.java",
+        "https://android.googlesource.com/platform/packages/modules/StatsD/+/refs/tags/android-17.0.0_r1/framework/java/android/util/StatsLog.java"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "区分配置控制链与事件写入链，保留已核对Java FD辅助方法不是native的事实。"
+    },
+    {
+      "before": "要判断一条记录是否稳定写入存储，还得看记录自身的持久化信息。",
+      "after": "映射可写不等于已经持久化。记录长度/序号/校验用于恢复时识别完整记录；掉电持久性还取决于同步策略、文件系统和设备，不能由校验通过倒推出。",
+      "reason": "完整性检查和持久化协议不同，mmap及校验不能保证掉电后存在。",
+      "sources": [
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/fsync.html"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "完整性检查和持久化协议不同，mmap及校验不能保证掉电后存在。"
+    },
+    {
+      "before": "主进程、WebView 进程、播放器进程和推送进程同时写入",
+      "after": "主进程、应用声明的WebView宿主进程、播放器进程和推送进程同时写入",
+      "reason": "避免把应用SDK日志写入能力误扩展到隔离的WebView渲染器。",
+      "sources": [
+        "https://developer.android.com/reference/android/webkit/WebViewRenderProcess",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "避免把应用SDK日志写入能力误扩展到隔离的WebView渲染器。"
+    },
+    {
+      "before": "rename 只保证目录项切换的原子性，此前数据是否已完整持久化，仍要靠记录长度、序号和校验值判断完整边界。",
+      "after": "同一文件系统内成功rename提供名称切换原子性；记录长度、序号和校验值用于恢复完整边界，不能证明此前数据已持久化。需要抗掉电时另行设计文件同步及所需的目录同步/提交顺序，并验证具体文件系统；同步失败必须留在失败状态。",
+      "reason": "修正校验能证明持久化的因果错误，保留rename成功与失败边界。",
+      "sources": [
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/rename.html",
+        "https://pubs.opengroup.org/onlinepubs/9799919799/functions/fsync.html"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "修正校验能证明持久化的因果错误，保留rename成功与失败边界。"
+    },
+    {
+      "before": "触发式采集与后台持续录制是两回事。[trigger-based capture 文档](https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture)说明，触发器只有在系统当时正在采集被抽样的后台 trace 且配额允许时，才可能得到结果；触发结果依赖全局监听器，App 未运行时会在以后启动并注册监听器后尝试投递。服务端应把\"触发已登记\"\"系统产生结果\"\"结果已上传\"分开统计。",
+      "after": "需要历史system trace的触发类型，依赖系统当时有抽样后台trace及可用配额；不能将这个前提推广到所有触发器。例如API37的`TRIGGER_TYPE_OOM`请求Java heap dump。按[各触发器契约](https://developer.android.com/reference/android/os/ProfilingTrigger)解释产物；结果依赖全局监听器，并区分“触发已登记”“系统产生结果”“结果已上传”。进程不在时的重投递也只是平台尝试。",
+      "reason": "区分trace快照触发与OOM堆转储，修正所有触发器均靠后台trace的概括。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/ProfilingTrigger",
+        "https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "区分trace快照触发与OOM堆转储，修正所有触发器均靠后台trace的概括。"
+    },
+    {
+      "before": "适合计算同一设备上的耗时。",
+      "after": "适合计算同一设备、同一次开机区间内的耗时；跨重启须另存开机区间标识。",
+      "reason": "与本文前部相同开机语义统一。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "与本文前部相同开机语义统一。"
+    },
+    {
+      "before": "ANR 是 Application Not Responding（应用无响应（ANR））",
+      "after": "ANR是Application Not Responding（应用无响应）",
+      "reason": "修复重复术语括注。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "修复重复术语括注。"
+    },
+    {
+      "before": "```kotlin\nimport android.app.ActivityManager\nimport android.app.usage.UsageStatsManager\nimport android.content.Context\nimport android.os.Build\nimport android.os.PowerManager\nimport android.system.Os\nimport android.system.OsConstants\n\ndata class RuntimeCapabilitySnapshot(\n    val sdkInt: Int,\n    val release: String,\n    val securityPatch: String,\n    val manufacturer: String,\n    val model: String,\n    val supportedAbis: List<String>,\n    val pageSizeBytes: Long,\n    val lowRamDevice: Boolean,\n    val backgroundRestricted: Boolean,\n    val standbyBucket: Int,\n    val powerSaveMode: Boolean,\n    val thermalStatus: Int,\n    val ignoringBatteryOptimizations: Boolean,\n    val installingPackage: String?,\n    val initiatingPackage: String?\n)\n\nfun readRuntimeCapabilitySnapshot(context: Context): RuntimeCapabilitySnapshot {\n    val activityManager =\n        context.getSystemService(ActivityManager::class.java)\n    val usageStatsManager =\n        context.getSystemService(UsageStatsManager::class.java)\n    val powerManager =\n        context.getSystemService(PowerManager::class.java)\n    val installSource =\n        context.packageManager.getInstallSourceInfo(context.packageName)\n\n    return RuntimeCapabilitySnapshot(\n        sdkInt = Build.VERSION.SDK_INT,\n        release = Build.VERSION.RELEASE,\n        securityPatch = Build.VERSION.SECURITY_PATCH,\n        manufacturer = Build.MANUFACTURER,\n        model = Build.MODEL,\n        supportedAbis = Build.SUPPORTED_ABIS.toList(),\n        pageSizeBytes = Os.sysconf(OsConstants._SC_PAGESIZE),\n        lowRamDevice = activityManager.isLowRamDevice,\n        backgroundRestricted = activityManager.isBackgroundRestricted,\n        standbyBucket = usageStatsManager.appStandbyBucket,\n        powerSaveMode = powerManager.isPowerSaveMode,\n        thermalStatus = powerManager.currentThermalStatus,\n        ignoringBatteryOptimizations =\n            powerManager.isIgnoringBatteryOptimizations(context.packageName),\n        installingPackage = installSource.installingPackageName,\n        initiatingPackage = installSource.initiatingPackageName\n    )\n}\n```",
+      "after": "```kotlin\nimport android.app.ActivityManager\nimport android.app.usage.UsageStatsManager\nimport android.content.Context\nimport android.os.Build\nimport android.os.PowerManager\nimport android.os.SystemClock\nimport android.system.Os\nimport android.system.OsConstants\n\ndata class Readout<T>(val value: T?, val error: String? = null)\n\nfun <T> observe(read: () -> T): Readout<T> = try {\n    Readout(read())\n} catch (e: Exception) {\n    Readout(null, e.javaClass.simpleName)\n}\n\nfun <T, R> Readout<T>.mapRead(read: (T) -> R): Readout<R> =\n    if (error != null) Readout(null, error)\n    else observe { read(requireNotNull(value)) }\n\ndata class RuntimeCapabilitySnapshot(\n    val readStartedElapsedMillis: Long,\n    val readFinishedElapsedMillis: Long,\n    val sdkInt: Int,\n    val release: String,\n    val securityPatch: String,\n    val manufacturer: String,\n    val model: String,\n    val supportedAbis: List<String>,\n    val pageSizeBytes: Readout<Long>,\n    val lowRamDevice: Readout<Boolean>,\n    val backgroundRestricted: Readout<Boolean>,\n    val standbyBucket: Readout<Int>,\n    val powerSaveMode: Readout<Boolean>,\n    val thermalStatus: Readout<Int>,\n    val ignoringBatteryOptimizations: Readout<Boolean>,\n    val installingPackage: Readout<String?>,\n    val initiatingPackage: Readout<String?>\n)\n\nfun readRuntimeCapabilitySnapshot(context: Context): RuntimeCapabilitySnapshot {\n    val started = SystemClock.elapsedRealtime()\n    val am = observe { requireNotNull(context.getSystemService(ActivityManager::class.java)) }\n    val usage = observe { requireNotNull(context.getSystemService(UsageStatsManager::class.java)) }\n    val power = observe { requireNotNull(context.getSystemService(PowerManager::class.java)) }\n    val source = observe {\n        context.packageManager.getInstallSourceInfo(context.packageName)\n    }\n    val pageSize = observe {\n        Os.sysconf(OsConstants._SC_PAGESIZE).also { check(it > 0) }\n    }\n    val lowRam = am.mapRead { it.isLowRamDevice }\n    val restricted = am.mapRead { it.isBackgroundRestricted }\n    val bucket = usage.mapRead { it.appStandbyBucket }\n    val powerSave = power.mapRead { it.isPowerSaveMode }\n    val thermal = power.mapRead { it.currentThermalStatus }\n    val exempt = power.mapRead { it.isIgnoringBatteryOptimizations(context.packageName) }\n    val installing = source.mapRead { it.installingPackageName }\n    val initiating = source.mapRead { it.initiatingPackageName }\n    return RuntimeCapabilitySnapshot(\n        readStartedElapsedMillis = started,\n        readFinishedElapsedMillis = SystemClock.elapsedRealtime(),\n        sdkInt = Build.VERSION.SDK_INT,\n        release = Build.VERSION.RELEASE,\n        securityPatch = Build.VERSION.SECURITY_PATCH,\n        manufacturer = Build.MANUFACTURER,\n        model = Build.MODEL,\n        supportedAbis = Build.SUPPORTED_ABIS.toList(),\n        pageSizeBytes = pageSize,\n        lowRamDevice = lowRam,\n        backgroundRestricted = restricted,\n        standbyBucket = bucket,\n        powerSaveMode = powerSave,\n        thermalStatus = thermal,\n        ignoringBatteryOptimizations = exempt,\n        installingPackage = installing,\n        initiatingPackage = initiating\n    )\n}\n```",
+      "reason": "逐字段隔离读取失败，服务缺失/权限失败不伪装为零；保留读取窗口和异常类别，正常null与失败分开。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/usage/UsageStatsManager.java",
+        "https://developer.android.com/reference/android/os/SystemClock",
+        "https://developer.android.com/reference/android/content/pm/InstallSourceInfo"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "逐字段隔离读取失败，服务缺失/权限失败不伪装为零；保留读取窗口和异常类别，正常null与失败分开。"
+    },
+    {
+      "before": "能力快照是带采集时间的观测记录，读它时我们要记住，设备能力会变：省电模式、热状态、standby bucket 与后台限制都可能变化，首次启动时的值解释不了几天后的任务延迟。",
+      "after": "示例保留同次开机内的读取开始/结束时间，表示一个观测窗口，不声称多个服务状态原子一致。每个`Readout`的`error != null`表示读取失败；`error == null && value == null`可表示安装来源正常不可得。异常只记类别，不直接上传异常消息；不要捕获并吞掉`Error`。省电、热状态、standby bucket和后台限制会变化，首次启动快照解释不了几天后的任务延迟。",
+      "reason": "使文字和已修订示例一致，明确逐字段读数时窗及空值契约。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/SystemClock",
+        "https://developer.android.com/reference/android/content/pm/InstallSourceInfo"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "使文字和已修订示例一致，明确逐字段读数时窗及空值契约。"
+    },
+    {
+      "before": "代码示例按调用方给定的批量上限读取历史记录，并以复合键去重。",
+      "after": "示例重扫系统仍保留的受限历史窗口，先过滤已经落盘或ACK的记录，再按调用方的批量上限选取最旧未处理项。它复用上文`Readout`和`observe`，应在受控后台执行器上调用。",
+      "reason": "查询上限先截断会让最近已处理记录遮住较旧未处理记录；重扫后限入队批次。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "查询上限先截断会让最近已处理记录遮住较旧未处理记录；重扫后限入队批次。"
+    },
+    {
+      "before": "```kotlin\nimport android.app.ActivityManager\nimport android.app.ApplicationExitInfo\nimport android.content.Context\n\ndata class ExitRecord(\n    val key: String,\n    val timestampMillis: Long,\n    val pid: Int,\n    val processName: String?,\n    val reason: Int,\n    val status: Int,\n    val importance: Int,\n    val pssKilobytes: Long,\n    val rssKilobytes: Long,\n    val description: String?\n)\n\nfun readUnseenExitRecords(\n    context: Context,\n    batchLimit: Int,\n    wasUploaded: (String) -> Boolean\n): List<ExitRecord> {\n    require(batchLimit > 0)\n    val activityManager =\n        context.getSystemService(ActivityManager::class.java)\n\n    return activityManager.getHistoricalProcessExitReasons(\n        context.packageName,\n        0,\n        batchLimit\n    ).map { info ->\n        val key = listOf(\n            info.timestamp,\n            info.pid,\n            info.reason,\n            info.status,\n            info.processName\n        ).joinToString(\":\")\n\n        ExitRecord(\n            key = key,\n            timestampMillis = info.timestamp,\n            pid = info.pid,\n            processName = info.processName,\n            reason = info.reason,\n            status = info.status,\n            importance = info.importance,\n            pssKilobytes = info.pss,\n            rssKilobytes = info.rss,\n            description = info.description\n        )\n    }.filterNot { wasUploaded(it.key) }\n}\n```",
+      "after": "```kotlin\nimport android.app.ActivityManager\nimport android.app.ApplicationExitInfo\nimport android.content.Context\nimport java.io.ByteArrayOutputStream\nimport java.io.DataOutputStream\nimport java.security.MessageDigest\n\ndata class ExitRecord(\n    val key: String,\n    val timestampMillis: Long,\n    val pid: Int,\n    val realUid: Int,\n    val packageUid: Int,\n    val processName: String?,\n    val reason: Int,\n    val status: Int,\n    val importance: Int,\n    val pssKilobytes: Long,\n    val rssKilobytes: Long,\n    val description: String?\n)\n\nfun exitRecordKey(info: ApplicationExitInfo): String {\n    val bytes = ByteArrayOutputStream()\n    DataOutputStream(bytes).use { out ->\n        out.writeInt(1) // 本地身份编码版本\n        out.writeLong(info.timestamp)\n        out.writeInt(info.pid)\n        out.writeInt(info.realUid)\n        out.writeInt(info.packageUid)\n        out.writeInt(info.reason)\n        out.writeInt(info.status)\n        val name = info.processName?.toByteArray(Charsets.UTF_8)\n        out.writeInt(name?.size ?: -1) // null 与空串不同\n        if (name != null) out.write(name)\n    }\n    return MessageDigest.getInstance(\"SHA-256\")\n        .digest(bytes.toByteArray())\n        .joinToString(\"\") { \"%02x\".format(it.toInt() and 0xff) }\n}\n\n// 使用上文 Readout / observe；查询失败与成功但无记录分开表示。\nfun readUnseenExitRecords(\n    context: Context,\n    batchLimit: Int,\n    isPersistedOrAcked: (String) -> Boolean\n): Readout<List<ExitRecord>> {\n    require(batchLimit > 0)\n    return observe {\n        val am = requireNotNull(context.getSystemService(ActivityManager::class.java))\n        // maxNum=0 返回系统当前仍保留的全部记录，并非无限历史。\n        // 最旧记录先入队，避免最新的已处理记录反复占满查询上限。\n        am.getHistoricalProcessExitReasons(context.packageName, 0, 0)\n            .asReversed().asSequence()\n            .map { info ->\n                ExitRecord(\n                    key = exitRecordKey(info),\n                    timestampMillis = info.timestamp,\n                    pid = info.pid,\n                    realUid = info.realUid,\n                    packageUid = info.packageUid,\n                    processName = info.processName,\n                    reason = info.reason,\n                    status = info.status,\n                    importance = info.importance,\n                    pssKilobytes = info.pss,\n                    rssKilobytes = info.rss,\n                    description = info.description\n                )\n            }\n            .distinctBy { it.key }\n            .filterNot { isPersistedOrAcked(it.key) }\n            .take(batchLimit).toList()\n    }\n}\n```",
+      "reason": "修复分隔符歧义、只有已上传去重导致重复待传、已处理记录占满查询上限导致饥饿及失败和空记录混淆。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "修复分隔符歧义、只有已上传去重导致重复待传、已处理记录占满查询上限导致饥饿及失败和空记录混淆。"
+    },
+    {
+      "before": "示例中的复合键只用于演示本地去重，也不构成设备身份。生产实现应给字段元组加版本并采用无歧义编码，例如长度前缀或规范化序列化后取摘要，避免进程名中的分隔符造成碰撞。收到上报确认后再持久化已处理标记；只保存\"最大时间戳\"会漏掉同一毫秒内的其他记录。",
+      "after": "示例对带版本的字段元组做长度前缀编码，再取SHA-256；它是本地尽力去重指纹，不是平台保证唯一的事件ID，也不会自动匿名化。`isPersistedOrAcked`查询已落盘待上传或已确认索引；调用方必须把记录与唯一键原子提交后才视为已持久化，并在ACK后变更状态。并发扫描以存储唯一约束兜底，保留重复/冲突计数。历史会淘汰，任何重扫策略都不能恢复已被平台覆盖的记录；不要只保存最大时间戳。",
+      "reason": "完整定义读取/持久化/ACK界面与平台历史缺失边界，避免把纯读取函数当可靠队列。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "完整定义读取/持久化/ACK界面与平台历史缺失边界，避免把纯读取函数当可靠队列。"
+    },
+    {
+      "before": "```text\n应用进程\n├─ 指标采集：启动、帧、CPU、内存、任务执行、能力快照\n├─ 稳定性采集：Java/Native 崩溃、ANR 线索、ApplicationExitInfo\n├─ 诊断采集：命中策略后请求 profile 或保存应用内 trace\n└─ 有界本地队列：版本化 schema、去重、限额、过期、用户同意状态\n                         │\n                         ▼\n                  机会式批量上传\n                         │\n                         ▼\n服务端入口 ──> 校验与限流 ──> 指标库 / 事件库 / trace 存储\n                                  │\n               构建与符号文件登记 ┤\n                                  ▼\n                    分群分析、告警、回归比较\n```",
+      "after": "三类采集各有schema与预算，先经过有界持久队列，再机会式批量上传；服务端按类型分库，并关联准确构建与符号文件。",
+      "reason": "用带分支、ACK回收和独立存储类型的白板图替代ASCII概览。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ApplicationExitInfo.java",
+        "https://developer.android.com/reference/android/os/ProfilingManager",
+        "https://developer.android.com/topic/performance/vitals"
+      ],
+      "article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "why": "用带分支、ACK回收和独立存储类型的白板图替代ASCII概览。"
     }
   ],
   "validation": {
@@ -15014,15 +17041,33 @@
       "article_positions": "passed",
       "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a285",
       "source_audit": "Read all 38 original lines and chapter links, with five official power/WorkManager/optimization/AppBundle/Thermal sources. Added one chapter-specific two-route diagnostic reading map; clarified fixed charging/screen/input/build conditions and WorkManager scheduling limits. SVG/PNG and actual rendered article position visually inspected; isolated mdBook/local links/assets/exact baseline reconstruction passed. No executable code changed, no device test claimed."
+    },
+    "a286": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a286",
+      "source_audit": "Read all 995 original lines; 52 successful official/AOSP/AndroidX/Firebase/OTel/Square source snapshots, with six failed historical/exploratory paths retained as audit attempts and not used as positive evidence. Verified 14/15/16/17 memtrack categories and pinned LeakCanary2.14 manifests/dependencies. Corrected core-vitals memory metrics, Firebase attributes, clock reboot scopes, StatsManager SystemApi, PULL constants and scheduling semantics, StatsCompanion versus StatsManagerService/socket roles, same-UID memory, conditional limiter profiling/kill, libmeminfo read failure and unverified libmemevents historical claims, default LeakCanary provider install, API34 trim delivery and unknown gaps. All 20 asset images and rendered positions visually inspected; build/links/SVG/PNG/exact reconstruction passed, four JSON examples parse, one bash-n and exact C++ fragment host adapter compile/run passed. No Android/NDK/StatsD/real profiling/benchmark or device measurement performed."
+    },
+    "a287": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a287",
+      "source_audit": "Read all 641 original lines and 44 official/AOSP/Kotlin/POSIX/Play Reporting sources. Corrected helper stack versus alternate signal stack, crash_dump/tombstoned FD ownership, audited signal-safe persistence wording, reboot clock scope, history cursor overlaps, Native build identity versus cross-version grouping, ART sigwait routing, phone/watch ANR threshold and distinct-user weighted rolling rates, Java Thread.State versus kernel scheduling, and async component deadlines with responsive main thread. Both original Mermaid diagrams replaced by specific flows/tracks; 18 assets and every rendered position visually checked, refined FD flow rechecked. Isolated mdBook, links, SVG/PNG, exact reconstruction and targeted source assertions passed. No executable examples remained/changed; no Android/device crash or ANR injection, profiling, upload or benchmark run."
     }
   },
   "last_checkpoint": {
-    "completed": 35,
+    "completed": 37,
     "total": 51,
-    "diagrams": 408,
-    "next_article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
-    "next_article_index": 286,
-    "updated_at": "2026-10-25T15:50:49.670391+08:00"
+    "diagrams": 446,
+    "next_article": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+    "next_article_index": 288,
+    "updated_at": "2026-10-25T16:13:19.316542+08:00"
   },
   "replaced_inline_diagrams": []
 }

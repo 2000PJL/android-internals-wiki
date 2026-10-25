@@ -1230,7 +1230,7 @@
     {
       "path": "src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
       "sha256_before": "5df4bf49953810a5b34a7de599bbad2d2cf0bf12ff8af46308bce2ec59512839",
-      "status": "in_progress",
+      "status": "illustrated",
       "diagrams": [
         "a228-01-gc-impact-paths",
         "a228-02-heap-task-chain",
@@ -1249,39 +1249,172 @@
       ],
       "article_index": 228,
       "sha256_at_assignment": "5df4bf49953810a5b34a7de599bbad2d2cf0bf12ff8af46308bce2ec59512839",
-      "sha256_current": "e9175f292b352e6b041d152c81aeaca2c2f617897ac0c5a60b64d7fdf8fbe070"
+      "sha256_current": "e9175f292b352e6b041d152c81aeaca2c2f617897ac0c5a60b64d7fdf8fbe070",
+      "sha256_after": "e9175f292b352e6b041d152c81aeaca2c2f617897ac0c5a60b64d7fdf8fbe070",
+      "source_audit": "原12引用+4补充固定源码/Perfetto文档均200；Android17源码5项契约核对；完整SQL在真实Perfetto57.2执行及合成重叠/upid/未知dur/边界/空结果通过。详见sources/a228/source-audit.json、extra-audit.json和a228-check-results.json。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a228/extra-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a228/source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch21-startup/08-di-framework-performance.md",
       "sha256_before": "bc1efc8d146af6f6d6040e471e9cc4a9cd45b49e3322fb20e297a979877a6f72",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a229-01-cost-stages",
+        "a229-02-provider-before-application",
+        "a229-03-demand-subgraph",
+        "a229-04-fastinit-retention",
+        "a229-05-lazy-scope-cache",
+        "a229-06-provider-workload",
+        "a229-07-viewmodel-first-create",
+        "a229-08-koin-start-order",
+        "a229-09-lazy-modules-tracks",
+        "a229-10-lazy-eager-race",
+        "a229-11-release-artifacts",
+        "a229-12-ksp-build-boundary",
+        "a229-13-scope-lifetime",
+        "a229-14-measurement-boundaries",
+        "a229-15-optimization-order"
+      ],
       "article_index": 229,
-      "sha256_at_assignment": "bc1efc8d146af6f6d6040e471e9cc4a9cd45b49e3322fb20e297a979877a6f72"
+      "sha256_at_assignment": "bc1efc8d146af6f6d6040e471e9cc4a9cd45b49e3322fb20e297a979877a6f72",
+      "sha256_current": "c749bba4eda6b2febe8f9de7defed71b6e0484afb8c5e8291dba577658b7a98b",
+      "sha256_after": "c749bba4eda6b2febe8f9de7defed71b6e0484afb8c5e8291dba577658b7a98b",
+      "source_audit": "21原引用均200；固定Dagger2.60.1与Koin4.2.2原始源码重取，临时SSL和猜测404保留并由正确路径取证替代。新增图来源已校验含Baseline重试。原2Kotlin+1Java片段编译API37；真实Dagger/Koin语义测试+6源码契约通过，详见a229-example-validation.json。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a229/extra-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a229/fig-extra-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a229/fig-retry-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a229/jakarta-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a229/maven-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a229/retry-extra-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a229/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a229/tree-extra-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
       "sha256_before": "5d8d9c4eef98a8995c25031e08ede9f399fa755b7c73b2f50d8a928e15f520d6",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a230-01-host-hierarchy",
+        "a230-02-composition-triggers",
+        "a230-03-parent-context-search",
+        "a230-04-lifecycle-clock",
+        "a230-05-entered-subtree",
+        "a230-06-composition-to-display",
+        "a230-07-remember-key-boundary",
+        "a230-08-profile-roles",
+        "a230-09-unattached-prefetch",
+        "a230-10-effects-and-data",
+        "a230-11-lazy-viewport",
+        "a230-12-subcompose-layout",
+        "a230-13-phase-feedback",
+        "a230-14-window-process-boundaries",
+        "a230-15-interop-host-lifetime",
+        "a230-16-fully-drawn-ready",
+        "a230-17-benchmark-window",
+        "a230-18-trace-paths",
+        "a230-19-phase-evidence"
+      ],
       "article_index": 230,
-      "sha256_at_assignment": "5d8d9c4eef98a8995c25031e08ede9f399fa755b7c73b2f50d8a928e15f520d6"
+      "sha256_at_assignment": "5d8d9c4eef98a8995c25031e08ede9f399fa755b7c73b2f50d8a928e15f520d6",
+      "sha256_current": "e06931b127da47e12c683f9843295cb1030ee114dc33c5b4ad6b22fd6df8f3a8",
+      "sha256_after": "e06931b127da47e12c683f9843295cb1030ee114dc33c5b4ad6b22fd6df8f3a8",
+      "source_audit": "20原引用均200；10文件固定963bf914原始源码、3补充与3新增图来源均200；实际BOM2026.08.00 POM确认UI/runtime-tracing1.12.0。3原Kotlin片段以实际Compose1.12.0/ActivityCompose1.11.0/ComposeCompiler2.2.20、Macrobenchmark1.5/UIAutomator2.4/API37编译；额外remember(enum)真实编译及9源码契约通过。详见a230-example-validation.json。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a230/bom-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a230/fig-extra-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a230/maven-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a230/pinned-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a230/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a230/supplement-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch21-startup/README.md",
       "sha256_before": "fb65735bf9302b829a4b0a8c7b2bcc550f6e17ab1c6ec0a46a7b8a66dc30902f",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a231-01-startup-state",
+        "a231-02-chapter-investigation"
+      ],
       "article_index": 231,
-      "sha256_at_assignment": "fb65735bf9302b829a4b0a8c7b2bcc550f6e17ab1c6ec0a46a7b8a66dc30902f"
+      "sha256_at_assignment": "fb65735bf9302b829a4b0a8c7b2bcc550f6e17ab1c6ec0a46a7b8a66dc30902f",
+      "sha256_current": "55811ae6a00f9bab6ade8e4ad41827fab168e0801cc2b75d3b56ffe93a08ecad",
+      "sha256_after": "55811ae6a00f9bab6ade8e4ad41827fab168e0801cc2b75d3b56ffe93a08ecad",
+      "source_audit": "启动章节9篇均已逐篇完成校勘；两项官方来源复用同日已抓取200证据并记录路径，索引9链接+2图本地链接、构建与视觉检查通过。无正文事实修订。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a231-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a231-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a231-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a231-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a231-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a231/source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
       "sha256_before": "9a549fe60975df3c58cbee670edf0ec7c5c2d3fba302666909815b909d666ea0",
-      "status": "pending",
-      "diagrams": [],
+      "status": "in_progress",
+      "diagrams": [
+        "a232-01-frame-pipeline",
+        "a232-02-layout-request-passes",
+        "a232-03-measure-contract",
+        "a232-04-hierarchy-costs",
+        "a232-05-constraint-evidence",
+        "a232-06-viewstub-replacement",
+        "a232-07-merge-include",
+        "a232-08-inflater-factories",
+        "a232-09-parent-layoutparams",
+        "a232-10-async-inflate-tracks",
+        "a232-11-async-backpressure",
+        "a232-12-layout-observers",
+        "a232-13-interop-surface",
+        "a232-14-measure-cache-inputs",
+        "a232-15-layout-changed",
+        "a232-16-drawing-hot-path",
+        "a232-17-canvas-backend",
+        "a232-18-displaylist-layers",
+        "a232-19-will-not-draw",
+        "a232-20-invalidate-layout",
+        "a232-21-animation-stops",
+        "a232-22-rendernode-partition",
+        "a232-23-rendernode-fallback",
+        "a232-24-frame-attribution"
+      ],
       "article_index": 232,
-      "sha256_at_assignment": "9a549fe60975df3c58cbee670edf0ec7c5c2d3fba302666909815b909d666ea0"
+      "sha256_at_assignment": "9a549fe60975df3c58cbee670edf0ec7c5c2d3fba302666909815b909d666ea0",
+      "sha256_current": "3740a3d00d9f27b97f159477c928eef839097acbbdfed6de73285cb6ad7dac64"
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md",
@@ -17085,7 +17218,24 @@
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/task_processor.cc",
         "https://perfetto.dev/docs/data-sources/cpu-scheduling"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-01-gc-impact-paths.svg",
+          "sha256": "5b39042ebdadab2b2ae5b40d416ae814565d9b895df625fd2bcaeeeb7cc68706",
+          "bytes": 32987
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-01-gc-impact-paths.png",
+          "sha256": "e39ec21fc9c252f6be499266c1366b524e50c29bd995c8839901dca26dc9916e",
+          "bytes": 146386,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a228-02-heap-task-chain",
@@ -17104,7 +17254,24 @@
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/task_processor.cc",
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/task_processor.h"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-02-heap-task-chain.svg",
+          "sha256": "8c1ddbf50ea67ddaa6517e67337b49426936edeeb4a8907d5d94c00d1073ffbb",
+          "bytes": 19109
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-02-heap-task-chain.png",
+          "sha256": "e156175e078ac7041bebe3aa4d3b2fc3e58835baf1f1362e03ac2b93a3a48b6a",
+          "bytes": 71210,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a228-03-queue-order",
@@ -17121,7 +17288,24 @@
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/task_processor.cc",
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/task_processor.h"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-03-queue-order.svg",
+          "sha256": "cdbfbf2818dc5449371c770f085e71d349de521be4cd5996c5375f13b815292a",
+          "bytes": 26504
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-03-queue-order.png",
+          "sha256": "0d8414e1c61417c60f701e8fd811c738f6ebdd064800241c017e6d26dbc1936a",
+          "bytes": 136057,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a228-04-postfork-threshold",
@@ -17136,7 +17320,24 @@
       "sources": [
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-04-postfork-threshold.svg",
+          "sha256": "a313f27cf11239a27ec7172a5d696944425cf6adad99ccfd3caafaac44faf3d7",
+          "bytes": 23841
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-04-postfork-threshold.png",
+          "sha256": "d8f793350736578ee5ac94130cfb628e49160a84d13aa0d57b01e1ec63ec2e8f",
+          "bytes": 83283,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a228-05-postfork-gc-jitter",
@@ -17151,7 +17352,24 @@
       "sources": [
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-05-postfork-gc-jitter.svg",
+          "sha256": "f82a87bebeccb70f55eedcda1a5b4a2b05cac4c4728ceb665c84409d20b65f3f",
+          "bytes": 27085
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-05-postfork-gc-jitter.png",
+          "sha256": "2b7d29d638dd2c96790cc2c9c69cafa52904fe84eb6375e2f9962f1e22878706",
+          "bytes": 151383,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a228-06-gc-causal-tracks",
@@ -17168,7 +17386,24 @@
         "https://perfetto.dev/docs/data-sources/cpu-scheduling",
         "https://perfetto.dev/docs/getting-started/system-tracing"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-06-gc-causal-tracks.svg",
+          "sha256": "7c3078b9c7d5291c83aa0e8c7276650c441aa18b23623a71d307f888023ef92a",
+          "bytes": 23276
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-06-gc-causal-tracks.png",
+          "sha256": "8d218b600ce49575303b508dfc9b8dee21852a1c881ef6ef7cfb9e4dc093c2c5",
+          "bytes": 87391,
+          "dimensions": [
+            2100,
+            975
+          ]
+        }
+      ]
     },
     {
       "id": "a228-07-running-intersection",
@@ -17185,7 +17420,24 @@
         "https://perfetto.dev/docs/analysis/sql-tables",
         "https://raw.githubusercontent.com/google/perfetto/v57.2/src/trace_processor/importers/common/thread_state_tracker.cc"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-07-running-intersection.svg",
+          "sha256": "e35015bae360cd7c092c010d8ce35f55bd49c32fb5a36663bf128cb152009e73",
+          "bytes": 16628
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-07-running-intersection.png",
+          "sha256": "d62792ee0d03c9b350fc6852e96b30b517fc4f6fb1bf6f2b09ad2437854d3bcc",
+          "bytes": 74324,
+          "dimensions": [
+            2100,
+            915
+          ]
+        }
+      ]
     },
     {
       "id": "a228-08-two-recordings",
@@ -17202,7 +17454,24 @@
         "https://perfetto.dev/docs/getting-started/system-tracing",
         "https://developer.android.com/topic/performance/memory-overview"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-08-two-recordings.svg",
+          "sha256": "89ed8148d0503c65fba359a84844b16900bd60dd7049a82cb1090f946a310949",
+          "bytes": 34369
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-08-two-recordings.png",
+          "sha256": "011a670f680816ca4d3b5fc7bbba9c5be594dc98c38958fcd60f69a478cb1894",
+          "bytes": 148674,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a228-09-allocation-shapes",
@@ -17219,7 +17488,24 @@
         "https://developer.android.com/topic/performance/memory-overview",
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-09-allocation-shapes.svg",
+          "sha256": "b28c92f49afc25e5df153e853eb9d685d1e7b5bb25b1bcf3900c83625af5f32f",
+          "bytes": 33889
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-09-allocation-shapes.png",
+          "sha256": "6be777aea9a9dc05212dbcbcda9ca54fb6e1dd48a55879ce0b5e2b761ea249a0",
+          "bytes": 139083,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a228-10-allocation-governance",
@@ -17236,7 +17522,24 @@
         "https://developer.android.com/studio/profile/record-java-kotlin-allocations",
         "https://perfetto.dev/docs/getting-started/system-tracing"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-10-allocation-governance.svg",
+          "sha256": "731e812795f23177d0df9d83b9e8499be5da7c8a758caf2ae2cf3a255a16e2ac",
+          "bytes": 25371
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-10-allocation-governance.png",
+          "sha256": "d02edbff16bdba09538b3a52bb80d78fa90cb8e17fab3de856e6a04ad0b85e7f",
+          "bytes": 89022,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a228-11-native-accounting",
@@ -17252,7 +17555,24 @@
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc",
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap-inl.h"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-11-native-accounting.svg",
+          "sha256": "576657f92f88a08434e91b555465812c739a411013ddc51c2706654548166b8a",
+          "bytes": 19950
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-11-native-accounting.png",
+          "sha256": "b8db444a7e633a0981f4df497becae00b8831936a11c92f210eddc2984f11bef",
+          "bytes": 101044,
+          "dimensions": [
+            2100,
+            915
+          ]
+        }
+      ]
     },
     {
       "id": "a228-12-native-check-triggers",
@@ -17267,7 +17587,24 @@
       "sources": [
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-12-native-check-triggers.svg",
+          "sha256": "94592bf3b3077544c43bc622f4c098e8f517e5416be1ca7b644c2671f4ae1e42",
+          "bytes": 28272
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-12-native-check-triggers.png",
+          "sha256": "aebe9429d86b7d7e31f6eb3a3b710fa4ab8d8a29c27eca50c281c7f723b45164",
+          "bytes": 143166,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
     },
     {
       "id": "a228-13-startup-completed",
@@ -17284,7 +17621,24 @@
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/runtime.cc",
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/dalvik_system_VMRuntime.cc"
       ],
-      "visual_review": "pending"
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-13-startup-completed.svg",
+          "sha256": "78f993c6252ffe8387540eeb26bc388964eaeace0ca1cc7b84ccb7eab900e77f",
+          "bytes": 22727
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-13-startup-completed.png",
+          "sha256": "f9491303386adb77c412ee0930acf267c3cd70201b8f4df5a004656370956ee9",
+          "bytes": 91122,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     },
     {
       "id": "a228-14-unsupported-controls",
@@ -17302,6 +17656,1646 @@
         "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/native/dalvik_system_VMRuntime.cc",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
         "https://perfetto.dev/docs/getting-started/system-tracing"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a228-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a228-14-unsupported-controls.svg",
+          "sha256": "2a1d5f14003019ce272fc7a01278e9c957dab9e7e6181a22fc050b3b38c892cd",
+          "bytes": 38611
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a228-14-unsupported-controls.png",
+          "sha256": "d65c7399610c88510dd76fc6da848fa159a27b07c75288ff2615f6a3695d899d",
+          "bytes": 153070,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-01-cost-stages",
+      "title": "DI 将图分析、注册与对象构造放在不同阶段",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-01-cost-stages.svg",
+        "src/assets/diagrams/ch21/a229-01-cost-stages.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-01-cost-stages",
+      "sources": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-android/main/java/dagger/hilt/android/internal/managers/ApplicationComponentManager.java",
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-compiler/main/java/dagger/hilt/android/processor/internal/androidentrypoint/ApplicationGenerator.java",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/KoinApplication.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/registry/InstanceRegistry.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/instance/SingleInstanceFactory.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-01-cost-stages.svg",
+          "sha256": "3d8a7841212ff016ae4812da77b0a8be5eb7d75469abf3c3adbc7c16405b6127",
+          "bytes": 35984
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-01-cost-stages.png",
+          "sha256": "1dfa7a30a34abdb7d1844fcc4980fa218c29b3780dd7e3d46011ea94785b805e",
+          "bytes": 150626,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-02-provider-before-application",
+      "title": "Android Provider 可把 Hilt 首次组件访问提前",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-02-provider-before-application.svg",
+        "src/assets/diagrams/ch21/a229-02-provider-before-application.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-02-provider-before-application",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-android/main/java/dagger/hilt/android/internal/managers/ApplicationComponentManager.java",
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-compiler/main/java/dagger/hilt/android/processor/internal/androidentrypoint/ApplicationGenerator.java",
+        "https://dagger.dev/hilt/components.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-02-provider-before-application.svg",
+          "sha256": "73372a0521685d1ae94ba7e214151fc3dff8b8399f1811a6737c72e12caa3bda",
+          "bytes": 20831
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-02-provider-before-application.png",
+          "sha256": "d81f77869d6e290039bb1bab086010bcb652f9f7011b60c4c2b4a7b25f55c89f",
+          "bytes": 87232,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-03-demand-subgraph",
+      "title": "组件建立规则，实际请求决定构造哪条依赖链",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-03-demand-subgraph.svg",
+        "src/assets/diagrams/ch21/a229-03-demand-subgraph.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-03-demand-subgraph",
+      "sources": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-android/main/java/dagger/hilt/android/internal/managers/ApplicationComponentManager.java",
+        "https://github.com/google/dagger/blob/dagger-2.60.1/dagger-runtime/main/java/dagger/internal/DoubleCheck.java",
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-compiler/main/java/dagger/hilt/android/processor/internal/androidentrypoint/ApplicationGenerator.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-03-demand-subgraph.svg",
+          "sha256": "53a7f00fab351ad6c72c2d6115ff67c807b2fed75df11b75309486bcb75e80a1",
+          "bytes": 22950
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-03-demand-subgraph.png",
+          "sha256": "3f123f2e90ca90783aefd5f05519fe4ddc6c9f4af38dbae594225d24d548ea92",
+          "bytes": 107166,
+          "dimensions": [
+            2100,
+            885
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-04-fastinit-retention",
+      "title": "fastInit 减少初始化类加载，同时扩大 Provider 持有范围",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-04-fastinit-retention.svg",
+        "src/assets/diagrams/ch21/a229-04-fastinit-retention.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-04-fastinit-retention",
+      "sources": [
+        "https://dagger.dev/hilt/flags.html#fast-init",
+        "https://dagger.dev/dev-guide/compiler-options.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-04-fastinit-retention.svg",
+          "sha256": "af53d123a0b8b26c5df805c358990e121a98454c1ffc485befaea97c8d886bb4",
+          "bytes": 33734
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-04-fastinit-retention.png",
+          "sha256": "7e1ec1dc87b1cac235a2495be6721c4681ba40d6008f3524842c44e3006fc9a9",
+          "bytes": 154789,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-05-lazy-scope-cache",
+      "title": "Lazy 缓存语义与 scope 的实例身份分别判断",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-05-lazy-scope-cache.svg",
+        "src/assets/diagrams/ch21/a229-05-lazy-scope-cache.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-05-lazy-scope-cache",
+      "sources": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/dagger-runtime/main/java/dagger/internal/DoubleCheck.java",
+        "https://dagger.dev/api/latest/dagger/Lazy.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-05-lazy-scope-cache.svg",
+          "sha256": "2417dd39ff69e5a84b1bff6bb060485e67ec1381db91b39fcdf49d61e2ab2cb5",
+          "bytes": 28592
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-05-lazy-scope-cache.png",
+          "sha256": "e879434b2bdc496cd4f46b39c127d311898de6c9ed29403d1727e395f7444fd1",
+          "bytes": 146604,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-06-provider-workload",
+      "title": "重构造会沿按需请求路径进入启动",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-06-provider-workload.svg",
+        "src/assets/diagrams/ch21/a229-06-provider-workload.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-06-provider-workload",
+      "sources": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-compiler/main/java/dagger/hilt/android/processor/internal/androidentrypoint/ApplicationGenerator.java",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/KoinApplication.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/registry/InstanceRegistry.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-06-provider-workload.svg",
+          "sha256": "71311abd63be25f991de9fed96fbe0c76bccd046d1a18c8388a5324da1f8d5ee",
+          "bytes": 39111
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-06-provider-workload.png",
+          "sha256": "6872d28b0e66047332b655b9bb3bc2e5dd9641804c0813753b9f1283d08b123e",
+          "bytes": 153240,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-07-viewmodel-first-create",
+      "title": "ViewModelStore 命中时跳过 Hilt 新建路径",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-07-viewmodel-first-create.svg",
+        "src/assets/diagrams/ch21/a229-07-viewmodel-first-create.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-07-viewmodel-first-create",
+      "sources": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-android/main/java/dagger/hilt/android/internal/lifecycle/HiltViewModelFactory.java",
+        "https://dagger.dev/hilt/view-model.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-07-viewmodel-first-create.svg",
+          "sha256": "d804cc4598a65ca8b8f7aa8dc6d83ec188685f0f6d176dd41db204f7f0cc692f",
+          "bytes": 24580
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-07-viewmodel-first-create.png",
+          "sha256": "376a1daf22a67047cc4737fab0b6f264247bf589d3ac3d4c1b5a7536e76c1115",
+          "bytes": 122573,
+          "dimensions": [
+            2100,
+            1140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-08-koin-start-order",
+      "title": "Koin 先注册配置，再创建当时已登记的 eager 实例",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-08-koin-start-order.svg",
+        "src/assets/diagrams/ch21/a229-08-koin-start-order.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-08-koin-start-order",
+      "sources": [
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/jvmMain/kotlin/org/koin/core/context/GlobalContext.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/KoinApplication.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/registry/InstanceRegistry.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/instance/SingleInstanceFactory.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-08-koin-start-order.svg",
+          "sha256": "a5c657b0520e0bcebae2a899576cb36db5723980a6da41a728dcd5d349feb1bd",
+          "bytes": 21303
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-08-koin-start-order.png",
+          "sha256": "f62544dbda7f1d4e9087ca8a04c8a5eafde29e860a58deb08f02cbd588d7a44e",
+          "bytes": 78222,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-09-lazy-modules-tracks",
+      "title": "Koin 懒模块在启动时并行注册，首次实例构造另算",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-09-lazy-modules-tracks.svg",
+        "src/assets/diagrams/ch21/a229-09-lazy-modules-tracks.png"
+      ],
+      "layout": "temporal-sequence",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-09-lazy-modules-tracks",
+      "sources": [
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core-coroutines/src/commonMain/kotlin/org/koin/core/KoinApplicationLazyExt.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core-coroutines/src/commonMain/kotlin/org/koin/core/coroutine/KoinCoroutinesEngine.kt",
+        "https://insert-koin.io/docs/reference/koin-core/lazy-modules/"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-09-lazy-modules-tracks.svg",
+          "sha256": "e25cff8325104468a4911aa5269d016c615e2ae963c798b54439333905820bfb",
+          "bytes": 22090
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-09-lazy-modules-tracks.png",
+          "sha256": "44be66e27799a63778e81f5a8c3e3c25eba34fcb86fe6e16fd6487135281c535",
+          "bytes": 98443,
+          "dimensions": [
+            2100,
+            1050
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-10-lazy-eager-race",
+      "title": "懒模块注册与 eager 快照之间没有自动等待关系",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-10-lazy-eager-race.svg",
+        "src/assets/diagrams/ch21/a229-10-lazy-eager-race.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-10-lazy-eager-race",
+      "sources": [
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core-coroutines/src/commonMain/kotlin/org/koin/core/KoinApplicationLazyExt.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/KoinApplication.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/registry/InstanceRegistry.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core-coroutines/src/commonMain/kotlin/org/koin/core/coroutine/KoinCoroutinesEngine.kt",
+        "https://insert-koin.io/docs/reference/koin-core/lazy-modules/"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-10-lazy-eager-race.svg",
+          "sha256": "d960f2c97b028868603a185c74db43f78b307325e5371d8dd8cc3f7e086381c5",
+          "bytes": 36986
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-10-lazy-eager-race.png",
+          "sha256": "fe098833288dbe9246d5dad6757cb42dcd2d4a136441bea5274ef71cbac724cb",
+          "bytes": 166345,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-11-release-artifacts",
+      "title": "生成源码经过 R8 后，编译与 DEX 布局分别影响运行",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-11-release-artifacts.svg",
+        "src/assets/diagrams/ch21/a229-11-release-artifacts.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-11-release-artifacts",
+      "sources": [
+        "https://dagger.dev/hilt/components.html",
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://developer.android.com/topic/performance/baselineprofiles/dex-layout-optimizations"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-11-release-artifacts.svg",
+          "sha256": "6b15d08242e307de4471a5d77e5a78893facdd1c2be594108c6fc02bd73fd980",
+          "bytes": 36056
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-11-release-artifacts.png",
+          "sha256": "e86cc926ad05d587f227085300787cec6465e3c5d32f049538e1845f7761703b",
+          "bytes": 152730,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-12-ksp-build-boundary",
+      "title": "KSP 优化构建处理，不直接改变设备上的 DI 工作",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-12-ksp-build-boundary.svg",
+        "src/assets/diagrams/ch21/a229-12-ksp-build-boundary.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-12-ksp-build-boundary",
+      "sources": [
+        "https://developer.android.com/build/migrate-to-ksp",
+        "https://developer.android.com/agents/skills/build-system/agp/agp-9-upgrade/references/ksp-kapt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-12-ksp-build-boundary.svg",
+          "sha256": "0c179f93447d2e7e890a9932b9ab5154b1d1b8de80900af7642db8ee72bd0f21",
+          "bytes": 29855
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-12-ksp-build-boundary.png",
+          "sha256": "e46b51b33dd341b7ab1c8a34284fcc7226224097e1ca2ac853ac8fbbddb881e5",
+          "bytes": 143301,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-13-scope-lifetime",
+      "title": "scope 缓存既决定身份，也形成内存持有边",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-13-scope-lifetime.svg",
+        "src/assets/diagrams/ch21/a229-13-scope-lifetime.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-13-scope-lifetime",
+      "sources": [
+        "https://dagger.dev/hilt/components.html",
+        "https://dagger.dev/api/latest/dagger/Reusable.html",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/registry/InstanceRegistry.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/instance/SingleInstanceFactory.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-13-scope-lifetime.svg",
+          "sha256": "f0e648f26462c8917d57ab97d873ed512fe8120d4e7b23648f41400884836ec7",
+          "bytes": 33465
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-13-scope-lifetime.png",
+          "sha256": "ca9878eedb3b363d69d430a7f44e5a8f6fa0efa3e432becd04040e8610ba1d88",
+          "bytes": 163893,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-14-measurement-boundaries",
+      "title": "组件首次创建位置决定 App trace 如何解释",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-14-measurement-boundaries.svg",
+        "src/assets/diagrams/ch21/a229-14-measurement-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-14-measurement-boundaries",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-compiler/main/java/dagger/hilt/android/processor/internal/androidentrypoint/ApplicationGenerator.java",
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-android/main/java/dagger/hilt/android/internal/managers/ApplicationComponentManager.java",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/KoinApplication.kt",
+        "https://developer.android.com/topic/performance/tracing/custom-events"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-14-measurement-boundaries.svg",
+          "sha256": "966b5a56f5beadcfe325fd46da27f77ee32c36261b447141599cd40c1b418a29",
+          "bytes": 32890
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-14-measurement-boundaries.png",
+          "sha256": "31f5812618762f6a6a91db0a4aee621b28c60e16c63c71ee2fe41899a5596b57",
+          "bytes": 159303,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a229-15-optimization-order",
+      "title": "先移走不必要的图，再验证剩余关键路径",
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a229-15-optimization-order.svg",
+        "src/assets/diagrams/ch21/a229-15-optimization-order.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a229-15-optimization-order",
+      "sources": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-android/main/java/dagger/hilt/android/internal/managers/ApplicationComponentManager.java",
+        "https://github.com/google/dagger/blob/dagger-2.60.1/dagger-runtime/main/java/dagger/internal/DoubleCheck.java",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core-coroutines/src/commonMain/kotlin/org/koin/core/KoinApplicationLazyExt.kt",
+        "https://dagger.dev/hilt/components.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a229-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a229-15-optimization-order.svg",
+          "sha256": "cfcabade11d0feaa8d65304368ea46161e16f77c1f267ffeb433e25d3b23f164",
+          "bytes": 28667
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a229-15-optimization-order.png",
+          "sha256": "3cacac66cc5135d16a286d6a76249e59391bdb95d776d94d416075e92cf886c6",
+          "bytes": 92105,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-01-host-hierarchy",
+      "title": "Compose 通过 View 宿主接入 Android 渲染管线",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-01-host-hierarchy.svg",
+        "src/assets/diagrams/ch21/a230-01-host-hierarchy.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-01-host-hierarchy",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/activity/activity-compose/src/main/java/androidx/activity/compose/ComponentActivity.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/Wrapper.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-01-host-hierarchy.svg",
+          "sha256": "555dba4a4d55100d2beacf8a99a478c61f6d22145dd7dfccf82482b40d0a137c",
+          "bytes": 18174
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-01-host-hierarchy.png",
+          "sha256": "eb257a532a03cae893845363745fc12ed53730b4eb8543a5880cfad3f83f49ca",
+          "bytes": 76666,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-02-composition-triggers",
+      "title": "setContent 的工作取决于 attach、父 context 与 Lifecycle",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-02-composition-triggers.svg",
+        "src/assets/diagrams/ch21/a230-02-composition-triggers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-02-composition-triggers",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/Wrapper.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeViewContext.android.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-02-composition-triggers.svg",
+          "sha256": "7b929b85ea4bdd63eba39c957579df932363158081892f00f93ea14fc11d90af",
+          "bytes": 36316
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-02-composition-triggers.png",
+          "sha256": "8b503c53abbb60496c46b0a45ea292a79a0f0efbe0a90ee6f10ea81a0aec83af",
+          "bytes": 168146,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-03-parent-context-search",
+      "title": "父 CompositionContext 按优先级复用，最后才创建窗口调度器",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-03-parent-context-search.svg",
+        "src/assets/diagrams/ch21/a230-03-parent-context-search.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-03-parent-context-search",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/WindowRecomposer.android.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-03-parent-context-search.svg",
+          "sha256": "95532dd5201a67f1652630e0fad506deec1cb3068e9db04f9896359f6179e07e",
+          "bytes": 27080
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-03-parent-context-search.png",
+          "sha256": "f341022c9bcf06d87cabbae3c04deeed72b65c1a9dd7a7a1635c7821d4bf76e7",
+          "bytes": 94485,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-04-lifecycle-clock",
+      "title": "初始组合与 Recomposer 帧时钟有不同的生命周期边界",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-04-lifecycle-clock.svg",
+        "src/assets/diagrams/ch21/a230-04-lifecycle-clock.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-04-lifecycle-clock",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/WindowRecomposer.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/Wrapper.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-04-lifecycle-clock.svg",
+          "sha256": "e3a2a71e2940d3074c9c67d33ee10b4633d93975f425860d3e9df1a3e2cede3b",
+          "bytes": 37825
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-04-lifecycle-clock.png",
+          "sha256": "f18272f1ebef2afa14703ea3076f76f3f6d923d513b294e157be631066a8dfd9",
+          "bytes": 168608,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-05-entered-subtree",
+      "title": "首次组合只执行进入的分支和布局请求的 item",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-05-entered-subtree.svg",
+        "src/assets/diagrams/ch21/a230-05-entered-subtree.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-05-entered-subtree",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/Wrapper.android.kt",
+        "https://developer.android.com/develop/ui/compose/lists"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-05-entered-subtree.svg",
+          "sha256": "44bb9572261127d4bea31cf85e710c103a7cbcf312e27f230bef542f2d032752",
+          "bytes": 22773
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-05-entered-subtree.png",
+          "sha256": "deaf7d95e73f3135902c4c2e3b5b44c3e2d4706b99e99253ad54672ba792dc20",
+          "bytes": 100532,
+          "dimensions": [
+            2100,
+            900
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-06-composition-to-display",
+      "title": "组合结束以后，仍有布局、绘制与系统呈现",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-06-composition-to-display.svg",
+        "src/assets/diagrams/ch21/a230-06-composition-to-display.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-06-composition-to-display",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/Wrapper.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt",
+        "https://developer.android.com/develop/ui/compose/phases",
+        "https://developer.android.com/guide/topics/graphics/overview"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-06-composition-to-display.svg",
+          "sha256": "3fd65b4b36aff8284238efaa9a7d99735258e8101e9b6854bc775920d688ab5c",
+          "bytes": 24639
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-06-composition-to-display.png",
+          "sha256": "cc6eae19a103463d580e42c5ad07676f1d165222c2177e67f4df24462f2eb42b",
+          "bytes": 84054,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-07-remember-key-boundary",
+      "title": "remember 可避免重复计算，首次成本仍在组合里",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-07-remember-key-boundary.svg",
+        "src/assets/diagrams/ch21/a230-07-remember-key-boundary.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-07-remember-key-boundary",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt",
+        "https://developer.android.com/develop/ui/compose/phases",
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-07-remember-key-boundary.svg",
+          "sha256": "3b6ed0bbf7ad7536a3bee3829dd0936996f77b15be1dc7de3338e5d846ae969e",
+          "bytes": 33218
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-07-remember-key-boundary.png",
+          "sha256": "bbea1a8e58dab13843fd7b6b1f1ae281af75e9d5a96af1d3784f48717cdc7322",
+          "bytes": 149129,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-08-profile-roles",
+      "title": "库规则、应用规则与 Startup Profile 各作用于不同边界",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-08-profile-roles.svg",
+        "src/assets/diagrams/ch21/a230-08-profile-roles.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-08-profile-roles",
+      "sources": [
+        "https://developer.android.com/topic/performance/baselineprofiles/overview",
+        "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations",
+        "https://developer.android.com/develop/ui/compose/bom/bom-mapping"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-08-profile-roles.svg",
+          "sha256": "d9ceedc5f5c36d70ccaca058beb1db56d7ac6b73e24f3ca326e58b39176e55a8",
+          "bytes": 32534
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-08-profile-roles.png",
+          "sha256": "a4eda6a605c8ae9aed44e922c7734903361e83d369a68671c62b799711b702e2",
+          "bytes": 155416,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-09-unattached-prefetch",
+      "title": "未 attach 预组合仍依赖已 attach 的上下文与清理",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-09-unattached-prefetch.svg",
+        "src/assets/diagrams/ch21/a230-09-unattached-prefetch.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-09-unattached-prefetch",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeViewContext.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt",
+        "https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ComposeViewContext"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-09-unattached-prefetch.svg",
+          "sha256": "15002cf7d941a1ec69b5b14e45aa528b0cbf4718f905cab30b1e9dc5fb7dd10b",
+          "bytes": 24361
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-09-unattached-prefetch.png",
+          "sha256": "22881db20b092da47c6111c799b1f2fd5380fa20ae7b95949a7408c471957eef",
+          "bytes": 92887,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-10-effects-and-data",
+      "title": "缓存、后台数据与 Effect 都有各自的成本归属",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-10-effects-and-data.svg",
+        "src/assets/diagrams/ch21/a230-10-effects-and-data.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-10-effects-and-data",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt",
+        "https://developer.android.com/develop/ui/compose/phases",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/Wrapper.android.kt",
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-10-effects-and-data.svg",
+          "sha256": "699816edc3f85234639619fcdf7a12785e2a13f91ac2c248a6a46638033ec5d2",
+          "bytes": 36658
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-10-effects-and-data.png",
+          "sha256": "8f127cf8b663d53a4332d25802da986e005e859eefde090046a075a4ccc7d157",
+          "bytes": 158026,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-11-lazy-viewport",
+      "title": "Lazy 请求量来自可见区域与布局约束，零尺寸会误导填充",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-11-lazy-viewport.svg",
+        "src/assets/diagrams/ch21/a230-11-lazy-viewport.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-11-lazy-viewport",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/lists"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-11-lazy-viewport.svg",
+          "sha256": "f2e717d58cbfa99051be6b062aa43e40e59bfdc62b21837c978e0ce344591f26",
+          "bytes": 36987
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-11-lazy-viewport.png",
+          "sha256": "a13927b216811b9f13ccacb6e8a5933245b8455a5af2c158d75acf48078700e0",
+          "bytes": 153047,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-12-subcompose-layout",
+      "title": "子组合将内容选择放到测量期间，普通 Box 不走此机制",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-12-subcompose-layout.svg",
+        "src/assets/diagrams/ch21/a230-12-subcompose-layout.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-12-subcompose-layout",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation-layout/src/commonMain/kotlin/androidx/compose/foundation/layout/Box.kt",
+        "https://developer.android.com/develop/ui/compose/phases"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-12-subcompose-layout.svg",
+          "sha256": "1a75c5d1bb9c107092af78cfd316064c55725f815b7730168f18615258c6ce68",
+          "bytes": 35643
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-12-subcompose-layout.png",
+          "sha256": "3d548f593ff6588cf3c4cd66e444bbdb1d4c9159e55df94dea2338a55ce6671d",
+          "bytes": 157558,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-13-phase-feedback",
+      "title": "把布局尺寸写回组合状态，可能多走一次帧循环",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-13-phase-feedback.svg",
+        "src/assets/diagrams/ch21/a230-13-phase-feedback.png"
+      ],
+      "layout": "temporal-sequence",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-13-phase-feedback",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/phases"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-13-phase-feedback.svg",
+          "sha256": "6063eef81d3f7e0d70396b937b4b2663646d3f97e075659253616299c7c973c3",
+          "bytes": 21472
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-13-phase-feedback.png",
+          "sha256": "0a6d44bba8f5c5de59e760858aa1a15c92b2729c8057aef5b944bd7818a711b4",
+          "bytes": 89605,
+          "dimensions": [
+            2100,
+            1020
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-14-window-process-boundaries",
+      "title": "窗口约束与进程边界改变组合发生的位置",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-14-window-process-boundaries.svg",
+        "src/assets/diagrams/ch21/a230-14-window-process-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-14-window-process-boundaries",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/glance",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt",
+        "https://developer.android.com/develop/ui/compose/layouts/adaptive/support-different-display-sizes"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-14-window-process-boundaries.svg",
+          "sha256": "1b7b0beabcc0cac1ae22d295a77146d0201bd1e848a9452ac35fa6cdf9f1dd29",
+          "bytes": 38346
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-14-window-process-boundaries.png",
+          "sha256": "c3fd20930d4b2a16ec12add66754f01170643b3563e3b5fdf409f4a3a5cc294e",
+          "bytes": 165713,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-15-interop-host-lifetime",
+      "title": "混合页面把宿主建立与组合生命周期同时带入首帧",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-15-interop-host-lifetime.svg",
+        "src/assets/diagrams/ch21/a230-15-interop-host-lifetime.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-15-interop-host-lifetime",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-15-interop-host-lifetime.svg",
+          "sha256": "b0e42b5eafaae9c736ddd987e1ef1fffb625f7f924e41e4113f0112b13e132a8",
+          "bytes": 33970
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-15-interop-host-lifetime.png",
+          "sha256": "d43c68b19aa7ec99a0d5f7d10ef0debdaca2cba63253782ee13978f08c2c023e",
+          "bytes": 160230,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-16-fully-drawn-ready",
+      "title": "充分绘制条件由业务定义，度量终点还需对齐显示帧",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-16-fully-drawn-ready.svg",
+        "src/assets/diagrams/ch21/a230-16-fully-drawn-ready.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-16-fully-drawn-ready",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/activity/activity-compose/src/main/java/androidx/activity/compose/ReportDrawn.kt",
+        "https://developer.android.com/topic/performance/vitals/launch-time",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-16-fully-drawn-ready.svg",
+          "sha256": "fb87a876cdf9ca922e49d1483f281c60ed41b605aa93a14949bd53a95048eac8",
+          "bytes": 33362
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-16-fully-drawn-ready.png",
+          "sha256": "f48f18c4500a9036db4a93257b5330816dd239bf26c9873d9484247b43f9efb5",
+          "bytes": 150260,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-17-benchmark-window",
+      "title": "启动采集同时固定编译条件与业务等待边界",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-17-benchmark-window.svg",
+        "src/assets/diagrams/ch21/a230-17-benchmark-window.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-17-benchmark-window",
+      "sources": [
+        "https://developer.android.com/reference/androidx/benchmark/macro/CompilationMode",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics",
+        "https://developer.android.com/develop/ui/compose/testing/interoperability#uiautomator-interop"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-17-benchmark-window.svg",
+          "sha256": "4a013822b24749f1cc7442d57bf268569edbf8e8c60899ebf049efec355156e8",
+          "bytes": 35189
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-17-benchmark-window.png",
+          "sha256": "d9775abaed91a6d7efcf3bb6646f5f4bcac1b39bb2637ae4b1744095bb7b6205",
+          "bytes": 155682,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-18-trace-paths",
+      "title": "粗粒度、细粒度与采集入口要按构建分别配置",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-18-trace-paths.svg",
+        "src/assets/diagrams/ch21/a230-18-trace-paths.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-18-trace-paths",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/tooling/tracing",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-18-trace-paths.svg",
+          "sha256": "c0936e9f8bb5c3859f916021ac19f47b7463857efd3282a373fc0b3b0824c995",
+          "bytes": 35278
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-18-trace-paths.png",
+          "sha256": "b985844ba084440b23abacca51e448a7e7c10f0324f097d9ac7fe07bec55a4bf",
+          "bytes": 157101,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a230-19-phase-evidence",
+      "title": "症状先映射到同一帧与启动窗口中的阶段证据",
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a230-19-phase-evidence.svg",
+        "src/assets/diagrams/ch21/a230-19-phase-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a230-19-phase-evidence",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt",
+        "https://developer.android.com/develop/ui/compose/tooling/tracing",
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics",
+        "https://developer.android.com/develop/ui/compose/phases"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a230-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a230-19-phase-evidence.svg",
+          "sha256": "0b33bb9abf8e0abab8143fd332b4ac5f01982dff29cf471862573ea90578fcd8",
+          "bytes": 37589
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a230-19-phase-evidence.png",
+          "sha256": "8569749e4089e7ba0cf1150103b049da6e17f955ecc9e947fdc31e716b3dcae6",
+          "bytes": 148681,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a231-01-startup-state",
+      "title": "冷温热启动按可复用状态区分",
+      "article": "src/part5-app/ch21-startup/README.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a231-01-startup-state.svg",
+        "src/assets/diagrams/ch21/a231-01-startup-state.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a231-01-startup-state",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a231-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a231-01-startup-state.svg",
+          "sha256": "e3f6ced280972e8807bdef10b95ff513410265180fb70f44969d65c873b671b8",
+          "bytes": 35976
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a231-01-startup-state.png",
+          "sha256": "09fa9df0b5f74147d05c57ae6b244f6e07031f1bf76ea6849d3ab188f2088bfb",
+          "bytes": 146279,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a231-02-chapter-investigation",
+      "title": "按成本来源选择章节，再回到同一启动路径验收",
+      "article": "src/part5-app/ch21-startup/README.md",
+      "assets": [
+        "src/assets/diagrams/ch21/a231-02-chapter-investigation.svg",
+        "src/assets/diagrams/ch21/a231-02-chapter-investigation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a231-02-chapter-investigation",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals/launch-time",
+        "https://developer.android.com/topic/performance/baselineprofiles/overview"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a231-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch21/a231-02-chapter-investigation.svg",
+          "sha256": "d352e3700abc12d71acc4182345250ea99cf45194720578cfdf2d2839624d40b",
+          "bytes": 39145
+        },
+        {
+          "path": "src/assets/diagrams/ch21/a231-02-chapter-investigation.png",
+          "sha256": "17214ea91e2b359694ae79a443f12a50f12826d6368e78cbfeb7b92729e883a1",
+          "bytes": 150440,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a232-01-frame-pipeline",
+      "title": "布局与自绘都要回到同一帧的提交和呈现链路",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-01-frame-pipeline.svg",
+        "src/assets/diagrams/ch22/a232-01-frame-pipeline.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-01-frame-pipeline",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-02-layout-request-passes",
+      "title": "requestLayout 合并调度后，一帧仍可能执行第二轮布局",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-02-layout-request-passes.svg",
+        "src/assets/diagrams/ch22/a232-02-layout-request-passes.png"
+      ],
+      "layout": "temporal-sequence",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-02-layout-request-passes",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-03-measure-contract",
+      "title": "MeasureSpec 约束向下，测量结果供父容器决定尺寸",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-03-measure-contract.svg",
+        "src/assets/diagrams/ch22/a232-03-measure-contract.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-03-measure-contract",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-04-hierarchy-costs",
+      "title": "重复测量、列表高频创建与低频内容预建分别治理",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-04-hierarchy-costs.svg",
+        "src/assets/diagrams/ch22/a232-04-hierarchy-costs.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-04-hierarchy-costs",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java",
+        "https://developer.android.com/topic/performance/rendering/optimizing-view-hierarchies"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-05-constraint-evidence",
+      "title": "ConstraintLayout 的选型依赖结构和等价页面证据",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-05-constraint-evidence.svg",
+        "src/assets/diagrams/ch22/a232-05-constraint-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-05-constraint-evidence",
+      "sources": [
+        "https://android-developers.googleblog.com/2017/08/understanding-performance-benefits-of.html",
+        "https://developer.android.com/topic/performance/rendering/optimizing-view-hierarchies"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-06-viewstub-replacement",
+      "title": "ViewStub 把子树创建推到首次需要时，并被真实根节点替换",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-06-viewstub-replacement.svg",
+        "src/assets/diagrams/ch22/a232-06-viewstub-replacement.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-06-viewstub-replacement",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewStub.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/LayoutInflater.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-07-merge-include",
+      "title": "merge 去掉冗余根，include 复用结构，两者条件不同",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-07-merge-include.svg",
+        "src/assets/diagrams/ch22/a232-07-merge-include.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-07-merge-include",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/LayoutInflater.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewStub.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-08-inflater-factories",
+      "title": "LayoutInflater 选择 Factory2 或 Factory，再按空结果回退",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-08-inflater-factories.svg",
+        "src/assets/diagrams/ch22/a232-08-inflater-factories.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-08-inflater-factories",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/LayoutInflater.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-09-parent-layoutparams",
+      "title": "inflate 的 root 同时决定 attach 与布局参数来源",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-09-parent-layoutparams.svg",
+        "src/assets/diagrams/ch22/a232-09-parent-layoutparams.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-09-parent-layoutparams",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/LayoutInflater.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-10-async-inflate-tracks",
+      "title": "异步 inflate 移动构造，回调仍需主线程与生命周期检查",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-10-async-inflate-tracks.svg",
+        "src/assets/diagrams/ch22/a232-10-async-inflate-tracks.png"
+      ],
+      "layout": "temporal-sequence",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-10-async-inflate-tracks",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar",
+        "https://developer.android.com/reference/androidx/asynclayoutinflater/view/AsyncLayoutInflater"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-11-async-backpressure",
+      "title": "AsyncLayoutInflater 不是无限队列，也不自动取消旧页面结果",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-11-async-backpressure.svg",
+        "src/assets/diagrams/ch22/a232-11-async-backpressure.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-11-async-backpressure",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar",
+        "https://developer.android.com/reference/androidx/asynclayoutinflater/view/AsyncLayoutInflater"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-12-layout-observers",
+      "title": "布局回调、充分绘制报告与实际呈现分别提供不同证据",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-12-layout-observers.svg",
+        "src/assets/diagrams/ch22/a232-12-layout-observers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-12-layout-observers",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewTreeObserver.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-13-interop-surface",
+      "title": "混合页先区分宿主窗口工作与独立内容 Producer",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-13-interop-surface.svg",
+        "src/assets/diagrams/ch22/a232-13-interop-surface.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-13-interop-surface",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose",
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-14-measure-cache-inputs",
+      "title": "测量缓存需要完整输入，并继续遵守尺寸输出契约",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-14-measure-cache-inputs.svg",
+        "src/assets/diagrams/ch22/a232-14-measure-cache-inputs.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-14-measure-cache-inputs",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java",
+        "https://developer.android.com/develop/ui/views/layout/custom-views/optimizing-view"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-15-layout-changed",
+      "title": "父 bounds 不变，子节点仍可能需要重新摆放",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-15-layout-changed.svg",
+        "src/assets/diagrams/ch22/a232-15-layout-changed.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-15-layout-changed",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-16-drawing-hot-path",
+      "title": "onDraw 记录命令，几何与对象准备按数据变化更新",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-16-drawing-hot-path.svg",
+        "src/assets/diagrams/ch22/a232-16-drawing-hot-path.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-16-drawing-hot-path",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://developer.android.com/develop/ui/views/layout/custom-views/optimizing-view",
+        "https://developer.android.com/topic/performance/hardware-accel"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-17-canvas-backend",
+      "title": "当前 Canvas 决定绘制后端，API 支持范围逐项检查",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-17-canvas-backend.svg",
+        "src/assets/diagrams/ch22/a232-17-canvas-backend.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-17-canvas-backend",
+      "sources": [
+        "https://developer.android.com/topic/performance/hardware-accel",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-18-displaylist-layers",
+      "title": "DisplayList 复用与额外离屏图层有不同成本",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-18-displaylist-layers.svg",
+        "src/assets/diagrams/ch22/a232-18-displaylist-layers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-18-displaylist-layers",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewPropertyAnimator.java",
+        "https://developer.android.com/topic/performance/hardware-accel"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-19-will-not-draw",
+      "title": "WILL_NOT_DRAW 与实际 SKIP_DRAW 还受背景等内容影响",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-19-will-not-draw.svg",
+        "src/assets/diagrams/ch22/a232-19-will-not-draw.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-19-will-not-draw",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-20-invalidate-layout",
+      "title": "像素失效和尺寸失效分别触发绘制与布局工作",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-20-invalidate-layout.svg",
+        "src/assets/diagrams/ch22/a232-20-invalidate-layout.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-20-invalidate-layout",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-21-animation-stops",
+      "title": "连续自绘要有运行状态，并在生命周期结束时停止",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-21-animation-stops.svg",
+        "src/assets/diagrams/ch22/a232-21-animation-stops.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-21-animation-stops",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewPropertyAnimator.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-22-rendernode-partition",
+      "title": "静态网格与动态波形各自记录，只重录失效节点",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-22-rendernode-partition.svg",
+        "src/assets/diagrams/ch22/a232-22-rendernode-partition.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-22-rendernode-partition",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RecordingCanvas.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-23-rendernode-fallback",
+      "title": "RenderNode 的版本路由与软件绘制回退都要覆盖",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-23-rendernode-fallback.svg",
+        "src/assets/diagrams/ch22/a232-23-rendernode-fallback.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-23-rendernode-fallback",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RecordingCanvas.java",
+        "https://developer.android.com/topic/performance/hardware-accel"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a232-24-frame-attribution",
+      "title": "按同一帧证据区分 UI 记录、渲染等待与显示后段",
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a232-24-frame-attribution.svg",
+        "src/assets/diagrams/ch22/a232-24-frame-attribution.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a232-24-frame-attribution",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/HardwareRenderer.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://perfetto.dev/docs/getting-started/system-tracing",
+        "https://developer.android.com/topic/performance/tracing/custom-events"
       ],
       "visual_review": "pending"
     }
@@ -21310,14 +23304,506 @@
       "sources": [
         "https://perfetto.dev/docs/getting-started/system-tracing"
       ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "before": "last_verified: '2026-10-20'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "Rechecked pinned source and official docs.",
+      "sources": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-android/main/java/dagger/hilt/android/internal/managers/ApplicationComponentManager.java",
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-compiler/main/java/dagger/hilt/android/processor/internal/androidentrypoint/ApplicationGenerator.java",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core-coroutines/src/commonMain/kotlin/org/koin/core/KoinApplicationLazyExt.kt",
+        "https://developer.android.com/build/migrate-to-ksp"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "before": "last_source_verified_at: '2026-10-20'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "why": "Rechecked pinned source and official docs; retain prior idle audit history.",
+      "sources": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-android/main/java/dagger/hilt/android/internal/managers/ApplicationComponentManager.java",
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-compiler/main/java/dagger/hilt/android/processor/internal/androidentrypoint/ApplicationGenerator.java",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core-coroutines/src/commonMain/kotlin/org/koin/core/KoinApplicationLazyExt.kt",
+        "https://developer.android.com/build/migrate-to-ksp"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "before": "docs checked 2026-10-20",
+      "after": "docs checked 2026-10-25",
+      "why": "Update verification date without changing pinned implementation versions.",
+      "sources": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-android/main/java/dagger/hilt/android/internal/managers/ApplicationComponentManager.java",
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-compiler/main/java/dagger/hilt/android/processor/internal/androidentrypoint/ApplicationGenerator.java",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core-coroutines/src/commonMain/kotlin/org/koin/core/KoinApplicationLazyExt.kt",
+        "https://developer.android.com/build/migrate-to-ksp"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "before": "一次注入至少包含四类工作：创建 container/component（保存依赖规则与生命周期缓存的容器）、建立 `Provider` 工厂、解析 binding（某个类型应怎样获得实例的绑定规则），以及执行对象构造和初始化。",
+      "after": "分析 DI 可拆成四类工作：创建 container/component（保存规则与生命周期缓存的容器）、建立工厂、解析 binding（类型与创建规则的绑定），以及执行对象构造和初始化。这些工作分属不同阶段；一次命中缓存的请求不会重新创建容器、工厂和对象。",
+      "why": "Do not claim every injection recreates all four costs or that Koin necessarily constructs a Dagger Provider.",
+      "sources": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-android/main/java/dagger/hilt/android/internal/managers/ApplicationComponentManager.java",
+        "https://github.com/google/dagger/blob/dagger-2.60.1/dagger-runtime/main/java/dagger/internal/DoubleCheck.java",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/KoinApplication.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/registry/InstanceRegistry.kt",
+        "https://github.com/InsertKoinIO/koin/blob/4.2.2/projects/core/koin-core/src/commonMain/kotlin/org/koin/core/instance/SingleInstanceFactory.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "before": "同一个 `dagger.Lazy<T>` 实例会缓存一次结果，但分别注入的两个 `Lazy<T>` 各自独立；若需要所有调用者共享同一对象，仍应由正确的 scope 保证。",
+      "after": "同一个 `dagger.Lazy<T>` 会缓存一次结果；对 unscoped binding，分别创建的 Lazy 包装器各自缓存，不能据此保证调用者拿到同一对象。scoped binding 则仍共享对应 scope 的实例，包装器本身也未必不同：2.60.1 的 [`DoubleCheck.lazy()`](https://github.com/google/dagger/blob/dagger-2.60.1/dagger-runtime/main/java/dagger/internal/DoubleCheck.java) 会直接复用已经实现 `Lazy` 的 provider。需要共享对象时应由正确的 scope 保证，不能依赖包装器身份。",
+      "why": "Qualify independent wrappers for unscoped bindings; DoubleCheck.lazy reuses Provider implementing Lazy, notably scoped DoubleCheck.",
+      "sources": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/dagger-runtime/main/java/dagger/internal/DoubleCheck.java",
+        "https://dagger.dev/api/latest/dagger/Lazy.html"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "before": "Hilt 在 Application 注入时只提供 `Lazy` wrapper（包装器）；`Analytics` 在 `get()` 时创建并由该 wrapper 缓存。",
+      "after": "Hilt 在 Application 注入时提供延迟访问入口，不会仅因给该字段赋值就创建 `Analytics`。第一次 `get()` 解析目标 binding；unscoped 值由该 Lazy 缓存，scoped 值还受原 scope 的缓存约束。",
+      "why": "Lazy can reuse scoped provider and get can return an already constructed scoped instance; avoid implying every first Lazy.get constructs new Analytics.",
+      "sources": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/dagger-runtime/main/java/dagger/internal/DoubleCheck.java",
+        "https://dagger.dev/api/latest/dagger/Lazy.html"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "before": "`@HiltViewModel` 不会随进程无条件创建。首屏调用 `ViewModelProvider` 或 Compose `hiltViewModel()` 时，`HiltViewModelFactory` 才创建对应 `ViewModelComponent` 并解析构造参数。它是否属于启动成本，取决于首屏何时请求。",
+      "after": "`@HiltViewModel` 不会随进程无条件创建。首屏通过 `ViewModelProvider` 或 Compose `hiltViewModel()` 请求实例时，若对应 owner/key 已有 ViewModel，就复用它；需要新建时才由 `HiltViewModelFactory` 建立 `ViewModelComponent` 并解析构造参数。它是否属于启动成本，取决于首屏何时首次创建，不能把每次获取都计作一次构造。实现见 [Hilt View Models](https://dagger.dev/hilt/view-model.html)。",
+      "why": "Distinguish ViewModelStore reuse from factory creation; repeated lookup is not repeated component construction.",
+      "sources": [
+        "https://github.com/google/dagger/blob/dagger-2.60.1/hilt-android/main/java/dagger/hilt/android/internal/lifecycle/HiltViewModelFactory.java",
+        "https://dagger.dev/hilt/view-model.html"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "before": "仍未支持 KSP 的 processor 需要按官方迁移指南放在使用 `com.android.legacy-kapt` 的 Gradle module 中。",
+      "after": "仍未支持 KSP 的 processor 可保留原 `kapt` 依赖，并在所在 Gradle module 应用 `com.android.legacy-kapt`；指南并未要求为此额外拆一个 module。",
+      "why": "Official AGP9 step4 applies legacy-kapt to the module retaining kapt dependencies, not mandatory module relocation.",
+      "sources": [
+        "https://developer.android.com/agents/skills/build-system/agp/agp-9-upgrade/references/ksp-kapt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "before": "同时看 TTID（首次显示时间）、TTFD（主要内容完整可用时间）、trace section、自身 CPU 时间、Java allocated bytes 和首帧后首交互。",
+      "after": "同时看 TTID、TTFD、trace section、自身 CPU 时间、Java allocated bytes 和首帧后首交互。TTFD 需记录工具及版本，并区分业务就绪报告与工具识别的显示帧终点，不能仅凭一段初始化 trace 结束就认为内容已显示。",
+      "why": "Keep report/frame endpoint distinction established in startup measurement chapter; trace closure is not a display event.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/ActivityThread.java",
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "last_verified: '2026-08-14'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "Recheck original pinned AndroidX commit and current official docs; keep BOM version baseline.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt",
+        "https://developer.android.com/develop/ui/compose/bom/bom-mapping"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "AOSP androidx-compose-release@963bf914",
+      "after": "AOSP AndroidX fixed commit 963bf914f78b389bdddef0da7f36bee19d897274; official docs checked 2026-10-25",
+      "why": "Record immutable source identity rather than branch name as if immutable.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/",
+        "https://developer.android.com/develop/ui/compose/bom/bom-mapping"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "  path: platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt",
+      "after": "  path: platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt",
+      "why": "Pin metadata source path to declared fixed commit.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "  path: platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt",
+      "after": "  path: platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt",
+      "why": "Pin metadata source path to declared fixed commit.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "- [AndroidX `ComponentActivity.setContent` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/activity/activity-compose/src/main/java/androidx/activity/compose/ComponentActivity.kt)",
+      "after": "- [AndroidX `ComponentActivity.setContent` 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/activity/activity-compose/src/main/java/androidx/activity/compose/ComponentActivity.kt)",
+      "why": "Pin moving source URL to the exact commit declared by this article.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/activity/activity-compose/src/main/java/androidx/activity/compose/ComponentActivity.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "- [AndroidX `ComposeView` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt)",
+      "after": "- [AndroidX `ComposeView` 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt)",
+      "why": "Pin moving source URL to the exact commit declared by this article.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/ComposeView.android.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "- [AndroidX `WindowRecomposer` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/WindowRecomposer.android.kt)",
+      "after": "- [AndroidX `WindowRecomposer` 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/WindowRecomposer.android.kt)",
+      "why": "Pin moving source URL to the exact commit declared by this article.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/WindowRecomposer.android.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "- [AndroidX `Recomposer` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt)",
+      "after": "- [AndroidX `Recomposer` 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt)",
+      "why": "Pin moving source URL to the exact commit declared by this article.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "- [AndroidX `remember` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt)",
+      "after": "- [AndroidX `remember` 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt)",
+      "why": "Pin moving source URL to the exact commit declared by this article.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "- [AndroidX `Box` 源码](https://android.googlesource.com/platform/frameworks/support/+/androidx-compose-release/compose/foundation/foundation-layout/src/commonMain/kotlin/androidx/compose/foundation/layout/Box.kt)",
+      "after": "- [AndroidX `Box` 源码](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation-layout/src/commonMain/kotlin/androidx/compose/foundation/layout/Box.kt)",
+      "why": "Pin moving source URL to the exact commit declared by this article.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation-layout/src/commonMain/kotlin/androidx/compose/foundation/layout/Box.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "Slot Table 是 runtime 维护的一张表，记录调用分组、参数和 `remember` 槽位。",
+      "after": "",
+      "why": "Remove repeated Slot Table definition immediately following the equivalent parenthesis.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Recomposer.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "设置父 `CompositionContext`（让子组合继承调度关系和环境值） 与 content lambda（声明 UI 的 `@Composable` 根函数）：前者让子组合继承调度关系和环境值，后者声明 UI 的 `@Composable` 根函数；",
+      "after": "设置父 `CompositionContext`（继承调度关系和环境值）与 content lambda（声明 UI 的 `@Composable` 根函数）；",
+      "why": "Remove duplicate explanations in the same sentence.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/activity/activity-compose/src/main/java/androidx/activity/compose/ComponentActivity.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/Wrapper.android.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "Lifecycle 至少到 `STARTED` 时，frame clock（向动画和重组提供帧时间的时钟） 才持续提供可见帧，它向动画和重组提供帧时间；",
+      "after": "`ON_CREATE` 启动 recomposer 的运行循环；到 `STARTED` 时才恢复 frame clock 的帧时间分发。frame clock 为动画等工作提供时间，不代表像素已经显示，也不是初始 composition 必须等到 STARTED 的门槛；",
+      "why": "Pinned WindowRecomposer starts loop at ON_CREATE, resumes clock at ON_START; initial composition can execute at CREATED and clocks are not display events.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/WindowRecomposer.android.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/Wrapper.android.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "Lazy layout（按需组合可见项的布局） 按需组合可见项，尚未请求的 item 不会因为数据集合存在就全部执行；",
+      "after": "Lazy layout 按布局请求组合 item；请求范围可以包含预取、超出可见区域或保留的项，尚未请求的 item 不会因为数据集合存在就全部执行；",
+      "why": "Do not equate lazy composed/requested items strictly with visible items; prefetch and retained/beyond-bounds paths can participate.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/lists"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "已进入 group 中 `remember { ... }` 的 calculation（花括号内的计算），也就是花括号内的计算，会执行一次；",
+      "after": "已进入 group 中 `remember { ... }` 的 calculation 会在首次执行时计算；",
+      "why": "Remove repeated calculation definition and qualify first execution.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "SurfaceFlinger（系统显示合成服务） 合成各窗口图层后，像素才出现在屏幕上。",
+      "after": "SurfaceFlinger 组织窗口图层合成，经 HWC/GPU 与显示提交、实际呈现后，像素才出现在屏幕上；不能把组合结束或一次 buffer 提交直接等同屏幕显示。",
+      "why": "Separate app draw, buffer submission, system composition and physical display presentation.",
+      "sources": [
+        "https://developer.android.com/guide/topics/graphics/overview"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "；Strong Skipping 指参数和状态允许时跳过可跳过调用的编译器策略。",
+      "after": "。",
+      "why": "Remove immediately repeated Strong Skipping definition.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/phases",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "数据量大或排序涉及 I/O 时，我们把排序挪到数据准备阶段完成——repository（封装数据来源的层） 封装数据来源，use case（封装一项业务操作的层） 封装一项业务操作，ViewModel 也可以承担——再把准备好的 UI state（可直接用于渲染的页面状态），也就是可直接用于渲染的页面状态，传入首屏。把代码从 Activity 移进 ViewModel 并不会自动延迟它：只要首屏同步创建 ViewModel 并等待结果，这段工作仍属于首帧显示时间（TTID） TTID（Time to Initial Display，首帧显示时间） 或完整显示时间（TTFD） TTFD（Time to Full Display，完整显示时间） 的统计路径。",
+      "after": "数据量大或伴随 I/O 时，把工作放到 repository、use case 或 ViewModel 的数据准备阶段，向首屏提供可直接渲染的 UI state。位置变化不会自动延迟工作：首屏若仍同步创建 ViewModel 并等待结果，成本依旧落在 TTID（首次显示）或 TTFD（充分显示）的统计路径上。",
+      "why": "Remove repeated definitions and preserve critical-path caveat.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/phases",
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "`remember(LazyThreadSafetyMode.NONE)` 并不存在于 Compose API：`remember` 的公开重载接收 calculation 和可选 keys，`LazyThreadSafetyMode` 参数属于 Kotlin `lazy()`。它也关不掉 Snapshot 对状态读取和失效通知的跟踪。",
+      "after": "`remember(LazyThreadSafetyMode.NONE) { ... }` 可以匹配 `key1: Any?` 重载，但这个枚举只会被当作缓存 key，不会配置线程安全模式。线程安全模式参数属于 Kotlin `lazy()`；Compose `remember` 不因此关闭 Snapshot 状态读取或失效跟踪。",
+      "why": "Correct compilable key overload mistaken for nonexistent API; enum is a key, not a mode. Exact call will be compiled with real runtime/compiler.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "；Macrobenchmark 从应用进程外测量完整用户流程，基类名称代替不了证据。",
+      "after": "；基类名称代替不了证据。",
+      "why": "Remove repeated Macrobenchmark definition.",
+      "sources": [
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "dispatcher（决定协程在哪类线程执行的调度器） 前的代码，仍可能与首帧竞争；dispatcher 决定协程在哪类线程执行。",
+      "after": "dispatcher 前的代码，仍可能与首帧竞争。",
+      "why": "Remove duplicate dispatcher explanation.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/phases",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/Wrapper.android.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "loading/ready 状态，也就是区分“仍在准备”和“已经可显示”；",
+      "after": "loading/ready 状态（仍在准备 / 已可显示）；",
+      "why": "Compress repeated state explanation.",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "把尺寸写进 `MutableState`（会触发 Compose 失效通知的可变状态）——这类可变状态会触发 Compose 失效通知；",
+      "after": "把尺寸写进 `MutableState`，触发失效通知；",
+      "why": "Remove duplicate MutableState definition.",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/phases"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "是否避免 `Class.forName()` 预热、后台自行驱动 composition 和无效的 `remember(LazyThreadSafetyMode.NONE)`？",
+      "after": "是否避免无证据的 `Class.forName()` 预热、后台自行驱动 composition，并明确 `remember(LazyThreadSafetyMode.NONE) { ... }` 只把枚举当 key？",
+      "why": "Align checklist with corrected remember overload semantics.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt",
+        "https://developer.android.com/reference/kotlin/androidx/compose/ui/platform/ComposeViewContext"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "        ) {\n            startActivityAndWait()\n        }\n",
+      "after": "        ) {\n            startActivityAndWait()\n            // 目标页面须将完成态 home_ready 标记导出为 UiAutomator resource id。\n            check(device.wait(Until.hasObject(By.res(\"home_ready\")), 10_000)) {\n                \"Home did not reach the benchmark's interactive completion state\"\n            }\n        }\n",
+      "why": "Keep trace window open for asynchronous business readiness; launch wait alone covers startup draw, not arbitrary fully-drawn business conditions. Fail missing marker rather than treating absence as fast TTFD.",
+      "sources": [
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics",
+        "https://developer.android.com/develop/ui/compose/testing/interoperability#uiautomator-interop"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "`CompilationMode.Partial(Require)` 会要求目标 APK 同时包含可安装的 Baseline Profile 与 ProfileInstaller，",
+      "after": "骨架中的 `home_ready` 是目标页面提供的稳定测试标记，不是系统自带 ID；Compose 可用 `testTag` 并通过 `testTagsAsResourceId` 导出，且只有业务完成态才应出现。测试模块需导入 UiAutomator 的 `By`/`Until`，并使用 `By.res(\"home_ready\")`；带 package 的双参数 `By.res` 会加上资源前缀，与 Compose testTag 不匹配。`startActivityAndWait()` 本身不等待任意异步业务完成；要采集 TTFD，须在测量块内等到与 `ReportDrawnWhen` 同义的完成标记，合法空态、错误页和离线页也应按既定口径释放它。\n\n`CompilationMode.Partial(Require)` 会要求目标 APK 同时包含可安装的 Baseline Profile 与 ProfileInstaller，",
+      "why": "Document test marker contract and imports so new wait is concrete and not mistaken for platform magic or compile-ready target UI.",
+      "sources": [
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/activity/activity-compose/src/main/java/androidx/activity/compose/ReportDrawn.kt",
+        "https://developer.android.com/develop/ui/compose/testing/interoperability#uiautomator-interop"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "before": "宿主从窗口 detach 时，窗口级 `Recomposer` 也会被取消；",
+      "after": "窗口级 `Recomposer` 所依附的根宿主 View 从窗口 detach 时，该 Recomposer 会被取消；这不等同于窗口中任意一个 item 的 `ComposeView` detach 都取消整个窗口调度器；",
+      "why": "Cancellation listener is installed on window recomposer root host; distinguish an individual child ComposeView detach, including pooling strategies.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/WindowRecomposer.android.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "last_verified: '2026-08-14'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "Recheck pinned17 sources and actual AsyncLayoutInflater1.1.0 source/AAR.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://dl.google.com/dl/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "> 源码基线：AOSP `android-17.0.0_r1`（API 37），内核 `android17-6.18-2026-06_r6`；设备可能使用其他内核分支。",
+      "after": "> 源码基线：AOSP `android-17.0.0_r1`（API 37）。本文核对 framework View 机制，不将某一内核分支当作 App 布局行为的统一契约。\n\n版本边界：一般 View 布局与绘制机制覆盖 API 21–37；`FrameMetrics` 从 API 24 提供，公开 `RenderNode` 示例仅用于 API 29+，FrameTimeline 取证从 Android 12 / API 31 起使用。低版本须按可用 API 选择测量与绘制路径。",
+      "why": "Remove unrelated unverified kernel tag; reconcile min21 metadata with API-gated metrics/rendernode/FrameTimeline sections.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/FrameMetrics.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "`createViewFromTag()` 先经过 `Factory2 → Factory → private factory`。都未创建 View 时，才进入 `onCreateView()` 或按完整类名构造；",
+      "after": "`createViewFromTag()` 在已设置 `Factory2` 时调用它，否则才调用 `Factory`；结果仍为空时再尝试 private factory，之后才进入 `onCreateView()` 或按完整类名构造。不是 `Factory2` 返回空后还必定调用普通 `Factory`；",
+      "why": "Source uses if factory2 else-if factory, followed by independent private-factory fallback.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/LayoutInflater.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "后台 inflate 要求父容器的 `generateLayoutParams(AttributeSet)` 线程安全，",
+      "after": "构造 `AsyncLayoutInflater` 和调用 `inflate()` 都应在 UI 线程；后台 inflate 要求父容器的 `generateLayoutParams(AttributeSet)` 线程安全，",
+      "why": "Expose UI-thread entry contract despite background construction.",
+      "sources": [
+        "https://developer.android.com/reference/androidx/asynclayoutinflater/view/AsyncLayoutInflater",
+        "https://dl.google.com/dl/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "AsyncLayoutInflater(context).inflate(\n    R.layout.panel_filter,\n    parent\n) { view, _, targetParent ->\n    targetParent?.addView(view)\n    bindFilterPanel(view)\n}\n",
+      "after": "private var filterInflateGeneration = 0L\n\n// UI 线程调用；Fragment 应传入本次 viewLifecycleOwner。\nfun requestFilterPanel(context: Context, parent: ViewGroup, owner: LifecycleOwner) {\n    val generation = ++filterInflateGeneration\n    AsyncLayoutInflater(context).inflate(R.layout.panel_filter, parent) { view, _, targetParent ->\n        if (owner.lifecycle.currentState == Lifecycle.State.DESTROYED ||\n            generation != filterInflateGeneration || targetParent !== parent) {\n            return@inflate\n        }\n        parent.addView(view)\n        bindFilterPanel(view)\n    }\n}\n\n// UI 线程调用：页面转向或不再需要结果时，使在途结果失效。\nfun discardPendingFilterPanel() {\n    filterInflateGeneration++\n}\n",
+      "why": "Guard async completion against destroyed view owner and stale request generation before attaching or binding; keep exact default UI callback route.",
+      "sources": [
+        "https://developer.android.com/reference/androidx/asynclayoutinflater/view/AsyncLayoutInflater",
+        "https://dl.google.com/dl/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar",
+        "https://developer.android.com/guide/fragments/lifecycle"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "`bindFilterPanel()` 与 `addView()` 仍在主线程执行。",
+      "after": "这里的 generation 只丢弃过期结果，不会中断已经排队或执行中的 inflate；1.1.0 未提供取消请求的公开方法。Fragment 应使用本次 View 的 owner，避免 Fragment 仍存活却给已销毁的旧 View 树添加内容。示例的状态读写和失效操作都限定在 UI 线程。\n\n`bindFilterPanel()` 与 `addView()` 仍在主线程执行。",
+      "why": "State cancellation scope and Fragment view ownership so the guard is not oversold as physical task cancellation.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar",
+        "https://developer.android.com/guide/fragments/lifecycle"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "还要记录预加载未命中率（已创建却从未使用的比例）和被取消数量，避免用更多 CPU、内存换来很少的命中。",
+      "after": "还要记录预加载未使用比例与被丢弃结果数，避免为低命中投入更多 CPU 和内存。1.1.0 只有一个 InflateThread，内部队列容量为 10，入队使用阻塞 `put()`；UI 线程批量提交把队列填满时，`inflate()` 本身也可能等待。限制预取窗口，不能把它理解成无限并行或永不阻塞的 API。实现见 [1.1.0 源码归档](https://dl.google.com/dl/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar)。",
+      "why": "Fixed1.1.0 source has one worker and capacity10 ArrayBlockingQueue.put; async entry can block on queue pressure; logical result discard is distinct from task cancellation.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/asynclayoutinflater/asynclayoutinflater/1.1.0/asynclayoutinflater-1.1.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "首帧显示应使用 FrameTimeline、`reportFullyDrawn()` 或与产品目标含义相符的信号，而不是 global layout 的结束时间。",
+      "after": "首帧显示用 API 31+ FrameTimeline 等实际显示证据或启动度量判断；`reportFullyDrawn()` 是业务充分绘制报告，不能当作首帧已上屏的物理信号。`OnGlobalLayoutListener` 的回调结束也不等于显示终点。",
+      "why": "Separate first display, business fully drawn report and layout callback; avoid physical-present inference from reportFullyDrawn.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewTreeObserver.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java",
+        "https://developer.android.com/topic/performance/vitals/launch-time"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "和 FrameTimeline overrun（超过该帧 deadline 的时长） 是否同时改善；overrun 是超过该帧 deadline 的时长，",
+      "after": "和 FrameTimeline overrun（超过该帧 deadline 的时长）是否同时改善；",
+      "why": "Remove duplicate overrun explanation.",
+      "sources": [
+        "https://perfetto.dev/docs/getting-started/system-tracing"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "Android 10—17 已支持 `clipPath()`、`drawPicture()` 和 `drawVertices()` 等过去受 API 版本限制的调用，其中 `drawVertices()` 从 API 29 起支持硬件 Canvas。",
+      "after": "本文覆盖 API 21–37，需要逐项区分：硬件 Canvas 的 `clipPath()` 从 API 18 支持，`drawPicture()` 从 API 23 支持，`drawVertices()` 从 API 29 支持。API 21–22 不能套用后两项的现代硬件支持结论。",
+      "why": "Align hardware operation support thresholds with full article min21 range, rather than discussing only Android10+.",
+      "sources": [
+        "https://developer.android.com/topic/performance/hardware-accel"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "纯布局 `ViewGroup` 可以设置 `setWillNotDraw(true)`，让框架跳过它自己的 `onDraw()`。子 View 仍会通过 `dispatchDraw()` 绘制。容器需要画背景、分隔线、调试标记或其他自身内容时，应清除该标记。",
+      "after": "没有自身 `onDraw()` 内容的布局 `ViewGroup` 可设置 `setWillNotDraw(true)`，框架在满足跳绘条件时直接走子节点的 `dispatchDraw()`。背景、前景或默认焦点高亮可能使框架清除 `PFLAG_SKIP_DRAW`，因此不能把它理解成始终跳过所有自身绘制；若新增分隔线、调试标记等自定义 `onDraw()` 内容，应明确设为 `false`。",
+      "why": "Pinned View flags only set PFLAG_SKIP_DRAW without background/foreground/focus highlight; avoid unconditional skip claim and distinguish framework background from custom onDraw.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "本文适用范围为 Android 10—17，可以直接调用平台 API。",
+      "after": "本文适用范围为 Android 5.0—17（API 21–37），可以直接调用平台 API。",
+      "why": "Fix body range inconsistent with metadata; API16 postInvalidateOnAnimation valid throughout min21.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "下面的示例把静态网格和动态波形分成两个节点。",
+      "after": "下面是仅用于 API 29+ 的独立实现节选；API 21–28 应路由到不含 `RenderNode` 字段的普通 Canvas 实现，不能只在 `onDraw()` 内判断版本，却先在字段初始化时调用新 API。示例把静态网格和动态波形分成两个节点。",
+      "why": "Guard class/field initialization, not just draw branch, for public RenderNode API29 compatibility.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "before": "        mContentBounds.set(\n                getPaddingLeft(),\n                getPaddingTop(),\n                w - getPaddingRight(),\n                h - getPaddingBottom());\n        rebuildWavePath(mWavePath, mContentBounds);\n    }\n\n    public void setSamples(float[] samples) {",
+      "after": "        updateContentGeometry();\n    }\n\n    @Override\n    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {\n        super.onLayout(changed, left, top, right, bottom);\n        // padding 改变时 bounds 未必改变，onSizeChanged 不一定再次调用。\n        updateContentGeometry();\n    }\n\n    private void updateContentGeometry() {\n        float left = getPaddingLeft();\n        float top = getPaddingTop();\n        float right = Math.max(left, getWidth() - getPaddingRight());\n        float bottom = Math.max(top, getHeight() - getPaddingBottom());\n        if (mContentBounds.left != left || mContentBounds.top != top\n                || mContentBounds.right != right || mContentBounds.bottom != bottom) {\n            mContentBounds.set(left, top, right, bottom);\n            rebuildWavePath(mWavePath, mContentBounds);\n        }\n    }\n\n    public void setSamples(float[] samples) {",
+      "why": "Size-only geometry cache becomes stale if padding changes with fixed outer bounds. Recheck full content bounds during layout, rebuild only on actual geometry change, clamp padding exceeding size.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://developer.android.com/develop/ui/views/layout/custom-views/optimizing-view"
+      ]
     }
   ],
   "validation": {},
   "last_checkpoint": {
-    "completed": 28,
+    "completed": 32,
     "total": 51,
-    "next_article": "src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
-    "updated_at": "2026-10-25T07:44:28.246587+00:00"
+    "next_article": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+    "updated_at": "2026-10-25T08:13:50.848794+00:00"
   },
   "replaced_inline_diagrams": []
 }

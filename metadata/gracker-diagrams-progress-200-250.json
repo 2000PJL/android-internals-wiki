@@ -2050,18 +2050,112 @@
     {
       "path": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
       "sha256_before": "3f5f92599e03360393a9421c7ee15f0b194c590a5efc10399a11ba4d4caf87d6",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a244-01-three-rates",
+        "a244-02-uniform-hold-cadence",
+        "a244-03-arr-te-constraints",
+        "a244-04-public-api-evolution",
+        "a244-05-capability-result-branches",
+        "a244-06-velocity-unit-conversion",
+        "a244-07-view-vote-aggregation",
+        "a244-08-group-propagation-reset",
+        "a244-09-fling-velocity-lifecycle",
+        "a244-10-window-policy-controls",
+        "a244-11-touch-response-evidence",
+        "a244-12-view-surface-topologies",
+        "a244-13-texture-frame-rate-feedback",
+        "a244-14-video-request-lifecycle",
+        "a244-15-surface-compatibility-semantics",
+        "a244-16-selector-choice-path",
+        "a244-17-explicit-vote-types",
+        "a244-18-composer-panel-boundary",
+        "a244-19-arr-evidence-layers",
+        "a244-20-producer-fence-dependencies",
+        "a244-21-test-settings-transaction",
+        "a244-22-cross-device-ab-buckets",
+        "a244-23-compose-preferred-layer",
+        "a244-24-arr-acceptance-loop"
+      ],
       "article_index": 244,
-      "sha256_at_assignment": "3f5f92599e03360393a9421c7ee15f0b194c590a5efc10399a11ba4d4caf87d6"
+      "sha256_at_assignment": "3f5f92599e03360393a9421c7ee15f0b194c590a5efc10399a11ba4d4caf87d6",
+      "sha256_current": "ff2a619e78cb23e7f9b642373419b996a3941940f45fd2e789d64ca89fa9cafc",
+      "sha256_after": "ff2a619e78cb23e7f9b642373419b996a3941940f45fd2e789d64ca89fa9cafc",
+      "source_audit": "23 original URLs and3 additional platform sources HTTP200;4 supplemental Android/Compose/Perfetto sources200. GNU pages403/SSL preserved, replaced final citations with author-maintained Bash manual200 plus local builtin help. Four exact article Kotlin snippets compiled real API37/Kotlin2.4.10; extra public APIs and actual Compose1.12 modifier calls compiled. Exact Bash executed9 fake-adb scenarios including signal exit and first cleanup failure.16 source contracts and actual body code identity passed; no device/performance claims.",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a244/additional-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a244/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a244/supplemental-source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
       "sha256_before": "5c0d3f05b8f0c0c594c1b76d7779f54e152dc4c9d716b55b3b1f78a4aafec439",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a245-01-consumer-boundaries",
+        "a245-02-buffer-state-fence",
+        "a245-03-surfaceview-layer-tree",
+        "a245-04-hole-punch-composition",
+        "a245-05-host-content-independence",
+        "a245-06-texture-two-queues",
+        "a245-07-texture-update-callback",
+        "a245-08-end-to-end-topologies",
+        "a245-09-latency-boundary-comparison",
+        "a245-10-device-client-opportunity",
+        "a245-11-graphics-memory-accounting",
+        "a245-12-benchmark-controlled-conditions",
+        "a245-13-geometry-buffer-transactions",
+        "a245-14-transaction-apply-modes",
+        "a245-15-transaction-callback-fences",
+        "a245-16-blast-frame-merge",
+        "a245-17-surface-sync-participants",
+        "a245-18-holder-producer-lifecycle",
+        "a245-19-surface-lifecycle-strategies",
+        "a245-20-texture-owned-wrapper-lifecycle",
+        "a245-21-texture-replacement-transfer",
+        "a245-22-black-screen-object-diagnosis",
+        "a245-23-camerax-source-doc-boundary",
+        "a245-24-video-overlay-or-processing",
+        "a245-25-vulkan-native-window-ownership",
+        "a245-26-live-overlay-options",
+        "a245-27-trace-surfaceview-object-map",
+        "a245-28-trace-textureview-object-map",
+        "a245-29-present-backward-investigation",
+        "a245-30-dequeue-wait-ownership",
+        "a245-31-visual-effects-and-protection",
+        "a245-32-compose-view-binding-lifecycle",
+        "a245-33-compose-producer-identity",
+        "a245-34-compose-external-surface-choices",
+        "a245-35-selection-measurement-loop"
+      ],
       "article_index": 245,
-      "sha256_at_assignment": "5c0d3f05b8f0c0c594c1b76d7779f54e152dc4c9d716b55b3b1f78a4aafec439"
+      "sha256_at_assignment": "5c0d3f05b8f0c0c594c1b76d7779f54e152dc4c9d716b55b3b1f78a4aafec439",
+      "sha256_current": "93cf9c1c7710045cbe7e538879755f6b82973403a98891751f3b1b33680a734e",
+      "sha256_after": "93cf9c1c7710045cbe7e538879755f6b82973403a98891751f3b1b33680a734e",
+      "source_audit": "34 original references fetched;3 transient SSL failures retried HTTP200. Additional published CameraX1.6.2 source/AAR, current library metadata, pinned BOM POM, Image.Plane, NDK and Khronos sources verified. Four actual Kotlin snippets compiled with real API37/Compose1.12/CameraX1.6.2, additional modern APIs and owned fence methods compiled. Exact identity key executed on equal-but-distinct objects; XML namespace parsed;18 source contracts and actual article code identity passed. C++ example manually checked against Khronos/NDK signatures and ownership, no native runtime or device performance claims.",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a245/figure-correction-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a245/retry-additional-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a245/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a245/supplemental-source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/15-vulkan-impeller-shader-compilation.md",
@@ -30970,6 +31064,1963 @@
           ]
         }
       ]
+    },
+    {
+      "id": "a244-01-three-rates",
+      "title": "内容、产帧与刷新三个量",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-01-three-rates.svg",
+        "src/assets/diagrams/ch22/a244-01-three-rates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-01-three-rates",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate",
+        "https://developer.android.com/media/optimize/performance/frame-rate"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-01-three-rates.svg",
+          "sha256": "e3a6c628c3899de32f3eb5aaeaf3b34c93307d5c111968c6835e6c52c8353943",
+          "bytes": 27253
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-01-three-rates.png",
+          "sha256": "a4d04c03886b3f284038946fa54fca0930d291180068b599007be744b481d50f",
+          "bytes": 101789,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-02-uniform-hold-cadence",
+      "title": "60fps内容与120Hz刷新的均匀保持",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-02-uniform-hold-cadence.svg",
+        "src/assets/diagrams/ch22/a244-02-uniform-hold-cadence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-02-uniform-hold-cadence",
+      "sources": [
+        "https://developer.android.com/media/optimize/performance/frame-rate"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-02-uniform-hold-cadence.svg",
+          "sha256": "3fa4f8e5c336db9bd862ea9e5b28f709ec903ab99a9ea5643ddfb88b72cef2a4",
+          "bytes": 18225
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-02-uniform-hold-cadence.png",
+          "sha256": "03c9b63addb17d397a76710d4c9e691fccc36a9e02e478faac213a14149ec39f",
+          "bytes": 63954,
+          "dimensions": [
+            2100,
+            825
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-03-arr-te-constraints",
+      "title": "ARR在同一模式内选择呈现节奏",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-03-arr-te-constraints.svg",
+        "src/assets/diagrams/ch22/a244-03-arr-te-constraints.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-03-arr-te-constraints",
+      "sources": [
+        "https://source.android.com/docs/core/graphics/arr"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-03-arr-te-constraints.svg",
+          "sha256": "7723d252d42e9561960b1f14a1c08b155784b1743620b772470a3e0a59bfb5af",
+          "bytes": 25144
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-03-arr-te-constraints.png",
+          "sha256": "1fded82815d64bea6a88b5011a1fbf9ecfac5ac82aa46d3c35c67b062fc9def5",
+          "bytes": 101521,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-04-public-api-evolution",
+      "title": "Android15至17公开接口边界",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-04-public-api-evolution.svg",
+        "src/assets/diagrams/ch22/a244-04-public-api-evolution.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-04-public-api-evolution",
+      "sources": [
+        "https://developer.android.com/reference/android/view/Display",
+        "https://developer.android.com/reference/android/view/View",
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-04-public-api-evolution.svg",
+          "sha256": "be16cda4c6ead7c094aff46da7191e927e940bc06d9b0cadc1817c2ec4c037ca",
+          "bytes": 26876
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-04-public-api-evolution.png",
+          "sha256": "2dab140dd36c01a1c7a822014d9a3cfd5d0650b4fdd08d047a19e9006175da5d",
+          "bytes": 101862,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-05-capability-result-branches",
+      "title": "能力查询的三个分支",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-05-capability-result-branches.svg",
+        "src/assets/diagrams/ch22/a244-05-capability-result-branches.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-05-capability-result-branches",
+      "sources": [
+        "https://developer.android.com/reference/android/view/Display",
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-05-capability-result-branches.svg",
+          "sha256": "2e97542cd73cd64ff5514eb9e256e7f9d3183a05e851673bdc97c94c7a4c030b",
+          "bytes": 23411
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-05-capability-result-branches.png",
+          "sha256": "837c7d01f110afdcd8948d9e55eebe07a356481df5f1d61f12e4bcf0775717cf",
+          "bytes": 99398,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-06-velocity-unit-conversion",
+      "title": "滚动速度从像素到dp的单位路径",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-06-velocity-unit-conversion.svg",
+        "src/assets/diagrams/ch22/a244-06-velocity-unit-conversion.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-06-velocity-unit-conversion",
+      "sources": [
+        "https://developer.android.com/reference/android/view/View",
+        "https://developer.android.com/reference/android/view/Display"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-06-velocity-unit-conversion.svg",
+          "sha256": "626b38dd2d5dc0b831b32e5cd993761b4f3e9a5b213e753b053bf8b85a9a0c88",
+          "bytes": 24235
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-06-velocity-unit-conversion.png",
+          "sha256": "fbffba8deadc240cf81709b989f7ec38994a07308fa9486f24615c6e21e813f7",
+          "bytes": 85792,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-07-view-vote-aggregation",
+      "title": "局部View偏好汇总到宿主窗口",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-07-view-vote-aggregation.svg",
+        "src/assets/diagrams/ch22/a244-07-view-vote-aggregation.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-07-view-vote-aggregation",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate",
+        "https://developer.android.com/reference/android/view/View",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-07-view-vote-aggregation.svg",
+          "sha256": "a1168d8babb854501b709c61621956a0d5f6cdb58c412df20db1ad2e1f48e9c7",
+          "bytes": 23198
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-07-view-vote-aggregation.png",
+          "sha256": "345f28d883d4a7acc594d41a0db18f3acf5b013b1bf34e1e2b475f3ad97bd9d7",
+          "bytes": 79855,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-08-group-propagation-reset",
+      "title": "ViewGroup设置、传播与撤销",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-08-group-propagation-reset.svg",
+        "src/assets/diagrams/ch22/a244-08-group-propagation-reset.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-08-group-propagation-reset",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java",
+        "https://developer.android.com/reference/android/view/View"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-08-group-propagation-reset.svg",
+          "sha256": "d5ffa6781d9cec6e90eee3f52c50319bded22cf8b1cbb8ff0863616fcd328e09",
+          "bytes": 21030
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-08-group-propagation-reset.png",
+          "sha256": "34aa091974d392c029d69f0a5df63032bfcddfecced1d79d52916da1842c5d56",
+          "bytes": 94814,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-09-fling-velocity-lifecycle",
+      "title": "惯性滚动与逐帧速度提示",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-09-fling-velocity-lifecycle.svg",
+        "src/assets/diagrams/ch22/a244-09-fling-velocity-lifecycle.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-09-fling-velocity-lifecycle",
+      "sources": [
+        "https://developer.android.com/reference/android/view/View",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/widget/OverScroller.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-09-fling-velocity-lifecycle.svg",
+          "sha256": "85902b9459a9bc832cb085cc6da81d422259f1c22fe483747c085d0c44d3de5c",
+          "bytes": 22066
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-09-fling-velocity-lifecycle.png",
+          "sha256": "07fee5f84f9bc2027c3329dc102c7e32246f5d1d746767d294bf40727d4eaaca",
+          "bytes": 81439,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-10-window-policy-controls",
+      "title": "窗口两项开关应独立回退",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-10-window-policy-controls.svg",
+        "src/assets/diagrams/ch22/a244-10-window-policy-controls.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-10-window-policy-controls",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate",
+        "https://developer.android.com/reference/android/view/Window"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-10-window-policy-controls.svg",
+          "sha256": "d771f9fbc84477c321b352b4c428a8e76d69367a299ebf3070e4448a28b0d23e",
+          "bytes": 27139
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-10-window-policy-controls.png",
+          "sha256": "74f0d1c41fed221cc6a1c7a2057715343762fac8876b863077ccb36e9644876c",
+          "bytes": 98908,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-11-touch-response-evidence",
+      "title": "触摸升帧实验的端到端观察",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-11-touch-response-evidence.svg",
+        "src/assets/diagrams/ch22/a244-11-touch-response-evidence.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-11-touch-response-evidence",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-11-touch-response-evidence.svg",
+          "sha256": "45b2945b525e178acdf5ce9b8cf6e3ad5b3473a825c9e0b476d5891171528885",
+          "bytes": 22601
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-11-touch-response-evidence.png",
+          "sha256": "9c4c99178ad24576e4ab0241261b03ed7a685ab1a99980d385f6c371266ad81a",
+          "bytes": 77558,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-12-view-surface-topologies",
+      "title": "普通View、TextureView与SurfaceView的拓扑",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-12-view-surface-topologies.svg",
+        "src/assets/diagrams/ch22/a244-12-view-surface-topologies.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-12-view-surface-topologies",
+      "sources": [
+        "https://developer.android.com/reference/android/view/View",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-12-view-surface-topologies.svg",
+          "sha256": "c0bd3bc26da5e393cf5ab68be5df01d926051bda180ac654ffdd871015f8a859",
+          "bytes": 19277
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-12-view-surface-topologies.png",
+          "sha256": "70f7e3dfe4699d9cfd16d9a99818b62e0f65e491a39425e0139bfbe128fe7cce",
+          "bytes": 94719,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-13-texture-frame-rate-feedback",
+      "title": "TextureView帧率回传的条件路径",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-13-texture-frame-rate-feedback.svg",
+        "src/assets/diagrams/ch22/a244-13-texture-frame-rate-feedback.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-13-texture-frame-rate-feedback",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-13-texture-frame-rate-feedback.svg",
+          "sha256": "9a29e4a664d52f5cdee38f0d6ac1871bc6b76b7530bc3e7d020140dda8bca798",
+          "bytes": 20818
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-13-texture-frame-rate-feedback.png",
+          "sha256": "0df0ad11f9964b9d5669025a3052decb7e5877e9ea09c60e95b205d4ac0ece6c",
+          "bytes": 71329,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-14-video-request-lifecycle",
+      "title": "固定源视频偏好的更新与清除",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-14-video-request-lifecycle.svg",
+        "src/assets/diagrams/ch22/a244-14-video-request-lifecycle.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-14-video-request-lifecycle",
+      "sources": [
+        "https://developer.android.com/media/optimize/performance/frame-rate",
+        "https://developer.android.com/reference/android/view/Surface"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-14-video-request-lifecycle.svg",
+          "sha256": "5550c93fd9f2e220e7d4727edbdd090f5637c7bc40414f25ea26f86b1cc7b871",
+          "bytes": 26701
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-14-video-request-lifecycle.png",
+          "sha256": "dd2854162d10266f6132983aaace97df81e592d740c55e3a38ae1dd6864abca0",
+          "bytes": 84215,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-15-surface-compatibility-semantics",
+      "title": "不同生产方的Surface兼容性语义",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-15-surface-compatibility-semantics.svg",
+        "src/assets/diagrams/ch22/a244-15-surface-compatibility-semantics.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-15-surface-compatibility-semantics",
+      "sources": [
+        "https://developer.android.com/reference/android/view/Surface",
+        "https://developer.android.com/media/optimize/performance/frame-rate"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-15-surface-compatibility-semantics.svg",
+          "sha256": "33999259873c6f7259c30e32958357e33b04e936efbf68cb9576793e73a80960",
+          "bytes": 29620
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-15-surface-compatibility-semantics.png",
+          "sha256": "a9c1c061c67d8b9ab2277e8c3aacf3cf9ef99816e201981bab918d0af31cc566",
+          "bytes": 115449,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-16-selector-choice-path",
+      "title": "Android17刷新率选择链",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-16-selector-choice-path.svg",
+        "src/assets/diagrams/ch22/a244-16-selector-choice-path.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-16-selector-choice-path",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/LayerHistory.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-16-selector-choice-path.svg",
+          "sha256": "664a4a973a38e26a907ba79d867ac78d08dfed7fcfd493c40626388f64532c1b",
+          "bytes": 23597
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-16-selector-choice-path.png",
+          "sha256": "fcb27afb7f68c706a63f5c05053ad22e35e3fc86316a0fa5a5f54206eecd432f",
+          "bytes": 74669,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-17-explicit-vote-types",
+      "title": "内部票型保留不同请求语义",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-17-explicit-vote-types.svg",
+        "src/assets/diagrams/ch22/a244-17-explicit-vote-types.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-17-explicit-vote-types",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/LayerHistory.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-17-explicit-vote-types.svg",
+          "sha256": "f33aa3ced5e01d63940454ab7a95e6315ea3577f6940335b4c41d94e135724b7",
+          "bytes": 19440
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-17-explicit-vote-types.png",
+          "sha256": "cad32af90037b9ca2abbb1a59ca3a1ed385660576a54f5716e3887d3bed9e8cf",
+          "bytes": 87691,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-18-composer-panel-boundary",
+      "title": "Composer3与面板能力约束",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-18-composer-panel-boundary.svg",
+        "src/assets/diagrams/ch22/a244-18-composer-panel-boundary.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-18-composer-panel-boundary",
+      "sources": [
+        "https://source.android.com/docs/core/graphics/arr",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/VrrConfig.aidl"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-18-composer-panel-boundary.svg",
+          "sha256": "b5946f2c865243ad4eafc055127b54e3598b3a32c632bf21ffd0dffbdd62fd22",
+          "bytes": 23226
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-18-composer-panel-boundary.png",
+          "sha256": "8e15c7a2f2110d83ca1f972ea7619ae613ce0cbe3a21b97481a6241ddab32a1a",
+          "bytes": 81684,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-19-arr-evidence-layers",
+      "title": "ARR验收需要四层证据",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-19-arr-evidence-layers.svg",
+        "src/assets/diagrams/ch22/a244-19-arr-evidence-layers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-19-arr-evidence-layers",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-19-arr-evidence-layers.svg",
+          "sha256": "d30d635c8bd59d83ce7a3d1555e86c70ddd063e915311f26c183b6e54d7e31b5",
+          "bytes": 27183
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-19-arr-evidence-layers.png",
+          "sha256": "c297431b4e9bfd74409af06d48fa49bbc0aed2ea64035b3faa4feb4039feb7d3",
+          "bytes": 112383,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-20-producer-fence-dependencies",
+      "title": "独立生产方的缓冲区与栅栏依赖",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-20-producer-fence-dependencies.svg",
+        "src/assets/diagrams/ch22/a244-20-producer-fence-dependencies.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-20-producer-fence-dependencies",
+      "sources": [
+        "https://source.android.com/docs/core/graphics/sync",
+        "https://developer.android.com/reference/android/view/Surface"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-20-producer-fence-dependencies.svg",
+          "sha256": "34ebc77eea5096d95937e0c5f62054e21da5924882135b3a08716697037800b6",
+          "bytes": 20876
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-20-producer-fence-dependencies.png",
+          "sha256": "bd74cd9d5186ed0a36e52ba50c500dd99b345f0d9b774d9182390234455affbe",
+          "bytes": 92624,
+          "dimensions": [
+            2100,
+            855
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-21-test-settings-transaction",
+      "title": "实验设置修改与可靠恢复",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-21-test-settings-transaction.svg",
+        "src/assets/diagrams/ch22/a244-21-test-settings-transaction.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-21-test-settings-transaction",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate",
+        "https://tiswww.case.edu/php/chet/bash/bash.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-21-test-settings-transaction.svg",
+          "sha256": "7744236380b8775cf2a5d88edc4f8f38a918eb3012dcd4f6cfd3cdde81692603",
+          "bytes": 26782
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-21-test-settings-transaction.png",
+          "sha256": "6b49fe372b885ca8edbdf161be465a922128f7a417ac0a2184ed0b35621d4c40",
+          "bytes": 89112,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-22-cross-device-ab-buckets",
+      "title": "能力分桶与功耗实验条件",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-22-cross-device-ab-buckets.svg",
+        "src/assets/diagrams/ch22/a244-22-cross-device-ab-buckets.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-22-cross-device-ab-buckets",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate",
+        "https://source.android.com/docs/core/graphics/arr"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-22-cross-device-ab-buckets.svg",
+          "sha256": "1a25bd67f0c4e512815c6b040905d65370529289d587329e766a892af9b0f6ac",
+          "bytes": 31164
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-22-cross-device-ab-buckets.png",
+          "sha256": "beb75e7493ac4c72852a7cca49c37acf9cd78e6b98ffea71722add44ca196728",
+          "bytes": 119565,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-23-compose-preferred-layer",
+      "title": "Compose帧率偏好的图形层路径",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-23-compose-preferred-layer.svg",
+        "src/assets/diagrams/ch22/a244-23-compose-preferred-layer.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-23-compose-preferred-layer",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-23-compose-preferred-layer.svg",
+          "sha256": "d3f6a9e4262b5e9eeb2438ce13d725eb7abbc17529a5699d297b237f1f89e8f9",
+          "bytes": 25355
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-23-compose-preferred-layer.png",
+          "sha256": "ac107c506237e61643e921d77a9a8336f378d83033a7c407df079171c787737d",
+          "bytes": 80480,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a244-24-arr-acceptance-loop",
+      "title": "应用帧率策略的验证闭环",
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a244-24-arr-acceptance-loop.svg",
+        "src/assets/diagrams/ch22/a244-24-arr-acceptance-loop.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a244-24-arr-acceptance-loop",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate",
+        "https://source.android.com/docs/core/graphics/arr",
+        "https://developer.android.com/media/optimize/performance/frame-rate"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a244-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a244-24-arr-acceptance-loop.svg",
+          "sha256": "435cc9f1bfb563c0c58453800c73f5c826411a06458b1a6fb294934c1fcec42c",
+          "bytes": 28090
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a244-24-arr-acceptance-loop.png",
+          "sha256": "4452e02975a82acc39cc8f9deaa279ce902ddc9d128d8d736938c787b265a98f",
+          "bytes": 88921,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-01-consumer-boundaries",
+      "title": "SurfaceView与TextureView的消费边界",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-01-consumer-boundaries.svg",
+        "src/assets/diagrams/ch22/a245-01-consumer-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-01-consumer-boundaries",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-01-consumer-boundaries.svg",
+          "sha256": "be7cf34e8747ce1355eab92533e349b70192068145d48af8960a719742f366f9",
+          "bytes": 18427
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-01-consumer-boundaries.png",
+          "sha256": "ead2a1d9a81aab7a31a18faac53b5cd7438fa9fbb4d0104c8c41b6baa98c61df",
+          "bytes": 89739,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-02-buffer-state-fence",
+      "title": "队列槽位与三类栅栏",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-02-buffer-state-fence.svg",
+        "src/assets/diagrams/ch22/a245-02-buffer-state-fence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-02-buffer-state-fence",
+      "sources": [
+        "https://source.android.com/docs/core/graphics/sync",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-02-buffer-state-fence.svg",
+          "sha256": "a4f5b1b40c2bc5ef7d63af74d5588cffc24de240da1a3fae2f05e3dc0a8b9979",
+          "bytes": 19827
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-02-buffer-state-fence.png",
+          "sha256": "7f690297cf60c4856a5a2226eaf922bc22bff07fc475117476ef40c993200ebd",
+          "bytes": 87001,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-03-surfaceview-layer-tree",
+      "title": "SurfaceView的container与内容子层",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-03-surfaceview-layer-tree.svg",
+        "src/assets/diagrams/ch22/a245-03-surfaceview-layer-tree.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-03-surfaceview-layer-tree",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-03-surfaceview-layer-tree.svg",
+          "sha256": "5a7185141f314f7ec33def0874fd9d370e1641effe167a64a048b6f361aaaf6a",
+          "bytes": 17100
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-03-surfaceview-layer-tree.png",
+          "sha256": "9d1782bc63cccb72603a08593a7f1ed89bc82b5e0030d004a54e322ff2fc886b",
+          "bytes": 85782,
+          "dimensions": [
+            2100,
+            975
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-04-hole-punch-composition",
+      "title": "默认Z-below与宿主透明孔",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-04-hole-punch-composition.svg",
+        "src/assets/diagrams/ch22/a245-04-hole-punch-composition.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-04-hole-punch-composition",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-04-hole-punch-composition.svg",
+          "sha256": "931c893f800cd3ae8bc6a3c1a46e3dd12eb9a875409a96a1e5c25b016e710237",
+          "bytes": 26852
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-04-hole-punch-composition.png",
+          "sha256": "7e97a8c68d49f9fef31ee45f2565f436ca19750952c5296885d2b83ebdb0f972",
+          "bytes": 104077,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-05-host-content-independence",
+      "title": "宿主与内容各自提交",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-05-host-content-independence.svg",
+        "src/assets/diagrams/ch22/a245-05-host-content-independence.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-05-host-content-independence",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-05-host-content-independence.svg",
+          "sha256": "bacb3ddb709205915ee39ebc1b02a5350dfeeec9984cd933294a659b983dca30",
+          "bytes": 19777
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-05-host-content-independence.png",
+          "sha256": "f121c1d50904dceab4b20be29f5ed0297201d680fe35cd73c4bd55089101ed10",
+          "bytes": 77608,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-06-texture-two-queues",
+      "title": "TextureView两套队列的连接",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-06-texture-two-queues.svg",
+        "src/assets/diagrams/ch22/a245-06-texture-two-queues.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-06-texture-two-queues",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-06-texture-two-queues.svg",
+          "sha256": "b9b07935cb53458312b7ccd0ee311b959b62d17f7bf20b0435987c71b0472670",
+          "bytes": 20054
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-06-texture-two-queues.png",
+          "sha256": "0314c8d058af7deb6cf7b127dcf7b02f7f7dae38f521c7588cb739281d9c83c2",
+          "bytes": 77383,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-07-texture-update-callback",
+      "title": "TextureView回调到RenderThread更新",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-07-texture-update-callback.svg",
+        "src/assets/diagrams/ch22/a245-07-texture-update-callback.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-07-texture-update-callback",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-07-texture-update-callback.svg",
+          "sha256": "ce1471abfcf57de4e7ba433a3fc8e3e34016c9b833c22fe246a5e6af3bd3169c",
+          "bytes": 19197
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-07-texture-update-callback.png",
+          "sha256": "40a2344757e1931630443f03c9e770b915dd73feb191a9d8198288a9b87dd679",
+          "bytes": 83435,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-08-end-to-end-topologies",
+      "title": "两条端到端路径与宿主层",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-08-end-to-end-topologies.svg",
+        "src/assets/diagrams/ch22/a245-08-end-to-end-topologies.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-08-end-to-end-topologies",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-08-end-to-end-topologies.svg",
+          "sha256": "964407acb4834109d40d338db87095d0c28355ba9b96b9a281fb29893ea3df0c",
+          "bytes": 22053
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-08-end-to-end-topologies.png",
+          "sha256": "6e93201c388387e2f55409302bccaffa15f429ffdd0f4015cda37febb46b89cd",
+          "bytes": 121037,
+          "dimensions": [
+            2100,
+            1110
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-09-latency-boundary-comparison",
+      "title": "两条路径的额外等待点",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-09-latency-boundary-comparison.svg",
+        "src/assets/diagrams/ch22/a245-09-latency-boundary-comparison.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-09-latency-boundary-comparison",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-09-latency-boundary-comparison.svg",
+          "sha256": "2a70ca863b8a0d3fd409c419e3929ebba1deb050eac18b0f5642a58217c9fe5e",
+          "bytes": 16107
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-09-latency-boundary-comparison.png",
+          "sha256": "4eff73505175b6d0787e3ba4a9c64ea5bed4ca2c10bb8738e83e6ed3bab90c84",
+          "bytes": 85671,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-10-device-client-opportunity",
+      "title": "独立图层与HWC合成机会",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-10-device-client-opportunity.svg",
+        "src/assets/diagrams/ch22/a245-10-device-client-opportunity.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-10-device-client-opportunity",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://source.android.com/docs/core/graphics/implement-hwc#display_comp_ops"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-10-device-client-opportunity.svg",
+          "sha256": "57344e077222d22c04d6f7678b96efc43d76db20dec1049920e6a77b49f14cda",
+          "bytes": 27438
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-10-device-client-opportunity.png",
+          "sha256": "066c2018888b5512ae2a2ac70c04571e8d64853490e1b3ba16970625fa8be7f9",
+          "bytes": 102858,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-11-graphics-memory-accounting",
+      "title": "缓冲区占用按stride单位与实际池核算",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-11-graphics-memory-accounting.svg",
+        "src/assets/diagrams/ch22/a245-11-graphics-memory-accounting.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-11-graphics-memory-accounting",
+      "sources": [
+        "https://developer.android.com/reference/android/media/Image.Plane",
+        "https://source.android.com/docs/core/graphics/arch-bq-gralloc"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-11-graphics-memory-accounting.svg",
+          "sha256": "76a8f50bb1b70a1c452895ca845c3244340c8839f104f62360ed255676aa85f1",
+          "bytes": 22243
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-11-graphics-memory-accounting.png",
+          "sha256": "ee40a342b485c6a02a3f8e99834cc512c41f14b972158479cb2261cd346e5a76",
+          "bytes": 99368,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-12-benchmark-controlled-conditions",
+      "title": "跨SoC比较的受控测量",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-12-benchmark-controlled-conditions.svg",
+        "src/assets/diagrams/ch22/a245-12-benchmark-controlled-conditions.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-12-benchmark-controlled-conditions",
+      "sources": [
+        "https://developer.android.com/media/media3/ui/surface",
+        "https://source.android.com/docs/core/graphics/implement-hwc"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-12-benchmark-controlled-conditions.svg",
+          "sha256": "d220eb77e51ba8561378499f65ae7123eedc0f7616bf56d78a47ac22f347964c",
+          "bytes": 27341
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-12-benchmark-controlled-conditions.png",
+          "sha256": "a54362103e5fb20b76531d4ef3fc4babfecdefcb83994eedda34c5b3a92ea967",
+          "bytes": 86212,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-13-geometry-buffer-transactions",
+      "title": "几何事务和内容缓冲区分别流入",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-13-geometry-buffer-transactions.svg",
+        "src/assets/diagrams/ch22/a245-13-geometry-buffer-transactions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-13-geometry-buffer-transactions",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-13-geometry-buffer-transactions.svg",
+          "sha256": "f23504ad430c5f64ef904efa36d2e2e40cdb986b56d203f23b59a3eaf3a0d808",
+          "bytes": 19757
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-13-geometry-buffer-transactions.png",
+          "sha256": "ab7c795ca2f5102091661919f70e65da810ede051c8ba7e7c1014190bfe6e56a",
+          "bytes": 93325,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-14-transaction-apply-modes",
+      "title": "apply的同步标志与one-way分开",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-14-transaction-apply-modes.svg",
+        "src/assets/diagrams/ch22/a245-14-transaction-apply-modes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-14-transaction-apply-modes",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-14-transaction-apply-modes.svg",
+          "sha256": "f08b4ee731ee052decb211de911215359a44e4d53c9a06850567da7f5c31b675",
+          "bytes": 20233
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-14-transaction-apply-modes.png",
+          "sha256": "fd45e939586f508b9cfbdb978c330dd73cf3e114d246b7cb9858ef90554fbcf5",
+          "bytes": 94655,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-15-transaction-callback-fences",
+      "title": "transaction回调与实际同步信号",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-15-transaction-callback-fences.svg",
+        "src/assets/diagrams/ch22/a245-15-transaction-callback-fences.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-15-transaction-callback-fences",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java",
+        "https://source.android.com/docs/core/graphics/sync"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-15-transaction-callback-fences.svg",
+          "sha256": "9416d7dc977fc5f61ce652c37d69bd4e936cd27f1f4198ed6410c9c08b20fc91",
+          "bytes": 19766
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-15-transaction-callback-fences.png",
+          "sha256": "8a26dc587a4ce0e60de9aa1572528377403c00d183a43dccd8d19a2dafda68dd",
+          "bytes": 93720,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-16-blast-frame-merge",
+      "title": "BLAST按内容frame number合并事务",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-16-blast-frame-merge.svg",
+        "src/assets/diagrams/ch22/a245-16-blast-frame-merge.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-16-blast-frame-merge",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-16-blast-frame-merge.svg",
+          "sha256": "9059ed868523a5895677e27a97b8e86118a74626310470423f1e24bbfecf58ff",
+          "bytes": 21583
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-16-blast-frame-merge.png",
+          "sha256": "2595801bce163c4e5512744c7390748c4fb3c13a5838b74b2dfc58fa8ffc6d87",
+          "bytes": 86144,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-17-surface-sync-participants",
+      "title": "SurfaceSyncGroup只等待已注册参与者",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-17-surface-sync-participants.svg",
+        "src/assets/diagrams/ch22/a245-17-surface-sync-participants.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-17-surface-sync-participants",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/window/SurfaceSyncGroup.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-17-surface-sync-participants.svg",
+          "sha256": "54105943d3780e35f9a79cda8cb00539e76b82d92f768b6033ad567c2972eb53",
+          "bytes": 20846
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-17-surface-sync-participants.png",
+          "sha256": "a7fac18d8ee24491d9d8e92133a5cef5cbb0347945c3f27de3cf9e891143504a",
+          "bytes": 80184,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-18-holder-producer-lifecycle",
+      "title": "SurfaceHolder回调约束生产方所有权",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-18-holder-producer-lifecycle.svg",
+        "src/assets/diagrams/ch22/a245-18-holder-producer-lifecycle.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-18-holder-producer-lifecycle",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://developer.android.com/reference/android/view/SurfaceHolder.Callback"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-18-holder-producer-lifecycle.svg",
+          "sha256": "5b7c4629dc7779828dc9bb90b5b33a304529f19b51253af3af0da32ab3c3ecf8",
+          "bytes": 23020
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-18-holder-producer-lifecycle.png",
+          "sha256": "50c4f7de9032722ef4ca8d053af6ef1586afb668c1defd1c2be9bc6b3a55dd03",
+          "bytes": 80346,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-19-surface-lifecycle-strategies",
+      "title": "可见性与attachment两种Surface寿命",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-19-surface-lifecycle-strategies.svg",
+        "src/assets/diagrams/ch22/a245-19-surface-lifecycle-strategies.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-19-surface-lifecycle-strategies",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://developer.android.com/media/media3/ui/surface"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-19-surface-lifecycle-strategies.svg",
+          "sha256": "690e0c74aaf7ee338fda1ec73c520f40da54c406fa08e706e750781e503f4746",
+          "bytes": 23081
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-19-surface-lifecycle-strategies.png",
+          "sha256": "a0dfd64a97d4146aaf3bfb101008c71ca7ace81b390aeef5611941d66672a629",
+          "bytes": 97414,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-20-texture-owned-wrapper-lifecycle",
+      "title": "TextureView与应用Surface包装的释放方",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-20-texture-owned-wrapper-lifecycle.svg",
+        "src/assets/diagrams/ch22/a245-20-texture-owned-wrapper-lifecycle.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-20-texture-owned-wrapper-lifecycle",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://developer.android.com/reference/android/graphics/SurfaceTexture"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-20-texture-owned-wrapper-lifecycle.svg",
+          "sha256": "bb717bf42f45f82a9f21777d561732dd6232c79be450da24e8b23043282e1c42",
+          "bytes": 19441
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-20-texture-owned-wrapper-lifecycle.png",
+          "sha256": "dd90c19cc2240e6b78e71361acc94a67a2d750e8c69b584d5171830699fa6a68",
+          "bytes": 80464,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-21-texture-replacement-transfer",
+      "title": "手动替换SurfaceTexture的移交",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-21-texture-replacement-transfer.svg",
+        "src/assets/diagrams/ch22/a245-21-texture-replacement-transfer.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-21-texture-replacement-transfer",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-21-texture-replacement-transfer.svg",
+          "sha256": "a09435a7596535ffdaba167339f5cff48ae7f536908080f41e95ffc129a78f5f",
+          "bytes": 21634
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-21-texture-replacement-transfer.png",
+          "sha256": "a753d6ec74bcec39346ed3850d807f59730e7cdb8f8578bf83a395e48c7a84b7",
+          "bytes": 80613,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-22-black-screen-object-diagnosis",
+      "title": "黑屏按对象边界逐级定位",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-22-black-screen-object-diagnosis.svg",
+        "src/assets/diagrams/ch22/a245-22-black-screen-object-diagnosis.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-22-black-screen-object-diagnosis",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://source.android.com/docs/core/graphics/sync"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-22-black-screen-object-diagnosis.svg",
+          "sha256": "68298077f7513ba5edf6024cea60be99b8e80b9fb543a09625117b7c86d0c868",
+          "bytes": 23532
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-22-black-screen-object-diagnosis.png",
+          "sha256": "415cfd583868053baacd0495a9f9eccc59cada42ea417bd1df1d632015849fe4",
+          "bytes": 101453,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-23-camerax-source-doc-boundary",
+      "title": "CameraX1.6.2实际回退与文档差异",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-23-camerax-source-doc-boundary.svg",
+        "src/assets/diagrams/ch22/a245-23-camerax-source-doc-boundary.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-23-camerax-source-doc-boundary",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/camera/camera-view/1.6.2/camera-view-1.6.2-sources.jar",
+        "https://developer.android.com/reference/androidx/camera/view/PreviewView.ImplementationMode"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-23-camerax-source-doc-boundary.svg",
+          "sha256": "3c65e758a113f6649e1fdddd45fb88e4578ae259780c69f3eb074c817e862b2b",
+          "bytes": 23852
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-23-camerax-source-doc-boundary.png",
+          "sha256": "b83945762620e3b6073b4acfba9a2278b12a864343564c9999e66d14a20f73fd",
+          "bytes": 99585,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-24-video-overlay-or-processing",
+      "title": "视频覆盖控件与统一像素处理",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-24-video-overlay-or-processing.svg",
+        "src/assets/diagrams/ch22/a245-24-video-overlay-or-processing.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-24-video-overlay-or-processing",
+      "sources": [
+        "https://developer.android.com/media/media3/ui/surface",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-24-video-overlay-or-processing.svg",
+          "sha256": "fe21ab5604281f5e27ad3b296f3608a7d4ac57bdce06c57d256a02237d5bc728",
+          "bytes": 29379
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-24-video-overlay-or-processing.png",
+          "sha256": "73d2ba7ebda7039e07b7a5688db16e546818b8b9c6954998711b40d9a6b2681e",
+          "bytes": 110202,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-25-vulkan-native-window-ownership",
+      "title": "Vulkan与ANativeWindow引用计数",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-25-vulkan-native-window-ownership.svg",
+        "src/assets/diagrams/ch22/a245-25-vulkan-native-window-ownership.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-25-vulkan-native-window-ownership",
+      "sources": [
+        "https://docs.vulkan.org/refpages/latest/refpages/source/vkCreateAndroidSurfaceKHR.html",
+        "https://developer.android.com/ndk/reference/group/native-activity"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-25-vulkan-native-window-ownership.svg",
+          "sha256": "715507cd7e936c20c73f0f6a1e74ef04850516db0c46adb534b5a29d815b1b3f",
+          "bytes": 17931
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-25-vulkan-native-window-ownership.png",
+          "sha256": "51d88b910e28ef32ad9d47d5c3a08fa39dea21184ba351d51e9811e16037bb6d",
+          "bytes": 83859,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-26-live-overlay-options",
+      "title": "直播弹幕的三种内容组合",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-26-live-overlay-options.svg",
+        "src/assets/diagrams/ch22/a245-26-live-overlay-options.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-26-live-overlay-options",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://developer.android.com/media/media3/ui/surface"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-26-live-overlay-options.svg",
+          "sha256": "ce6e40be2a9ff21a2aec1db41fb13d87430395aee68d302d4555635e09591d46",
+          "bytes": 23754
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-26-live-overlay-options.png",
+          "sha256": "4619742e659773694e3f1465fa342d97555410ba07080fa724b356a0147cdbea",
+          "bytes": 104783,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-27-trace-surfaceview-object-map",
+      "title": "SurfaceView取证对象表",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-27-trace-surfaceview-object-map.svg",
+        "src/assets/diagrams/ch22/a245-27-trace-surfaceview-object-map.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-27-trace-surfaceview-object-map",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-27-trace-surfaceview-object-map.svg",
+          "sha256": "9a228ea12e7d736a1682ca03c889112b0cb2b4301fbce2bd8cf9aaaa4a03ef38",
+          "bytes": 21115
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-27-trace-surfaceview-object-map.png",
+          "sha256": "5cb5a2afe4faa33ff68f69b2bdfae90b912011c6c51c8ef20ba2929ebd1c648a",
+          "bytes": 91441,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-28-trace-textureview-object-map",
+      "title": "TextureView从外部输入追到宿主呈现",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-28-trace-textureview-object-map.svg",
+        "src/assets/diagrams/ch22/a245-28-trace-textureview-object-map.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-28-trace-textureview-object-map",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-28-trace-textureview-object-map.svg",
+          "sha256": "62015bb8e8f086b2f8b5b298ea6e66f91978188acdbdef789c7be107eeebf2a6",
+          "bytes": 20165
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-28-trace-textureview-object-map.png",
+          "sha256": "6efd6ec012b96dd401d826f028737cad911a194a1de5b0b302e8b81d9dc4a02d",
+          "bytes": 80776,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-29-present-backward-investigation",
+      "title": "从异常present反向追责",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-29-present-backward-investigation.svg",
+        "src/assets/diagrams/ch22/a245-29-present-backward-investigation.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-29-present-backward-investigation",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-29-present-backward-investigation.svg",
+          "sha256": "1e53d4103807c92bb654c7c3ab9e46f64e028f8012203ad054fc4243deeefa2e",
+          "bytes": 20727
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-29-present-backward-investigation.png",
+          "sha256": "428d0f9a93154f6a104c90b6d567fe86a328c75f8e608c60c620b7c1df877809",
+          "bytes": 77996,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-30-dequeue-wait-ownership",
+      "title": "四种等待必须记录所属队列",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-30-dequeue-wait-ownership.svg",
+        "src/assets/diagrams/ch22/a245-30-dequeue-wait-ownership.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-30-dequeue-wait-ownership",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+        "https://source.android.com/docs/core/graphics/sync"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-30-dequeue-wait-ownership.svg",
+          "sha256": "05fa0d678c935c70314cf6feb13c4fe5396b1e51c0b1bf9a2090a6654be14475",
+          "bytes": 17611
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-30-dequeue-wait-ownership.png",
+          "sha256": "0c76e9091be7753238b82b530b8a7976cbc270b68a6f4bc1e5bc1c515afb777b",
+          "bytes": 92573,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-31-visual-effects-and-protection",
+      "title": "现代视觉API仍保留拓扑边界",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-31-visual-effects-and-protection.svg",
+        "src/assets/diagrams/ch22/a245-31-visual-effects-and-protection.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-31-visual-effects-and-protection",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/viewinterop/AndroidView.android.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-31-visual-effects-and-protection.svg",
+          "sha256": "62bdb06d1cf096df200e74e0d2902d94caa3278b5716a23f6e9ebb003dbe4045",
+          "bytes": 25443
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-31-visual-effects-and-protection.png",
+          "sha256": "4056142c97462b1a32f19e145962e37e6e4995a255f3dd58216b809428a429e0",
+          "bytes": 103086,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-32-compose-view-binding-lifecycle",
+      "title": "Compose复用时的生产方门控",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-32-compose-view-binding-lifecycle.svg",
+        "src/assets/diagrams/ch22/a245-32-compose-view-binding-lifecycle.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-32-compose-view-binding-lifecycle",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/viewinterop/AndroidView.android.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-32-compose-view-binding-lifecycle.svg",
+          "sha256": "c7961e90bfdf4b102d71fe1bc98a6d58a08ae0f22684f1a4161dbf74c914ecff",
+          "bytes": 21253
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-32-compose-view-binding-lifecycle.png",
+          "sha256": "8eecbcb16317737e602cae27e8b37bd85d8d86e56387ea1bd06244b1515ce0b7",
+          "bytes": 79853,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-33-compose-producer-identity",
+      "title": "producer身份键与equality边界",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-33-compose-producer-identity.svg",
+        "src/assets/diagrams/ch22/a245-33-compose-producer-identity.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-33-compose-producer-identity",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/viewinterop/AndroidView.android.kt",
+        "https://developer.android.com/reference/kotlin/androidx/compose/runtime/package-summary"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-33-compose-producer-identity.svg",
+          "sha256": "97274a05ce1939f1024d328f039858c6b5ed8e1395035b5e45fd5e0ba2b95dfb",
+          "bytes": 24859
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-33-compose-producer-identity.png",
+          "sha256": "5ca689d2bcd8f49984b1d17144181fb8c7d9474ccbcb6e5ba8f96f3a704761e8",
+          "bytes": 100959,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-34-compose-external-surface-choices",
+      "title": "Compose外部Surface类型仍决定消费者",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-34-compose-external-surface-choices.svg",
+        "src/assets/diagrams/ch22/a245-34-compose-external-surface-choices.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-34-compose-external-surface-choices",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/AndroidExternalSurface.android.kt",
+        "https://developer.android.com/media/media3/ui/surface"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-34-compose-external-surface-choices.svg",
+          "sha256": "170e7ec6f97bea7de890bedf920e6f090f3f3868dd543fc42bac8dfe72925554",
+          "bytes": 21493
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-34-compose-external-surface-choices.png",
+          "sha256": "d64eb617af102100d249b63f05dc59b1939d7ac08a7875a2ca128ad9928169f2",
+          "bytes": 102320,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a245-35-selection-measurement-loop",
+      "title": "Surface选型与排障的验证闭环",
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a245-35-selection-measurement-loop.svg",
+        "src/assets/diagrams/ch22/a245-35-selection-measurement-loop.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a245-35-selection-measurement-loop",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://developer.android.com/media/media3/ui/surface",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a245-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a245-35-selection-measurement-loop.svg",
+          "sha256": "d92f12dd919a084c4b2a0b7b7985a5b469a78632f6cce8bd53e023ab501e0c01",
+          "bytes": 27600
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a245-35-selection-measurement-loop.png",
+          "sha256": "79a2a976f6b884a343bdc1c2c7600134ad974b0b074e285d78165b55297415a8",
+          "bytes": 90504,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
     }
   ],
   "corrections": [
@@ -37930,14 +39981,433 @@
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/app/Activity.java",
         "https://perfetto.dev/docs/analysis/sql-tables#process"
       ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "last_verified: '2026-10-18'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "Recheck pinned platform source and current public APIs.",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate",
+        "https://source.android.com/docs/core/graphics/arr"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "last_source_verified_at: '2026-10-18'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "why": "Fresh primary source review and exact code validation.",
+      "sources": [
+        "https://developer.android.com/reference/android/view/View",
+        "https://developer.android.com/reference/android/view/Display"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "本文的平台实现基线是 Android 17、API 37 和 `android-17.0.0_r1`，内核源码基线是 `android17-6.18-2026-06_r6`。ARR 从 Android 15 进入平台；应用想用上完整能力，系统需为 Android 15 QPR1 或更高版本，设备还要实现相应的 Composer3 硬件抽象层（Hardware Abstraction Layer，HAL）能力。系统版本符合要求，并不表示每块显示设备都支持 ARR。",
+      "after": "本文的平台实现基线是 Android 17、API 37 和 `android-17.0.0_r1`，内核源码基线是 `android17-6.18-2026-06_r6`。ARR 从 Android 15 进入平台；应用想用上完整能力，系统需为 Android 15 QPR1 或更高版本，设备还要实现Composer3 AIDL 第 3 版所需的硬件抽象层（Hardware Abstraction Layer，HAL）接口与配套系统/内核支持。系统版本符合要求，并不表示每块显示设备都支持 ARR。",
+      "why": "Composer3 interface name is distinct from AIDL interface version 3 required for ARR.",
+      "sources": [
+        "https://source.android.com/docs/core/graphics/arr"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "`fps` 表示每秒生成的画面数，`Hz` 表示显示设备每秒刷新的次数。60 fps 的应用可以运行在 120 Hz 显示设备上，每个应用帧保持两个刷新周期，画面仍然均匀。应用平均达到 60 fps，也可能因为提交间隔忽快忽慢而出现卡顿。帧率平均值、呈现间隔和输入延迟回答的是不同问题。",
+      "after": "`fps` 表示每秒生成的画面数，`Hz` 表示显示设备每秒刷新的次数。60 fps 的应用可以运行在 120 Hz 显示设备上，在均匀产帧、及时呈现且无其他调度干扰时，每个应用帧可保持两个刷新周期。应用平均达到 60 fps，也可能因为提交间隔忽快忽慢而出现卡顿。帧率平均值、呈现间隔和输入延迟回答的是不同问题。",
+      "why": "Equal average rates alone do not guarantee uniform actual presentation.",
+      "sources": [
+        "https://developer.android.com/media/optimize/performance/frame-rate"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "`getSuggestedFrameRate()` 返回设备为指定类别配置的建议值。它不是当前刷新率，系统也不保证采用这个值。`getSupportedRefreshRates()` 从 API 21 就已存在，只在 API 36 更新了返回语义，不能把它写成 Android 16 新增的方法。",
+      "after": "`getSuggestedFrameRate()` 返回设备为指定类别配置的建议值。它不是当前刷新率，系统也不保证采用这个值。`getSupportedRefreshRates()` 从 API 21 就已存在，只在 API 36 更新了返回语义，不能把它写成 Android 16 新增的方法。\n\n表中只列当前公开 SDK 的接入入口。固定 Android 17 源码中还可见带特性开关的 `Surface.FrameRateParams` / `setFrameRate(FrameRateParams)` 草案；当前公开 API 文档与本次 API 37 SDK stub 未暴露它们，不能因源码类声明为 `public` 就按可调用的稳定 API 使用。",
+      "why": "Flagged public source declarations do not establish current SDK availability; pinned source contains unfinished range plumbing while API37 published stubs exclude it.",
+      "sources": [
+        "https://developer.android.com/reference/android/view/Surface",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "`ViewGroup.setRequestedFrameRate()` 在 API 35 不会自动传给子 `View`。API 36 增加的接口是 `ViewGroup.propagateRequestedFrameRate(frameRate, forceOverride)`：调用方要明确提供帧率值；`forceOverride=false` 保留子 `View` 已明确设置的值，`true` 则允许覆盖；恢复时传入 `DEFAULT` 类别。给页面根节点长期请求 `HIGH` 会扩大高刷新率范围，进度条、视频卡片、列表与静态正文也更难按各自节奏工作。",
+      "after": "`ViewGroup.setRequestedFrameRate()` 不会自动传给子 `View`，API 36—37 仍然如此。API 36 增加的接口是 `ViewGroup.propagateRequestedFrameRate(frameRate, forceOverride)`：调用方要明确提供帧率值；`forceOverride=false` 保留子 `View` 已明确设置的值，`true` 则允许覆盖；撤销传播时传入 `DEFAULT` 类别，但这不保存或恢复此前被强制覆盖的每个子 View 自定义值；需要恢复的业务值应由调用方另行保存和重设。给页面根节点长期请求 `HIGH` 会扩大高刷新率范围，进度条、视频卡片、列表与静态正文也更难按各自节奏工作。",
+      "why": "Direct setter still does not propagate on newer APIs; DEFAULT removes override but cannot restore overwritten per-child historic preferences.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java",
+        "https://developer.android.com/reference/android/view/View"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "```kotlin\nclass ArrAwareScrollView @JvmOverloads constructor(\n    context: Context,\n    attrs: AttributeSet? = null,\n) : View(context, attrs) {\n    private val scroller = OverScroller(context)\n\n    override fun computeScroll() {\n        if (!scroller.computeScrollOffset()) {\n            return\n        }\n\n        if (Build.VERSION.SDK_INT >= 35) {\n            frameContentVelocity = scroller.currVelocity\n        }\n        scrollTo(scroller.currX, scroller.currY)\n        postInvalidateOnAnimation()\n    }\n}\n```",
+      "after": "```kotlin\nclass ArrAwareScrollView @JvmOverloads constructor(\n    context: Context,\n    attrs: AttributeSet? = null,\n) : View(context, attrs) {\n    private val scroller = OverScroller(context)\n\n    fun startVerticalFling(velocityY: Int, maxScrollY: Int) {\n        scroller.fling(\n            scrollX, scrollY, 0, velocityY,\n            0, 0, 0, maxScrollY.coerceAtLeast(0),\n        )\n        postInvalidateOnAnimation()\n    }\n\n    override fun computeScroll() {\n        if (!scroller.computeScrollOffset()) {\n            return\n        }\n\n        if (Build.VERSION.SDK_INT >= 35) {\n            frameContentVelocity = scroller.currVelocity\n        }\n        scrollTo(scroller.currX, scroller.currY)\n        postInvalidateOnAnimation()\n    }\n}\n```",
+      "why": "The private OverScroller was never started; add explicit fling entry so the velocity reporting path is reachable.",
+      "sources": [
+        "https://developer.android.com/reference/android/view/View",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/widget/OverScroller.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "下面的例子从 `OverScroller` 读取当前惯性滚动速度，并在每个绘制帧更新提示。",
+      "after": "下面只展示惯性滚动的速度提示接线：调用 `startVerticalFling()` 才会启动示例中的 `OverScroller`。真正的滚动容器还需实现内容绘制、触摸/嵌套滚动、边界与取消处理，不能把这个普通 `View` 骨架当成完整容器。",
+      "why": "Clarify executable entry and deliberate UI omissions.",
+      "sources": [
+        "https://developer.android.com/reference/android/view/View"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "`currVelocity` 已经是非负值，单位是像素/秒。`setFrameContentVelocity()` 的值只对下一个绘制帧有效，所以一次手势只写一次无法覆盖完整的惯性滚动。触摸按住期间仍由触摸升帧保持较高节奏；速度映射用于松手后的减速阶段。",
+      "after": "`currVelocity` 已经是非负值，单位是像素/秒。`setFrameContentVelocity()` 的值只对下一个绘制帧有效，所以一次手势只写一次无法覆盖完整的惯性滚动。触摸按住期间，开启的触摸升帧可参与提高节奏，实际结果仍受显示能力与系统策略约束；速度映射用于松手后的减速阶段。",
+      "why": "Touch boost is conditional policy rather than guaranteed high rate.",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "```kotlin\nfun Surface.setVideoFrameRate(frameRate: Float) {\n    if (Build.VERSION.SDK_INT < 30) {\n        return\n    }\n    if (Build.VERSION.SDK_INT >= 31) {\n        setFrameRate(\n            frameRate,\n            Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,\n            Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS,\n        )\n    } else {\n        setFrameRate(\n            frameRate,\n            Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,\n        )\n    }\n}\n```",
+      "after": "```kotlin\nfun Surface.setVideoFrameRate(frameRate: Float) {\n    if (Build.VERSION.SDK_INT < 30) {\n        return\n    }\n    require(frameRate.isFinite() && frameRate > 0f) {\n        \"Video frame rate must be finite and positive\"\n    }\n    if (Build.VERSION.SDK_INT >= 31) {\n        setFrameRate(\n            frameRate,\n            Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,\n            Surface.CHANGE_FRAME_RATE_ONLY_IF_SEAMLESS,\n        )\n    } else {\n        setFrameRate(\n            frameRate,\n            Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE,\n        )\n    }\n}\n```",
+      "why": "A video fixed-source helper should reject NaN/infinite/negative/zero requests; clearing uses separate explicit path.",
+      "sources": [
+        "https://developer.android.com/reference/android/view/Surface"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "只有在长时间播放且产品接受可见切换时，才评估 `CHANGE_FRAME_RATE_ALWAYS`。非无缝切换还要求用户在系统的「匹配内容帧率」设置中允许此类切换；`ALWAYS` 只表示应用侧接受，不能绕过用户偏好。",
+      "after": "只有在长时间播放且产品接受可见切换时，才评估 `CHANGE_FRAME_RATE_ALWAYS`。非无缝切换还要求用户在系统的「匹配内容帧率」设置中允许此类切换；`ALWAYS` 只表示应用侧接受，不能绕过用户偏好。\n\n源帧率应保留实际的小数值，例如 23.976、29.97 fps，不要为了“匹配显示档位”先四舍五入。提示的 Surface 还必须由显示合成器消费；编码器等非显示消费者不靠此 API 控制输出速率。Surface 的创建、替换和销毁仍由生产方 owner 串行管理，避免向已经释放的对象写请求。",
+      "why": "Media docs explicitly require exact content rate; Surface source limits effect to displayed consumers and checks released state.",
+      "sources": [
+        "https://developer.android.com/media/optimize/performance/frame-rate",
+        "https://developer.android.com/reference/android/view/Surface"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "Android 17 的 `RefreshRateSelector` 用一组内部类型区分请求语义：`ExplicitDefault` 表示默认值，`ExplicitExactOrMultiple` 表示精确值或其整数倍，`ExplicitExact` 表示精确值，`ExplicitGte` 表示不低于给定值，`ExplicitCategory` 表示类别请求，`Heuristic` 表示系统根据历史推断。`FRAME_RATE_COMPATIBILITY_AT_LEAST` 对应最低值请求，与固定源的精确值或整数倍诉求采用不同评分。触摸状态和空闲状态也有提前结束选择及延后升帧分支，不能概括成“触摸必定拉满，固定若干秒后降频”。",
+      "after": "Android 17 的 `RefreshRateSelector` 用一组内部类型区分请求语义：`ExplicitDefault` 表示 `DEFAULT` 兼容性语义的显式帧率请求，并非“没有偏好”或恢复默认状态，`ExplicitExactOrMultiple` 表示精确值或其整数倍，`ExplicitExact` 表示精确值，`ExplicitGte` 表示不低于给定值，`ExplicitCategory` 表示类别请求，`Heuristic` 表示系统根据历史推断。`FRAME_RATE_COMPATIBILITY_AT_LEAST` 对应最低值请求，与固定源的精确值或整数倍诉求采用不同评分。触摸状态和空闲状态也有提前结束选择及延后升帧分支，不能概括成“触摸必定拉满，固定若干秒后降频”。",
+      "why": "ExplicitDefault is a vote type carrying a requested numeric rate, not lack of preference.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp",
+        "https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/LayerHistory.cpp"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "1. `queueBuffer`（缓冲区入队）；\n2. `BufferTX`（图层事务）；\n3. `acquire fence`（缓冲区就绪同步）；\n4. `latch`（SurfaceFlinger 接收缓冲区）；\n5. HWC 合成；\n6. `present`（送显）。",
+      "after": "1. `queueBuffer`（缓冲区入队）；\n2. `BufferTX`（图层事务）；\n3. `latch`（SurfaceFlinger 采纳候选缓冲区），并关联它的 `acquire fence`；\n4. 检查 acquire fence 何时真正发出就绪信号、合成何时可以使用内容；\n5. HWC 合成；\n6. `present`（送显）。",
+      "why": "Acquire fence readiness is a separate dependency and may be pending at latch; list must not impose a false ready-before-latch order.",
+      "sources": [
+        "https://source.android.com/docs/core/graphics/sync",
+        "https://developer.android.com/reference/android/view/Surface"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "View 请求不等于独立图层请求。普通 `View` 和 `TextureView` 的结果通常要在宿主应用窗口上验证；`SurfaceView` 内容则要找到它自己的 BLAST 缓冲区图层。Perfetto 的计数器（counter）是随时间记录数值的轨道；只看到刷新率计数器下降，无法证明是哪项应用策略触发，也无法证明交互没有受损。",
+      "after": "View 请求不等于独立图层请求。普通 `View` 和 `TextureView` 的结果通常要在宿主应用窗口上验证；`SurfaceView` 内容则要找到它自己的 BLAST 缓冲区图层。Perfetto 的计数器（counter）是随时间记录数值的轨道；只看到刷新率计数器下降，无法证明是哪项应用策略触发，也无法证明交互没有受损。\n\n上述项目是取证关联顺序，不是一条所有设备都严格串行执行的时序。BufferTX、latch 与 fence 的事件先后由实际轨迹确认；acquire fence 可在采纳缓冲区时仍未就绪，CLIENT 合成由 RenderEngine GPU 参与，最终还要核对目标显示设备的 present fence。",
+      "why": "Avoid strict serial inference and preserve CLIENT/HWC composition boundary.",
+      "sources": [
+        "https://source.android.com/docs/core/graphics/arr",
+        "https://source.android.com/docs/core/graphics/sync"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "```bash\n#!/usr/bin/env bash\nset -euo pipefail\n\nTEST_PEAK=\"${1:?pass a supported peak refresh rate, for example 120.0}\"\nTEST_PACKAGE=\"${2:-com.example.app}\"\nPEAK_BEFORE=\"$(adb shell settings get system peak_refresh_rate | tr -d '\\r')\"\nMIN_BEFORE=\"$(adb shell settings get system min_refresh_rate | tr -d '\\r')\"\n\nrestore_setting() {\n    local key=\"$1\"\n    local value=\"$2\"\n    if [[ -z \"$value\" || \"$value\" == \"null\" ]]; then\n        adb shell settings delete system \"$key\" >/dev/null\n    else\n        adb shell settings put system \"$key\" \"$value\"\n    fi\n}\n\nrestore_all() {\n    restore_setting peak_refresh_rate \"$PEAK_BEFORE\"\n    restore_setting min_refresh_rate \"$MIN_BEFORE\"\n}\n\ntrap restore_all EXIT\ntrap 'exit 130' INT TERM\n\nadb shell settings put system peak_refresh_rate \"$TEST_PEAK\"\nadb shell settings put system min_refresh_rate 0.0\nadb shell am force-stop \"$TEST_PACKAGE\"\nadb shell monkey -p \"$TEST_PACKAGE\" 1\n\nread -r -p \"Record the Perfetto trace, then press Enter to restore settings.\"\n```",
+      "after": "```bash\n#!/usr/bin/env bash\nset -euo pipefail\n\nTEST_PEAK=\"${1:?pass a supported peak refresh rate, for example 120.0}\"\nTEST_PACKAGE=\"${2:-com.example.app}\"\nPEAK_BEFORE=\"$(adb shell settings get system peak_refresh_rate | tr -d '\\r')\"\nMIN_BEFORE=\"$(adb shell settings get system min_refresh_rate | tr -d '\\r')\"\n\nrestore_setting() {\n    local key=\"$1\"\n    local value=\"$2\"\n    if [[ -z \"$value\" || \"$value\" == \"null\" ]]; then\n        adb shell settings delete system \"$key\" >/dev/null\n    else\n        adb shell settings put system \"$key\" \"$value\"\n    fi\n}\n\nrestore_all() {\n    local exit_status=$?\n    trap - EXIT\n    set +e\n    restore_setting peak_refresh_rate \"$PEAK_BEFORE\"\n    local peak_status=$?\n    restore_setting min_refresh_rate \"$MIN_BEFORE\"\n    local min_status=$?\n    if (( peak_status != 0 || min_status != 0 )); then\n        echo \"Failed to restore refresh settings; verify both values manually.\" >&2\n        if (( exit_status == 0 )); then exit_status=1; fi\n    fi\n    exit \"$exit_status\"\n}\n\ntrap restore_all EXIT\ntrap 'exit 130' INT\ntrap 'exit 143' TERM\n\nadb shell settings put system peak_refresh_rate \"$TEST_PEAK\"\nadb shell settings put system min_refresh_rate 0.0\nadb shell am force-stop \"$TEST_PACKAGE\"\nadb shell monkey -p \"$TEST_PACKAGE\" 1\n\nread -r -p \"Record the Perfetto trace, then press Enter to restore settings.\"\n```",
+      "why": "With set -e, first restore failure could skip second setting; attempt both, preserve command failure, report cleanup failure and use conventional TERM status143. Actual fake-adb scenarios validate teardown.",
+      "sources": [
+        "https://tiswww.case.edu/php/chet/bash/bash.html"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "Compose 从 1.9 起提供 `Modifier.preferredFrameRate(Float)` 和 `Modifier.preferredFrameRate(FrameRateCategory)`，本文核验基线为 Compose UI 1.12.0。帧率请求应靠近持续变化的可组合函数。给整屏统一设置 `High` 会扩大高刷新率范围；`LazyList` 应优先使用当前 Compose/AndroidX 自带的滚动支持，再用跟踪数据判断是否还需局部调整。ARR 也不会减少重组（recomposition）、布局（layout）或绘制（draw）本身的工作量。",
+      "after": "Compose 从 1.9 起提供 `Modifier.preferredFrameRate(Float)` 和 `Modifier.preferredFrameRate(FrameRateCategory)`，本文固定实现核验基线为 Compose UI 1.12.0；2026-10-25 当前稳定版为 1.12.1。帧率请求应靠近持续变化的可组合函数。给整屏统一设置 `High` 会扩大高刷新率范围；`LazyList` 应优先使用当前 Compose/AndroidX 自带的滚动支持，再用跟踪数据判断是否还需局部调整。ARR 也不会减少重组（recomposition）、布局（layout）或绘制（draw）本身的工作量。\n\n固定 1.12.0 实现会增加 `graphicsLayer()` 并在 draw 节点更新/传播图形层偏好；这不是新增 SurfaceFlinger 独立图层。请求只在内容参与绘制时起作用；数值重载用 `0f` 清除偏好，类别重载可用 `FrameRateCategory.Default` 恢复框架默认。不要仅为持续维持“投票”而主动制造重绘。",
+      "why": "Distinguish modifier layer, draw lifetime, reset semantics and pinned/current releases.",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://developer.android.com/jetpack/androidx/releases/compose-ui"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "before": "- [Android Developers：Adaptive Refresh Rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)\n- [AOSP：Adaptive refresh rate](https://source.android.com/docs/core/graphics/arr)\n- [Android Developers：View API](https://developer.android.com/reference/android/view/View)\n- [Android Developers：ViewGroup API](https://developer.android.com/reference/android/view/ViewGroup)\n- [Android Developers：Display API](https://developer.android.com/reference/android/view/Display)\n- [Android Developers：FrameRateVelocityPoint API](https://developer.android.com/reference/android/view/FrameRateVelocityPoint)\n- [Android Developers：Window API](https://developer.android.com/reference/android/view/Window)\n- [Android Developers：Surface API](https://developer.android.com/reference/android/view/Surface)\n- [Android Developers：Media frame rate](https://developer.android.com/media/optimize/performance/frame-rate)\n- [`View.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java)、[`Display.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java)、[`Window.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Window.java) 与 [`Surface.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java)\n- [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java) 与 [`TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java)\n- [`Scheduler.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp)、[`LayerHistory.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/LayerHistory.cpp) 与 [`RefreshRateSelector.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp)\n- [`DisplayConfiguration.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayConfiguration.aidl)、[`VrrConfig.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/VrrConfig.aidl) 与 [`IComposerClient.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl)\n- 内核 [`drm_vblank.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c) 与 [`drm_vblank.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/drm/drm_vblank.h)\n",
+      "after": "- [Android Developers：Adaptive Refresh Rate](https://developer.android.com/develop/ui/views/animations/adaptive-refresh-rate)\n- [AOSP：Adaptive refresh rate](https://source.android.com/docs/core/graphics/arr)\n- [Android Developers：View API](https://developer.android.com/reference/android/view/View)\n- [Android Developers：ViewGroup API](https://developer.android.com/reference/android/view/ViewGroup)\n- [Android Developers：Display API](https://developer.android.com/reference/android/view/Display)\n- [Android Developers：FrameRateVelocityPoint API](https://developer.android.com/reference/android/view/FrameRateVelocityPoint)\n- [Android Developers：Window API](https://developer.android.com/reference/android/view/Window)\n- [Android Developers：Surface API](https://developer.android.com/reference/android/view/Surface)\n- [Android Developers：Media frame rate](https://developer.android.com/media/optimize/performance/frame-rate)\n- [`View.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java)、[`Display.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Display.java)、[`Window.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Window.java) 与 [`Surface.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Surface.java)\n- [`SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java) 与 [`TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java)\n- [`Scheduler.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/Scheduler.cpp)、[`LayerHistory.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/LayerHistory.cpp) 与 [`RefreshRateSelector.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/Scheduler/RefreshRateSelector.cpp)\n- [`DisplayConfiguration.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/DisplayConfiguration.aidl)、[`VrrConfig.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/VrrConfig.aidl) 与 [`IComposerClient.aidl`](https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/graphics/composer/aidl/android/hardware/graphics/composer3/IComposerClient.aidl)\n- 内核 [`drm_vblank.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/gpu/drm/drm_vblank.c) 与 [`drm_vblank.h`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/include/drm/drm_vblank.h)\n\n- [AOSP：同步框架与 acquire/present fence](https://source.android.com/docs/core/graphics/sync)\n- [Compose UI 1.12.0 发布源码包（FrameRate.kt / FrameRateCategory.kt）](https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar)\n- [Compose UI 发布说明](https://developer.android.com/jetpack/androidx/releases/compose-ui)\n- [Bash 维护者发布的手册：set / trap / 退出状态](https://tiswww.case.edu/php/chet/bash/bash.html)",
+      "why": "Directly attribute added implementation and tested shell cleanup behavior.",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://source.android.com/docs/core/graphics/arr"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "Refresh source, public SDK and actual library validation.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "| 层级 | 基线 | 用途 |\n| --- | --- | --- |\n| Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `SurfaceView`、`TextureView`、BLAST、HWUI、SurfaceFlinger、HWC |\n| Android 内核 | `android17-6.18-2026-06_r6` | sync file、dma-fence 等底层同步语义 |\n| Jetpack Compose | Compose BOM 2026.08.00；UI 与 Foundation 1.12.0 | `AndroidView` 与外部 Surface 的互操作边界 |\n| Media3 / CameraX | 使用项目锁定的稳定版 | 组件策略独立发布，不能由 platform tag 代替 |",
+      "after": "| 层级 | 基线 | 用途 |\n| --- | --- | --- |\n| Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | `SurfaceView`、`TextureView`、BLAST、HWUI、SurfaceFlinger、HWC |\n| Android 内核 | `android17-6.18-2026-06_r6` | sync file、dma-fence 等底层同步语义 |\n| Jetpack Compose | 固定 Compose BOM 2026.08.00；UI / Foundation 1.12.0 | `AndroidView` 与外部 Surface 的互操作边界 |\n| Media3 / CameraX | 本次额外核对 CameraX 1.6.2 / Media3 1.11.1；工程仍锁定实际依赖 | 组件策略独立发布，不能由 platform tag 代替 |",
+      "why": "BOM POM confirms pinned1.12; separately record actually checked component versions rather than deriving from platform tag.",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/compose-bom/2026.08.00/compose-bom-2026.08.00.pom",
+        "https://dl.google.com/android/maven2/androidx/camera/camera-view/1.6.2/camera-view-1.6.2-sources.jar",
+        "https://developer.android.com/media/media3/ui/surface"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "版本演进只覆盖 Android 12—17 的现代路径；Android 10/11 只用于兼容性判断，不把早期实现套到 Android 17。",
+      "after": "版本演进只覆盖 Android 12—17 的现代路径；Android 10/11 只用于兼容性判断，不把早期实现套到 Android 17。\n\n固定源码行为与当前发布版本分开记录：2026-10-25，UI 与 Foundation 当前稳定版均为 1.12.1，本文互操作实现仍按指定 commit 的 1.12.0；CameraX 的回退分支按实际 1.6.2 发布源码核对。",
+      "why": "Do not silently relabel a pinned implementation as latest; current metadata independently checked.",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/compose/ui/ui/maven-metadata.xml",
+        "https://dl.google.com/android/maven2/androidx/compose/foundation/foundation/maven-metadata.xml",
+        "https://dl.google.com/android/maven2/androidx/camera/camera-view/1.6.2/camera-view-1.6.2-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "- **Producer / Consumer**：Producer 是写入画面的生产者，例如相机、解码器或游戏引擎；Consumer 是取得并使用 buffer 的消费者，例如 SurfaceFlinger 或 HWUI。\n- **BufferQueue / slot**：BufferQueue 管理可循环复用的 buffer；slot 是队列中标识某块 buffer 的槽位，不等于固定的双缓冲或三缓冲。\n- **layer**：SurfaceFlinger 可独立定位、裁剪并参与合成的图层。`TextureView` 的 `TextureLayer` 是 HWUI 对象，不属于 SurfaceFlinger layer。\n- **transaction**：一组原子提交的图层或 buffer 更新；同一 transaction 内的状态一起生效，但不会让尚未完成的 buffer 提前就绪。\n- **fence**：跨 CPU、GPU 与显示硬件同步的完成信号。acquire fence 保护即将读取的 buffer，release fence 表示旧 buffer 可以复用，present fence 标记一次显示提交的完成边界。\n- **latch / present**：latch 表示 SurfaceFlinger 为某个显示周期选中一块已就绪 buffer；present 表示该周期已经交给显示路径，仍早于面板像素的光学响应完成。\n- **HWC 与 DEVICE / CLIENT composition**：HWC（Hardware Composer，硬件合成器）按当前整屏图层集合选择合成方式。DEVICE 表示交给显示硬件处理；CLIENT 表示 RenderEngine 先用 GPU 合成 client target（供 HWC 使用的中间整屏目标）。\n- **BLAST**：Android 用来协调 BufferQueue 内容与 `SurfaceControl.Transaction` 的缓冲提交路径，源码和 trace 中常见 `BLASTBufferQueue`、BLAST child 与 `BufferTX`。\n- **hole-punch**：宿主窗口把 `SurfaceView` 对应区域处理为透明，露出处在更低合成层级的独立内容图层。",
+      "after": "- **Producer / Consumer**：Producer 是写入画面的生产者，例如相机、解码器或游戏引擎；Consumer 是取得并使用 buffer 的消费者，例如 SurfaceFlinger 或 HWUI。\n- **BufferQueue / slot**：BufferQueue 管理可循环复用的 buffer；slot 是队列中标识某块 buffer 的槽位，不等于固定的双缓冲或三缓冲。\n- **layer**：SurfaceFlinger 可独立定位、裁剪并参与合成的图层。`TextureView` 的 `TextureLayer` 是 HWUI 对象，不属于 SurfaceFlinger layer。\n- **transaction**：一组原子提交的图层或 buffer 更新；同一 transaction 内的状态一起生效，但不会让尚未完成的 buffer 提前就绪。\n- **fence**：跨 CPU、GPU 与显示硬件同步的完成信号。acquire fence 保护即将读取的 buffer，release fence 表示旧 buffer 可以复用，present fence 标记一次显示提交的完成边界。\n- **latch / present**：latch 表示 SurfaceFlinger 为某个显示周期采纳候选 buffer；特定 latch-unsignaled 路径下 acquire fence 此刻仍可能未就绪；present 表示该周期已经交给显示路径，仍早于面板像素的光学响应完成。\n- **HWC 与 DEVICE / CLIENT composition**：HWC（Hardware Composer，硬件合成器）按当前整屏图层集合选择合成方式。DEVICE 表示交给显示硬件处理；CLIENT 表示 RenderEngine 先用 GPU 合成 client target（供 HWC 使用的中间整屏目标）。\n- **BLAST**：Android 用来协调 BufferQueue 内容与 `SurfaceControl.Transaction` 的缓冲提交路径，源码和 trace 中常见 `BLASTBufferQueue`、BLAST child 与 `BufferTX`。\n- **hole-punch**：宿主窗口把 `SurfaceView` 对应区域处理为透明，露出处在更低合成层级的独立内容图层。",
+      "why": "Latch is not universally a ready-buffer guarantee, as AutoSingleLayer permits unsignaled latching.",
+      "sources": [
+        "https://source.android.com/docs/core/graphics/sync",
+        "https://source.android.com/docs/core/graphics/unsignaled-buffer-latch"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "`onSurfaceTextureUpdated()` 发生在 UI 线程提交 layer update 之后，不能证明 RenderThread 已取得输入、GPU 已完成采样或画面已经 present。",
+      "after": "`onSurfaceTextureUpdated()` 发生在 UI 线程提交 layer update 之后，不能证明 RenderThread 已取得输入、GPU 已完成采样或画面已经 present。\n\n固定 Android 17 的 `ASurfaceTexture_dequeueBuffer()` 路径还会丢弃除最新一块外的中间排队输入。某块输入已经 queue，不代表它必然被 HWUI 采样或最终呈现；排查视频/相机丢帧时应保留 Producer frame number 与实际采样内容的关联。",
+      "why": "DeferredLayerUpdater explicitly drops all but latest; input queue counts cannot stand in for sampled/presented frames.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "一块单平面、未压缩 buffer 的粗略下界可以按这个式子估算：",
+      "after": "一块单平面、未压缩 buffer 的粗略占用估算必须先说明 stride 单位：",
+      "why": "Original rowStride formula ambiguously multiplied bytes twice for Android Image.Plane rowStride.",
+      "sources": [
+        "https://developer.android.com/reference/android/media/Image.Plane"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "`rowStride × allocationHeight × bytesPerPixel`",
+      "after": "`rowStrideBytes × allocationHeight`；若 stride 以像素计，则是 `stridePixels × allocationHeight × bytesPerPixel`。`Image.Plane.getRowStride()` 的单位已经是字节，不能再乘一次每像素字节数。",
+      "why": "Distinguish byte stride from pixel stride; do not double-count bytes per pixel.",
+      "sources": [
+        "https://developer.android.com/reference/android/media/Image.Plane"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "硬件加速路径使用 `RenderNode.PositionUpdateListener` 取得最终位置和 host frame number，再经 `ViewRootImpl.mergeWithNextTransaction()` 与宿主目标帧合并。UI 线程的其他更新可由 `applyTransactionOnDraw()` 随下一次 ViewRoot draw 应用。",
+      "after": "硬件加速路径使用 `RenderNode.PositionUpdateListener` 取得最终位置和 host frame number，再经 `ViewRootImpl.mergeWithNextTransaction()` 与宿主目标帧合并。UI 线程的其他更新可由 `applyTransactionOnDraw()` 随下一次 ViewRoot draw 应用。\n\n这些是 SurfaceView 自己维护的状态。公开 `getSurfaceControl()` 返回值只定义了把自建子层挂在它下面的用途，近似只读；不要对这个返回对象直接改 position、crop、alpha 等 SurfaceView 管理属性，后续内部更新会覆盖它们。需要视觉效果时优先使用公开的 View/SurfaceView 属性或受支持的事务接口。",
+      "why": "API documentation limits getSurfaceControl to parenting children; source internals are not a public license to mutate managed container.",
+      "sources": [
+        "https://developer.android.com/reference/android/view/SurfaceView",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "公开 `Transaction.apply()` 会原子提交这笔 transaction 内的状态，并清空对象供后续复用。它走非同步 apply；源码中的 `apply(boolean sync)` 是隐藏入口，注释直接称其为更容易造成 jank 的版本。",
+      "after": "公开 `Transaction.apply()` 会原子提交这笔 transaction 内的状态，并清空对象供后续复用。固定实现调用 `apply(sync=false, oneWay=false)`：没有等待同步应用，但也不是 one-way Binder 调用；隐藏的 `applyAsyncUnsafe()` 才走 one-way，且明确警告可能乱序；`apply(boolean sync)` 是隐藏入口，注释直接称其为更容易造成 jank 的版本。",
+      "why": "Non-sync apply and one-way Binder are distinct flags; public apply is not applyAsyncUnsafe.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "BLAST 内部还有 buffer transaction、frame number 和 release callback。分析时要写明对象和队列，不能把任意回调统称为“buffer changed”。",
+      "after": "BLAST 内部还有 buffer transaction、frame number 和 release callback。分析时要写明对象和队列，不能把任意回调统称为“buffer changed”。\n\n`TransactionStats.getLatchTimeNanos()` 是 CLOCK_MONOTONIC 下的采纳/排队时间；精确呈现要看其 `getPresentFence()` 信号。固定实现会在 listener 正常返回后关闭内部 stats；调用方取得的是新 fence 引用，需自行 `close()`，设备不支持 present fence 时还可能得到无效 fence。不要在回调后保留内部 stats 当作长期有效资源。",
+      "why": "Completion callback delivery, latch timestamp and owned present fence are distinct; copied fence ownership and invalid-fence case come from API/source.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "```kotlin\nprivate interface FrameProducer {\n    fun attach(surface: Surface)\n    fun resize(width: Int, height: Int, format: Int)\n    fun detachAndWaitUntilIdle()\n}\n\nsurfaceView.holder.addCallback(object : SurfaceHolder.Callback {\n    override fun surfaceCreated(holder: SurfaceHolder) {\n        producer.attach(holder.surface)\n    }\n\n    override fun surfaceChanged(\n        holder: SurfaceHolder,\n        format: Int,\n        width: Int,\n        height: Int,\n    ) {\n        producer.resize(width, height, format)\n    }\n\n    override fun surfaceDestroyed(holder: SurfaceHolder) {\n        producer.detachAndWaitUntilIdle()\n    }\n})\n```",
+      "after": "```kotlin\nprivate interface FrameProducer {\n    fun attach(surface: Surface)\n    fun resize(width: Int, height: Int, format: Int)\n    fun detachAndWaitUntilIdle()\n}\n\nprivate fun installSurfaceProducer(\n    surfaceView: SurfaceView,\n    producer: FrameProducer,\n): SurfaceHolder.Callback {\n    val callback = object : SurfaceHolder.Callback {\n        override fun surfaceCreated(holder: SurfaceHolder) {\n            producer.attach(holder.surface)\n        }\n\n        override fun surfaceChanged(\n            holder: SurfaceHolder,\n            format: Int,\n            width: Int,\n            height: Int,\n        ) {\n            producer.resize(width, height, format)\n        }\n\n        override fun surfaceDestroyed(holder: SurfaceHolder) {\n            producer.detachAndWaitUntilIdle()\n        }\n    }\n    surfaceView.holder.addCallback(callback)\n    return callback\n}\n```",
+      "why": "Wrap executable callback registration in a function and return callback so its owner can remove it; original top-level statement is not valid Kotlin.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://developer.android.com/reference/android/view/SurfaceHolder.Callback"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "`detachAndWaitUntilIdle()` 必须保证 EGL/Vulkan、codec、camera 或远端 Producer 不再碰旧 Surface。只发一个异步 stop 消息后立即返回，仍可能与底层销毁竞态。",
+      "after": "`detachAndWaitUntilIdle()` 必须保证 EGL/Vulkan、codec、camera 或远端 Producer 不再碰旧 Surface。只发一个异步 stop 消息后立即返回，仍可能与底层销毁竞态。\n\n注册示例应在 holder Surface 创建前安装，owner 结束时移除返回的 callback，并按同一停止契约处理当前生产方。同步停止不能反过来等待主线程执行一个停止任务，否则主线程销毁回调等待工作线程、工作线程又等待主线程，会形成死锁；长期硬件释放要在业务生命周期中提早停止，不能把无界等待留到销毁回调。",
+      "why": "Registration lifetime, thread deadlock and bounded teardown are necessary owner responsibilities, not provided automatically by callback signatures.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "```kotlin\nprivate interface TextureFrameProducer {\n    fun attach(surface: Surface, width: Int, height: Int)\n    fun resize(width: Int, height: Int)\n    fun detachAndWaitUntilIdle()\n}\n\nprivate var producerSurface: Surface? = null\n\ntextureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {\n    override fun onSurfaceTextureAvailable(\n        surfaceTexture: SurfaceTexture,\n        width: Int,\n        height: Int,\n    ) {\n        producerSurface = Surface(surfaceTexture).also {\n            textureProducer.attach(it, width, height)\n        }\n    }\n\n    override fun onSurfaceTextureSizeChanged(\n        surfaceTexture: SurfaceTexture,\n        width: Int,\n        height: Int,\n    ) {\n        textureProducer.resize(width, height)\n    }\n\n    override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) = Unit\n\n    override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {\n        textureProducer.detachAndWaitUntilIdle()\n        producerSurface?.release()\n        producerSurface = null\n        return true\n    }\n}\n```",
+      "after": "```kotlin\nprivate interface TextureFrameProducer {\n    fun attach(surface: Surface, width: Int, height: Int)\n    fun resize(width: Int, height: Int)\n    fun detachAndWaitUntilIdle()\n}\n\nprivate fun installTextureProducer(\n    textureView: TextureView,\n    textureProducer: TextureFrameProducer,\n) {\n    var producerSurface: Surface? = null\n    textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {\n        override fun onSurfaceTextureAvailable(\n            surfaceTexture: SurfaceTexture,\n            width: Int,\n            height: Int,\n        ) {\n            val target = Surface(surfaceTexture)\n            producerSurface = target\n            try {\n                textureProducer.attach(target, width, height)\n            } catch (failure: Exception) {\n                try {\n                    textureProducer.detachAndWaitUntilIdle()\n                } finally {\n                    target.release()\n                    producerSurface = null\n                }\n                throw failure\n            }\n        }\n\n        override fun onSurfaceTextureSizeChanged(\n            surfaceTexture: SurfaceTexture,\n            width: Int,\n            height: Int,\n        ) {\n            textureProducer.resize(width, height)\n        }\n\n        override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) = Unit\n\n        override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {\n            textureProducer.detachAndWaitUntilIdle()\n            producerSurface?.release()\n            producerSurface = null\n            return true\n        }\n    }\n}\n```",
+      "why": "Make per-TextureView wrapper ownership local, put listener installation in valid function context, and release allocated wrapper if attach fails.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java",
+        "https://developer.android.com/reference/android/graphics/SurfaceTexture"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "返回 `true` 表示由 TextureView 释放当前 SurfaceTexture；返回 `false` 表示调用方接管，后续必须自行调用 `release()`。应用通过 `Surface(surfaceTexture)` 创建的包装对象始终由应用调用 `release()`。",
+      "after": "返回 `true` 表示由 TextureView 释放当前 SurfaceTexture；返回 `false` 表示调用方接管，后续必须自行调用 `release()`。应用通过 `Surface(surfaceTexture)` 创建的包装对象始终由应用调用 `release()`。\n\n这个安装函数只应在当前 TextureView 尚未可用且尚无旧 Producer 时调用一次。若绑定一个已经可用的实例，应由 owner 主动接入当前 `surfaceTexture`；仅设置 listener 不会补发过去的 available 回调。更换 listener 或手动 `setSurfaceTexture()` 前，先明确停用旧生产方并释放旧包装对象。",
+      "why": "Listener registration does not replay past availability; setup must state precondition and ownership when replacing.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "`setSurfaceTexture(newTexture)` 会立即释放旧对象，且不会为旧对象调用 destroyed 回调，也不会为新对象调用 available 回调。复用旧 SurfaceTexture 时要显式记录所有权，以及它是否已经从原 GL 环境分离。",
+      "after": "`setSurfaceTexture(newTexture)` 会立即释放旧对象，且不会为旧对象调用 destroyed 回调，也不会为新对象调用 available 回调。新传入对象必须先从所有 OpenGL ES context 分离；不能传当前同一实例或已 released 的对象。移交前应显式停止旧 Producer、释放旧 Surface 包装并记录新旧所有权。",
+      "why": "GL context detachment is mandatory, not optional; setter rejects same/released instances and skips lifecycle callbacks.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "CameraX `PreviewView` 的 `PERFORMANCE` 是默认模式，支持时使用 SurfaceView；`COMPATIBLE` 使用 TextureView。即使选择 `PERFORMANCE`，CameraX 也会在 API 24 及以下、LEGACY camera hardware，或目标旋转与 display rotation 不一致时回退到 TextureView。",
+      "after": "CameraX `PreviewView` 的 `PERFORMANCE` 是默认模式，支持时使用 SurfaceView；`COMPATIBLE` 使用 TextureView。这里需要区分文档描述和实际发布代码：公开文档把 API≤24、LEGACY 相机和目标旋转不等于 display rotation 都列为回退条件；但本次核对的 CameraX 1.6.2 `shouldUseTextureView()` 实际按 API≤24、LEGACY、`SurfaceViewStretchedQuirk` / `SurfaceViewNotCroppedByParentQuirk` 及模式值判断，旋转不一致的回退仍留有 TODO。因此不要依赖它自动处理旋转差异；此时应明确选择 `COMPATIBLE`，并在目标设备验证裁剪、旋转和实际实现。",
+      "why": "Published1.6.2 source retains TODO for rotation mismatch despite Javadoc claim and adds quirk branches; distinguish contract/documentation from actual implementation.",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/camera/camera-view/1.6.2/camera-view-1.6.2-sources.jar",
+        "https://developer.android.com/reference/androidx/camera/view/PreviewView.ImplementationMode"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "```xml\n<androidx.media3.ui.PlayerView\n    android:id=\"@+id/player_view\"\n    android:layout_width=\"match_parent\"\n    android:layout_height=\"match_parent\"\n    app:surface_type=\"texture_view\" />\n```",
+      "after": "```xml\n<androidx.media3.ui.PlayerView\n    xmlns:android=\"http://schemas.android.com/apk/res/android\"\n    xmlns:app=\"http://schemas.android.com/apk/res-auto\"\n    android:id=\"@+id/player_view\"\n    android:layout_width=\"match_parent\"\n    android:layout_height=\"match_parent\"\n    app:surface_type=\"texture_view\" />\n```",
+      "why": "Make XML namespace declarations explicit so the shown root fragment parses independently.",
+      "sources": [
+        "https://developer.android.com/media/media3/ui/surface"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "```cpp\nANativeWindow* window = ANativeWindow_fromSurface(env, javaSurface);\n\nVkAndroidSurfaceCreateInfoKHR createInfo{\n    VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR\n};\ncreateInfo.window = window;\n\nVkSurfaceKHR vkSurface = VK_NULL_HANDLE;\nvkCreateAndroidSurfaceKHR(instance, &createInfo, nullptr, &vkSurface);\n\nANativeWindow_release(window);\n```",
+      "after": "```cpp\nVkResult createAndroidSurface(\n    JNIEnv* env, jobject javaSurface, VkInstance instance,\n    VkSurfaceKHR* outSurface) {\n    *outSurface = VK_NULL_HANDLE;\n    ANativeWindow* window = ANativeWindow_fromSurface(env, javaSurface);\n    if (window == nullptr) {\n        return VK_ERROR_SURFACE_LOST_KHR;\n    }\n\n    VkAndroidSurfaceCreateInfoKHR createInfo{\n        VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR\n    };\n    createInfo.window = window;\n    VkResult result =\n        vkCreateAndroidSurfaceKHR(instance, &createInfo, nullptr, outSurface);\n    ANativeWindow_release(window);\n    return result;\n}\n```",
+      "why": "Handle null native-window and Vulkan creation failure; retain correct release of locally acquired reference because successful Vulkan creation acquires its own reference.",
+      "sources": [
+        "https://docs.vulkan.org/refpages/latest/refpages/source/vkCreateAndroidSurfaceKHR.html",
+        "https://developer.android.com/ndk/reference/group/native-activity"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "`vkCreateAndroidSurfaceKHR` 使用 `ANativeWindow`；SurfaceControl 负责 layer tree 与 transaction。引擎还要管理 swapchain 重建、预旋转（pre-rotation）、semaphore/fence 和帧节奏控制（Frame Pacing），不能依赖 `vkAcquireNextImageKHR` 或 `vkQueuePresentKHR` 的阻塞行为同步无关 CPU 工作。",
+      "after": "`vkCreateAndroidSurfaceKHR` 使用 `ANativeWindow`；SurfaceControl 负责 layer tree 与 transaction。引擎还要管理 swapchain 重建、预旋转（pre-rotation）、semaphore/fence 和帧节奏控制（Frame Pacing），不能依赖 `vkAcquireNextImageKHR` 或 `vkQueuePresentKHR` 的阻塞行为同步无关 CPU 工作。\n\n上例要求有效的 `instance`、已启用的 Android Surface 扩展及非空 `outSurface`，调用方检查返回的 `VkResult`。NDK 转换取得一份 window 引用；Vulkan 创建成功会再持有一份，`vkDestroySurfaceKHR()` 才释放后者，所以创建调用后释放本地引用是正确的。成功创建后仍要由 owner 在 swapchain 停用、相关使用结束后销毁 VkSurface；引用存活不代表 SurfaceHolder 底层内容目标永远可用，同一 window 也不能同时连接 EGLSurface 与 VkSurface。",
+      "why": "Explain two distinct native-window references and renderer lifecycle; avoid falsely flagging valid immediate release of local reference.",
+      "sources": [
+        "https://docs.vulkan.org/refpages/latest/refpages/source/vkCreateAndroidSurfaceKHR.html",
+        "https://developer.android.com/ndk/reference/group/native-activity"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "Perfetto 的 FrameTimeline 对 SurfaceView 内容流没有完整覆盖。SurfaceFrame 记录一个 Surface 产生帧的时间线，DisplayFrame 记录一次显示周期汇总；宿主应用窗口的两类记录仍有价值。SurfaceView 主体还要补查独立 layer、表示 buffer transaction 的 `BufferTX`、Producer 队列和 fence。",
+      "after": "Perfetto 的 FrameTimeline 对 SurfaceView 内容流没有完整覆盖。SurfaceFrame 记录一个 Surface 产生帧的时间线，DisplayFrame 记录一次显示周期汇总；宿主窗口的 SurfaceFrame 与 SurfaceFlinger 的 DisplayFrame 要分开关联；DisplayFrame 不是每个宿主窗口各自拥有的一条应用帧记录。SurfaceView 主体还要补查独立 layer、表示 buffer transaction 的 `BufferTX`、Producer 队列和 fence。",
+      "why": "Do not attribute system DisplayFrame to an app window; verify per-layer token and actual timing.",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "这段 Compose 宿主把 listener 安装、复用后的重新绑定和资源释放放在明确位置。`CameraPreviewProducer` 是业务接口，其中 `bindIfSurfaceValid()` 必须幂等：只在 holder 已有有效 Surface 且尚未绑定时连接。",
+      "after": "这段 Compose 宿主把 listener 安装、复用后的重新绑定和资源释放放在明确位置。`CameraPreviewProducer` 是业务接口，其中 `bindIfSurfaceValid()` 必须幂等：启用本次绑定，且只在 holder 已有有效 Surface、尚未绑定时连接。`detachAndWaitUntilIdle()` 还必须把该绑定标为停用，保证保留的 callback 在下一次 bind 前不会因迟到事件自行重新启动 Producer。",
+      "why": "onReset retains callbacks while view may be inactive; business contract must gate automatic reconnection as well as stop current work.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/viewinterop/AndroidView.android.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "```kotlin\nprivate interface CameraPreviewProducer {\n    val surfaceCallback: SurfaceHolder.Callback\n\n    fun bindIfSurfaceValid(holder: SurfaceHolder)\n    fun detachAndWaitUntilIdle()\n}\n\n@Composable\nfun CameraSurfaceHost(\n    producer: CameraPreviewProducer,\n    modifier: Modifier = Modifier,\n) {\n    key(producer) {\n        AndroidView(\n            modifier = modifier,\n            factory = { context ->\n                SurfaceView(context).also { view ->\n                    view.holder.addCallback(producer.surfaceCallback)\n                }\n            },\n            update = { view ->\n                producer.bindIfSurfaceValid(view.holder)\n            },\n            onReset = {\n                producer.detachAndWaitUntilIdle()\n            },\n            onRelease = { view ->\n                view.holder.removeCallback(producer.surfaceCallback)\n                producer.detachAndWaitUntilIdle()\n            },\n        )\n    }\n}\n```",
+      "after": "```kotlin\ninterface CameraPreviewProducer {\n    val surfaceCallback: SurfaceHolder.Callback\n\n    fun bindIfSurfaceValid(holder: SurfaceHolder)\n    fun detachAndWaitUntilIdle()\n}\n\nprivate class ProducerIdentityKey(private val owner: Any) {\n    override fun equals(other: Any?): Boolean =\n        other is ProducerIdentityKey && other.owner === owner\n    override fun hashCode(): Int = System.identityHashCode(owner)\n}\n\n@Composable\nfun CameraSurfaceHost(\n    producer: CameraPreviewProducer,\n    modifier: Modifier = Modifier,\n) {\n    key(ProducerIdentityKey(producer)) {\n        AndroidView(\n            modifier = modifier,\n            factory = { context ->\n                SurfaceView(context).also { view ->\n                    view.holder.addCallback(producer.surfaceCallback)\n                }\n            },\n            update = { view ->\n                producer.bindIfSurfaceValid(view.holder)\n            },\n            onReset = {\n                producer.detachAndWaitUntilIdle()\n            },\n            onRelease = { view ->\n                view.holder.removeCallback(producer.surfaceCallback)\n                producer.detachAndWaitUntilIdle()\n            },\n        )\n    }\n}\n```",
+      "why": "Public composable cannot expose private interface. Compose key uses equality; explicit reference identity key prevents equal-but-distinct producers from retaining old callback closure.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/viewinterop/AndroidView.android.kt",
+        "https://developer.android.com/reference/kotlin/androidx/compose/runtime/package-summary"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "`key(producer)` 使 Producer 身份变化时旧 View 退出组合，避免回调仍指向旧对象。业务实现还要保证 `detachAndWaitUntilIdle()` 幂等。`producer` 由上层持有时，整个 Producer 的终止释放应由上层所有者负责；这里仅解除当前 Surface。",
+      "after": "`key(ProducerIdentityKey(producer))` 使 Producer 身份变化时旧 View 退出组合，避免回调仍指向旧对象。业务实现还要保证 `detachAndWaitUntilIdle()` 幂等。`producer` 由上层持有时，整个 Producer 的终止释放应由上层所有者负责；这里仅解除当前 Surface。\n\nCompose 的 `key` 默认按 equality 比较，直接传 producer 不保证引用身份变化就换掉 View；上例显式用 `===` 做身份键。此接口的停用门控、串行切换与幂等停止仍由业务实现提供，不把这个包装器当成完整相机 session 管理器。",
+      "why": "Identity and equality are distinct; document exact owner responsibilities rather than claiming key(producer) always recreates.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/viewinterop/AndroidView.android.kt",
+        "https://developer.android.com/reference/kotlin/androidx/compose/runtime/package-summary"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "Android 14 alpha、Android 16 composition order 和 Android 17 blur region 扩展了视觉能力，但没有让 SurfaceView 变成普通纹理。blur region 坐标相对 View bounds，尺寸变化后必须更新。",
+      "after": "Android 14 alpha、Android 16 composition order 和 Android 17 blur region 扩展了视觉能力，但没有让 SurfaceView 变成普通纹理。blur region 坐标相对 View bounds，尺寸变化后必须更新。\n\n`AndroidView` 默认也不按自身布局边界裁剪；SurfaceView 包装后需要明确是否使用 `clipToOutline` / 受支持的 clip。`setCompositionOrder()` 中非负值位于宿主窗口之上、负值位于其下；同 order 的相对层级没有定义，不应依赖创建顺序。",
+      "why": "Interop clip and same-order behavior are documented constraints for modern SurfaceView animations.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/viewinterop/AndroidView.android.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "- [Android `SurfaceView` reference](https://developer.android.com/reference/android/view/SurfaceView)\n- [Android `TextureView` reference](https://developer.android.com/reference/android/view/TextureView)\n- [Android `SurfaceHolder.Callback` reference](https://developer.android.com/reference/android/view/SurfaceHolder.Callback)\n- [Android `SurfaceTexture` reference](https://developer.android.com/reference/android/graphics/SurfaceTexture)\n- [Android `SurfaceControl.Transaction` reference](https://developer.android.com/reference/android/view/SurfaceControl.Transaction)\n- [Android `SurfaceSyncGroup` reference](https://developer.android.com/reference/android/window/SurfaceSyncGroup)\n- [CameraX PreviewView implementation mode](https://developer.android.com/reference/androidx/camera/view/PreviewView.ImplementationMode)\n- [CameraX preview](https://developer.android.com/media/camera/camerax/preview)\n- [Media3 surface types](https://developer.android.com/media/media3/ui/surface)\n- [Media3 `PlayerView`](https://developer.android.com/reference/androidx/media3/ui/PlayerView)\n- [Compose BOM Maven metadata](https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom/maven-metadata.xml)\n- [Compose Foundation 1.12.0 `AndroidExternalSurface` source](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/AndroidExternalSurface.android.kt)\n- [Compose UI 1.12.0 `AndroidView` source](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/viewinterop/AndroidView.android.kt)\n- [Compose `AndroidView`](https://developer.android.com/reference/kotlin/androidx/compose/ui/viewinterop/AndroidView.composable)\n- [Compose `AndroidExternalSurface`](https://developer.android.com/reference/kotlin/androidx/compose/foundation/AndroidExternalSurface.composable)\n- [Compose `AndroidEmbeddedExternalSurface`](https://developer.android.com/reference/kotlin/androidx/compose/foundation/AndroidEmbeddedExternalSurface.composable)\n- [Vulkan on Android](https://developer.android.com/codelabs/beginning-vulkan-on-android)\n- [Android game native/Vulkan engine support](https://developer.android.com/games/develop/vulkan/native-engine-support)\n- [BufferQueue and gralloc](https://source.android.com/docs/core/graphics/arch-bq-gralloc)\n- [HWC composition operations](https://source.android.com/docs/core/graphics/implement-hwc#display_comp_ops)\n- [AutoSingleLayer unsignaled buffer latch](https://source.android.com/docs/core/graphics/unsignaled-buffer-latch)\n- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)\n- [Android 17 `SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java)\n- [Android 17 `TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java)\n- [Android 17 `TextureLayer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/TextureLayer.java)\n- [Android 17 `DeferredLayerUpdater.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp)\n- [Android 17 `DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)\n- [Android 17 `BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)\n- [Android 17 `SurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java)\n- [Android 17 `SurfaceSyncGroup.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/window/SurfaceSyncGroup.java)\n- [Android 17 SurfaceFlinger FrontEnd](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrontEnd/)\n- [Android 17 `HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)\n- [Android 17 kernel `sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)\n- [Android 17 kernel `dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)\n",
+      "after": "- [Android `SurfaceView` reference](https://developer.android.com/reference/android/view/SurfaceView)\n- [Android `TextureView` reference](https://developer.android.com/reference/android/view/TextureView)\n- [Android `SurfaceHolder.Callback` reference](https://developer.android.com/reference/android/view/SurfaceHolder.Callback)\n- [Android `SurfaceTexture` reference](https://developer.android.com/reference/android/graphics/SurfaceTexture)\n- [Android `SurfaceControl.Transaction` reference](https://developer.android.com/reference/android/view/SurfaceControl.Transaction)\n- [Android `SurfaceSyncGroup` reference](https://developer.android.com/reference/android/window/SurfaceSyncGroup)\n- [CameraX PreviewView implementation mode](https://developer.android.com/reference/androidx/camera/view/PreviewView.ImplementationMode)\n- [CameraX preview](https://developer.android.com/media/camera/camerax/preview)\n- [Media3 surface types](https://developer.android.com/media/media3/ui/surface)\n- [Media3 `PlayerView`](https://developer.android.com/reference/androidx/media3/ui/PlayerView)\n- [Compose BOM Maven metadata](https://dl.google.com/dl/android/maven2/androidx/compose/compose-bom/maven-metadata.xml)\n- [Compose Foundation 1.12.0 `AndroidExternalSurface` source](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/androidMain/kotlin/androidx/compose/foundation/AndroidExternalSurface.android.kt)\n- [Compose UI 1.12.0 `AndroidView` source](https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/viewinterop/AndroidView.android.kt)\n- [Compose `AndroidView`](https://developer.android.com/reference/kotlin/androidx/compose/ui/viewinterop/AndroidView.composable)\n- [Compose `AndroidExternalSurface`](https://developer.android.com/reference/kotlin/androidx/compose/foundation/AndroidExternalSurface.composable)\n- [Compose `AndroidEmbeddedExternalSurface`](https://developer.android.com/reference/kotlin/androidx/compose/foundation/AndroidEmbeddedExternalSurface.composable)\n- [Vulkan on Android](https://developer.android.com/codelabs/beginning-vulkan-on-android)\n- [Android game native/Vulkan engine support](https://developer.android.com/games/develop/vulkan/native-engine-support)\n- [BufferQueue and gralloc](https://source.android.com/docs/core/graphics/arch-bq-gralloc)\n- [HWC composition operations](https://source.android.com/docs/core/graphics/implement-hwc#display_comp_ops)\n- [AutoSingleLayer unsignaled buffer latch](https://source.android.com/docs/core/graphics/unsignaled-buffer-latch)\n- [Perfetto FrameTimeline](https://perfetto.dev/docs/data-sources/frametimeline)\n- [Android 17 `SurfaceView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java)\n- [Android 17 `TextureView.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/TextureView.java)\n- [Android 17 `TextureLayer.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/TextureLayer.java)\n- [Android 17 `DeferredLayerUpdater.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/DeferredLayerUpdater.cpp)\n- [Android 17 `DrawFrameTask.cpp`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp)\n- [Android 17 `BLASTBufferQueue.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/libs/gui/BLASTBufferQueue.cpp)\n- [Android 17 `SurfaceControl.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceControl.java)\n- [Android 17 `SurfaceSyncGroup.java`](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/window/SurfaceSyncGroup.java)\n- [Android 17 SurfaceFlinger FrontEnd](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/FrontEnd/)\n- [Android 17 `HWComposer.cpp`](https://android.googlesource.com/platform/frameworks/native/+/android-17.0.0_r1/services/surfaceflinger/DisplayHardware/HWComposer.cpp)\n- [Android 17 kernel `sync_file.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/sync_file.c)\n- [Android 17 kernel `dma-fence.c`](https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/dma-buf/dma-fence.c)\n\n- [CameraX 1.6.2 发布源码包：PreviewView 实际回退分支](https://dl.google.com/android/maven2/androidx/camera/camera-view/1.6.2/camera-view-1.6.2-sources.jar)\n- [BOM 2026.08.00 POM](https://dl.google.com/android/maven2/androidx/compose/compose-bom/2026.08.00/compose-bom-2026.08.00.pom)\n- [Image.Plane：rowStride 字节单位](https://developer.android.com/reference/android/media/Image.Plane)\n- [Vulkan：Android Surface 引用计数和独占连接](https://docs.vulkan.org/refpages/latest/refpages/source/vkCreateAndroidSurfaceKHR.html)\n- [NDK：ANativeWindow_fromSurface 本地引用](https://developer.android.com/ndk/reference/group/native-activity)",
+      "why": "Add exact primary artifacts for new corrections.",
+      "sources": [
+        "https://dl.google.com/android/maven2/androidx/camera/camera-view/1.6.2/camera-view-1.6.2-sources.jar",
+        "https://docs.vulkan.org/refpages/latest/refpages/source/vkCreateAndroidSurfaceKHR.html",
+        "https://developer.android.com/ndk/reference/group/native-activity"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "before": "### 功耗优势依赖 DEVICE composition",
+      "after": "### 功耗差异要连同合成策略测量",
+      "why": "DEVICE can avoid client composition, but an independent path may still change work even with CLIENT; only target measurements establish energy outcome.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java",
+        "https://developer.android.com/media/media3/ui/surface"
+      ]
     }
   ],
   "validation": {},
   "last_checkpoint": {
-    "completed": 44,
+    "completed": 46,
     "total": 51,
-    "next_article": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
-    "updated_at": "2026-10-25T11:21:03.333239+00:00"
+    "next_article": "src/part5-app/ch22-rendering-practice/15-vulkan-impeller-shader-compilation.md",
+    "updated_at": "2026-10-25T11:45:21.403813+00:00"
   },
   "replaced_inline_diagrams": []
 }

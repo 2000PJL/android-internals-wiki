@@ -526,50 +526,150 @@
     {
       "path": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
       "sha256_before": "90019ce7d891055b1294fedd1d4b920cc8636443bcda26ca0d02bc29427beaba",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a268-01-two-selection-layers",
+        "a268-02-sufficiency-before-filter",
+        "a268-03-scoring-buckets",
+        "a268-04-ranker-policy-order",
+        "a268-05-default-callback-order",
+        "a268-06-call-and-network-timelines",
+        "a268-07-capability-planes",
+        "a268-08-callback-lifecycle",
+        "a268-09-recover-by-operation",
+        "a268-10-evidence-correlate",
+        "a268-11-oem-scorer-evidence",
+        "a268-12-quic-migration-gates"
+      ],
       "article_index": 268,
-      "sha256_at_assignment": "90019ce7d891055b1294fedd1d4b920cc8636443bcda26ca0d02bc29427beaba"
+      "sha256_at_assignment": "90019ce7d891055b1294fedd1d4b920cc8636443bcda26ca0d02bc29427beaba",
+      "sha256_current": "8d54ec3c46269f1b7342389f8a1af90e1903aaf698095319fe05f635d425c5c1",
+      "sha256_after": "8d54ec3c46269f1b7342389f8a1af90e1903aaf698095319fe05f635d425c5c1",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文632行完整核读；31份成功来源，固定Android17r1 Selector/Scorer/Ranker/NetworkMonitor/WifiManager与OkHttp5.5事件及恢复源码核对，修复权限串损坏、API29 blocked边界、connect含TLS/DNS缺失end、PrivateDNS含受支持DoH3、当前BSSID空SSID前置过滤、事件子集/并行身份和取消终点、5.5.1当前发布及重复定义。12张图与12个正文位置实际视觉检查通过，5/6/9图复修后复看；mdbook构建/本地链接/图资产验证通过。代码块全保持原样；没有Kotlin编译或设备运行，不报告实测性能。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "90019ce7d891055b1294fedd1d4b920cc8636443bcda26ca0d02bc29427beaba"
     },
     {
       "path": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
       "sha256_before": "1bc7378bb628920923ff6095349d3bf504bb52ded8e9bd230d48ce156f451af9",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a269-01-independent-network-signals",
+        "a269-02-opt-in-and-operator",
+        "a269-03-coherent-budget-publication",
+        "a269-04-priority-and-byte-budget",
+        "a269-05-retry-eligibility-and-deadline",
+        "a269-06-fcm-two-conditions",
+        "a269-07-durable-delivery-states",
+        "a269-08-subscription-route-matching",
+        "a269-09-media-plan-and-abr",
+        "a269-10-lan-protection-scope",
+        "a269-11-lan-target-migration",
+        "a269-12-lan-two-authorizations",
+        "a269-13-nsd-grant-and-refresh",
+        "a269-14-lnp-error-evidence",
+        "a269-15-network-to-ui-delay"
+      ],
       "article_index": 269,
-      "sha256_at_assignment": "1bc7378bb628920923ff6095349d3bf504bb52ded8e9bd230d48ce156f451af9"
+      "sha256_at_assignment": "1bc7378bb628920923ff6095349d3bf504bb52ded8e9bd230d48ce156f451af9",
+      "sha256_current": "6e222d76ffe22d8d556741783f8a0914481711432431bb13f04e0004d92217a1",
+      "sha256_after": "6e222d76ffe22d8d556741783f8a0914481711432431bb13f04e0004d92217a1",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文926行完整核读，49份有效来源下载核对：Android17r1能力/回调/订阅/NSD/PermissionMonitor/native与公开SDK、当前卫星/FCM/Media3/NDK文档。15张技术图及全部正文位置实际视觉检查，FCM条件与队列分支修图后复核；mdbook/本地链接/资产通过。13条校勘包含切网先失效旧预算和注销后迟到回调守卫（顺序逻辑推断修复）、NOT_VPN候选与实际路径区别、控制流量计入总成本、NDK符号当前已公开及读后清除/负错误、NSD示例服务丢失处理、GREASE边界。代码仅预算监听器修改，JSON解析与shell语法通过，其余代码块未改；未编译Kotlin或设备执行，不宣称运行实测。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "1bc7378bb628920923ff6095349d3bf504bb52ded8e9bd230d48ce156f451af9"
     },
     {
       "path": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
       "sha256_before": "c1d77eab3be0c3c382fdce942aa6c21068594ba381cd03ad2feda82199af760b",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a270-01-quota-policy-planes",
+        "a270-02-bpf-map-swap-rcu",
+        "a270-03-stats-read-and-alert",
+        "a270-04-cycle-remaining-budget",
+        "a270-05-warning-and-limit-dispatch",
+        "a270-06-packet-quota-decision",
+        "a270-07-quota-feedback-and-telephony",
+        "a270-08-data-saver-uid-path",
+        "a270-09-public-app-observation",
+        "a270-10-diagnosis-by-enforcement-scope"
+      ],
       "article_index": 270,
-      "sha256_at_assignment": "c1d77eab3be0c3c382fdce942aa6c21068594ba381cd03ad2feda82199af760b"
+      "sha256_at_assignment": "c1d77eab3be0c3c382fdce942aa6c21068594ba381cd03ad2feda82199af760b",
+      "sha256_current": "86a08add11b63d443378ba69594bfb5b97041068f567d67b8582e13bee9d9e3e",
+      "sha256_after": "86a08add11b63d443378ba69594bfb5b97041068f567d67b8582e13bee9d9e3e",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文330行核读；17份有效来源均成功，固定17r1统计服务/Factory/Bpf/Policy/NMS/netd/ConnectivityService及android17-6.18-2026-06_r6 quota_mt2逐段核对，当前DataSaver官方TV800/10Kbit例外和公开统计/WorkManager接口核实。10图与10个正文位置实际视觉检查、mdbook/链接/资产通过。9条校勘：接口quota范围、RCU跨核同步、原始与调整累计分离、拒绝零配额在netd接口而非泛指内核、quota严格大于报文长度的边界、DataSaver例外不绕过独立管理员规则及来源。6代码块保持原样；shell仅替换UID占位做语法检查，不执行adb或内核实验，无性能测量。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "c1d77eab3be0c3c382fdce942aa6c21068594ba381cd03ad2feda82199af760b"
     },
     {
       "path": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
       "sha256_before": "a305097ad58f0a8416228d09d8adf850003e9c47cff2b4a29ec14812552485a2",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a271-01-rfcomm-eof-gates",
+        "a271-02-exit-cause-classification",
+        "a271-03-io-ownership-and-cancel",
+        "a271-04-stream-framing-and-bounds",
+        "a271-05-connection-generation-fence",
+        "a271-06-reconnect-state-gates",
+        "a271-07-retry-window-and-replay",
+        "a271-08-background-execution-and-permissions",
+        "a271-09-disconnect-work-versus-idle"
+      ],
       "article_index": 271,
-      "sha256_at_assignment": "a305097ad58f0a8416228d09d8adf850003e9c47cff2b4a29ec14812552485a2"
+      "sha256_at_assignment": "a305097ad58f0a8416228d09d8adf850003e9c47cff2b4a29ec14812552485a2",
+      "sha256_current": "0f947f3fdf115aef4dcb5b96ca728e5a3f8272fcc5e7456bad8e8d34cef4bdd7",
+      "sha256_after": "0f947f3fdf115aef4dcb5b96ca728e5a3f8272fcc5e7456bad8e8d34cef4bdd7",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文393行核读，11份有效来源成功，固定17r1 BluetoothSocket/InputStream/aconfig与当前RFCOMM正式行为、权限、FGS门槛核对。9图与9正文位置实际视觉，2/3/6图控制分支和标签修订后复核；构建/链接/资产通过。10条校勘：公开输入流read方法、EOF分类时的原子意图与物理先后区别、外层清理职责、包尺寸API23、蓝牙target31与FGS target34边界、RFCOMM测试范围及来源。4代码块全保持原样，shell仅语法检查；没有Kotlin编译、compat修改或设备测试。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "a305097ad58f0a8416228d09d8adf850003e9c47cff2b4a29ec14812552485a2"
     },
     {
       "path": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
       "sha256_before": "cfca3a0bb8e8891316d2437c114edcb0b928b6cfa6e87d3d54d190118a9e9a80",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a272-01-host-and-se-routing",
+        "a272-02-hce-latency-phases",
+        "a272-03-host-manager-state-flow",
+        "a272-04-intent-target-and-url",
+        "a272-05-reader-lifecycle-and-io",
+        "a272-06-async-apdu-submission-boundary",
+        "a272-07-trace-command-versus-response",
+        "a272-08-observe-one-transaction",
+        "a272-09-power-saving-state-and-support",
+        "a272-10-two-clock-measurement",
+        "a272-11-nfc-evidence-layers"
+      ],
       "article_index": 272,
-      "sha256_at_assignment": "cfca3a0bb8e8891316d2437c114edcb0b928b6cfa6e87d3d54d190118a9e9a80"
+      "sha256_at_assignment": "cfca3a0bb8e8891316d2437c114edcb0b928b6cfa6e87d3d54d190118a9e9a80",
+      "sha256_current": "11d7010c5e39efeca9bbf0447612702684dcd5ccaf7b370f119e30b5ca5405d0",
+      "sha256_after": "11d7010c5e39efeca9bbf0447612702684dcd5ccaf7b370f119e30b5ca5405d0",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文517行核读，19份有效来源全部成功，固定17r1 NFC模块与当前SDK/指南及官方协程文档核对；内核标签只作边界页，不推导设备驱动。11图与全部正文位置实际视觉检查，mdbook/链接/资产通过。14条校勘：以图资产替换Mermaid；stopped限定target37、停用只对链路结束/另服务切换；Reader任务close；HCE提交前主线程+命令代次并明确sendResponseApdu再次排队且无公开撤回/交易ID（静态交错推断，保存证据）；Observe先检查NFC开启；跨端时钟校准及射频/排队区间。只修改HCE Kotlin骨架，XML解析/shell语法通过，其余代码原样；未编译Kotlin、未运行设备/支付终端，无实测性能数字。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "cfca3a0bb8e8891316d2437c114edcb0b928b6cfa6e87d3d54d190118a9e9a80"
     },
     {
       "path": "src/part5-app/ch24-io-network/README.md",
       "sha256_before": "9b26804d5ef5d75b9cce52636d486cc0cad897c57fdd413c42313ec38f77a4ae",
-      "status": "pending",
-      "diagrams": [],
+      "status": "in_progress",
+      "diagrams": [
+        "a273-01-ch24-problem-reading-map"
+      ],
       "article_index": 273,
-      "sha256_at_assignment": "9b26804d5ef5d75b9cce52636d486cc0cad897c57fdd413c42313ec38f77a4ae"
+      "sha256_at_assignment": "9b26804d5ef5d75b9cce52636d486cc0cad897c57fdd413c42313ec38f77a4ae",
+      "sha256_current": "61c981037e16231a3fe95a2dd2338bec5a1729c095900b0dd9dc07b9825a4b9d"
     },
     {
       "path": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
@@ -5167,6 +5267,1371 @@
         "src/assets/diagrams/ch24/a267-11-dns-evidence-and-tests.svg": "3ff0b408113f0bb17fb27dabc172b932ea9c4bc02cd7d097121d9bc392f19a7c",
         "src/assets/diagrams/ch24/a267-11-dns-evidence-and-tests.png": "6854cba6d4ec0dc656ac245d2f9262f39e564256ad020a968c17a5cfb4bef059"
       }
+    },
+    {
+      "id": "a268-01-two-selection-layers",
+      "title": "无线候选选择与请求满足分属两层",
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a268-01-two-selection-layers.svg",
+        "src/assets/diagrams/ch24/a268-01-two-selection-layers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a268-01-two-selection-layers",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/WifiNetworkSelector.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/connectivity/NetworkRanker.java",
+        "https://developer.android.com/develop/connectivity/network-ops/reading-network-state"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a268-01-two-selection-layers.svg": "a51d6fbccca0d2783d272fb943bbdd7a65c1b264e2bc60e47acfc96284c6606f",
+        "src/assets/diagrams/ch24/a268-01-two-selection-layers.png": "d76da45c9714c12e36c16862aa6f6b9174310fb4500c26e8b027bc729428ba65"
+      }
+    },
+    {
+      "id": "a268-02-sufficiency-before-filter",
+      "title": "足够好判断先于扫描候选筛选",
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a268-02-sufficiency-before-filter.svg",
+        "src/assets/diagrams/ch24/a268-02-sufficiency-before-filter.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a268-02-sufficiency-before-filter",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/WifiNetworkSelector.java",
+        "https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/ScoringParams.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a268-02-sufficiency-before-filter.svg": "c3a0fa6452b516c9d2ead2f03578a8f18d9cf6d7d04990d9ef5a68f92a1f336a",
+        "src/assets/diagrams/ch24/a268-02-sufficiency-before-filter.png": "f6b54c4d522d05dd0abc3d82f944fb0917ef3ef6a897dfb92b730eb8017dd39e"
+      }
+    },
+    {
+      "id": "a268-03-scoring-buckets",
+      "title": "候选评分先区分优先区间再比较无线奖励",
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a268-03-scoring-buckets.svg",
+        "src/assets/diagrams/ch24/a268-03-scoring-buckets.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a268-03-scoring-buckets",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/ThroughputScorer.java",
+        "https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/WifiCandidates.java",
+        "https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/ScoringParams.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a268-03-scoring-buckets.svg": "10d8cce86ca1dfcb3a71fa58ead0bbf295ad820d8cdb0d94a55e262552a9fe29",
+        "src/assets/diagrams/ch24/a268-03-scoring-buckets.png": "333a6bb67e104c943e2fe9a96e74c877d19214b849d65fe97a41af27d6830bed"
+      }
+    },
+    {
+      "id": "a268-04-ranker-policy-order",
+      "title": "NetworkRanker以策略顺序逐轮保留候选",
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a268-04-ranker-policy-order.svg",
+        "src/assets/diagrams/ch24/a268-04-ranker-policy-order.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a268-04-ranker-policy-order",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/connectivity/NetworkRanker.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/connectivity/FullScore.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkScore.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a268-04-ranker-policy-order.svg": "b4ec7a065f97dc6a787df0c272ca3c541d294745f3172a38493c52d713321204",
+        "src/assets/diagrams/ch24/a268-04-ranker-policy-order.png": "9c20d891428c1f6cf9d2b5a22c7d13886e4fce54c3725dd12e704631fe50fad1"
+      }
+    },
+    {
+      "id": "a268-05-default-callback-order",
+      "title": "默认网络回调在新选择后跟踪新网络",
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a268-05-default-callback-order.svg",
+        "src/assets/diagrams/ch24/a268-05-default-callback-order.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a268-05-default-callback-order",
+      "sources": [
+        "https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a268-05-default-callback-order.svg": "6272b3427a163fa3e2f1e5c9eca6b24654be1bae2edf2de197ab463a574cf254",
+        "src/assets/diagrams/ch24/a268-05-default-callback-order.png": "5ffc3a7caa7a1f01554b728f760a92a27b3dcd59e3e4a44440315683ba6ef70d"
+      }
+    },
+    {
+      "id": "a268-06-call-and-network-timelines",
+      "title": "请求时间线与默认网络时间线只作关联",
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a268-06-call-and-network-timelines.svg",
+        "src/assets/diagrams/ch24/a268-06-call-and-network-timelines.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a268-06-call-and-network-timelines",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt",
+        "https://developer.android.com/develop/connectivity/network-ops/reading-network-state"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a268-06-call-and-network-timelines.svg": "80d2bd1c2953249c079cc2dae375d1310efc23394811a524733a5815ac9c3823",
+        "src/assets/diagrams/ch24/a268-06-call-and-network-timelines.png": "bc49e54fdcbac4e504f76935b4fc63de21f665feedcb6b8ed379e25b28493cb5"
+      }
+    },
+    {
+      "id": "a268-07-capability-planes",
+      "title": "无线关联、系统验证与业务成功分别判断",
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a268-07-capability-planes.svg",
+        "src/assets/diagrams/ch24/a268-07-capability-planes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a268-07-capability-planes",
+      "sources": [
+        "https://developer.android.com/reference/android/net/NetworkCapabilities",
+        "https://android.googlesource.com/platform/packages/modules/NetworkStack/+/refs/tags/android-17.0.0_r1/src/com/android/server/connectivity/NetworkMonitor.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a268-07-capability-planes.svg": "cc0216c17749056ae1a6f3390a9ae3670e762f522a2d9c61822c8169ac549620",
+        "src/assets/diagrams/ch24/a268-07-capability-planes.png": "f24c18547269b64b61278ca3564a02bd667aefe9431daf9eec9ec84824870d58"
+      }
+    },
+    {
+      "id": "a268-08-callback-lifecycle",
+      "title": "同一Handler维护网络代次并及时释放",
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a268-08-callback-lifecycle.svg",
+        "src/assets/diagrams/ch24/a268-08-callback-lifecycle.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a268-08-callback-lifecycle",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java",
+        "https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback",
+        "https://developer.android.com/reference/android/net/NetworkCapabilities"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a268-08-callback-lifecycle.svg": "58f0eb73fdfd6e338de9e348d6096961ed59dd60fb81206f3bd2ea68ce510ff3",
+        "src/assets/diagrams/ch24/a268-08-callback-lifecycle.png": "8ff166c93f9729e4bb4c6b6c88f5ecd66534fdcdf59e832715ae53e346ac1991"
+      }
+    },
+    {
+      "id": "a268-09-recover-by-operation",
+      "title": "切网后的恢复按连接和业务语义推进",
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a268-09-recover-by-operation.svg",
+        "src/assets/diagrams/ch24/a268-09-recover-by-operation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a268-09-recover-by-operation",
+      "sources": [
+        "https://lysine.dev/okhttp/features/connections/",
+        "https://developer.android.com/reference/android/net/NetworkCapabilities",
+        "https://developer.android.com/develop/background-work/background-tasks/persistent/getting-started/define-work"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a268-09-recover-by-operation.svg": "1256e4378b19c9640b092ebe2d90a5ab1d9ec7de5a9c974b7388fe733df31043",
+        "src/assets/diagrams/ch24/a268-09-recover-by-operation.png": "e33011f321fac97c1ae9875045fd41e3be3aa009eaddbf3219e62f09570c579d"
+      }
+    },
+    {
+      "id": "a268-10-evidence-correlate",
+      "title": "系统与请求证据按编号和时钟对齐",
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a268-10-evidence-correlate.svg",
+        "src/assets/diagrams/ch24/a268-10-evidence-correlate.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a268-10-evidence-correlate",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/network-ops/reading-network-state",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/connectivity/NetworkRanker.java",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a268-10-evidence-correlate.svg": "331e19f63a8656a176fc3d130bf2a5792b28429d36dbcf37abadafea2c900915",
+        "src/assets/diagrams/ch24/a268-10-evidence-correlate.png": "9f7505087a61df695643f0659d7d21d661ca86ec38dc3f6e749c7e30e003f9b2"
+      }
+    },
+    {
+      "id": "a268-11-oem-scorer-evidence",
+      "title": "OEM评分通道与三层设备证据",
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a268-11-oem-scorer-evidence.svg",
+        "src/assets/diagrams/ch24/a268-11-oem-scorer-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a268-11-oem-scorer-evidence",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/framework/java/android/net/wifi/WifiManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/ThroughputScorer.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a268-11-oem-scorer-evidence.svg": "8d8a1839a27e878a33dc14c602fab3ffcceb9492cdd7748e4ae4e80f3897cb1a",
+        "src/assets/diagrams/ch24/a268-11-oem-scorer-evidence.png": "55d91a114a2ea3adff0f660c0d586bcb3f254fd0690ef09ed1ca616b1d995cf4"
+      }
+    },
+    {
+      "id": "a268-12-quic-migration-gates",
+      "title": "HTTP3切网迁移以引擎与协商条件为前提",
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a268-12-quic-migration-gates.svg",
+        "src/assets/diagrams/ch24/a268-12-quic-migration-gates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a268-12-quic-migration-gates",
+      "sources": [
+        "https://developer.android.com/reference/android/net/http/ConnectionMigrationOptions.Builder",
+        "https://developer.android.com/reference/android/net/http/HttpEngine.Builder",
+        "https://developer.android.com/develop/connectivity/cronet/integration"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a268-12-quic-migration-gates.svg": "9de732198c36b30fa677fce7e8cbfc345c0af1808351c9edfdd5e589902a21de",
+        "src/assets/diagrams/ch24/a268-12-quic-migration-gates.png": "ff7b625bec276362b3dba6af79c8b13629731b089899b66a417e50e10bf02d68"
+      }
+    },
+    {
+      "id": "a269-01-independent-network-signals",
+      "title": "卫星、约束与计费分别形成预算",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-01-independent-network-signals.svg",
+        "src/assets/diagrams/ch24/a269-01-independent-network-signals.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-01-independent-network-signals",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/ServiceState.java",
+        "https://developer.android.com/develop/connectivity/satellite/constrained-networks"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-01-independent-network-signals.svg": "ddf1611ee5146f37a6723909422f93a993f1b567985cdedeaf5cac7c38bfef07",
+        "src/assets/diagrams/ch24/a269-01-independent-network-signals.png": "cdd6c5d90ed21ab139091eadaa29a1ab8d2f2088ea7cc308e1de65d1d29b848c"
+      }
+    },
+    {
+      "id": "a269-02-opt-in-and-operator",
+      "title": "宿主优化声明与运营商服务资格分别确认",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-02-opt-in-and-operator.svg",
+        "src/assets/diagrams/ch24/a269-02-opt-in-and-operator.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-02-opt-in-and-operator",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/satellite/constrained-networks",
+        "https://www.t-mobile.com/coverage/satellite-phone-service"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-02-opt-in-and-operator.svg": "61df1c6ae03eaf3ed757cec6376eb34d72952db91e550a77732f335d9dcd9f66",
+        "src/assets/diagrams/ch24/a269-02-opt-in-and-operator.png": "1bb6756dafa857d314bc4667c80237860b95bc5f29c5ea807d0a1677fe5be753"
+      }
+    },
+    {
+      "id": "a269-03-coherent-budget-publication",
+      "title": "切网先失效旧预算再合并回调快照",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-03-coherent-budget-publication.svg",
+        "src/assets/diagrams/ch24/a269-03-coherent-budget-publication.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-03-coherent-budget-publication",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java",
+        "https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback",
+        "https://developer.android.com/develop/connectivity/satellite/constrained-networks"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-03-coherent-budget-publication.svg": "3a80f7cce1c909c3a135b59f108b184558a02f818ea9072e40b1ff31bbc8ccac",
+        "src/assets/diagrams/ch24/a269-03-coherent-budget-publication.png": "abdeaa8f8b04cdb0f55ea87db4f9e2672ce1c15a30eeb2692ac5ff606eb0fe5c"
+      }
+    },
+    {
+      "id": "a269-04-priority-and-byte-budget",
+      "title": "请求按用户价值分级并共享数据预算",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-04-priority-and-byte-budget.svg",
+        "src/assets/diagrams/ch24/a269-04-priority-and-byte-budget.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-04-priority-and-byte-budget",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/satellite/constrained-networks",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-04-priority-and-byte-budget.svg": "b5ddce5e03276313741c5e5de05f404132e7b7646dd2a660a763972644b7dbe3",
+        "src/assets/diagrams/ch24/a269-04-priority-and-byte-budget.png": "e503bd65a8ff6c098a8ff9e4f268913dd7ce0c07e96de16888ee538039aec724"
+      }
+    },
+    {
+      "id": "a269-05-retry-eligibility-and-deadline",
+      "title": "重试受幂等、服务端退避和任务期限约束",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-05-retry-eligibility-and-deadline.svg",
+        "src/assets/diagrams/ch24/a269-05-retry-eligibility-and-deadline.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-05-retry-eligibility-and-deadline",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/satellite/constrained-networks",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-05-retry-eligibility-and-deadline.svg": "f70f9ce81270ed1ee23ca6b76823d145d6461cd19cc7660d202bed402b215399",
+        "src/assets/diagrams/ch24/a269-05-retry-eligibility-and-deadline.png": "6ca648f9e701757b0b8678fed41bd6f08cd82806f5a387bf39b7f7e964dc19c4"
+      }
+    },
+    {
+      "id": "a269-06-fcm-two-conditions",
+      "title": "FCM投递标记与业务数据拉取分别控制",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-06-fcm-two-conditions.svg",
+        "src/assets/diagrams/ch24/a269-06-fcm-two-conditions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-06-fcm-two-conditions",
+      "sources": [
+        "https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#androidconfig",
+        "https://firebase.google.com/docs/reference/admin/node/firebase-admin.messaging.androidconfig",
+        "https://developer.android.com/develop/connectivity/satellite/constrained-networks"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-06-fcm-two-conditions.svg": "e9436873a129be31ee9a4301dbcc10804cb3e863d0da5506df8f017eb0ccabeb",
+        "src/assets/diagrams/ch24/a269-06-fcm-two-conditions.png": "7e72bd375744023d81fb37e6e022735e02425c66a058632e003c3eafcae9765a"
+      }
+    },
+    {
+      "id": "a269-07-durable-delivery-states",
+      "title": "本地队列与服务端回执区分交付状态",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-07-durable-delivery-states.svg",
+        "src/assets/diagrams/ch24/a269-07-durable-delivery-states.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-07-durable-delivery-states",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/satellite/constrained-networks",
+        "https://firebase.google.com/docs/reference/fcm/rest/v1/projects.messages#androidconfig"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-07-durable-delivery-states.svg": "9c974f4137fe55723f1b5ec66fce612fa077c60142b06adea77e8d378bb4d8b3",
+        "src/assets/diagrams/ch24/a269-07-durable-delivery-states.png": "d6363bc1a6cc5e3f03792b59b28ec1f1ea7f5e2d97204c9fb92c5e57153b94f6"
+      }
+    },
+    {
+      "id": "a269-08-subscription-route-matching",
+      "title": "流媒体上限先匹配实际承载订阅",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-08-subscription-route-matching.svg",
+        "src/assets/diagrams/ch24/a269-08-subscription-route-matching.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-08-subscription-route-matching",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/SubscriptionInfo.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/SubscriptionManager.java",
+        "https://developer.android.com/reference/android/net/NetworkCapabilities#getSubscriptionIds()"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-08-subscription-route-matching.svg": "e3dc2398a86f2f51441f8cd94034d3b2a6828382d39eeb36eee2f07f8b35bb3d",
+        "src/assets/diagrams/ch24/a269-08-subscription-route-matching.png": "906072ccf2be6436dbc55e1bf77c3cde30c937eae9e10e2b5bf8b0531015efb3"
+      }
+    },
+    {
+      "id": "a269-09-media-plan-and-abr",
+      "title": "运营商上限约束候选而实时ABR继续择档",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-09-media-plan-and-abr.svg",
+        "src/assets/diagrams/ch24/a269-09-media-plan-and-abr.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-09-media-plan-and-abr",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/SubscriptionInfo.java",
+        "https://developer.android.com/reference/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection",
+        "https://developer.android.com/reference/androidx/media3/exoplayer/upstream/DefaultBandwidthMeter"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-09-media-plan-and-abr.svg": "da64bbc161f7a5da6efb2074dc40d630d0469f915e59b311948750d333ac4704",
+        "src/assets/diagrams/ch24/a269-09-media-plan-and-abr.png": "53b9ef851675634dbcc632380a720e3a2f788edfd68483233c8ca44ae9ef9182"
+      }
+    },
+    {
+      "id": "a269-10-lan-protection-scope",
+      "title": "本地网络保护按接口和地址范围判定",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-10-lan-protection-scope.svg",
+        "src/assets/diagrams/ch24/a269-10-lan-protection-scope.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-10-lan-protection-scope",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/local-network-definition",
+        "https://developer.android.com/privacy-and-security/local-network-permission"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-10-lan-protection-scope.svg": "7c9a6e3245cf29415f9191fcf32385d741e6555d47950832afd47decfd92fee1",
+        "src/assets/diagrams/ch24/a269-10-lan-protection-scope.png": "b379097150a39d67b004f2e604d99fa70b79ea6194342bb70e749d01c7fd8812"
+      }
+    },
+    {
+      "id": "a269-11-lan-target-migration",
+      "title": "Android16测试与Android17目标升级分步验证",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-11-lan-target-migration.svg",
+        "src/assets/diagrams/ch24/a269-11-lan-target-migration.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-11-lan-target-migration",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/local-network-permission",
+        "https://developer.android.com/about/versions/17/behavior-changes-17"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-11-lan-target-migration.svg": "c356fb7bf201ec29bdbc8d9526f15d85b4de549c4d2b8d1705f2b22619408388",
+        "src/assets/diagrams/ch24/a269-11-lan-target-migration.png": "a2f876c86edfc1a52bfd8b9059eb3444413c5cf659a59b396bc5de0ca68eb0fa"
+      }
+    },
+    {
+      "id": "a269-12-lan-two-authorizations",
+      "title": "设备选择授权与广泛局域网权限两条路径",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-12-lan-two-authorizations.svg",
+        "src/assets/diagrams/ch24/a269-12-lan-two-authorizations.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-12-lan-two-authorizations",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/local-network-permission",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework-t/src/android/net/nsd/DiscoveryRequest.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework-t/src/android/net/nsd/NsdManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-12-lan-two-authorizations.svg": "74f574ee8c57a1ceb79278840a3dcde69a55f6b91f1c81de0297147e329fe8fe",
+        "src/assets/diagrams/ch24/a269-12-lan-two-authorizations.png": "38b9b31322542e3ec5541681509a88c5153b81397c4f9f8cdf21c9f8f5d9a1d7"
+      }
+    },
+    {
+      "id": "a269-13-nsd-grant-and-refresh",
+      "title": "NSD服务授权可持久但连接地址必须刷新",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-13-nsd-grant-and-refresh.svg",
+        "src/assets/diagrams/ch24/a269-13-nsd-grant-and-refresh.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-13-nsd-grant-and-refresh",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework-t/src/android/net/nsd/DiscoveryRequest.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework-t/src/android/net/nsd/NsdManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-13-nsd-grant-and-refresh.svg": "27985c7d81ca1e1265a8a2a34042e94c7f084049862fd6c802e2ac271dd06171",
+        "src/assets/diagrams/ch24/a269-13-nsd-grant-and-refresh.png": "08526063e3306eb43d724c8e3757e852cd4874e594cba842304d1e7331452df3"
+      }
+    },
+    {
+      "id": "a269-14-lnp-error-evidence",
+      "title": "TCP超时需明确阻断原因才能归因LNP",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-14-lnp-error-evidence.svg",
+        "src/assets/diagrams/ch24/a269-14-lnp-error-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-14-lnp-error-evidence",
+      "sources": [
+        "https://developer.android.com/ndk/reference/group/networking",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/libconnectivity/src/connectivity_native.cpp",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/connectivity/PermissionMonitor.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-14-lnp-error-evidence.svg": "70c4b66c3f1133bca432c51e03d2bb22370dc437bd69f7f5b757e8a1fde68e73",
+        "src/assets/diagrams/ch24/a269-14-lnp-error-evidence.png": "b493f2ee2560aed54b11716dce5d2677483cc89f7bf52c73bd8d785efb4fde12"
+      }
+    },
+    {
+      "id": "a269-15-network-to-ui-delay",
+      "title": "数据到达、播放器消费与界面提交分别计时",
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a269-15-network-to-ui-delay.svg",
+        "src/assets/diagrams/ch24/a269-15-network-to-ui-delay.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a269-15-network-to-ui-delay",
+      "sources": [
+        "https://developer.android.com/about/versions/17/features",
+        "https://developer.android.com/about/versions/17/behavior-changes-17"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a269-15-network-to-ui-delay.svg": "56d9d46ac0031a915de85fd64411965fa5421221780ef22b96e1208483f3207c",
+        "src/assets/diagrams/ch24/a269-15-network-to-ui-delay.png": "f911bb15022b9dc8402e3fe886cd4c00c7b27c233f0d56e560ee4fe81fa79028"
+      }
+    },
+    {
+      "id": "a270-01-quota-policy-planes",
+      "title": "统计、提醒、总量限制与UID规则分别执行",
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a270-01-quota-policy-planes.svg",
+        "src/assets/diagrams/ch24/a270-01-quota-policy-planes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a270-01-quota-policy-planes",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkPolicyManagerService.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsFactory.java",
+        "https://developer.android.com/develop/connectivity/network-ops/data-saver"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a270-01-quota-policy-planes.svg": "8025cc4583e4684131e5c8d6a5f32d3a9342127d16d01cfc58885c22da42e35d",
+        "src/assets/diagrams/ch24/a270-01-quota-policy-planes.png": "b3f9135e405b2423b29ea2372091afed881614d9dcbd6c24f909561618c16e83"
+      }
+    },
+    {
+      "id": "a270-02-bpf-map-swap-rcu",
+      "title": "切换BPF双表后等待RCU再读旧表",
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a270-02-bpf-map-swap-rcu.svg",
+        "src/assets/diagrams/ch24/a270-02-bpf-map-swap-rcu.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a270-02-bpf-map-swap-rcu",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/BpfNetMaps.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsFactory.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a270-02-bpf-map-swap-rcu.svg": "9fb26042c8d008721deab20f29e879bee95454c76a3c37b430e73494c568fee6",
+        "src/assets/diagrams/ch24/a270-02-bpf-map-swap-rcu.png": "71a61749220138807f8c8c40492dc113a6d4f5aaa9f16368e86f83dd42ea2bac"
+      }
+    },
+    {
+      "id": "a270-03-stats-read-and-alert",
+      "title": "UID先读、接口后读并合并提供方计数",
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a270-03-stats-read-and-alert.svg",
+        "src/assets/diagrams/ch24/a270-03-stats-read-and-alert.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a270-03-stats-read-and-alert",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsService.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsFactory.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a270-03-stats-read-and-alert.svg": "83fb78a7534f0d1d848c26c17208ceaec71e3411b6cf4a3aeb425fc65f4e821a",
+        "src/assets/diagrams/ch24/a270-03-stats-read-and-alert.png": "9ff8618384a6acfd2e07521344fccaa1ef24c3abe46a71f31c11ba4aa4a5919c"
+      }
+    },
+    {
+      "id": "a270-04-cycle-remaining-budget",
+      "title": "周期总量与snooze决定接口余量",
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a270-04-cycle-remaining-budget.svg",
+        "src/assets/diagrams/ch24/a270-04-cycle-remaining-budget.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a270-04-cycle-remaining-budget",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkPolicyManagerService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a270-04-cycle-remaining-budget.svg": "9836e2155b654c31e8c0829c56865f81545680bc2b42fb90b180c7127cf4ca95",
+        "src/assets/diagrams/ch24/a270-04-cycle-remaining-budget.png": "35cf59ffa7531da7612206b928dcf74676e27c205d5b13843c113c2c8d5118f1"
+      }
+    },
+    {
+      "id": "a270-05-warning-and-limit-dispatch",
+      "title": "warning送统计提供方而limit进入接口拒绝规则",
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a270-05-warning-and-limit-dispatch.svg",
+        "src/assets/diagrams/ch24/a270-05-warning-and-limit-dispatch.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a270-05-warning-and-limit-dispatch",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkPolicyManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkManagementService.java",
+        "https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/BandwidthController.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a270-05-warning-and-limit-dispatch.svg": "b7e986be43e60e8fee1872beb4e5020ab70b7740534f13c830ef69533c67db90",
+        "src/assets/diagrams/ch24/a270-05-warning-and-limit-dispatch.png": "8839688f7ae23c6013e27d5abad754c9c92a742c3261d85bdde3fa48b03bdeaf"
+      }
+    },
+    {
+      "id": "a270-06-packet-quota-decision",
+      "title": "quota2以剩余字节与当前报文长度比较",
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a270-06-packet-quota-decision.svg",
+        "src/assets/diagrams/ch24/a270-06-packet-quota-decision.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a270-06-packet-quota-decision",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/netfilter/xt_quota2.c",
+        "https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/BandwidthController.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a270-06-packet-quota-decision.svg": "93fb266e83e0fbc28d67d09d4d6e980160c7e1c6d7a90616539b764877e50283",
+        "src/assets/diagrams/ch24/a270-06-packet-quota-decision.png": "786401f315a723d6f2879227350cdc130ca7dfedfd3149b6cdc956c7f2225086"
+      }
+    },
+    {
+      "id": "a270-07-quota-feedback-and-telephony",
+      "title": "接口事件触发复核而周期策略控制移动数据",
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a270-07-quota-feedback-and-telephony.svg",
+        "src/assets/diagrams/ch24/a270-07-quota-feedback-and-telephony.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a270-07-quota-feedback-and-telephony",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkPolicyManagerService.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsService.java",
+        "https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/BandwidthController.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a270-07-quota-feedback-and-telephony.svg": "5d21d3368b2eb49ffae7d58efdcb60a818484878c4937ab773c02fe2d9cde5b4",
+        "src/assets/diagrams/ch24/a270-07-quota-feedback-and-telephony.png": "b31320f48398d268375e42777b7eaa0a01964ca8899a9d8c589dc04164c24de7"
+      }
+    },
+    {
+      "id": "a270-08-data-saver-uid-path",
+      "title": "DataSaver总开关与UID有效规则共同判定",
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a270-08-data-saver-uid-path.svg",
+        "src/assets/diagrams/ch24/a270-08-data-saver-uid-path.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a270-08-data-saver-uid-path",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkPolicyManagerService.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/BpfNetMapsUtils.java",
+        "https://developer.android.com/develop/connectivity/network-ops/data-saver"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a270-08-data-saver-uid-path.svg": "4fe5bff1d7d8cdcbac2c09773fb3eea8799216e6c1590d26c24e149c1e3ce341",
+        "src/assets/diagrams/ch24/a270-08-data-saver-uid-path.png": "eaa228d15b62c50457a29442734e311ddd18e748d433658ec13d137fd92fc6af"
+      }
+    },
+    {
+      "id": "a270-09-public-app-observation",
+      "title": "普通应用用公开状态与任务约束调节传输",
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a270-09-public-app-observation.svg",
+        "src/assets/diagrams/ch24/a270-09-public-app-observation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a270-09-public-app-observation",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/network-ops/data-saver",
+        "https://developer.android.com/reference/android/app/usage/NetworkStatsManager",
+        "https://developer.android.com/reference/androidx/work/NetworkType",
+        "https://developer.android.com/reference/android/app/job/JobInfo"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a270-09-public-app-observation.svg": "4f93fd9c87d8ecf2871ca993a365daa09af9f14ede06b6baf1bfd77aaaff5959",
+        "src/assets/diagrams/ch24/a270-09-public-app-observation.png": "eebe4dfd6b282961215998d3ecd7b1de2634594541c86c74bf3423b7dcf8ee7e"
+      }
+    },
+    {
+      "id": "a270-10-diagnosis-by-enforcement-scope",
+      "title": "按设备、计量、周期与执行位置定位故障",
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a270-10-diagnosis-by-enforcement-scope.svg",
+        "src/assets/diagrams/ch24/a270-10-diagnosis-by-enforcement-scope.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a270-10-diagnosis-by-enforcement-scope",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkPolicyManagerService.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsService.java",
+        "https://developer.android.com/develop/connectivity/network-ops/data-saver"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a270-10-diagnosis-by-enforcement-scope.svg": "973741ea2901f8f2ba5be29e3726d9bee2ef47b23a31368408aa128d806f5e19",
+        "src/assets/diagrams/ch24/a270-10-diagnosis-by-enforcement-scope.png": "994110df318cff03de94e81fa820c95a27cb4e68e2251bf56f79319a0c65f32e"
+      }
+    },
+    {
+      "id": "a271-01-rfcomm-eof-gates",
+      "title": "RFCOMM负返回值由版本、目标与开关共同门控",
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a271-01-rfcomm-eof-gates.svg",
+        "src/assets/diagrams/ch24/a271-01-rfcomm-eof-gates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a271-01-rfcomm-eof-gates",
+      "sources": [
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothSocket.java",
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothInputStream.java",
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/flags/sockets.aconfig"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a271-01-rfcomm-eof-gates.svg": "f2659d18a14ff6bb20e3e638e0c97faa23e284ab4a674e6155ac4409ba4188e0",
+        "src/assets/diagrams/ch24/a271-01-rfcomm-eof-gates.png": "32d0646aa6e2bb23c773350aac10b4334b105e67bfbfe4322fe6e413c01af965"
+      }
+    },
+    {
+      "id": "a271-02-exit-cause-classification",
+      "title": "EOF与异常先按分类时可见的关闭意图归因",
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a271-02-exit-cause-classification.svg",
+        "src/assets/diagrams/ch24/a271-02-exit-cause-classification.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a271-02-exit-cause-classification",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothSocket.java",
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://developer.android.com/develop/connectivity/bluetooth/transfer-data"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a271-02-exit-cause-classification.svg": "bcc33e7d1c0bb320dd384338cadb245966e3d977b9403d735addc1fc925434cb",
+        "src/assets/diagrams/ch24/a271-02-exit-cause-classification.png": "1b14b08e994d3ceabd5265ad158970679600348596ddf3b905d240141e8d2f67"
+      }
+    },
+    {
+      "id": "a271-03-io-ownership-and-cancel",
+      "title": "阻塞读写与串行状态机分配独立执行资源",
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a271-03-io-ownership-and-cancel.svg",
+        "src/assets/diagrams/ch24/a271-03-io-ownership-and-cancel.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a271-03-io-ownership-and-cancel",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/bluetooth/transfer-data",
+        "https://developer.android.com/reference/android/bluetooth/BluetoothSocket"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a271-03-io-ownership-and-cancel.svg": "4c239cd41506d45946b2dae1ba02aa4d3b0108e5059c20916209bb39c81c1a36",
+        "src/assets/diagrams/ch24/a271-03-io-ownership-and-cancel.png": "27592ecfd42b9965ddce754ad92c18ac3cecba29af8b03036b9cf160f89af45b"
+      }
+    },
+    {
+      "id": "a271-04-stream-framing-and-bounds",
+      "title": "read边界与业务消息边界相互独立",
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a271-04-stream-framing-and-bounds.svg",
+        "src/assets/diagrams/ch24/a271-04-stream-framing-and-bounds.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a271-04-stream-framing-and-bounds",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/bluetooth/transfer-data",
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothInputStream.java",
+        "https://developer.android.com/reference/android/bluetooth/BluetoothSocket"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a271-04-stream-framing-and-bounds.svg": "a35155ea7aa945a3dde4a82bd7de33a9b6c1e4fc6227553423a444f720e537d6",
+        "src/assets/diagrams/ch24/a271-04-stream-framing-and-bounds.png": "2ae4efb8c7e7bf03f99bdd074513dc950b0c6b2c322385ee16d8d33c54b8aeec"
+      }
+    },
+    {
+      "id": "a271-05-connection-generation-fence",
+      "title": "connectionId阻止旧会话事件覆盖新状态",
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a271-05-connection-generation-fence.svg",
+        "src/assets/diagrams/ch24/a271-05-connection-generation-fence.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a271-05-connection-generation-fence",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothSocket.java",
+        "https://developer.android.com/develop/connectivity/bluetooth/transfer-data"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a271-05-connection-generation-fence.svg": "e1865d64b2b540e789e05dbb368e0c0ba66b9c820e95ccc27e5b05839b0d46f4",
+        "src/assets/diagrams/ch24/a271-05-connection-generation-fence.png": "44843027956e31bdcb30a889a0111808293e92d4feef341984a4b2dc973447de"
+      }
+    },
+    {
+      "id": "a271-06-reconnect-state-gates",
+      "title": "失败等待与本地关闭走不同状态出口",
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a271-06-reconnect-state-gates.svg",
+        "src/assets/diagrams/ch24/a271-06-reconnect-state-gates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a271-06-reconnect-state-gates",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/bluetooth/transfer-data",
+        "https://developer.android.com/reference/android/bluetooth/BluetoothSocket"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a271-06-reconnect-state-gates.svg": "908898742493bf2ce6bfe85e7042d4639ebbaf27f780a8a4c71b4f91a9e51d35",
+        "src/assets/diagrams/ch24/a271-06-reconnect-state-gates.png": "f052734d58b430408d716276f97acbab161cbc11be0000f2e1f0e7f11dccf1d8"
+      }
+    },
+    {
+      "id": "a271-07-retry-window-and-replay",
+      "title": "退避、扫描和重放共享会话预算",
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a271-07-retry-window-and-replay.svg",
+        "src/assets/diagrams/ch24/a271-07-retry-window-and-replay.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a271-07-retry-window-and-replay",
+      "sources": [
+        "https://developer.android.com/reference/android/bluetooth/BluetoothSocket",
+        "https://developer.android.com/develop/connectivity/bluetooth/transfer-data"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a271-07-retry-window-and-replay.svg": "fb8ff9196b8e25699b84939573ee3acc2acd6275d3b71b0c06d00534d17a5637",
+        "src/assets/diagrams/ch24/a271-07-retry-window-and-replay.png": "65d2cf9423ec5e4be141f6d54a6d8d728bc3af5899d9576343797ab7b7d6a759"
+      }
+    },
+    {
+      "id": "a271-08-background-execution-and-permissions",
+      "title": "后台连续连接与蓝牙授权分别满足前提",
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a271-08-background-execution-and-permissions.svg",
+        "src/assets/diagrams/ch24/a271-08-background-execution-and-permissions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a271-08-background-execution-and-permissions",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/fgs/service-types#connected-device",
+        "https://developer.android.com/about/versions/14/changes/fgs-types-required",
+        "https://developer.android.com/develop/connectivity/bluetooth/bt-permissions"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a271-08-background-execution-and-permissions.svg": "d511a02fecee699fa5aab46cb88d710f3f367deab651db644eddad4eaff71aee",
+        "src/assets/diagrams/ch24/a271-08-background-execution-and-permissions.png": "64357a58f50147596e4e2239f72e6655b20f27d59d27b2838188711e0d208cb0"
+      }
+    },
+    {
+      "id": "a271-09-disconnect-work-versus-idle",
+      "title": "空闲阻塞与关闭后残留线程要区分",
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a271-09-disconnect-work-versus-idle.svg",
+        "src/assets/diagrams/ch24/a271-09-disconnect-work-versus-idle.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a271-09-disconnect-work-versus-idle",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/bluetooth/transfer-data",
+        "https://developer.android.com/reference/android/bluetooth/BluetoothSocket"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a271-09-disconnect-work-versus-idle.svg": "5c000383c7385f711dcd8b2065568e681450049182ba8068314caf4e38eba46f",
+        "src/assets/diagrams/ch24/a271-09-disconnect-work-versus-idle.png": "b6524fb36bdbdbce10dfd372a884cc79ccd902da00cf877d9b66b97f2174a43f"
+      }
+    },
+    {
+      "id": "a272-01-host-and-se-routing",
+      "title": "NFCC路由将主机HCE与安全元件交易分流",
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a272-01-host-and-se-routing.svg",
+        "src/assets/diagrams/ch24/a272-01-host-and-se-routing.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a272-01-host-and-se-routing",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/nfc/hce",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/NfcService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a272-01-host-and-se-routing.svg": "d3cc9e8cc4e550ee2cae2bcf5ae476749163bfe3bf3724dccbc6b66eab5111e6",
+        "src/assets/diagrams/ch24/a272-01-host-and-se-routing.png": "d9b4c897c02e107b47b9469269765624c68fffc90810fac3329773d41d79e67a"
+      }
+    },
+    {
+      "id": "a272-02-hce-latency-phases",
+      "title": "HCE延迟按射频、路由绑定、应用与回传拆分",
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a272-02-hce-latency-phases.svg",
+        "src/assets/diagrams/ch24/a272-02-hce-latency-phases.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a272-02-hce-latency-phases",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/cardemulation/HostApduService.java",
+        "https://developer.android.com/develop/connectivity/nfc/hce"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a272-02-hce-latency-phases.svg": "654ab157d17c833e56a578afb58dcb843a05ba2c7546cfccdacdd919c9e353a6",
+        "src/assets/diagrams/ch24/a272-02-hce-latency-phases.png": "40f178eaa53cce298ca32f881b4e024523ed63969e52cbb01d27629e80653b32"
+      }
+    },
+    {
+      "id": "a272-03-host-manager-state-flow",
+      "title": "HostEmulationManager缓存首条命令等待服务就绪",
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a272-03-host-manager-state-flow.svg",
+        "src/assets/diagrams/ch24/a272-03-host-manager-state-flow.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a272-03-host-manager-state-flow",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/RegisteredAidCache.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a272-03-host-manager-state-flow.svg": "a7eb58973e5c6cbfa2354a0d52eaced553d74fc183ee265432802a86ae737d80",
+        "src/assets/diagrams/ch24/a272-03-host-manager-state-flow.png": "0b82eae437d031af52d4fb0f86536f104d0afa26b4a13a8e77750858418989e8"
+      }
+    },
+    {
+      "id": "a272-04-intent-target-and-url",
+      "title": "目标37的标签Intent保护与URL入口分别处理",
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a272-04-intent-target-and-url.svg",
+        "src/assets/diagrams/ch24/a272-04-intent-target-and-url.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a272-04-intent-target-and-url",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/NfcDispatcher.java",
+        "https://developer.android.com/develop/connectivity/nfc/nfc",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/NfcAdapter.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a272-04-intent-target-and-url.svg": "54c83961291bc46c90ce428f4ebe02f76a020d99919877353c974a282d2a8b0b",
+        "src/assets/diagrams/ch24/a272-04-intent-target-and-url.png": "079b93effb8adf44b607afd97c0ec91d3b749d13b6725e0b2b73baa35811ca17"
+      }
+    },
+    {
+      "id": "a272-05-reader-lifecycle-and-io",
+      "title": "ReaderMode按前台生命周期管理Tag任务",
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a272-05-reader-lifecycle-and-io.svg",
+        "src/assets/diagrams/ch24/a272-05-reader-lifecycle-and-io.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a272-05-reader-lifecycle-and-io",
+      "sources": [
+        "https://developer.android.com/reference/android/nfc/NfcAdapter.ReaderCallback",
+        "https://developer.android.com/reference/android/nfc/tech/TagTechnology",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/NfcAdapter.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a272-05-reader-lifecycle-and-io.svg": "a3515977faae21eb0232055ba2155283f4ffa5e36b3bdf6b08ebc2c2dc858c79",
+        "src/assets/diagrams/ch24/a272-05-reader-lifecycle-and-io.png": "278bde9d295d8003d946f87c870aa4014c9988dc4ae7b3665bd04f6fff921eac"
+      }
+    },
+    {
+      "id": "a272-06-async-apdu-submission-boundary",
+      "title": "异步APDU发送前失效检查与框架排队边界",
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a272-06-async-apdu-submission-boundary.svg",
+        "src/assets/diagrams/ch24/a272-06-async-apdu-submission-boundary.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a272-06-async-apdu-submission-boundary",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/cardemulation/HostApduService.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a272-06-async-apdu-submission-boundary.svg": "6e8515c2714f706a959b381e58ae3b515b9483af8491e9d481acdb811a987189",
+        "src/assets/diagrams/ch24/a272-06-async-apdu-submission-boundary.png": "afeac97e69315acf5c57e728a3249c7c69bf2e516a1030d6607000085babfdcb"
+      }
+    },
+    {
+      "id": "a272-07-trace-command-versus-response",
+      "title": "命令ACK、应用异步工作和响应ACK分别测量",
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a272-07-trace-command-versus-response.svg",
+        "src/assets/diagrams/ch24/a272-07-trace-command-versus-response.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a272-07-trace-command-versus-response",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/cardemulation/HostApduService.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a272-07-trace-command-versus-response.svg": "f978ae7f9bf8087552ffbce3a2bf20e7e9cbd17fcd7eab918753d412c21a95f4",
+        "src/assets/diagrams/ch24/a272-07-trace-command-versus-response.png": "c30cccf44ddfd2b6d036199baa15dd4b8ce43f127658ee9329a29a7bbb5d5fa6"
+      }
+    },
+    {
+      "id": "a272-08-observe-one-transaction",
+      "title": "ObserveMode按调用资格临时放行一笔HCE交易",
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a272-08-observe-one-transaction.svg",
+        "src/assets/diagrams/ch24/a272-08-observe-one-transaction.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a272-08-observe-one-transaction",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/NfcService.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/NfcAdapter.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/NfcProprietaryCaps.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a272-08-observe-one-transaction.svg": "1187498c8c194869d848f1f482bbfa66080830730205d06d5db94d5075b3a5ea",
+        "src/assets/diagrams/ch24/a272-08-observe-one-transaction.png": "6addd0f56c82864df12a4eac287832dc4c6fb97d3b21aaefed26f6a5f6b4459a"
+      }
+    },
+    {
+      "id": "a272-09-power-saving-state-and-support",
+      "title": "节电模式能力必须结合适配器状态判断",
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a272-09-power-saving-state-and-support.svg",
+        "src/assets/diagrams/ch24/a272-09-power-saving-state-and-support.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a272-09-power-saving-state-and-support",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/NfcService.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/NfcAdapter.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/NfcProprietaryCaps.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a272-09-power-saving-state-and-support.svg": "b6b42f8b9d25e3b91e1462140abe69dba4232955cf8bc44f6cf719e6a6cd361f",
+        "src/assets/diagrams/ch24/a272-09-power-saving-state-and-support.png": "720b4f6fe6011190cf8be068c4446bc62d8a4f0d882cca7fcdab652952c8c252"
+      }
+    },
+    {
+      "id": "a272-10-two-clock-measurement",
+      "title": "外部往返与应用处理可各用本端时钟测量",
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a272-10-two-clock-measurement.svg",
+        "src/assets/diagrams/ch24/a272-10-two-clock-measurement.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a272-10-two-clock-measurement",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/cardemulation/HostApduService.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java",
+        "https://developer.android.com/develop/connectivity/nfc/hce"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a272-10-two-clock-measurement.svg": "ac2ab20e991437c3a426e25bf28b1adb5822728953deb464f1a1523ae8537e14",
+        "src/assets/diagrams/ch24/a272-10-two-clock-measurement.png": "a281cc87d4959915bb90289d49dc13ba59dd19289020099c75becf4f6f659560"
+      }
+    },
+    {
+      "id": "a272-11-nfc-evidence-layers",
+      "title": "按分发、服务、控制器与外部终端分层取证",
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a272-11-nfc-evidence-layers.svg",
+        "src/assets/diagrams/ch24/a272-11-nfc-evidence-layers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a272-11-nfc-evidence-layers",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/NfcShellCommand.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/NfcService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch24/a272-11-nfc-evidence-layers.svg": "132181b75d693db6d9969017b88cbc99b0a0a87ea7679fd7e07e3d651f7b6824",
+        "src/assets/diagrams/ch24/a272-11-nfc-evidence-layers.png": "47bf7575351de8ca6b214a860e3e23275a27fcc48f367e8d3a26c3d6ddd5848e"
+      }
+    },
+    {
+      "id": "a273-01-ch24-problem-reading-map",
+      "title": "按存储、网络路径、系统能力和近场问题选择阅读入口",
+      "article": "src/part5-app/ch24-io-network/README.md",
+      "assets": [
+        "src/assets/diagrams/ch24/a273-01-ch24-problem-reading-map.svg",
+        "src/assets/diagrams/ch24/a273-01-ch24-problem-reading-map.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a273-01-ch24-problem-reading-map",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/network-ops/data-saver",
+        "https://developer.android.com/privacy-and-security/risks/bad-dns"
+      ],
+      "visual_review": "pending",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "pending"
     }
   ],
   "corrections": [
@@ -6757,6 +8222,718 @@
         "https://developer.android.com/reference/android/net/LinkProperties"
       ],
       "article": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md"
+    },
+    {
+      "before": "last_verified: '2026-10-02'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "全文以固定Android17r1/OkHttp5.5.0重新核对并检查当前版本公告。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/WifiNetworkSelector.java",
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt",
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "全文以固定Android17r1/OkHttp5.5.0重新核对并检查当前版本公告。"
+    },
+    {
+      "before": "Android Developers connectivity and Cronet docs current through 2026-10-02; OkHttp 5.5.0 source and changelog",
+      "after": "Android Developers connectivity and Cronet docs reviewed 2026-10-25; OkHttp 5.5.0 source and fixed parent-5.5.1 changelog",
+      "reason": "保留示例固定依赖，区分文档当前核对日期和固定源码基线。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt",
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "保留示例固定依赖，区分文档当前核对日期和固定源码基线。"
+    },
+    {
+      "before": "在这些过滤条件生效前，已连接的当前 BSSID 会先保留；",
+      "after": "源码先排除空 SSID；在其后的这些过滤条件生效前，已连接的当前 BSSID 会先保留；",
+      "reason": "filterScanResults空SSID检查早于当前BSSID保留，不能概括为绕过所有有效性检查。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/WifiNetworkSelector.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "filterScanResults空SSID检查早于当前BSSID保留，不能概括为绕过所有有效性检查。"
+    },
+    {
+      "before": "这些参数由 `ScoringParams` 和资源覆盖（设备厂商对 AOSP 默认资源值的替换）控制，资源覆盖指设备厂商对 AOSP 默认资源值的替换，两者决定",
+      "after": "这些参数由 `ScoringParams` 和资源覆盖（设备厂商对 AOSP 默认资源值的替换）控制，两者决定",
+      "reason": "去除重复定义。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/service/java/com/android/server/wifi/ScoringParams.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "去除重复定义。"
+    },
+    {
+      "before": "| DNS、TCP、TLS | 每组对应的 `start` | 同组 `end` 或 `failed` | 新解析、路由尝试和握手发生在哪一段 |",
+      "after": "| DNS、连接尝试、TLS | 同一解析或尝试对应的 `start` | 对应的 `end`，或该阶段可观测的失败事件 | HTTPS 的 connect 阶段包含 TLS；DNS 失败可能只表现为 Call 失败，缺失 end 不能记零 |",
+      "reason": "connectStart至connectEnd包含TLS；旧DNS事件没有dnsFailed，失败时缺失end并不表示零耗时。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "connectStart至connectEnd包含TLS；旧DNS事件没有dnsFailed，失败时缺失end并不表示零耗时。"
+    },
+    {
+      "before": "下面这段监听器按 OkHttp 5.5.0 的接口签名编写，并保留原始单调时钟时间线：",
+      "after": "下面这段监听器按 OkHttp 5.5.0 的接口签名编写，示范保留部分事件的原始单调时钟时间线：",
+      "reason": "示例没有失败和所有start回调，不能称为完整事件采集。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "示例没有失败和所有start回调，不能称为完整事件采集。"
+    },
+    {
+      "before": "截至 2026-10-02，OkHttp 最新稳定版本为 5.5.0，示例用的就是这一版的 `dispatcherQueueStart(call, dispatcher)` 和 `dispatcherQueueEnd(call, dispatcher)` 签名；升级依赖后，仍以对应版本的 `EventListener` 源码为准。",
+      "after": "示例固定使用 OkHttp 5.5.0 的 `dispatcherQueueStart(call, dispatcher)` 和 `dispatcherQueueEnd(call, dispatcher)` 签名；截至 2026-10-25，已发布 5.5.1（2026-10-22），这里不随最新版本自动改写示例。升级依赖后，以对应版本的 `EventListener` 源码为准。",
+      "reason": "官方固定5.5.1变更记录验证新版本，保留原示例可复现基线。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt",
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "官方固定5.5.1变更记录验证新版本，保留原示例可复现基线。"
+    },
+    {
+      "before": "末次 `dnsEnd` 与第一次 `dnsStart` 不能直接相减。",
+      "after": "末次 `dnsEnd` 与第一次 `dnsStart` 不能直接相减。上面的名称与时间戳也不足以精确配对并行连接尝试；生产埋点还应记录地址、代理、连接与交换标识，补齐 `connectFailed`、`requestFailed`、`responseFailed` 等失败事件及所需的起止回调。取消事件可能发生在 Call 起止范围外，不能把 `canceled` 无条件视为唯一终点。",
+      "reason": "明确示例覆盖范围和并行尝试身份缺失；EventListener源说明canceled可早于callStart或晚于callEnd。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "明确示例覆盖范围和并行尝试身份缺失；EventListener源说明canceled可早于callStart或晚于callEnd。"
+    },
+    {
+      "before": "Private DNS（Android 对 DNS-over-TLS 的系统配置） 与设备配置都可能影响结果，其中 Private DNS 指 Android 对 DNS-over-TLS 的系统配置。",
+      "after": "Private DNS（系统级加密解析配置）与设备配置都可能影响结果。Private DNS 不能一概解释为仅使用 DNS-over-TLS；受支持的系统更新与解析服务组合还可能使用 DNS-over-HTTP/3。",
+      "reason": "官方Android安全文档和安全博客确认Android11+受支持服务器可使用DoH3。",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/risks/bad-dns",
+        "https://security.googleblog.com/2022/07/dns-over-http3-in-android.html"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "官方Android安全文档和安全博客确认Android11+受支持服务器可使用DoH3。"
+    },
+    {
+      "before": "`ACCESS_NETWORK_STA（同时工作的两个 Wi-Fi 终端接口）TE`",
+      "after": "`ACCESS_NETWORK_STATE`",
+      "reason": "修复权限名被无关解释插入造成的拼写损坏。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "修复权限名被无关解释插入造成的拼写损坏。"
+    },
+    {
+      "before": "从 Android 8.0、API 26 起，新默认网络触发 `onAvailable()` 后，系统会紧接着按序发送 `onCapabilitiesChanged()`、`onLinkPropertiesChanged()` 和 `onBlockedStatusChanged()` 的初始状态。",
+      "after": "从 Android 8.0、API 26 起，新默认网络触发 `onAvailable()` 后，系统会紧接着按序发送 `onCapabilitiesChanged()`、`onLinkPropertiesChanged()` 的初始状态；`onBlockedStatusChanged()` 是 API 29 新增的公开回调，在本文适用的 API 29–37 范围还会紧随其后提供初始阻塞状态。",
+      "reason": "当前概述把blocked也回溯到O，但该方法Added29；分开版本边界避免API26调用不存在接口。",
+      "sources": [
+        "https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "当前概述把blocked也回溯到O，但该方法Added29；分开版本边界避免API26调用不存在接口。"
+    },
+    {
+      "before": "有选择空间；fast fallback 会错开尝试备用地址，以较快成功的连接继续。",
+      "after": "有选择空间。",
+      "reason": "删除重复解释，保留原定义。",
+      "sources": [
+        "https://lysine.dev/okhttp/features/connections/"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "删除重复解释，保留原定义。"
+    },
+    {
+      "before": "SNI 指 TLS 握手中携带目标主机名的扩展。",
+      "after": "这不是只替换 HTTP Host 请求头就能补救的。",
+      "reason": "去除同句重复定义并说明TLS身份不能靠Host修复。",
+      "sources": [
+        "https://lysine.dev/okhttp/features/connections/"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "去除同句重复定义并说明TLS身份不能靠Host修复。"
+    },
+    {
+      "before": "GET 等可安全重试的操作由网络库按配置恢复；POST、支付和提交操作需要幂等键或查询结果接口。",
+      "after": "GET 等可安全重试的操作由网络库按配置恢复；OkHttp 的自动恢复并非统一按 HTTP 方法幂等性禁止重放，可重放的 POST 请求也可能被重试。支付和提交操作仍需服务端幂等键或查询结果接口。",
+      "reason": "不能由GET例子暗示网络库绝不重放POST；RealCall的恢复依据请求体与发送阶段等。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/connection/RealCall.kt",
+        "https://lysine.dev/okhttp/features/connections/",
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "不能由GET例子暗示网络库绝不重放POST；RealCall的恢复依据请求体与发送阶段等。"
+    },
+    {
+      "before": "因果关系要靠这条关联才能确认。",
+      "after": "这些关联是定位前提；确认因果还需结合实际失败阶段、系统状态和可控复现，时间接近或共享编号本身都不足以证明切网导致超时。",
+      "reason": "时间关联必要但不足以单独证明因果。",
+      "sources": [
+        "https://github.com/lysine-dev/okhttp/blob/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt",
+        "https://developer.android.com/develop/connectivity/network-ops/reading-network-state"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "时间关联必要但不足以单独证明因果。"
+    },
+    {
+      "before": "即邻居不可达检测，用来确认",
+      "after": "用来确认",
+      "reason": "去除同句重复定义。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Wifi/+/refs/tags/android-17.0.0_r1/framework/java/android/net/wifi/WifiManager.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "去除同句重复定义。"
+    },
+    {
+      "before": "；Cronet 是 Chromium 网络栈的 Android 库。",
+      "after": "。",
+      "reason": "去除同句重复定义。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/cronet/integration"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "去除同句重复定义。"
+    },
+    {
+      "before": "- type: blog\n  path: DeepResearch/2026-05-14-android-wifi-scoring-connectivity-service.md",
+      "after": "- type: upstream\n  path: https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md\n- type: official\n  path: https://developer.android.com/privacy-and-security/risks/bad-dns\n- type: official\n  path: https://security.googleblog.com/2022/07/dns-over-http3-in-android.html\n- type: blog\n  path: DeepResearch/2026-05-14-android-wifi-scoring-connectivity-service.md",
+      "reason": "补入新增校勘所依赖的官方原始来源。",
+      "sources": [
+        "https://security.googleblog.com/2022/07/dns-over-http3-in-android.html",
+        "https://developer.android.com/privacy-and-security/risks/bad-dns",
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.1/CHANGELOG.md"
+      ],
+      "article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "why": "补入新增校勘所依赖的官方原始来源。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "以固定Android17r1重新全文核对，更新NDK公开参考当前状态。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/satellite/constrained-networks",
+        "https://developer.android.com/ndk/reference/group/networking"
+      ],
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "why": "以固定Android17r1重新全文核对，更新NDK公开参考当前状态。"
+    },
+    {
+      "before": "Android constrained satellite network guide current through 2026-08-15; Android 17 / API 37 docs and android-17.0.0_r1 source; FCM REST and Firebase Admin docs; current T-Satellite product pages",
+      "after": "Android constrained satellite network, FCM, Media3, local-network and NDK docs reviewed 2026-10-25; Android 17 / API 37 fixed android-17.0.0_r1 source; T-Satellite product pages checked",
+      "reason": "区分当前文档核对时间与源码固定版本。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java",
+        "https://developer.android.com/ndk/reference/group/networking"
+      ],
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "why": "区分当前文档核对时间与源码固定版本。"
+    },
+    {
+      "before": "import android.net.ConnectivityManager\nimport android.net.Network\nimport android.net.NetworkCapabilities\nimport android.net.NetworkRequest\nimport android.os.Handler\nimport android.os.Looper\nimport androidx.annotation.RequiresApi\nimport java.io.Closeable\n\n@RequiresApi(36)\nclass ConstrainedNetworkMonitor(\n    private val connectivityManager: ConnectivityManager,\n    private val handler: Handler,\n    private val onChanged: (Snapshot?) -> Unit,\n) : Closeable {\n\n    data class Snapshot(\n        val network: Network,\n        val constrained: Boolean,\n        val satellite: Boolean,\n        val validated: Boolean,\n        val metered: Boolean,\n        val suspended: Boolean,\n        val blocked: Boolean,\n        val downstreamKbps: Int,\n        val upstreamKbps: Int,\n    ) {\n        val useReducedDataMode: Boolean\n            get() = constrained || satellite\n\n        val canTransfer: Boolean\n            get() = validated && !suspended && !blocked\n    }\n\n    private var current: Network? = null\n    private var latestCaps: NetworkCapabilities? = null\n    private var blocked: Boolean? = null\n    private var registered = false\n\n    private val request = NetworkRequest.Builder()\n        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)\n        .removeCapability(\n            NetworkCapabilities.NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED,\n        )\n        .build()\n\n    private val callback = object : ConnectivityManager.NetworkCallback() {\n        override fun onAvailable(network: Network) {\n            current = network\n            latestCaps = null\n            blocked = null\n        }\n\n        override fun onCapabilitiesChanged(\n            network: Network,\n            caps: NetworkCapabilities,\n        ) {\n            if (network != current) return\n            latestCaps = caps\n            publish(network)\n        }\n\n        override fun onBlockedStatusChanged(\n            network: Network,\n            blocked: Boolean,\n        ) {\n            if (network != current) return\n            this@ConstrainedNetworkMonitor.blocked = blocked\n            publish(network)\n        }\n\n        private fun publish(network: Network) {\n            val caps = latestCaps ?: return\n            val isBlocked = blocked ?: return\n            onChanged(\n                Snapshot(\n                    network = network,\n                    constrained = !caps.hasCapability(\n                        NetworkCapabilities.NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED,\n                    ),\n                    satellite = caps.hasTransport(\n                        NetworkCapabilities.TRANSPORT_SATELLITE,\n                    ),\n                    validated = caps.hasCapability(\n                        NetworkCapabilities.NET_CAPABILITY_VALIDATED,\n                    ),\n                    metered = !caps.hasCapability(\n                        NetworkCapabilities.NET_CAPABILITY_NOT_METERED,\n                    ),\n                    suspended = !caps.hasCapability(\n                        NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED,\n                    ),\n                    blocked = isBlocked,\n                    downstreamKbps = caps.linkDownstreamBandwidthKbps,\n                    upstreamKbps = caps.linkUpstreamBandwidthKbps,\n                ),\n            )\n        }\n\n        override fun onLost(network: Network) {\n            if (network == current) {\n                current = null\n                latestCaps = null\n                blocked = null\n                onChanged(null)\n            }\n        }\n    }\n\n    private fun requireHandlerThread() {\n        check(Looper.myLooper() == handler.looper)\n    }\n\n    fun start() {\n        requireHandlerThread()\n        check(!registered)\n        connectivityManager.registerBestMatchingNetworkCallback(\n            request,\n            callback,\n            handler,\n        )\n        registered = true\n    }\n\n    override fun close() {\n        requireHandlerThread()\n        if (!registered) return\n        connectivityManager.unregisterNetworkCallback(callback)\n        registered = false\n        current = null\n        latestCaps = null\n        blocked = null\n    }\n}",
+      "after": "import android.net.ConnectivityManager\nimport android.net.Network\nimport android.net.NetworkCapabilities\nimport android.net.NetworkRequest\nimport android.os.Handler\nimport android.os.Looper\nimport androidx.annotation.RequiresApi\nimport java.io.Closeable\n\n@RequiresApi(36)\nclass ConstrainedNetworkMonitor(\n    private val connectivityManager: ConnectivityManager,\n    private val handler: Handler,\n    private val onChanged: (Snapshot?) -> Unit,\n) : Closeable {\n\n    data class Snapshot(\n        val network: Network,\n        val constrained: Boolean,\n        val satellite: Boolean,\n        val validated: Boolean,\n        val metered: Boolean,\n        val suspended: Boolean,\n        val blocked: Boolean,\n        val downstreamKbps: Int,\n        val upstreamKbps: Int,\n    ) {\n        val useReducedDataMode: Boolean\n            get() = constrained || satellite\n\n        val canTransfer: Boolean\n            get() = validated && !suspended && !blocked\n    }\n\n    private var current: Network? = null\n    private var latestCaps: NetworkCapabilities? = null\n    private var blocked: Boolean? = null\n    private var registered = false\n\n    private val request = NetworkRequest.Builder()\n        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)\n        .removeCapability(\n            NetworkCapabilities.NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED,\n        )\n        .build()\n\n    private val callback = object : ConnectivityManager.NetworkCallback() {\n        override fun onAvailable(network: Network) {\n            if (!registered) return\n            current = network\n            latestCaps = null\n            blocked = null\n            onChanged(null)\n        }\n\n        override fun onCapabilitiesChanged(\n            network: Network,\n            caps: NetworkCapabilities,\n        ) {\n            if (!registered || network != current) return\n            latestCaps = caps\n            publish(network)\n        }\n\n        override fun onBlockedStatusChanged(\n            network: Network,\n            blocked: Boolean,\n        ) {\n            if (!registered || network != current) return\n            this@ConstrainedNetworkMonitor.blocked = blocked\n            publish(network)\n        }\n\n        private fun publish(network: Network) {\n            val caps = latestCaps ?: return\n            val isBlocked = blocked ?: return\n            onChanged(\n                Snapshot(\n                    network = network,\n                    constrained = !caps.hasCapability(\n                        NetworkCapabilities.NET_CAPABILITY_NOT_BANDWIDTH_CONSTRAINED,\n                    ),\n                    satellite = caps.hasTransport(\n                        NetworkCapabilities.TRANSPORT_SATELLITE,\n                    ),\n                    validated = caps.hasCapability(\n                        NetworkCapabilities.NET_CAPABILITY_VALIDATED,\n                    ),\n                    metered = !caps.hasCapability(\n                        NetworkCapabilities.NET_CAPABILITY_NOT_METERED,\n                    ),\n                    suspended = !caps.hasCapability(\n                        NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED,\n                    ),\n                    blocked = isBlocked,\n                    downstreamKbps = caps.linkDownstreamBandwidthKbps,\n                    upstreamKbps = caps.linkUpstreamBandwidthKbps,\n                ),\n            )\n        }\n\n        override fun onLost(network: Network) {\n            if (registered && network == current) {\n                current = null\n                latestCaps = null\n                blocked = null\n                onChanged(null)\n            }\n        }\n    }\n\n    private fun requireHandlerThread() {\n        check(Looper.myLooper() == handler.looper)\n    }\n\n    fun start() {\n        requireHandlerThread()\n        check(!registered)\n        connectivityManager.registerBestMatchingNetworkCallback(\n            request,\n            callback,\n            handler,\n        )\n        registered = true\n    }\n\n    override fun close() {\n        requireHandlerThread()\n        if (!registered) return\n        connectivityManager.unregisterNetworkCallback(callback)\n        registered = false\n        current = null\n        latestCaps = null\n        blocked = null\n        onChanged(null)\n    }\n}",
+      "reason": "原onAvailable仅清内部字段但消费者仍持有前一网络预算，存在新能力到齐前使用旧预算窗口；新增null发布，注销后忽略已排队回调，并在close失效外部快照。此为顺序源码推断修复，不宣称设备复现。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java",
+        "https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback"
+      ],
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "why": "原onAvailable仅清内部字段但消费者仍持有前一网络预算，存在新能力到齐前使用旧预算窗口；新增null发布，注销后忽略已排队回调，并在close失效外部快照。此为顺序源码推断修复，不宣称设备复现。"
+    },
+    {
+      "before": "`onAvailable()` 之后先等按序到达的 `onCapabilitiesChanged()`，再等 `onBlockedStatusChanged()` 报告的应用身份限制状态，两样都到齐才发布快照，避免回调与同步查询读取到不同时间点的状态；",
+      "after": "`onAvailable()` 先发布 `null` 使旧网络预算失效，消费者此时应暂停依赖预算的自动传输；随后等按序到达的 `onCapabilitiesChanged()`，再等 `onBlockedStatusChanged()` 报告的应用身份限制状态，两样都到齐才发布快照，避免回调与同步查询读取到不同时间点的状态；",
+      "reason": "解释新增失效通知的消费者契约，不能把null解释为无限预算。",
+      "sources": [
+        "https://developer.android.com/reference/android/net/ConnectivityManager.NetworkCallback"
+      ],
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "why": "解释新增失效通知的消费者契约，不能把null解释为无限预算。"
+    },
+    {
+      "before": "避免生命周期字段被多个线程同时修改。",
+      "after": "避免生命周期字段被多个线程同时修改；`registered` 守卫还会忽略注销后已经排队的迟到回调，`close()` 通过 `null` 通知读者停用旧预算。",
+      "reason": "说明生命周期代码修复的边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "why": "说明生命周期代码修复的边界。"
+    },
+    {
+      "before": "VPN 也可能改变应用的实际出站路径，测试中要覆盖 VPN 开关。",
+      "after": "请求还保留默认的 `NOT_VPN` 等能力，最佳匹配结果不保证就是应用默认网络或某个现有套接字的实际路径。VPN 场景不能把这个非 VPN 候选快照直接当作隧道真实预算；应结合默认网络回调、绑定关系和实际路径验证，测试覆盖 VPN 开关。",
+      "reason": "NetworkRequest默认包含NOT_VPN，监听结果与实际应用socket不等价；修正全局预算可能误套VPN的隐含前提。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/NetworkCapabilities.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/ConnectivityManager.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "why": "NetworkRequest默认包含NOT_VPN，监听结果与实际应用socket不等价；修正全局预算可能误套VPN的隐含前提。"
+    },
+    {
+      "before": "| 请求阶段 | 域名解析（DNS）、连接、TLS 加密握手、首字节等待时间（TTFB）、上传、下载、总耗时 | 定位高时延出现在哪一段；TTFB 是发出请求后等到响应首个字节的时间 |",
+      "after": "| 请求阶段 | DNS、连接尝试、TLS、请求结束至响应头事件的等待、上传、下载、总耗时 | 明确各库事件边界；HTTPS 的连接阶段可能已包含 TLS，响应头事件差只是首字节等待的代理指标，不能重复累计 |",
+      "reason": "与前文OkHttp源码事件边界一致，connect含TLS，responseHeadersStart不能精确代表线上首字节测量。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/satellite/constrained-networks",
+        "https://raw.githubusercontent.com/lysine-dev/okhttp/parent-5.5.0/okhttp/src/commonJvmAndroid/kotlin/okhttp3/EventListener.kt"
+      ],
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "why": "与前文OkHttp源码事件边界一致，connect含TLS，responseHeadersStart不能精确代表线上首字节测量。"
+    },
+    {
+      "before": "截至 2026-08-15 的 Media3 API 参考中",
+      "after": "2026-10-25 核对的 Media3 API 参考中",
+      "reason": "重新验证两个当前API默认常量仍为0.7f与1000000，不改写为测量结果。",
+      "sources": [
+        "https://developer.android.com/reference/androidx/media3/exoplayer/trackselection/AdaptiveTrackSelection",
+        "https://developer.android.com/reference/androidx/media3/exoplayer/upstream/DefaultBandwidthMeter"
+      ],
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "why": "重新验证两个当前API默认常量仍为0.7f与1000000，不改写为测量结果。"
+    },
+    {
+      "before": "信令、小型控制请求和鉴权走的是控制路径，不占媒体码率预算；上行速率未知时照样可以建连。",
+      "after": "信令、小型控制请求和鉴权走控制路径，不应被直接设成视频轨道或编码器的码率目标；它们仍消耗整体网络流量和链路容量，应在应用数据预算中预留成本。上行速率未知不等于禁止建连。",
+      "reason": "控制请求不是物理免费，避免与前文完整会话需要计入请求头/媒体清单开销的预算表述冲突。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/telephony/java/android/telephony/SubscriptionInfo.java",
+        "https://developer.android.com/develop/connectivity/satellite/constrained-networks"
+      ],
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "why": "控制请求不是物理免费，避免与前文完整会话需要计入请求头/媒体清单开销的预算表述冲突。"
+    },
+    {
+      "before": "我们要在页面或控制器里保存回调对象，并在生命周期结束时调用 `unregisterServiceInfoCallback()` 取消注册。",
+      "after": "我们要在页面或控制器里保存回调对象，并在生命周期结束时调用 `unregisterServiceInfoCallback()` 取消注册。示例的 `onServiceLost()` 留空只为展示选择器签名；接入实际连接时，应在服务丢失后关闭失效连接并更新界面。",
+      "reason": "示例不能被误当作完整连接生命周期实现，NsdServiceInfo更新和丢失语义需业务处理。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework-t/src/android/net/nsd/NsdManager.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "why": "示例不能被误当作完整连接生命周期实现，NsdServiceInfo更新和丢失语义需业务处理。"
+    },
+    {
+      "before": "截至 2026-08-15，NDK 公开参考页尚未列出这个符号；网络库要按构建所用 NDK 和设备版本检查声明与符号是否可用，旧版本能否直接链接以检查结果为准。",
+      "after": "截至 2026-10-25，NDK 的 [Networking 公开参考](https://developer.android.com/ndk/reference/group/networking) 已列出该符号及 `NetworkBlockedReason`，声明位于 `android/multinetwork.h`。查询会返回并清除套接字已记录的阻断原因；负值表示 POSIX 错误，`NONE` 也可能只是没有可用记录。网络库仍应按构建所用 NDK、部署设备与符号可用性选择兼容链接方式，不能由当前文档反推旧设备都可直接链接。",
+      "reason": "当前NDK公开参考已补齐，且读后清除语义会影响重复诊断，负值错误不能当NONE。",
+      "sources": [
+        "https://developer.android.com/ndk/reference/group/networking",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/libconnectivity/src/connectivity_native.cpp"
+      ],
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "why": "当前NDK公开参考已补齐，且读后清除语义会影响重复诊断，负值错误不能当NONE。"
+    },
+    {
+      "before": "协商条件不满足时，支持该机制的客户端会发送内容随机的 ECH GREASE 扩展，避免中间设备只接受未携带 ECH 的固定握手格式。",
+      "after": "未获得可用 ECH 配置时，支持该机制的客户端可能发送内容随机的 ECH GREASE 扩展，避免中间设备只接受未携带该扩展的固定握手格式。GREASE 的出现不能证明服务器接受了真正的 ECH；已有配置被拒绝后的重试还必须遵守对应网络库的验证规则。",
+      "reason": "收紧无条件GREASE结论，区分真实ECH接受与伪配置扩展及重试。",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/security-config"
+      ],
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "why": "收紧无条件GREASE结论，区分真实ECH接受与伪配置扩展及重试。"
+    },
+    {
+      "before": "- type: research-feed\n  path: intake/research-feeds/2026-04-08-11-android17-network-data-plan-streaming-access-local-network-tls.md",
+      "after": "- type: official\n  path: https://developer.android.com/ndk/reference/group/networking\n- type: research-feed\n  path: intake/research-feeds/2026-04-08-11-android17-network-data-plan-streaming-access-local-network-tls.md",
+      "reason": "补入当前NDK原始文档以支持更新后的符号和诊断语义。",
+      "sources": [
+        "https://developer.android.com/ndk/reference/group/networking"
+      ],
+      "article": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "why": "补入当前NDK原始文档以支持更新后的符号和诊断语义。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "重新全文核对固定源码及当前公开接口文档。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkPolicyManagerService.java",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/netfilter/xt_quota2.c"
+      ],
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "why": "重新全文核对固定源码及当前公开接口文档。"
+    },
+    {
+      "before": "references 2026-08; verified",
+      "after": "references reviewed 2026-10-25; verified",
+      "reason": "刷新当前文档核对日期，保留固定平台与内核锚点。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/network-ops/data-saver",
+        "https://developer.android.com/reference/android/app/usage/NetworkStatsManager"
+      ],
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "why": "刷新当前文档核对日期，保留固定平台与内核锚点。"
+    },
+    {
+      "before": "源码里的配额（quota）表示剩余字节预算，耗尽后拒绝网络报文；",
+      "after": "本节追踪的接口配额（quota）表示剩余字节预算，耗尽后拒绝网络报文；",
+      "reason": "范围限定为接口强制配额；机会型配额是建议预算，不能概括所有名为quota的值都会阻断。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkPolicyManagerService.java",
+        "https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/BandwidthController.cpp"
+      ],
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "why": "范围限定为接口强制配额；机会型配额是建议预算，不能概括所有名为quota的值都会阻断。"
+    },
+    {
+      "before": "BPF 程序观察到新配置后改写活动表，服务读取已经停止增长的非活动表，从而获得相对稳定的增量。",
+      "after": "修改配置后还会执行 `synchronizeKernelRCU()`，等待正在运行的 BPF 程序结束并使各 CPU 观察新配置；方法返回后，服务才安全读取并清理非活动表。只切换 A/B 索引并不足以消除在途写入竞争。",
+      "reason": "BpfNetMaps实际在修改配置后等待RCU完成，其保证比只描述相对稳定更明确。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/BpfNetMaps.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsFactory.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "why": "BpfNetMaps实际在修改配置后等待RCU完成，其保证比只描述相对稳定更明确。"
+    },
+    {
+      "before": "读取结果是自上次切换以来的增量。`NetworkStatsFactory` 把增量合入 `mPersistSnapshot`，再按顺序处理 464xlat 修正和 VPN TUN 流量归因。TUN 是 VPN 常用的虚拟网络接口。查询方获得的是筛选后的累计视图，并非直接读取一张持续增长的 UID 表。",
+      "after": "读取结果是自上次切换以来的增量。`NetworkStatsFactory` 先把经标签过滤的增量合入原始累计 `mPersistSnapshot`，再对该增量依次做 464xlat 修正、VPN TUN 归因和调试项过滤，并合入另一份累计 `mTunAnd464xlatAdjustedStats`。TUN 是 VPN 常用的虚拟网络接口。查询方取得后者的筛选副本，并非直接返回原始累计或读取一张持续增长的 UID 表。",
+      "reason": "源码原始累计与调整后累计是两个独立对象，查询返回的是调整累计filteredClone，避免误认为修改原始累计后直接返回。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service-t/src/com/android/server/net/NetworkStatsFactory.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "why": "源码原始累计与调整后累计是两个独立对象，查询返回的是调整累计filteredClone，避免误认为修改原始累计后直接返回。"
+    },
+    {
+      "before": "内核规则不接受 0 字节，所以余量用",
+      "after": "该路径的 `netd.setInterfaceQuota()` 拒绝 0 字节输入，所以余量用",
+      "reason": "实际零值检查位于BandwidthController接口；xt_quota2可持有0计数器，不能泛化内核规则不允许0。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/BandwidthController.cpp",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/netfilter/xt_quota2.c",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkPolicyManagerService.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "why": "实际零值检查位于BandwidthController接口；xt_quota2可持有0计数器，不能泛化内核规则不允许0。"
+    },
+    {
+      "before": "`quota2` 计数器按报文长度递减；`! --quota` 使匹配结果在余量耗尽后成立，后续目标是 `REJECT`。",
+      "after": "在这里使用的字节递减模式下，`quota2` 只有在剩余字节严格大于当前 `skb->len` 时才扣减并通过；剩余字节小于或等于当前报文长度时，首次非零余量会记录事件并归零。配合 `! --quota`，这个边界报文及后续报文匹配到 `REJECT`，因此不保证恰好把预算中的每一个字节都发送出去。",
+      "reason": "固定内核quota_mt2使用严格>比较，边界相等报文也被拒绝；不能以为先完整耗尽才拒绝下一报文。",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/netfilter/xt_quota2.c",
+        "https://android.googlesource.com/platform/system/netd/+/refs/tags/android-17.0.0_r1/server/BandwidthController.cpp"
+      ],
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "why": "固定内核quota_mt2使用严格>比较，边界相等报文也被拒绝；不能以为先完整耗尽才拒绝下一报文。"
+    },
+    {
+      "before": "因此，Data Saver 开启后，不能据此认定该应用的全部网络请求都会失败。",
+      "after": "这些例外要按有效阻止原因分别计算，前台或用户允许名单并不无条件绕过管理员等独立限制。因此，Data Saver 开启后，不能据此认定该应用的全部网络请求都会失败。",
+      "reason": "BpfNetMapsUtils分别检查用户/管理员阻止位与DataSaver happyBox；例外不能泛化为所有规则豁免。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/net/NetworkPolicyManagerService.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/BpfNetMapsUtils.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "why": "BpfNetMapsUtils分别检查用户/管理员阻止位与DataSaver happyBox；例外不能泛化为所有规则豁免。"
+    },
+    {
+      "before": "- type: kernel\n  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/netfilter/xt_quota2.c",
+      "after": "- type: aosp\n  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java\n- type: aosp\n  path: https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/BpfNetMapsUtils.java\n- type: kernel\n  path: https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/net/netfilter/xt_quota2.c",
+      "reason": "补全DataSaver总开关和有效阻止原因的固定源码证据。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/service/src/com/android/server/ConnectivityService.java",
+        "https://android.googlesource.com/platform/packages/modules/Connectivity/+/refs/tags/android-17.0.0_r1/framework/src/android/net/BpfNetMapsUtils.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "why": "补全DataSaver总开关和有效阻止原因的固定源码证据。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "重新核对17正式行为文档、固定框架源码与后台执行规则。",
+      "sources": [
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothSocket.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "why": "重新核对17正式行为文档、固定框架源码与后台执行规则。"
+    },
+    {
+      "before": "stable behavior changes and API reference 2026-08 / Bluetooth transfer-data and foreground-service guides",
+      "after": "stable behavior changes and API reference reviewed 2026-10-25 / Bluetooth transfer-data, permissions and foreground-service guides",
+      "reason": "当前文档核对日期与固定源码基线分开记录。",
+      "sources": [
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://developer.android.com/about/versions/14/changes/fgs-types-required"
+      ],
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "why": "当前文档核对日期与固定源码基线分开记录。"
+    },
+    {
+      "before": "阻塞中的 `BluetoothSocket.read()` 会以",
+      "after": "`BluetoothSocket` 输入流中阻塞的 `read()` 会以",
+      "reason": "公开API是getInputStream取得流后调用read；BluetoothSocket内部read是包私有，避免误认为可直接调用公开read方法。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothSocket.java",
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothInputStream.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "why": "公开API是getInputStream取得流后调用read；BluetoothSocket内部read是包私有，避免误认为可直接调用公开read方法。"
+    },
+    {
+      "before": "EOF 分支在观察到返回值的那一刻保存原因，稍后到达的关闭请求改写不了已经发生的结果。",
+      "after": "EOF 分支按读取 `closeRequested` 时可见的意图保存分类；`read()` 返回与这次原子读取之间仍可能发生关闭请求，代码不能据此恢复真实断线的物理先后。分类一旦保存在 `terminalReason` 中，之后的关闭请求不会回写该分类。",
+      "reason": "原子变量保证可见性，不保证read返回与意图检查为同一原子事件；去除对返回瞬间顺序的过强承诺。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothSocket.java",
+        "https://developer.android.com/about/versions/17/behavior-changes-17"
+      ],
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "why": "原子变量保证可见性，不保证read返回与意图检查为同一原子事件；去除对返回瞬间顺序的过强承诺。"
+    },
+    {
+      "before": "`onCloseFailure` 还应触发读线程存活检查，防止关闭失败后线程持续阻塞。",
+      "after": "`onCloseFailure` 还应触发读线程存活检查，防止关闭失败后线程持续阻塞。这里的 `onExit` 只移交读任务结果，外层会话所有者还要关闭当前套接字、停用写入口并回收任务资源；它不是完整的会话清理实现，不能只更新界面状态。",
+      "reason": "最小读循环未负责EOF/IoFailure的完整会话资源清理，明确外层职责，防止照抄导致写任务和资源残留。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/bluetooth/transfer-data",
+        "https://developer.android.com/reference/android/bluetooth/BluetoothSocket"
+      ],
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "why": "最小读循环未负责EOF/IoFailure的完整会话资源清理，明确外层职责，防止照抄导致写任务和资源残留。"
+    },
+    {
+      "before": "`getMaxReceivePacketSize()` 与 `getMaxTransmitPacketSize()` 描述底层传输的包尺寸",
+      "after": "API 23 及以上的 `getMaxReceivePacketSize()` 与 `getMaxTransmitPacketSize()` 描述底层传输的包尺寸",
+      "reason": "文章适用API21起，但两方法Added23，调用需按版本保护。",
+      "sources": [
+        "https://developer.android.com/reference/android/bluetooth/BluetoothSocket"
+      ],
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "why": "文章适用API21起，但两方法Added23，调用需按版本保护。"
+    },
+    {
+      "before": "Android 12（API 31）及以上的连接操作通常需要 `BLUETOOTH_CONNECT` 运行时权限，扫描还涉及 `BLUETOOTH_SCAN`；各系统版本按各自的权限模型检查，",
+      "after": "在 Android 12（API 31）及以上设备上、应用目标 API 31 及以上时，连接操作需要 `BLUETOOTH_CONNECT` 运行时权限，扫描还涉及 `BLUETOOTH_SCAN`；旧目标与旧系统仍须按各自兼容权限模型检查，",
+      "reason": "补入target门控，不能把旧目标兼容应用一概套入新NearbyDevices权限模型。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/bluetooth/bt-permissions"
+      ],
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "why": "补入target门控，不能把旧目标兼容应用一概套入新NearbyDevices权限模型。"
+    },
+    {
+      "before": "要求 Android 14 及以上在服务上声明 `android:foregroundServiceType=\"connectedDevice\"`，并在清单中声明 `FOREGROUND_SERVICE_CONNECTED_DEVICE` 权限。",
+      "after": "要求在 Android 14 及以上设备上、应用目标 API 34 及以上时，在服务上声明 `android:foregroundServiceType=\"connectedDevice\"`，并在清单中声明 `FOREGROUND_SERVICE_CONNECTED_DEVICE`；基础 `FOREGROUND_SERVICE` 权限及前台服务启动限制也仍适用。",
+      "reason": "专项类型权限的强制执行有target34边界；类型运行前提不豁免基础权限与后台启动限制。",
+      "sources": [
+        "https://developer.android.com/develop/background-work/services/fgs/service-types#connected-device",
+        "https://developer.android.com/about/versions/14/changes/fgs-types-required"
+      ],
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "why": "专项类型权限的强制执行有target34边界；类型运行前提不豁免基础权限与后台启动限制。"
+    },
+    {
+      "before": "| 目标 SDK | 36、37 | 36 的旧异常分支与 37 的 EOF 分支都能终止读任务 |",
+      "after": "| 目标 SDK | 36、37 | 在 RFCOMM 底层负返回值且模块开关启用的对照中，36 默认旧异常分支、37 默认 EOF 分支都能终止读任务；其他 I/O 错误仍可抛异常 |",
+      "reason": "限定为RFCOMM负返回值门控对照，不能要求LECoC target36走异常或每次物理断线target37只走EOF。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Bluetooth/+/refs/tags/android-17.0.0_r1/framework/java/android/bluetooth/BluetoothSocket.java",
+        "https://developer.android.com/about/versions/17/behavior-changes-17"
+      ],
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "why": "限定为RFCOMM负返回值门控对照，不能要求LECoC target36走异常或每次物理断线target37只走EOF。"
+    },
+    {
+      "before": "- type: clippings-structure\n  path: '[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]'",
+      "after": "- type: official\n  path: https://developer.android.com/develop/connectivity/bluetooth/bt-permissions\n- type: official\n  path: https://developer.android.com/about/versions/14/changes/fgs-types-required\n- type: clippings-structure\n  path: '[结构参考: Clippings/Android 性能优化 - CPU 优化（上）：合理使用线程池，提升 CPU 利用率.md]'",
+      "reason": "补全蓝牙权限和FGS目标版本边界的官方来源。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/bluetooth/bt-permissions",
+        "https://developer.android.com/about/versions/14/changes/fgs-types-required"
+      ],
+      "article": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "why": "补全蓝牙权限和FGS目标版本边界的官方来源。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "固定17r1 NFC模块逐段复核并核对当前API文档。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/NfcAdapter.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/cardemulation/HostApduService.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "固定17r1 NFC模块逐段复核并核对当前API文档。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "官方文档与固定原始源文件重新获取，记录当前审查日期。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/NfcDispatcher.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "官方文档与固定原始源文件重新获取，记录当前审查日期。"
+    },
+    {
+      "before": "official NFC docs updated through 2026-08-03",
+      "after": "official NFC docs reviewed 2026-10-25",
+      "reason": "区分文档复核日期与原始更新时间，固定源码锚点不变。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/nfc/nfc",
+        "https://developer.android.com/develop/connectivity/nfc/hce"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "区分文档复核日期与原始更新时间，固定源码锚点不变。"
+    },
+    {
+      "before": "```mermaid\nflowchart LR\n    R[\"NFC 终端 / Reader\"] --> RF[\"RF 激活与 ISO-DEP\"]\n    RF --> C[\"NFCC 与固件\"]\n    C --> A{\"NFCC 路由目的地\"}\n    A -->|Host| N[\"NfcService\"]\n    N --> D{\"Host 侧 AID 解析\"}\n    D --> H[\"HostEmulationManager\"]\n    H --> B[\"Binder / Messenger\"]\n    B --> S[\"HostApduService\"]\n    S --> B\n    A -->|Off-host| E[\"eSE / UICC\"]\n```",
+      "after": "Host 路径经过 Android 服务和应用；off-host 路径在安全元件里处理交易 APDU。",
+      "reason": "以SVG+PNG替换原Mermaid并补充手机侧处理边界；原始Mermaid保留在冻结原文与校勘记录。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/nfc/hce",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "以SVG+PNG替换原Mermaid并补充手机侧处理边界；原始Mermaid保留在冻结原文与校勘记录。"
+    },
+    {
+      "before": "射频链路断开或 AID 切换时，系统调用 `onDeactivated()` 并清理活动服务状态。",
+      "after": "射频链路断开，或新 `SELECT AID` 被解析为另一服务时，系统调用 `onDeactivated()` 并清理活动服务状态。同一服务承接另一 AID 时未必触发停用，不能只用这个回调划分所有协议交易。",
+      "reason": "HostApduService文档与MSG_DEACTIVATED源码限定为另一个服务；同服务不同AID不能推定有deactivate。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/cardemulation/HostApduService.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "HostApduService文档与MSG_DEACTIVATED源码限定为另一个服务；同服务不同AID不能推定有deactivate。"
+    },
+    {
+      "before": "尚未被用户启动过、或被强行停止（force-stop）的应用处于 stopped 状态，收不到 NFC `Intent`；用户手动启动一次之后，这个状态才解除。",
+      "after": "尚未被用户启动过、或被强行停止（force-stop）的应用处于 stopped 状态；对上述目标 API 37 及以上的附加过滤，系统拒绝向其分发 NFC `Intent`。用户手动启动可解除 stopped 状态，不能把这段 target 门控外推到所有旧目标应用。",
+      "reason": "固定NfcDispatcher在target<=BAKLAVA时直接返回true，stopped检查属于新目标附加过滤。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/NfcDispatcher.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "固定NfcDispatcher在target<=BAKLAVA时直接返回true，stopped检查属于新目标附加过滤。"
+    },
+    {
+      "before": "`Tag`、`TagTechnology` 的连接对象同样别存到 Activity 生命周期之外。",
+      "after": "`Tag`、`TagTechnology` 的连接对象同样别存到 Activity 生命周期之外。上述代码只示范注册骨架；生产实现还需在 `onPause()`、标签离场或任务结束时停用旧任务并调用相应 `TagTechnology.close()` 释放连接，后者也会取消其他线程上阻塞的 `connect()` 等 I/O。仅 `disableReaderMode()` 不能替代应用自己的任务与资源清理。",
+      "reason": "官方TagTechnology契约要求close并支持取消其他线程I/O，原骨架onPause只有注销回调，补清完整生命周期责任。",
+      "sources": [
+        "https://developer.android.com/reference/android/nfc/tech/TagTechnology",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/NfcAdapter.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "官方TagTechnology契约要求close并支持取消其他线程I/O，原骨架onPause只有注销回调，补清完整生命周期责任。"
+    },
+    {
+      "before": "class DemoApduService : HostApduService() {\n    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)\n    private val transactionEpoch = AtomicLong(0L)\n\n    override fun processCommandApdu(\n        commandApdu: ByteArray,\n        extras: Bundle?\n    ): ByteArray? {\n        parseCheapCommand(commandApdu)?.let { return buildImmediateResponse(it) }\n\n        val epoch = transactionEpoch.get()\n        scope.launch {\n            val response = buildResponseFromLocalState(commandApdu)\n            if (transactionEpoch.get() == epoch) {\n                sendResponseApdu(response)\n            }\n        }\n        return null\n    }\n\n    override fun onDeactivated(reason: Int) {\n        transactionEpoch.incrementAndGet()\n        scope.coroutineContext.cancelChildren()\n    }\n\n    override fun onDestroy() {\n        scope.cancel()\n        super.onDestroy()\n    }\n}",
+      "after": "class DemoApduService : HostApduService() {\n    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)\n    private val transactionEpoch = AtomicLong(0L)\n    private val commandEpoch = AtomicLong(0L)\n\n    override fun processCommandApdu(\n        commandApdu: ByteArray,\n        extras: Bundle?\n    ): ByteArray? {\n        val commandId = commandEpoch.incrementAndGet()\n        parseCheapCommand(commandApdu)?.let { return buildImmediateResponse(it) }\n\n        val epoch = transactionEpoch.get()\n        scope.launch {\n            val response = buildResponseFromLocalState(commandApdu)\n            withContext(Dispatchers.Main.immediate) {\n                if (transactionEpoch.get() == epoch\n                    && commandEpoch.get() == commandId\n                ) {\n                    sendResponseApdu(response)\n                }\n            }\n        }\n        return null\n    }\n\n    override fun onDeactivated(reason: Int) {\n        transactionEpoch.incrementAndGet()\n        scope.coroutineContext.cancelChildren()\n    }\n\n    override fun onDestroy() {\n        scope.cancel()\n        super.onDestroy()\n    }\n}",
+      "reason": "后台epoch检查与提交之间可发生主线程停用；将提交前检查串行回主线程，并添加命令代次使同服务新命令取代旧结果。仍明确公开sendResponseApdu再次排队且不能撤回已提交响应。为源码顺序推断修复，非设备复现。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/cardemulation/HostApduService.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "后台epoch检查与提交之间可发生主线程停用；将提交前检查串行回主线程，并添加命令代次使同服务新命令取代旧结果。仍明确公开sendResponseApdu再次排队且不能撤回已提交响应。为源码顺序推断修复，非设备复现。"
+    },
+    {
+      "before": "这个骨架只表达线程与生命周期关系，支付协议本身没有实现。`transactionEpoch` 是本地交易代号，每次服务被停用时递增，把旧交易的异步结果挡在新交易之外；对非活动服务或错误状态下的响应，系统侧同样会丢弃。",
+      "after": "这个骨架只表达线程与生命周期关系，支付协议本身没有实现。`transactionEpoch` 实际标记服务停用代次，每次 `onDeactivated()` 递增；`commandEpoch` 标记同一服务收到的新命令。后台结果回到主线程后，与停用回调串行检查两者，再提交响应，避免在后台检查后被已处理的停用或新命令取代。\n\n这只是应用提交前的失效检查。固定 `android-17.0.0_r1` 的 `sendResponseApdu()` 还会把响应排入服务自己的 `Handler`，公开接口既不携带交易 ID，也没有撤回已入队响应的操作。系统只检查活动服务、Messenger 和传输状态；同一服务被新交易再次使用时，这些条件不构成旧响应的交易隔离保证。生产协议仍须关联当前命令与交易、拒绝迟到或重放结果，不能把本例当作完整支付实现。",
+      "reason": "原文宣称epoch完全挡住跨交易结果过强；源实现会再排队，活动服务身份可复用，明确提交前检查和不可撤回已入队消息的真实边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/cardemulation/HostApduService.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java",
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "原文宣称epoch完全挡住跨交易结果过强；源实现会再排队，活动服务身份可复用，明确提交前检查和不可撤回已入队消息的真实边界。"
+    },
+    {
+      "before": "- 特权进程的 UID（Linux 用户标识）可以调用。",
+      "after": "- NFC 适配器必须已开启，当前状态不可用时直接返回。\n- 特权进程的 UID（Linux 用户标识）可以通过调用资格检查。",
+      "reason": "NfcService在检查UID前先isNfcEnabled，不能理解特权UID无视适配器当前状态。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/NfcService.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "NfcService在检查UID前先isNfcEnabled，不能理解特权UID无视适配器当前状态。"
+    },
+    {
+      "before": "`T_apdu_in - T_select_tx` 覆盖 Android 路由和可能的服务绑定；`T_response_ready - T_apdu_in` 是应用生成响应的区间；`T_response_rx - T_response_ready` 覆盖 Binder、NCI、NFCC 和射频回传。两端时钟对不上时，就用同一测试动作的序号和相对间隔把记录关联起来——亚毫秒精度已经超出这些记录能支撑的范围。",
+      "after": "先用外部读卡器自己的时钟计算 `T_response_rx - T_select_tx`，用应用同一单调时钟计算 `T_response_ready - T_apdu_in`。只有建立并校准两端时钟映射后，才可用 `T_apdu_in - T_select_tx` 估算包含射频入站、NFCC、Android 路由与可能绑定的区间、用 `T_response_rx - T_response_ready` 估算包含应用/系统排队、Binder、NCI、NFCC 与射频的回传区间。\n\n未建立映射时，同一测试序号只能关联事件和各端相对间隔，不能直接相减两个设备的时间戳得到单向分段。时间精度应报告工具、时间戳位置与同步误差，不能一概断言某个亚毫秒精度必然可达或必然不可达。",
+      "reason": "跨时钟直接差分无共同基准，事件序号不会同步时钟；删除无实验依据的普适精度判断，给出本端可直接测量范围。；单向跨端区间还包括无线入站与系统排队等边界，不能把它视为纯Android路由耗时。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/cardemulation/HostApduService.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java",
+        "https://developer.android.com/develop/connectivity/nfc/hce"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "跨时钟直接差分无共同基准，事件序号不会同步时钟；删除无实验依据的普适精度判断，给出本端可直接测量范围。；单向跨端区间还包括无线入站与系统排队等边界，不能把它视为纯Android路由耗时。"
+    },
+    {
+      "before": "- 不在 `onDeactivated()` 后发送旧交易的响应；",
+      "after": "- 停用后不再主动提交旧结果，并由协议识别已入队的迟到响应；",
+      "reason": "与公开异步接口的不可撤回边界一致，不宣称应用epoch撤销了所有在途消息。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/cardemulation/HostApduService.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "与公开异步接口的不可撤回边界一致，不宣称应用epoch撤销了所有在途消息。"
+    },
+    {
+      "before": "- [ ] 异步响应能在 `onDeactivated()` 后取消，不会跨交易发送。",
+      "after": "- [ ] 异步工作在 `onDeactivated()` 后失效；发送前检查与已入队无法撤回的边界已明确，协议能拒绝迟到或重放响应。",
+      "reason": "将验收项改为实际可实现的应用与协议保证，避免把系统活动服务检查误当交易ID。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/framework/java/android/nfc/cardemulation/HostApduService.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/HostEmulationManager.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "将验收项改为实际可实现的应用与协议保证，避免把系统活动服务检查误当交易ID。"
+    },
+    {
+      "before": "- type: routed-material\n  ref: DeepResearch/2026-07-05-background-audio-hardening-power.md",
+      "after": "- type: upstream-docs\n  path: https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html\n- type: aosp-source\n  path: https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/RegisteredServicesCache.java\n- type: aosp-source\n  path: https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/RegisteredAidCache.java\n- type: routed-material\n  ref: DeepResearch/2026-07-05-background-audio-hardening-power.md",
+      "reason": "补全异步切回主线程和服务/AID注册路由的原始来源。",
+      "sources": [
+        "https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/with-context.html",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/RegisteredServicesCache.java",
+        "https://android.googlesource.com/platform/packages/modules/Nfc/+/android-17.0.0_r1/NfcNci/src/com/android/nfc/cardemulation/RegisteredAidCache.java"
+      ],
+      "article": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "why": "补全异步切回主线程和服务/AID注册路由的原始来源。"
+    },
+    {
+      "before": "HTTPDNS 是通过 HTTP 服务取得 DNS",
+      "after": "HTTPDNS 是通过 HTTP 或 HTTPS 服务取得 DNS",
+      "reason": "自定义HTTPDNS可经HTTPS，原术语不应让读者误以为仅限明文HTTP；服务来源和解析策略另行验证。",
+      "sources": [
+        "https://developer.android.com/privacy-and-security/risks/bad-dns"
+      ],
+      "article": "src/part5-app/ch24-io-network/README.md",
+      "why": "自定义HTTPDNS可经HTTPS，原术语不应让读者误以为仅限明文HTTP；服务来源和解析策略另行验证。"
+    },
+    {
+      "before": "24.10 中的 quota 表示剩余字节额度，该篇不讨论带宽整形。",
+      "after": "24.10 中的接口 quota 表示剩余字节额度，手机路径主要执行总量与 UID 访问控制；Android TV 的 Data Saver 速率限制是该篇单列的例外。",
+      "reason": "与刚完成24.10正文一致，机会型quota范围不同，且正文明确讨论TV速率例外，不能概括全篇不涉及限速。",
+      "sources": [
+        "https://developer.android.com/develop/connectivity/network-ops/data-saver"
+      ],
+      "article": "src/part5-app/ch24-io-network/README.md",
+      "why": "与刚完成24.10正文一致，机会型quota范围不同，且正文明确讨论TV速率例外，不能概括全篇不涉及限速。"
     }
   ],
   "validation": {
@@ -6912,15 +9089,60 @@
       "article_positions": "passed",
       "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a267",
       "source_audit": "完整阅读452行；22份有效原始来源全部成功，文档示例example.com和TEST-NET-3地址不列为证据。固定5.4九份路由/DNS/调度/连接池源码及4.12 ExchangeFinder、5.5.1发布记录已核对。11图及11正文位置实际视觉检查，构建/链接/资产/冻结基线通过；竞速图候选取消边界对齐获胜时刻。21条校勘，代码围栏保持原文；嵌套队列饥饿为标注的源码结构推断，未编译Kotlin或声称设备复现。"
+    },
+    "a268": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a268",
+      "source_audit": "全文632行完整核读；31份成功来源，固定Android17r1 Selector/Scorer/Ranker/NetworkMonitor/WifiManager与OkHttp5.5事件及恢复源码核对，修复权限串损坏、API29 blocked边界、connect含TLS/DNS缺失end、PrivateDNS含受支持DoH3、当前BSSID空SSID前置过滤、事件子集/并行身份和取消终点、5.5.1当前发布及重复定义。12张图与12个正文位置实际视觉检查通过，5/6/9图复修后复看；mdbook构建/本地链接/图资产验证通过。代码块全保持原样；没有Kotlin编译或设备运行，不报告实测性能。"
+    },
+    "a269": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a269",
+      "source_audit": "全文926行完整核读，49份有效来源下载核对：Android17r1能力/回调/订阅/NSD/PermissionMonitor/native与公开SDK、当前卫星/FCM/Media3/NDK文档。15张技术图及全部正文位置实际视觉检查，FCM条件与队列分支修图后复核；mdbook/本地链接/资产通过。13条校勘包含切网先失效旧预算和注销后迟到回调守卫（顺序逻辑推断修复）、NOT_VPN候选与实际路径区别、控制流量计入总成本、NDK符号当前已公开及读后清除/负错误、NSD示例服务丢失处理、GREASE边界。代码仅预算监听器修改，JSON解析与shell语法通过，其余代码块未改；未编译Kotlin或设备执行，不宣称运行实测。"
+    },
+    "a270": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a270",
+      "source_audit": "全文330行核读；17份有效来源均成功，固定17r1统计服务/Factory/Bpf/Policy/NMS/netd/ConnectivityService及android17-6.18-2026-06_r6 quota_mt2逐段核对，当前DataSaver官方TV800/10Kbit例外和公开统计/WorkManager接口核实。10图与10个正文位置实际视觉检查、mdbook/链接/资产通过。9条校勘：接口quota范围、RCU跨核同步、原始与调整累计分离、拒绝零配额在netd接口而非泛指内核、quota严格大于报文长度的边界、DataSaver例外不绕过独立管理员规则及来源。6代码块保持原样；shell仅替换UID占位做语法检查，不执行adb或内核实验，无性能测量。"
+    },
+    "a271": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a271",
+      "source_audit": "全文393行核读，11份有效来源成功，固定17r1 BluetoothSocket/InputStream/aconfig与当前RFCOMM正式行为、权限、FGS门槛核对。9图与9正文位置实际视觉，2/3/6图控制分支和标签修订后复核；构建/链接/资产通过。10条校勘：公开输入流read方法、EOF分类时的原子意图与物理先后区别、外层清理职责、包尺寸API23、蓝牙target31与FGS target34边界、RFCOMM测试范围及来源。4代码块全保持原样，shell仅语法检查；没有Kotlin编译、compat修改或设备测试。"
+    },
+    "a272": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a272",
+      "source_audit": "全文517行核读，19份有效来源全部成功，固定17r1 NFC模块与当前SDK/指南及官方协程文档核对；内核标签只作边界页，不推导设备驱动。11图与全部正文位置实际视觉检查，mdbook/链接/资产通过。14条校勘：以图资产替换Mermaid；stopped限定target37、停用只对链路结束/另服务切换；Reader任务close；HCE提交前主线程+命令代次并明确sendResponseApdu再次排队且无公开撤回/交易ID（静态交错推断，保存证据）；Observe先检查NFC开启；跨端时钟校准及射频/排队区间。只修改HCE Kotlin骨架，XML解析/shell语法通过，其余代码原样；未编译Kotlin、未运行设备/支付终端，无实测性能数字。"
     }
   },
   "last_checkpoint": {
-    "completed": 17,
+    "completed": 22,
     "total": 51,
-    "diagrams": 186,
-    "next_article": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
-    "next_article_index": 268,
-    "updated_at": "2026-10-25T13:51:05.046300+08:00"
+    "diagrams": 243,
+    "next_article": "src/part5-app/ch24-io-network/README.md",
+    "next_article_index": 273,
+    "updated_at": "2026-10-25T14:23:09.173740+08:00"
   },
   "replaced_inline_diagrams": []
 }

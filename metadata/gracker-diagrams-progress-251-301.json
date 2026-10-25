@@ -192,10 +192,10 @@
       ],
       "article_index": 255,
       "sha256_at_assignment": "33c32649f2f378c3cfc601256f4f8a702416abc72f095f3df0ddb30902379e9f",
-      "sha256_current": "ac3b7d71668c224f306cc686eb501a2c79ff137c9c60c9b9545d6620282c3748",
-      "sha256_after": "ac3b7d71668c224f306cc686eb501a2c79ff137c9c60c9b9545d6620282c3748",
+      "sha256_current": "bb2b01ae907f832e993e3879da06201db2657fa5768ac80700a83dd03ad76bc8",
+      "sha256_after": "bb2b01ae907f832e993e3879da06201db2657fa5768ac80700a83dd03ad76bc8",
       "reviewed_at": "2026-10-25",
-      "source_audit": "全文阅读38,909字符；42条官方API/固定AOSP与ACK6.18来源记录，核对统计读取、heapprofd rc与拦截入口、Sampler大小权重、Scudo flags和AndroidConfig、线程FixStackSize/虚拟线程降级、WebView预留与HSC条件。9条before/after/why/sources校勘：persist强制服务、quarantine与归还间隔、可写私有映射COW、page fault定义、Private Clean口径、静态辅助函数名、误插入WebView方法名的ART注释、Java HeapGraph产物、DirectByteBuffer释放边界。16图与16个真实mdBook位置均视觉看过；05重采循环、06/12分支、15条件图精修后复看。原代码围栏全部逐字未改；完整设备采集脚本bash -n通过，离线maps脚本用已知4MiB匿名与3MiB同名映射夹具核验聚合，未设备执行/未Java编译。独立mdBook构建、本地链接、PNG解码、SVG XML、prompt packs与基线哈希通过，无编造性能测量。",
+      "source_audit": "全文阅读38,909字符；42条官方API/固定AOSP与ACK6.18来源记录，核对统计读取、heapprofd rc与拦截入口、Sampler大小权重、Scudo flags和AndroidConfig、线程FixStackSize/虚拟线程降级、WebView预留与HSC条件。9条before/after/why/sources校勘：persist强制服务、quarantine与归还间隔、可写私有映射COW、page fault定义、Private Clean口径、静态辅助函数名、误插入WebView方法名的ART注释、Java HeapGraph产物、DirectByteBuffer释放边界。16图与16个真实mdBook位置均视觉看过；05重采循环、06/12分支、15条件图精修后复看。原代码围栏全部逐字未改；完整设备采集脚本bash -n通过，离线maps脚本用已知4MiB匿名与3MiB同名映射夹具核验聚合，未设备执行/未Java编译。独立mdBook构建、本地链接、PNG解码、SVG XML、prompt packs与基线哈希通过，无编造性能测量。 Final full-range audit additionally corrected three shell fences and their prose: angle-bracket placeholder tokens were invalid bash redirections. Explicit uppercase symbolic placeholders now retain official fixed libmemunreachable command semantics and require substitution. Four bash blocks pass bash -n; exact reconstruction and final isolated mdBook build passed. All16 unchanged figure assets retain prior actual visual review; all16 refreshed final article-position screenshots actually re-reviewed. No adb/device commands executed.",
       "visual_review": "passed",
       "article_position_review": "passed",
       "sha256_review_input": "33c32649f2f378c3cfc601256f4f8a702416abc72f095f3df0ddb30902379e9f"
@@ -1426,7 +1426,7 @@
     {
       "path": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
       "sha256_before": "d0da9f55f08e30b82caef120c69cae41fa301cfa8a8448544ad0b068608317a3",
-      "status": "in_progress",
+      "status": "illustrated",
       "diagrams": [
         "a299-01-kernel-and-process-evidence-scopes",
         "a299-02-wd-sys-filter-tail-call-reader",
@@ -1446,23 +1446,66 @@
       ],
       "article_index": 299,
       "sha256_at_assignment": "d0da9f55f08e30b82caef120c69cae41fa301cfa8a8448544ad0b068608317a3",
-      "sha256_current": "639fdd1b0539508997efd667f78c45f6286c7272e13c6130a1d3e62aabdf3232"
+      "sha256_current": "639fdd1b0539508997efd667f78c45f6286c7272e13c6130a1d3e62aabdf3232",
+      "sha256_after": "639fdd1b0539508997efd667f78c45f6286c7272e13c6130a1d3e62aabdf3232",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "651-line article fully reviewed against 46 captured primary-source pages/files: WOOTdroid fixed arXiv v1, Profilo fixed commit 5a66b9372c137be036403d9c6f89a57ce4111d0a, current AndroidX Tracing 2.0.5 and Android17 sources. 16 source assertions passed including real r6/r39 Binder byte comparisons, actual B/E-only swallowing hook and ring concurrency, alternate tracing backend and wire auto-init. Published code fences unchanged; shell syntax checks passed. All 15 SVG/PNG figures and all article positions actually visually reviewed; Binder snapshot/driver branches and UER set notation refined and re-reviewed. Isolated mdBook build, exact article reconstruction, hashes and links passed. No Android/root/OEM collection or measured overhead claim.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "d0da9f55f08e30b82caef120c69cae41fa301cfa8a8448544ad0b068608317a3"
     },
     {
       "path": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
       "sha256_before": "39fc372d6f73ac7399a120d8c8d68bf772b004f7d404cf939abaee6547948f0e",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a300-01-paper-platform-and-engineering-evidence",
+        "a300-02-async-producer-consumer-gap",
+        "a300-03-instrumentation-levels-and-fast-check",
+        "a300-04-ordinary-trace-start-conditional-costs",
+        "a300-05-targeted-entry-and-proxy-dispatch",
+        "a300-06-private-art-and-public-runtime-contracts",
+        "a300-07-reported-ab-rates-and-inference-limits",
+        "a300-08-single-device-and-ablation-boundaries",
+        "a300-09-frame-symptom-to-view-instance",
+        "a300-10-configuration-activation-and-rollback",
+        "a300-11-automation-stimulus-and-runtime-evidence",
+        "a300-12-attach-permissions-plugin-and-agent",
+        "a300-13-onload-onattach-onunload-and-dispose",
+        "a300-14-gc-agent-initialization-transaction",
+        "a300-15-gc-pauses-not-whole-cycle",
+        "a300-16-event-specific-deoptimization-scopes",
+        "a300-17-dex-standard-and-structural-redefinition",
+        "a300-18-object-tags-per-environment-and-free",
+        "a300-19-release-and-lab-tool-selection"
+      ],
       "article_index": 300,
-      "sha256_at_assignment": "39fc372d6f73ac7399a120d8c8d68bf772b004f7d404cf939abaee6547948f0e"
+      "sha256_at_assignment": "39fc372d6f73ac7399a120d8c8d68bf772b004f7d404cf939abaee6547948f0e",
+      "sha256_current": "7453877daef1948d3f1322a15c0a9cfa2f9fce05154e6b2be5cc2c9331d64421",
+      "sha256_after": "7453877daef1948d3f1322a15c0a9cfa2f9fce05154e6b2be5cc2c9331d64421",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "740-line frozen article fully read and checked against 29 captured remote primary sources plus one inspected local ARTEMIS note: fixed arXiv v1, official ICSE2026 SEIP program, android17r1 ART and JVMTI specification. 16 source assertions and rate arithmetic passed. Corrected false no-venue claim, tracing conditional branches, profileable/attach distinction, unsupported prespecified statistical claim, process-kill cleanup, JNI reference lifetime, DisposeEnvironment resource limits and wall clock definition. Exact published C++17 GC agent compiled against host JBR21 headers; fake-VM harness exercised seven init failure paths, 12 concurrent duplicate attaches creating one environment, and 80000 parallel callback updates per counter. Host shell syntax passed. All 19 figures and corresponding article positions actually visually reviewed; conditional trace bypass and rollout healthy/error branches refined and re-reviewed. Isolated mdBook build, exact reconstruction, SHA and local links passed. No Android NDK/ART device run, XTrace implementation reproduction or new performance measurement.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "39fc372d6f73ac7399a120d8c8d68bf772b004f7d404cf939abaee6547948f0e"
     },
     {
       "path": "src/part5-app/ch26-observability/README.md",
       "sha256_before": "2512d303d8e8380b150e6e0909b5e2165ec20e9b67070e59c76fbf642005ce2b",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a301-01-observability-evidence-to-release-loop",
+        "a301-02-symptom-to-chapter-and-permission-map"
+      ],
       "article_index": 301,
-      "sha256_at_assignment": "2512d303d8e8380b150e6e0909b5e2165ec20e9b67070e59c76fbf642005ce2b"
+      "sha256_at_assignment": "2512d303d8e8380b150e6e0909b5e2165ec20e9b67070e59c76fbf642005ce2b",
+      "sha256_current": "6fa72c09c6622f529099791243b4b0a9547b3d8724eabf61eec8706213f5ec76",
+      "sha256_after": "6fa72c09c6622f529099791243b4b0a9547b3d8724eabf61eec8706213f5ec76",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "45-line chapter index fully reviewed, all 15 chapter links and reading order checked against assigned chapter articles. Six already-captured official primary sources reused with recorded file SHA: ApplicationExitInfo, ApplicationStartInfo, ProfilingManager, Android17 trigger features, ART TI and Vitals. Added explicit API30/API35/API36 boundaries and debuggable-only runtime JVMTI attach. Two chapter-specific evidence/release-cycle and symptom-to-chapter maps rendered; actual final SVG/PNG and both isolated mdBook positions visually reviewed. Frozen input SHA, exact reconstruction, XML/PNG decoding, links and mdBook build passed. No device or new performance measurements.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "2512d303d8e8380b150e6e0909b5e2165ec20e9b67070e59c76fbf642005ce2b"
     }
   ],
   "diagrams": [
@@ -15412,9 +15455,14 @@
         "https://developer.android.com/reference/android/os/ProfilingManager",
         "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/docs/architecture.md"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-01-kernel-and-process-evidence-scopes.svg": "ee3fbd4b7c124462b33d0d887e16e20640fb7811e62f5f27db9a74be5e8ba09d",
+        "src/assets/diagrams/ch26/a299-01-kernel-and-process-evidence-scopes.png": "a0742f6b4c733e9eb7eefab88b37f684150d6509cfcccb8408c255a064c7b20b"
+      }
     },
     {
       "id": "a299-02-wd-sys-filter-tail-call-reader",
@@ -15430,9 +15478,14 @@
         "https://arxiv.org/html/2604.27830v1",
         "https://android.googlesource.com/platform/system/bpf/+/refs/tags/android-17.0.0_r1/loader/bpfloader.rs"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-02-wd-sys-filter-tail-call-reader.svg": "8915261a46ea6b7217ce11b5f1fff2b23def96ca12fd54476e889a54e182a799",
+        "src/assets/diagrams/ch26/a299-02-wd-sys-filter-tail-call-reader.png": "971202f594d078eed2353f9721ff60b7c19faf68983b0c432b16e2326770a138"
+      }
     },
     {
       "id": "a299-03-buffer-loss-and-observation-health",
@@ -15448,9 +15501,14 @@
         "https://arxiv.org/html/2604.27830v1",
         "https://source.android.com/docs/core/architecture/kernel/bpf"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-03-buffer-loss-and-observation-health.svg": "aed3a2f34bd07246aafddfc902b85f6865d92fc4a188ab7c382a85d92a2c2798",
+        "src/assets/diagrams/ch26/a299-03-buffer-loss-and-observation-health.png": "64368215a7eb8a860a1e9629b933cc0cce5f7bce41509dcb39e87323405c5d23"
+      }
     },
     {
       "id": "a299-04-binder-user-memory-to-signatures",
@@ -15467,9 +15525,14 @@
         "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/drivers/android/binder.c",
         "https://arxiv.org/html/2604.27830v1"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-04-binder-user-memory-to-signatures.svg": "35a26b7d881872be83372a9521aae2460b4c6736847ebc115e99698595d390cf",
+        "src/assets/diagrams/ch26/a299-04-binder-user-memory-to-signatures.png": "4f6e4b37a27d484dc2bc0a562c203279015e5c8c728f9f8f3f3a02884b683bf2"
+      }
     },
     {
       "id": "a299-05-binder-rpc-observation-tracks",
@@ -15486,9 +15549,14 @@
         "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r39/drivers/android/binder_trace.h",
         "https://arxiv.org/html/2604.27830v1"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-05-binder-rpc-observation-tracks.svg": "fe76ae6f081611cacb457fd3397c25fc8de8f6f9ecb5adb11858ebf5ab78088b",
+        "src/assets/diagrams/ch26/a299-05-binder-rpc-observation-tracks.png": "03b0368ae8441f8998b7f8e02665f6b6fcb4f959e3a2c360633d6ed396e2afab"
+      }
     },
     {
       "id": "a299-06-unique-event-rate-union-denominator",
@@ -15503,9 +15571,14 @@
       "sources": [
         "https://arxiv.org/html/2604.27830v1"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-06-unique-event-rate-union-denominator.svg": "ade0c202eee4cc5f9dd5c31b2c9bae73860bb65903c6814afb0d4138aa16bf2e",
+        "src/assets/diagrams/ch26/a299-06-unique-event-rate-union-denominator.png": "eab07b817275674f32a29af5a17a5295020058d623183048465e702d59037ca0"
+      }
     },
     {
       "id": "a299-07-version-bound-semantic-decoding",
@@ -15521,9 +15594,14 @@
         "https://arxiv.org/html/2604.27830v1",
         "https://developer.android.com/privacy-and-security/risks/log-info-disclosure"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-07-version-bound-semantic-decoding.svg": "f572bf6a73c81c21a866dd45639fe9afb80b2786a37f5d29a79b9a1bc6bd08c3",
+        "src/assets/diagrams/ch26/a299-07-version-bound-semantic-decoding.png": "078768a7c6caaccb23bcfc438df1e6edb5bf38ea25e478a066d90339a21f6f3d"
+      }
     },
     {
       "id": "a299-08-profilo-controller-to-private-files",
@@ -15539,9 +15617,14 @@
         "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/docs/architecture.md",
         "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/docs/trace-processing.md"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-08-profilo-controller-to-private-files.svg": "1b53a36cf15e4891220a84ecfe95673a67809a26381949a8bbbf5b8eda2287f6",
+        "src/assets/diagrams/ch26/a299-08-profilo-controller-to-private-files.png": "c09d4fb1801236ffa1bfc9606af0fa0661a3298e6d3279843e4e6dca32afa8b1"
+      }
     },
     {
       "id": "a299-09-profilo-ring-concurrency-and-wrap",
@@ -15556,9 +15639,14 @@
       "sources": [
         "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/logger/lfrb/LockFreeRingBuffer.h"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-09-profilo-ring-concurrency-and-wrap.svg": "ce7d2d18249b2bee656f51a9aef0ad6b78e47e85a40700720f196ff82cbe542f",
+        "src/assets/diagrams/ch26/a299-09-profilo-ring-concurrency-and-wrap.png": "3ee99f15ad49404cdb035c07c0833066f5423fe3c59dadc9d3b36da7ef977859"
+      }
     },
     {
       "id": "a299-10-android17-trace-backend-branches",
@@ -15576,9 +15664,14 @@
         "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.cpp",
         "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-10-android17-trace-backend-branches.svg": "ccd81484a1187bbea02e1799f67d746776ae3636ad1154158042a391dc34859f",
+        "src/assets/diagrams/ch26/a299-10-android17-trace-backend-branches.png": "ddaad257a599676e99ea6f3129785afab6c96badd3d9d4c0d65e059805e6c763"
+      }
     },
     {
       "id": "a299-11-profilo-hook-parse-and-swallow",
@@ -15594,9 +15687,14 @@
         "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp",
         "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/java/main/com/facebook/profilo/provider/atrace/SystraceProvider.java"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-11-profilo-hook-parse-and-swallow.svg": "cfcfdaf0de2d0a11e78bd9a55345c9bb6c17edc5f29f8daf4441cfe5bb62febc",
+        "src/assets/diagrams/ch26/a299-11-profilo-hook-parse-and-swallow.png": "a36a4c867a664b70c6975c8f353164d40de83a2a68020b4a17a676806ca70b9a"
+      }
     },
     {
       "id": "a299-12-thread-lifetime-stack-and-partial",
@@ -15612,9 +15710,14 @@
         "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/atrace/Atrace.cpp",
         "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/logger/lfrb/LockFreeRingBuffer.h"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-12-thread-lifetime-stack-and-partial.svg": "39c40bd33a62b0f1481ab2f8a25532c551eafb197db1192f72dd20a858198af2",
+        "src/assets/diagrams/ch26/a299-12-thread-lifetime-stack-and-partial.png": "ebdca2525e2fb4979a93013a648defa726c79c31fb1e582677e377c935a28579"
+      }
     },
     {
       "id": "a299-13-sampling-provider-thread-timers",
@@ -15631,9 +15734,14 @@
         "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/cpp/profiler/TimerManager.cpp",
         "https://raw.githubusercontent.com/facebookarchive/profilo/5a66b9372c137be036403d9c6f89a57ce4111d0a/java/main/com/facebook/profilo/provider/stacktrace/CPUProfiler.java"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-13-sampling-provider-thread-timers.svg": "d4ec38c39d78cb9189b27b6b6c3b3a9f1e6d7b0f0a16eaecbbe80963de95e516",
+        "src/assets/diagrams/ch26/a299-13-sampling-provider-thread-timers.png": "deae7fae63043dce1b1e69e368e5a778a911edde6c2c3d59ad34a723e2e0827d"
+      }
     },
     {
       "id": "a299-14-fixed-artifacts-and-hook-capabilities",
@@ -15650,9 +15758,14 @@
         "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/libcutils/trace-dev.inc",
         "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Trace.java"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-14-fixed-artifacts-and-hook-capabilities.svg": "80c4dcc46618cd135da4254a29458d6e1f3dfc77b9624b19c0dc89f48b889925",
+        "src/assets/diagrams/ch26/a299-14-fixed-artifacts-and-hook-capabilities.png": "167eecb58399bae51acb2e86f38506dee74a1c5843bda45b3f657075e6db3c1c"
+      }
     },
     {
       "id": "a299-15-stable-tracing-driver-and-system-scopes",
@@ -15670,9 +15783,507 @@
         "https://perfetto.dev/docs/instrumentation/tracing-sdk",
         "https://developer.android.com/reference/android/os/ProfilingManager"
       ],
-      "visual_review": "pending",
+      "visual_review": "passed",
       "reviewed_at": "2026-10-25",
-      "article_position_review": "pending"
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a299-15-stable-tracing-driver-and-system-scopes.svg": "3ba9d1fbcace98d1093e525cf47e89e420b2a49832bc4af696dbb993a29c8598",
+        "src/assets/diagrams/ch26/a299-15-stable-tracing-driver-and-system-scopes.png": "614975dfd6736cbde20a32abf6f9f9159049ef097d96c972ed27c98c6b414721"
+      }
+    },
+    {
+      "id": "a300-01-paper-platform-and-engineering-evidence",
+      "title": "论文报告、固定平台源码和工程验证分别回答不同问题",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-01-paper-platform-and-engineering-evidence.svg",
+        "src/assets/diagrams/ch26/a300-01-paper-platform-and-engineering-evidence.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-01-paper-platform-and-engineering-evidence",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti",
+        "https://source.android.com/docs/core/runtime/art-ti",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/trace.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-01-paper-platform-and-engineering-evidence.svg": "42a581add9e5c5c75893496fd677ce43f4efe68a6460c00ece0264a8939775c1",
+        "src/assets/diagrams/ch26/a300-01-paper-platform-and-engineering-evidence.png": "5d5cb68732228c554eb2675bd82c6c3b8569554ebc68118d874799bd3964e6d3"
+      }
+    },
+    {
+      "id": "a300-02-async-producer-consumer-gap",
+      "title": "异步故障栈缺少更早的写入者，需在下一次发生前布置观察",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-02-async-producer-consumer-gap.svg",
+        "src/assets/diagrams/ch26/a300-02-async-producer-consumer-gap.png"
+      ],
+      "layout": "perfetto-tracks",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-02-async-producer-consumer-gap",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://developer.android.com/studio/profile/sample-callstack"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-02-async-producer-consumer-gap.svg": "9a37141e7d853a50a8d28de915dc88e37bea7c0a2fce2054e7a1e962d16ca7da",
+        "src/assets/diagrams/ch26/a300-02-async-producer-consumer-gap.png": "66b4a35d9fa2bf9f6833ac94d751d04c55cf9b8f95cd10ae8f059f495b044bbf"
+      }
+    },
+    {
+      "id": "a300-03-instrumentation-levels-and-fast-check",
+      "title": "ART Instrumentation 内部层级与入口检查有不同作用",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-03-instrumentation-levels-and-fast-check.svg",
+        "src/assets/diagrams/ch26/a300-03-instrumentation-levels-and-fast-check.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-03-instrumentation-levels-and-fast-check",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/instrumentation.h",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/instrumentation.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-03-instrumentation-levels-and-fast-check.svg": "1cbf28bdae4b3e2056ca698d91483290bdc3a97b8014827af721d060120d392f",
+        "src/assets/diagrams/ch26/a300-03-instrumentation-levels-and-fast-check.png": "2707ede9af8f971bf6b5868739415d48903a06591c4dba8ed471fe77cdb5119f"
+      }
+    },
+    {
+      "id": "a300-04-ordinary-trace-start-conditional-costs",
+      "title": "Android17 普通方法追踪：保留分支条件再解释成本",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-04-ordinary-trace-start-conditional-costs.svg",
+        "src/assets/diagrams/ch26/a300-04-ordinary-trace-start-conditional-costs.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-04-ordinary-trace-start-conditional-costs",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/trace.cc",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/instrumentation.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-04-ordinary-trace-start-conditional-costs.svg": "79b10994df991481be44530305c91c47fdfc8c81deb7702de3c6c40b8bdb7238",
+        "src/assets/diagrams/ch26/a300-04-ordinary-trace-start-conditional-costs.png": "a394c22d215fb20208e66dade75d1fed8fe1c8204525a5c9573ac6b48e5ef105"
+      }
+    },
+    {
+      "id": "a300-05-targeted-entry-and-proxy-dispatch",
+      "title": "XTrace v1：选择目标入口，再由事件代理处理命中方法",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-05-targeted-entry-and-proxy-dispatch.svg",
+        "src/assets/diagrams/ch26/a300-05-targeted-entry-and-proxy-dispatch.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-05-targeted-entry-and-proxy-dispatch",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/art_method.h",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/arch/arm64/quick_entrypoints_arm64.S"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-05-targeted-entry-and-proxy-dispatch.svg": "799fec7b3e46faef1b902a1c57f424919fd418de3f4cc3749e7945f45474141f",
+        "src/assets/diagrams/ch26/a300-05-targeted-entry-and-proxy-dispatch.png": "5116c8afbf040264e14e77561449e5ef9d7c8df532c17fb27e5f63b15fa95ee6"
+      }
+    },
+    {
+      "id": "a300-06-private-art-and-public-runtime-contracts",
+      "title": "私有 ART hook、公共追踪与标准 agent 不共享部署契约",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-06-private-art-and-public-runtime-contracts.svg",
+        "src/assets/diagrams/ch26/a300-06-private-art-and-public-runtime-contracts.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-06-private-art-and-public-runtime-contracts",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java",
+        "https://source.android.com/docs/core/runtime/art-ti",
+        "https://developer.android.com/guide/topics/manifest/profileable-element"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-06-private-art-and-public-runtime-contracts.svg": "ade859111d467031a672f22fd3a3d941e5f0e6eb5b5b64d508c3098d9523bff7",
+        "src/assets/diagrams/ch26/a300-06-private-art-and-public-runtime-contracts.png": "c6ac5a158d16d2228ead9d428aa7e0973e130bc8e470ab8de33f9407a4b53923"
+      }
+    },
+    {
+      "id": "a300-07-reported-ab-rates-and-inference-limits",
+      "title": "大规模 A/B 数字按作者报告引用，不能外推完全等价",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-07-reported-ab-rates-and-inference-limits.svg",
+        "src/assets/diagrams/ch26/a300-07-reported-ab-rates-and-inference-limits.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-07-reported-ab-rates-and-inference-limits",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-07-reported-ab-rates-and-inference-limits.svg": "fe5550770ae13d24e429fc7efa73324cb9658d1b42d574c4e7696cebf9c1a7be",
+        "src/assets/diagrams/ch26/a300-07-reported-ab-rates-and-inference-limits.png": "34bd166502bbba7c01c8935ac4cc4fcd73d25d98b0edb803212a9b51818a7daa"
+      }
+    },
+    {
+      "id": "a300-08-single-device-and-ablation-boundaries",
+      "title": "性能实验与消融只支持所测设备和目标规模",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-08-single-device-and-ablation-boundaries.svg",
+        "src/assets/diagrams/ch26/a300-08-single-device-and-ablation-boundaries.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-08-single-device-and-ablation-boundaries",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/trace.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-08-single-device-and-ablation-boundaries.svg": "3cad9a87915917809081244804be030f9bdccf3184ded6dc67133a484431b564",
+        "src/assets/diagrams/ch26/a300-08-single-device-and-ablation-boundaries.png": "8af626ac107321c242dfcbc0a6f198624b31efe9251a5327a67b694a40d1bc66"
+      }
+    },
+    {
+      "id": "a300-09-frame-symptom-to-view-instance",
+      "title": "卡顿案例：先缩小阶段，再观察实例与重复调用",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-09-frame-symptom-to-view-instance.svg",
+        "src/assets/diagrams/ch26/a300-09-frame-symptom-to-view-instance.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-09-frame-symptom-to-view-instance",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://developer.android.com/studio/profile/sample-callstack"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-09-frame-symptom-to-view-instance.svg": "1bf336fd323304826e3c6b5d681b73a95d8b68248a9908dea7be6e378fec4ed2",
+        "src/assets/diagrams/ch26/a300-09-frame-symptom-to-view-instance.png": "2d4ed0c00e20c4e03977c979ee9f1f9add45814359cb4e5713c73d8993a932c6"
+      }
+    },
+    {
+      "id": "a300-10-configuration-activation-and-rollback",
+      "title": "动态配置要管理目标、动作、激活与撤销",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-10-configuration-activation-and-rollback.svg",
+        "src/assets/diagrams/ch26/a300-10-configuration-activation-and-rollback.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-10-configuration-activation-and-rollback",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/ti/agent.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-10-configuration-activation-and-rollback.svg": "720e5e0bbc000bc5b7148c410684c24d9d60805562686d2d7ac3803dc5a13b88",
+        "src/assets/diagrams/ch26/a300-10-configuration-activation-and-rollback.png": "f92c168139b8e893c65a3de3b60065d12426c8f2906f1ade462cad61f5d71330"
+      }
+    },
+    {
+      "id": "a300-11-automation-stimulus-and-runtime-evidence",
+      "title": "自动化操作与运行时事件分别保留证据，再关联步骤",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-11-automation-stimulus-and-runtime-evidence.svg",
+        "src/assets/diagrams/ch26/a300-11-automation-stimulus-and-runtime-evidence.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-11-automation-stimulus-and-runtime-evidence",
+      "sources": [
+        "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/DeepResearch/2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/trace.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-11-automation-stimulus-and-runtime-evidence.svg": "788d6769b5d9aa5bfb098613331bb65fd21902fc9ffb83480a7af9dbe8163fae",
+        "src/assets/diagrams/ch26/a300-11-automation-stimulus-and-runtime-evidence.png": "3e8ae904315cb6926063121116fa85dec401fef1e6412d36fb6fe5a2a9310225"
+      }
+    },
+    {
+      "id": "a300-12-attach-permissions-plugin-and-agent",
+      "title": "运行中 attach：授权、plugin、agent 库与事件分开检查",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-12-attach-permissions-plugin-and-agent.svg",
+        "src/assets/diagrams/ch26/a300-12-attach-permissions-plugin-and-agent.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-12-attach-permissions-plugin-and-agent",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/art-ti",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/ti/agent.cc",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Debug.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-12-attach-permissions-plugin-and-agent.svg": "86bf475436e80c4301debd938fff3d52490fd7a905122337b434f1e7c74a7f26",
+        "src/assets/diagrams/ch26/a300-12-attach-permissions-plugin-and-agent.png": "bc38256166b5b61a6955997aa26df72c09c01dc420e73cb336e067c7bb582dd9"
+      }
+    },
+    {
+      "id": "a300-13-onload-onattach-onunload-and-dispose",
+      "title": "agent 生命周期没有通用的对称 detach 操作",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-13-onload-onattach-onunload-and-dispose.svg",
+        "src/assets/diagrams/ch26/a300-13-onload-onattach-onunload-and-dispose.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-13-onload-onattach-onunload-and-dispose",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/ti/agent.cc",
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-13-onload-onattach-onunload-and-dispose.svg": "ff8c02c4064353e7839f722dc4368eceee9b54301acc1264b08f6f4d18243a92",
+        "src/assets/diagrams/ch26/a300-13-onload-onattach-onunload-and-dispose.png": "917d9959b3f7b1b4f421647e579ff1387a30dfb5581382273ca079d6c037b4d2"
+      }
+    },
+    {
+      "id": "a300-14-gc-agent-initialization-transaction",
+      "title": "GC 计数 agent：初始化提交前失败就释放新环境",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-14-gc-agent-initialization-transaction.svg",
+        "src/assets/diagrams/ch26/a300-14-gc-agent-initialization-transaction.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-14-gc-agent-initialization-transaction",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/events.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-14-gc-agent-initialization-transaction.svg": "b24ca7e9c5431702eb1f5d0f59b722bbe580ce4ba7953049e0c5d07374567947",
+        "src/assets/diagrams/ch26/a300-14-gc-agent-initialization-transaction.png": "46f15a5c3635c46cd19253f4e8b4172fe45f71f8f318be9dd058cc9c1c9a6f2f"
+      }
+    },
+    {
+      "id": "a300-15-gc-pauses-not-whole-cycle",
+      "title": "GC Start / Finish 报告暂停边界，不是完整并发 GC 周期",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-15-gc-pauses-not-whole-cycle.svg",
+        "src/assets/diagrams/ch26/a300-15-gc-pauses-not-whole-cycle.png"
+      ],
+      "layout": "perfetto-tracks",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-15-gc-pauses-not-whole-cycle",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/events.cc",
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-15-gc-pauses-not-whole-cycle.svg": "88f2302187200517982a21cb55c8e7e24251982e2d272ba5d749ca157bcfa78a",
+        "src/assets/diagrams/ch26/a300-15-gc-pauses-not-whole-cycle.png": "a852975207fb1063555ce96ff02a2b94d4aaa29388ce944e2c2e29c290ceed54"
+      }
+    },
+    {
+      "id": "a300-16-event-specific-deoptimization-scopes",
+      "title": "Android17：事件类型与线程过滤共同决定去优化范围",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-16-event-specific-deoptimization-scopes.svg",
+        "src/assets/diagrams/ch26/a300-16-event-specific-deoptimization-scopes.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-16-event-specific-deoptimization-scopes",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/events.cc",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/deopt_manager.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-16-event-specific-deoptimization-scopes.svg": "79f7a44c73be1c2c3bc722613cde171deef73fdef0e2f3572ef968a0cde2ac5a",
+        "src/assets/diagrams/ch26/a300-16-event-specific-deoptimization-scopes.png": "e3b7cc8e2b96f3500ee9a70597f87c1a92bc5ceeeefd5968e1c021ecb78cc870"
+      }
+    },
+    {
+      "id": "a300-17-dex-standard-and-structural-redefinition",
+      "title": "Android 的类重定义输入是单类 DEX，标准与扩展不同",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-17-dex-standard-and-structural-redefinition.svg",
+        "src/assets/diagrams/ch26/a300-17-dex-standard-and-structural-redefinition.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-17-dex-standard-and-structural-redefinition",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/art-ti",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/ti_redefine.cc",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/ti_extension.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-17-dex-standard-and-structural-redefinition.svg": "e274209d9163937c187c3b76f33b02adbbb7efc3d243025dda622db7812d900f",
+        "src/assets/diagrams/ch26/a300-17-dex-standard-and-structural-redefinition.png": "d617a6ea86bf1168b30f7a488ae211f1b9ae9846f0167249a2b4c1ecd35dfdac"
+      }
+    },
+    {
+      "id": "a300-18-object-tags-per-environment-and-free",
+      "title": "对象 tag 属于 JVMTI 环境，ObjectFree 不再给出对象",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-18-object-tags-per-environment-and-free.svg",
+        "src/assets/diagrams/ch26/a300-18-object-tags-per-environment-and-free.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-18-object-tags-per-environment-and-free",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/ti_heap.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-18-object-tags-per-environment-and-free.svg": "aa4840036d6b9f30a1cae2f51795b151fc09ca8ecd51279f19be043e97757e74",
+        "src/assets/diagrams/ch26/a300-18-object-tags-per-environment-and-free.png": "3d05bd4a3d5bfc31287aedcef4533712cd12e7ad935238ac2b837e9aaf3c2419"
+      }
+    },
+    {
+      "id": "a300-19-release-and-lab-tool-selection",
+      "title": "发布构建先选公开可用入口，调试 agent 另建基线",
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a300-19-release-and-lab-tool-selection.svg",
+        "src/assets/diagrams/ch26/a300-19-release-and-lab-tool-selection.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a300-19-release-and-lab-tool-selection",
+      "sources": [
+        "https://developer.android.com/reference/android/os/ProfilingManager",
+        "https://source.android.com/docs/core/runtime/art-ti",
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler",
+        "https://developer.android.com/guide/topics/manifest/profileable-element"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a300-19-release-and-lab-tool-selection.svg": "869dba71e57446e2a8ae01131660721213366c7edf0d62aea342d192af6d140d",
+        "src/assets/diagrams/ch26/a300-19-release-and-lab-tool-selection.png": "f5d59d7e349c10c8b743d6c6d50127a00d106f85f5088fe9b2fe3654ecc7f266"
+      }
+    },
+    {
+      "id": "a301-01-observability-evidence-to-release-loop",
+      "title": "第26章：从线上问题到修复验证与发布决策",
+      "article": "src/part5-app/ch26-observability/README.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a301-01-observability-evidence-to-release-loop.svg",
+        "src/assets/diagrams/ch26/a301-01-observability-evidence-to-release-loop.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a301-01-observability-evidence-to-release-loop",
+      "sources": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/baseline/src/part5-app/ch26-observability/README.md",
+        "https://developer.android.com/topic/performance/vitals",
+        "https://developer.android.com/reference/android/os/ProfilingManager"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a301-01-observability-evidence-to-release-loop.svg": "8f36aaedc2251406fff333d8d8e73ff9d23c5fe0a11d5450c591660c437f765d",
+        "src/assets/diagrams/ch26/a301-01-observability-evidence-to-release-loop.png": "cb0ad2a1e75309ca7aa75f08bd209ffec64f62a30816382fac5f1d2a1d83307a"
+      }
+    },
+    {
+      "id": "a301-02-symptom-to-chapter-and-permission-map",
+      "title": "按证据对象选择章节，同时核对采集权限",
+      "article": "src/part5-app/ch26-observability/README.md",
+      "assets": [
+        "src/assets/diagrams/ch26/a301-02-symptom-to-chapter-and-permission-map.svg",
+        "src/assets/diagrams/ch26/a301-02-symptom-to-chapter-and-permission-map.png"
+      ],
+      "layout": "flow-and-contract-boundaries",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a301-02-symptom-to-chapter-and-permission-map",
+      "sources": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/baseline/src/part5-app/ch26-observability/README.md",
+        "https://source.android.com/docs/core/runtime/art-ti",
+        "https://developer.android.com/reference/android/os/ProfilingManager"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch26/a301-02-symptom-to-chapter-and-permission-map.svg": "1017c666449ecb9a227e88f7fb713a6c12c88df87c263702d6c5f8d40f041b12",
+        "src/assets/diagrams/ch26/a301-02-symptom-to-chapter-and-permission-map.png": "6dc7112ce59057c9120dfaa9afccb07d3571f51c6e1a3da4c80201dde29884cb"
+      }
     }
   ],
   "corrections": [
@@ -15878,99 +16489,6 @@
       ],
       "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
       "why": "区分unregisterForAllProfilingResults与removeProfilingTriggersByType，避免将注销回调误认为停止系统trigger。"
-    },
-    {
-      "before": "也就是说，平时并没有一个常驻的 heapprofd 在采集，每次采集请求才把它按需拉起。",
-      "after": "默认配置支持按需拉起，但 `persist.heapprofd.enable=1` 也能独立启动并保持服务；`disabled` 不足以证明任意设备上服务都未运行，服务运行也不等于正在持续采集。",
-      "reason": "保留rc中两个空属性停服的正确条件，补充persist强制路径，避免从disabled推出所有现场都无常驻进程。",
-      "sources": [
-        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/heapprofd.rc"
-      ],
-      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
-      "why": "保留rc中两个空属性停服的正确条件，补充persist强制路径，避免从disabled推出所有现场都无常驻进程。"
-    },
-    {
-      "before": "Scudo 的 quarantine 会延迟复用已释放块，release interval 是批量向系统归还页面的间隔；",
-      "after": "启用 quarantine 时，隔离策略会延迟复用已释放块；小块隔离和 secondary 映射缓存的配置并不相同。固定标签的 standalone `flags.inc` 把小块隔离相关默认值设为 0，是否生效仍须结合构建选项与目标进程配置。release interval 用于限制或调节向系统归还空闲页的尝试，不是保证到点完成归还或 RSS 下降的定时器；",
-      "reason": "按Android17固定源码区分可选quarantine、secondary缓存与归还尝试，避免把通用Scudo说明当作所有进程实际默认配置。",
-      "sources": [
-        "https://android.googlesource.com/platform/external/scudo/+/refs/tags/android-17.0.0_r1/standalone/flags.inc",
-        "https://android.googlesource.com/platform/external/scudo/+/refs/tags/android-17.0.0_r1/standalone/allocator_config.h"
-      ],
-      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
-      "why": "按Android17固定源码区分可选quarantine、secondary缓存与归还尝试，避免把通用Scudo说明当作所有进程实际默认配置。"
-    },
-    {
-      "before": ".so 的只读页面可以在多个进程间共享，页面一旦被当前进程写脏，就变成这一进程的私有成本。",
-      "after": "`.so` 的只读文件页可以在多个进程间共享。具有写权限的 `MAP_PRIVATE` 文件映射被写入时，会通过 COW 形成当前进程的私有脏页；只读映射不能不经权限变更就直接写入。",
-      "reason": "明确私有脏页来自可写私有映射的COW，不能把只读文件页描述成可直接写脏。",
-      "sources": [
-        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst"
-      ],
-      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
-      "why": "明确私有脏页来自可写私有映射的COW，不能把只读文件页描述成可直接写脏。"
-    },
-    {
-      "before": "page fault（访问尚未驻留页面时产生的缺页事件）",
-      "after": "page fault（页故障，例如按需分配、文件读入、写时复制或权限异常）",
-      "reason": "页故障不只来自未驻留页面；写时复制和权限故障也会进入页故障路径。",
-      "sources": [
-        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst"
-      ],
-      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
-      "why": "页故障不只来自未驻留页面；写时复制和权限故障也会进入页故障路径。"
-    },
-    {
-      "before": "| Private Dirty / Private Clean | `dumpsys meminfo`、`smaps` | 进程独占且已修改或仍可从文件恢复的页 | 单次快照中的增长原因 |",
-      "after": "| Private Dirty / Private Clean | `dumpsys meminfo`、`smaps` | 进程独占页按当前 dirty / clean 状态分类；能否从文件恢复还要看映射来源 | 单次快照中的增长原因 |",
-      "reason": "clean/dirty与匿名/文件映射是不同维度，不能把Private Clean一概解释为可从文件恢复。",
-      "sources": [
-        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst"
-      ],
-      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
-      "why": "clean/dirty与匿名/文件映射是不同维度，不能把Private Clean一概解释为可从文件恢复。"
-    },
-    {
-      "before": "[`Thread::FixStackSize()`]",
-      "after": "[`thread.cc` 内的静态辅助函数 `FixStackSize()`]",
-      "reason": "固定源码定义为文件内static size_t FixStackSize(size_t)，不是Thread类成员。",
-      "sources": [
-        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc"
-      ],
-      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
-      "why": "固定源码定义为文件内static size_t FixStackSize(size_t)，不是Thread类成员。"
-    },
-    {
-      "before": "WebViewLibraryLoader.reserveAddressSpace（ART 管理的一类内存区域）InZygote()",
-      "after": "WebViewLibraryLoader.reserveAddressSpaceInZygote()",
-      "reason": "删除误插入函数名的ART Space中文注释；该函数属于WebView加载器，与ART Heap Space不是同一机制。",
-      "sources": [
-        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebViewLibraryLoader.java"
-      ],
-      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
-      "why": "删除误插入函数名的ART Space中文注释；该函数属于WebView加载器，与ART Heap Space不是同一机制。"
-    },
-    {
-      "before": "两者使用不同的数据源、信号与权限路径；某一种转储命令能运行，另一种 Perfetto 数据源还要单独验证。",
-      "after": "这里的 Java HPROF 指 Perfetto 的 `android.java_hprof` / `JavaHprofProducer` 路径，其 ART 插件输出 trace 内的 HeapGraph，并不先落盘为完整 `.hprof` 文件。独立完整 HPROF 仍由 `Debug.dumpHprofData()`、有权限的 `am dumpheap` 或 Studio 等入口生成，详见 [23.2 的产物区分](02-memory-leak-governance.md)。原生 heapprofd 与 Java HeapGraph 使用不同的数据源、信号与权限路径；某种转储命令能运行，另一条路径仍要单独验证。",
-      "reason": "明确历史命名java_hprof与实际HeapGraph产物，避免把信号触发的trace堆图误当完整HPROF。",
-      "sources": [
-        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/java_hprof_producer.cc",
-        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/perfetto_hprof/perfetto_hprof.cc"
-      ],
-      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
-      "why": "明确历史命名java_hprof与实际HeapGraph产物，避免把信号触发的trace堆图误当完整HPROF。"
-    },
-    {
-      "before": "- 释放 Bitmap、媒体缓冲区、DirectByteBuffer 与 native peer（Java 对象对应的原生侧实例）；",
-      "after": "- 按各自资源协议释放 Bitmap、媒体缓冲区与 native peer（Java 对象对应的原生侧实例）；DirectByteBuffer 没有通用公开 `close()`，应缩短引用生命周期；JNI 自管的底层 buffer 则由其原生所有者配对释放，并确保不存在仍访问它的 ByteBuffer 视图；",
-      "reason": "区分DirectByteBuffer引用生命周期与JNI自管底层分配，避免暗示应用能调用通用close或提前free仍被View访问的内存。",
-      "sources": [
-        "https://developer.android.com/training/articles/perf-jni",
-        "https://developer.android.com/reference/java/nio/ByteBuffer"
-      ],
-      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
-      "why": "区分DirectByteBuffer引用生命周期与JNI自管底层分配，避免暗示应用能调用通用close或提前free仍被View访问的内存。"
     },
     {
       "before": "Android 3.0 到 7.1 随 Bitmap 对象位于 Dalvik 堆",
@@ -22089,6 +22607,374 @@
       ],
       "article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
       "why": "固定论文明确版本，避免abs默认指向后续版本。"
+    },
+    {
+      "before": "last_verified: '2026-09-09'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "740行全文复核固定ART17源码、JVMTI规范、v1论文与ICSE2026官方议程；C++主机故障注入另存，未执行Android设备验证。",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/instrumentation.cc",
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "740行全文复核固定ART17源码、JVMTI规范、v1论文与ICSE2026官方议程；C++主机故障注入另存，未执行Android设备验证。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-09-09'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "740行全文复核固定ART17源码、JVMTI规范、v1论文与ICSE2026官方议程；C++主机故障注入另存，未执行Android设备验证。",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/instrumentation.cc",
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "740行全文复核固定ART17源码、JVMTI规范、v1论文与ICSE2026官方议程；C++主机故障注入另存，未执行Android设备验证。"
+    },
+    {
+      "before": "last_verified_against: arXiv:2512.21555v1 submission history and venue metadata checked 2026-09-09; AOSP android-17.0.0_r1 ART instrumentation/trace/JVMTI sources spot-checked 2026-09-09; Android Developers Debug, method tracing, ProfilingManager, Android 17 features and profileable docs spot-checked 2026-09-09; selected ARTEMIS performance/stability material read 2026-09-09",
+      "after": "last_verified_against: fixed arXiv:2512.21555v1 and ICSE2026 SEIP official program reviewed 2026-10-25; fixed android-17.0.0_r1 ART tracing/instrumentation/JVMTI sources and current official API docs audited; published GC agent compiled with host JBR21 headers and fake-VM failure/concurrency tests only; no Android device/NDK validation",
+      "reason": "保留真实证据范围，修正原元数据错误否认会议记录。",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/trace.cc",
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "保留真实证据范围，修正原元数据错误否认会议记录。"
+    },
+    {
+      "before": "note: 'XTrace: A Non-Invasive Dynamic Tracing Framework for Android Applications in Production; arXiv v1 submitted 2025-12-25; no public venue metadata as of 2026-09-09'",
+      "after": "note: 'XTrace arXiv v1 submitted 2025-12-25; ICSE2026 official SEIP program lists 2026-04-15 talk; reviewed 2026-10-25; method and numeric discussion pinned to v1'",
+      "reason": "arXiv无期刊字段不代表没有会议记录，官方议程已列该报告。",
+      "sources": [
+        "https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti",
+        "https://arxiv.org/html/2512.21555v1"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "arXiv无期刊字段不代表没有会议记录，官方议程已列该报告。"
+    },
+    {
+      "before": "公开材料目前只有论文，可下载的 XTrace SDK 或源码都还没有。",
+      "after": "本篇以公开arXiv v1为机制和实验数字基线；ICSE2026官方SEIP议程也已列出该报告。所核论文和会议页面未提供可下载SDK、源码或可复现实验脚本，不能据此独立复现内部实现。",
+      "reason": "纠正仅有论文的绝对声明；未找到下载链接不证明世界范围不存在实现。",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "纠正仅有论文的绝对声明；未找到下载链接不证明世界范围不存在实现。"
+    },
+    {
+      "before": "截至 2026-09-09，arXiv 提交历史仍只有 2025-12-25 上传的 [arXiv v1 手稿](https://arxiv.org/abs/2512.21555)。arXiv 页面只提供 arXiv-issued DataCite DOI，会议或期刊元数据缺席；PDF 上的 `Conference’17, July 2017, Washington, DC, USA`、假 ISBN 和模板 DOI 都来自 ACM 模板，当作正式发表证据用不上。",
+      "after": "截至2026-10-25，arXiv提交历史仍列2025-12-25的[固定v1手稿](https://arxiv.org/html/2512.21555v1)，其页面仅列arXiv DOI；但[ICSE2026官方议程](https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti)明确列出2026-04-15的SEIP报告。因此“没有公开会议记录”的原判断应撤回；本篇继续把v1中的机制/数字与会议议程的存在分开引用，不把旧稿模板页眉当作正式出版信息。",
+      "reason": "官方会议主来源证实SEIP报告；arXiv元数据缺席不能推出未发表/未报告。",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "官方会议主来源证实SEIP报告；arXiv元数据缺席不能推出未发表/未报告。"
+    },
+    {
+      "before": "ART 动态方法追踪可以通过运行时插桩或 JVMTI 事件获得方法级信号。XTrace 关注生产环境中的低开销动态选择，JVMTI Agent 提供标准实验入口，但受 profileable、debuggable 和去优化范围限制。",
+      "after": "ART动态方法追踪可通过运行时插桩或JVMTI事件获得方法级信号。XTrace研究生产环境动态选择；普通App的JVMTI运行期attach要求debuggable，profileable不能替代这一授权，事件选择还决定去优化范围。",
+      "reason": "开篇避免把profileable与debuggable并列成JVMTI可任选门槛。",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/art-ti",
+        "https://developer.android.com/guide/topics/manifest/profileable-element",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/events.cc"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "开篇避免把profileable与debuggable并列成JVMTI可任选门槛。"
+    },
+    {
+      "before": "method tracing 仍不适合长期运行在生产环境，因为普通 tracing 路径一启动就会做这些事：",
+      "after": "下面只描述普通、非sampling、未走内部low-overhead分支的tracing路径；不把Trace::Start的所有模式混成同一路径。对原本非Java-debuggable进程，启用时会切换运行时状态并执行相应代码失效/boot-image处理；已处于该状态则不重复该条件分支。它还会配置已加载方法与记录事件：",
+      "reason": "固定Trace::Start对!IsJavaDebuggable、sampling与kTraceLowOverhead有不同分支；原“一启动就”过于绝对。",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/trace.cc",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/instrumentation.cc"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "固定Trace::Start对!IsJavaDebuggable、sampling与kTraceLowOverhead有不同分支；原“一启动就”过于绝对。"
+    },
+    {
+      "before": "- 切换到 Java-debuggable 状态，使 JIT 编译代码缓存（`code cache`）失效，并对 boot image 做反优化；boot image 是预加载核心类及其编译结果的运行时镜像；",
+      "after": "- 若此前非Java-debuggable，切换状态、使JIT code cache失效并反优化boot image（预加载核心类及编译结果的运行时镜像）；",
+      "reason": "与实际条件分支一致，不宣称每次启动都重复相同状态切换。",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/trace.cc"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "与实际条件分支一致，不宣称每次启动都重复相同状态切换。"
+    },
+    {
+      "before": "非劣界值是实验预先允许的最大相对恶化幅度，95% 置信区间表示样本估计的不确定范围。论文表中的区间上界低于 Crash 的 +0.5% 和 ANR 的 +0.8% 界值，因此按其规则判为通过。",
+      "after": "非劣界值用于约束允许的相对恶化；论文列出Crash +0.5%、ANR +0.8%和相应区间，表内结论为Pass。公开v1没有给出原始事件数、去重/日聚合与区间计算细节，也未说明界值是否预注册，因此这里仅转录作者的检验结论，不声称已重算或独立证明非劣。",
+      "reason": "原文无证据称预先设定，统计输入不足以独立重算；保留作者数字但限定证明力。",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "原文无证据称预先设定，统计输入不足以独立重算；保留作者数字但限定证明力。"
+    },
+    {
+      "before": "正常退出、异常展开、进程终止与配置撤销都要恢复入口和监听器状态；恢复失败时应关闭该设备上的后续动态配置。",
+      "after": "正常退出、异常展开和配置撤销需按协议恢复入口/监听器；进程被杀时地址空间直接消失，不能依赖执行恢复代码或OnUnload。下次启动从干净状态重新核验，恢复失败的存活进程应关闭后续动态配置。",
+      "reason": "进程终止时不能保证执行清理回调，区分存活进程撤销与进程销毁。",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/ti/agent.cc",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/trace.cc"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "进程终止时不能保证执行清理回调，区分存活进程撤销与进程销毁。"
+    },
+    {
+      "before": "#include <atomic>\n#include <cstdint>\n#include <jni.h>\n#include <jvmti.h>\n\nnamespace {\n\nstd::atomic<uint64_t> g_gc_start_count{0};\nstd::atomic<uint64_t> g_gc_finish_count{0};\n\nvoid JNICALL OnGcStart(jvmtiEnv*) {\n  g_gc_start_count.fetch_add(1, std::memory_order_relaxed);\n}\n\nvoid JNICALL OnGcFinish(jvmtiEnv*) {\n  g_gc_finish_count.fetch_add(1, std::memory_order_relaxed);\n}\n\njint StartAgent(JavaVM* vm) {\n  jvmtiEnv* jvmti = nullptr;\n  if (vm->GetEnv(\n          reinterpret_cast<void**>(&jvmti),\n          JVMTI_VERSION_1_0) != JNI_OK ||\n      jvmti == nullptr) {\n    return JNI_ERR;\n  }\n\n  jvmtiCapabilities potential{};\n  if (jvmti->GetPotentialCapabilities(&potential) != JVMTI_ERROR_NONE ||\n      potential.can_generate_garbage_collection_events == 0) {\n    return JNI_ERR;\n  }\n\n  jvmtiCapabilities requested{};\n  requested.can_generate_garbage_collection_events = 1;\n  if (jvmti->AddCapabilities(&requested) != JVMTI_ERROR_NONE) {\n    return JNI_ERR;\n  }\n\n  jvmtiEventCallbacks callbacks{};\n  callbacks.GarbageCollectionStart = &OnGcStart;\n  callbacks.GarbageCollectionFinish = &OnGcFinish;\n  if (jvmti->SetEventCallbacks(&callbacks, sizeof(callbacks))\n      != JVMTI_ERROR_NONE) {\n    return JNI_ERR;\n  }\n\n  if (jvmti->SetEventNotificationMode(\n          JVMTI_ENABLE,\n          JVMTI_EVENT_GARBAGE_COLLECTION_START,\n          nullptr) != JVMTI_ERROR_NONE) {\n    return JNI_ERR;\n  }\n  if (jvmti->SetEventNotificationMode(\n          JVMTI_ENABLE,\n          JVMTI_EVENT_GARBAGE_COLLECTION_FINISH,\n          nullptr) != JVMTI_ERROR_NONE) {\n    jvmti->SetEventNotificationMode(\n        JVMTI_DISABLE,\n        JVMTI_EVENT_GARBAGE_COLLECTION_START,\n        nullptr);\n    return JNI_ERR;\n  }\n  return JNI_OK;\n}\n\n}  // namespace\n\nextern \"C\" JNIEXPORT jint JNICALL Agent_OnAttach(\n    JavaVM* vm, char*, void*) {\n  return StartAgent(vm);\n}\n\nextern \"C\" JNIEXPORT jint JNICALL Agent_OnLoad(\n    JavaVM* vm, char*, void*) {\n  return StartAgent(vm);\n}",
+      "after": "#include <atomic>\n#include <cstdint>\n#include <mutex>\n#include <jni.h>\n#include <jvmti.h>\n\nnamespace {\n\n// 本示例只为64位原子计数可无锁的目标ABI构建，不回退到隐藏锁。\nstatic_assert(std::atomic<uint64_t>::is_always_lock_free);\nstd::atomic<uint64_t> g_gc_start_count{0};\nstd::atomic<uint64_t> g_gc_finish_count{0};\nstd::mutex g_init_mutex;  // 仅初始化使用，GC回调不取此锁。\njvmtiEnv* g_running_env = nullptr;\n\nvoid JNICALL OnGcStart(jvmtiEnv*) {\n  g_gc_start_count.fetch_add(1, std::memory_order_relaxed);\n}\n\nvoid JNICALL OnGcFinish(jvmtiEnv*) {\n  g_gc_finish_count.fetch_add(1, std::memory_order_relaxed);\n}\n\nstruct PendingEnvironment {\n  jvmtiEnv* env;\n  bool committed = false;\n  ~PendingEnvironment() {\n    if (!committed) {\n      // DisposeEnvironment同时清理该环境的capability和事件。\n      // 正式工具还应记录清理错误；此示例只返回初始化失败。\n      env->DisposeEnvironment();\n    }\n  }\n};\n\njint StartAgent(JavaVM* vm) {\n  std::lock_guard<std::mutex> lock(g_init_mutex);\n  if (g_running_env != nullptr) return JNI_OK;  // 重复attach不再建环境。\n\n  jvmtiEnv* jvmti = nullptr;\n  if (vm->GetEnv(reinterpret_cast<void**>(&jvmti), JVMTI_VERSION_1_0)\n          != JNI_OK || jvmti == nullptr) {\n    return JNI_ERR;\n  }\n  PendingEnvironment pending{jvmti};\n\n  jvmtiCapabilities potential{};\n  if (jvmti->GetPotentialCapabilities(&potential) != JVMTI_ERROR_NONE ||\n      potential.can_generate_garbage_collection_events == 0) {\n    return JNI_ERR;\n  }\n  jvmtiCapabilities requested{};\n  requested.can_generate_garbage_collection_events = 1;\n  if (jvmti->AddCapabilities(&requested) != JVMTI_ERROR_NONE) {\n    return JNI_ERR;\n  }\n  jvmtiEventCallbacks callbacks{};\n  callbacks.GarbageCollectionStart = &OnGcStart;\n  callbacks.GarbageCollectionFinish = &OnGcFinish;\n  if (jvmti->SetEventCallbacks(&callbacks, sizeof(callbacks))\n          != JVMTI_ERROR_NONE) {\n    return JNI_ERR;\n  }\n  if (jvmti->SetEventNotificationMode(JVMTI_ENABLE,\n          JVMTI_EVENT_GARBAGE_COLLECTION_START, nullptr) != JVMTI_ERROR_NONE) {\n    return JNI_ERR;\n  }\n  if (jvmti->SetEventNotificationMode(JVMTI_ENABLE,\n          JVMTI_EVENT_GARBAGE_COLLECTION_FINISH, nullptr) != JVMTI_ERROR_NONE) {\n    return JNI_ERR;  // pending销毁时释放整个未提交环境，包含已启用START。\n  }\n  g_running_env = jvmti;\n  pending.committed = true;\n  return JNI_OK;\n}\n\n}  // namespace\n\nextern \"C\" JNIEXPORT jint JNICALL Agent_OnAttach(JavaVM* vm, char*, void*) {\n  return StartAgent(vm);\n}\n\nextern \"C\" JNIEXPORT jint JNICALL Agent_OnLoad(JavaVM* vm, char*, void*) {\n  return StartAgent(vm);\n}",
+      "reason": "每次JVMTI GetEnv创建独立环境，原失败分支泄漏环境与已启用事件；补未提交环境RAII释放、初始化串行与重复attach幂等，并限定GC回调64位原子必须无锁。7阶段故障与12并发attach、8万回调更新主机测试通过。",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/openjdkjvmti/events.cc"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "每次JVMTI GetEnv创建独立环境，原失败分支泄漏环境与已启用事件；补未提交环境RAII释放、初始化串行与重复attach幂等，并限定GC回调64位原子必须无锁。7阶段故障与12并发attach、8万回调更新主机测试通过。"
+    },
+    {
+      "before": "示例省略了事件停用、环境释放、计数导出和重复 attach 防护，离可直接投产的成品还有距离。",
+      "after": "示例用C++17为64位原子无锁的目标ABI构建；初始化失败释放未提交环境，初始化互斥与缓存环境避免重复attach再创建。GC回调只接触进程全局原子计数，不使用可能已被释放的env。它仍省略运行期stop/restart、计数导出、options解析和清理错误上报；成功后保留环境至进程结束，不能把它当完整生产agent。",
+      "reason": "正文契约对应改后的最小agent，不掩盖未实现的运行期资源生命周期。",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/ti/agent.cc"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "正文契约对应改后的最小agent，不掩盖未实现的运行期资源生命周期。"
+    },
+    {
+      "before": "agent 自己可以停用事件、停掉工作线程并调用 `DisposeEnvironment()` 释放 JVMTI 环境，但 `.so` 仍留在进程地址空间；",
+      "after": "agent可停用事件、停止工作线程后DisposeEnvironment释放环境；但它不等待已经运行的callback结束，也不自动恢复该环境挂起的线程、Deallocate内存或销毁raw monitor，这些都要自行处理。固定Android17的.so仍留在地址空间；",
+      "reason": "JVMTI明确Dispose不会完成所有资源清理且已有回调继续执行，避免等同通用detach。",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/ti/agent.cc"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "JVMTI明确Dispose不会完成所有资源清理且已有回调继续执行，避免等同通用detach。"
+    },
+    {
+      "before": "回调参数中的 JNI 局部引用和指针一般只在回调返回前有效，所以 agent 要把仍需使用的数据复制出来再交给异步线程；",
+      "after": "回调参数中的局部引用/临时指针不能直接排队给异步线程。原始值可按契约复制；需保留Java对象时仅在该回调允许JNI且线程状态合适时建立/释放global reference，GC暂停等受限回调不能套用此法；",
+      "reason": "仅复制jobject指针不延长JNI局部引用生命周期，受限GC回调也不能任意调用JNI。",
+      "sources": [
+        "https://docs.oracle.com/en/java/javase/21/docs/specs/jvmti.html",
+        "https://source.android.com/docs/core/runtime/art-ti"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "仅复制jobject指针不延长JNI局部引用生命周期，受限GC回调也不能任意调用JNI。"
+    },
+    {
+      "before": "wall time 是日历经过时间，CPU time 是线程实际占用处理器的累计时间",
+      "after": "wall time指以明确单调时钟测得的实耗时间并注明是否计深睡，非可回拨日历时间戳；CPU time是线程实际占用处理器的累计时间",
+      "reason": "避免将时长分母误当会随校时跳变的日期时钟。",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/trace.cc"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "避免将时长分母误当会随校时跳变的日期时钟。"
+    },
+    {
+      "before": "公开论文没有给出 hook 引擎、符号解析、方法重载消歧、入口写入同步或卸载代码。",
+      "after": "所核v1没有公开hook引擎、符号解析、重载消歧、入口同步或卸载代码；会议议程的存在不会补足这些实现输入。",
+      "reason": "在补会议记录后仍准确表明复现所缺内容，不作全网不存在声明。",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "在补会议记录后仍准确表明复现所缺内容，不作全网不存在声明。"
+    },
+    {
+      "before": "XTrace 目前是一份尚无法独立复现的系统设计研究。",
+      "after": "按本篇核到的公开输入，XTrace仍是一项无法独立复现内部实现的系统设计研究，已有ICSE2026 SEIP官方议程记录。",
+      "reason": "结论与证据范围、会议来源一致。",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "结论与证据范围、会议来源一致。"
+    },
+    {
+      "before": "11. DeepResearch：`2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md`。",
+      "after": "11. DeepResearch：`2026-09-08-morning-google-ARTEMIS-真机自然语言自动化-研究材料/04-dump-perf-engineer-cross.md`。\n12. [固定XTrace arXiv v1全文](https://arxiv.org/html/2512.21555v1)；[ICSE2026 SEIP官方议程](https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti)（2026-04-15报告）。",
+      "reason": "添加实际核到的版本化全文与会议主来源入口。",
+      "sources": [
+        "https://arxiv.org/html/2512.21555v1",
+        "https://conf.researchr.org/details/icse-2026/icse-2026-software-engineering-in-practice/74/XTrace-A-Non-Invasive-Dynamic-Tracing-Framework-for-Android-Applications-in-Producti"
+      ],
+      "article": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "why": "添加实际核到的版本化全文与会议主来源入口。"
+    },
+    {
+      "before": "`ApplicationExitInfo` 保存系统视角的近期进程退出记录，`ApplicationStartInfo` 保存系统侧启动原因、类型和时间信息。`ProfilingManager` 用于请求受系统约束的性能采集，`ProfilingTrigger` 描述由系统事件触发采集的条件。",
+      "after": "[ApplicationExitInfo](https://developer.android.com/reference/android/app/ApplicationExitInfo)从API30提供系统视角的近期退出记录；[ApplicationStartInfo](https://developer.android.com/reference/android/app/ApplicationStartInfo)从API35提供系统侧启动原因、类型和时间。[ProfilingManager](https://developer.android.com/reference/android/os/ProfilingManager)从API35提供受系统约束的采集请求，系统触发从API36加入，Android17继续扩展触发类型；请求、支持和实际成功产物分别核验。",
+      "reason": "章索引补公开能力的API版本与受控结果边界，防止把入口名称视为所有设备均可用。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://developer.android.com/reference/android/app/ApplicationStartInfo",
+        "https://developer.android.com/reference/android/os/ProfilingManager",
+        "https://developer.android.com/about/versions/17/features"
+      ],
+      "article": "src/part5-app/ch26-observability/README.md",
+      "why": "章索引补公开能力的API版本与受控结果边界，防止把入口名称视为所有设备均可用。"
+    },
+    {
+      "before": "普通发布应用受到调试状态和附加权限限制。",
+      "after": "普通App运行期JVMTI attach仅对debuggable应用开放，profileable不能授予此权；标准接口也不消除同进程native缺陷与事件采集成本。",
+      "reason": "把模糊“受限制”明确为普通应用实际调试边界，和26.15已核正文一致。",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/art-ti"
+      ],
+      "article": "src/part5-app/ch26-observability/README.md",
+      "why": "把模糊“受限制”明确为普通应用实际调试边界，和26.15已核正文一致。"
+    },
+    {
+      "before": "也就是说，平时并没有一个常驻的 heapprofd 在采集，每次采集请求才把它按需拉起。",
+      "after": "默认配置支持按需拉起，但 `persist.heapprofd.enable=1` 也能独立启动并保持服务；`disabled` 不足以证明任意设备上服务都未运行，服务运行也不等于正在持续采集。",
+      "reason": "保留rc中两个空属性停服的正确条件，补充persist强制路径，避免从disabled推出所有现场都无常驻进程。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/heapprofd.rc"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "保留rc中两个空属性停服的正确条件，补充persist强制路径，避免从disabled推出所有现场都无常驻进程。"
+    },
+    {
+      "before": "Scudo 的 quarantine 会延迟复用已释放块，release interval 是批量向系统归还页面的间隔；",
+      "after": "启用 quarantine 时，隔离策略会延迟复用已释放块；小块隔离和 secondary 映射缓存的配置并不相同。固定标签的 standalone `flags.inc` 把小块隔离相关默认值设为 0，是否生效仍须结合构建选项与目标进程配置。release interval 用于限制或调节向系统归还空闲页的尝试，不是保证到点完成归还或 RSS 下降的定时器；",
+      "reason": "按Android17固定源码区分可选quarantine、secondary缓存与归还尝试，避免把通用Scudo说明当作所有进程实际默认配置。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/scudo/+/refs/tags/android-17.0.0_r1/standalone/flags.inc",
+        "https://android.googlesource.com/platform/external/scudo/+/refs/tags/android-17.0.0_r1/standalone/allocator_config.h"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "按Android17固定源码区分可选quarantine、secondary缓存与归还尝试，避免把通用Scudo说明当作所有进程实际默认配置。"
+    },
+    {
+      "before": ".so 的只读页面可以在多个进程间共享，页面一旦被当前进程写脏，就变成这一进程的私有成本。",
+      "after": "`.so` 的只读文件页可以在多个进程间共享。具有写权限的 `MAP_PRIVATE` 文件映射被写入时，会通过 COW 形成当前进程的私有脏页；只读映射不能不经权限变更就直接写入。",
+      "reason": "明确私有脏页来自可写私有映射的COW，不能把只读文件页描述成可直接写脏。",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "明确私有脏页来自可写私有映射的COW，不能把只读文件页描述成可直接写脏。"
+    },
+    {
+      "before": "page fault（访问尚未驻留页面时产生的缺页事件）",
+      "after": "page fault（页故障，例如按需分配、文件读入、写时复制或权限异常）",
+      "reason": "页故障不只来自未驻留页面；写时复制和权限故障也会进入页故障路径。",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "页故障不只来自未驻留页面；写时复制和权限故障也会进入页故障路径。"
+    },
+    {
+      "before": "| Private Dirty / Private Clean | `dumpsys meminfo`、`smaps` | 进程独占且已修改或仍可从文件恢复的页 | 单次快照中的增长原因 |",
+      "after": "| Private Dirty / Private Clean | `dumpsys meminfo`、`smaps` | 进程独占页按当前 dirty / clean 状态分类；能否从文件恢复还要看映射来源 | 单次快照中的增长原因 |",
+      "reason": "clean/dirty与匿名/文件映射是不同维度，不能把Private Clean一概解释为可从文件恢复。",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "clean/dirty与匿名/文件映射是不同维度，不能把Private Clean一概解释为可从文件恢复。"
+    },
+    {
+      "before": "[`Thread::FixStackSize()`]",
+      "after": "[`thread.cc` 内的静态辅助函数 `FixStackSize()`]",
+      "reason": "固定源码定义为文件内static size_t FixStackSize(size_t)，不是Thread类成员。",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "固定源码定义为文件内static size_t FixStackSize(size_t)，不是Thread类成员。"
+    },
+    {
+      "before": "WebViewLibraryLoader.reserveAddressSpace（ART 管理的一类内存区域）InZygote()",
+      "after": "WebViewLibraryLoader.reserveAddressSpaceInZygote()",
+      "reason": "删除误插入函数名的ART Space中文注释；该函数属于WebView加载器，与ART Heap Space不是同一机制。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebViewLibraryLoader.java"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "删除误插入函数名的ART Space中文注释；该函数属于WebView加载器，与ART Heap Space不是同一机制。"
+    },
+    {
+      "before": "两者使用不同的数据源、信号与权限路径；某一种转储命令能运行，另一种 Perfetto 数据源还要单独验证。",
+      "after": "这里的 Java HPROF 指 Perfetto 的 `android.java_hprof` / `JavaHprofProducer` 路径，其 ART 插件输出 trace 内的 HeapGraph，并不先落盘为完整 `.hprof` 文件。独立完整 HPROF 仍由 `Debug.dumpHprofData()`、有权限的 `am dumpheap` 或 Studio 等入口生成，详见 [23.2 的产物区分](02-memory-leak-governance.md)。原生 heapprofd 与 Java HeapGraph 使用不同的数据源、信号与权限路径；某种转储命令能运行，另一条路径仍要单独验证。",
+      "reason": "明确历史命名java_hprof与实际HeapGraph产物，避免把信号触发的trace堆图误当完整HPROF。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/java_hprof_producer.cc",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/perfetto_hprof/perfetto_hprof.cc"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "明确历史命名java_hprof与实际HeapGraph产物，避免把信号触发的trace堆图误当完整HPROF。"
+    },
+    {
+      "before": "- 释放 Bitmap、媒体缓冲区、DirectByteBuffer 与 native peer（Java 对象对应的原生侧实例）；",
+      "after": "- 按各自资源协议释放 Bitmap、媒体缓冲区与 native peer（Java 对象对应的原生侧实例）；DirectByteBuffer 没有通用公开 `close()`，应缩短引用生命周期；JNI 自管的底层 buffer 则由其原生所有者配对释放，并确保不存在仍访问它的 ByteBuffer 视图；",
+      "reason": "区分DirectByteBuffer引用生命周期与JNI自管底层分配，避免暗示应用能调用通用close或提前free仍被View访问的内存。",
+      "sources": [
+        "https://developer.android.com/training/articles/perf-jni"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "区分DirectByteBuffer引用生命周期与JNI自管底层分配，避免暗示应用能调用通用close或提前free仍被View访问的内存。"
+    },
+    {
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "before": "```bash\n# 1. 看系统口径的进程内存分类\nadb shell dumpsys meminfo <package_or_pid>\n\n# 2. 在权限允许时保存 VMA 级明细\nadb shell cat /proc/<pid>/smaps > smaps.txt\n\n# 3. 从系统分类中单独观察 Native Heap\nadb shell dumpsys meminfo <pid> | grep -A 20 \"Native Heap\"\n```",
+      "after": "```bash\n# 大写名称是符号占位符，使用前替换为目标包名、数字PID或进程名。\n# 1. 看系统口径的进程内存分类\nadb shell dumpsys meminfo PACKAGE_OR_PID\n\n# 2. 在权限允许时保存 VMA 级明细\nadb shell cat /proc/PID/smaps > smaps.txt\n\n# 3. 从系统分类中单独观察 Native Heap\nadb shell dumpsys meminfo PID | grep -A 20 \"Native Heap\"\n```",
+      "reason": "原角括号占位符会被bash当重定向，导致bash -n失败；改明确全大写符号并注明必须替换，保留固定libmemunreachable命令语义。",
+      "why": "原角括号占位符会被bash当重定向，导致bash -n失败；改明确全大写符号并注明必须替换，保留固定libmemunreachable命令语义。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/memory/libmemunreachable/+/refs/tags/android-17.0.0_r1/README.md"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "before": "```bash\nadb root\nadb shell setprop libc.debug.malloc.program app_process\nadb shell setprop wrap.<process> \"\\$\\@\"\nadb shell setprop libc.debug.malloc.options backtrace=4\n\n# 重启目标进程并复现问题后执行\nadb shell dumpsys -t 600 meminfo --unreachable <process>\n```",
+      "after": "```bash\n# 大写名称是符号占位符，使用前替换为目标包名、数字PID或进程名。\nadb root\nadb shell setprop libc.debug.malloc.program app_process\nadb shell setprop wrap.PROCESS_NAME \"\\$\\@\"\nadb shell setprop libc.debug.malloc.options backtrace=4\n\n# 重启目标进程并复现问题后执行\nadb shell dumpsys -t 600 meminfo --unreachable PROCESS_NAME\n```",
+      "reason": "原角括号占位符会被bash当重定向，导致bash -n失败；改明确全大写符号并注明必须替换，保留固定libmemunreachable命令语义。",
+      "why": "原角括号占位符会被bash当重定向，导致bash -n失败；改明确全大写符号并注明必须替换，保留固定libmemunreachable命令语义。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/memory/libmemunreachable/+/refs/tags/android-17.0.0_r1/README.md"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "before": "```bash\nadb shell setprop libc.debug.malloc.options \"''\"\nadb shell setprop libc.debug.malloc.program \"''\"\nadb shell setprop wrap.<process> \"''\"\n```",
+      "after": "```bash\n# 大写名称是符号占位符，使用前替换为目标包名、数字PID或进程名。\nadb shell setprop libc.debug.malloc.options \"''\"\nadb shell setprop libc.debug.malloc.program \"''\"\nadb shell setprop wrap.PROCESS_NAME \"''\"\n```",
+      "reason": "原角括号占位符会被bash当重定向，导致bash -n失败；改明确全大写符号并注明必须替换，保留固定libmemunreachable命令语义。",
+      "why": "原角括号占位符会被bash当重定向，导致bash -n失败；改明确全大写符号并注明必须替换，保留固定libmemunreachable命令语义。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/memory/libmemunreachable/+/refs/tags/android-17.0.0_r1/README.md"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "before": "下面这组命令用于 userdebug 设备上的单个应用，`<process>` 要替换为进程名",
+      "after": "下面这组命令用于userdebug设备上的单个应用，PROCESS_NAME替换为进程名；PACKAGE_OR_PID替换为包名或PID，路径中的PID替换为数字PID",
+      "reason": "同步正文与命令占位符约定；示例为权限受控环境的接口形状，不声称已执行设备命令。",
+      "why": "同步正文与命令占位符约定；示例为权限受控环境的接口形状，不声称已执行设备命令。",
+      "sources": [
+        "https://android.googlesource.com/platform/system/memory/libmemunreachable/+/refs/tags/android-17.0.0_r1/README.md"
+      ]
     }
   ],
   "validation": {
@@ -22135,7 +23021,7 @@
       "visual_review": "passed",
       "article_positions": "passed",
       "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a255",
-      "source_audit": "全文阅读38,909字符；42条官方API/固定AOSP与ACK6.18来源记录，核对统计读取、heapprofd rc与拦截入口、Sampler大小权重、Scudo flags和AndroidConfig、线程FixStackSize/虚拟线程降级、WebView预留与HSC条件。9条before/after/why/sources校勘：persist强制服务、quarantine与归还间隔、可写私有映射COW、page fault定义、Private Clean口径、静态辅助函数名、误插入WebView方法名的ART注释、Java HeapGraph产物、DirectByteBuffer释放边界。16图与16个真实mdBook位置均视觉看过；05重采循环、06/12分支、15条件图精修后复看。原代码围栏全部逐字未改；完整设备采集脚本bash -n通过，离线maps脚本用已知4MiB匿名与3MiB同名映射夹具核验聚合，未设备执行/未Java编译。独立mdBook构建、本地链接、PNG解码、SVG XML、prompt packs与基线哈希通过，无编造性能测量。"
+      "source_audit": "全文阅读38,909字符；42条官方API/固定AOSP与ACK6.18来源记录，核对统计读取、heapprofd rc与拦截入口、Sampler大小权重、Scudo flags和AndroidConfig、线程FixStackSize/虚拟线程降级、WebView预留与HSC条件。9条before/after/why/sources校勘：persist强制服务、quarantine与归还间隔、可写私有映射COW、page fault定义、Private Clean口径、静态辅助函数名、误插入WebView方法名的ART注释、Java HeapGraph产物、DirectByteBuffer释放边界。16图与16个真实mdBook位置均视觉看过；05重采循环、06/12分支、15条件图精修后复看。原代码围栏全部逐字未改；完整设备采集脚本bash -n通过，离线maps脚本用已知4MiB匿名与3MiB同名映射夹具核验聚合，未设备执行/未Java编译。独立mdBook构建、本地链接、PNG解码、SVG XML、prompt packs与基线哈希通过，无编造性能测量。 Final full-range audit additionally corrected three shell fences and their prose: angle-bracket placeholder tokens were invalid bash redirections. Explicit uppercase symbolic placeholders now retain official fixed libmemunreachable command semantics and require substitution. Four bash blocks pass bash -n; exact reconstruction and final isolated mdBook build passed. All16 unchanged figure assets retain prior actual visual review; all16 refreshed final article-position screenshots actually re-reviewed. No adb/device commands executed."
     },
     "a256": {
       "mdbook": "passed",
@@ -22523,15 +23409,51 @@
       "article_positions": "passed",
       "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a298",
       "source_audit": "Full 1395-line frozen consolidated article read; 64 successful primary captures/artifacts checked, exploratory missing paths retained separately. 25 corrections include pinned trace-processor delta versus cumulative SQL, ART allocation-only exclusion, missing-zero-dump metadata/full-prefix requirements, CLOCK_PROCESS_CPUTIME_ID zero failure baseline, safe proc/fault parsing and CLK_TCK guards, GUP/perf and swap-cache distinctions, and process_stats record_process_runtime CPU-counter support. Twenty pinned assertions and exact published Kotlin host-stub/SQLite synthetic fixtures pass, including malformed/overflow/failed reads, clock/reset guards and cumulative100-40+30 semantics. All 22 final figures and 22 rendered positions actually viewed, including refined fault branches and CPU tracks. Build, exact reconstruction, unchanged shell bash syntax, local links and assets pass. No Android/SDK/NDK/device profiling or real leak/CPU/fault measurement performed."
+    },
+    "a299": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a299",
+      "source_audit": "651-line article fully reviewed against 46 captured primary-source pages/files: WOOTdroid fixed arXiv v1, Profilo fixed commit 5a66b9372c137be036403d9c6f89a57ce4111d0a, current AndroidX Tracing 2.0.5 and Android17 sources. 16 source assertions passed including real r6/r39 Binder byte comparisons, actual B/E-only swallowing hook and ring concurrency, alternate tracing backend and wire auto-init. Published code fences unchanged; shell syntax checks passed. All 15 SVG/PNG figures and all article positions actually visually reviewed; Binder snapshot/driver branches and UER set notation refined and re-reviewed. Isolated mdBook build, exact article reconstruction, hashes and links passed. No Android/root/OEM collection or measured overhead claim."
+    },
+    "a300": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a300",
+      "source_audit": "740-line frozen article fully read and checked against 29 captured remote primary sources plus one inspected local ARTEMIS note: fixed arXiv v1, official ICSE2026 SEIP program, android17r1 ART and JVMTI specification. 16 source assertions and rate arithmetic passed. Corrected false no-venue claim, tracing conditional branches, profileable/attach distinction, unsupported prespecified statistical claim, process-kill cleanup, JNI reference lifetime, DisposeEnvironment resource limits and wall clock definition. Exact published C++17 GC agent compiled against host JBR21 headers; fake-VM harness exercised seven init failure paths, 12 concurrent duplicate attaches creating one environment, and 80000 parallel callback updates per counter. Host shell syntax passed. All 19 figures and corresponding article positions actually visually reviewed; conditional trace bypass and rollout healthy/error branches refined and re-reviewed. Isolated mdBook build, exact reconstruction, SHA and local links passed. No Android NDK/ART device run, XTrace implementation reproduction or new performance measurement."
+    },
+    "a301": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a301",
+      "source_audit": "45-line chapter index fully reviewed, all 15 chapter links and reading order checked against assigned chapter articles. Six already-captured official primary sources reused with recorded file SHA: ApplicationExitInfo, ApplicationStartInfo, ProfilingManager, Android17 trigger features, ART TI and Vitals. Added explicit API30/API35/API36 boundaries and debuggable-only runtime JVMTI attach. Two chapter-specific evidence/release-cycle and symptom-to-chapter maps rendered; actual final SVG/PNG and both isolated mdBook positions visually reviewed. Frozen input SHA, exact reconstruction, XML/PNG decoding, links and mdBook build passed. No device or new performance measurements."
+    },
+    "final_range_audit": {
+      "status": "passed",
+      "report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/final-range-audit.json",
+      "articles": 51,
+      "diagrams": 626,
+      "assets": 1252,
+      "corrections": 626,
+      "updated_at": "2026-10-25T18:09:07.423816+08:00"
     }
   },
   "last_checkpoint": {
-    "completed": 48,
+    "completed": 51,
     "total": 51,
-    "diagrams": 590,
-    "next_article": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
-    "next_article_index": 299,
-    "updated_at": "2026-10-25T17:46:38.440011+08:00"
+    "diagrams": 626,
+    "next_article": null,
+    "next_article_index": null,
+    "updated_at": "2026-10-25T18:09:06.071235+08:00"
   },
   "replaced_inline_diagrams": []
 }

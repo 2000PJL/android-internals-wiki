@@ -1707,18 +1707,105 @@
     {
       "path": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
       "sha256_before": "a2d1fc9876b2ecf534aa953d7c55a2e3ae40ff2fc11f5a16e8314d03f0346615",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a238-01-window-pipeline",
+        "a238-02-property-models",
+        "a238-03-scale-input-coordinates",
+        "a238-04-hardware-layer",
+        "a238-05-frame-pixel-budget",
+        "a238-06-lottie-mode",
+        "a238-07-effect-fixed-states",
+        "a238-08-attribution-evidence",
+        "a238-09-geometry-cache",
+        "a238-10-stuffing-recovery",
+        "a238-11-avd-fallback",
+        "a238-12-transition-capture",
+        "a238-13-compose-read-phase",
+        "a238-14-frame-clock",
+        "a238-15-animatable-cancellation",
+        "a238-16-transition-coordination",
+        "a238-17-retained-exit",
+        "a238-18-animated-content",
+        "a238-19-state-adapters",
+        "a238-20-lazy-infinite",
+        "a238-21-pager-values",
+        "a238-22-benchmark-protocol",
+        "a238-23-scope-key-visibility",
+        "a238-24-lookahead-approach",
+        "a238-25-placeholder",
+        "a238-26-element-bounds",
+        "a238-27-graphics-layer-lifecycle",
+        "a238-28-overlay-clip-order",
+        "a238-29-scroll-source-lifetime",
+        "a238-30-predictive-back-flow",
+        "a238-31-debug-evidence",
+        "a238-32-config-boundary",
+        "a238-33-window-boundary"
+      ],
       "article_index": 238,
-      "sha256_at_assignment": "a2d1fc9876b2ecf534aa953d7c55a2e3ae40ff2fc11f5a16e8314d03f0346615"
+      "sha256_at_assignment": "a2d1fc9876b2ecf534aa953d7c55a2e3ae40ff2fc11f5a16e8314d03f0346615",
+      "sha256_current": "74988ce4f784454316655a7bdc2eb1087de0adc454c3def7ea985cf22c9e75b0",
+      "sha256_after": "74988ce4f784454316655a7bdc2eb1087de0adc454c3def7ea985cf22c9e75b0",
+      "source_audit": "57 original URLs:56 returned200, malformed commonMain URL repaired and official pinned source byte-equal to1.12 artifact. Fixed AOSP17 View/ViewGroup/VPA/AVD/Choreographer sources and Compose1.12 animation sources inspected. Added audited Lottie6.7.1 raw sources, predictive-back platform code/current official docs, Kotlin cancellation docs and real annotation1.9.1 jar. Actual10 Kotlin blocks compiled Kotlin/ComposeCompiler2.4.10/API37/Compose1.12/Benchmark1.5/UiAutomator2.4; scalar input test and17 contracts passed. No device UI/performance claimed. Source and failed parser-path discovery attempts retained under sources/a238; current Animation release1.12.1 verified, fixed1.12.0 baseline retained.",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a238/additional-primary-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a238/annotation-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a238/decoded-aosp-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a238/extracted-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a238/manifest-parser-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a238/predictive-platform-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a238/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a238/supplemental-source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
       "sha256_before": "eadb1b97c4485eb96993e8928c6075664dfd050815fd5b5a44f2b82d00915fa9",
-      "status": "pending",
-      "diagrams": [],
+      "status": "in_progress",
+      "diagrams": [
+        "a239-01-effect-offscreen",
+        "a239-02-blur-boundaries",
+        "a239-03-blur-api-guard",
+        "a239-04-pixel-area",
+        "a239-05-cost-dimensions",
+        "a239-06-agsl-input-binding",
+        "a239-07-uniform-effect-copy",
+        "a239-08-premultiplied-highlight",
+        "a239-09-compile-first-use",
+        "a239-10-runtime-paint-scope",
+        "a239-11-paint-uniform-refresh",
+        "a239-12-diagnostic-frame",
+        "a239-13-tools-headroom",
+        "a239-14-canvas-identity",
+        "a239-15-canvas-recording",
+        "a239-16-draw-targets",
+        "a239-17-draw-order",
+        "a239-18-cache-draw-invalidation",
+        "a239-19-restart-phases",
+        "a239-20-paint-and-resources",
+        "a239-21-layer-recording",
+        "a239-22-compositing-decision",
+        "a239-23-outsets-alpha",
+        "a239-24-blend-scope",
+        "a239-25-brush-uniform",
+        "a239-26-bitmap-contract",
+        "a239-27-charts-particles",
+        "a239-28-surface-choice",
+        "a239-29-measurement-boundaries",
+        "a239-30-versions-and-profile"
+      ],
       "article_index": 239,
-      "sha256_at_assignment": "eadb1b97c4485eb96993e8928c6075664dfd050815fd5b5a44f2b82d00915fa9"
+      "sha256_at_assignment": "eadb1b97c4485eb96993e8928c6075664dfd050815fd5b5a44f2b82d00915fa9",
+      "sha256_current": "bf2b86a73264e006b86de5cbc26b6674e21ee24f02b79c90c006791c6446da5f"
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
@@ -24738,6 +24825,1586 @@
           ]
         }
       ]
+    },
+    {
+      "id": "a238-01-window-pipeline",
+      "title": "动画进度与最终呈现的职责分段",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-01-window-pipeline.svg",
+        "src/assets/diagrams/ch22/a238-01-window-pipeline.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-01-window-pipeline",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ThreadedRenderer.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-01-window-pipeline.svg",
+          "sha256": "32457c678fe5ee35bdaf7816476d7c9dc5f3e7990d1d543cd98ecfe9b9f81d28",
+          "bytes": 21722
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-01-window-pipeline.png",
+          "sha256": "8e8b885d15ecc7c6c40afdcbc84abd8aae2e83289c0dbd3283e618287db93352",
+          "bytes": 73487,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-02-property-models",
+      "title": "每帧改变什么决定动画成本",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-02-property-models.svg",
+        "src/assets/diagrams/ch22/a238-02-property-models.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-02-property-models",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewPropertyAnimator.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/animation/PropertyValuesHolder.java",
+        "https://github.com/airbnb/lottie-android/blob/v6.7.1/lottie/src/main/java/com/airbnb/lottie/RenderMode.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-02-property-models.svg",
+          "sha256": "ef697ff317659817114c888b3ea182e982e6d9bd5af78bbfdcf94933a9b48d49",
+          "bytes": 31259
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-02-property-models.png",
+          "sha256": "628b57b9d9428900be0a6aa5399d749eac7ec8481eac3e1e26efad43872e8581",
+          "bytes": 140713,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-03-scale-input-coordinates",
+      "title": "缩放的布局、触摸与无障碍坐标",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-03-scale-input-coordinates.svg",
+        "src/assets/diagrams/ch22/a238-03-scale-input-coordinates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-03-scale-input-coordinates",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-03-scale-input-coordinates.svg",
+          "sha256": "c8807ba8add97e7d27fe3ee40ae33825918e9a2197a85b89cf7eb13695716dcf",
+          "bytes": 23264
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-03-scale-input-coordinates.png",
+          "sha256": "e3796e0436d13de36e97b11af70d9ec265234cd58295854374c3565a2a00f8ad",
+          "bytes": 86995,
+          "dimensions": [
+            2100,
+            735
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-04-hardware-layer",
+      "title": "硬件图层适合内容稳定的属性动画",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-04-hardware-layer.svg",
+        "src/assets/diagrams/ch22/a238-04-hardware-layer.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-04-hardware-layer",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewPropertyAnimator.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-04-hardware-layer.svg",
+          "sha256": "e2617638ccc479d6fba3d74d49f687ec006b1808454a45b1714ae49423c1df63",
+          "bytes": 22627
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-04-hardware-layer.png",
+          "sha256": "5a55e804801fea0ec59b2299e374542295fb1bc8bd6852b955f9e3149162f0f0",
+          "bytes": 79370,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-05-frame-pixel-budget",
+      "title": "逐帧图片先按解码像素估算",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-05-frame-pixel-budget.svg",
+        "src/assets/diagrams/ch22/a238-05-frame-pixel-budget.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-05-frame-pixel-budget",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-05-frame-pixel-budget.svg",
+          "sha256": "5eabe685af0b67106635a4a515f50198d4d1a523347d9a258d603a89f2918feb",
+          "bytes": 19049
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-05-frame-pixel-budget.png",
+          "sha256": "230c3cef96f370a32cadc67a344160ecc7e0458174d15d434f1676fe10d38f77",
+          "bytes": 71484,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-06-lottie-mode",
+      "title": "Lottie 6.7.1 自动模式与异步边界",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-06-lottie-mode.svg",
+        "src/assets/diagrams/ch22/a238-06-lottie-mode.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-06-lottie-mode",
+      "sources": [
+        "https://github.com/airbnb/lottie-android/blob/v6.7.1/lottie/src/main/java/com/airbnb/lottie/RenderMode.java",
+        "https://github.com/airbnb/lottie-android/blob/v6.7.1/lottie/src/main/java/com/airbnb/lottie/LottieAnimationView.java",
+        "https://github.com/airbnb/lottie-android/blob/v6.7.1/lottie/src/main/java/com/airbnb/lottie/AsyncUpdates.java",
+        "https://github.com/airbnb/lottie-android/blob/v6.7.1/lottie/src/main/java/com/airbnb/lottie/LottieDrawable.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-06-lottie-mode.svg",
+          "sha256": "6d0ce6389c5ece0a03f7f37a217f5825af3077b53427d1e2d67ee01d1af45f77",
+          "bytes": 35909
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-06-lottie-mode.png",
+          "sha256": "034ac65399404f91544d7826cf0dc6015b65bde277622778eee0e1047488f7a9",
+          "bytes": 156251,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-07-effect-fixed-states",
+      "title": "RenderEffect 固定档位与关闭路径",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-07-effect-fixed-states.svg",
+        "src/assets/diagrams/ch22/a238-07-effect-fixed-states.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-07-effect-fixed-states",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-07-effect-fixed-states.svg",
+          "sha256": "9abb191ceaffd50c69b419bb5e59c2ec394a10af00875d2340bacad9a41f2b00",
+          "bytes": 22051
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-07-effect-fixed-states.png",
+          "sha256": "ee596091c28638e79744c3f6c578a2f79d623f4370dd754a7cb37b0acd3ff9b1",
+          "bytes": 73353,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-08-attribution-evidence",
+      "title": "DrawFrame 变长后的归因证据",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-08-attribution-evidence.svg",
+        "src/assets/diagrams/ch22/a238-08-attribution-evidence.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-08-attribution-evidence",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-08-attribution-evidence.svg",
+          "sha256": "90e18bbceb776a0ed52a87ec2d165e069b5b5c10e491554545b5ad8154661b45",
+          "bytes": 21614
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-08-attribution-evidence.png",
+          "sha256": "47acec4768210dba6855e0046be4dda773415f397e41572ed96e1b49011ca0c6",
+          "bytes": 72373,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-09-geometry-cache",
+      "title": "把稳定几何准备移出逐帧回调",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-09-geometry-cache.svg",
+        "src/assets/diagrams/ch22/a238-09-geometry-cache.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-09-geometry-cache",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewPropertyAnimator.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-09-geometry-cache.svg",
+          "sha256": "922126901dca32637e358e212d14894c2f11a21f5913ab2700afe694651f2ce2",
+          "bytes": 23600
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-09-geometry-cache.png",
+          "sha256": "f7fbf7254aa2cc3b0a37006f473b2c947e81089c5965b8b84e87bccf89326dc1",
+          "bytes": 75396,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-10-stuffing-recovery",
+      "title": "缓冲区积压恢复与动画时间基准",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-10-stuffing-recovery.svg",
+        "src/assets/diagrams/ch22/a238-10-stuffing-recovery.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-10-stuffing-recovery",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewRootImpl.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-10-stuffing-recovery.svg",
+          "sha256": "16ea7bf907dbaf511fa577d3afbb1a0b2b898df8f5ecbcefaef709f7a273cd30",
+          "bytes": 21672
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-10-stuffing-recovery.png",
+          "sha256": "c010b03f5189f8b8925f8f6780d73fc8ed487eb6b8a2c7998d4fe7d254d6b3e0",
+          "bytes": 76970,
+          "dimensions": [
+            2100,
+            645
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-11-avd-fallback",
+      "title": "AVD 的 RT 与软件 Canvas 回退门禁",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-11-avd-fallback.svg",
+        "src/assets/diagrams/ch22/a238-11-avd-fallback.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-11-avd-fallback",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-11-avd-fallback.svg",
+          "sha256": "e2b960c7b169659a50fc6c2869d74274a34970cb7eb9d39402d0e75718e8ad33",
+          "bytes": 22414
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-11-avd-fallback.png",
+          "sha256": "93426845c8d36127d5362a16534241c630e61ee7cddf9155b8ec0f1dd5dd8637",
+          "bytes": 113736,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-12-transition-capture",
+      "title": "平台转场先捕获再比较目标",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-12-transition-capture.svg",
+        "src/assets/diagrams/ch22/a238-12-transition-capture.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-12-transition-capture",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/transition/TransitionManager.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-12-transition-capture.svg",
+          "sha256": "5d149b5980d73fd63cc999c8736cf8a29e6c3acdd925cb4f52e2f0ee575f793b",
+          "bytes": 23049
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-12-transition-capture.png",
+          "sha256": "22fca468d47358737569e3c7accf3f11d0acbd2aa926cd6b3cafeb47851b34fa",
+          "bytes": 81617,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-13-compose-read-phase",
+      "title": "动画值在哪里读取就影响哪个阶段",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-13-compose-read-phase.svg",
+        "src/assets/diagrams/ch22/a238-13-compose-read-phase.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-13-compose-read-phase",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation/1.12.0/animation-1.12.0-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-13-compose-read-phase.svg",
+          "sha256": "06203d96f7e912b6d49e40a4bbe4d29c62e61d4d52a2c32f227312bd890a57f9",
+          "bytes": 28763
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-13-compose-read-phase.png",
+          "sha256": "3309669a329712db1005b16275ef756a922745982aec9320811046f4912c5667",
+          "bytes": 126219,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-14-frame-clock",
+      "title": "默认 Android 帧时钟与错帧后的状态",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-14-frame-clock.svg",
+        "src/assets/diagrams/ch22/a238-14-frame-clock.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-14-frame-clock",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation-core/1.12.0/animation-core-1.12.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/Choreographer.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-14-frame-clock.svg",
+          "sha256": "4bc27baea2f0ea0c28a1d2e2afc3f4d70a1d3809f7c1fffe5e645dae16e400da",
+          "bytes": 24244
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-14-frame-clock.png",
+          "sha256": "07d9e2965f39390ebba66b8e8202eb14a81aaf939f68c872bd32d3d81838faf3",
+          "bytes": 83621,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-15-animatable-cancellation",
+      "title": "Animatable 中断的是正在运行的变更",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-15-animatable-cancellation.svg",
+        "src/assets/diagrams/ch22/a238-15-animatable-cancellation.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-15-animatable-cancellation",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation-core/1.12.0/animation-core-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-15-animatable-cancellation.svg",
+          "sha256": "b9910f632f47da3550fcbefd554eb311b6693b56177bf8c96947859b88769baa",
+          "bytes": 21405
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-15-animatable-cancellation.png",
+          "sha256": "4f2523f34beb6ed270cb010d8cb01b834921184c99e8a1cb5ee97a750f21a016",
+          "bytes": 77230,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-16-transition-coordination",
+      "title": "Transition 协调目标与子动画",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-16-transition-coordination.svg",
+        "src/assets/diagrams/ch22/a238-16-transition-coordination.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-16-transition-coordination",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation-core/1.12.0/animation-core-1.12.0-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation/1.12.0/animation-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-16-transition-coordination.svg",
+          "sha256": "e2cb880f136f6f7c86198912c8377a5a6d4deda6ae4c6e800e1c45b0b02d2327",
+          "bytes": 22495
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-16-transition-coordination.png",
+          "sha256": "469d52d42e701d1493eff3bd9e907cc7d349b8d2e9915d9baf0f4c744af6151e",
+          "bytes": 80276,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-17-retained-exit",
+      "title": "退出期间内容、副作用与资源仍可能存活",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-17-retained-exit.svg",
+        "src/assets/diagrams/ch22/a238-17-retained-exit.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-17-retained-exit",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation/1.12.0/animation-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-17-retained-exit.svg",
+          "sha256": "7addd88bcc9673308cb6c89bf874c569cc1cdab3548a0a68ce4b2837261f9326",
+          "bytes": 21008
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-17-retained-exit.png",
+          "sha256": "47ea7c7d5e228f6eeba6e5363bb010c8aed6b15f2431a5fbc29430f554c1c436",
+          "bytes": 80008,
+          "dimensions": [
+            2100,
+            705
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-18-animated-content",
+      "title": "内容身份与快速切换时的保留",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-18-animated-content.svg",
+        "src/assets/diagrams/ch22/a238-18-animated-content.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-18-animated-content",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation/1.12.0/animation-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-18-animated-content.svg",
+          "sha256": "cd17fd317d8b16d5da4623c6536c5a4f604165555b8cb5aae28cff50ccd52815",
+          "bytes": 27330
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-18-animated-content.png",
+          "sha256": "18d88c7f514e1aca56fa8ade1101cb67556d84705ed2fd1f42a73c40069c2746",
+          "bytes": 118479,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-19-state-adapters",
+      "title": "状态生产、观察流与低频派生分别做什么",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-19-state-adapters.svg",
+        "src/assets/diagrams/ch22/a238-19-state-adapters.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-19-state-adapters",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation-core/1.12.0/animation-core-1.12.0-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-19-state-adapters.svg",
+          "sha256": "309a4bf7bd9f4a8e9584a95addee2cd9d9656c4ed19627f22f7d5aaa88706dbf",
+          "bytes": 27350
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-19-state-adapters.png",
+          "sha256": "c4388a72b906cd617a74bb9210865a4c3de9c05ea81396f70713756b924ebb64",
+          "bytes": 128081,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-20-lazy-infinite",
+      "title": "惰性项与无限动画的所有权",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-20-lazy-infinite.svg",
+        "src/assets/diagrams/ch22/a238-20-lazy-infinite.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-20-lazy-infinite",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation-core/1.12.0/animation-core-1.12.0-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation/1.12.0/animation-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-20-lazy-infinite.svg",
+          "sha256": "f545b4c0e8cbd945035dfb2d5ffc320dc3e25076ca9c64033f4b1544ca4ab344",
+          "bytes": 24780
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-20-lazy-infinite.png",
+          "sha256": "87878d6a0db16ae94b0d4de870f24ca859726beaeb92ce70dfabe3ffffc6b532",
+          "bytes": 96486,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-21-pager-values",
+      "title": "Pager 三个页值对应三种语义",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-21-pager-values.svg",
+        "src/assets/diagrams/ch22/a238-21-pager-values.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-21-pager-values",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation/1.12.0/foundation-1.12.0-sources.jar"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-21-pager-values.svg",
+          "sha256": "3716ed5e0b0950a6d0b5657c58acbaa1ffbe93921ca3d78db3c6ce798fd52bf2",
+          "bytes": 26497
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-21-pager-values.png",
+          "sha256": "202786a32d1c2d823e82e2b27d722c43ebd139c5c1b0ec9553fb0d3ddfaa56d8",
+          "bytes": 118652,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-22-benchmark-protocol",
+      "title": "可重复动画基准要等待两个空闲边界",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-22-benchmark-protocol.svg",
+        "src/assets/diagrams/ch22/a238-22-benchmark-protocol.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-22-benchmark-protocol",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar",
+        "https://developer.android.com/develop/ui/compose/testing/interoperability"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-22-benchmark-protocol.svg",
+          "sha256": "c27b7b47436dd802c17f64d617dc9ef4c70e80cb7a8ed905e88c4a9d2d796b75",
+          "bytes": 21494
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-22-benchmark-protocol.png",
+          "sha256": "18c44d2e85af4528b7125af0ddbd8d20b22ff6561236b65797fe2e4df22b5443",
+          "bytes": 83844,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-23-scope-key-visibility",
+      "title": "共享 scope 内以业务 key 和可见性匹配",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-23-scope-key-visibility.svg",
+        "src/assets/diagrams/ch22/a238-23-scope-key-visibility.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-23-scope-key-visibility",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedElementEntry.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-23-scope-key-visibility.svg",
+          "sha256": "b81ac79e76855c366b86fc4f157024c2633339264768855925d67e45cc618c50",
+          "bytes": 14146
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-23-scope-key-visibility.png",
+          "sha256": "cca6d2affe012897da2be490eba80f1cf4f185098c67199c2ce29e205d04e3da",
+          "bytes": 75149,
+          "dimensions": [
+            2100,
+            780
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-24-lookahead-approach",
+      "title": "目标布局与当前动画布局各自的工作",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-24-lookahead-approach.svg",
+        "src/assets/diagrams/ch22/a238-24-lookahead-approach.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-24-lookahead-approach",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedContentNode.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-24-lookahead-approach.svg",
+          "sha256": "25568c0c5a1532a3aba22aa16b983b3a1b33bfdefad5a3b97af3266af2cd9d9f",
+          "bytes": 16983
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-24-lookahead-approach.png",
+          "sha256": "97ecb4e9229c0e962ef5b2c532be2ef2217eaf9ea218d5892e255c8102af8bcc",
+          "bytes": 75731,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-25-placeholder",
+      "title": "placeholder 控制父布局是否跟随动画",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-25-placeholder.svg",
+        "src/assets/diagrams/ch22/a238-25-placeholder.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-25-placeholder",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedContentNode.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-25-placeholder.svg",
+          "sha256": "2a2a8637e99e77f6181da0e3fff7e0b99f980d21363f846b55463f73f7cf7d9a",
+          "bytes": 20145
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-25-placeholder.png",
+          "sha256": "125b30f252b386ce529bd12c3e5f1373fe5a2a198c7247787890759fc89df55a",
+          "bytes": 85257,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-26-element-bounds",
+      "title": "相同视觉元素与变化容器的不同路径",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-26-element-bounds.svg",
+        "src/assets/diagrams/ch22/a238-26-element-bounds.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-26-element-bounds",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedContentNode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedElementEntry.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-26-element-bounds.svg",
+          "sha256": "5eacda03eeba3a5e833b210f0227de25e2f21e79783dba0e68798165bdb59fac",
+          "bytes": 27913
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-26-element-bounds.png",
+          "sha256": "e032cdfcc21246595e2608336930f62ec91192a52962952e53166234e1034d73",
+          "bytes": 120156,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-27-graphics-layer-lifecycle",
+      "title": "共享图形层在需要 overlay 时才分配",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-27-graphics-layer-lifecycle.svg",
+        "src/assets/diagrams/ch22/a238-27-graphics-layer-lifecycle.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-27-graphics-layer-lifecycle",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedContentNode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedElementEntry.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-27-graphics-layer-lifecycle.svg",
+          "sha256": "97cb774f71f7164e4f952d5a4c3d21b538921a4665bda10908fd482efe848582",
+          "bytes": 19724
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-27-graphics-layer-lifecycle.png",
+          "sha256": "f1416edfe928fe41984a5b5ebf885a9f83b01af5e02473ee8a9b2aafe46c3aab",
+          "bytes": 72945,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-28-overlay-clip-order",
+      "title": "overlay 绘制边界与 Modifier 顺序",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-28-overlay-clip-order.svg",
+        "src/assets/diagrams/ch22/a238-28-overlay-clip-order.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-28-overlay-clip-order",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedContentNode.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-28-overlay-clip-order.svg",
+          "sha256": "54acaea0721e7251f263d8732b90d6a079bea45cf7112d0e06c337a667575e7c",
+          "bytes": 27025
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-28-overlay-clip-order.png",
+          "sha256": "4b0f831868c88d354f6fa4bd03f3cc20052ae9a5fdaf68ca7cfd3afbb5b925b0",
+          "bytes": 122138,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-29-scroll-source-lifetime",
+      "title": "共享过渡要等目标可放置再移除源端",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-29-scroll-source-lifetime.svg",
+        "src/assets/diagrams/ch22/a238-29-scroll-source-lifetime.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-29-scroll-source-lifetime",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedContentNode.kt",
+        "https://developer.android.com/develop/ui/compose/animation/shared-elements"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-29-scroll-source-lifetime.svg",
+          "sha256": "7cf03ca2232dfdaa7977e324efc9a91de0e77ae02ffc9510d5c58280978288e1",
+          "bytes": 27566
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-29-scroll-source-lifetime.png",
+          "sha256": "6dca0459837f5a5e9181d91122a2ed4a542e337f451fef454eb735ff31bd08f7",
+          "bytes": 92345,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-30-predictive-back-flow",
+      "title": "预测性返回进度经过导航过渡驱动共享元素",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-30-predictive-back-flow.svg",
+        "src/assets/diagrams/ch22/a238-30-predictive-back-flow.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-30-predictive-back-flow",
+      "sources": [
+        "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture",
+        "https://developer.android.com/about/versions/16/behavior-changes-16",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-30-predictive-back-flow.svg",
+          "sha256": "31d7c019475b415ed16bfb843543b22621e590e2a1dc81a43375fd45ba7ac225",
+          "bytes": 23825
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-30-predictive-back-flow.png",
+          "sha256": "0e766fe0e97e968c11d127d702ec69e01401187d2802e8243a5c3bb7f069aa25",
+          "bytes": 84938,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-31-debug-evidence",
+      "title": "匹配调试与正式性能证据的分工",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-31-debug-evidence.svg",
+        "src/assets/diagrams/ch22/a238-31-debug-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-31-debug-evidence",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedContentNode.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedElementEntry.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-31-debug-evidence.svg",
+          "sha256": "3028e100051f2c3ed6e18226b2a05bc394ca0f85d70b022d24eb5a84cf2ba9ff",
+          "bytes": 27180
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-31-debug-evidence.png",
+          "sha256": "c500fa56ffe67f48abb8889487ab4c4da1bf25eb70dba6b964eff3c03b7f847a",
+          "bytes": 121457,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-32-config-boundary",
+      "title": "动态禁用与目标移除的不同决策",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-32-config-boundary.svg",
+        "src/assets/diagrams/ch22/a238-32-config-boundary.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-32-config-boundary",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedElementEntry.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-32-config-boundary.svg",
+          "sha256": "9648dd3110cfd177915b24bc61b3b850440de02b5aeb301633ee762ec906f343",
+          "bytes": 24794
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-32-config-boundary.png",
+          "sha256": "b03b9e2895b0c5236d56df7b13d736f9eb8d34f75a93950554a983687bbf3233",
+          "bytes": 100000,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a238-33-window-boundary",
+      "title": "Compose overlay 仍由宿主窗口提交",
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a238-33-window-boundary.svg",
+        "src/assets/diagrams/ch22/a238-33-window-boundary.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a238-33-window-boundary",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedContentNode.kt",
+        "https://developer.android.com/develop/ui/compose/animation/shared-elements"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a238-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a238-33-window-boundary.svg",
+          "sha256": "f76b97f8fee182c402069ddedb5f2c3b0088cde5b23f029ba7ffef6437200b77",
+          "bytes": 26283
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a238-33-window-boundary.png",
+          "sha256": "d0d06d4123dff2724ef311370ee722ac16453778d6c0b3dedc0e26cd6b13f639",
+          "bytes": 125725,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a239-01-effect-offscreen",
+      "title": "RenderEffect 改变窗口内的图像处理工作",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-01-effect-offscreen.svg",
+        "src/assets/diagrams/ch22/a239-01-effect-offscreen.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-01-effect-offscreen",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-02-blur-boundaries",
+      "title": "自身模糊、同窗口背板与跨窗口模糊",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-02-blur-boundaries.svg",
+        "src/assets/diagrams/ch22/a239-02-blur-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-02-blur-boundaries",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
+        "https://source.android.com/docs/core/display/window-blurs"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-03-blur-api-guard",
+      "title": "版本判断必须包住设置与清理",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-03-blur-api-guard.svg",
+        "src/assets/diagrams/ch22/a239-03-blur-api-guard.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-03-blur-api-guard",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-04-pixel-area",
+      "title": "全屏离屏纹理的逻辑像素量",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-04-pixel-area.svg",
+        "src/assets/diagrams/ch22/a239-04-pixel-area.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-04-pixel-area",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-05-cost-dimensions",
+      "title": "效果成本由面积、变化与处理共同决定",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-05-cost-dimensions.svg",
+        "src/assets/diagrams/ch22/a239-05-cost-dimensions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-05-cost-dimensions",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-06-agsl-input-binding",
+      "title": "AGSL 使用局部像素坐标读取内容",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-06-agsl-input-binding.svg",
+        "src/assets/diagrams/ch22/a239-06-agsl-input-binding.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-06-agsl-input-binding",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-07-uniform-effect-copy",
+      "title": "RuntimeShader 更新与 RenderEffect 快照是两层状态",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-07-uniform-effect-copy.svg",
+        "src/assets/diagrams/ch22/a239-07-uniform-effect-copy.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-07-uniform-effect-copy",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/jni/RenderEffect.cpp",
+        "https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/src/effects/imagefilters/SkRuntimeImageFilter.cpp",
+        "https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/include/effects/SkRuntimeEffect.h",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-08-premultiplied-highlight",
+      "title": "高光保留 alpha 与预乘颜色关系",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-08-premultiplied-highlight.svg",
+        "src/assets/diagrams/ch22/a239-08-premultiplied-highlight.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-08-premultiplied-highlight",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-09-compile-first-use",
+      "title": "着色器的创建、GPU 首用和稳定绘制",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-09-compile-first-use.svg",
+        "src/assets/diagrams/ch22/a239-09-compile-first-use.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-09-compile-first-use",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-10-runtime-paint-scope",
+      "title": "节点效果与 Paint 级 AGSL 的作用位置",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-10-runtime-paint-scope.svg",
+        "src/assets/diagrams/ch22/a239-10-runtime-paint-scope.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-10-runtime-paint-scope",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeColorFilter.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeXfermode.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-11-paint-uniform-refresh",
+      "title": "Paint 级动态参数在绘制前取得新 native 对象",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-11-paint-uniform-refresh.svg",
+        "src/assets/diagrams/ch22/a239-11-paint-uniform-refresh.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-11-paint-uniform-refresh",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/Paint.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeColorFilter.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeXfermode.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-12-diagnostic-frame",
+      "title": "从应用提交继续追到显示结果",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-12-diagnostic-frame.svg",
+        "src/assets/diagrams/ch22/a239-12-diagnostic-frame.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-12-diagnostic-frame",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/CanvasContext.cpp"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-13-tools-headroom",
+      "title": "性能工具与质量调节信号的边界",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-13-tools-headroom.svg",
+        "src/assets/diagrams/ch22/a239-13-tools-headroom.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-13-tools-headroom",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/health/SystemHealthManager.java",
+        "https://developer.android.com/android-performance-analyzer",
+        "https://developer.android.com/agi/frame-trace/frame-profiler"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-14-canvas-identity",
+      "title": "Compose Canvas 是带绘制回调的布局节点",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-14-canvas-identity.svg",
+        "src/assets/diagrams/ch22/a239-14-canvas-identity.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-14-canvas-identity",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-15-canvas-recording",
+      "title": "DrawScope 包装后的硬件窗口路径",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-15-canvas-recording.svg",
+        "src/assets/diagrams/ch22/a239-15-canvas-recording.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-15-canvas-recording",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/renderthread/DrawFrameTask.cpp",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaVulkanPipeline.cpp"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-16-draw-targets",
+      "title": "目标 Canvas 决定硬件或软件执行方式",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-16-draw-targets.svg",
+        "src/assets/diagrams/ch22/a239-16-draw-targets.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-16-draw-targets",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java",
+        "https://developer.android.com/topic/performance/hardware-accel"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-17-draw-order",
+      "title": "绘制 Modifier 通过 drawContent 定义顺序",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-17-draw-order.svg",
+        "src/assets/diagrams/ch22/a239-17-draw-order.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-17-draw-order",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-18-cache-draw-invalidation",
+      "title": "drawWithCache 的缓存依赖与每帧绘制分开",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-18-cache-draw-invalidation.svg",
+        "src/assets/diagrams/ch22/a239-18-cache-draw-invalidation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-18-cache-draw-invalidation",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/drawscope/CanvasDrawScope.kt"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-19-restart-phases",
+      "title": "高频状态放在哪里读取决定失效范围",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-19-restart-phases.svg",
+        "src/assets/diagrams/ch22/a239-19-restart-phases.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-19-restart-phases",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt",
+        "https://developer.android.com/develop/ui/compose/phases"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-20-paint-and-resources",
+      "title": "DrawScope 已复用 Paint，业务资源仍要管理",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-20-paint-and-resources.svg",
+        "src/assets/diagrams/ch22/a239-20-paint-and-resources.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-20-paint-and-resources",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/commonMain/kotlin/androidx/compose/ui/graphics/drawscope/CanvasDrawScope.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-21-layer-recording",
+      "title": "GraphicsLayer 首先隔离绘制命令",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-21-layer-recording.svg",
+        "src/assets/diagrams/ch22/a239-21-layer-recording.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-21-layer-recording",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderNode.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-22-compositing-decision",
+      "title": "合成策略与强制离屏条件",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-22-compositing-decision.svg",
+        "src/assets/diagrams/ch22/a239-22-compositing-decision.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-22-compositing-decision",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt",
+        "https://developer.android.com/develop/ui/compose/graphics/draw/modifiers"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-23-outsets-alpha",
+      "title": "可视边界扩展与重叠透明度是两个选择",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-23-outsets-alpha.svg",
+        "src/assets/diagrams/ch22/a239-23-outsets-alpha.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-23-outsets-alpha",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt",
+        "https://developer.android.com/reference/kotlin/androidx/compose/ui/graphics/LayerOutsets"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-24-blend-scope",
+      "title": "需要隔离时才建立最小混合目标",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-24-blend-scope.svg",
+        "src/assets/diagrams/ch22/a239-24-blend-scope.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-24-blend-scope",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt",
+        "https://developer.android.com/develop/ui/compose/graphics/draw/modifiers"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-25-brush-uniform",
+      "title": "ShaderBrush 直接绘制读取更新后的 shader",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-25-brush-uniform.svg",
+        "src/assets/diagrams/ch22/a239-25-brush-uniform.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-25-brush-uniform",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/Paint.java",
+        "https://developer.android.com/develop/ui/compose/graphics/draw/brush"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-26-bitmap-contract",
+      "title": "Hardware Bitmap 的只读显示边界",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-26-bitmap-contract.svg",
+        "src/assets/diagrams/ch22/a239-26-bitmap-contract.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-26-bitmap-contract",
+      "sources": [
+        "https://developer.android.com/reference/android/graphics/Bitmap.Config#HARDWARE",
+        "https://developer.android.com/topic/performance/hardware-accel"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-27-charts-particles",
+      "title": "图表与粒子的计算、绘制和语义分别设计",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-27-charts-particles.svg",
+        "src/assets/diagrams/ch22/a239-27-charts-particles.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-27-charts-particles",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt",
+        "https://developer.android.com/develop/ui/compose/graphics/draw/overview"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-28-surface-choice",
+      "title": "刷新节奏与像素生产者决定是否独立 Surface",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-28-surface-choice.svg",
+        "src/assets/diagrams/ch22/a239-28-surface-choice.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-28-surface-choice",
+      "sources": [
+        "https://developer.android.com/reference/androidx/graphics/lowlatency/CanvasFrontBufferedRenderer",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-29-measurement-boundaries",
+      "title": "回归指标与绘制 marker 各自证明什么",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-29-measurement-boundaries.svg",
+        "src/assets/diagrams/ch22/a239-29-measurement-boundaries.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-29-measurement-boundaries",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar",
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/androidMain/kotlin/androidx/compose/ui/platform/AndroidComposeView.android.kt"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a239-30-versions-and-profile",
+      "title": "平台、库与编译优化各自有边界",
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a239-30-versions-and-profile.svg",
+        "src/assets/diagrams/ch22/a239-30-versions-and-profile.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a239-30-versions-and-profile",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeColorFilter.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeXfermode.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/pipeline/skia/SkiaOpenGLPipeline.cpp",
+        "https://developer.android.com/topic/performance/baselineprofiles/overview"
+      ],
+      "visual_review": "pending"
     }
   ],
   "corrections": [
@@ -30354,14 +32021,430 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/SurfaceView.java"
       ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "本轮逐段核对固定平台与库源码，保留原库基线。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation/1.12.0/animation-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "如果这段展开只是视觉上的，布局占位与触摸区域都能保持目标尺寸，我们就可以用变换属性表达同一段视觉过程：",
+      "after": "如果这段展开只是视觉上的，同级布局占位可以保持目标尺寸，并且已定义好动画期间的点击与无障碍行为，我们就可以用变换属性表达视觉过程：",
+      "why": "scale 不重排占位，但标准 View 输入与无障碍坐标会处理变换，不能保证触摸区域固定。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "`scale（缩放）X` 改变的是绘制变换：measured width（测量宽度）、layout bounds（摆放边界）、触摸命中区域和无障碍节点边界都维持原值。反过来，产品要求周围内容随宽度移动、收起后不可点击，或无障碍边界同步变化时，我们就要更新布局和交互状态，并通过 trace（时间轴） 确认参与重排的子树及其耗时——这类几何语义要靠布局更新完成。",
+      "after": "`scaleX` 改变绘制矩阵，不改变 measured width（测量宽度）、layout bounds（摆放边界）或同级布局占位。标准 `ViewGroup` 触摸分发会用子 View 的逆矩阵把触点映射到局部坐标；`View` 的无障碍屏幕边界也会计入变换和裁剪，不能说两者始终保持原值。父级裁剪、自定义 `TouchDelegate` 或无障碍节点还会改变结果。产品要求周围内容随宽度移动时，需要更新布局；收起后不可操作则要显式管理可见性、点击和无障碍状态，不能仅靠 `alpha=0` 或缩放。再用 trace 确认重排子树与耗时。参见 [`ViewGroup` 输入坐标转换](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java) 与 [`View` 无障碍屏幕边界](https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java)。",
+      "why": "AOSP transformPointToViewLocal 用逆矩阵；getBoundsOnScreen 计算变换后屏幕矩形。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/view/ViewGroup.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "`LottieAnimationView` 的 `cacheComposition`（Compose 生成并维护 UI 树的组合阶段） 默认开启。",
+      "after": "`LottieAnimationView` 的 `cacheComposition` 默认开启；这里缓存的是 Lottie 解析后的动画模型，与 Jetpack Compose 的组合阶段无关。",
+      "why": "修复 composition 同名术语误解，核对6.7.1字段默认值。",
+      "sources": [
+        "https://github.com/airbnb/lottie-android/blob/v6.7.1/lottie/src/main/java/com/airbnb/lottie/LottieAnimationView.java",
+        "https://github.com/airbnb/lottie-android/blob/v6.7.1/lottie/src/main/java/com/airbnb/lottie/LottieCompositionFactory.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "    private val compact = RenderEffect.createBlurEffect(",
+      "after": "    init {\n        require(compactRadiusPx.isFinite() && compactRadiusPx > 0f)\n        require(expandedRadiusPx.isFinite() && expandedRadiusPx > 0f)\n    }\n\n    private val compact = RenderEffect.createBlurEffect(",
+      "why": "示例固定模糊档位明确接受有限正半径，避免NaN/无穷或关闭值混入；OFF仍用null，不构造通用性能阈值。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "这个示例避免在每帧重复创建相同效果，并保留 `null` 清理路径。",
+      "after": "这个示例把两个开启档位限定为有限正半径，避免在每帧重复创建相同效果，并保留 `null` 清理路径。",
+      "why": "解释新增的应用输入契约，避免误写成平台性能阈值。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "动画尚未启动、却先绘制到软件 Canvas 时，源码会调用 `fallbackOntoUI()` 切到 UI 线程实现；",
+      "after": "软件 Canvas 绘制时，只有当前 RT 动画尚未运行且存在待处理动画操作（`mPendingAnimationActions` 非空），源码才调用 `fallbackOntoUI()` 切到 UI 实现；单独绘制一张尚无待处理动画的静态矢量不满足这个分支。",
+      "why": "补齐AOSP draw中的两个必要条件，避免把任何软件Canvas绘制都视为回退。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/graphics/java/android/graphics/drawable/AnimatedVectorDrawable.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "Android 上也就没有一套脱离 `Choreographer`、按固定间隔自行计时的 Compose 界面时钟。",
+      "after": "这是标准 Android UI 协程上下文的帧时钟；测试或调用方提供的自定义 `MonotonicFrameClock` 可以替换它，不能据此断言所有 Compose 上下文都只能直接使用 `Choreographer`。",
+      "why": "限定默认AndroidUiFrameClock，保留可注入帧时钟的契约。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation-core/1.12.0/animation-core-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "取消会以 `CancellationException` 沿协程父子关系传播，需要释放的资源应在 `finally` 中清理。",
+      "after": "旧动画的调用协程会收到 `CancellationException`，同一协程中后续语句不会继续执行，需要释放的资源应在 `finally` 中清理。正常的子协程取消本身不会作为失败自动取消父协程；如果要继续其他工作，应按结构化并发设计各动画的协程作用域。",
+      "why": "Animatable取消其调用者，不应把CancellationException描述为必然向上取消父级。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation-core/1.12.0/animation-core-1.12.0-sources.jar",
+        "https://kotlinlang.org/docs/exception-handling.html#cancellation-and-exceptions"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "裁剪（clip（裁剪））只限制绘制范围",
+      "after": "裁剪（clip）只限制绘制范围",
+      "why": "去重嵌套术语注释。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/animation/animation/1.12.0/animation-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "键改变时，旧协程取消并启动新协程，离开组合时同样取消。",
+      "after": "键改变时，旧协程取消并启动新协程，离开组合时同样取消。结果状态由无键的 `remember` 保留，换键本身不会把当前结果自动重置为 `initialValue`；需要重置时由生产逻辑显式写入。",
+      "why": "区分produceState生产协程重启与结果State身份/当前值保留。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/runtime/runtime/1.12.0/runtime-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "`@NonRestartableComposable`（可组合函数）",
+      "after": "`@NonRestartableComposable`（不可重启可组合函数）",
+      "why": "修复注解术语；该注解会取消函数独立重启入口。",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "            device.findObject(By.res(\"reset_collapsed\")).click()\n            device.waitForIdle()",
+      "after": "            requireNotNull(device.findObject(By.res(\"reset_collapsed\"))).click()\n            check(device.wait(\n                Until.hasObject(By.res(\"animation_idle_collapsed\")),\n                2_000,\n            ))",
+      "why": "waitForIdle是UiAutomator事件空闲，不能证明目标动画完成；准备阶段显式等折叠目标且Transition空闲标记。",
+      "sources": [
+        "https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics",
+        "https://developer.android.com/reference/androidx/test/uiautomator/UiDevice#waitForIdle()"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "        device.findObject(By.res(\"toggle_animation\")).click()",
+      "after": "        requireNotNull(device.findObject(By.res(\"toggle_animation\"))).click()",
+      "why": "测试缺失触发控件时明确失败。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "`toggle_animation`、`reset（被复用）_collapsed` 和完成标记需要通过 `testTagAsResourceId` 或真实资源 ID 暴露。完成标记应在目标状态达到且 `Transition` 空闲后出现，避免只测到动画起点。每轮准备阶段都回到同一初始状态，测量区间只包含目标交互。",
+      "after": "`toggle_animation`、`reset_collapsed`、`animation_idle_collapsed` 与 `animation_idle_expanded` 需要通过根语义上的 `testTagsAsResourceId = true` 或真实资源 ID 暴露。Compose test tag 对应用例中的 `By.res(\"tag\")`，不要擅自补包名前缀。完成标记应在对应目标状态达到且 `Transition` 空闲后出现，并及时移除旧标记；`UiDevice.waitForIdle()` 本身不证明动画已经结束。每轮准备阶段都等待同一折叠状态，测量区间只包含目标交互。",
+      "why": "修复实际API拼写、损坏标签、等待边界与UiAutomator选择器约定。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/ui/ui-android/1.12.0/ui-android-1.12.0-sources.jar",
+        "https://developer.android.com/develop/ui/compose/testing/interoperability"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "`frameDurationCpuMs` 只覆盖界面线程与 `RenderThread` 生成一帧所用的 CPU 时间。",
+      "after": "按本文核对的 Macrobenchmark 1.5.0 查询口径，`frameDurationCpuMs` 是从 UI 帧区间开始到对应 RenderThread 区间结束的墙钟跨度（`rtSlice.endTs - uiSlice.ts`），其中可能包含等待和线程未获调度的时间；它不是两条线程 Running 时间的加总，也不覆盖 GPU 完成和最终 present。",
+      "why": "核对真实FrameTimingQuery，纠正把wall interval当成CPU运行量。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "Lazy layout（只布局可见项及预取项）",
+      "after": "Lazy layout（按需布局，并管理预取、缓存及保留项）",
+      "why": "惰性布局还会保留缓存/固定项，不能只等同可见+预取。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/compose/foundation/foundation/1.12.0/foundation-1.12.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "- Android 15 及以上不再提供 Predictive Back 开发者开关；应用仍需使用受支持的返回 API。`targetSdk >= 35` 时无需把 `enableOnBackInvokedCallback` 设为 `true`，`targetSdk <= 34` 时仍需显式开启；",
+      "after": "- Android 15 及以上不再提供 Predictive Back 开发者开关；系统版本、`targetSdk`、manifest 配置与实际启用的返回回调应分别核对。低目标版本迁移时按官方指南显式设置 `enableOnBackInvokedCallback=\"true\"`；不要仅凭 `targetSdk >= 35` 推断所有设备和 Activity 都已启用，Activity 配置还可以覆盖 application 默认值；",
+      "why": "Navigation集成指南与平台默认迁移分界表述不同，保留可检验的显式迁移路径与Activity优先级，避免target35单条件保证。",
+      "sources": [
+        "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture",
+        "https://developer.android.com/about/versions/16/behavior-changes-16",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/window/WindowOnBackInvokedDispatcher.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "迁移期间仍可按官方说明临时选择退出。",
+      "after": "迁移期间仍可在 application 或 activity 显式设为 `false` 临时退出；此时系统忽略平台 `OnBackInvokedCallback`，AndroidX `OnBackPressedCallback` 仍可工作。",
+      "why": "补全退出的真实影响；不能把AndroidX回调误认为也禁用。",
+      "sources": [
+        "https://developer.android.com/guide/navigation/custom-back/predictive-back-gesture",
+        "https://developer.android.com/about/versions/16/behavior-changes-16"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "截至 2026 年 8 月 15 日，Google Maven 中最新稳定版是 1.12.0；1.13.0-alpha01 属于预览版。",
+      "after": "本文固定使用 2026 年 8 月 15 日复核的 1.12.0 稳定基线与 1.13.0-alpha01 预览记录；后续已有 1.12.1 稳定补丁，不能把 1.12.0 继续称作当前最新稳定版；本文的具体实现结论仍只对照固定的 1.12.0 源码。",
+      "why": "本轮日期已更新；区分固定基线与当前最新版本。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/compose-animation"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "before": "/commonMain（Kotlin Multiplatform 的公共源码集）/kotlin/",
+      "after": "/commonMain/kotlin/",
+      "why": "修复中文术语解释插入URL导致官方源码链接404；已取回与1.12 source JAR相同源码。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/animation/animation/src/commonMain/kotlin/androidx/compose/animation/SharedTransitionScope.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "本轮按固定平台和库基线逐段复核。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "    if (!enabled || radiusPx <= 0f) {",
+      "after": "    if (!enabled || !radiusPx.isFinite() || radiusPx <= 0f) {",
+      "why": "关闭或非有限半径直接清理，NaN的<=比较为false，不能让其进入native blur参数。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "这段代码的行为很直接：API 31 以下直接返回，API 31+ 才允许清空或设置效果。",
+      "after": "这段代码的行为很直接：API 31 以下直接返回，API 31+ 才允许清空或设置效果；禁用、非有限或非正半径统一清空效果。",
+      "why": "明确示例输入策略，不引入通用性能阈值。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "下面的写法避免每帧重建对象：初始化时创建 `RuntimeShader` 和 `RenderEffect`，帧内只更新少量 uniform。",
+      "after": "下面的写法复用编译后的 `RuntimeShader`，每次更新 uniform 后重新创建并安装 `RenderEffect`。两者的生命周期不同：Android 17 的 JNI 把 shader builder 交给 Skia 图像滤镜，滤镜保存 builder 副本，uniform 数据写入时采用复制后写入；已经创建的旧效果不会自动获得后续 uniform。这个动态路径仍有每次效果创建的分配成本，固定不变的效果才适合直接复用。",
+      "why": "JNI RuntimeShader(*builder)→SkRuntimeImageFilter复制builder→writableUniformData copy-on-write，纠正只invalidate旧效果能动态更新的错误。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/jni/RenderEffect.cpp",
+        "https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/src/effects/imagefilters/SkRuntimeImageFilter.cpp",
+        "https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/include/effects/SkRuntimeEffect.h"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "            return src + half4(half3(band * 0.12), 0.0);",
+      "after": "            half highlight = half(band * 0.12);\n            return half4(mix(src.rgb, half3(src.a), highlight), src.a);",
+      "why": "把高光表达为向当前alpha下的白色预乘颜色插值，透明像素保持零RGB；避免直接给透明边缘加非预乘RGB。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "    private val effect = RenderEffect.createRuntimeShaderEffect(shader, \"content\")\n\n    private var effectApplied = false\n\n    fun applyTo(view: View, progress: Float) {\n        shader.setFloatUniform(\"size\", view.width.toFloat(), view.height.toFloat())\n        shader.setFloatUniform(\"progress\", progress.coerceIn(0f, 1f))\n        // 同一个 RenderEffect 已安装后，更新 uniform 不会请求下一帧\n        if (!effectApplied) {\n            view.setRenderEffect(effect)\n            effectApplied = true\n        } else {\n            view.postInvalidateOnAnimation()\n        }\n    }\n\n    fun clear(view: View) {\n        view.setRenderEffect(null)\n        effectApplied = false\n    }",
+      "after": "    fun applyTo(view: View, progress: Float) {\n        require(progress.isFinite())\n        shader.setFloatUniform(\"size\", view.width.toFloat(), view.height.toFloat())\n        shader.setFloatUniform(\"progress\", progress.coerceIn(0f, 1f))\n        // 更新参数后创建新的效果快照，setRenderEffect 会使属性失效\n        view.setRenderEffect(\n            RenderEffect.createRuntimeShaderEffect(shader, \"content\"),\n        )\n    }\n\n    fun clear(view: View) {\n        view.setRenderEffect(null)\n    }",
+      "why": "修复真实动态效果安装逻辑，删无效effectApplied缓存；同一shader不重复编译，动态filter快照逐次更新。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RenderEffect.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/jni/RenderEffect.cpp",
+        "https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/src/effects/imagefilters/SkRuntimeImageFilter.cpp",
+        "https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/include/effects/SkRuntimeEffect.h",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "这段示例只调用一次 `content.eval()`，动态参数也只有 `size` 和 `progress`。AGSL 的 `float2` 是两个 `float` 组成的向量，`half4` 是四个半精度分量，常用来表示 RGBA。`View.setRenderEffect()` 只在 RenderNode 的效果属性变化时请求重绘；同一个 `RenderEffect` 安装后，更新 `RuntimeShader` uniform 不会自动请求下一帧，所以动画场景要显式调用 `postInvalidateOnAnimation()`，或由动画框架驱动重绘。`effectApplied` 属于 `HighlightEffect` 实例，这个示例要求一个实例只服务一个 View。",
+      "after": "这段示例每个输出像素只调用一次 `content.eval()`，动态参数也只有 `size` 和 `progress`。AGSL 的 `float2` 是两个 `float` 组成的向量，`half4` 是四个半精度分量，常用来表示 RGBA。`View.setRenderEffect()` 在效果属性变化时请求重绘；本例安装新建效果，既更新参数快照也触发属性失效。只修改 shader uniform 后对旧效果调用 `invalidate()`，仍不能让旧效果获得新参数。示例由 UI 线程操作，一个 `HighlightEffect` 实例只服务一个 View。参见 [Android JNI](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/jni/RenderEffect.cpp)、[Skia 滤镜副本](https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/src/effects/imagefilters/SkRuntimeImageFilter.cpp) 与 [uniform 复制后写入](https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/include/effects/SkRuntimeEffect.h)。",
+      "why": "区分请求重绘与更新效果内容两项必要条件，提供直接原始源码证据。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/View.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/jni/RenderEffect.cpp",
+        "https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/src/effects/imagefilters/SkRuntimeImageFilter.cpp",
+        "https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/include/effects/SkRuntimeEffect.h"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "这个高光叠加还假定目标内容完全不透明。AGSL 要求 `main()` 返回预乘 alpha 颜色，也就是透明度为 A 时，RGB 要先乘 A；若输入带透明边缘，新增高光也要乘 `src.a`，否则透明像素可能保留非零 RGB，合成后出现色边。",
+      "after": "这个高光示例保持输入 alpha，把 RGB 向 `half3(src.a)` 插值，适用于普通 SDR 高光，并保持透明边缘的预乘关系。AGSL 要求 `main()` 返回预乘 alpha 颜色，也就是透明度为 A 时，RGB 要先乘 A；直接给透明像素加非零 RGB 会破坏该关系。广色域或 HDR 的高光色与亮度应按目标颜色空间另外设计。",
+      "why": "修复后的代码支持透明边缘，说明SDR白色插值的颜色边界，不把它当HDR调色方案。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "源码或 uniform 声明不合法时会抛出 `IllegalArgumentException`。",
+      "after": "源码不合法，或后续设置的 uniform 名称、类型、分量数量不匹配时，会抛出 `IllegalArgumentException`。构造期解析/编译 AGSL 与驱动在首次绘制准备 GPU 程序不是同一个阶段，首次使用仍应单独测量。",
+      "why": "区分构造器语法错误与setter契约、前端编译与GPU首次使用。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "裁剪区（clip（裁剪））",
+      "after": "裁剪区（clip）",
+      "why": "去除重复术语注释。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeXfermode.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "截至 2026 年 8 月 15 日，Google Maven 中的最新稳定版是 1.12.0，1.13.0-alpha01 属于预览版。",
+      "after": "本节固定使用 2026 年 8 月 15 日复核的 Compose UI 1.12.0 基线；1.13.0-alpha01 是当时的预览记录，后续已有 1.12.1 稳定补丁，具体实现仍按文中固定源码核对。",
+      "why": "本轮日期变化后保留固定基线，避免把旧版称当前latest。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/compose-ui"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "/Canvas.kt（Compose 1.11.4 源码快照）)（Compose UI 1.12.0 快照）。",
+      "after": "/Canvas.kt)（Compose UI 1.12.0 快照）。",
+      "why": "修复混入URL的中文版本说明，实际重取官方源码200。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/Canvas.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "            val path = Path()\n            val minValue = samples.minOrNull() ?: 0f\n            val maxValue = samples.maxOrNull() ?: minValue\n            val range = (maxValue - minValue).takeIf { it > 0f } ?: 1f",
+      "after": "            require(samples.all { it.isFinite() })\n            val path = Path()\n            val minValue = (samples.minOrNull() ?: 0f).toDouble()\n            val maxValue = (samples.maxOrNull() ?: 0f).toDouble()\n            val range = (maxValue - minValue).takeIf { it > 0.0 } ?: 1.0",
+      "why": "缓存构建校验输入有限；用Double计算有限Float极值跨度，防止max-min Float溢出导致坐标NaN。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt",
+        "https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/is-finite.html"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "                val y = size.height * (1f - (value - minValue) / range)",
+      "after": "                val fraction = ((value.toDouble() - minValue) / range).toFloat()\n                val y = size.height * (1f - fraction)",
+      "why": "匹配Double域归一化，确保有限Float极值可得到有效端点坐标。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "                val right = size.width * progress.value.coerceIn(0f, 1f)",
+      "after": "                val p = progress.value.let { if (it.isFinite()) it.coerceIn(0f, 1f) else 0f }\n                val right = size.width * p",
+      "why": "coerceIn不清除NaN；示例对无效动画值采用0进度以避免无效clip参数。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "对照这段代码看失效路径：`samples` 变化或 `Modifier` lambda 更新会重建缓存，尺寸变化也会重建 Path；",
+      "after": "调用方需把 `samples` 作为不可变数据提交；原地修改普通 `MutableList` 不会自动建立 Snapshot 通知。本例在缓存构建阶段拒绝非有限样本，使用 Double 计算跨度，空列表不生成线段；非有限进度按 0 处理。对照失效路径：`samples` 或 `Modifier` lambda 更新会重建缓存，尺寸变化也会重建 Path；",
+      "why": "明确数据不可变/失效契约和有限输入策略，避免缓存静默保留旧Path。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui/src/commonMain/kotlin/androidx/compose/ui/draw/DrawModifier.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "`Offscreen` | 总是先画到图形层 `bounds` 大小的中间目标",
+      "after": "`Offscreen` | 总是先画到中间目标；默认按图形层 `bounds`，可由 `LayerOutsets` 扩展",
+      "why": "同文后续已有outsets，表格不应把bounds写成不可扩展的固定大小。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/ui/ui-graphics/src/androidMain/kotlin/androidx/compose/ui/graphics/layer/GraphicsLayerV29.android.kt",
+        "https://developer.android.com/reference/kotlin/androidx/compose/ui/graphics/LayerOutsets"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "            shader.setFloatUniform(\"resolution\", size.width, size.height)",
+      "after": "            shader.setFloatUniform(\"resolution\", maxOf(1f, size.width), maxOf(1f, size.height))",
+      "why": "避免初始化或零尺寸画布把0作为AGSL归一化分母。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java",
+        "https://developer.android.com/develop/ui/compose/graphics/draw/brush"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "                shader.setFloatUniform(\"time\", timeSeconds.value)",
+      "after": "                val time = timeSeconds.value.let { if (it.isFinite()) it else 0f }\n                shader.setFloatUniform(\"time\", time)",
+      "why": "有限时间输入避免sin无效值传播；保留绘制阶段读取以限定失效。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java",
+        "https://developer.android.com/develop/ui/compose/graphics/draw/brush"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "它避免每帧编译 AGSL 或新建 Shader；全屏 `drawRect` 仍会执行每个 fragment（片元，最终对应待计算像素） 的着色工作，缓存对象不会降低逐像素数学成本。",
+      "after": "它避免每帧编译 AGSL 或新建 Shader，分辨率至少设为 1，非有限时间按 0 处理。这里 shader 直接作为 Paint/Brush 的绘制输入，当前绘制会取得它更新后的 native instance；这与前文 `RenderEffect` 保存图像滤镜参数副本的路径不同。全屏 `drawRect` 仍会执行每个 fragment（片元，最终对应待计算像素）的着色工作，缓存对象不会降低逐像素数学成本。",
+      "why": "解释两个看似相反示例的实际消费边界；动态ShaderBrush更新不能用来证明旧RenderEffect会同步。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/RuntimeShader.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/Paint.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/hwui/jni/RenderEffect.cpp",
+        "https://android.googlesource.com/platform/external/skia/+/android-17.0.0_r1/src/effects/imagefilters/SkRuntimeImageFilter.cpp"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "- UI Thread 与 RenderThread 相关的 `frameDurationCpuMs`；",
+      "after": "- `frameDurationCpuMs`：按 Macrobenchmark 1.5.0 查询，是从 UI 帧开始到对应 RenderThread 结束的墙钟跨度，包含可能的等待，不是两线程 Running 时间的加总；",
+      "why": "复核真实FrameTimingQuery口径，防止CPU名被理解成纯运行时间。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "before": "- `frameCount`，用于识别无效帧数量变化。",
+      "after": "- `frameCount`：识别该测量区间内被统计的帧数变化，不能仅凭它判断哪些帧无效或卡顿。",
+      "why": "frameCount统计帧而不是专门无效帧；需结合业务/超期分类。",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/benchmark/benchmark-macro/1.5.0/benchmark-macro-1.5.0-sources.jar"
+      ]
     }
   ],
   "validation": {},
   "last_checkpoint": {
-    "completed": 38,
+    "completed": 39,
     "total": 51,
-    "next_article": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
-    "updated_at": "2026-10-25T09:51:42.862214+00:00"
+    "next_article": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+    "updated_at": "2026-10-25T10:09:06.711095+00:00"
   },
   "replaced_inline_diagrams": []
 }

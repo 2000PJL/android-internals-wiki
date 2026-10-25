@@ -6500,6 +6500,66 @@
       "status": "appended",
       "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析这次我在三星On"
     },
+    "source/juejin-android/2026-10-26-76574953-腾讯 XLog 日志框架 Android 端.md": {
+      "chapter": "待分类",
+      "entry_id": "a15b4d4f37565a35",
+      "last_appended": "2026-10-26T05:25:20.418512+08:00",
+      "last_seen": "2026-10-26T05:25:20.418512+08:00",
+      "mtime": 1792959521.9836905,
+      "score": 9,
+      "sha256": "62267a1cb7901e9e096ac66df81b41da7c429a01c7fe5ee2872700c2f2671d79",
+      "size": 11716,
+      "status": "appended",
+      "title": "腾讯 XLog 日志框架 Android 端接入"
+    },
+    "source/juejin-android/2026-10-26-76648798-你是不是还没用过 select？实.md": {
+      "chapter": "待分类",
+      "entry_id": "dd737043b076358f",
+      "last_appended": "2026-10-26T05:25:20.418512+08:00",
+      "last_seen": "2026-10-26T05:25:20.418512+08:00",
+      "mtime": 1792959521.9830518,
+      "score": 9,
+      "sha256": "39a16537cf6c3ab85eb4a28f2ce3b610d98c5112b4717dcee32b18fb18851bed",
+      "size": 18091,
+      "status": "appended",
+      "title": "你是不是还没用过 select？实战 Kotlin select"
+    },
+    "source/juejin-android/2026-10-26-76678955-别再只用 Loading、Success、.md": {
+      "chapter": "待分类",
+      "entry_id": "1eafa59b0d31c340",
+      "last_appended": "2026-10-26T05:25:20.418512+08:00",
+      "last_seen": "2026-10-26T05:25:20.418512+08:00",
+      "mtime": 1792959521.9819245,
+      "score": 9,
+      "sha256": "6364561801de0433347517fc29c3140ba062ab7a8653fcfb0b7bd66b7de8562c",
+      "size": 33535,
+      "status": "appended",
+      "title": "别再只用 Loading、Success、Error 表示所有页面状态了"
+    },
+    "source/juejin-android/2026-10-26-76756264-三星安卓系统BUG排查记录：云闪付、铁.md": {
+      "chapter": "待分类",
+      "entry_id": "86221a6e823351ce",
+      "last_appended": "2026-10-26T05:25:20.418512+08:00",
+      "last_seen": "2026-10-26T05:25:20.418512+08:00",
+      "mtime": 1792959521.9795582,
+      "score": 24,
+      "sha256": "5283d4bf9805c911b050977a8aed050d14dd1637abb23902c185138e33fc679a",
+      "size": 33803,
+      "status": "appended",
+      "title": "三星安卓系统BUG排查记录：云闪付、铁路12306、个人所得税、中国移动等App，长期闪退的根本原因分析"
+    },
+    "source/juejin-android/2026-10-26-76940645-Android 以后可能不会再有横竖屏适.md": {
+      "chapter": "待分类",
+      "entry_id": "9fa3fef2fdfe9d89",
+      "last_appended": "2026-10-26T05:25:20.418512+08:00",
+      "last_seen": "2026-10-26T05:25:20.418512+08:00",
+      "mtime": 1792959521.9801226,
+      "score": 15,
+      "sha256": "8f05a8707af864d341bee7ff4b98105c0b86358022d1d670b7e23cd3a1619678",
+      "size": 15760,
+      "status": "appended",
+      "title": "Android 以后可能不会再有横竖屏适配了"
+    },
     "source/rss-snapshot/2026-09-28-A-SKILL-md-for-commenting-on-Hacker-News.md": {
       "last_seen": "2026-09-28T05:25:49.875545+08:00",
       "mtime": 1790536682.1143188,
@@ -8885,24 +8945,24 @@
     }
   },
   "last_report": {
-    "appended": 4,
-    "considered": 4,
-    "cutoff": "2026-10-24T05:20:20.127166+08:00",
-    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-25.md",
+    "appended": 5,
+    "considered": 5,
+    "cutoff": "2026-10-25T05:20:20.337855+08:00",
+    "daily_info": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/intake/daily-info/2026-10-26.md",
     "dry_run": false,
     "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
-    "scanned": 2255,
+    "scanned": 2260,
     "skipped": {
       "existing_link": 0,
       "low_score": 0,
       "max_files": 0,
       "old_unseen": 1414,
       "path": 31,
-      "unchanged": 806
+      "unchanged": 810
     },
     "state": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/tech-article-aiw-intake-state.json"
   },
-  "last_run_at": "2026-10-25T05:25:20.337855+08:00",
+  "last_run_at": "2026-10-26T05:25:20.418512+08:00",
   "root": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/技术文章",
   "version": 1
 }

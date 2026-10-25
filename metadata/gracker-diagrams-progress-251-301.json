@@ -1,0 +1,2196 @@
+{
+  "schema_version": 1,
+  "goal": "逐章为正文配准确的 Gracker 白板原理图与流程图",
+  "assignment": {
+    "range_start": 251,
+    "range_end": 301,
+    "indexing": "1-based frozen master articles array on 2026-10-25",
+    "first_article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+    "last_article": "src/part5-app/ch26-observability/README.md",
+    "work_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301",
+    "shard_ledger": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-progress-251-301.json",
+    "article_paths": [
+      "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "src/part5-app/ch22-rendering-practice/README.md",
+      "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "src/part5-app/ch23-memory-practice/04-bitmap-optimization.md",
+      "src/part5-app/ch23-memory-practice/05-large-heap-multiprocess.md",
+      "src/part5-app/ch23-memory-practice/06-ondevice-llm-memory-management.md",
+      "src/part5-app/ch23-memory-practice/07-memory-monitoring.md",
+      "src/part5-app/ch23-memory-practice/README.md",
+      "src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
+      "src/part5-app/ch24-io-network/02-database-serialization-performance.md",
+      "src/part5-app/ch24-io-network/03-data-cache-offline-first.md",
+      "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "src/part5-app/ch24-io-network/README.md",
+      "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "src/part5-app/ch25-power-size/README.md",
+      "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "src/part5-app/ch26-observability/07-application-start-info.md",
+      "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "src/part5-app/ch26-observability/README.md"
+    ]
+  },
+  "style": "gracker-diagrams / whiteboard",
+  "articles": [
+    {
+      "path": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "sha256_before": "eeba4c0419502fd29a3b8f681247c9d6367d397bab1f568f6ec56da11872fff6",
+      "status": "illustrated",
+      "diagrams": [
+        "a251-01-protocol-boundary",
+        "a251-02-caller-outcomes",
+        "a251-03-aosp-capture-path",
+        "a251-04-multidisplay-session",
+        "a251-05-color-semantics",
+        "a251-06-buffer-cost",
+        "a251-07-measurement-tracks",
+        "a251-08-crossdevice-result"
+      ],
+      "article_index": 251,
+      "sha256_at_assignment": "eeba4c0419502fd29a3b8f681247c9d6367d397bab1f568f6ec56da11872fff6",
+      "sha256_current": "f288a321e459b5f30a7bbec00e073c8678d4193f49ebff0be66a66415a864941",
+      "sha256_after": "f288a321e459b5f30a7bbec00e073c8678d4193f49ebff0be66a66415a864941",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文阅读原文 18995 字符；21 份官方 API/AOSP 来源已拉取存档并记录 SHA256。核验 Android 17 r1 Intent/flags、WMS 权限、capture helper 的 RGBA 与 software copy、display 监听、viewmodel 取像素及结果发送。3 条 before/after/reason/why/sources 校勘：公开契约与 RESULT_OK 实现归因、首次焦点回调无 hasFocus 门禁、async Trace 实例字段与 Activity 重建边界。8 张 SVG+PNG 原图及 8 个真实 mdBook 正文位置逐个视觉检查；含无实测时长的 Perfetto 风格 tracks，未编造性能数据。独立 mdBook 构建通过，本篇本地链接、PNG 解码、SVG XML、prompt pack 与基线哈希验证通过；未进行 Android 设备运行或 Kotlin 编译。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "eeba4c0419502fd29a3b8f681247c9d6367d397bab1f568f6ec56da11872fff6"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/README.md",
+      "sha256_before": "53cb44d8d7910add878ebf956a4717ff3c013f373511f61e2fa226824cc18b06",
+      "status": "illustrated",
+      "diagrams": [
+        "a252-01-rendering-reading-map"
+      ],
+      "article_index": 252,
+      "sha256_at_assignment": "53cb44d8d7910add878ebf956a4717ff3c013f373511f61e2fa226824cc18b06",
+      "sha256_current": "21cab2a08f8615b090543757c12fd426999d88683f9c9b7d912d8f69f8ee2bf5",
+      "sha256_after": "21cab2a08f8615b090543757c12fd426999d88683f9c9b7d912d8f69f8ee2bf5",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文阅读第22章索引2333字符，核对20个索引入口与跨章本地链接。1条校勘区分刷新间隔和实际 expected frame 可用预算，补官方 FrameTimeline 依据；2份官方文档已存档。1张专用场景阅读导航 SVG+PNG 已逐图与真实 mdBook 正文位置视觉验收；孤立构建、本地链接与资产格式通过。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "53cb44d8d7910add878ebf956a4717ff3c013f373511f61e2fa226824cc18b06"
+    },
+    {
+      "path": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "sha256_before": "8dc7b53618cdf85bd2809d6d29e474aeeb83c9b2030bd109a097cfc099372094",
+      "status": "illustrated",
+      "diagrams": [
+        "a253-01-metric-boundaries",
+        "a253-02-los-allocation",
+        "a253-03-allocation-oom",
+        "a253-04-streaming-copy",
+        "a253-05-cache-trim",
+        "a253-06-gc-trigger",
+        "a253-07-heap-task-queue",
+        "a253-08-gc-request-dedup",
+        "a253-09-gc-frame-tracks",
+        "a253-10-profiling-evidence",
+        "a253-11-composition-retention",
+        "a253-12-slot-storage",
+        "a253-13-remember-list-keys",
+        "a253-14-strong-skipping",
+        "a253-15-derived-state",
+        "a253-16-snapshotflow-lifecycle",
+        "a253-17-lazy-key-identity",
+        "a253-18-composeview-lifecycle",
+        "a253-19-androidview-reuse",
+        "a253-20-diagnostic-tools"
+      ],
+      "article_index": 253,
+      "sha256_at_assignment": "8dc7b53618cdf85bd2809d6d29e474aeeb83c9b2030bd109a097cfc099372094",
+      "sha256_current": "e1e8c2704b5b9bc91919375761239860cf6e5785be8e98e8e4b4fcdadf0337e8",
+      "sha256_after": "e1e8c2704b5b9bc91919375761239860cf6e5785be8e98e8e4b4fcdadf0337e8",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文阅读原文57,837字符、约1100行；49份官方API、AOSP ART、固定AndroidX及历史版本来源存档并记录SHA256。按源码核对LOS判定与回退、OOM慢路径与回收产出循环、时间GC积分/乘积配置、HeapTask串行队列和序号CAS去重；核验Compose 1.12.0固定基线、LinkTable默认关闭与R8规则、状态/remember/Strong Skipping/snapshotFlow/Interop语义。7条可审计校勘包含帧预算、时间积分、OOM重试、beta02当前版本及版本表、retained size与snapshotFlow初始/合并语义。20张专用SVG+PNG及20个真实mdBook正文位置均视觉检查；精修2/6分支走线、7/15留白、16首值emit、17身份路线、18策略先后、19直接release路径后复看。16个原始代码/text围栏逐字保持；未Android设备执行或Kotlin编译。独立mdBook构建、本地链接、PNG解码、SVG XML、各图完整prompt pack与基线哈希通过。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "8dc7b53618cdf85bd2809d6d29e474aeeb83c9b2030bd109a097cfc099372094"
+    },
+    {
+      "path": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "sha256_before": "20898785b4764694e652a370ffedfab6d6402e0bbad6f2b03ffdd12df90745f9",
+      "status": "illustrated",
+      "diagrams": [
+        "a254-01-leak-conditions",
+        "a254-02-listener-ownership",
+        "a254-03-fragment-view-tracks",
+        "a254-04-compose-subscription",
+        "a254-05-jni-resource-ownership",
+        "a254-06-dialog-observer-case",
+        "a254-07-leakcanary-pipeline",
+        "a254-08-capture-artifacts",
+        "a254-09-trigger-delivery",
+        "a254-10-exitinfo-boundaries"
+      ],
+      "article_index": 254,
+      "sha256_at_assignment": "20898785b4764694e652a370ffedfab6d6402e0bbad6f2b03ffdd12df90745f9",
+      "sha256_current": "293fea1c73867aba14b64f0502445793d8bb6c11e9deb4e0f457efcd4a4a57c9",
+      "sha256_after": "293fea1c73867aba14b64f0502445793d8bb6c11e9deb4e0f457efcd4a4a57c9",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文阅读原文24,047字符、约620行；27条来源存档含AOSP17固定Profiling/HPROF/SignalCatcher/HeapGraph/heapprofd实现、官方API/JNI/Compose、LeakCanary/Shark/KOOM和只读货拉拉原始归档，并实际查看原文引用链与Dialog代码两张图。9条before/after/why/sources校勘：ART画像不记录回收、remember(source)初态、JNI附加线程local例外、close/release、案例数字补源、引用方向、KOOM当前推送口径、HPROF切段阈值、listener注销不等于移除trigger。10张专用SVG+PNG及10个mdBook正文位置均实际视觉检查；03轨道底部裁切与10长注释精修后复看；无编造性能测量。10个代码围栏仅改1处预期remember键，其余逐字未变。独立mdBook构建、本地链接、SVG XML、PNG解码、完整prompt pack、基线哈希通过；未Android设备执行或Kotlin编译。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "20898785b4764694e652a370ffedfab6d6402e0bbad6f2b03ffdd12df90745f9"
+    },
+    {
+      "path": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "sha256_before": "72ab646b6a60e55afbfe5481432b7a2d3cbb6e0512bf79a119d2887fcf2f7061",
+      "status": "illustrated",
+      "diagrams": [
+        "a255-01-memory-accounting",
+        "a255-02-smaps-vs-rollup",
+        "a255-03-heapprofd-lifecycle",
+        "a255-04-sampling-semantics",
+        "a255-05-unreachable-scan",
+        "a255-06-free-vs-rss",
+        "a255-07-so-private-dirty",
+        "a255-08-virtual-vs-resident",
+        "a255-09-contiguous-hole",
+        "a255-10-mmd-swap-maintenance",
+        "a255-11-thread-stack-size",
+        "a255-12-bounded-executor",
+        "a255-13-virtual-thread-fallback",
+        "a255-14-webview-reservation",
+        "a255-15-hsc-eligibility",
+        "a255-16-multiprocess-cost"
+      ],
+      "article_index": 255,
+      "sha256_at_assignment": "33c32649f2f378c3cfc601256f4f8a702416abc72f095f3df0ddb30902379e9f",
+      "sha256_current": "ac3b7d71668c224f306cc686eb501a2c79ff137c9c60c9b9545d6620282c3748",
+      "sha256_after": "ac3b7d71668c224f306cc686eb501a2c79ff137c9c60c9b9545d6620282c3748",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文阅读38,909字符；42条官方API/固定AOSP与ACK6.18来源记录，核对统计读取、heapprofd rc与拦截入口、Sampler大小权重、Scudo flags和AndroidConfig、线程FixStackSize/虚拟线程降级、WebView预留与HSC条件。9条before/after/why/sources校勘：persist强制服务、quarantine与归还间隔、可写私有映射COW、page fault定义、Private Clean口径、静态辅助函数名、误插入WebView方法名的ART注释、Java HeapGraph产物、DirectByteBuffer释放边界。16图与16个真实mdBook位置均视觉看过；05重采循环、06/12分支、15条件图精修后复看。原代码围栏全部逐字未改；完整设备采集脚本bash -n通过，离线maps脚本用已知4MiB匿名与3MiB同名映射夹具核验聚合，未设备执行/未Java编译。独立mdBook构建、本地链接、PNG解码、SVG XML、prompt packs与基线哈希通过，无编造性能测量。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "33c32649f2f378c3cfc601256f4f8a702416abc72f095f3df0ddb30902379e9f"
+    },
+    {
+      "path": "src/part5-app/ch23-memory-practice/04-bitmap-optimization.md",
+      "sha256_before": "15e6204650996dbc85df60b6cd2270d0b834b9745feec0d57d1f34ae861571ea",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 256,
+      "sha256_at_assignment": "15e6204650996dbc85df60b6cd2270d0b834b9745feec0d57d1f34ae861571ea"
+    },
+    {
+      "path": "src/part5-app/ch23-memory-practice/05-large-heap-multiprocess.md",
+      "sha256_before": "51763fb5934a727ea08855504d3fc668fa97d7108b713be6f24d7d030eebf51e",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 257,
+      "sha256_at_assignment": "51763fb5934a727ea08855504d3fc668fa97d7108b713be6f24d7d030eebf51e"
+    },
+    {
+      "path": "src/part5-app/ch23-memory-practice/06-ondevice-llm-memory-management.md",
+      "sha256_before": "e7aa64ec17e75d49052802ef2afc695277cedbf4a0837abd3370006ee0667842",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 258,
+      "sha256_at_assignment": "e7aa64ec17e75d49052802ef2afc695277cedbf4a0837abd3370006ee0667842"
+    },
+    {
+      "path": "src/part5-app/ch23-memory-practice/07-memory-monitoring.md",
+      "sha256_before": "1544e2a9a522d8e56069932bb697fa1e34cedec372484bc7bacc1e864aa79ced",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 259,
+      "sha256_at_assignment": "1544e2a9a522d8e56069932bb697fa1e34cedec372484bc7bacc1e864aa79ced"
+    },
+    {
+      "path": "src/part5-app/ch23-memory-practice/README.md",
+      "sha256_before": "f6b696020f99b08e7cc498ef2a1e0380effd1c584a46d233a029be5635a04b67",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 260,
+      "sha256_at_assignment": "f6b696020f99b08e7cc498ef2a1e0380effd1c584a46d233a029be5635a04b67"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/01-file-io-saf-contentresolver.md",
+      "sha256_before": "c6bcba2b1e782ad13f042a9803b7520d6fbf9e27c3a396756c101598e70bd510",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 261,
+      "sha256_at_assignment": "c6bcba2b1e782ad13f042a9803b7520d6fbf9e27c3a396756c101598e70bd510"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/02-database-serialization-performance.md",
+      "sha256_before": "9dc6f782dd9fb660f50a8304af4615cf18ca4a07895563b38d70f8abd8b58e15",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 262,
+      "sha256_at_assignment": "9dc6f782dd9fb660f50a8304af4615cf18ca4a07895563b38d70f8abd8b58e15"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/03-data-cache-offline-first.md",
+      "sha256_before": "3cd0aaeda5a2eb0c47b7fe55bee309cbd59f939596fcd360e442449991120ca2",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 263,
+      "sha256_at_assignment": "3cd0aaeda5a2eb0c47b7fe55bee309cbd59f939596fcd360e442449991120ca2"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/04-mediastore-photo-picker-transcoding.md",
+      "sha256_before": "1e3148999fa3713f0d64b5433053b5bc77362d9737faa99864412b6d63cd03b5",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 264,
+      "sha256_at_assignment": "1e3148999fa3713f0d64b5433053b5bc77362d9737faa99864412b6d63cd03b5"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/05-mobile-network-connection-resilience.md",
+      "sha256_before": "6b23876c48a7df75784bdbc26e14d0366568839266c1d133828eabe38a04d829",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 265,
+      "sha256_at_assignment": "6b23876c48a7df75784bdbc26e14d0366568839266c1d133828eabe38a04d829"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/06-http2-http3-grpc-ech.md",
+      "sha256_before": "a829bb39921240ed923c9b529cc1627e4034c39c8a4480290b1afbbf99ebe8df",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 266,
+      "sha256_at_assignment": "a829bb39921240ed923c9b529cc1627e4034c39c8a4480290b1afbbf99ebe8df"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/07-httpdns-okhttp-dns-boundary.md",
+      "sha256_before": "328442df5d86e217a13295bd869b497677156826356f133c2728672ee47cfdf0",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 267,
+      "sha256_at_assignment": "328442df5d86e217a13295bd869b497677156826356f133c2728672ee47cfdf0"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/08-wifi-connectivity-selection.md",
+      "sha256_before": "90019ce7d891055b1294fedd1d4b920cc8636443bcda26ca0d02bc29427beaba",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 268,
+      "sha256_at_assignment": "90019ce7d891055b1294fedd1d4b920cc8636443bcda26ca0d02bc29427beaba"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/09-low-bandwidth-streaming-local-network.md",
+      "sha256_before": "1bc7378bb628920923ff6095349d3bf504bb52ded8e9bd230d48ce156f451af9",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 269,
+      "sha256_at_assignment": "1bc7378bb628920923ff6095349d3bf504bb52ded8e9bd230d48ce156f451af9"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/10-android17-network-quota-management.md",
+      "sha256_before": "c1d77eab3be0c3c382fdce942aa6c21068594ba381cd03ad2feda82199af760b",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 270,
+      "sha256_at_assignment": "c1d77eab3be0c3c382fdce942aa6c21068594ba381cd03ad2feda82199af760b"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/11-bluetoothsocket-read-disconnect.md",
+      "sha256_before": "a305097ad58f0a8416228d09d8adf850003e9c47cff2b4a29ec14812552485a2",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 271,
+      "sha256_at_assignment": "a305097ad58f0a8416228d09d8adf850003e9c47cff2b4a29ec14812552485a2"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/12-nfc-contactless-payment-performance.md",
+      "sha256_before": "cfca3a0bb8e8891316d2437c114edcb0b928b6cfa6e87d3d54d190118a9e9a80",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 272,
+      "sha256_at_assignment": "cfca3a0bb8e8891316d2437c114edcb0b928b6cfa6e87d3d54d190118a9e9a80"
+    },
+    {
+      "path": "src/part5-app/ch24-io-network/README.md",
+      "sha256_before": "9b26804d5ef5d75b9cce52636d486cc0cad897c57fdd413c42313ec38f77a4ae",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 273,
+      "sha256_at_assignment": "9b26804d5ef5d75b9cce52636d486cc0cad897c57fdd413c42313ec38f77a4ae"
+    },
+    {
+      "path": "src/part5-app/ch25-power-size/01-power-diagnosis-oem-background.md",
+      "sha256_before": "a5671a4a80851549ed5defb7894fa09cad1964de1212e13bdc6fbe9a06227888",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 274,
+      "sha256_at_assignment": "a5671a4a80851549ed5defb7894fa09cad1964de1212e13bdc6fbe9a06227888"
+    },
+    {
+      "path": "src/part5-app/ch25-power-size/02-background-power-foreground-service.md",
+      "sha256_before": "c2c0677c1072f868b826569fcc2a00fe133442aa00f49baaabea92d7010b446f",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 275,
+      "sha256_at_assignment": "c2c0677c1072f868b826569fcc2a00fe133442aa00f49baaabea92d7010b446f"
+    },
+    {
+      "path": "src/part5-app/ch25-power-size/03-wakelock-alarm-workmanager.md",
+      "sha256_before": "6fd9d164fc3207cc0df486488a9ecfd6700740564b95b343816730edd8e103a1",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 276,
+      "sha256_at_assignment": "6fd9d164fc3207cc0df486488a9ecfd6700740564b95b343816730edd8e103a1"
+    },
+    {
+      "path": "src/part5-app/ch25-power-size/04-location-sensor.md",
+      "sha256_before": "1de1f8977ac7bac64ba5139bdef977dcaf3538514de0fca06704b6751fcbc19c",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 277,
+      "sha256_at_assignment": "1de1f8977ac7bac64ba5139bdef977dcaf3538514de0fca06704b6751fcbc19c"
+    },
+    {
+      "path": "src/part5-app/ch25-power-size/05-background-audio-audiotrack-offload.md",
+      "sha256_before": "2ed897ec9e3c1d291b2b3b3ccc24b370ccd2b255fb9622941884e815505fa5c3",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 278,
+      "sha256_at_assignment": "2ed897ec9e3c1d291b2b3b3ccc24b370ccd2b255fb9622941884e815505fa5c3"
+    },
+    {
+      "path": "src/part5-app/ch25-power-size/06-hybrid-webview-power.md",
+      "sha256_before": "9da847520c1a6fa56e77f3b14723b217b442adefd794b495259055e1b717ada1",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 279,
+      "sha256_at_assignment": "9da847520c1a6fa56e77f3b14723b217b442adefd794b495259055e1b717ada1"
+    },
+    {
+      "path": "src/part5-app/ch25-power-size/07-application-cpu-optimization.md",
+      "sha256_before": "173fb64258ddec8d368602f524abba3cb84aa9b792d58c1c25569e5324fa5382",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 280,
+      "sha256_at_assignment": "173fb64258ddec8d368602f524abba3cb84aa9b792d58c1c25569e5324fa5382"
+    },
+    {
+      "path": "src/part5-app/ch25-power-size/08-performance-hint-adpf-power.md",
+      "sha256_before": "b000770e8005d06cba0000ff2351b72c5c614213576cb8b1080cd6e82e91d618",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 281,
+      "sha256_at_assignment": "b000770e8005d06cba0000ff2351b72c5c614213576cb8b1080cd6e82e91d618"
+    },
+    {
+      "path": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "sha256_before": "beb0f2107fcb04e4b63ed3a57ac453d374b81e9245530127075c10cf0b21bc6d",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 282,
+      "sha256_at_assignment": "beb0f2107fcb04e4b63ed3a57ac453d374b81e9245530127075c10cf0b21bc6d"
+    },
+    {
+      "path": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "sha256_before": "beed2934fb30009e903fba49bdedb8980e9bf7179e5602d7029869bd2443e097",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 283,
+      "sha256_at_assignment": "beed2934fb30009e903fba49bdedb8980e9bf7179e5602d7029869bd2443e097"
+    },
+    {
+      "path": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "sha256_before": "96f03e3561cbb71502c35e4084fb68bf8688a550f8789d4dc9d55e66dff02330",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 284,
+      "sha256_at_assignment": "96f03e3561cbb71502c35e4084fb68bf8688a550f8789d4dc9d55e66dff02330"
+    },
+    {
+      "path": "src/part5-app/ch25-power-size/README.md",
+      "sha256_before": "f23b6771d9ed08ec4de65b8da531f778a04fbee1930067e555295d8e11c29430",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 285,
+      "sha256_at_assignment": "f23b6771d9ed08ec4de65b8da531f778a04fbee1930067e555295d8e11c29430"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+      "sha256_before": "3fe6c963097813a591db99353a6ec710cd9f1b7d8015cfc1fbf54e18fbb6f65a",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 286,
+      "sha256_at_assignment": "3fe6c963097813a591db99353a6ec710cd9f1b7d8015cfc1fbf54e18fbb6f65a"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/02-crash-anr-monitoring.md",
+      "sha256_before": "5467671029b421a7a06ba6c4b407f11c442a99f4766236b081b5fe062aa218c3",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 287,
+      "sha256_at_assignment": "5467671029b421a7a06ba6c4b407f11c442a99f4766236b081b5fe062aa218c3"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/03-online-troubleshooting-diagnostic-rom.md",
+      "sha256_before": "cd851c0ac301508d8244a207d80fb43e6026379718dad2d9ce714691cd9576ac",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 288,
+      "sha256_at_assignment": "cd851c0ac301508d8244a207d80fb43e6026379718dad2d9ce714691cd9576ac"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/04-ab-testing-regression.md",
+      "sha256_before": "7115f8f40a476ea7728f0172b53a6a79d4d75bc321cfff72f527e8e23e4da766",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 289,
+      "sha256_at_assignment": "7115f8f40a476ea7728f0172b53a6a79d4d75bc321cfff72f527e8e23e4da766"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/05-performance-score-release-gate.md",
+      "sha256_before": "776533fdefcc95e8435b2f6992dcbcd02124022d16160e59fe28ab45b7599efb",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 290,
+      "sha256_at_assignment": "776533fdefcc95e8435b2f6992dcbcd02124022d16160e59fe28ab45b7599efb"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/06-application-exit-versioned-diagnostics.md",
+      "sha256_before": "221f538203e0eafc4c7876b0185d53b656cf4d270b157e99ebcfcc8f285f5e72",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 291,
+      "sha256_at_assignment": "221f538203e0eafc4c7876b0185d53b656cf4d270b157e99ebcfcc8f285f5e72"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/07-application-start-info.md",
+      "sha256_before": "99983630f25d6fcc1ecaac563a4d4c2d9196f11524a5886541771ece14178d2a",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 292,
+      "sha256_at_assignment": "99983630f25d6fcc1ecaac563a4d4c2d9196f11524a5886541771ece14178d2a"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/08-android-vitals-play-console-quality.md",
+      "sha256_before": "204d9efbeb77e10bff1302bfda3fcc8de4648e1d9508df9fa23ff81a43aff1ca",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 293,
+      "sha256_at_assignment": "204d9efbeb77e10bff1302bfda3fcc8de4648e1d9508df9fa23ff81a43aff1ca"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/09-online-storage-io-sqlite-observability.md",
+      "sha256_before": "f8c2be01716fd2ff06ef9b78ad52d9cefc57b92e97e7a6f226240f60ec77b4b8",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 294,
+      "sha256_at_assignment": "f8c2be01716fd2ff06ef9b78ad52d9cefc57b92e97e7a6f226240f60ec77b4b8"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/10-online-network-quality-observability.md",
+      "sha256_before": "1846f99170ce15f0fcd366b8580b46ff127a984567d849942ba3da7151c800e1",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 295,
+      "sha256_at_assignment": "1846f99170ce15f0fcd366b8580b46ff127a984567d849942ba3da7151c800e1"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/11-battery-historian-performance-metrics-integration.md",
+      "sha256_before": "ed24a0ffa54268e437c242d7825c9c8e7d7543a9113b98bfd7fdf7f9ebf7c38b",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 296,
+      "sha256_at_assignment": "ed24a0ffa54268e437c242d7825c9c8e7d7543a9113b98bfd7fdf7f9ebf7c38b"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/12-bytecode-instrumentation-monitoring-automation.md",
+      "sha256_before": "648c16ad855674f9be29a64327fdbd2027307603748bc6b5948d3fdd3d46d7df",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 297,
+      "sha256_at_assignment": "648c16ad855674f9be29a64327fdbd2027307603748bc6b5948d3fdd3d46d7df"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/13-heapprofd-procfs-page-fault.md",
+      "sha256_before": "97e6f2bbd30cd54c9c447262be41390a16d7a1e69122ba1bb7539e1d03097518",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 298,
+      "sha256_at_assignment": "97e6f2bbd30cd54c9c447262be41390a16d7a1e69122ba1bb7539e1d03097518"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/14-ebpf-atrace-online-tracing.md",
+      "sha256_before": "d0da9f55f08e30b82caef120c69cae41fa301cfa8a8448544ad0b068608317a3",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 299,
+      "sha256_at_assignment": "d0da9f55f08e30b82caef120c69cae41fa301cfa8a8448544ad0b068608317a3"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/15-art-dynamic-tracing-jvmti.md",
+      "sha256_before": "39fc372d6f73ac7399a120d8c8d68bf772b004f7d404cf939abaee6547948f0e",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 300,
+      "sha256_at_assignment": "39fc372d6f73ac7399a120d8c8d68bf772b004f7d404cf939abaee6547948f0e"
+    },
+    {
+      "path": "src/part5-app/ch26-observability/README.md",
+      "sha256_before": "2512d303d8e8380b150e6e0909b5e2165ec20e9b67070e59c76fbf642005ce2b",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 301,
+      "sha256_at_assignment": "2512d303d8e8380b150e6e0909b5e2165ec20e9b67070e59c76fbf642005ce2b"
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "a251-01-protocol-boundary",
+      "title": "EyeDropper 的调用、实现与协作边界",
+      "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a251-01-protocol-boundary.svg",
+        "src/assets/diagrams/ch22/a251-01-protocol-boundary.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a251-01-protocol-boundary",
+      "sources": [
+        "https://developer.android.com/reference/android/content/Intent#ACTION_OPEN_EYE_DROPPER",
+        "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/MainActivity.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch22/a251-01-protocol-boundary.svg": "4dd9bb163c09b344a153aeb69a24cba338df63f7b065d8ae5bfcd17d416bdc02",
+        "src/assets/diagrams/ch22/a251-01-protocol-boundary.png": "e21a72200362d2a2142259c0ce3f03b8bb1a2d1e191d83010bf090d0eefe5067"
+      }
+    },
+    {
+      "id": "a251-02-caller-outcomes",
+      "title": "调用方的启动与结果分支",
+      "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a251-02-caller-outcomes.svg",
+        "src/assets/diagrams/ch22/a251-02-caller-outcomes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a251-02-caller-outcomes",
+      "sources": [
+        "https://developer.android.com/reference/android/content/Intent#ACTION_OPEN_EYE_DROPPER",
+        "https://developer.android.com/training/basics/intents/result",
+        "https://developer.android.com/training/package-visibility/declaring"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch22/a251-02-caller-outcomes.svg": "d5e5c4fadf9bd31504bcf612c049e2a611c60044ae6cab09d506d2a4a6cb2add",
+        "src/assets/diagrams/ch22/a251-02-caller-outcomes.png": "e136a5ef81494c2c018d67eb7d80f1740c2bc22edb7d049cf456ae36bafef143"
+      }
+    },
+    {
+      "id": "a251-03-aosp-capture-path",
+      "title": "AOSP 从屏幕快照到颜色结果",
+      "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a251-03-aosp-capture-path.svg",
+        "src/assets/diagrams/ch22/a251-03-aosp-capture-path.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a251-03-aosp-capture-path",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/util/ScreenCaptureHelper.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowManagerService.java",
+        "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/ui/BaseEyeDropperViewModel.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch22/a251-03-aosp-capture-path.svg": "c31ef5a7053f51f003a778e26f308ab7acd9cae63685fd5a845b06b0b723db18",
+        "src/assets/diagrams/ch22/a251-03-aosp-capture-path.png": "b17e5830c207fc520ace2a45ab49e497824844c27a0c39bb5763975e2036a161"
+      }
+    },
+    {
+      "id": "a251-04-multidisplay-session",
+      "title": "多 display 快照会话的生命周期",
+      "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a251-04-multidisplay-session.svg",
+        "src/assets/diagrams/ch22/a251-04-multidisplay-session.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a251-04-multidisplay-session",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/MainActivity.kt",
+        "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/EyeDropperControllerService.kt",
+        "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/desktop/DesktopDisplayListener.kt",
+        "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/ui/touchscreen/ActiveDisplayTracker.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch22/a251-04-multidisplay-session.svg": "fd493f05b708446e0bbe85d1d8461201cddb7f8287a208684cae5d05b4092b9c",
+        "src/assets/diagrams/ch22/a251-04-multidisplay-session.png": "7667e932095291846ad432badab7caf389602824ed73482eb4f2e9b2e6fd9ff2"
+      }
+    },
+    {
+      "id": "a251-05-color-semantics",
+      "title": "颜色整数携带的信息与缺失的上下文",
+      "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a251-05-color-semantics.svg",
+        "src/assets/diagrams/ch22/a251-05-color-semantics.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a251-05-color-semantics",
+      "sources": [
+        "https://developer.android.com/reference/android/content/Intent#ACTION_OPEN_EYE_DROPPER",
+        "https://developer.android.com/reference/android/content/Intent#EXTRA_COLOR",
+        "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/util/ScreenCaptureHelper.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch22/a251-05-color-semantics.svg": "c53d5e42b2fd51f3b9221edbf7c61b34cdbb02a799282e7808a38f79be890397",
+        "src/assets/diagrams/ch22/a251-05-color-semantics.png": "8219bea5cc3c0ba7c7b396b65fa5ea021684cf6e1d23e8302e4885639187ae93"
+      }
+    },
+    {
+      "id": "a251-06-buffer-cost",
+      "title": "取一个像素之前的全帧内存成本",
+      "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a251-06-buffer-cost.svg",
+        "src/assets/diagrams/ch22/a251-06-buffer-cost.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a251-06-buffer-cost",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/util/ScreenCaptureHelper.kt",
+        "https://developer.android.com/reference/android/graphics/Bitmap"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch22/a251-06-buffer-cost.svg": "1e8c0e74516f99681aaf4a103859711fdad8986acc2cbfa153edeb4e2f7f36dd",
+        "src/assets/diagrams/ch22/a251-06-buffer-cost.png": "7bb5638d6706050e13cf6b77ef59469189442ab5d1046c8514effc9eb1305565"
+      }
+    },
+    {
+      "id": "a251-07-measurement-tracks",
+      "title": "把系统工作、用户停留和结果绘制分开量",
+      "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a251-07-measurement-tracks.svg",
+        "src/assets/diagrams/ch22/a251-07-measurement-tracks.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a251-07-measurement-tracks",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Trace",
+        "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/MainActivity.kt",
+        "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/util/ScreenCaptureHelper.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch22/a251-07-measurement-tracks.svg": "74411b12ab1681b178cffb9c1786c0ef99d48bef6ff73931329631818a1a6f72",
+        "src/assets/diagrams/ch22/a251-07-measurement-tracks.png": "d9ca0fdc2954b88cc43a329c91a4670f6d96d39dd3acf3926ecd91d7fd28521a"
+      }
+    },
+    {
+      "id": "a251-08-crossdevice-result",
+      "title": "跨设备颜色协作由应用协议完成",
+      "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a251-08-crossdevice-result.svg",
+        "src/assets/diagrams/ch22/a251-08-crossdevice-result.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a251-08-crossdevice-result",
+      "sources": [
+        "https://developer.android.com/reference/android/content/Intent#ACTION_OPEN_EYE_DROPPER"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch22/a251-08-crossdevice-result.svg": "55017d42ff8465bd7e9a7a7d566a828b43bfbfa3814bf3142d03153f5603b66c",
+        "src/assets/diagrams/ch22/a251-08-crossdevice-result.png": "4c61713a85c5ce5537fde0ce568543d3f824d99ed64521db6028b3614fcf0560"
+      }
+    },
+    {
+      "id": "a252-01-rendering-reading-map",
+      "title": "渲染实战各场景的阅读入口",
+      "article": "src/part5-app/ch22-rendering-practice/README.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a252-01-rendering-reading-map.svg",
+        "src/assets/diagrams/ch22/a252-01-rendering-reading-map.png"
+      ],
+      "layout": "hub-spoke",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a252-01-rendering-reading-map",
+      "sources": [
+        "https://developer.android.com/topic/performance/rendering",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch22/a252-01-rendering-reading-map.svg": "7f4781e8491465485da5266fe1045efe1792f470b966ff162d1dd60fe1f261fa",
+        "src/assets/diagrams/ch22/a252-01-rendering-reading-map.png": "63d81a953daba5b685f4cda93d75cde4e72de21c70e989026e6b0b238ec097c4"
+      }
+    },
+    {
+      "id": "a253-01-metric-boundaries",
+      "title": "Java 堆计数、堆限制与 PSS 的口径",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-01-metric-boundaries.svg",
+        "src/assets/diagrams/ch23/a253-01-metric-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-01-metric-boundaries",
+      "sources": [
+        "https://developer.android.com/topic/performance/memory-overview",
+        "https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.h"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-01-metric-boundaries.svg": "7c870cadf3b6975308fb580064a386b8a30d5824eaaf6344ed52ae35bb91126a",
+        "src/assets/diagrams/ch23/a253-01-metric-boundaries.png": "45402e3380f794432775279f627c26705a7e159f28d3b2034a346536287fdf33"
+      }
+    },
+    {
+      "id": "a253-02-los-allocation",
+      "title": "大对象空间的尝试与失败回退",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-02-los-allocation.svg",
+        "src/assets/diagrams/ch23/a253-02-los-allocation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-02-los-allocation",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap-inl.h"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-02-los-allocation.svg": "f9785389980fbd63bf592ea2ae64b695a3123e44f539ed1e187d16c1f7775b5f",
+        "src/assets/diagrams/ch23/a253-02-los-allocation.png": "92f7173e32215f7819b58b230706148babe6677ea8065f387bc99965f2311c40"
+      }
+    },
+    {
+      "id": "a253-03-allocation-oom",
+      "title": "分配失败会逐级回收重试",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-03-allocation-oom.svg",
+        "src/assets/diagrams/ch23/a253-03-allocation-oom.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-03-allocation-oom",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-03-allocation-oom.svg": "6923cf6b87bee9be6208600f4be2a719271672687b54bca9e4ea8ca51fc77d15",
+        "src/assets/diagrams/ch23/a253-03-allocation-oom.png": "e5faeb1eccdf4bdabba50832ffd52f59b9373c66bc6e723bbb35b529475471a1"
+      }
+    },
+    {
+      "id": "a253-04-streaming-copy",
+      "title": "用分块和消费边界限制峰值",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-04-streaming-copy.svg",
+        "src/assets/diagrams/ch23/a253-04-streaming-copy.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-04-streaming-copy",
+      "sources": [
+        "https://developer.android.com/topic/performance/memory"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-04-streaming-copy.svg": "d159b197e7e8727e6f8876f28912ba4eb1b09e055f40ec19c95430d08e2eaa6b",
+        "src/assets/diagrams/ch23/a253-04-streaming-copy.png": "f784db82f6675c6f5ffea57b0d64aa3bb04ac0109dce1a2fc6eae37ee401cea7"
+      }
+    },
+    {
+      "id": "a253-05-cache-trim",
+      "title": "状态提示、缓存收缩和 GC 是三件事",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-05-cache-trim.svg",
+        "src/assets/diagrams/ch23/a253-05-cache-trim.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-05-cache-trim",
+      "sources": [
+        "https://developer.android.com/reference/android/content/ComponentCallbacks2",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/util/LruCache.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-05-cache-trim.svg": "443938c28a8770246e66187d9434b04edbe66b91de232e6dd8cbf91bb3978e67",
+        "src/assets/diagrams/ch23/a253-05-cache-trim.png": "4836bec9cafaa61a1a7f5902589cfd3f77bf1924535196044e7636858d3df3e9"
+      }
+    },
+    {
+      "id": "a253-06-gc-trigger",
+      "title": "Java 分配请求并发 GC 的条件",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-06-gc-trigger.svg",
+        "src/assets/diagrams/ch23/a253-06-gc-trigger.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-06-gc-trigger",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap-inl.h",
+        "https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-06-gc-trigger.svg": "f5f5a6e80ed399cc943ceeeb0cfdef9db39bf821999c38c2d6696e206ac3f3ef",
+        "src/assets/diagrams/ch23/a253-06-gc-trigger.png": "ed2cc87c14ecd158ca31599ac8a1be073e4cbc10f646ae2e2c5574fb2654e816"
+      }
+    },
+    {
+      "id": "a253-07-heap-task-queue",
+      "title": "HeapTaskDaemon 串行执行堆维护队列",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-07-heap-task-queue.svg",
+        "src/assets/diagrams/ch23/a253-07-heap-task-queue.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-07-heap-task-queue",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/libart/src/main/java/java/lang/Daemons.java",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/task_processor.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-07-heap-task-queue.svg": "4afc08abfc15f17e7215078022e0a20cd5db33e8c7212b200174cd81fbd48363",
+        "src/assets/diagrams/ch23/a253-07-heap-task-queue.png": "c9b7d2a5f2e0bf3391db75697f4a4efe9eb8bcae426303880da761677aac3389"
+      }
+    },
+    {
+      "id": "a253-08-gc-request-dedup",
+      "title": "并发 GC 用序号协议去重",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-08-gc-request-dedup.svg",
+        "src/assets/diagrams/ch23/a253-08-gc-request-dedup.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-08-gc-request-dedup",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc",
+        "https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap-inl.h"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-08-gc-request-dedup.svg": "a6bf7b0d61b41682c433c4c2e25112a059ec96508737c70a59f21e6033b05441",
+        "src/assets/diagrams/ch23/a253-08-gc-request-dedup.png": "a14595e0fa8cc34f03a0511fd2a79e2190b634f9b54b7ae08bdbe75e8e11fae6"
+      }
+    },
+    {
+      "id": "a253-09-gc-frame-tracks",
+      "title": "GC 与慢帧的时间关系需要线程证据",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-09-gc-frame-tracks.svg",
+        "src/assets/diagrams/ch23/a253-09-gc-frame-tracks.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-09-gc-frame-tracks",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals/render",
+        "https://source.android.com/docs/core/runtime/gc-debug"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-09-gc-frame-tracks.svg": "0d17e098eb44c6b788560aacc49a464b658d539ba14c7468b5b7f0a781b7759e",
+        "src/assets/diagrams/ch23/a253-09-gc-frame-tracks.png": "5661a6c75aefcbc1d6f9cec6a9a232aa51587f91a42c6c2eec964d53e49d4571"
+      }
+    },
+    {
+      "id": "a253-10-profiling-evidence",
+      "title": "分配画像与堆转储回答不同问题",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-10-profiling-evidence.svg",
+        "src/assets/diagrams/ch23/a253-10-profiling-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-10-profiling-evidence",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler",
+        "https://developer.android.com/studio/profile/capture-heap-dump",
+        "https://developer.android.com/studio/profile/record-java-kotlin-allocations"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-10-profiling-evidence.svg": "8894118f64bd50a896fa9e42b2e90205ebc8f796e25864c6bbe1abd91dc94286",
+        "src/assets/diagrams/ch23/a253-10-profiling-evidence.png": "1fae7dec4a9a7ee296f89f332865b8745e0d09c48e1a7441ba3dba820a6dec15"
+      }
+    },
+    {
+      "id": "a253-11-composition-retention",
+      "title": "Composition 的正常持有与生命周期泄漏",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-11-composition-retention.svg",
+        "src/assets/diagrams/ch23/a253-11-composition-retention.png"
+      ],
+      "layout": "hierarchical-layers",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-11-composition-retention",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composition.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/RecomposeScopeImpl.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-11-composition-retention.svg": "5d726083fa798390e90485b281874d957aac7a58e0fe0d151c12e373c4478905",
+        "src/assets/diagrams/ch23/a253-11-composition-retention.png": "6ed0cb227aeee8a02e6f542224a1473f3385625eae9e674ba98da25ea92a0cad"
+      }
+    },
+    {
+      "id": "a253-12-slot-storage",
+      "title": "固定 Runtime 版本与实验存储开关",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-12-slot-storage.svg",
+        "src/assets/diagrams/ch23/a253-12-slot-storage.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-12-slot-storage",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composition.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/ComposeRuntimeFlags.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-12-slot-storage.svg": "1f6285d58a6432aaeb17e0e3208182d08331100bdd69077ea6e36214c274f37c",
+        "src/assets/diagrams/ch23/a253-12-slot-storage.png": "00ad64043502c0210a7cae4f6035494ba7575916afd513979bbca9db36995642"
+      }
+    },
+    {
+      "id": "a253-13-remember-list-keys",
+      "title": "remember 的 key 不等于列表内容版本",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-13-remember-list-keys.svg",
+        "src/assets/diagrams/ch23/a253-13-remember-list-keys.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-13-remember-list-keys",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/Composables.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/snapshots/SnapshotStateList.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-13-remember-list-keys.svg": "eeff8d93f88efa301364e75efc007535759869d1a94cc993855de361059918a0",
+        "src/assets/diagrams/ch23/a253-13-remember-list-keys.png": "a6118bb8b060714004e13f145dee25a14c12c621095baf9df415134110e68ea0"
+      }
+    },
+    {
+      "id": "a253-14-strong-skipping",
+      "title": "Strong Skipping 的参数比较规则",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-14-strong-skipping.svg",
+        "src/assets/diagrams/ch23/a253-14-strong-skipping.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-14-strong-skipping",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/performance/stability/strongskipping",
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/RecomposeScopeImpl.kt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-14-strong-skipping.svg": "54b597ec3155fd4dcd9db1dc8bbebd5ed776039a63bdcce251fed4af7192bd78",
+        "src/assets/diagrams/ch23/a253-14-strong-skipping.png": "1b6e05a71462ff423c13410a3d8ece4e66505e2a2e62b4bb6ca26652d36d35cd"
+      }
+    },
+    {
+      "id": "a253-15-derived-state",
+      "title": "derivedStateOf 把高频输入变成较少结果变化",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-15-derived-state.svg",
+        "src/assets/diagrams/ch23/a253-15-derived-state.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-15-derived-state",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/DerivedState.kt",
+        "https://developer.android.com/develop/ui/compose/side-effects",
+        "https://developer.android.com/jetpack/androidx/releases/compose-runtime"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-15-derived-state.svg": "803a26397dc0fd5fb7be48dc6b220727c5e2e4cef70697f6f39c371d478ac53c",
+        "src/assets/diagrams/ch23/a253-15-derived-state.png": "86f45146fbb2e4d714b18218669b773de73b9b3276e518dadab7f1914883aadb"
+      }
+    },
+    {
+      "id": "a253-16-snapshotflow-lifecycle",
+      "title": "snapshotFlow 的收集与释放由任务生命周期约束",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-16-snapshotflow-lifecycle.svg",
+        "src/assets/diagrams/ch23/a253-16-snapshotflow-lifecycle.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-16-snapshotflow-lifecycle",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotFlow.kt",
+        "https://developer.android.com/develop/ui/compose/side-effects"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-16-snapshotflow-lifecycle.svg": "e4204ea4ffcf233c88add9174de6fb2459b48583862d8929a10f1fefbc0bdcd5",
+        "src/assets/diagrams/ch23/a253-16-snapshotflow-lifecycle.png": "7cd165878c51eca9ba3c62fd8733f787f0bca267e7e945fd1a402bd0b7f8e8ad"
+      }
+    },
+    {
+      "id": "a253-17-lazy-key-identity",
+      "title": "Lazy 列表稳定 key 维护业务身份",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-17-lazy-key-identity.svg",
+        "src/assets/diagrams/ch23/a253-17-lazy-key-identity.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-17-lazy-key-identity",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/lists"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-17-lazy-key-identity.svg": "36637ce7dc41a78568b714622c420c5818359b4268c78bb02baf5ed9bdcb47cd",
+        "src/assets/diagrams/ch23/a253-17-lazy-key-identity.png": "179d1973a89007d5f3f6500ed5a7f5d89d65d9397b946a616c246c18442b128a"
+      }
+    },
+    {
+      "id": "a253-18-composeview-lifecycle",
+      "title": "Fragment View 的销毁要带走 Composition",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-18-composeview-lifecycle.svg",
+        "src/assets/diagrams/ch23/a253-18-composeview-lifecycle.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-18-composeview-lifecycle",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/compose-in-views"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-18-composeview-lifecycle.svg": "c42f200a6ecaf0a8b695246986b80adec490cba4aa19baa6eeddb6000a61b2db",
+        "src/assets/diagrams/ch23/a253-18-composeview-lifecycle.png": "ea461e13377900d652e2817bc02034800d6974ab1c57604d666d2a006655465b"
+      }
+    },
+    {
+      "id": "a253-19-androidview-reuse",
+      "title": "AndroidView 的创建、更新、复用与终止",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-19-androidview-reuse.svg",
+        "src/assets/diagrams/ch23/a253-19-androidview-reuse.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-19-androidview-reuse",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/migrate/interoperability-apis/views-in-compose"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-19-androidview-reuse.svg": "71c66f6f8f59ccfefc1442cea1fb87df928a337f1caeda27f7bbb4b0429f43cd",
+        "src/assets/diagrams/ch23/a253-19-androidview-reuse.png": "7a2917d29aae4680f6559cff4865389404e64659b2d8925f0fc48ab8aeab734d"
+      }
+    },
+    {
+      "id": "a253-20-diagnostic-tools",
+      "title": "编译判断、运行次数、分配与持有分别取证",
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a253-20-diagnostic-tools.svg",
+        "src/assets/diagrams/ch23/a253-20-diagnostic-tools.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a253-20-diagnostic-tools",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/performance/stability/diagnose",
+        "https://developer.android.com/develop/ui/compose/tooling/tracing",
+        "https://developer.android.com/studio/profile/record-java-kotlin-allocations",
+        "https://developer.android.com/studio/profile/capture-heap-dump"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a253-20-diagnostic-tools.svg": "9665cbb792c8e0c1f4f7a178fec1ebd01d40a8861e6d76764d75fc0a65c01ce7",
+        "src/assets/diagrams/ch23/a253-20-diagnostic-tools.png": "143cb022bfe5b462eaa0860860aa001099ce72f1fdff46702f3cbfd18eaf66ae"
+      }
+    },
+    {
+      "id": "a254-01-leak-conditions",
+      "title": "可达性和业务生命周期必须同时核验",
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a254-01-leak-conditions.svg",
+        "src/assets/diagrams/ch23/a254-01-leak-conditions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a254-01-leak-conditions",
+      "sources": [
+        "https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/",
+        "https://square.github.io/leakcanary/fundamentals-fixing-a-memory-leak/"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a254-01-leak-conditions.svg": "5ac7c61ea9e433d424f30dad99983a0c78eed7fa63b348895e4ccf3725160562",
+        "src/assets/diagrams/ch23/a254-01-leak-conditions.png": "eef48d51dafb44537be5ad45bf1d17debc5ced9682f733286f38bbf81c5558e5"
+      }
+    },
+    {
+      "id": "a254-02-listener-ownership",
+      "title": "注销要切断外部长生命周期持有",
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a254-02-listener-ownership.svg",
+        "src/assets/diagrams/ch23/a254-02-listener-ownership.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a254-02-listener-ownership",
+      "sources": [
+        "https://square.github.io/leakcanary/fundamentals-fixing-a-memory-leak/"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a254-02-listener-ownership.svg": "cb04f264815564e9a3b7de8b8087b14ab03a31a72a365b39d701e903d7e78c50",
+        "src/assets/diagrams/ch23/a254-02-listener-ownership.png": "6ff40aa5dce0cffefb9c854f55a5cbb9954686d015b6776e747b5c534f49cb4c"
+      }
+    },
+    {
+      "id": "a254-03-fragment-view-tracks",
+      "title": "Fragment 本体可以跨越多代 View",
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a254-03-fragment-view-tracks.svg",
+        "src/assets/diagrams/ch23/a254-03-fragment-view-tracks.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a254-03-fragment-view-tracks",
+      "sources": [
+        "https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a254-03-fragment-view-tracks.svg": "f2dc22d8dffb12e2e491b318ed6b1c61da5e5453dca7019bc3ce632820fe6575",
+        "src/assets/diagrams/ch23/a254-03-fragment-view-tracks.png": "9091d3e8fb0ee8e1ee15529b93939181a47fd2d2cdd78a3ae51bc57175c990aa"
+      }
+    },
+    {
+      "id": "a254-04-compose-subscription",
+      "title": "DisposableEffect 的 key 与注销边界",
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a254-04-compose-subscription.svg",
+        "src/assets/diagrams/ch23/a254-04-compose-subscription.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a254-04-compose-subscription",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/side-effects"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a254-04-compose-subscription.svg": "c37d396acb6145acd76ca30b6eaf7374d8a07a6f298db93b3792b4dc098106a7",
+        "src/assets/diagrams/ch23/a254-04-compose-subscription.png": "68ed00425a8146ac5f2264540b5723da6878b47694ac437ba9ba1fd1cd590d5b"
+      }
+    },
+    {
+      "id": "a254-05-jni-resource-ownership",
+      "title": "JNI 引用和底层资源有各自的释放协议",
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a254-05-jni-resource-ownership.svg",
+        "src/assets/diagrams/ch23/a254-05-jni-resource-ownership.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a254-05-jni-resource-ownership",
+      "sources": [
+        "https://developer.android.com/training/articles/perf-jni",
+        "https://developer.android.com/reference/android/media/MediaCodec",
+        "https://developer.android.com/reference/android/view/Surface"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a254-05-jni-resource-ownership.svg": "0872bfa3a3cdf76621756a54fcef05ea9156b9743e0e1abb18ab3dc45f2e5202",
+        "src/assets/diagrams/ch23/a254-05-jni-resource-ownership.png": "d1af5847b1b22bde45b688af6c0fea5458fcd63ce99b8af46f8d7fa670a8c2da"
+      }
+    },
+    {
+      "id": "a254-06-dialog-observer-case",
+      "title": "常驻 Activity 的观察者表如何留住弹窗",
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a254-06-dialog-observer-case.svg",
+        "src/assets/diagrams/ch23/a254-06-dialog-observer-case.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a254-06-dialog-observer-case",
+      "sources": [
+        "https://cubox.pro/web/card/7243148750653230377"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a254-06-dialog-observer-case.svg": "120d9f5168b76902243a61bbb8795c95987176c351b175104f03e88c31bcc326",
+        "src/assets/diagrams/ch23/a254-06-dialog-observer-case.png": "a6616d814496324fe553c8bdefddd15d13c962b084851588a843e739b27e8519"
+      }
+    },
+    {
+      "id": "a254-07-leakcanary-pipeline",
+      "title": "LeakCanary 从观察到泄漏签名的流程",
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a254-07-leakcanary-pipeline.svg",
+        "src/assets/diagrams/ch23/a254-07-leakcanary-pipeline.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a254-07-leakcanary-pipeline",
+      "sources": [
+        "https://square.github.io/leakcanary/fundamentals-how-leakcanary-works/",
+        "https://square.github.io/leakcanary/fundamentals-fixing-a-memory-leak/",
+        "https://square.github.io/leakcanary/shark/"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a254-07-leakcanary-pipeline.svg": "76873f9c6a6dbd9f3bec7d751b905e51e4a36ef2fb1bb55256ce875eca5ba4de",
+        "src/assets/diagrams/ch23/a254-07-leakcanary-pipeline.png": "b48a2c2294fadffd14e10f8cd4da04c57ede5ed33050d89b49094b7ca53678d9"
+      }
+    },
+    {
+      "id": "a254-08-capture-artifacts",
+      "title": "完整 HPROF、HeapGraph 和分配画像的三条管线",
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a254-08-capture-artifacts.svg",
+        "src/assets/diagrams/ch23/a254-08-capture-artifacts.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a254-08-capture-artifacts",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/hprof/hprof.cc",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/perfetto_hprof/perfetto_hprof.cc",
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a254-08-capture-artifacts.svg": "43c6303aaca128f9db93b49b1fbc361cbe36978b6533315bb4c0665f94e13aed",
+        "src/assets/diagrams/ch23/a254-08-capture-artifacts.png": "4f43958dbe68781128e57d43bacf1a164733774a69d31867c8c944fe6b64435b"
+      }
+    },
+    {
+      "id": "a254-09-trigger-delivery",
+      "title": "系统 trigger 的采集与延后结果交付",
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a254-09-trigger-delivery.svg",
+        "src/assets/diagrams/ch23/a254-09-trigger-delivery.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a254-09-trigger-delivery",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java",
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingTrigger.java",
+        "https://developer.android.com/topic/performance/tracing/profiling-manager/trigger-based-capture"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a254-09-trigger-delivery.svg": "f9851f1c5c79319fbd18f1ef790a23c99cfe886b234218ef72a39e7ebe78824d",
+        "src/assets/diagrams/ch23/a254-09-trigger-delivery.png": "9ae608fffcff5cc692fda6f40981ef3d005099eb2e0acf8cfa0ac899e83c12e4"
+      }
+    },
+    {
+      "id": "a254-10-exitinfo-boundaries",
+      "title": "退出原因、内存采样与泄漏证据的边界",
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a254-10-exitinfo-boundaries.svg",
+        "src/assets/diagrams/ch23/a254-10-exitinfo-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a254-10-exitinfo-boundaries",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://developer.android.com/about/versions/17/behavior-changes-all"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a254-10-exitinfo-boundaries.svg": "4ae50789d87900c054bb14cb48bfa3d7a752eceda36de559c1ada67cfb72fbb1",
+        "src/assets/diagrams/ch23/a254-10-exitinfo-boundaries.png": "6cbca9c3b3b78884f94d82971012b25917df3fa2ba8763d0a947e364db551d66"
+      }
+    },
+    {
+      "id": "a255-01-memory-accounting",
+      "title": "分配器字节、VMA 和物理页的三层统计",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-01-memory-accounting.svg",
+        "src/assets/diagrams/ch23/a255-01-memory-accounting.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-01-memory-accounting",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp",
+        "https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/androidprocheaps.cpp",
+        "https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/procmeminfo.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-01-memory-accounting.svg": "65fdcc4eac832f92f419cead9949178b8527617cbb0619bb7f24398f39db3d3d",
+        "src/assets/diagrams/ch23/a255-01-memory-accounting.png": "4ef31f52633263f53386fc2591481e7a7207b1631c36e9316f0a822f305c5994"
+      }
+    },
+    {
+      "id": "a255-02-smaps-vs-rollup",
+      "title": "逐VMA分类与聚合总量来自不同读取路径",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-02-smaps-vs-rollup.svg",
+        "src/assets/diagrams/ch23/a255-02-smaps-vs-rollup.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-02-smaps-vs-rollup",
+      "sources": [
+        "https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/androidprocheaps.cpp",
+        "https://android.googlesource.com/platform/system/memory/libmeminfo/+/refs/tags/android-17.0.0_r1/procmeminfo.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-02-smaps-vs-rollup.svg": "ca9eb4e43617ef59692efe107c557b24206319c897f99014bf04e17740907891",
+        "src/assets/diagrams/ch23/a255-02-smaps-vs-rollup.png": "80d05513ff67e3e9e4d6b5b127a366595c278a98fb0131026ca821a87d0b4fda"
+      }
+    },
+    {
+      "id": "a255-03-heapprofd-lifecycle",
+      "title": "heapprofd服务、目标进程拦截器和采集请求",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-03-heapprofd-lifecycle.svg",
+        "src/assets/diagrams/ch23/a255-03-heapprofd-lifecycle.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-03-heapprofd-lifecycle",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/heapprofd.rc",
+        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/heapprofd.cc",
+        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/malloc_interceptor_bionic_hooks.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-03-heapprofd-lifecycle.svg": "1fb3ca5db7e72586051ace8b3e1131128168e1acde9d06a24bb1ca8623ae12d2",
+        "src/assets/diagrams/ch23/a255-03-heapprofd-lifecycle.png": "05b096cf471d791d2ac285fb32ff9ea5dc54e32f6cb6749a2029c6110b190044"
+      }
+    },
+    {
+      "id": "a255-04-sampling-semantics",
+      "title": "按字节采样不是每N次对象分配取一个",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-04-sampling-semantics.svg",
+        "src/assets/diagrams/ch23/a255-04-sampling-semantics.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-04-sampling-semantics",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/sampler.h",
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-04-sampling-semantics.svg": "a67771efeb8780d541bd10210412ff188f710a1edfa86bd4e9387e2b39afe234",
+        "src/assets/diagrams/ch23/a255-04-sampling-semantics.png": "2da49f8c1b789fbcc679647ac1d2abecc6ca371d3f7e6b7b43dc0caab0d5b4fe"
+      }
+    },
+    {
+      "id": "a255-05-unreachable-scan",
+      "title": "原生不可达扫描仍需业务证据",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-05-unreachable-scan.svg",
+        "src/assets/diagrams/ch23/a255-05-unreachable-scan.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-05-unreachable-scan",
+      "sources": [
+        "https://android.googlesource.com/platform/system/memory/libmemunreachable/+/refs/tags/android-17.0.0_r1/README.md",
+        "https://android.googlesource.com/platform/bionic/+show/android-17.0.0_r1/libc/memory/malloc_debug/README.md"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-05-unreachable-scan.svg": "89debe903e5b1120094f0ddc8d2f700e5d2cebbe6691812fafa732bd87d19347",
+        "src/assets/diagrams/ch23/a255-05-unreachable-scan.png": "b9f4ecaa003d0d175ee906162247ed7b2016fa33196dbf57284e1cc02588072f"
+      }
+    },
+    {
+      "id": "a255-06-free-vs-rss",
+      "title": "free归还对象不等于马上归还物理页",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-06-free-vs-rss.svg",
+        "src/assets/diagrams/ch23/a255-06-free-vs-rss.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-06-free-vs-rss",
+      "sources": [
+        "https://android.googlesource.com/platform/external/scudo/+/refs/tags/android-17.0.0_r1/standalone/flags.inc",
+        "https://android.googlesource.com/platform/external/scudo/+/refs/tags/android-17.0.0_r1/standalone/allocator_config.h",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/jni/android_os_Debug.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-06-free-vs-rss.svg": "211d797d83cb3141c72a41f3dcd6301ef6594a72d9d8cbb58a6bf2f900103d2a",
+        "src/assets/diagrams/ch23/a255-06-free-vs-rss.png": "7454c54234bba2ce97a8a9cc77722d2595766611eea2a30943ea5c10522f0e4d"
+      }
+    },
+    {
+      "id": "a255-07-so-private-dirty",
+      "title": "共享库的映射、共享页与私有脏页",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-07-so-private-dirty.svg",
+        "src/assets/diagrams/ch23/a255-07-so-private-dirty.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-07-so-private-dirty",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst",
+        "https://source.android.com/docs/core/tests/debug/native-memory"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-07-so-private-dirty.svg": "b253ad2179dddceea9ba08748932a0691efbc5f72747d9a73959a535e7a2f6b0",
+        "src/assets/diagrams/ch23/a255-07-so-private-dirty.png": "a98822c5c6b190118adf15c93f49ba556471a1647d2a541d59c978ad2929bccf"
+      }
+    },
+    {
+      "id": "a255-08-virtual-vs-resident",
+      "title": "虚拟映射、驻留和换出是不同状态",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-08-virtual-vs-resident.svg",
+        "src/assets/diagrams/ch23/a255-08-virtual-vs-resident.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-08-virtual-vs-resident",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst",
+        "https://source.android.com/docs/core/perf/mmd"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-08-virtual-vs-resident.svg": "1237cb8daa8b155cb181c20ee18325c397e7009f5646062e7b5c4b07f41342e1",
+        "src/assets/diagrams/ch23/a255-08-virtual-vs-resident.png": "4cf0190ec48bdc2340dc07adef7664f0e6a2d28b04dab4023458bbd96c3f4aa5"
+      }
+    },
+    {
+      "id": "a255-09-contiguous-hole",
+      "title": "总空闲地址够用仍可能没有连续空洞",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-09-contiguous-hole.svg",
+        "src/assets/diagrams/ch23/a255-09-contiguous-hole.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-09-contiguous-hole",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-09-contiguous-hole.svg": "3b92920d50768d6a5b72431019d411e9b770dd55a9007c8614137a1424befe10",
+        "src/assets/diagrams/ch23/a255-09-contiguous-hole.png": "f4bb59a088ea13b1a03aa024e19923435a4929cedfe6ad2f8860432bf298d6d3"
+      }
+    },
+    {
+      "id": "a255-10-mmd-swap-maintenance",
+      "title": "mmd处理ZRAM维护，不改变进程统计定义",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-10-mmd-swap-maintenance.svg",
+        "src/assets/diagrams/ch23/a255-10-mmd-swap-maintenance.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-10-mmd-swap-maintenance",
+      "sources": [
+        "https://source.android.com/docs/core/perf/mmd",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/mm/multigen_lru.rst"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-10-mmd-swap-maintenance.svg": "2f8c78a77c92d2e7a070c9fbdc6b97eedc12dad7519cc5006e52a73ae05c54bb",
+        "src/assets/diagrams/ch23/a255-10-mmd-swap-maintenance.png": "81b06065bc7780c5bfaa534a9a89984151a53160ae4043caebda6beb0bd35c8b"
+      }
+    },
+    {
+      "id": "a255-11-thread-stack-size",
+      "title": "ART最终线程栈大小是多步计算的结果",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-11-thread-stack-size.svg",
+        "src/assets/diagrams/ch23/a255-11-thread-stack-size.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-11-thread-stack-size",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-11-thread-stack-size.svg": "62f124a5778ee41ae9978205daae45a3854d7f5e58263509a63bbd062751bd7f",
+        "src/assets/diagrams/ch23/a255-11-thread-stack-size.png": "131dc3fa48d4169fe4ea9f46b473db4d763bb17e7b0d27d5f235c535f99a02a7"
+      }
+    },
+    {
+      "id": "a255-12-bounded-executor",
+      "title": "线程数和队列都要设置上限",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-12-bounded-executor.svg",
+        "src/assets/diagrams/ch23/a255-12-bounded-executor.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-12-bounded-executor",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-12-bounded-executor.svg": "3c11acea559740b264186e194942a3752d64524d9726deae497885a066f98aab",
+        "src/assets/diagrams/ch23/a255-12-bounded-executor.png": "de171508cd29532fd1787dbce7687161a64dfd1a29502d28daacd4f959f88535"
+      }
+    },
+    {
+      "id": "a255-13-virtual-thread-fallback",
+      "title": "虚拟线程API存在不等于所有镜像都节省pthread",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-13-virtual-thread-fallback.svg",
+        "src/assets/diagrams/ch23/a255-13-virtual-thread-fallback.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-13-virtual-thread-fallback",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/ThreadBuilders.java",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/api/current.txt"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-13-virtual-thread-fallback.svg": "892adfe3a4a68180cf1d7d7822fe8d4c63335cbb5defb1559689e5531a769170",
+        "src/assets/diagrams/ch23/a255-13-virtual-thread-fallback.png": "c1f6e0693b6a993349cf8a2a5497b1baf41a23ed85b3c8f07617583b570bea21"
+      }
+    },
+    {
+      "id": "a255-14-webview-reservation",
+      "title": "WebView预留由加载器持有状态并随后复用",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-14-webview-reservation.svg",
+        "src/assets/diagrams/ch23/a255-14-webview-reservation.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-14-webview-reservation",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebViewLibraryLoader.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/native/webview/loader/loader.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-14-webview-reservation.svg": "f507f2dd7bef72cf86c9b8127c1a6dd9a2b558c2125f189cbe1938077e46b1fa",
+        "src/assets/diagrams/ch23/a255-14-webview-reservation.png": "7e123da3235d7ea0c55282f85a85e724ea032780367fcfda67709498988fbaa6"
+      }
+    },
+    {
+      "id": "a255-15-hsc-eligibility",
+      "title": "HSC是受Space和收集器约束的兼容路径",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-15-hsc-eligibility.svg",
+        "src/assets/diagrams/ch23/a255-15-hsc-eligibility.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-15-hsc-eligibility",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-15-hsc-eligibility.svg": "c28198af909d5655d3ae1d5ac992ae6eea1ac06d4878720c77e923019770fa0c",
+        "src/assets/diagrams/ch23/a255-15-hsc-eligibility.png": "f622a214679937a49c150902013c4cf0928b21b61a21c78beace5db070de47db"
+      }
+    },
+    {
+      "id": "a255-16-multiprocess-cost",
+      "title": "主进程变小还要看所有进程的总成本",
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch23/a255-16-multiprocess-cost.svg",
+        "src/assets/diagrams/ch23/a255-16-multiprocess-cost.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a255-16-multiprocess-cost",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst",
+        "https://developer.android.com/training/articles/perf-jni"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch23/a255-16-multiprocess-cost.svg": "67ab853f5adfd07143613dccfc518111877b3251e147a7f5f92f3a11c57b5988",
+        "src/assets/diagrams/ch23/a255-16-multiprocess-cost.png": "8c54904059c4ce4e72f588d6808de5e99a88f8910f459f18d4b0286fb473b9a5"
+      }
+    }
+  ],
+  "corrections": [
+    {
+      "before": "`Intent.ACTION_OPEN_EYE_DROPPER` 的公开文档定义了调用方可以依赖的行为：",
+      "after": "`Intent.ACTION_OPEN_EYE_DROPPER` 的公开文档定义取色 UI、颜色 extra、secure/protected 遮蔽与 opaque ARGB 输出。结合 AOSP 的结果返回路径，调用方按以下方式处理：",
+      "reason": "公开 action 文档没有逐字规定 RESULT_OK；将 public 契约与 AOSP sendColor 的结果码实现分开归因。",
+      "sources": [
+        "https://developer.android.com/reference/android/content/Intent#ACTION_OPEN_EYE_DROPPER",
+        "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/MainActivity.kt"
+      ],
+      "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "why": "公开 action 文档没有逐字规定 RESULT_OK；将 public 契约与 AOSP sendColor 的结果码实现分开归因。"
+    },
+    {
+      "before": "- 在 `MainActivity` 获得焦点后读取所有 display id；",
+      "after": "- 在 `MainActivity.onWindowFocusChanged()` 首次进入准备分支时读取所有 display id；该版本由 `setupInitiated` 保证只准备一次，没有显式检查 `hasFocus` 为 true；\n\n  > ⚠️ 矛盾：旧稿写成“获得焦点后”，而固定版本源码只检查 `setupInitiated`，不能据此断言准备分支必由焦点获得触发。",
+      "reason": "android-17.0.0_r1 MainActivity 的 onWindowFocusChanged 没有 hasFocus 条件；按实际首次回调与 setupInitiated 描述。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/apps/EyeDropper/+/refs/tags/android-17.0.0_r1/src/com/android/eyedropper/MainActivity.kt"
+      ],
+      "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "why": "android-17.0.0_r1 MainActivity 的 onWindowFocusChanged 没有 hasFocus 条件；按实际首次回调与 setupInitiated 描述。"
+    },
+    {
+      "before": "async trace 通过名称和 cookie 关联跨线程、跨时间的开始与结束；示例用布尔状态限制同一进程只开启一段会话。若允许并发，应为每次请求分配进程内唯一 cookie。进程在结果返回前退出时，trace 可能留下未闭合的 async slice，复盘时应将其标记为中断会话。",
+      "after": "async trace 通过名称和 cookie 关联跨线程、跨时间的开始与结束。示例的布尔状态只限制当前状态持有者重复开始 trace；若字段属于 Activity 实例，它既不能协调同进程的其他实例，也不能在 Activity 重建后自动恢复。实际接入应由能跨配置变化存活的请求状态持有者协调 pending 请求、cookie 与结束操作，并避免同一请求重复 launch。若允许并发，应为每次请求分配进程内唯一 cookie。进程在结果返回前退出时，trace 可能留下未闭合的 async slice，复盘时应将其标记为中断会话。\n\n> ⚠️ 矛盾：旧稿把实例布尔字段写成“限制同一进程只开启一段会话”；实例字段没有进程范围的互斥或重建恢复能力。Activity Result 的回调重注册也不会替应用保存这些额外状态。",
+      "reason": "实例字段作用域不等于进程级协调；Activity Result 官方文档要求单独保存恢复处理结果所需的额外状态。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/Trace",
+        "https://developer.android.com/training/basics/intents/result"
+      ],
+      "article": "src/part5-app/ch22-rendering-practice/20-android17-eyedropper.md",
+      "why": "实例字段作用域不等于进程级协调；Activity Result 官方文档要求单独保存恢复处理结果所需的额外状态。"
+    },
+    {
+      "before": "帧预算是当前刷新周期留给一帧按时完成的时间：60 Hz 下约为 16.7 ms，120 Hz 下约为 8.3 ms；设备采用动态刷新率时，应以实际帧时间线为准。",
+      "after": "60 Hz、120 Hz 的刷新间隔分别约为 16.7 ms、8.3 ms；具体帧的可用渲染时间由调度和流水线决定，应检查 [FrameTimeline 的 Expected Timeline](https://perfetto.dev/docs/data-sources/frametimeline) 与对应的 actual frame，而不是把所有 App 的 deadline 都固定为一个刷新间隔。设备采用动态刷新率时，还要记录当前生效的显示模式与帧率策略。",
+      "reason": "刷新间隔不等于每个应用帧的固定可用预算。Perfetto 官方示例中 app expected slice 与 SurfaceFlinger expected slice 时长不同，必须按关联帧的真实 expected/actual 验证。",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "article": "src/part5-app/ch22-rendering-practice/README.md",
+      "why": "刷新间隔不等于每个应用帧的固定可用预算。Perfetto 官方示例中 app expected slice 与 SurfaceFlinger expected slice 时长不同，必须按关联帧的真实 expected/actual 验证。"
+    },
+    {
+      "before": "每帧预算由屏幕刷新率决定，写不成一个固定的毫秒数。",
+      "after": "屏幕刷新率决定刷新间隔，但具体应用帧的可用渲染预算还取决于调度与流水线，应读取 FrameTimeline 中对应帧的 expected 区间与 deadline，不能仅用刷新率倒数替代。",
+      "reason": "避免把刷新间隔直接等同于所有应用帧的 deadline；与第22章索引使用同一准确口径。",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "why": "避免把刷新间隔直接等同于所有应用帧的 deadline；与第22章索引使用同一准确口径。"
+    },
+    {
+      "before": "`ShouldConcurrentGCForJava()` 有字节阈值和“分配增量 × 经过时间”两类判断。",
+      "after": "`ShouldConcurrentGCForJava()` 先受当前 feature flag 与非零时间阈值约束。时间路径仍保留 `concurrent_start_bytes_` 字节兜底；随后若启用 `time_based_gc_triggering_via_integral()`，用 `TimeIntegral::AddSample()` 累积分配增量的时间积分，否则使用“上次 GC 后新增 KiB × 距上次 GC 的毫秒数”。未进入时间路径时只比较字节阈值。\n\n> ⚠️ 矛盾：旧稿将时间判断统一写为“分配增量 × 经过时间”；Android 17 r1 还包含受独立开关控制的累计积分模式，必须按运行时配置区分。",
+      "reason": "固定源码同时存在积分与简单乘积路径；不能把其中一条公式描述成所有时间触发模式。",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap-inl.h"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "why": "固定源码同时存在积分与简单乘积路径；不能把其中一条公式描述成所有时间触发模式。"
+    },
+    {
+      "before": "这些尝试都失败后，才抛出 OOME。",
+      "after": "这些尝试仍无法满足请求后，才抛出 OOME。完整回收和清除软引用阶段不是必然只执行一次：源码结合空闲堆比例、此次回收字节比例以及是否成功运行 GC 判定是否继续重试，避免无产出的 GC thrashing。`kMaxGcAttempts = 5` 只约束“未成功运行 GC”这一重试条件，不是整条慢路径最多五次 GC 的保证。",
+      "reason": "补充 AllocateInternalWithGc 中的 do/while 条件，防止线性文字被读成一次全堆回收或固定最多五次 GC。",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/android-17.0.0_r1/runtime/gc/heap.cc"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "why": "补充 AllocateInternalWithGc 中的 do/while 条件，防止线性文字被读成一次全堆回收或固定最多五次 GC。"
+    },
+    {
+      "before": "截至 2026-10-21，官方发布页列出的稳定版为 1.12.1，预览版为 1.13.0-beta01；1.12.1 发布说明标注其相对 1.12.0 没有改动。本文保留 1.12.0 的固定源码锚点，预览版变化单独标明，不作为稳定行为依据。",
+      "after": "截至 2026-10-25，官方发布页列出的稳定版仍为 1.12.1，预览版已于 2026-10-21 更新到 1.13.0-beta02；1.12.1 发布说明标注其相对 1.12.0 没有改动。本文保留 1.12.0 的固定源码锚点，预览版变化单独标明，不作为稳定行为依据。",
+      "reason": "按当前官方发布页更新预览版本；保留稳定源码基线，避免把 beta02 修复反推为稳定1.12行为。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/compose-runtime"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "why": "按当前官方发布页更新预览版本；保留稳定源码基线，避免把 beta02 修复反推为稳定1.12行为。"
+    },
+    {
+      "before": "| Compose Runtime 1.13.0-beta01 | 2026-10-07 发布的预览版；不作为本文稳定行为依据 |",
+      "after": "| Compose Runtime 1.13.0-beta02 | 2026-10-21 发布的预览版；修复 ComputedState 保留与失效问题，不作为本文稳定行为依据 |",
+      "reason": "版本表与当前核验日期及官方 beta02 发布说明同步。",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/compose-runtime"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "why": "版本表与当前核验日期及官方 beta02 发布说明同步。"
+    },
+    {
+      "before": "retained size 还包括只通过该对象保持可达、移除这条引用后可一并回收的对象。",
+      "after": "retained size 还包括被该对象支配的对象：当该对象本身变为不可达时，随它一起可被回收的对象占用；删除任意一条入引用并不保证它已经不可达。",
+      "reason": "保留大小由支配关系定义，不是删除任意一条引用即可释放的字节数。",
+      "sources": [
+        "https://developer.android.com/studio/profile/capture-heap-dump"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "why": "保留大小由支配关系定义，不是删除任意一条引用即可释放的字节数。"
+    },
+    {
+      "before": "`reportIndex` 更新时，`rememberUpdatedState` 让现有收集任务使用最新回调；",
+      "after": "`snapshotFlow` 会立即发送首次求值结果；后续只有结果不等时发送。快速多次 Snapshot 变化可能在一次重新求值前合并，因此它不是逐次写入的无损事件日志，`block` 也应无副作用且不能写 Snapshot 状态。\n\n`reportIndex` 更新时，`rememberUpdatedState` 让现有收集任务使用最新回调；",
+      "reason": "补足初始发送和状态合并语义，避免把用于位置观察的 Flow 误当逐事件无损轨迹。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/963bf914f78b389bdddef0da7f36bee19d897274/compose/runtime/runtime/src/commonMain/kotlin/androidx/compose/runtime/SnapshotFlow.kt"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/01-java-heap-gc-compose-allocation.md",
+      "why": "补足初始发送和状态合并语义，避免把用于位置观察的 Flow 误当逐事件无损轨迹。"
+    },
+    {
+      "before": "allocation profile 记录一段时间内的分配、释放及调用栈。",
+      "after": "allocation profile 记录一段时间内的分配采样及创建调用栈：native heapprofd 可根据 free 更新存活信息，ART allocation profiling 不追踪对象删除或 GC。",
+      "reason": "区分原生分配画像的释放记账与 ART 累计创建画像，避免暗示ART记录对象回收。",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/native-heap-profiler"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "why": "区分原生分配画像的释放记账与 ART 累计创建画像，避免暗示ART记录对象回收。"
+    },
+    {
+      "before": "var connected by remember { mutableStateOf(source.isConnected()) }",
+      "after": "var connected by remember(source) { mutableStateOf(source.isConnected()) }",
+      "reason": "source变化时Effect重注册，但无key的remember会保留旧source状态；使状态初值与订阅使用相同key。",
+      "sources": [
+        "https://developer.android.com/develop/ui/compose/side-effects"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "why": "source变化时Effect重注册，但无key的remember会保留旧source状态；使状态初值与订阅使用相同key。"
+    },
+    {
+      "before": "local reference 只在当前原生方法调用范围内有效，调用结束之后再持有它就会出问题；跨线程或跨调用时，我们要分清 local、global 与 weak global reference（局部、全局与弱全局引用）。",
+      "after": "从 Java 进入的一次 JNI 方法调用中，local reference 通常在返回时自动释放，不能带到其他线程或后续调用继续使用。自行 `AttachCurrentThread()` 的原生线程没有同样的逐次方法返回清理点，local reference 需用 `DeleteLocalRef()` 或 `PushLocalFrame()` / `PopLocalFrame()` 控制，并在退出前 `DetachCurrentThread()`。跨线程或跨调用持有对象时，应按业务所有权选择 global 或 weak global reference。",
+      "reason": "补JNI官方文档中附加原生线程local reference不随普通方法返回自动清理的例外。",
+      "sources": [
+        "https://developer.android.com/training/articles/perf-jni"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "why": "补JNI官方文档中附加原生线程local reference不随普通方法返回自动清理的例外。"
+    },
+    {
+      "before": "持有者应通过 `use`、try-with-resources 或对应的 `close()` 在业务生命周期终点释放；",
+      "after": "持有者应按各自 API 在业务生命周期终点显式释放：`Cursor`、`ParcelFileDescriptor`、`Image` 使用 `close()`，支持 `Closeable` / `AutoCloseable` 的对象可配合 `use` 或 try-with-resources；[`MediaCodec.release()`](https://developer.android.com/reference/android/media/MediaCodec#release()) 与 [`Surface.release()`](https://developer.android.com/reference/android/view/Surface#release()) 则调用各自的释放方法。",
+      "reason": "这些资源没有统一close协议，特别是MediaCodec/Surface应release，不能泛化用use/close。",
+      "sources": [
+        "https://developer.android.com/reference/android/media/MediaCodec",
+        "https://developer.android.com/reference/android/view/Surface"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "why": "这些资源没有统一close协议，特别是MediaCodec/Surface应release，不能泛化用use/close。"
+    },
+    {
+      "before": "测试人员每两秒触发一次弹窗，约八分钟、约 240 次展示后，观察到内存上涨约 50 MB；",
+      "after": "[原始复盘](https://mp.weixin.qq.com/s?__biz=MzI0MjIxNjE0OQ==&mid=2247490141&idx=1&sn=645139e24e5424bc0acdb6209d329360)中，测试人员每两秒触发一次弹窗，约八分钟、约 240 次展示后，观察到内存上涨约 50 MB；",
+      "reason": "为案例数字补原始来源，已读取只读Cubox全文并实际查看原文两张引用路径/代码图，数字不作为本次测量。",
+      "sources": [
+        "https://cubox.pro/web/card/7243148750653230377"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "why": "为案例数字补原始来源，已读取只读Cubox全文并实际查看原文两张引用路径/代码图，数字不作为本次测量。"
+    },
+    {
+      "before": "一条引用链从弹窗 `mView` 经 `LifecycleRegistry.mObserverMap` 到常驻 `MainActivity`。",
+      "after": "原图的 References 面板从弹窗 `mView` 等子对象向 `LifecycleRegistry.mObserverMap`、常驻 `MainActivity` 回溯持有者。按强引用方向应读作：`MainActivity → LifecycleRegistry → mObserverMap → Dialog（观察者）→ mView → 布局对象`。\n\n> ⚠️ 矛盾：旧稿沿分析器回溯方向描述引用链，容易被理解为弹窗持有 Activity 才导致弹窗泄漏。本例的保留原因是常驻 Activity 的观察者表仍持有已关闭的 Dialog；原图中更靠近 Root 的路径另含系统单例，本文链路为简化表示。\n\n",
+      "reason": "原文References界面由目标对象回溯Root，不能直接当作强引用箭头方向；代码图确认Dialog implements LifecycleEventObserver且addObserver(this)。",
+      "sources": [
+        "https://cubox.pro/web/card/7243148750653230377"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "why": "原文References界面由目标对象回溯Root，不能直接当作强引用箭头方向；代码图确认Dialog implements LifecycleEventObserver且addObserver(this)。"
+    },
+    {
+      "before": "截至 2026-08-15，KOOM 仓库未归档，默认分支最近一次推送为 2026-01-12，GitHub 最新正式版仍是 2024-04-16 发布的 v2.2.2。这段空窗期本身不携带兼容性信息；",
+      "after": "截至 2026-10-25，KOOM 仓库仍未归档，GitHub 仓库元数据的 `pushed_at` 为 2026-10-20，最新正式版仍是 2024-04-16 发布的 v2.2.2。仓库级推送时间并不指明默认分支具体提交，也不证明某个系统版本已经兼容；",
+      "reason": "更新当前维护状态，并区分仓库pushed_at与默认分支提交；latest release仍为v2.2.2。",
+      "sources": [
+        "https://api.github.com/repos/KwaiAppTeam/KOOM/releases/latest"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "why": "更新当前维护状态，并区分仓库pushed_at与默认分支提交；latest release仍为v2.2.2。"
+    },
+    {
+      "before": "segment（输出分段） 以最多 128 个对象或 4 KiB 为边界。",
+      "after": "segment（输出分段）通过 `CheckHeapSegmentConstraints()` 检查：当前对象数达到 128 或当前输出长度达到 4096 字节时开启新段。它是在对象记录之间检查的切段阈值，不把大数组等单条记录硬拆成不超过 4 KiB 的块，因此不能据此宣称每段最多 4 KiB。",
+      "reason": "源码先检查当前段大小再写下一对象，单条大记录可以超过字节阈值；不能将阈值解释为格式硬上限。",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/hprof/hprof.cc"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "why": "源码先检查当前段大小再写下一对象，单条大记录可以超过字节阈值；不能将阈值解释为格式硬上限。"
+    },
+    {
+      "before": "应用应在稳定的进程入口尽早注册全局 listener，否则可能错过先前事件的结果交付。",
+      "after": "应用应在稳定的进程入口尽早注册全局 listener，否则可能错过先前事件的结果交付。示例的 `unregister()` 只解除结果 listener，不删除触发配置；若业务要停止特定类型的触发式采集，还应按目标 API 调用 `removeProfilingTriggersByType(intArrayOf(...))`。",
+      "reason": "区分unregisterForAllProfilingResults与removeProfilingTriggersByType，避免将注销回调误认为停止系统trigger。",
+      "sources": [
+        "https://android.googlesource.com/platform/packages/modules/Profiling/+/refs/tags/android-17.0.0_r1/framework/java/android/os/ProfilingManager.java"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/02-memory-leak-governance.md",
+      "why": "区分unregisterForAllProfilingResults与removeProfilingTriggersByType，避免将注销回调误认为停止系统trigger。"
+    },
+    {
+      "before": "也就是说，平时并没有一个常驻的 heapprofd 在采集，每次采集请求才把它按需拉起。",
+      "after": "默认配置支持按需拉起，但 `persist.heapprofd.enable=1` 也能独立启动并保持服务；`disabled` 不足以证明任意设备上服务都未运行，服务运行也不等于正在持续采集。",
+      "reason": "保留rc中两个空属性停服的正确条件，补充persist强制路径，避免从disabled推出所有现场都无常驻进程。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/heapprofd.rc"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "保留rc中两个空属性停服的正确条件，补充persist强制路径，避免从disabled推出所有现场都无常驻进程。"
+    },
+    {
+      "before": "Scudo 的 quarantine 会延迟复用已释放块，release interval 是批量向系统归还页面的间隔；",
+      "after": "启用 quarantine 时，隔离策略会延迟复用已释放块；小块隔离和 secondary 映射缓存的配置并不相同。固定标签的 standalone `flags.inc` 把小块隔离相关默认值设为 0，是否生效仍须结合构建选项与目标进程配置。release interval 用于限制或调节向系统归还空闲页的尝试，不是保证到点完成归还或 RSS 下降的定时器；",
+      "reason": "按Android17固定源码区分可选quarantine、secondary缓存与归还尝试，避免把通用Scudo说明当作所有进程实际默认配置。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/scudo/+/refs/tags/android-17.0.0_r1/standalone/flags.inc",
+        "https://android.googlesource.com/platform/external/scudo/+/refs/tags/android-17.0.0_r1/standalone/allocator_config.h"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "按Android17固定源码区分可选quarantine、secondary缓存与归还尝试，避免把通用Scudo说明当作所有进程实际默认配置。"
+    },
+    {
+      "before": ".so 的只读页面可以在多个进程间共享，页面一旦被当前进程写脏，就变成这一进程的私有成本。",
+      "after": "`.so` 的只读文件页可以在多个进程间共享。具有写权限的 `MAP_PRIVATE` 文件映射被写入时，会通过 COW 形成当前进程的私有脏页；只读映射不能不经权限变更就直接写入。",
+      "reason": "明确私有脏页来自可写私有映射的COW，不能把只读文件页描述成可直接写脏。",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "明确私有脏页来自可写私有映射的COW，不能把只读文件页描述成可直接写脏。"
+    },
+    {
+      "before": "page fault（访问尚未驻留页面时产生的缺页事件）",
+      "after": "page fault（页故障，例如按需分配、文件读入、写时复制或权限异常）",
+      "reason": "页故障不只来自未驻留页面；写时复制和权限故障也会进入页故障路径。",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "页故障不只来自未驻留页面；写时复制和权限故障也会进入页故障路径。"
+    },
+    {
+      "before": "| Private Dirty / Private Clean | `dumpsys meminfo`、`smaps` | 进程独占且已修改或仍可从文件恢复的页 | 单次快照中的增长原因 |",
+      "after": "| Private Dirty / Private Clean | `dumpsys meminfo`、`smaps` | 进程独占页按当前 dirty / clean 状态分类；能否从文件恢复还要看映射来源 | 单次快照中的增长原因 |",
+      "reason": "clean/dirty与匿名/文件映射是不同维度，不能把Private Clean一概解释为可从文件恢复。",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/filesystems/proc.rst"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "clean/dirty与匿名/文件映射是不同维度，不能把Private Clean一概解释为可从文件恢复。"
+    },
+    {
+      "before": "[`Thread::FixStackSize()`]",
+      "after": "[`thread.cc` 内的静态辅助函数 `FixStackSize()`]",
+      "reason": "固定源码定义为文件内static size_t FixStackSize(size_t)，不是Thread类成员。",
+      "sources": [
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/thread.cc"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "固定源码定义为文件内static size_t FixStackSize(size_t)，不是Thread类成员。"
+    },
+    {
+      "before": "WebViewLibraryLoader.reserveAddressSpace（ART 管理的一类内存区域）InZygote()",
+      "after": "WebViewLibraryLoader.reserveAddressSpaceInZygote()",
+      "reason": "删除误插入函数名的ART Space中文注释；该函数属于WebView加载器，与ART Heap Space不是同一机制。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/webkit/WebViewLibraryLoader.java"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "删除误插入函数名的ART Space中文注释；该函数属于WebView加载器，与ART Heap Space不是同一机制。"
+    },
+    {
+      "before": "两者使用不同的数据源、信号与权限路径；某一种转储命令能运行，另一种 Perfetto 数据源还要单独验证。",
+      "after": "这里的 Java HPROF 指 Perfetto 的 `android.java_hprof` / `JavaHprofProducer` 路径，其 ART 插件输出 trace 内的 HeapGraph，并不先落盘为完整 `.hprof` 文件。独立完整 HPROF 仍由 `Debug.dumpHprofData()`、有权限的 `am dumpheap` 或 Studio 等入口生成，详见 [23.2 的产物区分](02-memory-leak-governance.md)。原生 heapprofd 与 Java HeapGraph 使用不同的数据源、信号与权限路径；某种转储命令能运行，另一条路径仍要单独验证。",
+      "reason": "明确历史命名java_hprof与实际HeapGraph产物，避免把信号触发的trace堆图误当完整HPROF。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/android-17.0.0_r1/src/profiling/memory/java_hprof_producer.cc",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/perfetto_hprof/perfetto_hprof.cc"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "明确历史命名java_hprof与实际HeapGraph产物，避免把信号触发的trace堆图误当完整HPROF。"
+    },
+    {
+      "before": "- 释放 Bitmap、媒体缓冲区、DirectByteBuffer 与 native peer（Java 对象对应的原生侧实例）；",
+      "after": "- 按各自资源协议释放 Bitmap、媒体缓冲区与 native peer（Java 对象对应的原生侧实例）；DirectByteBuffer 没有通用公开 `close()`，应缩短引用生命周期；JNI 自管的底层 buffer 则由其原生所有者配对释放，并确保不存在仍访问它的 ByteBuffer 视图；",
+      "reason": "区分DirectByteBuffer引用生命周期与JNI自管底层分配，避免暗示应用能调用通用close或提前free仍被View访问的内存。",
+      "sources": [
+        "https://developer.android.com/training/articles/perf-jni",
+        "https://developer.android.com/reference/java/nio/ByteBuffer"
+      ],
+      "article": "src/part5-app/ch23-memory-practice/03-native-virtual-memory-optimization.md",
+      "why": "区分DirectByteBuffer引用生命周期与JNI自管底层分配，避免暗示应用能调用通用close或提前free仍被View访问的内存。"
+    }
+  ],
+  "validation": {
+    "a251": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a251",
+      "source_audit": "全文阅读原文 18995 字符；21 份官方 API/AOSP 来源已拉取存档并记录 SHA256。核验 Android 17 r1 Intent/flags、WMS 权限、capture helper 的 RGBA 与 software copy、display 监听、viewmodel 取像素及结果发送。3 条 before/after/reason/why/sources 校勘：公开契约与 RESULT_OK 实现归因、首次焦点回调无 hasFocus 门禁、async Trace 实例字段与 Activity 重建边界。8 张 SVG+PNG 原图及 8 个真实 mdBook 正文位置逐个视觉检查；含无实测时长的 Perfetto 风格 tracks，未编造性能数据。独立 mdBook 构建通过，本篇本地链接、PNG 解码、SVG XML、prompt pack 与基线哈希验证通过；未进行 Android 设备运行或 Kotlin 编译。"
+    },
+    "a252": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a252",
+      "source_audit": "全文阅读第22章索引2333字符，核对20个索引入口与跨章本地链接。1条校勘区分刷新间隔和实际 expected frame 可用预算，补官方 FrameTimeline 依据；2份官方文档已存档。1张专用场景阅读导航 SVG+PNG 已逐图与真实 mdBook 正文位置视觉验收；孤立构建、本地链接与资产格式通过。"
+    },
+    "a253": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a253",
+      "source_audit": "全文阅读原文57,837字符、约1100行；49份官方API、AOSP ART、固定AndroidX及历史版本来源存档并记录SHA256。按源码核对LOS判定与回退、OOM慢路径与回收产出循环、时间GC积分/乘积配置、HeapTask串行队列和序号CAS去重；核验Compose 1.12.0固定基线、LinkTable默认关闭与R8规则、状态/remember/Strong Skipping/snapshotFlow/Interop语义。7条可审计校勘包含帧预算、时间积分、OOM重试、beta02当前版本及版本表、retained size与snapshotFlow初始/合并语义。20张专用SVG+PNG及20个真实mdBook正文位置均视觉检查；精修2/6分支走线、7/15留白、16首值emit、17身份路线、18策略先后、19直接release路径后复看。16个原始代码/text围栏逐字保持；未Android设备执行或Kotlin编译。独立mdBook构建、本地链接、PNG解码、SVG XML、各图完整prompt pack与基线哈希通过。"
+    },
+    "a254": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a254",
+      "source_audit": "全文阅读原文24,047字符、约620行；27条来源存档含AOSP17固定Profiling/HPROF/SignalCatcher/HeapGraph/heapprofd实现、官方API/JNI/Compose、LeakCanary/Shark/KOOM和只读货拉拉原始归档，并实际查看原文引用链与Dialog代码两张图。9条before/after/why/sources校勘：ART画像不记录回收、remember(source)初态、JNI附加线程local例外、close/release、案例数字补源、引用方向、KOOM当前推送口径、HPROF切段阈值、listener注销不等于移除trigger。10张专用SVG+PNG及10个mdBook正文位置均实际视觉检查；03轨道底部裁切与10长注释精修后复看；无编造性能测量。10个代码围栏仅改1处预期remember键，其余逐字未变。独立mdBook构建、本地链接、SVG XML、PNG解码、完整prompt pack、基线哈希通过；未Android设备执行或Kotlin编译。"
+    },
+    "a255": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a255",
+      "source_audit": "全文阅读38,909字符；42条官方API/固定AOSP与ACK6.18来源记录，核对统计读取、heapprofd rc与拦截入口、Sampler大小权重、Scudo flags和AndroidConfig、线程FixStackSize/虚拟线程降级、WebView预留与HSC条件。9条before/after/why/sources校勘：persist强制服务、quarantine与归还间隔、可写私有映射COW、page fault定义、Private Clean口径、静态辅助函数名、误插入WebView方法名的ART注释、Java HeapGraph产物、DirectByteBuffer释放边界。16图与16个真实mdBook位置均视觉看过；05重采循环、06/12分支、15条件图精修后复看。原代码围栏全部逐字未改；完整设备采集脚本bash -n通过，离线maps脚本用已知4MiB匿名与3MiB同名映射夹具核验聚合，未设备执行/未Java编译。独立mdBook构建、本地链接、PNG解码、SVG XML、prompt packs与基线哈希通过，无编造性能测量。"
+    }
+  },
+  "last_checkpoint": {
+    "completed": 5,
+    "total": 51,
+    "diagrams": 55,
+    "next_article": "src/part5-app/ch23-memory-practice/04-bitmap-optimization.md",
+    "next_article_index": 256,
+    "updated_at": "2026-10-25T12:53:46.644924+08:00"
+  },
+  "replaced_inline_diagrams": []
+}

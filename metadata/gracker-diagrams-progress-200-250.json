@@ -1,0 +1,4103 @@
+{
+  "schema_version": 1,
+  "goal": "逐章为正文配准确的 Gracker 白板原理图与流程图",
+  "assignment": {
+    "range_start": 200,
+    "range_end": 250,
+    "indexing": "1-based frozen master articles array on 2026-10-25",
+    "first_article": "src/part4-system/ch19-oem/02-soc-differences.md",
+    "last_article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+    "work_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250",
+    "shard_ledger": "/Users/gracker/Library/Mobile Documents/iCloud~md~obsidian/Documents/Obsidian/Android-Internal-Wiki/metadata/gracker-diagrams-progress-200-250.json",
+    "article_paths": [
+      "src/part4-system/ch19-oem/02-soc-differences.md",
+      "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "src/part4-system/ch19-oem/06-private-space-app-lock-boundary.md",
+      "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "src/part4-system/ch19-oem/README.md",
+      "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "src/part5-app/ch20-stability/02-java-crash-exception-stack-analysis.md",
+      "src/part5-app/ch20-stability/03-native-crash-unwinding-symbolication.md",
+      "src/part5-app/ch20-stability/04-anr-governance.md",
+      "src/part5-app/ch20-stability/05-oom-webview-renderer-recovery.md",
+      "src/part5-app/ch20-stability/06-native-memory-leak-online-monitoring.md",
+      "src/part5-app/ch20-stability/07-fd-resource-monitoring.md",
+      "src/part5-app/ch20-stability/08-thread-coroutine-leak-governance.md",
+      "src/part5-app/ch20-stability/09-binder-ipc-fault-monitoring.md",
+      "src/part5-app/ch20-stability/10-keystore-quota-login-stability.md",
+      "src/part5-app/ch20-stability/11-mte-gwp-asan-native-memory-safety.md",
+      "src/part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md",
+      "src/part5-app/ch20-stability/13-native-dcl-secure-loading.md",
+      "src/part5-app/ch20-stability/14-sdk-performance-governance.md",
+      "src/part5-app/ch20-stability/README.md",
+      "src/part5-app/ch21-startup/01-app-startup-path-monitoring.md",
+      "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "src/part5-app/ch21-startup/05-splash-screen.md",
+      "src/part5-app/ch21-startup/06-sdk-runtime-ad-sdk-startup.md",
+      "src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
+      "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "src/part5-app/ch21-startup/README.md",
+      "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md",
+      "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "src/part5-app/ch22-rendering-practice/15-vulkan-impeller-shader-compilation.md",
+      "src/part5-app/ch22-rendering-practice/16-webview-optimization.md",
+      "src/part5-app/ch22-rendering-practice/17-media3-video-rendering.md",
+      "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md"
+    ]
+  },
+  "style": "gracker-diagrams / whiteboard",
+  "articles": [
+    {
+      "path": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "sha256_before": "f216b1bacf23aba10cbeec4067b9baffaf273e31391f62cffcce51284ab1f1ba",
+      "status": "illustrated",
+      "diagrams": [
+        "a200-01-evidence-layers",
+        "a200-02-cpu-dimensions",
+        "a200-03-scheduler-decisions",
+        "a200-04-migration-observation",
+        "a200-05-gpu-capability-gates",
+        "a200-06-accelerator-evidence",
+        "a200-07-bandwidth-units",
+        "a200-08-tools-evidence",
+        "a200-09-comparison-loop"
+      ],
+      "article_index": 200,
+      "sha256_at_assignment": "f216b1bacf23aba10cbeec4067b9baffaf273e31391f62cffcce51284ab1f1ba",
+      "sha256_current": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
+      "sha256_after": "52d3eca2d6667d8eab1972bc1f0081f8414425a17cf342c57f0632ca43d9f0b9",
+      "source_audit": "全文 442 行基线已读；26 个原参考链接全部归档成功（7 个 TLS 失败已逐项重试）；额外核验 cpufreq 官方文档、Perfetto trace bounds 源码。24 条 before/after/why/sources 校勘含重复术语清理、相对时间窗口与 idle 伪迁移修正。固定 tag 的 fair.c/EAS 核验；Trace Processor v57.2 在非零 trace 起点（122 秒）完成实际 SQL 与边界/idle 夹具验证。9 个四文件 pack 先于 SVG/PNG；mdbook、9 本地链接、9 正文插图位置与视觉检查通过。无真机测量或性能数据。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a200/audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a200/retry-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a200/source-audit.json"
+      ]
+    },
+    {
+      "path": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "sha256_before": "287cb0577790123a668799312f4dc21e94cd4b649b52cd8133d27ebcd5f5285b",
+      "status": "illustrated",
+      "diagrams": [
+        "a201-01-scx-three-gates",
+        "a201-02-scheduler-layers",
+        "a201-03-lifecycle-fallback",
+        "a201-04-full-partial",
+        "a201-05-dsq-cycle",
+        "a201-06-frequency-modes",
+        "a201-07-vendor-evidence",
+        "a201-08-vip-budget",
+        "a201-09-dependency-propagation",
+        "a201-10-game-mode-power",
+        "a201-11-input-end-to-end",
+        "a201-12-window-targets",
+        "a201-13-async-injection",
+        "a201-14-view-interception",
+        "a201-15-refresh-votes",
+        "a201-16-input-latency-tracks",
+        "a201-17-ab-attribution"
+      ],
+      "article_index": 201,
+      "sha256_at_assignment": "287cb0577790123a668799312f4dc21e94cd4b649b52cd8133d27ebcd5f5285b",
+      "sha256_current": "17c2b50ff583cdc404276fa1378fe17fb8cd97eb9e6ee19f25b8fb3fa1b1d3fe",
+      "sha256_after": "17c2b50ff583cdc404276fa1378fe17fb8cd97eb9e6ee19f25b8fb3fa1b1d3fe",
+      "source_audit": "全文基线已读；39 个参考 URL 全部归档成功。核对固定内核 sched_ext 文档、GKI 配置、full/partial、20ms 常量、schedutil，OSDI26 MUSCHED 原论文及平台 InputDispatcher/GameManager/ViewGroup/刷新率源码。8 条校勘含错误术语、TID 复用聚合身份、sysfs 无法归因单次 BPF 回调、3 段 Mermaid 保留折叠。Trace Processor v57.2 实际执行2段SQL通过，并以 TID 复用夹具验证保留2个 utid 实例。17 四文件 pack 先于 SVG/PNG；mdbook、17 本地图片链接及正文位置、逐图视觉验收通过。未做真机或性能测量。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a201/source-audit.json"
+      ]
+    },
+    {
+      "path": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "sha256_before": "cb0a6b0c6bee18497b827ecc043f14408742b3cae1a8486a783125ed3e7236f5",
+      "status": "illustrated",
+      "diagrams": [
+        "a202-01-control-statistics",
+        "a202-02-four-layers",
+        "a202-03-entry-contracts",
+        "a202-04-scx-input-modes",
+        "a202-05-frequency-request",
+        "a202-06-recovery-lifecycles",
+        "a202-07-driver-boundaries",
+        "a202-08-hint-session-lifetime",
+        "a202-09-headroom-direction",
+        "a202-10-energy-measurements",
+        "a202-11-stats-three-objects",
+        "a202-12-stats-service-branches",
+        "a202-13-monitor-cache-noise",
+        "a202-14-energy-difference",
+        "a202-15-collection-cadence"
+      ],
+      "article_index": 202,
+      "sha256_at_assignment": "cb0a6b0c6bee18497b827ecc043f14408742b3cae1a8486a783125ed3e7236f5",
+      "sha256_current": "4e645e28616bb568d5a8f7a577c7d8f482c4a0d210daa912ffd0b0f2a61f10f5",
+      "sha256_after": "4e645e28616bb568d5a8f7a577c7d8f482c4a0d210daa912ffd0b0f2a61f10f5",
+      "source_audit": "全文基线已读；34 个原参考 URL 全部成功归档，4 个 TLS 失败重试成功；额外归档 Power AIDL 构建与 Session/SystemClock 文档。核对 v7/v2、Mode/Boost、SCX target、厂商驱动边界、fake 默认服务、三类对象、Logger 时间转换、三路数据消费者、20s/250ms 缓存和随机扰动。5 条校勘：API34 示例改用 System.nanoTime 并解释 API35 方法边界；修正 Power Monitor 并非 Logger 下游的树图和说明；1段 Mermaid 折叠保留。API 示例做源码/API契约检查，未执行 Android 编译或真机测量。15 四文件 pack 先于SVG/PNG；mdbook、15 本地链接及插入位置、原图和正文视觉验收通过。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a202/extra-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a202/source-audit.json"
+      ]
+    },
+    {
+      "path": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "sha256_before": "7bd202869a9e2e2e2620128ba476ef2bd79f82a319377cbbc62209d0c2ad3563",
+      "status": "illustrated",
+      "diagrams": [
+        "a203-01-mpc-defined-values",
+        "a203-02-four-signals",
+        "a203-03-default-fallback",
+        "a203-04-play-lazy-cache",
+        "a203-05-feature-decision",
+        "a203-06-threshold-contracts",
+        "a203-07-feature-sets",
+        "a203-08-rollout-evidence",
+        "a203-09-certification-evidence"
+      ],
+      "article_index": 203,
+      "sha256_at_assignment": "7bd202869a9e2e2e2620128ba476ef2bd79f82a319377cbbc62209d0c2ad3563",
+      "sha256_current": "b869e23c74e6544a34c11dd0993562fb9ee38d2ce187889beebd5dfd8e82c69e",
+      "sha256_after": "b869e23c74e6544a34c11dd0993562fb9ee38d2ce187889beebd5dfd8e82c69e",
+      "source_audit": "全文已读；10个原参考URL均归档（2个TLS失败重试成功），补充核对固定Android17 CTS SequentialRWTest确认字节/1024²的I/O统计单位。4条校勘：默认读取器fingerprint回退、max合并低等级的条件、首次lazy读取runBlocking、I/O单位口径。CDD17等级及5.12GiB/5GiB冲突、SDK分离、AndroidX源码与CTS职责已核对。原2段纯Kotlin示例合并编译执行，14个归一化与39个HDR条件用例通过；没有Android设备运行或性能测量。9四文件pack先于SVG/PNG；构建、9本地图片链接、9插入位置与视觉验收通过。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a203/cts-unit-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a203/retry-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a203/source-audit.json"
+      ]
+    },
+    {
+      "path": "src/part4-system/ch19-oem/06-private-space-app-lock-boundary.md",
+      "sha256_before": "10a5f886df8932ae745781a95c2aaf48b3e064aecf70546ad7e52f08895d8b31",
+      "status": "illustrated",
+      "diagrams": [
+        "a204-01-four-lock-models",
+        "a204-02-user-data-isolation",
+        "a204-03-profile-visibility-states",
+        "a204-04-hidden-profile-access",
+        "a204-05-sensitive-entry-gate",
+        "a204-06-uri-two-conditions",
+        "a204-07-file-transfer",
+        "a204-08-observable-results",
+        "a204-09-privacy-test-matrix"
+      ],
+      "article_index": 204,
+      "sha256_at_assignment": "10a5f886df8932ae745781a95c2aaf48b3e064aecf70546ad7e52f08895d8b31",
+      "sha256_current": "13a71fa1e01e0dd4df9bff59abc55c6293cca6ce8d9bcf3bec79742a6a9b6ef8",
+      "sha256_after": "13a71fa1e01e0dd4df9bff59abc55c6293cca6ce8d9bcf3bec79742a6a9b6ef8",
+      "source_audit": "全文已读；18个原参考URL全部归档成功。核对Private Space停止/启动与可见性、普通Launcher+HOME及FULL特权双路径、资料内getProfiles返回范围、AAOS AppLock部署、Biometric认证边界与16QPR2可选文件转移。1条校勘澄清HOME仅为普通权限路径前提。Launcher原Kotlin示例使用既有Android37 jar实际编译通过，未在真机执行；生物认证例按公开API文档核对。9四文件pack先于SVG/PNG；mdbook、9本地图片链接和正文位置、原图/正文视觉验收通过。无性能测量。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a204/source-audit.json"
+      ]
+    },
+    {
+      "path": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "sha256_before": "a8cf33296de0de83246a8039d1e602e841df901c126fcaacc4fd1310d05271c9",
+      "status": "illustrated",
+      "diagrams": [
+        "a205-01-platform-placement",
+        "a205-02-version-axes",
+        "a205-03-first-template",
+        "a205-04-template-quota",
+        "a205-05-surface-lifecycle",
+        "a205-06-map-budget",
+        "a205-07-media-path",
+        "a205-08-independent-connectivity",
+        "a205-09-watchdog-writes",
+        "a205-10-power-boundaries",
+        "a205-11-vehicle-data",
+        "a205-12-clock-domains",
+        "a205-13-test-layers"
+      ],
+      "article_index": 205,
+      "sha256_at_assignment": "a8cf33296de0de83246a8039d1e602e841df901c126fcaacc4fd1310d05271c9",
+      "sha256_current": "7aca6c17cc34dc94e7f57ed4a2caaf9f99bb6eac571177be209efff9e83372aa",
+      "sha256_after": "7aca6c17cc34dc94e7f57ed4a2caaf9f99bb6eac571177be209efff9e83372aa",
+      "source_audit": "已全文核对，27 个原文参考链接已归档，原 whats-new TLS 失败由 extra-audit 成功补齐；另归档 Screen、媒体与 Perfetto 时钟同步等 11 份专项依据。固定标签 Car APIs/VHAL 与当前 2026-10-25 类别文档核验；未进行实车性能测量。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a205/extra-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a205/source-audit.json"
+      ]
+    },
+    {
+      "path": "src/part4-system/ch19-oem/README.md",
+      "sha256_before": "a2718d3559e5c855575cb6d4ed79e73a20436b9d282cab792d6fb2d95e1a9270",
+      "status": "illustrated",
+      "diagrams": [
+        "a206-01-evidence-levels",
+        "a206-02-chapter-routes"
+      ],
+      "article_index": 206,
+      "sha256_at_assignment": "a2718d3559e5c855575cb6d4ed79e73a20436b9d282cab792d6fb2d95e1a9270",
+      "sha256_current": "9fd9540b5f526fd5a8e3d2402bfeb1955623405c578b481699498828bc7ac5e7",
+      "sha256_after": "9fd9540b5f526fd5a8e3d2402bfeb1955623405c578b481699498828bc7ac5e7",
+      "source_audit": "全文 23 行已读取；章节链接与前面已核验的 SoC/Power HAL/MPC/Private Space/车载专题一致；另归档 IPower.aidl 固定标签、Build.FINGERPRINT、MPC API 与车载平台 4 项官方依据，均成功。初选电源概览 URL 404 后已改为准确固定标签 IPower.aidl，未留正文坏链接。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a206-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a206-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a206-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a206-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a206-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a206/initial-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a206/source-audit.json"
+      ]
+    },
+    {
+      "path": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "sha256_before": "5d3ec1bd7a3ca3ac882fa51b5d59d43073686a1a7c098753de8f78dcf71598fe",
+      "status": "in_progress",
+      "diagrams": [
+        "a207-01-phenomenon-evidence",
+        "a207-02-java-fatal-chain",
+        "a207-03-native-fatal-chain",
+        "a207-04-anr-deadlines",
+        "a207-05-resource-failures",
+        "a207-06-exit-history",
+        "a207-07-vitals-versus-sdk",
+        "a207-08-identity-contracts",
+        "a207-09-metric-denominators",
+        "a207-10-period-dedup",
+        "a207-11-startup-outcomes",
+        "a207-12-observability-api",
+        "a207-13-error-budget",
+        "a207-14-release-evidence",
+        "a207-15-aggregation-layers",
+        "a207-16-fingerprint-levels",
+        "a207-17-java-features",
+        "a207-18-native-artifacts",
+        "a207-19-nontransitive-similarity",
+        "a207-20-attribution-exposure",
+        "a207-21-issue-workflow",
+        "a207-22-event-and-ingestion",
+        "a207-23-ai-evidence"
+      ],
+      "article_index": 207,
+      "sha256_at_assignment": "5d3ec1bd7a3ca3ac882fa51b5d59d43073686a1a7c098753de8f78dcf71598fe",
+      "sha256_current": "adf2b98ec4300c5c6b2775e97054958553ba9cdcda6f6b1b4160b531e5772a37"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/02-java-crash-exception-stack-analysis.md",
+      "sha256_before": "a4bbcd565c49e1990f79c7e6391d4d9c92a8bb95b6e9d971e071154697c0655b",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 208,
+      "sha256_at_assignment": "98f7cd41449c2af7f6dd36e6121225c5338b59e1deeb2e5ffaa429702b9bac61"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/03-native-crash-unwinding-symbolication.md",
+      "sha256_before": "882e01843220fce7a61871cf0c7bf256ebe1c3c3b136bfa3164cd3d81eb677e0",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 209,
+      "sha256_at_assignment": "882e01843220fce7a61871cf0c7bf256ebe1c3c3b136bfa3164cd3d81eb677e0"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/04-anr-governance.md",
+      "sha256_before": "067f85174d7223d5296d6267a6c1f6522e459812c0c080c1e0990a733343ff08",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 210,
+      "sha256_at_assignment": "067f85174d7223d5296d6267a6c1f6522e459812c0c080c1e0990a733343ff08"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/05-oom-webview-renderer-recovery.md",
+      "sha256_before": "f49ddbc9519877e5bbce105175cc1403383a60ed461c755c66a9f6ddda4a121c",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 211,
+      "sha256_at_assignment": "f49ddbc9519877e5bbce105175cc1403383a60ed461c755c66a9f6ddda4a121c"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/06-native-memory-leak-online-monitoring.md",
+      "sha256_before": "b3c2220eda01409c410ea7ad6470f0729820354f9d6ddca243c9194decff9774",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 212,
+      "sha256_at_assignment": "b3c2220eda01409c410ea7ad6470f0729820354f9d6ddca243c9194decff9774"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/07-fd-resource-monitoring.md",
+      "sha256_before": "532b815b9438845d3cdad9feb0a3cd49342a661aa3505c7a788c0f396c622715",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 213,
+      "sha256_at_assignment": "532b815b9438845d3cdad9feb0a3cd49342a661aa3505c7a788c0f396c622715"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/08-thread-coroutine-leak-governance.md",
+      "sha256_before": "6a69e8c0d821781bbd60853886e59ba8b93e119fa2ed356babc6815b48d2cb48",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 214,
+      "sha256_at_assignment": "6a69e8c0d821781bbd60853886e59ba8b93e119fa2ed356babc6815b48d2cb48"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/09-binder-ipc-fault-monitoring.md",
+      "sha256_before": "0a3d0ab89175673396a3092b829804643f1e4a8de5f27cccff135ec366513a33",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 215,
+      "sha256_at_assignment": "0a3d0ab89175673396a3092b829804643f1e4a8de5f27cccff135ec366513a33"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/10-keystore-quota-login-stability.md",
+      "sha256_before": "4f82ea1a8204fdb5e6929571a20e3edcb1e57c1bc8ecc39759658ea8f4c3d757",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 216,
+      "sha256_at_assignment": "4f82ea1a8204fdb5e6929571a20e3edcb1e57c1bc8ecc39759658ea8f4c3d757"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/11-mte-gwp-asan-native-memory-safety.md",
+      "sha256_before": "dda7df25c6ef413f14a49a5c9d517ff700653e58903d7b6e562a9dcc3fab33dd",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 217,
+      "sha256_at_assignment": "dda7df25c6ef413f14a49a5c9d517ff700653e58903d7b6e562a9dcc3fab33dd"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/12-native-hook-technology-selection-implementation.md",
+      "sha256_before": "8c8066cd7d8bf79a92bd2c8114814f08ebd4b6f4a13b935d0a4c7c576686bc6f",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 218,
+      "sha256_at_assignment": "8c8066cd7d8bf79a92bd2c8114814f08ebd4b6f4a13b935d0a4c7c576686bc6f"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/13-native-dcl-secure-loading.md",
+      "sha256_before": "0d71a646b68e7f510cc9e7875c0b5402991b8e324ebf32a359d3190dd154e4ce",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 219,
+      "sha256_at_assignment": "0d71a646b68e7f510cc9e7875c0b5402991b8e324ebf32a359d3190dd154e4ce"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/14-sdk-performance-governance.md",
+      "sha256_before": "04dd5c01f34ef7d2dfc4abc53cba25e59902a463815300bc5102baeb5d441c47",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 220,
+      "sha256_at_assignment": "04dd5c01f34ef7d2dfc4abc53cba25e59902a463815300bc5102baeb5d441c47"
+    },
+    {
+      "path": "src/part5-app/ch20-stability/README.md",
+      "sha256_before": "47ab41c4ca4487684c354a2c9f8573b815b628f3d53d5566274e564baecd1fd8",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 221,
+      "sha256_at_assignment": "47ab41c4ca4487684c354a2c9f8573b815b628f3d53d5566274e564baecd1fd8"
+    },
+    {
+      "path": "src/part5-app/ch21-startup/01-app-startup-path-monitoring.md",
+      "sha256_before": "2fbcb05c57992a5f0bd9ee2d4416393c450f9cab56d5fe301d75cfa14d4ca282",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 222,
+      "sha256_at_assignment": "2fbcb05c57992a5f0bd9ee2d4416393c450f9cab56d5fe301d75cfa14d4ca282"
+    },
+    {
+      "path": "src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+      "sha256_before": "1d380229c6ecf746d935312b0c6dba6cf76435e99e88af95021ec39d0ac9e24e",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 223,
+      "sha256_at_assignment": "c77a248fe2ba01f104f202cdc117388bcca6981ff04d1102b53f19e950e2a1c2"
+    },
+    {
+      "path": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
+      "sha256_before": "25264bf4121fea70a546306f8704e687395e7895735ff904fc52b67998de2daf",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 224,
+      "sha256_at_assignment": "25264bf4121fea70a546306f8704e687395e7895735ff904fc52b67998de2daf"
+    },
+    {
+      "path": "src/part5-app/ch21-startup/04-baseline-startup-cloud-profile.md",
+      "sha256_before": "95a69dc5b17d0f7acb69e482638d124e797592bc4472e6e7e2301346eaa57b6d",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 225,
+      "sha256_at_assignment": "95a69dc5b17d0f7acb69e482638d124e797592bc4472e6e7e2301346eaa57b6d"
+    },
+    {
+      "path": "src/part5-app/ch21-startup/05-splash-screen.md",
+      "sha256_before": "92398dd0838fd0280279b1c330d5f486326b3650a2d6d1d90b49c0c5f529b8c7",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 226,
+      "sha256_at_assignment": "92398dd0838fd0280279b1c330d5f486326b3650a2d6d1d90b49c0c5f529b8c7"
+    },
+    {
+      "path": "src/part5-app/ch21-startup/06-sdk-runtime-ad-sdk-startup.md",
+      "sha256_before": "277590b29b80c4ed3ac016b0d5f88aaebb2a7863168e9b722a65b13e71e8c05f",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 227,
+      "sha256_at_assignment": "277590b29b80c4ed3ac016b0d5f88aaebb2a7863168e9b722a65b13e71e8c05f"
+    },
+    {
+      "path": "src/part5-app/ch21-startup/07-art-gc-startup-allocation-governance.md",
+      "sha256_before": "5df4bf49953810a5b34a7de599bbad2d2cf0bf12ff8af46308bce2ec59512839",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 228,
+      "sha256_at_assignment": "5df4bf49953810a5b34a7de599bbad2d2cf0bf12ff8af46308bce2ec59512839"
+    },
+    {
+      "path": "src/part5-app/ch21-startup/08-di-framework-performance.md",
+      "sha256_before": "bc1efc8d146af6f6d6040e471e9cc4a9cd45b49e3322fb20e297a979877a6f72",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 229,
+      "sha256_at_assignment": "bc1efc8d146af6f6d6040e471e9cc4a9cd45b49e3322fb20e297a979877a6f72"
+    },
+    {
+      "path": "src/part5-app/ch21-startup/09-compose-first-composition-startup.md",
+      "sha256_before": "5d8d9c4eef98a8995c25031e08ede9f399fa755b7c73b2f50d8a928e15f520d6",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 230,
+      "sha256_at_assignment": "5d8d9c4eef98a8995c25031e08ede9f399fa755b7c73b2f50d8a928e15f520d6"
+    },
+    {
+      "path": "src/part5-app/ch21-startup/README.md",
+      "sha256_before": "fb65735bf9302b829a4b0a8c7b2bcc550f6e17ab1c6ec0a46a7b8a66dc30902f",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 231,
+      "sha256_at_assignment": "fb65735bf9302b829a4b0a8c7b2bcc550f6e17ab1c6ec0a46a7b8a66dc30902f"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/01-view-layout-custom-drawing.md",
+      "sha256_before": "9a549fe60975df3c58cbee670edf0ec7c5c2d3fba302666909815b909d666ea0",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 232,
+      "sha256_at_assignment": "9a549fe60975df3c58cbee670edf0ec7c5c2d3fba302666909815b909d666ea0"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md",
+      "sha256_before": "e7ac9d6d71aaba9057ada97da81698081497c345bb011e0db7e802f35521902c",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 233,
+      "sha256_at_assignment": "988a0cbebc6a5e5464641debfec635f62f30e1eb4635e208b24f2ea88bf7781d"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
+      "sha256_before": "0f3bf3c9a1fdf8ecc4672acccb7967fdc3d103c7e87d5de8396c8f919e8722e5",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 234,
+      "sha256_at_assignment": "0f3bf3c9a1fdf8ecc4672acccb7967fdc3d103c7e87d5de8396c8f919e8722e5"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/04-compose-layout-text-rendering.md",
+      "sha256_before": "9406733308f25ee42953418622c49b558f06b67c0f1c7225cb8b47637ac255b4",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 235,
+      "sha256_at_assignment": "9406733308f25ee42953418622c49b558f06b67c0f1c7225cb8b47637ac255b4"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/05-compose-snapshot-state-consistency.md",
+      "sha256_before": "80526219dc0a6315bff6575200e28bf10ca49bf0d34ab7c12b020586de200f46",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 236,
+      "sha256_at_assignment": "80526219dc0a6315bff6575200e28bf10ca49bf0d34ab7c12b020586de200f46"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/06-compose-view-interop.md",
+      "sha256_before": "0c71c05cf00189b622e93e16870bef44bf4f18b83163aef31a032f7eabbb6989",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 237,
+      "sha256_at_assignment": "0c71c05cf00189b622e93e16870bef44bf4f18b83163aef31a032f7eabbb6989"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/07-view-compose-animation-shared-transition.md",
+      "sha256_before": "a2d1fc9876b2ecf534aa953d7c55a2e3ae40ff2fc11f5a16e8314d03f0346615",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 238,
+      "sha256_at_assignment": "a2d1fc9876b2ecf534aa953d7c55a2e3ae40ff2fc11f5a16e8314d03f0346615"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/08-runtime-effects-compose-canvas.md",
+      "sha256_before": "eadb1b97c4485eb96993e8928c6075664dfd050815fd5b5a44f2b82d00915fa9",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 239,
+      "sha256_at_assignment": "eadb1b97c4485eb96993e8928c6075664dfd050815fd5b5a44f2b82d00915fa9"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/09-image-bitmap-rendernode.md",
+      "sha256_before": "ee4f1716af87ef7aa8e9a710f2d6df716ef7132ce489bf8e141711519bc046eb",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 240,
+      "sha256_at_assignment": "ee4f1716af87ef7aa8e9a710f2d6df716ef7132ce489bf8e141711519bc046eb"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/10-frame-monitoring.md",
+      "sha256_before": "13191f54c74f66fe3c3c746788ec133caf6030928487d474419d6c7c41eecbdb",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 241,
+      "sha256_at_assignment": "13191f54c74f66fe3c3c746788ec133caf6030928487d474419d6c7c41eecbdb"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/11-fragment-predictive-back-navigation.md",
+      "sha256_before": "cb5d919d8339699e3bf5a94a0946cf98ccc073d6486cb1a1680e63de0ed397f3",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 242,
+      "sha256_at_assignment": "cb5d919d8339699e3bf5a94a0946cf98ccc073d6486cb1a1680e63de0ed397f3"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/12-adaptive-layout-multi-form-factor.md",
+      "sha256_before": "1a3eba3d7e4692299df00066b362d3e0f69604e837f06af0471b68a1621a25aa",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 243,
+      "sha256_at_assignment": "1a3eba3d7e4692299df00066b362d3e0f69604e837f06af0471b68a1621a25aa"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/13-adaptive-refresh-rate.md",
+      "sha256_before": "3f5f92599e03360393a9421c7ee15f0b194c590a5efc10399a11ba4d4caf87d6",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 244,
+      "sha256_at_assignment": "3f5f92599e03360393a9421c7ee15f0b194c590a5efc10399a11ba4d4caf87d6"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/14-surfaceview-textureview.md",
+      "sha256_before": "5c0d3f05b8f0c0c594c1b76d7779f54e152dc4c9d716b55b3b1f78a4aafec439",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 245,
+      "sha256_at_assignment": "5c0d3f05b8f0c0c594c1b76d7779f54e152dc4c9d716b55b3b1f78a4aafec439"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/15-vulkan-impeller-shader-compilation.md",
+      "sha256_before": "2fbb0b1ffff519f4f3229ec2b5962e5dedd7124930644840ca11e2a0cbf22d49",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 246,
+      "sha256_at_assignment": "2fbb0b1ffff519f4f3229ec2b5962e5dedd7124930644840ca11e2a0cbf22d49"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/16-webview-optimization.md",
+      "sha256_before": "b1bfbc289c9fa943627810beae6e926c43d38dea20cc45e86fc702a9af7e12c2",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 247,
+      "sha256_at_assignment": "b1bfbc289c9fa943627810beae6e926c43d38dea20cc45e86fc702a9af7e12c2"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/17-media3-video-rendering.md",
+      "sha256_before": "d24d82a9428b94a56a2133d6b8136557d85308d792191b5560101c6f7de3abc4",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 248,
+      "sha256_at_assignment": "d24d82a9428b94a56a2133d6b8136557d85308d792191b5560101c6f7de3abc4"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "sha256_before": "c735c567365f9b809ff641ad71b17a3896c482bac5fe7e1a423a0d087e13180d",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 249,
+      "sha256_at_assignment": "c735c567365f9b809ff641ad71b17a3896c482bac5fe7e1a423a0d087e13180d"
+    },
+    {
+      "path": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "sha256_before": "a595e1c8665f4141463bc0daaee7fdffe686c2e743dbcec35416e32c754bfa7d",
+      "status": "pending",
+      "diagrams": [],
+      "article_index": 250,
+      "sha256_at_assignment": "a595e1c8665f4141463bc0daaee7fdffe686c2e743dbcec35416e32c754bfa7d"
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "a200-01-evidence-layers",
+      "title": "SoC 规格、整机实现与当前状态",
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a200-01-evidence-layers.svg",
+        "src/assets/diagrams/ch19/a200-01-evidence-layers.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a200-01-evidence-layers",
+      "sources": [
+        "https://docs.kernel.org/admin-guide/pm/cpufreq.html",
+        "https://perfetto.dev/docs/data-sources/gpu"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a200-01-evidence-layers.svg",
+          "sha256": "6c46e671d2ca98e5cc5d81c6019c8c8068209fb7c4ee0fc8b16dfb149fc85246",
+          "bytes": 23139
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a200-01-evidence-layers.png",
+          "sha256": "7cf24ddf2cddfc8ec0da923a74799e877fc1700e251f3e7c8bad8e37a5bfbbec",
+          "bytes": 77489,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a200-02-cpu-dimensions",
+      "title": "CPU 差异的四个维度",
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a200-02-cpu-dimensions.svg",
+        "src/assets/diagrams/ch19/a200-02-cpu-dimensions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a200-02-cpu-dimensions",
+      "sources": [
+        "https://docs.kernel.org/admin-guide/pm/cpufreq.html",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a200-02-cpu-dimensions.svg",
+          "sha256": "256743b4ae6e2b1971d6bee5e48564a67385d79238b358a6919aec2fe114ecd7",
+          "bytes": 28086
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a200-02-cpu-dimensions.png",
+          "sha256": "420594e995f7733a36658e09dba225f86eaa4df80f5dc1d794a5a3ebaaa8ef79",
+          "bytes": 115350,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a200-03-scheduler-decisions",
+      "title": "选核、选任务与请求频率的职责",
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a200-03-scheduler-decisions.svg",
+        "src/assets/diagrams/ch19/a200-03-scheduler-decisions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a200-03-scheduler-decisions",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/fair.c",
+        "https://docs.kernel.org/admin-guide/pm/cpufreq.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a200-03-scheduler-decisions.svg",
+          "sha256": "7f3357f8a1418d4f08bfb85b7c647899adf61e27dbb9a8b3fc40e7b023872a35",
+          "bytes": 29728
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a200-03-scheduler-decisions.png",
+          "sha256": "14c277fd2e6e3af8851423ccdc6e9581a1bba88b8c0c5c5e2494ea13940f9fe1",
+          "bytes": 121517,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a200-04-migration-observation",
+      "title": "相邻运行片段的 CPU 变化",
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a200-04-migration-observation.svg",
+        "src/assets/diagrams/ch19/a200-04-migration-observation.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a200-04-migration-observation",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/7424539825a0ae7a6529c26a696a64896bab32c5/src/trace_processor/perfetto_sql/stdlib/prelude/trace_bounds.sql",
+        "https://perfetto.dev/docs/analysis/sql-tables"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a200-04-migration-observation.svg",
+          "sha256": "9345b381471b2d20e7643f08d644cfe8dd846df9554b52cb295b529d869b2789",
+          "bytes": 21152
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a200-04-migration-observation.png",
+          "sha256": "2ec219a09c307a68f83edbb4babb57274a3c3f7d598324fd650fcfa06424c6c1",
+          "bytes": 75055,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a200-05-gpu-capability-gates",
+      "title": "GPU 能力从 IP 到可观测数据",
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a200-05-gpu-capability-gates.svg",
+        "src/assets/diagrams/ch19/a200-05-gpu-capability-gates.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a200-05-gpu-capability-gates",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/gpu",
+        "https://developer.android.com/agi/start"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a200-05-gpu-capability-gates.svg",
+          "sha256": "fcbda910bef2726282d03421bb0a4e044564050a70a5fda8079d7047772aacf4",
+          "bytes": 21592
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a200-05-gpu-capability-gates.png",
+          "sha256": "4a7cc9134324ecc140e5d00e42f692e3cf397b820e0b2d9dc24cbe4beb0e28d3",
+          "bytes": 76653,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a200-06-accelerator-evidence",
+      "title": "专用加速器的执行证据",
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a200-06-accelerator-evidence.svg",
+        "src/assets/diagrams/ch19/a200-06-accelerator-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a200-06-accelerator-evidence",
+      "sources": [
+        "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide",
+        "https://source.android.com/docs/core/interaction/neural-networks",
+        "https://perfetto.dev/docs/data-sources/gpu"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a200-06-accelerator-evidence.svg",
+          "sha256": "2ec9069a79e0cbcec6883d41701430ac3f7324c600e9457561dc33e9f6fc8963",
+          "bytes": 24467
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a200-06-accelerator-evidence.png",
+          "sha256": "4254bb1ec44d8d0a81acbb57a78b32269f35fc7fa362ec39dd7f6d6ed28bfdb4",
+          "bytes": 93468,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a200-07-bandwidth-units",
+      "title": "从内存标称值到有效带宽",
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a200-07-bandwidth-units.svg",
+        "src/assets/diagrams/ch19/a200-07-bandwidth-units.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a200-07-bandwidth-units",
+      "sources": [
+        "https://www.qualcomm.com/content/dam/qcomm-martech/dm-assets/documents/Snapdragon-8-Elite-Gen-5-product-brief.pdf",
+        "https://www.mediatek.com/products/smartphones/mediatek-dimensity-9500"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a200-07-bandwidth-units.svg",
+          "sha256": "7a17f933b8b80f0b8c84b4f53a6a3b84f13b82517e6d6c345628988c1502964f",
+          "bytes": 22365
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a200-07-bandwidth-units.png",
+          "sha256": "3f70cf705189179c3128ea829895233acfd85aa00a67efd1e425a79122cec8dc",
+          "bytes": 78676,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a200-08-tools-evidence",
+      "title": "分析工具与可支持的证据",
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a200-08-tools-evidence.svg",
+        "src/assets/diagrams/ch19/a200-08-tools-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a200-08-tools-evidence",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/gpu",
+        "https://developer.android.com/agi",
+        "https://developer.android.com/android-performance-analyzer"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a200-08-tools-evidence.svg",
+          "sha256": "0a85ab70a6c1557e6e73f191572f8c1a02334e4732987c0ebdd93e880ab5e2eb",
+          "bytes": 25121
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a200-08-tools-evidence.png",
+          "sha256": "4143dc41d9f1c93685fa23c891446228130cf756d40de3b77227c245368dc7ff",
+          "bytes": 97801,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a200-09-comparison-loop",
+      "title": "跨 SoC 实验的证据闭环",
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a200-09-comparison-loop.svg",
+        "src/assets/diagrams/ch19/a200-09-comparison-loop.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a200-09-comparison-loop",
+      "sources": [
+        "https://docs.kernel.org/admin-guide/pm/cpufreq.html",
+        "https://perfetto.dev/docs/data-sources/gpu"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a200-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a200-09-comparison-loop.svg",
+          "sha256": "177930ebc97461a09105dea94bdd8ad0a7794f6699dd8f96532312252c2d5e0c",
+          "bytes": 25722
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a200-09-comparison-loop.png",
+          "sha256": "6f01c98855cecbea091f7a6d63a8c727f515ae76f354b4e325a131369ee33549",
+          "bytes": 82508,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-01-scx-three-gates",
+      "title": "sched_ext 生效的三层确认",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-01-scx-three-gates.svg",
+        "src/assets/diagrams/ch19/a201-01-scx-three-gates.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-01-scx-three-gates",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-ext.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/arch/arm64/configs/gki_defconfig"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-01-scx-three-gates.svg",
+          "sha256": "f1e8289a9f0db2cd1f336c6daab4d1a8fa5da936fb0e11342658d2499efeebce",
+          "bytes": 19359
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-01-scx-three-gates.png",
+          "sha256": "1fa5408ec4ea01f645dfc95f690b99ed87fb6573d7f5122c562791cf195c4ee0",
+          "bytes": 71097,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-02-scheduler-layers",
+      "title": "用户工作、内核策略与硬件约束",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-02-scheduler-layers.svg",
+        "src/assets/diagrams/ch19/a201-02-scheduler-layers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-02-scheduler-layers",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-ext.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-02-scheduler-layers.svg",
+          "sha256": "dda41b9f58bf8f21cd2b961409e5c7e137a70a6b624f194c97f2e88e7e780d85",
+          "bytes": 25006
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-02-scheduler-layers.png",
+          "sha256": "da1cf80d72350cb89f24b5db9a26720ae7d137b98fd697728cdf76f7ff03b8de",
+          "bytes": 97750,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-03-lifecycle-fallback",
+      "title": "BPF 调度器的启用和回退",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-03-lifecycle-fallback.svg",
+        "src/assets/diagrams/ch19/a201-03-lifecycle-fallback.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-03-lifecycle-fallback",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-ext.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-03-lifecycle-fallback.svg",
+          "sha256": "628190fa773db73d455000fcaffb18879a9ea694be686785dabf19416bcf9b69",
+          "bytes": 20038
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-03-lifecycle-fallback.png",
+          "sha256": "57cd258eb02206ce5c82132c7cda610d573931b69e178fa513d34321a8fffe84",
+          "bytes": 74521,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-04-full-partial",
+      "title": "full、partial 与无调度器状态",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-04-full-partial.svg",
+        "src/assets/diagrams/ch19/a201-04-full-partial.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-04-full-partial",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-ext.rst"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-04-full-partial.svg",
+          "sha256": "0839e89651ca2df0f892117053bb1d04641db73ef91000136cec1e873cbbc710",
+          "bytes": 19054
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-04-full-partial.png",
+          "sha256": "7190bf4b40d5953abe382907c53569d4a51f861956f549bf2ef4e9f0a8256c8b",
+          "bytes": 85266,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-05-dsq-cycle",
+      "title": "sched_ext 唤醒与分发路径",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-05-dsq-cycle.svg",
+        "src/assets/diagrams/ch19/a201-05-dsq-cycle.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-05-dsq-cycle",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/Documentation/scheduler/sched-ext.rst",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-05-dsq-cycle.svg",
+          "sha256": "236f0be3d2b7625f0f0707aca4f6b8450f0f1bbba68ff2cf1584ed2b73ce17f1",
+          "bytes": 24711
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-05-dsq-cycle.png",
+          "sha256": "1ffafe276cd07e526aa72d7a4d7e02a4b1a1f61f88237fceac6b4dd0b1ac4479",
+          "bytes": 130865,
+          "dimensions": [
+            2100,
+            1095
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-06-frequency-modes",
+      "title": "full 和 partial 的利用率输入",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-06-frequency-modes.svg",
+        "src/assets/diagrams/ch19/a201-06-frequency-modes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-06-frequency-modes",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-06-frequency-modes.svg",
+          "sha256": "8b30f967086ccb5b8819d8d4c7d7c814524114130c80be5ffd37b86e300a8365",
+          "bytes": 17730
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-06-frequency-modes.png",
+          "sha256": "11c05419d8988d6cf670be77c0665762b66985bbf0aa241790d03b3dacf8dd8d",
+          "bytes": 80188,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-07-vendor-evidence",
+      "title": "OEM 策略证据的强度",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-07-vendor-evidence.svg",
+        "src/assets/diagrams/ch19/a201-07-vendor-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-07-vendor-evidence",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c",
+        "https://raw.githubusercontent.com/Wuzikh1/sched_ext/main/hmbird_sched_proc_main.c"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-07-vendor-evidence.svg",
+          "sha256": "e024d208eb703ed217e59f211a175f58127963be1a43d377d0fbc8469bbb2211",
+          "bytes": 24351
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-07-vendor-evidence.png",
+          "sha256": "d14a6b66bf81009ea7673ff2e5bf12726c5401c4733193610eb28b462454d985",
+          "bytes": 99340,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-08-vip-budget",
+      "title": "MUSCHED 有界 VIP 服务",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-08-vip-budget.svg",
+        "src/assets/diagrams/ch19/a201-08-vip-budget.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-08-vip-budget",
+      "sources": [
+        "https://www.usenix.org/system/files/osdi26-xiao.pdf"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-08-vip-budget.svg",
+          "sha256": "a35efdb807056ccc162d3be5fd5866e1b4f16cd94f2d383baefb56647d67eeb6",
+          "bytes": 22206
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-08-vip-budget.png",
+          "sha256": "47a506052b8bb696ea1bf76c01448f8529d0eca0ac4b50d116658d3b67b08895",
+          "bytes": 76586,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-09-dependency-propagation",
+      "title": "等待方、依赖方与优先级生命周期",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-09-dependency-propagation.svg",
+        "src/assets/diagrams/ch19/a201-09-dependency-propagation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-09-dependency-propagation",
+      "sources": [
+        "https://www.usenix.org/system/files/osdi26-xiao.pdf",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/android/binder.c"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-09-dependency-propagation.svg",
+          "sha256": "4c9ab7521da5455c78ada88fce06c2e092ce0c79d6487a86a1f5e84ddc7747f8",
+          "bytes": 27577
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-09-dependency-propagation.png",
+          "sha256": "6306b228b8c60f1660f1710bf6d3c1895959764aac0810ac9d0530c48954ffd6",
+          "bytes": 110786,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-10-game-mode-power",
+      "title": "Game Mode 的场景信号和输入路由",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-10-game-mode-power.svg",
+        "src/assets/diagrams/ch19/a201-10-game-mode-power.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-10-game-mode-power",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/app/GameManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp",
+        "https://source.android.com/docs/core/perf/boost"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-10-game-mode-power.svg",
+          "sha256": "0c291692115bc6b806cd07f3465d00e1823c962fe00eb1e2c937541a73d1b89e",
+          "bytes": 24966
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-10-game-mode-power.png",
+          "sha256": "bf9a2188f40efe78fed73e8b13e87b82ee2df9ab40273fae78420f2de55f95e6",
+          "bytes": 109334,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-11-input-end-to-end",
+      "title": "从触控前端到屏幕呈现的阶段",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-11-input-end-to-end.svg",
+        "src/assets/diagrams/ch19/a201-11-input-end-to-end.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-11-input-end-to-end",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp",
+        "https://perfetto.dev/docs/analysis/stdlib-docs#android-input"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-11-input-end-to-end.svg",
+          "sha256": "26f468b7cb4af60d2918a0f07a9fa37a81c13c242f401952bd3513b48b1fc534",
+          "bytes": 20482
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-11-input-end-to-end.png",
+          "sha256": "46eb5005817d19faa1b98ad551752143abc8b98487a0f8640afd5d5eb3a6dc2e",
+          "bytes": 74611,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-12-window-targets",
+      "title": "InputDispatcher 的目标规则",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-12-window-targets.svg",
+        "src/assets/diagrams/ch19/a201-12-window-targets.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-12-window-targets",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-12-window-targets.svg",
+          "sha256": "24ccca84904147f0a7008e15be8c0c2ebd4720e5eb3410e0bfc104ddca3ad5b3",
+          "bytes": 30295
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-12-window-targets.png",
+          "sha256": "1a8afb8a8939b5ff45c58baa624e43ad80783fa186b5ef294fffcff245ca7770",
+          "bytes": 120123,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-13-async-injection",
+      "title": "异步输入注入的返回边界",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-13-async-injection.svg",
+        "src/assets/diagrams/ch19/a201-13-async-injection.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-13-async-injection",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-13-async-injection.svg",
+          "sha256": "4b3a55badcdf36b06ee9f6f95b483b7c8728468b9fa262f0be424aeab3bb81ec",
+          "bytes": 20410
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-13-async-injection.png",
+          "sha256": "728c7093429e1b3c1df54902116ea89974bb826116b1d40369e04ccf4f5edecc",
+          "bytes": 78164,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-14-view-interception",
+      "title": "ViewGroup 手势拦截的边界",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-14-view-interception.svg",
+        "src/assets/diagrams/ch19/a201-14-view-interception.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-14-view-interception",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/view/ViewGroup.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-14-view-interception.svg",
+          "sha256": "3205db750166217234eb9afdc5897c6fa20b7b09fb4ae9c2ad066f70c159af3b",
+          "bytes": 26870
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-14-view-interception.png",
+          "sha256": "35589c777069ac76f348ccf70ea3895814b7a1250b5db28dfbfe607f4d91f0db",
+          "bytes": 108760,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-15-refresh-votes",
+      "title": "帧率偏好到物理刷新率",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-15-refresh-votes.svg",
+        "src/assets/diagrams/ch19/a201-15-refresh-votes.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-15-refresh-votes",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/RefreshRatePolicy.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowState.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-15-refresh-votes.svg",
+          "sha256": "55370b3a0fff8834ab785cfecfa553cf3bf9c040d4a4f27e906c007c0246f265",
+          "bytes": 25638
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-15-refresh-votes.png",
+          "sha256": "94482b2fb8e2f48f2a82b62975d81cfa00b512be9b31e82fc4365c1948fddd9c",
+          "bytes": 80946,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-16-input-latency-tracks",
+      "title": "输入交付、ACK 与关联呈现的区间",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-16-input-latency-tracks.svg",
+        "src/assets/diagrams/ch19/a201-16-input-latency-tracks.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-16-input-latency-tracks",
+      "sources": [
+        "https://perfetto.dev/docs/analysis/stdlib-docs#android-input",
+        "https://perfetto.dev/docs/reference/trace-config-proto#AndroidInputEventConfig"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-16-input-latency-tracks.svg",
+          "sha256": "44de6700539c1e12a9769eb23441ae49d2a741d53a94f1f9bdb0f70421634ce3",
+          "bytes": 21814
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-16-input-latency-tracks.png",
+          "sha256": "e85b00bc75982d7b7e78320ecbbc406b9bb23dc6b58934d3ca458198761ec2d2",
+          "bytes": 104741,
+          "dimensions": [
+            2100,
+            930
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a201-17-ab-attribution",
+      "title": "游戏模式与 OEM 触控增强的对照",
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a201-17-ab-attribution.svg",
+        "src/assets/diagrams/ch19/a201-17-ab-attribution.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a201-17-ab-attribution",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/app/GameManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/native/+/refs/tags/android-17.0.0_r1/services/inputflinger/dispatcher/InputDispatcher.cpp",
+        "https://perfetto.dev/docs/analysis/stdlib-docs#android-input"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a201-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a201-17-ab-attribution.svg",
+          "sha256": "2866df2a9665bf01c394d595050e9db50385f9140f86acfe90f1be073bd42efe",
+          "bytes": 32255
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a201-17-ab-attribution.png",
+          "sha256": "b9c7d79c7dfd0ec0bfede00ea9265328c866b0c01004786ed6eacb3270b1a940",
+          "bytes": 128919,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-01-control-statistics",
+      "title": "电源控制与能量统计的两条路径",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-01-control-statistics.svg",
+        "src/assets/diagrams/ch19/a202-01-control-statistics.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-01-control-statistics",
+      "sources": [
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/aidl/android/hardware/power/IPower.aidl",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-01-control-statistics.svg",
+          "sha256": "eddb962345a42391debc44b82af283a5c27c7d7b2f547b91379f40e39dd94136",
+          "bytes": 21664
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-01-control-statistics.png",
+          "sha256": "39e76f6c16d4baffcb863e6f831f20c930c46b5afb1b40f7377cc452fd03eb03",
+          "bytes": 75963,
+          "dimensions": [
+            2100,
+            750
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-02-four-layers",
+      "title": "从应用预算到硬件动作的职责",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-02-four-layers.svg",
+        "src/assets/diagrams/ch19/a202-02-four-layers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-02-four-layers",
+      "sources": [
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/aidl/android/hardware/power/IPower.aidl",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-02-four-layers.svg",
+          "sha256": "98d425a1337c2d1e2f52174144b0c6b890bbb8e7dae7f09017cc52ba44656eaa",
+          "bytes": 31545
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-02-four-layers.png",
+          "sha256": "a00567391a235c0016ae247300596d9a56ec9b2c49bd5244fa8a63e3555f1353",
+          "bytes": 130010,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-03-entry-contracts",
+      "title": "Mode、Boost 与 Hint Session 的入口",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-03-entry-contracts.svg",
+        "src/assets/diagrams/ch19/a202-03-entry-contracts.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-03-entry-contracts",
+      "sources": [
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/aidl/android/hardware/power/IPower.aidl",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/hint/HintManagerService.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-03-entry-contracts.svg",
+          "sha256": "44c0222e3260188e9ce418dad0cf50b3ba9846c5f52ca9aa4e16dfe4f1a797ed",
+          "bytes": 19183
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-03-entry-contracts.png",
+          "sha256": "89e8c767239b083cc64d96f6af8a38fd8cd306f6c69b16a5d17a91ce4b6e68f5",
+          "bytes": 100989,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-04-scx-input-modes",
+      "title": "SCX 状态改变 schedutil 的输入",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-04-scx-input-modes.svg",
+        "src/assets/diagrams/ch19/a202-04-scx-input-modes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-04-scx-input-modes",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-04-scx-input-modes.svg",
+          "sha256": "9b7dffcd11344af602abfef0f9c1b0d32fd7cebf3db1d2563bd619015c11fa7d",
+          "bytes": 14355
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-04-scx-input-modes.png",
+          "sha256": "cb539dda07f536f576d277d64b4b4ba22a1383bd9acf9a57a06ec4906dba6754",
+          "bytes": 78328,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-05-frequency-request",
+      "title": "从性能目标到频率执行",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-05-frequency-request.svg",
+        "src/assets/diagrams/ch19/a202-05-frequency-request.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-05-frequency-request",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-05-frequency-request.svg",
+          "sha256": "565f3c0a418c5f68edbf3824c62a361b8234e20872a4839a3f64ee837bb074a8",
+          "bytes": 22298
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-05-frequency-request.png",
+          "sha256": "3501807b165140726f3250621d71c04901b794c7c1fc02695949ba1efa07dbe4",
+          "bytes": 80530,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-06-recovery-lifecycles",
+      "title": "SCX 回退与厂商状态清理",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-06-recovery-lifecycles.svg",
+        "src/assets/diagrams/ch19/a202-06-recovery-lifecycles.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-06-recovery-lifecycles",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/cpufreq_schedutil.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/power/PowerManagerService.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-06-recovery-lifecycles.svg",
+          "sha256": "b89027d8e54a23af81dc5972b6cb92965be35a2eb16ff19f35b46445212a7101",
+          "bytes": 25702
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-06-recovery-lifecycles.png",
+          "sha256": "6ccd70c606ca43f942a58a01ca27b5c1addd285e4d6b85004e7d6c5737c4fce0",
+          "bytes": 107153,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-07-driver-boundaries",
+      "title": "公开驱动与量产实现的边界",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-07-driver-boundaries.svg",
+        "src/assets/diagrams/ch19/a202-07-driver-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-07-driver-boundaries",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/soc/qcom/rpmh.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/cpufreq/mediatek-cpufreq.c",
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/drivers/soc/samsung/exynos-asv.c"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-07-driver-boundaries.svg",
+          "sha256": "6d39e2ff36a408947d1b57ec49509b3ac573353248f885caa98731f44d32efb0",
+          "bytes": 27475
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-07-driver-boundaries.png",
+          "sha256": "5beb6bf58cc686384acb6055fade2938c199b7e51c5ac987292a8b2546c504d1",
+          "bytes": 102996,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-08-hint-session-lifetime",
+      "title": "Hint Session 的周期工作闭环",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-08-hint-session-lifetime.svg",
+        "src/assets/diagrams/ch19/a202-08-hint-session-lifetime.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-08-hint-session-lifetime",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PerformanceHintManager",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-08-hint-session-lifetime.svg",
+          "sha256": "9ef8e2901d86f93377aec5f38610079d325b1a006c69f4d96e9e30bec25cf907",
+          "bytes": 22590
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-08-hint-session-lifetime.png",
+          "sha256": "96ee2189bf4688bc166c57c9c32f2d885b656c815d0648d64384661fade4a18b",
+          "bytes": 80718,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-09-headroom-direction",
+      "title": "两类 headroom 的读数方向",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-09-headroom-direction.svg",
+        "src/assets/diagrams/ch19/a202-09-headroom-direction.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-09-headroom-direction",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerManager",
+        "https://developer.android.com/reference/android/os/health/SystemHealthManager"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-09-headroom-direction.svg",
+          "sha256": "ad332cd6d052cd6d0ee8f98383ef7d5f2dafe11d3d0788f69dbb5250f0fb8f28",
+          "bytes": 27482
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-09-headroom-direction.png",
+          "sha256": "a5279950009a971a7a77fc11b49464a16a4d1a610d970907dc7c31b57ca5cb61",
+          "bytes": 102192,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-10-energy-measurements",
+      "title": "能量、电流与测量边界",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-10-energy-measurements.svg",
+        "src/assets/diagrams/ch19/a202-10-energy-measurements.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-10-energy-measurements",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/battery-counters",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-10-energy-measurements.svg",
+          "sha256": "9cdfba224e9b82640cfc5cba7f3bce0aa10de971814d848d28b029e5e550f691",
+          "bytes": 22037
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-10-energy-measurements.png",
+          "sha256": "cae71e084fc2a4ecc1feaa4346790f91a19f7dea7f4a78ec27be14141c619600",
+          "bytes": 88020,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-11-stats-three-objects",
+      "title": "Power Stats 的三类对象",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-11-stats-three-objects.svg",
+        "src/assets/diagrams/ch19/a202-11-stats-three-objects.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-11-stats-three-objects",
+      "sources": [
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/EnergyConsumerResult.aidl",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/EnergyMeasurement.aidl"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-11-stats-three-objects.svg",
+          "sha256": "a0444cf3f6132f10a7d44653c14e6a180914585a542d6d5b4e255780fd2e010b",
+          "bytes": 19164
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-11-stats-three-objects.png",
+          "sha256": "085de88d9bfde4bea9c7b53439700a74cf8c4feca7acf14e28be8102b4c211be",
+          "bytes": 93727,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-12-stats-service-branches",
+      "title": "PowerStatsService 的三条使用路径",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-12-stats-service-branches.svg",
+        "src/assets/diagrams/ch19/a202-12-stats-service-branches.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-12-stats-service-branches",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsLogger.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsHALWrapper.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-12-stats-service-branches.svg",
+          "sha256": "eb6e5147565a804b6c59df60f84735bf7ebe7ba5848d61adae9ee6f2e6fd7636",
+          "bytes": 19156
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-12-stats-service-branches.png",
+          "sha256": "b01d7269f4ff78a27aac2d03cbf773915dcc60e8ce0a2b7eb9bd89e895e3a9da",
+          "bytes": 97813,
+          "dimensions": [
+            2100,
+            885
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-13-monitor-cache-noise",
+      "title": "Power Monitor 的缓存与读数",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-13-monitor-cache-noise.svg",
+        "src/assets/diagrams/ch19/a202-13-monitor-cache-noise.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-13-monitor-cache-noise",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java",
+        "https://developer.android.com/reference/android/os/health/SystemHealthManager"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-13-monitor-cache-noise.svg",
+          "sha256": "ffdc584dc75528c806d3bdea0b6346ca6332b305a5050914300f79d8ac90f4fb",
+          "bytes": 26562
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-13-monitor-cache-noise.png",
+          "sha256": "156586cf8b5ced2f76fc741ea5e3d68d9f19147be3ce846bb3dbcd25472aad04",
+          "bytes": 88687,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-14-energy-difference",
+      "title": "跨设备能量比较前的对齐",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-14-energy-difference.svg",
+        "src/assets/diagrams/ch19/a202-14-energy-difference.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-14-energy-difference",
+      "sources": [
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/stats/aidl/android/hardware/power/stats/IPowerStats.aidl",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsLogger.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-14-energy-difference.svg",
+          "sha256": "24eeedcf274d6d5943578b5df8472c94c26905d38d0f1ea0e119c96f9896b9ae",
+          "bytes": 22868
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-14-energy-difference.png",
+          "sha256": "2a99cc1b194f9bff676f191327da85293946387e62afb59ef0b91829b7610b6b",
+          "bytes": 83426,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a202-15-collection-cadence",
+      "title": "日志触发、公开缓存与设备采样",
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a202-15-collection-cadence.svg",
+        "src/assets/diagrams/ch19/a202-15-collection-cadence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a202-15-collection-cadence",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/TimerTrigger.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/BatteryTrigger.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a202-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a202-15-collection-cadence.svg",
+          "sha256": "84104a377f4f323fd23e356888f42f2224bb8e43966cf478cd63b9b77a32023d",
+          "bytes": 29274
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a202-15-collection-cadence.png",
+          "sha256": "c68e658450c6215c14019e72a6f4da0c78e13be1587533c0b78f934e95d3dd79",
+          "bytes": 116985,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a203-01-mpc-defined-values",
+      "title": "Android 17 MPC 的显式等级集合",
+      "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a203-01-mpc-defined-values.svg",
+        "src/assets/diagrams/ch19/a203-01-mpc-defined-values.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a203-01-mpc-defined-values",
+      "sources": [
+        "https://source.android.com/docs/compatibility/17/android-17-cdd#227_handheld_media_performance_class",
+        "https://source.android.com/docs/compatibility/17/mpc"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a203-01-mpc-defined-values.svg",
+          "sha256": "f53bc278992d5725fef6e97fc1310f1b6f35290f1f440092a836266ba04b0381",
+          "bytes": 32655
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a203-01-mpc-defined-values.png",
+          "sha256": "a2c88a4e8016c56a9c27daadc824c9f4007027daeb3a25c88e84d28413b7fcbd",
+          "bytes": 120831,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a203-02-four-signals",
+      "title": "平台 API、等级、单项能力和体验",
+      "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a203-02-four-signals.svg",
+        "src/assets/diagrams/ch19/a203-02-four-signals.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a203-02-four-signals",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/Build.java",
+        "https://source.android.com/docs/compatibility/17/android-17-cdd#227_handheld_media_performance_class",
+        "https://developer.android.com/topic/performance/performance-class"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a203-02-four-signals.svg",
+          "sha256": "d2d2fe9d6fdb69ef8907256179263f4ce6993203cb72c4943dddafff177fd3f2",
+          "bytes": 27508
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a203-02-four-signals.png",
+          "sha256": "de7dfe389c6b9ac2104855f61566aee1c5c05aee0b208a808988f49d2b3beb53",
+          "bytes": 113358,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a203-03-default-fallback",
+      "title": "AndroidX 默认读取器的回退路径",
+      "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a203-03-default-fallback.svg",
+        "src/assets/diagrams/ch19/a203-03-default-fallback.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a203-03-default-fallback",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-performance/src/main/java/androidx/core/performance/DefaultDevicePerformance.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a203-03-default-fallback.svg",
+          "sha256": "123ec6e48886107e2ec5c1af134f0d0862ef1aa92a0bfdc40398b70f20c6c085",
+          "bytes": 23257
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a203-03-default-fallback.png",
+          "sha256": "f755de92ce03ca204d64ba6bd4feda44c9b3690c284a81f8c7cd3610991179da",
+          "bytes": 104816,
+          "dimensions": [
+            2100,
+            885
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a203-04-play-lazy-cache",
+      "title": "Play services 的异步更新与首次读取",
+      "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a203-04-play-lazy-cache.svg",
+        "src/assets/diagrams/ch19/a203-04-play-lazy-cache.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a203-04-play-lazy-cache",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-performance-play-services/src/main/java/androidx/core/performance/play/services/PlayServicesDevicePerformance.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-performance/src/main/java/androidx/core/performance/DefaultDevicePerformance.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a203-04-play-lazy-cache.svg",
+          "sha256": "c497d91c88bea3af2f22b865efe7f27b3c6ecd2336643f753060fbe6822a68e3",
+          "bytes": 28383
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a203-04-play-lazy-cache.png",
+          "sha256": "8cea101dc53ead6e2c9d1efb7d968ada710746b0e4d5b2ff946b1edd88008dec",
+          "bytes": 124519,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a203-05-feature-decision",
+      "title": "MPC 与运行时能力的组合决策",
+      "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a203-05-feature-decision.svg",
+        "src/assets/diagrams/ch19/a203-05-feature-decision.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a203-05-feature-decision",
+      "sources": [
+        "https://source.android.com/docs/compatibility/17/android-17-cdd#227_handheld_media_performance_class",
+        "https://source.android.com/docs/compatibility/17/mpc"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a203-05-feature-decision.svg",
+          "sha256": "197f840e08894d341b791a6f38815f57a65fdc3fb506caab6ccae082aeefb742",
+          "bytes": 21961
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a203-05-feature-decision.png",
+          "sha256": "33bb2c4ee3332768a70f07913e8266c9651939e8b6a32a21018b364f2e8238ab",
+          "bytes": 82000,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a203-06-threshold-contracts",
+      "title": "单项 MPC 门槛的读取顺序",
+      "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a203-06-threshold-contracts.svg",
+        "src/assets/diagrams/ch19/a203-06-threshold-contracts.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a203-06-threshold-contracts",
+      "sources": [
+        "https://source.android.com/docs/compatibility/17/android-17-cdd#227_handheld_media_performance_class",
+        "https://source.android.com/docs/compatibility/17/mpc"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a203-06-threshold-contracts.svg",
+          "sha256": "7c9bcd7f407613d7aedf186eca21c73a3f7dd9a0ee219573f73612b930d8e952",
+          "bytes": 34043
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a203-06-threshold-contracts.png",
+          "sha256": "cf337afdd794299cbe7ff621035f2c51f3da42fb5c4eecfe00e8e278d1cdec98",
+          "bytes": 135840,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a203-07-feature-sets",
+      "title": "功能条件采用明确的等级集合",
+      "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a203-07-feature-sets.svg",
+        "src/assets/diagrams/ch19/a203-07-feature-sets.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a203-07-feature-sets",
+      "sources": [
+        "https://source.android.com/docs/compatibility/17/android-17-cdd#227_handheld_media_performance_class",
+        "https://source.android.com/docs/compatibility/17/mpc"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a203-07-feature-sets.svg",
+          "sha256": "e2a10016161c2e28b3d825d2f91292148a34756169c691b625a89071e1c3542d",
+          "bytes": 21372
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a203-07-feature-sets.png",
+          "sha256": "baef371c622c81ee116847cbbcd2b15255e08b74ff3fb2b5838f15a81ba711f4",
+          "bytes": 95064,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a203-08-rollout-evidence",
+      "title": "从原始值到可回退的分阶段发布",
+      "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a203-08-rollout-evidence.svg",
+        "src/assets/diagrams/ch19/a203-08-rollout-evidence.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a203-08-rollout-evidence",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-performance-play-services/src/main/java/androidx/core/performance/play/services/PlayServicesDevicePerformance.kt",
+        "https://android-developers.googleblog.com/2025/01/performance-class-helps-google-maps-deliver-premium-experiences.html"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a203-08-rollout-evidence.svg",
+          "sha256": "f00c5f225f3b2ded3a7193bc3e53d8cf0876ef31d9ba3141446e8ba982f30902",
+          "bytes": 22559
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a203-08-rollout-evidence.png",
+          "sha256": "607f9951b8df664255020bb3e24f08fa515e98eae1f401789ed82563d0800e8a",
+          "bytes": 80704,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a203-09-certification-evidence",
+      "title": "声明、兼容测试与应用体验的证据链",
+      "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a203-09-certification-evidence.svg",
+        "src/assets/diagrams/ch19/a203-09-certification-evidence.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a203-09-certification-evidence",
+      "sources": [
+        "https://source.android.com/docs/compatibility/17/android-17-cdd#227_handheld_media_performance_class",
+        "https://source.android.com/docs/compatibility/17/mpc",
+        "https://source.android.com/docs/compatibility/cts/media-cts"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a203-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a203-09-certification-evidence.svg",
+          "sha256": "9c0ab304b8e4b557ddb8904071985696f6d5f9b12f7428f14c4c2de2f12c5e79",
+          "bytes": 21170
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a203-09-certification-evidence.png",
+          "sha256": "07930a8fde0914f539bdcc00f18ac31812fcfc7ee10433d01737f0e78aaab2fa",
+          "bytes": 81491,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a204-01-four-lock-models",
+      "title": "四类“锁”保护的对象与生命周期",
+      "article": "src/part4-system/ch19-oem/06-private-space-app-lock-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a204-01-four-lock-models.svg",
+        "src/assets/diagrams/ch19/a204-01-four-lock-models.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a204-01-four-lock-models",
+      "sources": [
+        "https://source.android.com/docs/security/features/private-space",
+        "https://source.android.com/docs/automotive/unbundled_apps/app-lock",
+        "https://developer.android.com/identity/sign-in/biometric-auth"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a204-01-four-lock-models.svg",
+          "sha256": "56d66eff15f043cd07f74642452ec1fb05520b91a78085e9317c7271ec19733a",
+          "bytes": 28378
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a204-01-four-lock-models.png",
+          "sha256": "cd51125d9076e0fbb25f325f437500eca1bd97c907de9400dcf6deb3e1af32b8",
+          "bytes": 123684,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a204-02-user-data-isolation",
+      "title": "同包代码与两份用户数据",
+      "article": "src/part4-system/ch19-oem/06-private-space-app-lock-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a204-02-user-data-isolation.svg",
+        "src/assets/diagrams/ch19/a204-02-user-data-isolation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a204-02-user-data-isolation",
+      "sources": [
+        "https://source.android.com/docs/security/features/private-space",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/UserManager.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a204-02-user-data-isolation.svg",
+          "sha256": "bc357051078e567302f01fbaee0868ab5a8aaf730279c712eadece1237d9303c",
+          "bytes": 16095
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a204-02-user-data-isolation.png",
+          "sha256": "90fb7d9e8073786906b7f746c934bb0e5a4c3d9681649b131e476feaa319d69a",
+          "bytes": 73647,
+          "dimensions": [
+            2100,
+            870
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a204-03-profile-visibility-states",
+      "title": "运行状态与入口可见性分开建模",
+      "article": "src/part4-system/ch19-oem/06-private-space-app-lock-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a204-03-profile-visibility-states.svg",
+        "src/assets/diagrams/ch19/a204-03-profile-visibility-states.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a204-03-profile-visibility-states",
+      "sources": [
+        "https://source.android.com/docs/security/features/private-space",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/LauncherApps.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a204-03-profile-visibility-states.svg",
+          "sha256": "08cd50af92e75c2837e86feecb7460901effc06b33accdab2f8a90e479c7ca2a",
+          "bytes": 16450
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a204-03-profile-visibility-states.png",
+          "sha256": "2f5bf372d5f20a76fb53d786609e624f4902b1b9f7d2570293beea22ef3927d7",
+          "bytes": 109602,
+          "dimensions": [
+            2100,
+            1035
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a204-04-hidden-profile-access",
+      "title": "访问隐藏资料的两条权限路径",
+      "article": "src/part4-system/ch19-oem/06-private-space-app-lock-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a204-04-hidden-profile-access.svg",
+        "src/assets/diagrams/ch19/a204-04-hidden-profile-access.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a204-04-hidden-profile-access",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/LauncherApps.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/AndroidManifest.xml"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a204-04-hidden-profile-access.svg",
+          "sha256": "6ed2c9a10239748854a91a12e2350df1dd646c287f08ca29150011af5c62475d",
+          "bytes": 19497
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a204-04-hidden-profile-access.png",
+          "sha256": "66d1a6060101898cb40f60e91126771613e18f84dd5998a576f1e405dc3f6cd9",
+          "bytes": 93246,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a204-05-sensitive-entry-gate",
+      "title": "敏感页面的统一入口校验",
+      "article": "src/part4-system/ch19-oem/06-private-space-app-lock-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a204-05-sensitive-entry-gate.svg",
+        "src/assets/diagrams/ch19/a204-05-sensitive-entry-gate.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a204-05-sensitive-entry-gate",
+      "sources": [
+        "https://developer.android.com/identity/sign-in/biometric-auth",
+        "https://source.android.com/docs/security/features/private-space"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a204-05-sensitive-entry-gate.svg",
+          "sha256": "17559dcaf53d2b4e5af10a6a1a4ad2ad7b3afbd374cc342e8714e6183f6eb4cf",
+          "bytes": 24834
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a204-05-sensitive-entry-gate.png",
+          "sha256": "c58de4f3c41ad5fbab721db941bb0910ea1ce20f95741af13e7bb02bbda6ddea",
+          "bytes": 86216,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a204-06-uri-two-conditions",
+      "title": "URI 授权与来源可用性是两个条件",
+      "article": "src/part4-system/ch19-oem/06-private-space-app-lock-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a204-06-uri-two-conditions.svg",
+        "src/assets/diagrams/ch19/a204-06-uri-two-conditions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a204-06-uri-two-conditions",
+      "sources": [
+        "https://source.android.com/docs/security/features/private-space",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/os/UserManager.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a204-06-uri-two-conditions.svg",
+          "sha256": "612f28f71eea6ee68dbef22be77ccff07f1bfc9e871100d693eaee017e318fb3",
+          "bytes": 23407
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a204-06-uri-two-conditions.png",
+          "sha256": "424b9ef68cb7ed015e969e1444883c338eac7dc407c0ac541a4733119809d4e6",
+          "bytes": 97137,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a204-07-file-transfer",
+      "title": "Add files 的受控文件转移",
+      "article": "src/part4-system/ch19-oem/06-private-space-app-lock-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a204-07-file-transfer.svg",
+        "src/assets/diagrams/ch19/a204-07-file-transfer.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a204-07-file-transfer",
+      "sources": [
+        "https://source.android.com/docs/security/features/private-space",
+        "https://source.android.com/docs/whatsnew/android-16-release"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a204-07-file-transfer.svg",
+          "sha256": "417621cb059bba0dd12cfaf34cd31cd00290cac0ecfb8f6d8412aa4a40f7e5dc",
+          "bytes": 23761
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a204-07-file-transfer.png",
+          "sha256": "37549ef02f8c181c96ccf53bbb2315ff8bf826a82241573a96f166e2162f6c93",
+          "bytes": 93102,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a204-08-observable-results",
+      "title": "围绕 App 可见结果处理 OEM 应用锁",
+      "article": "src/part4-system/ch19-oem/06-private-space-app-lock-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a204-08-observable-results.svg",
+        "src/assets/diagrams/ch19/a204-08-observable-results.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a204-08-observable-results",
+      "sources": [
+        "https://developer.android.com/about/versions/15/behavior-changes-all",
+        "https://source.android.com/docs/security/features/private-space"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a204-08-observable-results.svg",
+          "sha256": "7c0d30a4a7a4ae9bdaeb3fcd5f04c73bbc25808ec41aee6657c8d89842f1440e",
+          "bytes": 27252
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a204-08-observable-results.png",
+          "sha256": "3fb7459fdb33be1b59d60c72be2f3d73d521220a4d9241ca3f8ea9fd985d3b75",
+          "bytes": 104011,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a204-09-privacy-test-matrix",
+      "title": "兼容性测试的输入和可记录结果",
+      "article": "src/part4-system/ch19-oem/06-private-space-app-lock-boundary.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a204-09-privacy-test-matrix.svg",
+        "src/assets/diagrams/ch19/a204-09-privacy-test-matrix.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a204-09-privacy-test-matrix",
+      "sources": [
+        "https://source.android.com/docs/security/features/private-space",
+        "https://developer.android.com/about/versions/15/behavior-changes-all"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a204-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a204-09-privacy-test-matrix.svg",
+          "sha256": "a171d7b23ce59ad9daa77892c2806b4c39bc52598df42d6cd2810812519b660a",
+          "bytes": 31614
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a204-09-privacy-test-matrix.png",
+          "sha256": "4a50c98f548cc819bd09e916ee4d603aa327fe7a28d80e02d03c6cc97f4f21b8",
+          "bytes": 112495,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a205-01-platform-placement",
+      "title": "Android Auto 与 AAOS 的实际执行位置",
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a205-01-platform-placement.svg",
+        "src/assets/diagrams/ch19/a205-01-platform-placement.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a205-01-platform-placement",
+      "sources": [
+        "https://developer.android.com/training/cars/apps/library/glossary-concepts",
+        "https://developer.android.com/training/cars"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a205-01-platform-placement.svg",
+          "sha256": "4dcb822757107fb4640a44006afedec35f5ebfa738bb688f078ae0af2ed3a70c",
+          "bytes": 23611
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a205-01-platform-placement.png",
+          "sha256": "02e32e267d524c57a675e0679b06d7ec103ac01a856a85a041ad9f4b752973ef",
+          "bytes": 130721,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a205-02-version-axes",
+      "title": "车载能力由四个版本轴共同决定",
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a205-02-version-axes.svg",
+        "src/assets/diagrams/ch19/a205-02-version-axes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a205-02-version-axes",
+      "sources": [
+        "https://developer.android.com/training/cars",
+        "https://developer.android.com/training/cars/apps/library"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a205-02-version-axes.svg",
+          "sha256": "ccb7b089751a4ab41f5d918265b0d5e590d2646783bb1c5aaa5af328c2e40e24",
+          "bytes": 22678
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a205-02-version-axes.png",
+          "sha256": "b2efefedeff3dfcb20d6ae203f1ed901b51ae6562f995747bc3a95acae546a50",
+          "bytes": 107055,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a205-03-first-template",
+      "title": "首模板只依赖可立即读取的本地状态",
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a205-03-first-template.svg",
+        "src/assets/diagrams/ch19/a205-03-first-template.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a205-03-first-template",
+      "sources": [
+        "https://developer.android.com/training/cars/apps/library/refresh-template",
+        "https://developer.android.com/reference/androidx/car/app/Screen"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a205-03-first-template.svg",
+          "sha256": "68a795e227a9c984d15d825ddd75b21f76acabf1170d956bb6a3db6cfc21aa44",
+          "bytes": 23328
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a205-03-first-template.png",
+          "sha256": "85927771eb7296e9c6518cee30e8be725513e4e38f4b7b7a40208aba4cff5e4c",
+          "bytes": 82509,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a205-04-template-quota",
+      "title": "模板配额和列表上限是两类约束",
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a205-04-template-quota.svg",
+        "src/assets/diagrams/ch19/a205-04-template-quota.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a205-04-template-quota",
+      "sources": [
+        "https://developer.android.com/training/cars/apps/library/template-restrictions",
+        "https://developer.android.com/training/cars/apps/library/constraints-api"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a205-04-template-quota.svg",
+          "sha256": "f0c6fbacaca71934b0d3067ddf2365ef3654c1f56460953a447e8054cde82f61",
+          "bytes": 24420
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a205-04-template-quota.png",
+          "sha256": "515986890943c9206bdc1bfcc0ac48baa9e4b524c2405279d2d5c6e65f6a205c",
+          "bytes": 98098,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a205-05-surface-lifecycle",
+      "title": "每次 Surface 回调都重新确认几何与资源",
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a205-05-surface-lifecycle.svg",
+        "src/assets/diagrams/ch19/a205-05-surface-lifecycle.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a205-05-surface-lifecycle",
+      "sources": [
+        "https://developer.android.com/training/cars/apps/library/draw-maps"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a205-05-surface-lifecycle.svg",
+          "sha256": "7b1c7fadc3f1e884b44fd02c0995683be1ffefa81282057ecf6a4612e567e128",
+          "bytes": 25389
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a205-05-surface-lifecycle.png",
+          "sha256": "58f463c672ff38b39abbd320411231841b6a2ec6047d5f6991688e624d03f686",
+          "bytes": 86158,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a205-06-map-budget",
+      "title": "地图管线按责任拆开观察",
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a205-06-map-budget.svg",
+        "src/assets/diagrams/ch19/a205-06-map-budget.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a205-06-map-budget",
+      "sources": [
+        "https://developer.android.com/training/cars/apps/library/draw-maps",
+        "https://developer.android.com/training/cars/apps/navigation"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a205-06-map-budget.svg",
+          "sha256": "1833b9c8847795670e2ce06054f0e89127f8f9e914b0efe76176a7164c6f18b4",
+          "bytes": 34630
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a205-06-map-budget.png",
+          "sha256": "a0b4fabf5ada1662ac3488d1a7b91c9ba84aa9e0e34f5e7d8d3f20501fe4338b",
+          "bytes": 125689,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a205-07-media-path",
+      "title": "媒体控制与声音输出分段观测",
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a205-07-media-path.svg",
+        "src/assets/diagrams/ch19/a205-07-media-path.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a205-07-media-path",
+      "sources": [
+        "https://developer.android.com/training/cars/media"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a205-07-media-path.svg",
+          "sha256": "2fa3ed13e44ee7579e5012a3e027d7e5bb9d33cb3e9e965914d5ce60f501e03b",
+          "bytes": 23318
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a205-07-media-path.png",
+          "sha256": "0aff1bfd837737b4c9e9485477e8f75a18aed7bc234971859c1adac4057a661d",
+          "bytes": 80637,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a205-08-independent-connectivity",
+      "title": "投射会话与业务网络独立恢复",
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a205-08-independent-connectivity.svg",
+        "src/assets/diagrams/ch19/a205-08-independent-connectivity.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a205-08-independent-connectivity",
+      "sources": [
+        "https://developer.android.com/training/cars/apps/library/glossary-concepts",
+        "https://developer.android.com/training/cars/apps/library"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a205-08-independent-connectivity.svg",
+          "sha256": "99d8e350436d15c2c5bd478311ae88e016087aea88888e2041fb07f614e25f68",
+          "bytes": 31212
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a205-08-independent-connectivity.png",
+          "sha256": "cbf00a61d1e112f378afb0acbf85031fa1e05e1bfddad1b28342550eb466d0c6",
+          "bytes": 126702,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a205-09-watchdog-writes",
+      "title": "CarWatchdog 按 UTC 自然日累计写入",
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a205-09-watchdog-writes.svg",
+        "src/assets/diagrams/ch19/a205-09-watchdog-writes.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a205-09-watchdog-writes",
+      "sources": [
+        "https://source.android.com/docs/automotive/watchdog/wd_flash_memory",
+        "https://android.googlesource.com/platform/packages/services/Car/+/android-17.0.0_r1/car-lib/src/android/car/watchdog/CarWatchdogManager.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a205-09-watchdog-writes.svg",
+          "sha256": "d16f6916946fe97224c0c63651404451af255e343055662c5dd226aec2bfb069",
+          "bytes": 24647
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a205-09-watchdog-writes.png",
+          "sha256": "eb1e63bb4176464f974bd6a1824d9658e3f1227d8870f3d54cd1c0b178da6957",
+          "bytes": 86822,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a205-10-power-boundaries",
+      "title": "车辆电源转换区分普通应用和特权服务",
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a205-10-power-boundaries.svg",
+        "src/assets/diagrams/ch19/a205-10-power-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a205-10-power-boundaries",
+      "sources": [
+        "https://source.android.com/docs/automotive/power/power",
+        "https://android.googlesource.com/platform/packages/services/Car/+/android-17.0.0_r1/car-lib/src/android/car/hardware/power/CarPowerManager.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a205-10-power-boundaries.svg",
+          "sha256": "39480066fb61784b5a7d5345aacbaf7c27e1acdacd70955714943ec155092031",
+          "bytes": 32380
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a205-10-power-boundaries.png",
+          "sha256": "5b5efe5601898f374340460fb456226869e3d23669e9e4eeab6c985b88355b85",
+          "bytes": 118896,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a205-11-vehicle-data",
+      "title": "车辆属性先过权限，再以有界任务消费",
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a205-11-vehicle-data.svg",
+        "src/assets/diagrams/ch19/a205-11-vehicle-data.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a205-11-vehicle-data",
+      "sources": [
+        "https://source.android.com/docs/automotive/vhal",
+        "https://android.googlesource.com/platform/packages/services/Car/+/android-17.0.0_r1/car-lib/src/android/car/hardware/property/CarPropertyManager.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a205-11-vehicle-data.svg",
+          "sha256": "ef773f98ea192a29c5318b878122feec9897c4c6d8235f7bffd7cc75970da01c",
+          "bytes": 25674
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a205-11-vehicle-data.png",
+          "sha256": "1624904b9a1b9a4c14a987a32bf6730e37f665431f218256fda8ff190487afcb",
+          "bytes": 86500,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a205-12-clock-domains",
+      "title": "跨设备延迟必须先建立时间域映射",
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a205-12-clock-domains.svg",
+        "src/assets/diagrams/ch19/a205-12-clock-domains.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a205-12-clock-domains",
+      "sources": [
+        "https://perfetto.dev/docs/concepts/clock-sync",
+        "https://developer.android.com/training/cars/apps/library/glossary-concepts"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a205-12-clock-domains.svg",
+          "sha256": "86938acb9aca9990bb44b0649e0b616564ffe1538cb15cf151c1e581dfb9ae5f",
+          "bytes": 34659
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a205-12-clock-domains.png",
+          "sha256": "ea438ab37855891f759242578f957909b07f75e4b4b21196093f0891a605e254",
+          "bytes": 127813,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a205-13-test-layers",
+      "title": "逻辑验证与目标硬件性能验证分层",
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a205-13-test-layers.svg",
+        "src/assets/diagrams/ch19/a205-13-test-layers.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a205-13-test-layers",
+      "sources": [
+        "https://developer.android.com/training/cars/testing/dhu",
+        "https://developer.android.com/training/cars/testing/emulator",
+        "https://source.android.com/docs/automotive/tools/sys-perf"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a205-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a205-13-test-layers.svg",
+          "sha256": "a573b3c0f3bc9c4645e8faeac8150b14bb400862713771984989ef32719979e8",
+          "bytes": 26934
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a205-13-test-layers.png",
+          "sha256": "4998d2ce00cea3eef7700891746a495d9fd6b1e22d881d486e605a4efb6eda35",
+          "bytes": 99581,
+          "dimensions": [
+            2100,
+            990
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a206-01-evidence-levels",
+      "title": "先按证据来源，再解释设备差异",
+      "article": "src/part4-system/ch19-oem/README.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a206-01-evidence-levels.svg",
+        "src/assets/diagrams/ch19/a206-01-evidence-levels.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a206-01-evidence-levels",
+      "sources": [
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/aidl/android/hardware/power/IPower.aidl",
+        "https://developer.android.com/reference/android/os/Build#FINGERPRINT",
+        "https://developer.android.com/reference/android/os/Build.VERSION#MEDIA_PERFORMANCE_CLASS"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a206-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a206-01-evidence-levels.svg",
+          "sha256": "067c7d8a337281072f0c9270e7bb9fef052c09cfeea0bf6fa929a67a627f559a",
+          "bytes": 30059
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a206-01-evidence-levels.png",
+          "sha256": "4a7556cfc930999c9dad29a9995609721e16e92614a3395669e96c24734610be",
+          "bytes": 118988,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a206-02-chapter-routes",
+      "title": "从问题选择本章阅读入口",
+      "article": "src/part4-system/ch19-oem/README.md",
+      "assets": [
+        "src/assets/diagrams/ch19/a206-02-chapter-routes.svg",
+        "src/assets/diagrams/ch19/a206-02-chapter-routes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a206-02-chapter-routes",
+      "sources": [
+        "https://android.googlesource.com/platform/hardware/interfaces/+/android-17.0.0_r1/power/aidl/android/hardware/power/IPower.aidl",
+        "https://developer.android.com/reference/android/os/Build#FINGERPRINT",
+        "https://developer.android.com/reference/android/os/Build.VERSION#MEDIA_PERFORMANCE_CLASS",
+        "https://developer.android.com/training/cars"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a206-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch19/a206-02-chapter-routes.svg",
+          "sha256": "8c6c079d6c34ce2cd501806fca0d76c8291a8e2de5871e9e522645dfa4e731c9",
+          "bytes": 35553
+        },
+        {
+          "path": "src/assets/diagrams/ch19/a206-02-chapter-routes.png",
+          "sha256": "e76168295e043de6eac5ff9aac30eda0d558e5bd47bdcb0563010698ed3dbba9",
+          "bytes": 136934,
+          "dimensions": [
+            2100,
+            1470
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a207-01-phenomenon-evidence",
+      "title": "用户现象先分层，再选取证据",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-01-phenomenon-evidence.svg",
+        "src/assets/diagrams/ch20/a207-01-phenomenon-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-01-phenomenon-evidence",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://developer.android.com/topic/performance/vitals/anr",
+        "https://developer.android.com/reference/android/webkit/WebViewClient"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-02-java-fatal-chain",
+      "title": "Java 未捕获异常继续交给原默认处理器",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-02-java-fatal-chain.svg",
+        "src/assets/diagrams/ch20/a207-02-java-fatal-chain.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-02-java-fatal-chain",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/os/RuntimeInit.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-03-native-fatal-chain",
+      "title": "Native 致命信号到 tombstone 的实际链路",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-03-native-fatal-chain.svg",
+        "src/assets/diagrams/ch20/a207-03-native-fatal-chain.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-03-native-fatal-chain",
+      "sources": [
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/handler/debuggerd_handler.cpp",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/crash_dump.cpp",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/tombstoned/tombstoned.cpp"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-04-anr-deadlines",
+      "title": "ANR 按系统入口使用不同期限",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-04-anr-deadlines.svg",
+        "src/assets/diagrams/ch20/a207-04-anr-deadlines.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-04-anr-deadlines",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals/anr"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-05-resource-failures",
+      "title": "资源失败分别看分配域与系统压力",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-05-resource-failures.svg",
+        "src/assets/diagrams/ch20/a207-05-resource-failures.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-05-resource-failures",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/runtime/gc/heap.cc",
+        "https://android.googlesource.com/platform/system/memory/lmkd/+/refs/tags/android-17.0.0_r1/lmkd.cpp"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-06-exit-history",
+      "title": "退出原因、内存采样与 trace 分别解释",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-06-exit-history.svg",
+        "src/assets/diagrams/ch20/a207-06-exit-history.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-06-exit-history",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://developer.android.com/reference/android/app/ActivityManager"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-07-vitals-versus-sdk",
+      "title": "Play 与 SDK 指标先比范围，再比数值",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-07-vitals-versus-sdk.svg",
+        "src/assets/diagrams/ch20/a207-07-vitals-versus-sdk.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-07-vitals-versus-sdk",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals",
+        "https://developer.android.com/topic/performance/vitals/crash",
+        "https://developer.android.com/topic/performance/vitals/anr",
+        "https://firebase.google.com/docs/crashlytics/crash-free-metrics"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-08-identity-contracts",
+      "title": "事件重传去重与问题归类使用不同身份",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-08-identity-contracts.svg",
+        "src/assets/diagrams/ch20/a207-08-identity-contracts.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-08-identity-contracts",
+      "sources": [
+        "https://firebase.google.com/docs/crashlytics/crash-free-metrics",
+        "https://firebase.google.com/docs/crashlytics/troubleshooting"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-09-metric-denominators",
+      "title": "无崩溃用户、无崩溃会话和事件率不同",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-09-metric-denominators.svg",
+        "src/assets/diagrams/ch20/a207-09-metric-denominators.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-09-metric-denominators",
+      "sources": [
+        "https://firebase.google.com/docs/crashlytics/crash-free-metrics"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-10-period-dedup",
+      "title": "观察期去重不能替换成每日百分比平均",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-10-period-dedup.svg",
+        "src/assets/diagrams/ch20/a207-10-period-dedup.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-10-period-dedup",
+      "sources": [
+        "https://firebase.google.com/docs/crashlytics/crash-free-metrics"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-11-startup-outcomes",
+      "title": "首帧是里程碑，成功与故障是终态",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-11-startup-outcomes.svg",
+        "src/assets/diagrams/ch20/a207-11-startup-outcomes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-11-startup-outcomes",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationStartInfo"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-12-observability-api",
+      "title": "采集能力按版本开放，结果仍允许缺席",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-12-observability-api.svg",
+        "src/assets/diagrams/ch20/a207-12-observability-api.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-12-observability-api",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://developer.android.com/reference/android/app/ActivityManager",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-13-error-budget",
+      "title": "错误预算的单位跟随 SLI 分母",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-13-error-budget.svg",
+        "src/assets/diagrams/ch20/a207-13-error-budget.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-13-error-budget",
+      "sources": [
+        "https://sre.google/workbook/alerting-on-slos/",
+        "https://sre.google/workbook/error-budget-policy/"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-14-release-evidence",
+      "title": "发布结论需要质量和采集完整性同时成立",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-14-release-evidence.svg",
+        "src/assets/diagrams/ch20/a207-14-release-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-14-release-evidence",
+      "sources": [
+        "https://firebase.google.com/docs/crashlytics/crash-free-metrics",
+        "https://developer.android.com/topic/performance/vitals",
+        "https://sre.google/workbook/alerting-on-slos/"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-15-aggregation-layers",
+      "title": "原始事件到责任归因分成四层",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-15-aggregation-layers.svg",
+        "src/assets/diagrams/ch20/a207-15-aggregation-layers.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-15-aggregation-layers",
+      "sources": [
+        "https://developer.android.com/tools/retrace",
+        "https://developer.android.com/ndk/guides/ndk-stack",
+        "https://firebase.google.com/docs/crashlytics/troubleshooting"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-16-fingerprint-levels",
+      "title": "构建内位置要精确，跨构建候选要保守",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-16-fingerprint-levels.svg",
+        "src/assets/diagrams/ch20/a207-16-fingerprint-levels.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-16-fingerprint-levels",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Throwable.java",
+        "https://developer.android.com/tools/retrace",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/proto/tombstone.proto"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-17-java-features",
+      "title": "Java 指纹保留异常结构和失败语义",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-17-java-features.svg",
+        "src/assets/diagrams/ch20/a207-17-java-features.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-17-java-features",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Throwable.java",
+        "https://firebase.google.com/docs/crashlytics/android/customize-crash-reports"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-18-native-artifacts",
+      "title": "Native 符号化先验证构建身份",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-18-native-artifacts.svg",
+        "src/assets/diagrams/ch20/a207-18-native-artifacts.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-18-native-artifacts",
+      "sources": [
+        "https://developer.android.com/ndk/guides/ndk-stack",
+        "https://developer.android.com/build/include-native-symbols",
+        "https://android.googlesource.com/platform/system/core/+/refs/tags/android-17.0.0_r1/debuggerd/proto/tombstone.proto"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-19-nontransitive-similarity",
+      "title": "相似关系不能沿桥接样本自动传递",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-19-nontransitive-similarity.svg",
+        "src/assets/diagrams/ch20/a207-19-nontransitive-similarity.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-19-nontransitive-similarity",
+      "sources": [
+        "https://firebase.google.com/docs/crashlytics/troubleshooting",
+        "https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Throwable.java"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-20-attribution-exposure",
+      "title": "归因比较发生率，再核对首次引入证据",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-20-attribution-exposure.svg",
+        "src/assets/diagrams/ch20/a207-20-attribution-exposure.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-20-attribution-exposure",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals",
+        "https://firebase.google.com/docs/crashlytics/crash-free-metrics",
+        "https://firebase.google.com/docs/crashlytics/troubleshooting"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-21-issue-workflow",
+      "title": "修复发布后仍要等待足够样本",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-21-issue-workflow.svg",
+        "src/assets/diagrams/ch20/a207-21-issue-workflow.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-21-issue-workflow",
+      "sources": [
+        "https://firebase.google.com/docs/crashlytics/crash-free-metrics",
+        "https://sre.google/workbook/alerting-on-slos/"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-22-event-and-ingestion",
+      "title": "故障发生时间与服务端收到时间分开使用",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-22-event-and-ingestion.svg",
+        "src/assets/diagrams/ch20/a207-22-event-and-ingestion.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-22-event-and-ingestion",
+      "sources": [
+        "https://sre.google/workbook/alerting-on-slos/",
+        "https://firebase.google.com/docs/crashlytics/android/customize-crash-reports"
+      ],
+      "visual_review": "pending"
+    },
+    {
+      "id": "a207-23-ai-evidence",
+      "title": "AI 输出候选、反证与缺失证据",
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "assets": [
+        "src/assets/diagrams/ch20/a207-23-ai-evidence.svg",
+        "src/assets/diagrams/ch20/a207-23-ai-evidence.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a207-23-ai-evidence",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Throwable.java",
+        "https://firebase.google.com/docs/crashlytics/android/customize-crash-reports",
+        "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners"
+      ],
+      "visual_review": "pending"
+    }
+  ],
+  "corrections": [
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "（cpufreq policy，即共享一套调频控制的 CPU 集合）的组织方式；cpufreq policy 指共享一套调频控制的 CPU 集合。",
+      "after": "（cpufreq policy，即共享一套调频控制的 CPU 集合）的组织方式。",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "Power HAL（负责传递系统性能与功耗策略的硬件抽象层） 和 OEM 服务如何使用这些硬件；Power HAL 负责在系统与硬件之间传递性能与功耗策略。",
+      "after": "Power HAL（负责传递系统性能与功耗策略的硬件抽象层）和 OEM 服务如何使用这些硬件。",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "IPC（instructions per cycle，每周期完成的指令数（instructions））",
+      "after": "IPC（instructions per cycle，每周期完成的指令数）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "Android vendor hook（厂商钩子，即内核预留的扩展回调点）——内核预留的扩展回调点，厂商可以在这里接管选核。",
+      "after": "Android vendor hook（厂商钩子，即内核预留的扩展回调点），厂商可以在这里接管选核。",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "performance domain（性能域，即共享一组性能状态的 CPU 集合） 估算活动能耗；performance domain 指共享一组性能状态的 CPU 集合。",
+      "after": "performance domain（性能域，即共享一组性能状态的 CPU 集合）估算活动能耗。",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "uclamp（utilization clamp，利用率钳制） 全称 utilization clamp",
+      "after": "uclamp（utilization clamp，利用率钳制）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "任务配置档（task profile） task profile",
+      "after": "任务配置档（task profile）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "cpufreq 服务质量约束（QoS） QoS",
+      "after": "cpufreq 服务质量约束（QoS）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "TBR（tile-based rendering） 指 tile-based rendering",
+      "after": "TBR（tile-based rendering）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "功能级别（feature level） feature level",
+      "after": "功能级别（feature level）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "系统构建指纹（build fingerprint） build fingerprint",
+      "after": "系统构建指纹（build fingerprint）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "Vulkan 队列） queue family，即具备同类操作能力的一组 Vulkan 队列",
+      "after": "Vulkan 队列）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "空轨道（Track） Track",
+      "after": "空轨道（Track）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "动态形状（dynamic shape） dynamic shape",
+      "after": "动态形状（dynamic shape）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "子图（partition） partition",
+      "after": "子图（partition）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "内存通道（channel） channel",
+      "after": "内存通道（channel）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "微基准（microbenchmark） microbenchmark",
+      "after": "微基准（microbenchmark）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "跟踪点（tracepoint） tracepoint",
+      "after": "跟踪点（tracepoint）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "绘制调用（draw call） draw call",
+      "after": "绘制调用（draw call）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "批量大小（batch size） batch size",
+      "after": "批量大小（batch size）",
+      "why": "清除重复术语释义，保持原技术含义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "WHERE s.ts BETWEEN 1000000000 AND 11000000000",
+      "after": "WHERE s.ts >= trace_start() + 1000000000\n    AND s.ts < trace_start() + 11000000000",
+      "why": "sched.ts 使用 trace 时间域的纳秒时间戳；相对窗口需显式加 trace_start()，使用半开区间避免相邻窗口重复边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/7424539825a0ae7a6529c26a696a64896bab32c5/src/trace_processor/perfetto_sql/stdlib/prelude/trace_bounds.sql"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "示例时间戳对应 trace 起点后的 1～11 秒，使用时要替换成目标交互区间。",
+      "after": "示例窗口为 `[trace_start() + 1 秒, trace_start() + 11 秒)`，按运行片段的开始时间筛选；跨越窗口起点但开始于窗口外的片段不在此计数内。使用时要替换成目标交互区间。\n\n> ⚠️ 时间基准校勘：`sched.ts` 不是默认从零开始的相对时间；直接写 1～11 秒的常量不能表示 trace 起点后的窗口。[来源：Perfetto trace bounds 源码](https://android.googlesource.com/platform/external/perfetto/+/7424539825a0ae7a6529c26a696a64896bab32c5/src/trace_processor/perfetto_sql/stdlib/prelude/trace_bounds.sql)",
+      "why": "修正原文将绝对 trace 时间戳误当相对时间的解释，并明确按片段开始时间选样。",
+      "sources": [
+        "https://android.googlesource.com/platform/external/perfetto/+/7424539825a0ae7a6529c26a696a64896bab32c5/src/trace_processor/perfetto_sql/stdlib/prelude/trace_bounds.sql"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "WHERE r.previous_cpu IS NOT NULL\n  AND r.previous_cpu != r.cpu",
+      "after": "WHERE COALESCE(t.is_idle, 0) = 0\n  AND r.previous_cpu IS NOT NULL\n  AND r.previous_cpu != r.cpu",
+      "why": "实际 Trace Processor 验证发现 idle 合并身份会产生伪 CPU 变化计数；按 thread.is_idle 排除。",
+      "sources": [
+        "https://perfetto.dev/docs/analysis/sql-tables#thread"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/02-soc-differences.md",
+      "before": "这个计数只描述相邻运行片段的 CPU 编号变化",
+      "after": "查询排除 idle 线程，避免把多 CPU 的空闲片段当成同一业务线程的迁移。这个计数只描述相邻运行片段的 CPU 编号变化",
+      "why": "同步解释 idle 排除口径。",
+      "sources": [
+        "https://perfetto.dev/docs/analysis/sql-tables#thread"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "before": "CPU（push） 预算",
+      "after": "CPU 预算",
+      "why": "清除误加的 push 释义；push 在后文专指负载均衡方向。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "before": "输入设备描述符（descriptor，用于区分设备的稳定标识字符串） descriptor（稳定标识字符串）",
+      "after": "输入设备描述符（descriptor，用于区分设备的稳定标识字符串）",
+      "why": "清除重复释义。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "before": "GROUP BY t.tid, t.name\nORDER BY adjacent_cpu_changes DESC;",
+      "after": "GROUP BY t.utid, t.tid, t.name\nORDER BY adjacent_cpu_changes DESC;",
+      "why": "tid 在同一 trace 中可能复用，聚合须保留 utid 的线程实例身份。",
+      "sources": [
+        "https://perfetto.dev/docs/analysis/sql-tables#thread"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "before": "它适合定位需要继续分析的线程。",
+      "after": "它适合定位需要继续分析的线程；查询按 `utid` 保留线程实例，避免同一 trace 中 TID 复用时合并不同线程。",
+      "why": "同步解释聚合身份。",
+      "sources": [
+        "https://perfetto.dev/docs/analysis/sql-tables#thread"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "before": "`sched_switch` 只记录线程切换，要回答“这次决策来自哪个 BPF 回调”，得靠采集 trace 前后同时保存的 sched_ext sysfs 快照；设备若有厂商 tracepoint（预先定义的内核跟踪点），再用它补充策略原因。",
+      "after": "`sched_switch` 只记录线程切换。采集 trace 前后保存 sched_ext sysfs 快照，可以确认当时的调度器状态和接管模式；要回答“这次决策来自哪个 BPF 回调”，仍需 BPF 策略自身的跟踪标记或厂商 tracepoint（预先定义的内核跟踪点）记录决策原因。仅有 sysfs 快照不能归因到单次回调。",
+      "why": "sysfs 记录运行状态/模式，不记录每次调度决策的回调来源；修正证据能力越界。",
+      "sources": [
+        "https://android.googlesource.com/kernel/common/+/refs/tags/android17-6.18-2026-06_r6/kernel/sched/ext.c",
+        "https://perfetto.dev/docs/data-sources/cpu-scheduling"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "before": "```mermaid\nflowchart TD\n    Work[\"App work: main / RenderThread / Binder / worker\"] --> Thread[\"Linux task\"]\n    Profile[\"task profile / cpuset / affinity / uclamp\"] --> Thread\n    Thread --> Class{\"scheduler class\"}\n    Class --> RT[\"stop / DL / RT\"]\n    Class --> Fair[\"fair class: EEVDF + EAS\"]\n    Class --> SCX[\"sched_ext class\"]\n    Loader[\"BPF struct_ops loader\"] --> SCX\n    SCX --> DSQ[\"local / global / custom DSQ\"]\n    Fair --> Run[\"CPU executes task\"]\n    DSQ --> Run\n    RT --> Run\n    SCX --> Target[\"SCX CPU performance target\"]\n    Target --> Gov[\"schedutil / CPUFreq driver\"]\n    Clamp[\"uclamp / thermal / policy limits\"] --> Gov\n```",
+      "after": "<details>\n<summary>Mermaid 源码（保留供复查）</summary>\n\n```mermaid\nflowchart TD\n    Work[\"App work: main / RenderThread / Binder / worker\"] --> Thread[\"Linux task\"]\n    Profile[\"task profile / cpuset / affinity / uclamp\"] --> Thread\n    Thread --> Class{\"scheduler class\"}\n    Class --> RT[\"stop / DL / RT\"]\n    Class --> Fair[\"fair class: EEVDF + EAS\"]\n    Class --> SCX[\"sched_ext class\"]\n    Loader[\"BPF struct_ops loader\"] --> SCX\n    SCX --> DSQ[\"local / global / custom DSQ\"]\n    Fair --> Run[\"CPU executes task\"]\n    DSQ --> Run\n    RT --> Run\n    SCX --> Target[\"SCX CPU performance target\"]\n    Target --> Gov[\"schedutil / CPUFreq driver\"]\n    Clamp[\"uclamp / thermal / policy limits\"] --> Gov\n```\n\n</details>",
+      "why": "保留原始 Mermaid，折叠长源码以配合对应白板图阅读。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "before": "```mermaid\nsequenceDiagram\n    participant T as Waking task\n    participant S as SCX core\n    participant B as BPF scheduler\n    participant D as DSQ\n    participant C as Target CPU\n    T->>S: becomes runnable\n    S->>B: select_cpu optional\n    alt inserted into local DSQ\n        B->>D: scx_bpf_dsq_insert\n    else not inserted yet\n        S->>B: enqueue optional\n        B->>D: insert into built-in or custom DSQ\n    end\n    C->>D: consume local DSQ\n    alt local and global are empty\n        S->>B: dispatch optional\n        B->>D: insert or move task to local DSQ\n    end\n    D->>C: run task\n```",
+      "after": "<details>\n<summary>Mermaid 源码（保留供复查）</summary>\n\n```mermaid\nsequenceDiagram\n    participant T as Waking task\n    participant S as SCX core\n    participant B as BPF scheduler\n    participant D as DSQ\n    participant C as Target CPU\n    T->>S: becomes runnable\n    S->>B: select_cpu optional\n    alt inserted into local DSQ\n        B->>D: scx_bpf_dsq_insert\n    else not inserted yet\n        S->>B: enqueue optional\n        B->>D: insert into built-in or custom DSQ\n    end\n    C->>D: consume local DSQ\n    alt local and global are empty\n        S->>B: dispatch optional\n        B->>D: insert or move task to local DSQ\n    end\n    D->>C: run task\n```\n\n</details>",
+      "why": "保留原始 Mermaid，折叠长源码以配合对应白板图阅读。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
+      "before": "```mermaid\nflowchart LR\n    Finger[\"Finger\"] --> IC[\"Touch IC sampling / filtering\"]\n    IC --> Driver[\"Kernel evdev\"]\n    Driver --> Reader[\"EventHub + InputReader\"]\n    Reader --> Dispatcher[\"InputDispatcher\"]\n    Dispatcher --> App[\"App receives and handles input\"]\n    App --> Render[\"Game logic + render + GPU\"]\n    Render --> SF[\"BufferQueue + SurfaceFlinger\"]\n    SF --> Display[\"Display scanout\"]\n    Firmware[\"OEM firmware / driver policy\"] --> IC\n    Power[\"GAME / GAME_LOADING + Power HAL\"] --> App\n    Scheduler[\"uclamp / scheduler / CPUFreq\"] --> App\n    Rate[\"frame-rate vote / display policy\"] --> SF\n```",
+      "after": "<details>\n<summary>Mermaid 源码（保留供复查）</summary>\n\n```mermaid\nflowchart LR\n    Finger[\"Finger\"] --> IC[\"Touch IC sampling / filtering\"]\n    IC --> Driver[\"Kernel evdev\"]\n    Driver --> Reader[\"EventHub + InputReader\"]\n    Reader --> Dispatcher[\"InputDispatcher\"]\n    Dispatcher --> App[\"App receives and handles input\"]\n    App --> Render[\"Game logic + render + GPU\"]\n    Render --> SF[\"BufferQueue + SurfaceFlinger\"]\n    SF --> Display[\"Display scanout\"]\n    Firmware[\"OEM firmware / driver policy\"] --> IC\n    Power[\"GAME / GAME_LOADING + Power HAL\"] --> App\n    Scheduler[\"uclamp / scheduler / CPUFreq\"] --> App\n    Rate[\"frame-rate vote / display policy\"] --> SF\n```\n\n</details>",
+      "why": "保留原始 Mermaid，折叠长源码以配合对应白板图阅读。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "before": "        val startNs = SystemClock.uptimeNanos()\n        renderOneFrame()\n        val actualNs = SystemClock.uptimeNanos() - startNs",
+      "after": "        val startNs = System.nanoTime()\n        renderOneFrame()\n        val actualNs = System.nanoTime() - startNs",
+      "why": "文章范围包含 API 34；uptimeNanos 从 API 35 才公开。用同一单调时钟 System.nanoTime 测量 duration，避免低版本无保护调用。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/SystemClock",
+        "https://developer.android.com/reference/android/os/PerformanceHintManager"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "before": "目标时长应取该线程组在整条处理管线中的工作预算，计时使用与 `SystemClock.uptimeNanos()` 一致的时钟基准。",
+      "after": "目标时长应取该线程组在整条处理管线中的工作预算。示例两端都用 `System.nanoTime()` 测量单调时钟时差，兼容本文覆盖的 API 34；`SystemClock.uptimeNanos()` 与其同属不包含深度休眠的 uptime 时间基准，但该公开方法从 API 35 才提供。\n\n> ⚠️ API 边界校勘：Hint Session 从 API 31 提供，不代表示例中的所有计时方法也都能在 API 31～34 使用。[来源：SystemClock API](https://developer.android.com/reference/android/os/SystemClock#uptimeNanos())",
+      "why": "同步说明计时方法的 API 边界与计时域。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "before": "vendor PowerStats HAL\n  → PowerStatsHALWrapper\n  → PowerStatsService\n  → PowerStatsLogger\n  → PowerStatsDataStorage / PowerMonitor / dumpsys",
+      "after": "vendor PowerStats HAL\n  → PowerStatsHALWrapper\n  → PowerStatsService\n      ├─ PowerStatsLogger → PowerStatsDataStorage → dumpsys --proto\n      ├─ Power Monitor API → 独立缓存 → SystemHealthManager\n      └─ LocalService → StatsPullAtomCallbackImpl → StatsD",
+      "why": "原箭头图把 Power Monitor 错列为 Logger 的下游；改成与正文和固定源码相符的三路分支。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsLogger.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/StatsPullAtomCallbackImpl.java"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "before": "下面列出主要类名，便于在源码中定位；箭头表示组件关系。图中含有存储、PowerMonitor 和 `dumpsys` 的那一行是并列的三种使用入口，它们不按文字顺序互相调用。",
+      "after": "下面列出主要类名，便于在源码中定位。服务连接 HAL 后分成日志、公开 Power Monitor 和 StatsD 三路；公开 Power Monitor 使用服务自己的缓存，不经过 Logger 或日志文件。",
+      "why": "移除对错误串行箭头的歧义解释，明确三路使用关系。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/powerstats/PowerStatsLogger.java"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
+      "before": "```mermaid\nflowchart TD\n    scene[\"系统场景或特权调用\"] --> pms[\"PowerManagerService\"]\n    pms --> mode[\"IPower setMode / setBoost\"]\n    app[\"应用周期工作\"] --> hint[\"PerformanceHintManager / HintManagerService\"]\n    hint --> session[\"IPower hint session / 可选 FMQ\"]\n    mode -.->|OEM 可选映射| control[\"uclamp / QoS / 固件资源请求\"]\n    session -.->|OEM 可选映射| control\n    wake[\"调度、唤醒与约束\"] --> cfs[\"fair-class utilization\"]\n    scx[\"SCX BPF scheduler\"] --> target[\"SCX CPU performance target\"]\n    cfs --> sugov[\"schedutil\"]\n    target --> sugov\n    control -.->|product-specific| sugov\n    sugov --> driver[\"cpufreq driver / OPP\"]\n```",
+      "after": "<details>\n<summary>Mermaid 源码（保留供复查）</summary>\n\n```mermaid\nflowchart TD\n    scene[\"系统场景或特权调用\"] --> pms[\"PowerManagerService\"]\n    pms --> mode[\"IPower setMode / setBoost\"]\n    app[\"应用周期工作\"] --> hint[\"PerformanceHintManager / HintManagerService\"]\n    hint --> session[\"IPower hint session / 可选 FMQ\"]\n    mode -.->|OEM 可选映射| control[\"uclamp / QoS / 固件资源请求\"]\n    session -.->|OEM 可选映射| control\n    wake[\"调度、唤醒与约束\"] --> cfs[\"fair-class utilization\"]\n    scx[\"SCX BPF scheduler\"] --> target[\"SCX CPU performance target\"]\n    cfs --> sugov[\"schedutil\"]\n    target --> sugov\n    control -.->|product-specific| sugov\n    sugov --> driver[\"cpufreq driver / OPP\"]\n```\n\n</details>",
+      "why": "保留原始 Mermaid，并折叠源码以配合对应白板图阅读。",
+      "sources": []
+    },
+    {
+      "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "before": "它会把 `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 返回的 1、10、20 视为无效并退回 0。",
+      "after": "它会把 `Build.VERSION.MEDIA_PERFORMANCE_CLASS` 返回的 1、10、20 视为无效，再尝试内置设备 fingerprint 表；只有属性与 fingerprint 两条路径都没有通过旧的有效性检查时，才返回 0。",
+      "why": "固定归档源码显示无效平台值后仍查询内置 fingerprint；原文遗漏回退步骤。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-performance/src/main/java/androidx/core/performance/DefaultDevicePerformance.kt"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "before": "若 Play services 已把 1、10、20 写入 DataStore，`PlayServicesDevicePerformance` 会直接对该持久化结果取 `max`，低等级仍能保留；只依赖平台构建属性的默认读取路径则会丢失这些值。",
+      "after": "若 Play services 已把 1、10、20 写入 DataStore，且默认读取器结果为 0，`PlayServicesDevicePerformance` 的 `max` 会保留这个持久化低等级；如果默认读取器从 fingerprint 表得到更大的值，结果仍取较大者。平台构建属性中的低等级本身，无法通过这版默认读取器的旧有效性检查。",
+      "why": "max 合并不保证低等级总被保留；结果还取决于默认读取器的 fingerprint 回退。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-performance/src/main/java/androidx/core/performance/DefaultDevicePerformance.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-performance-play-services/src/main/java/androidx/core/performance/play/services/PlayServicesDevicePerformance.kt"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "before": "接入前应针对项目实际使用的 Jetpack 版本写一个单元测试。",
+      "after": "接入前应针对项目实际使用的 Jetpack 版本写一个单元测试。该版 `PlayServicesDevicePerformance` 首次读取属性会在 lazy 初始化里用 `runBlocking` 读取 DataStore；耗时取决于存储和初始化状态，应避免把第一次读取放到渲染或音频关键路径。",
+      "why": "源码首次读取包含 runBlocking，补充与本文性能分级直接相关的调用成本边界。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/refs/heads/androidx-main/core/core-performance-play-services/src/main/java/androidx/core/performance/play/services/PlayServicesDevicePerformance.kt"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
+      "before": "表中的 `30/31` 和 `34/35` 只是把相近等级合并展示，阈值并非完全相同。",
+      "after": "> ⚠️ I/O 单位口径：补充表把速率列写作 `mbps`，本表保留官方常用的 `MB/s` 标签与阈值数值；固定 Android 17 CTS 的 `SequentialRWTest` 实际按 `bytes / 1024 / 1024` 计算速率并记为 `MBPS`，按该公式理解对应 MiB/s。与十进制 MB/s 或 Mbit/s 的外部结果比较时，必须先统一单位，不能只按标签直接拼表。[来源：CTS SequentialRWTest](https://android.googlesource.com/platform/cts/+/refs/tags/android-17.0.0_r1/tests/filesystem/src/android/filesystem/cts/SequentialRWTest.java)\n\n表中的 `30/31` 和 `34/35` 只是把相近等级合并展示，阈值并非完全相同。",
+      "why": "补充文档 mbps 标签与 CTS MBPS 的大小写不能直接确定 byte/bit 与十进制/二进制口径；以固定 CTS 计算公式明确比较边界。",
+      "sources": [
+        "https://source.android.com/docs/compatibility/17/mpc",
+        "https://android.googlesource.com/platform/cts/+/refs/tags/android-17.0.0_r1/tests/filesystem/src/android/filesystem/cts/SequentialRWTest.java"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/06-private-space-app-lock-boundary.md",
+      "before": "`LauncherApps#getProfiles()` 在 Android 17 源码里明确要求 HOME 角色；当调用进程本身位于 managed profile（工作资料）或 private profile 时，该方法也只返回当前资料用户。",
+      "after": "访问隐藏资料时，`LauncherApps#getProfiles()` 的普通权限路径要求 HOME 角色；源码还明确保留 `ACCESS_HIDDEN_PROFILES_FULL` 系统特权路径。当调用进程本身位于 managed profile（工作资料）或 private profile 时，该方法只返回当前资料用户。",
+      "why": "避免把普通权限路径的 HOME 要求写成所有调用者的共同前提，与前文 full 特权分支保持一致。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/android/content/pm/LauncherApps.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/res/AndroidManifest.xml"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "before": "last_verified: '2026-08-14'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "核对当前车载类别发布状态及固定标签源码，更新复核日期。",
+      "sources": [
+        "https://developer.android.com/training/cars/whats-new",
+        "https://developer.android.com/training/cars"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "before": "Android for Cars docs current on 2026-08-14;",
+      "after": "Android for Cars docs current on 2026-10-25;",
+      "why": "当前文档发布状态已变化，记录本次核对日期。",
+      "sources": [
+        "https://developer.android.com/training/cars/whats-new",
+        "https://developer.android.com/training/cars"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "before": "Android Auto 的模板模型与 host 绘制分处手机与车机，AAOS 则都落在车机内。",
+      "after": "Android Auto 的模板模型与 host 绘制都在手机，车机负责投射接收、显示、输入和音频；AAOS 的应用与 host 则都在车机内。",
+      "why": "原句与前文及官方 host 定义矛盾，不能把 Android Auto host 错放到车机。",
+      "sources": [
+        "https://developer.android.com/training/cars/apps/library/glossary-concepts"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "before": "停驻游戏等类别也有各自的平台与发布轨道要求。",
+      "after": "停驻游戏已于 2026 年 9 月 14 日在 Android Auto 与 AAOS 上正式开放，可发布到所有 Play 轨道；浏览器仍仅支持 AAOS 的内部测试轨道。",
+      "why": "更新过期发布信息，并区分类别限制。",
+      "sources": [
+        "https://developer.android.com/training/cars/whats-new",
+        "https://developer.android.com/training/cars"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "before": "视频、游戏和浏览器等停驻体验要按当前平台支持、车辆停驻状态和发布轨道处理。当前文档中，视频与浏览器主要面向 AAOS，停驻游戏可面向 Android Auto 与 AAOS，但部分能力仍处于受限测试阶段。普通媒体应用不能因为屏幕尺寸足够就允许行驶中播放视频。",
+      "after": "视频、游戏和浏览器等停驻体验要按当前平台支持、车辆状态和发布轨道处理。截至 2026 年 10 月 25 日，游戏可在 Android Auto 与 AAOS 上停驻使用，并发布到所有 Play 轨道；浏览器仅支持 AAOS 停驻使用，限内部测试轨道。视频类别支持 AAOS 的所有轨道，主要在停驻时使用；官方允许的行驶中有限使用是音频能力，不能据此在行驶中显示视频。详见[当前支持类别](https://developer.android.com/training/cars#supported-app-categories)与[2026 年 9 月发布更新](https://developer.android.com/training/cars/whats-new)。",
+      "why": "不能把已经正式开放的游戏类别继续描述成受限测试，也不能混淆视频与浏览器的轨道要求。",
+      "sources": [
+        "https://developer.android.com/training/cars/whats-new",
+        "https://developer.android.com/training/cars"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "before": "`invalidate()` 只请求 host 再次调用 `onGetTemplate()`，应从主线程调用。",
+      "after": "`invalidate()` 只请求 host 再次调用 `onGetTemplate()`，应从主线程调用；`Screen` 未达到 `STARTED` 生命周期时，该调用没有效果。",
+      "why": "补全 Screen.invalidate 的生命周期前提，避免恢复时丢失刷新请求。",
+      "sources": [
+        "https://developer.android.com/reference/androidx/car/app/Screen"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "before": "Android Auto 还要在手机与 DHU 或车机日志中记录同一个测试事件，或使用可对齐的单调时钟；单调时钟只向前递增，不受用户校时影响，适合计算阶段耗时。",
+      "after": "Android Auto 还要在手机与 DHU 或车机日志中记录同一个测试事件。本机单调时钟适合计算本机阶段耗时，但不同设备的起点和漂移不同，不能直接相减；跨设备合并轨迹前需要共同事件或显式时钟同步，记录偏移、漂移与对齐误差。Perfetto 的[时钟同步模型](https://perfetto.dev/docs/concepts/clock-sync)说明了以时钟快照建立时间域映射的方式；无法建立映射时应分别报告各端耗时和外部端到端测量。",
+      "why": "单调不等于跨设备同步，原句容易导致直接相减不同设备时间戳。",
+      "sources": [
+        "https://perfetto.dev/docs/concepts/clock-sync"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "before": "模板 host 位于另一个设备或进程且无法采集时，在报告中标出观测缺口。",
+      "after": "模板 host 的进程轨道或车端接收与呈现轨道无法采集时，在报告中标出观测缺口。",
+      "why": "标准 Android Auto host 在手机进程，车端接收与 host 必须分开标注。",
+      "sources": [
+        "https://developer.android.com/training/cars/apps/library/glossary-concepts"
+      ]
+    },
+    {
+      "article": "src/part4-system/ch19-oem/07-android-auto-car-os-performance.md",
+      "before": "```mermaid\nflowchart LR\n    subgraph auto[\"Android Auto 手机投射\"]\n        direction TB\n        phone[\"手机中的应用或 Service\"] --> autoHost[\"Android Auto host\"]\n        autoHost --> autoDisplay[\"车载显示、输入与音频\"]\n        phone --> phoneNet[\"手机网络\"]\n    end\n\n    subgraph aaos[\"Android Automotive OS\"]\n        direction TB\n        carApp[\"车机中的应用或 Service\"] --> aaosHost[\"模板 host 或系统 UI\"]\n        parked[\"允许停驻使用的 Activity\"] --> aaosDisplay[\"车载显示与输入\"]\n        aaosHost --> aaosDisplay\n        carApp --> carNet[\"车机网络\"]\n        carApp --> carService[\"CarService 与权限检查\"]\n        carService --> vhal[\"VHAL 与车辆网络\"]\n    end\n```",
+      "after": "<details>\n<summary>平台责任图的 Mermaid 源码</summary>\n\n```mermaid\nflowchart LR\n    subgraph auto[\"Android Auto 手机投射\"]\n        direction TB\n        phone[\"手机中的应用或 Service\"] --> autoHost[\"Android Auto host\"]\n        autoHost --> autoDisplay[\"车载显示、输入与音频\"]\n        phone --> phoneNet[\"手机网络\"]\n    end\n\n    subgraph aaos[\"Android Automotive OS\"]\n        direction TB\n        carApp[\"车机中的应用或 Service\"] --> aaosHost[\"模板 host 或系统 UI\"]\n        parked[\"允许停驻使用的 Activity\"] --> aaosDisplay[\"车载显示与输入\"]\n        aaosHost --> aaosDisplay\n        carApp --> carNet[\"车机网络\"]\n        carApp --> carService[\"CarService 与权限检查\"]\n        carService --> vhal[\"VHAL 与车辆网络\"]\n    end\n```\n\n</details>",
+      "why": "保留可编辑源码，正文以可直接阅读的白板图展示。",
+      "sources": [
+        "https://developer.android.com/training/cars/apps/library/glossary-concepts",
+        "https://source.android.com/docs/automotive/vhal"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "last_verified: '2026-08-14'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "当前官方统计规则和 API 37 边界已重新核验。",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals",
+        "https://firebase.google.com/docs/crashlytics/crash-free-metrics",
+        "https://developer.android.com/reference/android/app/ActivityManager",
+        "https://developer.android.com/reference/android/os/ProfilingTrigger"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "Android vitals docs current on 2026-08-14",
+      "after": "Android vitals docs current on 2026-10-25",
+      "why": "记录本次官方文档复核日期。",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals",
+        "https://firebase.google.com/docs/crashlytics/crash-free-metrics"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "截至 2026-08-14，它将用户感知崩溃率和用户感知 ANR 率",
+      "after": "截至 2026-10-25，它将用户感知崩溃率和用户感知 ANR 率",
+      "why": "复核 1.09% / 0.47% / 手机型号 8% 阈值未变，记录新日期。",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "按 2026 年 8 月 14 日的官方文档核对",
+      "after": "按 2026 年 10 月 25 日的官方文档核对",
+      "why": "明确本次外部统计规则的核对日期。",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals",
+        "https://firebase.google.com/docs/crashlytics/crash-free-metrics"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "截至 2026 年 8 月 14 日，[Google Play 公布的手机阈值]",
+      "after": "截至 2026 年 10 月 25 日，[Google Play 公布的手机阈值]",
+      "why": "当前官方手机阈值复核仍一致。",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "Java/Native Crash 按去除易变地址和行号后的堆栈、异常或信号、Build ID 聚类；ANR 按原因文本、阻塞关系和主线程状态聚类。",
+      "after": "Java/Native Crash 先按事件族和构建产物隔离，再按符号化帧、异常或信号建组；构建内精确指纹保留源行号或模块相对 PC，跨构建候选降低这些位置字段的权重。ANR 按原因文本、阻塞关系和相关执行线程状态聚类。",
+      "why": "原句一律去行号，与后文两层指纹原则矛盾，可能误合并同方法不同失败点。",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Throwable.java",
+        "https://developer.android.com/tools/retrace",
+        "https://developer.android.com/ndk/guides/ndk-stack"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "三类启动要分别建立启动尝试，并为每次尝试记录终态：",
+      "after": "三类启动要分别建立启动尝试。先记录启动里程碑，再为每次尝试记录互斥的终态：",
+      "why": "first_frame_presented 与 fully_drawn 可以先后发生，不能同时当作互斥终态。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationStartInfo"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "`first_frame_presented`：第一帧画面已经提交，用户能看到界面；",
+      "after": "`first_frame_presented`：第一帧已经呈现的里程碑，提交渲染命令本身不代表用户已看到画面；",
+      "why": "区分提交与实际呈现，避免把客户端提交时间冒充可见终点。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationStartInfo",
+        "https://developer.android.com/topic/performance/vitals/render"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "`fully_drawn`：关键内容可用，可与 `Activity.reportFullyDrawn()` 的语义对应；",
+      "after": "`fully_drawn`：关键内容可用的成功终态，可与 `Activity.reportFullyDrawn()` 的语义对应；",
+      "why": "明确首帧是里程碑，fully_drawn 是本例选定的成功终态。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationStartInfo"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "以“关键内容可用”为成功条件时，可以计算：",
+      "after": "以“关键内容可用”为成功条件时，成功、故障失败和放弃要分开。下面只计算由 `fatal` 或 `abnormal_exit` 导致的故障启动失败率，`abandoned` 单列；该比例不等于 `1 − 启动成功率`：",
+      "why": "原文成功定义与仅包含两类故障的分子不互补；用户放弃既未成功，也不应自动计为故障。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationStartInfo"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "Play 每天用最近 28 天的平均值评估质量。",
+      "after": "Play 通常用最近 28 天数据评估质量，出现突增时也可能提前采取措施。",
+      "why": "官方说明最近 28 天数据，未在此保证每日比例的简单算术平均；避免额外推断。",
+      "sources": [
+        "https://developer.android.com/topic/performance/vitals",
+        "https://support.google.com/googleplay/android-developer/answer/9844486"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "会在 `reason == REASON_ANR` 时提供结构化 ANR 信息，其他退出原因返回 `null`",
+      "after": "可能在 `reason == REASON_ANR` 时提供结构化 ANR 信息；其他退出原因返回 `null`，ANR 记录也仍需判空",
+      "why": "公开返回值可空，不能把 reason 条件当作必达保证。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "java.util.concurrent.Executor（任务执行器）,%20java.util.function.Consumer",
+      "after": "java.util.concurrent.Executor,%20java.util.function.Consumer",
+      "why": "中文解释误插入 URL 片段，会跳不到实际 API 锚点。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/ActivityManager"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "P1/P2 通常表示最高和次高处理优先级，响应时限由团队值班能力与业务损失确定；",
+      "after": "P1/P2 是团队自定义的处理优先级标签，是否另设 P0、各级含义及响应时限由团队值班能力与业务损失确定；",
+      "why": "本篇前面使用 P0/P1；不可把 P1/P2 解释成通用最高/次高级别。",
+      "sources": [
+        "https://sre.google/workbook/alerting-on-slos/"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "```mermaid\nflowchart LR\n  A[\"原始 occurrence\"] --> B[\"格式校验与去重\"]\n  B --> C{\"事件族\"}\n  C -->|\"Java/Kotlin\"| D[\"R8 Retrace\"]\n  C -->|\"Native\"| E[\"按 Build ID 符号化\"]\n  C -->|\"ANR\"| F[\"解析 ANR 类型与线程关系\"]\n  C -->|\"OOM/LMK\"| G[\"解析内存故障类别\"]\n  D --> H[\"构建内精确指纹\"]\n  E --> H\n  F --> H\n  G --> H\n  H --> I[\"variant\"]\n  I --> J[\"跨构建候选召回\"]\n  J --> K[\"保守相似度判定\"]\n  K --> L[\"issue / issue family\"]\n  L --> M[\"归因、分派、告警\"]\n```",
+      "after": "<details>\n<summary>聚合流水线的 Mermaid 源码</summary>\n\n```mermaid\nflowchart LR\n  A[\"原始 occurrence\"] --> B[\"格式校验与去重\"]\n  B --> C{\"事件族\"}\n  C -->|\"Java/Kotlin\"| D[\"R8 Retrace\"]\n  C -->|\"Native\"| E[\"按 Build ID 符号化\"]\n  C -->|\"ANR\"| F[\"解析 ANR 类型与线程关系\"]\n  C -->|\"OOM/LMK\"| G[\"解析内存故障类别\"]\n  D --> H[\"构建内精确指纹\"]\n  E --> H\n  F --> H\n  G --> H\n  H --> I[\"variant\"]\n  I --> J[\"跨构建候选召回\"]\n  J --> K[\"保守相似度判定\"]\n  K --> L[\"issue / issue family\"]\n  L --> M[\"归因、分派、告警\"]\n```\n\n</details>",
+      "why": "保留编辑源码，正文使用分层可阅读白板图。",
+      "sources": [
+        "https://android.googlesource.com/platform/libcore/+/android-17.0.0_r1/ojluni/src/main/java/java/lang/Throwable.java",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo",
+        "https://firebase.google.com/docs/crashlytics/troubleshooting"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+      "before": "若事件后来成为 ANR，`anrId` 可与退出信息关联。",
+      "after": "若事件后来成为 ANR，可用 `anrType + anrId` 与退出信息关联；`anrId` 只保证在同一 ANR 类型内唯一，不能单独作为全局关联键。",
+      "why": "官方只保证每个 ANR 类型内 id 唯一，关联键必须包含类型，避免不同类型事件误关联。",
+      "sources": [
+        "https://developer.android.com/reference/android/app/AnrWarningResult",
+        "https://developer.android.com/reference/android/app/ApplicationExitInfo.AnrInfo"
+      ]
+    }
+  ],
+  "validation": {},
+  "last_checkpoint": {
+    "completed": 7,
+    "total": 51,
+    "next_article": "src/part5-app/ch20-stability/01-stability-metrics-aggregation-attribution.md",
+    "updated_at": "2026-10-25T04:52:03.498699+00:00"
+  },
+  "replaced_inline_diagrams": []
+}

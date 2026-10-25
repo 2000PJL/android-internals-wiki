@@ -918,34 +918,120 @@
     {
       "path": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
       "sha256_before": "beb0f2107fcb04e4b63ed3a57ac453d374b81e9245530127075c10cf0b21bc6d",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a282-01-thermal-policy-actions-and-public-signals",
+        "a282-02-skin-global-status-and-shutdown",
+        "a282-03-thermal-versus-capacity-headroom",
+        "a282-04-forecast-hal-versus-framework-regression",
+        "a282-05-headroom-callback-significance-and-throttle",
+        "a282-06-observer-generation-and-fresh-forecast",
+        "a282-07-tier-hysteresis-and-cooldown",
+        "a282-08-shared-tier-and-stale-queue-discard",
+        "a282-09-thermal-causality-evidence-tracks",
+        "a282-10-cpu-gpu-and-other-mitigation-evidence",
+        "a282-11-thermal-hint-game-and-sustained-roles",
+        "a282-12-job-thermal-restriction-branches",
+        "a282-13-independent-power-constraints",
+        "a282-14-override-ui-test-versus-hardware-test",
+        "a282-15-steady-performance-and-state-duration"
+      ],
       "article_index": 282,
-      "sha256_at_assignment": "beb0f2107fcb04e4b63ed3a57ac453d374b81e9245530127075c10cf0b21bc6d"
+      "sha256_at_assignment": "beb0f2107fcb04e4b63ed3a57ac453d374b81e9245530127075c10cf0b21bc6d",
+      "sha256_current": "af2630cbe04d31d15629f20bb25e42caa910dea7ba74620cf1202ec78951f1be",
+      "sha256_after": "af2630cbe04d31d15629f20bb25e42caa910dea7ba74620cf1202ec78951f1be",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "全文665行已读，22份官方/17r1和冻结Thermal AIDL V1-V3来源核对；15图及15处正文实际视觉检查通过，独立mdBook构建、本地链接、SVG XML、PNG解码通过；20条校勘及原文+校勘+插图精确重建、独立代码围栏检查通过。2段Kotlin修改用Kotlin2.2.20/JDK21主机SDK适配器验证注册/回调/清理与7种档位边界，shell仅bash -n，SQL合成fixture通过，无Android构建/ADB/设备热功耗测量。",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "beb0f2107fcb04e4b63ed3a57ac453d374b81e9245530127075c10cf0b21bc6d"
     },
     {
       "path": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
       "sha256_before": "beed2934fb30009e903fba49bdedb8980e9bf7179e5602d7029869bd2443e097",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a283-01-four-size-boundaries",
+        "a283-02-dex-index-data-and-reference-limit",
+        "a283-03-source-r8-d8-and-art-products",
+        "a283-04-keep-four-dimensions",
+        "a283-05-analyzer-score-radius-and-runtime",
+        "a283-06-dependency-and-desugaring-footprint",
+        "a283-07-debug-mapping-and-kotlin-metadata",
+        "a283-08-startup-profile-versus-baseline-profile",
+        "a283-09-dex-delivery-regression-loop",
+        "a283-10-elf-loadable-segments-and-sections",
+        "a283-11-same-link-release-and-symbol-artifact",
+        "a283-12-abi-build-set-versus-device-set",
+        "a283-13-compile-link-gc-and-thinlto",
+        "a283-14-jni-export-protocol-and-icf",
+        "a283-15-static-duplicate-and-shared-cpp-runtime",
+        "a283-16-elf-and-zip-independent-16kb-alignment",
+        "a283-17-native-dcl-readonly-publication",
+        "a283-18-native-regression-artifact-chain",
+        "a283-19-aapt2-res-and-assets-separate-paths",
+        "a283-20-resource-overlay-versus-content-duplicates",
+        "a283-21-resource-names-paths-and-sparse-tables",
+        "a283-22-resource-shrinking-reachability-and-dynamic-name",
+        "a283-23-image-format-and-runtime-cost",
+        "a283-24-locale-filter-language-split-and-user-choice",
+        "a283-25-zip-compression-versus-direct-access",
+        "a283-26-fonts-features-and-asset-delivery",
+        "a283-27-final-size-ci-and-compatibility-gate"
+      ],
       "article_index": 283,
-      "sha256_at_assignment": "beed2934fb30009e903fba49bdedb8980e9bf7179e5602d7029869bd2443e097"
+      "sha256_at_assignment": "beed2934fb30009e903fba49bdedb8980e9bf7179e5602d7029869bd2443e097",
+      "sha256_current": "7d97b373a4f6ec8f99a9b62f41704fd45f60c91eae9eeb84e23217e0c43d8c12",
+      "sha256_after": "7d97b373a4f6ec8f99a9b62f41704fd45f60c91eae9eeb84e23217e0c43d8c12",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "Read 1926 original lines and 64 official/AOSP/LLVM/Google schema sources; corrected R8 minimum versions and HTML export versus protobuf schema, multidex definition, assets bypass of resource compilation, dedup semantics and test-property restoration; 27 diagrams plus all 27 actual rendered positions visually inspected after placement refinement. Isolated mdBook, local links, SVG/PNG and exact baseline+correction+placement reconstruction passed; 31 non-Mermaid fences unchanged and 13 shell blocks pass bash -n. No Android/AGP/NDK build or device size/performance result claimed.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "beed2934fb30009e903fba49bdedb8980e9bf7179e5602d7029869bd2443e097"
     },
     {
       "path": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
       "sha256_before": "96f03e3561cbb71502c35e4084fb68bf8688a550f8789d4dc9d55e66dff02330",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a284-01-aab-publish-device-apks-and-platform",
+        "a284-02-three-size-metrics-and-fixed-device-spec",
+        "a284-03-split-session-consistency-validation",
+        "a284-04-feature-boundary-and-build-dependencies",
+        "a284-05-feature-delivery-timing-and-fusing",
+        "a284-06-on-demand-state-recovery-and-zero-session",
+        "a284-07-splitcompat-system-entry-and-versioning",
+        "a284-08-asset-pack-three-delivery-timelines",
+        "a284-09-asset-update-and-first-use-fallback",
+        "a284-10-channel-capability-and-executable-boundary",
+        "a284-11-delivery-ci-same-spec-and-module-dependencies"
+      ],
       "article_index": 284,
-      "sha256_at_assignment": "96f03e3561cbb71502c35e4084fb68bf8688a550f8789d4dc9d55e66dff02330"
+      "sha256_at_assignment": "96f03e3561cbb71502c35e4084fb68bf8688a550f8789d4dc9d55e66dff02330",
+      "sha256_current": "7603d42ad1513ecfd32ca26e925bc8ca6673f29a25d88eed6cfb0cdc6df2e54e",
+      "sha256_after": "7603d42ad1513ecfd32ca26e925bc8ca6673f29a25d88eed6cfb0cdc6df2e54e",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "Read all 307 original lines; 19 official/API/AOSP/policy sources retained, with four legacy cs.android links treated as historical only. Verified split identity/required types in 17r1. Corrected ID0 no-session completion, active-session restore, early callback reconciliation, SERVICE_DIED -1 and stale callback lifecycle; AGP9 built-in Kotlin, PAD support scope and actual disk semantics. Exact modified Kotlin gate compiled/run with Kotlin2.2.20/JDK21 host fake Tasks and Play APIs across lifecycle/race/failure cases; not an Android/Play library build. 11 figures and all rendered positions visually inspected, refined figures3/6 checked again. Isolated mdBook/local links/assets/exact reconstruction passed; 3 shell blocks bash-n only, no bundletool/Play/device installation or download test.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "96f03e3561cbb71502c35e4084fb68bf8688a550f8789d4dc9d55e66dff02330"
     },
     {
       "path": "src/part5-app/ch25-power-size/README.md",
       "sha256_before": "f23b6771d9ed08ec4de65b8da531f778a04fbee1930067e555295d8e11c29430",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a285-01-power-size-reading-and-validation-map"
+      ],
       "article_index": 285,
-      "sha256_at_assignment": "f23b6771d9ed08ec4de65b8da531f778a04fbee1930067e555295d8e11c29430"
+      "sha256_at_assignment": "f23b6771d9ed08ec4de65b8da531f778a04fbee1930067e555295d8e11c29430",
+      "sha256_current": "d07562f7e1f5f4b0a4df52807355da2f7dafde54997797b744934c43aa50db96",
+      "sha256_after": "d07562f7e1f5f4b0a4df52807355da2f7dafde54997797b744934c43aa50db96",
+      "reviewed_at": "2026-10-25",
+      "source_audit": "Read all 38 original lines and chapter links, with five official power/WorkManager/optimization/AppBundle/Thermal sources. Added one chapter-specific two-route diagnostic reading map; clarified fixed charging/screen/input/build conditions and WorkManager scheduling limits. SVG/PNG and actual rendered article position visually inspected; isolated mdBook/local links/assets/exact baseline reconstruction passed. No executable code changed, no device test claimed.",
+      "visual_review": "passed",
+      "article_position_review": "passed",
+      "sha256_review_input": "f23b6771d9ed08ec4de65b8da531f778a04fbee1930067e555295d8e11c29430"
     },
     {
       "path": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
@@ -9433,6 +9519,1285 @@
         "src/assets/diagrams/ch25/a281-15-powerstats-log-rotation-and-metadata.svg": "9f5e5f3de99e35f30ed2ee063e1c6f7119e72cb4bf6ded65d860afbbe57626b1",
         "src/assets/diagrams/ch25/a281-15-powerstats-log-rotation-and-metadata.png": "b545614d8761536590c977fb1f405f72d3dd1eb85a49fdc6d7fd5dbf1778b0cd"
       }
+    },
+    {
+      "id": "a282-01-thermal-policy-actions-and-public-signals",
+      "title": "底层热限制先执行，应用接收信号再减少自身工作",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-01-thermal-policy-actions-and-public-signals.svg",
+        "src/assets/diagrams/ch25/a282-01-thermal-policy-actions-and-public-signals.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-01-thermal-policy-actions-and-public-signals",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/IThermal.aidl"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-01-thermal-policy-actions-and-public-signals.svg": "53c09d79deec00873771460ba662fe8170ae16e89da9575d9997f20ae657d9be",
+        "src/assets/diagrams/ch25/a282-01-thermal-policy-actions-and-public-signals.png": "bf70b7ce47529b5469a656061c09639fad1d8ac2a32841844a0749a0ffe3849b"
+      }
+    },
+    {
+      "id": "a282-02-skin-global-status-and-shutdown",
+      "title": "全局状态只聚合SKIN，关机安全检查还覆盖其他热源",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-02-skin-global-status-and-shutdown.svg",
+        "src/assets/diagrams/ch25/a282-02-skin-global-status-and-shutdown.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-02-skin-global-status-and-shutdown",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/ThrottlingSeverity.aidl"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-02-skin-global-status-and-shutdown.svg": "0da98d31cbdb92e361f8860bfed533ab25bb9803a45642006d1977870a0f210f",
+        "src/assets/diagrams/ch25/a282-02-skin-global-status-and-shutdown.png": "03ec1cb79d62806541b21609e32e4f0f858b3d143f1d556386e0317ff942d5aa"
+      }
+    },
+    {
+      "id": "a282-03-thermal-versus-capacity-headroom",
+      "title": "热headroom越高越紧，容量headroom越低越紧",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-03-thermal-versus-capacity-headroom.svg",
+        "src/assets/diagrams/ch25/a282-03-thermal-versus-capacity-headroom.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-03-thermal-versus-capacity-headroom",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java",
+        "https://developer.android.com/reference/android/os/health/SystemHealthManager",
+        "https://developer.android.com/reference/android/os/PowerManager.OnThermalHeadroomChangedListener"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-03-thermal-versus-capacity-headroom.svg": "9db119f528fc66a46e6fc484e788bc397e0faa248506d3390c1b466d2816c155",
+        "src/assets/diagrams/ch25/a282-03-thermal-versus-capacity-headroom.png": "f31834a2ec97546d49687c3f9571d7fc5a5c0a8cb542684fa2fd8cbd0d27eef5"
+      }
+    },
+    {
+      "id": "a282-04-forecast-hal-versus-framework-regression",
+      "title": "预测可能由HAL提供，也可能是近期温度外推",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-04-forecast-hal-versus-framework-regression.svg",
+        "src/assets/diagrams/ch25/a282-04-forecast-hal-versus-framework-regression.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-04-forecast-hal-versus-framework-regression",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java",
+        "https://developer.android.com/games/optimize/adpf/thermal"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-04-forecast-hal-versus-framework-regression.svg": "33a5d474016de4621799ee8d27aadeb34879a39ad50692a89db01a1ae1dae381",
+        "src/assets/diagrams/ch25/a282-04-forecast-hal-versus-framework-regression.png": "fd1071e2b97e2dd1fbdd92c6139867231ff2c2390037e3f6a987ea781ece8dcd"
+      }
+    },
+    {
+      "id": "a282-05-headroom-callback-significance-and-throttle",
+      "title": "5秒只抑制相似回调，显著变化可以更快通知",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-05-headroom-callback-significance-and-throttle.svg",
+        "src/assets/diagrams/ch25/a282-05-headroom-callback-significance-and-throttle.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-05-headroom-callback-significance-and-throttle",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java",
+        "https://developer.android.com/reference/android/os/PowerManager.OnThermalHeadroomChangedListener"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-05-headroom-callback-significance-and-throttle.svg": "4977fa0333d8a6c090d0b910d0f0b2d3417f7f390beff264ff55f96725ff1e4e",
+        "src/assets/diagrams/ch25/a282-05-headroom-callback-significance-and-throttle.png": "b6ce20d68020c1ab1c2cf15620f29d441d7e178fd0538d5113ec5d951020628f"
+      }
+    },
+    {
+      "id": "a282-06-observer-generation-and-fresh-forecast",
+      "title": "监听器生命周期与预测新鲜度都进入同一控制队列",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-06-observer-generation-and-fresh-forecast.svg",
+        "src/assets/diagrams/ch25/a282-06-observer-generation-and-fresh-forecast.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-06-observer-generation-and-fresh-forecast",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java",
+        "https://developer.android.com/reference/android/os/PowerManager.OnThermalHeadroomChangedListener",
+        "https://developer.android.com/games/optimize/adpf/thermal"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-06-observer-generation-and-fresh-forecast.svg": "8ebbfe08ecf0c5dab9be93cecf7f0a916bcb7360eabb20788e71122310853a52",
+        "src/assets/diagrams/ch25/a282-06-observer-generation-and-fresh-forecast.png": "3d8b95796e332ea7ea91cd67b49b336afdfa763e8a46a328bd66b4f31424d80e"
+      }
+    },
+    {
+      "id": "a282-07-tier-hysteresis-and-cooldown",
+      "title": "降载可快速，恢复必须有退出余量与冷却驻留",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-07-tier-hysteresis-and-cooldown.svg",
+        "src/assets/diagrams/ch25/a282-07-tier-hysteresis-and-cooldown.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-07-tier-hysteresis-and-cooldown",
+      "sources": [
+        "https://developer.android.com/games/optimize/adpf/thermal",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-07-tier-hysteresis-and-cooldown.svg": "08b8827faa190f5b3cd1d8f54362290e6b8da451c2623765066667de172a19fc",
+        "src/assets/diagrams/ch25/a282-07-tier-hysteresis-and-cooldown.png": "e98d9af038b3c809f4af5ab827aceb7bef2b065c9344b098b5da0dbc7a1f0cbc"
+      }
+    },
+    {
+      "id": "a282-08-shared-tier-and-stale-queue-discard",
+      "title": "热降载同时改变生产速率、消费能力与积压队列",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-08-shared-tier-and-stale-queue-discard.svg",
+        "src/assets/diagrams/ch25/a282-08-shared-tier-and-stale-queue-discard.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-08-shared-tier-and-stale-queue-discard",
+      "sources": [
+        "https://developer.android.com/games/optimize/adpf/thermal",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/restrictions/ThermalStatusRestriction.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-08-shared-tier-and-stale-queue-discard.svg": "a9818b767a4882f0606a2056ecb848d93c7fadc33f3ec8895d59308ec08d11cd",
+        "src/assets/diagrams/ch25/a282-08-shared-tier-and-stale-queue-discard.png": "2c0089fb5cb5412ab38c691f334054c1d8361a35c30ab50e52303fc8283f1dff"
+      }
+    },
+    {
+      "id": "a282-09-thermal-causality-evidence-tracks",
+      "title": "热、资源限制、性能退化与降载回落要按时间对齐",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-09-thermal-causality-evidence-tracks.svg",
+        "src/assets/diagrams/ch25/a282-09-thermal-causality-evidence-tracks.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-09-thermal-causality-evidence-tracks",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java",
+        "https://source.android.com/docs/core/power/thermal-mitigation"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-09-thermal-causality-evidence-tracks.svg": "101302958d99553b25f65ac513f88dcdf3133a4bb68079361a9299795f6ba922",
+        "src/assets/diagrams/ch25/a282-09-thermal-causality-evidence-tracks.png": "436bd1bfc33eb890ac828e59564a793df4fa81e446703fa047bab9a67431dac5"
+      }
+    },
+    {
+      "id": "a282-10-cpu-gpu-and-other-mitigation-evidence",
+      "title": "CPU、GPU和充电限制分别取证再选择减载项",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-10-cpu-gpu-and-other-mitigation-evidence.svg",
+        "src/assets/diagrams/ch25/a282-10-cpu-gpu-and-other-mitigation-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-10-cpu-gpu-and-other-mitigation-evidence",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java",
+        "https://source.android.com/docs/core/power/thermal-mitigation",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/CoolingDevice.aidl"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-10-cpu-gpu-and-other-mitigation-evidence.svg": "49a6b1a3ed1d831feca3ec801449a9ab7a269ae2e911c5423f34a7d61c16f53c",
+        "src/assets/diagrams/ch25/a282-10-cpu-gpu-and-other-mitigation-evidence.png": "ee84d31f5b786b363542afefe62a3290508fa92717e23c28e28a2550863789da"
+      }
+    },
+    {
+      "id": "a282-11-thermal-hint-game-and-sustained-roles",
+      "title": "Thermal、Performance Hint、Game Mode各负责不同意图",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-11-thermal-hint-game-and-sustained-roles.svg",
+        "src/assets/diagrams/ch25/a282-11-thermal-hint-game-and-sustained-roles.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-11-thermal-hint-game-and-sustained-roles",
+      "sources": [
+        "https://developer.android.com/games/optimize/adpf/thermal",
+        "https://developer.android.com/games/optimize/adpf/gamemode/about-API-and-interventions",
+        "https://developer.android.com/reference/android/os/health/SystemHealthManager",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-11-thermal-hint-game-and-sustained-roles.svg": "61049c7c36d6490ec39c584363a73172e94ef7927d661b0b15d2549b2de7e955",
+        "src/assets/diagrams/ch25/a282-11-thermal-hint-game-and-sustained-roles.png": "abd43e74479f844feff5b921aae5410676887587a80d464fb7696713ed95ba68"
+      }
+    },
+    {
+      "id": "a282-12-job-thermal-restriction-branches",
+      "title": "Job热限制先看TOP_APP，再按热等级和bias分支",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-12-job-thermal-restriction-branches.svg",
+        "src/assets/diagrams/ch25/a282-12-job-thermal-restriction-branches.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-12-job-thermal-restriction-branches",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/restrictions/ThermalStatusRestriction.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-12-job-thermal-restriction-branches.svg": "4980eb6126f109cd11d7dde94b71e8b3da61eaab64cbb005fb6a6acdd0458c69",
+        "src/assets/diagrams/ch25/a282-12-job-thermal-restriction-branches.png": "df48c26138b8c04f312a7416b8581feb703df4d3b998db3de38158ca66d6f586"
+      }
+    },
+    {
+      "id": "a282-13-independent-power-constraints",
+      "title": "热限制、Doze、待机桶与省电规则独立判断",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-13-independent-power-constraints.svg",
+        "src/assets/diagrams/ch25/a282-13-independent-power-constraints.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-13-independent-power-constraints",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/restrictions/ThermalStatusRestriction.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-13-independent-power-constraints.svg": "a39205ac0ae67806bc6f13cb2fe6283f8ce6bb4933d682d8b2430361c1e55ab3",
+        "src/assets/diagrams/ch25/a282-13-independent-power-constraints.png": "6f6a48c7b4d82503d28bd463a5f3d39bc5bcb1bab24fad7c8c705bf7cf065196"
+      }
+    },
+    {
+      "id": "a282-14-override-ui-test-versus-hardware-test",
+      "title": "override-status只测试Framework策略，不制造真实热节流",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-14-override-ui-test-versus-hardware-test.svg",
+        "src/assets/diagrams/ch25/a282-14-override-ui-test-versus-hardware-test.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-14-override-ui-test-versus-hardware-test",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-14-override-ui-test-versus-hardware-test.svg": "b24268430a50aca697fb20cedd5a0c3e07202c08cff78b8442d4f50502db540d",
+        "src/assets/diagrams/ch25/a282-14-override-ui-test-versus-hardware-test.png": "027e5d2932cdddf06bf04d5b4622d3aa9e819569a1a19c4eb97465f86ecd715f"
+      }
+    },
+    {
+      "id": "a282-15-steady-performance-and-state-duration",
+      "title": "发布验收看热稳定后的吞吐与质量，并记录恢复振荡",
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a282-15-steady-performance-and-state-duration.svg",
+        "src/assets/diagrams/ch25/a282-15-steady-performance-and-state-duration.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a282-15-steady-performance-and-state-duration",
+      "sources": [
+        "https://developer.android.com/games/optimize/adpf/thermal",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java",
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a282-15-steady-performance-and-state-duration.svg": "1b0b8386379392250487fafa094185d96565d6003f3d60ada7208b85c42b2776",
+        "src/assets/diagrams/ch25/a282-15-steady-performance-and-state-duration.png": "adf104428cc8b119957df39f46793c9b12f624c45658f19120abe82577811f51"
+      }
+    },
+    {
+      "id": "a283-01-four-size-boundaries",
+      "title": "同一应用的四种体积，需要四套可比口径",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-01-four-size-boundaries.svg",
+        "src/assets/diagrams/ch25/a283-01-four-size-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-01-four-size-boundaries",
+      "sources": [
+        "https://developer.android.com/studio/debug/apk-analyzer",
+        "https://developer.android.com/guide/app-bundle/app-bundle-format"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-01-four-size-boundaries.svg": "7657fbe8ae8892d9309013cf058a212cf6a21fc1a118ab5d4834e355b8cb3f5b",
+        "src/assets/diagrams/ch25/a283-01-four-size-boundaries.png": "b1ec6512c39ea992d781ff68ea8f95458099fe3a8d1b73840b0595716d7acf38"
+      }
+    },
+    {
+      "id": "a283-02-dex-index-data-and-reference-limit",
+      "title": "DEX 字节由索引和变长数据共同组成",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-02-dex-index-data-and-reference-limit.svg",
+        "src/assets/diagrams/ch25/a283-02-dex-index-data-and-reference-limit.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-02-dex-index-data-and-reference-limit",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/dex-format",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/standard_dex_file.h"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-02-dex-index-data-and-reference-limit.svg": "4279060098e26ee9617209399b2be9cc162285159db73427704033612283997b",
+        "src/assets/diagrams/ch25/a283-02-dex-index-data-and-reference-limit.png": "e6d1ab09a77d7eeae26ad5699b8cf4d94c08bbd7048f5f62d8a964886a8586cb"
+      }
+    },
+    {
+      "id": "a283-03-source-r8-d8-and-art-products",
+      "title": "R8 与 D8 是构建分支，ART 产物在设备侧生成",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-03-source-r8-d8-and-art-products.svg",
+        "src/assets/diagrams/ch25/a283-03-source-r8-d8-and-art-products.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-03-source-r8-d8-and-art-products",
+      "sources": [
+        "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization",
+        "https://developer.android.com/tools/d8",
+        "https://android.googlesource.com/platform/art/+/refs/tags/android-17.0.0_r1/libdexfile/dex/standard_dex_file.h"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-03-source-r8-d8-and-art-products.svg": "05ed580b3e72c9c663b971af3a17de6bae2f27fed71f208c0dd789303771533d",
+        "src/assets/diagrams/ch25/a283-03-source-r8-d8-and-art-products.png": "2ce591395551562f18558c878da2c695c51707305d79a55f0c96fea5cb982411"
+      }
+    },
+    {
+      "id": "a283-04-keep-four-dimensions",
+      "title": "Keep 规则保护的是具体运行时协议",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-04-keep-four-dimensions.svg",
+        "src/assets/diagrams/ch25/a283-04-keep-four-dimensions.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-04-keep-four-dimensions",
+      "sources": [
+        "https://developer.android.com/topic/performance/app-optimization/add-keep-rules",
+        "https://developer.android.com/topic/performance/app-optimization/troubleshooting-rules"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-04-keep-four-dimensions.svg": "bbf77317f5ab2a0186f8ff8ba7ece5f3b6c26ef0ba8ce29d8f815f30d0b366ac",
+        "src/assets/diagrams/ch25/a283-04-keep-four-dimensions.png": "b228c78f6e2c8638a928b08571bcb576fde5dd851b204da118f939ee21cb4958"
+      }
+    },
+    {
+      "id": "a283-05-analyzer-score-radius-and-runtime",
+      "title": "R8 Analyzer 定位静态约束，运行时测试确认协议",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-05-analyzer-score-radius-and-runtime.svg",
+        "src/assets/diagrams/ch25/a283-05-analyzer-score-radius-and-runtime.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-05-analyzer-score-radius-and-runtime",
+      "sources": [
+        "https://developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer",
+        "https://raw.githubusercontent.com/android/skills/main/performance/r8-analyzer/references/CONFIGURATION-ANALYZER.md"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-05-analyzer-score-radius-and-runtime.svg": "ff5380fada7efc2cbc06bec74f707bd8b15a8bd4ade96f305e65b6d9e54f55b1",
+        "src/assets/diagrams/ch25/a283-05-analyzer-score-radius-and-runtime.png": "a113aae3b9f137ca963dff5540918982e94f09b7b82599b45a9015916f27ca53"
+      }
+    },
+    {
+      "id": "a283-06-dependency-and-desugaring-footprint",
+      "title": "依赖和生成代码的贡献，要在发布 DEX 中确认",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-06-dependency-and-desugaring-footprint.svg",
+        "src/assets/diagrams/ch25/a283-06-dependency-and-desugaring-footprint.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-06-dependency-and-desugaring-footprint",
+      "sources": [
+        "https://developer.android.com/tools/d8",
+        "https://developer.android.com/studio/debug/apk-analyzer",
+        "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-06-dependency-and-desugaring-footprint.svg": "39223197705895ced6daf33219ecd56624dc908a73bb0cdaa6f0d4a5dc517c9e",
+        "src/assets/diagrams/ch25/a283-06-dependency-and-desugaring-footprint.png": "d795fe532870f68fb19d8b74303d5fd5384ab7c39d71a279a9a75b3da0ac0df7"
+      }
+    },
+    {
+      "id": "a283-07-debug-mapping-and-kotlin-metadata",
+      "title": "调试与元数据按运行时用途保留，并绑定发布版本",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-07-debug-mapping-and-kotlin-metadata.svg",
+        "src/assets/diagrams/ch25/a283-07-debug-mapping-and-kotlin-metadata.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-07-debug-mapping-and-kotlin-metadata",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/dex-format",
+        "https://developer.android.com/tools/retrace",
+        "https://developer.android.com/topic/performance/app-optimization/full-mode"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-07-debug-mapping-and-kotlin-metadata.svg": "1c2eabc8aef54818bd8a7f50be7e67a0cacb6cab44ef2997cd9dc8b8cea574fc",
+        "src/assets/diagrams/ch25/a283-07-debug-mapping-and-kotlin-metadata.png": "f285bc39a247c8902ae8c25dcddbae3c8b328952cfd9d838b8ab34ca98afadc3"
+      }
+    },
+    {
+      "id": "a283-08-startup-profile-versus-baseline-profile",
+      "title": "Startup Profile 改布局，Baseline Profile 指导编译",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-08-startup-profile-versus-baseline-profile.svg",
+        "src/assets/diagrams/ch25/a283-08-startup-profile-versus-baseline-profile.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-08-startup-profile-versus-baseline-profile",
+      "sources": [
+        "https://developer.android.com/topic/performance/startupprofiles/dex-layout-optimizations",
+        "https://developer.android.com/topic/performance/baselineprofiles/debug-baseline-profiles",
+        "https://developer.android.com/build/multidex"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-08-startup-profile-versus-baseline-profile.svg": "ad2bff727448b2efb2a644659de0e566fd291e7f63abd0f9a3e53f38f4ddc5d0",
+        "src/assets/diagrams/ch25/a283-08-startup-profile-versus-baseline-profile.png": "4e7e59554facf69b7d1036471217e3db9a72e68559251bd843ab5c373b117fd4"
+      }
+    },
+    {
+      "id": "a283-09-dex-delivery-regression-loop",
+      "title": "DEX 回归从固定发布基线走到同设备 APK 集",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-09-dex-delivery-regression-loop.svg",
+        "src/assets/diagrams/ch25/a283-09-dex-delivery-regression-loop.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-09-dex-delivery-regression-loop",
+      "sources": [
+        "https://developer.android.com/tools/bundletool",
+        "https://developer.android.com/studio/debug/apk-analyzer",
+        "https://developer.android.com/guide/app-bundle/app-bundle-format"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-09-dex-delivery-regression-loop.svg": "cfd3185769213e46a417c85de7d80830528e8a2a6903a3c010f900119506dd28",
+        "src/assets/diagrams/ch25/a283-09-dex-delivery-regression-loop.png": "3d52d3876498a020a4886eb2d794574028fc7d3088fce521bac6fd4a55b08c6f"
+      }
+    },
+    {
+      "id": "a283-10-elf-loadable-segments-and-sections",
+      "title": "ELF 程序头决定映射，节区解释文件组成",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-10-elf-loadable-segments-and-sections.svg",
+        "src/assets/diagrams/ch25/a283-10-elf-loadable-segments-and-sections.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-10-elf-loadable-segments-and-sections",
+      "sources": [
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr.cpp",
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker.cpp",
+        "https://developer.android.com/build/include-native-symbols"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-10-elf-loadable-segments-and-sections.svg": "e0c6c42e2f1fa0b4e84e4def889c18d95200b57f6ad442acb585ac628f76f39f",
+        "src/assets/diagrams/ch25/a283-10-elf-loadable-segments-and-sections.png": "7797029f23b7009ae8e5e69a2bbecb3b03b55fb9845cd3e9c23098db3de357ad"
+      }
+    },
+    {
+      "id": "a283-11-same-link-release-and-symbol-artifact",
+      "title": "同一次链接产物，分开交付库与离线符号",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-11-same-link-release-and-symbol-artifact.svg",
+        "src/assets/diagrams/ch25/a283-11-same-link-release-and-symbol-artifact.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-11-same-link-release-and-symbol-artifact",
+      "sources": [
+        "https://developer.android.com/build/include-native-symbols",
+        "https://developer.android.com/ndk/guides/symbol-visibility",
+        "https://android.googlesource.com/platform/system/unwinding/+/refs/tags/android-17.0.0_r1/libunwindstack/ElfInterfaceArm.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-11-same-link-release-and-symbol-artifact.svg": "81e440178265eaa0e6b8df78a9a134be14bae119f937a6f052b5eda2b4289cad",
+        "src/assets/diagrams/ch25/a283-11-same-link-release-and-symbol-artifact.png": "7893fe8d384ba725d6a841d2b9b02f3dc6985e95c2f5ddf7407e81c0b25565d1"
+      }
+    },
+    {
+      "id": "a283-12-abi-build-set-versus-device-set",
+      "title": "ABI 构建集合、支持设备和单设备交付分别管理",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-12-abi-build-set-versus-device-set.svg",
+        "src/assets/diagrams/ch25/a283-12-abi-build-set-versus-device-set.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-12-abi-build-set-versus-device-set",
+      "sources": [
+        "https://developer.android.com/ndk/guides/abis",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/services/core/java/com/android/server/pm/PackageAbiHelperImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/android-17.0.0_r1/core/java/com/android/internal/content/NativeLibraryHelper.java",
+        "https://developer.android.com/google/play/requirements/64-bit"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-12-abi-build-set-versus-device-set.svg": "7f3060784de73da8c05dcf92df6e8aabb9f67e3f933f835e93836d6c6d78a455",
+        "src/assets/diagrams/ch25/a283-12-abi-build-set-versus-device-set.png": "d35735a15c1e91dd668c07274929a7be283addaab440604bfd14fa6a7cab02ab"
+      }
+    },
+    {
+      "id": "a283-13-compile-link-gc-and-thinlto",
+      "title": "先给链接器可删除边界，再比较优化强度",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-13-compile-link-gc-and-thinlto.svg",
+        "src/assets/diagrams/ch25/a283-13-compile-link-gc-and-thinlto.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-13-compile-link-gc-and-thinlto",
+      "sources": [
+        "https://clang.llvm.org/docs/CommandGuide/clang.html",
+        "https://developer.android.com/ndk/guides/symbol-visibility"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-13-compile-link-gc-and-thinlto.svg": "b00c1a50308bb0890bd7eb0be9bba5ae8f18ba6cfb73a6ea54967ee396e64e84",
+        "src/assets/diagrams/ch25/a283-13-compile-link-gc-and-thinlto.png": "d9de6a5341c60778fdb619e7614366362dc2ce45957991750daf6660776aedc3"
+      }
+    },
+    {
+      "id": "a283-14-jni-export-protocol-and-icf",
+      "title": "可见性与链接折叠必须服从 Native 协议",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-14-jni-export-protocol-and-icf.svg",
+        "src/assets/diagrams/ch25/a283-14-jni-export-protocol-and-icf.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-14-jni-export-protocol-and-icf",
+      "sources": [
+        "https://developer.android.com/ndk/guides/symbol-visibility",
+        "https://developer.android.com/ndk/guides/jni-tips",
+        "https://developer.android.com/ndk/guides/cpp-support",
+        "https://android.googlesource.com/platform/system/unwinding/+/refs/tags/android-17.0.0_r1/libunwindstack/ElfInterfaceArm.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-14-jni-export-protocol-and-icf.svg": "979494f8e4cdd3fc5a85e90833cc321ac393c727c507116747caaad5918298ec",
+        "src/assets/diagrams/ch25/a283-14-jni-export-protocol-and-icf.png": "92b2c489785ddf002452d6c617e326fc8d813f136b72395cdd44d1cbbdb98398"
+      }
+    },
+    {
+      "id": "a283-15-static-duplicate-and-shared-cpp-runtime",
+      "title": "静态库重复拷贝与共享运行时是两类依赖问题",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-15-static-duplicate-and-shared-cpp-runtime.svg",
+        "src/assets/diagrams/ch25/a283-15-static-duplicate-and-shared-cpp-runtime.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-15-static-duplicate-and-shared-cpp-runtime",
+      "sources": [
+        "https://developer.android.com/ndk/guides/cpp-support",
+        "https://developer.android.com/ndk/guides/symbol-visibility",
+        "https://developer.android.com/ndk/guides/abis"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-15-static-duplicate-and-shared-cpp-runtime.svg": "5873fd508cb8ffa4c0ffe66160955898b02c9ee574076ff234a2f027d6f4e516",
+        "src/assets/diagrams/ch25/a283-15-static-duplicate-and-shared-cpp-runtime.png": "441452db49069cfb40ae0894bc645b52ae12c7079549902447d1b64569c28503"
+      }
+    },
+    {
+      "id": "a283-16-elf-and-zip-independent-16kb-alignment",
+      "title": "16KB 兼容要同时检查 ELF 布局与 APK ZIP 偏移",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-16-elf-and-zip-independent-16kb-alignment.svg",
+        "src/assets/diagrams/ch25/a283-16-elf-and-zip-independent-16kb-alignment.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-16-elf-and-zip-independent-16kb-alignment",
+      "sources": [
+        "https://developer.android.com/guide/practices/page-sizes",
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-16-elf-and-zip-independent-16kb-alignment.svg": "8cae4b8dd39bb56de23a3df8a73b3081424103949b9c87085690748de5be6030",
+        "src/assets/diagrams/ch25/a283-16-elf-and-zip-independent-16kb-alignment.png": "e75dc8295892b29521929c015c56760c6bfed7aeb4bbab44f4257b021f7fc268"
+      }
+    },
+    {
+      "id": "a283-17-native-dcl-readonly-publication",
+      "title": "Native 动态加载先建立只读可信文件，再发布并加载",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-17-native-dcl-readonly-publication.svg",
+        "src/assets/diagrams/ch25/a283-17-native-dcl-readonly-publication.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-17-native-dcl-readonly-publication",
+      "sources": [
+        "https://developer.android.com/about/versions/17/behavior-changes-17",
+        "https://developer.android.com/about/versions/14/behavior-changes-14",
+        "https://android.googlesource.com/platform/libcore/+/refs/tags/android-17.0.0_r1/ojluni/src/main/java/java/lang/Runtime.java",
+        "https://developer.android.com/privacy-and-security/risks/dynamic-code-loading"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-17-native-dcl-readonly-publication.svg": "2ca50af2a2c5ecc6f862762060ba5d19abb5c608d90e304ba6db9f87317e512b",
+        "src/assets/diagrams/ch25/a283-17-native-dcl-readonly-publication.png": "a8378d645b137bc527a6cc7f196964cd044fb121b9ad2440cbcff382a1c140b8"
+      }
+    },
+    {
+      "id": "a283-18-native-regression-artifact-chain",
+      "title": "Native 回归报告从发布库回到链接来源",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-18-native-regression-artifact-chain.svg",
+        "src/assets/diagrams/ch25/a283-18-native-regression-artifact-chain.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-18-native-regression-artifact-chain",
+      "sources": [
+        "https://developer.android.com/build/include-native-symbols",
+        "https://developer.android.com/guide/practices/page-sizes",
+        "https://clang.llvm.org/docs/CommandGuide/clang.html"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-18-native-regression-artifact-chain.svg": "0c90ded12b5f343d5936e38b4598cf1c08da9b724d3ec58e76858ac2df53c6e4",
+        "src/assets/diagrams/ch25/a283-18-native-regression-artifact-chain.png": "c768c431f4607b7d29f32b93b6b798b4b1b434862f9caaaedf8341c94ed660b1"
+      }
+    },
+    {
+      "id": "a283-19-aapt2-res-and-assets-separate-paths",
+      "title": "res 进入编译与资源图，assets 按原始路径接入打包",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-19-aapt2-res-and-assets-separate-paths.svg",
+        "src/assets/diagrams/ch25/a283-19-aapt2-res-and-assets-separate-paths.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-19-aapt2-res-and-assets-separate-paths",
+      "sources": [
+        "https://developer.android.com/tools/aapt2",
+        "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/AssetManager2.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-19-aapt2-res-and-assets-separate-paths.svg": "31696c9d5199ad5479f935bcb321a02269a0defe9c283b150220f2d5ab8b6f30",
+        "src/assets/diagrams/ch25/a283-19-aapt2-res-and-assets-separate-paths.png": "8340b379a01f05afef29ec8dd34e65334d696e232bdb6c82776f1370066b820f"
+      }
+    },
+    {
+      "id": "a283-20-resource-overlay-versus-content-duplicates",
+      "title": "覆盖、值去重与异名文件合并是不同操作",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-20-resource-overlay-versus-content-duplicates.svg",
+        "src/assets/diagrams/ch25/a283-20-resource-overlay-versus-content-duplicates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-20-resource-overlay-versus-content-duplicates",
+      "sources": [
+        "https://developer.android.com/tools/aapt2",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/tools/aapt2/ResourceTable.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-20-resource-overlay-versus-content-duplicates.svg": "89172ca7960311e687eca8c3939ae96b40440b326dcba608cd38ff63f608d710",
+        "src/assets/diagrams/ch25/a283-20-resource-overlay-versus-content-duplicates.png": "1330685ce20767624a64526d884057f81c05bd5cf4b9a11db5a71cc8d091081e"
+      }
+    },
+    {
+      "id": "a283-21-resource-names-paths-and-sparse-tables",
+      "title": "资源名、路径与表编码分别有优化入口",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-21-resource-names-paths-and-sparse-tables.svg",
+        "src/assets/diagrams/ch25/a283-21-resource-names-paths-and-sparse-tables.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-21-resource-names-paths-and-sparse-tables",
+      "sources": [
+        "https://developer.android.com/tools/aapt2",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/include/androidfw/ResourceTypes.h",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/androidfw/AssetManager2.cpp"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-21-resource-names-paths-and-sparse-tables.svg": "3f6ff3f9468a459b31c9ac3a5a2f432401e7979ddf6e62ca3d8992466e7f3af0",
+        "src/assets/diagrams/ch25/a283-21-resource-names-paths-and-sparse-tables.png": "72c7d279fd3ee38436749ca4cf6726cb4eb2b4d93141368800ee59dd5d66f05b"
+      }
+    },
+    {
+      "id": "a283-22-resource-shrinking-reachability-and-dynamic-name",
+      "title": "资源缩减先让静态引用图可靠，再覆盖动态协议",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-22-resource-shrinking-reachability-and-dynamic-name.svg",
+        "src/assets/diagrams/ch25/a283-22-resource-shrinking-reachability-and-dynamic-name.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-22-resource-shrinking-reachability-and-dynamic-name",
+      "sources": [
+        "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization",
+        "https://developer.android.com/topic/performance/app-optimization/customize-which-resources-to-keep",
+        "https://developer.android.com/studio/write/tool-attributes"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-22-resource-shrinking-reachability-and-dynamic-name.svg": "6fa548808cf1365a7415e4fc2e07e578f8d50c117500873962a6ae044543ddb8",
+        "src/assets/diagrams/ch25/a283-22-resource-shrinking-reachability-and-dynamic-name.png": "393ec2a1dc643398fceb3eff3153e807c25a96ed42dc5a02b9b5f3a441f724e2"
+      }
+    },
+    {
+      "id": "a283-23-image-format-and-runtime-cost",
+      "title": "图片选择同时约束解码版本、画质与运行成本",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-23-image-format-and-runtime-cost.svg",
+        "src/assets/diagrams/ch25/a283-23-image-format-and-runtime-cost.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-23-image-format-and-runtime-cost",
+      "sources": [
+        "https://developer.android.com/guide/topics/media/media-formats#image-formats",
+        "https://developer.android.com/develop/ui/views/graphics/reduce-image-sizes",
+        "https://developer.android.com/topic/performance/reduce-apk-size"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-23-image-format-and-runtime-cost.svg": "0a631541aec4858cd55319ebbbb7ffc554b3a3589935dcee4d3b7f64c8cf72f6",
+        "src/assets/diagrams/ch25/a283-23-image-format-and-runtime-cost.png": "b0759c6661f7dff7db9f3e2f235c6600183c46500ec388e36782fbb38886bb09"
+      }
+    },
+    {
+      "id": "a283-24-locale-filter-language-split-and-user-choice",
+      "title": "语言过滤、设备拆分和应用内切换要一起设计",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-24-locale-filter-language-split-and-user-choice.svg",
+        "src/assets/diagrams/ch25/a283-24-locale-filter-language-split-and-user-choice.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-24-locale-filter-language-split-and-user-choice",
+      "sources": [
+        "https://developer.android.com/reference/tools/gradle-api/9.3/com/android/build/api/dsl/ApplicationAndroidResources",
+        "https://developer.android.com/guide/app-bundle/configure-base",
+        "https://developer.android.com/guide/app-bundle/app-bundle-format"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-24-locale-filter-language-split-and-user-choice.svg": "598cb6e4331d5e4c14d912558052933d64e0fd6b758f52ebd936b45f36243c9b",
+        "src/assets/diagrams/ch25/a283-24-locale-filter-language-split-and-user-choice.png": "aa68510e5d673f0ff9970fd53c07c320047ec812e874fdc9502fbd3f6e17d670"
+      }
+    },
+    {
+      "id": "a283-25-zip-compression-versus-direct-access",
+      "title": "目录名不决定压缩，交付压缩与直接访问分别权衡",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-25-zip-compression-versus-direct-access.svg",
+        "src/assets/diagrams/ch25/a283-25-zip-compression-versus-direct-access.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-25-zip-compression-versus-direct-access",
+      "sources": [
+        "https://developer.android.com/tools/aapt2",
+        "https://developer.android.com/topic/performance/reduce-apk-size",
+        "https://developer.android.com/guide/app-bundle/app-bundle-format"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-25-zip-compression-versus-direct-access.svg": "df654b384f1147515925d427b23e2079d1293232a8caa42592aa69c96b74d903",
+        "src/assets/diagrams/ch25/a283-25-zip-compression-versus-direct-access.png": "5b8b26446bf8f6d997237ceaf387771bd298aaa9c3a422da5d526dd85d9a1556"
+      }
+    },
+    {
+      "id": "a283-26-fonts-features-and-asset-delivery",
+      "title": "字形与低频资产可以改变交付集合，但要有回退",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-26-fonts-features-and-asset-delivery.svg",
+        "src/assets/diagrams/ch25/a283-26-fonts-features-and-asset-delivery.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-26-fonts-features-and-asset-delivery",
+      "sources": [
+        "https://developer.android.com/guide/topics/resources/font-resource",
+        "https://developer.android.com/develop/ui/compose/text/fonts#variable-fonts",
+        "https://developer.android.com/guide/playcore/asset-delivery",
+        "https://developer.android.com/guide/app-bundle/app-bundle-format"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-26-fonts-features-and-asset-delivery.svg": "71a3b572d4f83a7e0602af34e91822692c73507ebe244a4cc3cebfd138e36503",
+        "src/assets/diagrams/ch25/a283-26-fonts-features-and-asset-delivery.png": "bb81513fa7ecd4338aa03c173f0412e4999bfea8e51a2253eda4fd8bde9f3943"
+      }
+    },
+    {
+      "id": "a283-27-final-size-ci-and-compatibility-gate",
+      "title": "最后用同一发布基线同时验体积、性能与兼容",
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a283-27-final-size-ci-and-compatibility-gate.svg",
+        "src/assets/diagrams/ch25/a283-27-final-size-ci-and-compatibility-gate.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a283-27-final-size-ci-and-compatibility-gate",
+      "sources": [
+        "https://developer.android.com/tools/bundletool",
+        "https://developer.android.com/build/include-native-symbols",
+        "https://developer.android.com/tools/retrace",
+        "https://developer.android.com/tools/aapt2"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a283-27-final-size-ci-and-compatibility-gate.svg": "1cc8b05aec7bffe9c165d449cf1ac42d1f6dac97e12792cad062647429dcafd5",
+        "src/assets/diagrams/ch25/a283-27-final-size-ci-and-compatibility-gate.png": "f055994474e993b97427b6d8798373360beef17e7fe9836fc47309a7708dcc57"
+      }
+    },
+    {
+      "id": "a284-01-aab-publish-device-apks-and-platform",
+      "title": "AAB 是发布输入，设备安装匹配的一组 APK",
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a284-01-aab-publish-device-apks-and-platform.svg",
+        "src/assets/diagrams/ch25/a284-01-aab-publish-device-apks-and-platform.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a284-01-aab-publish-device-apks-and-platform",
+      "sources": [
+        "https://developer.android.com/guide/app-bundle",
+        "https://developer.android.com/guide/app-bundle/app-bundle-format",
+        "https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/core/java/android/content/pm/PackageInstaller.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a284-01-aab-publish-device-apks-and-platform.svg": "4e3b5065bb5753f26ffce1fa110823183faae2ffec1522fc905505f7132eee24",
+        "src/assets/diagrams/ch25/a284-01-aab-publish-device-apks-and-platform.png": "f995b0032e123da4617c8efca1c674e5b6e91c070bb6df5580c630221bf41294"
+      }
+    },
+    {
+      "id": "a284-02-three-size-metrics-and-fixed-device-spec",
+      "title": "固定设备规格后，再谈首次下载与安装占用",
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a284-02-three-size-metrics-and-fixed-device-spec.svg",
+        "src/assets/diagrams/ch25/a284-02-three-size-metrics-and-fixed-device-spec.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a284-02-three-size-metrics-and-fixed-device-spec",
+      "sources": [
+        "https://developer.android.com/tools/bundletool",
+        "https://developer.android.com/guide/app-bundle/app-bundle-format"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a284-02-three-size-metrics-and-fixed-device-spec.svg": "ae6dd7562cdef94d5e5aa43c6d79e5f02af7a887a39e0015be4a61a5492d4328",
+        "src/assets/diagrams/ch25/a284-02-three-size-metrics-and-fixed-device-spec.png": "f089e48f959a993051469fba0160ade6db4efc4b8bf205d5efc1de25ef9eb60a"
+      }
+    },
+    {
+      "id": "a284-03-split-session-consistency-validation",
+      "title": "一次安装会话中的 base 与 splits 必须一致",
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a284-03-split-session-consistency-validation.svg",
+        "src/assets/diagrams/ch25/a284-03-split-session-consistency-validation.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a284-03-split-session-consistency-validation",
+      "sources": [
+        "https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java",
+        "https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/core/java/android/content/pm/parsing/ApkLiteParseUtils.java",
+        "https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/core/java/android/content/pm/PackageInstaller.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a284-03-split-session-consistency-validation.svg": "a48a5ac21855b17a7c84989e43e03ca76bd79284f396085eb4299ab929bb77f5",
+        "src/assets/diagrams/ch25/a284-03-split-session-consistency-validation.png": "b275a76558dc3886c1c8d0e377e1402b6168954de432403719545af250342dcc"
+      }
+    },
+    {
+      "id": "a284-04-feature-boundary-and-build-dependencies",
+      "title": "base 保留可立即恢复的入口，feature 承载可等待实现",
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a284-04-feature-boundary-and-build-dependencies.svg",
+        "src/assets/diagrams/ch25/a284-04-feature-boundary-and-build-dependencies.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a284-04-feature-boundary-and-build-dependencies",
+      "sources": [
+        "https://developer.android.com/guide/playcore/feature-delivery/on-demand",
+        "https://developer.android.com/build/migrate-to-built-in-kotlin"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a284-04-feature-boundary-and-build-dependencies.svg": "9524524dd8f98f38ea192cd872440e7ede9db2d9941b0e37ce33b75f65c7fb53",
+        "src/assets/diagrams/ch25/a284-04-feature-boundary-and-build-dependencies.png": "b16b479289b593d5d73467910081b048c2c28ccf3393a408d8b590dab3d06470"
+      }
+    },
+    {
+      "id": "a284-05-feature-delivery-timing-and-fusing",
+      "title": "交付方式影响何时可用，fusing 影响 universal 内容",
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a284-05-feature-delivery-timing-and-fusing.svg",
+        "src/assets/diagrams/ch25/a284-05-feature-delivery-timing-and-fusing.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a284-05-feature-delivery-timing-and-fusing",
+      "sources": [
+        "https://developer.android.com/guide/playcore/feature-delivery/conditional",
+        "https://developer.android.com/guide/playcore/feature-delivery/on-demand",
+        "https://developer.android.com/tools/bundletool"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a284-05-feature-delivery-timing-and-fusing.svg": "dcc56a38e17e4d805e7e7fa06d23528fc52fc4a92d285391ae1913230e1e1130",
+        "src/assets/diagrams/ch25/a284-05-feature-delivery-timing-and-fusing.png": "43fb35c5f8bda4da3d1183e360b6105f43c851d542d5f5ebc1f7810e877b9e5e"
+      }
+    },
+    {
+      "id": "a284-06-on-demand-state-recovery-and-zero-session",
+      "title": "先查已安装，再接回会话；ID 0 不会产生安装事件",
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a284-06-on-demand-state-recovery-and-zero-session.svg",
+        "src/assets/diagrams/ch25/a284-06-on-demand-state-recovery-and-zero-session.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a284-06-on-demand-state-recovery-and-zero-session",
+      "sources": [
+        "https://developer.android.com/reference/com/google/android/play/core/splitinstall/SplitInstallManager",
+        "https://developer.android.com/guide/playcore/feature-delivery/on-demand"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a284-06-on-demand-state-recovery-and-zero-session.svg": "3fa0f0ddba5e066f43dfed39e16509d663eb221dbaaac736230fc37e7900be89",
+        "src/assets/diagrams/ch25/a284-06-on-demand-state-recovery-and-zero-session.png": "e1b97e2ff1f0a49467c4a3e4d656a0b5d08f666de2da5cf96b9f1dab20b1a56f"
+      }
+    },
+    {
+      "id": "a284-07-splitcompat-system-entry-and-versioning",
+      "title": "安装完成后，还要让代码、资源与系统入口可用",
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a284-07-splitcompat-system-entry-and-versioning.svg",
+        "src/assets/diagrams/ch25/a284-07-splitcompat-system-entry-and-versioning.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a284-07-splitcompat-system-entry-and-versioning",
+      "sources": [
+        "https://developer.android.com/guide/playcore/feature-delivery/on-demand",
+        "https://developer.android.com/reference/com/google/android/play/core/splitinstall/SplitInstallManager"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a284-07-splitcompat-system-entry-and-versioning.svg": "8a02b6cfd5bc1c5bdde52af4ca58c756092867818738f8570b1de2e49393bbf1",
+        "src/assets/diagrams/ch25/a284-07-splitcompat-system-entry-and-versioning.png": "de19013ac495768b9b6d9f536dcca620e31650b88560124da7a165ec2707af25"
+      }
+    },
+    {
+      "id": "a284-08-asset-pack-three-delivery-timelines",
+      "title": "资源包的三种下载时机，也有不同磁盘形态",
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a284-08-asset-pack-three-delivery-timelines.svg",
+        "src/assets/diagrams/ch25/a284-08-asset-pack-three-delivery-timelines.png"
+      ],
+      "layout": "perfetto-timeline",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a284-08-asset-pack-three-delivery-timelines",
+      "sources": [
+        "https://developer.android.com/guide/playcore/asset-delivery"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a284-08-asset-pack-three-delivery-timelines.svg": "ea8a0b0a7a0ddecd8c7e165d9ac33651b6485b72f2393a9092fa95090878216b",
+        "src/assets/diagrams/ch25/a284-08-asset-pack-three-delivery-timelines.png": "9955f7bfd7066a84921fc850a6f37df1cb4be811ffbd0881a5fe055ec7f86c2e"
+      }
+    },
+    {
+      "id": "a284-09-asset-update-and-first-use-fallback",
+      "title": "新二进制可先到达，资产更新必须有独立状态",
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a284-09-asset-update-and-first-use-fallback.svg",
+        "src/assets/diagrams/ch25/a284-09-asset-update-and-first-use-fallback.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a284-09-asset-update-and-first-use-fallback",
+      "sources": [
+        "https://developer.android.com/guide/playcore/asset-delivery",
+        "https://developer.android.com/guide/playcore/asset-delivery/texture-compression"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a284-09-asset-update-and-first-use-fallback.svg": "727810f3d43c53f739fce66b508072e2f0db4b77144a936670a48f10bd5ab32e",
+        "src/assets/diagrams/ch25/a284-09-asset-update-and-first-use-fallback.png": "179b54b6af07e04ad0c3e5512882a39322ed6d725fd368368e9d87ac6406d044"
+      }
+    },
+    {
+      "id": "a284-10-channel-capability-and-executable-boundary",
+      "title": "按渠道验证分包与签名，非代码资源另建更新协议",
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a284-10-channel-capability-and-executable-boundary.svg",
+        "src/assets/diagrams/ch25/a284-10-channel-capability-and-executable-boundary.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a284-10-channel-capability-and-executable-boundary",
+      "sources": [
+        "https://support.google.com/googleplay/android-developer/answer/16559646",
+        "https://developer.android.com/tools/bundletool",
+        "https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a284-10-channel-capability-and-executable-boundary.svg": "36e3e0a8c491956baf10fab6ca02644040cd976a3ba6a8a6f4acf10a3c0141d4",
+        "src/assets/diagrams/ch25/a284-10-channel-capability-and-executable-boundary.png": "cabd2ebcbb48a3c34b4f3de7c1bddb20a5d9e300695d2da655af6b5a35054561"
+      }
+    },
+    {
+      "id": "a284-11-delivery-ci-same-spec-and-module-dependencies",
+      "title": "体积门禁固定规格，并把首用失败纳入结果",
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a284-11-delivery-ci-same-spec-and-module-dependencies.svg",
+        "src/assets/diagrams/ch25/a284-11-delivery-ci-same-spec-and-module-dependencies.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a284-11-delivery-ci-same-spec-and-module-dependencies",
+      "sources": [
+        "https://developer.android.com/tools/bundletool",
+        "https://developer.android.com/guide/app-bundle/app-bundle-format",
+        "https://developer.android.com/guide/playcore/feature-delivery/on-demand"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a284-11-delivery-ci-same-spec-and-module-dependencies.svg": "9c182c12756de551c46e5b653ac173820556170c2312c2d445844fb0adfb82f4",
+        "src/assets/diagrams/ch25/a284-11-delivery-ci-same-spec-and-module-dependencies.png": "b74f807d3c9ee6f810adddede0b3932da33f7889de0dbdf6035f19bba18f8a4b"
+      }
+    },
+    {
+      "id": "a285-01-power-size-reading-and-validation-map",
+      "title": "按症状进入章节，再回到同条件验证",
+      "article": "src/part5-app/ch25-power-size/README.md",
+      "assets": [
+        "src/assets/diagrams/ch25/a285-01-power-size-reading-and-validation-map.svg",
+        "src/assets/diagrams/ch25/a285-01-power-size-reading-and-validation-map.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/packs/a285-01-power-size-reading-and-validation-map",
+      "sources": [
+        "https://developer.android.com/topic/performance/power",
+        "https://developer.android.com/develop/background-work/background-tasks/persistent",
+        "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization",
+        "https://developer.android.com/guide/app-bundle",
+        "https://developer.android.com/games/optimize/adpf/thermal"
+      ],
+      "visual_review": "passed",
+      "reviewed_at": "2026-10-25",
+      "article_position_review": "passed",
+      "validation": "SVG XML, PNG decode, local links and isolated mdBook build passed",
+      "assets_sha256": {
+        "src/assets/diagrams/ch25/a285-01-power-size-reading-and-validation-map.svg": "373a479cdec50cac5a5c044d6731cdeba016e0d7077a4c4bec41b9c0f70b1c4c",
+        "src/assets/diagrams/ch25/a285-01-power-size-reading-and-validation-map.png": "7bd05f95b73f134f665118962a7a56246643f515e4aa1363fb173112f0549156"
+      }
     }
   ],
   "corrections": [
@@ -12807,6 +14172,531 @@
       "sources": [
         "https://developer.android.com/reference/android/os/PowerMonitorReadings"
       ]
+    },
+    {
+      "before": "last_verified: 2026-08-15",
+      "after": "last_verified: 2026-10-25",
+      "reason": "记录本轮全文与官方/17r1源码核验日期。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "记录本轮全文与官方/17r1源码核验日期。"
+    },
+    {
+      "before": "last_source_verified_at: 2026-08-15",
+      "after": "last_source_verified_at: 2026-10-25",
+      "reason": "记录本轮全文与官方/17r1源码核验日期。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "记录本轮全文与官方/17r1源码核验日期。"
+    },
+    {
+      "before": "docs and AOSP Thermal mitigation guide retrieved 2026-08-15",
+      "after": "docs and AOSP Thermal mitigation guide retrieved 2026-10-25",
+      "reason": "固定源码版本与当前官方检索日期分开记录。",
+      "sources": [
+        "https://developer.android.com/games/optimize/adpf/thermal"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "固定源码版本与当前官方检索日期分开记录。"
+    },
+    {
+      "before": "服务端对相似回调使用 5 秒最小间隔，并以 headroom 差值 0.03、阈值表数值差 0.01 判断显著变化。",
+      "after": "服务端仅在“数据没有显著变化，且距上次回调不足5秒”时抑制通知；显著变化可以在5秒内再次通知，不能把5秒写成所有回调的硬下限。r1 用headroom差值0.03、阈值表数值差0.01等判断显著变化。",
+      "reason": "源码条件为!significant AND elapsed<5000，显著事件可突破相似回调的抑制窗口。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "源码条件为!significant AND elapsed<5000，显著事件可突破相似回调的抑制窗口。"
+    },
+    {
+      "before": "BATTERY（续航优先） 传感器",
+      "after": "BATTERY（电池温度）传感器",
+      "reason": "这里是热传感器类型，不是Battery Game Mode的续航偏好。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "这里是热传感器类型，不是Battery Game Mode的续航偏好。"
+    },
+    {
+      "before": "API 36 起再注册 headroom 监听器，API 30—35 由外部调度器以低频调用 `pollForecast()`。",
+      "after": "API 36起再尝试注册headroom监听器，API 30+在需要持续预测时仍由统一外部调度器低频调用 `pollForecast()`，包含API 36监听注册失败或仅有稀疏事件的情况。",
+      "reason": "API36事件监听不能完整替代周期预测查询，注册失败仍保留状态和轮询降级。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerManager.OnThermalHeadroomChangedListener",
+        "https://developer.android.com/games/optimize/adpf/thermal"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "API36事件监听不能完整替代周期预测查询，注册失败仍保留状态和轮询降级。"
+    },
+    {
+      "before": "import android.content.Context\nimport android.os.Build\nimport android.os.PowerManager\nimport androidx.annotation.RequiresApi\nimport java.util.concurrent.Executor\n\ndata class ThermalSignals(\n    val status: Int,\n    val headroom: Float,\n    val forecastHeadroom: Float,\n    val forecastSeconds: Int,\n    val thresholds: Map<Int, Float>,\n)\n\n@RequiresApi(29)\nclass AppThermalObserver(\n    context: Context,\n    private val callbackExecutor: Executor,\n    private val onChanged: (ThermalSignals) -> Unit,\n) {\n    private val powerManager =\n        context.getSystemService(PowerManager::class.java)\n\n    @Volatile private var status = powerManager.currentThermalStatus\n    @Volatile private var headroom = Float.NaN\n    @Volatile private var forecastHeadroom = Float.NaN\n    @Volatile private var forecastSeconds = 0\n    @Volatile private var thresholds: Map<Int, Float> = emptyMap()\n    private var started = false\n    private var headroomListenerToken: Any? = null\n\n    private val statusListener =\n        PowerManager.OnThermalStatusChangedListener { newStatus ->\n            status = newStatus\n            publish()\n        }\n\n    fun start() {\n        if (started) return\n        started = true\n        powerManager.addThermalStatusListener(\n            callbackExecutor,\n            statusListener,\n        )\n\n        if (Build.VERSION.SDK_INT >= 36) {\n            headroomListenerToken = runCatching {\n                Api36.register(\n                    powerManager,\n                    callbackExecutor,\n                ) { current, forecast, seconds, map ->\n                    headroom = current\n                    forecastHeadroom = forecast\n                    forecastSeconds = seconds\n                    thresholds = map\n                    publish()\n                }\n            }.getOrNull()\n        } else if (Build.VERSION.SDK_INT >= 35) {\n            thresholds = runCatching {\n                Api35.readThresholds(powerManager)\n            }.getOrDefault(emptyMap())\n        }\n    }\n\n    @RequiresApi(30)\n    fun pollForecast(seconds: Int = 10) {\n        val clampedSeconds = seconds.coerceIn(0, 60)\n        val value = runCatching {\n            powerManager.getThermalHeadroom(clampedSeconds)\n        }.getOrDefault(Float.NaN)\n        if (!value.isNaN()) {\n            forecastHeadroom = value\n            forecastSeconds = clampedSeconds\n            publish()\n        }\n    }\n\n    fun stop() {\n        if (!started) return\n        headroomListenerToken?.let { token ->\n            if (Build.VERSION.SDK_INT >= 36) {\n                Api36.unregister(powerManager, token)\n            }\n        }\n        headroomListenerToken = null\n        powerManager.removeThermalStatusListener(statusListener)\n        started = false\n    }\n\n    private fun publish() {\n        onChanged(\n            ThermalSignals(\n                status,\n                headroom,\n                forecastHeadroom,\n                forecastSeconds,\n                thresholds,\n            ),\n        )\n    }\n\n    @RequiresApi(35)\n    private object Api35 {\n        fun readThresholds(\n            powerManager: PowerManager,\n        ): Map<Int, Float> =\n            powerManager.getThermalHeadroomThresholds()\n    }\n\n    @RequiresApi(36)\n    private object Api36 {\n        fun register(\n            powerManager: PowerManager,\n            executor: Executor,\n            callback: (\n                Float,\n                Float,\n                Int,\n                Map<Int, Float>,\n            ) -> Unit,\n        ): Any {\n            val listener =\n                PowerManager.OnThermalHeadroomChangedListener {\n                        current,\n                        forecast,\n                        seconds,\n                        thresholds ->\n                    callback(\n                        current,\n                        forecast,\n                        seconds,\n                        thresholds,\n                    )\n                }\n            powerManager.addThermalHeadroomListener(\n                executor,\n                listener,\n            )\n            return listener\n        }\n\n        fun unregister(\n            powerManager: PowerManager,\n            token: Any,\n        ) {\n            powerManager.removeThermalHeadroomListener(\n                token as PowerManager.OnThermalHeadroomChangedListener,\n            )\n        }\n    }\n}\n",
+      "after": "import android.content.Context\nimport android.os.Build\nimport android.os.PowerManager\nimport android.os.SystemClock\nimport androidx.annotation.RequiresApi\nimport java.util.concurrent.Executor\n\ndata class ThermalSignals(\n    val status: Int,\n    val headroom: Float,\n    val forecastHeadroom: Float,\n    val forecastSeconds: Int,\n    val thresholds: Map<Int, Float>,\n    val forecastTimestampMillis: Long,\n)\n\n@RequiresApi(29)\nclass AppThermalObserver(\n    context: Context,\n    private val callbackExecutor: Executor,\n    private val onChanged: (ThermalSignals) -> Unit,\n) {\n    private val powerManager =\n        checkNotNull(context.getSystemService(PowerManager::class.java))\n\n    // start/stop/pollForecast与回调均在同一串行控制执行器上运行。\n    private var status = powerManager.currentThermalStatus\n    private var headroom = Float.NaN\n    private var forecastHeadroom = Float.NaN\n    private var forecastSeconds = 0\n    private var forecastTimestampMillis = 0L\n    private var thresholds: Map<Int, Float> = emptyMap()\n    private var started = false\n    private var generation = 0L\n    private var statusListener: PowerManager.OnThermalStatusChangedListener? = null\n    private var headroomListenerToken: Any? = null\n\n    fun start() {\n        if (started) return\n        val currentGeneration = ++generation\n        status = powerManager.currentThermalStatus\n        val listener = PowerManager.OnThermalStatusChangedListener { newStatus ->\n            if (started && generation == currentGeneration) {\n                status = newStatus\n                publish()\n            }\n        }\n        started = true\n        try {\n            powerManager.addThermalStatusListener(callbackExecutor, listener)\n            statusListener = listener\n        } catch (error: RuntimeException) {\n            started = false\n            ++generation\n            throw error\n        }\n\n        if (Build.VERSION.SDK_INT >= 36) {\n            headroomListenerToken = runCatching {\n                Api36.register(powerManager, callbackExecutor) {\n                        current, forecast, seconds, map ->\n                    if (started && generation == currentGeneration) {\n                        headroom = current\n                        forecastHeadroom = forecast\n                        forecastSeconds = seconds\n                        forecastTimestampMillis =\n                            if (forecast.isFinite()) SystemClock.elapsedRealtime() else 0L\n                        thresholds = map.toMap()\n                        publish()\n                    }\n                }\n            }.getOrNull()\n        } else if (Build.VERSION.SDK_INT >= 35) {\n            thresholds = runCatching {\n                Api35.readThresholds(powerManager).toMap()\n            }.getOrDefault(emptyMap())\n        }\n    }\n\n    @RequiresApi(30)\n    fun pollForecast(seconds: Int = 10) {\n        if (!started) return\n        val clampedSeconds = seconds.coerceIn(0, 60)\n        val value = runCatching {\n            powerManager.getThermalHeadroom(clampedSeconds)\n        }.getOrDefault(Float.NaN)\n        forecastHeadroom = if (value.isFinite()) value else Float.NaN\n        forecastSeconds = clampedSeconds\n        forecastTimestampMillis =\n            if (value.isFinite()) SystemClock.elapsedRealtime() else 0L\n        if (clampedSeconds == 0) headroom = forecastHeadroom\n        publish() // NaN也发布，使策略不再沿用旧预测。\n    }\n\n    fun stop() {\n        if (!started) return\n        started = false\n        ++generation // 已排队的旧回调即使随后到达也不能更新新会话。\n        val oldHeadroomToken = headroomListenerToken\n        val oldStatusListener = statusListener\n        headroomListenerToken = null\n        statusListener = null\n        headroom = Float.NaN\n        forecastHeadroom = Float.NaN\n        forecastTimestampMillis = 0L\n        thresholds = emptyMap()\n        try {\n            if (Build.VERSION.SDK_INT >= 36 && oldHeadroomToken != null) {\n                Api36.unregister(powerManager, oldHeadroomToken)\n            }\n        } finally {\n            if (oldStatusListener != null) {\n                powerManager.removeThermalStatusListener(oldStatusListener)\n            }\n        }\n    }\n\n    private fun publish() {\n        onChanged(\n            ThermalSignals(\n                status, headroom, forecastHeadroom, forecastSeconds,\n                thresholds, forecastTimestampMillis,\n            ),\n        )\n    }\n\n    @RequiresApi(35)\n    private object Api35 {\n        fun readThresholds(powerManager: PowerManager): Map<Int, Float> =\n            powerManager.getThermalHeadroomThresholds()\n    }\n\n    @RequiresApi(36)\n    private object Api36 {\n        fun register(\n            powerManager: PowerManager,\n            executor: Executor,\n            callback: (Float, Float, Int, Map<Int, Float>) -> Unit,\n        ): Any {\n            val listener = PowerManager.OnThermalHeadroomChangedListener {\n                    current, forecast, seconds, thresholds ->\n                callback(current, forecast, seconds, thresholds)\n            }\n            powerManager.addThermalHeadroomListener(executor, listener)\n            return listener\n        }\n\n        fun unregister(powerManager: PowerManager, token: Any) {\n            powerManager.removeThermalHeadroomListener(\n                token as PowerManager.OnThermalHeadroomChangedListener,\n            )\n        }\n    }\n}\n",
+      "reason": "修复NaN后旧预测滞留、stop后已排队回调污染重新启动、注册失败残留started、单项注销失败阻断另项清理；为预测添加单调时间戳，所有操作明确串行，API36失败也可低频查询。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java",
+        "https://developer.android.com/reference/android/os/PowerManager.OnThermalHeadroomChangedListener",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "修复NaN后旧预测滞留、stop后已排队回调污染重新启动、注册失败残留started、单项注销失败阻断另项清理；为预测添加单调时间戳，所有操作明确串行，API36失败也可低频查询。"
+    },
+    {
+      "before": "`callbackExecutor` 宜用串行执行器，`pollForecast()` 也进同一控制队列，免得多个回调同时改写状态。",
+      "after": "示例要求 `callbackExecutor` 为串行控制执行器，`start()`、`stop()` 和 `pollForecast()` 也必须投递到同一队列；这才保证整组信号快照与生命周期一致，单独给字段加 `volatile` 不能提供组合原子性。",
+      "reason": "把示例的单控制队列要求明确为使用前提，避免多个方法和回调竞争状态。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "把示例的单控制队列要求明确为使用前提，避免多个方法和回调竞争状态。"
+    },
+    {
+      "before": "API 30—35 的 `pollForecast()` 每次只发起一次 headroom 查询。",
+      "after": "API 30+的 `pollForecast()` 每次只发起一次headroom查询；失败或NaN会发布不可用状态并清除预测时间戳，不继续把旧值当当前预测。",
+      "reason": "轮询失败必须使旧预测失效，API36也可按需要查询。",
+      "sources": [
+        "https://developer.android.com/games/optimize/adpf/thermal"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "轮询失败必须使旧预测失效，API36也可按需要查询。"
+    },
+    {
+      "before": "enum class WorkloadTier {\n    FULL,\n    REDUCED,\n    MINIMUM,\n    SURVIVAL,\n}\n\nfun requestedTier(signals: ThermalSignals): WorkloadTier {\n    val moderateThreshold =\n        signals.thresholds[PowerManager.THERMAL_STATUS_MODERATE]\n    val severeThreshold =\n        signals.thresholds[PowerManager.THERMAL_STATUS_SEVERE] ?: 1.0f\n    val forecast = signals.forecastHeadroom\n    val forecastValid = !forecast.isNaN()\n\n    return when {\n        signals.status >= PowerManager.THERMAL_STATUS_CRITICAL ->\n            WorkloadTier.SURVIVAL\n\n        signals.status >= PowerManager.THERMAL_STATUS_SEVERE ||\n            (forecastValid && forecast >= severeThreshold) ->\n            WorkloadTier.MINIMUM\n\n        signals.status >= PowerManager.THERMAL_STATUS_MODERATE ||\n            (\n                forecastValid &&\n                    moderateThreshold != null &&\n                    forecast >= moderateThreshold\n                ) ->\n            WorkloadTier.REDUCED\n\n        else -> WorkloadTier.FULL\n    }\n}\n",
+      "after": "enum class WorkloadTier {\n    FULL,\n    REDUCED,\n    MINIMUM,\n    SURVIVAL,\n}\n\nfun requestedTier(\n    signals: ThermalSignals,\n    nowElapsedMillis: Long,\n    maxForecastAgeMillis: Long,\n): WorkloadTier {\n    require(maxForecastAgeMillis > 0L)\n    val moderateThreshold =\n        signals.thresholds[PowerManager.THERMAL_STATUS_MODERATE]\n    val severeThreshold =\n        signals.thresholds[PowerManager.THERMAL_STATUS_SEVERE] ?: 1.0f\n    val forecast = signals.forecastHeadroom\n    val forecastTimestamp = signals.forecastTimestampMillis\n    val forecastValid = forecast.isFinite() && forecast >= 0f &&\n        forecastTimestamp > 0L && nowElapsedMillis >= forecastTimestamp &&\n        nowElapsedMillis - forecastTimestamp <= maxForecastAgeMillis\n\n    return when {\n        signals.status >= PowerManager.THERMAL_STATUS_CRITICAL ->\n            WorkloadTier.SURVIVAL\n\n        signals.status >= PowerManager.THERMAL_STATUS_SEVERE ||\n            (forecastValid && forecast >= severeThreshold) ->\n            WorkloadTier.MINIMUM\n\n        signals.status >= PowerManager.THERMAL_STATUS_MODERATE ||\n            (\n                forecastValid &&\n                    moderateThreshold != null &&\n                    forecast >= moderateThreshold\n                ) ->\n            WorkloadTier.REDUCED\n\n        else -> WorkloadTier.FULL\n    }\n}\n",
+      "reason": "映射函数仅使用同次开机且在项目有效期内的有限非负预测；缺失、过期、时钟回退时回到热状态，不永久沿用旧预测。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerManager.OnThermalHeadroomChangedListener",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/os/PowerManager.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "映射函数仅使用同次开机且在项目有效期内的有限非负预测；缺失、过期、时钟回退时回到热状态，不永久沿用旧预测。"
+    },
+    {
+      "before": "这个函数只给出目标档位。",
+      "after": "调用方传入当前 `SystemClock.elapsedRealtime()` 和按轮询节奏/业务风险设置的 `maxForecastAgeMillis`；过期或不可用预测只退回热状态，不能据此断言设备已冷却。这个函数只给出目标档位。",
+      "reason": "说明新鲜度参数的来源和NaN不代表安全，滞回状态机仍是恢复前提。",
+      "sources": [
+        "https://developer.android.com/games/optimize/adpf/thermal"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "说明新鲜度参数的来源和NaN不代表安全，滞回状态机仍是恢复前提。"
+    },
+    {
+      "before": "`LIGHT` 开始限制 MIN priority，以及部分未运行或 overtime 的 LOW priority job；",
+      "after": "`LIGHT` 对 `bias >= BIAS_FOREGROUND_SERVICE` 的Job不施加这条热限制；其余Job限制MIN priority，以及未运行或已overtime的LOW priority；",
+      "reason": "源码LIGHT分支先放行FGS及更高bias，补齐正文遗漏的豁免。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/job/restrictions/ThermalStatusRestriction.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "源码LIGHT分支先放行FGS及更高bias，补齐正文遗漏的豁免。"
+    },
+    {
+      "before": "ADPF（Android Dynamic Performance Framework（Android 动态性能框架），Android 动态性能框架）",
+      "after": "ADPF（Android Dynamic Performance Framework，Android 动态性能框架）",
+      "reason": "删除重复括号释义。",
+      "sources": [
+        "https://developer.android.com/games/optimize/adpf/thermal"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "删除重复括号释义。"
+    },
+    {
+      "before": "`PERFORMANCE`（性能优先） 性能优先，`BATTERY` 续航优先，`STANDARD`（标准） 标准。",
+      "after": "`PERFORMANCE`（性能优先）、`BATTERY`（续航优先）、`STANDARD`（标准）。",
+      "reason": "删除重复释义，模式含义保持不变。",
+      "sources": [
+        "https://developer.android.com/games/optimize/adpf/gamemode/about-API-and-interventions"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "删除重复释义，模式含义保持不变。"
+    },
+    {
+      "before": "`getCpuHeadroom()` / `getGpuHeadroom()` 返回 0—100，0 表示没有更多可分配容量；",
+      "after": "`getCpuHeadroom()` / `getGpuHeadroom()` 的有效值为0—100，0表示没有更多可分配容量；暂时无数据可为NaN，不支持则抛 `UnsupportedOperationException`，CPU参数/TID/亲和性错误还要按对应异常处理；",
+      "reason": "区分容量余量不支持、暂时无数据与参数异常，不把0或NaN当全部结果。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/health/SystemHealthManager"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "区分容量余量不支持、暂时无数据与参数异常，不把0或NaN当全部结果。"
+    },
+    {
+      "before": "适合系统调试和 statsd（Android 的系统指标收集服务） 这类系统指标服务使用",
+      "after": "适合系统调试和 statsd（Android的系统指标收集服务）使用",
+      "reason": "删除重复系统指标服务展开。",
+      "sources": [
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/CoolingDevice.aidl"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "删除重复系统指标服务展开。"
+    },
+    {
+      "before": "`elapsedRealtime` 只随设备运行时间递增，不受用户改时间或网络校时影响，适合计算状态持续时间。",
+      "after": "`elapsedRealtime` 在同次开机内单调递增并计入深度睡眠，不受用户改时间或网络校时影响，适合计算状态持续时间；跨重启的样本要另行切分。",
+      "reason": "补齐计深睡眠和同次开机边界，避免把持续时间跨重启相减。",
+      "sources": [
+        "https://developer.android.com/reference/android/os/SystemClock"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "补齐计深睡眠和同次开机边界，避免把持续时间跨重启相减。"
+    },
+    {
+      "before": "```mermaid\nflowchart TB\n    SENSOR[\"传感器、虚拟 skin 模型、固件信号\"]\n    POLICY[\"内核 thermal governor<br/>vendor daemon / firmware policy\"]\n    CDEV[\"Cooling actions<br/>cpufreq、devfreq、充电、亮度等\"]\n    HAL[\"Thermal HAL<br/>AIDL IThermal / 旧 HIDL 兼容\"]\n    TMS[\"ThermalManagerService<br/>system_server\"]\n    STATUS[\"全局 thermal status<br/>SKIN severity 最大值\"]\n    HEADROOM[\"Thermal headroom<br/>当前值、预测、threshold map\"]\n    PM[\"PowerManager 公开 API\"]\n    APP[\"应用 workload policy\"]\n    TRACE[\"dumpsys、Perfetto、频率与帧时间\"]\n\n    SENSOR --> POLICY\n    POLICY --> CDEV\n    POLICY --> HAL\n    HAL --> TMS\n    TMS --> STATUS\n    TMS --> HEADROOM\n    STATUS --> PM\n    HEADROOM --> PM\n    PM --> APP\n    CDEV --> TRACE\n    TMS --> TRACE\n    APP --> TRACE\n```",
+      "after": "应用可见信号与底层限制动作分属两条路径：底层策略可以先限制资源，Framework再把热状态与headroom送到应用。下图给出默认设备的边界。",
+      "reason": "用最终校核SVG/PNG替代原Mermaid，分开策略限制与上报路径，不暗示所有热策略都必须经HAL命令执行。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java",
+        "https://android.googlesource.com/platform/hardware/interfaces/+/refs/tags/android-17.0.0_r1/thermal/aidl/android/hardware/thermal/IThermal.aidl"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "用最终校核SVG/PNG替代原Mermaid，分开策略限制与上报路径，不暗示所有热策略都必须经HAL命令执行。"
+    },
+    {
+      "before": "连续 10 秒没有查询就停止采样。",
+      "after": "连续10秒没有查询就停止采样。样本不足3个时，r1可以返回当前温度的归一化值，而不是成熟的未来外推；所以拿到非NaN也不能证明预测已经完成预热。",
+      "reason": "源码不足3样本退回当前归一化值，避免误认为非NaN必有可靠未来预测。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "源码不足3样本退回当前归一化值，避免误认为非NaN必有可靠未来预测。"
+    },
+    {
+      "before": "若 HAL v3 支持 `forecastSkinTemperature()` 且设备只报告一组 SKIN 阈值，",
+      "after": "若相应功能开关开启、HAL v3支持 `forecastSkinTemperature()` 且设备只报告一组SKIN阈值，",
+      "reason": "HAL预测选择还受allowThermalHalSkinForecast功能开关控制，不能只按HAL版本判断。",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/power/thermal/ThermalManagerService.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
+      "why": "HAL预测选择还受allowThermalHalSkinForecast功能开关控制，不能只按HAL版本判断。"
+    },
+    {
+      "before": "last_verified: '2026-10-20'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮全文与所列官方来源复核日期，不表示完成Android构建或实机体积实验。",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/dex-format",
+        "https://developer.android.com/guide/practices/page-sizes"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "本轮全文与所列官方来源复核日期，不表示完成Android构建或实机体积实验。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-10-20'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "记录当前来源复核日期；历史源码标签和此前审计保留。",
+      "sources": [
+        "https://developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "记录当前来源复核日期；历史源码标签和此前审计保留。"
+    },
+    {
+      "before": "构建工具语义按 2026 年 8 月 30 日检索的官方文档核对",
+      "after": "构建工具语义于 2026 年 10 月 25 日按文中指定版本及官方文档复核",
+      "reason": "更新正文总来源边界，与本轮R8及页对齐核对一致。",
+      "sources": [
+        "https://developer.android.com/build/releases/agp-9-3-0-release-notes",
+        "https://developer.android.com/guide/practices/page-sizes"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "更新正文总来源边界，与本轮R8及页对齐核对一致。"
+    },
+    {
+      "before": "；MUTF-8 是以 UTF-16 代码单元为基础的变体编码",
+      "after": "",
+      "reason": "删除同一句内重复的MUTF-8释义。",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/dex-format"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "删除同一句内重复的MUTF-8释义。"
+    },
+    {
+      "before": "，ULEB128 即无符号小端 Base-128 变长编码",
+      "after": "",
+      "reason": "删除同一句内重复的ULEB128释义。",
+      "sources": [
+        "https://source.android.com/docs/core/runtime/dex-format"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "删除同一句内重复的ULEB128释义。"
+    },
+    {
+      "before": "multidex（为 Dalvik 运行时安装和加载次级 DEX 的兼容方案） 的由来",
+      "after": "multidex（将代码分布到多个 DEX）需求的由来；旧版 Dalvik 的次级 DEX 安装与加载兼容只是它的一条历史路径",
+      "reason": "原释义把整个multidex限于Dalvik兼容库，与本文API29–37及前面的定义不一致。",
+      "sources": [
+        "https://developer.android.com/build/multidex"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "原释义把整个multidex限于Dalvik兼容库，与本文API29–37及前面的定义不一致。"
+    },
+    {
+      "before": "AGP 9.3 及以上可以单独运行这项检查，不必每次都先生成完整 APK 或 App Bundle：",
+      "after": "分析器要求 AGP 9.3.0 或 R8 9.3.7-dev 及以上；独立 Gradle 任务由 AGP 9.3.0 及以上提供，可以不先生成完整 APK 或 App Bundle：",
+      "reason": "区分分析器R8最低版本和AGP独立任务门槛。",
+      "sources": [
+        "https://developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "区分分析器R8最低版本和AGP独立任务门槛。"
+    },
+    {
+      "before": "若 AGP 版本还没有独立任务，而项目使用的 R8 已支持 Configuration Analyzer，可用 `dumpkeepradiustodirectory` 输出 keep radius 数据，再通过 Google `android/skills` 仓库 `performance/r8-analyzer` 的 reference 转成 JSON 和分析结果；工具链连原始数据都生成不了时，才退回到包级通配符、整类成员通配符、`!` inversion 等语法启发式检查。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: https://github.com/android/skills/tree/main/performance/r8-analyzer]",
+      "after": "AGP 9.2 及更早版本可按官方“Replacing R8 in AGP”临时使用兼容的新 R8，再以 `-Dcom.android.tools.r8.dumpkeepradiushtmltodirectory=<output_directory>` 运行启用 R8 的发布构建，直接生成 HTML 报告；这仍会构建应用，并非独立分析任务。当前官方示例使用 R8 9.4.14，升级前需验证项目兼容。`dumpkeepradiustodirectory` 则输出底层 keep-radius protobuf，适合按 Google `android/skills` 的对应 schema 转换和进一步分析，不应与 HTML 输出属性混淆。两种导出都要求工具链支持；不支持时先用合并规则与保留原因排查。[已验证: https://developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer；https://github.com/android/skills/tree/main/performance/r8-analyzer]",
+      "reason": "官方增加了旧AGP直接HTML导出流程；原文只给原始protobuf路线，且遗漏完整属性命名空间。",
+      "sources": [
+        "https://developer.android.com/topic/performance/app-optimization/r8-configuration-analyzer",
+        "https://raw.githubusercontent.com/android/skills/main/performance/r8-analyzer/references/CONFIGURATION-ANALYZER.md"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "官方增加了旧AGP直接HTML导出流程；原文只给原始protobuf路线，且遗漏完整属性命名空间。"
+    },
+    {
+      "before": "Blast Radius 明细比单纯搜索 `-keep` 更适合排优先级。导出的 `keep_rule_blast_radius_table` 会把规则关联到 `class_blast_radius`、`field_blast_radius` 和 `method_blast_radius`；对象表 `kept_class_info_table`、`kept_field_info_table`、`kept_method_info_table` 又可通过 `kept_by` 回到具体规则、约束、来源文件或 Maven 坐标。[来源: 技术文章/source/juejin-android/2026-09-04-76760926-R8 Configuration Analyzer，优化 App 大小和内存.md；已验证: Android Developers R8 Configuration Analyzer]",
+      "after": "Blast Radius 明细可帮助按规则的静态影响范围排序。在底层 protobuf/JSON schema 中，`keep_rule_blast_radius_table` 的每条规则通过其 `blast_radius` 子对象关联 `class_blast_radius`、`field_blast_radius` 和 `method_blast_radius`；`kept_class_info_table`、`kept_field_info_table`、`kept_method_info_table` 的 `kept_by` 则回指规则 ID。再结合 constraints、origin 和 file/Maven 信息定位来源。这些字段名来自 Google `android/skills` 的原始导出 schema，不能把它们当成所有版本 HTML 报告的固定列名。[已验证: https://raw.githubusercontent.com/android/skills/main/performance/r8-analyzer/references/CONFIGURATION-ANALYZER.md]",
+      "reason": "准确记录嵌套blast_radius层级并纠正字段出处，官方HTML介绍页并不列此schema。",
+      "sources": [
+        "https://raw.githubusercontent.com/android/skills/main/performance/r8-analyzer/references/CONFIGURATION-ANALYZER.md"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "准确记录嵌套blast_radius层级并纠正字段出处，官方HTML介绍页并不列此schema。"
+    },
+    {
+      "before": "program header（程序头（program header））",
+      "after": "program header（程序头）",
+      "reason": "删除嵌套重复释义。",
+      "sources": [
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr.cpp"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "删除嵌套重复释义。"
+    },
+    {
+      "before": "section header（节区头（section header））",
+      "after": "section header（节区头）",
+      "reason": "删除嵌套重复释义。",
+      "sources": [
+        "https://android.googlesource.com/platform/bionic/+/refs/tags/android-17.0.0_r1/linker/linker_phdr.cpp"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "删除嵌套重复释义。"
+    },
+    {
+      "before": "两项必须配合。测试需要覆盖所有延迟加载和动态特性模块路径，完成后恢复设备属性。",
+      "after": "两项必须配合。修改前记录两项 `getprop` 原值；测试需要覆盖所有延迟加载和动态特性模块路径，并在成功、失败或中断后恢复所记录原值。",
+      "reason": "让设备状态恢复可执行，不能假设原值或只在成功路径恢复。",
+      "sources": [
+        "https://developer.android.com/guide/practices/page-sizes"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "让设备状态恢复可执行，不能假设原值或只在成功路径恢复。"
+    },
+    {
+      "before": "它不会扫描所有不同名称的 PNG/WebP，再按内容哈希自动改写引用并合并文件。",
+      "after": "它不会扫描所有不同名称的 PNG/WebP，再按内容哈希自动改写引用并合并文件。另需区分 AAPT2 对兼容配置下相同资源值的去重：`--no-resource-deduping` 可关闭这类值去重，它不等于把所有异名图片自动合并。",
+      "reason": "避免“不会图片哈希去重”被扩大成AAPT2完全没有资源去重。",
+      "sources": [
+        "https://developer.android.com/tools/aapt2"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "避免“不会图片哈希去重”被扩大成AAPT2完全没有资源去重。"
+    },
+    {
+      "before": "```mermaid\nflowchart LR\n    SRC[\"Java / Kotlin 源码\"]\n    CF[\"Javac / kotlinc<br/>class 文件\"]\n    R8[\"R8<br/>shrink / optimize / obfuscate<br/>DEX 生成\"]\n    D8[\"D8<br/>desugar / dex / merge\"]\n    PKG[\"AGP 打包<br/>APK / AAB\"]\n    PLAY[\"Play / bundletool<br/>设备专用 APK 集\"]\n    ART[\"Android 17 ART<br/>验证、profile、dexopt\"]\n    OUT[\"vdex / odex / art<br/>设备侧产物\"]\n\n    SRC --> CF\n    CF --> R8\n    CF --> D8\n    R8 --> PKG\n    D8 --> PKG\n    PKG --> PLAY\n    PLAY --> ART\n    ART --> OUT\n```",
+      "after": "构建路径分为启用 R8 的发布优化分支和 D8 分支，最终 DEX 进入发布打包；设备侧 ART 辅助产物另外生成。",
+      "reason": "用经过核对的白板图替换原Mermaid，明确构建分支、制品和原始assets边界。",
+      "sources": [
+        "https://developer.android.com/tools/aapt2",
+        "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization",
+        "https://developer.android.com/build/include-native-symbols"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "用经过核对的白板图替换原Mermaid，明确构建分支、制品和原始assets边界。"
+    },
+    {
+      "before": "```mermaid\nflowchart LR\n    SRC[\"C / C++ / Rust 源码\"]\n    OBJ[\"Clang 编译<br/>object / archive\"]\n    ELF[\"未 strip ELF<br/>含 build ID 与 DWARF\"]\n    STRIP[\"AGP / llvm-strip<br/>发布裁剪\"]\n    SO[\"strip 后 .so\"]\n    SYMBOL[\"native-debug-symbols.zip<br/>或未 strip ELF\"]\n    AAB[\"AAB / APK\"]\n    APKSET[\"设备 ABI APK 集\"]\n    LINKER[\"Android 17 linker64\"]\n    CRASH[\"tombstone / Android vitals\"]\n\n    SRC --> OBJ\n    OBJ --> ELF\n    ELF --> STRIP\n    STRIP --> SO\n    ELF --> SYMBOL\n    SO --> AAB\n    AAB --> APKSET\n    APKSET --> LINKER\n    CRASH --> SYMBOL\n```",
+      "after": "同一次链接产物分为应用交付的 stripped ELF 与离线诊断的符号制品，按 ABI、版本和 Build ID 关联。",
+      "reason": "用经过核对的白板图替换原Mermaid，明确构建分支、制品和原始assets边界。",
+      "sources": [
+        "https://developer.android.com/tools/aapt2",
+        "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization",
+        "https://developer.android.com/build/include-native-symbols"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "用经过核对的白板图替换原Mermaid，明确构建分支、制品和原始assets边界。"
+    },
+    {
+      "before": "```mermaid\nflowchart LR\n    SRC[\"res/ 与 assets/ 源文件\"]\n    COMPILE[\"AAPT2 compile<br/>.flat 中间产物\"]\n    LINK[\"AAPT2 link<br/>合并、ID、引用解析\"]\n    GRAPH[\"R8 + resource shrinker<br/>代码/资源可达图\"]\n    OPT[\"AAPT2 optimize / AGP packaging\"]\n    AAB[\"AAB<br/>modules + resources.pb\"]\n    APKSET[\"设备 APK Set<br/>resources.arsc + res/ + assets/\"]\n    AM[\"Android 17<br/>AssetManager2 / Resources\"]\n\n    SRC --> COMPILE\n    COMPILE --> LINK\n    LINK --> GRAPH\n    GRAPH --> OPT\n    OPT --> AAB\n    AAB --> APKSET\n    APKSET --> AM\n```",
+      "after": "`res/` 经过 AAPT2 compile/link 与代码/资源可达性分析；`assets/` 以原始路径内容接入打包，不经过 `res/` 的逐文件编译和资源 ID 分配。模块随后按设备生成 APK 集，运行时再选择资源配置。",
+      "reason": "用经过核对的白板图替换原Mermaid，明确构建分支、制品和原始assets边界。",
+      "sources": [
+        "https://developer.android.com/tools/aapt2",
+        "https://developer.android.com/topic/performance/app-optimization/enable-app-optimization",
+        "https://developer.android.com/build/include-native-symbols"
+      ],
+      "article": "src/part5-app/ch25-power-size/10-apk-r8-resource-optimization.md",
+      "why": "用经过核对的白板图替换原Mermaid，明确构建分支、制品和原始assets边界。"
+    },
+    {
+      "before": "last_verified: '2026-08-15'",
+      "after": "last_verified: '2026-10-25'",
+      "reason": "本轮官方文档、API与17r1源码复核日期，不宣称Play或设备验收。",
+      "sources": [
+        "https://developer.android.com/tools/bundletool",
+        "https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "why": "本轮官方文档、API与17r1源码复核日期，不宣称Play或设备验收。"
+    },
+    {
+      "before": "last_source_verified_at: '2026-08-15'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "reason": "本轮官方文档、API与17r1源码复核日期，不宣称Play或设备验收。",
+      "sources": [
+        "https://developer.android.com/tools/bundletool",
+        "https://cs.android.com/android/platform/superproject/+/android-16.0.0_r1:frameworks/base/services/core/java/com/android/server/pm/PackageInstallerSession.java"
+      ],
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "why": "本轮官方文档、API与17r1源码复核日期，不宣称Play或设备验收。"
+    },
+    {
+      "before": "Android Developers App Bundle, Feature Delivery, Asset Delivery and bundletool docs retrieved 2026-08-15 + Google Play Device and Network Abuse policy + AOSP android-17.0.0_r1",
+      "after": "Android Developers App Bundle/Feature Delivery/Asset Delivery/bundletool and SplitInstallManager API, AGP built-in Kotlin, Play policy and AOSP android-17.0.0_r1 reviewed 2026-10-25; host-only state-machine adapter validation, no Android/Play/device test",
+      "reason": "更新来源边界与可验证测试范围。",
+      "sources": [
+        "https://developer.android.com/reference/com/google/android/play/core/splitinstall/SplitInstallManager",
+        "https://developer.android.com/build/migrate-to-built-in-kotlin"
+      ],
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "why": "更新来源边界与可验证测试范围。"
+    },
+    {
+      "before": "Base module 用这段配置注册动态功能，并把编译平台统一到 Android 17/API 37。",
+      "after": "下例按 AGP 9.x 默认内置 Kotlin 的工程说明。Base module 用这段配置注册动态功能，并把编译平台统一到 Android 17/API 37；平台API与AGP版本分别固定。",
+      "reason": "示例引入AGP9明确工具链边界，避免同时应用已冲突的旧Kotlin插件。",
+      "sources": [
+        "https://developer.android.com/build/migrate-to-built-in-kotlin"
+      ],
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "why": "示例引入AGP9明确工具链边界，避免同时应用已冲突的旧Kotlin插件。"
+    },
+    {
+      "before": "    id(\"org.jetbrains.kotlin.android\")\n",
+      "after": "",
+      "reason": "AGP9默认内置Kotlin，不应重复应用旧org.jetbrains.kotlin.android；旧AGP配置另行声明。",
+      "sources": [
+        "https://developer.android.com/build/migrate-to-built-in-kotlin"
+      ],
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "why": "AGP9默认内置Kotlin，不应重复应用旧org.jetbrains.kotlin.android；旧AGP配置另行声明。"
+    },
+    {
+      "before": "Feature 可以访问 base 的公共 API；base 不能在编译期引用 feature 实现。",
+      "after": "AGP 9.x 默认内置 Kotlin，不再额外应用 `org.jetbrains.kotlin.android`；旧 AGP 或显式退出内置 Kotlin 的工程应按各自迁移文档配置，不能照搬同一插件组合。Feature 可以访问 base 的公共 API；base 不能在编译期引用 feature 实现。",
+      "reason": "说明移除插件的版本条件，并保留base/feature依赖方向。",
+      "sources": [
+        "https://developer.android.com/build/migrate-to-built-in-kotlin",
+        "https://developer.android.com/guide/playcore/feature-delivery/on-demand"
+      ],
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "why": "说明移除插件的版本条件，并保留base/feature依赖方向。"
+    },
+    {
+      "before": "这个 Kotlin 骨架展示安装会话过滤和关键状态处理。页面只有收到 `INSTALLED` 后才能进入功能。",
+      "after": "这个 Kotlin 骨架展示已安装检查、活动会话恢复和关键状态过滤。模块已安装时可以直接进入；`startInstall()` 返回 ID 0 表示拆分包已安装且不会生成会话，不能继续等待 `INSTALLED` 广播。其余路径确认安装完成并可访问后再进入。",
+      "reason": "API明确session0无session；原文只等INSTALLED会让已安装请求永远等待。",
+      "sources": [
+        "https://developer.android.com/reference/com/google/android/play/core/splitinstall/SplitInstallManager",
+        "https://developer.android.com/guide/playcore/feature-delivery/on-demand"
+      ],
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "why": "API明确session0无session；原文只等INSTALLED会让已安装请求永远等待。"
+    },
+    {
+      "before": "```kotlin\nval manager = SplitInstallManagerFactory.create(context)\nval request = SplitInstallRequest.newBuilder()\n    .addModule(\"camera_editor\")\n    .build()\n\nvar activeSessionId = 0\nval listener = SplitInstallStateUpdatedListener { state ->\n    if (state.sessionId() != activeSessionId) return@SplitInstallStateUpdatedListener\n\n    when (state.status()) {\n        SplitInstallSessionStatus.DOWNLOADING -> {\n            // 用 bytesDownloaded/totalBytesToDownload 更新进度。\n        }\n        SplitInstallSessionStatus.REQUIRES_USER_CONFIRMATION -> {\n            // 通过 startConfirmationDialogForResult 请求用户确认。\n        }\n        SplitInstallSessionStatus.INSTALLED -> {\n            // 此时再导航到 feature 页面。\n        }\n        SplitInstallSessionStatus.FAILED,\n        SplitInstallSessionStatus.CANCELED -> {\n            // 保留基础功能，并提供重试或退出。\n        }\n    }\n}\n\nmanager.registerListener(listener)\nmanager.startInstall(request)\n    .addOnSuccessListener { activeSessionId = it }\n    .addOnFailureListener { /* 请求尚未建立，展示可恢复错误。 */ }\n```",
+      "after": "```kotlin\n// 在主线程创建、调用并关闭；Play Task默认监听器也在主线程执行。\n// onState处理进度/确认UI；onError保留base并提供重试；onReady导航一次。\nclass FeatureInstallGate(\n    private val manager: SplitInstallManager,\n    private val module: String,\n    private val onReady: () -> Unit,\n    private val onState: (SplitInstallSessionState) -> Unit,\n    private val onError: (String) -> Unit,\n) : AutoCloseable {\n    private var closed = false\n    private var delivered = false\n    private var pending = false\n    private var generation = 0L\n    private var activeSessionId: Int? = null\n    private val listener = SplitInstallStateUpdatedListener { accept(it) }\n\n    init { manager.registerListener(listener) }\n\n    private fun installed() = module in manager.installedModules\n    private fun current(token: Long) =\n        !closed && !delivered && token == generation\n\n    private fun ready() {\n        if (closed || delivered) return\n        delivered = true\n        pending = false\n        activeSessionId = null\n        generation++\n        onReady()\n    }\n\n    private fun fail(message: String) {\n        pending = false\n        activeSessionId = null\n        generation++ // 使前一次请求尚未到达的Task回调失效。\n        onError(message)\n    }\n\n    private fun accept(state: SplitInstallSessionState) {\n        if (closed || delivered) return\n        if (state.sessionId() == -1 &&\n            state.errorCode() == SplitInstallErrorCode.SERVICE_DIED &&\n            (pending || activeSessionId != null)) {\n            fail(\"安装服务中断，请重试\")\n            return\n        }\n        if (state.sessionId() != activeSessionId) return\n        when (state.status()) {\n            SplitInstallSessionStatus.INSTALLED -> {\n                if (installed()) ready() else fail(\"模块暂不可访问，请重试\")\n            }\n            SplitInstallSessionStatus.FAILED,\n            SplitInstallSessionStatus.CANCELED -> {\n                val message = \"安装终止：${state.errorCode()}\"\n                fail(message)\n            }\n            else -> onState(state) // 包括REQUIRES_USER_CONFIRMATION。\n        }\n    }\n\n    fun startOrRestore() {\n        check(!closed)\n        if (delivered || pending || activeSessionId != null) return\n        if (installed()) { ready(); return }\n        pending = true\n        val token = ++generation\n        manager.sessionStates.addOnSuccessListener { states ->\n            if (!current(token)) return@addOnSuccessListener\n            val existing = states.firstOrNull { module in it.moduleNames() }\n            if (existing != null) {\n                pending = false\n                activeSessionId = existing.sessionId()\n                accept(existing)\n            } else {\n                val request = SplitInstallRequest.newBuilder()\n                    .addModule(module).build()\n                manager.startInstall(request).addOnSuccessListener { id ->\n                    if (current(token)) {\n                        pending = false\n                        if (id == 0 || installed()) {\n                            ready() // ID 0：模块已安装，没有后续安装会话。\n                        } else {\n                            activeSessionId = id\n                            // 弥补会话ID返回前已到达而被过滤的状态通知。\n                            manager.getSessionState(id).addOnSuccessListener { state ->\n                                if (current(token)) accept(state)\n                            }.addOnFailureListener { error ->\n                                if (current(token)) {\n                                    if (installed()) ready()\n                                    else fail(\"状态查询失败：${error.message}\")\n                                }\n                            }\n                        }\n                    }\n                }.addOnFailureListener { error ->\n                    if (current(token)) fail(\"请求失败：${error.message}\")\n                }\n            }\n        }.addOnFailureListener { error ->\n            if (current(token)) fail(\"会话恢复失败：${error.message}\")\n        }\n    }\n\n    override fun close() {\n        if (closed) return\n        closed = true\n        generation++\n        manager.unregisterListener(listener)\n    }\n}\n```",
+      "reason": "补已安装/session0、早到回调后状态查询、活动会话恢复、SERVICE_DIED -1和关闭后旧Task回调保护；同一主线程控制，重复请求有界。",
+      "sources": [
+        "https://developer.android.com/reference/com/google/android/play/core/splitinstall/SplitInstallManager",
+        "https://developer.android.com/guide/playcore/feature-delivery/on-demand"
+      ],
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "why": "补已安装/session0、早到回调后状态查询、活动会话恢复、SERVICE_DIED -1和关闭后旧Task回调保护；同一主线程控制，重复请求有界。"
+    },
+    {
+      "before": "`startInstall()` 成功回调只返回安装会话 ID，不代表安装完成。监听器要按页面或进程生命周期注销；进程重建后，通过 `installedModules`（已安装模块集合）和安装会话状态恢复，不能只依赖内存变量。`deferredInstall()` 只是后台尽力预取，无法跟踪进度，需要立即使用模块时仍应调用 `startInstall()`。完整状态和用户确认流程见 [Configure on-demand delivery](https://developer.android.com/guide/playcore/feature-delivery/on-demand)。",
+      "after": "`startInstall()` 成功只表示请求结果：ID 为 0 时模块已安装、不会创建会话，正 ID 才用于后续跟踪。上面的 gate 在同一主线程使用，一次只管理一个模块请求；`onState` 必须把 `REQUIRES_USER_CONFIRMATION` 接到当前页面的确认 API，并处理取消结果，下载进度不代表可以导航。页面释放时调用 `close()` 成对注销，关闭不会取消已经提交的安装；新页面或进程创建新 gate 后调用 `startOrRestore()`，先检查 `installedModules`，再接回该模块活动会话。`SERVICE_DIED` 可能以会话 ID -1 上报，不能被普通 ID 过滤直接丢弃。`deferredInstall()` 是后台尽力预取，无法跟踪进度，也不保证立即可用；需要立即使用时仍走 `startInstall()`。库依赖、imports、具体 UI/确认回调和生命周期接线需由工程补齐。完整流程见 [Configure on-demand delivery](https://developer.android.com/guide/playcore/feature-delivery/on-demand) 与 [SplitInstallManager API](https://developer.android.com/reference/com/google/android/play/core/splitinstall/SplitInstallManager)。",
+      "reason": "准确写请求完成/安装完成/取消/生命周期边界，明确示例缺少的工程集成项。",
+      "sources": [
+        "https://developer.android.com/reference/com/google/android/play/core/splitinstall/SplitInstallManager",
+        "https://developer.android.com/guide/playcore/feature-delivery/on-demand"
+      ],
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "why": "准确写请求完成/安装完成/取消/生命周期边界，明确示例缺少的工程集成项。"
+    },
+    {
+      "before": "Play Asset Delivery（PAD，Play 资源交付）面向 asset（原始素材），不允许 asset pack 包含可执行代码。",
+      "after": "Play Asset Delivery（PAD，Play 资源交付）的官方指南主要面向游戏资源交付。项目先核对自身应用类型和 Play 支持范围，再设计 asset pack；它面向 asset（原始素材），不允许包含可执行代码。",
+      "reason": "防把游戏PAD方案当所有应用/渠道无条件可用的资源下载服务。",
+      "sources": [
+        "https://developer.android.com/guide/playcore/asset-delivery"
+      ],
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "why": "防把游戏PAD方案当所有应用/渠道无条件可用的资源下载服务。"
+    },
+    {
+      "before": "推迟下载不会减少最终磁盘占用，仍要设计空间检查、失败恢复和资源回收。",
+      "after": "推迟下载本身不会删掉最终使用所需的资源；完整下载后不保证磁盘占用更小。仍要设计空间检查、失败恢复和资源回收，并单独测量补丁及临时展开的空间峰值。",
+      "reason": "去掉绝对占用相同推断；pack删除、补丁、展开策略会影响实际磁盘成本。",
+      "sources": [
+        "https://developer.android.com/guide/playcore/asset-delivery"
+      ],
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "why": "去掉绝对占用相同推断；pack删除、补丁、展开策略会影响实际磁盘成本。"
+    },
+    {
+      "before": "https://developer.android.com/tools/bundletool\n- type: policy",
+      "after": "https://developer.android.com/tools/bundletool\n- type: official\n  path: https://developer.android.com/reference/com/google/android/play/core/splitinstall/SplitInstallManager\n- type: official\n  path: https://developer.android.com/build/migrate-to-built-in-kotlin\n- type: policy",
+      "reason": "补入本轮修订直接使用的官方API与AGP来源。",
+      "sources": [
+        "https://developer.android.com/reference/com/google/android/play/core/splitinstall/SplitInstallManager",
+        "https://developer.android.com/build/migrate-to-built-in-kotlin"
+      ],
+      "article": "src/part5-app/ch25-power-size/11-app-bundle-delivery.md",
+      "why": "补入本轮修订直接使用的官方API与AGP来源。"
+    },
+    {
+      "before": "功耗测试应固定设备、温度、网络和使用时长",
+      "after": "功耗测试应固定设备与构建、温度与充电状态、屏幕亮度、网络、输入脚本和使用时长",
+      "reason": "补全影响功耗归因的关键实验条件，避免充电或屏幕状态改变被误判为优化收益。",
+      "sources": [
+        "https://developer.android.com/topic/performance/power",
+        "https://developer.android.com/games/optimize/adpf/thermal"
+      ],
+      "article": "src/part5-app/ch25-power-size/README.md",
+      "why": "补全影响功耗归因的关键实验条件，避免充电或屏幕状态改变被误判为优化收益。"
+    },
+    {
+      "before": "WorkManager 是 Jetpack 提供的持久后台任务调度库。",
+      "after": "WorkManager 是 Jetpack 提供的持久后台任务调度库，仍受系统调度、约束和额度影响，不能保证精确执行时刻。",
+      "reason": "使索引术语与25.2–25.3的后台执行边界一致，避免把持久调度误读为准时或配额豁免。",
+      "sources": [
+        "https://developer.android.com/develop/background-work/background-tasks/persistent"
+      ],
+      "article": "src/part5-app/ch25-power-size/README.md",
+      "why": "使索引术语与25.2–25.3的后台执行边界一致，避免把持久调度误读为准时或配额豁免。"
     }
   ],
   "validation": {
@@ -13088,15 +14978,51 @@
       "article_positions": "passed",
       "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a281",
       "source_audit": "全文578行已读，31份官方/固定17r1及冻结HAL V4-V7来源核对；15图及15处正文实际视觉检查通过，独立mdBook构建、本地链接、SVG XML、PNG解码通过；20条可审计校勘及原文+校勘+插图精确重建通过。修改2段Kotlin并用Kotlin2.2.20/协程1.11.0/JDK21主机适配器验证周期与关闭顺序、主异常、零时长、取消清理、7种差值边界；不是Android SDK/NDK构建，无设备/HAL或功耗实测。"
+    },
+    "a282": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a282",
+      "source_audit": "全文665行已读，22份官方/17r1和冻结Thermal AIDL V1-V3来源核对；15图及15处正文实际视觉检查通过，独立mdBook构建、本地链接、SVG XML、PNG解码通过；20条校勘及原文+校勘+插图精确重建、独立代码围栏检查通过。2段Kotlin修改用Kotlin2.2.20/JDK21主机SDK适配器验证注册/回调/清理与7种档位边界，shell仅bash -n，SQL合成fixture通过，无Android构建/ADB/设备热功耗测量。"
+    },
+    "a283": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a283",
+      "source_audit": "Read 1926 original lines and 64 official/AOSP/LLVM/Google schema sources; corrected R8 minimum versions and HTML export versus protobuf schema, multidex definition, assets bypass of resource compilation, dedup semantics and test-property restoration; 27 diagrams plus all 27 actual rendered positions visually inspected after placement refinement. Isolated mdBook, local links, SVG/PNG and exact baseline+correction+placement reconstruction passed; 31 non-Mermaid fences unchanged and 13 shell blocks pass bash -n. No Android/AGP/NDK build or device size/performance result claimed."
+    },
+    "a284": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a284",
+      "source_audit": "Read all 307 original lines; 19 official/API/AOSP/policy sources retained, with four legacy cs.android links treated as historical only. Verified split identity/required types in 17r1. Corrected ID0 no-session completion, active-session restore, early callback reconciliation, SERVICE_DIED -1 and stale callback lifecycle; AGP9 built-in Kotlin, PAD support scope and actual disk semantics. Exact modified Kotlin gate compiled/run with Kotlin2.2.20/JDK21 host fake Tasks and Play APIs across lifecycle/race/failure cases; not an Android/Play library build. 11 figures and all rendered positions visually inspected, refined figures3/6 checked again. Isolated mdBook/local links/assets/exact reconstruction passed; 3 shell blocks bash-n only, no bundletool/Play/device installation or download test."
+    },
+    "a285": {
+      "mdbook": "passed",
+      "local_links": "passed",
+      "svg_png": "passed",
+      "visual_review": "passed",
+      "article_positions": "passed",
+      "screenshot_dir": "/tmp/gracker-android-wiki-diagrams-20261025-agent-251-301/reviews/a285",
+      "source_audit": "Read all 38 original lines and chapter links, with five official power/WorkManager/optimization/AppBundle/Thermal sources. Added one chapter-specific two-route diagnostic reading map; clarified fixed charging/screen/input/build conditions and WorkManager scheduling limits. SVG/PNG and actual rendered article position visually inspected; isolated mdBook/local links/assets/exact baseline reconstruction passed. No executable code changed, no device test claimed."
     }
   },
   "last_checkpoint": {
-    "completed": 31,
+    "completed": 35,
     "total": 51,
-    "diagrams": 354,
-    "next_article": "src/part5-app/ch25-power-size/09-thermal-throttling-performance.md",
-    "next_article_index": 282,
-    "updated_at": "2026-10-25T15:24:18.685053+08:00"
+    "diagrams": 408,
+    "next_article": "src/part5-app/ch26-observability/01-app-observability-performance-collection.md",
+    "next_article_index": 286,
+    "updated_at": "2026-10-25T15:50:49.670391+08:00"
   },
   "replaced_inline_diagrams": []
 }

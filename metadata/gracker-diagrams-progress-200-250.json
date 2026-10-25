@@ -402,7 +402,14 @@
         "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a208/extra-audit.json",
         "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a208/extra-retry-audit.json",
         "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a208/source-audit.json"
-      ]
+      ],
+      "baseline_provenance": {
+        "index": 208,
+        "original_master_sha256": "a4bbcd565c49e1990f79c7e6391d4d9c92a8bb95b6e9d971e071154697c0655b",
+        "assignment_snapshot_sha256": "98f7cd41449c2af7f6dd36e6121225c5338b59e1deeb2e5ffaa429702b9bac61",
+        "snapshot": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/baseline/src/part5-app/ch20-stability/02-java-crash-exception-stack-analysis.md",
+        "note": "Earlier master inventory hash and frozen worker-assignment hash retained separately; this worker replay starts from the latter. Neither hash was reset to revised content."
+      }
     },
     {
       "path": "src/part5-app/ch20-stability/03-native-crash-unwinding-symbolication.md",
@@ -1048,7 +1055,14 @@
         "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a223/compile-extra-audit.json",
         "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a223/extra-audit.json",
         "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a223/source-audit.json"
-      ]
+      ],
+      "baseline_provenance": {
+        "index": 223,
+        "original_master_sha256": "1d380229c6ecf746d935312b0c6dba6cf76435e99e88af95021ec39d0ac9e24e",
+        "assignment_snapshot_sha256": "c77a248fe2ba01f104f202cdc117388bcca6981ff04d1102b53f19e950e2a1c2",
+        "snapshot": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/baseline/src/part5-app/ch21-startup/02-startup-task-lazy-concurrency.md",
+        "note": "Earlier master inventory hash and frozen worker-assignment hash retained separately; this worker replay starts from the latter. Neither hash was reset to revised content."
+      }
     },
     {
       "path": "src/part5-app/ch21-startup/03-contentprovider-multiprocess-startup.md",
@@ -1484,7 +1498,14 @@
         "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a233/added-source-audit.json",
         "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a233/extra-audit.json",
         "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a233/source-audit.json"
-      ]
+      ],
+      "baseline_provenance": {
+        "index": 233,
+        "original_master_sha256": "e7ac9d6d71aaba9057ada97da81698081497c345bb011e0db7e802f35521902c",
+        "assignment_snapshot_sha256": "988a0cbebc6a5e5464641debfec635f62f30e1eb4635e208b24f2ea88bf7781d",
+        "snapshot": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/baseline/src/part5-app/ch22-rendering-practice/02-recyclerview-compose-lazylist.md",
+        "note": "Earlier master inventory hash and frozen worker-assignment hash retained separately; this worker replay starts from the latter. Neither hash was reset to revised content."
+      }
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/03-compose-compiler-modifier-diagnostics.md",
@@ -2355,18 +2376,118 @@
     {
       "path": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
       "sha256_before": "c735c567365f9b809ff641ad71b17a3896c482bac5fe7e1a423a0d087e13180d",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a249-01-four-coordinates",
+        "a249-02-camera-consumer-topology",
+        "a249-03-hal-fence-ownership",
+        "a249-04-session-negotiation",
+        "a249-05-session-update-boundaries",
+        "a249-06-preview-mode-and-layer",
+        "a249-07-preview-first-visible",
+        "a249-08-camera-and-display-cadence",
+        "a249-09-analysis-backpressure",
+        "a249-10-synchronous-analysis-close",
+        "a249-11-async-image-ownership",
+        "a249-12-analysis-cost-breakdown",
+        "a249-13-capture-modes-and-latency",
+        "a249-14-raw14-and-dng",
+        "a249-15-zsl-three-gates",
+        "a249-16-zsl-disable-and-flash",
+        "a249-17-zsl-private-selection",
+        "a249-18-zsl-output-input-loop",
+        "a249-19-metadata-pairing",
+        "a249-20-zsl-three-a-filter",
+        "a249-21-zsl-buffer-limits",
+        "a249-22-fifo-candidate-order",
+        "a249-23-input-request-construction",
+        "a249-24-zsl-fallback-vs-failure",
+        "a249-25-reprocess-build-order",
+        "a249-26-reprocess-image-identity",
+        "a249-27-image-transfer-and-release",
+        "a249-28-zsl-residency-and-pressure",
+        "a249-29-zsl-clock-and-evidence",
+        "a249-30-video-quality-selection",
+        "a249-31-recording-four-stages",
+        "a249-32-high-speed-combination",
+        "a249-33-extension-isolated-mode",
+        "a249-34-model-effects-and-display",
+        "a249-35-thermal-hysteresis",
+        "a249-36-trace-correlation-tracks",
+        "a249-37-camera-memory-domains",
+        "a249-38-abstraction-choice",
+        "a249-39-diagnostic-progression"
+      ],
       "article_index": 249,
-      "sha256_at_assignment": "c735c567365f9b809ff641ad71b17a3896c482bac5fe7e1a423a0d087e13180d"
+      "sha256_at_assignment": "c735c567365f9b809ff641ad71b17a3896c482bac5fe7e1a423a0d087e13180d",
+      "sha256_current": "e56b458c5ac4be76f8e89c9488c80133248989b847c67eb85f78e1d857f83e34",
+      "sha256_after": "e56b458c5ac4be76f8e89c9488c80133248989b847c67eb85f78e1d857f83e34",
+      "source_audit": "原文26来源、实际CameraX1.6.1发布包和固定源码、Android17源码及新补充来源已核对；首次PreviewView TLS失败经同址重试200，误探ImageWriter源码404由官方API契约替代，Extensions旧路径404已修正为extensions-api并HTTP200。5段实际Kotlin、API37签名、16项源码契约和主机资源关闭分支通过；无相机设备实测。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a249/additional-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a249/corrected-extension-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a249/final-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a249/source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a249/supplement-source-audit.json"
+      ]
     },
     {
       "path": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
       "sha256_before": "a595e1c8665f4141463bc0daaee7fdffe686c2e743dbcec35416e32c754bfa7d",
-      "status": "pending",
-      "diagrams": [],
+      "status": "illustrated",
+      "diagrams": [
+        "a250-01-update-three-process-tracks",
+        "a250-02-host-apply-branches",
+        "a250-03-plugin-vs-appwidget",
+        "a250-04-three-update-semantics",
+        "a250-05-full-snapshot-recovery",
+        "a250-06-partial-merge-effective-snapshot",
+        "a250-07-legacy-vs-snapshot-collection",
+        "a250-08-collection-capacity-stop",
+        "a250-09-immutable-row-snapshot",
+        "a250-10-refresh-scheduling-contract",
+        "a250-11-receiver-budget-and-finish",
+        "a250-12-listener-alarm-lifetime",
+        "a250-13-freshness-and-local-clock",
+        "a250-14-bitmap-and-binder-limits",
+        "a250-15-provider-target-memory-branch",
+        "a250-16-image-source-and-stale-result",
+        "a250-17-action-growth-and-batch",
+        "a250-18-glance-runtime-to-remoteviews",
+        "a250-19-glance-session-state",
+        "a250-20-glance-size-modes",
+        "a250-21-raw-versus-glance-choice",
+        "a250-22-user-instance-and-uri-identity",
+        "a250-23-last-good-and-glance-error",
+        "a250-24-three-process-measurement",
+        "a250-25-symptom-first-checks"
+      ],
       "article_index": 250,
-      "sha256_at_assignment": "a595e1c8665f4141463bc0daaee7fdffe686c2e743dbcec35416e32c754bfa7d"
+      "sha256_at_assignment": "a595e1c8665f4141463bc0daaee7fdffe686c2e743dbcec35416e32c754bfa7d",
+      "sha256_current": "63e3a81835f28022bac21ed85142f8e8482c7ceb3bb5c00149862f7eabf067d4",
+      "sha256_after": "63e3a81835f28022bac21ed85142f8e8482c7ceb3bb5c00149862f7eabf067d4",
+      "source_audit": "22条原文来源、18项追加发布物/平台源码和8条新引用核验；AppWidgetHost与advanced首次TLS失败后同址补充抓取200。2段正文Kotlin、API37真实签名、实际Glance1.2.0两尺寸示例、XML及24项源码契约通过；无Launcher/服务/闹钟运行和性能测量。",
+      "reviewed_at": "2026-10-25",
+      "validation": {
+        "build": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-build.log",
+        "links": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-link-validation.json",
+        "placement": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-placement-audit.json",
+        "visual": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+        "assets": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-asset-validation.json"
+      },
+      "source_evidence": [
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a250/additional-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a250/final-source-audit.json",
+        "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/sources/a250/source-audit.json"
+      ]
     }
   ],
   "diagrams": [
@@ -37093,6 +37214,2159 @@
           ]
         }
       ]
+    },
+    {
+      "id": "a249-01-four-coordinates",
+      "title": "平台、库、设备与内核分别固定",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-01-four-coordinates.svg",
+        "src/assets/diagrams/ch22/a249-01-four-coordinates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-01-four-coordinates",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/camera",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraDevice.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-01-four-coordinates.svg",
+          "sha256": "eda6f69148e0e607286d8218532019a0abe2a6fb01b0618eab384c1fd759be82",
+          "bytes": 28908
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-01-four-coordinates.png",
+          "sha256": "6dc655dbf73a59a2bd3bd3ab99c4f7ec93e383b672440effb9800e387a3b3685",
+          "bytes": 120607,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-02-camera-consumer-topology",
+      "title": "CameraPipe配置链与四类输出消费者",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-02-camera-consumer-topology.svg",
+        "src/assets/diagrams/ch22/a249-02-camera-consumer-topology.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-02-camera-consumer-topology",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ImageAnalysis.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-video/src/main/java/androidx/camera/video/Recorder.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraDevice.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-02-camera-consumer-topology.svg",
+          "sha256": "1bc9f4d94a1d1c811a67e2b0b3d427534e9482c73f0dcd55c049303edfc532f4",
+          "bytes": 25151
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-02-camera-consumer-topology.png",
+          "sha256": "4cc8cf78a200bd45819efc235f146d0ffa1986f16c5ab0929883506d863e8837",
+          "bytes": 122497,
+          "dimensions": [
+            2100,
+            1140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-03-hal-fence-ownership",
+      "title": "输出缓冲区的同步依赖随所有权传递",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-03-hal-fence-ownership.svg",
+        "src/assets/diagrams/ch22/a249-03-hal-fence-ownership.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-03-hal-fence-ownership",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-03-hal-fence-ownership.svg",
+          "sha256": "2b4bfaf9446665fbc5bd13dd08b473b5cc10aaf8c79716911f6077fc95728d75",
+          "bytes": 19751
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-03-hal-fence-ownership.png",
+          "sha256": "082d4ae346ad74845c8280316c4e730cb3807764d559f2df9fd5e344ac0aade9",
+          "bytes": 73422,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-04-session-negotiation",
+      "title": "先用完整UseCase集合协商会话",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-04-session-negotiation.svg",
+        "src/assets/diagrams/ch22/a249-04-session-negotiation.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-04-session-negotiation",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/SessionConfig.kt",
+        "https://developer.android.com/media/camera/camerax/configuration"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-04-session-negotiation.svg",
+          "sha256": "e2cbc495e349615d273fbcf35204811af4859afdbbe32a7ee820643cf9a89cea",
+          "bytes": 25225
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-04-session-negotiation.png",
+          "sha256": "5a41cb37c010f34bb9578542a33147936a319666cd9652b261c4634d999af7dc",
+          "bytes": 76807,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-05-session-update-boundaries",
+      "title": "界面更新、用例重绑与平台换面分开",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-05-session-update-boundaries.svg",
+        "src/assets/diagrams/ch22/a249-05-session-update-boundaries.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-05-session-update-boundaries",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraCaptureSession.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/SessionConfig.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ImageAnalysis.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-05-session-update-boundaries.svg",
+          "sha256": "d880fa6c3a8a6682916d51a4b893d7f565540d4e80bde6ebb6673d182b90dd5b",
+          "bytes": 31867
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-05-session-update-boundaries.png",
+          "sha256": "283227bf1f6ec3e8c7fb651ee872191d0f6458120367af5382f958ba9fba489c",
+          "bytes": 131622,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-06-preview-mode-and-layer",
+      "title": "实现模式是偏好，实际layer才是证据",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-06-preview-mode-and-layer.svg",
+        "src/assets/diagrams/ch22/a249-06-preview-mode-and-layer.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-06-preview-mode-and-layer",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-view/src/main/java/androidx/camera/view/PreviewView.java",
+        "https://developer.android.com/media/camera/camerax/preview"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-06-preview-mode-and-layer.svg",
+          "sha256": "49e3e164a14e373cf4e877618f4d0e030b950fc2f056be68140add5bd0f7e96e",
+          "bytes": 24047
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-06-preview-mode-and-layer.png",
+          "sha256": "2f3dce9412bb6194f456c16fe31b86c197c07b9887a2c9daf8e08cb7faf53d37",
+          "bytes": 118987,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-07-preview-first-visible",
+      "title": "预览初始化与可见首帧分段",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-07-preview-first-visible.svg",
+        "src/assets/diagrams/ch22/a249-07-preview-first-visible.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-07-preview-first-visible",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-view/src/main/java/androidx/camera/view/PreviewView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraDevice.java",
+        "https://perfetto.dev/docs/data-sources/frametimeline"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-07-preview-first-visible.svg",
+          "sha256": "a8217fbcde21884432b52688339a7136079bdbc090b9d19f4ef20cf478471af1",
+          "bytes": 22268
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-07-preview-first-visible.png",
+          "sha256": "ff5781d9f7f37bfb417dfdd61fe28ca5d198d6b42c53e4acb689d66cf437a848",
+          "bytes": 76967,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-08-camera-and-display-cadence",
+      "title": "相机产帧与显示节奏分别统计",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-08-camera-and-display-cadence.svg",
+        "src/assets/diagrams/ch22/a249-08-camera-and-display-cadence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-08-camera-and-display-cadence",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraCharacteristics.java",
+        "https://developer.android.com/media/camera/camerax/preview"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-08-camera-and-display-cadence.svg",
+          "sha256": "ebe7fc2ed7544070331bcd75098163bcb7131d0a9467b3c588dc0f465335f501",
+          "bytes": 28094
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-08-camera-and-display-cadence.png",
+          "sha256": "0e320efc5eea2fdabaa5d7f772bd44df8817bfa976652825c18ec8354e8ba939",
+          "bytes": 123651,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-09-analysis-backpressure",
+      "title": "两种分析背压策略改变等待位置",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-09-analysis-backpressure.svg",
+        "src/assets/diagrams/ch22/a249-09-analysis-backpressure.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-09-analysis-backpressure",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ImageAnalysis.java",
+        "https://developer.android.com/media/camera/camerax/analyze"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-09-analysis-backpressure.svg",
+          "sha256": "445e7ce922343aec6ff3f944f92064095324cc5340afdd28197ba00984350a30",
+          "bytes": 31912
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-09-analysis-backpressure.png",
+          "sha256": "0c5e0caa52f2c2e49b9f6316d31197b7c68dae384c99df6643521c540d941df8",
+          "bytes": 123915,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-10-synchronous-analysis-close",
+      "title": "同步Analyzer的访问和关闭责任",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-10-synchronous-analysis-close.svg",
+        "src/assets/diagrams/ch22/a249-10-synchronous-analysis-close.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-10-synchronous-analysis-close",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ImageAnalysis.java",
+        "https://developer.android.com/media/camera/camerax/analyze"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-10-synchronous-analysis-close.svg",
+          "sha256": "19feed065e71ac0601fe62636fc81ea81c63a2fbd45e2b9efa95a874ebdda28d",
+          "bytes": 21975
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-10-synchronous-analysis-close.png",
+          "sha256": "95d3ff102054f23adc52fe600461516bf3d0e3f2b0cf30bfd0c9f5ca7203fe64",
+          "bytes": 81543,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-11-async-image-ownership",
+      "title": "异步图像必须等最后消费者确认结束",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-11-async-image-ownership.svg",
+        "src/assets/diagrams/ch22/a249-11-async-image-ownership.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-11-async-image-ownership",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ImageAnalysis.java",
+        "https://developer.android.com/reference/android/media/ImageWriter"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-11-async-image-ownership.svg",
+          "sha256": "5e011adf00c31c196b528713609f958fc0d9d1ef68a0d58e88bc492516b9efcd",
+          "bytes": 32299
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-11-async-image-ownership.png",
+          "sha256": "1cf793b80fdc5edcd8d4c8803fb069224ae6a6d22b2c9280c15436d04f1c2ac6",
+          "bytes": 134222,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-12-analysis-cost-breakdown",
+      "title": "分析预算覆盖排队到结果显示",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-12-analysis-cost-breakdown.svg",
+        "src/assets/diagrams/ch22/a249-12-analysis-cost-breakdown.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-12-analysis-cost-breakdown",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ImageAnalysis.java",
+        "https://developer.android.com/media/camera/camerax/analyze",
+        "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-12-analysis-cost-breakdown.svg",
+          "sha256": "e056b44fe7784c57b916a07c35d00e9bf11d3334fe5994fb106ada127cfbf64f",
+          "bytes": 30386
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-12-analysis-cost-breakdown.png",
+          "sha256": "82a21d1aac1f56039e778f5049486b3a542d7821daca50afcbb0ce21745a3aa5",
+          "bytes": 120669,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-13-capture-modes-and-latency",
+      "title": "拍照偏好与完成时间不是同一个指标",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-13-capture-modes-and-latency.svg",
+        "src/assets/diagrams/ch22/a249-13-capture-modes-and-latency.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-13-capture-modes-and-latency",
+      "sources": [
+        "https://developer.android.com/media/camera/camerax/take-photo/zsl",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraDevice.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-13-capture-modes-and-latency.svg",
+          "sha256": "7dd2b1718cacea12b3d6234f80b7f1406238abf3c0ec59abf88b6c7afdbffbbe",
+          "bytes": 27701
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-13-capture-modes-and-latency.png",
+          "sha256": "1fe30feb3bf295ec228594619658ed58b0bbe46119bcd593b422abddf9de057f",
+          "bytes": 125980,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-14-raw14-and-dng",
+      "title": "API37 RAW14与CameraX RAW分别查询",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-14-raw14-and-dng.svg",
+        "src/assets/diagrams/ch22/a249-14-raw14-and-dng.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-14-raw14-and-dng",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/graphics/java/android/graphics/ImageFormat.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraDevice.java",
+        "https://developer.android.com/media/camera/camerax/take-photo"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-14-raw14-and-dng.svg",
+          "sha256": "dc6853ef50a2ccf48f7904f324ca739b4d561ae85fc5142688fa3c6a68db5c7f",
+          "bytes": 28918
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-14-raw14-and-dng.png",
+          "sha256": "50bc21942544b2fae596600f59cee4c08661cfe60b53a3b29251beea53561d14",
+          "bytes": 126078,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-15-zsl-three-gates",
+      "title": "ZSL需要逐层通过设备、会话和单次检查",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-15-zsl-three-gates.svg",
+        "src/assets/diagrams/ch22/a249-15-zsl-three-gates.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-15-zsl-three-gates",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CameraInfoAdapter.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CaptureConfigAdapter.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-15-zsl-three-gates.svg",
+          "sha256": "b3f382b67d68d8e326f64a8985be38dbd99176456c10d345ee6fc4d58b2e25a9",
+          "bytes": 26654
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-15-zsl-three-gates.png",
+          "sha256": "ca710d3a9c874cc8b0582e5dfec9b4d5a1e676e40ccfea64b053d41643632b15",
+          "bytes": 112743,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-16-zsl-disable-and-flash",
+      "title": "禁用输入流与单次绕过是不同分支",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-16-zsl-disable-and-flash.svg",
+        "src/assets/diagrams/ch22/a249-16-zsl-disable-and-flash.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-16-zsl-disable-and-flash",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CaptureConfigAdapter.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CameraInfoAdapter.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-16-zsl-disable-and-flash.svg",
+          "sha256": "a0e0efe7fd64a268072df4b3ef2451435fd0dd4ce6326e04210eeaa2880645d0",
+          "bytes": 27129
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-16-zsl-disable-and-flash.png",
+          "sha256": "e1249463082deb276f1ab6caf700e6f6992d9221cf1edb9668c779965201890f",
+          "bytes": 119660,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-17-zsl-private-selection",
+      "title": "PRIVATE输入尺寸与JPEG映射分别查询",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-17-zsl-private-selection.svg",
+        "src/assets/diagrams/ch22/a249-17-zsl-private-selection.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-17-zsl-private-selection",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/impl/CameraGraphConfigProvider.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-17-zsl-private-selection.svg",
+          "sha256": "12ba876ebd09465ef5e7c193f1bcf64f2ce5cf692533caee71c8d1f888b0c8d8",
+          "bytes": 21981
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-17-zsl-private-selection.png",
+          "sha256": "7d8113d0f02e6304cbdd8959f2de971b88d2e356221d78526d170fde3e1327e7",
+          "bytes": 85686,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-18-zsl-output-input-loop",
+      "title": "候选输出与重处理输入属于同一会话",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-18-zsl-output-input-loop.svg",
+        "src/assets/diagrams/ch22/a249-18-zsl-output-input-loop.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-18-zsl-output-input-loop",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2-pipe/src/main/java/androidx/camera/camera2/pipe/compat/Camera2CaptureSequenceProcessor.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraDevice.java",
+        "https://developer.android.com/reference/android/media/ImageWriter"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-18-zsl-output-input-loop.svg",
+          "sha256": "ae630194b1cd7caf5a7f2a56592b4fb9b8546ebab923b755bff30cfe50731677",
+          "bytes": 23186
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-18-zsl-output-input-loop.png",
+          "sha256": "8971dabe8a1838377db42108ededd48212d4eeef06e7c0274e9f90efb27f0653",
+          "bytes": 119114,
+          "dimensions": [
+            2100,
+            1140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-19-metadata-pairing",
+      "title": "图像与捕获结果先按时间戳匹配",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-19-metadata-pairing.svg",
+        "src/assets/diagrams/ch22/a249-19-metadata-pairing.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-19-metadata-pairing",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/MetadataImageReader.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/internal/utils/ZslRingBuffer.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-19-metadata-pairing.svg",
+          "sha256": "9b29cacb5a96d5dd4f43f9a9368f361c1521d6197122d7067b681cc87410c0e2",
+          "bytes": 21606
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-19-metadata-pairing.png",
+          "sha256": "2a2b088352933de1927f2e9e76086b78f3286f99ce1f622444febec268b8180b",
+          "bytes": 79149,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-20-zsl-three-a-filter",
+      "title": "3A枚举条件决定候选是否入队",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-20-zsl-three-a-filter.svg",
+        "src/assets/diagrams/ch22/a249-20-zsl-three-a-filter.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-20-zsl-three-a-filter",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/internal/utils/ZslRingBuffer.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-20-zsl-three-a-filter.svg",
+          "sha256": "0f0152e351794f07232fe4b6c21fc78b70b253662b73e82015b4e573e42cf2f5",
+          "bytes": 18611
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-20-zsl-three-a-filter.png",
+          "sha256": "e4e92d0067167958668c63f5e1376e2f7fe50640e189d20fbd2fefa5b836bdfc",
+          "bytes": 88355,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-21-zsl-buffer-limits",
+      "title": "3、9、1约束不同对象",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-21-zsl-buffer-limits.svg",
+        "src/assets/diagrams/ch22/a249-21-zsl-buffer-limits.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-21-zsl-buffer-limits",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/impl/CameraGraphConfigProvider.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2-pipe/src/main/java/androidx/camera/camera2/pipe/compat/Camera2CaptureSequenceProcessor.kt",
+        "https://developer.android.com/reference/android/media/ImageWriter"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-21-zsl-buffer-limits.svg",
+          "sha256": "cc13f9cdf126139fedcdee1abeed825c7a1ad1c52b6ace73dd8240a57ef5a976",
+          "bytes": 28856
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-21-zsl-buffer-limits.png",
+          "sha256": "2d13471a27ed15ae155039a37635237cb59dc9662976bd8476cc5e32fd0e12a8",
+          "bytes": 125334,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-22-fifo-candidate-order",
+      "title": "当前ring按FIFO取最早保留候选",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-22-fifo-candidate-order.svg",
+        "src/assets/diagrams/ch22/a249-22-fifo-candidate-order.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-22-fifo-candidate-order",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/internal/utils/ArrayRingBuffer.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/internal/utils/ZslRingBuffer.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-22-fifo-candidate-order.svg",
+          "sha256": "145936ce16104d1711ac26503bac17374289e56692d640b6a126e23f64781261",
+          "bytes": 21228
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-22-fifo-candidate-order.png",
+          "sha256": "6e5e6356d260faecbf0d362252aeb04fdbb8598c25292a624ef547a5a54812fc",
+          "bytes": 80774,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-23-input-request-construction",
+      "title": "InputRequest同时携带图像和源FrameInfo",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-23-input-request-construction.svg",
+        "src/assets/diagrams/ch22/a249-23-input-request-construction.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-23-input-request-construction",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CaptureConfigAdapter.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-23-input-request-construction.svg",
+          "sha256": "5911104df27d0e848a4e11516f5c1e4042cf0ea90ebbfa498addfcdb1880b17b",
+          "bytes": 19560
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-23-input-request-construction.png",
+          "sha256": "848fc645988f84bd3eb4a0688c46888c2999b59dad4a9f745cde00631526bbb9",
+          "bytes": 76495,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-24-zsl-fallback-vs-failure",
+      "title": "无候选降级与构建失败不能混淆",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-24-zsl-fallback-vs-failure.svg",
+        "src/assets/diagrams/ch22/a249-24-zsl-fallback-vs-failure.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-24-zsl-fallback-vs-failure",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CaptureConfigAdapter.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2-pipe/src/main/java/androidx/camera/camera2/pipe/compat/Camera2CaptureSequenceProcessor.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-24-zsl-fallback-vs-failure.svg",
+          "sha256": "baaf0d20587cdd3a10b830da980bcfc58b3c4fdabaee97517603e037f78941c3",
+          "bytes": 25299
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-24-zsl-fallback-vs-failure.png",
+          "sha256": "62ae40b5165184ded0f2ee37a95c93ac53e3f12ed174ba26bf8f6c9e7fe0fa0a",
+          "bytes": 123679,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-25-reprocess-build-order",
+      "title": "先构造builder，再移交输入图像",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-25-reprocess-build-order.svg",
+        "src/assets/diagrams/ch22/a249-25-reprocess-build-order.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-25-reprocess-build-order",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2-pipe/src/main/java/androidx/camera/camera2/pipe/compat/Camera2CaptureSequenceProcessor.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraDevice.java",
+        "https://developer.android.com/reference/android/media/ImageWriter"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-25-reprocess-build-order.svg",
+          "sha256": "569a368cf152a51b70fc93a136a3e79cbbc85fc63da437918b73842b35b40df9",
+          "bytes": 21575
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-25-reprocess-build-order.png",
+          "sha256": "a7e263d240dc753c1e57c0c00b52f47762f20a6092800cd3794c7ca7e441df20",
+          "bytes": 83636,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-26-reprocess-image-identity",
+      "title": "源图像、结果与会话必须匹配",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-26-reprocess-image-identity.svg",
+        "src/assets/diagrams/ch22/a249-26-reprocess-image-identity.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-26-reprocess-image-identity",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraDevice.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2-pipe/src/main/java/androidx/camera/camera2/pipe/compat/Camera2CaptureSequenceProcessor.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-26-reprocess-image-identity.svg",
+          "sha256": "8b9426665089360f4f18f208436810d00b09540463e2d944cd8056bc6b8cac33",
+          "bytes": 28653
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-26-reprocess-image-identity.png",
+          "sha256": "ff3420111d6792d2f42d95040687efa82ab8b1b579a12bb7b3a296faf00bf43c",
+          "bytes": 115527,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-27-image-transfer-and-release",
+      "title": "图像移交、包装关闭与buffer归还是三件事",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-27-image-transfer-and-release.svg",
+        "src/assets/diagrams/ch22/a249-27-image-transfer-and-release.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-27-image-transfer-and-release",
+      "sources": [
+        "https://developer.android.com/reference/android/media/ImageWriter",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CaptureConfigAdapter.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-27-image-transfer-and-release.svg",
+          "sha256": "2602dfd7d29cee026bcc93820c2654044d3ddfadddcf10fa0b7dbd65f6784f6c",
+          "bytes": 27557
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-27-image-transfer-and-release.png",
+          "sha256": "893ae24070cbe12c34478ca9b93dded0b477ffae60875919605a333b545b22e2",
+          "bytes": 126634,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-28-zsl-residency-and-pressure",
+      "title": "候选输出与已移交输入分别追踪",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-28-zsl-residency-and-pressure.svg",
+        "src/assets/diagrams/ch22/a249-28-zsl-residency-and-pressure.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-28-zsl-residency-and-pressure",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CaptureConfigAdapter.kt",
+        "https://developer.android.com/reference/android/media/ImageWriter",
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-28-zsl-residency-and-pressure.svg",
+          "sha256": "e719eed511d1f02e3feb3b00a58f604d1e0d622d0ffdc1c3001536c8da85e937",
+          "bytes": 29993
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-28-zsl-residency-and-pressure.png",
+          "sha256": "b01b564dfbda99cd49602697c927ff21d4173932da2fb12ed1ffa29a9a6c28b7",
+          "bytes": 120926,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-29-zsl-clock-and-evidence",
+      "title": "ZSL图像年龄与按键到文件时延分开",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-29-zsl-clock-and-evidence.svg",
+        "src/assets/diagrams/ch22/a249-29-zsl-clock-and-evidence.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-29-zsl-clock-and-evidence",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraCharacteristics.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CaptureConfigAdapter.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2-pipe/src/main/java/androidx/camera/camera2/pipe/compat/Camera2CaptureSequenceProcessor.kt"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-29-zsl-clock-and-evidence.svg",
+          "sha256": "ce5e2e386f28b2838c18e203f13fad5eebcf22f86df6e62be7ef2e06c0b02fa4",
+          "bytes": 28730
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-29-zsl-clock-and-evidence.png",
+          "sha256": "77572a330ec7e62081e61026b215124c10bc65a0d5bcdf44320454b9b819cb45",
+          "bytes": 125635,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-30-video-quality-selection",
+      "title": "质量列表与回退策略共同决定结果",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-30-video-quality-selection.svg",
+        "src/assets/diagrams/ch22/a249-30-video-quality-selection.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-30-video-quality-selection",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-video/src/main/java/androidx/camera/video/FallbackStrategy.java",
+        "https://developer.android.com/media/camera/camerax/video-capture",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-video/src/main/java/androidx/camera/video/Recorder.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-30-video-quality-selection.svg",
+          "sha256": "6f30c65403ca9e04ea9844f813a63b94864f8d09e073fb31b60ea408ce8478ca",
+          "bytes": 30627
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-30-video-quality-selection.png",
+          "sha256": "4b491da34d35bdbb7f717f2e6ade42892d0b06b7f57771c97a28149e137011a7",
+          "bytes": 125815,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-31-recording-four-stages",
+      "title": "录像卡顿按相机、编码、封装和写入分段",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-31-recording-four-stages.svg",
+        "src/assets/diagrams/ch22/a249-31-recording-four-stages.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-31-recording-four-stages",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-video/src/main/java/androidx/camera/video/Recorder.java",
+        "https://developer.android.com/media/camera/camerax/video-capture"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-31-recording-four-stages.svg",
+          "sha256": "adc869380ad582b7e7d819a4764675dc820e6551b4c7c6cc44a52c8a4e3be8bf",
+          "bytes": 18372
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-31-recording-four-stages.png",
+          "sha256": "b1eb77d083e5bbd1bcdf2cbc853829eed977c83aa52a1e182ac4b9270035d08d",
+          "bytes": 72955,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-32-high-speed-combination",
+      "title": "高速录像需要对完整会话查询",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-32-high-speed-combination.svg",
+        "src/assets/diagrams/ch22/a249-32-high-speed-combination.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-32-high-speed-combination",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/SessionConfig.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-video/src/main/java/androidx/camera/video/Recorder.java",
+        "https://developer.android.com/media/camera/camerax/video-capture"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-32-high-speed-combination.svg",
+          "sha256": "8480fc7690b8387771a2680b2adbecfdb70ecebc4cc04aab6d437ff39fa50057",
+          "bytes": 31173
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-32-high-speed-combination.png",
+          "sha256": "74a12b65b27ad4d54d1916ec8ea1110baf18742b38a7e3d06b791fd29173228e",
+          "bytes": 124255,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-33-extension-isolated-mode",
+      "title": "Extensions是独立厂商工作模式",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-33-extension-isolated-mode.svg",
+        "src/assets/diagrams/ch22/a249-33-extension-isolated-mode.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-33-extension-isolated-mode",
+      "sources": [
+        "https://developer.android.com/media/camera/camerax/extensions-api",
+        "https://developer.android.com/jetpack/androidx/releases/camera"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-33-extension-isolated-mode.svg",
+          "sha256": "67d4b6a7ab4a3bd285157be6cda8b8a68fd855d1efcd2940227e72372d644595",
+          "bytes": 29870
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-33-extension-isolated-mode.png",
+          "sha256": "afea3e84d9d65641baeee613e4b17a189db490a8a91ecdb07825be891b159f6d",
+          "bytes": 121754,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-34-model-effects-and-display",
+      "title": "模型、效果与结果覆盖层是不同消费者",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-34-model-effects-and-display.svg",
+        "src/assets/diagrams/ch22/a249-34-model-effects-and-display.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-34-model-effects-and-display",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ImageAnalysis.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-view/src/main/java/androidx/camera/view/PreviewView.java",
+        "https://developer.android.com/media/camera/camerax/analyze"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-34-model-effects-and-display.svg",
+          "sha256": "7b409a95260b814292437e4288dffcda5b6b82457cd2596c97ca20ad82426318",
+          "bytes": 31308
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-34-model-effects-and-display.png",
+          "sha256": "2272b816dff92a863d28d0aa852c9e1daff5119f49a0b664a3a05160f68ad68f",
+          "bytes": 122441,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-35-thermal-hysteresis",
+      "title": "持续录像降级需要滞回与驻留时间",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-35-thermal-hysteresis.svg",
+        "src/assets/diagrams/ch22/a249-35-thermal-hysteresis.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-35-thermal-hysteresis",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerManager",
+        "https://developer.android.com/media/camera/camerax/video-capture"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-35-thermal-hysteresis.svg",
+          "sha256": "85c368a96d8c85624894a4a765218ac63eb4e16af00711faecb62de638cbec96",
+          "bytes": 36845
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-35-thermal-hysteresis.png",
+          "sha256": "073a8dfb5a840da877fc419cd38cd825bfaa8108178b644559ca15b4cfe50fd3",
+          "bytes": 133252,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-36-trace-correlation-tracks",
+      "title": "Perfetto按生产、消费者和显示关联",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-36-trace-correlation-tracks.svg",
+        "src/assets/diagrams/ch22/a249-36-trace-correlation-tracks.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-36-trace-correlation-tracks",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ImageAnalysis.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-video/src/main/java/androidx/camera/video/Recorder.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-36-trace-correlation-tracks.svg",
+          "sha256": "420051a45d857d6085898854522d13ff572016a20e3c5a8340f17ea47cdcaee2",
+          "bytes": 17719
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-36-trace-correlation-tracks.png",
+          "sha256": "0162f33fc3ba4b99fb1e7fecd900c3e89fad3084ddfb4f79db386adfa10902af",
+          "bytes": 78109,
+          "dimensions": [
+            2100,
+            1005
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-37-camera-memory-domains",
+      "title": "内存按分配域、共享和持有对象核查",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-37-camera-memory-domains.svg",
+        "src/assets/diagrams/ch22/a249-37-camera-memory-domains.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-37-camera-memory-domains",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp",
+        "https://developer.android.com/reference/android/media/ImageWriter",
+        "https://source.android.com/docs/core/graphics/implement-dma-buf-gpu-mem"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-37-camera-memory-domains.svg",
+          "sha256": "5f63781047a85ea9af7fda9a9c128e0de1f669afd905bbc02742ee66501b643a",
+          "bytes": 28452
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-37-camera-memory-domains.png",
+          "sha256": "2151db29495dd2ffaf1cc0c152603d66db4b0cb4823e2a2ee54260852fdfc633",
+          "bytes": 118729,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-38-abstraction-choice",
+      "title": "按所需控制范围选择CameraX或Camera2",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-38-abstraction-choice.svg",
+        "src/assets/diagrams/ch22/a249-38-abstraction-choice.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-38-abstraction-choice",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/SessionConfig.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraDevice.java",
+        "https://developer.android.com/media/camera/camerax/architecture"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-38-abstraction-choice.svg",
+          "sha256": "402af1cb8d9ac5ee1f4cb2c95d079d46dc8ea640a344ceb00da5224f3d608978",
+          "bytes": 34373
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-38-abstraction-choice.png",
+          "sha256": "d7f10457774c3d2df28ccde361315a3da2537d8dd6c0133de4adfdd5ab3e673c",
+          "bytes": 136194,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a249-39-diagnostic-progression",
+      "title": "逐项加入消费者定位性能变化",
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a249-39-diagnostic-progression.svg",
+        "src/assets/diagrams/ch22/a249-39-diagnostic-progression.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a249-39-diagnostic-progression",
+      "sources": [
+        "https://developer.android.com/media/camera/camerax/configuration",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ImageAnalysis.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-video/src/main/java/androidx/camera/video/Recorder.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a249-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a249-39-diagnostic-progression.svg",
+          "sha256": "dd8a9eaf65fe5be95befd095e7e23d9bd95db1b7090b94296932bae99ae4d75e",
+          "bytes": 24945
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a249-39-diagnostic-progression.png",
+          "sha256": "fed6968280c9b61c6bb9fe6028b528f3ebf32b558431907ccc4a8ba8ea041966",
+          "bytes": 81807,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-01-update-three-process-tracks",
+      "title": "更新跨越提供方、服务和宿主消息队列",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-01-update-three-process-tracks.svg",
+        "src/assets/diagrams/ch22/a250-01-update-three-process-tracks.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-01-update-three-process-tracks",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHost.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHostView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-01-update-three-process-tracks.svg",
+          "sha256": "1d4a963aab1dffd77556ab7eaa032904d43ade2f323c078a44bc62c8b3d3c1fd",
+          "bytes": 21598
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-01-update-three-process-tracks.png",
+          "sha256": "5208abb3bc9e9293c7d17039b894aa9b0e54463d29ae777768b66242822f3c7a",
+          "bytes": 89289,
+          "dimensions": [
+            2100,
+            1050
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-02-host-apply-branches",
+      "title": "宿主决定复用，失败时仍可能重建",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-02-host-apply-branches.svg",
+        "src/assets/diagrams/ch22/a250-02-host-apply-branches.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-02-host-apply-branches",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHostView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-02-host-apply-branches.svg",
+          "sha256": "4f12e8d5f21c5453bd8457d747e970863c985581ddee7867623b2a033fcdec1a",
+          "bytes": 34489
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-02-host-apply-branches.png",
+          "sha256": "7fad3db2fcd723379783e7a549f8814865b19ec1b3c45e22b88dd2394246fb08",
+          "bytes": 137337,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-03-plugin-vs-appwidget",
+      "title": "进程内插件卡片与标准Widget走不同路径",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-03-plugin-vs-appwidget.svg",
+        "src/assets/diagrams/ch22/a250-03-plugin-vs-appwidget.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-03-plugin-vs-appwidget",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-03-plugin-vs-appwidget.svg",
+          "sha256": "04e0164f762b9f80002e81e831afdb1a2b99584261636c8fa506fb0bf66e7894",
+          "bytes": 33978
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-03-plugin-vs-appwidget.png",
+          "sha256": "d7581a488a890a25a079db679ba241946112c24a822f5b92b9c2467fdcac1816",
+          "bytes": 140857,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-04-three-update-semantics",
+      "title": "完整、局部与集合更新改变不同对象",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-04-three-update-semantics.svg",
+        "src/assets/diagrams/ch22/a250-04-three-update-semantics.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-04-three-update-semantics",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViewsService.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-04-three-update-semantics.svg",
+          "sha256": "66cb6249cc6e7c1b03f64a9d8bfedeaa322ca307e044ad45ff0559005ab8b4ea",
+          "bytes": 32773
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-04-three-update-semantics.png",
+          "sha256": "c83ee06182ec8587eb7e53e30722329edc3c050029f6e4d0a2f66a0382d6c8e4",
+          "bytes": 135680,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-05-full-snapshot-recovery",
+      "title": "完整快照与业务持久数据各自负责恢复",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-05-full-snapshot-recovery.svg",
+        "src/assets/diagrams/ch22/a250-05-full-snapshot-recovery.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-05-full-snapshot-recovery",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetManager.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-05-full-snapshot-recovery.svg",
+          "sha256": "edf3881ba81b401e616409bdbb187d61dd919a099ec008317d672060ef7209b5",
+          "bytes": 23780
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-05-full-snapshot-recovery.png",
+          "sha256": "a805e8d701af86ca4810cb1799330f269686f282bb0fd4b3ee3ff9cc700eee0f",
+          "bytes": 81975,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-06-partial-merge-effective-snapshot",
+      "title": "局部更新缩小提供方负载，宿主收到合并结果",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-06-partial-merge-effective-snapshot.svg",
+        "src/assets/diagrams/ch22/a250-06-partial-merge-effective-snapshot.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-06-partial-merge-effective-snapshot",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHostView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-06-partial-merge-effective-snapshot.svg",
+          "sha256": "06f108a0f0cbefd8c76955178186fb9824b97b45410659ddb2778de7569249f0",
+          "bytes": 27184
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-06-partial-merge-effective-snapshot.png",
+          "sha256": "3990dbc618f14c77b7b6d6117e97c1c0b6f1289811cc6638691b96b46cd18377",
+          "bytes": 117400,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-07-legacy-vs-snapshot-collection",
+      "title": "集合适配器是否转换决定取数位置",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-07-legacy-vs-snapshot-collection.svg",
+        "src/assets/diagrams/ch22/a250-07-legacy-vs-snapshot-collection.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-07-legacy-vs-snapshot-collection",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViewsService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViewsAdapter.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-07-legacy-vs-snapshot-collection.svg",
+          "sha256": "fb0742a24371662e2174b9fce1d5844868712f28a97ac1384d9e677f17471735",
+          "bytes": 27063
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-07-legacy-vs-snapshot-collection.png",
+          "sha256": "fb46b5c00fea4affa87a4ca0d28d84a8fc769d05df8cee9c94df6eecafb8cee0",
+          "bytes": 131924,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-08-collection-capacity-stop",
+      "title": "集合转换在加入超限当前项之前停止",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-08-collection-capacity-stop.svg",
+        "src/assets/diagrams/ch22/a250-08-collection-capacity-stop.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-08-collection-capacity-stop",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViewsService.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-08-collection-capacity-stop.svg",
+          "sha256": "0297b15bba177fea8736166f544bef8059bbd361eb5f76c3079eacd4621f38ac",
+          "bytes": 20424
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-08-collection-capacity-stop.png",
+          "sha256": "1d435aacad3ac7325943dc80590a1e1da895f35e2a1df12f72c005a64d5d0a7b",
+          "bytes": 71683,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-09-immutable-row-snapshot",
+      "title": "集合回调从安全发布的不可变快照读取",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-09-immutable-row-snapshot.svg",
+        "src/assets/diagrams/ch22/a250-09-immutable-row-snapshot.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-09-immutable-row-snapshot",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViewsService.java",
+        "https://developer.android.com/develop/ui/views/appwidgets/collections"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-09-immutable-row-snapshot.svg",
+          "sha256": "81b95ec36a8b6422d08fb174bb094650c7b13b8059fd9f8d78fc9a880a317d14",
+          "bytes": 27420
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-09-immutable-row-snapshot.png",
+          "sha256": "6fbe7b1fd4ad3441830697c6179c9d99054945a7395241333300e95fe2391210",
+          "bytes": 87527,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-10-refresh-scheduling-contract",
+      "title": "更新周期、后台任务与数据时效分开",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-10-refresh-scheduling-contract.svg",
+        "src/assets/diagrams/ch22/a250-10-refresh-scheduling-contract.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-10-refresh-scheduling-contract",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://developer.android.com/reference/androidx/work/PeriodicWorkRequest",
+        "https://developer.android.com/develop/ui/views/appwidgets/advanced"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-10-refresh-scheduling-contract.svg",
+          "sha256": "2354feea0ae5eb0a6f0d759a5a24caa15325b5593d81677fd80141b013f98c81",
+          "bytes": 33183
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-10-refresh-scheduling-contract.png",
+          "sha256": "446b9a52f480d3a200f43091759fa350ebe86fe39549845d929e0a8ffeadad32",
+          "bytes": 130939,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-11-receiver-budget-and-finish",
+      "title": "广播必须及时结束，goAsync仍有超时",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-11-receiver-budget-and-finish.svg",
+        "src/assets/diagrams/ch22/a250-11-receiver-budget-and-finish.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-11-receiver-budget-and-finish",
+      "sources": [
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs",
+        "https://developer.android.com/develop/ui/views/appwidgets/advanced"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-11-receiver-budget-and-finish.svg",
+          "sha256": "3d2e9e86d0e0b51dbacb4466417f4f7549ad0ae65e27dfa1e9db02732cd888b9",
+          "bytes": 32199
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-11-receiver-budget-and-finish.png",
+          "sha256": "092488b9759465e72a50021de1072b5d769b7a2c67361c05e00b396adb649778",
+          "bytes": 123447,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-12-listener-alarm-lifetime",
+      "title": "监听器闹钟免特殊访问，仍依赖组件存活",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-12-listener-alarm-lifetime.svg",
+        "src/assets/diagrams/ch22/a250-12-listener-alarm-lifetime.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-12-listener-alarm-lifetime",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-12-listener-alarm-lifetime.svg",
+          "sha256": "22ee35cf9354e609de3b302055c2296e0efd8e224dde93a0caac801fe7066234",
+          "bytes": 34205
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-12-listener-alarm-lifetime.png",
+          "sha256": "744984c04288e023d9099c94a44d08f2cd9c0ce537262748cd0af8e6909b8f27",
+          "bytes": 128408,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-13-freshness-and-local-clock",
+      "title": "数据新鲜度、可见性与本地计时分别设计",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-13-freshness-and-local-clock.svg",
+        "src/assets/diagrams/ch22/a250-13-freshness-and-local-clock.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-13-freshness-and-local-clock",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java",
+        "https://developer.android.com/reference/android/widget/Chronometer"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-13-freshness-and-local-clock.svg",
+          "sha256": "723dbc0f12cf0aeed9e39bc6d2105a1ada60e27a916a0a60024f2e4c486cb012",
+          "bytes": 30766
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-13-freshness-and-local-clock.png",
+          "sha256": "a764f11ff79b0c5c525316578d5d391a20ab7a21285eb39ecd46b328de860f85",
+          "bytes": 123324,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-14-bitmap-and-binder-limits",
+      "title": "Binder事务与Widget图像预算是两套限制",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-14-bitmap-and-binder-limits.svg",
+        "src/assets/diagrams/ch22/a250-14-bitmap-and-binder-limits.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-14-bitmap-and-binder-limits",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java",
+        "https://developer.android.com/reference/android/os/TransactionTooLargeException"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-14-bitmap-and-binder-limits.svg",
+          "sha256": "e4860af1dffa92b44c64eaab4effd6da5254ce6ef1edb1c75aa1680040c57e3a",
+          "bytes": 33320
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-14-bitmap-and-binder-limits.png",
+          "sha256": "fe912f95822155bdc48214727a063c0f8885e5ade7fb62a72140a879e3401921",
+          "bytes": 125342,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-15-provider-target-memory-branch",
+      "title": "图像强制上限由提供方targetSdk决定",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-15-provider-target-memory-branch.svg",
+        "src/assets/diagrams/ch22/a250-15-provider-target-memory-branch.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-15-provider-target-memory-branch",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-15-provider-target-memory-branch.svg",
+          "sha256": "e08d8b4137fec5284f41cc0884f1eb9e7fa08e5f6d9a1761384dc7b37d5fe90c",
+          "bytes": 28681
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-15-provider-target-memory-branch.png",
+          "sha256": "9e25c45804c70555229c18ccb5d98ceff8f13dd99e52ab1814396d5508c541e0",
+          "bytes": 131092,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-16-image-source-and-stale-result",
+      "title": "按图像来源降载，并拒绝旧结果回写",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-16-image-source-and-stale-result.svg",
+        "src/assets/diagrams/ch22/a250-16-image-source-and-stale-result.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-16-image-source-and-stale-result",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://developer.android.com/develop/ui/views/appwidgets/advanced"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-16-image-source-and-stale-result.svg",
+          "sha256": "1cc55f47fe3c8de8de1437e708e303685376c6a2803634b6eed7d1e06886003b",
+          "bytes": 31798
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-16-image-source-and-stale-result.png",
+          "sha256": "2e4db91171aa8064f6fcf16ab9641130c74cc4dc31ae21b2193e72b318768fcf",
+          "bytes": 129202,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-17-action-growth-and-batch",
+      "title": "动作合并与批量实例更新都有剩余成本",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-17-action-growth-and-batch.svg",
+        "src/assets/diagrams/ch22/a250-17-action-growth-and-batch.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-17-action-growth-and-batch",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-17-action-growth-and-batch.svg",
+          "sha256": "95094ab54c65875b241aa92ab866d5079eab39e50ef123f6d87f79486494dfa7",
+          "bytes": 32263
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-17-action-growth-and-batch.png",
+          "sha256": "9ff9a2f3dbf5ff719c3f50483be2bb868074a2566a20582eb7390b583c2e32a5",
+          "bytes": 124492,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-18-glance-runtime-to-remoteviews",
+      "title": "Glance组合翻译后仍经AppWidget与宿主",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-18-glance-runtime-to-remoteviews.svg",
+        "src/assets/diagrams/ch22/a250-18-glance-runtime-to-remoteviews.png"
+      ],
+      "layout": "linear-progression",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-18-glance-runtime-to-remoteviews",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-18-glance-runtime-to-remoteviews.svg",
+          "sha256": "69df15b179f4ae216ed9673510ef05828cfc3feac6596ffdd094032147e9f0ca",
+          "bytes": 21641
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-18-glance-runtime-to-remoteviews.png",
+          "sha256": "bdb96c6f5364dd64520710248fc0b8f3178eba73836d0e5945e7a11290d64ad9",
+          "bytes": 81670,
+          "dimensions": [
+            2100,
+            615
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-19-glance-session-state",
+      "title": "活跃会话重新读状态，结束后再启动worker",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-19-glance-session-state.svg",
+        "src/assets/diagrams/ch22/a250-19-glance-session-state.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-19-glance-session-state",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar",
+        "https://developer.android.com/develop/ui/compose/glance/glance-app-widget"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-19-glance-session-state.svg",
+          "sha256": "c6f3cf69a9880aafb68bf4c393ce574689f5be03c91ff1dfcda5d9a3fca0b3c4",
+          "bytes": 32200
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-19-glance-session-state.png",
+          "sha256": "fcefd93223b0923882720b57dc569cfcc85432bca6ce832f4d7805f76a6718c9",
+          "bytes": 130636,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-20-glance-size-modes",
+      "title": "有限断点与精确尺寸各有组合成本",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-20-glance-size-modes.svg",
+        "src/assets/diagrams/ch22/a250-20-glance-size-modes.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-20-glance-size-modes",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java",
+        "https://developer.android.com/develop/ui/compose/glance/build-ui"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-20-glance-size-modes.svg",
+          "sha256": "56db8068add76587931e325b5765f3cf5232bdb8398ec20f21040c37264f4c3b",
+          "bytes": 32524
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-20-glance-size-modes.png",
+          "sha256": "250646c11df382a918a7a6141ecb6794844a25ca78a5e2fa5839665c0cfd7b98",
+          "bytes": 129469,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-21-raw-versus-glance-choice",
+      "title": "两种写法共享同一宿主交付约束",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-21-raw-versus-glance-choice.svg",
+        "src/assets/diagrams/ch22/a250-21-raw-versus-glance-choice.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-21-raw-versus-glance-choice",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java",
+        "https://developer.android.com/develop/ui/views/appwidgets/advanced"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-21-raw-versus-glance-choice.svg",
+          "sha256": "7ff5f057d7b1f0d2906698bc310a092a1cc0de5537d21107185eeaab17fa1581",
+          "bytes": 30946
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-21-raw-versus-glance-choice.png",
+          "sha256": "9e060c7e4804230c7a515a0afa633a7adde6bb143c363ce2fa459811aefbaf7d",
+          "bytes": 120817,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-22-user-instance-and-uri-identity",
+      "title": "用户、实例与URI身份必须一起核对",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-22-user-instance-and-uri-identity.svg",
+        "src/assets/diagrams/ch22/a250-22-user-instance-and-uri-identity.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-22-user-instance-and-uri-identity",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-22-user-instance-and-uri-identity.svg",
+          "sha256": "ab2a117010d1733ad2c68d4a0e5ef0eda9ba9f0429c06ceb37feba4a8d7fc80a",
+          "bytes": 30160
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-22-user-instance-and-uri-identity.png",
+          "sha256": "b0cd1de61cd3752da7034c1609fba978d18bbf1f0f6399b61b2f09081c1476f0",
+          "bytes": 126438,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-23-last-good-and-glance-error",
+      "title": "最近可用数据策略与Glance默认错误UI分开",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-23-last-good-and-glance-error.svg",
+        "src/assets/diagrams/ch22/a250-23-last-good-and-glance-error.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-23-last-good-and-glance-error",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar",
+        "https://developer.android.com/develop/ui/views/appwidgets/advanced"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-23-last-good-and-glance-error.svg",
+          "sha256": "ab514bfc1e92c738ecd21e5352a66f20d437212f97576e928886bb1cd81bd5f6",
+          "bytes": 37155
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-23-last-good-and-glance-error.png",
+          "sha256": "9ec74966893e7d5700947c9fe4444d47c0eff1a4c26ec87c50fe3be501c578c4",
+          "bytes": 124342,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-24-three-process-measurement",
+      "title": "按同次业务版本关联三段测量",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-24-three-process-measurement.svg",
+        "src/assets/diagrams/ch22/a250-24-three-process-measurement.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-24-three-process-measurement",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHost.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHostView.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-24-three-process-measurement.svg",
+          "sha256": "53715ba583936bcad127ef239fbbe9861bc5a54504e4632af133215f15741e1c",
+          "bytes": 29427
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-24-three-process-measurement.png",
+          "sha256": "46d222cf4e3459aa163f3e3866946e60a1645229cd1d86fccd2411077ae83a7e",
+          "bytes": 119075,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
+    },
+    {
+      "id": "a250-25-symptom-first-checks",
+      "title": "先判更新语义与身份，再定位负载",
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "assets": [
+        "src/assets/diagrams/ch22/a250-25-symptom-first-checks.svg",
+        "src/assets/diagrams/ch22/a250-25-symptom-first-checks.png"
+      ],
+      "layout": "structural-breakdown",
+      "prompt_pack": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/packs/a250-25-symptom-first-checks",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViewsService.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHostView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java"
+      ],
+      "visual_review": "passed",
+      "visual_review_report": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/a250-visual-review.json",
+      "asset_checksums": [
+        {
+          "path": "src/assets/diagrams/ch22/a250-25-symptom-first-checks.svg",
+          "sha256": "8baae8a13b851ffc6e05f8051968dae5c77d00886c72e34e4c4565e57eeff97d",
+          "bytes": 41625
+        },
+        {
+          "path": "src/assets/diagrams/ch22/a250-25-symptom-first-checks.png",
+          "sha256": "55e2e011d30a58f4d2970ee9ee0e74173065605bb2db0d4c4eeffa20c6429447",
+          "bytes": 148464,
+          "dimensions": [
+            2100,
+            1230
+          ]
+        }
+      ]
     }
   ],
   "corrections": [
@@ -37101,140 +39375,180 @@
       "before": "（cpufreq policy，即共享一套调频控制的 CPU 集合）的组织方式；cpufreq policy 指共享一套调频控制的 CPU 集合。",
       "after": "（cpufreq policy，即共享一套调频控制的 CPU 集合）的组织方式。",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "Power HAL（负责传递系统性能与功耗策略的硬件抽象层） 和 OEM 服务如何使用这些硬件；Power HAL 负责在系统与硬件之间传递性能与功耗策略。",
       "after": "Power HAL（负责传递系统性能与功耗策略的硬件抽象层）和 OEM 服务如何使用这些硬件。",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "IPC（instructions per cycle，每周期完成的指令数（instructions））",
       "after": "IPC（instructions per cycle，每周期完成的指令数）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "Android vendor hook（厂商钩子，即内核预留的扩展回调点）——内核预留的扩展回调点，厂商可以在这里接管选核。",
       "after": "Android vendor hook（厂商钩子，即内核预留的扩展回调点），厂商可以在这里接管选核。",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "performance domain（性能域，即共享一组性能状态的 CPU 集合） 估算活动能耗；performance domain 指共享一组性能状态的 CPU 集合。",
       "after": "performance domain（性能域，即共享一组性能状态的 CPU 集合）估算活动能耗。",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "uclamp（utilization clamp，利用率钳制） 全称 utilization clamp",
       "after": "uclamp（utilization clamp，利用率钳制）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "任务配置档（task profile） task profile",
       "after": "任务配置档（task profile）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "cpufreq 服务质量约束（QoS） QoS",
       "after": "cpufreq 服务质量约束（QoS）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "TBR（tile-based rendering） 指 tile-based rendering",
       "after": "TBR（tile-based rendering）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "功能级别（feature level） feature level",
       "after": "功能级别（feature level）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "系统构建指纹（build fingerprint） build fingerprint",
       "after": "系统构建指纹（build fingerprint）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "Vulkan 队列） queue family，即具备同类操作能力的一组 Vulkan 队列",
       "after": "Vulkan 队列）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "空轨道（Track） Track",
       "after": "空轨道（Track）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "动态形状（dynamic shape） dynamic shape",
       "after": "动态形状（dynamic shape）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "子图（partition） partition",
       "after": "子图（partition）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "内存通道（channel） channel",
       "after": "内存通道（channel）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "微基准（microbenchmark） microbenchmark",
       "after": "微基准（microbenchmark）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "跟踪点（tracepoint） tracepoint",
       "after": "跟踪点（tracepoint）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "绘制调用（draw call） draw call",
       "after": "绘制调用（draw call）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
       "before": "批量大小（batch size） batch size",
       "after": "批量大小（batch size）",
       "why": "清除重复术语释义，保持原技术含义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/02-soc-differences.md",
@@ -37277,14 +39591,18 @@
       "before": "CPU（push） 预算",
       "after": "CPU 预算",
       "why": "清除误加的 push 释义；push 在后文专指负载均衡方向。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
       "before": "输入设备描述符（descriptor，用于区分设备的稳定标识字符串） descriptor（稳定标识字符串）",
       "after": "输入设备描述符（descriptor，用于区分设备的稳定标识字符串）",
       "why": "清除重复释义。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
@@ -37319,21 +39637,27 @@
       "before": "```mermaid\nflowchart TD\n    Work[\"App work: main / RenderThread / Binder / worker\"] --> Thread[\"Linux task\"]\n    Profile[\"task profile / cpuset / affinity / uclamp\"] --> Thread\n    Thread --> Class{\"scheduler class\"}\n    Class --> RT[\"stop / DL / RT\"]\n    Class --> Fair[\"fair class: EEVDF + EAS\"]\n    Class --> SCX[\"sched_ext class\"]\n    Loader[\"BPF struct_ops loader\"] --> SCX\n    SCX --> DSQ[\"local / global / custom DSQ\"]\n    Fair --> Run[\"CPU executes task\"]\n    DSQ --> Run\n    RT --> Run\n    SCX --> Target[\"SCX CPU performance target\"]\n    Target --> Gov[\"schedutil / CPUFreq driver\"]\n    Clamp[\"uclamp / thermal / policy limits\"] --> Gov\n```",
       "after": "<details>\n<summary>Mermaid 源码（保留供复查）</summary>\n\n```mermaid\nflowchart TD\n    Work[\"App work: main / RenderThread / Binder / worker\"] --> Thread[\"Linux task\"]\n    Profile[\"task profile / cpuset / affinity / uclamp\"] --> Thread\n    Thread --> Class{\"scheduler class\"}\n    Class --> RT[\"stop / DL / RT\"]\n    Class --> Fair[\"fair class: EEVDF + EAS\"]\n    Class --> SCX[\"sched_ext class\"]\n    Loader[\"BPF struct_ops loader\"] --> SCX\n    SCX --> DSQ[\"local / global / custom DSQ\"]\n    Fair --> Run[\"CPU executes task\"]\n    DSQ --> Run\n    RT --> Run\n    SCX --> Target[\"SCX CPU performance target\"]\n    Target --> Gov[\"schedutil / CPUFreq driver\"]\n    Clamp[\"uclamp / thermal / policy limits\"] --> Gov\n```\n\n</details>",
       "why": "保留原始 Mermaid，折叠长源码以配合对应白板图阅读。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
       "before": "```mermaid\nsequenceDiagram\n    participant T as Waking task\n    participant S as SCX core\n    participant B as BPF scheduler\n    participant D as DSQ\n    participant C as Target CPU\n    T->>S: becomes runnable\n    S->>B: select_cpu optional\n    alt inserted into local DSQ\n        B->>D: scx_bpf_dsq_insert\n    else not inserted yet\n        S->>B: enqueue optional\n        B->>D: insert into built-in or custom DSQ\n    end\n    C->>D: consume local DSQ\n    alt local and global are empty\n        S->>B: dispatch optional\n        B->>D: insert or move task to local DSQ\n    end\n    D->>C: run task\n```",
       "after": "<details>\n<summary>Mermaid 源码（保留供复查）</summary>\n\n```mermaid\nsequenceDiagram\n    participant T as Waking task\n    participant S as SCX core\n    participant B as BPF scheduler\n    participant D as DSQ\n    participant C as Target CPU\n    T->>S: becomes runnable\n    S->>B: select_cpu optional\n    alt inserted into local DSQ\n        B->>D: scx_bpf_dsq_insert\n    else not inserted yet\n        S->>B: enqueue optional\n        B->>D: insert into built-in or custom DSQ\n    end\n    C->>D: consume local DSQ\n    alt local and global are empty\n        S->>B: dispatch optional\n        B->>D: insert or move task to local DSQ\n    end\n    D->>C: run task\n```\n\n</details>",
       "why": "保留原始 Mermaid，折叠长源码以配合对应白板图阅读。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/03-oem-scheduling-game-input.md",
       "before": "```mermaid\nflowchart LR\n    Finger[\"Finger\"] --> IC[\"Touch IC sampling / filtering\"]\n    IC --> Driver[\"Kernel evdev\"]\n    Driver --> Reader[\"EventHub + InputReader\"]\n    Reader --> Dispatcher[\"InputDispatcher\"]\n    Dispatcher --> App[\"App receives and handles input\"]\n    App --> Render[\"Game logic + render + GPU\"]\n    Render --> SF[\"BufferQueue + SurfaceFlinger\"]\n    SF --> Display[\"Display scanout\"]\n    Firmware[\"OEM firmware / driver policy\"] --> IC\n    Power[\"GAME / GAME_LOADING + Power HAL\"] --> App\n    Scheduler[\"uclamp / scheduler / CPUFreq\"] --> App\n    Rate[\"frame-rate vote / display policy\"] --> SF\n```",
       "after": "<details>\n<summary>Mermaid 源码（保留供复查）</summary>\n\n```mermaid\nflowchart LR\n    Finger[\"Finger\"] --> IC[\"Touch IC sampling / filtering\"]\n    IC --> Driver[\"Kernel evdev\"]\n    Driver --> Reader[\"EventHub + InputReader\"]\n    Reader --> Dispatcher[\"InputDispatcher\"]\n    Dispatcher --> App[\"App receives and handles input\"]\n    App --> Render[\"Game logic + render + GPU\"]\n    Render --> SF[\"BufferQueue + SurfaceFlinger\"]\n    SF --> Display[\"Display scanout\"]\n    Firmware[\"OEM firmware / driver policy\"] --> IC\n    Power[\"GAME / GAME_LOADING + Power HAL\"] --> App\n    Scheduler[\"uclamp / scheduler / CPUFreq\"] --> App\n    Rate[\"frame-rate vote / display policy\"] --> SF\n```\n\n</details>",
       "why": "保留原始 Mermaid，折叠长源码以配合对应白板图阅读。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/04-power-hal-schedutil-power-stats.md",
@@ -37380,7 +39704,9 @@
       "before": "```mermaid\nflowchart TD\n    scene[\"系统场景或特权调用\"] --> pms[\"PowerManagerService\"]\n    pms --> mode[\"IPower setMode / setBoost\"]\n    app[\"应用周期工作\"] --> hint[\"PerformanceHintManager / HintManagerService\"]\n    hint --> session[\"IPower hint session / 可选 FMQ\"]\n    mode -.->|OEM 可选映射| control[\"uclamp / QoS / 固件资源请求\"]\n    session -.->|OEM 可选映射| control\n    wake[\"调度、唤醒与约束\"] --> cfs[\"fair-class utilization\"]\n    scx[\"SCX BPF scheduler\"] --> target[\"SCX CPU performance target\"]\n    cfs --> sugov[\"schedutil\"]\n    target --> sugov\n    control -.->|product-specific| sugov\n    sugov --> driver[\"cpufreq driver / OPP\"]\n```",
       "after": "<details>\n<summary>Mermaid 源码（保留供复查）</summary>\n\n```mermaid\nflowchart TD\n    scene[\"系统场景或特权调用\"] --> pms[\"PowerManagerService\"]\n    pms --> mode[\"IPower setMode / setBoost\"]\n    app[\"应用周期工作\"] --> hint[\"PerformanceHintManager / HintManagerService\"]\n    hint --> session[\"IPower hint session / 可选 FMQ\"]\n    mode -.->|OEM 可选映射| control[\"uclamp / QoS / 固件资源请求\"]\n    session -.->|OEM 可选映射| control\n    wake[\"调度、唤醒与约束\"] --> cfs[\"fair-class utilization\"]\n    scx[\"SCX BPF scheduler\"] --> target[\"SCX CPU performance target\"]\n    cfs --> sugov[\"schedutil\"]\n    target --> sugov\n    control -.->|product-specific| sugov\n    sugov --> driver[\"cpufreq driver / OPP\"]\n```\n\n</details>",
       "why": "保留原始 Mermaid，并折叠源码以配合对应白板图阅读。",
-      "sources": []
+      "sources": [],
+      "kind": "editorial",
+      "source_note": "Pure wording/deduplication or retained Mermaid folding; evidence is the frozen original excerpt and its recorded before/after. No new external factual assertion."
     },
     {
       "article": "src/part4-system/ch19-oem/05-media-performance-class-device-capability.md",
@@ -45223,14 +47549,559 @@
       "sources": [
         "https://android.googlesource.com/platform/frameworks/av/+/android-17.0.0_r1/media/libstagefright/MediaCodec.cpp"
       ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "last_verified: '2026-08-20'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "Recheck fixed CameraX1.6.1 source plus current releases and public SDK37.",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/camera",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "CameraX 1.6.1 稳定版与 1.7.0-alpha03 版本说明",
+      "after": "CameraX 1.6.1 固定源码；截至 2026-10-25 的稳定版 1.6.2 与预览版 1.7.0-rc01 版本说明",
+      "why": "Distinguish historical source pin from current release.",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/camera"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "截至 2026-08-15，AndroidX 官方版本页列出的 CameraX 稳定版是 1.6.1，预览版是 1.7.0-alpha03；3.0 主版本还查不到可核验的发布物，本文也就不按它描述版本能力。",
+      "after": "截至 2026-10-25，官方发布页与 Google Maven 列出的最新稳定版为 1.6.2（2026-08-26），预览版为 1.7.0-rc01（2026-10-21）。下文源码细节与依赖示例仍固定在 1.6.1；升级后需重新核对实现，不能把旧代码直接标为新版本。1.6.2 修复了较新 JDK 解析传递引入的 JSpecify 注解时的编译问题。",
+      "why": "Current release audit; retain actual implementation version.",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/camera",
+        "https://dl.google.com/dl/android/maven2/androidx/camera/camera-core/maven-metadata.xml"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "| 坐标 | 基线 | 用途 |\n|---|---|---|\n| Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | Camera2、相机服务、HAL 接口与显示系统 |\n| CameraX 稳定版 | 1.6.1 | 应用依赖、兼容修复、CameraPipe、录像与用例配置 |\n| CameraX 预览版 | 1.7.0-alpha03，仅作观察 | 不进入生产基线，也不据此描述稳定能力 |\n| Android common kernel | `android17-6.18-2026-06_r6` | dma-buf、dma-fence 与 sync_file（把 fence 暴露为文件描述符的接口）公共语义 |",
+      "after": "| 坐标 | 基线 | 用途 |\n|---|---|---|\n| Android 平台 | Android 17 / API 37 / `android-17.0.0_r1` | Camera2、相机服务、HAL 接口与显示系统 |\n| CameraX 源码基线 | 1.6.1 | 应用依赖、兼容修复、CameraPipe、录像与用例配置 |\n| CameraX 预览版 | 1.7.0-rc01，仅作观察 | 不进入生产基线，也不据此描述稳定能力 |\n| Android common kernel | `android17-6.18-2026-06_r6` | dma-buf、dma-fence 与 sync_file（把 fence 暴露为文件描述符的接口）公共语义 |",
+      "why": "Version table should label pinned source separately from current stable.",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/camera"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "- CameraX 1.2 引入实验性的 ZSL 捕获模式；\n- CameraX 1.3 扩展了并发相机与录像镜像等能力；\n- CameraX 1.5 开始提供 `SessionConfig`、高速录像会话和更完整的特性组合表达；\n- CameraX 1.5.2 修复 Android 17 新 dynamic range profile（动态范围档位标识） 造成的绑定崩溃；\n- CameraX 1.6 把默认 Camera2 实现迁移到 CameraPipe，录像的 MP4 / 3GPP 封装默认使用 Media3 Muxer，并稳定 `SessionConfig`、`HighSpeedVideoSessionConfig` 与 `isSessionConfigSupported()`；\n- CameraX 1.6.1 修复 1.6.0 的依赖编译问题；\n- CameraX 1.7 仍处于 alpha 阶段。1.7.0-alpha02 加入面向 GPU 的 `ImageAnalysis`、QHD（2560 × 1440）录像等接口；1.7.0-alpha03 又加入新的 Camera2Interop 配置方式、UseCase Kotlin DSL（领域专用配置语法） 配置语法，并移除预览与录像镜像控制的实验注解。这些能力均不属于 1.6.1 稳定基线。",
+      "after": "- CameraX 1.2 引入实验性的 ZSL 捕获模式；\n- CameraX 1.3 扩展了并发相机与录像镜像等能力；\n- CameraX 1.5 开始提供 `SessionConfig`、高速录像会话和更完整的特性组合表达；\n- CameraX 1.5.2 修复 Android 17 新 dynamic range profile（动态范围档位标识） 造成的绑定崩溃；\n- CameraX 1.6 把默认 Camera2 实现迁移到 CameraPipe，录像的 MP4 / 3GPP 封装默认使用 Media3 Muxer，并稳定 `SessionConfig`、`HighSpeedVideoSessionConfig` 与 `isSessionConfigSupported()`；\n- CameraX 1.6.1 修复 1.6.0 的依赖编译问题；\n- CameraX 1.7 截至本次核验已进入 RC 阶段。1.7.0-alpha02 加入面向 GPU 的 `ImageAnalysis`、QHD（2560 × 1440）录像等接口；1.7.0-alpha03 又加入新的 Camera2Interop 配置方式、UseCase Kotlin DSL（领域专用配置语法） 配置语法，并移除预览与录像镜像控制的实验注解。这些新增接口均不属于 1.6.1 固定基线；1.7.0-rc01 还修复效果 Surface 生命周期、ImageAnalysis 动态旋转/解绑泄漏等问题，不能据此假定 1.6.1 已包含这些修复。",
+      "why": "Do not describe current1.7 RC as alpha; note fixes relevant to ownership paths.",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/camera"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "CameraPipe 是 CameraX 内部负责 Camera2 适配、会话和请求管理的模块。CameraX 1.6 里，`Camera2Config.defaultConfig()` 返回的已经是基于 CameraPipe 的配置，早期那套 Camera2 内部实现已经不用了。CameraPipe 调用（Binder 是 Android 的跨进程通信机制）的仍是平台 Camera2 接口，往下同样要经过相机服务进程 `cameraserver`、Camera HAL、sensor 和 ISP。",
+      "after": "CameraPipe 是 CameraX 内部负责 Camera2 适配、会话和请求管理的模块。CameraX 1.6 里，`Camera2Config.defaultConfig()` 返回的已经是基于 CameraPipe 的配置，早期那套 Camera2 内部实现已经不用了。CameraPipe 仍调用平台 Camera2 接口，框架通过 Binder 跨进程连接相机服务，往下同样要经过相机服务进程 `cameraserver`、Camera HAL、sensor 和 ISP。",
+      "why": "Remove broken wording and identify Binder boundary.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/Camera2Config.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraDevice.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "`Camera3OutputStream` 仍从 `ANativeWindow` 取得缓冲区，等待 acquire fence（生产者允许写入的同步点），再把 HAL 返回的 release fence（消费者可以读取的同步点） 随缓冲区交给消费者，release fence 到了，消费者才可以读取。CameraX 的 Java/Kotlin API 不改变这条所有权链；Analyzer 长时间持有 `ImageProxy`、编码器消费变慢或显示端等待，都可能向上游施加压力。",
+      "after": "`Camera3OutputStream` 从 `ANativeWindow` dequeue 缓冲区及 fence fd，再把该 fd 作为 `acquire_fence` 连同 buffer 交给 HAL。HAL 写入前必须满足该同步依赖；不能把它画成 Camera3OutputStream 必然先在 CPU 上等待完成。HAL 返回的 release fence 随输出 buffer queue 给消费者，后续消费同样必须满足同步依赖，可以等待或传递 fence。CameraX API 不改变这条所有权链；Analyzer 长时间持有 `ImageProxy`、编码器消费变慢或显示端等待，都可能向上游施加压力。",
+      "why": "Pinned getBufferLocked hands unsignaled acquire fd to HAL; CPU wait is not inherent to stream dequeue.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "`CameraCaptureSession.updateOutputConfigurations()` 是 Android 17 / API 37 新增的 Camera2 平台接口，可以替换属性兼容的既有输出 Surface，无需重建整个会话；它只用于替换，传入数量必须与现有输出一致，增加或删除输出配置则超出了它的范围。CameraX 1.6 没有承诺把任意用例切换自动映射为该 API，需要精确控制 Android 17 的动态输出更新时，应评估 Camera2。",
+      "after": "`CameraCaptureSession.updateOutputConfigurations()` 是 Android 17 / API 37 新增的 Camera2 平台接口，可以替换属性兼容的既有输出 Surface，无需重建整个会话；它只用于替换，传入数量必须与现有输出一致，增加或删除输出配置则超出了它的范围。CameraX 1.6 没有承诺把任意用例切换自动映射为该 API，需要精确控制 Android 17 的动态输出更新时，应评估 Camera2。 此调用还会停止目标为被替换 Surface 的活跃请求，框架继续跟踪旧 Surface 以接收在途 buffer；调用方需重新面向新目标组织请求，不能把“不重建会话”理解为请求或画面天然无中断。",
+      "why": "API37 source explicitly stops active requests targeting replaced surfaces and drains old in-flight buffers.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraCaptureSession.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "- `SurfaceView` 为预览提供独立 Surface，SurfaceFlinger 可以把它作为独立 layer 参与合成；满足设备条件时，HWC 有机会使用 overlay，从而减少宿主窗口的纹理采样；\n- `TextureView` 把相机图像作为纹理放进宿主窗口，裁剪、旋转、动画和 View 变换更灵活，但每帧还要经过宿主窗口的 HWUI（Android 界面硬件加速渲染器） / GPU 路径。",
+      "after": "- `SurfaceView` 为预览提供独立 Surface，SurfaceFlinger 可以把它作为独立 layer 参与合成；满足设备条件时，HWC 有机会使用 overlay，从而减少宿主窗口的纹理采样；\n- `TextureView` 把相机图像作为纹理放进宿主窗口，裁剪、旋转、动画和 View 变换更灵活，但每帧还要经过宿主窗口的 HWUI（Android 界面硬件加速渲染器） / GPU 路径。 现代 Android 的 SurfaceView 也支持同步位移及一定范围的 alpha、裁剪，是否需要 TextureView 应按实际变换验证，不能仅凭“有动画”判断。",
+      "why": "Avoid generalizing TextureView as necessary for every transform.",
+      "sources": [
+        "https://developer.android.com/media/camera/camerax/preview",
+        "https://developer.android.com/reference/android/view/SurfaceView"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "```kotlin\nval analysis = ImageAnalysis.Builder()\n    .setOutputImageFormat(\n        ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888\n    )\n    .setBackpressureStrategy(\n        ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST\n    )\n    .build()\n\nanalysis.setAnalyzer(analysisExecutor) { imageProxy ->\n    Trace.beginSection(\"CameraX#analyze\")\n    try {\n        analyzeFrame(imageProxy)\n    } finally {\n        imageProxy.close()\n        Trace.endSection()\n    }\n}\n```",
+      "after": "```kotlin\nval analysis = ImageAnalysis.Builder()\n    .setOutputImageFormat(\n        ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888\n    )\n    .setBackpressureStrategy(\n        ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST\n    )\n    .build()\n\nanalysis.setAnalyzer(analysisExecutor) { imageProxy ->\n    Trace.beginSection(\"CameraX#analyze\")\n    try {\n        analyzeFrame(imageProxy)\n    } catch (error: Exception) {\n        // 业务错误记录必须轻量且不抛异常。\n        reportAnalysisFailure(error)\n    } finally {\n        try {\n            imageProxy.close()\n        } finally {\n            Trace.endSection()\n        }\n    }\n}\n```",
+      "why": "Synchronous analyzer should report business failure and always balance Trace even if close throws.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ImageAnalysis.java",
+        "https://developer.android.com/media/camera/camerax/analyze"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "下面的 Analyzer 适合实时识别：它保留最新帧，并用 ATrace（应用写入 Perfetto 的命名时间区间） 标出处理过程。ATrace 是应用写入 Perfetto 的命名时间区间。",
+      "after": "下面的 Analyzer 适合同步、耗时有界的实时识别，`analyzeFrame` 必须在返回前结束对图像的访问；`reportAnalysisFailure` 是业务提供的轻量、不抛异常的记录函数。ATrace 在当前线程标出处理区间；若分析是异步任务，应按下文的所有权约定另行组织，不能跨线程复用同一个同步 section。",
+      "why": "Declare synchronous execution, helper contract and Trace thread lifetime.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ImageAnalysis.java",
+        "https://developer.android.com/reference/android/os/Trace"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "异步模型下，关闭操作要放到异步任务的完成回调里。若 `analyzeFrame()` 只是提交任务就返回、`finally` 立即关闭，模型随后访问的图像已经失效；若一直等业务回调才关闭，又会延长缓冲区持有时间。解决办法是让分析任务明确拥有这次 `ImageProxy` 的生命周期，并为超时、异常和取消路径都注册关闭操作。",
+      "after": "异步模型下，只有最后一个消费者确认停止访问之后，owner 才能调用 `ImageProxy.close()`。超时、取消或失败信号本身不保证 GPU、native 或异步模型已停止读图，不能直接把这些信号都接到关闭操作。优先把所需数据复制到自有、有界缓冲区后及早关闭 ImageProxy；若要零复制持有原图，则明确任务接受/拒绝、完成、失败、取消确认和会话退出的回收协议，保证恰好一次关闭，并拒收旧会话结果。",
+      "why": "Cancellation request is not proof of image access completion; prevent premature close in asynchronous consumers.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ImageAnalysis.java",
+        "https://developer.android.com/reference/android/media/ImageWriter",
+        "https://developer.android.com/media/camera/camerax/analyze"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "`YUV_420_888` 是默认输出。请求 `RGBA_8888` 时，CameraX 会在内部执行 YUV 到 RGBA 的转换，把结果放进第一个数据平面（plane），这段转换时间同样要计入分析成本。",
+      "after": "`YUV_420_888` 是默认输出。请求 `RGBA_8888` 时，CameraX 会在内部执行 YUV 到 RGBA 的转换，把结果放进第一个数据平面（plane），这段转换时间同样要计入分析成本。 1.6.1 还提供 NV21 输出；读取 YUV/NV21 必须依据各 plane 的 rowStride、pixelStride、crop 与旋转信息，不能假设紧密连续的宽×高数组。格式转换和旋转也可能使 ImageProxy 与其底层 Media.Image 的尺寸/布局不同，应按所用 API 的契约取数。",
+      "why": "Add actual published NV21 output and stride/layout ownership boundary.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ImageAnalysis.java",
+        "https://developer.android.com/media/camera/camerax/analyze"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "1. 改用 `KEEP_ONLY_LATEST`，消除旧结果排队；\n2. 减少输入尺寸，确认识别准确率仍满足产品要求；\n3. 避免每帧分配 Bitmap、ByteArray 或大对象；\n4. 直接使用 YUV plane，减少无必要的 YUV → RGB → Bitmap 转换；\n5. 降低分析频率或依据场景变化触发分析；\n6. 选择更轻的模型或合适的 NNAPI（Android 神经网络 API）/ GPU 执行路径；\n7. 只有必须逐帧处理时才使用 `BLOCK_PRODUCER`，并对队列等待时间设监控。",
+      "after": "1. 改用 `KEEP_ONLY_LATEST`，消除旧结果排队；\n2. 减少输入尺寸，确认识别准确率仍满足产品要求；\n3. 避免每帧分配 Bitmap、ByteArray 或大对象；\n4. 直接使用 YUV plane，减少无必要的 YUV → RGB → Bitmap 转换；\n5. 降低分析频率或依据场景变化触发分析；\n6. 选择更轻的模型，并按所用运行时评估 CPU / GPU 等执行路径；NNAPI 已在 Android 15 废弃，新方案不把它当默认性能建议；\n7. 只有必须逐帧处理时才使用 `BLOCK_PRODUCER`，并对队列等待时间设监控。",
+      "why": "Remove deprecated NNAPI as generic forward-looking optimization recommendation.",
+      "sources": [
+        "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "- CPU Analyzer 会占用 CPU、内存带宽，并持有分析图像；\n- GPU Analyzer 或效果会增加纹理导入、同步、shader（着色器程序） 与输出 Surface 的工作；\n- NNAPI / GPU 模型可能与预览效果争用 GPU 或内存；\n- 逐帧 YUV → RGB 与 Bitmap 分配会增加 CPU、内存和 GC（垃圾回收） 压力；\n- 结果覆盖层若每帧触发复杂 UI 重绘，还会增加宿主窗口的帧耗时。",
+      "after": "- CPU Analyzer 会占用 CPU、内存带宽，并持有分析图像；\n- GPU Analyzer 或效果会增加纹理导入、同步、shader（着色器程序） 与输出 Surface 的工作；\n- GPU 模型或实际被委派到 GPU 的模型可能与预览效果争用 GPU 或内存；\n- 逐帧 YUV → RGB 与 Bitmap 分配会增加 CPU、内存和 GC（垃圾回收） 压力；\n- 结果覆盖层若每帧触发复杂 UI 重绘，还会增加宿主窗口的帧耗时。",
+      "why": "Clarify resource depends on backend, NNAPI is deprecated and not an execution device.",
+      "sources": [
+        "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide",
+        "https://developer.android.com/media/camera/camerax/analyze"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "- `CAPTURE_MODE_MINIMIZE_LATENCY`：默认值，优先减少捕获延迟；\n- `CAPTURE_MODE_MAXIMIZE_QUALITY`：允许设备选择更重的画质路径；\n- `CAPTURE_MODE_ZERO_SHUTTER_LAG`：实验能力，从候选历史帧中选择接近按键时刻的帧，再执行 reprocess（把已捕获图像作为输入重新处理），把已捕获的图像作为输入重新处理。",
+      "after": "- `CAPTURE_MODE_MINIMIZE_LATENCY`：默认值，优先减少捕获延迟；\n- `CAPTURE_MODE_MAXIMIZE_QUALITY`：允许设备选择更重的画质路径；\n- `CAPTURE_MODE_ZERO_SHUTTER_LAG`：实验能力，从候选历史帧中选择接近按键时刻的帧，再执行 reprocess（把已捕获图像作为输入重新处理）。",
+      "why": "Remove duplicate definition of reprocessing.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "```kotlin\n@OptIn(ExperimentalZeroShutterLag::class)\nfun buildImageCapture(cameraInfo: CameraInfo): ImageCapture {\n    val captureMode = if (cameraInfo.isZslSupported) {\n        ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG\n    } else {\n        ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY\n    }\n\n    return ImageCapture.Builder()\n        .setCaptureMode(captureMode)\n        .setFlashMode(ImageCapture.FLASH_MODE_OFF)\n        .build()\n}\n```",
+      "after": "```kotlin\n@androidx.annotation.OptIn(ExperimentalZeroShutterLag::class)\nfun buildImageCapture(cameraInfo: CameraInfo): ImageCapture {\n    val captureMode = if (cameraInfo.isZslSupported) {\n        ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG\n    } else {\n        ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY\n    }\n\n    return ImageCapture.Builder()\n        .setCaptureMode(captureMode)\n        .setFlashMode(ImageCapture.FLASH_MODE_OFF)\n        .build()\n}\n```",
+      "why": "AndroidX experimental Java annotation requires AndroidX OptIn; Kotlin OptIn does not acknowledge this marker.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CameraInfoAdapter.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/ExperimentalZeroShutterLag.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "被选中的 `ImageProxy` 在排入 `ImageWriter` 后仍持有底层资源。CameraX 会为请求安装监听器，并在以下路径中通过同一个原子引用关闭它：",
+      "after": "成功 `queueInputImage()` 后，底层 `Image` 的所有权已经交给 ImageWriter/下游，原 Image 不得继续访问，其状态等同已关闭；这不等于物理 buffer 已被下游消费并归还。CameraX 仍需关闭 `ImageProxy` 包装以传播内部关闭通知，并为请求安装监听器，在以下路径共用一个原子引用：",
+      "why": "Distinguish transferred Image invalidation, wrapper close notifications and eventual downstream buffer return.",
+      "sources": [
+        "https://developer.android.com/reference/android/media/ImageWriter",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CaptureConfigAdapter.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "多个回调可能先后发生，原子引用保证资源只关闭一次。我们若自行实现 Camera2 ZSL，同样要在提交失败、会话关闭、请求中止和异常路径中完整回收输入图像。",
+      "after": "多个回调可能先后发生，`getAndSet(null)` 保证这一监听器对包装对象最多发起一次关闭。我们若自行实现 Camera2 ZSL，同样要在提交失败、会话关闭、请求中止和异常路径中按当前所有者回收资源；成功 queue 后不能再次读写原 Image，也不能把 wrapper.close 当作下游已释放缓冲区的证明。",
+      "why": "Atomic listener exactly-once refers to wrapper close call rather than downstream physical release.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CaptureConfigAdapter.kt",
+        "https://developer.android.com/reference/android/media/ImageWriter"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "环形队列保存的是尚未关闭的 `ImageProxy`，每保留一帧，就有一块 `PRIVATE` 输出缓冲区回不到生产方队列。队列满后关闭被淘汰的帧，拍照完成或失败后关闭被选中的帧，会话重置时清空全部帧。",
+      "after": "环形队列保存尚未关闭的 `ImageProxy`，候选帧会占用输出资源；满队列淘汰和会话重置会关闭未选中的帧。选中帧在成功 queue 前仍由调用方负责，成功 queue 后 Image 所有权转到输入链路，wrapper 关闭通知与下游真正释放 buffer 是不同阶段。分析驻留量时必须把候选输出与已移交的在途输入分开。",
+      "why": "Avoid assuming selected ImageProxy retains readable physical output resource until callback close.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CaptureConfigAdapter.kt",
+        "https://developer.android.com/reference/android/media/ImageWriter"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "CameraPipe 会为可重处理会话的输入 `Surface` 创建 `ImageWriter`。准备提交请求时，`Camera2CaptureSequenceProcessor` 先调用以下方法，把选中的历史帧排入输入队列：",
+      "after": "CameraPipe 会为可重处理会话的输入 `Surface` 创建 `ImageWriter`。在该版本的请求构建循环中，`Camera2CaptureSequenceProcessor` 先用源 TotalCaptureResult 创建 reprocess builder 并加入输出目标，再调用以下方法，把选中的历史帧排入输入队列：",
+      "why": "Actual buildCaptureRequestBuilder precedes queueInputImage, despite following subsection order.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2-pipe/src/main/java/androidx/camera/camera2/pipe/compat/Camera2CaptureSequenceProcessor.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "这一步把 CameraX 持有的 `PRIVATE` 图像排入 Camera2 会话的输入队列，全程既没有复制出应用可访问的位图，也没有把 JPEG 数据送回 HAL。",
+      "after": "这一步把 CameraX 持有的 `PRIVATE` 图像排入 Camera2 会话的输入队列，全程既没有复制出应用可访问的位图，也没有把 JPEG 数据送回 HAL。 这是 API 层的图像移交描述，不承诺 ISP/驱动内部全程无拷贝；外部 Image 排入时还需要可用的 ImageWriter 输入槽，无空槽时该调用可能阻塞。",
+      "why": "Do not infer hardware end-to-end zero-copy or nonblocking behavior from PRIVATE queue.",
+      "sources": [
+        "https://developer.android.com/reference/android/media/ImageWriter",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2-pipe/src/main/java/androidx/camera/camera2/pipe/compat/Camera2CaptureSequenceProcessor.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "只记一个 `zsl=true` 布尔值是不够的：会话是否建立了输入流、本次拍照是否从环形队列取得了历史帧，都要靠上面的字段回答。",
+      "after": "只记一个 `zsl=true` 布尔值是不够的：会话是否建立了输入流、本次拍照是否从环形队列取得了历史帧，都要靠上面的字段回答。 `SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME` 的 sensor timestamp 可与 `elapsedRealtimeNanos()` 比较；UNKNOWN 源不能直接做跨时钟差。ZSL 帧可能早于按键，图像年龄和按键到文件延迟是两个指标，不能把负的时间差当作计时错误。",
+      "why": "Clock-source and ZSL age must be explicit before timestamp subtraction.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraCharacteristics.java",
+        "https://developer.android.com/media/camera/camerax/take-photo/zsl"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "下面的选择器用于优先 1080p，并允许在不支持时选择较低质量。",
+      "after": "下面的选择器优先 1080p，其次 720p、SD，未命中列表时仅尝试低于 FHD 的质量；若不存在可用质量，应由产品处理不支持分支，不能悄悄回退到更高成本的 UHD。",
+      "why": "Original lowerQualityOrHigherThan(SD) may select higher quality contrary to low-cost claim.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-video/src/main/java/androidx/camera/video/FallbackStrategy.java",
+        "https://developer.android.com/media/camera/camerax/video-capture"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "```kotlin\nval qualitySelector = QualitySelector.fromOrderedList(\n    listOf(Quality.FHD, Quality.HD, Quality.SD),\n    FallbackStrategy.lowerQualityOrHigherThan(Quality.SD),\n)\n\nval recorder = Recorder.Builder()\n    .setQualitySelector(qualitySelector)\n    .build()\n\nval videoCapture = VideoCapture.withOutput(recorder)\n```",
+      "after": "```kotlin\nval qualitySelector = QualitySelector.fromOrderedList(\n    listOf(Quality.FHD, Quality.HD, Quality.SD),\n    FallbackStrategy.lowerQualityThan(Quality.FHD),\n)\n\nval recorder = Recorder.Builder()\n    .setQualitySelector(qualitySelector)\n    .build()\n\nval videoCapture = VideoCapture.withOutput(recorder)\n```",
+      "why": "Strict lower-quality fallback matches stated no-unexpected-higher-cost intent.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-video/src/main/java/androidx/camera/video/FallbackStrategy.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "性能计时要覆盖从相机 timestamp 到结果显示的端到端延迟——即使模型推理很快，输入帧在队列里等得太久，用户看到的仍是旧结果。",
+      "after": "性能计时要覆盖从相机 timestamp 到结果显示的端到端延迟——即使模型推理很快，输入帧在队列里等得太久，用户看到的仍是旧结果。 跨 timestamp 源的计时先确认时基映射，结果还需带会话/帧身份，旧会话或已过期结果不得更新当前预览；预览镜像只改变显示坐标，不代表分析缓冲区也已镜像。",
+      "why": "Require clock/identity and display-analysis transform mapping for end-to-end metric.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/hardware/camera2/CameraCharacteristics.java",
+        "https://developer.android.com/media/camera/camerax/analyze",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-view/src/main/java/androidx/camera/view/PreviewView.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "降级要由状态机控制，升降级使用不同温度阈值，形成滞回，避免温度在阈值附近时反复重绑会话。只降低应用线程优先级，通常解决不了 ISP、GPU、编码器或 DDR 的热限制。",
+      "after": "降级要由状态机控制，按可获得的系统热状态/实测信号使用不同升降级阈值与最短驻留时间，形成滞回，避免温度在阈值附近时反复重绑会话。只降低应用线程优先级，通常解决不了 ISP、GPU、编码器或 DDR 的热限制。 普通应用可使用 PowerManager 热状态监听等公开信号，不应假定能读取所有传感器或厂商温度。",
+      "why": "Use available thermal signals and hysteresis rather than assuming privileged sensor temperature access.",
+      "sources": [
+        "https://developer.android.com/reference/android/os/PowerManager",
+        "https://developer.android.com/media/camera/camerax/video-capture"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "[15.14 Android Camera 性能与 Perfetto 分析](../../part3-tools/ch15-other-tools/14-camera-performance-analysis.md) 给出了 Android 17 的 Perfetto 配置、CameraService 打开相机阶段、输出流首缓冲区、请求延迟直方图与 ZSL 时间点拆分，采集配置可以直接沿用。",
+      "after": "[15.14 Android Camera 性能与 Perfetto 分析](../../part3-tools/ch15-other-tools/14-camera-performance-analysis.md) 给出了 Android 17 的 Perfetto 配置、CameraService 打开相机阶段、输出流首缓冲区、请求延迟直方图与 ZSL 时间点拆分，采集配置可作起点，但必须按设备实际支持的 atrace 类别、数据源与权限校验；缺失的厂商 ISP/GPU/thermal 轨迹要标为不可见。",
+      "why": "Trace source availability and permissions vary; do not promise all source categories exist.",
+      "sources": [
+        "https://perfetto.dev/docs/data-sources/frametimeline",
+        "https://perfetto.dev/docs/data-sources/atrace"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "进程 RSS（常驻物理内存）的增长不能直接换算成 `ImageAnalysis` 的队列大小。我们先确认未关闭的 `ImageProxy`、Bitmap 分配和 native heap，再结合 dma-buf、Surface 与厂商数据判断。",
+      "after": "进程 RSS（常驻物理内存）的增长不能直接换算成 `ImageAnalysis` 的队列大小。我们先确认未关闭的 `ImageProxy`、Bitmap 分配和 native heap，再结合 dma-buf、Surface 与厂商数据判断。 共享映射可能在多个进程中重复计入 RSS，不能把各进程 RSS 简单相加当唯一物理占用；PRIVATE 格式的步长、对齐、压缩与多平面布局需按实际分配数据核实。",
+      "why": "Avoid shared physical-memory double counting and fixed pixel-size inference.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/av/+/refs/tags/android-17.0.0_r1/services/camera/libcameraservice/device3/Camera3OutputStream.cpp",
+        "https://source.android.com/docs/core/graphics/implement-dma-buf-gpu-mem"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "- [CameraX 版本说明](https://developer.android.com/jetpack/androidx/releases/camera)\n- [CameraX 架构](https://developer.android.com/media/camera/camerax/architecture)\n- [CameraX 配置与多用例组合](https://developer.android.com/media/camera/camerax/configuration)\n- [`PreviewView` 预览实现](https://developer.android.com/media/camera/camerax/preview)\n- [`ImageAnalysis` 回压与图像归还](https://developer.android.com/media/camera/camerax/analyze)\n- [CameraX ZSL](https://developer.android.com/media/camera/camerax/take-photo/zsl)\n- [CameraX VideoCapture](https://developer.android.com/media/camera/camerax/video-capture)\n- [`SessionConfig`](https://developer.android.com/reference/androidx/camera/core/SessionConfig)\n- [`ExtensionSessionConfig`](https://developer.android.com/reference/androidx/camera/extensions/ExtensionSessionConfig)\n- [Android 17 Camera 更新](https://developer.android.com/about/versions/17/release-notes)\n- [Camera2 API](https://developer.android.com/reference/android/hardware/camera2/package-summary)\n- [13.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](../../part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md)\n- [15.14 Android Camera 性能与 Perfetto 分析](../../part3-tools/ch15-other-tools/14-camera-performance-analysis.md)\n",
+      "after": "- [CameraX 版本说明](https://developer.android.com/jetpack/androidx/releases/camera)\n- [CameraX 架构](https://developer.android.com/media/camera/camerax/architecture)\n- [CameraX 配置与多用例组合](https://developer.android.com/media/camera/camerax/configuration)\n- [`PreviewView` 预览实现](https://developer.android.com/media/camera/camerax/preview)\n- [`ImageAnalysis` 回压与图像归还](https://developer.android.com/media/camera/camerax/analyze)\n- [CameraX ZSL](https://developer.android.com/media/camera/camerax/take-photo/zsl)\n- [CameraX VideoCapture](https://developer.android.com/media/camera/camerax/video-capture)\n- [`SessionConfig`](https://developer.android.com/reference/androidx/camera/core/SessionConfig)\n- [`ExtensionSessionConfig`](https://developer.android.com/reference/androidx/camera/extensions/ExtensionSessionConfig)\n- [Android 17 Camera 更新](https://developer.android.com/about/versions/17/release-notes)\n- [Camera2 API](https://developer.android.com/reference/android/hardware/camera2/package-summary)\n- [13.10 Android Camera 平台管线：HAL3、Buffer、ZSL 与显示](../../part2-performance/ch13-rendering-pipelines/10-camera-pipeline.md)\n- [15.14 Android Camera 性能与 Perfetto 分析](../../part3-tools/ch15-other-tools/14-camera-performance-analysis.md)\n\n- [ImageWriter 图像移交契约](https://developer.android.com/reference/android/media/ImageWriter)\n- [NNAPI 迁移说明](https://developer.android.com/ndk/guides/neuralnetworks/migration-guide)\n- [固定版本 ZSL 控制](https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt)、[请求转换](https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CaptureConfigAdapter.kt)、[CameraPipe 重处理](https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2-pipe/src/main/java/androidx/camera/camera2/pipe/compat/Camera2CaptureSequenceProcessor.kt)\n- [固定版本 ZSL ring](https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/internal/utils/ZslRingBuffer.java)、[FIFO 容器](https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/internal/utils/ArrayRingBuffer.java)：过滤条件与候选顺序。",
+      "why": "Add directly auditable ownership, deprecation and ZSL implementation sources.",
+      "sources": [
+        "https://developer.android.com/reference/android/media/ImageWriter",
+        "https://developer.android.com/ndk/guides/neuralnetworks/migration-guide",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/ZslControl.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/adapter/CaptureConfigAdapter.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2-pipe/src/main/java/androidx/camera/camera2/pipe/compat/Camera2CaptureSequenceProcessor.kt",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/internal/utils/ZslRingBuffer.java",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-core/src/main/java/androidx/camera/core/internal/utils/ArrayRingBuffer.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
+      "before": "| 名称 | 数值 | 约束对象 |\n|---|---:|---|\n| `RING_BUFFER_CAPACITY` | 3 | 可供 ZSL 选择的合格 `ImageProxy` 数量 |\n| `ZslControlImpl.MAX_IMAGES` | 9 | 传给 `MetadataImageReader` 的图像上限，源码中为环形队列容量的 3 倍 |\n| CameraPipe 输入端 `maxImages` | 1 | 会话输入 `Surface` 上的 `ImageWriter` 并发图像数 |",
+      "after": "| 名称 | 数值 | 约束对象 |\n|---|---:|---|\n| `RING_BUFFER_CAPACITY` | 3 | 可供 ZSL 选择的合格 `ImageProxy` 数量 |\n| `ZslControlImpl.MAX_IMAGES` | 9 | 传给 `MetadataImageReader` 的图像上限，源码中为环形队列容量的 3 倍 |\n| CameraPipe 输入端 `maxImages` | 1 | 会话输入 `Surface` 上的 `ImageWriter` 可同时 dequeue 的图像数；不能等同整个下游在途 buffer 总数 |",
+      "why": "ImageWriter maxImages is simultaneous dequeued images, not entire downstream in-flight memory cap.",
+      "sources": [
+        "https://developer.android.com/reference/android/media/ImageWriter",
+        "https://android.googlesource.com/platform/frameworks/support/+/987b9ac8585b31424a397206c492196dd163997b/camera/camera-camera2/src/main/java/androidx/camera/camera2/impl/CameraGraphConfigProvider.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "last_verified: '2026-10-18'",
+      "after": "last_verified: '2026-10-25'",
+      "why": "Fresh complete platform and Glance source audit.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "last_source_verified_at: '2026-10-18T18:39:38+08:00'",
+      "after": "last_source_verified_at: '2026-10-25'",
+      "why": "Primary-source fetch and signature audit refreshed.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "> 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；Glance 以 1.2.0 为准。文中讨论的更新、缓存和宿主应用逻辑都发生在 Android 框架与 Jetpack 库中，不延伸到内核实现。",
+      "after": "> 源码基线：AOSP `android-17.0.0_r1`（Android 17 / API 37）；Glance 以 1.2.0 为准。文中讨论的更新、缓存和宿主应用逻辑都发生在 Android 框架与 Jetpack 库中，不延伸到内核实现。 截至2026-10-25，Google Maven 与发布页的最新稳定版仍是 Glance 1.2.0（2026-08-26），另有1.3.0-alpha02；本文不把预览版能力套到1.2.0。",
+      "why": "Record current stable separately from alpha metadata latest.",
+      "sources": [
+        "https://developer.android.com/jetpack/androidx/releases/glance",
+        "https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/maven-metadata.xml"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "还有一点要留意：提供方完成 `updateAppWidget()` 调用时，桌面像素往往还没刷新。旧式集合适配器的兼容转换开启时，主线程调用还可能先把转换工作投递到后台执行器，再由后台提交更新——这时函数返回，连“系统服务已收到新快照”都保证不了。",
+      "after": "还有一点要留意：提供方完成 `updateAppWidget()` 调用时，桌面像素往往还没刷新。旧式集合适配器的兼容转换开启时，主线程调用还可能先把转换工作投递到后台执行器，再由后台提交更新——这时函数返回，连“系统服务已收到新快照”都保证不了。 转换由 CompletableFuture 链提交，非主线程调用也不能只凭函数返回认定服务已接收；转换失败可只写日志。业务应保留数据版本与提交/宿主观察的阶段证据，不能把调用返回当成功显示回执。",
+      "why": "Adapter conversion may remain asynchronous off main; failures may be logged in future handlers.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetManager.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "`AppWidgetHostView.applyRemoteViews()` 先选择适合当前尺寸的 `RemoteViews`，再判断现有 View 能否复用。同步路径调用 `canRecycleView(mView)`：布局与现有 View 满足复用条件时执行 `reapply()`，否则由 `apply()` 创建新内容。宿主配置了异步 `Executor`（执行任务的线程调度接口） 时，代码进入 `inflateAsync()`，按同样的判断分别调用 `reapplyAsync()` 或 `applyAsync()`。复用与否由宿主决定，提供方手里没有能强制宿主执行 `reapply()` 的公开接口。",
+      "after": "`AppWidgetHostView.applyRemoteViews()` 先选择适合当前尺寸的 `RemoteViews`，再判断现有 View 能否复用。同步路径调用 `canRecycleView(mView)`：布局与现有 View 满足复用条件时执行 `reapply()`，否则由 `apply()` 创建新内容。宿主配置了异步 `Executor`（执行任务的线程调度接口） 时，代码进入 `inflateAsync()`，按同样的判断分别调用 `reapplyAsync()` 或 `applyAsync()`。复用与否由宿主决定，提供方手里没有能强制宿主执行 `reapply()` 的公开接口。 即便判断可复用，reapply 抛 RuntimeException 后同步路径仍会尝试重新 apply；异步路径也有失败恢复。异步执行器只分担可异步的加载/初始化，最终 View 应用及界面帧仍由宿主管理，不代表测量、布局和绘制全在后台完成。",
+      "why": "Host fallback and async boundaries matter even with same layout.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHostView.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "这个插件模型的加载与隔离方式也不同：`PluginActionManager` 在加载前检查插件权限和是否可启用，`PluginInstance` 为插件创建 `PathClassLoader`，把宿主类加载器包在只放行指定包名前缀的 `ClassLoaderFilter` 之后，再通过 `createApplicationContext()` 加载插件资源。它提供的是类可见性与资源上下文隔离；插件实例仍在宿主进程里执行，和 AppWidget 跨进程 `RemoteViews` 的进程级隔离是两回事。[已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt@android-17.0.0_r1][已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt@android-17.0.0_r1]",
+      "after": "这个插件模型的加载与隔离方式也不同：`PluginActionManager` 在加载前检查插件权限和是否可启用，`PluginInstance` 为插件创建 `PathClassLoader`，把宿主类加载器包在只放行指定包名前缀的 `ClassLoaderFilter` 之后，再通过 `createApplicationContext()` 加载插件资源。它提供的是类可见性与资源上下文隔离；插件实例仍在宿主进程里执行，和 AppWidget 跨进程 `RemoteViews` 的进程级隔离是两回事。[已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt@android-17.0.0_r1][已验证: packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt@android-17.0.0_r1] ClassLoaderFilter 不是不可信代码的安全沙箱，也不会隔离插件在宿主线程中的阻塞、崩溃或内存开销；实际生产加载还受非调试构建的特权名单等规则限制。",
+      "why": "Class visibility separation is not process/crash/security isolation; production loading is gated.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "局部更新省下的是提供方发送的动作和参数；宿主仍要接收更新并执行对应动作，收益要结合更新频率、动作大小和宿主实现来测。业务状态容易偏离完整数据时，可以在配置变化、数据版本迁移这类明确事件后重新提交完整快照，让界面回到一致状态——这是一项工程策略，系统并没有要求按固定周期执行。",
+      "after": "局部更新省下的是提供方发送的动作和参数；Android17服务合并后通知宿主的是 `widget.getEffectiveViewsLocked()` 的快照副本，不能假定宿主只收本次delta或仅执行新增动作，收益要结合更新频率、动作大小和宿主实现来测。业务状态容易偏离完整数据时，可以在配置变化、数据版本迁移这类明确事件后重新提交完整快照，让界面回到一致状态——这是一项工程策略，系统并没有要求按固定周期执行。 `mergeRemoteViews()` 按动作 unique key 和 mergeBehavior 做替换、追加或忽略；相同属性常会替换，追加型动作则可能累积。局部更新并不天然保证缓存动作数恒定。",
+      "why": "Partial provider payload does not mean delta-only host IPC; merge rules are not unconditional append.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "转换时，内部方法 `RemoteViewsFactory.getRemoteCollectionItems()` 会顺序读取项目，达到序列化数据或位图容量限制时停止收集。较大的集合要检查实际交付的项目数量；排查列表缺项时，同样要检查转换阶段的容量限制。[已验证: frameworks/base/core/java/android/widget/RemoteViewsService.java@android-17.0.0_r1]",
+      "after": "转换时，内部方法 `RemoteViewsFactory.getRemoteCollectionItems()` 会顺序读取项目，达到序列化数据或位图容量限制时停止收集。较大的集合要检查实际交付的项目数量；排查列表缺项时，同样要检查转换阶段的容量限制。[已验证: frameworks/base/core/java/android/widget/RemoteViewsService.java@android-17.0.0_r1] 固定源码中，单项序列化后 `dataSize > capSize` 或位图累计 `>= capBitmapSize` 会在加入当前项之前停止；`getViewAt()` 返回 null 也会结束本次收集。这些内部限制不是应用可依赖的完整交付协议，应核对实际item数并提供有界数据。",
+      "why": "Exact collection truncation order and null termination explain missing trailing rows.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViewsService.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "1. 在后台完成数据库查询、排序和业务计算。\n2. 生成不可变的数据列表，并在回调结束前原子替换旧快照——一次发布整份新引用，读取方不会看到只更新了一半的数据。\n3. `getViewAt()` 只读取快照，设置文本、资源和点击模板所需的填充参数。\n4. 对相同内容复用资源引用，避免为每一项重复创建相同位图。\n5. 数据暂不可用时返回稳定的加载或空状态，避免宿主反复收到结构差异很大的布局。",
+      "after": "1. 在后台完成数据库查询、排序和业务计算。\n2. 生成不可变的数据列表，并在回调结束前通过 AtomicReference、volatile 引用或锁安全发布整份不可变新快照，读取方不会看到只更新了一半的数据。\n3. `getViewAt()` 只读取快照，设置文本、资源和点击模板所需的填充参数。\n4. 对相同内容复用资源引用，避免为每一项重复创建相同位图。\n5. 数据暂不可用时返回稳定的加载或空状态，避免宿主反复收到结构差异很大的布局。 跨线程发布不仅要求引用写入不可分割，还要求可见性；不要在发布后继续修改列表或项目内部可变数据。",
+      "why": "Plain reference assignment alone does not guarantee safe publication across threads.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViewsService.java",
+        "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/atomic/AtomicReference.html"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "`AppWidgetProvider` 继承 `BroadcastReceiver`。系统文档要求接收器通常在约 10 秒内完成，网络访问、批量图片解码或大型数据库迁移都要放到 `onUpdate()` 之外。合适的处理顺序是：",
+      "after": "`AppWidgetProvider` 继承 `BroadcastReceiver`。官方 API 用约10秒说明应迅速完成的一般原则，但不能把它写成所有广播固定ANR门槛：Android14及以上的前台优先广播通常为10–20秒，后台优先广播为60–120秒，取决于CPU饥饿等条件；冷启动也计入超时。`goAsync()` 仍受广播超时约束，必须及时 `PendingResult.finish()`。这些上限不是可使用的业务计算预算，网络、批量解码和大型迁移应放到 `onUpdate()` 之外。合适的处理顺序是：",
+      "why": "Distinguish responsiveness advice from version/priority-dependent ANR timeout and async finish ownership.",
+      "sources": [
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs",
+        "https://developer.android.com/reference/android/content/BroadcastReceiver"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "WorkManager 是 Jetpack 的可延迟后台任务调度器，可以表达网络、电量、充电等约束，也能把一次性任务去重。它不保证精确执行时刻，周期任务还受最小周期、应用待机分桶（按活跃度分档限制后台）、省电模式和执行配额影响；把它当成精确定时器，就会误判数据时效。",
+      "after": "WorkManager 是 Jetpack 的可延迟后台任务调度器，可以表达网络、电量、充电等约束，也能把一次性任务去重。它不保证精确执行时刻，周期任务还受最小周期、应用待机分桶（按活跃度分档限制后台）、省电模式和执行配额影响；把它当成精确定时器，就会误判数据时效。 `PeriodicWorkRequest` 的最小重复间隔为15分钟，这也只是允许的请求参数，不是数据每15分钟必定刷新的SLA。离线、约束未满足或系统延期时，应继续显示最近可用值和更新时间。",
+      "why": "Add actual periodic minimum and separate scheduling parameter from freshness guarantee.",
+      "sources": [
+        "https://developer.android.com/reference/androidx/work/PeriodicWorkRequest",
+        "https://developer.android.com/develop/ui/views/appwidgets/advanced"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "监听器形式免去了 `SCHEDULE_EXACT_ALARM` 特殊访问权限，代价是受这条进程生命周期约束。调用方应在所属组件结束时调用 `cancel(OnAlarmListener)`。进程死亡后仍要触发更新的场景，改用 `PendingIntent` 形式——它由系统代应用保存、可在应用进程不存在时触发，其精确闹钟形式需要满足对应的访问规则。允许延迟时，优先使用 WorkManager 或系统的非精确周期机制。",
+      "after": "监听器形式免去了 `SCHEDULE_EXACT_ALARM` 特殊访问权限，代价是受这条进程生命周期约束。调用方应在所属组件结束时调用 `cancel(OnAlarmListener)`。进程死亡后仍要触发更新的场景，改用 `PendingIntent` 形式——它由系统代应用保存、可在应用进程不存在时触发，其精确闹钟形式需要满足对应的访问规则。允许延迟时，优先使用 WorkManager 或系统的非精确周期机制。 allow-while-idle 仍受平台配额和调度规则约束，Executor 排队也会推迟业务执行；API37这个重载不是无配额的常驻Widget秒级刷新机制。",
+      "why": "Permission exception is not unlimited cadence or delivery-latency guarantee.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "媒体播放进度一类高频信息，还要优先考虑系统已有的媒体会话和宿主能力。用周期 Binder 更新模拟每一帧进度，会同时增加提供方、`system_server` 和 Launcher 的工作。",
+      "after": "媒体播放进度一类高频信息，还要优先考虑系统已有的媒体会话和宿主能力。用周期 Binder 更新模拟每一帧进度，会同时增加提供方、`system_server` 和 Launcher 的工作。 对可由宿主本地计时表达的倒计时或时钟，还可使用 RemoteViews 支持的 Chronometer / TextClock；Chronometer 的base使用elapsedRealtime时基，不能直接填墙上时间。它们减少逐秒IPC，但不替代业务数据刷新。",
+      "why": "Host-side supported time widgets can avoid per-second IPC; specify Chronometer clock.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java",
+        "https://developer.android.com/reference/android/widget/Chronometer",
+        "https://developer.android.com/reference/android/widget/TextClock"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "源码注释给出的含义是 1.5 个屏幕、每像素 4 字节。对非系统 UID（Android 用来标识应用身份的 Linux 用户编号） 提交的非空快照，服务会在缓存合并或替换后检查 `RemoteViews` 的图像估算值。`targetSdkVersion` 不高于 37 时，强制上限只计普通位图缓存，超限会清空该 Widget 的缓存并抛出 `IllegalArgumentException`；`Icon` 对象内携带的位图会计入总量，总量超限时记录警告。",
+      "after": "源码注释给出的含义是 1.5 个屏幕、每像素 4 字节。对非系统 UID（Android 用来标识应用身份的 Linux 用户编号） 提交的非空快照，服务会在缓存合并或替换后检查 `RemoteViews` 的图像估算值。`targetSdkVersion` 不高于 37 时，强制上限只计普通位图缓存，超限会清空该 Widget 的缓存并抛出 `IllegalArgumentException`；`Icon` 对象内携带的位图会计入总量，总量超限时记录警告。 这里取的是提供方 ActivityInfo 中的 targetSdk，和Launcher的targetSdk无关；同一Android17源码还写有 targetSdk>37 时按 Bitmap+Icon 总量强制检查的分支。检查单位是合并/替换后的该Widget快照，不是提供方传入delta本身，也不是整个进程的总内存预算。",
+      "why": "Clarify provider target, >37 source branch and merged-snapshot unit of memory enforcement.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "这个上限随设备显示尺寸变化，写死成 1 MB、8 MB 或某个机型的实测值都套不上。设计时仍应让峰值显著低于系统上限——同一宿主还要同时处理桌面、其他 Widget 和自身图形资源。",
+      "after": "这个上限随设备显示尺寸变化，写死成 1 MB、8 MB 或某个机型的实测值都套不上。设计时仍应让峰值显著低于系统上限——同一宿主还要同时处理桌面、其他 Widget 和自身图形资源。 位图估算采用缓存内 Bitmap.getAllocationByteCount()，不能用网络压缩图字节数、JPEG文件大小或动作Parcel大小代替；布局变体和集合图片也要纳入总量。",
+      "why": "Actual allocation bytes are distinct from compressed or serialized payload bytes.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "- 静态图标和背景优先使用资源 ID，让宿主按资源加载。\n- 网络图片按 Widget 实际显示尺寸解码，避免把相机原图缩放后再塞入 `RemoteViews`。\n- 相同位图在一次快照中尽量复用，避免内容相同却创建多个对象。\n- 使用内容 URI（统一资源标识符） 时确认目标宿主具备读权限，并保证 URI 生命周期覆盖显示周期。\n- 提交新图片前先取消已经过时的下载或解码任务，防止旧请求覆盖新状态。\n- 集合中的缩略图要按总量估算，只盯着单项大小会漏算。",
+      "after": "- 静态图标和背景优先使用资源 ID，让宿主按资源加载。\n- 网络图片按 Widget 实际显示尺寸解码，避免把相机原图缩放后再塞入 `RemoteViews`。\n- 相同位图在一次快照中尽量复用，避免内容相同却创建多个对象。\n- 使用内容 URI（统一资源标识符） 时确认目标宿主具备读权限，并保证 URI 生命周期覆盖显示周期。\n- 提交新图片前先取消已经过时的下载或解码任务，并在完成回调重新核对用户、实例和数据版本；取消未必及时生效，仅靠取消不能阻止旧结果晚到覆盖新状态。\n- 集合中的缩略图要按总量估算，只盯着单项大小会漏算。",
+      "why": "Generation/identity gate needed beyond cancellation to reject stale asynchronous image results.",
+      "sources": [
+        "https://developer.android.com/develop/ui/views/appwidgets/advanced",
+        "https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "同一个 `provideGlance()` 仍在运行时，再次调用 `update()` 不会重启它。需要展示的新数据应先写入 Glance 能观察到的状态，由现有会话重新组合；反复调用 `update()` 替代不了状态同步。",
+      "after": "同一个 `provideGlance()` 仍在运行时，再次调用 `update()` 不会重启它。需要展示的新数据应先写入 Glance 能观察到的状态，由现有会话重新组合；反复调用 `update()` 替代不了状态同步。 1.2.0的活跃组合通常只维持约45秒，并可因交互/更新请求延长，不是常驻桌面重组循环。外部完成持久状态写入后仍应调用update，以在会话已结束时启动新worker；会话仍活跃时，它会通过事件重读Glance状态，而非重新执行整个provideGlance。",
+      "why": "Finite session lifetime and external update trigger are required alongside observable state.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar",
+        "https://developer.android.com/develop/ui/compose/glance/glance-app-widget"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "尺寸能归纳为几个明确阈值时，`SizeMode.Responsive` 可以预先生成有限布局，这里的阈值就是响应式设计常说的尺寸断点。Android 12 及以上版本会为传入的响应式尺寸分别生成内容，再由框架选择合适变体。`SizeMode.Exact` 会在每次尺寸变化时按精确尺寸重新创建内容，官方文档提示它可能增加开销，并造成调整大小时的界面跳变。布局连续依赖精确宽高、有限断点表达不了时，再选用 `SizeMode.Exact`。",
+      "after": "尺寸能归纳为几个明确阈值时，`SizeMode.Responsive` 可以预先生成有限布局，这里的阈值就是响应式设计常说的尺寸断点。Android 12 及以上版本会为传入的响应式尺寸分别生成内容，再由框架选择合适变体。`SizeMode.Exact` 会在每次尺寸变化时按精确尺寸重新创建内容，官方文档提示它可能增加开销，并造成调整大小时的界面跳变。布局连续依赖精确宽高、有限断点表达不了时，再选用 `SizeMode.Exact`。 多尺寸会并发运行各自的内容组合，remember状态每个尺寸各有一份；相同默认lambda key可触发多个尺寸的对应动作，副作用也会按尺寸运行。共享网络、写库、支付等外部操作必须去重/幂等，不能按组合份数重复执行。API31+平台按尺寸映射的RemoteViews最多接受16个变体，断点不是越多越好。",
+      "why": "Multi-size composition multiplies state/effects/actions; enforce actual RemoteViews variant cap.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "把一个整数 ID 复制到另一份资料中，定位不到另一侧实例；工作资料暂停、锁定或移除后，提供方还要停止任务并清理对应缓存。",
+      "after": "把一个整数 ID 复制到另一份资料中，定位不到另一侧实例；资料暂停或移除时应用可能无法继续执行代码；系统负责相应进程/组件约束，应用应在可收到的生命周期事件及恢复启动时校验实例、停止失效工作并整理可访问缓存，不能依赖“移除后必跑一次清理”。",
+      "why": "Do not rely on app code running after profile removal or suspension.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "这套策略也能缩短广播入口的执行时间，避免每次启动都等待网络再提交首屏。",
+      "after": "这套策略也能缩短广播入口的执行时间，避免每次启动都等待网络再提交首屏。 这属于产品恢复策略；Glance1.2.0的默认onCompositionError会发布错误布局并关闭该会话，errorUiLayout为0时会重新抛错。需要保留最近业务状态或自定义错误UI时，必须明确实现对应回调与恢复路径。",
+      "why": "Separate proposed last-good policy from actual Glance default error behavior.",
+      "sources": [
+        "https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "输出适合确认实例归属、`updatePeriodMillis`、宿主和提供方状态；耗时分析它给不了，仍要与系统跟踪、应用日志以及 Launcher 行为对应。",
+      "after": "输出适合确认实例归属、`updatePeriodMillis`、宿主和提供方状态；耗时分析它给不了，仍要与系统跟踪、应用日志以及 Launcher 行为对应。 为每次业务更新附带用户/实例/数据版本，在可控宿主记录收到与完成应用的标记；不可控Launcher缺少回执时，明确只能观察到哪一层，不能把API返回时间补写为屏幕刷新时间。",
+      "why": "Require correlation identity and explicitly bound host visibility evidence.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetManager.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHost.java",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHostView.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "批量提交减少提供方发起调用和重复构造的次数，但系统仍要逐个维护 Widget 实例并通知相应宿主，一次 API 调用的工作量要按多次宿主工作来估算。",
+      "after": "批量提交减少提供方发起调用和重复构造的次数，但系统仍要逐个维护 Widget 实例并通知相应宿主，一次 API 调用的工作量要按多次宿主工作来估算。 上述批量接口不是跨实例的事务提交：某实例的权限、内存或宿主状态失败时，不应假定所有实例一起成功或一起回滚。业务保留每个实例的状态与重试范围。",
+      "why": "Service loops IDs and can fail mid-loop, so batch is not atomic transaction.",
+      "sources": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java"
+      ]
+    },
+    {
+      "article": "src/part5-app/ch22-rendering-practice/19-app-widget-performance.md",
+      "before": "- [AppWidgetManager.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetManager.java)\n- [AppWidgetServiceImpl.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java)\n- [AppWidgetHost.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHost.java)\n- [AppWidgetHostView.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHostView.java)\n- [RemoteViews.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java)\n- [RemoteViewsService.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViewsService.java)\n- [AlarmManager.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java)\n- [AlarmManagerService.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java)\n- [PluginActionManager.kt（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt)\n- [PluginInstance.kt（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt)\n- [Plugin.kt（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/plugin_core/src/com/android/systemui/plugins/Plugin.kt)\n- [高级 Widget 指南](https://developer.android.com/develop/ui/views/appwidgets/advanced)\n- [集合 Widget 指南](https://developer.android.com/develop/ui/views/appwidgets/collections)\n- [Jetpack Glance 概览](https://developer.android.com/develop/ui/compose/glance)\n- [使用 Glance 构建响应式界面](https://developer.android.com/develop/ui/compose/glance/build-ui)\n- [AlarmManager API 参考](https://developer.android.com/reference/android/app/AlarmManager)\n- [AppWidgetManager API 参考](https://developer.android.com/reference/android/appwidget/AppWidgetManager)\n- [Glance 1.2.0 发行说明](https://developer.android.com/jetpack/androidx/releases/glance#1.2.0)\n- [`glance-appwidget:1.2.0` 源码 JAR](https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar)\n- [精确闹钟调度指南](https://developer.android.com/develop/background-work/services/alarms)\n- [PeriodicWorkRequest API 参考](https://developer.android.com/reference/androidx/work/PeriodicWorkRequest)\n- [【车载 Android】从 AAR 到 Plugin：Launcher 卡片插件化解耦实践](https://juejin.cn/post/7678556373495971883)",
+      "after": "- [AppWidgetManager.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetManager.java)\n- [AppWidgetServiceImpl.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/appwidget/java/com/android/server/appwidget/AppWidgetServiceImpl.java)\n- [AppWidgetHost.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHost.java)\n- [AppWidgetHostView.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/appwidget/AppWidgetHostView.java)\n- [RemoteViews.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViews.java)\n- [RemoteViewsService.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/core/java/android/widget/RemoteViewsService.java)\n- [AlarmManager.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/framework/java/android/app/AlarmManager.java)\n- [AlarmManagerService.java（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/apex/jobscheduler/service/java/com/android/server/alarm/AlarmManagerService.java)\n- [PluginActionManager.kt（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginActionManager.kt)\n- [PluginInstance.kt（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/shared/src/com/android/systemui/shared/plugins/PluginInstance.kt)\n- [Plugin.kt（Android 17）](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/plugin_core/src/com/android/systemui/plugins/Plugin.kt)\n- [高级 Widget 指南](https://developer.android.com/develop/ui/views/appwidgets/advanced)\n- [集合 Widget 指南](https://developer.android.com/develop/ui/views/appwidgets/collections)\n- [Jetpack Glance 概览](https://developer.android.com/develop/ui/compose/glance)\n- [使用 Glance 构建响应式界面](https://developer.android.com/develop/ui/compose/glance/build-ui)\n- [AlarmManager API 参考](https://developer.android.com/reference/android/app/AlarmManager)\n- [AppWidgetManager API 参考](https://developer.android.com/reference/android/appwidget/AppWidgetManager)\n- [Glance 1.2.0 发行说明](https://developer.android.com/jetpack/androidx/releases/glance#1.2.0)\n- [`glance-appwidget:1.2.0` 源码 JAR](https://dl.google.com/dl/android/maven2/androidx/glance/glance-appwidget/1.2.0/glance-appwidget-1.2.0-sources.jar)\n- [精确闹钟调度指南](https://developer.android.com/develop/background-work/services/alarms)\n- [PeriodicWorkRequest API 参考](https://developer.android.com/reference/androidx/work/PeriodicWorkRequest)\n- [【车载 Android】从 AAR 到 Plugin：Launcher 卡片插件化解耦实践](https://juejin.cn/post/7678556373495971883)\n- [广播ANR的版本与优先级边界](https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs)\n- [TransactionTooLargeException](https://developer.android.com/reference/android/os/TransactionTooLargeException)\n- [Chronometer时基](https://developer.android.com/reference/android/widget/Chronometer)：宿主本地计时。",
+      "why": "Add primary evidence supporting corrected timeout, Binder and clock details.",
+      "sources": [
+        "https://developer.android.com/topic/performance/anrs/diagnose-and-fix-anrs",
+        "https://developer.android.com/reference/android/os/TransactionTooLargeException"
+      ]
     }
   ],
-  "validation": {},
+  "validation": {
+    "final_range": "/tmp/gracker-android-wiki-diagrams-20261025-agent-200-250/range-final-validation.json",
+    "passed": true,
+    "articles": 51,
+    "diagrams": 1103,
+    "corrections": 891,
+    "assets_verified": 2206,
+    "correction_replay": "All51 frozen assignment snapshots + ordered before/after records exactly reproduce current body after diagram blocks removed.",
+    "baseline_provenance": "Original master sha256_before preserved, assignment snapshots match sha256_at_assignment; three earlier-master hashes differ as documented."
+  },
   "last_checkpoint": {
-    "completed": 49,
+    "completed": 51,
     "total": 51,
-    "next_article": "src/part5-app/ch22-rendering-practice/18-camerax-rendering.md",
-    "updated_at": "2026-10-25T12:23:47.424530+00:00"
+    "next_article": null,
+    "updated_at": "2026-10-25T12:41:35.583380+00:00"
   },
   "replaced_inline_diagrams": []
 }

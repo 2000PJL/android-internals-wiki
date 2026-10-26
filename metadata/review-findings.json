@@ -10183,6 +10183,91 @@
       "summary": "Rust 过滤器的进程内调用被概括为全程同一调用链",
       "type": "incorrect-mechanism",
       "updated_at": "2026-10-26T14:44:18.438612+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/03-gesture-navigation-predictive-back.md",
+      "close_note": "重写高度配额例外段，分别说明第三方粘性沉浸窗口的条件、旧 target SDK 隐式排除兼容分支和临时导航栏返回条件；保留可触摸区域与遮挡裁剪边界。 已核对固定版本源码/官方资料并通过目标章节元数据、目录链接和限定 diff 检查；全文与新增行写作硬门无新增命中。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261026-183520-idle-audit-99ace863",
+      "created_at": "2026-10-26T18:41:47.480949+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261026-183520-idle-audit-99ace863",
+      "details": "原文承认特定 sticky immersive 可绕过普通限制，随后却断言第三方应用仍只能按普通限额申请。android-17.0.0_r1 DisplayContent.needsGestureExclusionRestrictions 对导航栏请求隐藏且行为为 BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE 的窗口跳过高度配额，没有第三方身份检查；WindowState.isImplicitlyExcludingAllSystemGestures 是另一个受 targetSdk<29 和配置开关约束的兼容分支，两者应分清。临时显示导航栏时 SystemUI 优先允许边缘返回。",
+      "id": "finding-ch03-03-sticky-exclusion-scope",
+      "log_path": "logs/audit/2026-10-26-20261026-183520-idle-audit-99ace863-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/DisplayContent.java#6352",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/wm/WindowState.java#942",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java#1041"
+      ],
+      "status": "verified",
+      "summary": "粘性沉浸的排除高度豁免被错误限定为平台权限，遗漏第三方窗口适用条件",
+      "type": "source-mismatch",
+      "updated_at": "2026-10-26T18:45:08.627920+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/03-gesture-navigation-predictive-back.md",
+      "close_note": "将无取消事件的排查项改为命中最终获批排除区域，说明仅未获批的申请不会阻止系统返回。 已核对固定版本源码/官方资料并通过目标章节元数据、目录链接和限定 diff 检查；全文与新增行写作硬门无新增命中。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261026-183520-idle-audit-99ace863",
+      "created_at": "2026-10-26T18:41:47.538700+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261026-183520-idle-audit-99ace863",
+      "details": "原文旧式返回排查第4步要求在完整触摸流且没有 CANCEL 时检查排除请求被拒绝。EdgeBackGestureHandler.isWithinTouchRegion 仅在受限的已获批 mExcludeRegion 命中时拒绝候选；仅命中 mUnrestrictedExcludeRegion 只记录 rejected exclusion，仍返回 withinRange。该步骤与前面的正确机制描述互相矛盾。",
+      "id": "finding-ch03-03-rejected-exclusion-diagnosis",
+      "log_path": "logs/audit/2026-10-26-20261026-183520-idle-audit-99ace863-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java#1047",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/packages/SystemUI/src/com/android/systemui/navigationbar/gestural/EdgeBackGestureHandler.java#1226"
+      ],
+      "status": "verified",
+      "summary": "无 ACTION_CANCEL 的排查步骤把未获批排除请求写成阻止返回的原因",
+      "type": "incorrect-diagnostic",
+      "updated_at": "2026-10-26T18:45:08.684084+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/03-gesture-navigation-predictive-back.md",
+      "close_note": "区分收尾方法中尚未执行的回调与三类系统转场在提交后动画开始时执行的回调，标明 mRealCallbackInvoked 的去重作用。 已核对固定版本源码/官方资料并通过目标章节元数据、目录链接和限定 diff 检查；全文与新增行写作硬门无新增命中。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261026-183520-idle-audit-99ace863",
+      "created_at": "2026-10-26T18:41:47.594668+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261026-183520-idle-audit-99ace863",
+      "details": "原文把 invokeOrCancelBack 的收尾顺序泛化为所有真实回调。BackAnimationController.startPostCommitAnimation 在跨 Activity、跨任务和返回主屏的 shouldTriggerCloseTransition 条件下先 dispatchOnBackInvoked 并置 mRealCallbackInvoked=true；后续 invokeOrCancelBack 才调用 onAnimationFinished，并跳过已执行的真实回调。",
+      "id": "finding-ch03-03-postcommit-callback-order",
+      "log_path": "logs/audit/2026-10-26-20261026-183520-idle-audit-99ace863-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/back/BackAnimationController.java#904",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/libs/WindowManager/Shell/src/com/android/wm/shell/back/BackAnimationController.java#998"
+      ],
+      "status": "verified",
+      "summary": "真实返回回调前必定同步通知 WMS 的表述不适用于提前提交的三类系统转场",
+      "type": "incorrect-call-order",
+      "updated_at": "2026-10-26T18:45:08.740280+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch03-input/03-gesture-navigation-predictive-back.md",
+      "close_note": "将 frontmatter 和文末资料中的旧链接替换为已读取的 system-tracing 文档，并更新资料标题。 已核对固定版本源码/官方资料并通过目标章节元数据、目录链接和限定 diff 检查；全文与新增行写作硬门无新增命中。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261026-183520-idle-audit-99ace863",
+      "created_at": "2026-10-26T18:41:47.650415+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261026-183520-idle-audit-99ace863",
+      "details": "https://perfetto.dev/docs/quickstart/android-tracing 返回 HTTP 成功但 main.md-content 为空，未提供被引用的录制说明。站点导航指向 https://perfetto.dev/docs/getting-started/system-tracing，已读取其 Android 命令行与 atrace 类别示例及平台前提。",
+      "id": "finding-ch03-03-perfetto-quickstart-link",
+      "log_path": "logs/audit/2026-10-26-20261026-183520-idle-audit-99ace863-idle-audit.md",
+      "severity": "P3",
+      "source_paths": [
+        "https://perfetto.dev/docs/quickstart/android-tracing",
+        "https://perfetto.dev/docs/getting-started/system-tracing"
+      ],
+      "status": "verified",
+      "summary": "Perfetto Android tracing 旧快速入门链接只返回空正文模板",
+      "type": "stale-source-link",
+      "updated_at": "2026-10-26T18:45:08.796272+08:00"
     }
   ],
   "schema_version": 1

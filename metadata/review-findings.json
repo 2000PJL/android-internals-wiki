@@ -10268,6 +10268,49 @@
       "summary": "Perfetto Android tracing 旧快速入门链接只返回空正文模板",
       "type": "stale-source-link",
       "updated_at": "2026-10-26T18:45:08.796272+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md",
+      "close_note": "已直接重写开篇，分开 lmkd 全局压力决策、Freezer 状态/策略触发、MemoryLimiter 局部配额和产品预取；r1 源码及官方 Freezer 文档支持。正文新增行风格门与章节元数据校验通过。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261026-223520-idle-audit-d4b4a84f",
+      "created_at": "2026-10-26T22:41:02.074722+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261026-223520-idle-audit-d4b4a84f",
+      "details": "正文开篇称系统内存压力会触发冻结，与后文独立路径说明冲突。固定 r1 CachedAppOptimizer 按进程状态/冻结策略安排冻结；官方 Cached apps freezer 将进入缓存状态与生命周期事件列为冻结/解冻条件。应直接修正开篇的触发归因。",
+      "id": "finding-3696a5a772b6",
+      "log_path": "logs/audit/2026-10-26-20261026-223520-idle-audit-d4b4a84f-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/CachedAppOptimizer.java#1387",
+        "https://source.android.com/docs/core/perf/cached-apps-freezer"
+      ],
+      "status": "fixed",
+      "summary": "开篇将缓存进程冻结错误归入系统内存压力触发链",
+      "type": "mechanism-trigger",
+      "updated_at": "2026-10-26T22:45:36.149447+08:00"
+    },
+    {
+      "chapter": "src/part1-fundamentals/ch04-memory/03-lmkd-freezer-memory-pressure.md",
+      "close_note": "属性 ERE 改为单反斜杠；合成属性输入中原命令退出 1、修复后退出 0 且只匹配两个目标属性。冻结命令改用 PID_OR_PROCESS_NAME，并明确 r1 精确进程名及多实例报错边界。未伪称真机测试。",
+      "closed_by": "aiw-polish-idle-audit",
+      "closed_run_id": "20261026-223520-idle-audit-d4b4a84f",
+      "created_at": "2026-10-26T22:41:02.132238+08:00",
+      "created_by": "aiw-polish-idle-audit",
+      "created_run_id": "20261026-223520-idle-audit-d4b4a84f",
+      "details": "getprop 管道在单引号 ERE 中使用两个反斜杠，不能匹配 ro.lmk/sys.lmk 属性；合成属性输入回归已复现退出码 1、无输出。am freeze/unfreeze 的 PACKAGE_OR_PROCESS 占位也不准确，r1 getProcessFromShell 只按 PID 或完整进程名匹配，多实例同名会报错。",
+      "id": "finding-ac4fdb8d9019",
+      "log_path": "logs/audit/2026-10-26-20261026-223520-idle-audit-d4b4a84f-idle-audit.md",
+      "severity": "P2",
+      "source_paths": [
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java#1501",
+        "https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-17.0.0_r1/services/core/java/com/android/server/am/ActivityManagerShellCommand.java#1547",
+        "local grep -E regression with explicitly synthetic property fixture"
+      ],
+      "status": "fixed",
+      "summary": "诊断命令存在属性过滤双重转义及冻结目标参数歧义",
+      "type": "diagnostic-command",
+      "updated_at": "2026-10-26T22:45:36.213470+08:00"
     }
   ],
   "schema_version": 1
